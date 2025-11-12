@@ -36,7 +36,7 @@ Kopiere das gesamte Verzeichnis `docs/runbooks/` oder importiere das ZIP-Bundle:
 Anschließend in der README oder CONTRIBUTING-Doku verlinken:
 
 ````markdown
-Weitere Informationen zur Projekt-Sanitation und Dokumentenkuration findest du unter [docs/runbooks/](docs/runbooks/).
+Weitere Informationen zur Projekt-Sanitation und Dokumentenkuration findest du unter [docs/runbooks/](../runbooks/).
 ````
 
 ---
