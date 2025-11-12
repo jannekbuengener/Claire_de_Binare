@@ -1,0 +1,20 @@
+artifacts/
+backoffice/artifacts/
+evidence/
+__pycache__/
+.coverage
+*.coverage*
+*.log
+tmp_*
+backups/
+operations/logs/
+*.sqlite*
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+id_*
+*.secrets
