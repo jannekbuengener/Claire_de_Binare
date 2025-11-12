@@ -1,0 +1,4 @@
+== Sanitation Simulation Report ==
+Executed filter-repo dry run on 3 targets (.env, postgres_env.txt, postgres_env_runtime.txt)
+Exit Code: 0 (expected)
+Verification Hash Report: tmp_sanitation_hashes.tsv
