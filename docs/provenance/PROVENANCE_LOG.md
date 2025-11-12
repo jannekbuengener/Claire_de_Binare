@@ -22,3 +22,13 @@
   target_path: docs/ops/RUNBOOK_DOCKER_OPERATIONS.md
   target_sha256: 25f850ad3740169c188b3fdc995c94f5917e88ec017cd632c217ef6e7b8aa3b4
   status: identical
+
+- source_path: sanitation/dryrun
+  action: simulation
+  target_path: docs/security/SECURITY_SANITATION_REPORT.md
+  source_sha256: <Hashwert aus tmp_sanitation_hashes.tsv>
+  target_sha256: <Hashwert des Reports>
+  status: verified
+  executed_by: Codex
+  date: 2025-11-13
+  note: Dry-run executed successfully; no destructive changes performed.
