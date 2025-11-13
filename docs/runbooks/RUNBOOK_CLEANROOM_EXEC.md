@@ -3,19 +3,19 @@
 ## Track 1: Dry-Run-Merge (ohne Löschungen)
 
 ### 1. Vorbereitung (Go/No-Go)
-1.1 Go-Kriterien: CI zuletzt grün, Inventur-Plan abgenommen, Owner verfügbar.  
-1.2 No-Go: Offene Security-Funde, fehlendes Backup, Blocker im Risk Register.  
+1.1 Go-Kriterien: CI zuletzt grün, Inventur-Plan abgenommen, Owner verfügbar.
+1.2 No-Go: Offene Security-Funde, fehlendes Backup, Blocker im Risk Register.
 1.3 Beweis der Wirkung: Screenshot/Link zum letzten erfolgreichen CI-Run.
 
 ### 2. Branch anlegen & Artefakte hinzufügen
-2.1 GitHub Desktop Pfad  
-    - Repository öffnen → `Branch` → `New Branch…` → Name `feature/cleanroom-dryrun`.  
-    - Dateien hinzufügen (Drag & Drop aus Planung):  
-      - `docs/CLEANUP_PLAN.md`  
-      - `docs/MIGRATION_MAP.md`  
-      - `docs/SECURITY_SANITATION_PLAN.md`  
-      - `docs/PR_CLEANROOM_DRYRUN.md`  
-    - .gitignore patchen: Rechtsklick `.gitignore` → „Öffnen in Editor“ → Diff aus Phase II einfügen.  
+2.1 GitHub Desktop Pfad
+    - Repository öffnen → `Branch` → `New Branch…` → Name `feature/cleanroom-dryrun`.
+    - Dateien hinzufügen (Drag & Drop aus Planung):
+      - `docs/CLEANUP_PLAN.md`
+      - `docs/MIGRATION_MAP.md`
+      - `docs/SECURITY_SANITATION_PLAN.md`
+      - `docs/PR_CLEANROOM_DRYRUN.md`
+    - .gitignore patchen: Rechtsklick `.gitignore` → „Öffnen in Editor“ → Diff aus Phase II einfügen.
     - Beweis: GitHub Desktop zeigt vier neue Dateien + 1 geänderte `.gitignore`.
 
 2.2 CLI-Äquivalent (Bash / PowerShell)
@@ -26,7 +26,7 @@ cp path/to/plans/MIGRATION_MAP.md docs/MIGRATION_MAP.md
 cp path/to/plans/SECURITY_SANITATION_PLAN.md docs/SECURITY_SANITATION_PLAN.md
 cp path/to/plans/PR_CLEANROOM_DRYRUN.md docs/PR_CLEANROOM_DRYRUN.md
 cat <<'EOF' >> .gitignore
-# Cleanroom ignore – artifacts & caches
+## Cleanroom ignore – artifacts & caches
 artifacts/
 backoffice/artifacts/
 evidence/
@@ -39,7 +39,7 @@ backups/
 operations/logs/
 *.sqlite*
 
-# Secrets
+## Secrets
 .env
 .env.*
 *.pem
@@ -53,7 +53,7 @@ git status
 Beweis: git status listet neue Dateien und geändertes .gitignore.
 
 ### 3. Commit & Push
-3.1 GitHub Desktop: Summary `chore(cleanroom): add plans + gitignore (dry run)` → Commit → Push origin.  
+3.1 GitHub Desktop: Summary `chore(cleanroom): add plans + gitignore (dry run)` → Commit → Push origin.
 3.2 CLI:
 ```bash
 git add docs/CLEANUP_PLAN.md docs/MIGRATION_MAP.md docs/SECURITY_SANITATION_PLAN.md docs/PR_CLEANROOM_DRYRUN.md .gitignore
@@ -63,30 +63,30 @@ git push -u origin feature/cleanroom-dryrun
 Beweis: Push-Ausgabe Exitcode 0.
 
 ### 4. PR erstellen
-4.1 Titel: `chore(cleanroom): prepare structure & policy dry run`  
-4.2 Body: aus `docs/PR_CLEANROOM_DRYRUN.md`.  
-4.3 Labels: `cleanup`, `documentation`, `security-prep`; Milestone „Cleanroom Phase II Dry-Run“.  
-4.4 Reviewer `@DevLead`, `@DocsLead`, `@SecurityLead`.  
+4.1 Titel: `chore(cleanroom): prepare structure & policy dry run`
+4.2 Body: aus `docs/PR_CLEANROOM_DRYRUN.md`.
+4.3 Labels: `cleanup`, `documentation`, `security-prep`; Milestone „Cleanroom Phase II Dry-Run“.
+4.4 Reviewer `@DevLead`, `@DocsLead`, `@SecurityLead`.
 4.5 Beweis: Pull-Request-Link mit Status „Open“.
 
 ### 5. Go/No-Go vor Merge
-Go: CI grün, Checklist abgezeichnet, keine Secrets.  
-No-Go: Neue Findings, Review blockiert.  
-Rollback lokal: `git revert <commit>`; Remote: PR schließen, Branch löschen (`git push origin --delete feature/cleanroom-dryrun`).  
+Go: CI grün, Checklist abgezeichnet, keine Secrets.
+No-Go: Neue Findings, Review blockiert.
+Rollback lokal: `git revert <commit>`; Remote: PR schließen, Branch löschen (`git push origin --delete feature/cleanroom-dryrun`).
 Beweis: Merge-Preview frei von roten Checks.
 
 
 ## Track 2: Security-Sanitation (History-Rewrite)
 
 ### 1. Vorbereitung (Go/No-Go)
-1.1 Mirror-Backup erstellen: `git clone --mirror <REMOTE> repo-cleanroom-backup.git`.  
-1.2 Freeze kommunizieren (Slack/Teams + Mail).  
-1.3 Stakeholder & Owner (Security, Ops, Dev) bestätigen Wartungsfenster `<MAINT_WINDOW>`.  
-1.4 Neues Secret-Set generiert (z. B. `<SECRET_DB_PASSWORD>`).  
+1.1 Mirror-Backup erstellen: `git clone --mirror <REMOTE> repo-cleanroom-backup.git`.
+1.2 Freeze kommunizieren (Slack/Teams + Mail).
+1.3 Stakeholder & Owner (Security, Ops, Dev) bestätigen Wartungsfenster `<MAINT_WINDOW>`.
+1.4 Neues Secret-Set generiert (z. B. `<SECRET_DB_PASSWORD>`).
 1.5 Beweis: Backup-Ordner vorhanden + Stakeholder-Leserückmeldung.
 
 ### 2. filter-repo/BFG Planung
-2.1 Liste der Pfade/Muster: `.env`, `postgres_env.txt`, `postgres_env_runtime.txt`, `.env.*`, `*.pem`, `*.key`, `*.pfx`, `id_*`, `*.secrets`, `*.sqlite*`.  
+2.1 Liste der Pfade/Muster: `.env`, `postgres_env.txt`, `postgres_env_runtime.txt`, `.env.*`, `*.pem`, `*.key`, `*.pfx`, `id_*`, `*.secrets`, `*.sqlite*`.
 2.2 Befehle vorbereiten:
 
 **Alternative 1 – git filter-repo**
@@ -113,7 +113,7 @@ docker compose -f compose.yml run --rm cdb_core pytest -q  # Beispiel-Compose-Sm
 Beweis: Exitcodes 0, Gitleaks „no leaks detected“.
 
 ### 4. Push Protection & Force Push
-4.1 GitHub UI → Settings → Code security → Secret scanning (Enable) & Push protection (Enable).  
+4.1 GitHub UI → Settings → Code security → Secret scanning (Enable) & Push protection (Enable).
 4.2 Force-Push nach Freigabe:
 ```bash
 git push --force-with-lease origin <MAIN>
@@ -121,7 +121,7 @@ git push --force-with-lease origin <MAIN>
 Beweis: GitHub Security Center zeigt „Push protection active“, Force-Push erfolgreich.
 
 ### 5. Kommunikation
-Mail/Slack auf Basis `COMMS_PACK.md`: Hinweis auf neues Clone-Erfordernis.  
+Mail/Slack auf Basis `COMMS_PACK.md`: Hinweis auf neues Clone-Erfordernis.
 Re-Clone-Anleitung senden:
 ```bash
 git clone <REMOTE> cleanroom-new
@@ -134,18 +134,18 @@ Falls Regression: aus Mirror wiederherstellen:
 git remote add rollback ../repo-cleanroom-backup.git
 git push --force origin refs/heads/<MAIN>:refs/heads/<MAIN>
 ```
-Kommunikationstext: „Revert durchgeführt – bitte alte Klone weiterverwenden“.  
+Kommunikationstext: „Revert durchgeführt – bitte alte Klone weiterverwenden“.
 Beweis: Remote-Historie identisch mit Backup.
 
 
 ## Track 3: Doku-Kuration & Link-Fix
 
 ### 1. Aufgabenliste (Moves – keine Ausführung hier)
-- `archive/legacy_quickstart/QUICK_START.md` → `docs/quickstart/QUICK_START.md`  
-- `backoffice/docs/ARCHITEKTUR.md` → `docs/architecture/ARCHITEKTUR.md`  
-- `backoffice/docs/SECURITY.md` → `docs/security/SECURITY.md`  
-- `evidence/TEST_RERUN_EVIDENCE_2025-11-11.md` → `docs/reports/TEST_RERUN_EVIDENCE_2025-11-11.md`  
-- `backoffice/SESSION_MEMO_*` → `docs/meetings/SESSION_MEMO_*.md` (kuratieren)  
+- `archive/legacy_quickstart/QUICK_START.md` → `docs/quickstart/QUICK_START.md`
+- `backoffice/docs/ARCHITEKTUR.md` → `docs/architecture/ARCHITEKTUR.md`
+- `backoffice/docs/SECURITY.md` → `docs/security/SECURITY.md`
+- `evidence/TEST_RERUN_EVIDENCE_2025-11-11.md` → `docs/reports/TEST_RERUN_EVIDENCE_2025-11-11.md`
+- `backoffice/SESSION_MEMO_*` → `docs/meetings/SESSION_MEMO_*.md` (kuratieren)
 *(vollständige Liste: `MIGRATION_MAP.md`)*
 
 ### 2. Link-Check Script (Entwurf)
@@ -186,15 +186,15 @@ print("All links OK")
 Beweis: Script liefert „All links OK“ (Exitcode 0).
 
 ### 3. PR-Vorlage
-- **Titel:** `docs(cleanroom): consolidate documentation tree`  
-- **Body:**  
-  - Checkliste (z. B. `- [ ] MIGRATION_MAP abgearbeitet`).  
-  - Akzeptanzkriterien (404-Check 0, Redundanzen de-dupliziert).  
-- **Labels:** `documentation`, `cleanup`.  
+- **Titel:** `docs(cleanroom): consolidate documentation tree`
+- **Body:**
+  - Checkliste (z. B. `- [ ] MIGRATION_MAP abgearbeitet`).
+  - Akzeptanzkriterien (404-Check 0, Redundanzen de-dupliziert).
+- **Labels:** `documentation`, `cleanup`.
 - **Beweis:** PR diff zeigt nur Doc-Moves & Link-Fixes.
 
 ### 4. Go/No-Go & Rollback
-Go: Sanitation abgeschlossen, MIGRATION_MAP freigegeben, Link-Check grün.  
-No-Go: Offene PRs, Link-Check liefert Fehler.  
-Rollback: `git revert` pro Move-Commit oder `git checkout -- docs/<file>` vor Commit.  
+Go: Sanitation abgeschlossen, MIGRATION_MAP freigegeben, Link-Check grün.
+No-Go: Offene PRs, Link-Check liefert Fehler.
+Rollback: `git revert` pro Move-Commit oder `git checkout -- docs/<file>` vor Commit.
 Beweis: Wiederholter Link-Check nach Rollback zeigt keine Fehler.

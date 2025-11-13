@@ -13,12 +13,12 @@ fasst Start, Validierung, Tests und Störungen zusammen.
 ## ▶️ Start & Health-Checks
 
 ```powershell
-# Container starten
+## Container starten
 pwsh backoffice/automation/check_env.ps1
 docker compose pull
 docker compose up -d
 
-# Status & Health
+## Status & Health
 docker compose ps
 curl http://localhost:8001/health
 curl http://localhost:8002/health
@@ -28,21 +28,21 @@ curl http://localhost:8003/health
 ## 🔍 Schnelltest (Paper-Trading)
 
 ```powershell
-# Market-Data-Event simulieren
+## Market-Data-Event simulieren
 $event = '{"symbol":"BTC_USDT","price":50000,"volume":1000000,"timestamp":1736600000,"pct_change":5.0}'
 docker exec cdb_redis redis-cli PUBLISH market_data $event
 
-# Ergebnisse prüfen
+## Ergebnisse prüfen
 docker exec cdb_postgres psql -U claire -d claire_de_binare -c "SELECT * FROM signals ORDER BY timestamp DESC LIMIT 3;"
 ```
 
 ## ♻️ Neustart & Wartung
 
 ```powershell
-# Einzelne Services neustarten (Signal & Risk)
+## Einzelne Services neustarten (Signal & Risk)
 docker compose restart signal_engine risk_manager
 
-# Kompletten Stack neu starten
+## Kompletten Stack neu starten
 docker compose down
 Start-Sleep -Seconds 5
 docker compose up -d

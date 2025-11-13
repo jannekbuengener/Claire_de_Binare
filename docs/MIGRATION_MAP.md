@@ -22,16 +22,16 @@
 | backoffice/docs/Service-Kommunikation & Datenflüsse.md | docs/architecture/SERVICE_DATA_FLOWS.md | P1 | Service-Kommunikation mit Architektur verknüpfen |
 | backoffice/docs/Risikomanagement-Logik.md | docs/security/RISK_LOGIC.md | P1 | Sicherheits-/Risk-Thema in Security-Bereich schieben |
 | backoffice/docs/SECURITY.md | docs/security/SECURITY.md | P1 | Security-Grundsatzdoku konsolidieren |
-| backoffice/docs/SECURITY_FIX_PLAN.md | docs/security/SECURITY_FIX_PLAN.md | P1 | Sicherheitsmaßnahmen referenzierbar halten |
-| backoffice/docs/SECURITY_RISK_REPORT.md | docs/security/SECURITY_RISK_REPORT.md | P1 | Risk-Report zentralisieren |
+| SECURITY_FIX_PLAN.md | docs/security/SECURITY_FIX_PLAN.md | P1 | Sicherheitsmaßnahmen referenzierbar halten |
+| SECURITY_RISK_REPORT.md | docs/security/SECURITY_RISK_REPORT.md | P1 | Risk-Report zentralisieren |
 | backoffice/docs/BACKUP_STRATEGY.md | docs/ops/BACKUP_STRATEGY.md | P2 | Operations-Guides bündeln |
 | operations/backup/BACKUP_ANLEITUNG.md | docs/ops/BACKUP_ANLEITUNG.md | P2 | Backup-Inhalte in neue Ops-Struktur einpassen |
-| backoffice/automation/RUNBOOK_DOCKER_OPERATIONS.md | docs/ops/RUNBOOK_DOCKER_OPERATIONS.md | P2 | Runbooks in Ops-Sektion vereinheitlichen |
 | backoffice/docs/TEST_RUNBOOK.md | docs/ops/TEST_RUNBOOK.md | P2 | Testbetrieb dokumentiert halten |
-| backoffice/docs/SESSION_MEMO_* | docs/meetings/SESSION_MEMO_*.md (kuratierte Sammel-Doku) | P3 | Sitzungsprotokolle nach Themen bündeln, Redundanzen vermeiden |
-| evidence/TEST_RERUN_EVIDENCE_* | docs/reports/TEST_RERUN_EVIDENCE_* | P2 | Testevidenz dauerhaft verfügbar machen |
-| backoffice/docs/reports/* | docs/reports/* | P2 | Reports in eigenen Bereich legen |
-| backoffice/docs/research/* | docs/research/* | P3 | Forschungsnotizen thematisch gruppieren |
+| backoffice/docs/SESSION_MEMO_* | docs/meetings/ | P3 | Sitzungsprotokolle nach Themen bündeln, Redundanzen vermeiden |
+| backoffice/SESSION_MEMO_* | docs/meetings/ | P3 | Sitzungsprotokolle aus Root konsolidieren |
+| evidence/TEST_RERUN_EVIDENCE_* | docs/reports/ | P2 | Testevidenz dauerhaft verfügbar machen |
+| backoffice/docs/reports/* | docs/reports/ | P2 | Reports in eigenen Bereich legen |
+| backoffice/docs/research/* | docs/research/ | P3 | Forschungsnotizen thematisch gruppieren |
 | dashboard/docs/DASHBOARD_README.md | docs/tooling/DASHBOARD_README.md | P3 | Tool-spezifische Doku zentralisieren |
 | docker/docker.instructions.md | docs/tooling/DOCKER_TOOLKIT.md | P3 | Docker-Toolkit-Guide in Tooling-Bereich |
 | scripts/powershell.instructions.md | docs/tooling/POWERSHELL_GUIDE.md | P3 | Skript-Doku zusammenführen |

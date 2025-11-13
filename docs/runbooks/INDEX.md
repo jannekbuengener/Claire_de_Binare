@@ -41,6 +41,6 @@ Weitere Informationen zur Projekt-Sanitation und Dokumentenkuration findest du u
 
 ---
 
-**Version:** v1.0.0-cleanroom  
-**Erstellt:** 2025-11-12  
+**Version:** v1.0.0-cleanroom
+**Erstellt:** 2025-11-12
 **Maintainer:** Project Manager / Dev Lead / Security Lead

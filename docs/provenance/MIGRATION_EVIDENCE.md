@@ -21,7 +21,7 @@
 ## docs/ops/RUNBOOK_DOCKER_OPERATIONS.md
 - Owner: OpsLead
 - Timestamp: 2025-11-12T22:26:17+01:00
-- Source: backoffice/automation/RUNBOOK_DOCKER_OPERATIONS.md (commit 335be5bbebe7b6b317d38ab4a1ca436d4c6bfa91)
+- Source: ../ops/RUNBOOK_DOCKER_OPERATIONS.md (commit 335be5bbebe7b6b317d38ab4a1ca436d4c6bfa91)
 - Hash Check: 🟢 identical (25f850ad3740169c188b3fdc995c94f5917e88ec017cd632c217ef6e7b8aa3b4)
 - Struktur/Überschriften-Check: 🟢 H1/H2/H3 match
 - Link-Status: 🟢 All links OK

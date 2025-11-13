@@ -16,7 +16,7 @@
   target_sha256: faf05cec5332dbfc63d6ec89c54181d236990d12b096278c25a9db634313f0f7
   status: identical
 
-- source_path: backoffice/automation/RUNBOOK_DOCKER_OPERATIONS.md
+- source_path: ../ops/RUNBOOK_DOCKER_OPERATIONS.md
   source_commit: 335be5bbebe7b6b317d38ab4a1ca436d4c6bfa91
   source_sha256: 25f850ad3740169c188b3fdc995c94f5917e88ec017cd632c217ef6e7b8aa3b4
   target_path: docs/ops/RUNBOOK_DOCKER_OPERATIONS.md

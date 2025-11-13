@@ -20,7 +20,7 @@
      git push --force origin rollback/<MAIN>:<MAIN>
      ```
   2. Stakeholder informieren: „Rewrite revertiert, bitte alte Klone weiterverwenden.“
-- Kommunikationstext: 
+- Kommunikationstext:
   > „Rewrite rückgängig gemacht, Repository entspricht dem Stand vor `<timestamp>`. Keine weiteren Aktionen nötig.“
 - Beweis: Git log zeigt ursprüngliche Commit-IDs.
 
