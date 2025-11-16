@@ -1,0 +1,29 @@
+# Execution Service - Dependencies
+# Claire de Binaire Trading Bot
+
+# Web Framework
+flask==3.0.0
+
+# Redis Client
+redis==5.0.1
+
+# Database
+psycopg2-binary==2.9.9
+
+# HTTP Client (für MEXC API)
+requests==2.31.0
+
+# Async Support
+aiohttp==3.12.14
+
+# Crypto & Signing (für MEXC API)
+cryptography==42.0.4
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Logging
+python-json-logger==2.0.7
+
+# Utilities
+python-dateutil==2.8.2

@@ -1,20 +1,85 @@
-artifacts/
-backoffice/artifacts/
-evidence/
+# Python
 __pycache__/
-.coverage
-*.coverage*
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment
+.env
+.env.local
+*.env
+# Exclude all .env files in docker directories
+docker/**/.env
+# But include .env.example templates
+!docker/**/.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
 *.log
-tmp_*
-backups/
-operations/logs/
-*.sqlite*
+logs/
+backoffice/logs/*
+!backoffice/logs/.gitkeep
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+*.pid
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups & Archives
+*.zip
+*.tar.gz
+*.bak
+*_backup
 
 # Secrets
-.env
-.env.*
-*.pem
-*.key
-*.pfx
-id_*
-*.secrets
+*_secret*
+*_private*
+api_keys.txt
+
+# Integrations (external dependencies, large vendor code)
+integrations/
+
+# Node modules (if present in integrations)
+node_modules/
+
+# Backup files
+docker/mcp/backup/
+docker/tools/backup/
+*.tgz
+*.tar.gz
+
+# Temporary testing artifacts
+docker_audit/

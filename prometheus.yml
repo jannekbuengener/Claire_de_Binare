@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus selbst
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          service: 'monitoring'
+
+  # Execution Service
+  - job_name: 'execution_service'
+    static_configs:
+      - targets: ['execution_service:8003']
+        labels:
+          instance: 'execution_service'
+          service: 'trading'
+    metrics_path: '/metrics'
+    
+  # Signal Engine
+  - job_name: 'signal_engine'
+    static_configs:
+      - targets: ['signal_engine:8001']
+        labels:
+          instance: 'signal_engine'
+          service: 'analysis'
+    metrics_path: '/metrics'
+    
+  # Risk Manager
+  - job_name: 'risk_manager'
+    static_configs:
+      - targets: ['risk_manager:8002']
+        labels:
+          instance: 'risk_manager'
+          service: 'risk'
+    metrics_path: '/metrics'

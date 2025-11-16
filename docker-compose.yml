@@ -1,0 +1,292 @@
+# Claire de Binaire - Docker Compose Setup
+# Vollständige Infrastruktur für autonomen Trading-Bot
+
+services:
+  # ====================================================================
+  # INFRASTRUKTUR - Message Bus & Datenbank
+  # ====================================================================
+
+  cdb_redis:
+    image: redis:7-alpine
+    container_name: cdb_redis
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_postgres:
+    image: postgres:15-alpine
+    container_name: cdb_postgres
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: claire_de_binare
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backoffice/docs/DATABASE_SCHEMA.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_network
+
+  # ====================================================================
+  # MONITORING - Prometheus & Grafana
+  # ====================================================================
+
+  cdb_prometheus:
+    image: prom/prometheus:latest
+    container_name: cdb_prometheus
+    restart: unless-stopped
+    ports:
+      - "19090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_grafana:
+    image: grafana/grafana:latest
+    container_name: cdb_grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD not set}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - cdb_prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
+  # ====================================================================
+  # SCREENER - Bestehende Implementierung
+  # ====================================================================
+
+  cdb_ws:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SCRIPT_NAME: mexc_top5_ws.py
+    container_name: cdb_ws
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - cdb_redis
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    read_only: true
+    networks:
+      - cdb_network
+
+  # cdb_rest: DISABLED - mexc_top_movers.py nicht im Source-Repo gefunden
+  # Sobald mexc_top_movers.py verfügbar ist, Service wieder aktivieren
+  # cdb_rest:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     args:
+  #       SCRIPT_NAME: mexc_top_movers.py
+  #   container_name: cdb_rest
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   command: ["/bin/sh", "-c", "while true; do python -u app.py; echo '[bot_rest] Warte 300s bis zum nächsten Durchlauf...'; sleep 300; done"]
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   depends_on:
+  #     - cdb_redis
+  #   security_opt:
+  #     - no-new-privileges:true
+  #   cap_drop:
+  #     - ALL
+  #   tmpfs:
+  #     - /tmp
+  #   networks:
+  #     - cdb_network
+  #   healthcheck:
+  #     test: ["CMD", "true"]
+  #     interval: 30s
+  #     timeout: 3s
+  #     retries: 3
+
+  # ====================================================================
+  # MVP SERVICES - Vorbereitet für Entwicklung
+  # ====================================================================
+  # Hinweis: Diese Services sind noch nicht implementiert
+  # Auskommentiert mit "profiles" - aktivieren wenn Code bereit
+
+  cdb_core:
+    build:
+      context: ./backoffice/services/signal_engine
+      dockerfile: Dockerfile
+    container_name: cdb_core
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backoffice/services/signal_engine:/app
+      - signal_data:/data
+    depends_on:
+      - cdb_redis
+      - cdb_ws
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    read_only: true
+    networks:
+      cdb_network:
+        aliases:
+          - signal_engine
+
+  cdb_risk:
+    build:
+      context: ./backoffice/services/risk_manager
+      dockerfile: Dockerfile
+    container_name: cdb_risk
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./backoffice/services/risk_manager:/app
+      - risk_logs:/logs
+    depends_on:
+      - cdb_redis
+      - cdb_core
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    read_only: true
+    networks:
+      cdb_network:
+        aliases:
+          - risk_manager
+
+  cdb_execution:
+    build:
+      context: ./backoffice/services/execution_service
+      dockerfile: Dockerfile
+    container_name: cdb_execution
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./backoffice/services/execution_service:/app
+    depends_on:
+      - cdb_redis
+      - cdb_risk
+      - cdb_postgres
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    user: "1000:1000"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    read_only: true
+    networks:
+      cdb_network:
+        aliases:
+          - execution_service
+
+# ====================================================================
+# LEGACY SERVICE - ENTFERNT (ADR-037)
+# ====================================================================
+# cdb_signal_gen wurde entfernt:
+# - Dockerfile.signal_gen fehlt
+# - Funktionalität wird von cdb_core (Signal Engine) übernommen
+# - Siehe ADR-037 in backoffice/docs/DECISION_LOG.md
+
+# ====================================================================
+# VOLUMES - Persistente Daten
+# ====================================================================
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  prom_data:
+    driver: local
+  grafana_data:
+    driver: local
+  signal_data:
+    driver: local
+  risk_logs:
+    driver: local
+
+# ====================================================================
+# NETWORKS
+# ====================================================================
+networks:
+  cdb_network:
+    driver: bridge

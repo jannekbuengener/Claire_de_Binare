@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "json": {
+      "format": "%(asctime)s %(name)s %(levelname)s %(message)s"
+    },
+    "structured": {
+      "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "INFO",
+      "formatter": "structured",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "root": {
+    "level": "INFO",
+    "handlers": ["console"]
+  },
+  "loggers": {
+    "signal_engine": {
+      "level": "INFO",
+      "handlers": ["console"],
+      "propagate": false
+    },
+    "risk_manager": {
+      "level": "INFO",
+      "handlers": ["console"],
+      "propagate": false
+    },
+    "screener": {
+      "level": "INFO",
+      "handlers": ["console"],
+      "propagate": false
+    }
+  }
+}

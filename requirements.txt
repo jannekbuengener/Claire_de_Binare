@@ -1,0 +1,27 @@
+# Claire de Binaire - Core Dependencies
+
+# === SOFORT BENÖTIGT ===
+requests==2.31.0
+pandas==2.1.4
+websocket-client==1.7.0
+flask==3.0.0
+ccxt==4.5.11
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+
+# Message Bus
+redis==5.0.1
+
+# Monitoring
+prometheus-client==0.19.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# === DEVELOPMENT (optional) ===
+# pytest==7.4.3
+# pytest-cov==4.1.0
+# black==23.12.1
+# mypy==1.8.0
