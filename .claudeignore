@@ -1,0 +1,38 @@
+# Ordner ausschließen
+archive/
+.vscode/
+.github/
+.claude/
+.git/
+venv/
+.venv/
+env/
+ENV/
+integrations/
+node_modules/
+docker/mcp/backup/
+docker/tools/backup/
+docker_audit/
+
+# Dateien ausschließen
+.env
+.editorconfig
+.gitattributes
+nul
+
+# Dateitypen ausschließen
+*.pyc
+*.py[cod]
+*$py.class
+*.log
+*.tmp
+*.bak
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar.gz
+*.tgz
+*.egg
+*.egg-info/
+

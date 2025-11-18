@@ -31,7 +31,10 @@ wheels/
 # Exclude all .env files in docker directories
 docker/**/.env
 # But include .env.example templates
-!docker/**/.env.example
+!docker/**/.env.example/**/.env.template
+# Exclude historical archive from Claude uploads
+archive/
+archive/**
 
 # IDE
 .vscode/
