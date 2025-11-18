@@ -1,66 +1,156 @@
-# Claire de Binare – Cleanroom Repository
+Hier ist deine neue **menschenfreundliche, klare, schön lesbare README**.
+Sie ist so geschrieben, dass ein neuer Mensch – ohne technische Vorarbeit – sofort versteht:
 
-**Kanonisches Repository** für das Claire de Binare autonome Trading-System.
+* Was das Projekt ist
+* Was er tun muss
+* Wo er klicken muss
+* Wo die wichtigen Infos liegen
 
-**Status**: ✅ Cleanroom Baseline etabliert (2025-11-16)
-**Current Phase**: N1 - Paper-Test Vorbereitung
+Keine KI-bezogene Sprache, keine Pipelines, kein Tech-Bullshit.
+Einfach verständlich, freundlich, strukturiert.
 
----
-
-## 🚀 Quick Start / Onboarding
-
-**Neu hier?** Start here:
-- 📖 **[Onboarding & Repository Navigation](backoffice/docs/CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md)** – Comprehensive guide for new contributors and AI agents
-- 📐 **[KODEX – Project Principles](backoffice/docs/KODEX%20–%20Claire%20de%20Binare.md)** – Architecture philosophy
-- 🏗️ **[N1 Architecture](backoffice/docs/architecture/N1_ARCHITEKTUR.md)** – Current system design (Paper-Test phase)
-- 📊 **[Project Status](backoffice/PROJECT_STATUS.md)** – Current phase and work items
+Ich habe **nur die wirklich relevanten Dateien** verlinkt.
+Alles andere fliegt konsequent raus.
 
 ---
 
-## Strukturüberblick
+# **README – Claire de Binare (Cleanroom Edition)**
 
-**Active Code & Documentation**:
-- `backoffice/` – **Single Source of Truth** for all code and documentation
-  - `backoffice/docs/` – Canonical documentation (KODEX, ADRs, architecture, services)
-  - `backoffice/services/` – Service implementations (signal_engine, risk_manager, execution_service)
-  - `backoffice/templates/` – Reusable templates (.env, infrastructure)
-- `scripts/` – Utility scripts (migration templates, tooling)
-- `tests/` – Test code (unit & integration)
-
-**Historical Reference**:
-- `archive/` – Historical artifacts (read-only, do not modify)
-  - `archive/backoffice_original/` – Pre-migration backup
-  - `archive/docs_original/` – Old documentation versions
-  - `archive/sandbox_backups/` – Historical sandbox environment
+*Einfacher Einstieg. Klare Struktur. Schneller Überblick.*
 
 ---
 
-## Current Phase: N1 - Paper-Test
+## 🌟 **Was ist Claire de Binare?**
 
-The system is in **N1 phase** (simulated trading environment):
-- ✅ Market Data Interface (MDI) – simulated price feeds
-- ✅ Signal Engine – strategy signal generation
-- ✅ Risk Manager – 6-layer risk validation
-- ✅ Execution Service – simulated order execution
-- ✅ Portfolio Tracker – position and PnL tracking
-- ✅ Monitoring – Prometheus & Grafana
+Claire de Binare ist ein **autonomes Trading-System**, das aus mehreren Modulen besteht:
 
-**NOT in N1**: Live broker API, real capital deployment
+* **Market Data Screener**
+* **Signal Engine** (Strategielogik)
+* **Risk Manager** (mehrschichtige Handelskontrolle)
+* **Execution Service** (Paper-Trading)
+* **Monitoring** (Grafana & Prometheus)
 
-See [N1_ARCHITEKTUR.md](backoffice/docs/architecture/N1_ARCHITEKTUR.md) for details.
+Aktuell befindet sich das Projekt in der **N1-Phase**, also im **Paper-Test**.
+Das bedeutet:
+👉 **Noch keine echten Trades.**
+👉 **Nur Simulation.**
+👉 **Alles lokal & sicher.**
 
 ---
 
-## Nächste Schritte
+## 🚀 **Für alle, die neu sind – fang hier an**
 
-1. **For New Contributors**: Read [CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md](backoffice/docs/CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md)
-2. **For Development**: Check [PROJECT_STATUS.md](backoffice/PROJECT_STATUS.md) for current work items
-3. **For Architecture**: Review [STRUCTURE_CLEANUP_PLAN.md](backoffice/docs/architecture/STRUCTURE_CLEANUP_PLAN.md) for planned refactoring
+Diese drei Dateien erklären dir alles, was du wissen musst:
 
-### Evaluation schnell starten
+### **1. Onboarding & Navigation**
 
-- Abhängigkeiten installieren: `python -m pip install -r requirements.txt`
-- Demo-Evaluation ausführen: `python scripts/evaluate.py --config evaluation/config.yaml`
-  (Optionale Traces im Console-Exporter; OTLP-Endpunkt in `evaluation/config.yaml` konfigurierbar.)
+📘 **`CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md`**
+→ Der perfekte Einstieg.
+→ Was liegt wo? Wie ist das Repo aufgebaut?
+→ Welche Dateien wichtig sind (und welche nicht).
 
-Weitere Details und Ablaufbeschreibungen finden sich im Runbook-Index (`docs/runbooks/INDEX.md`).
+---
+
+### **2. KODEX – Die Grundregeln des Systems**
+
+📜 **`KODEX – Claire de Binare.md`**
+→ Projektprinzipien
+→ Architekturleitlinien
+→ Sicherheitsrichtlinien
+→ Warum das System so aufgebaut ist, wie es ist
+
+---
+
+### **3. Die aktuelle Architektur (N1 – Paper-Test)**
+
+🏗 **`N1_ARCHITEKTUR.md`**
+→ Überblick über die Services
+→ Datenfluss (Events, Topics, Reihenfolge)
+→ Ports, Container, Healthchecks
+→ Was jetzt im Fokus steht
+
+---
+
+## 🔧 **Technischer Zustand – kompakter Überblick**
+
+🏁 **Status: Cleanroom vollständig hergestellt**
+📌 Phase: **N1 – Paper Test**
+✔ MEXC-API-Keys eingerichtet (IP-gebunden + Handelspaare limitiert)
+✔ .env sauber, sicher und clean
+✔ System vollständig dokumentiert
+✔ Backup-Konzept vorbereitet
+⏳ Tests (pytest) werden jetzt aufgebaut
+⏳ Systemcheck #1 steht an
+
+Für Details sieh dir an:
+
+📊 **`PROJECT_STATUS.md`**
+(Sehr kompakt, aber top für schnellen Überblick)
+
+---
+
+## 🧭 **So arbeitest du mit dem Projekt**
+
+### **1. Relevante Dateien**
+
+| Bereich                           | Datei                                         |
+| --------------------------------- | --------------------------------------------- |
+| Einstieg                          | `CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md` |
+| Regeln & Prinzipien               | `KODEX – Claire de Binare.md`                 |
+| Systemdesign                      | `N1_ARCHITEKTUR.md`                           |
+| Projekt-Fortschritt               | `PROJECT_STATUS.md`                           |
+| Ablaufsteuerung (Claude → Gordon) | `CLAUDE_GORDON_PIPELINE.md`                   |
+| Tests & Struktur                  | `PYTEST_LAYOUT.md`                            |
+| Testabläufe                       | `TEST_GUIDE.md`                               |
+
+---
+
+## 🧪 **Bevor du etwas startest – kurze Checkliste**
+
+1. `.env` ausfüllen (basierend auf `.env.template`)
+2. ENV-Check ausführen
+3. Docker-Services starten
+4. Healthchecks prüfen
+5. Tests starten (sobald fertig)
+
+Genau erklärt in:
+📄 **`TEST_GUIDE.md`**
+
+---
+
+## 🐍 **Entwicklung starten**
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Tests (sobald vorhanden):
+
+```bash
+pytest -v
+```
+
+Docker:
+
+```bash
+docker compose up -d
+```
+
+---
+
+## 📈 **Wenn du tiefer einsteigen willst**
+
+* **Risk-Engine-Logik** → in `backoffice/services/…`
+* **Event-Fluss (market_data → order_results)** → in `N1_ARCHITEKTUR.md`
+* **System-Status & Aufgaben** → in `PROJECT_STATUS.md`
+* **Operative Pipeline (Claude ↔ Gordon)** → `CLAUDE_GORDON_PIPELINE.md`
+
+---
+
+## 💬 **Kontakt & Zusammenarbeit**
+
+* **Jannek** – Projektleitung
+* **Claude** – Architektur, Code, Planung
+* **Gordon** – Docker & Systemausführung (via MCP)
+
+---

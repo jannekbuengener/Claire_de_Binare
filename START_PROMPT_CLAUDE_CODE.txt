@@ -1,0 +1,22 @@
+Hallo! Ich bin neu in diesem Projekt "Claire de Binare".
+
+Bitte lies zuerst die Datei CLAUDE_CODE_START.md im Projekt-Root, 
+um den vollständigen Kontext zu bekommen.
+
+Dann implementiere bitte die 4 Risk-Engine Tests in der Datei 
+tests/test_risk_engine_core.py.
+
+Aktuell sind dort 4 Test-Funktionen mit pytest.skip("Implementation 
+pending") - diese sollst du durch echte Test-Logic ersetzen:
+
+1. test_daily_drawdown_blocks_trading
+2. test_exposure_blocks_new_orders  
+3. test_circuit_breaker_stops_all_trading
+4. test_position_size_calculation
+
+Die Fixtures sind bereits fertig in tests/conftest.py definiert.
+
+Ziel: Alle 4 Tests sollen grün werden bei: 
+pytest -v tests/test_risk_engine_core.py
+
+Fang mit Test 1 an und arbeite dich dann durch. Danke!

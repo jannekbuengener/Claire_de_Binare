@@ -407,3 +407,14 @@ Applikations-Container selbst gelten als stateless und können jederzeit neu geb
 - **Repository Structure Refactoring**: Details zum geplanten Struktur-Cleanup siehe [STRUCTURE_CLEANUP_PLAN.md](STRUCTURE_CLEANUP_PLAN.md)
 - **Project Governance**: Architektur-Prinzipien und Entscheidungen siehe [KODEX – Claire de Binare.md](../KODEX%20–%20Claire%20de%20Binare.md)
 - **Architectural Decisions**: Alle ADRs dokumentiert in [DECISION_LOG.md](../DECISION_LOG.md)
+
+Python-Laufzeit
+----------------
+Das System verwendet **ausschließlich das global installierte Python**, gesteuert über:
+
+- `PYTHON_HOME`
+- `SYSTEM_PYTHON_PATH`
+- `USE_SYSTEM_PYTHON=true`
+
+Lokale Python-Installationen innerhalb des Projektordners sind deaktiviert.
+
