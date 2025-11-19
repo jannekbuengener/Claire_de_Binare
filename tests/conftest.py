@@ -49,7 +49,9 @@ def mock_redis(mocker):
 
     redis_mock = mocker.Mock()
     redis_mock.ping.return_value = True
-    return mocker.patch("redis.Redis", return_value=redis_mock)
+    redis_mock.publish.return_value = 1
+    redis_mock.get.return_value = None
+    return mocker.Mock(return_value=redis_mock)
 
 
 @pytest.fixture
@@ -57,5 +59,6 @@ def mock_postgres(mocker):
     """Simulate a PostgreSQL connection pool using pytest-mock."""
 
     pool_mock = mocker.Mock()
-    pool_mock.getconn.return_value = mocker.Mock()
-    return mocker.patch("psycopg2.pool.SimpleConnectionPool", return_value=pool_mock)
+    connection_mock = mocker.Mock()
+    pool_mock.getconn.return_value = connection_mock
+    return mocker.Mock(return_value=pool_mock)

@@ -1,0 +1,66 @@
+name: Docker Health Check
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'docker-compose.yml'
+      - 'services/**'
+      - '.github/workflows/docker-health.yml'
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  docker-compose-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Create .env file
+      run: |
+        cat > .env <<EOF
+        # PostgreSQL
+        POSTGRES_USER=claire_admin
+        POSTGRES_PASSWORD=test_password_ci
+        POSTGRES_DB=claire_de_binaire
+
+        # Redis
+        REDIS_PASSWORD=test_redis_ci
+
+        # Risk Limits
+        MAX_POSITION_PCT=0.10
+        MAX_DAILY_DRAWDOWN_PCT=0.05
+        MAX_TOTAL_EXPOSURE_PCT=0.30
+        CIRCUIT_BREAKER_THRESHOLD_PCT=0.10
+
+        # Logging
+        LOG_LEVEL=INFO
+        EOF
+
+    - name: Start Docker Compose
+      run: |
+        docker compose up -d cdb_postgres cdb_redis
+
+    - name: Wait for services to be healthy
+      run: |
+        timeout 60 bash -c 'until docker compose ps | grep -q "healthy"; do sleep 2; done'
+
+    - name: Check PostgreSQL health
+      run: |
+        docker compose exec -T cdb_postgres pg_isready -U claire_admin
+
+    - name: Check Redis health
+      run: |
+        docker compose exec -T cdb_redis redis-cli -a test_redis_ci ping
+
+    - name: Show container logs
+      if: failure()
+      run: |
+        docker compose logs
+
+    - name: Teardown
+      if: always()
+      run: |
+        docker compose down -v
