@@ -1,115 +1,118 @@
-# Test-Setup Validierung fuer Claire de Binaire
-# Dieses Script prueft, ob alles korrekt installiert und konfiguriert ist
+<#
+Validate local test setup for Claire de Binaire.
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Claire de Binaire - Test Setup Check" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+This script performs static checks only:
+- Verifies Python version.
+- Confirms required packages are installed.
+- Ensures pytest.ini and tests/conftest.py exist.
+- Highlights core smoke/unit test files that should be present.
 
-$python = "C:\Users\janne\AppData\Local\Programs\Python\Python312\python.exe"
+It intentionally does NOT run pytest, docker, or any external services. To run
+the suite manually after resolving warnings, execute commands such as:
+    - pytest -q
+    - pytest -m unit
+    - pytest -m integration
+    - pytest --cov=services --cov-report=term-missing
+#>
+
+$python = "python"
 $errors = @()
 $warnings = @()
+$required = @(
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "pytest-cov",
+    "black",
+    "flake8",
+    "mypy",
+    "faker",
+    "redis",
+    "psycopg2-binary",
+    "requests"
+)
 
-# 1. Python-Version
-Write-Host "[1/6] Python-Version pruefen..." -ForegroundColor Yellow
+Write-Host "`n=== Claire de Binaire :: Validate Test Setup ===`n" -ForegroundColor Cyan
+
+# Python version
+Write-Host "[1/6] Checking Python version (expected 3.12.x)..." -ForegroundColor Yellow
 try {
     $pythonVersion = & $python --version 2>&1
-    Write-Host "  OK $pythonVersion" -ForegroundColor Green
+    if ($pythonVersion -match "3\.12\.") {
+        Write-Host "  OK $pythonVersion" -ForegroundColor Green
+    } else {
+        $warnings += "Python 3.12.x recommended (found: $pythonVersion)"
+        Write-Host "  WARN $pythonVersion" -ForegroundColor Yellow
+    }
 } catch {
-    $errors += "Python nicht gefunden oder nicht ausfuehrbar"
-    Write-Host "  FEHLER Python nicht gefunden" -ForegroundColor Red
+    $errors += "Python executable not found"
+    Write-Host "  ERROR Python not found" -ForegroundColor Red
 }
 
-# 2. pytest installiert
-Write-Host "`n[2/6] pytest pruefen..." -ForegroundColor Yellow
-try {
-    $pytestVersion = & $python -m pytest --version 2>&1 | Select-String "pytest"
-    Write-Host "  OK $pytestVersion" -ForegroundColor Green
-} catch {
-    $errors += "pytest nicht installiert"
-    Write-Host "  FEHLER pytest nicht gefunden" -ForegroundColor Red
-}
-
-# 3. Dependencies
-Write-Host "`n[3/6] Dependencies pruefen..." -ForegroundColor Yellow
-$required = @("pytest", "pytest-cov", "pytest-mock", "pytest-asyncio", "black", "faker", "redis", "psycopg2-binary")
+# Dependencies
+Write-Host "`n[2/5] Checking required packages..." -ForegroundColor Yellow
 foreach ($pkg in $required) {
-    $check = & $python -m pip show $pkg 2>&1
+    $null = & $python -m pip show $pkg 2>$null
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  OK $pkg" -ForegroundColor Green
     } else {
-        $warnings += "$pkg fehlt"
-        Write-Host "  FEHLER $pkg fehlt" -ForegroundColor Red
+        $errors += "$pkg missing"
+        Write-Host "  MISSING $pkg" -ForegroundColor Red
     }
 }
 
-# 4. pytest.ini vorhanden
-Write-Host "`n[4/6] pytest.ini pruefen..." -ForegroundColor Yellow
+# pytest.ini
+Write-Host "`n[3/5] Verifying pytest.ini..." -ForegroundColor Yellow
 if (Test-Path "pytest.ini") {
-    Write-Host "  OK pytest.ini existiert" -ForegroundColor Green
+    Write-Host "  OK pytest.ini present" -ForegroundColor Green
 } else {
-    $errors += "pytest.ini fehlt"
-    Write-Host "  FEHLER pytest.ini fehlt" -ForegroundColor Red
+    $errors += "pytest.ini missing"
+    Write-Host "  ERROR pytest.ini missing" -ForegroundColor Red
 }
 
-# 5. Test-Ordner-Struktur
-Write-Host "`n[5/6] Test-Struktur pruefen..." -ForegroundColor Yellow
-if (Test-Path "tests\conftest.py") {
-    Write-Host "  OK tests\conftest.py existiert" -ForegroundColor Green
+# conftest.py
+Write-Host "`n[4/5] Verifying tests/conftest.py..." -ForegroundColor Yellow
+if (Test-Path "tests/conftest.py") {
+    Write-Host "  OK conftest.py present" -ForegroundColor Green
 } else {
-    $errors += "conftest.py fehlt"
-    Write-Host "  FEHLER conftest.py fehlt" -ForegroundColor Red
+    $errors += "tests/conftest.py missing"
+    Write-Host "  ERROR tests/conftest.py missing" -ForegroundColor Red
 }
 
-if (Test-Path "tests\test_risk_engine_core.py") {
-    Write-Host "  OK tests\test_risk_engine_core.py existiert" -ForegroundColor Green
-} else {
-    $warnings += "test_risk_engine_core.py fehlt"
-    Write-Host "  FEHLER test_risk_engine_core.py fehlt" -ForegroundColor Yellow
-}
-
-# 6. Test-Run durchfuehren
-Write-Host "`n[6/6] Test-Run durchfuehren..." -ForegroundColor Yellow
-try {
-    $testResult = & $python -m pytest tests/test_risk_engine_core.py -v --tb=no 2>&1
-    if ($testResult -match "4 skipped") {
-        Write-Host "  OK Tests gefunden (4 skipped - bereit fuer Implementierung)" -ForegroundColor Green
-    } elseif ($testResult -match "passed") {
-        Write-Host "  OK Tests laufen und bestehen!" -ForegroundColor Green
+# Smoke tests presence
+Write-Host "`n[5/5] Checking core test files..." -ForegroundColor Yellow
+$files = @("tests/test_smoke_repo.py", "tests/test_compose_smoke.py", "tests/test_risk_engine_core.py")
+foreach ($file in $files) {
+    if (Test-Path $file) {
+        Write-Host "  OK $file" -ForegroundColor Green
     } else {
-        $warnings += "Test-Run hatte Warnungen"
-        Write-Host "  WARNUNG Test-Run mit Warnungen" -ForegroundColor Yellow
+        $warnings += "$file missing"
+        Write-Host "  MISSING $file" -ForegroundColor Yellow
     }
-} catch {
-    $errors += "Test-Run fehlgeschlagen"
-    Write-Host "  FEHLER Test-Run fehlgeschlagen" -ForegroundColor Red
 }
 
-# Zusammenfassung
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Zusammenfassung" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
-
+# Summary
+Write-Host "`n=== Summary ===" -ForegroundColor Cyan
 if ($errors.Count -eq 0 -and $warnings.Count -eq 0) {
-    Write-Host "OK Setup komplett! Alle Checks bestanden." -ForegroundColor Green
-    Write-Host "`nBereit fuer Claude Code:" -ForegroundColor Cyan
-    Write-Host "  1. pytest -v                    # Alle Tests" -ForegroundColor White
-    Write-Host "  2. pytest -v -m unit           # Nur Unit-Tests" -ForegroundColor White
-    Write-Host "  3. pytest --cov=services       # Mit Coverage" -ForegroundColor White
+    Write-Host "All checks passed. Test environment ready." -ForegroundColor Green
+    Write-Host "Run tests manually, for example: pytest -q" -ForegroundColor Cyan
     exit 0
-} else {
-    if ($errors.Count -gt 0) {
-        Write-Host "FEHLER gefunden ($($errors.Count)):" -ForegroundColor Red
-        foreach ($e in $errors) {
-            Write-Host "  - $e" -ForegroundColor Red
-        }
-    }
-    if ($warnings.Count -gt 0) {
-        Write-Host "`nWARNUNGEN ($($warnings.Count)):" -ForegroundColor Yellow
-        foreach ($w in $warnings) {
-            Write-Host "  - $w" -ForegroundColor Yellow
-        }
-    }
-    Write-Host "`nFix:" -ForegroundColor Cyan
-    Write-Host "  pip install -r requirements-dev.txt" -ForegroundColor White
+}
+
+if ($errors.Count -gt 0) {
+    Write-Host "Errors:" -ForegroundColor Red
+    foreach ($err in $errors) { Write-Host "  - $err" -ForegroundColor Red }
+}
+
+if ($warnings.Count -gt 0) {
+    Write-Host "Warnings:" -ForegroundColor Yellow
+    foreach ($warn in $warnings) { Write-Host "  - $warn" -ForegroundColor Yellow }
+}
+
+if ($errors.Count -gt 0) {
+    Write-Host "`nResolve the above items before running the full suite." -ForegroundColor Cyan
     exit 1
 }
+
+Write-Host "`nResolve warnings if possible, then run tests manually (e.g. pytest -q)." -ForegroundColor Cyan
+exit 0
