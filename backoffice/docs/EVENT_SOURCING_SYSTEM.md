@@ -171,7 +171,7 @@ python claire_cli.py replay --from 2025-02-10 --to 2025-02-15
 ```bash
 # Start von letztem Snapshot (schneller)
 python claire_cli.py replay --sequence 5000 10000
-# → Lädt Snapshot bei seq=5000, replayed nur Delta
+# → Lädt Snapshot bei seq=5000, replayt nur Delta
 ```
 
 **Use Case:** Schnelle Replay für jüngere Zeiträume
