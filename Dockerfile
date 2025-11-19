@@ -1,7 +1,7 @@
 # Claire de Binaire - Screener Dockerfile
 # Multi-Stage Build für Python Trading-Bot
 
-FROM python:3.14-slim as base
+FROM python:3.11-slim as base
 
 # Build-Arg für welches Script ausgeführt wird
 ARG SCRIPT_NAME=mexc_top5_ws.py
