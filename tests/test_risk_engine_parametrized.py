@@ -48,9 +48,9 @@ def test_daily_drawdown_scenarios(
     decision = risk_engine.evaluate_signal(sample_signal_event, state, risk_config)
 
     # Assert
-    assert decision.approved is expected_approved, (
-        f"Failed for scenario: {description} (PnL={daily_pnl})"
-    )
+    assert (
+        decision.approved is expected_approved
+    ), f"Failed for scenario: {description} (PnL={daily_pnl})"
 
     if not expected_approved:
         assert decision.reason == "max_daily_drawdown_exceeded"
@@ -95,8 +95,7 @@ def test_exposure_limit_scenarios(
 
     # Assert
     assert decision.approved is expected_approved, (
-        f"Failed for scenario: {description} "
-        f"(current_exposure={current_exposure})"
+        f"Failed for scenario: {description} " f"(current_exposure={current_exposure})"
     )
 
     if not expected_approved:
@@ -116,16 +115,20 @@ def test_exposure_limit_scenarios(
         (50_000.0, 1.0, 0.10, 100_000.0, 0.2, "Normal: 10% of 100k equity"),
         (100_000.0, 1.0, 0.10, 100_000.0, 0.1, "High price: Position limited"),
         (10_000.0, 10.0, 0.10, 100_000.0, 1.0, "Low price: Requested < Max"),
-
         # Edge cases
         (50_000.0, 1.0, 0.0, 100_000.0, 0.0, "Zero max_pct"),
         (0.0, 1.0, 0.10, 100_000.0, 0.0, "Zero price"),
         (50_000.0, 0.0, 0.10, 100_000.0, 0.0, "Zero requested"),
-
         # Different equity levels
         (50_000.0, 1.0, 0.10, 10_000.0, 0.02, "Small equity"),
-        (50_000.0, 5.0, 0.10, 1_000_000.0, 2.0, "Large equity (requested 5, allowed 2)"),
-
+        (
+            50_000.0,
+            5.0,
+            0.10,
+            1_000_000.0,
+            2.0,
+            "Large equity (requested 5, allowed 2)",
+        ),
         # Different max_pct values
         (50_000.0, 1.0, 0.05, 100_000.0, 0.1, "Conservative 5%"),
         (50_000.0, 1.0, 0.20, 100_000.0, 0.4, "Aggressive 20%"),
@@ -143,9 +146,9 @@ def test_position_sizing_scenarios(
     result_size = risk_engine.limit_position_size(signal, config, equity=equity)
 
     # Assert
-    assert result_size == pytest.approx(expected_size, abs=1e-6), (
-        f"Failed for scenario: {description}"
-    )
+    assert result_size == pytest.approx(
+        expected_size, abs=1e-6
+    ), f"Failed for scenario: {description}"
 
 
 # =============================================================================
@@ -162,13 +165,11 @@ def test_position_sizing_scenarios(
         ("buy", 50_000.0, 0.05, 47_500.0, "Long: 5% stop below"),
         ("buy", 50_000.0, 0.01, 49_500.0, "Long: 1% tight stop"),
         ("buy", 100_000.0, 0.02, 98_000.0, "Long: High price asset"),
-
         # Short positions (stop above entry)
         ("sell", 50_000.0, 0.02, 51_000.0, "Short: 2% stop above"),
         ("sell", 50_000.0, 0.05, 52_500.0, "Short: 5% stop above"),
         ("sell", 50_000.0, 0.01, 50_500.0, "Short: 1% tight stop"),
         ("sell", 100_000.0, 0.02, 102_000.0, "Short: High price asset"),
-
         # Edge cases
         ("buy", 0.0, 0.02, 0.0, "Zero price"),
         ("sell", 0.0, 0.02, 0.0, "Zero price (short)"),
@@ -184,9 +185,9 @@ def test_stop_loss_scenarios(side, price, stop_pct, expected_stop, description):
     stop_data = risk_engine.generate_stop_loss(signal, config)
 
     # Assert
-    assert stop_data["stop_price"] == pytest.approx(expected_stop, abs=1e-6), (
-        f"Failed for scenario: {description}"
-    )
+    assert stop_data["stop_price"] == pytest.approx(
+        expected_stop, abs=1e-6
+    ), f"Failed for scenario: {description}"
     assert stop_data["side"] == side
 
 
@@ -199,14 +200,16 @@ def test_stop_loss_scenarios(side, price, stop_pct, expected_stop, description):
 @pytest.mark.parametrize(
     "equity,daily_pnl_pct,expected_approved",
     [
-        (100_000.0, -0.0499, True),   # 4.99% loss - just below limit
+        (100_000.0, -0.0499, True),  # 4.99% loss - just below limit
         (100_000.0, -0.0500, False),  # 5.00% loss - at limit
         (100_000.0, -0.0501, False),  # 5.01% loss - just above limit
-        (50_000.0, -0.0499, True),    # Different equity, same %
+        (50_000.0, -0.0499, True),  # Different equity, same %
         (200_000.0, -0.0500, False),  # Different equity, at limit
     ],
 )
-def test_drawdown_boundary_values(risk_config, sample_signal_event, equity, daily_pnl_pct, expected_approved):
+def test_drawdown_boundary_values(
+    risk_config, sample_signal_event, equity, daily_pnl_pct, expected_approved
+):
     """Boundary Value Testing für Daily Drawdown Grenzwerte."""
     # Arrange
     daily_pnl = equity * daily_pnl_pct

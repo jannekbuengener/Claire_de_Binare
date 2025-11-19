@@ -4,7 +4,6 @@ Datenklassen für Market-Data und Signals
 """
 from dataclasses import dataclass
 from typing import Literal
-from datetime import datetime
 
 
 @dataclass

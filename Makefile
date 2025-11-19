@@ -1,7 +1,7 @@
 # Makefile for Claire de Binaire
 # Provides convenient shortcuts for common development tasks
 
-.PHONY: help test test-unit test-integration test-fast test-all coverage coverage-html clean install setup lint
+.PHONY: help test test-unit test-integration test-fast test-all coverage coverage-html coverage-check clean install setup lint lint-check format format-check type-check security-check docker-up docker-down docker-health docker-logs pre-commit dev-check
 
 # Default target
 help:
@@ -15,6 +15,16 @@ help:
 	@echo "  make coverage      - Run tests with coverage report"
 	@echo "  make coverage-html - Generate HTML coverage report"
 	@echo ""
+	@echo "Linting & Formatting:"
+	@echo "  make lint          - Run all linters (black, ruff, mypy)"
+	@echo "  make lint-check    - Check code quality without fixing"
+	@echo "  make format        - Auto-format code with black"
+	@echo "  make format-check  - Check formatting without fixing"
+	@echo "  make type-check    - Run mypy type checker"
+	@echo ""
+	@echo "Security:"
+	@echo "  make security-check - Run security scans (pip-audit, bandit)"
+	@echo ""
 	@echo "Setup:"
 	@echo "  make install       - Install development dependencies"
 	@echo "  make setup         - Full development environment setup"
@@ -26,6 +36,11 @@ help:
 	@echo "  make docker-up     - Start Docker services"
 	@echo "  make docker-down   - Stop Docker services"
 	@echo "  make docker-health - Check Docker services health"
+	@echo "  make docker-logs   - Show Docker service logs"
+	@echo ""
+	@echo "Workflows:"
+	@echo "  make dev-check     - Quick dev workflow (fast tests + coverage)"
+	@echo "  make pre-commit    - Run pre-commit hook manually"
 
 # Testing targets
 test:
@@ -111,12 +126,52 @@ clean:
 	@find . -type f -name "coverage.json" -delete 2>/dev/null || true
 	@echo "✅ Cleanup complete"
 
+# Linting & Code Quality targets
+lint: format-check lint-check type-check
+	@echo ""
+	@echo "✅ All linting checks passed"
+
+lint-check:
+	@echo "🔍 Running linters..."
+	@command -v ruff >/dev/null 2>&1 && ruff check services/ tests/ || echo "⚠️  ruff not installed (pip install ruff)"
+	@command -v flake8 >/dev/null 2>&1 && flake8 services/ tests/ --max-line-length=100 || echo "⚠️  flake8 not installed"
+
+format:
+	@echo "🎨 Auto-formatting code..."
+	@command -v black >/dev/null 2>&1 && black services/ tests/ || echo "⚠️  black not installed (pip install black)"
+	@echo "✅ Code formatted"
+
+format-check:
+	@echo "🎨 Checking code formatting..."
+	@command -v black >/dev/null 2>&1 && black services/ tests/ --check || echo "⚠️  black not installed (pip install black)"
+
+type-check:
+	@echo "🔍 Running type checker..."
+	@command -v mypy >/dev/null 2>&1 && mypy services/ --ignore-missing-imports || echo "⚠️  mypy not installed (pip install mypy)"
+
+# Security targets
+security-check:
+	@echo "🔒 Running security scans..."
+	@echo ""
+	@echo "📦 Checking Python dependencies..."
+	@command -v pip-audit >/dev/null 2>&1 && pip-audit || echo "⚠️  pip-audit not installed (pip install pip-audit)"
+	@echo ""
+	@echo "🔍 Scanning code for security issues..."
+	@command -v bandit >/dev/null 2>&1 && bandit -r services/ -ll || echo "⚠️  bandit not installed (pip install bandit)"
+	@echo ""
+	@echo "✅ Security scan complete"
+
 # Quick development workflow
 dev-check: test-fast coverage-check
 	@echo ""
 	@echo "✅ Quick dev check complete"
 
+# Full CI simulation
+ci-check: clean test-all lint security-check
+	@echo ""
+	@echo "✅ Full CI check complete (local simulation)"
+
 # Pre-commit simulation
 pre-commit:
 	@echo "🔍 Running pre-commit checks..."
-	@bash .git/hooks/pre-commit || echo "⚠️  Pre-commit hook not installed"
+	@bash .git/hooks/pre-commit || echo "⚠️  Pre-commit hook not installed (run: make setup)"

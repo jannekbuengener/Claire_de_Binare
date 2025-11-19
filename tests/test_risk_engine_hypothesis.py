@@ -172,7 +172,9 @@ def test_position_size_scales_with_price(price1, price2):
     """
     # Arrange
     assume(price1 != price2)  # Skip wenn gleich
-    assume(abs(price2 - price1) / min(price1, price2) > 0.01)  # Mindestens 1% Unterschied
+    assume(
+        abs(price2 - price1) / min(price1, price2) > 0.01
+    )  # Mindestens 1% Unterschied
 
     equity = 100_000.0
     max_pct = 0.10

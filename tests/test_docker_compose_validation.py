@@ -15,9 +15,9 @@ import yaml
 @pytest.mark.unit
 def test_docker_compose_file_exists():
     """Verify docker-compose.yml exists in project root."""
-    assert os.path.exists("docker-compose.yml"), (
-        "docker-compose.yml not found in project root"
-    )
+    assert os.path.exists(
+        "docker-compose.yml"
+    ), "docker-compose.yml not found in project root"
 
 
 @pytest.mark.unit
@@ -45,9 +45,9 @@ def test_docker_compose_has_required_services():
     services = config.get("services", {})
 
     for service_name, description in required_services.items():
-        assert service_name in services, (
-            f"Missing required service: {service_name} ({description})"
-        )
+        assert (
+            service_name in services
+        ), f"Missing required service: {service_name} ({description})"
 
 
 @pytest.mark.unit
@@ -69,7 +69,9 @@ def test_docker_compose_services_have_healthchecks():
         # Validate healthcheck structure
         healthcheck = service["healthcheck"]
         assert "test" in healthcheck, f"{service_name}: healthcheck missing 'test'"
-        assert "interval" in healthcheck, f"{service_name}: healthcheck missing 'interval'"
+        assert (
+            "interval" in healthcheck
+        ), f"{service_name}: healthcheck missing 'interval'"
 
 
 @pytest.mark.unit
@@ -85,9 +87,9 @@ def test_docker_compose_uses_env_file():
 
     for service_name in critical_services:
         service = services.get(service_name, {})
-        assert "env_file" in service or "environment" in service, (
-            f"{service_name} must use env_file or environment for configuration"
-        )
+        assert (
+            "env_file" in service or "environment" in service
+        ), f"{service_name} must use env_file or environment for configuration"
 
 
 @pytest.mark.unit
@@ -110,9 +112,9 @@ def test_docker_compose_port_mappings():
         # Convert ports list to strings for comparison
         port_strings = [str(p) for p in ports]
 
-        assert any(expected_port in str(port) for port in port_strings), (
-            f"{service_name} should expose port {expected_port}"
-        )
+        assert any(
+            expected_port in str(port) for port in port_strings
+        ), f"{service_name} should expose port {expected_port}"
 
 
 @pytest.mark.unit
@@ -134,14 +136,14 @@ def test_docker_compose_volumes_configured():
         volumes = service.get("volumes", [])
 
         # Check that volume is used
-        assert any(expected_volume in str(vol) for vol in volumes), (
-            f"{service_name} should use volume {expected_volume} for data persistence"
-        )
+        assert any(
+            expected_volume in str(vol) for vol in volumes
+        ), f"{service_name} should use volume {expected_volume} for data persistence"
 
         # Check that volume is defined
-        assert expected_volume in volumes_config, (
-            f"Volume {expected_volume} should be defined in top-level volumes section"
-        )
+        assert (
+            expected_volume in volumes_config
+        ), f"Volume {expected_volume} should be defined in top-level volumes section"
 
 
 @pytest.mark.unit
@@ -162,9 +164,9 @@ def test_docker_compose_network_configuration():
                 service_networks = service["networks"]
                 if isinstance(service_networks, list):
                     for net in service_networks:
-                        assert net in network_names, (
-                            f"{service_name} references undefined network: {net}"
-                        )
+                        assert (
+                            net in network_names
+                        ), f"{service_name} references undefined network: {net}"
 
 
 @pytest.mark.unit
@@ -183,6 +185,6 @@ def test_docker_compose_restart_policies():
 
         if "restart" in service:
             restart_policy = service["restart"]
-            assert restart_policy in valid_restart_policies, (
-                f"{service_name} has invalid restart policy: {restart_policy}"
-            )
+            assert (
+                restart_policy in valid_restart_policies
+            ), f"{service_name} has invalid restart policy: {restart_policy}"

@@ -2,7 +2,6 @@
 Signal Engine - Main Service
 Momentum-basierte Signal-Generierung
 """
-import os
 import sys
 import json
 import time
