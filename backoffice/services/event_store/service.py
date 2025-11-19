@@ -475,8 +475,7 @@ class EventReader:
             Complete audit trail
         """
         query = "SELECT explain_decision(%s)"
-        results = self.db.execute(query, (decision_event_id,))
-        if results:
+        if results := self.db.execute(query, (decision_event_id,)):
             return results[0]["explain_decision"]
         return {}
 
