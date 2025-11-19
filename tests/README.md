@@ -97,11 +97,10 @@ make test-full-system  # Docker + E2E
 ### CI-Tests (ohne E2E)
 
 ```
-======================== 12 passed, 2 skipped, 18 deselected =========================
-Laufzeit: ~0.5s
+================ 102 passed, 2 skipped, 18 deselected in 0.59s =================
 ```
 
-- ✅ 12 Unit-Tests bestanden
+- ✅ 102 Tests bestanden (90 Unit + 12 Integration)
 - ⏭️ 2 Integration-Tests geskippt (Placeholders)
 - 🚫 18 E2E-Tests deselektiert
 

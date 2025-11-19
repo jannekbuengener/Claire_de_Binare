@@ -20,8 +20,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install -r requirements.txt || true
-      - run: pytest -q || true
+      - run: pip install -r requirements.txt -r requirements-dev.txt || true
+      - run: pytest -q -m "not e2e and not local_only" || true
 
   secrets:
     runs-on: ubuntu-latest
