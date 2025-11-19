@@ -525,7 +525,7 @@ class ReplayEngine:
             "deterministic": deterministic,
             "replay1": result1,
             "replay2": result2,
-            "state_diff": self._compare_states(state1, state2) if not deterministic else None,
+            "state_diff": None if deterministic else self._compare_states(state1, state2),
         }
 
         if deterministic:
