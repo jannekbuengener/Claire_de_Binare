@@ -56,17 +56,20 @@ Das Claire de Binare Projekt zeigt eine **solide technische Grundlage** mit:
 #### ⚠️ Findings
 
 1. **HOCH**: Veraltete Projekt-Bezeichnung in Dokumentation
-   - **Location**: `backoffice/docs/services/cdb_prometheus.md` (3x)
-   - **Problem**: "Claire de Binare" statt "Claire de Binare"
+   - **Location**: `backoffice/docs/services/cdb_prometheus.md` (3x) + weitere Dateien
+   - **Problem**: "Claire de Binaire" (MIT "i", veraltet) statt "Claire de Binare" (OHNE "i", korrekt)
    - **Impact**: Verwirrung, Inkonsistenz
    - **Fix**: Suchen & Ersetzen in allen Doku-Dateien
    ```bash
-   grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
+   grep -r "Claire de Binaire" backoffice/ --exclude-dir=archive
    # Betroffen:
    # - backoffice/docs/services/cdb_prometheus.md (3 Instanzen)
    # - backoffice/docs/services/risk/cdb_risk.md (1 Instanz)
-   # - backoffice/docs/KODEX – Claire de Binare.md (Dateiname!)
+   # - backoffice/docs/KODEX – Claire de Binaire.md (Dateiname mit alter Schreibweise!)
    # - backoffice/PROJECT_STATUS.md (Titel-Zeile)
+   # - backoffice/docs/audit/CODE_AUDIT_2025-11-19.md (dieser Report)
+   # - AUDIT_SUMMARY.md
+   # + weitere Dateien
    ```
 
 2. **MITTEL**: TODO-Marker in Production-Code
@@ -242,16 +245,16 @@ Das Claire de Binare Projekt zeigt eine **solide technische Grundlage** mit:
 2. **MITTEL**: PROJECT_STATUS.md zeigt veralteten Stand
    - **Location**: `backoffice/PROJECT_STATUS.md:1`
    - **Problem**:
-     - Titel: "PROJECT STATUS - Claire de Binare Cleanroom" (alte Schreibweise)
+     - Titel: "PROJECT STATUS - Claire de Binare Cleanroom" (korrekt, aber Datum veraltet)
      - Container-Status: "🔴 STOPPED (Template)" (alle Services)
      - Stand: 2025-01-14 (veraltet, heute ist 2025-11-19)
    - **Impact**: Status-Dokument nicht verlässlich
    - **Empfehlung**: Update durchführen mit aktuellen Container-Status
 
-3. **NIEDRIG**: Dateiname-Inkonsistenz
-   - **Location**: `backoffice/docs/KODEX – Claire de Binare.md`
+3. **NIEDRIG**: Dateiname-Inkonsistenz (HISTORISCH)
+   - **Location**: `backoffice/docs/KODEX – Claire de Binaire.md` (mit "i", veraltet)
    - **Problem**: Dateiname mit alter Schreibweise
-   - **Empfehlung**: Rename zu "KODEX – Claire de Binare.md"
+   - **Empfehlung**: Rename zu "KODEX – Claire de Binare.md" (ohne "i")
 
 ---
 
@@ -310,25 +313,25 @@ Das Claire de Binare Projekt zeigt eine **solide technische Grundlage** mit:
 
 2. **Projektname-Inkonsistenz fixen**
    ```bash
-   # 1. Dateien umbenennen
-   mv "backoffice/docs/KODEX – Claire de Binare.md" \
+   # 1. Dateien umbenennen (falls vorhanden)
+   mv "backoffice/docs/KODEX – Claire de Binaire.md" \
       "backoffice/docs/KODEX – Claire de Binare.md"
 
-   # 2. Inhalt ersetzen
+   # 2. Inhalt ersetzen (alte Schreibweise MIT "i" → neue Schreibweise OHNE "i")
    find backoffice/docs -name "*.md" -type f -exec \
-     sed -i 's/Claire de Binare/Claire de Binare/g' {} +
+     sed -i 's/Claire de Binaire/Claire de Binare/g' {} +
 
-   # 3. PROJECT_STATUS.md Titel-Zeile
-   sed -i 's/PROJECT STATUS - Claire de Binare Cleanroom/PROJECT STATUS - Claire de Binare Cleanroom/' \
+   # 3. PROJECT_STATUS.md Titel-Zeile (nur falls noch alte Schreibweise)
+   sed -i 's/PROJECT STATUS - Claire de Binaire Cleanroom/PROJECT STATUS - Claire de Binare Cleanroom/' \
      backoffice/PROJECT_STATUS.md
 
    # 4. Validation
-   grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
-   # Sollte 0 Treffer außer in docker-compose.yml (POSTGRES_DB) ergeben
+   grep -r "Claire de Binaire" backoffice/ --exclude-dir=archive --exclude-dir=provenance
+   # Sollte 0 Treffer (nur noch historische Referenzen in provenance/)
    ```
    - **Impact**: Verhindert Verwirrung, erhöht Professionalität
    - **Aufwand**: 30 Minuten (inkl. Testing)
-   - **Files betroffen**: 4-5 Dateien
+   - **Files betroffen**: 9 Dateien (basierend auf grep-Ergebnis)
 
 3. **PROJECT_STATUS.md aktualisieren**
    - Container-Status prüfen: `docker compose ps`

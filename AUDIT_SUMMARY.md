@@ -36,27 +36,27 @@ pytest --collect-only  # Sollte 104 Tests finden
 ## ⚠️ HIGH-PRIORITY (1-2 Tage)
 
 ### 2. Projektname-Inkonsistenz
-**Problem**: "Claire de Binare" (alt) in 4+ Dateien statt "Claire de Binare"
+**Problem**: "Claire de Binaire" (alt, MIT "i") in 4+ Dateien statt "Claire de Binare" (korrekt, OHNE "i")
 
 **Betroffen**:
 - `backoffice/docs/services/cdb_prometheus.md` (3x)
 - `backoffice/docs/services/risk/cdb_risk.md` (1x)
-- `backoffice/docs/KODEX – Claire de Binare.md` (Dateiname)
+- `backoffice/docs/KODEX – Claire de Binaire.md` (Dateiname mit alter Schreibweise)
 - `backoffice/PROJECT_STATUS.md` (Titel)
 
 **Fix**:
 ```bash
-# Datei umbenennen
-mv "backoffice/docs/KODEX – Claire de Binare.md" \
+# 1. Dateien umbenennen (falls vorhanden)
+mv "backoffice/docs/KODEX – Claire de Binaire.md" \
    "backoffice/docs/KODEX – Claire de Binare.md"
 
-# Inhalt ersetzen
+# 2. Inhalt ersetzen
 find backoffice/docs -name "*.md" -type f -exec \
-  sed -i 's/Claire de Binare/Claire de Binare/g' {} +
+  sed -i 's/Claire de Binaire/Claire de Binare/g' {} +
 
-# Validation
-grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
-# Sollte 0 Treffer (außer docker-compose.yml: POSTGRES_DB)
+# 3. Validation
+grep -r "Claire de Binaire" backoffice/ --exclude-dir=archive --exclude-dir=provenance
+# Sollte 0 Treffer (nur noch historische Referenzen in provenance/)
 ```
 
 ### 3. PROJECT_STATUS.md veraltet
@@ -109,10 +109,10 @@ grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
 
 ## 📋 QUICK-FIX CHECKLIST
 
-- [ ] `pip install -r requirements-dev.txt`
-- [ ] Fix Projektname "Claire de Binare" → "Claire de Binare"
-- [ ] Update PROJECT_STATUS.md mit aktuellen Daten
-- [ ] Test-Coverage messen: `make test-coverage`
+- [x] `pip install -r requirements-dev.txt` ✅ **ERLEDIGT**
+- [x] Fix Projektname "Claire de Binaire" → "Claire de Binare" ✅ **ERLEDIGT**
+- [x] Update PROJECT_STATUS.md mit aktuellen Daten ✅ **ERLEDIGT**
+- [ ] Test-Coverage messen: `make test-coverage` (28% gemessen, Ziel: >60%)
 - [ ] TODO-Marker reviewen und auflösen
 
 ---
