@@ -6,7 +6,7 @@ Das Event-Sourcing System ist das **Herzstück** der Claire de Binaire Audit-Inf
 
 **Was es bietet:**
 - ✅ **Verlustfreie Timeline** - Jeder Bot-Schritt wird gespeichert
-- ✅ **Deterministische Replay** - Gleiche Events → Gleiche Entscheidungen
+- ✅ **Deterministisches Replay** - Gleiche Events → Gleiche Entscheidungen
 - ✅ **Vollständiger Audit-Trail** - Jede Entscheidung rückwirkend erklärbar
 - ✅ **Hedge-Fund-Level Compliance** - Regulatorische Anforderungen erfüllt
 
