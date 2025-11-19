@@ -86,3 +86,9 @@ docker/tools/backup/
 
 # Temporary testing artifacts
 docker_audit/
+
+# Test Coverage Reports
+.coverage
+coverage.json
+htmlcov/
+.pytest_cache/
