@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Pre-commit hook template
+# Copy to .git/hooks/pre-commit and make executable
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Check if we're in the right directory
+if [ ! -f "pytest.ini" ]; then
+    echo -e "${RED}❌ Error: Not in project root directory${NC}"
+    exit 1
+fi
+
+# 1. Run fast unit tests
+echo -e "\n${YELLOW}📝 Running unit tests...${NC}"
+if ! python -m pytest -v -m unit --tb=short -q; then
+    echo -e "${RED}❌ Unit tests failed${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Unit tests passed${NC}"
+
+# 2. Check coverage threshold
+echo -e "\n${YELLOW}📊 Checking coverage (minimum 95%)...${NC}"
+if ! python -m pytest --cov=services --cov-fail-under=95 --cov-report=term -q -m unit; then
+    echo -e "${RED}❌ Coverage below 95%${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Coverage check passed${NC}"
+
+# 3. Check for debugging statements
+echo -e "\n${YELLOW}🔎 Checking for debug statements...${NC}"
+if git diff --cached --name-only | grep -E '\.py$' | xargs grep -n "import pdb\|breakpoint()\|print(" 2>/dev/null; then
+    echo -e "${RED}❌ Found debugging statements (pdb, breakpoint, print)${NC}"
+    echo -e "${YELLOW}Please remove them before committing${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ No debug statements found${NC}"
+
+# 4. Check for TODO/FIXME in staged files
+echo -e "\n${YELLOW}📌 Checking for TODO/FIXME...${NC}"
+if git diff --cached --name-only | grep -E '\.py$' | xargs grep -n "TODO\|FIXME" 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  Found TODO/FIXME comments - make sure they're intentional${NC}"
+    # Don't fail, just warn
+fi
+
+echo -e "\n${GREEN}✅ All pre-commit checks passed!${NC}"
+exit 0
