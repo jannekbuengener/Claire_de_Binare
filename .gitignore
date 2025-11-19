@@ -93,3 +93,6 @@ coverage.json
 htmlcov/
 .pytest_cache/
 .hypothesis/
+
+# Backtest Results (test artifacts)
+backtest_results/

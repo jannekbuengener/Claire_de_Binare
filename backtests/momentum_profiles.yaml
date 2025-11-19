@@ -1,0 +1,45 @@
+# Scenario Configuration for Paper Trading
+# Usage: claire run-scenarios --config backtests/momentum_profiles.yaml
+
+# Default period (can be overridden per scenario)
+default_period:
+  days: 30  # Last 30 days
+
+# Scenarios to run
+scenarios:
+  - name: "Conservative Momentum"
+    strategy: "momentum_v1"
+    risk_profile: "conservative"
+    description: "Low risk, tight stop-loss, small positions"
+
+  - name: "Balanced Momentum"
+    strategy: "momentum_v1"
+    risk_profile: "balanced"
+    description: "Medium risk, standard settings"
+
+  - name: "Aggressive Momentum"
+    strategy: "momentum_v1"
+    risk_profile: "aggressive"
+    description: "High risk, larger positions, wider stops"
+
+  - name: "Custom High-Win-Rate"
+    strategy: "momentum_v1"
+    description: "Custom params for high win rate optimization"
+    risk_params:
+      MAX_POSITION_PCT: 0.08  # 8%
+      MAX_DAILY_DRAWDOWN_PCT: 0.04  # 4%
+      MAX_EXPOSURE_PCT: 0.25  # 25%
+      STOP_LOSS_PCT: 0.01  # 1% tight stop
+    period:
+      days: 30
+
+  - name: "Custom Low-Drawdown"
+    strategy: "momentum_v1"
+    description: "Custom params for minimal drawdown"
+    risk_params:
+      MAX_POSITION_PCT: 0.03  # 3% very small positions
+      MAX_DAILY_DRAWDOWN_PCT: 0.02  # 2% strict daily limit
+      MAX_EXPOSURE_PCT: 0.15  # 15% low exposure
+      STOP_LOSS_PCT: 0.015  # 1.5% stop
+    period:
+      days: 30

@@ -3,12 +3,14 @@
 Claire de Binaire - Command Line Interface
 
 Commands:
-    replay      Replay events from event log
-    explain     Explain specific trading decision
-    trace       Trace all events for correlation ID
-    stats       Show event statistics
-    snapshot    Create or restore state snapshot
-    validate    Validate determinism
+    replay         Replay events from event log
+    explain        Explain specific trading decision
+    trace          Trace all events for correlation ID
+    stats          Show event statistics
+    snapshot       Create or restore state snapshot
+    validate       Validate determinism
+    run-paper      Run paper trading simulation
+    run-scenarios  Run multiple scenarios from config
 
 Examples:
     # Replay events from date range
@@ -25,6 +27,12 @@ Examples:
 
     # Validate determinism
     python claire_cli.py validate --sequence 1 1000
+
+    # Run paper trading
+    python claire_cli.py run-paper --days 30 --profile balanced
+
+    # Run scenarios
+    python claire_cli.py run-scenarios --config backtests/momentum_profiles.yaml
 """
 
 import argparse
@@ -40,6 +48,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from backoffice.services.event_store.service import DatabaseConnection, EventReader
 from services.replay_engine import ReplayEngine
+from services.paper_trading_runner import run_single_paper_trade
+from services.scenario_orchestrator import run_scenarios_from_config
 
 # ==============================================================================
 # CONFIGURATION
@@ -317,6 +327,61 @@ def validate_command(args):
         db.close()
 
 
+def run_paper_command(args):
+    """
+    Run paper trading simulation.
+
+    Args:
+        args: Parsed arguments
+    """
+    logger.info("📄 Starting paper trading run...")
+
+    try:
+        result = run_single_paper_trade(
+            from_date=args.from_date,
+            to_date=args.to_date,
+            days=args.days,
+            strategy=args.strategy,
+            profile=args.profile,
+        )
+
+        # Results already printed by runner
+        sys.exit(0)
+
+    except Exception as e:
+        logger.error(f"❌ Paper trading run failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
+def run_scenarios_command(args):
+    """
+    Run multiple scenarios from config.
+
+    Args:
+        args: Parsed arguments
+    """
+    logger.info(f"📋 Running scenarios from {args.config}...")
+
+    try:
+        results = run_scenarios_from_config(
+            config_path=args.config,
+            output_dir=args.output_dir,
+        )
+
+        # Comparison report already printed by orchestrator
+        logger.info(f"✅ All {len(results)} scenarios complete")
+
+        sys.exit(0)
+
+    except Exception as e:
+        logger.error(f"❌ Scenario run failed: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+
 # ==============================================================================
 # MAIN CLI
 # ==============================================================================
@@ -400,6 +465,65 @@ def main():
         help="Sequence range to validate",
     )
 
+    # -------------------------------------------------------------------------
+    # RUN-PAPER command
+    # -------------------------------------------------------------------------
+    run_paper_parser = subparsers.add_parser("run-paper", help="Run paper trading simulation")
+
+    run_paper_parser.add_argument(
+        "--from",
+        dest="from_date",
+        type=str,
+        help="Start date (YYYY-MM-DD)",
+    )
+
+    run_paper_parser.add_argument(
+        "--to",
+        dest="to_date",
+        type=str,
+        help="End date (YYYY-MM-DD)",
+    )
+
+    run_paper_parser.add_argument(
+        "--days",
+        type=int,
+        help="Number of days to run (alternative to --from/--to)",
+    )
+
+    run_paper_parser.add_argument(
+        "--strategy",
+        type=str,
+        default="momentum_v1",
+        help="Strategy name (default: momentum_v1)",
+    )
+
+    run_paper_parser.add_argument(
+        "--profile",
+        type=str,
+        default="balanced",
+        choices=["conservative", "balanced", "aggressive"],
+        help="Risk profile (default: balanced)",
+    )
+
+    # -------------------------------------------------------------------------
+    # RUN-SCENARIOS command
+    # -------------------------------------------------------------------------
+    run_scenarios_parser = subparsers.add_parser("run-scenarios", help="Run multiple scenarios from config")
+
+    run_scenarios_parser.add_argument(
+        "--config",
+        type=str,
+        required=True,
+        help="Path to scenario config YAML file",
+    )
+
+    run_scenarios_parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="backtest_results/scenarios",
+        help="Output directory for reports (default: backtest_results/scenarios)",
+    )
+
     # Parse arguments
     args = parser.parse_args()
 
@@ -414,6 +538,8 @@ def main():
         "trace": trace_command,
         "stats": stats_command,
         "validate": validate_command,
+        "run-paper": run_paper_command,
+        "run-scenarios": run_scenarios_command,
     }
 
     handler = commands.get(args.command)

@@ -1,0 +1,25 @@
+# Scenario Configuration with specific date ranges
+# Usage: claire run-scenarios --config backtests/date_range_example.yaml
+
+# Scenarios with specific date ranges
+scenarios:
+  - name: "February 2025 - Conservative"
+    strategy: "momentum_v1"
+    risk_profile: "conservative"
+    period:
+      from: "2025-02-01"
+      to: "2025-02-28"
+
+  - name: "February 2025 - Aggressive"
+    strategy: "momentum_v1"
+    risk_profile: "aggressive"
+    period:
+      from: "2025-02-01"
+      to: "2025-02-28"
+
+  - name: "Q1 2025 - Balanced"
+    strategy: "momentum_v1"
+    risk_profile: "balanced"
+    period:
+      from: "2025-01-01"
+      to: "2025-03-31"

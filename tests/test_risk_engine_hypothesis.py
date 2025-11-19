@@ -103,7 +103,7 @@ def test_drawdown_decision_consistency(equity, daily_pnl_pct):
     }
     config = {
         "ACCOUNT_EQUITY": equity,
-        "MAX_DRAWDOWN_PCT": 0.05,
+        "MAX_DAILY_DRAWDOWN_PCT": 0.05,
         "MAX_POSITION_PCT": 0.10,
         "MAX_EXPOSURE_PCT": 0.30,
     }
@@ -145,7 +145,7 @@ def test_exposure_limit_respected(current_exposure, signal_exposure):
     }
     config = {
         "ACCOUNT_EQUITY": equity,
-        "MAX_DRAWDOWN_PCT": 0.05,
+        "MAX_DAILY_DRAWDOWN_PCT": 0.05,
         "MAX_POSITION_PCT": 0.50,  # High enough to not interfere
         "MAX_EXPOSURE_PCT": max_exposure,
     }
@@ -210,7 +210,7 @@ def test_approved_signal_has_valid_position_size(equity, max_pct):
     }
     config = {
         "ACCOUNT_EQUITY": equity,
-        "MAX_DRAWDOWN_PCT": 0.05,
+        "MAX_DAILY_DRAWDOWN_PCT": 0.05,
         "MAX_POSITION_PCT": max_pct,
         "MAX_EXPOSURE_PCT": 0.50,  # Hoch genug
     }

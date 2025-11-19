@@ -124,7 +124,7 @@ def evaluate_signal(
 
     equity = _resolve_equity(risk_state, risk_config)
     daily_pnl = float(risk_state.get("daily_pnl") or 0.0)
-    drawdown_threshold = -equity * float(risk_config.get("MAX_DRAWDOWN_PCT", 0.0))
+    drawdown_threshold = -equity * float(risk_config.get("MAX_DAILY_DRAWDOWN_PCT", 0.0))
     if daily_pnl <= drawdown_threshold:
         return RiskDecision(
             approved=False,

@@ -13,7 +13,7 @@ def risk_config() -> Dict[str, float]:
 
     return {
         "ACCOUNT_EQUITY": 100_000.0,
-        "MAX_DRAWDOWN_PCT": 0.05,
+        "MAX_DAILY_DRAWDOWN_PCT": 0.05,
         "MAX_POSITION_PCT": 0.10,
         "MAX_EXPOSURE_PCT": 0.30,
         "STOP_LOSS_PCT": 0.02,
