@@ -321,8 +321,11 @@ class ExecutionSimulator:
             depth_impact = depth_ratio * self.depth_impact_factor * 10000
             slippage += depth_impact
 
-        # Volatility impact
-        vol_impact = volatility * self.vol_slippage_multiplier * 10000
+        # Volatility impact (convert annual vol to hourly, then to bps)
+        # Annual vol → hourly vol: divide by sqrt(365 × 24) ≈ 94
+        # Then multiply by slippage multiplier and convert to bps
+        hourly_vol = volatility / (365 * 24) ** 0.5
+        vol_impact = hourly_vol * self.vol_slippage_multiplier * 10000
         slippage += vol_impact
 
         logger.debug(
