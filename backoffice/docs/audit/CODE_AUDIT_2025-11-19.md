@@ -1,4 +1,4 @@
-# CODE AUDIT REPORT - Claire de Binaire
+# CODE AUDIT REPORT - Claire de Binare
 
 **Audit-Datum**: 2025-11-19
 **Auditor**: Claude Code (Sonnet 4.5)
@@ -12,7 +12,7 @@
 
 **Gesamt-Bewertung**: ✅ **GRÜN** (Production-Ready mit Minor Fixes)
 
-Das Claire de Binaire Projekt zeigt eine **solide technische Grundlage** mit:
+Das Claire de Binare Projekt zeigt eine **solide technische Grundlage** mit:
 - Sauberer Service-Architektur (Event-Driven Design)
 - Guter Test-Coverage-Infrastruktur (32 Tests, 3640 LoC Test-Code)
 - Starke Security-Maßnahmen (.gitignore, ENV-Variablen, Pre-Commit Hooks)
@@ -57,7 +57,7 @@ Das Claire de Binaire Projekt zeigt eine **solide technische Grundlage** mit:
 
 1. **HOCH**: Veraltete Projekt-Bezeichnung in Dokumentation
    - **Location**: `backoffice/docs/services/cdb_prometheus.md` (3x)
-   - **Problem**: "Claire de Binare" statt "Claire de Binaire"
+   - **Problem**: "Claire de Binare" statt "Claire de Binare"
    - **Impact**: Verwirrung, Inkonsistenz
    - **Fix**: Suchen & Ersetzen in allen Doku-Dateien
    ```bash
@@ -251,7 +251,7 @@ Das Claire de Binaire Projekt zeigt eine **solide technische Grundlage** mit:
 3. **NIEDRIG**: Dateiname-Inkonsistenz
    - **Location**: `backoffice/docs/KODEX – Claire de Binare.md`
    - **Problem**: Dateiname mit alter Schreibweise
-   - **Empfehlung**: Rename zu "KODEX – Claire de Binaire.md"
+   - **Empfehlung**: Rename zu "KODEX – Claire de Binare.md"
 
 ---
 
@@ -312,14 +312,14 @@ Das Claire de Binaire Projekt zeigt eine **solide technische Grundlage** mit:
    ```bash
    # 1. Dateien umbenennen
    mv "backoffice/docs/KODEX – Claire de Binare.md" \
-      "backoffice/docs/KODEX – Claire de Binaire.md"
+      "backoffice/docs/KODEX – Claire de Binare.md"
 
    # 2. Inhalt ersetzen
    find backoffice/docs -name "*.md" -type f -exec \
-     sed -i 's/Claire de Binare/Claire de Binaire/g' {} +
+     sed -i 's/Claire de Binare/Claire de Binare/g' {} +
 
    # 3. PROJECT_STATUS.md Titel-Zeile
-   sed -i 's/PROJECT STATUS - Claire de Binare Cleanroom/PROJECT STATUS - Claire de Binaire Cleanroom/' \
+   sed -i 's/PROJECT STATUS - Claire de Binare Cleanroom/PROJECT STATUS - Claire de Binare Cleanroom/' \
      backoffice/PROJECT_STATUS.md
 
    # 4. Validation

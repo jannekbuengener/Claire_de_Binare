@@ -18,7 +18,7 @@ Es kombiniert:
 Alle Schreibweisen mit **„Binaire“** sind **falsch** bzw. **Legacy** und werden vom Audit als Finding markiert.
 
 Beispiele für **ungültige Varianten** (historisch/Legacy):
-- Claire de Binaire
+- Claire de Binare
 - Claire_de_Binaire
 - Claire-de-Binaire
 - claire de binaire  
@@ -89,7 +89,7 @@ project:
   naming_rules:
     enforce_canonical_project_name: true
     invalid_variants:
-      - "Claire de Binaire"
+      - "Claire de Binare"
       - "Claire_de_Binaire"
       - "Claire-de-Binaire"
       - "claire de binaire"
@@ -402,7 +402,7 @@ text_validation:
   canonical_terms:
     - canonical: "Claire_de_Binare"
       variants:
-        - "Claire de Binaire"
+        - "Claire de Binare"
         - "Claire_de_Binaire"
         - "Claire-de-Binaire"
         - "Claire de Binare"

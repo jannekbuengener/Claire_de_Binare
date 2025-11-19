@@ -1,4 +1,4 @@
-# CODE AUDIT SUMMARY - Claire de Binaire
+# CODE AUDIT SUMMARY - Claire de Binare
 
 **Datum**: 2025-11-19
 **Status**: ✅ **PRODUCTION-READY** (mit Minor Fixes)
@@ -36,7 +36,7 @@ pytest --collect-only  # Sollte 104 Tests finden
 ## ⚠️ HIGH-PRIORITY (1-2 Tage)
 
 ### 2. Projektname-Inkonsistenz
-**Problem**: "Claire de Binare" (alt) in 4+ Dateien statt "Claire de Binaire"
+**Problem**: "Claire de Binare" (alt) in 4+ Dateien statt "Claire de Binare"
 
 **Betroffen**:
 - `backoffice/docs/services/cdb_prometheus.md` (3x)
@@ -48,11 +48,11 @@ pytest --collect-only  # Sollte 104 Tests finden
 ```bash
 # Datei umbenennen
 mv "backoffice/docs/KODEX – Claire de Binare.md" \
-   "backoffice/docs/KODEX – Claire de Binaire.md"
+   "backoffice/docs/KODEX – Claire de Binare.md"
 
 # Inhalt ersetzen
 find backoffice/docs -name "*.md" -type f -exec \
-  sed -i 's/Claire de Binare/Claire de Binaire/g' {} +
+  sed -i 's/Claire de Binare/Claire de Binare/g' {} +
 
 # Validation
 grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
@@ -110,7 +110,7 @@ grep -r "Claire de Binare" backoffice/ --exclude-dir=archive
 ## 📋 QUICK-FIX CHECKLIST
 
 - [ ] `pip install -r requirements-dev.txt`
-- [ ] Fix Projektname "Claire de Binare" → "Claire de Binaire"
+- [ ] Fix Projektname "Claire de Binare" → "Claire de Binare"
 - [ ] Update PROJECT_STATUS.md mit aktuellen Daten
 - [ ] Test-Coverage messen: `make test-coverage`
 - [ ] TODO-Marker reviewen und auflösen

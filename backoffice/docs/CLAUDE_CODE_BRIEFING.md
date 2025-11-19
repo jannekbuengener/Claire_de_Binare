@@ -2,7 +2,7 @@
 
 ## 🎯 Ziel
 
-Pytest-Testing-Infrastruktur für **Claire de Binaire** vollständig implementieren.
+Pytest-Testing-Infrastruktur für **Claire de Binare** vollständig implementieren.
 
 ---
 
