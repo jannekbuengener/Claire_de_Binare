@@ -14,10 +14,16 @@ faker==20.1.0
 black==23.12.1
 flake8==6.1.0
 mypy==1.7.1
+ruff==0.1.6
 
-# Optional: Integration Testing
+# Pre-Commit Hooks
+pre-commit==3.5.0
+
+# Integration Testing (für E2E-Tests)
 redis==5.0.1
 psycopg2-binary==2.9.9
+requests==2.31.0
 
 # Type Stubs
 types-redis==4.6.0.11
+types-requests==2.31.0.10

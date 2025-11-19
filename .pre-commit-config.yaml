@@ -1,0 +1,67 @@
+# Pre-Commit Hooks für Claire de Binaire
+# Installation: pip install pre-commit && pre-commit install
+# Manual run: pre-commit run --all-files
+
+repos:
+  # Ruff - Fast Python Linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.6
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  # Black - Python Code Formatter
+  - repo: https://github.com/psf/black
+    rev: 23.11.0
+    hooks:
+      - id: black
+        language_version: python3.11
+
+  # Trailing Whitespace & EOF
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # pytest - Nur schnelle Tests (KEINE E2E!)
+  - repo: local
+    hooks:
+      - id: pytest-fast
+        name: pytest-fast (unit + integration, NO e2e)
+        entry: pytest
+        language: system
+        # Nur Unit + Integration, KEINE E2E/local_only
+        args: ["-q", "-m", "not e2e and not local_only", "--tb=short"]
+        pass_filenames: false
+        always_run: true
+        stages: [commit]
+
+  # pytest-cov - Coverage Check (nur wenn Coverage-Threshold gewünscht)
+  # Auskommentiert, da noch keine Coverage-Threshold definiert
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-cov
+  #       name: pytest with coverage
+  #       entry: pytest
+  #       language: system
+  #       args: ["--cov=services", "--cov-fail-under=60"]
+  #       pass_filenames: false
+  #       always_run: true
+  #       stages: [commit]
+
+# Hinweis:
+# E2E-Tests werden NICHT in Pre-Commit Hooks ausgeführt, da sie:
+# - Zu langsam sind (>10s)
+# - Docker-Container benötigen
+# - Nur lokal sinnvoll sind
+#
+# E2E-Tests manuell ausführen mit:
+# - pytest -v -m e2e
+# - make test-e2e
+# - make test-full-system

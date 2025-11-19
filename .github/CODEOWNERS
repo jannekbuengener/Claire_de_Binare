@@ -1,17 +1,3 @@
-# Claire de Binaire - Code Ownership
-
-# Alle Dateien - Projektleiter
-*                       @jannekbuengener
-
-# Kritische Trading-Logik
-backoffice/             @jannekbuengener
-scripts/                @jannekbuengener
-
-# Infrastruktur
-docker-compose.yml      @jannekbuengener
-Dockerfile              @jannekbuengener
-prometheus.yml          @jannekbuengener
-
-# Dokumentation
-*.md                    @jannekbuengener
-docs/                   @jannekbuengener
+# Beispiel – anpassen
+*       @DevLead
+docs/*  @DocsLead

@@ -53,7 +53,14 @@
       "Bash(if [ -f \"backoffice/docs/security/$file\" ])",
       "Bash(do [ -f \"$item\" ])",
       "Bash(do grep -n \"Claire de Binaire\" \"$file\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(dir:*)",
+      "Bash(md testse2e 2)",
+      "Bash(python -m pytest:*)",
+      "Bash(make:*)",
+      "Bash(docker:*)",
+      "mcp__MCP_DOCKER__docker",
+      "Bash(test:*)"
     ],
     "deny": [],
     "ask": []
