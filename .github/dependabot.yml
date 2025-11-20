@@ -1,18 +1,177 @@
 version: 2
 
 updates:
+  # ============================================================
+  # PYTHON DEPENDENCIES (Production)
+  # ============================================================
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers:
+      - "jannekbuengener"
+    open-pull-requests-limit: 10
+    groups:
+      # Core-Dependencies (Redis, PostgreSQL, Flask, etc.)
+      production-core:
+        patterns:
+          - "redis"
+          - "psycopg2*"
+          - "flask"
+          - "pydantic"
+          - "python-dotenv"
+      # Trading & Exchange APIs
+      trading-apis:
+        patterns:
+          - "ccxt"
+          - "mexc*"
+          - "binance*"
+      # Utilities & Tools
+      production-utils:
+        patterns:
+          - "requests"
+          - "python-dateutil"
+          - "pytz"
+
+  # ============================================================
+  # PYTHON DEPENDENCIES (Development/Testing)
+  # ============================================================
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(deps-dev)"
+    labels:
+      - "dependencies"
+      - "testing"
+      - "development"
+    reviewers:
+      - "jannekbuengener"
+    open-pull-requests-limit: 5
+    groups:
+      # Testing-Framework
+      testing-tools:
+        patterns:
+          - "pytest*"
+          - "coverage"
+          - "hypothesis"
+          - "faker"
+      # Code-Quality Tools
+      dev-tools:
+        patterns:
+          - "ruff"
+          - "black"
+          - "mypy"
+          - "pre-commit"
+
+  # ============================================================
+  # DOCKER BASE IMAGES (Root)
+  # ============================================================
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
-    groups:
-      runtime-images:
-        patterns:
-          - "*"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "jannekbuengener"
     open-pull-requests-limit: 5
+    groups:
+      base-images:
+        patterns:
+          - "python*"
+          - "postgres*"
+          - "redis*"
+          - "grafana*"
+          - "prom/prometheus*"
 
+  # ============================================================
+  # DOCKER IMAGES (Signal Engine Service)
+  # ============================================================
+  - package-ecosystem: "docker"
+    directory: "/backoffice/services/signal_engine"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(docker/signal)"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "cdb_core"
+    open-pull-requests-limit: 3
+
+  # ============================================================
+  # DOCKER IMAGES (Risk Manager Service)
+  # ============================================================
+  - package-ecosystem: "docker"
+    directory: "/backoffice/services/risk_manager"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(docker/risk)"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "cdb_risk"
+    open-pull-requests-limit: 3
+
+  # ============================================================
+  # DOCKER IMAGES (Execution Service)
+  # ============================================================
+  - package-ecosystem: "docker"
+    directory: "/backoffice/services/execution_service"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(docker/execution)"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "cdb_execution"
+    open-pull-requests-limit: 3
+
+  # ============================================================
+  # GITHUB ACTIONS
+  # ============================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "wednesday"
+      time: "06:00"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "ci-cd"
+      - "github-actions"
+    reviewers:
+      - "jannekbuengener"
     open-pull-requests-limit: 5
+    groups:
+      ci-actions:
+        patterns:
+          - "actions/*"
+          - "docker/*"
