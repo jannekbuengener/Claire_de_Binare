@@ -1,0 +1,47 @@
+[
+  {
+    "title": "M1 - Foundation & Governance Setup",
+    "description": "Ziel: Projektstruktur, Regeln, Standards und Quality Gates etablieren.\n\nDeliverables:\n- Architektur-Kodex finalisiert (KODEX – Claire de Binaire)\n- Issue-Templates erstellt (Bug Report, Feature Request, Risk-Event Report, Enhancement)\n- Label-System definiert (risk-layer, infra, execution, critical, research, good first issue)\n- Branch-Konventionen + Naming-Regeln (ADR-Style)\n- CONTRIBUTING.md ergänzt\n- Kanonisches Event-Schema als Referenz verlinkt\n\nDefinition of Done:\n- Alle Templates produktiv im .github/ISSUE_TEMPLATE\n- Labels vollständig angelegt\n- Roadmap-Matrix mit Themen-Clustern steht",
+    "state": "open"
+  },
+  {
+    "title": "M2 - N1 Architektur Finalisierung",
+    "description": "Ziel: Komplette logische Systemarchitektur als Issues abbilden, sodass jedes Modul separat entwickelt werden kann.\n\nDeliverables:\n- Issue-Paket: Market Data Ingestion (MDI)\n- Issue-Paket: Strategy Engine\n- Issue-Paket: Risk Engine (7-Layer)\n- Issue-Paket: Execution Simulator\n- Issue-Paket: Portfolio State Manager\n- Issue-Paket: Logging & Analytics\n- Issue-Paket: Event-Validator + Schema-Checker\n\nDefinition of Done:\nJedes Modul besitzt:\n- 1 Epic-Issue\n- 3–10 Sub-Issues\n- Klar definierte Acceptance Criteria\n- Abhängigkeiten via Issue-Links dokumentiert",
+    "state": "open"
+  },
+  {
+    "title": "M3 - Risk-Layer Hardening & Guards",
+    "description": "Ziel: Alle Risk-Parameter, ENV-Variablen, Konfigs und Validierungs-Workflows als Issues abbilden.\n\nDeliverables:\n- Parameter-Range-Checks\n- Test-Suite für alle Guards\n- Daily-Drawdown Lock Workflow\n- Alert-System (CRITICAL, WARNING)\n- Recovery-Logic (Cooldown, Reset)\n- Dokumentation: Entscheidungsbaum Risk Engine\n\nDefinition of Done:\n- Mind. 80% Test-Coverage für Risk-Layer\n- Alert-Codes dokumentiert und getestet\n- ENV-Ranges maschinell validiert",
+    "state": "open"
+  },
+  {
+    "title": "M4 - Event-Driven Core (Redis Pub/Sub)",
+    "description": "Ziel: Das vollständige Event-Gerüst als GitHub-Issue-Cluster operationalisieren.\n\nDeliverables:\n- market_data Flow implementiert\n- signals Flow implementiert\n- orders Flow implementiert\n- order_results Flow implementiert\n- alerts Flow implementiert\n- Event-Schema-Validator + Contracts-Testing\n\nDefinition of Done:\n- Alle Topic-Spezifikationen in /docs abgelegt\n- Jede Message-Art hat ein eigenes QA-Issue (Schema Snapshot Test)\n- Replay-Test auf Basis historischer Candles läuft durch",
+    "state": "open"
+  },
+  {
+    "title": "M5 - Persistenz + Analytics Layer",
+    "description": "Ziel: Datenhaltung, Logging und Backtest-Auswertungen über Issues tracken.\n\nDeliverables:\n- PostgreSQL-Schema validiert + konsolidiert\n- Storage für: Signals, Orders, Trades, RiskEvents, Snapshots\n- Backtest-Run-Tracking (Lauf-ID, Params, Ergebnisse)\n- Export-Funktionen für Analytics\n- Grund-UI für Equity & Drawdown\n\nDefinition of Done:\n- Persistenz-Tests laufen\n- Backtest-Daten vollständig reproduzierbar\n- UI zeigt Equity, DD, Trades",
+    "state": "open"
+  },
+  {
+    "title": "M6 - Dockerized Runtime (Local Environment)",
+    "description": "Ziel: Produktionsnahe lokale Umgebung als GitHub-Meilenstein bilden.\n\nDeliverables:\n- Docker Compose finalisiert\n- Health-Checks für jeden Service\n- Grafana Dashboards\n- Prometheus Scraping-Regeln\n- .env.template final\n\nDefinition of Done:\n- docker compose up -d → alle Container healthy\n- Metriken sichtbar\n- Alerts erscheinen in UI",
+    "state": "open"
+  },
+  {
+    "title": "M7 - Initial Live-Test (MEXC Testnet)",
+    "description": "Ziel: Expeditionelle Phase definieren und mit Issues absichern.\n\nDeliverables:\n- Testnet-Integration\n- Testnet Execution Service\n- Testnet Order Reconciliation\n- Manual-Override Interface\n- Monitoring: Live Trades\n\nDefinition of Done:\n- 100 Trades im Testnet erfolgreich durchgelaufen\n- Keine CRITICAL Alerts\n- Vergleich Live-Eingaben ↔ Systemlog konsistent",
+    "state": "open"
+  },
+  {
+    "title": "M8 - Production Hardening & Security Review",
+    "description": "Ziel: Finale Absicherung vor Produktivbetrieb.\n\nDeliverables:\n- Full Security Review (SR-001 bis SR-009)\n- Vault- oder Secret-Rotation Workflow\n- Production-Compose ohne Mounts\n- Logging-Hardening\n- Backup-Policies\n\nDefinition of Done:\n- Security-Score ≥ 95%\n- Risk-Level LOW\n- Production-Compose → immutable",
+    "state": "open"
+  },
+  {
+    "title": "M9 - Production Release 1.0",
+    "description": "Ziel: Abschluss-Meilenstein.\n\nDeliverables:\n- Release Notes\n- Fixierte ENV-Parameter\n- Systemdiagramme final\n- CI/CD-Pipeline\n- Documentation Pack (PDF + Markdown)\n\nDefinition of Done:\n- System läuft 72h stabil\n- Alle Backtests + Livetests konsistent\n- Documentation Score: 100% vollständig",
+    "state": "open"
+  }
+]
