@@ -60,7 +60,20 @@
       "Bash(make:*)",
       "Bash(docker:*)",
       "mcp__MCP_DOCKER__docker",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(gh:*)",
+      "Bash(bash create_milestones.sh:*)",
+      "Bash(do)",
+      "Bash(curl:*)",
+      "Bash(pytest --version:*)",
+      "Bash(pytest:*)",
+      "Bash(python -c:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(POSTGRES_HOST=localhost python:*)",
+      "Bash($env:POSTGRES_HOST=\"localhost\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

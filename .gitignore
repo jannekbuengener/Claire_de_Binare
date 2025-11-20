@@ -92,3 +92,4 @@ docker_audit/
 coverage.json
 htmlcov/
 .pytest_cache/
+nul

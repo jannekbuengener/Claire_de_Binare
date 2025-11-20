@@ -1,0 +1,56 @@
+[
+  {
+    "title": "M1 - Foundation & Governance Setup",
+    "description": "Establish project foundation with documentation, governance structures, and development standards. Includes KODEX, ADRs, and initial architecture decisions.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M2 - N1 Architektur Finalisierung",
+    "description": "Finalize N1 (Paper Trading) architecture. Complete system design, service boundaries, event flows, and database schema. Ready for implementation phase.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M3 - Risk-Layer Hardening & Guards",
+    "description": "Implement and test all 7 risk validation layers: Data Quality, Position Limits, Daily Drawdown, Total Exposure, Circuit Breaker, Spread Check, Timeout Check. Achieve 100% coverage.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M4 - Event-Driven Core (Redis Pub/Sub)",
+    "description": "Build event-driven message bus using Redis Pub/Sub. Implement all event types (market_data, signals, orders, order_results, alerts) with proper routing and error handling.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M5 - Persistenz + Analytics Layer",
+    "description": "Complete PostgreSQL integration with 5 core tables (signals, orders, trades, positions, portfolio_snapshots). Implement analytics queries and reporting capabilities.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M6 - Dockerized Runtime (Local Environment)",
+    "description": "Fully containerized development environment with docker-compose. All 8 services running healthy: Redis, PostgreSQL, Signal Engine, Risk Manager, Execution Service, WebSocket Screener, Grafana, Prometheus.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M7 - Initial Live-Test (MEXC Testnet)",
+    "description": "First live integration with MEXC Testnet. Paper trading with real market data. Performance validation and system stability testing.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M8 - Production Hardening & Security Review",
+    "description": "Security audit, penetration testing, secret management hardening. Performance optimization and load testing. Final production readiness review.",
+    "due_date": null,
+    "state": "open"
+  },
+  {
+    "title": "M9 - Production Release 1.0",
+    "description": "Official production release with full documentation, deployment playbooks, monitoring dashboards, and 24/7 operational procedures. System ready for live trading.",
+    "due_date": null,
+    "state": "open"
+  }
+]
