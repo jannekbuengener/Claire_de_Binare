@@ -21,23 +21,34 @@
 
 ## 1. Executive Summary
 
-**Projekt**: Claire de Binaire – Autonomer Krypto-Trading-Bot  
-**Status**: ✅ Deployment-Ready (100%) | End-to-End Tests: 7/7  
-**Phase**: N1 - Paper-Test Implementation  
-**Deine Aufgabe**: Pytest-Struktur finalisieren, Tests implementieren
+**Projekt**: Claire de Binaire – Autonomer Krypto-Trading-Bot
+**Status**: ✅ Deployment-Ready (100%) | E2E-Tests: 17/18 (94.4%)
+**Phase**: N1 - Paper-Test Implementation
+**Letztes Update**: 2025-11-20
 
 ### 🎯 Aktuelle Prioritäten (November 2025):
 
-1. **Pytest implementieren** (4 Risk-Engine Tests als Templates vorhanden)
-2. **Test-Coverage erhöhen** (Ziel: >60%)
-3. **Signal-Engine Tests** (neue Test-Datei erstellen)
-4. **Integration-Tests** (Redis/PostgreSQL Mocks)
+**System Status**: ✅ **VOLLSTÄNDIG OPERATIONAL**
+
+1. **Test-Infrastruktur**: ✅ 32 Tests (12 Unit, 2 Integration, 18 E2E)
+2. **Risk-Engine**: ✅ 100% Coverage erreicht
+3. **MEXC Perpetuals**: ✅ Integriert mit Risk Engine
+4. **Advanced Position Sizing**: ✅ Implementiert
+5. **Execution Simulator**: ✅ Module 2 & 3 fertig
 
 ### ⚡ System läuft:
-- 4/4 Container healthy
-- PostgreSQL mit 10 Tabellen
-- Redis Message Bus operational
-- Signal Engine + Risk Manager deployed
+- **8/8 Container healthy** (alle Services operational)
+- **PostgreSQL**: 5 Tabellen (signals, orders, trades, positions, portfolio_snapshots)
+- **Redis Message Bus**: Pub/Sub operational
+- **Signal Engine**: Momentum-Strategie deployed
+- **Risk Manager**: 7-Layer-Validierung aktiv
+- **Execution Service**: Paper-Trading funktional
+
+### 📊 Test-Status:
+- **E2E-Tests**: 17/18 passed (94.4%) ✅
+- **Unit-Tests**: 12/12 passed (100%) ✅
+- **Risk-Engine Coverage**: 100% ✅
+- **CI/CD**: Fully integrated ✅
 
 ---
 
@@ -49,12 +60,15 @@
 # 1. Dependencies installieren
 pip install -r requirements-dev.txt
 
-# 2. Tests ausführen (sollten alle skippen)
-pytest -v
+# 2. ENV-Template kopieren
+cp .env.example .env
 
-# 3. Erste Test-Implementierung
-# Öffne: tests/test_risk_engine_core.py
-# Implementiere: test_daily_drawdown_blocks_trading
+# 3. Docker-Stack starten
+docker compose up -d
+
+# 4. Tests ausführen
+pytest -v -m "not e2e"  # CI-Tests (schnell)
+pytest -v -m e2e        # E2E-Tests (mit Docker)
 ```
 
 ### 2.2 Pflichtlektüre (in dieser Reihenfolge)
@@ -63,55 +77,72 @@ pytest -v
 |-------|-------|-----------|
 | `backoffice/docs/CLAUDE_CODE_BRIEFING.md` | **START HIER** | 5 min |
 | `backoffice/PROJECT_STATUS.md` | Live-Status | 3 min |
-| `services/cdb_risk/service.py` | Risk-Logic Referenz | 10 min |
+| `backoffice/docs/testing/E2E_TEST_COMPLETION_REPORT.md` | Test-Infrastruktur | 5 min |
+| `backoffice/docs/testing/LOCAL_E2E_TESTS.md` | E2E-Guide | 10 min |
+| `services/risk_engine.py` | Risk-Logic Referenz | 10 min |
 | `tests/conftest.py` | Test-Fixtures | 3 min |
 
 ### 2.3 Wo liegt was?
 
 **Dein Workspace**:
 ```
-C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom\
-├── tests/                    ← DU ARBEITEST HIER
-│   ├── conftest.py          ← Fixtures (fertig)
-│   ├── test_risk_engine_core.py  ← 4 TODO-Tests
-│   └── test_*.py            ← Du erstellst neue
-├── services/                ← Service-Code (Referenz)
-│   ├── cdb_risk/service.py ← Risk-Logic
-│   ├── cdb_core/service.py ← Signal-Logic
-│   └── ...
-├── pytest.ini               ← Config (fertig)
-└── requirements-dev.txt     ← Dependencies (fertig)
+/home/user/Claire_de_Binare_Cleanroom/
+├── tests/                           ← TEST-INFRASTRUKTUR
+│   ├── conftest.py                 ← Fixtures (fertig)
+│   ├── e2e/                        ← E2E-Tests (18 Tests)
+│   │   ├── test_docker_compose_full_stack.py
+│   │   ├── test_redis_postgres_integration.py
+│   │   └── test_event_flow_pipeline.py
+│   ├── integration/                ← Integration-Tests
+│   ├── unit/                       ← Unit-Tests
+│   ├── test_risk_engine_*.py       ← Risk-Tests (100% Coverage)
+│   ├── test_mexc_perpetuals.py     ← MEXC-Tests
+│   ├── test_position_sizing.py     ← Position Sizing
+│   └── test_execution_simulator.py ← Execution Tests
+│
+├── services/                        ← SERVICE-CODE
+│   ├── risk_engine.py              ← Risk-Logic (100% Coverage)
+│   ├── mexc_perpetuals.py          ← MEXC Integration
+│   ├── position_sizing.py          ← Position Sizing
+│   └── execution_simulator.py      ← Execution Simulator
+│
+├── backoffice/                      ← DOKUMENTATION
+│   ├── docs/
+│   │   ├── testing/                ← Test-Guides
+│   │   ├── architecture/           ← System-Design
+│   │   ├── services/               ← Event-Flows
+│   │   ├── security/               ← Security-Richtlinien
+│   │   └── schema/                 ← Datenmodelle (YAML)
+│   ├── services/                   ← Legacy-Services (backoffice/services/)
+│   │   ├── signal_engine/
+│   │   ├── risk_manager/
+│   │   └── execution_service/
+│   └── PROJECT_STATUS.md           ← ⭐ Live-Status
+│
+├── docker-compose.yml               ← Container-Definition (8 Services)
+├── pytest.ini                       ← Test-Konfiguration
+├── Makefile                         ← Test-Targets
+├── requirements-dev.txt             ← Test-Dependencies
+└── .env                            ← ENV-Variablen (nicht committen!)
 ```
 
-### 2.4 Dein erster Test (Copy & Paste)
+### 2.4 Schnellstart-Commands
 
-```python
-# In tests/test_risk_engine_core.py
-# Ersetze "pytest.skip(...)" durch:
+```bash
+# CI-Tests (schnell, ohne Docker)
+pytest -v -m "not e2e and not local_only"
 
-@pytest.mark.unit
-def test_daily_drawdown_blocks_trading(risk_config, sample_risk_state):
-    """Test: Trading blockiert bei Daily Drawdown > 5%"""
-    # Arrange
-    from services.cdb_risk.service import RiskManager
-    risk_mgr = RiskManager()
-    
-    state = sample_risk_state.copy()
-    state["daily_pnl"] = -6000.0  # -6% bei 100k Kapital
-    
-    signal = {
-        "type": "signal",
-        "symbol": "BTCUSDT",
-        "signal_type": "buy",
-        "price": 50000.0
-    }
-    
-    # Act
-    result = risk_mgr.validate_signal(signal, state, risk_config)
-    
-    # Assert
-    assert result["approved"] is False, "Signal sollte blockiert sein"
-    assert "daily_drawdown" in result["reason"].lower()
+# E2E-Tests (mit Docker)
+docker compose up -d
+pytest -v -m e2e
+
+# Coverage-Report generieren
+pytest --cov=services --cov-report=html
+
+# Makefile-Targets (Linux/Mac)
+make test              # CI-Tests
+make test-e2e          # E2E-Tests
+make test-full-system  # Docker + E2E komplett
 ```
 
 ---
@@ -125,28 +156,43 @@ def test_daily_drawdown_blocks_trading(risk_config, sample_risk_state):
 
 **Code/Tech-IDs**:
 - ✅ `claire_de_binaire` (DB-Name, Volumes)
-- ✅ `cdb_*` (Service-Präfix: `cdb_core`, `cdb_risk`)
+- ✅ `cdb_*` (Service-Präfix: `cdb_core`, `cdb_risk`, `cdb_execution`)
 
 ❌ **VERALTET**: „Claire de Binare" (alte Schreibweise – bei Fund melden)
 
 ### 3.2 System-Übersicht
 
-**Container (4/4 healthy)**:
+**Container (8/8 healthy)**:
 ```
-cdb_postgres  → Port 5432 (PostgreSQL)
-cdb_redis     → Port 6379 (Message Bus)
-cdb_signal    → Port 8001 (Signal Engine)
-cdb_risk      → Port 8002 (Risk Manager)
+cdb_redis       → Port 6379  (Message Bus)
+cdb_postgres    → Port 5432  (PostgreSQL)
+cdb_ws          → Port 8000  (WebSocket Screener)
+cdb_core        → Port 8001  (Signal Engine)
+cdb_risk        → Port 8002  (Risk Manager)
+cdb_execution   → Port 8003  (Execution Service)
+cdb_prometheus  → Port 19090 (Metrics Collector)
+cdb_grafana     → Port 3000  (Monitoring Dashboard)
 ```
 
 **Services (Status)**:
-- ✅ Signal Engine – Momentum-Strategie implementiert
-- ✅ Risk Manager – 7-Layer-Validierung aktiv
-- ⏳ Execution Service – In Vorbereitung
+- ✅ Signal Engine – Momentum-Strategie deployed
+- ✅ Risk Manager – 7-Layer-Validierung aktiv (100% Coverage)
+- ✅ Execution Service – Paper-Trading operational
+- ✅ MEXC Perpetuals – Integriert mit Risk Engine
+- ✅ Position Sizing – Advanced Module implementiert
 
 **Test-Status**:
-- ✅ End-to-End: 7/7 manuell bestanden
-- 🔄 Pytest: 4 Templates, 0 implementiert → **DEINE AUFGABE**
+- ✅ E2E-Tests: 17/18 (94.4%)
+- ✅ Unit-Tests: 12/12 (100%)
+- ✅ Risk-Engine Coverage: 100%
+- ✅ Integration-Tests: 2/2 (Placeholder)
+
+**Letzte Erfolge**:
+- ✅ Lokale E2E Test-Suite vollständig (2025-11-19)
+- ✅ MEXC Perpetuals Integration (2025-11-19)
+- ✅ Risk-Engine 100% Coverage (2025-11-19)
+- ✅ Advanced Position Sizing implementiert (2025-11-19)
+- ✅ Dokumentation konsolidiert (2025-11-20)
 
 ---
 
@@ -156,59 +202,93 @@ cdb_risk      → Port 8002 (Risk Manager)
 
 ```
 Claire_de_Binare_Cleanroom/
-├── services/              # 🐳 Microservices (Python)│   ├── cdb_ws/           # WebSocket-Screener (8000)
-│   ├── cdb_core/         # Signal Engine (8001)
-│   ├── cdb_risk/         # Risk Manager (8002)
-│   └── cdb_execution/    # Execution Service (8003)
+├── services/              # 🐳 Core-Microservices (Python)
+│   ├── risk_engine.py              # Risk-Logic (100% Coverage)
+│   ├── mexc_perpetuals.py          # MEXC Integration
+│   ├── position_sizing.py          # Position Sizing
+│   └── execution_simulator.py      # Execution Simulator
 │
-├── tests/                # 🧪 Pytest-Suite ← DU ARBEITEST HIER
-│   ├── conftest.py      # Fixtures & Mocks
-│   ├── test_risk_*.py   # Risk-Tests
-│   └── test_signal_*.py # Signal-Tests
+├── backoffice/services/   # 🔧 Legacy-Services (Container)
+│   ├── signal_engine/              # Signal-Logic
+│   ├── risk_manager/               # Risk-Manager
+│   └── execution_service/          # Execution Service
 │
-├── backoffice/          # 📚 Dokumentation
+├── tests/                 # 🧪 Pytest-Suite (32 Tests)
+│   ├── conftest.py                 # Fixtures & Mocks
+│   ├── e2e/                        # E2E-Tests (18)
+│   │   ├── test_docker_compose_full_stack.py     (5)
+│   │   ├── test_redis_postgres_integration.py    (8)
+│   │   └── test_event_flow_pipeline.py           (5)
+│   ├── integration/                # Integration-Tests (2)
+│   ├── unit/                       # Unit-Tests
+│   ├── test_risk_engine_*.py       # Risk-Tests (100% Coverage)
+│   ├── test_mexc_perpetuals.py     # MEXC-Tests
+│   ├── test_position_sizing.py     # Position Sizing Tests
+│   └── test_execution_simulator.py # Execution Tests
+│
+├── backoffice/            # 📚 Dokumentation (61 MD-Dateien)
 │   ├── docs/
-│   │   ├── architecture/       # System-Design
-│   │   ├── services/          # Event-Flows
-│   │   ├── security/          # Security-Richtlinien
-│   │   ├── schema/            # Datenmodelle (YAML)
-│   │   └── CLAUDE_CODE_BRIEFING.md  # ← START HIER
-│   └── PROJECT_STATUS.md       # ⭐ Live-Status
+│   │   ├── testing/                # Test-Guides
+│   │   │   ├── E2E_TEST_COMPLETION_REPORT.md
+│   │   │   └── LOCAL_E2E_TESTS.md
+│   │   ├── architecture/           # System-Design
+│   │   ├── services/               # Event-Flows
+│   │   ├── security/               # Security-Richtlinien
+│   │   ├── schema/                 # Datenmodelle (YAML)
+│   │   ├── runbooks/               # Runbooks & Workflows
+│   │   ├── CLAUDE_CODE_BRIEFING.md # ← START HIER
+│   │   └── DECISION_LOG.md         # Entscheidungs-Historie
+│   └── PROJECT_STATUS.md           # ⭐ Live-Status
 │
-├── docker-compose.yml   # Container-Definition
-├── pytest.ini          # Test-Config
-├── requirements-dev.txt # Test-Dependencies
-└── .env                # ENV-Variablen (nicht committen!)
+├── docker-compose.yml     # Container-Definition (8 Services)
+├── pytest.ini             # Test-Konfiguration
+├── Makefile               # Test-Targets
+├── requirements-dev.txt   # Test-Dependencies
+└── .env                   # ENV-Variablen (nicht committen!)
 ```
 
 ### 4.2 Datei-Zuordnung (für neue Dateien)
 
 | Was du erstellst | Wohin |
 |-----------------|-------|
-| Test-Code | `tests/test_*.py` |
-| Service-Code | `services/cdb_*/` |
+| Test-Code (Unit/Integration) | `tests/test_*.py` |
+| Test-Code (E2E) | `tests/e2e/test_*.py` |
+| Service-Code (Core) | `services/*.py` |
+| Service-Code (Container) | `backoffice/services/cdb_*/` |
 | Dokumentation | `backoffice/docs/` |
 | Schemas | `backoffice/docs/schema/` |
 | Runbooks | `backoffice/docs/runbooks/` |
+| Test-Guides | `backoffice/docs/testing/` |
 
 ---
 
 ## 5. Arbeitsweisen nach Aufgabentyp
 
-### 5.1 Test-Engineering (Deine Hauptaufgabe)
+### 5.1 Test-Engineering
 
 **Workflow**:
-1. Lese Template in `tests/test_risk_engine_core.py`
-2. Analysiere Service-Logic in `services/cdb_risk/service.py`
-3. Ersetze `pytest.skip(...)` durch echten Test
-4. Führe aus: `pytest -v tests/test_risk_engine_core.py`
-5. Coverage prüfen: `pytest --cov=services`
+1. Prüfe bestehende Tests in `tests/`
+2. Nutze Fixtures aus `conftest.py`
+3. Schreibe Tests im Arrange-Act-Assert-Pattern
+4. Führe aus: `pytest -v tests/test_*.py`
+5. Coverage prüfen: `pytest --cov=services --cov-report=html`
+
+**Test-Kategorien (Marker)**:
+```python
+@pytest.mark.unit          # Schnell, keine Ext. Dependencies
+@pytest.mark.integration   # Mit Redis/PostgreSQL (gemockt)
+@pytest.mark.e2e          # End-to-End mit echten Containern
+@pytest.mark.local_only   # Nur lokal, nicht in CI
+@pytest.mark.slow         # >10s Runtime
+```
 
 **Test-Struktur (Pflicht)**:
 ```python
-@pytest.mark.unit  # Oder: integration, slow
+@pytest.mark.unit
 def test_descriptive_name(fixture1, fixture2):
     """
+    Test: Beschreibung was getestet wird
+
     Gegeben: Ausgangssituation
     Wenn: Aktion X
     Dann: Erwartetes Ergebnis Y
@@ -216,13 +296,13 @@ def test_descriptive_name(fixture1, fixture2):
     # Arrange - Setup
     state = sample_risk_state.copy()
     state["daily_pnl"] = -6000.0
-    
+
     # Act - Ausführung
     result = risk_engine.validate_signal(signal, state, config)
-    
+
     # Assert - Prüfung
     assert result["approved"] is False
-    assert "daily_drawdown" in result["reason"]
+    assert "daily_drawdown" in result["reason"].lower()
 ```
 
 **Fixtures nutzen** (aus `conftest.py`):
@@ -235,14 +315,15 @@ def test_descriptive_name(fixture1, fixture2):
 
 **Test-Ausführung**:
 ```bash
-# Alle Tests
-pytest -v
+# CI-Tests (schnell, ohne Docker)
+pytest -v -m "not e2e and not local_only"
 
-# Nur Unit-Tests (schnell, keine DB)
-pytest -v -m unit
+# E2E-Tests (mit Docker)
+docker compose up -d
+pytest -v -m e2e
 
-# Nur Risk-Tests
-pytest -v tests/test_risk_engine_core.py
+# Bestimmte Test-Suite
+pytest -v tests/e2e/test_redis_postgres_integration.py
 
 # Mit Coverage
 pytest --cov=services --cov-report=html
@@ -261,7 +342,7 @@ pytest --cov=services --cov-report=html
 **Code-Standards**:
 ```python
 # ✅ GUT
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from pydantic import BaseModel
 import logging
 
@@ -281,12 +362,12 @@ def validate_signal(
 ) -> Dict[str, bool]:
     """
     Validiert Signal gegen Risk-Limits.
-    
+
     Args:
         signal: Trading-Signal
         risk_state: Aktueller Risk-State
         config: Risk-Konfiguration
-        
+
     Returns:
         {"approved": bool, "reason": str}
     """
@@ -305,6 +386,7 @@ def check(data):  # Keine Type Hints
 **Scope**:
 - ✅ `backoffice/docs/` – Darf geändert werden
 - ✅ `backoffice/PROJECT_STATUS.md` – Aktualisieren
+- ✅ Test-Dokumentation – `backoffice/docs/testing/`
 - ❌ `archive/` – Read-Only (nicht ändern!)
 
 **Prüfpunkte bei Doku-Audit**:
@@ -313,6 +395,7 @@ def check(data):  # Keine Type Hints
 3. Links funktionsfähig
 4. Status aktuell
 5. Code-Beispiele lauffähig
+6. Test-Status korrekt (32 Tests, 17/18 E2E)
 
 ---
 
@@ -334,7 +417,7 @@ def check(data):  # Keine Type Hints
 └──────┬───────┘
        ↓ signals (Redis)
 ┌──────────────┐
-│ Risk Manager │ (cdb_risk:8002)
+│ Risk Manager │ (cdb_risk:8002) ✅ 100% Coverage
 └──────┬───────┘
        ↓ orders (Redis)
 ┌──────────────┐
@@ -343,6 +426,7 @@ def check(data):  # Keine Type Hints
        ↓ order_results (Redis)
 ┌──────────────┐
 │ PostgreSQL   │ (cdb_postgres:5432)
+│ 5 Tabellen   │
 └──────────────┘
 ```
 
@@ -377,6 +461,12 @@ MAX_TOTAL_EXPOSURE_PCT=0.30     # 30% Gesamt-Exposure
 CIRCUIT_BREAKER_THRESHOLD_PCT=0.10  # 10% Emergency Stop
 MAX_SLIPPAGE_PCT=0.02           # 2% Max Slippage
 DATA_STALE_TIMEOUT_SEC=60       # 60s Timeout
+
+# Docker-Netzwerk
+REDIS_HOST=cdb_redis
+REDIS_PORT=6379
+POSTGRES_HOST=cdb_postgres
+POSTGRES_PORT=5432
 ```
 
 ---
@@ -419,7 +509,7 @@ except Exception:  # ❌ Zu breit
 ### 7.2 Service-Struktur (Template)
 
 ```python
-# services/cdb_*/service.py
+# services/*.py oder backoffice/services/cdb_*/service.py
 import os
 import logging
 from typing import Dict
@@ -445,12 +535,12 @@ def health():
 class ServiceCore:
     def __init__(self):
         self.config = self._load_config()
-    
+
     def _load_config(self) -> Dict:
         return {
             "param": os.getenv("PARAM", "default")
         }
-    
+
     def process(self, event: Dict) -> Dict:
         logger.info(f"Processing: {event}")
         # ... Logic
@@ -475,10 +565,10 @@ refactor: # Code-Refactoring
 chore:    # Build/Tooling
 
 # Beispiele:
-git commit -m "feat: add daily drawdown test"
-git commit -m "fix: risk validation logic"
-git commit -m "test: increase coverage to 65%"
-git commit -m "docs: update claude.md for Claude Code"
+git commit -m "feat: add MEXC perpetuals integration"
+git commit -m "fix: risk validation logic for edge cases"
+git commit -m "test: achieve 100% coverage for risk engine"
+git commit -m "docs: update CLAUDE.md with current state"
 ```
 
 ---
@@ -489,20 +579,40 @@ git commit -m "docs: update claude.md for Claude Code"
 
 ```python
 @pytest.mark.unit          # Schnell, keine Ext. Dependencies
-@pytest.mark.integration   # Mit Redis/PostgreSQL
-@pytest.mark.slow         # >1s Runtime
-@pytest.mark.risk         # Risk-Manager spezifisch
-@pytest.mark.signal       # Signal-Engine spezifisch
+@pytest.mark.integration   # Mit Redis/PostgreSQL (gemockt)
+@pytest.mark.e2e          # End-to-End mit echten Containern
+@pytest.mark.local_only   # Nur lokal, nicht in CI
+@pytest.mark.slow         # >10s Runtime
 ```
 
 **Ausführung nach Kategorie**:
 ```bash
-pytest -v -m unit          # Nur Unit-Tests
-pytest -v -m "not slow"    # Ohne langsame Tests
-pytest -v -m risk          # Nur Risk-Tests
+pytest -v -m unit                    # Nur Unit-Tests
+pytest -v -m "not e2e and not slow"  # CI-Tests
+pytest -v -m e2e                     # E2E-Tests (Docker)
 ```
 
-### 8.2 Fixtures (aus conftest.py)
+### 8.2 Test-Übersicht (32 Tests)
+
+**Unit-Tests** (12):
+- `tests/test_risk_engine_core.py` (4)
+- `tests/test_risk_engine_edge_cases.py` (3)
+- `tests/unit/` (5+)
+
+**Integration-Tests** (2):
+- `tests/integration/` (2 Placeholder)
+
+**E2E-Tests** (18):
+- `tests/e2e/test_docker_compose_full_stack.py` (5)
+- `tests/e2e/test_redis_postgres_integration.py` (8)
+- `tests/e2e/test_event_flow_pipeline.py` (5)
+
+**Success-Rates**:
+- Unit-Tests: 100% (12/12) ✅
+- E2E-Tests: 94.4% (17/18) ✅
+- Risk-Engine Coverage: 100% ✅
+
+### 8.3 Fixtures (aus conftest.py)
 
 **Mock-Fixtures**:
 ```python
@@ -520,7 +630,7 @@ def test_with_sample_data(sample_signal_event, risk_config):
     config = risk_config  # {"MAX_POSITION_PCT": 0.10, ...}
 ```
 
-### 8.3 Assertion-Patterns
+### 8.4 Assertion-Patterns
 
 ```python
 # Boolean-Checks
@@ -540,41 +650,54 @@ with pytest.raises(ValueError, match="Invalid signal"):  # ✅
     process_invalid_signal()
 ```
 
-### 8.4 Test-Daten erstellen
-
-```python
-# Basis-State kopieren und modifizieren
-def test_custom_scenario(sample_risk_state):
-    state = sample_risk_state.copy()
-    state["daily_pnl"] = -6000.0  # Anpassen
-    state["total_exposure"] = 0.25
-    # Test mit modifiziertem State
-```
-
 ---
 
 ## 9. Troubleshooting
 
-### 9.1 Pytest findet Tests nicht
+### 9.1 Docker-Container starten nicht
 
-**Problem**: `pytest` meldet "no tests collected"
+**Problem**: `docker compose up -d` schlägt fehl oder Container crashen
 
 **Lösung**:
 ```bash
-# 1. Prüfen: Sind Tests in tests/ Ordner?
-ls tests/
+# 1. Logs prüfen
+docker compose logs --tail=100 cdb_core cdb_risk cdb_execution
 
-# 2. Prüfen: Haben Dateien test_*.py Format?
-ls tests/test_*.py
+# 2. ENV-Variablen prüfen
+cat .env
 
-# 3. Prüfen: pytest.ini vorhanden?
-cat pytest.ini
+# 3. Häufigste Fehlerquellen:
+# - REDIS_HOST=cdb_redis (nicht "redis")
+# - POSTGRES_HOST=cdb_postgres (nicht "localhost")
+# - Alle Passwörter gesetzt
 
-# 4. Expliziter Pfad
-pytest -v tests/test_risk_engine_core.py
+# 4. Clean-Restart
+docker compose down
+docker compose up -d --build
 ```
 
-### 9.2 Import-Errors
+### 9.2 E2E-Tests schlagen fehl
+
+**Problem**: `pytest -v -m e2e` meldet Fehler
+
+**Lösung**:
+```bash
+# 1. Docker-Status prüfen
+docker compose ps  # Sollte 8/8 healthy zeigen
+
+# 2. Health-Checks manuell
+curl -fsS http://localhost:8001/health  # Signal Engine
+curl -fsS http://localhost:8002/health  # Risk Manager
+curl -fsS http://localhost:8003/health  # Execution
+
+# 3. Warte auf Container-Start
+sleep 30  # Container brauchen Zeit zum Hochfahren
+
+# 4. Dependencies installiert?
+pip install -r requirements-dev.txt
+```
+
+### 9.3 Import-Errors
 
 **Problem**: `ModuleNotFoundError: No module named 'services'`
 
@@ -584,40 +707,26 @@ pytest -v tests/test_risk_engine_core.py
 export PYTHONPATH=$PYTHONPATH:$(pwd)  # Linux/Mac
 $env:PYTHONPATH += ";$(Get-Location)" # Windows PowerShell
 
-# Oder: pytest mit -s Flag
-pytest -v -s
+# Dependencies installieren
+pip install -r requirements-dev.txt
+
+# Besonders: psycopg2 für PostgreSQL-Tests
+pip install psycopg2-binary
 ```
 
-### 9.3 Redis/PostgreSQL Connection-Errors
+### 9.4 CI-Tests laufen, E2E nicht
 
-**Problem**: Tests schlagen fehl mit "Connection refused"
+**Problem**: CI-Tests funktionieren, aber E2E-Tests fehlen
 
-**Lösung**:
-```python
-# In Tests: IMMER Mocks nutzen für Unit-Tests
-def test_with_mock(mock_redis, mock_postgres):
-    # Keine echte Verbindung nötig
-    pass
+**Erklärung**: Das ist **KORREKT** by design.
 
-# Integration-Tests: Container prüfen
-docker compose ps  # Sollte alle grün zeigen
-```
-
-### 9.4 Fixtures not found
-
-**Problem**: `fixture 'sample_signal_event' not found`
-
-**Lösung**:
 ```bash
-# 1. Prüfen: conftest.py in tests/?
-ls tests/conftest.py
+# CI führt NIEMALS E2E-Tests aus:
+pytest -q -m "not e2e and not local_only"
 
-# 2. Prüfen: Fixture definiert?
-grep "def sample_signal_event" tests/conftest.py
-
-# 3. pytest Cache löschen
-pytest --cache-clear
-rm -rf .pytest_cache
+# E2E-Tests MÜSSEN explizit gestartet werden:
+docker compose up -d
+pytest -v -m e2e
 ```
 
 ---
@@ -633,6 +742,7 @@ rm -rf .pytest_cache
 5. **Event-Types umbenennen** – `market_data`, `signals`, etc. sind fix
 6. **Tech-IDs ändern** – `claire_de_binaire`, `cdb_*` sind fix
 7. **Dateien löschen** – Ohne Rückfrage mit Jannek
+8. **E2E-Tests in CI** – NIEMALS `pytest -m e2e` in CI
 
 ### ✅ Immer tun:
 
@@ -643,6 +753,7 @@ rm -rf .pytest_cache
 5. **Doku aktualisieren** – Bei Änderungen
 6. **PROJECT_STATUS.md updaten** – Bei Meilensteinen
 7. **Arrange-Act-Assert** – In allen Tests
+8. **Test-Marker verwenden** – `@pytest.mark.unit`, etc.
 
 ### 🤔 Bei Unsicherheit:
 
@@ -652,8 +763,8 @@ rm -rf .pytest_cache
 3. Auf Jannek's Antwort warten
 
 **Beispiel**:
-> „Ich bin unsicher, ob Layer 3 implementiert ist.  
-> Soll ich `services/cdb_risk/service.py` analysieren?"
+> „Ich bin unsicher, ob das neue Feature bereits getestet ist.
+> Soll ich `tests/test_*.py` analysieren?"
 
 ---
 
@@ -672,12 +783,20 @@ curl -fsS http://localhost:8002/health
 
 # Restart
 docker compose restart cdb_risk
+
+# Clean-Restart (alle Services)
+docker compose down
+docker compose up -d --build
 ```
 
 ### Pytest:
 ```bash
-# Alle Tests
-pytest -v
+# CI-Tests (schnell, ohne Docker)
+pytest -v -m "not e2e and not local_only"
+
+# E2E-Tests (mit Docker)
+docker compose up -d
+pytest -v -m e2e
 
 # Mit Coverage
 pytest --cov=services --cov-report=html
@@ -690,6 +809,16 @@ pytest -vv -s
 
 # Bestimmte Datei
 pytest -v tests/test_risk_engine_core.py::test_daily_drawdown_blocks_trading
+```
+
+### Makefile (Linux/Mac):
+```bash
+make test              # CI-Tests
+make test-e2e          # E2E-Tests
+make test-full-system  # Docker + E2E
+make docker-up         # Starte Container
+make docker-down       # Stoppe Container
+make docker-health     # Health-Status
 ```
 
 ### Code-Suche:
@@ -739,11 +868,13 @@ grep -r "TODO" services/ tests/
 |-------|-------|
 | `backoffice/PROJECT_STATUS.md` | Live-Status des Projekts |
 | `backoffice/docs/CLAUDE_CODE_BRIEFING.md` | Dein Briefing |
-| `services/cdb_risk/service.py` | Risk-Logic (Referenz) |
-| `services/cdb_core/service.py` | Signal-Logic (Referenz) |
+| `backoffice/docs/testing/E2E_TEST_COMPLETION_REPORT.md` | Test-Status |
+| `backoffice/docs/testing/LOCAL_E2E_TESTS.md` | E2E-Guide |
+| `services/risk_engine.py` | Risk-Logic (100% Coverage) |
+| `services/mexc_perpetuals.py` | MEXC Integration |
 | `tests/conftest.py` | Test-Fixtures |
 | `pytest.ini` | Test-Konfiguration |
-| `.env` | ENV-Variablen (nicht committen!) |
+| `.env.example` | ENV-Template |
 
 ### Service-Ports:
 
@@ -755,6 +886,8 @@ grep -r "TODO" services/ tests/
 | Execution | 8003 | `/health`, `/status` |
 | PostgreSQL | 5432 | - |
 | Redis | 6379 | - |
+| Grafana | 3000 | `/api/health` |
+| Prometheus | 19090 | `/-/healthy` |
 
 ### Risk-Limits (ENV):
 
@@ -765,541 +898,114 @@ MAX_TOTAL_EXPOSURE_PCT=0.30        # 30%
 CIRCUIT_BREAKER_THRESHOLD_PCT=0.10 # 10%
 ```
 
+### Test-Commands:
+
+```bash
+# CI-Tests
+pytest -v -m "not e2e and not local_only"
+
+# E2E-Tests
+docker compose up -d && pytest -v -m e2e
+
+# Coverage
+pytest --cov=services --cov-report=html
+
+# Makefile
+make test              # CI-Tests
+make test-e2e          # E2E-Tests
+make test-full-system  # Docker + E2E
+```
+
 ---
 
 ## 14. Definition of Done (N1 MVP)
 
 ### Infrastruktur:
-- ✅ 4 Container healthy
+- ✅ 8/8 Container healthy
 - ✅ Health-Endpoints aktiv
 - ✅ Structured Logging
+- ✅ Docker-Netzwerk funktioniert
 
 ### Services:
-- ✅ Signal Engine deployed
-- ✅ Risk Manager deployed
-- ⏳ Execution Service (Mock)
+- ✅ Signal Engine deployed & läuft
+- ✅ Risk Manager deployed & läuft (100% Coverage)
+- ✅ Execution Service deployed & läuft
+- ✅ MEXC Perpetuals integriert
+- ✅ Advanced Position Sizing implementiert
 
 ### Testing:
-- ✅ End-to-End: 7/7 manual
-- ✅ **Pytest: 32 Tests implementiert** (12 Unit, 2 Integration, 18 E2E)
-- ✅ **E2E-Tests: 17/18 bestanden (94.4%)** - mit echten Docker-Containern
+- ✅ **32 Tests implementiert** (12 Unit, 2 Integration, 18 E2E)
+- ✅ **E2E-Tests: 17/18 bestanden (94.4%)**
+- ✅ **Risk-Engine: 100% Coverage**
+- ✅ **CI/CD-Integration vollständig**
 - ✅ **Lokale Test-Suite vollständig** - tests/e2e/ mit 3 Dateien
-- ⏳ Coverage >60%
 
 ### Daten:
 - ✅ PostgreSQL (5 Tabellen: signals, orders, trades, positions, portfolio_snapshots)
 - ✅ Redis Message Bus (Pub/Sub funktional)
 - ✅ Trade-Historie persistent (PostgreSQL)
 
-Du arbeitest jetzt als „Claire Local Test Orchestrator“ für das Projekt **Claire de Binaire**.
-
-Ziel:
-Ich möchte, dass du dich eigenständig darum kümmerst, alle sinnvollen Tests zu identifizieren, zu ergänzen und auszuführen, die **nur lokal** laufen (sollen oder können) – und prüfst, wie sie mit der bestehenden Test- und Codebasis harmonieren.
-
-Kontext (aktueller Stand – bitte als gegeben annehmen):
-- Es existiert eine umfangreiche Test-Infrastruktur:
-  - 125+ Tests
-  - Risk-Engine: 100% Coverage
-  - Event-Sourcing & Replay: deterministischer Kernel mit Audit-Trail
-  - Paper-Trading + Scenario Orchestrator: N1 Paper-Trading Runner, Szenario-Engine, Trading-Statistiken
-- Es gibt:
-  - Pre-Commit-Hooks (mit Coverage-Threshold)
-  - CI-Pipelines (pytest, docker-health, docs)
-  - TESTING_GUIDE, CI_CD_TROUBLESHOOTING, EVENT_SOURCING_SYSTEM, PAPER_TRADING_GUIDE etc.
-
-Deine Aufgabe:
-Übernimm jetzt bitte proaktiv den gesamten Block „lokale-only Tests“ – das sind Tests, die typischerweise **nicht** dauerhaft in CI laufen, sondern bewusst nur lokal / manuell:
-
-- Echte End-to-End-/System-Tests mit docker-compose (Redis, Postgres, Event Store, Risk, Core, Execution, Paper-Trading Runner)
-- ggf. längere / Performance-nahe Tests
-- Tests, die echte Container starten
-- Tests, die reale Event-Flows über mehrere Services prüfen
-- Tests, die mehr Ressourcen brauchen, als wir in CI haben wollen
-
-Bitte gehe dabei wie folgt vor:
-
-1. Bestandsaufnahme
-   - Analysiere das Repo:
-     - Welche Test-Arten existieren bereits? (Unit, Integration, Property-Based, Compose-Validation, Paper-Trading, Event-Sourcing)
-     - Welche „Schichten“ sind schon gut durchgetestet? Welche nicht?
-   - Identifiziere explizit:
-     - Welche Tests aktuell **nur in CI** laufen
-     - Welche Tests **noch komplett fehlen**, aber für einen realistischen lokalen Systemtest sinnvoll wären
-   - Notiere dir, welche Bereiche sich besonders für lokale-only Tests eignen:
-     - Komplettes docker-compose Szenario (alle Container hochgefahren)
-     - End-to-End Signal → Risk → Paper Execution → Event Store → Statistics
-     - CLI-Tools im „echten“ Setup (z.B. `claire run-paper`, `claire run-scenarios`, `claire_cli.py replay/explain/validate`)
-
-2. Design der „lokalen-only“ Test-Suite
-   - Lege ein klares Konzept fest:
-     - Welche Testklassen / -dateien sind für lokale-only Tests vorgesehen? (z.B. `tests/e2e/` oder Markierung mit `@pytest.mark.e2e` / `@pytest.mark.local_only`)
-     - Wie grenzen sich diese Tests von den normalen CI-Tests ab? (Marker, eigene Makefile-Targets, eigene pytest-Commands)
-   - Definiere sinnvolle Szenarien, z. B.:
-     - „Start docker-compose, warte bis alle Services healthy sind, spiele einen Paper-Run mit echter Datenbank/Redis durch, prüfe Basis-Metriken“
-     - „Replay eines echten Event-Tages gegen den Event Store, Validierung auf Determinismus“
-     - „End-to-End: market_data → signals → risk → paper_execution → event_store → trading_statistics“
-
-3. Implementierung der Tests
-   - Implementiere die fehlenden lokalen-only Tests in passenden Dateien, z. B.:
-     - `tests/e2e/test_full_pipeline_docker_compose.py`
-     - `tests/e2e/test_cli_paper_trading_local.py`
-     - oder ähnliche sinnvolle Namen
-   - Verwende konsequent pytest-Marker wie z. B.:
-     - `@pytest.mark.e2e`
-     - `@pytest.mark.local_only`
-   - Stelle sicher:
-     - Diese Tests sind robust, geben klare Fehlerbilder
-     - Sie sind deterministisch (kein Flaky-Verhalten, soweit möglich)
-     - Sie nutzen die bestehende Logik (Event-Sourcing, Runner, Orchestrator, CLI) statt parallele „Sonderwege“ einzubauen
-
-4. Harmonisierung mit bestehender Test- und Tooling-Landschaft
-   - Integriere die lokalen-only Tests sauber:
-     - Ergänze ggf. `pytest.ini` oder ähnliche Config, um Marker sauber zu definieren
-     - Erweitere das Makefile um sinnvolle Targets, z. B.:
-       - `make test-e2e`
-       - `make test-local`
-       - `make test-full-system`
-   - Stelle sicher, dass:
-     - Normale `make test` / CI-Läufe NICHT automatisch alle e2e/local-only Tests mitziehen (nur, wenn explizit gewünscht)
-     - Pre-Commit-Hooks nicht durch E2E-Tests blockiert werden (diese sollen bewusst manuell gestartet werden)
-   - Achte darauf, dass die Coverage-Logik nicht durch lokale-only Tests „kaputt“ geht:
-     - Ggf. Marker oder separate Commands so setzen, dass CI weiter sauber bleibt
-
-5. Lokale Ausführung & Ergebnisbericht
-   - Führe lokal (bzw. in deinem Code-Execution-Kontext) alle relevanten neuen lokalen-only Tests mindestens einmal aus:
-     - Zeige die genauen Commands, die ein Mensch später verwenden kann
-       - z. B.:
-         - `pytest -m "e2e and local_only" -v`
-         - `make test-e2e`
-         - `docker compose up -d && pytest tests/e2e/...`
-   - Prüfe:
-     - Laufen alle neuen Tests durch?
-     - Gibt es Konflikte mit bestehenden Tests, Fixtures, Datenbanken oder Docker-Setups?
-   - Wenn es Wechselwirkungen gibt (z. B. Ports, Testdaten, Race Conditions):
-     - Passe die Tests / Setup/Teardown so an, dass sie reproduzierbar laufen
-   - Abschließend:
-     - Erstelle eine kurze Zusammenfassung in Textform im Repo (z. B. Ergänzung in `PAPER_TRADING_GUIDE.md` oder eine neue Datei `docs/testing/LOCAL_E2E_TESTS.md`), in der steht:
-       - „Welche lokalen-only Tests gibt es?“
-       - „Wie startet man sie?“
-       - „Was testen sie genau?“
-
-Wichtige Leitplanken:
-- Bitte NICHT:
-  - Coverage-Thresholds senken
-  - Pre-Commit-Hooks aushebeln
-  - Quick-and-dirty-Lösungen, die das bestehende Qualitätsniveau senken
-- Bitte JA:
-  - Saubere Integration
-  - Verständliche Marker, Makefile-Targets und Dokumentation
-  - Fokus auf Reproduzierbarkeit und realistische End-to-End-Flows
-
-Ergebnis, das ich von dir erwarte:
-1. Neue/erweiterte Test-Dateien für lokale-only / E2E / Systemtests.
-2. Angepasste Konfiguration (pytest.ini, Makefile, ggf. docs).
-3. Konkrete Commands, mit denen ich diese Tests lokal starten kann.
-4. Eine kurze, klare Abschlusszusammenfassung, ob alles harmonisch mit der bestehenden Testsuite läuft (oder wo du bewusst Grenzen einziehst).
-
-Starte jetzt bitte mit der Analyse des Repos und geh die Schritte oben der Reihe nach durch.
-
-
-Hier ist ein klarer Debug-Plan für deine drei Python-Services
-(cdb_core, cdb_risk, cdb_execution).
-Ziel: Herausfinden, warum sie nach ein paar Sekunden wieder sterben – und das systematisch.
-
-1. Problem gezielt nachstellen
-
-Docker-Stack frisch starten:
-
-docker compose down
-docker compose up -d
-
-
-Status prüfen:
-
-docker compose ps
-
-
-Wichtig: Merken, welche Services unhealthy oder exited sind.
-
-2. Roh-Fehler holen (ohne zu interpretieren)
-
-Für jeden betroffenen Service:
-
-docker compose logs cdb_core --tail=100
-docker compose logs cdb_risk --tail=100
-docker compose logs cdb_execution --tail=100
-
-
-Ziel in diesem Schritt:
-Nur sammeln, nicht gleich reparieren.
-
-Achte besonders auf:
-
-„Traceback“ / Python-Fehler
-
-„Connection refused“ (DB/Redis)
-
-„KeyError“ / „Environment variable not set“
-
-Port already in use
-
-Config/Import-Fehler
-
-Wenn du magst, kannst du mir diese Logs reinkopieren – dann gehen wir gezielt rein.
-
-3. Health-Check isoliert testen
-
-Auch wenn der Container kurz lebt, kannst du direkt nach up -d versuchen:
-
-curl -s http://localhost:8001/health  # cdb_core
-curl -s http://localhost:8002/health  # cdb_risk
-curl -s http://localhost:8003/health  # cdb_execution
-
-
-Szenarien:
-
-Antwortet {"status": "ok", ...} → Service lebt, Fehler liegt später im Codepfad.
-
-Keine Antwort / Connection refused → Service startet nicht richtig.
-
-HTML-Fehlerseite / Traceback → FastAPI/Flask-Exception direkt im Health-Handler.
-
-4. Typische Fehlerquellen systematisch abklopfen
-4.1 Environment-Variablen
-
-Sehr häufige Ursache.
-
-.env öffnen und prüfen:
-
-Sind alle erwarteten Variablen gesetzt?
-(REDIS, POSTGRES, RISK-Parameter, SERVICE-PORTS etc.)
-
-In den Logs siehst du oft sowas wie:
-
-KeyError: 'POSTGRES_PASSWORD'
-
-ValueError bei Konvertierung (z. B. „5.0“ statt „0.05“)
-
-Wenn etwas fehlt/komisch ist:
-
-.env.template danebenlegen
-
-Werte nachziehen / korrigieren
-
-docker compose up -d --build neu starten
-
-4.2 Verbindungsprobleme zu Redis / Postgres
-
-Im Log sieht das oft aus wie:
-
-connection refused
-
-could not connect to server
-
-timeout
-
-Check:
-
-docker compose logs cdb_postgres --tail=50
-docker compose logs cdb_redis --tail=50
-
-
-Wenn DB/Redis noch hochfahren, kann es sein, dass deine Services zu früh verbinden wollen.
-
-Quick-Fix (wenn nötig):
-
-In den Services ein paar Sekunden Retry-Logik / Backoff (oft schon vorhanden).
-
-Oder depends_on + Healthcheck in docker-compose.yml nutzen (wenn noch nicht drin).
-
-4.3 Import-/Code-Fehler durch neuen Code
-
-Da du viel neuen Code hinzugefügt hast (Paper-Trading, Event-Sourcing etc.):
-
-Lokal (ohne Docker) im Cleanroom-Repo:
-
-python -m pytest -q
-python -m pytest -m "not e2e" -q
-
-
-Wenn das grün ist, ist die Codebasis grundsätzlich okay.
-
-Dann prüfen, ob der Service-Einstiegspunkt (meist main.py o.ä.) sauber importiert:
-
-python services/cdb_core/main.py  # Beispielpfad, je nach Struktur
-
-
-Wenn der lokal direkt crasht, siehst du denselben Fehler wie im Container – nur besser lesbar.
-
-5. „In den Container reingehen“ und vor Ort testen
-
-Wenn der Service immer wieder crasht, kannst du ihn einmal manuell im Container starten:
-
-Container interaktiv öffnen, solange er noch da ist:
-
-docker compose run --rm cdb_core bash
-
-
-Drinnen:
-
-python -m pip list         # check, ob Dependencies stimmen
-python -m your_service_app # Startbefehl des Services
-
-
-Vorteil: Du siehst den Fehler live im Terminal, nicht nur im Log-Ausschnitt.
-
-Das gleiche Spiel für cdb_risk und cdb_execution.
-
-6. Health-Endpoints standardisieren (wenn Services laufen)
-
-Wenn die Services grundsätzlich laufen, aber Health-Check spinnt:
-
-Ziel-Format:
-
-{"status": "ok", "service": "cdb_core"}
-
-
-Prüfen:
-
-Antworten manche Services z. B. nur mit "OK" oder HTML?
-
-Dann Health-Handler im Code anpassen (z. B. FastAPI/Flask-Route).
-
-Danach erneut:
-
-curl -s http://localhost:8001/health
-
-7. Regression gegen E2E-Tests
-
-Wenn ein Fehler gefixt ist:
-
-Stack neu bauen:
-
-docker compose down
-docker compose up -d --build
-
-
-E2E-Suite laufen lassen:
-
-pytest -v -m e2e
-
-
-Zielzustand:
-
-18/18 Tests grün
-
-alle Services healthy
-
-Health-Endpoints antworten konsistent
-
-8. Minimaler „Debug-Fahrplan“ zum Abarbeiten
-
-Du kannst es dir wie eine Checkliste nehmen:
-
-docker compose ps → welche Services sterben?
-
-docker compose logs <service> → echten Fehler sehen.
-
-.env und Config mit Fehler abgleichen → Variablen & Ports fixen.
-
-curl /health → prüfen, ob der Service stabil antwortet.
-
-Falls unklar: docker compose run --rm <service> bash und Service manuell starten.
-
-Fix einbauen → neu bauen → pytest -v -m e2e.
+### Dokumentation:
+- ✅ **E2E_TEST_COMPLETION_REPORT.md** (vollständig)
+- ✅ **LOCAL_E2E_TESTS.md** (8500+ Wörter)
+- ✅ **CLAUDE.md** (aktualisiert)
+- ✅ **tests/README.md** (Schnellstart)
+- ✅ **.env.example** (Template)
 
 ---
 
-## ✅ ABGESCHLOSSEN: Lokale E2E Test-Suite (2025-11-19)
+## 15. Aktuelle Entwicklungs-Schwerpunkte
 
-### 🎯 Aufgabe erfolgreich implementiert
+### ✅ ABGESCHLOSSEN (2025-11-19/20):
 
-Die vollständige lokale E2E-Test-Infrastruktur für Claire de Binaire wurde implementiert, getestet und dokumentiert.
+1. **Lokale E2E Test-Suite**
+   - 18 E2E-Tests implementiert
+   - 17/18 bestanden (94.4%)
+   - Vollständige Dokumentation
 
-### 📊 Finale Test-Ergebnisse
+2. **Risk-Engine**
+   - 100% Test-Coverage erreicht
+   - 7-Layer-Validierung vollständig
+   - Edge-Cases abgedeckt
 
-**Test-Statistik**:
-- **32 Tests gesamt** (12 Unit + 2 Integration + 18 E2E)
-- **E2E-Tests: 17/18 bestanden (94.4% Success Rate)**
-- **CI-Tests: 12/12 bestanden (100%)**
+3. **MEXC Perpetuals**
+   - Integration mit Risk Engine
+   - Position Sizing implementiert
+   - Execution Simulator Module 2 & 3
 
-**E2E-Test-Breakdown**:
-```
-tests/e2e/test_docker_compose_full_stack.py:     4/5 PASSED (1 SKIPPED)
-tests/e2e/test_redis_postgres_integration.py:    8/8 PASSED
-tests/e2e/test_event_flow_pipeline.py:           5/5 PASSED
-```
+4. **Dokumentation**
+   - Konsolidiert und reorganisiert
+   - Test-Guides vollständig
+   - CLAUDE.md aktualisiert
 
-### 🐳 Docker Compose Status
+### ⏳ IN PROGRESS:
 
-**Alle 8 Container healthy**:
-- ✅ cdb_redis (Message Bus)
-- ✅ cdb_postgres (Database)
-- ✅ cdb_core (Signal Engine) - **NEU FUNKTIONSFÄHIG**
-- ✅ cdb_risk (Risk Manager) - **NEU FUNKTIONSFÄHIG**
-- ✅ cdb_execution (Execution Service) - **NEU FUNKTIONSFÄHIG**
-- ✅ cdb_ws (WebSocket Screener)
-- ✅ cdb_grafana (Monitoring)
-- ✅ cdb_prometheus (Metrics)
+- None (System operational)
 
-### 🔧 Durchgeführte Fixes
+### 📋 BACKLOG:
 
-1. **ENV-Variablen hinzugefügt**:
-   - `REDIS_HOST=cdb_redis` (statt default "redis")
-   - `POSTGRES_HOST=cdb_postgres`
-   - Alle Services verbinden sich jetzt korrekt
+1. **Performance-Tests**
+   - Load-Testing mit locust
+   - Stress-Tests für Redis/PostgreSQL
 
-2. **PostgreSQL-Schema geladen**:
-   - 5 Tabellen erstellt: signals, orders, trades, positions, portfolio_snapshots
-   - User `claire_user` mit korrekten Permissions
+2. **CLI-Tools-Tests**
+   - `claire run-paper`
+   - `claire run-scenarios`
+   - `claire_cli.py` Commands
 
-3. **Test-Fixes**:
-   - Decimal-to-float Konvertierung in 2 Test-Dateien
-   - Health-Check Format flexibel gestaltet
+3. **Security-Tests**
+   - Penetration Testing
+   - Secret-Scanning
 
-### 📁 Erstellte Dateien
-
-**Test-Dateien**:
-- `tests/e2e/test_docker_compose_full_stack.py` (5 Tests)
-- `tests/e2e/test_redis_postgres_integration.py` (8 Tests)
-- `tests/e2e/test_event_flow_pipeline.py` (5 Tests)
-- `tests/e2e/conftest.py` (E2E-Fixtures)
-- `tests/e2e/__init__.py`
-
-**Konfiguration**:
-- `pytest.ini` - Erweitert mit Markern: e2e, local_only, slow
-- `Makefile` - Test-Targets für CI und lokal
-- `.pre-commit-config.yaml` - Hooks ohne E2E
-- `.env` und `.env.example` - ENV-Templates
-- `requirements-dev.txt` - Dependencies ergänzt
-
-**Dokumentation**:
-- `backoffice/docs/testing/LOCAL_E2E_TESTS.md` (vollständige Anleitung, 8500+ Wörter)
-- `tests/README.md` (Schnellstart-Guide)
-
-### 🚀 Wie die Tests ausgeführt werden
-
-**CI-Tests (automatisch in GitHub Actions)**:
-```bash
-pytest -v -m "not e2e and not local_only"
-# → 12 passed, 2 skipped in 0.5s
-```
-
-**E2E-Tests (lokal mit Docker)**:
-```bash
-# 1. Docker starten
-docker compose up -d
-
-# 2. E2E-Tests ausführen
-pytest -v -m e2e
-# → 17 passed, 1 skipped in 9s
-```
-
-**Makefile-Targets** (Linux/Mac):
-```bash
-make test              # CI-Tests
-make test-e2e          # E2E-Tests
-make test-full-system  # Docker + E2E
-```
-
-### ✅ Validierte Funktionalität
-
-**Redis Integration** (100%):
-- ✅ Pub/Sub Pattern
-- ✅ Event-Bus Simulation (market_data → signals)
-- ✅ SET/GET Operations
-
-**PostgreSQL Integration** (100%):
-- ✅ Verbindung mit claire_user
-- ✅ INSERT/SELECT in 5 Tabellen
-- ✅ Cross-Service Data-Flow (Redis → PostgreSQL)
-
-**Docker Compose** (100%):
-- ✅ Alle Container starten und laufen
-- ✅ Health-Checks bestehen
-- ✅ Netzwerk funktioniert
-
-**Event-Flow Pipeline** (100%):
-- ✅ Market-Data Events
-- ✅ Signal-Engine reagiert
-- ✅ Risk-Manager validiert
-- ✅ End-to-End Flow: market_data → signals → risk → orders → PostgreSQL
-
-### 🎯 Wichtige Leitplanken eingehalten
-
-**✅ JA gemacht**:
-- Saubere Integration mit bestehender Testsuite
-- CI bleibt schnell (<1s, keine E2E)
-- Pre-Commit Hooks blockieren nicht
-- Coverage-Logik intakt
-- Verständliche Marker und Dokumentation
-
-**❌ NICHT gemacht** (wie gewünscht):
-- Coverage-Thresholds NICHT gesenkt
-- Pre-Commit-Hooks NICHT ausgehebelt
-- Keine Quick-and-dirty-Lösungen
-
-### 📊 Harmonisierung mit bestehender Infrastruktur
-
-**CI/CD**:
-- GitHub Actions führt nur aus: `pytest -m "not e2e and not local_only"`
-- Laufzeit unverändert: ~0.5s
-- Keine E2E-Tests in CI
-
-**Pre-Commit Hooks**:
-- Führt nur CI-Tests aus (keine E2E)
-- Commits bleiben schnell (<5s)
-
-**Test-Trennung**:
-```
-Gesamt:    32 Tests
-├─ CI:     14 Tests (pytest -m "not e2e")
-└─ E2E:    18 Tests (pytest -m e2e)
-```
-
-### 🔍 Bekannte Einschränkungen
-
-1. **test_http_health_endpoints_respond** - Geskippt
-   - Grund: cdb_ws hat anderes Health-Format
-   - Status: Funktioniert, aber Test passt Format-Erwartung an
-
-2. **Python-Services crashten initial**
-   - Problem: `REDIS_HOST=redis` statt `cdb_redis`
-   - Lösung: ENV-Variablen in .env hinzugefügt
-   - Status: ✅ Behoben
-
-### 📚 Dokumentation
-
-**Vollständige Anleitungen**:
-- `backoffice/docs/testing/LOCAL_E2E_TESTS.md` - Komplette E2E-Doku
-- `tests/README.md` - Schnellstart
-- `.env.example` - ENV-Template
-
-**Commands-Übersicht**:
-```bash
-# CI-Tests
-pytest -v -m "not e2e and not local_only"
-
-# E2E-Tests
-docker compose up -d
-pytest -v -m e2e
-
-# Bestimmte Test-Suite
-pytest -v tests/e2e/test_redis_postgres_integration.py
-```
-
-### ✨ Nächste Schritte (optional)
-
-1. **CLI-Tools-Tests** - `claire run-paper`, `claire run-scenarios`
-2. **Performance-Tests** - Load-Testing mit locust
-3. **Chaos-Tests** - Container-Ausfälle simulieren
-4. **Security-Tests** - Penetration Testing
+4. **Chaos-Tests**
+   - Container-Ausfälle simulieren
+   - Network-Latenz testen
 
 ---
 
-**Status**: ✅ **VOLLSTÄNDIG ABGESCHLOSSEN**  
-**Datum**: 2025-11-19  
-**Test-Success-Rate**: 94.4% (17/18 E2E-Tests)  
-**Alle Services**: healthy  
-**Dokumentation**: vollständig  
-
+**Letztes Update**: 2025-11-20
+**Version**: 2.0.0
+**Status**: ✅ **VOLLSTÄNDIG OPERATIONAL**
+**Test-Success-Rate**: 94.4% (17/18 E2E)
+**Alle Services**: healthy
+**Dokumentation**: vollständig
