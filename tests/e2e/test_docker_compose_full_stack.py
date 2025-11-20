@@ -114,10 +114,11 @@ def test_http_health_endpoints_respond():
     # Warte kurz, damit Services hochgefahren sind
     time.sleep(3)
 
+    tested_services = 0
     for service_name, config in SERVICES.items():
         health_url = config.get("health_url")
         if not health_url:
-            pytest.skip(f"Service {service_name} hat keinen HTTP Health-Endpoint")
+            # Überspringe Services ohne HTTP Health-Endpoint (z.B. Redis, Postgres)
             continue
 
         is_healthy = _check_http_health(health_url)
@@ -125,6 +126,10 @@ def test_http_health_endpoints_respond():
             f"Health-Endpoint von '{service_name}' antwortet nicht: {health_url}\n"
             f"Prüfe Service-Logs: docker compose logs {service_name}"
         )
+        tested_services += 1
+
+    # Stelle sicher, dass mindestens ein Service getestet wurde
+    assert tested_services > 0, "Keine Services mit HTTP Health-Endpoint gefunden"
 
 
 @pytest.mark.e2e
