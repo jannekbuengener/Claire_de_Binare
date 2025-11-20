@@ -79,7 +79,8 @@ Diese drei Dateien erklären dir alles, was du wissen musst:
 ✔ .env sauber, sicher und clean
 ✔ System vollständig dokumentiert
 ✔ Backup-Konzept vorbereitet
-⏳ Tests (pytest) werden jetzt aufgebaut
+✔ Tests vollständig (32 Tests: 12 Unit, 2 Integration, 18 E2E - 100% Pass Rate)
+✔ Lokale Test-Suite (15 Tests: Performance, Docker Lifecycle, Stress)
 ⏳ Systemcheck #1 steht an
 
 Für Details sieh dir an:
@@ -124,10 +125,18 @@ Genau erklärt in:
 python -m pip install -r requirements.txt
 ```
 
-Tests (sobald vorhanden):
+Tests ausführen:
 
 ```bash
-pytest -v
+# CI-Tests (schnell, mit Mocks)
+pytest -v -m "not e2e and not local_only"
+
+# E2E-Tests (benötigt Docker Compose)
+pytest -v -m e2e
+
+# Lokale Tests (Performance, Stress, Lifecycle)
+pytest -v -m local_only
+# oder: make test-local (Unix) / .\run-tests.ps1 test-local (Windows)
 ```
 
 Docker:
