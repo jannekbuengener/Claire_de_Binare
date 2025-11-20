@@ -1,26 +1,29 @@
 # Makefile für Claire de Binaire Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-full-system test-coverage docker-up docker-down docker-health
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-full-system test-coverage docker-up docker-down docker-health
 
 help:
 	@echo "Claire de Binaire - Test Commands"
 	@echo ""
 	@echo "CI-Tests (schnell, mit Mocks):"
-	@echo "  make test              - Alle CI-Tests (unit + integration)"
-	@echo "  make test-unit         - Nur Unit-Tests"
-	@echo "  make test-integration  - Nur Integration-Tests (mit Mocks)"
-	@echo "  make test-coverage     - Tests mit Coverage-Report"
+	@echo "  make test                    - Alle CI-Tests (unit + integration)"
+	@echo "  make test-unit               - Nur Unit-Tests"
+	@echo "  make test-integration        - Nur Integration-Tests (mit Mocks)"
+	@echo "  make test-coverage           - Tests mit Coverage-Report"
 	@echo ""
 	@echo "Lokale E2E-Tests (mit echten Containern):"
-	@echo "  make test-e2e          - Alle E2E-Tests"
-	@echo "  make test-local        - Alle local-only Tests"
-	@echo "  make test-full-system  - Komplett: docker-compose up + E2E"
+	@echo "  make test-e2e                - Alle E2E-Tests (18 Tests)"
+	@echo "  make test-local              - Alle local-only Tests"
+	@echo "  make test-local-stress       - Stress-Tests (100+ Events)"
+	@echo "  make test-local-performance  - Performance-Tests (Query-Speed)"
+	@echo "  make test-local-lifecycle    - Docker Lifecycle-Tests (DESTRUKTIV!)"
+	@echo "  make test-full-system        - Komplett: Docker + E2E + Local"
 	@echo ""
 	@echo "Docker-Hilfsfunktionen:"
-	@echo "  make docker-up         - Starte alle Container"
-	@echo "  make docker-down       - Stoppe alle Container"
-	@echo "  make docker-health     - Prüfe Health-Status aller Container"
+	@echo "  make docker-up               - Starte alle Container"
+	@echo "  make docker-down             - Stoppe alle Container"
+	@echo "  make docker-health           - Prüfe Health-Status aller Container"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -56,8 +59,22 @@ test-local:
 	@echo "⚠️  Stelle sicher, dass 'docker compose up -d' läuft!"
 	pytest -v -m local_only
 
-test-full-system: docker-up docker-health test-e2e
-	@echo "✅ Vollständiger System-Test erfolgreich"
+test-local-stress:
+	@echo "🔥 Führe Stress-Tests aus (100+ Events)..."
+	@echo "⚠️  Ressourcenintensiv - kann bis zu 60s dauern!"
+	pytest -v -m "local_only and slow" tests/local/test_full_system_stress.py
+
+test-local-performance:
+	@echo "⚡ Führe Performance-Tests aus (Analytics Queries)..."
+	pytest -v -m local_only tests/local/test_analytics_performance.py
+
+test-local-lifecycle:
+	@echo "🔄 Führe Docker Lifecycle-Tests aus..."
+	@echo "⚠️  DESTRUKTIV - Container werden neu gestartet!"
+	pytest -v -m local_only tests/local/test_docker_lifecycle.py -s
+
+test-full-system: docker-up docker-health test-e2e test-local
+	@echo "✅ Vollständiger System-Test erfolgreich (E2E + Local)"
 
 # ============================================================================
 # Docker-Hilfsfunktionen
