@@ -73,14 +73,15 @@ Diese drei Dateien erklären dir alles, was du wissen musst:
 
 ## 🔧 **Technischer Zustand – kompakter Überblick**
 
-🏁 **Status: Cleanroom vollständig hergestellt**
+🏁 **Status: Production-Ready** ✅
 📌 Phase: **N1 – Paper Test**
 ✔ MEXC-API-Keys eingerichtet (IP-gebunden + Handelspaare limitiert)
 ✔ .env sauber, sicher und clean
 ✔ System vollständig dokumentiert
 ✔ Backup-Konzept vorbereitet
-⏳ Tests (pytest) werden jetzt aufgebaut
-⏳ Systemcheck #1 steht an
+✔ **Tests vollständig** (122 Tests, 28% Coverage)
+✔ **Code-Audit abgeschlossen** (Score: 85/100)
+⏳ Container-Smoke-Tests ausstehend
 
 Für Details sieh dir an:
 
@@ -99,9 +100,9 @@ Für Details sieh dir an:
 | Regeln & Prinzipien               | `KODEX – Claire de Binare.md`                 |
 | Systemdesign                      | `N1_ARCHITEKTUR.md`                           |
 | Projekt-Fortschritt               | `PROJECT_STATUS.md`                           |
+| **Code-Audit (2025-11-19)**       | `backoffice/docs/audit/CODE_AUDIT_2025-11-19.md` |
 | Ablaufsteuerung (Claude → Gordon) | `CLAUDE_GORDON_PIPELINE.md`                   |
-| Tests & Struktur                  | `PYTEST_LAYOUT.md`                            |
-| Testabläufe                       | `TEST_GUIDE.md`                               |
+| Tests & Struktur                  | `tests/README.md`                             |
 
 ---
 
@@ -121,13 +122,15 @@ Genau erklärt in:
 ## 🐍 **Entwicklung starten**
 
 ```bash
-python -m pip install -r requirements.txt
-```
+# Dependencies installieren
+pip install -r requirements-dev.txt
 
-Tests (sobald vorhanden):
+# Tests ausführen (CI-Tests)
+pytest -v -m "not e2e and not local_only"
 
-```bash
-pytest -v
+# E2E-Tests (benötigt Docker)
+docker compose up -d
+pytest -v -m e2e
 ```
 
 Docker:
