@@ -444,7 +444,36 @@ pytest --cov=services --cov-report=html
 
 ## Nächste Schritte
 
-### Geplante Erweiterungen
+### ✅ Implementierte Erweiterungen (2025-11-20)
+
+**Neue Test-Suites**:
+- ✅ **Service-Tests** (37 Tests): `tests/local/service/`
+  - `test_risk_manager_service.py` (15 Tests) - Alle 7 Risk-Layer
+  - `test_signal_engine_service.py` (11 Tests) - Momentum-Strategie
+  - `test_execution_service.py` (11 Tests) - Paper-Execution
+
+- ✅ **Integration-Tests** (8 Tests): `tests/local/integration/`
+  - `test_full_pipeline_integration.py` (8 Tests) - Multi-Service-Flows
+
+**Commands**:
+```bash
+# Service-Tests
+make test-services
+
+# Integration-Tests
+make test-integration-local
+
+# Alle lokalen Tests (E2E + Services + Integration)
+make test-all-local
+```
+
+**Test-Statistik**:
+- E2E-Tests: 18 Tests
+- Service-Tests: 37 Tests
+- Integration-Tests: 8 Tests
+- **Gesamt lokal**: 63 Tests
+
+### Geplante Weitere Erweiterungen
 
 - [ ] **CLI-Tests**: `claire run-paper`, `claire run-scenarios`
 - [ ] **Performance-Tests**: Load-Testing mit `locust`

@@ -1,7 +1,7 @@
 # Makefile für Claire de Binaire Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-full-system test-coverage docker-up docker-down docker-health
+.PHONY: help test test-unit test-integration test-e2e test-local test-full-system test-coverage test-services test-integration-local test-all-local docker-up docker-down docker-health clean install-dev
 
 help:
 	@echo "Claire de Binaire - Test Commands"
@@ -16,6 +16,11 @@ help:
 	@echo "  make test-e2e          - Alle E2E-Tests"
 	@echo "  make test-local        - Alle local-only Tests"
 	@echo "  make test-full-system  - Komplett: docker-compose up + E2E"
+	@echo ""
+	@echo "Erweiterte Lokale Tests:"
+	@echo "  make test-services     - Service-spezifische Tests (Signal, Risk, Execution)"
+	@echo "  make test-integration-local - Service-Integration-Tests"
+	@echo "  make test-all-local    - Alle lokalen Tests (E2E + Services + Integration)"
 	@echo ""
 	@echo "Docker-Hilfsfunktionen:"
 	@echo "  make docker-up         - Starte alle Container"
@@ -58,6 +63,25 @@ test-local:
 
 test-full-system: docker-up docker-health test-e2e
 	@echo "✅ Vollständiger System-Test erfolgreich"
+
+# ============================================================================
+# Erweiterte Lokale Tests (tests/local/)
+# ============================================================================
+
+test-services:
+	@echo "🔧 Führe Service-Tests aus (Signal Engine, Risk Manager, Execution)..."
+	@echo "⚠️  Benötigt: docker compose up -d"
+	pytest -v -m local_only tests/local/service/
+
+test-integration-local:
+	@echo "🔗 Führe Service-Integration-Tests aus..."
+	@echo "⚠️  Benötigt: Alle Services running (cdb_core, cdb_risk, cdb_execution)"
+	pytest -v -m local_only tests/local/integration/
+
+test-all-local: docker-up docker-health
+	@echo "🚀 Führe ALLE lokalen Tests aus (E2E + Services + Integration)..."
+	pytest -v -m local_only tests/e2e/ tests/local/
+	@echo "✅ Alle lokalen Tests abgeschlossen"
 
 # ============================================================================
 # Docker-Hilfsfunktionen
