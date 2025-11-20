@@ -8,8 +8,8 @@ import subprocess
 import pytest
 
 
-@pytest.mark.integration
-@pytest.mark.skip(reason="docker compose smoke test scaffold – not active yet")
+@pytest.mark.e2e
+@pytest.mark.local_only
 def test_docker_compose_config_parses():
     """Run ``docker compose config`` to check syntax if Docker is available."""
 
