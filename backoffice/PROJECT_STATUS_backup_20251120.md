@@ -1,9 +1,9 @@
 # PROJECT STATUS - Claire de Binare Cleanroom
 
-**Datum**: 2025-11-20
-**Version**: 1.1.0-tested
-**Environment**: Cleanroom (Test-Suite Complete)
-**Letztes Update**: 17:50 UTC
+**Datum**: 2025-01-14  
+**Version**: 1.0.0-cleanroom  
+**Environment**: Cleanroom (Pre-Deployment)  
+**Letztes Update**: 18:45 CET
 
 ---
 
@@ -43,15 +43,13 @@
 ```
 
 
-### Aktuelle Phase: **N1 - Paper-Test Ready**
+### Aktuelle Phase: **N1 - Paper-Test-Vorbereitung**
 - ✅ Cleanroom-Migration abgeschlossen (2025-11-16)
 - ✅ Pipelines abgeschlossen (4/4)
 - ✅ Kanonisches Schema erstellt
 - ✅ Security-Hardening dokumentiert (Score aktuell: 95 %)
-- ✅ N1-Architektur etabliert
-- ✅ **Test-Suite vollständig implementiert (122 Tests, 100% Pass Rate)** 🎉
-- ✅ **E2E-Tests mit Docker integriert (18/18 bestanden)**
-- ✅ **Risk-Engine: 100% Coverage erreicht**
+- 🔄 N1-Architektur etabliert
+- ⏳ Paper-Test-Infrastruktur in Vorbereitung
 
 ---
 
@@ -66,7 +64,12 @@
    - Health-Endpoints noch nicht verifiziert
 
 ### HOCH (Funktions-beeinträchtigend)
-_Keine aktiven HOCH-Blocker_ ✅
+1. **Services nicht getestet**
+   - Health-Endpoints unvalidiert
+   - Redis-/Postgres-Connections ungetestet
+2. **Keine automatisierten Tests**
+   - pytest-Struktur fehlt
+   - Risk-Manager ohne Test-Coverage
 
 ### MITTEL (Qualitäts-Issues)
 1. **Dokumentations-Redundanz**
@@ -74,14 +77,6 @@ _Keine aktiven HOCH-Blocker_ ✅
    - Unklare Source of Truth → dieses Dokument ist kanonisch
 2. **Postgres-Backup-Strategie noch nicht produktiv verankert**
    - Konzept definiert (siehe unten), aber noch nicht als Script/Job umgesetzt
-3. **Risk-Engine TODO**
-   - `services/risk_engine.py` enthält TODO-Kommentar für Production-Grade-Logik
-   - Aktuelle Tests bestehen, aber vor Production-Deployment auflösen
-
-### ✅ GELÖST (vormals HOCH)
-1. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
-2. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
-3. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
 
 ---
 
@@ -89,14 +84,13 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
-| 2025-11-20  | **Test-Suite vollständig implementiert** 🎉  | ✅ **122 Tests, 100% Pass Rate**  |
-| 2025-11-19  | **E2E-Tests mit Docker integriert**          | ✅ **18/18 Tests bestanden**      |
-| 2025-11-19  | **Risk-Engine Coverage erreicht**            | ✅ **23 Tests implementiert**     |
-| 2025-11-19  | **MEXC Perpetuals & Position Sizing**        | ✅ **78 Tests implementiert**     |
-| 2025-11-18  | MEXC-API-Key ip-gebunden + limitiert         | ✅ Safety-Layer Exchange-Seite    |
 | 2025-11-16  | Cleanroom-Migration durchgeführt             | ✅ Repo vollständig kanonisiert   |
 | 2025-11-16  | Pipelines abgeschlossen                      | ✅ 31 Artefakte erstellt          |
 | 2025-11-16  | Security verbessert                          | ✅ 70 % → 95 % Score              |
+| 2025-01-14  | Ordnerstruktur etabliert                     | ✅ Cleanroom-Struktur aktiv       |
+| 2025-01-17  | Nullpunkt definiert                          | ✅ Cleanroom = aktueller Stand    |
+| 2025-01-18  | Architecture Refactoring Plan dokumentiert   | ✅ STRUCTURE_CLEANUP_PLAN.md      |
+| 2025-11-18  | MEXC-API-Key ip-gebunden + auf BTC/USDC/USDE limitiert | ✅ Safety-Layer Exchange-Seite |
 
 ---
 
@@ -111,10 +105,10 @@ _Keine aktiven HOCH-Blocker_ ✅
 - [ ] **Systemcheck #1 durchführen** (siehe Systemcheck-Checkliste unten)
   - Container starten, Health prüfen, Status-Tabelle aktualisieren
 
-**HEUTE (< 4h)**
-- [x] ~~pytest-Basisstruktur anlegen~~ → ✅ **Abgeschlossen** (2025-11-19)
-- [x] ~~Erste Unit-Tests für Risk-Manager~~ → ✅ **23 Tests implementiert** (2025-11-19)
-- [x] ~~Execution-Simulator-Grundstruktur~~ → ✅ **23 Tests implementiert** (2025-11-19)
+**HEUTE (< 4h)**  
+- [ ] pytest-Basisstruktur anlegen (`tests/`-Ordner, `pytest.ini`)
+- [ ] Erste Unit-Tests für Risk-Manager (Happy-Path + 1–2 Guard-Checks)
+- [ ] Execution-Simulator-Grundstruktur für Paper-Test erstellen
 
 **DIESE WOCHE**  
 - [ ] Portfolio & State Manager implementieren
@@ -132,12 +126,9 @@ _Keine aktiven HOCH-Blocker_ ✅
 ## 📈 METRIKEN
 
 ### Code-Qualität
-- **Lines of Code**: ~5.400 (Services: 1.755, Tests: 3.664)
-- **Test Coverage**: ✅ **100%** (basierend auf manueller Analyse)
-- **Test Count**: ✅ **122 Tests** (90 Unit, 14 Integration, 18 E2E)
-- **CI Test Speed**: ✅ **0.27s** (103 Tests ohne E2E)
-- **Test-zu-Code-Ratio**: ✅ **1.6:1** (exzellent)
-- **Linting**: ✅ Pre-Commit Hooks (Ruff + Black) aktiv
+- **Lines of Code**: ~2.500
+- **Test Coverage**: TBD (pytest noch nicht gelaufen)
+- **Linting Score**: TBD
 
 ### Infrastruktur
 - **Docker-Services**: 8 definiert (siehe Container-Tabelle)
