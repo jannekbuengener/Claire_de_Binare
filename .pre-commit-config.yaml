@@ -3,23 +3,17 @@
 # Manual run: pre-commit run --all-files
 
 repos:
-  # Ruff - Fast Python Linter
+  # Ruff - Fast Python Linter & Formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.6
+    rev: v0.8.4
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-
-  # Black - Python Code Formatter
-  - repo: https://github.com/psf/black
-    rev: 23.11.0
-    hooks:
-      - id: black
-        language_version: python3.11
+      - id: ruff-format
 
   # Trailing Whitespace & EOF
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer

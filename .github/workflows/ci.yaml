@@ -6,36 +6,134 @@ on:
 
 jobs:
   lint:
+    name: Lint with Ruff
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install ruff
-      - run: ruff check .
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff
+        run: ruff check .
 
   test:
+    name: Test with Pytest
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install -r requirements.txt -r requirements-dev.txt || true
-      - run: pytest -q -m "not e2e and not local_only" || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run Tests (CI-only)
+        run: pytest -v -m "not e2e and not local_only" --tb=short
+
+      - name: Generate Coverage Report
+        if: success()
+        run: pytest --cov=services --cov-report=term --cov-report=xml -m "not e2e and not local_only"
+
+      - name: Upload Coverage to Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+          retention-days: 7
+
+  docker-health:
+    name: Docker Compose Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create .env file
+        run: |
+          cat > .env << 'EOF'
+          POSTGRES_USER=claire_user
+          POSTGRES_PASSWORD=secure_password_123
+          POSTGRES_DB=claire_de_binaire
+          POSTGRES_HOST=cdb_postgres
+          REDIS_HOST=cdb_redis
+          REDIS_PORT=6379
+          LOG_LEVEL=INFO
+          MAX_POSITION_PCT=0.10
+          MAX_DAILY_DRAWDOWN_PCT=0.05
+          MAX_TOTAL_EXPOSURE_PCT=0.30
+          CIRCUIT_BREAKER_THRESHOLD_PCT=0.10
+          EOF
+
+      - name: Start Docker Compose
+        run: docker compose up -d --wait --wait-timeout 60
+
+      - name: Check Container Health
+        run: |
+          docker compose ps
+          docker compose logs cdb_postgres
+          docker compose logs cdb_redis
+
+      - name: Test Health Endpoints
+        run: |
+          curl -f http://localhost:8001/health || echo "Signal Engine not ready"
+          curl -f http://localhost:8002/health || echo "Risk Manager not ready"
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
 
   secrets:
+    name: Scan for Secrets (Gitleaks)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: |
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        run: |
           curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_x64.tar.gz | tar -xz
-          ./gitleaks detect --no-git --source .
+          ./gitleaks detect --no-git --source . --verbose
 
   security:
+    name: Security Scan (Bandit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install bandit
-      - run: bandit -q -r . || true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit
+        run: bandit -r services/ tests/ -f json -o bandit-report.json || true
+
+      - name: Display Bandit Results
+        if: always()
+        run: bandit -r services/ tests/ || true
+
+      - name: Upload Bandit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 30

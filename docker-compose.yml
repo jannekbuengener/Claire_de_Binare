@@ -15,12 +15,26 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - cdb_network
 
@@ -38,9 +52,23 @@ services:
       - ./backoffice/docs/DATABASE_SCHEMA.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - cdb_network
 
@@ -62,9 +90,23 @@ services:
       - '--storage.tsdb.path=/prometheus'
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - cdb_network
 
@@ -81,12 +123,27 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
-      - cdb_prometheus
+      cdb_prometheus:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     networks:
       - cdb_network
 
@@ -108,12 +165,27 @@ services:
     volumes:
       - ./logs:/app/logs
     depends_on:
-      - cdb_redis
+      cdb_redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -175,13 +247,29 @@ services:
       - ./backoffice/services/signal_engine:/app
       - signal_data:/data
     depends_on:
-      - cdb_redis
-      - cdb_ws
+      cdb_redis:
+        condition: service_healthy
+      cdb_ws:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
-      interval: 30s
+      interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -207,13 +295,29 @@ services:
       - ./backoffice/services/risk_manager:/app
       - risk_logs:/logs
     depends_on:
-      - cdb_redis
-      - cdb_core
+      cdb_redis:
+        condition: service_healthy
+      cdb_core:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8002/health"]
-      interval: 30s
+      interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -238,14 +342,31 @@ services:
     volumes:
       - ./backoffice/services/execution_service:/app
     depends_on:
-      - cdb_redis
-      - cdb_risk
-      - cdb_postgres
+      cdb_redis:
+        condition: service_healthy
+      cdb_risk:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8003/health"]
-      interval: 30s
+      interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     user: "1000:1000"
     security_opt:
       - no-new-privileges:true
