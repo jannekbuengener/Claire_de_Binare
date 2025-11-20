@@ -30,7 +30,7 @@
 > Beim nächsten Systemcheck werden hier die echten `docker compose ps`-Werte eingetragen
 
 ## 📊 PROJEKT-PHASE
-**Operative Ablaufsteuerung:** Siehe `CLAUDE_GORDON_PIPELINE.md` für die vollständige Befehlskette (Claude → Gordon).
+**Operative Ablaufsteuerung:** Siehe `backoffice/docs/runbooks/CLAUDE_GORDON_WORKFLOW.md` für die vollständige Befehlskette (Claude → Gordon).
 
 
 
