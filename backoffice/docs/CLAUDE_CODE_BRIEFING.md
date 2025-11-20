@@ -143,8 +143,8 @@ pytest --cov=services --cov-report=html
 ## 📚 Referenz-Dokumente
 
 **Im Projekt:**
-- `PYTEST_LAYOUT.md` – Struktur-Übersicht
-- `TEST_GUIDE.md` – Manual Testing Anleitung
+- `tests/README.md` – Test-Struktur und Anleitung
+- `backoffice/docs/testing/LOCAL_E2E_TESTS.md` – E2E-Test-Guide
 - `SERVICE_TEMPLATE.md` – Service-Architektur
 - `EVENT_SCHEMA.json` – Event-Datenstruktur
 

@@ -1,5 +1,77 @@
 # Architektur-Entscheidungen (ADR-Style)
 
+## ADR-040: Dokumentations-Konsolidierung und Strukturbereinigung
+
+**Datum**: 2025-11-20
+**Status**: ✅ Akzeptiert
+**Verantwortlicher**: Claude Code (via Dokumentations-Audit)
+
+### Kontext
+
+Nach erfolgreicher Implementierung der E2E-Test-Suite (2025-11-19) existierten **redundante und veraltete Dokumentationsdateien** im Repository-Root:
+
+**Probleme**:
+1. **Redundante Test-Dokumentation**: 4 separate Dateien (`TESTING.md`, `TEST_GUIDE.md`, `PYTEST_LAYOUT.md`, `CLAUDE_CODE_START.md`) mit überlappenden Inhalten
+2. **Veraltete Status-Dateien**: `CLAUDE_TODO.md`, `PR_NOTES.md`, `DECISION_LOG.md` (Root-Duplikat) waren erledigt/veraltet
+3. **Unstrukturierte Ablage**: Wichtige Reports (`E2E_TEST_COMPLETION_REPORT.md`) lagen im Root statt in `backoffice/docs/`
+4. **Inkonsistente Links**: Mehrere Dokumente verwiesen auf gelöschte/verschobene Dateien
+5. **Verwirrung für neue Entwickler**: 11 MD-Dateien im Root, unklare Prioritäten
+
+**Fragestellung**: Wie strukturieren wir die Dokumentation klar, vermeiden Duplikate und erleichtern Navigation?
+
+### Entscheidung
+
+**Alle Test-Dokumentation wird in `tests/README.md` und `backoffice/docs/testing/` konsolidiert. Redundante Root-Dateien werden gelöscht.**
+
+**Durchgeführte Maßnahmen**:
+
+1. **Gelöschte redundante Dateien** (7 Dateien):
+   - `DECISION_LOG.md` - Duplikat zu `backoffice/docs/DECISION_LOG.md`
+   - `CLAUDE_TODO.md` - Alte Aufgabenliste (erledigt)
+   - `PR_NOTES.md` - Alte PR-Notizen (in Git-History)
+   - `PYTEST_LAYOUT.md` - Minimal, redundant mit `tests/README.md`
+   - `CLAUDE_CODE_START.md` - Alte Pytest-Briefing-Datei (Task erledigt)
+   - `TESTING.md` - Veraltet, konsolidiert in `tests/README.md`
+   - `TEST_GUIDE.md` - Minimal, redundant
+
+2. **Verschobene Dateien** (2 Dateien):
+   - `E2E_TEST_COMPLETION_REPORT.md` → `backoffice/docs/testing/E2E_TEST_COMPLETION_REPORT.md`
+   - `CLAUDE_GORDON_PIPELINE.md` → `backoffice/docs/runbooks/CLAUDE_GORDON_WORKFLOW.md`
+
+3. **Aktualisierte Links** (3 Dateien):
+   - `backoffice/PROJECT_STATUS.md` - Link zu CLAUDE_GORDON_WORKFLOW.md
+   - `backoffice/docs/CLAUDE_CODE_BRIEFING.md` - Verweise auf `tests/README.md` und `LOCAL_E2E_TESTS.md`
+   - `README.md` - Vollständige Pfade zu allen Dokumenten
+
+4. **Neue Dokumentations-Struktur**:
+   - **Root-Level**: Nur essenzielle Dateien (`CLAUDE.md`, `README.md`)
+   - **Test-Dokumentation**: `tests/README.md` + `backoffice/docs/testing/`
+   - **Runbooks**: `backoffice/docs/runbooks/`
+   - **Architektur**: `backoffice/docs/architecture/`
+
+### Konsequenzen
+
+**Positiv**:
+- ✅ **Klarheit**: Reduzierung von 11 auf 4 Root-MD-Dateien (-64%)
+- ✅ **Navigation**: Klare Struktur, alle Links funktionieren
+- ✅ **Wartbarkeit**: Keine Duplikate mehr, Single Source of Truth
+- ✅ **Onboarding**: Neue Entwickler finden Dokumentation schneller
+
+**Neutral**:
+- Historische Informationen bleiben in Git-History verfügbar
+- Alte Links in externen Dokumenten müssen ggf. aktualisiert werden
+
+**Negativ**:
+- Keine signifikanten Nachteile
+
+### Compliance
+
+- ✅ **KODEX-konform**: Dokumentation folgt Single-Source-Prinzip
+- ✅ **Archiv-Regel eingehalten**: Keine Archive geändert
+- ✅ **Git-History**: Alle gelöschten Inhalte bleiben nachvollziehbar
+
+---
+
 ## ADR-039: Cleanroom-Repository als kanonische Codebasis etabliert
 
 **Datum**: 2025-01-17

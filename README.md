@@ -97,11 +97,11 @@ Für Details sieh dir an:
 | --------------------------------- | --------------------------------------------- |
 | Einstieg                          | `CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md` |
 | Regeln & Prinzipien               | `KODEX – Claire de Binare.md`                 |
-| Systemdesign                      | `N1_ARCHITEKTUR.md`                           |
-| Projekt-Fortschritt               | `PROJECT_STATUS.md`                           |
-| Ablaufsteuerung (Claude → Gordon) | `CLAUDE_GORDON_PIPELINE.md`                   |
-| Tests & Struktur                  | `PYTEST_LAYOUT.md`                            |
-| Testabläufe                       | `TEST_GUIDE.md`                               |
+| Systemdesign                      | `backoffice/docs/architecture/N1_ARCHITEKTUR.md` |
+| Projekt-Fortschritt               | `backoffice/PROJECT_STATUS.md`                |
+| Ablaufsteuerung (Claude → Gordon) | `backoffice/docs/runbooks/CLAUDE_GORDON_WORKFLOW.md` |
+| Tests & Struktur                  | `tests/README.md`                             |
+| E2E-Tests                         | `backoffice/docs/testing/LOCAL_E2E_TESTS.md`  |
 
 ---
 
@@ -114,7 +114,7 @@ Für Details sieh dir an:
 5. Tests starten (sobald fertig)
 
 Genau erklärt in:
-📄 **`TEST_GUIDE.md`**
+📄 **`tests/README.md`** und **`backoffice/docs/testing/LOCAL_E2E_TESTS.md`**
 
 ---
 
