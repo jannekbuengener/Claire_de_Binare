@@ -259,6 +259,28 @@ services:
         aliases:
           - execution_service
 
+  cdb_db_writer:
+    build:
+      context: ./backoffice/services/db_writer
+      dockerfile: Dockerfile
+    container_name: cdb_db_writer
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backoffice/services/db_writer:/app
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 10s
+      timeout: 3s
+      retries: 1
+    networks:
+      cdb_network:
+        aliases:
+          - db_writer
+
 # ====================================================================
 # LEGACY SERVICE - ENTFERNT (ADR-037)
 # ====================================================================
