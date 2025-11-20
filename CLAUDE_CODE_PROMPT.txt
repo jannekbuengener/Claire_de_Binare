@@ -1,0 +1,32 @@
+Erstelle die 9 GitHub Milestones für Claire de Binaire.
+
+Im aktuellen Verzeichnis findest du:
+- create_milestones.sh (Bash-Script mit allen gh-Befehlen)
+- milestones.json (JSON-Daten)
+- MILESTONES_README.md (Anleitung)
+
+Führe folgende Schritte aus:
+
+1. Prüfe ob gh CLI installiert ist: gh --version
+   - Falls nicht: Installiere gh CLI (brew install gh / sudo apt install gh)
+
+2. Prüfe Authentifizierung: gh auth status
+   - Falls nicht: gh auth login
+
+3. Führe Script aus: bash create_milestones.sh
+
+4. Verifiziere: gh milestone list
+   - Erwartung: 9 Milestones (M1-M9)
+
+Die 9 Milestones sind:
+M1 - Foundation & Governance Setup
+M2 - N1 Architektur Finalisierung
+M3 - Risk-Layer Hardening & Guards
+M4 - Event-Driven Core (Redis Pub/Sub)
+M5 - Persistenz + Analytics Layer
+M6 - Dockerized Runtime (Local Environment)
+M7 - Initial Live-Test (MEXC Testnet)
+M8 - Production Hardening & Security Review
+M9 - Production Release 1.0
+
+Führe alle Schritte aus und berichte über das Ergebnis.
