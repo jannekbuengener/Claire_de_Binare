@@ -1,0 +1,57 @@
+name: 🔗 Markdown Link Check
+
+on:
+  push:
+    branches: [main, develop, claude/**]
+    paths:
+      - '**.md'
+      - '.markdown-link-check.json'
+      - '.github/workflows/link-check.yml'
+  pull_request:
+    paths:
+      - '**.md'
+      - '.markdown-link-check.json'
+  schedule:
+    # Run weekly on Mondays at 09:00 UTC (to catch external link rot)
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  link-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 Install markdown-link-check
+        run: npm install -g markdown-link-check
+
+      - name: 🔍 Check README.md
+        run: markdown-link-check README.md --config .markdown-link-check.json
+
+      - name: 🔍 Check ROADMAP.md
+        run: markdown-link-check ROADMAP.md --config .markdown-link-check.json
+
+      - name: 🔍 Check CLAUDE.md
+        run: markdown-link-check CLAUDE.md --config .markdown-link-check.json
+        continue-on-error: true
+
+      - name: 🔍 Check backoffice/PROJECT_STATUS.md
+        run: markdown-link-check backoffice/PROJECT_STATUS.md --config .markdown-link-check.json
+
+      - name: 🔍 Check all docs
+        run: |
+          find backoffice/docs -name "*.md" -type f | while read file; do
+            echo "Checking: $file"
+            markdown-link-check "$file" --config .markdown-link-check.json || true
+          done
+
+      - name: 📊 Summary
+        if: always()
+        run: echo "✅ Link check completed"

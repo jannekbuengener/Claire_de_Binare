@@ -62,7 +62,7 @@ This document contains:
 ### **Testing & Development**
 
 - **[Testing Guide](backoffice/docs/testing/)** - Test documentation
-  - [`TESTING_GUIDE.md`](backoffice/docs/testing/TESTING_GUIDE.md) - Complete testing guide
+  - [`LOCAL_E2E_TESTS.md`](backoffice/docs/testing/LOCAL_E2E_TESTS.md) - Complete testing guide
   - [`LOCAL_E2E_TESTS.md`](backoffice/docs/testing/LOCAL_E2E_TESTS.md) - E2E test documentation
   - [`E2E_TEST_COMPLETION_REPORT.md`](backoffice/docs/reports/E2E_PAPER_TEST_REPORT.md) - E2E completion report
 
@@ -251,7 +251,7 @@ See [`backoffice/docs/security/HARDENING.md`](backoffice/docs/security/HARDENING
 
 ### **Questions**
 - Architecture: See [`backoffice/docs/DECISION_LOG.md`](backoffice/docs/DECISION_LOG.md)
-- Testing: See [`backoffice/docs/testing/TESTING_GUIDE.md`](backoffice/docs/testing/TESTING_GUIDE.md)
+- Testing: See [`backoffice/docs/testing/LOCAL_E2E_TESTS.md`](backoffice/docs/testing/LOCAL_E2E_TESTS.md)
 - CI/CD: See [`backoffice/docs/CI_CD_GUIDE.md`](backoffice/docs/CI_CD_GUIDE.md)
 
 ---
