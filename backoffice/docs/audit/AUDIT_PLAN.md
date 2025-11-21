@@ -41,14 +41,17 @@
 ### **PHASE 1: KRITISCH - Security & Compliance** 🔴
 **Timeline**: SOFORT (30 Min)
 
-#### Checklist:
+#### Checklist
+
+
 - [ ] `.env` File auf Secrets prüfen
 - [ ] `.env.template` validieren (keine echten Werte)
 - [ ] API-Keys Status (Read-only bestätigen)
 - [ ] Docker-Security-Flags validieren
 - [ ] Passwort-Policy für Redis/Postgres/Grafana
 
-#### Commands für Audit:
+#### Commands für Audit
+
 ```bash
 # Security-Scan
 grep -r "password\|secret\|key\|token" --exclude-dir=.git .env
@@ -65,12 +68,14 @@ find . -type f -name "*.py" -exec ls -la {} \; | grep -E "^-rwx"
 ### **PHASE 2: HOCH - ENV-Standardisierung** 🟠
 **Timeline**: 45 Min
 
-#### Probleme zu lösen:
+#### Probleme zu lösen
+
 1. **Dezimal vs. Prozent**: Alle auf Dezimal-Format (0.05 = 5%)
 2. **Naming-Konventionen**: `UPPER_SNAKE_CASE` durchsetzen
 3. **Prefix-Konsistenz**: Alle mit `CDB_` beginnen
 
-#### Audit-Matrix:
+#### Audit-Matrix
+
 ```yaml
 env_variables:
   risk_limits:
@@ -90,7 +95,8 @@ env_variables:
 ### **PHASE 3: HOCH - Service-Code-Alignment** 🟠
 **Timeline**: 60 Min
 
-#### Validierung je Service:
+#### Validierung je Service
+
 ```
 /backoffice/services/
 ├── execution_service/
@@ -101,7 +107,8 @@ env_variables:
 └── signal_engine/
 ```
 
-#### Prüfpunkte:
+#### Prüfpunkte
+
 - [ ] Config.py liest alle ENV-Vars aus canonical_schema.yaml
 - [ ] Health-Endpoints implementiert (`/health`)
 - [ ] Redis-Connections mit Retry-Logic
@@ -114,12 +121,12 @@ env_variables:
 ### **PHASE 4: MITTEL - Dokumenten-Konsolidierung** 🟡
 **Timeline**: 30 Min
 
-#### Zu konsolidieren:
+#### Zu konsolidieren
 1. **Status-Dokumente** → Ein `PROJECT_STATUS.md`
 2. **Index-Dateien** → Ein `MASTER_INDEX.md`
 3. **Provenance** → Archiv-Ordner für alte Versionen
 
-#### Neue Struktur:
+#### Neue Struktur
 ```
 /backoffice/docs/
 ├── PROJECT_STATUS.md        # SINGLE SOURCE OF TRUTH
@@ -136,12 +143,12 @@ env_variables:
 ### **PHASE 5: MITTEL - Test-Struktur-Bereinigung** 🟡
 **Timeline**: 20 Min
 
-#### Aktionen:
+#### Aktionen
 1. **Entfernen**: `__pycache__` aus `/backoffice/docs/tests`
 2. **Verschieben**: Tests aus docs → `/tests`
 3. **Gitignore**: `*.pyc`, `__pycache__/` hinzufügen
 
-#### Ziel-Struktur:
+#### Ziel-Struktur
 ```
 /tests/
 ├── unit/
@@ -161,14 +168,14 @@ env_variables:
 ### **PHASE 6: NIEDRIG - Pre-Deployment-Check** 🟢
 **Timeline**: 15 Min
 
-#### Final Checklist:
+#### Final Checklist
 - [ ] Docker-Compose validieren: `docker-compose config`
 - [ ] Container-Namen konsistent: `cdb_*`
 - [ ] Volumes persistent: `redis_data`, `postgres_data`
 - [ ] Networks definiert: `cdb_network`
 - [ ] Prometheus-Config vorhanden
 
-#### Smoke-Test:
+#### Smoke-Test
 ```bash
 docker-compose up -d
 sleep 30
@@ -183,7 +190,7 @@ curl -f http://localhost:8083/health  # execution
 
 ## 📋 SOFORT-AKTIONEN
 
-### 1. Fehlende Kern-Dateien erstellen:
+### 1. Fehlende Kern-Dateien erstellen
 ```bash
 # PROJECT_STATUS.md Template
 cat > backoffice/PROJECT_STATUS.md << 'EOF'
@@ -200,7 +207,7 @@ cat > backoffice/PROJECT_STATUS.md << 'EOF'
 EOF
 ```
 
-### 2. Redundanz eliminieren:
+### 2. Redundanz eliminieren
 ```bash
 # Archive alte Status-Files
 mkdir -p backoffice/docs/archive/legacy_status
@@ -208,7 +215,7 @@ mv backoffice/docs/provenance/FINAL_STATUS.md backoffice/docs/archive/legacy_sta
 mv backoffice/docs/runbooks/MIGRATION_READY.md backoffice/docs/archive/legacy_status/
 ```
 
-### 3. Git-Cleanup:
+### 3. Git-Cleanup
 ```bash
 # .gitignore erweitern
 echo "__pycache__/" >> .gitignore

@@ -3,6 +3,7 @@
 Dieses Dokument definiert das Audit-Verhalten für das Projekt **Claire_de_Binare** (interne Schreibweise) bzw. **„Claire de Binare“** (externe Schreibweise) und beschreibt, was bei dem Kommando **„audit“** passiert.
 
 Es kombiniert:
+
 - ein maschinenlesbares Schema (YAML), das von Claude als Referenz genutzt werden kann, und
 - eine klare Beschreibung des Audit-Ablaufs im Fließtext – inklusive Regeln gegen „Dokumüll“ und unsauberes Archivieren.
 
@@ -18,12 +19,14 @@ Es kombiniert:
 Alle Schreibweisen mit **„Binaire“** sind **falsch** bzw. **Legacy** und werden vom Audit als Finding markiert.
 
 Beispiele für **ungültige Varianten** (historisch/Legacy):
+
 - Claire de Binaire
 - Claire_de_Binaire
 - Claire-de-Binaire
 - claire de binaire  
 
 Der Audit sorgt dafür, dass:
+
 - im Code, in Dateinamen und in internen Referenzen **nur** `Claire_de_Binare` verwendet wird und
 - in externen Texten (z. B. Beschreibungen, Overviews) die Formulierung **„Claire de Binare“** genutzt wird.
 
@@ -61,6 +64,7 @@ Claire_de_Binare_Cleanroom/
 ```
 
 Wichtige Annahme:
+
 - Es gibt **einen klaren Dokumenten-Kanon**, der über `CANONICAL_SOURCES.yaml` gesteuert wird.
 - Archivierte Stände liegen unter `backoffice/docs/archive/`.
 - Temporäre Brain-Dumps liegen ausschließlich in dedizierten Scratch-Bereichen.
@@ -553,6 +557,7 @@ Wenn du das Kommando **„audit“** verwendest, passiert aus Sicht der Logik ob
 9. **Zusammenfassung der Dokumenthygiene**
 
 Konkret stellt der Audit sicher, dass:
+
 - **kein dauerhafter Dokumüll** entsteht – Brain-Dumps bleiben in eigenen Scratch-Bereichen.
 - **Archiv-Dateien nur stabile Stände** enthalten, mit sauberer Herkunfts-Referenz und klarer Begründung.
 - **wichtige Begriffe und Namen (insbesondere „Claire_de_Binare“) konsistent** und korrekt verwendet werden.

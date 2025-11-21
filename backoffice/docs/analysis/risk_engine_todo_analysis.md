@@ -1,4 +1,5 @@
 # Risk Engine TODO Analysis
+
 **Date**: 2025-11-20 17:52 UTC
 **File**: services/risk_engine.py:431
 
@@ -11,7 +12,7 @@
 
 ## Analysis
 
-### Evidence that TODO is OUTDATED:
+### Evidence that TODO is OUTDATED
 
 1. **Comprehensive Implementation**:
    - `evaluate_signal_v2()` is 200+ lines with full production logic
@@ -31,11 +32,12 @@
    - Type hints
    - Error handling
 
-### Recommendation:
+### Recommendation
 
 **OPTION A**: Remove TODO entirely (logic is production-grade)
 
 **OPTION B**: Update TODO to reflect actual gap:
+
 ```python
 # TODO: Add live connectivity to portfolio service (currently using mock state)
 # TODO: Integrate with real order management system (paper-trading works)
@@ -43,9 +45,10 @@
 
 **OPTION C**: Keep as reminder for Phase N2 (Live Trading)
 
-## Decision:
+## Decision
 
 Recommend **OPTION B** - Update TODO to be specific about what's actually missing:
+
 - Live portfolio state (vs. mock)
 - Real order management integration
 
