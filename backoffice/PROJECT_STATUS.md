@@ -70,19 +70,20 @@
 _Keine aktiven HOCH-Blocker_ ✅
 
 ### MITTEL (Qualitäts-Issues)
-1. **Dokumentations-Redundanz**
-   - Multiple Status-Files
-   - Unklare Source of Truth → dieses Dokument ist kanonisch
-2. **Postgres-Backup-Strategie noch nicht produktiv verankert**
-   - Konzept definiert (siehe unten), aber noch nicht als Script/Job umgesetzt
-3. **Risk-Engine TODO**
+1. **Risk-Engine TODO**
    - `services/risk_engine.py` enthält TODO-Kommentar für Production-Grade-Logik
    - Aktuelle Tests bestehen, aber vor Production-Deployment auflösen
+2. **Markdown-Lint Warnings (Legacy-Dateien)**
+   - 4.900+ Warnungen in großen Dokumenten (CLAUDE.md, DECISION_LOG.md, etc.)
+   - Neue Dateien (automation/) sind clean (100%)
+   - Empfehlung: Separate Issue für Legacy-Cleanup
 
-### ✅ GELÖST (vormals HOCH)
-1. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
-2. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
-3. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
+### ✅ GELÖST (vormals MITTEL)
+1. ~~**Dokumentations-Redundanz**~~ → ✅ **Restructured to 9 categories** (2025-11-21)
+2. ~~**Postgres-Backup-Strategie**~~ → ✅ **Scripts + Documentation complete** (2025-11-21)
+3. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
+4. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
+5. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
 
 ---
 
@@ -90,6 +91,8 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-21  | **Markdownlint-Cleanup (4 Dateien)**         | ✅ **60+ Fixes, neue Dateien 100% clean** |
+| 2025-11-21  | **Postgres-Backup Scripts implementiert**    | ✅ **Bash + PowerShell, vollständige Docs** |
 | 2025-11-21  | **CI/CD Pipeline umfassend erweitert** 🚀    | ✅ **8 Jobs, Coverage, Security** |
 | 2025-11-20  | **Test-Suite vollständig implementiert** 🎉  | ✅ **122 Tests, 100% Pass Rate**  |
 | 2025-11-19  | **E2E-Tests mit Docker integriert**          | ✅ **18/18 Tests bestanden**      |
@@ -162,41 +165,56 @@ _Keine aktiven HOCH-Blocker_ ✅
 - **YAML Configs**: 4
 - **Total Size**: ~420 KB
 
-## 🔐 POSTGRES-BACKUP-STRATEGIE (DRAFT N1)
+## 🔐 POSTGRES-BACKUP-STRATEGIE
 
-> Zielwerte laut Architektur: `RPO ≤ 24h`, `RETENTION_DAYS = 14`【turn0file26†L156-L166】.  
-> Für N1 reicht eine **lokale, skriptbasierte** Lösung.
+**Status**: ✅ **IMPLEMENTIERT** (2025-11-21)
 
-1. **Backup-Typ**  
-   - Logisches Backup mit `pg_dump` (Schema + Daten)  
-   - Ziel: rekonstruktionsfähige Dumps für N1-Analyse + Recovery
+> Zielwerte: `RPO ≤ 24h`, `RETENTION_DAYS = 14`
+> Lösung: **Lokale, skriptbasierte** Backups mit automatischer Retention.
 
-2. **Backup-Frequenz**  
-   - **Täglich** 01:00 lokale Zeit: Voll-Dump
-   - Vor strukturellen Änderungen (Schema, Migration): manuelles Ad-hoc-Backup
+### **Scripts verfügbar:**
+- ✅ `backoffice/automation/postgres_backup.sh` (Linux/Mac)
+- ✅ `backoffice/automation/postgres_backup.ps1` (Windows)
+- ✅ Vollständige Dokumentation: `backoffice/automation/README.md`
 
-3. **Ablageort**  
-   - Lokaler Ordner, z. B. `C:\Backups\cdb_postgres\YYYY-MM-DD\`  
-   - Dateinamensschema: `cdb_backup_YYYY-MM-DD_HHMM.sql`
+### **Features:**
+1. **Backup-Typ**: Logisches Backup mit `pg_dump` (Schema + Daten)
+2. **Backup-Frequenz**: Täglich 01:00 (via Cron/Task Scheduler)
+3. **Ablageort**:
+   - Linux/Mac: `$HOME/backups/cdb_postgres/`
+   - Windows: `%USERPROFILE%\backups\cdb_postgres\`
+4. **Dateiformat**: `claire_de_binaire_backup_YYYY-MM-DD_HHMM.sql.(gz|zip)`
+5. **Retention**: 14 Tage (automatische Bereinigung)
+6. **Compression**: gzip (Linux/Mac) / ZIP (Windows)
+7. **Verification**: Automatische Integritätsprüfung
+8. **Logging**: Detaillierte Logs in `backup_log.txt`
 
-4. **Retention**  
-   - Mindestens **14 Tage** aufbewahren (`RETENTION_DAYS`)  
-   - Ältere Backups automatisch löschen
+### **Quick Start:**
 
-5. **Beispiel-Kommandos (Windows/PowerShell, lokal)**
+**Linux/Mac**:
+```bash
+chmod +x backoffice/automation/postgres_backup.sh
+./backoffice/automation/postgres_backup.sh
+```
 
-   ```powershell
-   # Vollbackup
-   pg_dump -h localhost -p 5432 -U claire -d claire_de_binare `
-       -F p -f "C:\Backups\cdb_postgres\$(Get-Date -Format 'yyyy-MM-dd_HHmm')_full.sql"
+**Windows**:
+```powershell
+.\backoffice\automation\postgres_backup.ps1
+```
 
-   # Cleanup (älter als 14 Tage löschen)
-   Get-ChildItem "C:\Backups\cdb_postgres" -File |
-     Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-14) } |
-     Remove-Item
+### **Automation Setup:**
 
+**Cron** (Linux/Mac):
+```bash
+0 1 * * * /path/to/postgres_backup.sh
+```
 
-### Status-Tracking
+**Task Scheduler** (Windows):
+- Daily at 01:00
+- Program: `powershell.exe`
+- Arguments: `-ExecutionPolicy Bypass -File "C:\path\to\postgres_backup.ps1"`
+
+### **Status-Tracking
 
 Letztes erfolgreiches Backup-Datum hier unten dokumentieren
 
