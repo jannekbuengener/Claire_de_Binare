@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare.local/schemas/signal.schema.json",
+  "title": "StrategySignal",
+  "description": "Trading signal published by Signal Engine, consumed by Risk Manager",
+  "type": "object",
+  "required": [
+    "type",
+    "symbol",
+    "timestamp"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "signal",
+      "description": "Event type identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+_[A-Z]+$",
+      "description": "Trading pair symbol (e.g., BTC_USDT)",
+      "examples": ["BTC_USDT", "ETH_USDT"]
+    },
+    "direction": {
+      "type": "string",
+      "enum": ["BUY", "SELL", "FLAT"],
+      "description": "Signal direction (BUY, SELL, or FLAT for no position)"
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL", "FLAT"],
+      "description": "Alias for direction field"
+    },
+    "strength": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Signal strength/conviction (0.0 to 1.0)"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Signal confidence score (0.0 to 1.0), alias for strength"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reason for the signal",
+      "examples": ["MOMENTUM_BREAKOUT", "Top mover + RSI oversold"]
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "description": "Unix timestamp in milliseconds when signal was generated"
+    },
+    "strategy_id": {
+      "type": "string",
+      "description": "Identifier of the strategy that generated this signal",
+      "examples": ["momentum_v1", "volume_surge"]
+    }
+  },
+  "additionalProperties": false,
+  "oneOf": [
+    {
+      "required": ["direction"]
+    },
+    {
+      "required": ["side"]
+    }
+  ]
+}

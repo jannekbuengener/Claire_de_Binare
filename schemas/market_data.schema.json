@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare.local/schemas/market_data.schema.json",
+  "title": "MarketDataEvent",
+  "description": "Market data event published by WS/REST Screener, consumed by Signal Engine",
+  "type": "object",
+  "required": [
+    "type",
+    "symbol",
+    "timestamp",
+    "close",
+    "volume",
+    "interval"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "market_data",
+      "description": "Event type identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+_[A-Z]+$",
+      "description": "Trading pair symbol (e.g., BTC_USDT)",
+      "examples": ["BTC_USDT", "ETH_USDT"]
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "description": "Unix timestamp in milliseconds"
+    },
+    "open": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Opening price of the candle"
+    },
+    "high": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Highest price of the candle"
+    },
+    "low": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Lowest price of the candle"
+    },
+    "close": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Closing price of the candle"
+    },
+    "volume": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Trading volume during the interval"
+    },
+    "interval": {
+      "type": "string",
+      "enum": ["1m", "5m", "15m", "1h", "4h", "1d"],
+      "description": "Candle interval"
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Current/latest price (alternative to close)"
+    }
+  },
+  "additionalProperties": false
+}

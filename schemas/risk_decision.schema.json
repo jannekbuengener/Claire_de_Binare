@@ -1,0 +1,99 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare.local/schemas/risk_decision.schema.json",
+  "title": "RiskDecision",
+  "description": "Risk validation decision published by Risk Manager, consumed internally for order generation",
+  "type": "object",
+  "required": [
+    "type",
+    "symbol",
+    "requested_direction",
+    "approved",
+    "reason_code",
+    "timestamp"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "risk_decision",
+      "description": "Event type identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+_[A-Z]+$",
+      "description": "Trading pair symbol (e.g., BTC_USDT)",
+      "examples": ["BTC_USDT", "ETH_USDT"]
+    },
+    "requested_direction": {
+      "type": "string",
+      "enum": ["BUY", "SELL", "FLAT"],
+      "description": "Direction of the original signal"
+    },
+    "approved": {
+      "type": "boolean",
+      "description": "Whether the signal passed all risk checks"
+    },
+    "approved_size": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Approved position size (0 if rejected, may be trimmed from requested)"
+    },
+    "requested_size": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Originally requested position size"
+    },
+    "reason_code": {
+      "type": "string",
+      "description": "Risk check result code",
+      "examples": [
+        "OK",
+        "DAILY_DRAWDOWN_EXCEEDED",
+        "EXPOSURE_LIMIT_REACHED",
+        "POSITION_SIZE_TRIMMED",
+        "DATA_STALE",
+        "CIRCUIT_BREAKER_ACTIVE"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reason for the decision"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "description": "Unix timestamp in milliseconds when decision was made"
+    },
+    "risk_checks": {
+      "type": "object",
+      "description": "Detailed results of individual risk checks",
+      "properties": {
+        "daily_drawdown": {
+          "type": "boolean",
+          "description": "Daily drawdown check passed"
+        },
+        "exposure_limit": {
+          "type": "boolean",
+          "description": "Total exposure limit check passed"
+        },
+        "position_size": {
+          "type": "boolean",
+          "description": "Position size limit check passed"
+        },
+        "data_quality": {
+          "type": "boolean",
+          "description": "Data quality/staleness check passed"
+        },
+        "circuit_breaker": {
+          "type": "boolean",
+          "description": "Circuit breaker check passed (no market anomalies)"
+        },
+        "stop_loss": {
+          "type": "boolean",
+          "description": "Stop loss check passed"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

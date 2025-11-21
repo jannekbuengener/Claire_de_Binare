@@ -1,0 +1,114 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare.local/schemas/order_result.schema.json",
+  "title": "OrderResultEvent",
+  "description": "Order execution result published by Execution Service, consumed by Risk Manager, Dashboard, and Persistence layer",
+  "type": "object",
+  "required": [
+    "type",
+    "order_id",
+    "status",
+    "symbol",
+    "timestamp"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "order_result",
+      "description": "Event type identifier"
+    },
+    "order_id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_-]+$",
+      "description": "Unique order identifier (matches original order)",
+      "examples": ["ORD_1730443270_BTC_USDT", "MOCK_123456", "SIM_123456"]
+    },
+    "exchange_order_id": {
+      "type": "string",
+      "description": "Exchange-provided order ID (if applicable)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "FILLED",
+        "PARTIALLY_FILLED",
+        "REJECTED",
+        "CANCELLED",
+        "EXPIRED",
+        "PENDING"
+      ],
+      "description": "Order execution status"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+_[A-Z]+$",
+      "description": "Trading pair symbol (e.g., BTC_USDT)",
+      "examples": ["BTC_USDT", "ETH_USDT"]
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL"],
+      "description": "Order side (BUY or SELL)"
+    },
+    "filled_quantity": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Quantity that was filled (0 if not filled)"
+    },
+    "requested_quantity": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Originally requested quantity"
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Execution price (average if multiple fills)"
+    },
+    "fee": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Trading fee paid"
+    },
+    "fee_currency": {
+      "type": "string",
+      "description": "Currency in which fee was paid",
+      "examples": ["USDT", "BTC"]
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "description": "Unix timestamp in milliseconds when result was generated"
+    },
+    "execution_time_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time taken to execute the order in milliseconds"
+    },
+    "error_code": {
+      "type": "string",
+      "description": "Error code if status is REJECTED",
+      "examples": ["INSUFFICIENT_BALANCE", "INVALID_QUANTITY", "MARKET_CLOSED"]
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Human-readable error message if status is REJECTED"
+    },
+    "paper_trading": {
+      "type": "boolean",
+      "default": true,
+      "description": "Flag indicating this was a simulated/paper trade"
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "status": {
+        "enum": ["FILLED", "PARTIALLY_FILLED"]
+      }
+    }
+  },
+  "then": {
+    "required": ["filled_quantity", "price"]
+  }
+}

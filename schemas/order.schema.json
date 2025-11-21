@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare.local/schemas/order.schema.json",
+  "title": "OrderEvent",
+  "description": "Approved order published by Risk Manager, consumed by Execution Service",
+  "type": "object",
+  "required": [
+    "type",
+    "order_id",
+    "symbol",
+    "side",
+    "quantity",
+    "timestamp"
+  ],
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "order",
+      "description": "Event type identifier"
+    },
+    "order_id": {
+      "type": "string",
+      "pattern": "^[A-Z0-9_-]+$",
+      "description": "Unique order identifier (client_order_id for idempotency)",
+      "examples": ["ORD_1730443270_BTC_USDT"]
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+_[A-Z]+$",
+      "description": "Trading pair symbol (e.g., BTC_USDT)",
+      "examples": ["BTC_USDT", "ETH_USDT"]
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL"],
+      "description": "Order side (BUY or SELL)"
+    },
+    "quantity": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Order quantity (approved size from risk decision)"
+    },
+    "order_type": {
+      "type": "string",
+      "enum": ["MARKET", "LIMIT", "STOP_LOSS", "TAKE_PROFIT"],
+      "default": "MARKET",
+      "description": "Order type"
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Limit price (required for LIMIT orders)"
+    },
+    "stop_price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Stop price (required for STOP_LOSS orders)"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "description": "Unix timestamp in milliseconds when order was created"
+    },
+    "strategy_id": {
+      "type": "string",
+      "description": "Identifier of the strategy that originated this order"
+    },
+    "risk_approved": {
+      "type": "boolean",
+      "default": true,
+      "description": "Flag indicating this order was approved by risk manager"
+    },
+    "paper_trading": {
+      "type": "boolean",
+      "default": true,
+      "description": "Flag indicating this is a paper trading order (not live)"
+    }
+  },
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "order_type": {
+        "const": "LIMIT"
+      }
+    }
+  },
+  "then": {
+    "required": ["price"]
+  }
+}
