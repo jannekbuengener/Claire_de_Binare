@@ -1,0 +1,407 @@
+# Claire de Binaire - Backtest Scenarios
+# =======================================================================
+# Diese Datei definiert verschiedene Backtest-Szenarien für die N1 Paper-Test-Phase.
+# Jedes Szenario testet spezifische Marktbedingungen und Risk-Engine-Funktionalität.
+#
+# Verwendung:
+#   python scripts/run_backtest.py --scenario bullish_momentum
+#   python scripts/run_backtest.py --scenario high_volatility_stress
+#
+# Autor: Claire de Binaire Team
+# Datum: 2025-11-21
+# Version: 1.0.0
+# =======================================================================
+
+scenarios:
+  # =======================================================================
+  # SZENARIO 1: Bullish Momentum (Baseline)
+  # =======================================================================
+  - name: bullish_momentum
+    description: |
+      Standard-Szenario für normale Aufwärtsphase mit moderater Volatilität.
+      Testet die Basis-Funktionalität der Momentum-Strategie unter optimalen Bedingungen.
+      Verwendet als Baseline für Vergleiche mit anderen Szenarien.
+
+    symbol_set:
+      - BTCUSDT
+      - ETHUSDT
+
+    timeframe:
+      start: "2024-01-15T00:00:00Z"  # Beginn Bull-Run 2024
+      end: "2024-03-15T00:00:00Z"    # 2 Monate
+
+    candle_interval: "15m"
+
+    risk_config:
+      max_position_pct: 0.10           # 10% pro Position
+      max_daily_drawdown_pct: 0.05     # 5% Tages-Drawdown
+      max_total_exposure_pct: 0.30     # 30% Gesamt-Exposure
+      circuit_breaker_threshold_pct: 0.10  # 10% Emergency Stop
+      max_slippage_pct: 0.02           # 2% max Slippage
+      stop_loss_pct: 0.02              # 2% Stop-Loss
+      data_stale_timeout_sec: 60       # 60s Timeout
+      account_equity: 100000.0         # $100k Startkapital
+
+    target_metrics:
+      min_total_pnl: 5000.0            # Mindestens $5k Gewinn erwartet
+      max_drawdown: 0.08               # Max 8% Drawdown toleriert
+      min_winrate: 0.55                # Mindestens 55% Winrate
+      min_sharpe_ratio: 1.5            # Mindestens 1.5 Sharpe
+      max_trades: 100                  # Max 100 Trades in 2 Monaten
+      min_profit_factor: 1.8           # Gewinn/Verlust-Verhältnis
+
+    market_conditions:
+      expected_volatility: "moderate"   # moderate | high | low
+      expected_trend: "bullish"         # bullish | bearish | sideways
+      liquidity_level: "high"           # high | medium | low
+
+  # =======================================================================
+  # SZENARIO 2: High Volatility Stress Test
+  # =======================================================================
+  - name: high_volatility_stress
+    description: |
+      Stress-Test unter extremen Volatilitätsbedingungen.
+      Testet Circuit-Breaker, Daily-Drawdown-Limits und Risk-Layer-Funktionalität.
+      Simuliert Mai 2021 Crash-Periode oder November 2022 FTX-Kollaps.
+
+    symbol_set:
+      - BTCUSDT
+      - ETHUSDT
+      - BNBUSDT
+
+    timeframe:
+      start: "2021-05-10T00:00:00Z"    # Beginn Mai 2021 Crash
+      end: "2021-05-25T00:00:00Z"      # 2 Wochen extreme Volatilität
+
+    candle_interval: "5m"              # Kürzerer Interval für schnelle Bewegungen
+
+    risk_config:
+      max_position_pct: 0.08           # Konservativer: 8% pro Position
+      max_daily_drawdown_pct: 0.03     # Strenger: 3% Tages-Drawdown
+      max_total_exposure_pct: 0.20     # Reduziert: 20% Gesamt-Exposure
+      circuit_breaker_threshold_pct: 0.07  # Früher Stop: 7%
+      max_slippage_pct: 0.05           # Höhere Toleranz: 5% (wegen Volatilität)
+      stop_loss_pct: 0.015             # Enger: 1.5% Stop-Loss
+      data_stale_timeout_sec: 30       # Schneller: 30s Timeout
+      account_equity: 100000.0
+
+    target_metrics:
+      min_total_pnl: -5000.0           # Verluste akzeptabel (Survival-Test)
+      max_drawdown: 0.10               # Max 10% Drawdown
+      min_winrate: 0.40                # Niedrigere Winrate OK
+      min_sharpe_ratio: 0.5            # Negativer Sharpe erwartet
+      max_trades: 150                  # Mehr Trades durch kürzeren Interval
+      min_profit_factor: 0.8           # Verluste erwartet
+
+    market_conditions:
+      expected_volatility: "extreme"
+      expected_trend: "bearish"
+      liquidity_level: "low"
+      special_conditions:
+        - "flash_crashes"
+        - "wide_spreads"
+        - "slippage_events"
+
+  # =======================================================================
+  # SZENARIO 3: Sideways Chop (Whipsaw Test)
+  # =======================================================================
+  - name: sideways_chop
+    description: |
+      Range-gebundene Marktphase mit vielen False-Breakouts.
+      Testet Frequenzbegrenzung, Over-Trading-Protection und Signal-Quality-Filter.
+      Typisch für Juli-August 2024 Sommerflaute.
+
+    symbol_set:
+      - BTCUSDT
+      - ETHUSDT
+
+    timeframe:
+      start: "2024-07-01T00:00:00Z"    # Sommer-Konsolidierung
+      end: "2024-08-31T00:00:00Z"      # 2 Monate
+
+    candle_interval: "15m"
+
+    risk_config:
+      max_position_pct: 0.06           # Klein: 6% (viele kleine Trades)
+      max_daily_drawdown_pct: 0.04     # Standard: 4%
+      max_total_exposure_pct: 0.15     # Niedrig: 15% (vorsichtig)
+      circuit_breaker_threshold_pct: 0.08
+      max_slippage_pct: 0.02
+      stop_loss_pct: 0.025             # Weiter: 2.5% (False-Breakouts)
+      data_stale_timeout_sec: 60
+      account_equity: 100000.0
+      # Zusätzliche Parameter für Frequenzbegrenzung:
+      max_trades_per_day: 5            # Max 5 Trades/Tag
+      min_signal_strength: 0.70        # Höhere Schwelle für Signale
+
+    target_metrics:
+      min_total_pnl: -2000.0           # Kleine Verluste OK (Chop kostet)
+      max_drawdown: 0.06               # Max 6% Drawdown
+      min_winrate: 0.45                # Schwierig in Sideways
+      min_sharpe_ratio: 0.3            # Nahe 0 erwartet
+      max_trades: 200                  # Viele kleine Trades
+      min_profit_factor: 0.9           # Break-Even bis leichte Verluste
+
+    market_conditions:
+      expected_volatility: "low"
+      expected_trend: "sideways"
+      liquidity_level: "medium"
+      special_conditions:
+        - "false_breakouts"
+        - "range_bound"
+        - "low_momentum"
+
+  # =======================================================================
+  # SZENARIO 4: Flash Crash Scenario (Emergency Stop Test)
+  # =======================================================================
+  - name: flash_crash_emergency
+    description: |
+      Simulation extremer Marktbewegungen (>20% in <1h).
+      Testet Circuit-Breaker-Auslösung, Position-Closure-Logic und Emergency-Stops.
+      Basierend auf echten Flash-Crash-Events (Binance 2021, FTX 2022).
+
+    symbol_set:
+      - BTCUSDT
+
+    timeframe:
+      start: "2021-05-19T00:00:00Z"    # Exakter Flash-Crash Tag
+      end: "2021-05-20T00:00:00Z"      # 24h
+
+    candle_interval: "1m"              # 1-Minuten-Daten für exakte Bewegungen
+
+    risk_config:
+      max_position_pct: 0.05           # Sehr konservativ: 5%
+      max_daily_drawdown_pct: 0.02     # Sehr eng: 2%
+      max_total_exposure_pct: 0.10     # Minimal: 10%
+      circuit_breaker_threshold_pct: 0.05  # Sehr früh: 5%
+      max_slippage_pct: 0.10           # Sehr hoch: 10% (Crash-Bedingungen)
+      stop_loss_pct: 0.01              # Extrem eng: 1%
+      data_stale_timeout_sec: 15       # Sehr schnell: 15s
+      account_equity: 100000.0
+      # Emergency-Mode-Parameter:
+      emergency_close_all: true        # Bei Circuit-Breaker alle schließen
+      halt_trading_on_crash: true      # Trading komplett stoppen
+
+    target_metrics:
+      min_total_pnl: -2000.0           # Minimale Verluste = Erfolg
+      max_drawdown: 0.05               # Max 5% Drawdown (Circuit-Breaker!)
+      min_winrate: 0.30                # Egal (Survival zählt)
+      min_sharpe_ratio: -1.0           # Stark negativ erwartet
+      max_trades: 10                   # Sehr wenige (sofortiger Stop)
+      min_profit_factor: 0.5           # Verluste = OK
+
+    market_conditions:
+      expected_volatility: "extreme"
+      expected_trend: "crash"
+      liquidity_level: "very_low"
+      special_conditions:
+        - "flash_crash"
+        - "extreme_slippage"
+        - "order_book_collapse"
+        - "circuit_breaker_test"
+
+  # =======================================================================
+  # SZENARIO 5: Multi-Symbol Correlation Test
+  # =======================================================================
+  - name: multi_symbol_correlation
+    description: |
+      Portfolio-Exposure-Test mit 5 korrelierten Assets.
+      Testet Exposure-Limits, Position-Sizing und Portfolio-Risk-Management.
+      Simuliert gleichzeitige Bewegungen in BTC, ETH, BNB, SOL, MATIC.
+
+    symbol_set:
+      - BTCUSDT
+      - ETHUSDT
+      - BNBUSDT
+      - SOLUSDT
+      - MATICUSDT
+
+    timeframe:
+      start: "2024-02-01T00:00:00Z"    # Q1 2024 Altcoin-Rally
+      end: "2024-04-01T00:00:00Z"      # 2 Monate
+
+    candle_interval: "15m"
+
+    risk_config:
+      max_position_pct: 0.08           # 8% pro Position
+      max_daily_drawdown_pct: 0.05     # 5% Tages-Drawdown
+      max_total_exposure_pct: 0.40     # WICHTIG: 40% für Multi-Symbol
+      circuit_breaker_threshold_pct: 0.10
+      max_slippage_pct: 0.03           # 3% (Altcoins höher)
+      stop_loss_pct: 0.02
+      data_stale_timeout_sec: 60
+      account_equity: 100000.0
+      # Portfolio-spezifisch:
+      max_correlated_positions: 3      # Max 3 gleichzeitig
+      correlation_threshold: 0.70      # Korrelation >0.7 = "korreliert"
+
+    target_metrics:
+      min_total_pnl: 8000.0            # Höherer Gewinn durch Diversifikation
+      max_drawdown: 0.10               # Max 10% (Multi-Symbol-Risk)
+      min_winrate: 0.52                # 52% Winrate
+      min_sharpe_ratio: 1.3
+      max_trades: 150                  # Mehr Trades (5 Symbole)
+      min_profit_factor: 1.6
+
+    market_conditions:
+      expected_volatility: "moderate"
+      expected_trend: "bullish"
+      liquidity_level: "high"
+      special_conditions:
+        - "high_correlation"
+        - "sector_rotation"
+        - "portfolio_diversification"
+
+  # =======================================================================
+  # SZENARIO 6: Low Liquidity Environment (Slippage Test)
+  # =======================================================================
+  - name: low_liquidity_slippage
+    description: |
+      Small-Cap oder Off-Peak-Hours mit niedriger Liquidität.
+      Testet Slippage-Toleranzen, Spread-Checks und Order-Size-Anpassungen.
+      Simuliert Wochenend-Trading oder Altcoin mit niedriger Market-Cap.
+
+    symbol_set:
+      - BTCUSDT    # Referenz (hohe Liquidität)
+      - MATICUSDT  # Medium Liquidity
+      - RUNEUSDT   # Low Liquidity
+
+    timeframe:
+      start: "2024-06-01T00:00:00Z"    # Sommer (niedrigere Volumes)
+      end: "2024-06-30T00:00:00Z"      # 1 Monat
+
+    candle_interval: "15m"
+
+    risk_config:
+      max_position_pct: 0.06           # Klein: 6% (Slippage-Schutz)
+      max_daily_drawdown_pct: 0.04
+      max_total_exposure_pct: 0.20
+      circuit_breaker_threshold_pct: 0.08
+      max_slippage_pct: 0.08           # WICHTIG: 8% Slippage-Toleranz
+      stop_loss_pct: 0.025
+      data_stale_timeout_sec: 90       # Länger: 90s (niedrige Update-Frequenz)
+      account_equity: 100000.0
+      # Liquidity-spezifisch:
+      min_volume_threshold: 100000.0   # Min $100k Volume/Candle
+      max_spread_pct: 0.05             # Max 5% Bid-Ask-Spread
+      liquidity_check_enabled: true
+
+    target_metrics:
+      min_total_pnl: 1000.0            # Geringere Erwartung
+      max_drawdown: 0.08
+      min_winrate: 0.48                # Schwieriger
+      min_sharpe_ratio: 0.8
+      max_trades: 80                   # Weniger Trades (viele rejected)
+      min_profit_factor: 1.2
+
+    market_conditions:
+      expected_volatility: "moderate"
+      expected_trend: "mixed"
+      liquidity_level: "low"
+      special_conditions:
+        - "wide_spreads"
+        - "high_slippage"
+        - "low_volume"
+        - "order_rejection_risk"
+
+  # =======================================================================
+  # SZENARIO 7: Consistent Trend (Optimal Case)
+  # =======================================================================
+  - name: consistent_trend_optimal
+    description: |
+      Best-Case-Szenario mit starkem, konsistentem Trend ohne große Pullbacks.
+      Testet maximale Performance der Momentum-Strategie.
+      Referenz für Strategie-Tuning und Risk-Parameter-Optimierung.
+
+    symbol_set:
+      - BTCUSDT
+      - ETHUSDT
+
+    timeframe:
+      start: "2023-10-01T00:00:00Z"    # Q4 2023 Bull-Run Start
+      end: "2023-12-31T00:00:00Z"      # 3 Monate
+
+    candle_interval: "15m"
+
+    risk_config:
+      max_position_pct: 0.12           # Aggressiver: 12%
+      max_daily_drawdown_pct: 0.06     # Standard: 6%
+      max_total_exposure_pct: 0.35     # Höher: 35%
+      circuit_breaker_threshold_pct: 0.10
+      max_slippage_pct: 0.02
+      stop_loss_pct: 0.03              # Weiter: 3% (Trend-Following)
+      data_stale_timeout_sec: 60
+      account_equity: 100000.0
+      # Optimal-Case-Parameter:
+      trailing_stop_enabled: true      # Gewinne laufen lassen
+      pyramiding_allowed: true         # Nachlegen bei Trend
+      max_pyramid_levels: 2            # Max 2x nachlegen
+
+    target_metrics:
+      min_total_pnl: 12000.0           # HOCH: $12k Gewinn
+      max_drawdown: 0.08               # Max 8%
+      min_winrate: 0.60                # 60% Winrate
+      min_sharpe_ratio: 2.0            # Sehr gut: 2.0 Sharpe
+      max_trades: 120
+      min_profit_factor: 2.5           # Sehr gut: 2.5
+
+    market_conditions:
+      expected_volatility: "moderate"
+      expected_trend: "strong_bullish"
+      liquidity_level: "high"
+      special_conditions:
+        - "consistent_trend"
+        - "low_drawdowns"
+        - "momentum_persistence"
+
+# =======================================================================
+# GLOBALE KONFIGURATION
+# =======================================================================
+global_config:
+  # Simulation-Engine-Parameter
+  execution_model: "next_candle_open"   # Wie werden Fills simuliert?
+  commission_pct: 0.0006                # 0.06% Maker/Taker Fee (MEXC)
+  enable_slippage_simulation: true      # Slippage-Modell aktiviert
+  slippage_model: "proportional"        # linear | proportional | realistic
+
+  # Logging & Output
+  log_level: "INFO"
+  output_format: "json"                 # json | csv | parquet
+  save_trades: true
+  save_signals: true
+  save_portfolio_snapshots: true
+  save_risk_decisions: true
+
+  # Performance
+  parallel_execution: false             # Szenarien parallel ausführen?
+  max_workers: 4
+
+  # Validierung
+  validate_data_quality: true           # Pre-Checks auf Marktdaten
+  require_continuous_data: true         # Keine Gaps erlaubt
+
+# =======================================================================
+# BENCHMARK-VERGLEICH (Optional)
+# =======================================================================
+benchmarks:
+  - name: "buy_and_hold_btc"
+    description: "Passive Buy & Hold BTC"
+    symbol: "BTCUSDT"
+
+  - name: "equal_weight_portfolio"
+    description: "Gleichgewichtetes Portfolio (BTC, ETH, BNB)"
+    symbols: ["BTCUSDT", "ETHUSDT", "BNBUSDT"]
+    rebalance_frequency: "weekly"
+
+# =======================================================================
+# METADATA
+# =======================================================================
+metadata:
+  version: "1.0.0"
+  created: "2025-11-21"
+  author: "Claire de Binaire Team"
+  schema_version: "1.0"
+  compatible_with:
+    - "claire_backtest_engine >= 1.0.0"
+    - "claire_risk_engine >= 1.0.0"
+    - "claire_strategy_engine >= 1.0.0"
