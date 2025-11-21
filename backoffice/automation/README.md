@@ -27,7 +27,29 @@
 
 ---
 
-### **2. PostgreSQL Backup**
+### **2. System Health Check** ⭐ NEW
+
+**Files**:
+
+- `systemcheck.sh` - Linux/Mac bash script
+- `systemcheck.ps1` - Windows PowerShell script
+
+**Purpose**: Comprehensive system health validation before deployment or testing.
+
+**Features**:
+
+- ✅ Docker daemon status check
+- ✅ Container status validation (running/stopped)
+- ✅ Health endpoint testing (HTTP /health)
+- ✅ Database connectivity (PostgreSQL, Redis)
+- ✅ Colored output with summary
+- ✅ Exit codes for CI/CD integration
+- ✅ Quick mode for fast checks
+- ✅ Full mode with database tests
+
+---
+
+### **3. PostgreSQL Backup**
 
 **Files**:
 
@@ -108,6 +130,103 @@ Warnings: 0
 Errors: 0
 
 [SUCCESS] ENV Validation passed! ✅
+```
+
+---
+
+### **System Health Check**
+
+**Linux/Mac (Bash)**:
+
+```bash
+# Make script executable
+chmod +x backoffice/automation/systemcheck.sh
+
+# Run full system check
+./backoffice/automation/systemcheck.sh
+
+# Quick check (skip database connectivity tests)
+./backoffice/automation/systemcheck.sh --quick
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+# Run full system check
+.\backoffice\automation\systemcheck.ps1
+
+# Quick check
+.\backoffice\automation\systemcheck.ps1 -Quick
+```
+
+**Exit Codes**:
+- `0`: All checks passed (system ready)
+- `1`: Critical failures (deployment blocked)
+- `2`: Warnings present (review recommended)
+
+**What Gets Checked**:
+
+1. **Prerequisites**:
+   - Docker installed and running
+   - Docker Compose available
+   - .env file exists
+
+2. **Container Status**:
+   - All 8 containers (redis, postgres, ws, core, risk, execution, prometheus, grafana)
+   - Running state
+   - Health status
+
+3. **Health Endpoints**:
+   - `/health` endpoints for services (ws, core, risk, execution)
+   - HTTP response validation
+
+4. **Database Connectivity** (full mode only):
+   - PostgreSQL: Connection test with SELECT 1
+   - Redis: PING test
+
+**Example Output**:
+
+```
+╔══════════════════════════════════════════════════════════╗
+║  System Health Check - Claire de Binaire                ║
+╚══════════════════════════════════════════════════════════╝
+
+Timestamp: 2025-11-21 15:30:00 UTC
+Mode: Full Check
+
+━━━ Prerequisites ━━━
+[✓ OK] Docker installed (version 24.0.7)
+[✓ OK] Docker daemon is running
+[✓ OK] Docker Compose available (v2.23.0)
+[✓ OK] .env file found
+
+━━━ Container Status ━━━
+[✓ OK] cdb_redis: running (healthy)
+[✓ OK] cdb_postgres: running (healthy)
+[✓ OK] cdb_ws: running
+[✓ OK] cdb_core: running
+[✓ OK] cdb_risk: running
+[✓ OK] cdb_execution: running
+[✓ OK] cdb_prometheus: running
+[✓ OK] cdb_grafana: running
+
+━━━ Health Endpoints ━━━
+[✓ OK] cdb_ws /health → 200 OK
+[✓ OK] cdb_core /health → 200 OK
+[✓ OK] cdb_risk /health → 200 OK
+[✓ OK] cdb_execution /health → 200 OK
+
+━━━ Database Connectivity ━━━
+[✓ OK] PostgreSQL: Connection successful
+[✓ OK] Redis: PING successful
+
+━━━ Summary ━━━
+
+Passed:   14
+Warnings: 0
+Failed:   0
+
+[✓ SYSTEM READY] All checks passed ✅
 ```
 
 ---
@@ -499,6 +618,27 @@ The ENV validation scripts check the following variables:
 3. **Test After Changes**:
    - Run validation after editing `.env`
    - Check for typos in variable names
+
+### **System Health Check**
+1. **Before Deployment**:
+   - Run full system check before going live
+   - Fix all critical failures (exit code 1)
+   - Review and address warnings (exit code 2)
+
+2. **After Docker Changes**:
+   - Run systemcheck after `docker compose up`
+   - Verify all containers are healthy
+   - Check health endpoints respond
+
+3. **Regular Monitoring**:
+   - Run daily or after configuration changes
+   - Use quick mode for fast checks: `--quick` / `-Quick`
+   - Integrate into deployment pipeline
+
+4. **Troubleshooting**:
+   - Check Docker logs for failed containers: `docker compose logs <service>`
+   - Verify .env configuration with `check_env.sh`
+   - Ensure ports are not blocked by firewall
 
 ### **PostgreSQL Backup**
 1. **Test Backups Regularly**:
