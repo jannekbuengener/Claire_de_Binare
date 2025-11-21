@@ -74,6 +74,7 @@ pytest -v
 |-------|-------|-----------|
 | `backoffice/docs/CLAUDE_CODE_BRIEFING.md` | **START HIER** | 5 min |
 | `backoffice/PROJECT_STATUS.md` | Live-Status | 3 min |
+| `backoffice/docs/ENV_CATALOG.md` | ⭐ ENV-Variablen-Katalog (46 Variablen) | 5 min |
 | `services/cdb_risk/service.py` | Risk-Logic Referenz | 10 min |
 | `tests/conftest.py` | Test-Fixtures | 3 min |
 
@@ -389,6 +390,8 @@ CIRCUIT_BREAKER_THRESHOLD_PCT=0.10  # 10% Emergency Stop
 MAX_SLIPPAGE_PCT=0.02           # 2% Max Slippage
 DATA_STALE_TIMEOUT_SEC=60       # 60s Timeout
 ```
+
+**📖 Vollständiger Katalog:** Siehe `backoffice/docs/ENV_CATALOG.md` für alle 46 ENV-Variablen (Risk, DB, Redis, Monitoring, Services, Trading, System) mit Ranges, Defaults und Service-Mapping.
 
 ---
 
@@ -750,6 +753,7 @@ grep -r "TODO" services/ tests/
 |-------|-------|
 | `backoffice/PROJECT_STATUS.md` | Live-Status des Projekts |
 | `backoffice/docs/CLAUDE_CODE_BRIEFING.md` | Dein Briefing |
+| `backoffice/docs/ENV_CATALOG.md` | ⭐ ENV-Variablen-Katalog (46 Variablen) |
 | `services/cdb_risk/service.py` | Risk-Logic (Referenz) |
 | `services/cdb_core/service.py` | Signal-Logic (Referenz) |
 | `tests/conftest.py` | Test-Fixtures |
@@ -775,6 +779,8 @@ MAX_DAILY_DRAWDOWN_PCT=0.05        # 5%
 MAX_TOTAL_EXPOSURE_PCT=0.30        # 30%
 CIRCUIT_BREAKER_THRESHOLD_PCT=0.10 # 10%
 ```
+
+**💡 Tipp:** Vollständiger ENV-Katalog mit allen 46 Variablen → `backoffice/docs/ENV_CATALOG.md`
 
 ---
 

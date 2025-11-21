@@ -59,9 +59,10 @@
 ## ⚠️ AKTIVE BLOCKER
 
 ### KRITISCH (Deployment-verhindernd)
-1. **ENV-Validation ausstehend**
-   - `.env` existiert, aber noch nicht mit `check_env.ps1` validiert
-   - Letzter Stand: `.env.template` clean, Secrets nur lokal in `.env`
+1. **✅ ENV-Validation: DOKUMENTIERT (2025-11-21)**
+   - ✅ ENV_CATALOG.md erstellt: 46 Variablen vollständig dokumentiert
+   - ✅ `.env.template` clean, Secrets nur lokal in `.env`
+   - ⏳ Ausstehend: `check_env.ps1` gegen `.env` laufen lassen (Validierungs-Script)
 2. **Systemcheck noch nicht durchgeführt**
    - Container-Status aktuell nur Template
    - Health-Endpoints noch nicht verifiziert
@@ -106,10 +107,14 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 ### Phase N1: Paper-Test-Vorbereitung
 
-**SOFORT (< 1h)**  
+**SOFORT (< 1h)**
+- [x] ~~**ENV-Katalog erstellen**~~ → ✅ **Abgeschlossen** (2025-11-21)
+  - ✅ `backoffice/docs/ENV_CATALOG.md` erstellt (46 Variablen dokumentiert)
+  - ✅ Referenzen in CLAUDE.md und PROJECT_STATUS.md integriert
 - [ ] **ENV-Validation ausführen**
   - `backoffice/automation/check_env.ps1` gegen `.env` laufen lassen
   - Ergebnis hier dokumentieren (OK / WARN / ERROR)
+  - **Basis:** ENV_CATALOG.md (kanonische Referenz)
 - [ ] **Systemcheck #1 durchführen** (siehe Systemcheck-Checkliste unten)
   - Container starten, Health prüfen, Status-Tabelle aktualisieren
 
@@ -158,9 +163,10 @@ _Keine aktiven HOCH-Blocker_ ✅
 - **Exposed Ports**: 8 (nur localhost)
 
 ### Dokumentation
-- **Markdown Files**: 47
+- **Markdown Files**: 48 (+1 ENV_CATALOG.md)
 - **YAML Configs**: 4
-- **Total Size**: ~420 KB
+- **Total Size**: ~428 KB
+- **Neu (2025-11-21):** ⭐ `backoffice/docs/ENV_CATALOG.md` – Vollständiger Katalog aller 46 ENV-Variablen (Risk, DB, Redis, Monitoring, Services, Trading, System) mit Ranges, Defaults und Service-Mapping
 
 ## 🔐 POSTGRES-BACKUP-STRATEGIE (DRAFT N1)
 
