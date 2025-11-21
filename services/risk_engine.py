@@ -10,7 +10,7 @@ is available.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -86,7 +86,7 @@ def _calculate_signal_notional(signal_event: Dict[str, float], size: float) -> f
 
 def generate_stop_loss(
     signal_event: Dict[str, float], risk_config: Dict[str, float]
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """Generate a basic stop-loss level for a signal.
 
     Args:

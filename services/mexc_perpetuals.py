@@ -16,7 +16,7 @@ import logging
 import os
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +360,7 @@ def create_position_from_signal(
 def validate_liquidation_distance(
     position: MexcPerpetualPosition,
     min_distance: float,
-) -> Dict[str, bool]:
+) -> Dict[str, Any]:
     """Validate that liquidation distance is acceptable.
 
     Args:
