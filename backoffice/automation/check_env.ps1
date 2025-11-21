@@ -47,9 +47,13 @@ $expectedVars = @{
     # Redis
     "REDIS_HOST" = @{ Required = $true; Type = "string"; Default = "cdb_redis" }
     "REDIS_PORT" = @{ Required = $true; Type = "int"; Default = "6379" }
-    "REDIS_PASSWORD" = @{ Required = $false; Type = "secret" }
+    "REDIS_PASSWORD" = @{ Required = $true; Type = "secret"; MinLength = 8 }
+    "REDIS_DB" = @{ Required = $false; Type = "int"; Min = 0; Max = 15; Default = "0" }
 
-    # Risk Limits
+    # Grafana
+    "GRAFANA_PASSWORD" = @{ Required = $false; Type = "secret"; MinLength = 5; Default = "admin" }
+
+    # Risk Limits (NICHT ÄNDERN ohne Rücksprache!)
     "MAX_POSITION_PCT" = @{ Required = $true; Type = "float"; Min = 0.01; Max = 1.0; Default = "0.10" }
     "MAX_DAILY_DRAWDOWN_PCT" = @{ Required = $true; Type = "float"; Min = 0.01; Max = 0.5; Default = "0.05" }
     "MAX_TOTAL_EXPOSURE_PCT" = @{ Required = $true; Type = "float"; Min = 0.1; Max = 1.0; Default = "0.30" }
@@ -59,9 +63,12 @@ $expectedVars = @{
     # System
     "DATA_STALE_TIMEOUT_SEC" = @{ Required = $true; Type = "int"; Min = 10; Max = 300; Default = "60" }
     "LOG_LEVEL" = @{ Required = $false; Type = "enum"; Values = @("DEBUG", "INFO", "WARNING", "ERROR"); Default = "INFO" }
-    "ENVIRONMENT" = @{ Required = $false; Type = "enum"; Values = @("development", "staging", "production"); Default = "development" }
 
-    # MEXC API (Optional für N1 Paper-Test)
+    # Trading Configuration
+    "TRADING_MODE" = @{ Required = $true; Type = "enum"; Values = @("paper", "live"); Default = "paper" }
+    "ACCOUNT_EQUITY" = @{ Required = $true; Type = "float"; Min = 1000.0; Max = 10000000.0; Default = "100000.0" }
+
+    # MEXC API (Optional für N1 Paper-Test, Required für Live-Trading)
     "MEXC_API_KEY" = @{ Required = $false; Type = "secret"; MinLength = 32 }
     "MEXC_API_SECRET" = @{ Required = $false; Type = "secret"; MinLength = 32 }
 }

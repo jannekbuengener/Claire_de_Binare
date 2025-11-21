@@ -6,7 +6,28 @@
 
 ## 📁 Available Scripts
 
-### **1. PostgreSQL Backup**
+### **1. ENV Validation** ⭐ NEW
+
+**Files**:
+
+- `check_env.sh` - Linux/Mac bash script
+- `check_env.ps1` - Windows PowerShell script
+
+**Purpose**: Validate `.env` file against expected configuration variables before deployment.
+
+**Features**:
+
+- ✅ Type validation (int, float, string, secret, enum)
+- ✅ Range checking (min/max values)
+- ✅ Required vs optional variables
+- ✅ Secret length validation
+- ✅ Colored output (errors, warnings, success)
+- ✅ Detailed error messages
+- ✅ Exit codes for CI/CD integration
+
+---
+
+### **2. PostgreSQL Backup**
 
 **Files**:
 
@@ -29,7 +50,71 @@
 
 ## 🚀 Usage
 
-### **Linux/Mac (Bash)**
+### **ENV Validation**
+
+**Linux/Mac (Bash)**:
+
+```bash
+# Make script executable
+chmod +x backoffice/automation/check_env.sh
+
+# Run validation (checks .env in current directory)
+./backoffice/automation/check_env.sh
+
+# Or check specific file
+./backoffice/automation/check_env.sh /path/to/.env
+```
+
+**Windows (PowerShell)**:
+
+```powershell
+# Run validation (checks .env in current directory)
+.\backoffice\automation\check_env.ps1
+
+# Or check specific file
+.\backoffice\automation\check_env.ps1 -EnvFile "C:\path\to\.env"
+```
+
+**Exit Codes**:
+- `0`: All checks passed (OK or warnings)
+- `1`: Validation failed (errors found)
+- `2`: .env file not found (Bash only)
+
+**Example Output**:
+
+```
+=== ENV Validation for Claire de Binaire ===
+
+[OK] .env found
+
+Found 18 variables in .env
+
+=== Validating Variables ===
+
+[OK] POSTGRES_HOST = cdb_postgres
+[OK] POSTGRES_PORT = 5432
+[OK] POSTGRES_USER = claire_user
+[OK] POSTGRES_PASSWORD = ******** (Length: 24)
+[OK] POSTGRES_DB = claire_de_binaire
+[OK] REDIS_HOST = cdb_redis
+[OK] REDIS_PORT = 6379
+[OK] REDIS_PASSWORD = ******** (Length: 24)
+[OK] TRADING_MODE = paper
+[OK] ACCOUNT_EQUITY = 100000.0
+
+=== Validation Summary ===
+OK: 18
+Warnings: 0
+Errors: 0
+
+[SUCCESS] ENV Validation passed! ✅
+```
+
+---
+
+### **PostgreSQL Backup**
+
+**Linux/Mac (Bash)**:
 
 ```bash
 # Make script executable
@@ -358,8 +443,64 @@ Get-Content "$env:USERPROFILE\backups\cdb_postgres\backup_log.txt" -Tail 20
 
 ---
 
+## 📊 ENV Validation - Validated Variables
+
+The ENV validation scripts check the following variables:
+
+### **Database Configuration**
+- `POSTGRES_HOST` (string, required) - Default: `cdb_postgres`
+- `POSTGRES_PORT` (int, required, 1024-65535) - Default: `5432`
+- `POSTGRES_USER` (string, required) - Default: `claire_user`
+- `POSTGRES_PASSWORD` (secret, required, min 8 chars)
+- `POSTGRES_DB` (string, required) - Default: `claire_de_binare`
+
+### **Redis Configuration**
+- `REDIS_HOST` (string, required) - Default: `cdb_redis`
+- `REDIS_PORT` (int, required, 1024-65535) - Default: `6379`
+- `REDIS_PASSWORD` (secret, required, min 8 chars)
+- `REDIS_DB` (int, optional, 0-15) - Default: `0`
+
+### **Grafana Configuration**
+- `GRAFANA_PASSWORD` (secret, optional, min 5 chars) - Default: `admin`
+
+### **Risk Limits** (⚠️ NICHT ÄNDERN ohne Rücksprache!)
+- `MAX_POSITION_PCT` (float, required, 0.01-1.0) - Default: `0.10` (10%)
+- `MAX_DAILY_DRAWDOWN_PCT` (float, required, 0.01-0.5) - Default: `0.05` (5%)
+- `MAX_TOTAL_EXPOSURE_PCT` (float, required, 0.1-1.0) - Default: `0.30` (30%)
+- `CIRCUIT_BREAKER_THRESHOLD_PCT` (float, required, 0.05-0.5) - Default: `0.10` (10%)
+- `MAX_SLIPPAGE_PCT` (float, required, 0.001-0.1) - Default: `0.02` (2%)
+
+### **System Configuration**
+- `DATA_STALE_TIMEOUT_SEC` (int, required, 10-300) - Default: `60`
+- `LOG_LEVEL` (enum, optional: DEBUG, INFO, WARNING, ERROR) - Default: `INFO`
+
+### **Trading Configuration**
+- `TRADING_MODE` (enum, required: paper, live) - Default: `paper`
+- `ACCOUNT_EQUITY` (float, required, 1000-10000000) - Default: `100000.0`
+
+### **MEXC API** (Optional for N1 Paper-Test, Required for Live-Trading)
+- `MEXC_API_KEY` (secret, optional, min 32 chars)
+- `MEXC_API_SECRET` (secret, optional, min 32 chars)
+
+---
+
 ## 📋 Best Practices
 
+### **ENV Validation**
+1. **Run Before Deployment**:
+   - Always validate `.env` before starting services
+   - Integrate into CI/CD pipeline
+
+2. **Secure Secrets**:
+   - Never commit `.env` to git (in `.gitignore`)
+   - Use strong passwords (≥16 chars recommended)
+   - Rotate secrets regularly
+
+3. **Test After Changes**:
+   - Run validation after editing `.env`
+   - Check for typos in variable names
+
+### **PostgreSQL Backup**
 1. **Test Backups Regularly**:
    - Perform restore test monthly
    - Verify data integrity
