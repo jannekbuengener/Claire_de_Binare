@@ -1,0 +1,98 @@
+# Alertmanager Configuration for Claire de Binaire
+# Based on MONITORING_SPEC.md Section 5.2
+
+global:
+  resolve_timeout: 5m
+
+# Route configuration
+route:
+  receiver: 'default'
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 3h
+
+  routes:
+    # Critical Alerts → Slack + Email (wenn konfiguriert)
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      continue: false
+
+    # Warning Alerts → Slack only
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      continue: false
+
+    # Info Alerts → Log only (webhook)
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      continue: false
+
+# Receivers configuration
+receivers:
+  # Default receiver (falls kein Match)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:8080/alerts/default'
+        send_resolved: true
+
+  # Critical alerts - Höchste Priorität
+  - name: 'critical-alerts'
+    webhook_configs:
+      - url: 'http://localhost:8080/alerts/critical'
+        send_resolved: true
+    # Slack-Integration (wenn konfiguriert):
+    # slack_configs:
+    #   - api_url: '<SLACK_WEBHOOK_URL>'
+    #     channel: '#claire-critical'
+    #     title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+    # Email-Integration (wenn konfiguriert):
+    # email_configs:
+    #   - to: 'ops@claire.trading'
+    #     from: 'alertmanager@claire.trading'
+    #     smarthost: 'smtp.gmail.com:587'
+    #     auth_username: '<USERNAME>'
+    #     auth_password: '<PASSWORD>'
+
+  # Warning alerts - Mittlere Priorität
+  - name: 'warning-alerts'
+    webhook_configs:
+      - url: 'http://localhost:8080/alerts/warning'
+        send_resolved: true
+    # Slack-Integration (wenn konfiguriert):
+    # slack_configs:
+    #   - api_url: '<SLACK_WEBHOOK_URL>'
+    #     channel: '#claire-alerts'
+    #     title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+    #     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+    #     send_resolved: true
+
+  # Info alerts - Niedrige Priorität
+  - name: 'info-alerts'
+    webhook_configs:
+      - url: 'http://localhost:8080/alerts/info'
+        send_resolved: false
+
+# Inhibition rules (verhindert Duplikate)
+inhibit_rules:
+  # Wenn Service down ist, keine weiteren Alerts von diesem Service
+  - source_match:
+      severity: 'critical'
+      alertname: 'ServiceDown'
+    target_match:
+      severity: 'warning'
+    equal: ['component']
+
+  # Wenn Circuit Breaker aktiv ist, keine Position-Size-Violations
+  - source_match:
+      severity: 'critical'
+      alertname: 'CircuitBreakerActivated'
+    target_match:
+      severity: 'warning'
+      alertname: 'PositionSizeViolation'
+    equal: []

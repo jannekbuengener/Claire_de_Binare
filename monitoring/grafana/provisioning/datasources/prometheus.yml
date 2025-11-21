@@ -1,0 +1,16 @@
+# Grafana Datasource Provisioning for Claire de Binaire
+# Auto-loads Prometheus as datasource on Grafana startup
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://cdb_prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: "POST"

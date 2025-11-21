@@ -1,0 +1,148 @@
+# Prometheus Alert Rules for Claire de Binaire
+# Based on MONITORING_SPEC.md Section 5
+
+groups:
+  - name: claire_de_binaire_critical
+    interval: 15s
+    rules:
+
+      # ALERT 1: Daily Drawdown Limit Exceeded
+      - alert: DailyDrawdownLimitExceeded
+        expr: cdb_daily_drawdown_pct > 5.0
+        for: 1m
+        labels:
+          severity: critical
+          component: risk_engine
+        annotations:
+          summary: "Daily Drawdown Limit Exceeded"
+          description: "Daily drawdown is {{ $value | humanizePercentage }}, exceeding 5% limit. Trading stopped."
+          runbook_url: "https://docs.claire/runbooks/daily-drawdown"
+
+      # ALERT 2: Circuit Breaker Activated
+      - alert: CircuitBreakerActivated
+        expr: cdb_circuit_breaker_active == 1
+        for: 30s
+        labels:
+          severity: critical
+          component: risk_engine
+        annotations:
+          summary: "Circuit Breaker Activated"
+          description: "Market anomalies detected (high slippage or spread). Trading paused."
+          runbook_url: "https://docs.claire/runbooks/circuit-breaker"
+
+      # ALERT 3: Service Down
+      - alert: ServiceDown
+        expr: cdb_health_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: "{{ $labels.service }}"
+        annotations:
+          summary: "Service {{ $labels.service }} is DOWN"
+          description: "Health check failed for service {{ $labels.service }}."
+          runbook_url: "https://docs.claire/runbooks/service-restart"
+
+      # ALERT 4: High Error Rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(cdb_signal_errors_total[5m]) +
+            rate(cdb_execution_errors_total[5m])
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High Error Rate Detected"
+          description: "Error rate is {{ $value | humanize }} errors/sec over last 5 minutes."
+          runbook_url: "https://docs.claire/runbooks/error-rate"
+
+      # ALERT 5: Stale Market Data
+      - alert: StaleMarketData
+        expr: cdb_data_staleness_seconds > 30
+        for: 1m
+        labels:
+          severity: warning
+          component: market_data
+        annotations:
+          summary: "Stale Market Data Detected"
+          description: "No market data received for {{ $value }} seconds from {{ $labels.source }}."
+          runbook_url: "https://docs.claire/runbooks/data-stale"
+
+      # ALERT 6: Exposure Limit Approaching
+      - alert: ExposureLimitApproaching
+        expr: cdb_total_exposure_pct > 45.0
+        for: 5m
+        labels:
+          severity: warning
+          component: risk_engine
+        annotations:
+          summary: "Portfolio Exposure Approaching Limit"
+          description: "Total exposure is {{ $value | humanizePercentage }}, approaching 50% limit."
+          runbook_url: "https://docs.claire/runbooks/exposure-limit"
+
+      # ALERT 7: Position Size Violation
+      - alert: PositionSizeViolation
+        expr: cdb_position_exposure_pct > 10.0
+        for: 2m
+        labels:
+          severity: warning
+          component: risk_engine
+        annotations:
+          summary: "Position Size Exceeds Limit for {{ $labels.symbol }}"
+          description: "Position {{ $labels.symbol }} has {{ $value | humanizePercentage }} exposure, exceeding 10% limit."
+          runbook_url: "https://docs.claire/runbooks/position-size"
+
+      # ALERT 8: High Event Processing Latency
+      - alert: HighEventProcessingLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(cdb_event_processing_duration_seconds_bucket[5m]))
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          component: "{{ $labels.service }}"
+        annotations:
+          summary: "High Event Processing Latency in {{ $labels.service }}"
+          description: "P95 latency is {{ $value | humanizeDuration }} in {{ $labels.service }}."
+          runbook_url: "https://docs.claire/runbooks/latency"
+
+      # ALERT 9: Database Connection Failures
+      - alert: DatabaseConnectionFailures
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL Database Unreachable"
+          description: "Cannot connect to PostgreSQL database claire_de_binaire."
+          runbook_url: "https://docs.claire/runbooks/database-down"
+
+      # ALERT 10: Redis Unavailable
+      - alert: RedisUnavailable
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: message_bus
+        annotations:
+          summary: "Redis Message Bus Unavailable"
+          description: "Cannot connect to Redis. Event routing stopped."
+          runbook_url: "https://docs.claire/runbooks/redis-down"
+
+  - name: claire_de_binaire_info
+    interval: 1m
+    rules:
+
+      # INFO: Positive PnL Milestone
+      - alert: PositivePnLMilestone
+        expr: cdb_cumulative_pnl_usd > 1000
+        labels:
+          severity: info
+          component: trading
+        annotations:
+          summary: "Positive PnL Milestone Reached"
+          description: "Cumulative PnL is ${{ $value | humanize }}. 🎉"

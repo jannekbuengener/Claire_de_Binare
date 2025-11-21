@@ -1,0 +1,58 @@
+# Prometheus Configuration for Claire de Binaire
+# Auto-Discovery für Services via Docker-DNS
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'claire_de_binaire'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'cdb_alertmanager:9093'
+
+# Load rules from alerts.yml
+rule_files:
+  - '/etc/prometheus/alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Claire Services (Python Microservices)
+  - job_name: 'cdb_services'
+    scrape_interval: 15s
+    static_configs:
+      - targets:
+          - 'cdb_ws:8000'
+          - 'cdb_core:8001'
+          - 'cdb_risk:8002'
+          - 'cdb_execution:8003'
+    metrics_path: '/metrics'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: 'cdb_([^:]+):.+'
+        replacement: '${1}'
+
+  # Redis (via redis_exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['cdb_redis_exporter:9121']
+
+  # PostgreSQL (via postgres_exporter)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['cdb_postgres_exporter:9187']
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Alertmanager self-monitoring
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['cdb_alertmanager:9093']

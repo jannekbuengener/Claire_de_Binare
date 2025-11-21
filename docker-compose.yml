@@ -55,11 +55,16 @@ services:
     ports:
       - "19090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prom_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=14d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
       interval: 30s
@@ -78,7 +83,10 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD not set}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
     volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
       - grafana_data:/var/lib/grafana
     depends_on:
       - cdb_prometheus
@@ -87,6 +95,50 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - cdb_network
+
+  # Redis Exporter für Prometheus
+  cdb_redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: cdb_redis_exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: cdb_redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "9121:9121"
+    networks:
+      - cdb_network
+    depends_on:
+      - cdb_redis
+
+  # PostgreSQL Exporter für Prometheus
+  cdb_postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: cdb_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@cdb_postgres:5432/claire_de_binare?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - cdb_network
+    depends_on:
+      - cdb_postgres
+
+  # Alertmanager für Prometheus
+  cdb_alertmanager:
+    image: prom/alertmanager:latest
+    container_name: cdb_alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
     networks:
       - cdb_network
 

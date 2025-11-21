@@ -1,0 +1,15 @@
+# Grafana Dashboard Provisioning for Claire de Binaire
+# Auto-loads dashboards from /var/lib/grafana/dashboards
+
+apiVersion: 1
+
+providers:
+  - name: 'claire_dashboards'
+    orgId: 1
+    folder: 'Claire de Binaire'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
