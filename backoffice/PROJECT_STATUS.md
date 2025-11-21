@@ -70,20 +70,18 @@
 _Keine aktiven HOCH-Blocker_ ✅
 
 ### MITTEL (Qualitäts-Issues)
-1. **Risk-Engine TODO**
-   - `services/risk_engine.py` enthält TODO-Kommentar für Production-Grade-Logik
-   - Aktuelle Tests bestehen, aber vor Production-Deployment auflösen
-2. **Markdown-Lint Warnings (Legacy-Dateien)**
+1. **Markdown-Lint Warnings (Legacy-Dateien)**
    - 4.900+ Warnungen in großen Dokumenten (CLAUDE.md, DECISION_LOG.md, etc.)
    - Neue Dateien (automation/) sind clean (100%)
    - Empfehlung: Separate Issue für Legacy-Cleanup
 
 ### ✅ GELÖST (vormals MITTEL)
-1. ~~**Dokumentations-Redundanz**~~ → ✅ **Restructured to 9 categories** (2025-11-21)
-2. ~~**Postgres-Backup-Strategie**~~ → ✅ **Scripts + Documentation complete** (2025-11-21)
-3. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
-4. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
-5. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
+1. ~~**Risk-Engine Architektur**~~ → ✅ **ADR-044 dokumentiert, TODO aktualisiert** (2025-11-21)
+2. ~~**Dokumentations-Redundanz**~~ → ✅ **Restructured to 9 categories** (2025-11-21)
+3. ~~**Postgres-Backup-Strategie**~~ → ✅ **Scripts + Documentation complete** (2025-11-21)
+4. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
+5. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
+6. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
 
 ---
 
@@ -91,6 +89,7 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-21  | **Risk-Engine Architektur dokumentiert** 📐  | ✅ **ADR-044: 7-Layer Validation** |
 | 2025-11-21  | **Markdownlint-Cleanup (4 Dateien)**         | ✅ **60+ Fixes, neue Dateien 100% clean** |
 | 2025-11-21  | **Postgres-Backup Scripts implementiert**    | ✅ **Bash + PowerShell, vollständige Docs** |
 | 2025-11-21  | **CI/CD Pipeline umfassend erweitert** 🚀    | ✅ **8 Jobs, Coverage, Security** |

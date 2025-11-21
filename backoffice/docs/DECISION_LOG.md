@@ -1,5 +1,248 @@
 # Architektur-Entscheidungen (ADR-Style)
 
+## ADR-044: Risk-Engine Architektur mit 7-Layer-Validierung
+
+**Datum**: 2025-11-21
+**Status**: ✅ Akzeptiert
+**Verantwortlicher**: Claire de Binaire Team (Risk Management System)
+
+### Kontext
+
+Nach erfolgreicher Implementierung der Test-Suite (122 Tests, 100%) und CI/CD-Pipeline (8 Jobs) benötigte das Projekt eine **formalisierte Architektur-Dokumentation für die Risk-Engine** – das kritischste Sicherheitssystem des autonomen Trading-Bots.
+
+**Ausgangssituation**:
+- Risk-Engine Code existiert und ist vollständig getestet (23 Tests, 100% Coverage)
+- `evaluate_signal_v2()` implementiert mit 200+ Zeilen Production-Logic
+- TODO-Kommentar in Code suggeriert "placeholder logic" (veraltet, siehe `risk_engine_todo_analysis.md`)
+- Keine strukturierte Dokumentation der Risk-Layers und Decision-Flow
+- Unklare Abgrenzung zwischen Base-System und Enhanced-System (v1 vs. v2)
+
+**Probleme**:
+1. **Fehlende Architektur-Dokumentation**: Risk-Decision-Flow nicht formal dokumentiert
+2. **Veralteter TODO-Kommentar**: Suggeriert Placeholder-Code, obwohl System production-ready ist
+3. **Unklare Layer-Struktur**: 7 Validierungs-Schichten nicht explizit benannt
+4. **Module-Integration unklar**: MEXC Perpetuals, Position Sizing, Execution Simulator Integration nicht dokumentiert
+5. **ENV-Konfiguration verstreut**: Risk-Limits in verschiedenen Modulen definiert
+
+**Fragestellung**: Wie dokumentieren wir die Risk-Engine-Architektur formal und etablieren sie als zentrale Entscheidungs-Komponente?
+
+### Entscheidung
+
+**Formale Etablierung einer 7-Layer-Validierungs-Architektur mit modularem Design und ENV-basierter Konfiguration als Production-Grade Risk-Management-System.**
+
+**Architektur-Übersicht**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    RISK ENGINE ARCHITEKTUR                  │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Input: signal_event, risk_state, risk_config,             │
+│         market_conditions                                   │
+│                                                             │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 1: Daily Drawdown Check                        │ │
+│  │  → Prüft: daily_pnl <= -equity * MAX_DRAWDOWN_PCT     │ │
+│  │  → Blockiert bei Überschreitung (5% Default)          │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 2: Advanced Position Sizing (Module 2)         │ │
+│  │  → Methoden: Fixed Fractional, Vol-Targeting,         │ │
+│  │              Kelly Criterion, ATR-Based                │ │
+│  │  → Fallback: Basic limit_position_size()              │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 3: Total Exposure Check                        │ │
+│  │  → Prüft: exposure_pct <= MAX_EXPOSURE_PCT (50%)      │ │
+│  │  → Verhindert Over-Allocation                         │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 4: Liquidation Distance Check (Module 1)       │ │
+│  │  → MEXC Perpetuals: Margin, Leverage, Liq-Price      │ │
+│  │  → Prüft: liq_distance >= MIN_LIQUIDATION_DISTANCE    │ │
+│  │  → Berechnet: Funding Fees (8h)                       │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 5: Execution Simulation (Module 3)             │ │
+│  │  → Simuliert: Slippage, Fees, Partial Fills          │ │
+│  │  → Prüft: slippage_bps <= MAX_SLIPPAGE_BPS (100bps)  │ │
+│  │  → Blockiert bei exzessiver Slippage                  │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 6: Stop-Loss Generation                        │ │
+│  │  → Berechnet: Stop-Price basierend auf STOP_LOSS_PCT  │ │
+│  │  → Long: stop = price * (1 - stop_pct)               │ │
+│  │  → Short: stop = price * (1 + stop_pct)              │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                            ↓                                │
+│  ┌───────────────────────────────────────────────────────┐ │
+│  │  LAYER 7: Final Approval mit Metadata                 │ │
+│  │  → Approved: True                                     │ │
+│  │  → Metadata: liquidation_price, leverage, fees, etc.  │ │
+│  └───────────────────────────────────────────────────────┘ │
+│                                                             │
+│  Output: EnhancedRiskDecision (approved + metadata)        │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Module-Integration**:
+
+1. **Module 1: MEXC Perpetuals** (`services/mexc_perpetuals.py`):
+   - `create_position_from_signal()`: Erstellt Position mit Margin/Leverage
+   - `validate_liquidation_distance()`: Prüft Min-Distanz zur Liquidation
+   - `calculate_liquidation_price()`: Berechnet Liquidations-Preis
+   - `calculate_funding_fee()`: Schätzt Funding-Kosten (8h)
+
+2. **Module 2: Advanced Position Sizing** (`services/position_sizing.py`):
+   - `select_sizing_method()`: Wählt Sizing-Methode (Fixed/Vol/Kelly/ATR)
+   - `SizingResult`: Rückgabe mit `size_usd`, `size_contracts`, `rationale`
+
+3. **Module 3: Execution Simulator** (`services/execution_simulator.py`):
+   - `simulate_market_order()`: Simuliert Order-Execution
+   - `ExecutionResult`: Rückgabe mit `filled_size`, `avg_fill_price`, `slippage_bps`, `fees`, `partial_fill`
+
+**ENV-Konfiguration** (alle Limits zentral in `.env`):
+
+```yaml
+# Base Risk Limits
+ACCOUNT_EQUITY: 100000.0          # Account-Größe (USD)
+MAX_POSITION_PCT: 0.10            # 10% max Position-Size
+MAX_DRAWDOWN_PCT: 0.05            # 5% max Daily Drawdown
+MAX_EXPOSURE_PCT: 0.50            # 50% max Total Exposure
+STOP_LOSS_PCT: 0.02               # 2% Stop-Loss Distanz
+MAX_SLIPPAGE_BPS: 100.0           # 100bps (1%) max Slippage
+
+# Perpetuals Config (from Module 1)
+LEVERAGE: 5                       # Default Leverage
+MIN_LIQUIDATION_DISTANCE: 0.15    # 15% Min-Distanz
+FUNDING_RATE: 0.0001              # Default Funding Rate
+
+# Position Sizing Config (from Module 2)
+SIZING_METHOD: fixed_fractional   # Sizing-Methode
+TARGET_VOLATILITY: 0.15           # Für Vol-Targeting
+KELLY_FRACTION: 0.25              # Kelly Criterion Fraktion
+
+# Execution Config (from Module 3)
+LIQUIDITY_THRESHOLD: 100000.0     # Min Order Book Depth
+VOLATILITY_MULTIPLIER: 2.0        # Slippage-Multiplikator
+```
+
+**Dual-API-Design**:
+
+```python
+# LEGACY API (v1) - Basis-Validierung
+def evaluate_signal(
+    signal_event: Dict,
+    risk_state: Dict,
+    risk_config: Dict,
+) -> RiskDecision:
+    """
+    3-Layer Basic Validation:
+    - Layer 1: Daily Drawdown
+    - Layer 2: Position Size Limit
+    - Layer 3: Exposure Check
+    """
+    # ... 60 Zeilen Code ...
+
+# ENHANCED API (v2) - Production System (EMPFOHLEN)
+def evaluate_signal_v2(
+    signal_event: Dict,
+    risk_state: Dict,
+    risk_config: Dict,
+    market_conditions: Dict,
+) -> EnhancedRiskDecision:
+    """
+    7-Layer Enhanced Validation + 3 Module:
+    - All v1 Layers PLUS
+    - Perpetuals (Liquidation, Funding)
+    - Advanced Sizing (4 Methoden)
+    - Execution Simulation (Slippage, Fees)
+    """
+    # ... 200+ Zeilen Code ...
+```
+
+**Error-Handling-Strategie**:
+- **Fail-Safe**: Bei Module-Errors → Fallback auf Basis-Logik
+- **Rejection Reasons**: Strukturierte Error-Codes für alle Layers
+- **Metadata**: Vollständige Transparenz über Rejection-Grund
+
+### Konsequenzen
+
+**Positiv**:
+- ✅ **Formal dokumentiert**: Risk-Architektur jetzt ADR-backed
+- ✅ **7-Layer-Design**: Klare Trennung der Verantwortlichkeiten
+- ✅ **Modulare Erweiterbarkeit**: Neue Module einfach integrierbar
+- ✅ **Production-Ready**: System erfüllt alle Anforderungen für N1 Paper-Trading
+- ✅ **Testbar**: 100% Coverage durch Unit/Integration-Tests
+- ✅ **ENV-Driven**: Alle Limits zentral konfigurierbar
+- ✅ **Fail-Safe**: Robuste Error-Handling-Strategie
+- ✅ **Metadata-Rich**: Vollständige Transparenz bei Rejections
+- ✅ **Dual-API**: Legacy (v1) und Enhanced (v2) koexistieren
+- ✅ **MEXC-Integration**: Perpetuals-Mechanik vollständig implementiert
+
+**Neutral**:
+- Legacy-API (v1) bleibt für Backwards-Compatibility
+- TODO-Kommentar sollte aktualisiert werden (nicht entfernt)
+
+**Negativ**:
+- Keine Live-Portfolio-Connectivity (N1 Paper-Trading nutzt Mock-State)
+- Keine Real-Order-Management-Integration (Paper-Execution funktioniert)
+- Module-Dependencies erhöhen Komplexität (Trade-off für Features)
+
+### Alternativen
+
+1. **Monolithische Risk-Funktion ohne Module**:
+   - ❌ Abgelehnt: Schwer testbar, keine Wiederverwendbarkeit
+   - ✅ Module-Design erlaubt isolierte Tests
+
+2. **Event-Sourcing für Risk-Decisions**:
+   - ❌ Verschoben: Erst für N2 Live-Trading
+   - ✅ Stateless-Design reicht für N1 Paper-Trading
+
+3. **ML-basierte Risk-Prediction**:
+   - ❌ Verschoben: Erst nach 6+ Monaten Trading-Historie
+   - ✅ Rule-based System ist transparenter für MVP
+
+4. **Circuit-Breaker als separater Layer**:
+   - ❌ Abgelehnt: Ist Teil des Daily-Drawdown-Checks
+   - ✅ Kann später als Layer 0 hinzugefügt werden
+
+### Compliance
+
+- ✅ **KODEX-konform**: Multi-Layer Defense-in-Depth
+- ✅ **Risk-First-Prinzip**: Alle Signals durchlaufen Risk-Engine
+- ✅ **Fail-Safe-Design**: Error → Rejection (nicht Approval)
+- ✅ **Audit-Trail**: Rejection-Reasons für Compliance
+- ✅ **ENV-Driven**: Limits zentral und auditierbar
+- ✅ **Test-Coverage**: 100% für alle Risk-Layers
+
+### Follow-Up Actions
+
+1. **TODO-Kommentar aktualisieren** (services/risk_engine.py:430):
+   ```python
+   # TODO: Add live connectivity to portfolio service (currently using mock state)
+   # TODO: Integrate with real order management system (paper-trading works)
+   # NOTE: Core risk logic is production-grade (see ADR-044)
+   ```
+
+2. **Integration in N2 Live-Trading**:
+   - Live-Portfolio-State via REST-API
+   - Real-Order-Management via WebSocket
+   - Event-Sourcing für Risk-Decisions
+
+3. **Monitoring & Observability** (geplant):
+   - Prometheus-Metrics für Rejection-Rates
+   - Grafana-Dashboards für Risk-Layer-Performance
+   - Alert-Rules für anomale Rejection-Patterns
+
+---
+
 ## ADR-043: Security-Hardening durch Multi-Layer-Scanning
 
 **Datum**: 2025-11-21
