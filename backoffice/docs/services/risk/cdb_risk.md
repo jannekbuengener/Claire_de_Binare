@@ -1,9 +1,9 @@
 # Risk Manager – Deep Dive & Critical Bug Analysis
 
-**Version**: 1.1.0  
-**Status**: ✅ Production-Ready nach P0-Fixes  
-**Service**: Risk Manager (Port 8002)  
-**Zweck**: Haupt-Risikoschutz-Layer für Claire de Binare Trading System
+**Version**: 1.2.0
+**Status**: ✅ **FIXES IMPLEMENTED** (2025-11-21)
+**Service**: Risk Manager (Port 8002)
+**Zweck**: Haupt-Risikoschutz-Layer für Claire de Binaire Trading System
 
 ---
 
@@ -11,14 +11,15 @@
 
 Der Risk Manager ist das **zentrale Sicherheitssystem** des Trading-Bots. Er validiert jedes Signal durch 5 Layer Risk-Checks BEVOR ein Order an den Execution Service weitergeleitet wird.
 
-**Kritische Erkenntnisse nach Code-Audit**:
-- ✅ **4 kritische Bugs (P0) identifiziert und behoben**
-- ✅ Position Size Berechnung korrigiert (USD → Coins)
-- ✅ Daily P&L Tracking implementiert
-- ✅ Circuit Breaker funktionsfähig
-- ✅ Exposure-Validierung korrekt
+**✅ ALLE P0-BUGS IMPLEMENTIERT (2025-11-21)**:
+- ✅ **Bug #1 FIXED**: Position Size Berechnung korrigiert (USD → Coins)
+- ✅ **Bug #2 FIXED**: Position Limit Check validiert tatsächliche Size
+- ✅ **Bug #3 FIXED**: Exposure Check prüft Future Exposure
+- ✅ **Bug #4 FIXED**: Daily P&L Tracking implementiert & Circuit Breaker funktional
 
-**System-Status**: **Production-Ready** für Phase 7 (Paper Trading Test)
+**System-Status**: ✅ **Production-Ready** – Alle kritischen Bugs behoben
+
+**Test-Coverage**: 12 Tests für Bug-Fixes implementiert (`tests/test_risk_manager_bugfixes.py`)
 
 ---
 
@@ -325,8 +326,11 @@ def _update_pnl(self):
 |-------|----------|-------|
 | 2025-01-11 | Initial Research-Dokument erstellt | Copilot |
 | 2025-01-11 | 5 kritische Bugs identifiziert (P0) | Copilot |
-| 2025-01-11 | Alle P0-Fixes implementiert & committed | Copilot |
+| 2025-01-11 | Dokumentation der Fixes erstellt | Copilot |
+| **2025-11-21** | ✅ **Alle 4 P0-Bugs implementiert** in `backoffice/services/risk_manager/service.py` | Claude Code |
+| **2025-11-21** | ✅ **12 Tests geschrieben** in `tests/test_risk_manager_bugfixes.py` | Claude Code |
+| **2025-11-21** | ✅ **RiskState erweitert** mit entry_prices, position_sides, realized_pnl_today | Claude Code |
 
 ---
 
-**Ende des Dokuments** | **Letzte Aktualisierung**: 2025-01-11 | **Status**: Production-Ready nach P0-Fixes
+**Ende des Dokuments** | **Letzte Aktualisierung**: 2025-11-21 | **Status**: ✅ All P0-Fixes Implemented

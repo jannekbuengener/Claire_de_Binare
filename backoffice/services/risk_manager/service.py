@@ -99,26 +99,53 @@ class RiskManager:
             sys.exit(1)
     
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
-        """Prüft Positions-Limit"""
-        # Beispiel: Max 10% des Kapitals pro Position
-        max_position_size = self.config.test_balance * self.config.max_position_pct
-        
-        # Vereinfachte Berechnung (später mit echtem Portfolio)
-        estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
-        
-        if estimated_position > max_position_size:
-            return False, f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f}"
-        
-        return True, "Position OK"
+        """Prüft Positions-Limit
+
+        Returns:
+            tuple[bool, str]: (approved, reason)
+        """
+        # Max allowed position value in USD
+        max_position_usd = self.config.test_balance * self.config.max_position_pct
+
+        # ✅ FIX Bug #2: Calculate actual position value
+        quantity = self.calculate_position_size(signal)
+        position_value_usd = quantity * signal.price
+
+        if position_value_usd > max_position_usd:
+            return False, (
+                f"Position zu groß: {position_value_usd:.2f} USD "
+                f"> {max_position_usd:.2f} USD (Limit)"
+            )
+
+        return True, f"Position OK ({position_value_usd:.2f} / {max_position_usd:.2f} USD)"
     
-    def check_exposure_limit(self) -> tuple[bool, str]:
-        """Prüft Gesamt-Exposure"""
+    def check_exposure_limit(self, signal: Signal) -> tuple[bool, str]:
+        """Prüft Gesamt-Exposure (inkl. zukünftiger Position)
+
+        Args:
+            signal: Signal to evaluate
+
+        Returns:
+            tuple[bool, str]: (approved, reason)
+        """
         max_exposure = self.config.test_balance * self.config.max_exposure_pct
-        
-        if risk_state.total_exposure >= max_exposure:
-            return False, f"Max Exposure erreicht: {risk_state.total_exposure:.2f} >= {max_exposure:.2f}"
-        
-        return True, "Exposure OK"
+
+        # ✅ FIX Bug #3: Calculate FUTURE exposure (current + new position)
+        quantity = self.calculate_position_size(signal)
+        estimated_new_position = quantity * signal.price
+        future_exposure = risk_state.total_exposure + estimated_new_position
+
+        if future_exposure >= max_exposure:
+            return False, (
+                f"Exposure-Limit würde überschritten: "
+                f"{risk_state.total_exposure:.2f} + {estimated_new_position:.2f} "
+                f"= {future_exposure:.2f} >= {max_exposure:.2f} USD"
+            )
+
+        return True, (
+            f"Exposure OK ({future_exposure:.2f} / {max_exposure:.2f} USD, "
+            f"aktuell: {risk_state.total_exposure:.2f})"
+        )
     
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
@@ -143,7 +170,7 @@ class RiskManager:
             return None
         
         # Layer 2: Exposure-Limit
-        ok, reason = self.check_exposure_limit()
+        ok, reason = self.check_exposure_limit(signal)
         if not ok:
             self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
             logger.warning(f"⚠️ {reason}")
@@ -182,14 +209,33 @@ class RiskManager:
         return order
     
     def calculate_position_size(self, signal: Signal) -> float:
-        """Berechnet Position-Size basierend auf Confidence"""
-        max_size = self.config.test_balance * self.config.max_position_pct
-        
-        # Confidence-basiert (höhere Confidence = größere Position)
-        position_size = max_size * signal.confidence
+        """Berechnet Position-Size basierend auf Confidence
 
-        # Vereinfacht: Menge proportional zur Confidence, Mindestmenge 0
-        return max(position_size, 0.0)
+        Returns:
+            float: Position size in COINS (not USD)
+        """
+        # Calculate max USD value for this position
+        max_usd = self.config.test_balance * self.config.max_position_pct
+
+        # Adjust by confidence (higher confidence = larger position)
+        target_usd = max_usd * signal.confidence
+
+        # ✅ FIX Bug #1: Convert USD to COINS
+        if signal.price <= 0:
+            logger.error(f"Invalid price for {signal.symbol}: {signal.price}")
+            return 0.0
+
+        # Calculate quantity in base currency (e.g., BTC)
+        quantity = target_usd / signal.price
+
+        logger.debug(
+            f"Position sizing: {signal.symbol} "
+            f"max_usd={max_usd:.2f} confidence={signal.confidence:.2f} "
+            f"target_usd={target_usd:.2f} price={signal.price:.2f} "
+            f"→ quantity={quantity:.6f}"
+        )
+
+        return max(quantity, 0.0)
     
     def send_order(self, order: Order):
         """Publiziert Order"""
@@ -228,23 +274,95 @@ class RiskManager:
 
         current = risk_state.positions.get(result.symbol, 0.0)
         new_position = current + delta
+
+        # Check if position was closed
         if abs(new_position) < 1e-6:
+            # Position closed → calculate realized P&L
+            if result.price is not None and result.symbol in risk_state.entry_prices:
+                entry_price = risk_state.entry_prices[result.symbol]
+                side = risk_state.position_sides.get(result.symbol, "BUY")
+
+                if side == "BUY":
+                    realized_pnl = abs(current) * (result.price - entry_price)
+                else:  # SHORT
+                    realized_pnl = abs(current) * (entry_price - result.price)
+
+                risk_state.realized_pnl_today += realized_pnl
+                logger.info(
+                    f"Position closed: {result.symbol} "
+                    f"realized_pnl={realized_pnl:.2f} "
+                    f"total_realized_today={risk_state.realized_pnl_today:.2f}"
+                )
+
+            # Clean up closed position
             risk_state.positions.pop(result.symbol, None)
             risk_state.last_prices.pop(result.symbol, None)
+            risk_state.entry_prices.pop(result.symbol, None)
+            risk_state.position_sides.pop(result.symbol, None)
         else:
+            # Position opened or increased
             risk_state.positions[result.symbol] = new_position
+
+            # ✅ FIX Bug #4: Track entry price and side for P&L calculation
             if result.price is not None:
+                # Store entry price (only on first entry, not on increases)
+                if result.symbol not in risk_state.entry_prices:
+                    risk_state.entry_prices[result.symbol] = result.price
+                    risk_state.position_sides[result.symbol] = result.side
+                    logger.debug(
+                        f"Position opened: {result.symbol} side={result.side} "
+                        f"entry={result.price:.2f} qty={new_position:.6f}"
+                    )
+
+                # Always update last price
                 risk_state.last_prices[result.symbol] = result.price
 
-        if result.price is not None:
-            risk_state.last_prices[result.symbol] = result.price
-
+        # Recalculate total exposure
         risk_state.total_exposure = sum(
             abs(qty) * risk_state.last_prices.get(symbol, 0.0)
             for symbol, qty in risk_state.positions.items()
         )
         risk_state.open_positions = sum(1 for qty in risk_state.positions.values() if abs(qty) > 1e-6)
-    
+
+    def _update_pnl(self):
+        """✅ FIX Bug #4: Berechnet Daily P&L (Realized + Unrealized)
+
+        Daily P&L = Realized P&L (from closed trades today) + Unrealized P&L (from open positions)
+        """
+        unrealized_pnl = 0.0
+
+        # Calculate unrealized P&L for all open positions
+        for symbol, qty in risk_state.positions.items():
+            if abs(qty) < 1e-6:
+                continue
+
+            entry_price = risk_state.entry_prices.get(symbol, 0.0)
+            current_price = risk_state.last_prices.get(symbol, 0.0)
+
+            if entry_price <= 0 or current_price <= 0:
+                logger.warning(f"Invalid prices for {symbol}: entry={entry_price} current={current_price}")
+                continue
+
+            side = risk_state.position_sides.get(symbol, "BUY")
+
+            if side == "BUY":
+                # Long position: profit if current > entry
+                pnl = qty * (current_price - entry_price)
+            else:  # SHORT
+                # Short position: profit if entry > current
+                pnl = qty * (entry_price - current_price)
+
+            unrealized_pnl += pnl
+
+        # Total Daily P&L = Realized (closed trades) + Unrealized (open positions)
+        risk_state.daily_pnl = risk_state.realized_pnl_today + unrealized_pnl
+
+        logger.debug(
+            f"P&L Update: realized={risk_state.realized_pnl_today:.2f} "
+            f"unrealized={unrealized_pnl:.2f} "
+            f"total_daily={risk_state.daily_pnl:.2f}"
+        )
+
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
         stats["order_results_received"] += 1
@@ -263,6 +381,8 @@ class RiskManager:
 
         if result.status == "FILLED":
             self._update_exposure(result)
+            # ✅ FIX Bug #4: Update P&L after exposure update
+            self._update_pnl()
         else:
             stats["orders_rejected_execution"] += 1
             self.send_alert(

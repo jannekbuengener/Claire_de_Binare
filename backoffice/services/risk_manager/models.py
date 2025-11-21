@@ -145,4 +145,8 @@ class RiskState:
     positions: dict[str, float] = field(default_factory=dict)
     pending_orders: int = 0
     last_prices: dict[str, float] = field(default_factory=dict)
+    # ✅ FIX Bug #4: Add fields for P&L tracking
+    entry_prices: dict[str, float] = field(default_factory=dict)
+    position_sides: dict[str, str] = field(default_factory=dict)
+    realized_pnl_today: float = 0.0
 
