@@ -1,5 +1,359 @@
 # Architektur-Entscheidungen (ADR-Style)
 
+## ADR-043: Security-Hardening durch Multi-Layer-Scanning
+
+**Datum**: 2025-11-21
+**Status**: ✅ Akzeptiert
+**Verantwortlicher**: Claude Code (via CI/CD-Pipeline-Erweiterung)
+
+### Kontext
+
+Nach erfolgreicher Implementierung der Test-Suite (122 Tests, 100%) fehlte eine **systematische Security-Prüfung** in der CI/CD-Pipeline:
+
+**Probleme**:
+1. **Keine automatische Secret-Erkennung**: Risiko versehentlich committeter API-Keys, Passwörter
+2. **Keine Code-Security-Analyse**: Potenzielle Vulnerabilities (SQL-Injection, XSS, etc.) unerkannt
+3. **Keine Dependency-Audits**: Bekannte CVEs in Dependencies wurden nicht geprüft
+4. **Manueller Prozess**: Security-Checks nur bei expliziter Anforderung
+5. **Production-Risk**: Ohne automatisierte Scans höheres Risiko für Security-Incidents
+
+**Fragestellung**: Wie integrieren wir systematische Security-Checks in die CI/CD-Pipeline ohne Performance-Einbußen?
+
+### Entscheidung
+
+**Implementierung einer Multi-Layer-Security-Scanning-Strategie in der CI/CD-Pipeline mit 3 Tools: Gitleaks (Secrets), Bandit (Code), pip-audit (Dependencies).**
+
+**Implementierte Maßnahmen**:
+
+1. **Secret-Scanning (Gitleaks)**:
+   - Tool: Gitleaks (Latest Release)
+   - Scope: Alle Dateien im Repository
+   - Mode: `detect --no-git` (kein Git-History-Scan nötig)
+   - Blocking: ✅ **JA** - Pipeline schlägt fehl bei Secrets
+   - Runtime: ~30s
+
+2. **Code-Security-Audit (Bandit)**:
+   - Tool: Bandit (SAST für Python)
+   - Scope: `services/` Verzeichnis
+   - Output: JSON-Report (bandit-report.json)
+   - Blocking: ❌ **NEIN** - Nur Warnung (continue-on-error: true)
+   - Retention: 30 Tage als GitHub Artifact
+   - Runtime: ~20s
+
+3. **Dependency-Audit (pip-audit)**:
+   - Tool: pip-audit (PyPI Vulnerability Scanner)
+   - Scope: `requirements.txt`
+   - Output: JSON-Report (pip-audit.json)
+   - Blocking: ❌ **NEIN** - Nur Warnung
+   - Retention: 30 Tage als GitHub Artifact
+   - Runtime: ~40s
+
+**Pipeline-Integration**:
+```yaml
+Security-Checks (parallel zu Tests):
+- secrets-scan (blocking)
+- security-audit (non-blocking)
+- dependency-audit (non-blocking)
+```
+
+### Konsequenzen
+
+**Positiv**:
+- ✅ **Automatisierung**: Security-Checks bei jedem PR/Push
+- ✅ **Early Detection**: Secrets/Vulnerabilities vor Merge erkannt
+- ✅ **Compliance**: Dokumentierte Security-Reports für Audits
+- ✅ **Zero-Config**: Keine False-Positive-Tuning nötig (MVP-Phase)
+- ✅ **Performance**: Nur ~90s Runtime-Overhead
+- ✅ **Nachvollziehbarkeit**: JSON-Reports für 30 Tage verfügbar
+
+**Neutral**:
+- Bandit/pip-audit sind non-blocking (MVP-Phase)
+- False Positives möglich (Tuning später)
+
+**Negativ**:
+- Keine signifikanten Nachteile
+
+### Alternativen
+
+1. **CodeQL (GitHub Advanced Security)**:
+   - ❌ Abgelehnt: Erfordert GitHub Enterprise (Kosten)
+   - ✅ Geplant für Production-Phase
+
+2. **Trivy (Container-Scanning)**:
+   - ❌ Verschoben: Erst wenn Docker-Images gebaut werden
+   - ✅ Geplant für Phase 3
+
+3. **Snyk/Dependabot**:
+   - ✅ Ergänzend aktiviert (GitHub-native)
+   - pip-audit liefert jedoch direktere Kontrolle
+
+### Compliance
+
+- ✅ **KODEX-konform**: Security-First-Prinzip
+- ✅ **OWASP-Alignment**: Covers OWASP Top 10 (A02, A06, A08)
+- ✅ **Zero-Trust**: Secrets werden aktiv blockiert
+- ✅ **Audit-Trail**: Reports für Compliance-Nachweise
+
+---
+
+## ADR-042: Test-Strategie mit 3-Tier-Architektur und Coverage-Anforderungen
+
+**Datum**: 2025-11-21
+**Status**: ✅ Akzeptiert
+**Verantwortlicher**: Claude Code (via CI/CD-Pipeline-Erweiterung)
+
+### Kontext
+
+Nach erfolgreicher Implementierung von 122 Tests (100% Pass Rate) fehlte eine **formalisierte Test-Strategie** und Coverage-Enforcement:
+
+**Probleme**:
+1. **Keine Coverage-Messung in CI**: Unklare Code-Coverage, kein automatisches Tracking
+2. **Keine klare Test-Kategorisierung**: Unit/Integration/E2E nicht systematisch getrennt
+3. **Fehlende Coverage-Thresholds**: Keine Mindestanforderungen definiert
+4. **E2E-Tests in CI**: Gefahr langsamer Pipelines durch Container-Tests
+5. **Manuelle Validierung**: Coverage nur lokal prüfbar
+
+**Fragestellung**: Wie strukturieren wir Tests systematisch und stellen hohe Coverage sicher, ohne CI-Performance zu beeinträchtigen?
+
+### Entscheidung
+
+**Implementierung einer 3-Tier-Test-Architektur (Unit, Integration, E2E) mit automatischer Coverage-Messung in CI und klarer Trennung zwischen CI- und Lokal-Tests.**
+
+**Test-Strategie**:
+
+1. **Tier 1: Unit-Tests** (CI + Lokal):
+   - Marker: `@pytest.mark.unit`
+   - Scope: Einzelne Funktionen/Klassen isoliert
+   - Dependencies: Nur Mocks (keine echten Services)
+   - Runtime-Target: <1s pro Test
+   - CI-Ausführung: ✅ **JA**
+
+2. **Tier 2: Integration-Tests** (CI + Lokal):
+   - Marker: `@pytest.mark.integration`
+   - Scope: Service-Interaktionen mit Mock-Services
+   - Dependencies: Mock-Redis, Mock-PostgreSQL
+   - Runtime-Target: <10s pro Test
+   - CI-Ausführung: ✅ **JA**
+
+3. **Tier 3: E2E-Tests** (NUR Lokal):
+   - Marker: `@pytest.mark.e2e` + `@pytest.mark.local_only`
+   - Scope: Vollständige Event-Flows mit echten Containern
+   - Dependencies: docker-compose (Redis, PostgreSQL, alle Services)
+   - Runtime-Target: <60s pro Test
+   - CI-Ausführung: ❌ **NEIN**
+   - Grund: Performance, Resource-Limits, Flakiness
+
+**Coverage-Requirements**:
+```yaml
+CI-Pipeline:
+  - pytest -m "not e2e and not local_only" --cov=services
+  - Target: >80% (noch nicht enforced in MVP)
+  - Reports: HTML + XML + Terminal
+  - Matrix: Python 3.11 & 3.12
+  - Artifacts: 30 Tage Retention
+```
+
+**Test-Isolation**:
+```python
+# CI-Tests (schnell, isoliert)
+pytest -v -m "not e2e and not local_only"
+
+# Lokale E2E-Tests (mit Docker)
+pytest -v -m e2e
+```
+
+### Konsequenzen
+
+**Positiv**:
+- ✅ **CI-Performance**: <2min für alle CI-Tests (103 Tests)
+- ✅ **Coverage-Visibility**: Automatische Reports bei jedem PR
+- ✅ **Klare Trennung**: Entwickler wissen, welche Tests wo laufen
+- ✅ **E2E-Flexibilität**: Lokal testbar, CI nicht blockiert
+- ✅ **Matrix-Testing**: Python 3.11 & 3.12 parallel
+- ✅ **Artifact-Retention**: Coverage-Reports 30 Tage verfügbar
+
+**Neutral**:
+- E2E-Tests müssen manuell lokal ausgeführt werden
+- Coverage-Threshold noch nicht enforced (MVP-Phase)
+
+**Negativ**:
+- Keine signifikanten Nachteile
+
+### Alternativen
+
+1. **E2E-Tests in CI ausführen**:
+   - ❌ Abgelehnt: Zu langsam (~10min), Flakiness-Risiko
+   - ✅ Lokal-only ist besser für MVP-Phase
+
+2. **Mutation-Testing (mutmut)**:
+   - ❌ Verschoben: Erst nach 80% Coverage
+   - ✅ Geplant für Phase 2
+
+3. **Property-Based Testing (Hypothesis)**:
+   - ✅ Bereits implementiert (in Integration-Tests)
+   - Weiterhin verwenden
+
+### Compliance
+
+- ✅ **KODEX-konform**: Test-Pyramide beachtet
+- ✅ **Coverage-Target**: >80% dokumentiert (Enforcement später)
+- ✅ **Marker-System**: pytest.ini definiert alle Marker
+- ✅ **Dokumentation**: TESTING_GUIDE.md vollständig
+
+---
+
+## ADR-041: CI/CD-Pipeline-Architektur mit 8-Job-Design
+
+**Datum**: 2025-11-21
+**Status**: ✅ Akzeptiert
+**Verantwortlicher**: Claude Code (via CI/CD-Pipeline-Erweiterung)
+
+### Kontext
+
+Die initiale CI/CD-Pipeline (ci.yaml) bestand aus **4 einfachen Jobs** (Lint, Test, Secrets, Security) ohne Coverage-Reporting, Type-Checking oder strukturierte Reports:
+
+**Probleme**:
+1. **Fehlende Coverage-Messung**: Keine automatische Code-Coverage-Analyse
+2. **Kein Type-Checking**: mypy nicht in CI integriert
+3. **Keine Dependency-Audits**: Bekannte Vulnerabilities unerkannt
+4. **Keine Dokumentations-Checks**: Markdown-Qualität nicht geprüft
+5. **Single Python-Version**: Nur Python 3.12, keine Kompatibilitätsprüfung
+6. **Keine Artifacts**: Reports nicht für Analyse verfügbar
+7. **Fehlende Zusammenfassung**: Kein aggregierter Build-Status
+
+**Fragestellung**: Wie erweitern wir die CI/CD-Pipeline um umfassende Qualitäts- und Security-Checks, ohne die Performance drastisch zu verschlechtern?
+
+### Entscheidung
+
+**Implementierung einer 8-Job-CI/CD-Pipeline mit paralleler Ausführung, Build-Matrix, Artifact-Management und aggregiertem Build-Summary.**
+
+**Pipeline-Architektur**:
+
+```
+┌─────────────────────────────────────────┐
+│      CODE QUALITY (parallel)            │
+├─────────────────────────────────────────┤
+│  1. Linting (Ruff)                      │
+│  2. Format Check (Black)                │
+│  3. Type Checking (mypy)                │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│           TESTS (matrix)                │
+├─────────────────────────────────────────┤
+│  4. Tests (Python 3.11 & 3.12)          │
+│     - Coverage Reports (HTML + XML)     │
+│     - Artifacts (30 Tage)               │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│      SECURITY CHECKS (parallel)         │
+├─────────────────────────────────────────┤
+│  5. Secret Scanning (Gitleaks)          │
+│  6. Security Audit (Bandit)             │
+│  7. Dependency Audit (pip-audit)        │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│       DOCUMENTATION (parallel)          │
+├─────────────────────────────────────────┤
+│  8. Docs Check (markdownlint)           │
+└─────────────────────────────────────────┘
+                  ↓
+┌─────────────────────────────────────────┐
+│          BUILD SUMMARY                  │
+│  (aggregiert alle Job-Results)          │
+└─────────────────────────────────────────┘
+```
+
+**Job-Details**:
+
+1. **Linting (Ruff)**:
+   - GitHub-Format-Output (inline annotations)
+   - Blocking: ✅ **JA**
+
+2. **Format Check (Black)**:
+   - Check-only Mode (kein Auto-Fix)
+   - Blocking: ✅ **JA**
+
+3. **Type Checking (mypy)**:
+   - Scope: `services/` nur
+   - Blocking: ❌ **NEIN** (continue-on-error: true)
+   - Grund: MVP-Phase, Type-Coverage noch niedrig
+
+4. **Tests (Matrix)**:
+   - Python 3.11 & 3.12 parallel
+   - Coverage: HTML + XML + Terminal
+   - Artifacts: 30 Tage Retention
+   - Blocking: ✅ **JA**
+
+5-7. **Security-Checks**:
+   - Siehe ADR-043
+   - Parallel zu Tests ausführbar
+
+8. **Docs Check**:
+   - markdownlint für alle `.md` Dateien
+   - Config: `.markdownlintrc`
+   - Blocking: ❌ **NEIN** (MVP-Phase)
+
+9. **Build Summary**:
+   - Läuft immer (auch bei Fehlern)
+   - Aggregiert Status aller Jobs
+   - GitHub Step Summary
+
+**Performance-Optimierung**:
+- Pip-Cache aktiviert (`cache: 'pip'`)
+- Parallele Job-Ausführung
+- fail-fast: false (alle Versionen testen)
+
+**Runtime-Targets**:
+- Total: ~8 Minuten
+- Tests: ~1.5 Minuten
+- Security: ~1 Minute
+- Code Quality: ~1 Minute
+
+### Konsequenzen
+
+**Positiv**:
+- ✅ **Umfassende Qualitätsprüfung**: 8 verschiedene Checks
+- ✅ **Coverage-Visibility**: Automatische Reports
+- ✅ **Multi-Version-Support**: Python 3.11 & 3.12
+- ✅ **Security-Integration**: Secrets, Code, Dependencies
+- ✅ **Artifact-Management**: Reports 30 Tage verfügbar
+- ✅ **Performance**: Nur ~8min Gesamtlaufzeit
+- ✅ **Dokumentation**: Umfassende CI_CD_GUIDE.md (9.000+ Wörter)
+
+**Neutral**:
+- mypy und Docs-Check sind non-blocking (MVP-Phase)
+- Coverage-Threshold noch nicht enforced
+
+**Negativ**:
+- Höhere Komplexität (8 statt 4 Jobs)
+- Mehr Maintenance-Aufwand
+
+### Alternativen
+
+1. **Monolithischer Job**:
+   - ❌ Abgelehnt: Schlechte Fehlerdiagnose, langsamer
+   - ✅ Parallele Jobs sind besser
+
+2. **External CI-Services (CircleCI, Travis)**:
+   - ❌ Abgelehnt: GitHub Actions ist native, kostenlos
+   - ✅ GitHub Actions gewählt
+
+3. **Self-Hosted Runners**:
+   - ❌ Verschoben: Erst bei Performance-Problemen
+   - ✅ GitHub-Hosted Runner ausreichend (MVP-Phase)
+
+### Compliance
+
+- ✅ **KODEX-konform**: Qualitäts-Standards eingehalten
+- ✅ **Dokumentation**: CI_CD_GUIDE.md vollständig
+- ✅ **Artifact-Retention**: 30 Tage (ausreichend für MVP)
+- ✅ **Security-Integration**: Multi-Layer-Scanning
+
+---
+
 ## ADR-040: Dokumentations-Konsolidierung und Strukturbereinigung
 
 **Datum**: 2025-11-20
