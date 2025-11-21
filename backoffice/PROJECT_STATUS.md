@@ -1,9 +1,9 @@
 # PROJECT STATUS - Claire de Binare Cleanroom
 
-**Datum**: 2025-11-20
-**Version**: 1.1.0-tested
-**Environment**: Cleanroom (Test-Suite Complete)
-**Letztes Update**: 17:50 UTC
+**Datum**: 2025-11-21
+**Version**: 1.2.0-ci-enhanced
+**Environment**: Cleanroom (CI/CD Complete)
+**Letztes Update**: 14:30 UTC
 
 ---
 
@@ -52,6 +52,7 @@
 - ✅ **Test-Suite vollständig implementiert (122 Tests, 100% Pass Rate)** 🎉
 - ✅ **E2E-Tests mit Docker integriert (18/18 bestanden)**
 - ✅ **Risk-Engine: 100% Coverage erreicht**
+- ✅ **CI/CD Pipeline umfassend erweitert** (2025-11-21)
 
 ---
 
@@ -89,6 +90,7 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-21  | **CI/CD Pipeline umfassend erweitert** 🚀    | ✅ **8 Jobs, Coverage, Security** |
 | 2025-11-20  | **Test-Suite vollständig implementiert** 🎉  | ✅ **122 Tests, 100% Pass Rate**  |
 | 2025-11-19  | **E2E-Tests mit Docker integriert**          | ✅ **18/18 Tests bestanden**      |
 | 2025-11-19  | **Risk-Engine Coverage erreicht**            | ✅ **23 Tests implementiert**     |
@@ -138,6 +140,16 @@ _Keine aktiven HOCH-Blocker_ ✅
 - **CI Test Speed**: ✅ **0.27s** (103 Tests ohne E2E)
 - **Test-zu-Code-Ratio**: ✅ **1.6:1** (exzellent)
 - **Linting**: ✅ Pre-Commit Hooks (Ruff + Black) aktiv
+
+### CI/CD Pipeline
+- **Pipeline Jobs**: 8 (Lint, Format, Type, Test, Secret-Scan, Security, Dependency, Docs)
+- **Pipeline Runtime**: ~8 Minuten (kompletter Durchlauf)
+- **Python Versions**: 3.11, 3.12 (Build-Matrix)
+- **Coverage Reports**: HTML + XML (30 Tage Retention)
+- **Security Scans**: Gitleaks (Secrets), Bandit (Code), pip-audit (Dependencies)
+- **Artefakte**: Coverage Reports, Security Reports (JSON)
+- **Dokumentation**: CI_CD_GUIDE.md (9.000+ Wörter)
+- **Trigger**: Pull Requests, Push auf main, Manuell
 
 ### Infrastruktur
 - **Docker-Services**: 8 definiert (siehe Container-Tabelle)
