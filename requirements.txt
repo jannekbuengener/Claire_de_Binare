@@ -19,6 +19,7 @@ prometheus-client==0.19.0
 
 # Utilities
 python-dotenv==1.0.0
+jsonschema==4.20.0
 
 # === DEVELOPMENT (optional) ===
 # pytest==7.4.3

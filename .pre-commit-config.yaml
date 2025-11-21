@@ -29,6 +29,17 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
 
+  # JSON Schema Validation
+  - repo: local
+    hooks:
+      - id: validate-json-schemas
+        name: validate JSON schemas
+        entry: python
+        language: system
+        args: ["-c", "import json, sys; [json.load(open(f)) for f in sys.argv[1:]]; print('✅ All schemas are valid JSON')"]
+        files: ^schemas/.*\.schema\.json$
+        pass_filenames: true
+
   # pytest - Nur schnelle Tests (KEINE E2E!)
   - repo: local
     hooks:

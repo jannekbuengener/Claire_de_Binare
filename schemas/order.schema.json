@@ -49,7 +49,7 @@
     "price": {
       "type": "number",
       "exclusiveMinimum": 0,
-      "description": "Limit price (required for LIMIT orders)"
+      "description": "Limit price (optional, but required for LIMIT orders - validated in business logic)"
     },
     "stop_price": {
       "type": "number",
@@ -76,15 +76,5 @@
       "description": "Flag indicating this is a paper trading order (not live)"
     }
   },
-  "additionalProperties": false,
-  "if": {
-    "properties": {
-      "order_type": {
-        "const": "LIMIT"
-      }
-    }
-  },
-  "then": {
-    "required": ["price"]
-  }
+  "additionalProperties": false
 }
