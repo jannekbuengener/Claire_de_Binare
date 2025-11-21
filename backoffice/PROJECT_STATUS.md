@@ -89,6 +89,8 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-21  | **Link-Checking implementiert** 🔗           | ✅ **CI-Integration, broken links behoben** |
+| 2025-11-21  | **Type-Coverage auf 98.3% erhöht** 📊        | ✅ **Ziel 90%, 0 mypy errors** |
 | 2025-11-21  | **Risk-Engine Architektur dokumentiert** 📐  | ✅ **ADR-044: 7-Layer Validation** |
 | 2025-11-21  | **Markdownlint-Cleanup (4 Dateien)**         | ✅ **60+ Fixes, neue Dateien 100% clean** |
 | 2025-11-21  | **Postgres-Backup Scripts implementiert**    | ✅ **Bash + PowerShell, vollständige Docs** |
