@@ -1,5 +1,5 @@
 # Development & Testing Dependencies
-# Claire de Binaire - MVP Phase
+# Claire de Binare - MVP Phase
 
 # Testing Framework
 pytest==7.4.3

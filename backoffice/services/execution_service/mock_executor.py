@@ -1,6 +1,6 @@
 """
 Mock Executor for Paper Trading
-Claire de Binaire Trading Bot
+Claire de Binare Trading Bot
 
 Features:
 - Realistic latency simulation (50-200ms)

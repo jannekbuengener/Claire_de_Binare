@@ -66,5 +66,5 @@ redis-cli -a $REDIS_PASSWORD monitor  # kurzfristig zum Trace
 
 ## 🪶 Lizenz & Credits
 
-- Maintainer: Signal Squad (Claire de Binaire Core Team)
+- Maintainer: Signal Squad (Claire de Binare Core Team)
 - Nutzung intern, Source proprietär

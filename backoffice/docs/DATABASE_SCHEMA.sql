@@ -1,4 +1,4 @@
--- DATABASE_SCHEMA.sql - Claire de Binaire
+-- DATABASE_SCHEMA.sql - Claire de Binare
 -- PostgreSQL Schema für Trading-System
 -- Erstellt: 2025-11-19
 -- Version: 1.0.0

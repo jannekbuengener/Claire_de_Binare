@@ -1,4 +1,4 @@
-# Pre-Commit Hooks für Claire de Binaire
+# Pre-Commit Hooks für Claire de Binare
 # Installation: pip install pre-commit && pre-commit install
 # Manual run: pre-commit run --all-files
 

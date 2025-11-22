@@ -331,7 +331,7 @@ scrape_configs:
 
 ## 6. Repo-Struktur-Empfehlungen
 
-### Für neue Projekte (Claire-de-Binaire-inspiriert)
+### Für neue Projekte (Claire-de-Binare-inspiriert)
 
 ```
 {{PROJECT_NAME}}/
@@ -406,7 +406,7 @@ scrape_configs:
 
 ## 8. Single Source of Truth (SSOT) Empfehlungen
 
-Basierend auf Claire-de-Binaire-Analyse:
+Basierend auf Claire-de-Binare-Analyse:
 
 ### Files, die SSOT sein sollten
 

@@ -1,4 +1,4 @@
-# PowerShell Test Runner für Claire de Binaire
+# PowerShell Test Runner für Claire de Binare
 # Windows-Alternative zum Makefile
 
 param(
@@ -7,7 +7,7 @@ param(
 )
 
 function Show-Help {
-    Write-Host "Claire de Binaire - Test Commands (PowerShell)" -ForegroundColor Cyan
+    Write-Host "Claire de Binare - Test Commands (PowerShell)" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "CI-Tests (schnell, mit Mocks):"
     Write-Host "  .\run-tests.ps1 test                    - Alle CI-Tests (unit + integration)"

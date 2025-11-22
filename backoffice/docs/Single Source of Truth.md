@@ -124,7 +124,7 @@ archive/ enthält nur historische Artefakte, keine aktiv gepflegten Dokumente.
 
 Namenskonvention „Claire de Binare“
 
-Die Schreibweise „Claire de Binaire“ gilt als historisch/ungültig (Ausnahme: explizite Audit- oder Historien-Referenzen).
+Die Schreibweise „Claire de Binare“ gilt als historisch/ungültig (Ausnahme: explizite Audit- oder Historien-Referenzen).
 
 5. Onboarding-Flow (Menschen)
 

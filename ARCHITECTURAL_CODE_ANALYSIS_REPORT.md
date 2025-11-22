@@ -1,4 +1,4 @@
-# Claire de Binaire – Umfassende Architektur- und Code-Analyse
+# Claire de Binare – Umfassende Architektur- und Code-Analyse
 
 **Datum**: 2025-11-21
 **Analyst**: Claire Architect
@@ -349,15 +349,15 @@ Aber Service-Code liegt in:
 
 ❌ **Weaknesses:**
 - **Redundancy**: Multiple "PROJECT_STATUS" files (backup exists)
-- **Consistency**: "Claire de Binaire" vs. "Claire de Binare" (Typo in KODEX header)
+- **Consistency**: "Claire de Binare" vs. "Claire de Binare" (Typo in KODEX header)
 - **Staleness**: Some docs refer to archived branches
 - **Single Source of Truth**: CLAUDE.md, PROJECT_STATUS.md, and DECISION_LOG.md all claim authority
 
 **Specific Issues:**
 
-1. **KODEX Schreibweise**: "Binare" vs. "Binaire"
-   - CLAUDE.md (Line 24): "Claire de Binaire" ✅
-   - KODEX (Line 6): "Claire de Binare" ❌
+1. **KODEX Schreibweise**: ✅ "Binare" standardized
+   - CLAUDE.md (Line 24): "Claire de Binare" ✅
+   - KODEX (Line 6): "Claire de Binare" ✅
    - docker-compose.yml: "claire_de_binare" ✅
 
 2. **Broken References**:
@@ -642,7 +642,7 @@ class SizingError(Exception):
 
 **Solution**:
 1. Archive old PROJECT_STATUS_backup_20251120.md
-2. Standardize naming to "Binaire" (as per CLAUDE.md)
+2. ✅ Standardize naming to "Binare" (completed)
 3. Create `docs/README.md` with navigation
 
 **Timeline**: Sprint 3
@@ -919,7 +919,7 @@ PR Template: docs: expand makefile with development targets
 #### Sprint Task 3.1: Consolidate Documentation
 ```bash
 # Effort breakdown:
-# - Rename all "Binare" → "Binaire" (30 min)
+# - ✅ Rename all "Binaire" → "Binare" (completed)
 # - Archive backup files (15 min)
 # - Create docs/README.md (1 hour)
 # - Remove redundant sections (1.5 hours)
@@ -1017,7 +1017,7 @@ PR Template: ci: add weekly E2E test automation
 | **Documentation** | | |
 | Markdown Files | 47 | ⚠️ Redundant |
 | ADRs | Present | ✅ |
-| Naming Consistency | "Binaire"/"Binare" | ❌ |
+| Naming Consistency | "Binare" (standardized) | ✅ |
 | **CI/CD** | | |
 | Pipeline Jobs | 8 | ✅ |
 | Average Runtime | ~8 minutes | ✅ |
@@ -1104,7 +1104,7 @@ Fr: Production readiness review
 
 ## 10. Schlusswort
 
-Das Claire de Binaire Projekt zeigt **solides technisches Engineering** mit klarer Event-Driven-Architektur und umfassender Test-Infrastruktur. Die drei kritischen Issues sind gut zu beheben und blockieren nicht für die Paper-Test-Phase.
+Das Claire de Binare Projekt zeigt **solides technisches Engineering** mit klarer Event-Driven-Architektur und umfassender Test-Infrastruktur. Die drei kritischen Issues sind gut zu beheben und blockieren nicht für die Paper-Test-Phase.
 
 **Hauptempfehlungen:**
 

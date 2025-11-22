@@ -68,5 +68,5 @@ redis-cli -a $REDIS_PASSWORD lrange alerts -5 -1
 
 ## 🪶 Lizenz & Credits
 
-- Maintainer: Risk Team (Claire de Binaire Core Team)
+- Maintainer: Risk Team (Claire de Binare Core Team)
 - Status: ✅ Production Ready (v1.0)

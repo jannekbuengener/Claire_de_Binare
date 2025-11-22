@@ -1,4 +1,4 @@
-# Database Tracking Gap-Analyse - Claire de Binaire
+# Database Tracking Gap-Analyse - Claire de Binare
 **Datum**: 2025-11-20 18:10 UTC
 **Status**: Analyse was getrackt wird vs. was fehlt
 

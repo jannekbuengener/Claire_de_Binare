@@ -1,4 +1,4 @@
-# Claire de Binaire - Test Suite
+# Claire de Binare - Test Suite
 
 > **Schnellstart-Guide für Tests**
 

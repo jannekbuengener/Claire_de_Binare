@@ -437,7 +437,7 @@ Nach erfolgreicher Implementierung der E2E-Test-Suite (2025-11-19) existierten *
 Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (2025-11-16) und Abschluss aller Kanonisierungs-Pipelines existierte eine **ambivalente Dokumentationslage**:
 
 **Probleme**:
-1. **Namensinkonsistenz**: 28 Dateien verwendeten noch "Claire de Binaire" statt "Claire de Binare"
+1. **Namensinkonsistenz**: 28 Dateien verwendeten noch "Claire de Binare" statt "Claire de Binare"
 2. **Status-Verwirrung**: Cleanroom wurde in vielen Dokumenten als "Ziel-Repo" oder "migrations-bereit" beschrieben, obwohl die Migration bereits erfolgt war
 3. **Redundante Migrations-Dokumente**: 6 Dokumente (MIGRATION_READY.md, PRE_MIGRATION_*.md, CLEANROOM_MIGRATION_MANIFEST.md) beschrieben die Migration als bevorstehende Aktion
 4. **Unklare Single Source of Truth**: Unklar, ob `backoffice/docs/` oder Root-Dateien die gültige Version darstellten
@@ -451,10 +451,10 @@ Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (
 **Durchgeführte Maßnahmen**:
 
 1. **Namens-Normalisierung**:
-   - Datei `backoffice/docs/KODEX – Claire de Binaire.md` → `KODEX – Claire de Binare.md`
-   - Alle Vorkommen von "Claire de Binaire" im Projektkontext → "Claire de Binare"
+   - Datei `backoffice/docs/KODEX – Claire de Binare.md` → `KODEX – Claire de Binare.md`
+   - Alle Vorkommen von "Claire de Binare" im Projektkontext → "Claire de Binare"
    - Technische IDs (`claire_de_binare`) bleiben unverändert
-   - Hinweis in KODEX ergänzt: "Frühere Dokumente verwenden teilweise 'Claire de Binaire'; gilt als historisch"
+   - Hinweis in KODEX ergänzt: "Frühere Dokumente verwenden teilweise 'Claire de Binare'; gilt als historisch"
 
 2. **Nullpunkt-Definition**:
    - `PROJECT_STATUS.md`: Phase auf "N1 - Paper-Test-Vorbereitung" aktualisiert (100% Cleanroom etabliert)

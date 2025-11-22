@@ -1,6 +1,6 @@
 # MEXC Perpetual Futures Risk Management – Deep Dive
 
-**Projekt:** Claire de Binaire
+**Projekt:** Claire de Binare
 **Erstellt:** 2025-11-19
 **Autor:** Claude (IT-Chef)
 **Status:** Implementation Guide
@@ -9,7 +9,7 @@
 
 ## 📋 Executive Summary
 
-Dieses Dokument beschreibt die vollständige Implementierung von **MEXC Perpetual Futures Risk Management** für Claire de Binaire. Es basiert auf offizieller MEXC-API-Dokumentation (2024) und erweitert die bestehende Risk-Engine um:
+Dieses Dokument beschreibt die vollständige Implementierung von **MEXC Perpetual Futures Risk Management** für Claire de Binare. Es basiert auf offizieller MEXC-API-Dokumentation (2024) und erweitert die bestehende Risk-Engine um:
 
 1. **Exchange-spezifische Mechaniken** (Margin, Leverage, Liquidation)
 2. **Advanced Position Sizing** (Vol-Targeting, Kelly, Fixed-Fractional)
@@ -671,7 +671,7 @@ def test_full_flow_stressed_market():
 - Vol-Targeting: Moreira & Muir (2017) "Volatility-Managed Portfolios"
 - Slippage Modeling: Almgren & Chriss (2000) "Optimal Execution of Portfolio Transactions"
 
-**Claire de Binaire:**
+**Claire de Binare:**
 - `KODEX.md` - Architektur-Prinzipien
 - `canonical_schema.yaml` - System-Schema
 - `EVENT_SCHEMA.json` - Event-Definitionen

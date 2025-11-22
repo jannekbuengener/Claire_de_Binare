@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "Claire de Binaire - Pre-Migration Execution" -ForegroundColor Cyan
+Write-Host "Claire de Binare - Pre-Migration Execution" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 Write-Host ""
 

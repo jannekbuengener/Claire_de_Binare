@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 label_all_prs.py - Automatisches Label-System für Pull Requests
-Erstellt für: Claire de Binaire Cleanroom
+Erstellt für: Claire de Binare Cleanroom
 Datum: 2025-11-22
 
 Verwendet die GitHub API über gh CLI oder direkt über requests.
@@ -261,7 +261,7 @@ class PRLabeler:
 
     def run(self):
         """Hauptprogramm"""
-        print(f"{Colors.BLUE}🏷️  Label-Bot für Claire de Binaire Pull Requests{Colors.NC}")
+        print(f"{Colors.BLUE}🏷️  Label-Bot für Claire de Binare Pull Requests{Colors.NC}")
         print("=" * 60)
         print()
 

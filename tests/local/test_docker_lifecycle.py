@@ -1,5 +1,5 @@
 """
-Docker Compose Lifecycle Test - Claire de Binaire
+Docker Compose Lifecycle Test - Claire de Binare
 Lokaler-only Test: Vollständiger Container-Lebenszyklus
 
 WICHTIG: Dieser Test MUSS lokal ausgeführt werden!
@@ -296,7 +296,7 @@ def test_docker_compose_volume_persistence():
         conn = psycopg2.connect(
             host="localhost",
             port=5432,
-            database="claire_de_binaire",
+            database="claire_de_binare",
             user="claire_user",
             password="claire_db_secret_2024",
         )
@@ -322,7 +322,7 @@ def test_docker_compose_volume_persistence():
     conn = psycopg2.connect(
         host="localhost",
         port=5432,
-        database="claire_de_binaire",
+        database="claire_de_binare",
         user="claire_user",
         password="claire_db_secret_2024",
     )

@@ -1,5 +1,5 @@
 """
-Full System Stress Test - Claire de Binaire
+Full System Stress Test - Claire de Binare
 Lokaler-only Test: Vollständige System-Belastung mit realistischen Event-Flows
 
 WICHTIG: Dieser Test MUSS lokal mit Docker Compose ausgeführt werden!
@@ -39,7 +39,7 @@ def postgres_conn():
     conn = psycopg2.connect(
         host="localhost",
         port=5432,
-        database="claire_de_binaire",
+        database="claire_de_binare",
         user="claire_user",
         password="claire_db_secret_2024",
     )
