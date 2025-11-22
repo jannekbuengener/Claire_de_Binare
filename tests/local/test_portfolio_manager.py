@@ -6,15 +6,14 @@ Test Portfolio State Management, Position Tracking, P&L Calculation
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
-import json
+from unittest.mock import Mock
 
 # Add service path
 service_path = Path(__file__).parent.parent / "backoffice" / "services" / "portfolio_manager"
 sys.path.insert(0, str(service_path))
 
-from portfolio_manager import PortfolioManager
-from models import PortfolioState, Position, PositionSide
+from portfolio_manager import PortfolioManager  # noqa: E402
+from models import PositionSide  # noqa: E402
 
 # Diese Tests sind als local_only markiert wegen Import-Komplexität
 pytestmark = pytest.mark.local_only

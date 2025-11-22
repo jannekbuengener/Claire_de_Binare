@@ -255,7 +255,7 @@ def evaluate_signal_v2(
         )
         position_size_usd = sizing_result.size_usd
         position_size_contracts = position_size_usd / float(signal_event["price"])
-    except (ValueError, KeyError) as e:
+    except (ValueError, KeyError):
         # Sizing method error → fallback to basic sizing
         position_size_contracts = limit_position_size(signal_event, risk_config, equity)
         position_size_usd = position_size_contracts * float(signal_event["price"])
@@ -346,7 +346,7 @@ def evaluate_signal_v2(
 
         # Use execution results
         final_size = execution.filled_size
-        adjusted_entry_price = execution.avg_fill_price
+        # avg_fill_price includes slippage adjustment
         execution_fees = execution.fees
 
         # Update position with adjusted entry price (if partial fill)
@@ -359,10 +359,10 @@ def evaluate_signal_v2(
             liq_price = position.calculate_liquidation_price()
             liq_distance = position.calculate_liquidation_distance()
 
-    except Exception as e:
+    except Exception:
         # Execution simulation failed → use original values
         final_size = position_size_contracts
-        adjusted_entry_price = float(signal_event["price"])
+        # Use original price (no slippage adjustment)
         execution_fees = 0.0
         execution = None
 

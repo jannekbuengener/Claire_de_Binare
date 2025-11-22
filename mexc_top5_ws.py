@@ -1,4 +1,8 @@
-import os, json, time, threading, math, sys
+import os
+import json
+import time
+import threading
+import sys
 from collections import defaultdict, deque
 from datetime import datetime
 import pandas as pd
@@ -72,13 +76,16 @@ def on_message(ws, message):
     global last_tick_ts
     try:
         msg = json.loads(message)
-    except:
+    except (json.JSONDecodeError, Exception):
         return
     if msg.get("channel") == "push.kline":
         d = msg.get("data", {})
         if d.get("interval") != KL_INTERVAL:
             return
-        s = d.get("symbol"); c = d.get("c"); ts = d.get("t"); v = d.get("vol")
+        s = d.get("symbol")
+        c = d.get("c")
+        ts = d.get("t")
+        v = d.get("vol")
         if s and c is not None and ts:
             try:
                 price = float(c)
@@ -143,7 +150,8 @@ def compute_top5():
     for s, dq in klines.items():
         if len(dq) < 2:
             continue
-        first = dq[0][1]; last = dq[-1][1]
+        first = dq[0][1]
+        last = dq[-1][1]
         pct = (last - first) / first * 100.0
         rows.append({"symbol": s, "pct_change": round(pct, 3)})
     if not rows:
@@ -161,8 +169,10 @@ def printer():
         if gains is None:
             print("Noch keine Daten – warte auf Klines...")
         else:
-            print("TOP 5 Gewinner:"); print(gains.to_string(index=False))
-            print("TOP 5 Verlierer:"); print(losses.to_string(index=False))
+            print("TOP 5 Gewinner:")
+            print(gains.to_string(index=False))
+            print("TOP 5 Verlierer:")
+            print(losses.to_string(index=False))
 
 if __name__ == "__main__":
     print("Hole Symbolliste...")

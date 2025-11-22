@@ -13,7 +13,7 @@ import os
 import argparse
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from datetime import datetime, timedelta
+# datetime and timedelta available if needed for future queries
 from tabulate import tabulate
 
 
