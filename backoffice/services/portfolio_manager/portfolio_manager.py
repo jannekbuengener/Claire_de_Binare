@@ -13,7 +13,10 @@ from datetime import datetime
 import redis
 import psycopg2
 
-from models import Position, PositionSide, PortfolioState, PortfolioSnapshot
+try:
+    from .models import Position, PositionSide, PortfolioState, PortfolioSnapshot
+except ImportError:
+    from models import Position, PositionSide, PortfolioState, PortfolioSnapshot
 
 
 logger = logging.getLogger(__name__)

@@ -15,10 +15,16 @@ from flask import Flask, jsonify, Response
 import redis
 from threading import Thread
 
-import config
-from models import Order, ExecutionResult
-from mock_executor import MockExecutor
-from database import Database
+try:
+    from . import config
+    from .models import Order, ExecutionResult
+    from .mock_executor import MockExecutor
+    from .database import Database
+except ImportError:
+    import config
+    from models import Order, ExecutionResult
+    from mock_executor import MockExecutor
+    from database import Database
 
 # Logging setup mit zentraler Konfiguration
 # Im Container ist logging_config.json nicht verfügbar, daher Fallback
