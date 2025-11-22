@@ -6,8 +6,14 @@ Validates that test events were correctly persisted to PostgreSQL
 
 import os
 import sys
-import psycopg2
 from datetime import datetime
+
+import psycopg2
+
+
+ALLOWED_SIGNAL_TYPES = {"buy", "sell"}
+ALLOWED_ORDER_SIDES = {"buy", "sell", "long", "short"}
+ALLOWED_TRADE_SIDES = {"buy", "sell"}
 
 
 def connect_postgres():
@@ -46,9 +52,13 @@ def validate_signals(conn):
     count = cursor.fetchone()[0]
     print(f"✅ Total signals: {count}")
 
+    issues = []
+
     if count == 0:
-        print("⚠️  No signals found! Did you publish the events?")
-        return
+        issue = "No signals found! Did you publish the events?"
+        print(f"⚠️  {issue}")
+        issues.append(issue)
+        return issues
 
     # Check signal_type (should be lowercase)
     cursor.execute("""
@@ -67,7 +77,8 @@ def validate_signals(conn):
         id_, symbol, signal_type, confidence, ts = row
 
         # Validate signal_type is lowercase
-        if signal_type not in ('buy', 'sell'):
+        if signal_type not in ALLOWED_SIGNAL_TYPES:
+            issues.append(f"Signal {id_} has invalid signal_type '{signal_type}'")
             print(f"❌ {id_:<5} {symbol:<10} {signal_type:<6} INVALID (not lowercase!)")
         else:
             print(f"✅ {id_:<5} {symbol:<10} {signal_type:<6} {float(confidence):<12.2f} {ts:<20}")
@@ -77,9 +88,12 @@ def validate_signals(conn):
     uppercase_count = cursor.fetchone()[0]
 
     if uppercase_count > 0:
+        issues.append(f"Found {uppercase_count} signals with UPPERCASE signal_type")
         print(f"\n❌ WARNING: Found {uppercase_count} signals with UPPERCASE signal_type!")
     else:
         print("\n✅ All signals have lowercase signal_type")
+
+    return issues
 
 
 def validate_orders(conn):
@@ -95,9 +109,12 @@ def validate_orders(conn):
     count = cursor.fetchone()[0]
     print(f"✅ Total orders: {count}")
 
+    issues = []
+
     if count == 0:
+        issues.append("No orders found!")
         print("⚠️  No orders found!")
-        return
+        return issues
 
     # Check side (should be lowercase)
     cursor.execute("""
@@ -116,7 +133,8 @@ def validate_orders(conn):
         id_, symbol, side, approved, status, ts = row
 
         # Validate side is lowercase
-        if side not in ('buy', 'sell', 'long', 'short'):
+        if side not in ALLOWED_ORDER_SIDES:
+            issues.append(f"Order {id_} has invalid side '{side}'")
             print(f"❌ {id_:<5} {symbol:<10} {side:<6} INVALID!")
         else:
             approved_str = "✅ Yes" if approved else "❌ No"
@@ -127,10 +145,13 @@ def validate_orders(conn):
     uppercase_count = cursor.fetchone()[0]
 
     if uppercase_count > 0:
+        issues.append(f"Found {uppercase_count} orders with UPPERCASE side")
         print(f"\n❌ CRITICAL: Found {uppercase_count} orders with UPPERCASE side!")
         print("   This means the fix didn't work - check db_writer.py line 200")
     else:
         print("\n✅ All orders have lowercase side ← FIX WORKING!")
+
+    return issues
 
 
 def validate_trades(conn):
@@ -146,9 +167,12 @@ def validate_trades(conn):
     count = cursor.fetchone()[0]
     print(f"✅ Total trades: {count}")
 
+    issues = []
+
     if count == 0:
+        issues.append("No trades found!")
         print("⚠️  No trades found!")
-        return
+        return issues
 
     # Check side and slippage
     cursor.execute("""
@@ -167,10 +191,14 @@ def validate_trades(conn):
         id_, symbol, side, price, slippage_bps, ts = row
 
         # Validate side is lowercase
-        if side not in ('buy', 'sell'):
+        if side not in ALLOWED_TRADE_SIDES:
+            issues.append(f"Trade {id_} has invalid side '{side}'")
             print(f"❌ {id_:<5} {symbol:<10} {side:<6} INVALID!")
         else:
-            slippage_str = f"{float(slippage_bps):.2f}" if slippage_bps else "N/A"
+            if slippage_bps is None:
+                slippage_str = "N/A"
+            else:
+                slippage_str = f"{float(slippage_bps):.2f}"
             print(f"✅ {id_:<5} {symbol:<10} {side:<6} {float(price):<12.2f} {slippage_str:<15} {ts:<20}")
 
     # Check for UPPERCASE side
@@ -178,10 +206,13 @@ def validate_trades(conn):
     uppercase_count = cursor.fetchone()[0]
 
     if uppercase_count > 0:
+        issues.append(f"Found {uppercase_count} trades with UPPERCASE side")
         print(f"\n❌ CRITICAL: Found {uppercase_count} trades with UPPERCASE side!")
         print("   Check db_writer.py line 248")
     else:
         print("\n✅ All trades have lowercase side ← FIX WORKING!")
+
+    return issues
 
 
 def validate_portfolio_snapshots(conn):
@@ -197,9 +228,12 @@ def validate_portfolio_snapshots(conn):
     count = cursor.fetchone()[0]
     print(f"✅ Total snapshots: {count}")
 
+    issues = []
+
     if count == 0:
+        issues.append("No portfolio snapshots found!")
         print("⚠️  No portfolio snapshots found!")
-        return
+        return issues
 
     # Check total_exposure_pct (should be 0.0-1.0, NOT 0.0-0.01)
     cursor.execute("""
@@ -229,6 +263,7 @@ def validate_portfolio_snapshots(conn):
             print(f"✅ {id_:<5} {float(equity):<12.2f} {exposure_val:<12.4f} {float(daily_pnl):<12.2f} {ts:<20}")
 
     if exposure_issues:
+        issues.append(f"Found {len(exposure_issues)} snapshots with suspicious exposure values")
         print(f"\n❌ WARNING: Found {len(exposure_issues)} snapshots with suspicious exposure values!")
         print("   Expected: 0.05 (5%), 0.30 (30%)")
         print("   Found:    0.0005, 0.003, etc. (too small!)")
@@ -236,6 +271,8 @@ def validate_portfolio_snapshots(conn):
         print("   Check db_writer.py line 297")
     else:
         print("\n✅ All exposure values look correct ← FIX WORKING!")
+
+    return issues
 
 
 def summary(conn):
@@ -270,6 +307,16 @@ def summary(conn):
     print("\n" + "=" * 60)
 
 
+def run_validations(conn):
+    """Run all validations and collect any issues."""
+    issues = []
+    issues.extend(validate_signals(conn))
+    issues.extend(validate_orders(conn))
+    issues.extend(validate_trades(conn))
+    issues.extend(validate_portfolio_snapshots(conn))
+    return issues
+
+
 def main():
     """Main execution"""
     print("=" * 60)
@@ -280,14 +327,16 @@ def main():
     conn = connect_postgres()
 
     try:
-        # Validate each table
-        validate_signals(conn)
-        validate_orders(conn)
-        validate_trades(conn)
-        validate_portfolio_snapshots(conn)
+        issues = run_validations(conn)
 
         # Summary
         summary(conn)
+
+        if issues:
+            print("\n❌ Validation found issues:")
+            for issue in issues:
+                print(f" - {issue}")
+            sys.exit(1)
 
         print("\n✅ Validation complete!")
 
@@ -295,6 +344,7 @@ def main():
         print(f"\n❌ Validation failed: {e}")
         import traceback
         traceback.print_exc()
+        sys.exit(1)
     finally:
         conn.close()
 

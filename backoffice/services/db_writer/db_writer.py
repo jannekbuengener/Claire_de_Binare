@@ -96,6 +96,40 @@ class DatabaseWriter:
         logger.warning(f"Unknown timestamp type: {type(timestamp_value)}, using current time")
         return datetime.utcnow()
 
+    @staticmethod
+    def normalize_side(value: str) -> str:
+        """Normalize side strings to lowercase and handle missing values."""
+        if value is None:
+            return ""
+        try:
+            return str(value).lower()
+        except Exception:  # pragma: no cover - defensive fallback
+            return ""
+
+    @staticmethod
+    def normalize_exposure_pct(value) -> float:
+        """Normalize exposure values sent either as decimal (0-1) or percentage (0-100)."""
+        try:
+            exposure = float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+        if exposure > 1:
+            logger.warning(
+                "Portfolio snapshot total_exposure_pct looks like a percentage (%.4f); normalizing by /100",
+                exposure,
+            )
+            return exposure / 100.0
+
+        if exposure < 0:
+            logger.warning(
+                "Portfolio snapshot total_exposure_pct is negative (%.4f); clamping to 0",
+                exposure,
+            )
+            return 0.0
+
+        return exposure
+
     def connect_redis(self):
         """Connect to Redis"""
         try:
@@ -197,7 +231,7 @@ class DatabaseWriter:
             """,
                 (
                     data.get("symbol"),
-                    data.get("side", "").lower(),  # Convert to lowercase for DB compatibility
+                    self.normalize_side(data.get("side")),
                     data.get("order_type", "market"),
                     data.get("price"),
                     data.get("quantity", data.get("size", 0)),
@@ -245,7 +279,7 @@ class DatabaseWriter:
             """,
                 (
                     data.get("symbol"),
-                    data.get("side", "").lower(),  # Convert to lowercase for DB compatibility
+                    self.normalize_side(data.get("side")),
                     data.get("price"),
                     data.get("quantity", data.get("size", 0)),
                     data.get("status", "filled"),
@@ -294,7 +328,7 @@ class DatabaseWriter:
                     data.get("daily_pnl", 0),
                     data.get("total_unrealized_pnl", 0),
                     data.get("total_realized_pnl", 0),
-                    data.get("total_exposure_pct", 0.0),  # Event already sends decimal (0.0-1.0)
+                    self.normalize_exposure_pct(data.get("total_exposure_pct", 0.0)),
                     data.get("max_drawdown_pct", 0),
                     data.get("num_positions", data.get("open_positions", 0)),
                     json.dumps(data.get("metadata", {})),

@@ -9,6 +9,7 @@ import os
 import sys
 import time
 import redis
+from json import JSONDecodeError
 from pathlib import Path
 
 
@@ -20,8 +21,42 @@ def load_test_events():
         print(f"❌ Test file not found: {test_file}")
         sys.exit(1)
 
-    with open(test_file) as f:
-        return json.load(f)
+    try:
+        with open(test_file) as f:
+            events = json.load(f)
+    except JSONDecodeError as exc:
+        print(f"❌ Failed to parse {test_file}: {exc}")
+        sys.exit(1)
+
+    required_keys = {
+        "signals": ["symbol", "signal_type"],
+        "orders": ["symbol", "side"],
+        "order_results": ["symbol", "status"],
+        "portfolio_snapshots": ["timestamp"],
+    }
+
+    for key, required_fields in required_keys.items():
+        section = events.get(key)
+        if section is None:
+            print(f"❌ Missing required key '{key}' in test events")
+            sys.exit(1)
+        if not isinstance(section, list):
+            print(f"❌ '{key}' must be a list in test_events.json")
+            sys.exit(1)
+
+        for idx, entry in enumerate(section, start=1):
+            if not isinstance(entry, dict):
+                print(f"❌ Entry {idx} in '{key}' must be an object")
+                sys.exit(1)
+
+            missing = [field for field in required_fields if field not in entry]
+            if missing:
+                print(
+                    f"❌ Entry {idx} in '{key}' is missing required field(s): {', '.join(missing)}"
+                )
+                sys.exit(1)
+
+    return events
 
 
 def connect_redis():
@@ -34,7 +69,7 @@ def connect_redis():
         client = redis.Redis(
             host=redis_host,
             port=redis_port,
-            password=redis_password if redis_password else None,
+            password=redis_password or None,
             decode_responses=True,
         )
         client.ping()
@@ -131,12 +166,23 @@ def main():
     # Verify db_writer is running
     verify_db_writer_running(redis_client)
 
-    # Ask for confirmation
-    print("\n" + "=" * 60)
-    response = input("📤 Publish events to Redis? [y/N]: ")
-    if response.lower() != 'y':
-        print("❌ Aborted by user")
-        sys.exit(0)
+    # Ask for confirmation (unless auto-publish is enabled)
+    auto_publish = os.getenv("CDB_AUTO_PUBLISH")
+
+    if auto_publish and auto_publish.lower() in ("1", "true", "yes", "y", "on"):
+        print("\n" + "=" * 60)
+        print("📤 Auto-publish enabled via CDB_AUTO_PUBLISH; skipping confirmation prompt.")
+    else:
+        print("\n" + "=" * 60)
+        try:
+            response = input("📤 Publish events to Redis? [y/N]: ")
+        except EOFError:
+            print("❌ No input available and auto-publish not enabled; aborting.")
+            sys.exit(1)
+
+        if response.lower() != "y":
+            print("❌ Aborted by user")
+            sys.exit(0)
 
     # Publish events
     print("\n🚀 Publishing events...")
