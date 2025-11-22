@@ -1,0 +1,135 @@
+{
+  "labels": [
+    {
+      "name": "feat",
+      "description": "Feature - Neue Funktionalität",
+      "color": "0e8a16"
+    },
+    {
+      "name": "fix",
+      "description": "Bugfix - Fehlerbehebung",
+      "color": "d73a4a"
+    },
+    {
+      "name": "docs",
+      "description": "Dokumentation",
+      "color": "0075ca"
+    },
+    {
+      "name": "test",
+      "description": "Tests",
+      "color": "ffd700"
+    },
+    {
+      "name": "refactor",
+      "description": "Refactoring - Code-Verbesserung",
+      "color": "fbca04"
+    },
+    {
+      "name": "chore",
+      "description": "Chore - Wartung und Tooling",
+      "color": "fef2c0"
+    },
+    {
+      "name": "ci",
+      "description": "CI/CD - Continuous Integration",
+      "color": "1e90ff"
+    },
+    {
+      "name": "risk-engine",
+      "description": "Risk Engine - Risk Manager Service",
+      "color": "ff6347"
+    },
+    {
+      "name": "signal-engine",
+      "description": "Signal Engine - Trading Signal Service",
+      "color": "4169e1"
+    },
+    {
+      "name": "execution",
+      "description": "Execution Service - Order Execution",
+      "color": "32cd32"
+    },
+    {
+      "name": "testing",
+      "description": "Testing Infrastructure - Test-Framework",
+      "color": "ffa500"
+    },
+    {
+      "name": "infrastructure",
+      "description": "Infrastructure - Docker, Deployment, Config",
+      "color": "8b4513"
+    },
+    {
+      "name": "security",
+      "description": "Security - Sicherheit und Secrets",
+      "color": "b22222"
+    },
+    {
+      "name": "performance",
+      "description": "Performance - Optimization und Speed",
+      "color": "9370db"
+    },
+    {
+      "name": "dependencies",
+      "description": "Dependencies - Dependency Updates",
+      "color": "0366d6"
+    },
+    {
+      "name": "breaking-change",
+      "description": "Breaking Change - API-Breaking Changes",
+      "color": "ff0000"
+    },
+    {
+      "name": "needs-review",
+      "description": "Needs Review - Wartet auf Review",
+      "color": "fbca04"
+    },
+    {
+      "name": "work-in-progress",
+      "description": "Work in Progress - Noch nicht bereit",
+      "color": "ededed"
+    },
+    {
+      "name": "good-first-issue",
+      "description": "Good First Issue - Gut für Einsteiger",
+      "color": "7057ff"
+    },
+    {
+      "name": "help-wanted",
+      "description": "Help Wanted - Hilfe benötigt",
+      "color": "008672"
+    }
+  ],
+  "label_rules": {
+    "type_labels": {
+      "feat": ["feat:", "feature:"],
+      "fix": ["fix:", "bugfix:"],
+      "docs": ["docs:", "documentation:"],
+      "test": ["test:", "tests:"],
+      "refactor": ["refactor:"],
+      "chore": ["chore:"],
+      "ci": ["ci:", "ci/cd:"]
+    },
+    "area_labels": {
+      "risk-engine": ["risk", "risk-engine", "risk_engine", "risk manager"],
+      "signal-engine": ["signal", "signal-engine", "signal_engine", "signal engine"],
+      "execution": ["execution", "exec", "order execution"],
+      "testing": ["test", "testing", "pytest", "coverage", "test infrastructure"],
+      "infrastructure": ["infrastructure", "docker", "compose", "deployment", "ci/cd"],
+      "security": ["security", "secrets", "audit", "auth", "authentication"],
+      "performance": ["performance", "optimization", "speed", "latency"]
+    },
+    "special_labels": {
+      "dependencies": ["bump", "dependabot", "dependencies", "dependency update"],
+      "breaking-change": ["breaking", "breaking change", "breaking-change", "!"]
+    }
+  },
+  "auto_labeling_config": {
+    "enabled": true,
+    "require_conventional_commits": false,
+    "fallback_to_body_analysis": true,
+    "require_manual_review_if_no_labels": true,
+    "max_labels_per_pr": 5
+  }
+}
