@@ -1,2 +1,2 @@
 # Execution Service
-# Claire de Binaire Trading Bot
+# Claire de Binare Trading Bot

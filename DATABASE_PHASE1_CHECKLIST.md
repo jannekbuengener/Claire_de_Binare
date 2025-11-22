@@ -1,4 +1,4 @@
-# Phase 1 Validation Checklist - Claire de Binaire
+# Phase 1 Validation Checklist - Claire de Binare
 **Start**: Tag 0 (Jetzt)
 **Dauer**: 1-2 Stunden
 **Ziel**: Bestehende 5 Tabellen validieren

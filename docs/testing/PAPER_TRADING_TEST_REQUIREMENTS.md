@@ -1,4 +1,4 @@
-# Paper Trading Test Requirements - Claire de Binaire
+# Paper Trading Test Requirements - Claire de Binare
 **Dokumentation für vollständige Paper Trading Test-Suite**
 
 ---

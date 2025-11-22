@@ -1,5 +1,5 @@
 <#
-Validate local test setup for Claire de Binaire.
+Validate local test setup for Claire de Binare.
 
 This script performs static checks only:
 - Verifies Python version.
@@ -32,7 +32,7 @@ $required = @(
     "requests"
 )
 
-Write-Host "`n=== Claire de Binaire :: Validate Test Setup ===`n" -ForegroundColor Cyan
+Write-Host "`n=== Claire de Binare :: Validate Test Setup ===`n" -ForegroundColor Cyan
 
 # Python version
 Write-Host "[1/6] Checking Python version (expected 3.12.x)..." -ForegroundColor Yellow

@@ -1,4 +1,4 @@
-# Local E2E Tests - Claire de Binaire
+# Local E2E Tests - Claire de Binare
 **Vollständige lokale Test-Suite mit Docker Compose**
 
 ---
@@ -17,7 +17,7 @@
 
 ## 1. Übersicht
 
-Die lokale E2E-Test-Suite testet das **vollständige Claire de Binaire System** mit **echten Docker-Containern**, realistischen Event-Flows und Performance unter Last.
+Die lokale E2E-Test-Suite testet das **vollständige Claire de Binare System** mit **echten Docker-Containern**, realistischen Event-Flows und Performance unter Last.
 
 ### Warum lokale-only Tests?
 
@@ -183,7 +183,7 @@ Wichtig für lokale Tests:
 # PostgreSQL
 POSTGRES_HOST=localhost      # Für Host-Maschine
 POSTGRES_PORT=5432
-POSTGRES_DB=claire_de_binaire
+POSTGRES_DB=claire_de_binare
 POSTGRES_USER=claire_user
 POSTGRES_PASSWORD=claire_db_secret_2024
 

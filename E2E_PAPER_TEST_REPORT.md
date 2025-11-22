@@ -1,5 +1,5 @@
 # End-to-End Paper-Test Report
-**Claire de Binaire Trading Bot**
+**Claire de Binare Trading Bot**
 **Datum**: 2025-11-20
 **Test-Phase**: N1 - Paper Trading MVP
 
@@ -57,7 +57,7 @@ tests/e2e/test_event_flow_pipeline.py::test_all_services_are_healthy_for_event_f
 
 ## 🗄️ PostgreSQL-Persistence
 
-### Datenbank: `claire_de_binaire`
+### Datenbank: `claire_de_binare`
 
 **Tabellen**:
 ```

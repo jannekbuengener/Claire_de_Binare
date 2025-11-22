@@ -1,5 +1,5 @@
 # Execution Service - Dependencies
-# Claire de Binaire Trading Bot
+# Claire de Binare Trading Bot
 
 # Web Framework
 flask==3.0.0

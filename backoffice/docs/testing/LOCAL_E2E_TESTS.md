@@ -1,4 +1,4 @@
-# Local E2E Tests - Claire de Binaire
+# Local E2E Tests - Claire de Binare
 
 > **Dokumentation für lokale End-to-End Tests**
 > Erstellt: 2025-11-19
@@ -519,4 +519,4 @@ pytest -m e2e  # Explizit
 **Version**: 1.0
 **Autor**: Claire Local Test Orchestrator
 **Letzte Aktualisierung**: 2025-11-19
-**Maintainer**: Claire de Binaire Team
+**Maintainer**: Claire de Binare Team

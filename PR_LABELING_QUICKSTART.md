@@ -138,7 +138,7 @@ gh pr view <PR_NUMBER>
 ## Beispiel-Output
 
 ```
-🏷️  Label-Bot für Claire de Binaire Pull Requests
+🏷️  Label-Bot für Claire de Binare Pull Requests
 ==================================================
 
 Schritt 1: Prüfe GitHub CLI...

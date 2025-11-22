@@ -1,5 +1,5 @@
 """
-Analytics Performance Test - Claire de Binaire
+Analytics Performance Test - Claire de Binare
 Lokaler-only Test: Query-Performance mit realen Daten
 
 WICHTIG: Dieser Test MUSS lokal ausgeführt werden!
@@ -24,7 +24,7 @@ def postgres_conn():
     conn = psycopg2.connect(
         host="localhost",
         port=5432,
-        database="claire_de_binaire",
+        database="claire_de_binare",
         user="claire_user",
         password="claire_db_secret_2024",
     )

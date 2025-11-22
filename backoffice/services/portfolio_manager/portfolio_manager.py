@@ -1,6 +1,6 @@
 """
 Portfolio Manager - Core Logic
-Claire de Binaire Trading Bot
+Claire de Binare Trading Bot
 
 Manages portfolio state in Redis and persists to PostgreSQL
 """

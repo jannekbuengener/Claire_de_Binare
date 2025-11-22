@@ -1,6 +1,6 @@
 """
 Execution Service - Main Entry Point
-Claire de Binaire Trading Bot
+Claire de Binare Trading Bot
 """
 
 import json

@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Dieses Dokument beschreibt das automatische Label-System für alle Pull Requests im Claire de Binaire Cleanroom Repository.
+Dieses Dokument beschreibt das automatische Label-System für alle Pull Requests im Claire de Binare Cleanroom Repository.
 
 ## Ausführung
 

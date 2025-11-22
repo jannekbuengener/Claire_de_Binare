@@ -1,5 +1,5 @@
 """
-DB Writer Service - Claire de Binaire
+DB Writer Service - Claire de Binare
 Persistiert Events aus Redis in PostgreSQL
 
 Funktionen:
@@ -41,7 +41,7 @@ class DatabaseWriter:
 
         self.postgres_host = os.getenv("POSTGRES_HOST", "cdb_postgres")
         self.postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
-        self.postgres_db = os.getenv("POSTGRES_DB", "claire_de_binaire")
+        self.postgres_db = os.getenv("POSTGRES_DB", "claire_de_binare")
         self.postgres_user = os.getenv("POSTGRES_USER", "claire_user")
         self.postgres_password = os.getenv("POSTGRES_PASSWORD", "")
 

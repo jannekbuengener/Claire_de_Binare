@@ -1,4 +1,4 @@
-# CLAUDE → GORDON Pipeline – Claire de Binaire
+# CLAUDE → GORDON Pipeline – Claire de Binare
 
 ## 1. Ziel
 

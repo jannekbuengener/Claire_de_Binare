@@ -1,5 +1,5 @@
 # Analytics Query Tool
-**Claire de Binaire - PostgreSQL Auswertungen**
+**Claire de Binare - PostgreSQL Auswertungen**
 
 ## 📊 Übersicht
 

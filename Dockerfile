@@ -1,4 +1,4 @@
-# Claire de Binaire - Screener Dockerfile
+# Claire de Binare - Screener Dockerfile
 # Multi-Stage Build für Python Trading-Bot
 
 FROM python:3.11-slim as base

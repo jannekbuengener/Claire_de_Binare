@@ -2,7 +2,7 @@
 
 ## Systemarchitektur
 
-Das Claire-de-Binaire-System basiert auf einer ereignisgesteuerten Architektur mit mehreren unabhängigen Services. Die Kommunikation erfolgt über Redis Pub/Sub. Jeder Service hat seine eigene Verantwortlichkeit und operiert autonom.
+Das Claire-de-Binare-System basiert auf einer ereignisgesteuerten Architektur mit mehreren unabhängigen Services. Die Kommunikation erfolgt über Redis Pub/Sub. Jeder Service hat seine eigene Verantwortlichkeit und operiert autonom.
 
 ### Service-Übersicht
 

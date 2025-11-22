@@ -1,4 +1,4 @@
-# Database Enhancement Roadmap - Claire de Binaire
+# Database Enhancement Roadmap - Claire de Binare
 **Datum**: 2025-11-20 18:15 UTC
 **Strategie**: 3-Phasen Progressive Enhancement
 **Ziel**: Von 7/10 → 10/10 Tracking-Coverage

@@ -1,4 +1,4 @@
-# CLAUDE.md – KI-Agent-Protokoll für Claire de Binaire
+# CLAUDE.md – KI-Agent-Protokoll für Claire de Binare
 
 > **Für Claude Code**: Start mit [Abschnitt 2: Quick Start](#2-quick-start-für-claude-code)
 
@@ -21,7 +21,7 @@
 
 ## 1. Executive Summary
 
-**Projekt**: Claire de Binaire – Autonomer Krypto-Trading-Bot
+**Projekt**: Claire de Binare – Autonomer Krypto-Trading-Bot
 **Status**: ✅ Deployment-Ready (100%) | E2E-Tests: 18/18 (100%) ✨
 **Phase**: N1 - Paper-Test Implementation
 **Letztes Update**: 2025-11-20
@@ -132,10 +132,10 @@ def test_daily_drawdown_blocks_trading(risk_config, sample_risk_state):
 ### 3.1 Naming (KRITISCH – nicht ändern!)
 
 **Dokumentation/Kommunikation**:
-- ✅ **Claire de Binaire** (offiziell)
+- ✅ **Claire de Binare** (offiziell)
 
 **Code/Tech-IDs**:
-- ✅ `claire_de_binaire` (DB-Name, Volumes)
+- ✅ `claire_de_binare` (DB-Name, Volumes)
 - ✅ `cdb_*` (Service-Präfix: `cdb_core`, `cdb_risk`)
 
 ❌ **VERALTET**: „Claire de Binare" (alte Schreibweise – bei Fund melden)
@@ -319,8 +319,8 @@ def check(data):  # Keine Type Hints
 - ❌ `archive/` – Read-Only (nicht ändern!)
 
 **Prüfpunkte bei Doku-Audit**:
-1. Projektname: „Claire de Binaire" (nicht „Binare")
-2. Tech-IDs: `claire_de_binaire`, `cdb_*`
+1. Projektname: „Claire de Binare" (nicht „Binare")
+2. Tech-IDs: `claire_de_binare`, `cdb_*`
 3. Links funktionsfähig
 4. Status aktuell
 5. Code-Beispiele lauffähig
@@ -642,7 +642,7 @@ rm -rf .pytest_cache
 3. **Secrets committen** – `.env` in `.gitignore`
 4. **`print()` nutzen** – Nur `logger.info()`
 5. **Event-Types umbenennen** – `market_data`, `signals`, etc. sind fix
-6. **Tech-IDs ändern** – `claire_de_binaire`, `cdb_*` sind fix
+6. **Tech-IDs ändern** – `claire_de_binare`, `cdb_*` sind fix
 7. **Dateien löschen** – Ohne Rückfrage mit Jannek
 
 ### ✅ Immer tun:
@@ -802,7 +802,7 @@ CIRCUIT_BREAKER_THRESHOLD_PCT=0.10 # 10%
 - ✅ Redis Message Bus (Pub/Sub funktional)
 - ✅ Trade-Historie persistent (PostgreSQL)
 
-Du arbeitest jetzt als „Claire Local Test Orchestrator“ für das Projekt **Claire de Binaire**.
+Du arbeitest jetzt als „Claire Local Test Orchestrator“ für das Projekt **Claire de Binare**.
 
 Ziel:
 Ich möchte, dass du dich eigenständig darum kümmerst, alle sinnvollen Tests zu identifizieren, zu ergänzen und auszuführen, die **nur lokal** laufen (sollen oder können) – und prüfst, wie sie mit der bestehenden Test- und Codebasis harmonieren.
@@ -1125,7 +1125,7 @@ Fix einbauen → neu bauen → pytest -v -m e2e.
 
 ### 🎯 Aufgabe erfolgreich implementiert
 
-Die vollständige lokale E2E-Test-Infrastruktur für Claire de Binaire wurde implementiert, getestet und dokumentiert.
+Die vollständige lokale E2E-Test-Infrastruktur für Claire de Binare wurde implementiert, getestet und dokumentiert.
 
 ### 📊 Finale Test-Ergebnisse
 
@@ -1316,7 +1316,7 @@ pytest -v tests/e2e/test_redis_postgres_integration.py
 **Alle Services**: healthy
 **Dokumentation**: vollständig  
 
-### Erstelle die 9 GitHub Milestones für Claire de Binaire.
+### Erstelle die 9 GitHub Milestones für Claire de Binare.
 
 Im aktuellen Verzeichnis findest du:
 - create_milestones.sh (Bash-Script mit allen gh-Befehlen)

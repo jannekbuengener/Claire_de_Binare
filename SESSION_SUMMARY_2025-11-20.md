@@ -1,5 +1,5 @@
 # Session Summary - 2025-11-20
-**Claire de Binaire Trading Bot**
+**Claire de Binare Trading Bot**
 
 ## 🎯 Abgeschlossene Tasks
 
@@ -86,7 +86,7 @@
 - **Uptime**: 3+ hours (most services)
 
 ### PostgreSQL
-- **Database**: claire_de_binaire
+- **Database**: claire_de_binare
 - **Tabellen**: 6 (signals, orders, trades, positions, portfolio_snapshots, schema_version)
 - **Data**: 1 initial portfolio snapshot (100k USDT)
 - **Schema Version**: 1.0.0
@@ -208,7 +208,7 @@
 
 ---
 
-## 📊 Gesamtstatus Claire de Binaire
+## 📊 Gesamtstatus Claire de Binare
 
 ### Infrastructure
 - ✅ Docker Compose: 9/9 Services healthy
