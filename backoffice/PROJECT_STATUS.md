@@ -1,9 +1,9 @@
 # PROJECT STATUS - Claire de Binare Cleanroom
 
-**Datum**: 2025-11-21
-**Version**: 1.2.0-ci-enhanced
-**Environment**: Cleanroom (CI/CD Complete)
-**Letztes Update**: 14:30 UTC
+**Datum**: 2025-11-22
+**Version**: 1.3.0-persistence-stable
+**Environment**: Cleanroom (PostgreSQL Persistence 100%)
+**Letztes Update**: 16:45 UTC
 
 ---
 
@@ -18,6 +18,7 @@
 |----------------|-----------------|--------------------|------------------|-------|------------------------------|
 | Redis          | cdb_redis       | 🔴 STOPPED (Template) | n/a              | 6379  | Start via `docker compose`   |
 | PostgreSQL     | cdb_postgres    | 🔴 STOPPED (Template) | n/a              | 5432  | DB: `claire_de_binare`       |
+| DB Writer      | cdb_db_writer   | 🔴 STOPPED (Template) | n/a              | -     | PostgreSQL Persistence       |
 | WebSocket      | cdb_ws          | 🔴 STOPPED (Template) | n/a              | 8000  | Market Data Ingestion        |
 | Signal Engine  | cdb_core        | 🔴 STOPPED (Template) | n/a              | 8001  | Momentum Signal Engine       |
 | Risk Manager   | cdb_risk        | 🔴 STOPPED (Template) | n/a              | 8002  | 7-Layer Risk Validation      |
@@ -25,7 +26,7 @@
 | Prometheus     | cdb_prometheus  | 🔴 STOPPED (Template) | n/a              | 19090 | Host 19090 → Container 9090  |
 | Grafana        | cdb_grafana     | 🔴 STOPPED (Template) | n/a              | 3000  | Dashboards                   |
 
-**Total (zuletzt aktualisiert)**: 0/8 Running | **Memory**: n/a | **CPU**: n/a  
+**Total (zuletzt aktualisiert)**: 0/9 Running | **Memory**: n/a | **CPU**: n/a  
 
 > Beim nächsten Systemcheck werden hier die echten `docker compose ps`-Werte eingetragen
 
@@ -53,6 +54,10 @@
 - ✅ **E2E-Tests mit Docker integriert (18/18 bestanden)**
 - ✅ **Risk-Engine: 100% Coverage erreicht**
 - ✅ **CI/CD Pipeline umfassend erweitert** (2025-11-21)
+- ✅ **PostgreSQL Persistence: 100% stabil** (2025-11-22)
+  - 5 kritische Bugs gefixt (case mismatches, null handling, double division)
+  - E2E-Validierung: 18/18 Events erfolgreich persistiert
+  - Test-Suite: `tests/test_events.json`, `publish_test_events.py`, `validate_persistence.py`
 
 ---
 
@@ -83,6 +88,10 @@ _Keine aktiven HOCH-Blocker_ ✅
 1. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
 2. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
 3. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
+4. ~~**PostgreSQL Persistence Bugs**~~ → ✅ **5 Bugs gefixt + Test-Suite** (2025-11-22)
+   - `orders.side` / `trades.side` / `trades.status`: UPPERCASE → lowercase
+   - `trades.price`: NULL → target_price fallback
+   - `portfolio_snapshots.total_exposure_pct`: double division eliminated
 
 ---
 
@@ -90,6 +99,7 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-22  | **PostgreSQL Persistence 100% stabil** 🎯    | ✅ **5 Bugs gefixt, 18/18 Events**|
 | 2025-11-21  | **CI/CD Pipeline umfassend erweitert** 🚀    | ✅ **8 Jobs, Coverage, Security** |
 | 2025-11-20  | **Test-Suite vollständig implementiert** 🎉  | ✅ **122 Tests, 100% Pass Rate**  |
 | 2025-11-19  | **E2E-Tests mit Docker integriert**          | ✅ **18/18 Tests bestanden**      |
