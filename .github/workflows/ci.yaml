@@ -140,7 +140,8 @@ jobs:
 
       - name: Run Gitleaks
         run: |
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_x64.tar.gz | tar -xz
+          curl -sSL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_x64.tar.gz
+          tar -xzf gitleaks.tar.gz
           ./gitleaks detect --no-git --source . --verbose
 
   security-audit:
