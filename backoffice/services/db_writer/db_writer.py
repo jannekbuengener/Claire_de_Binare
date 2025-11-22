@@ -197,7 +197,7 @@ class DatabaseWriter:
             """,
                 (
                     data.get("symbol"),
-                    data.get("side"),
+                    data.get("side", "").lower(),  # Convert to lowercase for DB compatibility
                     data.get("order_type", "market"),
                     data.get("price"),
                     data.get("quantity", data.get("size", 0)),
@@ -245,7 +245,7 @@ class DatabaseWriter:
             """,
                 (
                     data.get("symbol"),
-                    data.get("side"),
+                    data.get("side", "").lower(),  # Convert to lowercase for DB compatibility
                     data.get("price"),
                     data.get("quantity", data.get("size", 0)),
                     data.get("status", "filled"),
@@ -294,7 +294,7 @@ class DatabaseWriter:
                     data.get("daily_pnl", 0),
                     data.get("total_unrealized_pnl", 0),
                     data.get("total_realized_pnl", 0),
-                    data.get("total_exposure_pct", 0) / 100.0,  # Convert to decimal
+                    data.get("total_exposure_pct", 0.0),  # Event already sends decimal (0.0-1.0)
                     data.get("max_drawdown_pct", 0),
                     data.get("num_positions", data.get("open_positions", 0)),
                     json.dumps(data.get("metadata", {})),
