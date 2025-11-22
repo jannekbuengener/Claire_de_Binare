@@ -280,10 +280,10 @@ class DatabaseWriter:
                 (
                     data.get("symbol"),
                     self.normalize_side(data.get("side")),
-                    data.get("price"),
+                    data.get("price") or data.get("target_price", 0.0),  # Use target_price if price is null
                     data.get("quantity", data.get("size", 0)),
                     data.get("status", "filled").lower(),  # Convert to lowercase for DB compatibility
-                    data.get("price"),  # execution_price
+                    data.get("price") or data.get("target_price", 0.0),  # Use target_price if price is null
                     slippage_bps,
                     data.get("fees", 0.0),
                     timestamp,
