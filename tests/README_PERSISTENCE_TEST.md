@@ -91,7 +91,7 @@ export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_DB=claire_de_binare
 export POSTGRES_USER=claire_user
-export POSTGRES_PASSWORD=<your_postgres_password>
+export POSTGRES_PASSWORD=claire_db_secret_2024
 ```
 
 ---
