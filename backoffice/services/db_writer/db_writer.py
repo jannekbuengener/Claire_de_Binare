@@ -282,7 +282,7 @@ class DatabaseWriter:
                     self.normalize_side(data.get("side")),
                     data.get("price"),
                     data.get("quantity", data.get("size", 0)),
-                    data.get("status", "filled"),
+                    data.get("status", "filled").lower(),  # Convert to lowercase for DB compatibility
                     data.get("price"),  # execution_price
                     slippage_bps,
                     data.get("fees", 0.0),
