@@ -214,7 +214,7 @@ def test_docker_compose_down_up_full_cycle():
     result = run_docker_compose(["ps", "--format", "json"])
     services = parse_docker_json(result.stdout)
 
-    print(f"\n📊 Services after full cycle:")
+    print("\n📊 Services after full cycle:")
     for service in services:
         name = service.get("Name", "unknown")
         status = service.get("Status", "unknown")

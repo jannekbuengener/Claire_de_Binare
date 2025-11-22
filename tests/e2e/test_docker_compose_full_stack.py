@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import subprocess
 import time
-from typing import Dict, List
+from typing import List
 
 import pytest
 import requests

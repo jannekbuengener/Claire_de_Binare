@@ -12,13 +12,11 @@ Funktionen:
 import os
 import json
 import logging
-import time
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict
 
 import redis
 import psycopg2
-from psycopg2.extras import RealDictCursor
 
 # Logging Setup
 logging.basicConfig(

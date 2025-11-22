@@ -6,14 +6,13 @@ Test latency simulation, slippage und order execution
 import pytest
 import sys
 from pathlib import Path
-from unittest.mock import Mock
 
 # Add service path to sys.path
 service_path = Path(__file__).parent.parent / "backoffice" / "services" / "execution_service"
 sys.path.insert(0, str(service_path))
 
-from mock_executor import MockExecutor
-from models import Order, OrderStatus
+from mock_executor import MockExecutor  # noqa: E402
+from models import Order, OrderStatus  # noqa: E402
 
 # Diese Tests sind als local_only markiert wegen Import-Komplexität
 pytestmark = pytest.mark.local_only
@@ -190,7 +189,7 @@ def test_latency_simulation(executor, sample_order):
     import time
 
     start = time.time()
-    result = executor.execute_order(sample_order)
+    _ = executor.execute_order(sample_order)
     end = time.time()
 
     elapsed_ms = (end - start) * 1000

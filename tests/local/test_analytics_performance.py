@@ -309,7 +309,6 @@ def test_analytics_query_tool_integration(postgres_conn):
     print("\n📊 Testing analytics query tool integration...")
 
     import subprocess
-    import sys
     import os
 
     # Test verschiedene Query-Commands
@@ -341,7 +340,7 @@ def test_analytics_query_tool_integration(postgres_conn):
         results.append((cmd, success, result.returncode))
 
         if success:
-            print(f"    ✅ Command successful")
+            print("    ✅ Command successful")
         else:
             print(f"    ❌ Command failed with code {result.returncode}")
             if result.stderr:

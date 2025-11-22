@@ -11,7 +11,6 @@ from typing import Dict, Optional
 from datetime import datetime
 
 import redis
-import psycopg2
 
 try:
     from .models import Position, PositionSide, PortfolioState, PortfolioSnapshot

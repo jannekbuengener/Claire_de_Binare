@@ -17,7 +17,7 @@ import redis
 import psycopg2
 import json
 import time
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 
 
 @pytest.fixture
@@ -101,7 +101,7 @@ def test_stress_100_market_data_events(redis_client, postgres_conn):
     if recent_signals > 0:
         print(f"✅ DB Writer persisted {recent_signals} signals")
     else:
-        print(f"⚠️  No signals persisted (DB Writer might not be running)")
+        print("⚠️  No signals persisted (DB Writer might not be running)")
 
 
 @pytest.mark.local_only
@@ -184,7 +184,7 @@ def test_stress_concurrent_signal_and_order_flow(redis_client, postgres_conn):
     cursor.execute("SELECT COUNT(*) FROM trades WHERE timestamp > NOW() - INTERVAL '1 minute'")
     trades_count = cursor.fetchone()[0]
 
-    print(f"\n📊 DB Persistence Results:")
+    print("\n📊 DB Persistence Results:")
     print(f"  - Signals: {signals_count}")
     print(f"  - Orders: {orders_count}")
     print(f"  - Trades: {trades_count}")
@@ -249,7 +249,7 @@ def test_stress_portfolio_snapshot_frequency(redis_client, postgres_conn):
     final_count = cursor.fetchone()[0]
     new_snapshots = final_count - baseline_count
 
-    print(f"\n📊 DB Validation:")
+    print("\n📊 DB Validation:")
     print(f"  - Baseline: {baseline_count}")
     print(f"  - Final: {final_count}")
     print(f"  - New snapshots: {new_snapshots}")
@@ -292,7 +292,7 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
         if line.strip():
             services.append(json.loads(line))
 
-    print(f"\n📊 Docker Services Status:")
+    print("\n📊 Docker Services Status:")
     healthy_count = 0
     for service in services:
         name = service.get("Name", "unknown")
