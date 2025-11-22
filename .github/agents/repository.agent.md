@@ -35,7 +35,7 @@ Er optimiert Struktur, Ordnung und Konsistenz durch automatisierte Label- und Or
 
 ### 4. Governance- & Struktur-Automation
 - Vorschläge für strukturierte Ordnerhierarchien
-- Anwendung von „Claire de Binaire“-Coding- und Dokumentationsstandards
+- Anwendung von „Claire de Binare“-Coding- und Dokumentationsstandards
 - Hinweise auf fehlende Architektur-, ENV- oder Risk-Dokumente
 - Sicherstellung konsistenter Links und Referenzen im Repo
 

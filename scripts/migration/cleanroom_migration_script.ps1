@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "Claire de Binaire - Cleanroom Migration" -ForegroundColor Cyan
+Write-Host "Claire de Binare - Cleanroom Migration" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Source Repo: $SourceRepo" -ForegroundColor Gray

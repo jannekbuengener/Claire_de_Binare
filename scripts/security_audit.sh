@@ -1,10 +1,10 @@
 #!/bin/bash
-# SECURITY AUDIT SCRIPT - Claire de Binaire
+# SECURITY AUDIT SCRIPT - Claire de Binare
 # Phase 1: Kritische Security-Checks
 # Ausführung: bash security_audit.sh
 
 echo "================================================"
-echo "  CLAIRE DE BINAIRE - SECURITY AUDIT PHASE 1"
+echo "  CLAIRE DE BINARE - SECURITY AUDIT PHASE 1"
 echo "  Datum: $(date +%Y-%m-%d\ %H:%M)"
 echo "================================================"
 echo ""

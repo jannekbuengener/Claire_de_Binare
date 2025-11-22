@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for the Claire de Binaire test-suite."""
+"""Shared pytest fixtures for the Claire de Binare test-suite."""
 
 from __future__ import annotations
 

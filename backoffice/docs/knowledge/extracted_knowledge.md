@@ -1,4 +1,4 @@
-# Konsolidiertes Wissen - Claire de Binaire
+# Konsolidiertes Wissen - Claire de Binare
 
 **Extrahiert von**: software-jochen
 **Datum**: 2025-11-14
@@ -49,7 +49,7 @@ market_data → signals → orders → order_results
 
 ### 1.4 Container-Konventionen
 
-**Naming**: Alle Container mit `cdb_` Präfix (Claire de Binaire).
+**Naming**: Alle Container mit `cdb_` Präfix (Claire de Binare).
 
 **Security Hardening** (docker-compose.yml):
 - `security_opt: [no-new-privileges:true]`

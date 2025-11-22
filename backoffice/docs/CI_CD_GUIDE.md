@@ -1,4 +1,4 @@
-# CI/CD Pipeline Guide - Claire de Binaire
+# CI/CD Pipeline Guide - Claire de Binare
 
 **Version**: 2.0
 **Datum**: 2025-11-21
@@ -629,5 +629,5 @@ repos:
 
 **Erstellt**: 2025-11-21
 **Autor**: Claude (AI Assistant)
-**Projekt**: Claire de Binaire - Autonomous Crypto Trading Bot
+**Projekt**: Claire de Binare - Autonomous Crypto Trading Bot
 **Phase**: N1 - Paper Trading Implementation

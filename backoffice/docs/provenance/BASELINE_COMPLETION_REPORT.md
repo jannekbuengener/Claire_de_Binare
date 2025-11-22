@@ -27,7 +27,7 @@ All active documentation in the Claire de Binare Cleanroom repository has been n
 ## 1. Phase 1 Scope & Objectives
 
 ### Objective
-Replace all active occurrences of "Claire de Binaire" with "Claire de Binare" while preserving:
+Replace all active occurrences of "Claire de Binare" with "Claire de Binare" while preserving:
 - Historical/explanatory references (documenting what WAS changed)
 - Educational content (audit schemas listing invalid variants)
 - Immutable pipeline outputs (knowledge extraction artifacts)
@@ -47,7 +47,7 @@ Based on `grep -r "Binaire" backoffice/docs`:
 | File | Line | Change | Status |
 |------|------|--------|--------|
 | **cdb_kubernetes.md** | 543 | `Clair de Binaire` → `Claire de Binare` | ✅ Fixed (also corrected "Clair" → "Claire") |
-| **cdb_signal.md** | 169 | `Claire-de-Binaire` → `Claire de Binare` | ✅ Fixed (removed hyphens) |
+| **cdb_signal.md** | 169 | `Claire-de-Binare` → `Claire de Binare` | ✅ Fixed (removed hyphens) |
 
 **Notes**:
 - All other service files (cdb_execution.md, cdb_postgres.md, etc.) already used correct naming or contained no project name references
@@ -57,8 +57,8 @@ Based on `grep -r "Binaire" backoffice/docs`:
 
 | File | Line | Change | Status |
 |------|------|--------|--------|
-| **provenance/INDEX.md** | 323 | `Claire-de-Binaire-System` → `Claire de Binare-System` | ✅ Fixed |
-| **runbooks/MIGRATION_READY.md** | 430 | `Claire-de-Binaire-System` → `Claire de Binare-System` | ✅ Fixed |
+| **provenance/INDEX.md** | 323 | `Claire-de-Binare-System` → `Claire de Binare-System` | ✅ Fixed |
+| **runbooks/MIGRATION_READY.md** | 430 | `Claire-de-Binare-System` → `Claire de Binare-System` | ✅ Fixed |
 
 **Notes**:
 - Both files had active statements (not historical explanations)
@@ -122,7 +122,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 
 | File | Reason for Exclusion | Example Content |
 |------|---------------------|-----------------|
-| **schema/audit_schema.yaml** | Lists invalid variants for validation | Lines 16-20, 329-331: Lists "Claire de Binaire" as invalid variant |
+| **schema/audit_schema.yaml** | Lists invalid variants for validation | Lines 16-20, 329-331: Lists "Claire de Binare" as invalid variant |
 | **audit/AUDIT_CLEANROOM.md** | Educational documentation of naming issues | Contains intentional "invalid variants" examples |
 
 **Status**: ✅ **CORRECT** - These files MUST list "Binaire" to document what NOT to use.
@@ -131,8 +131,8 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 
 | File | Reason for Exclusion | Example Content |
 |------|---------------------|-----------------|
-| **DECISION_LOG.md** | Documents ADR-039 which EXPLAINS the change from "Binaire" | Lines 14, 28-29: "28 Dateien verwendeten noch 'Claire de Binaire'" |
-| **Single Source of Truth.md** | Explains that "Binaire" is historical/invalid | Line 127: "Die Schreibweise 'Claire de Binaire' gilt als historisch/ungültig" |
+| **DECISION_LOG.md** | Documents ADR-039 which EXPLAINS the change from "Binaire" | Lines 14, 28-29: "28 Dateien verwendeten noch 'Claire de Binare'" |
+| **Single Source of Truth.md** | Explains that "Binaire" is historical/invalid | Line 127: "Die Schreibweise 'Claire de Binare' gilt als historisch/ungültig" |
 | **provenance/CLEANROOM_BASELINE_SUMMARY.md** | Documents what WAS changed | Lines 15, 42-47: Explains normalization FROM "Binaire" TO "Binare" |
 | **provenance/NULLPUNKT_DEFINITION_REPORT.md** | Reports on the nullpunkt changes | Lines 15, 30: Documents old name → new name |
 | **knowledge/extracted_knowledge.md** | Immutable pipeline output | Line [various]: Pipeline extraction artifact |

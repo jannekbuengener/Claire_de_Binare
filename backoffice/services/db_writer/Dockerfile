@@ -1,5 +1,5 @@
 # Dockerfile - DB Writer Service
-# Claire de Binaire Trading Bot
+# Claire de Binare Trading Bot
 
 FROM python:3.11-slim
 

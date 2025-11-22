@@ -12,7 +12,7 @@
 Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 der offizielle, kanonische Stand des Projekts **Claire de Binare**.
 
 **Was wurde erreicht:**
-- ✅ Namenskonvention von "Claire de Binaire" auf "Claire de Binare" normalisiert
+- ✅ Namenskonvention von "Claire de Binare" auf "Claire de Binare" normalisiert
 - ✅ Cleanroom-Repository als aktueller Ist-Zustand etabliert (nicht mehr "Ziel-Repo")
 - ✅ Migration vom 2025-11-16 als abgeschlossen historisiert
 - ✅ N1-Phase (Paper-Test) als nächstes Ziel definiert
@@ -43,13 +43,13 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 de
 
 | Datei | Änderungstyp | Änderung |
 |-------|--------------|----------|
-| `KODEX – Claire de Binaire.md` | **UMBENENNEN** | → `KODEX – Claire de Binare.md` |
-| `KODEX – Claire de Binare.md` (Inhalt) | **CONTENT_UPDATE** | Alle "Claire de Binaire" → "Claire de Binare" |
+| `KODEX – Claire de Binare.md` | **UMBENENNEN** | → `KODEX – Claire de Binare.md` |
+| `KODEX – Claire de Binare.md` (Inhalt) | **CONTENT_UPDATE** | Alle "Claire de Binare" → "Claire de Binare" |
 | `KODEX – Claire de Binare.md` (Hinweis) | **CONTENT_UPDATE** | Hinweis ergänzt: Frühere Schreibweise "Binaire" gilt als historisch |
-| `N1_ARCHITEKTUR.md` | **CONTENT_UPDATE** | Zeile 11: "Claire de Binaire" → "Claire de Binare" |
+| `N1_ARCHITEKTUR.md` | **CONTENT_UPDATE** | Zeile 11: "Claire de Binare" → "Claire de Binare" |
 | `EXECUTIVE_SUMMARY.md` | **CONTENT_UPDATE** | Titel & Zeile 3: "Binare" statt "Binaire" |
 
-**Hinweis**: Weitere 25+ Dateien enthalten noch "Claire de Binaire" und müssen in Phase 3 aktualisiert werden (siehe ADR-039, Nächste Schritte).
+**Hinweis**: Weitere 25+ Dateien enthalten noch "Claire de Binare" und müssen in Phase 3 aktualisiert werden (siehe ADR-039, Nächste Schritte).
 
 ---
 
@@ -209,7 +209,7 @@ Gemäß `backoffice/docs/architecture/N1_ARCHITEKTUR.md` ist die **Paper-Test-Ph
 - `backoffice/docs/knowledge/extracted_knowledge.md`
 - u.a.
 
-**Handlungsbedarf**: Bulk-Edit mit "Claire de Binaire" → "Claire de Binare" für alle oben genannten Dateien.
+**Handlungsbedarf**: Bulk-Edit mit "Claire de Binare" → "Claire de Binare" für alle oben genannten Dateien.
 
 ---
 

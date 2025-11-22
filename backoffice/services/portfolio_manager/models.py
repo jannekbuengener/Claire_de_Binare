@@ -1,6 +1,6 @@
 """
 Portfolio Manager - Data Models
-Claire de Binaire Trading Bot
+Claire de Binare Trading Bot
 
 Models für Portfolio State, Positions, und Equity Tracking
 """

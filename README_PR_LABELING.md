@@ -2,7 +2,7 @@
 
 ## 📋 Übersicht
 
-Dieses Verzeichnis enthält ein vollautomatisches Label-System für alle Pull Requests im Claire de Binaire Cleanroom Repository.
+Dieses Verzeichnis enthält ein vollautomatisches Label-System für alle Pull Requests im Claire de Binare Cleanroom Repository.
 
 ## 🚀 Schnellstart
 
@@ -91,7 +91,7 @@ gh auth login
 ## 📊 Beispiel-Output
 
 ```
-🏷️  Label-Bot für Claire de Binaire Pull Requests
+🏷️  Label-Bot für Claire de Binare Pull Requests
 ==================================================
 
 Schritt 1: Prüfe GitHub CLI...

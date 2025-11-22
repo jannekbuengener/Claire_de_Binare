@@ -1,5 +1,5 @@
 """
-Local-Only Tests - Claire de Binaire
+Local-Only Tests - Claire de Binare
 
 Tests in diesem Verzeichnis sind NUR für lokale Ausführung gedacht:
 - Erfordern Docker Compose mit allen Services

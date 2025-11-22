@@ -1,4 +1,4 @@
-# Label-Struktur für Claire de Binaire Pull Requests
+# Label-Struktur für Claire de Binare Pull Requests
 
 ## Hierarchie
 

@@ -1,4 +1,4 @@
-# 🗺️ ROADMAP TO PRODUCTION - Claire de Binaire
+# 🗺️ ROADMAP TO PRODUCTION - Claire de Binare
 
 **Ziel**: Erster Echtgeld-Handel (Production Release 1.0)
 **Aktueller Stand**: N1 - Paper-Test-Vorbereitung

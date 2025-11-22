@@ -4,7 +4,7 @@
 **Geltungsbereich:** Gesamtes Projekt „Claire de Binare" – Architektur, Betrieb, Doku, Automationen
 **Ziel:** Einheitlicher Entscheidungsrahmen für Architektur, Sicherheit, Risiko, Betrieb und Kommunikation.
 
-> **Hinweis zur Schreibweise:** Frühere Dokumente verwenden teilweise die Schreibweise „Claire de Binaire". Diese gilt als historisch und wird nicht weiter verwendet. Die verbindliche Projektbezeichnung lautet **„Claire de Binare"**.
+> **Hinweis zur Schreibweise:** Frühere Dokumente verwenden teilweise die Schreibweise „Claire de Binare". Diese gilt als historisch und wird nicht weiter verwendet. Die verbindliche Projektbezeichnung lautet **„Claire de Binare"**.
 
 ---
 

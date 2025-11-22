@@ -1,4 +1,4 @@
-"""End-to-End Tests für Claire de Binaire.
+"""End-to-End Tests für Claire de Binare.
 
 Diese Tests erfordern laufende Docker-Container und sind ausschließlich
 für lokale Entwicklung gedacht. Sie werden NICHT in CI ausgeführt.

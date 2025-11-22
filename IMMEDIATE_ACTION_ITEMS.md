@@ -1,4 +1,4 @@
-# Claire de Binaire – Sofortmaßnahmen (Next 72 Hours)
+# Claire de Binare – Sofortmaßnahmen (Next 72 Hours)
 
 **Datum**: 2025-11-21
 **Priorität**: KRITISCH – Blockiert Production Release
@@ -680,7 +680,7 @@ Once all three are complete:
 ```markdown
 ## Critical Issues Found – 72-Hour Action Plan
 
-We've completed a comprehensive architecture analysis of Claire de Binaire.
+We've completed a comprehensive architecture analysis of Claire de Binare.
 Three critical blockers were identified that must be fixed before Production:
 
 ### K1: TODO in Production Code (4h)

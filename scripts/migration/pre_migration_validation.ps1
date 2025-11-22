@@ -21,7 +21,7 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $IssuesFound = 0
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "Claire de Binaire - Pre-Migration Validation" -ForegroundColor Cyan
+Write-Host "Claire de Binare - Pre-Migration Validation" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 Write-Host ""
 

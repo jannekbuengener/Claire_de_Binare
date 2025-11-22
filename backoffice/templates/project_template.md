@@ -1,7 +1,7 @@
 # Event-Driven Trading System - Project Template
 
 **Version**: 1.0
-**Basiert auf**: Claire de Binaire Architecture (abstr ahiert)
+**Basiert auf**: Claire de Binare Architecture (abstr ahiert)
 **Zielgruppe**: Neue Event-Driven Trading/Financial Systems
 
 ---
@@ -55,7 +55,7 @@ Input-Events → Processing-Service → Output-Events → Execution/Storage
 | **Execution Engine** | `orders_topic` → Order-Platzierung → `results_topic` | `/health` | Pflicht |
 
 **Platzhalter**:
-- `{{PROJECT_NAME}}`: z.B. "claire_de_binaire" → Container-Präfix `cdb_`
+- `{{PROJECT_NAME}}`: z.B. "claire_de_binare" → Container-Präfix `cdb_`
 - `{{EXCHANGE_API}}`: z.B. "MEXC", "Binance", "Interactive Brokers"
 
 ### 1.3 Infrastructure Services (Pflicht)
@@ -352,6 +352,6 @@ docker compose up -d --build
 ---
 
 **Version History**:
-- v1.0 (2025-11-14): Initiale Template-Generierung aus Claire de Binaire
+- v1.0 (2025-11-14): Initiale Template-Generierung aus Claire de Binare
 
 **Next Steps**: Template in neuem Projekt anwenden, Platzhalter ersetzen, projektspezifische Anpassungen dokumentieren.

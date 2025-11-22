@@ -27,7 +27,7 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 
 | Alter Name | Neuer Name | Status |
 |------------|------------|--------|
-| `KODEX – Claire de Binaire.md` | `KODEX – Claire de Binare.md` | ✅ Umbenannt |
+| `KODEX – Claire de Binare.md` | `KODEX – Claire de Binare.md` | ✅ Umbenannt |
 
 ---
 
@@ -87,7 +87,7 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 
 ## 3. Verbleibende "Binaire"-Vorkommen
 
-Nach Abschluss aller Änderungen verbleiben **6 Dateien** mit "Claire de Binaire" - alle in **bewussten, korrekten Kontexten**:
+Nach Abschluss aller Änderungen verbleiben **6 Dateien** mit "Claire de Binare" - alle in **bewussten, korrekten Kontexten**:
 
 | Datei | Kontext | Korrekt? |
 |-------|---------|----------|
@@ -139,7 +139,7 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 
 | Kontext | Korrekte Schreibweise | Ungültige Varianten |
 |---------|----------------------|---------------------|
-| **Projektname (Brand)** | "Claire de Binare" | ~~Claire de Binaire~~, ~~Claire_de_Binaire~~ |
+| **Projektname (Brand)** | "Claire de Binare" | ~~Claire de Binare~~, ~~Claire_de_Binaire~~ |
 | **Technische IDs** | `claire_de_binare` | (keine Änderungen) |
 | **DB-Namen** | `claire_de_binare` | (keine Änderungen) |
 | **Container-Präfixe** | `cdb_` | (keine Änderungen) |

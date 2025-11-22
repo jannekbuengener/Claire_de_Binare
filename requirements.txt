@@ -1,4 +1,4 @@
-# Claire de Binaire - Core Dependencies
+# Claire de Binare - Core Dependencies
 
 # === SOFORT BENÖTIGT ===
 requests==2.31.0

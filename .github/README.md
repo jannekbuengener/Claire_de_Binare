@@ -1,4 +1,4 @@
-# GitHub Workflows - Claire de Binaire
+# GitHub Workflows - Claire de Binare
 
 ## CI/CD Pipeline
 
@@ -80,5 +80,5 @@ Siehe [CI_CD_GUIDE.md](../backoffice/docs/CI_CD_GUIDE.md#troubleshooting)
 
 ---
 
-**Projekt**: Claire de Binaire - Autonomous Crypto Trading Bot
+**Projekt**: Claire de Binare - Autonomous Crypto Trading Bot
 **Maintainer**: Jannek

@@ -1,5 +1,5 @@
 """
-Analytics Query Tool - Claire de Binaire
+Analytics Query Tool - Claire de Binare
 Einfache Queries für Trading-Auswertung
 
 Verwendung:
@@ -29,7 +29,7 @@ class AnalyticsQuery:
         self.conn = psycopg2.connect(
             host=os.getenv("POSTGRES_HOST", default_host),
             port=int(os.getenv("POSTGRES_PORT", "5432")),
-            database=os.getenv("POSTGRES_DB", "claire_de_binaire"),
+            database=os.getenv("POSTGRES_DB", "claire_de_binare"),
             user=os.getenv("POSTGRES_USER", "claire_user"),
             password=os.getenv("POSTGRES_PASSWORD", ""),
         )
@@ -193,7 +193,7 @@ class AnalyticsQuery:
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="Claire de Binaire - Analytics Query Tool"
+        description="Claire de Binare - Analytics Query Tool"
     )
 
     parser.add_argument(
