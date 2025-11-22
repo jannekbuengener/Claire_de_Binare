@@ -52,17 +52,14 @@ class Signal:
             "type": self.type,
             "symbol": self.symbol,
             "side": self.side,
-            "signal_type": self.side.lower(),  # DB-kompatibel: 'buy'/'sell'
             "confidence": self.confidence,
             "reason": self.reason,
             "timestamp": self.timestamp,
             "price": self.price,
             "pct_change": self.pct_change,
-            "source": "momentum_strategy",     # Quelle des Signals
         }
 
     @staticmethod
     def generate_reason(pct_change: float, threshold: float) -> str:
         """Generiert Begründung für Signal"""
         return f"Momentum: {pct_change:+.2f}% (Schwelle: {threshold}%)"
-
