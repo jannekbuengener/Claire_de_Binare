@@ -149,7 +149,9 @@ class PositionSizer:
             Moreira & Muir (2017): "Volatility-Managed Portfolios"
         """
         if asset_volatility <= 0:
-            raise ValueError(f"Asset volatility must be positive, got {asset_volatility}")
+            raise ValueError(
+                f"Asset volatility must be positive, got {asset_volatility}"
+            )
 
         # Calculate notional exposure
         notional = (equity * target_volatility) / asset_volatility

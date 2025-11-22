@@ -21,7 +21,7 @@ import psycopg2
 # Logging Setup
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("db_writer")
 
@@ -60,7 +60,7 @@ class DatabaseWriter:
                 host=self.redis_host,
                 port=self.redis_port,
                 password=self.redis_password,
-                decode_responses=True
+                decode_responses=True,
             )
             self.redis_client.ping()
             logger.info(f"Connected to Redis at {self.redis_host}:{self.redis_port}")
@@ -76,10 +76,12 @@ class DatabaseWriter:
                 port=self.postgres_port,
                 database=self.postgres_db,
                 user=self.postgres_user,
-                password=self.postgres_password
+                password=self.postgres_password,
             )
             self.db_conn.autocommit = True
-            logger.info(f"Connected to PostgreSQL at {self.postgres_host}:{self.postgres_port}/{self.postgres_db}")
+            logger.info(
+                f"Connected to PostgreSQL at {self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+            )
         except Exception as e:
             logger.error(f"Failed to connect to PostgreSQL: {e}")
             raise
@@ -103,21 +105,26 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO signals (symbol, signal_type, price, confidence, timestamp, source, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                data.get("symbol"),
-                data.get("signal_type"),
-                data.get("price"),
-                data.get("confidence", 0.5),
-                data.get("timestamp", datetime.utcnow().isoformat()),
-                data.get("source", "signal_engine"),
-                json.dumps(data.get("metadata", {}))
-            ))
+            """,
+                (
+                    data.get("symbol"),
+                    data.get("signal_type"),
+                    data.get("price"),
+                    data.get("confidence", 0.5),
+                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    data.get("source", "signal_engine"),
+                    json.dumps(data.get("metadata", {})),
+                ),
+            )
             signal_id = cursor.fetchone()[0]
-            logger.info(f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')}")
+            logger.info(
+                f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')}"
+            )
         except Exception as e:
             logger.error(f"Failed to persist signal: {e}")
 
@@ -130,25 +137,30 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO orders
                 (symbol, side, order_type, price, size, approved, rejection_reason, status, metadata, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                data.get("symbol"),
-                data.get("side"),
-                data.get("order_type", "market"),
-                data.get("price"),
-                data.get("quantity", data.get("size", 0)),
-                data.get("approved", False),
-                data.get("rejection_reason"),
-                data.get("status", "pending"),
-                json.dumps(data.get("metadata", {})),
-                data.get("timestamp", datetime.utcnow().isoformat())
-            ))
+            """,
+                (
+                    data.get("symbol"),
+                    data.get("side"),
+                    data.get("order_type", "market"),
+                    data.get("price"),
+                    data.get("quantity", data.get("size", 0)),
+                    data.get("approved", False),
+                    data.get("rejection_reason"),
+                    data.get("status", "pending"),
+                    json.dumps(data.get("metadata", {})),
+                    data.get("timestamp", datetime.utcnow().isoformat()),
+                ),
+            )
             order_id = cursor.fetchone()[0]
-            logger.info(f"✅ Order persisted: ID={order_id}, {data.get('symbol')} {data.get('side')}")
+            logger.info(
+                f"✅ Order persisted: ID={order_id}, {data.get('symbol')} {data.get('side')}"
+            )
         except Exception as e:
             logger.error(f"Failed to persist order: {e}")
 
@@ -165,29 +177,36 @@ class DatabaseWriter:
             # Calculate slippage in basis points
             slippage_bps = None
             if data.get("target_price") and data.get("price"):
-                slippage = abs(data.get("price") - data.get("target_price")) / data.get("target_price")
+                slippage = abs(data.get("price") - data.get("target_price")) / data.get(
+                    "target_price"
+                )
                 slippage_bps = slippage * 10000  # Convert to bps
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO trades
                 (symbol, side, price, size, status, execution_price, slippage_bps, fees, timestamp, exchange, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                data.get("symbol"),
-                data.get("side"),
-                data.get("price"),
-                data.get("quantity", data.get("size", 0)),
-                data.get("status", "filled"),
-                data.get("price"),  # execution_price
-                slippage_bps,
-                data.get("fees", 0.0),
-                data.get("timestamp", datetime.utcnow().isoformat()),
-                data.get("exchange", "MEXC"),
-                json.dumps(data.get("metadata", {}))
-            ))
+            """,
+                (
+                    data.get("symbol"),
+                    data.get("side"),
+                    data.get("price"),
+                    data.get("quantity", data.get("size", 0)),
+                    data.get("status", "filled"),
+                    data.get("price"),  # execution_price
+                    slippage_bps,
+                    data.get("fees", 0.0),
+                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    data.get("exchange", "MEXC"),
+                    json.dumps(data.get("metadata", {})),
+                ),
+            )
             trade_id = cursor.fetchone()[0]
-            logger.info(f"✅ Trade persisted: ID={trade_id}, {data.get('symbol')} {data.get('side')} @ {data.get('price')}")
+            logger.info(
+                f"✅ Trade persisted: ID={trade_id}, {data.get('symbol')} {data.get('side')} @ {data.get('price')}"
+            )
         except Exception as e:
             logger.error(f"Failed to persist trade: {e}")
 
@@ -200,28 +219,33 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO portfolio_snapshots
                 (timestamp, total_equity, available_balance, margin_used, daily_pnl,
                  total_unrealized_pnl, total_realized_pnl, total_exposure_pct, max_drawdown_pct,
                  open_positions, metadata)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (
-                data.get("timestamp", datetime.utcnow().isoformat()),
-                data.get("equity", data.get("total_equity", 0)),
-                data.get("cash", data.get("available_balance", 0)),
-                data.get("margin_used", 0),
-                data.get("daily_pnl", 0),
-                data.get("total_unrealized_pnl", 0),
-                data.get("total_realized_pnl", 0),
-                data.get("total_exposure_pct", 0) / 100.0,  # Convert to decimal
-                data.get("max_drawdown_pct", 0),
-                data.get("num_positions", data.get("open_positions", 0)),
-                json.dumps(data.get("metadata", {}))
-            ))
+            """,
+                (
+                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    data.get("equity", data.get("total_equity", 0)),
+                    data.get("cash", data.get("available_balance", 0)),
+                    data.get("margin_used", 0),
+                    data.get("daily_pnl", 0),
+                    data.get("total_unrealized_pnl", 0),
+                    data.get("total_realized_pnl", 0),
+                    data.get("total_exposure_pct", 0) / 100.0,  # Convert to decimal
+                    data.get("max_drawdown_pct", 0),
+                    data.get("num_positions", data.get("open_positions", 0)),
+                    json.dumps(data.get("metadata", {})),
+                ),
+            )
             snapshot_id = cursor.fetchone()[0]
-            logger.info(f"✅ Portfolio snapshot persisted: ID={snapshot_id}, Equity={data.get('equity')}")
+            logger.info(
+                f"✅ Portfolio snapshot persisted: ID={snapshot_id}, Equity={data.get('equity')}"
+            )
         except Exception as e:
             logger.error(f"Failed to persist portfolio snapshot: {e}")
 

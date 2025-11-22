@@ -1,6 +1,7 @@
 """
 Risk Manager - Data Models
 """
+
 from dataclasses import dataclass, field
 from typing import Literal, Optional
 import time
@@ -10,6 +11,7 @@ from datetime import datetime
 @dataclass
 class Signal:
     """Signal vom Signal-Engine"""
+
     symbol: str
     side: Literal["BUY", "SELL"]
     confidence: float
@@ -18,7 +20,7 @@ class Signal:
     price: float
     pct_change: float
     type: Literal["signal"] = "signal"  # Type-safe event type
-    
+
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
@@ -29,13 +31,14 @@ class Signal:
             timestamp=int(data["timestamp"]),
             price=float(data["price"]),
             pct_change=float(data["pct_change"]),
-            type=data.get("type", "signal")
+            type=data.get("type", "signal"),
         )
 
 
 @dataclass
 class Order:
     """Order für Execution-Service"""
+
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
@@ -45,7 +48,7 @@ class Order:
     timestamp: int
     client_id: Optional[str] = None
     type: Literal["order"] = "order"  # Type-safe event type
-    
+
     def to_dict(self) -> dict:
         return {
             "type": self.type,
@@ -63,6 +66,7 @@ class Order:
 @dataclass
 class OrderResult:
     """Order-Result Event vom Execution-Service"""
+
     order_id: str
     status: Literal["FILLED", "REJECTED", "ERROR"]
     symbol: str
@@ -74,7 +78,7 @@ class OrderResult:
     client_id: Optional[str] = None
     error_message: Optional[str] = None
     type: Literal["order_result"] = "order_result"
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "OrderResult":
         ts_raw = data.get("timestamp")
@@ -108,20 +112,21 @@ class OrderResult:
             price=(float(data["price"]) if data.get("price") is not None else None),
             client_id=data.get("client_id"),
             error_message=data.get("error_message"),
-            timestamp=ts
+            timestamp=ts,
         )
 
 
 @dataclass
 class Alert:
     """Alert bei Risk-Limit-Verletzung"""
+
     level: Literal["INFO", "WARNING", "CRITICAL"]
     code: str
     message: str
     context: dict
     timestamp: int
     type: Literal["alert"] = "alert"  # Type-safe event type
-    
+
     def to_dict(self) -> dict:
         return {
             "type": self.type,
@@ -129,13 +134,14 @@ class Alert:
             "code": self.code,
             "message": self.message,
             "context": self.context,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
 
 @dataclass
 class RiskState:
     """Aktueller Risk-Status"""
+
     total_exposure: float = 0.0
     daily_pnl: float = 0.0
     open_positions: int = 0
@@ -145,4 +151,3 @@ class RiskState:
     positions: dict[str, float] = field(default_factory=dict)
     pending_orders: int = 0
     last_prices: dict[str, float] = field(default_factory=dict)
-

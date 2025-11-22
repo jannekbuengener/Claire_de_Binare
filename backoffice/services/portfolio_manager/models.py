@@ -13,6 +13,7 @@ from enum import Enum
 
 class PositionSide(str, Enum):
     """Position side: LONG or SHORT"""
+
     LONG = "LONG"
     SHORT = "SHORT"
 
@@ -20,6 +21,7 @@ class PositionSide(str, Enum):
 @dataclass
 class Position:
     """Single position in portfolio"""
+
     symbol: str
     side: PositionSide
     quantity: float
@@ -46,6 +48,7 @@ class Position:
 @dataclass
 class PortfolioState:
     """Complete portfolio state"""
+
     equity: float
     cash: float
     positions: Dict[str, Position]
@@ -79,6 +82,7 @@ class PortfolioState:
 @dataclass
 class PortfolioSnapshot:
     """Historical snapshot for analytics"""
+
     timestamp: str
     equity: float
     cash: float
@@ -102,5 +106,5 @@ class PortfolioSnapshot:
             "daily_pnl": self.daily_pnl,
             "daily_pnl_pct": self.daily_pnl_pct,
             "total_realized_pnl": self.total_realized_pnl,
-            "num_trades": self.num_trades
+            "num_trades": self.num_trades,
         }

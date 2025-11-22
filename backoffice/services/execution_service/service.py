@@ -31,7 +31,9 @@ except ImportError:
 logging_config_path = Path("/app/logging_config.json")  # Falls gemountet
 if not logging_config_path.exists():
     # Versuche relative Pfade für lokale Entwicklung
-    logging_config_path = Path(__file__).resolve().parent.parent.parent / "logging_config.json"
+    logging_config_path = (
+        Path(__file__).resolve().parent.parent.parent / "logging_config.json"
+    )
 
 if logging_config_path.exists():
     with open(logging_config_path) as cfg_file:
@@ -41,7 +43,7 @@ else:
     # Fallback zu basicConfig
     logging.basicConfig(
         level=getattr(logging, config.LOG_LEVEL),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
 logger = logging.getLogger(config.SERVICE_NAME)
@@ -60,17 +62,25 @@ stats = {
     "orders_filled": 0,
     "orders_rejected": 0,
     "start_time": datetime.utcnow().isoformat(),
-    "last_result": None
+    "last_result": None,
 }
 
 
-def _init_with_retry(name: str, factory, retries: int = 3, delay: float = config.RETRY_DELAY_SECONDS) -> object:
+def _init_with_retry(
+    name: str, factory, retries: int = 3, delay: float = config.RETRY_DELAY_SECONDS
+) -> object:
     """Initialisiert eine Komponente mit Retry-Logik"""
     for attempt in range(1, retries + 1):
         try:
             return factory()
         except Exception as exc:  # noqa: BLE001
-            logger.error("%s Initialisierung fehlgeschlagen (%s/%s): %s", name, attempt, retries, exc)
+            logger.error(
+                "%s Initialisierung fehlgeschlagen (%s/%s): %s",
+                name,
+                attempt,
+                retries,
+                exc,
+            )
             if attempt == retries:
                 raise
             time.sleep(delay)
@@ -79,15 +89,16 @@ def _init_with_retry(name: str, factory, retries: int = 3, delay: float = config
 def init_services():
     """Initialize Redis, Executor and Database"""
     global redis_client, pubsub, executor, db
-    
+
     try:
+
         def _create_redis_client():
             client = redis.Redis(
                 host=config.REDIS_HOST,
                 port=config.REDIS_PORT,
                 password=config.REDIS_PASSWORD or None,
                 db=config.REDIS_DB,
-                decode_responses=True
+                decode_responses=True,
             )
             client.ping()
             return client
@@ -95,12 +106,12 @@ def init_services():
         # Redis connection
         redis_client = _init_with_retry("Redis", _create_redis_client, retries=5)
         logger.info(f"Connected to Redis at {config.REDIS_HOST}:{config.REDIS_PORT}")
-        
+
         # Subscribe to orders topic
         pubsub = redis_client.pubsub()
         pubsub.subscribe(config.TOPIC_ORDERS)
         logger.info(f"Subscribed to topic: {config.TOPIC_ORDERS}")
-        
+
         # Initialize executor
         if config.MOCK_TRADING:
             executor = MockExecutor()
@@ -109,13 +120,15 @@ def init_services():
             # TODO: Real MEXC executor
             logger.warning("Real trading not implemented yet, using MockExecutor")
             executor = MockExecutor()
-        
+
         # Initialize database
-        db = _init_with_retry("PostgreSQL", Database, retries=3, delay=config.RETRY_DELAY_SECONDS * 2)
+        db = _init_with_retry(
+            "PostgreSQL", Database, retries=3, delay=config.RETRY_DELAY_SECONDS * 2
+        )
         logger.info("Database initialized")
-        
+
         return True
-        
+
     except Exception as e:
         logger.exception("Failed to initialize services: %s", e)
         return False
@@ -124,10 +137,12 @@ def init_services():
 def process_order(order_data: dict):
     """Process incoming order"""
     global stats
-    
+
     try:
         if order_data.get("type") not in (None, "order"):
-            logger.warning("Ignoriere Event mit unerwartetem Typ: %s", order_data.get("type"))
+            logger.warning(
+                "Ignoriere Event mit unerwartetem Typ: %s", order_data.get("type")
+            )
             return None
 
         order = Order.from_event(order_data)
@@ -148,7 +163,7 @@ def process_order(order_data: dict):
         result = executor.execute_order(order)
         if result is None:
             raise RuntimeError("Executor returned no result")
-        
+
         # Update stats
         schema_status = ExecutionResult._schema_status(result.status)
         if schema_status == "FILLED":
@@ -156,23 +171,27 @@ def process_order(order_data: dict):
             logger.info("Order filled: %s at %s", result.order_id, result.price)
         else:
             stats["orders_rejected"] += 1
-            logger.warning("Order rejected: %s - %s", result.order_id, result.error_message)
-        
+            logger.warning(
+                "Order rejected: %s - %s", result.order_id, result.error_message
+            )
+
         # Publish result
         event_payload = result.to_dict()
         stats["last_result"] = event_payload
         if not redis_client:
             raise RuntimeError("Redis client not initialised")
 
-        redis_client.publish(config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False))
+        redis_client.publish(
+            config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
+        )
         logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
-        
+
         # Save to PostgreSQL
         if db:
             db.save_order(result)
             if schema_status == "FILLED":
                 db.save_trade(result)
-        
+
         return result
     except (KeyError, ValueError) as err:
         logger.error("Fehlerhafte Orderdaten: %s", err)
@@ -187,13 +206,13 @@ def process_order(order_data: dict):
 def message_loop():
     """Listen for orders from Redis"""
     global running
-    
+
     logger.info("Starting message loop...")
-    
+
     while running:
         try:
             message = pubsub.get_message(timeout=1.0)
-            
+
             if message and message["type"] == "message":
                 try:
                     order_data = json.loads(message["data"])
@@ -202,26 +221,31 @@ def message_loop():
                     logger.error(f"Invalid JSON in message: {e}")
                 except Exception as e:
                     logger.error(f"Error handling message: {e}")
-            
+
         except Exception as e:
             logger.error(f"Error in message loop: {e}")
             time.sleep(1)
-    
+
     logger.info("Message loop stopped")
 
 
 # Health Check Endpoint
-@app.route('/health', methods=['GET'])
+@app.route("/health", methods=["GET"])
 def health():
     """Health check endpoint"""
-    return jsonify({
-        "service": config.SERVICE_NAME,
-        "status": "ok",
-        "version": config.SERVICE_VERSION
-    }), 200
+    return (
+        jsonify(
+            {
+                "service": config.SERVICE_NAME,
+                "status": "ok",
+                "version": config.SERVICE_VERSION,
+            }
+        ),
+        200,
+    )
 
 
-@app.route('/status', methods=['GET'])
+@app.route("/status", methods=["GET"])
 def status():
     """Status endpoint with statistics"""
     try:
@@ -229,26 +253,29 @@ def status():
     except Exception:
         redis_connected = False
 
-    return jsonify({
-        "service": config.SERVICE_NAME,
-        "version": config.SERVICE_VERSION,
-        "mode": "mock" if config.MOCK_TRADING else "live",
-        "stats": stats,
-        "redis": {
-            "connected": redis_connected
-        },
-        "database": db.get_stats() if db else {"error": "not initialized"}
-    }), 200
+    return (
+        jsonify(
+            {
+                "service": config.SERVICE_NAME,
+                "version": config.SERVICE_VERSION,
+                "mode": "mock" if config.MOCK_TRADING else "live",
+                "stats": stats,
+                "redis": {"connected": redis_connected},
+                "database": db.get_stats() if db else {"error": "not initialized"},
+            }
+        ),
+        200,
+    )
 
 
-@app.route('/metrics', methods=['GET'])
+@app.route("/metrics", methods=["GET"])
 def metrics():
     """Metrics endpoint for Prometheus"""
     uptime_seconds = max(
         0.0,
         (
             datetime.utcnow() - datetime.fromisoformat(stats["start_time"])
-        ).total_seconds()
+        ).total_seconds(),
     )
 
     body = (
@@ -269,18 +296,15 @@ def metrics():
     return Response(body, mimetype="text/plain")
 
 
-@app.route('/orders', methods=['GET'])
+@app.route("/orders", methods=["GET"])
 def orders():
     """Get recent orders from database"""
     if not db:
         return jsonify({"error": "Database not initialized"}), 503
-    
+
     try:
         recent_orders = db.get_recent_orders(limit=20)
-        return jsonify({
-            "count": len(recent_orders),
-            "orders": recent_orders
-        }), 200
+        return jsonify({"count": len(recent_orders), "orders": recent_orders}), 200
     except Exception as e:
         logger.error(f"Error retrieving orders: {e}")
         return jsonify({"error": str(e)}), 500
@@ -296,32 +320,29 @@ def signal_handler(signum, frame):
 def main():
     """Main entry point"""
     global running
-    
+
     logger.info(f"Starting {config.SERVICE_NAME} v{config.SERVICE_VERSION}")
     logger.info(f"Port: {config.SERVICE_PORT}")
     logger.info(f"Mode: {'MOCK' if config.MOCK_TRADING else 'LIVE'}")
-    
+
     # Register signal handlers
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Initialize services
     if not init_services():
         logger.error("Failed to initialize services, exiting")
         sys.exit(1)
-    
+
     # Start message loop in background
     message_thread = Thread(target=message_loop, daemon=True)
     message_thread.start()
     logger.info("Message loop started")
-    
+
     # Start Flask app
     try:
         app.run(
-            host='0.0.0.0',
-            port=config.SERVICE_PORT,
-            debug=False,
-            use_reloader=False
+            host="0.0.0.0", port=config.SERVICE_PORT, debug=False, use_reloader=False
         )
     except KeyboardInterrupt:
         logger.info("Keyboard interrupt received")

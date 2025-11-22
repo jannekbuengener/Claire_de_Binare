@@ -122,7 +122,9 @@ def test_redis_set_get(redis_client):
 def test_redis_event_bus_simulation(redis_client):
     """Test: Simuliere Event-Bus Pattern (market_data → signals)."""
     market_data_channel = "market_data"
-    test_event = '{"symbol":"BTCUSDT","price":50000.0,"timestamp":"2025-11-19T00:00:00Z"}'
+    test_event = (
+        '{"symbol":"BTCUSDT","price":50000.0,"timestamp":"2025-11-19T00:00:00Z"}'
+    )
 
     # Subscribe zu market_data
     pubsub = redis_client.pubsub()
@@ -177,11 +179,13 @@ def test_postgres_tables_exist(postgres_conn):
     ]
 
     cursor = postgres_conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
-    """)
+    """
+    )
 
     existing_tables = [row[0] for row in cursor.fetchall()]
     cursor.close()
@@ -200,19 +204,24 @@ def test_postgres_insert_select_signal(postgres_conn):
     cursor = postgres_conn.cursor()
 
     # Insert Test-Signal
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO signals (
             symbol, signal_type, price, confidence, timestamp
         ) VALUES (
             %s, %s, %s, %s, NOW()
         ) RETURNING id
-    """, ("BTCUSDT_TEST", "buy", 50000.0, 0.85))
+    """,
+        ("BTCUSDT_TEST", "buy", 50000.0, 0.85),
+    )
 
     signal_id = cursor.fetchone()[0]
     postgres_conn.commit()
 
     # Select Test-Signal
-    cursor.execute("SELECT symbol, signal_type, price FROM signals WHERE id = %s", (signal_id,))
+    cursor.execute(
+        "SELECT symbol, signal_type, price FROM signals WHERE id = %s", (signal_id,)
+    )
     result = cursor.fetchone()
 
     assert result is not None
@@ -251,17 +260,22 @@ def test_redis_to_postgres_flow(redis_client, postgres_conn):
 
     # 2. Simuliere Service-Logic: Parse Event & Write to PostgreSQL
     cursor = postgres_conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO signals (symbol, signal_type, price, confidence, timestamp)
         VALUES (%s, %s, %s, %s, NOW())
         RETURNING id
-    """, ("ETHUSDT", "sell", 3000.0, 0.9))
+    """,
+        ("ETHUSDT", "sell", 3000.0, 0.9),
+    )
 
     signal_id = cursor.fetchone()[0]
     postgres_conn.commit()
 
     # 3. Verify: Signal ist in DB
-    cursor.execute("SELECT symbol, signal_type FROM signals WHERE id = %s", (signal_id,))
+    cursor.execute(
+        "SELECT symbol, signal_type FROM signals WHERE id = %s", (signal_id,)
+    )
     result = cursor.fetchone()
 
     assert result is not None

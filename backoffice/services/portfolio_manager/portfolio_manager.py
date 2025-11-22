@@ -32,10 +32,12 @@ class PortfolioManager:
     - Persist snapshots to PostgreSQL
     """
 
-    def __init__(self,
-                 redis_client: redis.Redis,
-                 postgres_conn,
-                 initial_capital: float = 100000.0):
+    def __init__(
+        self,
+        redis_client: redis.Redis,
+        postgres_conn,
+        initial_capital: float = 100000.0,
+    ):
         """
         Initialize Portfolio Manager
 
@@ -68,7 +70,7 @@ class PortfolioManager:
                 total_realized_pnl=0.0,
                 daily_pnl=0.0,
                 daily_volume=0.0,
-                num_trades=0
+                num_trades=0,
             )
 
             self._save_state(initial_state)
@@ -95,7 +97,11 @@ class PortfolioManager:
 
         # Handle timestamp (might be bytes or string from mock)
         timestamp_raw = data.get(b"timestamp", datetime.utcnow().isoformat())
-        timestamp = timestamp_raw.decode() if isinstance(timestamp_raw, bytes) else timestamp_raw
+        timestamp = (
+            timestamp_raw.decode()
+            if isinstance(timestamp_raw, bytes)
+            else timestamp_raw
+        )
 
         return PortfolioState(
             equity=float(data.get(b"equity", self.initial_capital)),
@@ -106,49 +112,56 @@ class PortfolioManager:
             daily_pnl=float(data.get(b"daily_pnl", 0.0)),
             daily_volume=float(data.get(b"daily_volume", 0.0)),
             num_trades=int(data.get(b"num_trades", 0)),
-            timestamp=timestamp
+            timestamp=timestamp,
         )
 
     def _save_state(self, state: PortfolioState):
         """Save portfolio state to Redis"""
         # Save main state
-        self.redis.hset(self.STATE_KEY, mapping={
-            "equity": state.equity,
-            "cash": state.cash,
-            "total_unrealized_pnl": state.total_unrealized_pnl,
-            "total_realized_pnl": state.total_realized_pnl,
-            "daily_pnl": state.daily_pnl,
-            "daily_volume": state.daily_volume,
-            "num_trades": state.num_trades,
-            "timestamp": state.timestamp
-        })
+        self.redis.hset(
+            self.STATE_KEY,
+            mapping={
+                "equity": state.equity,
+                "cash": state.cash,
+                "total_unrealized_pnl": state.total_unrealized_pnl,
+                "total_realized_pnl": state.total_realized_pnl,
+                "daily_pnl": state.daily_pnl,
+                "daily_volume": state.daily_volume,
+                "num_trades": state.num_trades,
+                "timestamp": state.timestamp,
+            },
+        )
 
         # Save positions separately (JSON)
         positions_data = {
             symbol: {
                 "symbol": pos.symbol,
-                "side": pos.side.value if hasattr(pos.side, 'value') else pos.side,
+                "side": pos.side.value if hasattr(pos.side, "value") else pos.side,
                 "quantity": pos.quantity,
                 "entry_price": pos.entry_price,
                 "current_price": pos.current_price,
                 "unrealized_pnl": pos.unrealized_pnl,
                 "realized_pnl": pos.realized_pnl,
                 "stop_loss": pos.stop_loss,
-                "entry_timestamp": pos.entry_timestamp
+                "entry_timestamp": pos.entry_timestamp,
             }
             for symbol, pos in state.positions.items()
         }
 
         self.redis.set(self.POSITIONS_KEY, json.dumps(positions_data))
 
-        logger.debug(f"Saved portfolio state: Equity={state.equity:.2f}, Positions={len(state.positions)}")
+        logger.debug(
+            f"Saved portfolio state: Equity={state.equity:.2f}, Positions={len(state.positions)}"
+        )
 
-    def open_position(self,
-                      symbol: str,
-                      side: str,
-                      quantity: float,
-                      price: float,
-                      stop_loss: Optional[float] = None) -> PortfolioState:
+    def open_position(
+        self,
+        symbol: str,
+        side: str,
+        quantity: float,
+        price: float,
+        stop_loss: Optional[float] = None,
+    ) -> PortfolioState:
         """
         Open a new position
 
@@ -165,14 +178,18 @@ class PortfolioManager:
         state = self.get_state()
 
         # Normalize side
-        position_side = PositionSide.LONG if side.upper() in ["BUY", "LONG"] else PositionSide.SHORT
+        position_side = (
+            PositionSide.LONG if side.upper() in ["BUY", "LONG"] else PositionSide.SHORT
+        )
 
         # Calculate notional cost
         notional = quantity * price
 
         # Check if we have enough cash
         if notional > state.cash:
-            logger.warning(f"Insufficient cash for {symbol}: {notional:.2f} > {state.cash:.2f}")
+            logger.warning(
+                f"Insufficient cash for {symbol}: {notional:.2f} > {state.cash:.2f}"
+            )
             return state
 
         # Create position
@@ -184,7 +201,7 @@ class PortfolioManager:
             current_price=price,
             unrealized_pnl=0.0,
             realized_pnl=0.0,
-            stop_loss=stop_loss
+            stop_loss=stop_loss,
         )
 
         # Update state
@@ -199,9 +216,7 @@ class PortfolioManager:
 
         return state
 
-    def close_position(self,
-                       symbol: str,
-                       exit_price: float) -> PortfolioState:
+    def close_position(self, symbol: str, exit_price: float) -> PortfolioState:
         """
         Close an existing position
 
@@ -267,9 +282,13 @@ class PortfolioManager:
 
                 # Calculate unrealized P&L
                 if position.side == PositionSide.LONG:
-                    position.unrealized_pnl = (new_price - position.entry_price) * position.quantity
+                    position.unrealized_pnl = (
+                        new_price - position.entry_price
+                    ) * position.quantity
                 else:  # SHORT
-                    position.unrealized_pnl = (position.entry_price - new_price) * position.quantity
+                    position.unrealized_pnl = (
+                        position.entry_price - new_price
+                    ) * position.quantity
 
                 total_unrealized += position.unrealized_pnl
 
@@ -294,14 +313,18 @@ class PortfolioManager:
             "daily_pnl": state.daily_pnl,
             "total_exposure_pct": state.total_exposure_pct / 100.0,  # As decimal
             "num_positions": len(state.positions),
-            "cash": state.cash
+            "cash": state.cash,
         }
 
     def create_snapshot(self) -> PortfolioSnapshot:
         """Create a snapshot for persistence"""
         state = self.get_state()
 
-        daily_pnl_pct = (state.daily_pnl / self.initial_capital) * 100 if self.initial_capital > 0 else 0.0
+        daily_pnl_pct = (
+            (state.daily_pnl / self.initial_capital) * 100
+            if self.initial_capital > 0
+            else 0.0
+        )
 
         return PortfolioSnapshot(
             timestamp=datetime.utcnow().isoformat(),
@@ -313,7 +336,7 @@ class PortfolioManager:
             daily_pnl=state.daily_pnl,
             daily_pnl_pct=daily_pnl_pct,
             total_realized_pnl=state.total_realized_pnl,
-            num_trades=state.num_trades
+            num_trades=state.num_trades,
         )
 
     def persist_snapshot(self):
@@ -322,23 +345,26 @@ class PortfolioManager:
 
         try:
             cursor = self.db.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO portfolio_snapshots
                 (timestamp, equity, cash, total_exposure, total_exposure_pct,
                  num_positions, daily_pnl, daily_pnl_pct, total_realized_pnl, num_trades)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                snapshot.timestamp,
-                snapshot.equity,
-                snapshot.cash,
-                snapshot.total_exposure,
-                snapshot.total_exposure_pct,
-                snapshot.num_positions,
-                snapshot.daily_pnl,
-                snapshot.daily_pnl_pct,
-                snapshot.total_realized_pnl,
-                snapshot.num_trades
-            ))
+            """,
+                (
+                    snapshot.timestamp,
+                    snapshot.equity,
+                    snapshot.cash,
+                    snapshot.total_exposure,
+                    snapshot.total_exposure_pct,
+                    snapshot.num_positions,
+                    snapshot.daily_pnl,
+                    snapshot.daily_pnl_pct,
+                    snapshot.total_realized_pnl,
+                    snapshot.num_trades,
+                ),
+            )
             self.db.commit()
             logger.debug(f"Persisted snapshot: Equity={snapshot.equity:.2f}")
         except Exception as e:

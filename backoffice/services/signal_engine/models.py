@@ -2,6 +2,7 @@
 Signal Engine - Data Models
 Datenklassen für Market-Data und Signals
 """
+
 from dataclasses import dataclass
 from typing import Literal
 
@@ -9,6 +10,7 @@ from typing import Literal
 @dataclass
 class MarketData:
     """Marktdaten vom Screener"""
+
     symbol: str
     price: float
     volume: float
@@ -16,7 +18,7 @@ class MarketData:
     timestamp: int
     interval: str = "15m"
     type: Literal["market_data"] = "market_data"  # Type-safe event type
-    
+
     @classmethod
     def from_dict(cls, data: dict):
         """Erstellt MarketData aus Dictionary"""
@@ -27,13 +29,14 @@ class MarketData:
             pct_change=float(data["pct_change"]),
             timestamp=int(data["timestamp"]),
             interval=data.get("interval", "15m"),
-            type=data.get("type", "market_data")
+            type=data.get("type", "market_data"),
         )
 
 
 @dataclass
 class Signal:
     """Trading-Signal"""
+
     symbol: str
     side: Literal["BUY", "SELL"]
     confidence: float  # 0.0 - 1.0
@@ -42,7 +45,7 @@ class Signal:
     price: float
     pct_change: float
     type: Literal["signal"] = "signal"  # Type-safe event type
-    
+
     def to_dict(self) -> dict:
         """Konvertiert zu Dictionary für Redis"""
         return {
@@ -53,9 +56,9 @@ class Signal:
             "reason": self.reason,
             "timestamp": self.timestamp,
             "price": self.price,
-            "pct_change": self.pct_change
+            "pct_change": self.pct_change,
         }
-    
+
     @staticmethod
     def generate_reason(pct_change: float, threshold: float) -> str:
         """Generiert Begründung für Signal"""

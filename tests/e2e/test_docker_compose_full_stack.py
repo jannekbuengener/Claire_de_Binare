@@ -156,9 +156,11 @@ def test_services_respond_with_valid_health_json():
 
             # Status sollte "ok", "healthy" oder "stale" sein
             # (cdb_ws kann "stale" sein wenn keine aktuellen Daten vorliegen)
-            assert data["status"] in ["ok", "healthy", "stale"], (
-                f"Health-Status von '{service_name}' hat unerwarteten Wert: {data['status']}"
-            )
+            assert data["status"] in [
+                "ok",
+                "healthy",
+                "stale",
+            ], f"Health-Status von '{service_name}' hat unerwarteten Wert: {data['status']}"
 
         except requests.RequestException as e:
             pytest.fail(f"Health-Check für '{service_name}' fehlgeschlagen: {e}")
@@ -176,6 +178,4 @@ def test_docker_compose_config_is_valid():
     )
 
     # Config sollte "services" Section enthalten
-    assert "services:" in stdout, (
-        "docker-compose.yml enthält keine 'services' Section"
-    )
+    assert "services:" in stdout, "docker-compose.yml enthält keine 'services' Section"

@@ -23,11 +23,11 @@ logger = logging.getLogger(config.SERVICE_NAME)
 
 class Database:
     """PostgreSQL database handler"""
-    
+
     def __init__(self):
         self.connection_string = config.DATABASE_URL
         self._test_connection()
-    
+
     def _test_connection(self):
         """Test database connection on init"""
         try:
@@ -38,7 +38,7 @@ class Database:
         except Exception as e:
             logger.error(f"Database connection failed: {e}")
             raise
-    
+
     @contextmanager
     def get_connection(self):
         """Context manager for database connections"""
@@ -55,7 +55,7 @@ class Database:
         finally:
             if conn:
                 conn.close()
-    
+
     def save_order(self, result: ExecutionResult) -> bool:
         """
         Save order to orders table
@@ -65,7 +65,8 @@ class Database:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     # Insert into orders table
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO orders (
                             order_id, symbol, side, type,
                             quantity, price, filled_quantity, average_price,
@@ -81,28 +82,34 @@ class Database:
                             average_price = EXCLUDED.average_price,
                             status = EXCLUDED.status,
                             filled_at = EXCLUDED.filled_at
-                    """, (
-                        result.order_id,
-                        result.symbol,
-                        result.side,
-                        'MARKET',  # Default order type
-                        result.quantity,
-                        result.price,
-                        result.filled_quantity,
-                        result.price,  # average_price = price for now
-                        result.status,
-                        result.order_id,  # exchange_order_id = order_id for mock
-                        int(time.time()),  # submitted_at as Unix timestamp
-                        int(time.time()) if result.status == OrderStatus.FILLED.value else None
-                    ))
-                    
+                    """,
+                        (
+                            result.order_id,
+                            result.symbol,
+                            result.side,
+                            "MARKET",  # Default order type
+                            result.quantity,
+                            result.price,
+                            result.filled_quantity,
+                            result.price,  # average_price = price for now
+                            result.status,
+                            result.order_id,  # exchange_order_id = order_id for mock
+                            int(time.time()),  # submitted_at as Unix timestamp
+                            (
+                                int(time.time())
+                                if result.status == OrderStatus.FILLED.value
+                                else None
+                            ),
+                        ),
+                    )
+
                     logger.info(f"Saved order to database: {result.order_id}")
                     return True
-                    
+
         except Exception as e:
             logger.error(f"Failed to save order: {e}")
             return False
-    
+
     def save_trade(self, result: ExecutionResult) -> bool:
         """
         Save filled order as trade to trades table
@@ -112,15 +119,18 @@ class Database:
         if result.status != OrderStatus.FILLED.value:
             logger.warning(f"Skipping trade save - order not filled: {result.order_id}")
             return False
-        
+
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     # Convert timestamp string to Unix timestamp
-                    timestamp = int(datetime.fromisoformat(result.timestamp).timestamp())
-                    
+                    timestamp = int(
+                        datetime.fromisoformat(result.timestamp).timestamp()
+                    )
+
                     # Insert into trades table
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO trades (
                             order_id, symbol, side,
                             quantity, entry_price, 
@@ -130,86 +140,91 @@ class Database:
                             %s, %s,
                             %s, %s
                         )
-                    """, (
-                        result.order_id,
-                        result.symbol,
-                        result.side,
-                        result.filled_quantity,
-                        result.price,
-                        'OPEN',  # Trade starts as OPEN
-                        timestamp
-                    ))
-                    
+                    """,
+                        (
+                            result.order_id,
+                            result.symbol,
+                            result.side,
+                            result.filled_quantity,
+                            result.price,
+                            "OPEN",  # Trade starts as OPEN
+                            timestamp,
+                        ),
+                    )
+
                     logger.info(f"Saved trade to database: {result.order_id}")
                     return True
-                    
+
         except Exception as e:
             logger.error(f"Failed to save trade: {e}")
             return False
-    
+
     def get_order_by_id(self, order_id: str) -> Optional[dict]:
         """Retrieve order by order_id"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT * FROM orders 
                         WHERE order_id = %s
-                    """, (order_id,))
-                    
+                    """,
+                        (order_id,),
+                    )
+
                     result = cur.fetchone()
                     return dict(result) if result else None
-                    
+
         except Exception as e:
             logger.error(f"Failed to retrieve order: {e}")
             return None
-    
+
     def get_recent_orders(self, limit: int = 10) -> list:
         """Get recent orders"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT * FROM orders 
                         ORDER BY submitted_at DESC 
                         LIMIT %s
-                    """, (limit,))
-                    
+                    """,
+                        (limit,),
+                    )
+
                     results = cur.fetchall()
                     return [dict(row) for row in results]
-                    
+
         except Exception as e:
             logger.error(f"Failed to retrieve orders: {e}")
             return []
-    
+
     def get_stats(self) -> dict:
         """Get database statistics"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     # Count orders by status
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT 
                             COUNT(*) FILTER (WHERE status = 'FILLED') as filled,
                             COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected,
                             COUNT(*) FILTER (WHERE status = 'PENDING') as pending,
                             COUNT(*) as total
                         FROM orders
-                    """)
-                    
+                    """
+                    )
+
                     row = cur.fetchone()
                     return {
                         "filled": row[0],
                         "rejected": row[1],
                         "pending": row[2],
-                        "total": row[3]
+                        "total": row[3],
                     }
-                    
+
         except Exception as e:
             logger.error(f"Failed to get stats: {e}")
-            return {
-                "filled": 0,
-                "rejected": 0,
-                "pending": 0,
-                "total": 0
-            }
+            return {"filled": 0, "rejected": 0, "pending": 0, "total": 0}

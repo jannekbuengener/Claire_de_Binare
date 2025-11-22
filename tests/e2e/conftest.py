@@ -34,8 +34,7 @@ def docker_compose_running() -> bool:
 
     if not running:
         pytest.skip(
-            "Docker Compose Stack nicht gestartet. "
-            "Starte mit: docker compose up -d"
+            "Docker Compose Stack nicht gestartet. " "Starte mit: docker compose up -d"
         )
 
     return True

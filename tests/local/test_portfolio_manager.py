@@ -9,7 +9,9 @@ from pathlib import Path
 from unittest.mock import Mock
 
 # Add service path
-service_path = Path(__file__).parent.parent / "backoffice" / "services" / "portfolio_manager"
+service_path = (
+    Path(__file__).parent.parent / "backoffice" / "services" / "portfolio_manager"
+)
 sys.path.insert(0, str(service_path))
 
 from portfolio_manager import PortfolioManager  # noqa: E402
@@ -22,6 +24,7 @@ pytestmark = pytest.mark.local_only
 @pytest.fixture
 def mock_redis():
     """Mock Redis client with in-memory state"""
+
     class MockRedis:
         def __init__(self):
             self._hash_data = {}  # Hash storage
@@ -33,8 +36,7 @@ def mock_redis():
         def hgetall(self, key):
             # Return dict with bytes keys (like real Redis)
             data = self._hash_data.get(key, {})
-            return {k.encode() if isinstance(k, str) else k: v
-                    for k, v in data.items()}
+            return {k.encode() if isinstance(k, str) else k: v for k, v in data.items()}
 
         def hset(self, key, mapping=None, **kwargs):
             if key not in self._hash_data:
@@ -67,9 +69,7 @@ def mock_postgres():
 def portfolio_manager(mock_redis, mock_postgres):
     """PortfolioManager with mocked dependencies"""
     return PortfolioManager(
-        redis_client=mock_redis,
-        postgres_conn=mock_postgres,
-        initial_capital=100000.0
+        redis_client=mock_redis, postgres_conn=mock_postgres, initial_capital=100000.0
     )
 
 
@@ -90,10 +90,7 @@ def test_portfolio_initialization(portfolio_manager, mock_redis):
 def test_open_position_long(portfolio_manager):
     """Test: Long Position kann geöffnet werden"""
     state = portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     assert "BTCUSDT" in state.positions
@@ -114,10 +111,7 @@ def test_open_position_long(portfolio_manager):
 def test_open_position_short(portfolio_manager):
     """Test: Short Position kann geöffnet werden"""
     state = portfolio_manager.open_position(
-        symbol="ETHUSDT",
-        side="SELL",
-        quantity=10.0,
-        price=3000.0
+        symbol="ETHUSDT", side="SELL", quantity=10.0, price=3000.0
     )
 
     assert "ETHUSDT" in state.positions
@@ -133,10 +127,7 @@ def test_insufficient_cash(portfolio_manager):
     """Test: Position wird rejected bei insufficient cash"""
     # Versuche Position zu öffnen die mehr als Equity kostet
     state = portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=3.0,  # 150k notional
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=3.0, price=50000.0  # 150k notional
     )
 
     # Position sollte NICHT geöffnet werden
@@ -149,17 +140,11 @@ def test_close_position_profit(portfolio_manager):
     """Test: Position schließen mit Profit"""
     # Open position
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     # Close with profit
-    state = portfolio_manager.close_position(
-        symbol="BTCUSDT",
-        exit_price=51000.0
-    )
+    state = portfolio_manager.close_position(symbol="BTCUSDT", exit_price=51000.0)
 
     # Position should be removed
     assert "BTCUSDT" not in state.positions
@@ -177,17 +162,11 @@ def test_close_position_loss(portfolio_manager):
     """Test: Position schließen mit Loss"""
     # Open
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     # Close with loss
-    state = portfolio_manager.close_position(
-        symbol="BTCUSDT",
-        exit_price=49000.0
-    )
+    state = portfolio_manager.close_position(symbol="BTCUSDT", exit_price=49000.0)
 
     # P&L should be -1000
     assert state.total_realized_pnl == -1000.0
@@ -199,16 +178,11 @@ def test_update_prices(portfolio_manager):
     """Test: Price Updates aktualisieren unrealized P&L"""
     # Open position
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     # Update price
-    state = portfolio_manager.update_prices({
-        "BTCUSDT": 51000.0
-    })
+    state = portfolio_manager.update_prices({"BTCUSDT": 51000.0})
 
     position = state.positions["BTCUSDT"]
 
@@ -225,18 +199,12 @@ def test_multiple_positions(portfolio_manager):
     """Test: Mehrere Positionen gleichzeitig"""
     # Open BTC Long
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     # Open ETH Short
     portfolio_manager.open_position(
-        symbol="ETHUSDT",
-        side="SELL",
-        quantity=10.0,
-        price=3000.0
+        symbol="ETHUSDT", side="SELL", quantity=10.0, price=3000.0
     )
 
     state = portfolio_manager.get_state()
@@ -254,10 +222,7 @@ def test_multiple_positions(portfolio_manager):
 def test_get_risk_state(portfolio_manager):
     """Test: Risk State wird korrekt formatiert"""
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     risk_state = portfolio_manager.get_risk_state()
@@ -276,10 +241,7 @@ def test_exposure_percentage(portfolio_manager):
     """Test: Exposure Percentage wird korrekt berechnet"""
     # Open 50k position (50% exposure)
     state = portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     # Total exposure should be 50%
@@ -291,10 +253,7 @@ def test_exposure_percentage(portfolio_manager):
 def test_create_snapshot(portfolio_manager):
     """Test: Portfolio Snapshot kann erstellt werden"""
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     snapshot = portfolio_manager.create_snapshot()
@@ -310,10 +269,7 @@ def test_reset_daily_stats(portfolio_manager):
     """Test: Daily Stats können resettet werden"""
     # Make some trades
     portfolio_manager.open_position(
-        symbol="BTCUSDT",
-        side="BUY",
-        quantity=1.0,
-        price=50000.0
+        symbol="BTCUSDT", side="BUY", quantity=1.0, price=50000.0
     )
 
     state = portfolio_manager.get_state()
