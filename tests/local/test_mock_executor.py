@@ -8,7 +8,9 @@ import sys
 from pathlib import Path
 
 # Add service path to sys.path
-service_path = Path(__file__).parent.parent / "backoffice" / "services" / "execution_service"
+service_path = (
+    Path(__file__).parent.parent / "backoffice" / "services" / "execution_service"
+)
 sys.path.insert(0, str(service_path))
 
 from mock_executor import MockExecutor  # noqa: E402
@@ -25,19 +27,14 @@ def executor():
         success_rate=1.0,  # 100% für deterministische Tests
         min_latency_ms=10,
         max_latency_ms=20,
-        base_slippage_pct=0.02
+        base_slippage_pct=0.02,
     )
 
 
 @pytest.fixture
 def sample_order():
     """Sample Buy Order"""
-    return Order(
-        symbol="BTCUSDT",
-        side="buy",
-        quantity=1.0,
-        client_id="TEST_001"
-    )
+    return Order(symbol="BTCUSDT", side="buy", quantity=1.0, client_id="TEST_001")
 
 
 @pytest.mark.unit
@@ -81,10 +78,7 @@ def test_slippage_on_buy_order(executor, sample_order):
 def test_slippage_on_sell_order(executor):
     """Test: Sell Order wird erfolgreich ausgeführt"""
     sell_order = Order(
-        symbol="BTCUSDT",
-        side="sell",
-        quantity=1.0,
-        client_id="TEST_SELL"
+        symbol="BTCUSDT", side="sell", quantity=1.0, client_id="TEST_SELL"
     )
 
     result = executor.execute_order(sell_order)

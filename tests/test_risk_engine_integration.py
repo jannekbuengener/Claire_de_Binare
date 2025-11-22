@@ -90,7 +90,10 @@ def standard_risk_config():
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_approves_clean_signal(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 approves a clean signal with all checks passing.
 
@@ -125,7 +128,10 @@ def test_evaluate_signal_v2_approves_clean_signal(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_rejects_daily_drawdown(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 rejects signals when daily drawdown exceeded.
 
@@ -152,7 +158,10 @@ def test_evaluate_signal_v2_rejects_daily_drawdown(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_rejects_max_exposure(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 rejects signals when max exposure reached.
 
@@ -184,7 +193,10 @@ def test_evaluate_signal_v2_rejects_max_exposure(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_with_vol_targeting(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test v2 with volatility targeting position sizing.
 
@@ -212,7 +224,10 @@ def test_evaluate_signal_v2_with_vol_targeting(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_with_kelly_criterion(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test v2 with Kelly Criterion position sizing.
 
@@ -320,7 +335,10 @@ def test_evaluate_signal_v2_rejects_excessive_slippage(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_includes_liquidation_metadata(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 includes liquidation price and distance.
 
@@ -351,7 +369,10 @@ def test_evaluate_signal_v2_includes_liquidation_metadata(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_includes_funding_estimate(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 includes funding fee estimate.
 
@@ -444,7 +465,10 @@ def test_evaluate_signal_v2_handles_missing_market_conditions(
 
 @pytest.mark.integration
 def test_evaluate_signal_v2_returns_enhanced_decision_type(
-    standard_signal, standard_risk_state, standard_risk_config, standard_market_conditions
+    standard_signal,
+    standard_risk_state,
+    standard_risk_config,
+    standard_market_conditions,
 ):
     """Test that v2 returns EnhancedRiskDecision (not base RiskDecision).
 

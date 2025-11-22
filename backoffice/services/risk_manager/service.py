@@ -2,6 +2,7 @@
 Risk Manager - Main Service
 Multi-Layer Risk Management
 """
+
 import sys
 import json
 import time
@@ -32,8 +33,8 @@ else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)]
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[logging.StreamHandler(sys.stdout)],
     )
 
 logger = logging.getLogger("risk_manager")
@@ -51,7 +52,7 @@ stats = {
     "order_results_received": 0,
     "orders_rejected_execution": 0,
     "last_order_result": None,
-    "status": "initializing"
+    "status": "initializing",
 }
 
 # Risk-State
@@ -60,7 +61,7 @@ risk_state = RiskState()
 
 class RiskManager:
     """Multi-Layer Risk-Management"""
-    
+
     def __init__(self):
         self.config = config
         self.redis_client: Optional[redis.Redis] = None
@@ -68,7 +69,7 @@ class RiskManager:
         self.pubsub_results: Optional[redis.client.PubSub] = None
         self._order_result_thread: Optional[Thread] = None
         self.running = False
-        
+
         # Validiere Config
         try:
             self.config.validate()
@@ -76,7 +77,7 @@ class RiskManager:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
-    
+
     def connect_redis(self):
         """Redis-Verbindung"""
         try:
@@ -85,67 +86,82 @@ class RiskManager:
                 port=self.config.redis_port,
                 password=self.config.redis_password,
                 db=self.config.redis_db,
-                decode_responses=True
+                decode_responses=True,
             )
             self.redis_client.ping()
-            logger.info(f"Redis verbunden: {self.config.redis_host}:{self.config.redis_port}")
-            
+            logger.info(
+                f"Redis verbunden: {self.config.redis_host}:{self.config.redis_port}"
+            )
+
             self.pubsub = self.redis_client.pubsub()
             self.pubsub.subscribe(self.config.input_topic)
             logger.info(f"Subscribed zu Topic: {self.config.input_topic}")
-            
+
             self.pubsub_results = self.redis_client.pubsub()
             self.pubsub_results.subscribe(self.config.input_topic_order_results)
-            logger.info(f"Subscribed zu Order-Result Topic: {self.config.input_topic_order_results}")
-            
+            logger.info(
+                f"Subscribed zu Order-Result Topic: {self.config.input_topic_order_results}"
+            )
+
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
-    
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # Beispiel: Max 10% des Kapitals pro Position
         max_position_size = self.config.test_balance * self.config.max_position_pct
-        
+
         # Vereinfachte Berechnung (später mit echtem Portfolio)
         estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
-        
+
         if estimated_position > max_position_size:
-            return False, f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f}"
-        
+            return (
+                False,
+                f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f}",
+            )
+
         return True, "Position OK"
-    
+
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
         max_exposure = self.config.test_balance * self.config.max_exposure_pct
-        
+
         if risk_state.total_exposure >= max_exposure:
-            return False, f"Max Exposure erreicht: {risk_state.total_exposure:.2f} >= {max_exposure:.2f}"
-        
+            return (
+                False,
+                f"Max Exposure erreicht: {risk_state.total_exposure:.2f} >= {max_exposure:.2f}",
+            )
+
         return True, "Exposure OK"
-    
+
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
         max_drawdown = self.config.test_balance * self.config.max_daily_drawdown_pct
-        
+
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
-            return False, f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}"
-        
+            return (
+                False,
+                f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}",
+            )
+
         return True, "Drawdown OK"
-    
+
     def process_signal(self, signal: Signal) -> Optional[Order]:
         """Prüft Signal gegen alle Risk-Layers"""
-        
+
         # Layer 1: Circuit Breaker
         ok, reason = self.check_drawdown_limit()
         if not ok:
-            self.send_alert("CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol})
+            self.send_alert(
+                "CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol}
+            )
             logger.warning(f"🚨 {reason}")
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
-        
+
         # Layer 2: Exposure-Limit
         ok, reason = self.check_exposure_limit()
         if not ok:
@@ -154,7 +170,7 @@ class RiskManager:
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
-        
+
         # Layer 3: Position-Size
         ok, reason = self.check_position_limit(signal)
         if not ok:
@@ -163,10 +179,10 @@ class RiskManager:
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
-        
+
         # Alle Checks passed → Order erstellen
         quantity = self.calculate_position_size(signal)
-        
+
         order = Order(
             symbol=signal.symbol,
             side=signal.side,
@@ -175,26 +191,28 @@ class RiskManager:
             signal_id=signal.timestamp,
             reason=signal.reason,
             timestamp=int(time.time()),
-            client_id=f"{signal.symbol}-{signal.timestamp}"
+            client_id=f"{signal.symbol}-{signal.timestamp}",
         )
-        
-        logger.info(f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}")
+
+        logger.info(
+            f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
+        )
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
         risk_state.pending_orders += 1
-        
+
         return order
-    
+
     def calculate_position_size(self, signal: Signal) -> float:
         """Berechnet Position-Size basierend auf Confidence"""
         max_size = self.config.test_balance * self.config.max_position_pct
-        
+
         # Confidence-basiert (höhere Confidence = größere Position)
         position_size = max_size * signal.confidence
 
         # Vereinfacht: Menge proportional zur Confidence, Mindestmenge 0
         return max(position_size, 0.0)
-    
+
     def send_order(self, order: Order):
         """Publiziert Order"""
         try:
@@ -205,7 +223,7 @@ class RiskManager:
             logger.error(f"Fehler beim Order-Publishing: {e}")
             if risk_state.pending_orders > 0:
                 risk_state.pending_orders -= 1
-    
+
     def send_alert(self, level: str, code: str, message: str, context: dict):
         """Publiziert Alert"""
         try:
@@ -214,7 +232,7 @@ class RiskManager:
                 code=code,
                 message=message,
                 context=context,
-                timestamp=int(time.time())
+                timestamp=int(time.time()),
             )
             msg = json.dumps(alert.to_dict())
             self.redis_client.publish(self.config.output_topic_alerts, msg)
@@ -222,7 +240,7 @@ class RiskManager:
             logger.warning(f"Alert: [{level}] {code}: {message}")
         except Exception as e:
             logger.error(f"Fehler beim Alert-Publishing: {e}")
-    
+
     def _update_exposure(self, result: OrderResult):
         """Aktualisiert Exposure basierend auf Order-Result"""
         direction = 1 if result.side == "BUY" else -1
@@ -247,8 +265,10 @@ class RiskManager:
             abs(qty) * risk_state.last_prices.get(symbol, 0.0)
             for symbol, qty in risk_state.positions.items()
         )
-        risk_state.open_positions = sum(1 for qty in risk_state.positions.values() if abs(qty) > 1e-6)
-    
+        risk_state.open_positions = sum(
+            1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
+        )
+
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
         stats["order_results_received"] += 1
@@ -259,7 +279,7 @@ class RiskManager:
             "filled_quantity": result.filled_quantity,
             "client_id": result.client_id,
             "price": result.price,
-            "timestamp": result.timestamp
+            "timestamp": result.timestamp,
         }
 
         if risk_state.pending_orders > 0:
@@ -277,9 +297,9 @@ class RiskManager:
                     "order_id": result.order_id,
                     "symbol": result.symbol,
                     "client_id": result.client_id,
-                }
+                },
             )
-    
+
     def listen_order_results(self):
         """Hintergrund-Listener für order_result Topic"""
         if not self.pubsub_results:
@@ -296,7 +316,10 @@ class RiskManager:
                 try:
                     payload = json.loads(message["data"])
                     if payload.get("type") != "order_result":
-                        logger.debug("Ignoriere Fremd-Event im order_results Topic: %s", payload.get("type"))
+                        logger.debug(
+                            "Ignoriere Fremd-Event im order_results Topic: %s",
+                            payload.get("type"),
+                        )
                         continue
                     result = OrderResult.from_dict(payload)
                     logger.info(
@@ -312,60 +335,67 @@ class RiskManager:
                     logger.warning(f"Order-Result unvollständig: {err}")
         finally:
             logger.info("Order-Result Listener beendet")
-    
+
     def run(self):
         """Hauptschleife"""
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = datetime.now().isoformat()
-        
+
         logger.info("🚀 Risk-Manager gestartet")
         logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
         logger.info(f"   Max Exposure: {self.config.max_exposure_pct*100}%")
         logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
         logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}%")
 
-        if self.pubsub_results and (self._order_result_thread is None or not self._order_result_thread.is_alive()):
-            self._order_result_thread = Thread(target=self.listen_order_results, daemon=True)
+        if self.pubsub_results and (
+            self._order_result_thread is None
+            or not self._order_result_thread.is_alive()
+        ):
+            self._order_result_thread = Thread(
+                target=self.listen_order_results, daemon=True
+            )
             self._order_result_thread.start()
             logger.info("Order-Result Listener Thread gestartet")
-        
+
         try:
             for message in self.pubsub.listen():
                 if not self.running:
                     break
-                
+
                 if message["type"] == "message":
                     try:
                         data = json.loads(message["data"])
                         signal = Signal.from_dict(data)
-                        
+
                         stats["signals_received"] += 1
-                        logger.info(f"📨 Signal empfangen: {signal.symbol} {signal.side}")
-                        
+                        logger.info(
+                            f"📨 Signal empfangen: {signal.symbol} {signal.side}"
+                        )
+
                         # Risk-Checks durchführen
                         order = self.process_signal(signal)
-                        
+
                         # Falls approved, Order senden
                         if order:
                             self.send_order(order)
-                        
+
                     except json.JSONDecodeError as e:
                         logger.warning(f"Ungültiges JSON: {e}")
                     except Exception as e:
                         logger.error(f"Fehler in Hauptschleife: {e}")
-        
+
         except KeyboardInterrupt:
             logger.info("Shutdown via Keyboard")
         finally:
             self.shutdown()
-    
+
     def shutdown(self):
         """Graceful Shutdown"""
         logger.info("Shutdown Risk-Manager...")
         self.running = False
         stats["status"] = "stopped"
-        
+
         if self.pubsub:
             self.pubsub.close()
         if self.pubsub_results:
@@ -374,36 +404,43 @@ class RiskManager:
             self._order_result_thread.join(timeout=2)
         if self.redis_client:
             self.redis_client.close()
-        
+
         logger.info("Risk-Manager gestoppt ✓")
 
 
 # ===== FLASK ENDPOINTS =====
 
+
 @app.route("/health")
 def health():
-    return jsonify({
-        "status": "ok" if stats["status"] == "running" else "error",
-        "service": "risk_manager",
-        "version": "0.1.0"
-    })
+    return jsonify(
+        {
+            "status": "ok" if stats["status"] == "running" else "error",
+            "service": "risk_manager",
+            "version": "0.1.0",
+        }
+    )
+
 
 @app.route("/status")
 def status():
-    return jsonify({
-        **stats,
-        "risk_state": {
-            "total_exposure": risk_state.total_exposure,
-            "daily_pnl": risk_state.daily_pnl,
-            "open_positions": risk_state.open_positions,
-            "signals_approved": risk_state.signals_approved,
-            "signals_blocked": risk_state.signals_blocked,
-            "circuit_breaker": risk_state.circuit_breaker_active,
-            "positions": risk_state.positions,
-            "pending_orders": risk_state.pending_orders,
-            "last_prices": risk_state.last_prices
+    return jsonify(
+        {
+            **stats,
+            "risk_state": {
+                "total_exposure": risk_state.total_exposure,
+                "daily_pnl": risk_state.daily_pnl,
+                "open_positions": risk_state.open_positions,
+                "signals_approved": risk_state.signals_approved,
+                "signals_blocked": risk_state.signals_blocked,
+                "circuit_breaker": risk_state.circuit_breaker_active,
+                "positions": risk_state.positions,
+                "pending_orders": risk_state.pending_orders,
+                "last_prices": risk_state.last_prices,
+            },
         }
-    })
+    )
+
 
 @app.route("/metrics")
 def metrics():
@@ -435,6 +472,7 @@ def metrics():
 
 # ===== SIGNAL HANDLER =====
 
+
 def signal_handler(signum, frame):
     logger.warning(f"Signal empfangen: {signum}")
     manager.shutdown()
@@ -446,16 +484,16 @@ def signal_handler(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     manager = RiskManager()
     manager.connect_redis()
-    
+
     # Flask in Thread
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
     flask_thread.daemon = True
     flask_thread.start()
-    
+
     logger.info(f"Health-Check: http://0.0.0.0:{config.port}/health")
-    
+
     # Hauptschleife
     manager.run()

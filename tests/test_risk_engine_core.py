@@ -8,7 +8,9 @@ from services import risk_engine
 
 
 @pytest.mark.unit
-def test_daily_drawdown_blocks_orders(risk_config, sample_risk_state, sample_signal_event):
+def test_daily_drawdown_blocks_orders(
+    risk_config, sample_risk_state, sample_signal_event
+):
     """Orders are rejected once the daily drawdown limit is breached."""
 
     state = {**sample_risk_state, "daily_pnl": -6_000}

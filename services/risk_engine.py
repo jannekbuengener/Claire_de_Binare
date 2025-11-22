@@ -124,9 +124,7 @@ def evaluate_signal(
 
     equity = _resolve_equity(risk_state, risk_config)
     daily_pnl = float(risk_state.get("daily_pnl") or 0.0)
-    drawdown_threshold = -equity * float(
-        risk_config.get("MAX_DRAWDOWN_PCT", 0.0)
-    )
+    drawdown_threshold = -equity * float(risk_config.get("MAX_DRAWDOWN_PCT", 0.0))
     if daily_pnl <= drawdown_threshold:
         return RiskDecision(
             approved=False,
@@ -310,7 +308,9 @@ def evaluate_signal_v2(
         liq_distance = position.calculate_liquidation_distance()
 
         # Estimate funding fee
-        funding_rate = market_conditions.get("funding_rate", risk_config.get("FUNDING_RATE", 0.0001))
+        funding_rate = market_conditions.get(
+            "funding_rate", risk_config.get("FUNDING_RATE", 0.0001)
+        )
         funding_fee = position.calculate_funding_fee(funding_rate, hours=8.0)
 
     except Exception as e:
@@ -329,7 +329,9 @@ def evaluate_signal_v2(
             side=signal_event.get("side", "buy"),
             size=position_size_contracts,
             current_price=float(signal_event["price"]),
-            order_book_depth=float(market_conditions.get("order_book_depth", 1000000.0)),
+            order_book_depth=float(
+                market_conditions.get("order_book_depth", 1000000.0)
+            ),
             volatility=float(market_conditions.get("volatility", 0.60)),
         )
 

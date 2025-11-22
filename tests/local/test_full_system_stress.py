@@ -24,10 +24,10 @@ from datetime import datetime, UTC
 def redis_client():
     """Redis client für Event-Publishing"""
     client = redis.Redis(
-        host='localhost',
+        host="localhost",
         port=6379,
-        password='claire_redis_secret_2024',
-        decode_responses=True
+        password="claire_redis_secret_2024",
+        decode_responses=True,
     )
     yield client
     client.close()
@@ -37,11 +37,11 @@ def redis_client():
 def postgres_conn():
     """PostgreSQL connection für Daten-Validierung"""
     conn = psycopg2.connect(
-        host='localhost',
+        host="localhost",
         port=5432,
-        database='claire_de_binaire',
-        user='claire_user',
-        password='claire_db_secret_2024'
+        database="claire_de_binaire",
+        user="claire_user",
+        password="claire_db_secret_2024",
     )
     yield conn
     conn.close()
@@ -72,7 +72,7 @@ def test_stress_100_market_data_events(redis_client, postgres_conn):
             "price": 50000 + (i * 10),  # Realistic price movement
             "volume": 1000 + (i * 5),
             "timestamp": datetime.now(UTC).isoformat(),
-            "sequence": i
+            "sequence": i,
         }
         redis_client.publish("market_data", json.dumps(event))
 
@@ -91,7 +91,9 @@ def test_stress_100_market_data_events(redis_client, postgres_conn):
 
     # Validate DB persistence (wenn DB Writer läuft)
     cursor = postgres_conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM signals WHERE timestamp > NOW() - INTERVAL '30 seconds'")
+    cursor.execute(
+        "SELECT COUNT(*) FROM signals WHERE timestamp > NOW() - INTERVAL '30 seconds'"
+    )
     recent_signals = cursor.fetchone()[0]
 
     print(f"📊 Recent signals in DB: {recent_signals}")
@@ -130,7 +132,7 @@ def test_stress_concurrent_signal_and_order_flow(redis_client, postgres_conn):
             "signal_type": "buy" if i % 2 == 0 else "sell",
             "price": 50000 + (i * 50),
             "confidence": 0.7 + (i % 3) * 0.1,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         redis_client.publish("signals", json.dumps(signal))
 
@@ -144,7 +146,7 @@ def test_stress_concurrent_signal_and_order_flow(redis_client, postgres_conn):
             "quantity": 0.1 + (i % 5) * 0.05,
             "price": 50000 + (i * 50),
             "approved": i % 4 != 0,  # 75% approval rate
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         redis_client.publish("orders", json.dumps(order))
 
@@ -158,7 +160,7 @@ def test_stress_concurrent_signal_and_order_flow(redis_client, postgres_conn):
             "quantity": 0.1,
             "price": 50000 + (i * 50),
             "status": "filled",
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         redis_client.publish("order_results", json.dumps(result))
 
@@ -175,13 +177,19 @@ def test_stress_concurrent_signal_and_order_flow(redis_client, postgres_conn):
     # Validate DB counts
     cursor = postgres_conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM signals WHERE timestamp > NOW() - INTERVAL '1 minute'")
+    cursor.execute(
+        "SELECT COUNT(*) FROM signals WHERE timestamp > NOW() - INTERVAL '1 minute'"
+    )
     signals_count = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM orders WHERE created_at > NOW() - INTERVAL '1 minute'")
+    cursor.execute(
+        "SELECT COUNT(*) FROM orders WHERE created_at > NOW() - INTERVAL '1 minute'"
+    )
     orders_count = cursor.fetchone()[0]
 
-    cursor.execute("SELECT COUNT(*) FROM trades WHERE timestamp > NOW() - INTERVAL '1 minute'")
+    cursor.execute(
+        "SELECT COUNT(*) FROM trades WHERE timestamp > NOW() - INTERVAL '1 minute'"
+    )
     trades_count = cursor.fetchone()[0]
 
     print("\n📊 DB Persistence Results:")
@@ -230,7 +238,7 @@ def test_stress_portfolio_snapshot_frequency(redis_client, postgres_conn):
             "daily_pnl": 200 + (i * 5),
             "total_exposure_pct": 5 + (i % 10),
             "num_positions": 2 + (i % 3),
-            "metadata": {"stress_test": True, "sequence": i}
+            "metadata": {"stress_test": True, "sequence": i},
         }
         redis_client.publish("portfolio_snapshots", json.dumps(snapshot))
         time.sleep(1.5)  # Realistic interval (90s between snapshots)
@@ -257,7 +265,9 @@ def test_stress_portfolio_snapshot_frequency(redis_client, postgres_conn):
     # Soft assertion (DB Writer might not be running)
     if new_snapshots > 0:
         print(f"✅ DB Writer persisted {new_snapshots} new snapshots")
-        assert new_snapshots >= 10, f"Expected at least 10 snapshots, got {new_snapshots}"
+        assert (
+            new_snapshots >= 10
+        ), f"Expected at least 10 snapshots, got {new_snapshots}"
     else:
         print("⚠️  No new snapshots (DB Writer might not be running)")
 
@@ -278,9 +288,7 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
 
     # Check Docker status
     result = subprocess.run(
-        ["docker", "compose", "ps", "--format", "json"],
-        capture_output=True,
-        text=True
+        ["docker", "compose", "ps", "--format", "json"], capture_output=True, text=True
     )
 
     if result.returncode != 0:
@@ -288,7 +296,7 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
 
     # Parse multiple JSON objects (one per line)
     services = []
-    for line in result.stdout.strip().split('\n'):
+    for line in result.stdout.strip().split("\n"):
         if line.strip():
             services.append(json.loads(line))
 
@@ -310,7 +318,9 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
 
     # Assertion: Mindestens 7/9 Services müssen healthy sein
     # (DB Writer oder andere könnten in bestimmten Setups fehlen)
-    assert healthy_count >= 7, f"Too many unhealthy services: {healthy_count}/{len(services)}"
+    assert (
+        healthy_count >= 7
+    ), f"Too many unhealthy services: {healthy_count}/{len(services)}"
 
     # Load test: Publish events while checking health
     print("\n📊 Publishing events under load...")
@@ -319,7 +329,7 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
             "type": "market_data",
             "symbol": "BTCUSDT",
             "price": 50000,
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
         redis_client.publish("market_data", json.dumps(event))
 
@@ -327,17 +337,16 @@ def test_all_docker_services_under_load(redis_client, postgres_conn):
 
     # Re-check health after load
     result = subprocess.run(
-        ["docker", "compose", "ps", "--format", "json"],
-        capture_output=True,
-        text=True
+        ["docker", "compose", "ps", "--format", "json"], capture_output=True, text=True
     )
     services_after = []
-    for line in result.stdout.strip().split('\n'):
+    for line in result.stdout.strip().split("\n"):
         if line.strip():
             services_after.append(json.loads(line))
 
     healthy_after = sum(
-        1 for s in services_after
+        1
+        for s in services_after
         if "healthy" in s.get("Status", "").lower() or s.get("Health") == "healthy"
     )
 

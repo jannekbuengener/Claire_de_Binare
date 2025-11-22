@@ -38,4 +38,6 @@ def test_event_pipeline_reference():
     """
     # This test passes to indicate the reference is valid
     # Actual implementation is in E2E test suite
-    assert True, "E2E event pipeline tests exist in tests/e2e/test_event_flow_pipeline.py"
+    assert (
+        True
+    ), "E2E event pipeline tests exist in tests/e2e/test_event_flow_pipeline.py"

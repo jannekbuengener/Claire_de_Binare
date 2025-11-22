@@ -24,11 +24,13 @@ except ImportError:
 class MockExecutor:
     """Simulates order execution without real API calls"""
 
-    def __init__(self,
-                 success_rate: float = 0.95,
-                 min_latency_ms: int = 50,
-                 max_latency_ms: int = 200,
-                 base_slippage_pct: float = 0.02):
+    def __init__(
+        self,
+        success_rate: float = 0.95,
+        min_latency_ms: int = 50,
+        max_latency_ms: int = 200,
+        base_slippage_pct: float = 0.02,
+    ):
         """
         Initialize Mock Executor
 
@@ -43,7 +45,7 @@ class MockExecutor:
         self.min_latency_ms = min_latency_ms
         self.max_latency_ms = max_latency_ms
         self.base_slippage_pct = base_slippage_pct
-    
+
     def execute_order(self, order: Order) -> ExecutionResult:
         """
         Simulate order execution with realistic latency and slippage
@@ -73,7 +75,7 @@ class MockExecutor:
                 execution_price = base_price * (1 - slippage)  # Sell lower
 
             filled_quantity = order.quantity
-            
+
             result = ExecutionResult(
                 order_id=order_id,
                 symbol=order.symbol,
@@ -84,14 +86,14 @@ class MockExecutor:
                 price=round(execution_price, 2),
                 client_id=client_id,
                 error_message=None,
-                timestamp=datetime.utcnow().isoformat()
+                timestamp=datetime.utcnow().isoformat(),
             )
-            
+
             # Store order
             self.orders[order_id] = result
-            
+
             return result
-        
+
         else:
             # Simulate rejection
             result = ExecutionResult(
@@ -104,11 +106,11 @@ class MockExecutor:
                 price=None,
                 client_id=client_id,
                 error_message="Mock rejection: Insufficient liquidity",
-                timestamp=datetime.utcnow().isoformat()
+                timestamp=datetime.utcnow().isoformat(),
             )
-            
+
             return result
-    
+
     def _simulate_price(self, symbol: str) -> float:
         """
         Simulate realistic price based on symbol
@@ -153,11 +155,11 @@ class MockExecutor:
 
         # Cap maximum slippage at 0.1% (reasonable for liquid markets)
         return min(total_slippage, 0.001)
-    
+
     def get_order_status(self, order_id: str) -> Optional[ExecutionResult]:
         """Get status of a mock order"""
         return self.orders.get(order_id)
-    
+
     def cancel_order(self, order_id: str) -> bool:
         """Cancel a mock order (always succeeds)"""
         if order_id in self.orders:

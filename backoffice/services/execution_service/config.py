@@ -37,7 +37,7 @@ POSTGRES_DB = os.getenv("POSTGRES_DB", "claire_de_binare")
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
 )
 
 # Topics

@@ -126,7 +126,9 @@ class MexcPerpetualPosition:
         )
         return maintenance
 
-    def calculate_liquidation_price(self, account_balance: Optional[float] = None) -> float:
+    def calculate_liquidation_price(
+        self, account_balance: Optional[float] = None
+    ) -> float:
         """Calculate liquidation price for this position.
 
         Uses official MEXC formulas (Fair Price based):
@@ -414,7 +416,9 @@ def load_perpetuals_config() -> Dict:
     return {
         "MARGIN_MODE": os.getenv("MARGIN_MODE", "isolated"),
         "MAX_LEVERAGE": int(os.getenv("MAX_LEVERAGE", "10")),
-        "MIN_LIQUIDATION_DISTANCE": float(os.getenv("MIN_LIQUIDATION_DISTANCE", "0.15")),
+        "MIN_LIQUIDATION_DISTANCE": float(
+            os.getenv("MIN_LIQUIDATION_DISTANCE", "0.15")
+        ),
         "CONTRACT_MULTIPLIER": float(os.getenv("CONTRACT_MULTIPLIER", "0.0001")),
         "MAINTENANCE_MARGIN_RATE": float(os.getenv("MAINTENANCE_MARGIN_RATE", "0.005")),
         "FUNDING_RATE": float(os.getenv("FUNDING_RATE", "0.0001")),

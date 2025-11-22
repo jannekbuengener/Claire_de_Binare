@@ -267,19 +267,24 @@ def test_full_event_pipeline_simulation(redis_client, postgres_conn):
 
     # 4. Simuliere Trade-Execution → PostgreSQL
     cursor = postgres_conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         INSERT INTO trades (
             symbol, side, price, size, status, timestamp
         ) VALUES (
             %s, %s, %s, %s, %s, NOW()
         ) RETURNING id
-    """, ("ADAUSDT", "buy", 0.5, 100.0, "filled"))
+    """,
+        ("ADAUSDT", "buy", 0.5, 100.0, "filled"),
+    )
 
     trade_id = cursor.fetchone()[0]
     postgres_conn.commit()
 
     # 5. Verify: Trade ist in DB
-    cursor.execute("SELECT symbol, side, price, size FROM trades WHERE id = %s", (trade_id,))
+    cursor.execute(
+        "SELECT symbol, side, price, size FROM trades WHERE id = %s", (trade_id,)
+    )
     result = cursor.fetchone()
 
     assert result is not None

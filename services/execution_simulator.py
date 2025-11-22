@@ -73,7 +73,9 @@ class ExecutionSimulator:
         # Slippage parameters
         self.base_slippage_bps = float(self.config.get("BASE_SLIPPAGE_BPS", 5.0))
         self.depth_impact_factor = float(self.config.get("DEPTH_IMPACT_FACTOR", 0.10))
-        self.vol_slippage_multiplier = float(self.config.get("VOL_SLIPPAGE_MULTIPLIER", 2.0))
+        self.vol_slippage_multiplier = float(
+            self.config.get("VOL_SLIPPAGE_MULTIPLIER", 2.0)
+        )
 
         # Partial fill parameters
         self.fill_threshold = float(self.config.get("FILL_THRESHOLD", 0.80))
@@ -238,7 +240,9 @@ class ExecutionSimulator:
             )
         else:
             # Not filled
-            logger.info(f"Limit Order: {side} {size:.4f} @ {limit_price:.2f} NOT FILLED")
+            logger.info(
+                f"Limit Order: {side} {size:.4f} @ {limit_price:.2f} NOT FILLED"
+            )
             return ExecutionResult(
                 filled_size=0.0,
                 avg_fill_price=0.0,
@@ -394,7 +398,10 @@ class ExecutionSimulator:
 
         # Total cost
         total_cost = (
-            entry_slippage_usd + exit_slippage_usd + entry_result.fees + exit_result.fees
+            entry_slippage_usd
+            + exit_slippage_usd
+            + entry_result.fees
+            + exit_result.fees
         )
 
         # Cost as % of avg notional

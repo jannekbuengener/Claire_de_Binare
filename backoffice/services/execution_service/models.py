@@ -11,6 +11,7 @@ from enum import Enum
 
 class OrderSide(str, Enum):
     """Order side: BUY or SELL"""
+
     BUY = "BUY"
     SELL = "SELL"
     LONG = "LONG"  # Alias for BUY
@@ -19,6 +20,7 @@ class OrderSide(str, Enum):
 
 class OrderStatus(str, Enum):
     """Order execution status"""
+
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     FILLED = "FILLED"
@@ -31,6 +33,7 @@ class OrderStatus(str, Enum):
 @dataclass
 class Order:
     """Order from Risk Manager (EVENT_SCHEMA kompatibel)"""
+
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
@@ -59,7 +62,7 @@ class Order:
                 else None
             ),
             client_id=payload.get("client_id"),
-            timestamp=payload.get("timestamp")
+            timestamp=payload.get("timestamp"),
         )
 
     def to_dict(self) -> dict:
@@ -80,7 +83,7 @@ class Order:
             "symbol": self.symbol,
             "side": self.side,
             "quantity": self.quantity,
-            "timestamp": timestamp_value
+            "timestamp": timestamp_value,
         }
         if self.stop_loss_pct is not None:
             payload["stop_loss_pct"] = self.stop_loss_pct
@@ -92,6 +95,7 @@ class Order:
 @dataclass
 class ExecutionResult:
     """Ergebnis der Orderausfuehrung (EVENT_SCHEMA kompatibel)"""
+
     order_id: str
     symbol: str
     side: Literal["BUY", "SELL"]
@@ -126,7 +130,9 @@ class ExecutionResult:
         timestamp_value = self.timestamp
         if isinstance(timestamp_value, str):
             try:
-                timestamp_value = int(datetime.fromisoformat(timestamp_value).timestamp())
+                timestamp_value = int(
+                    datetime.fromisoformat(timestamp_value).timestamp()
+                )
             except ValueError:
                 try:
                     timestamp_value = int(float(timestamp_value))
@@ -145,7 +151,7 @@ class ExecutionResult:
             "side": self.side,
             "quantity": self.quantity,
             "filled_quantity": self.filled_quantity,
-            "timestamp": timestamp_value
+            "timestamp": timestamp_value,
         }
         if self.price is not None:
             payload["price"] = self.price
@@ -159,6 +165,7 @@ class ExecutionResult:
 @dataclass
 class Trade:
     """Executed trade for database"""
+
     trade_id: str
     order_id: str
     symbol: str
@@ -167,7 +174,7 @@ class Trade:
     price: float
     commission: float
     timestamp: str
-    
+
     def to_dict(self) -> dict:
         """Convert to dictionary"""
         return {
@@ -178,5 +185,5 @@ class Trade:
             "quantity": self.quantity,
             "price": self.price,
             "commission": self.commission,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }

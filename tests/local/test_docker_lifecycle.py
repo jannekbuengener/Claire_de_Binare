@@ -21,19 +21,14 @@ import json
 def run_docker_compose(args, timeout=30):
     """Helper: Docker Compose Command ausführen"""
     cmd = ["docker", "compose"] + args
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=timeout
-    )
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     return result
 
 
 def parse_docker_json(stdout):
     """Parse docker compose ps --format json output (multiple JSON objects)"""
     services = []
-    for line in stdout.strip().split('\n'):
+    for line in stdout.strip().split("\n"):
         if line.strip():
             try:
                 services.append(json.loads(line))
@@ -78,14 +73,17 @@ def test_docker_compose_stop_start_cycle():
     services = parse_docker_json(result.stdout)
 
     healthy_count = sum(
-        1 for s in services
+        1
+        for s in services
         if "healthy" in s.get("Status", "").lower() or s.get("Health") == "healthy"
     )
 
     print(f"\n📊 Services after restart: {healthy_count}/{len(services)} healthy")
 
     # Mindestens 7/9 sollten healthy sein
-    assert healthy_count >= 7, f"Too many unhealthy after restart: {healthy_count}/{len(services)}"
+    assert (
+        healthy_count >= 7
+    ), f"Too many unhealthy after restart: {healthy_count}/{len(services)}"
 
     print("✅ Stop/Start cycle successful")
 
@@ -123,7 +121,9 @@ def test_docker_compose_restart_individual_service():
     assert len(after_services) == baseline_count, "Service count changed after restart"
 
     # Find cdb_core
-    cdb_core = next((s for s in after_services if "cdb_core" in s.get("Name", "")), None)
+    cdb_core = next(
+        (s for s in after_services if "cdb_core" in s.get("Name", "")), None
+    )
     assert cdb_core is not None, "cdb_core not found after restart"
 
     print(f"  ✓ cdb_core status: {cdb_core.get('Status')}")
@@ -221,14 +221,17 @@ def test_docker_compose_down_up_full_cycle():
         print(f"  - {name}: {status}")
 
     healthy_count = sum(
-        1 for s in services
+        1
+        for s in services
         if "healthy" in s.get("Status", "").lower() or s.get("Health") == "healthy"
     )
 
     print(f"\n📊 Healthy services: {healthy_count}/{len(services)}")
 
     # Mindestens 6/9 sollten healthy sein (einige brauchen länger)
-    assert healthy_count >= 6, f"Too many unhealthy after full cycle: {healthy_count}/{len(services)}"
+    assert (
+        healthy_count >= 6
+    ), f"Too many unhealthy after full cycle: {healthy_count}/{len(services)}"
 
     print("✅ Full down/up cycle successful")
 
@@ -291,11 +294,11 @@ def test_docker_compose_volume_persistence():
     print("  📊 Counting baseline data...")
     try:
         conn = psycopg2.connect(
-            host='localhost',
+            host="localhost",
             port=5432,
-            database='claire_de_binaire',
-            user='claire_user',
-            password='claire_db_secret_2024'
+            database="claire_de_binaire",
+            user="claire_user",
+            password="claire_db_secret_2024",
         )
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
@@ -317,11 +320,11 @@ def test_docker_compose_volume_persistence():
     # Step 3: Check data after restart
     print("  📊 Counting data after restart...")
     conn = psycopg2.connect(
-        host='localhost',
+        host="localhost",
         port=5432,
-        database='claire_de_binaire',
-        user='claire_user',
-        password='claire_db_secret_2024'
+        database="claire_de_binaire",
+        user="claire_user",
+        password="claire_db_secret_2024",
     )
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
@@ -331,7 +334,9 @@ def test_docker_compose_volume_persistence():
     print(f"    ✓ Snapshots after restart: {after_count}")
 
     # Data should be preserved
-    assert after_count == baseline_count, f"Data lost after restart: {baseline_count} → {after_count}"
+    assert (
+        after_count == baseline_count
+    ), f"Data lost after restart: {baseline_count} → {after_count}"
 
     print("✅ Volume persistence verified")
 

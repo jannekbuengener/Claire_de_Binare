@@ -13,6 +13,7 @@ import os
 import argparse
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
 # datetime and timedelta available if needed for future queries
 from tabulate import tabulate
 
@@ -30,18 +31,21 @@ class AnalyticsQuery:
             port=int(os.getenv("POSTGRES_PORT", "5432")),
             database=os.getenv("POSTGRES_DB", "claire_de_binaire"),
             user=os.getenv("POSTGRES_USER", "claire_user"),
-            password=os.getenv("POSTGRES_PASSWORD", "")
+            password=os.getenv("POSTGRES_PASSWORD", ""),
         )
 
     def last_signals(self, limit=10):
         """Get last N signals"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id, symbol, signal_type, price, confidence, timestamp
                 FROM signals
                 ORDER BY timestamp DESC
                 LIMIT %s
-            """, (limit,))
+            """,
+                (limit,),
+            )
             rows = cursor.fetchall()
 
             if rows:
@@ -53,12 +57,15 @@ class AnalyticsQuery:
     def last_trades(self, limit=20):
         """Get last N trades"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT id, symbol, side, price, size, status, slippage_bps, timestamp
                 FROM trades
                 ORDER BY timestamp DESC
                 LIMIT %s
-            """, (limit,))
+            """,
+                (limit,),
+            )
             rows = cursor.fetchall()
 
             if rows:
@@ -70,7 +77,8 @@ class AnalyticsQuery:
     def portfolio_summary(self):
         """Get latest portfolio snapshot"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     timestamp,
                     total_equity,
@@ -83,7 +91,8 @@ class AnalyticsQuery:
                 FROM portfolio_snapshots
                 ORDER BY timestamp DESC
                 LIMIT 1
-            """)
+            """
+            )
             row = cursor.fetchone()
 
             if row:
@@ -99,7 +108,8 @@ class AnalyticsQuery:
     def daily_pnl(self, days=7):
         """Get daily P&L for last N days"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     DATE(timestamp) as date,
                     COUNT(*) as num_snapshots,
@@ -110,7 +120,9 @@ class AnalyticsQuery:
                 WHERE timestamp >= NOW() - INTERVAL '%s days'
                 GROUP BY DATE(timestamp)
                 ORDER BY date DESC
-            """, (days,))
+            """,
+                (days,),
+            )
             rows = cursor.fetchall()
 
             if rows:
@@ -122,7 +134,8 @@ class AnalyticsQuery:
     def trade_statistics(self):
         """Get overall trade statistics"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     COUNT(*) as total_trades,
                     COUNT(CASE WHEN side = 'buy' THEN 1 END) as buy_trades,
@@ -131,7 +144,8 @@ class AnalyticsQuery:
                     SUM(fees) as total_fees,
                     COUNT(DISTINCT symbol) as unique_symbols
                 FROM trades
-            """)
+            """
+            )
             row = cursor.fetchone()
 
             if row and row["total_trades"] > 0:
@@ -147,7 +161,8 @@ class AnalyticsQuery:
     def open_positions(self):
         """Get currently open positions"""
         with self.conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT
                     symbol,
                     side,
@@ -159,7 +174,8 @@ class AnalyticsQuery:
                 FROM positions
                 WHERE side != 'none' AND size > 0
                 ORDER BY opened_at DESC
-            """)
+            """
+            )
             rows = cursor.fetchall()
 
             if rows:
@@ -176,14 +192,30 @@ class AnalyticsQuery:
 
 def main():
     """Main CLI entry point"""
-    parser = argparse.ArgumentParser(description="Claire de Binaire - Analytics Query Tool")
+    parser = argparse.ArgumentParser(
+        description="Claire de Binaire - Analytics Query Tool"
+    )
 
-    parser.add_argument("--last-signals", type=int, metavar="N", help="Show last N signals")
-    parser.add_argument("--last-trades", type=int, metavar="N", help="Show last N trades")
-    parser.add_argument("--portfolio-summary", action="store_true", help="Show latest portfolio snapshot")
-    parser.add_argument("--daily-pnl", type=int, metavar="DAYS", help="Show daily P&L for last N days")
-    parser.add_argument("--trade-statistics", action="store_true", help="Show overall trade statistics")
-    parser.add_argument("--open-positions", action="store_true", help="Show currently open positions")
+    parser.add_argument(
+        "--last-signals", type=int, metavar="N", help="Show last N signals"
+    )
+    parser.add_argument(
+        "--last-trades", type=int, metavar="N", help="Show last N trades"
+    )
+    parser.add_argument(
+        "--portfolio-summary",
+        action="store_true",
+        help="Show latest portfolio snapshot",
+    )
+    parser.add_argument(
+        "--daily-pnl", type=int, metavar="DAYS", help="Show daily P&L for last N days"
+    )
+    parser.add_argument(
+        "--trade-statistics", action="store_true", help="Show overall trade statistics"
+    )
+    parser.add_argument(
+        "--open-positions", action="store_true", help="Show currently open positions"
+    )
 
     args = parser.parse_args()
 
