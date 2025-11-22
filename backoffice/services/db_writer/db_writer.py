@@ -13,7 +13,8 @@ import os
 import json
 import logging
 from datetime import datetime
-from typing import Dict
+from decimal import Decimal, InvalidOperation
+from typing import Dict, Any, Optional
 
 import redis
 import psycopg2
@@ -24,6 +25,11 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("db_writer")
+
+# Trade Status Definitions
+# Only filled/partial trades are persisted to trades table
+EXECUTION_STATUSES = {"filled", "partial", "partially_filled"}
+NON_EXECUTION_STATUSES = {"rejected", "cancelled"}
 
 
 class DatabaseWriter:
@@ -130,6 +136,76 @@ class DatabaseWriter:
 
         return exposure
 
+    @staticmethod
+    def get_order_price(data: Dict[str, Any]) -> Optional[Decimal]:
+        """
+        Get order limit price (NULL for pure market orders).
+
+        Returns:
+            Decimal: Limit price for limit/stop orders
+            None: Market orders without limit price
+
+        Raises:
+            ValueError: If price format is invalid
+        """
+        raw = data.get("price") or data.get("limit_price")
+
+        if raw is None:
+            logger.info(
+                "Market order without limit price: %s %s",
+                data.get("symbol"),
+                data.get("order_type"),
+            )
+            return None
+
+        try:
+            return Decimal(str(raw))
+        except (InvalidOperation, TypeError) as e:
+            logger.error("Invalid price format in order data: %s (error: %s)", raw, e)
+            raise ValueError(f"Invalid price format: {raw}") from e
+
+    @staticmethod
+    def _get_positive_decimal(value: Any, field_name: str, data: Dict) -> Decimal:
+        """
+        Extract and validate a positive decimal value.
+
+        Args:
+            value: Raw value to convert
+            field_name: Field name for error messages
+            data: Full event data for error logging
+
+        Returns:
+            Decimal: Validated positive decimal value
+
+        Raises:
+            ValueError: If value is None, invalid format, or not positive
+        """
+        if value is None:
+            raise ValueError(f"{field_name} is required but was None")
+
+        try:
+            dec = Decimal(str(value))
+        except (InvalidOperation, TypeError) as e:
+            logger.error(
+                "Invalid %s format in trade: %s (data=%s, error=%s)",
+                field_name,
+                value,
+                data.get("symbol"),
+                e,
+            )
+            raise ValueError(f"Invalid {field_name} format: {value}") from e
+
+        if dec <= 0:
+            logger.error(
+                "Non-positive %s in trade: %s (data=%s)",
+                field_name,
+                dec,
+                data.get("symbol"),
+            )
+            raise ValueError(f"{field_name} must be > 0, got: {dec}")
+
+        return dec
+
     def connect_redis(self):
         """Connect to Redis"""
         try:
@@ -211,17 +287,21 @@ class DatabaseWriter:
 
     def process_order_event(self, data: Dict):
         """
-        Persist Order event to PostgreSQL
+        Persist Order event to PostgreSQL.
+
+        Note: orders.price can be NULL for pure market orders without limit price.
 
         Args:
             data: Order event data
         """
         try:
-            cursor = self.db_conn.cursor()
+            # Get limit price (NULL for market orders without limit)
+            order_price = self.get_order_price(data)
 
             # Convert timestamp (handles Unix timestamps and ISO strings)
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
+            cursor = self.db_conn.cursor()
             cursor.execute(
                 """
                 INSERT INTO orders
@@ -233,7 +313,7 @@ class DatabaseWriter:
                     data.get("symbol"),
                     self.normalize_side(data.get("side")),
                     data.get("order_type", "market"),
-                    data.get("price"),
+                    order_price,  # Can be None for market orders
                     data.get("quantity", data.get("size", 0)),
                     data.get("approved", False),
                     data.get("rejection_reason"),
@@ -244,32 +324,85 @@ class DatabaseWriter:
             )
             order_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Order persisted: ID={order_id}, {data.get('symbol')} {data.get('side')}"
+                "✅ Order persisted: ID=%d, %s %s",
+                order_id,
+                data.get("symbol"),
+                data.get("side"),
+            )
+        except ValueError as e:
+            # Validation error (e.g., invalid price format)
+            logger.error(
+                "Validation error for order event %s: %s",
+                data.get("symbol"),
+                e,
             )
         except Exception as e:
-            logger.error(f"Failed to persist order: {e}")
+            logger.error("Failed to persist order: %s", e)
 
     def process_trade_event(self, data: Dict):
         """
-        Persist Trade event to PostgreSQL
+        Persist Trade event to PostgreSQL.
+
+        IMPORTANT: Only persists actual executions (filled/partial).
+        Rejected/cancelled orders are NOT trades and belong in orders table.
 
         Args:
             data: Trade/Order Result event data
         """
-        try:
-            cursor = self.db_conn.cursor()
+        # Validate status - only persist actual executions
+        status_raw = data.get("status") or "filled"
+        status = status_raw.lower()
 
-            # Convert timestamp (handles Unix timestamps and ISO strings)
+        # Skip non-executions
+        if status in NON_EXECUTION_STATUSES:
+            logger.info(
+                "⏭️  Skipping %s order_result: %s - not an actual trade",
+                status,
+                data.get("symbol"),
+            )
+            return
+
+        # Warn on unknown status
+        if status not in EXECUTION_STATUSES:
+            logger.warning(
+                "Unknown trade status '%s' for %s - treating as non-execution",
+                status_raw,
+                data.get("symbol"),
+            )
+            return
+
+        try:
+            # Validate execution price (must be > 0 for actual trades)
+            execution_price_raw = data.get("price") or data.get("execution_price")
+            execution_price = self._get_positive_decimal(
+                execution_price_raw, "execution_price", data
+            )
+
+            # Validate execution quantity (must be > 0)
+            execution_qty_raw = data.get("quantity") or data.get("size")
+            execution_qty = self._get_positive_decimal(
+                execution_qty_raw, "execution_quantity", data
+            )
+
+            # Convert timestamp
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
-            # Calculate slippage in basis points
+            # Calculate slippage in basis points (if target_price available)
             slippage_bps = None
-            if data.get("target_price") and data.get("price"):
-                slippage = abs(data.get("price") - data.get("target_price")) / data.get(
-                    "target_price"
-                )
-                slippage_bps = slippage * 10000  # Convert to bps
+            target_price = data.get("target_price")
+            if target_price:
+                try:
+                    target_dec = Decimal(str(target_price))
+                    slippage = abs(execution_price - target_dec) / target_dec
+                    slippage_bps = float(slippage * 10000)  # Convert to bps
+                except (InvalidOperation, ZeroDivisionError, TypeError):
+                    logger.warning(
+                        "Could not calculate slippage for %s (target_price=%s)",
+                        data.get("symbol"),
+                        target_price,
+                    )
 
+            cursor = self.db_conn.cursor()
             cursor.execute(
                 """
                 INSERT INTO trades
@@ -280,10 +413,10 @@ class DatabaseWriter:
                 (
                     data.get("symbol"),
                     self.normalize_side(data.get("side")),
-                    data.get("price") or data.get("target_price", 0.0),  # Use target_price if price is null
-                    data.get("quantity", data.get("size", 0)),
-                    data.get("status", "filled").lower(),  # Convert to lowercase for DB compatibility
-                    data.get("price") or data.get("target_price", 0.0),  # Use target_price if price is null
+                    execution_price,
+                    execution_qty,
+                    status,
+                    execution_price,
                     slippage_bps,
                     data.get("fees", 0.0),
                     timestamp,
@@ -293,10 +426,21 @@ class DatabaseWriter:
             )
             trade_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Trade persisted: ID={trade_id}, {data.get('symbol')} {data.get('side')} @ {data.get('price')}"
+                "✅ Trade persisted: ID=%d, %s %s @ %s",
+                trade_id,
+                data.get("symbol"),
+                data.get("side"),
+                execution_price,
+            )
+        except ValueError as e:
+            # Validation error - log but don't crash the service
+            logger.error(
+                "Validation error for trade event %s: %s",
+                data.get("symbol"),
+                e,
             )
         except Exception as e:
-            logger.error(f"Failed to persist trade: {e}")
+            logger.error("Failed to persist trade: %s", e)
 
     def process_portfolio_snapshot(self, data: Dict):
         """
