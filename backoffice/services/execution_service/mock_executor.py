@@ -14,7 +14,11 @@ import random
 import time
 from datetime import datetime
 from typing import Optional
-from models import Order, ExecutionResult, OrderStatus
+
+try:
+    from .models import Order, ExecutionResult, OrderStatus
+except ImportError:
+    from models import Order, ExecutionResult, OrderStatus
 
 
 class MockExecutor:

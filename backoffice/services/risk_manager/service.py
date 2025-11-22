@@ -15,8 +15,12 @@ from typing import Optional
 from pathlib import Path
 from threading import Thread
 
-from config import config
-from models import Signal, Order, Alert, RiskState, OrderResult
+try:
+    from .config import config
+    from .models import Signal, Order, Alert, RiskState, OrderResult
+except ImportError:
+    from config import config
+    from models import Signal, Order, Alert, RiskState, OrderResult
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"

@@ -11,8 +11,12 @@ from datetime import datetime
 import time
 from contextlib import contextmanager
 
-import config
-from models import ExecutionResult, OrderStatus
+try:
+    from . import config
+    from .models import ExecutionResult, OrderStatus
+except ImportError:
+    import config
+    from models import ExecutionResult, OrderStatus
 
 logger = logging.getLogger(config.SERVICE_NAME)
 

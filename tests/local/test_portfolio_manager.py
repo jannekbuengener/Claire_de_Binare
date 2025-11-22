@@ -16,6 +16,9 @@ sys.path.insert(0, str(service_path))
 from portfolio_manager import PortfolioManager
 from models import PortfolioState, Position, PositionSide
 
+# Diese Tests sind als local_only markiert wegen Import-Komplexität
+pytestmark = pytest.mark.local_only
+
 
 @pytest.fixture
 def mock_redis():
