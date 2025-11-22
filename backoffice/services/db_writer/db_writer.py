@@ -26,6 +26,61 @@ logging.basicConfig(
 logger = logging.getLogger("db_writer")
 
 
+# ===== TIMESTAMP CONVERSION UTILITY =====
+
+
+def convert_timestamp(timestamp_value):
+    """
+    Konvertiert verschiedene Timestamp-Formate zu PostgreSQL-kompatiblem datetime.
+
+    Unterstützt:
+    - Unix timestamps (int): 1732302000
+    - ISO strings: "2024-11-22T19:00:00Z"
+    - datetime objects: datetime(2024, 11, 22, 19, 0, 0)
+    - None: current UTC time
+
+    Args:
+        timestamp_value: Unix timestamp (int), ISO string, datetime, or None
+
+    Returns:
+        datetime: PostgreSQL-kompatibles datetime-Objekt
+
+    Raises:
+        ValueError: Wenn das Format nicht konvertiert werden kann
+    """
+    # None → current UTC
+    if timestamp_value is None:
+        return datetime.utcnow()
+
+    # Bereits datetime → zurückgeben
+    if isinstance(timestamp_value, datetime):
+        return timestamp_value
+
+    # Unix timestamp (int oder float)
+    if isinstance(timestamp_value, (int, float)):
+        try:
+            return datetime.utcfromtimestamp(timestamp_value)
+        except (ValueError, OSError) as e:
+            logger.error(f"Ungültiger Unix timestamp: {timestamp_value} ({e})")
+            return datetime.utcnow()
+
+    # ISO string
+    if isinstance(timestamp_value, str):
+        try:
+            # Entferne 'Z' suffix falls vorhanden
+            iso_str = timestamp_value.replace("Z", "+00:00")
+            return datetime.fromisoformat(iso_str)
+        except ValueError:
+            logger.error(f"Ungültiger ISO timestamp: {timestamp_value}")
+            return datetime.utcnow()
+
+    # Unbekanntes Format → Fallback
+    logger.warning(
+        f"Unbekanntes Timestamp-Format: {type(timestamp_value)} - {timestamp_value}"
+    )
+    return datetime.utcnow()
+
+
 class DatabaseWriter:
     """
     Database Writer Service
@@ -105,6 +160,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (Unix int → datetime)
+            timestamp = convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO signals (symbol, signal_type, price, confidence, timestamp, source, metadata)
@@ -116,14 +175,14 @@ class DatabaseWriter:
                     data.get("signal_type"),
                     data.get("price"),
                     data.get("confidence", 0.5),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,  # ✅ FIX: Converted timestamp
                     data.get("source", "signal_engine"),
                     json.dumps(data.get("metadata", {})),
                 ),
             )
             signal_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')}"
+                f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')} @ {timestamp}"
             )
         except Exception as e:
             logger.error(f"Failed to persist signal: {e}")
@@ -137,6 +196,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (Unix int → datetime)
+            timestamp = convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO orders
@@ -154,12 +217,12 @@ class DatabaseWriter:
                     data.get("rejection_reason"),
                     data.get("status", "pending"),
                     json.dumps(data.get("metadata", {})),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,  # ✅ FIX: Converted timestamp
                 ),
             )
             order_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Order persisted: ID={order_id}, {data.get('symbol')} {data.get('side')}"
+                f"✅ Order persisted: ID={order_id}, {data.get('symbol')} {data.get('side')} @ {timestamp}"
             )
         except Exception as e:
             logger.error(f"Failed to persist order: {e}")
@@ -173,6 +236,9 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (Unix int → datetime)
+            timestamp = convert_timestamp(data.get("timestamp"))
 
             # Calculate slippage in basis points
             slippage_bps = None
@@ -198,14 +264,14 @@ class DatabaseWriter:
                     data.get("price"),  # execution_price
                     slippage_bps,
                     data.get("fees", 0.0),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,  # ✅ FIX: Converted timestamp
                     data.get("exchange", "MEXC"),
                     json.dumps(data.get("metadata", {})),
                 ),
             )
             trade_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Trade persisted: ID={trade_id}, {data.get('symbol')} {data.get('side')} @ {data.get('price')}"
+                f"✅ Trade persisted: ID={trade_id}, {data.get('symbol')} {data.get('side')} @ {data.get('price')} @ {timestamp}"
             )
         except Exception as e:
             logger.error(f"Failed to persist trade: {e}")
@@ -219,6 +285,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (Unix int → datetime)
+            timestamp = convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO portfolio_snapshots
@@ -229,7 +299,7 @@ class DatabaseWriter:
                 RETURNING id
             """,
                 (
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,  # ✅ FIX: Converted timestamp
                     data.get("equity", data.get("total_equity", 0)),
                     data.get("cash", data.get("available_balance", 0)),
                     data.get("margin_used", 0),
@@ -244,7 +314,7 @@ class DatabaseWriter:
             )
             snapshot_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Portfolio snapshot persisted: ID={snapshot_id}, Equity={data.get('equity')}"
+                f"✅ Portfolio snapshot persisted: ID={snapshot_id}, Equity={data.get('equity')} @ {timestamp}"
             )
         except Exception as e:
             logger.error(f"Failed to persist portfolio snapshot: {e}")
