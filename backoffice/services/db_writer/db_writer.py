@@ -53,6 +53,49 @@ class DatabaseWriter:
         self.db_conn = None
         self.pubsub = None
 
+    @staticmethod
+    def convert_timestamp(timestamp_value):
+        """
+        Convert timestamp to PostgreSQL-compatible format.
+
+        Handles:
+        - Unix timestamps (integers like 1763840671)
+        - ISO strings (like "2025-11-22T12:00:00Z")
+        - None (returns current UTC time)
+
+        Args:
+            timestamp_value: Unix timestamp (int), ISO string, or None
+
+        Returns:
+            datetime object compatible with PostgreSQL timestamp with time zone
+        """
+        if timestamp_value is None:
+            return datetime.utcnow()
+
+        # If integer (Unix timestamp), convert to datetime
+        if isinstance(timestamp_value, int):
+            return datetime.utcfromtimestamp(timestamp_value)
+
+        # If string (ISO format), parse it
+        if isinstance(timestamp_value, str):
+            try:
+                # Handle ISO format with 'Z' suffix
+                if timestamp_value.endswith('Z'):
+                    timestamp_value = timestamp_value[:-1] + '+00:00'
+                return datetime.fromisoformat(timestamp_value)
+            except ValueError:
+                # Fallback to current time if parsing fails
+                logger.warning(f"Invalid timestamp format: {timestamp_value}, using current time")
+                return datetime.utcnow()
+
+        # If already datetime, return as-is
+        if isinstance(timestamp_value, datetime):
+            return timestamp_value
+
+        # Fallback
+        logger.warning(f"Unknown timestamp type: {type(timestamp_value)}, using current time")
+        return datetime.utcnow()
+
     def connect_redis(self):
         """Connect to Redis"""
         try:
@@ -105,6 +148,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (handles Unix timestamps and ISO strings)
+            timestamp = self.convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO signals (symbol, signal_type, price, confidence, timestamp, source, metadata)
@@ -116,7 +163,7 @@ class DatabaseWriter:
                     data.get("signal_type"),
                     data.get("price"),
                     data.get("confidence", 0.5),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,
                     data.get("source", "signal_engine"),
                     json.dumps(data.get("metadata", {})),
                 ),
@@ -137,6 +184,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (handles Unix timestamps and ISO strings)
+            timestamp = self.convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO orders
@@ -154,7 +205,7 @@ class DatabaseWriter:
                     data.get("rejection_reason"),
                     data.get("status", "pending"),
                     json.dumps(data.get("metadata", {})),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,
                 ),
             )
             order_id = cursor.fetchone()[0]
@@ -173,6 +224,9 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (handles Unix timestamps and ISO strings)
+            timestamp = self.convert_timestamp(data.get("timestamp"))
 
             # Calculate slippage in basis points
             slippage_bps = None
@@ -198,7 +252,7 @@ class DatabaseWriter:
                     data.get("price"),  # execution_price
                     slippage_bps,
                     data.get("fees", 0.0),
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,
                     data.get("exchange", "MEXC"),
                     json.dumps(data.get("metadata", {})),
                 ),
@@ -219,6 +273,10 @@ class DatabaseWriter:
         """
         try:
             cursor = self.db_conn.cursor()
+
+            # Convert timestamp (handles Unix timestamps and ISO strings)
+            timestamp = self.convert_timestamp(data.get("timestamp"))
+
             cursor.execute(
                 """
                 INSERT INTO portfolio_snapshots
@@ -229,7 +287,7 @@ class DatabaseWriter:
                 RETURNING id
             """,
                 (
-                    data.get("timestamp", datetime.utcnow().isoformat()),
+                    timestamp,
                     data.get("equity", data.get("total_equity", 0)),
                     data.get("cash", data.get("available_balance", 0)),
                     data.get("margin_used", 0),
