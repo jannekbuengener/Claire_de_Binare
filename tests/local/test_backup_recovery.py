@@ -186,11 +186,11 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     cursor.execute(
         """
         INSERT INTO portfolio_snapshots (
-            timestamp, total_equity, cash, total_unrealized_pnl, total_realized_pnl,
-            daily_pnl, total_exposure_pct, num_positions, metadata
+            timestamp, total_equity, available_balance, total_unrealized_pnl, total_realized_pnl,
+            daily_pnl, total_exposure_pct, open_positions, metadata
         ) VALUES (
             NOW(), 100000.0, 95000.0, 500.0, 1000.0,
-            200.0, 5.0, 2, '{"test": "restore_marker"}'::jsonb
+            200.0, 0.05, 2, '{"test": "restore_marker"}'::jsonb
         )
     """
     )
