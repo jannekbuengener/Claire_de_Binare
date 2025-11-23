@@ -1,90 +1,22 @@
-version: 2.1
-
-orbs:
-  python: circleci/python@3.1.0
-  docker: circleci/docker@2.2.0
-
-executors:
-  python-executor:
-    docker:
-      - image: cimg/python:3.11
-    working_directory: ~/repo
-
-jobs:
-  install-deps:
-    executor: python-executor
-    steps:
-      - checkout
-      - restore_cache:
-          name: Restore venv cache
-          keys:
-            - venv-{{ arch }}-{{ .Branch }}-{{ checksum "requirements.txt" }}
-            - venv-{{ arch }}-
-      - run:
-          name: Install dependencies
-          command: |
-            python -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-      - save_cache:
-          name: Save venv cache
-          key: venv-{{ arch }}-{{ .Branch }}-{{ checksum "requirements.txt" }}
-          paths:
-            - venv
-
-  lint:
-    executor: python-executor
-    steps:
-      - checkout
-      - run:
-          name: Install linting tools
-          command: |
-            pip install black ruff
-      - run:
-          name: Run Black
-          command: black --check .
-      - run:
-          name: Run Ruff
-          command: ruff check .
-
-  unit-tests:
-    executor: python-executor
-    steps:
-      - checkout
-      - run:
-          name: Install test dependencies
-          command: |
-            pip install pytest pytest-cov
-            pip install -r requirements.txt
-      - run:
-          name: Run tests
-          command: |
-            pytest --maxfail=1 --disable-warnings -q
-
-  docker-compose-test:
-    docker:
-      - image: cimg/base:stable
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - setup_remote_docker:
-          version: 24.0.2
-      - run:
-          name: Build & Start Cleanroom Stack
-          command: |
-            docker compose up --build -d
-      - run:
-          name: Health Check
-          command: |
-            sleep 5
-            docker ps
-      - run:
-          name: Tear Down
-          command: docker compose down
-
 workflows:
   version: 2
-  validate-and-test:
+
+  feature-branches:
+    when:
+      not:
+        equal: [ main, << pipeline.git.branch >> ]
+    jobs:
+      - install-deps
+      - lint:
+          requires:
+            - install-deps
+      - unit-tests:
+          requires:
+            - install-deps
+
+  main-branch:
+    when:
+      equal: [ main, << pipeline.git.branch >> ]
     jobs:
       - install-deps
       - lint:
@@ -96,3 +28,13 @@ workflows:
       - docker-compose-test:
           requires:
             - unit-tests
+
+  tagged-release:
+    when:
+      matches:
+        pattern: "^v[0-9]+\\.[0-9]+\\.[0-9]+$"
+        value: << pipeline.git.tag >>
+    jobs:
+      - docker-compose-test
+      # später: build-and-push-images
+
