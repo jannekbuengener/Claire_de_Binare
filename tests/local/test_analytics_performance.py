@@ -309,9 +309,6 @@ def test_database_index_effectiveness(postgres_conn):
 
 @pytest.mark.local_only
 @pytest.mark.slow
-@pytest.mark.skip(
-    reason="query_analytics.py has bugs (crashes at line 222), needs refactoring - see backoffice/scripts/query_analytics.py"
-)
 def test_analytics_query_tool_integration(postgres_conn):
     """
     Integration-Test: Analytics Query Tool gegen echte DB

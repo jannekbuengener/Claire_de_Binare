@@ -231,8 +231,59 @@ def evaluate_signal_v2(
     # 1. Basic Risk Checks (from original evaluate_signal)
     equity = _resolve_equity(risk_state, risk_config)
     daily_pnl = float(risk_state.get("daily_pnl") or 0.0)
-    drawdown_threshold = -equity * float(risk_config.get("MAX_DRAWDOWN_PCT", 0.0))
 
+    # Timeout Check (Layer 7 - Data Freshness)
+    # Check if signal timestamp is stale (>60s old by default)
+    if "timestamp" in signal_event:
+        from datetime import datetime, timedelta, timezone
+
+        signal_timestamp_str = signal_event["timestamp"]
+        try:
+            # Parse ISO 8601 timestamp
+            if signal_timestamp_str.endswith("Z"):
+                signal_timestamp_str = signal_timestamp_str[:-1] + "+00:00"
+
+            signal_timestamp = datetime.fromisoformat(signal_timestamp_str)
+
+            # Ensure timezone-aware
+            if signal_timestamp.tzinfo is None:
+                signal_timestamp = signal_timestamp.replace(tzinfo=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+            age_seconds = (now - signal_timestamp).total_seconds()
+
+            stale_timeout = float(risk_config.get("DATA_STALE_TIMEOUT_SEC", 60))
+
+            if age_seconds > stale_timeout:
+                return EnhancedRiskDecision(
+                    approved=False,
+                    reason=f"stale_data (age={age_seconds:.0f}s > timeout={stale_timeout:.0f}s)",
+                    position_size=0.0,
+                    stop_price=None,
+                )
+        except (ValueError, TypeError, KeyError):
+            # Timestamp parsing error → reject signal
+            return EnhancedRiskDecision(
+                approved=False,
+                reason="invalid_timestamp_format",
+                position_size=0.0,
+                stop_price=None,
+            )
+
+    # Circuit-Breaker Check (Layer 5 - Emergency Stop at 10% Loss)
+    circuit_breaker_threshold = -equity * float(
+        risk_config.get("CIRCUIT_BREAKER_THRESHOLD_PCT", 0.10)
+    )
+    if daily_pnl <= circuit_breaker_threshold:
+        return EnhancedRiskDecision(
+            approved=False,
+            reason="circuit_breaker_triggered",
+            position_size=0.0,
+            stop_price=None,
+        )
+
+    # Daily Drawdown Check (Layer 3 - Max 5% Loss)
+    drawdown_threshold = -equity * float(risk_config.get("MAX_DRAWDOWN_PCT", 0.0))
     if daily_pnl <= drawdown_threshold:
         return EnhancedRiskDecision(
             approved=False,

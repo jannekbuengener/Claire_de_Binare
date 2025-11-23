@@ -1,15 +1,16 @@
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health
+.PHONY: help test test-unit test-integration test-security test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health
 
 help:
 	@echo "Claire de Binare - Test Commands"
 	@echo ""
 	@echo "CI-Tests (schnell, mit Mocks):"
-	@echo "  make test                    - Alle CI-Tests (unit + integration)"
+	@echo "  make test                    - Alle CI-Tests (unit + integration + security)"
 	@echo "  make test-unit               - Nur Unit-Tests"
 	@echo "  make test-integration        - Nur Integration-Tests (mit Mocks)"
+	@echo "  make test-security           - Nur Security-Tests (GO-Kriterium 1)"
 	@echo "  make test-coverage           - Tests mit Coverage-Report"
 	@echo ""
 	@echo "Lokale E2E-Tests (mit echten Containern):"
@@ -42,6 +43,10 @@ test-unit:
 test-integration:
 	@echo "🔌 Führe Integration-Tests aus (mit Mocks)..."
 	pytest -v -m "integration and not e2e and not local_only"
+
+test-security:
+	@echo "🔒 Führe Security-Tests aus (GO-Kriterium 1)..."
+	pytest -v -m security
 
 test-coverage:
 	@echo "📊 Führe Tests mit Coverage-Report aus..."
