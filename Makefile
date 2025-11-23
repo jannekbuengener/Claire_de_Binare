@@ -1,7 +1,7 @@
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-full-system test-coverage docker-up docker-down docker-health
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -18,6 +18,9 @@ help:
 	@echo "  make test-local-stress       - Stress-Tests (100+ Events)"
 	@echo "  make test-local-performance  - Performance-Tests (Query-Speed)"
 	@echo "  make test-local-lifecycle    - Docker Lifecycle-Tests (DESTRUKTIV!)"
+	@echo "  make test-local-cli          - CLI-Tools Tests (query_analytics.py)"
+	@echo "  make test-local-chaos        - Chaos/Resilience Tests (SEHR DESTRUKTIV!)"
+	@echo "  make test-local-backup       - Backup & Recovery Tests (pg_dump/restore)"
 	@echo "  make test-full-system        - Komplett: Docker + E2E + Local"
 	@echo ""
 	@echo "Docker-Hilfsfunktionen:"
@@ -72,6 +75,22 @@ test-local-lifecycle:
 	@echo "🔄 Führe Docker Lifecycle-Tests aus..."
 	@echo "⚠️  DESTRUKTIV - Container werden neu gestartet!"
 	pytest -v -m local_only tests/local/test_docker_lifecycle.py -s
+
+test-local-cli:
+	@echo "🛠️  Führe CLI-Tools Tests aus..."
+	@echo "⚠️  Benötigt PostgreSQL mit Daten!"
+	pytest -v -m local_only tests/local/test_cli_tools.py -s
+
+test-local-chaos:
+	@echo "💥 Führe Chaos/Resilience Tests aus..."
+	@echo "⚠️  SEHR DESTRUKTIV - Container werden ge-killed!"
+	@echo "⚠️  Nur ausführen wenn System stabil ist!"
+	pytest -v -m "local_only and chaos" tests/local/test_chaos_resilience.py -s
+
+test-local-backup:
+	@echo "💾 Führe Backup & Recovery Tests aus..."
+	@echo "⚠️  Testet pg_dump/pg_restore Workflows!"
+	pytest -v -m local_only tests/local/test_backup_recovery.py -s
 
 test-full-system: docker-up docker-health test-e2e test-local
 	@echo "✅ Vollständiger System-Test erfolgreich (E2E + Local)"

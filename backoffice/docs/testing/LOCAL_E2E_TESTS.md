@@ -2,7 +2,8 @@
 
 > **Dokumentation für lokale End-to-End Tests**
 > Erstellt: 2025-11-19
-> Status: ✅ Implementiert & Validiert
+> **Letztes Update**: 2025-11-23 (✨ Neue Tests: CLI, Chaos, Backup)
+> Status: ✅ Implementiert & Erweitert (123 Tests total)
 
 ---
 
@@ -58,6 +59,7 @@ tests/
 | `@pytest.mark.e2e` | End-to-End mit Containern | ❌ | ✅ |
 | `@pytest.mark.local_only` | Explizit nur lokal | ❌ | ✅ |
 | `@pytest.mark.slow` | Tests mit >10s Laufzeit | ❌ | ✅ |
+| `@pytest.mark.chaos` | **🆕 Chaos/Resilience Tests (DESTRUKTIV!)** | ❌ | ✅ |
 
 ### Test-Scopes
 
