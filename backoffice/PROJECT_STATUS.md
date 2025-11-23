@@ -1,9 +1,9 @@
 # PROJECT STATUS - Claire de Binare Cleanroom
 
-**Datum**: 2025-11-22
-**Version**: 1.3.0-persistence-stable
+**Datum**: 2025-11-23
+**Version**: 1.3.1-persistence-hardened
 **Environment**: Cleanroom (All Systems Operational ✅)
-**Letztes Update**: 17:00 UTC
+**Letztes Update**: 00:15 UTC
 
 ---
 
@@ -52,10 +52,14 @@
 - ✅ **E2E-Tests mit Docker integriert (18/18 bestanden)**
 - ✅ **Risk-Engine: 100% Coverage erreicht**
 - ✅ **CI/CD Pipeline umfassend erweitert** (2025-11-21)
-- ✅ **PostgreSQL Persistence: 100% stabil** (2025-11-22)
-  - 5 kritische Bugs gefixt (case mismatches, null handling, double division)
-  - E2E-Validierung: 18/18 Events erfolgreich persistiert
-  - Test-Suite: `tests/test_events.json`, `publish_test_events.py`, `validate_persistence.py`
+- ✅ **PostgreSQL Persistence: 100% stabil + gehärtet** (2025-11-23)
+  - **7 kritische Bugs gefixt**: case mismatches, null handling, double division, schema constraints
+  - **Fix #6**: orders.price nullable für Market-Orders (Migration 002 erfolgreich)
+  - **Fix #7**: rejected trades werden semantisch korrekt geskippt (nicht in trades table)
+  - **Decimal-Typ**: Financial data mit Präzisions-Garantie (statt float)
+  - **Hard Validation**: ValueError bei ungültigen Daten (keine silent defaults)
+  - E2E-Validierung: 18/18 Events erfolgreich persistiert + neue Test-Events bestanden
+  - ADR-044 dokumentiert: Architektur-Entscheidungen mit Alternativen-Analyse
 
 ---
 
@@ -83,10 +87,13 @@ _Keine aktiven HOCH-Blocker_ ✅
 1. ~~**Services nicht getestet**~~ → ✅ **103 CI-Tests + 18 E2E-Tests implementiert**
 2. ~~**Keine automatisierten Tests**~~ → ✅ **pytest + Pre-Commit Hooks aktiv**
 3. ~~**Risk-Manager ohne Test-Coverage**~~ → ✅ **23 Tests, 100% Coverage** (2025-11-19)
-4. ~~**PostgreSQL Persistence Bugs**~~ → ✅ **5 Bugs gefixt + Test-Suite** (2025-11-22)
-   - `orders.side` / `trades.side` / `trades.status`: UPPERCASE → lowercase
-   - `trades.price`: NULL → target_price fallback
-   - `portfolio_snapshots.total_exposure_pct`: double division eliminated
+4. ~~**PostgreSQL Persistence Bugs**~~ → ✅ **7 Bugs gefixt + gehärtet** (2025-11-23)
+   - **Fix #1-3** (2025-11-22): `orders.side` / `trades.side` / `trades.status`: UPPERCASE → lowercase
+   - **Fix #4** (2025-11-22): `trades.price`: NULL → target_price fallback
+   - **Fix #5** (2025-11-22): `portfolio_snapshots.total_exposure_pct`: double division eliminated
+   - **Fix #6** (2025-11-23): `orders.price` nullable für Market-Orders (Migration 002)
+   - **Fix #7** (2025-11-23): rejected trades semantisch korrekt geskippt (nicht in trades table)
+   - **Zusätzlich**: Decimal-Typ für Präzision, Hard Validation mit ValueError
 5. ~~**Systemcheck noch nicht durchgeführt**~~ → ✅ **Alle 9 Container healthy** (2025-11-22)
    - Container-Status validiert via Docker Desktop
    - Health-Checks: alle Services operational
@@ -98,6 +105,7 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
+| 2025-11-23  | **PostgreSQL Persistence gehärtet** 🛡️       | ✅ **Fix #6 & #7, Decimal-Typ**   |
 | 2025-11-22  | **Systemcheck: Alle Container operational** 🚀| ✅ **9/9 Services healthy**      |
 | 2025-11-22  | **PostgreSQL Persistence 100% stabil** 🎯    | ✅ **5 Bugs gefixt, 18/18 Events**|
 | 2025-11-21  | **CI/CD Pipeline umfassend erweitert** 🚀    | ✅ **8 Jobs, Coverage, Security** |
