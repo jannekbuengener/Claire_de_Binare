@@ -7,14 +7,12 @@ import pytest
 import sys
 from pathlib import Path
 
-# Add service path to sys.path
-service_path = (
-    Path(__file__).parent.parent / "backoffice" / "services" / "execution_service"
-)
-sys.path.insert(0, str(service_path))
+# Add project root to sys.path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from mock_executor import MockExecutor  # noqa: E402
-from models import Order, OrderStatus  # noqa: E402
+from backoffice.services.execution_service.mock_executor import MockExecutor  # noqa: E402
+from backoffice.services.execution_service.models import Order, OrderStatus  # noqa: E402
 
 # Diese Tests sind als local_only markiert wegen Import-Komplexität
 pytestmark = pytest.mark.local_only

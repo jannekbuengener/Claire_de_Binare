@@ -8,14 +8,12 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock
 
-# Add service path
-service_path = (
-    Path(__file__).parent.parent / "backoffice" / "services" / "portfolio_manager"
-)
-sys.path.insert(0, str(service_path))
+# Add project root to sys.path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
-from portfolio_manager import PortfolioManager  # noqa: E402
-from models import PositionSide  # noqa: E402
+from backoffice.services.portfolio_manager.portfolio_manager import PortfolioManager  # noqa: E402
+from backoffice.services.portfolio_manager.models import PositionSide  # noqa: E402
 
 # Diese Tests sind als local_only markiert wegen Import-Komplexität
 pytestmark = pytest.mark.local_only
