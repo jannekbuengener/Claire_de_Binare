@@ -2,6 +2,12 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+remote_write:
+  - url: https://prometheus-prod-eu-west-2.grafana.net/api/prom/push
+    basic_auth:
+      username: "1556723"
+      password: "glc_eyJvIjoiMTU1NjcyMyIsIm4iOiJzdGFjay0xNDAxMzc2LWludGVncmF0aW9uLWdyYWZhbmFfYWdlbnQiLCJrIjoiS3RaMTF6NXk0OVFmZ2kwajVKOTM5dmdxIiwibSI6eyJyIjoicHJvZC1ldS13ZXN0LTIifX0="
+
 scrape_configs:
   # Prometheus selbst
   - job_name: 'prometheus'

@@ -228,7 +228,7 @@ services:
 
   cdb_execution:
     build:
-      context: ./backoffice/services/execution_service
+      context: ./services/cdb_execution
       dockerfile: Dockerfile
     container_name: cdb_execution
     restart: unless-stopped
@@ -236,7 +236,7 @@ services:
     ports:
       - "8003:8003"
     volumes:
-      - ./backoffice/services/execution_service:/app
+      - ./services/cdb_execution:/app
     depends_on:
       - cdb_redis
       - cdb_risk
