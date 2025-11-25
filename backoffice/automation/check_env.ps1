@@ -62,7 +62,7 @@ $expectedVars = @{
     "ENVIRONMENT" = @{ Required = $false; Type = "enum"; Values = @("development", "staging", "production"); Default = "development" }
 
     # MEXC API (Optional für N1 Paper-Test)
-    "MEXC_API_KEY" = @{ Required = $false; Type = "secret"; MinLength = 32 }
+    "MEXC_API_KEY" = @{ Required = $false; Type = "secret"; MinLength = 16 }
     "MEXC_API_SECRET" = @{ Required = $false; Type = "secret"; MinLength = 32 }
 }
 

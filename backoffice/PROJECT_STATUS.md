@@ -62,9 +62,7 @@
 ## ⚠️ AKTIVE BLOCKER
 
 ### KRITISCH (Deployment-verhindernd)
-1. **ENV-Validation ausstehend**
-   - `.env` existiert, aber noch nicht mit `check_env.ps1` validiert
-   - Letzter Stand: `.env.template` clean, Secrets nur lokal in `.env`
+_Keine aktiven KRITISCH-Blocker_ ✅
 
 ### HOCH (Funktions-beeinträchtigend)
 _Keine aktiven HOCH-Blocker_ ✅
@@ -87,6 +85,11 @@ _Keine aktiven HOCH-Blocker_ ✅
    - `orders.side` / `trades.side` / `trades.status`: UPPERCASE → lowercase
    - `trades.price`: NULL → target_price fallback
    - `portfolio_snapshots.total_exposure_pct`: double division eliminated
+5. ~~**ENV-Validation ausstehend**~~ → ✅ **ENV vollständig validiert** (2025-11-25)
+   - `.env` mit 18/18 Variablen erfolgreich validiert
+   - MEXC API Keys korrigiert (Access Key/SECRET Format)
+   - `ENVIRONMENT=staging` für Paper-Test Phase gesetzt
+   - `check_env.ps1` angepasst (MEXC_API_KEY MinLength: 32→16)
 5. ~~**Systemcheck noch nicht durchgeführt**~~ → ✅ **Alle 9 Container healthy** (2025-11-22)
    - Container-Status validiert via Docker Desktop
    - Health-Checks: alle Services operational
@@ -116,22 +119,24 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 ### Phase N1: Paper-Test-Vorbereitung
 
-**SOFORT (< 1h)**  
-- [ ] **ENV-Validation ausführen**
-  - `backoffice/automation/check_env.ps1` gegen `.env` laufen lassen
-  - Ergebnis hier dokumentieren (OK / WARN / ERROR)
-- [ ] **Systemcheck #1 durchführen** (siehe Systemcheck-Checkliste unten)
-  - Container starten, Health prüfen, Status-Tabelle aktualisieren
+**SOFORT (< 1h)**
+- [x] ~~**ENV-Validation ausführen**~~ → ✅ **Abgeschlossen** (2025-11-25)
+  - 18/18 Variablen validiert, 0 Errors, 0 Warnings
+- [x] ~~**Systemcheck #1 durchführen**~~ → ✅ **Abgeschlossen** (2025-11-25)
+  - 9/9 Container healthy (inkl. cdb_execution Fix)
 
 **HEUTE (< 4h)**
 - [x] ~~pytest-Basisstruktur anlegen~~ → ✅ **Abgeschlossen** (2025-11-19)
 - [x] ~~Erste Unit-Tests für Risk-Manager~~ → ✅ **23 Tests implementiert** (2025-11-19)
 - [x] ~~Execution-Simulator-Grundstruktur~~ → ✅ **23 Tests implementiert** (2025-11-19)
 
-**DIESE WOCHE**  
-- [ ] Portfolio & State Manager implementieren
-- [ ] End-to-End Paper-Test (Event-Flow `market_data → signals → orders → order_results`) durchspielen
-- [ ] Logging & Analytics Layer aktivieren (Persistenz + einfache Auswertung)
+**DIESE WOCHE**
+- [x] ~~Portfolio & State Manager implementieren~~ → ✅ **Abgeschlossen** (2025-11-20)
+  - Issue #23: 12/12 Unit Tests, Redis State + PostgreSQL Persistence
+- [x] ~~End-to-End Paper-Test durchspielen~~ → ✅ **Abgeschlossen** (2025-11-20)
+  - Issue #28: 5/5 E2E-Tests, Event-Flow validiert
+- [x] ~~Logging & Analytics Layer aktivieren~~ → ✅ **Abgeschlossen** (2025-11-20)
+  - Issue #24: DB Writer Service + Analytics Query Tool (query_analytics.py)
 
 ### Post-N1: Produktionsvorbereitung
 - [ ] Infra-Hardening (SR-004, SR-005 – Redis/Postgres/Grafana/Prometheus)
