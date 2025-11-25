@@ -1,0 +1,572 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "claire-de-binare-overview",
+    "title": "Claire de Binare - Trading Bot Monitor",
+    "tags": ["claire", "trading", "n1-paper-test"],
+    "timezone": "UTC",
+    "schemaVersion": 39,
+    "version": 1,
+    "refresh": "5s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {
+      "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+    },
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Total Signals (1m rate)",
+        "targets": [
+          {
+            "expr": "rate(signals_received_total[1m])",
+            "refId": "A",
+            "legendFormat": "Signals/min"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 1, "color": "yellow"},
+                {"value": 5, "color": "green"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Orders Placed (1m rate)",
+        "targets": [
+          {
+            "expr": "rate(orders_placed_total[1m])",
+            "refId": "A",
+            "legendFormat": "Orders/min"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 1, "color": "yellow"},
+                {"value": 2, "color": "green"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Circuit Breaker Status",
+        "targets": [
+          {
+            "expr": "risk_circuit_breaker_active",
+            "refId": "A",
+            "legendFormat": "CB Active"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "mappings": [
+              {"type": "value", "options": {"0": {"text": "✅ INACTIVE", "color": "green"}}},
+              {"type": "value", "options": {"1": {"text": "🚨 ACTIVE", "color": "red"}}}
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 1, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "value",
+          "colorMode": "background"
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"x": 18, "y": 0, "w": 6, "h": 4},
+        "type": "stat",
+        "title": "Total Exposure (USD)",
+        "targets": [
+          {
+            "expr": "risk_total_exposure_usd",
+            "refId": "A",
+            "legendFormat": "Exposure"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 4500, "color": "yellow"},
+                {"value": 5000, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+        "type": "timeseries",
+        "title": "Daily P&L (USD)",
+        "targets": [
+          {
+            "expr": "risk_daily_pnl_usd",
+            "refId": "A",
+            "legendFormat": "Daily P&L"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "showPoints": "auto",
+              "axisPlacement": "auto"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": -500, "color": "red"},
+                {"value": -400, "color": "yellow"},
+                {"value": 0, "color": "green"},
+                {"value": 500, "color": "blue"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "list", "placement": "bottom"},
+          "tooltip": {"mode": "single", "sort": "none"}
+        }
+      },
+      {
+        "id": 6,
+        "gridPos": {"x": 12, "y": 4, "w": 12, "h": 8},
+        "type": "timeseries",
+        "title": "Account Equity (USD)",
+        "targets": [
+          {
+            "expr": "account_equity_usd",
+            "refId": "A",
+            "legendFormat": "Current Equity"
+          },
+          {
+            "expr": "100000",
+            "refId": "B",
+            "legendFormat": "Starting Balance"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10,
+              "showPoints": "auto",
+              "axisPlacement": "auto"
+            }
+          }
+        },
+        "options": {
+          "legend": {"displayMode": "list", "placement": "bottom"},
+          "tooltip": {"mode": "single", "sort": "none"}
+        }
+      },
+      {
+        "id": 7,
+        "gridPos": {"x": 0, "y": 12, "w": 8, "h": 6},
+        "type": "gauge",
+        "title": "Exposure vs Limit (%)",
+        "targets": [
+          {
+            "expr": "(risk_total_exposure_usd / 5000) * 100",
+            "refId": "A",
+            "legendFormat": "Exposure %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 90, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "id": 8,
+        "gridPos": {"x": 8, "y": 12, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Open Positions",
+        "targets": [
+          {
+            "expr": "risk_open_positions_count",
+            "refId": "A",
+            "legendFormat": "Positions"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "yellow"},
+                {"value": 3, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 15, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "orientation": "auto",
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 9,
+        "gridPos": {"x": 16, "y": 12, "w": 8, "h": 6},
+        "type": "timeseries",
+        "title": "Risk Check Success Rate (%)",
+        "targets": [
+          {
+            "expr": "(sum(rate(risk_checks_passed_total[5m])) / sum(rate(risk_checks_total[5m]))) * 100",
+            "refId": "A",
+            "legendFormat": "Success Rate"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 10
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 10, "color": "yellow"},
+                {"value": 20, "color": "green"},
+                {"value": 80, "color": "orange"},
+                {"value": 95, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 10,
+        "gridPos": {"x": 0, "y": 18, "w": 12, "h": 7},
+        "type": "table",
+        "title": "Service Health",
+        "targets": [
+          {
+            "expr": "up{job=~\".*_service\"}",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "fieldConfig": {
+          "overrides": [
+            {
+              "matcher": {"id": "byName", "options": "Value"},
+              "properties": [
+                {
+                  "id": "mappings",
+                  "value": [
+                    {"type": "value", "options": {"0": {"text": "❌ DOWN", "color": "red"}}},
+                    {"type": "value", "options": {"1": {"text": "✅ UP", "color": "green"}}}
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "showHeader": true,
+          "footer": {"show": false}
+        },
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true, "__name__": true},
+              "renameByName": {"job": "Service", "Value": "Status"}
+            }
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "gridPos": {"x": 12, "y": 18, "w": 12, "h": 7},
+        "type": "timeseries",
+        "title": "CPU Usage by Service (%)",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=~\".*_service\"}[1m]) * 100",
+            "refId": "A",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 5
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 50, "color": "yellow"},
+                {"value": 80, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 12,
+        "gridPos": {"x": 0, "y": 25, "w": 12, "h": 7},
+        "type": "timeseries",
+        "title": "Memory Usage by Service (MB)",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=~\".*_service\"} / (1024^2)",
+            "refId": "A",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decmbytes",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "smooth",
+              "fillOpacity": 5
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 300, "color": "yellow"},
+                {"value": 500, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 13,
+        "gridPos": {"x": 12, "y": 25, "w": 12, "h": 7},
+        "type": "timeseries",
+        "title": "Order Execution Status",
+        "targets": [
+          {
+            "expr": "sum by (status) (rate(orders_placed_total{status=~\"FILLED|REJECTED|PARTIAL\"}[5m]))",
+            "refId": "A",
+            "legendFormat": "{{status}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ops",
+            "custom": {
+              "drawStyle": "bars",
+              "barAlignment": 0,
+              "fillOpacity": 80,
+              "stacking": {"mode": "normal"}
+            }
+          },
+          "overrides": [
+            {"matcher": {"id": "byName", "options": "FILLED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}}]},
+            {"matcher": {"id": "byName", "options": "REJECTED"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}}]},
+            {"matcher": {"id": "byName", "options": "PARTIAL"}, "properties": [{"id": "color", "value": {"mode": "fixed", "fixedColor": "yellow"}}]}
+          ]
+        }
+      },
+      {
+        "id": 14,
+        "gridPos": {"x": 0, "y": 32, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Average Signal Confidence",
+        "targets": [
+          {
+            "expr": "avg(signal_confidence)",
+            "refId": "A",
+            "legendFormat": "Avg Confidence"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percentunit",
+            "decimals": 2,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 0.5, "color": "yellow"},
+                {"value": 0.7, "color": "green"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "textMode": "value_and_name",
+          "colorMode": "value",
+          "graphMode": "area"
+        }
+      },
+      {
+        "id": 15,
+        "gridPos": {"x": 8, "y": 32, "w": 8, "h": 6},
+        "type": "stat",
+        "title": "Redis Connections",
+        "targets": [
+          {
+            "expr": "redis_connected_clients",
+            "refId": "A",
+            "legendFormat": "Connections"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "none",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "red"},
+                {"value": 1, "color": "green"},
+                {"value": 10, "color": "yellow"},
+                {"value": 20, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "reduceOptions": {"calcs": ["lastNotNull"]},
+          "textMode": "value_and_name",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 16,
+        "gridPos": {"x": 16, "y": 32, "w": 8, "h": 6},
+        "type": "timeseries",
+        "title": "Data Freshness (seconds since last signal)",
+        "targets": [
+          {
+            "expr": "time() - signal_last_received_timestamp",
+            "refId": "A",
+            "legendFormat": "Data Age"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "custom": {
+              "drawStyle": "line",
+              "lineInterpolation": "stepAfter"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": null, "color": "green"},
+                {"value": 30, "color": "yellow"},
+                {"value": 60, "color": "orange"},
+                {"value": 120, "color": "red"}
+              ]
+            }
+          }
+        }
+      }
+    ],
+    "annotations": {
+      "list": [
+        {
+          "name": "Circuit Breaker Activations",
+          "datasource": "-- Grafana --",
+          "enable": true,
+          "expr": "changes(risk_circuit_breaker_active[1d]) > 0",
+          "iconColor": "red",
+          "tagKeys": "circuit_breaker"
+        }
+      ]
+    },
+    "templating": {
+      "list": []
+    }
+  },
+  "overwrite": true,
+  "message": "Initial Claire de Binare Dashboard - N1 Paper Test Phase"
+}

@@ -1,0 +1,525 @@
+# Claire de Binare - Grafana Alert Rules
+# Version: 1.0.0
+# Format: Grafana Unified Alerting (v9+)
+
+groups:
+  - name: claire_critical_alerts
+    interval: 30s
+    rules:
+      - uid: circuit_breaker_active
+        title: "[CRITICAL] Circuit Breaker Activated"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: risk_circuit_breaker_active
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          description: "Circuit Breaker ist aktiviert! Trading wurde pausiert wegen Daily Drawdown > 5% (-500 USD). Keine neuen Orders werden platziert bis zum Reset um Mitternacht UTC."
+          summary: "🚨 KRITISCH: Circuit Breaker aktiv"
+          runbook_url: "https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/blob/main/backoffice/docs/runbooks/CIRCUIT_BREAKER_RESPONSE.md"
+        labels:
+          severity: critical
+          component: risk_manager
+          alert_type: circuit_breaker
+
+      - uid: service_down
+        title: "[CRITICAL] Service Down"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 120
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: up{job=~".*_service"}
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 2m
+        annotations:
+          description: "Service {{ $labels.job }} ist down! Letzte Antwort vor mehr als 2 Minuten. Docker Container prüfen: docker compose ps {{ $labels.job }}"
+          summary: "🚨 KRITISCH: Service {{ $labels.job }} down"
+        labels:
+          severity: critical
+          component: "{{ $labels.job }}"
+          alert_type: service_health
+
+      - uid: exposure_limit_exceeded
+        title: "[CRITICAL] Exposure Limit Exceeded"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 60
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: risk_total_exposure_usd
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [5000]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: Alerting
+        for: 30s
+        annotations:
+          description: "Total Exposure ({{ $values.B }}) überschreitet Limit von 5000 USD! KRITISCHER BUG im Risk Manager - sollte niemals passieren. Sofortiges Eingreifen erforderlich."
+          summary: "🚨 KRITISCH: Exposure Limit überschritten"
+          runbook_url: "https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/blob/main/backoffice/docs/runbooks/EXPOSURE_LIMIT_BREACH.md"
+        labels:
+          severity: critical
+          component: risk_manager
+          alert_type: risk_breach
+
+  - name: claire_warning_alerts
+    interval: 1m
+    rules:
+      - uid: high_exposure
+        title: "[WARNING] High Exposure (>90%)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: risk_total_exposure_usd
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [4500]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: "Exposure ({{ $values.B }} USD) ist bei >90% vom Limit (5000 USD). Neue Orders werden wahrscheinlich rejected. Überlegen: Positionen schließen?"
+          summary: "⚠️ WARNING: Hohe Exposure"
+        labels:
+          severity: warning
+          component: risk_manager
+          alert_type: risk_warning
+
+      - uid: daily_drawdown_approaching
+        title: "[WARNING] Daily Drawdown Approaching Limit"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: risk_daily_pnl_usd
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [-400]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: "Daily P&L ({{ $values.B }} USD) nähert sich Circuit Breaker Limit (-500 USD). Nur noch {{ $values.B | humanize1024 }} USD bis Pausierung."
+          summary: "⚠️ WARNING: Drawdown nähert sich Limit"
+        labels:
+          severity: warning
+          component: risk_manager
+          alert_type: risk_warning
+
+      - uid: no_signals_received
+        title: "[WARNING] No Signals Received (>5min)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: rate(signals_received_total[1m])
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [0.01]
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          description: "Keine Signals seit >5 Minuten empfangen. WebSocket-Verbindung zu MEXC prüfen oder Signal Engine down."
+          summary: "⚠️ WARNING: Keine Signals"
+        labels:
+          severity: warning
+          component: signal_engine
+          alert_type: data_silence
+
+      - uid: high_slippage
+        title: "[WARNING] High Slippage (>1%)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: abs((execution_executed_price - signal_price) / signal_price) * 100
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: mean
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [1.0]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: "Durchschnittliche Slippage ({{ $values.B }}%) liegt über 1%. Markt sehr volatil oder Liquidität gering."
+          summary: "⚠️ WARNING: Hohe Slippage"
+        labels:
+          severity: warning
+          component: execution_service
+          alert_type: market_condition
+
+      - uid: memory_leak_detected
+        title: "[WARNING] Possible Memory Leak"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 3600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: process_resident_memory_bytes{job=~".*_service"} / (1024^2)
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [400]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 10m
+        annotations:
+          description: "Service {{ $labels.job }} Memory Usage ({{ $values.B }} MB) sehr hoch. Möglicher Memory Leak - Service restart erwägen."
+          summary: "⚠️ WARNING: Hoher Memory-Verbrauch"
+        labels:
+          severity: warning
+          component: "{{ $labels.job }}"
+          alert_type: resource_leak
+
+  - name: claire_info_alerts
+    interval: 5m
+    rules:
+      - uid: first_trade_of_day
+        title: "[INFO] First Trade of Day"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: changes(orders_placed_total[1d])
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 1m
+        annotations:
+          description: "Erste Order des Tages wurde platziert. Trading ist aktiv."
+          summary: "ℹ️ INFO: Trading gestartet"
+        labels:
+          severity: info
+          component: execution_service
+          alert_type: daily_event
+
+      - uid: profitable_day
+        title: "[INFO] Profitable Day (+$100)"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: risk_daily_pnl_usd
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: reduce
+              refId: B
+              expression: A
+              reducer: last
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              refId: C
+              expression: B
+              conditions:
+                - evaluator:
+                    params: [100]
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: [C]
+                  type: query
+        noDataState: OK
+        execErrState: OK
+        for: 5m
+        annotations:
+          description: "Daily P&L ({{ $values.B }} USD) ist profitabel! Aktueller Gewinn: +{{ $values.B | humanize1024 }} USD"
+          summary: "✅ INFO: Profitabler Tag"
+        labels:
+          severity: info
+          component: risk_manager
+          alert_type: performance
