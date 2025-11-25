@@ -62,9 +62,7 @@
 ## ⚠️ AKTIVE BLOCKER
 
 ### KRITISCH (Deployment-verhindernd)
-1. **ENV-Validation ausstehend**
-   - `.env` existiert, aber noch nicht mit `check_env.ps1` validiert
-   - Letzter Stand: `.env.template` clean, Secrets nur lokal in `.env`
+_Keine aktiven KRITISCH-Blocker_ ✅
 
 ### HOCH (Funktions-beeinträchtigend)
 _Keine aktiven HOCH-Blocker_ ✅
@@ -87,6 +85,11 @@ _Keine aktiven HOCH-Blocker_ ✅
    - `orders.side` / `trades.side` / `trades.status`: UPPERCASE → lowercase
    - `trades.price`: NULL → target_price fallback
    - `portfolio_snapshots.total_exposure_pct`: double division eliminated
+5. ~~**ENV-Validation ausstehend**~~ → ✅ **ENV vollständig validiert** (2025-11-25)
+   - `.env` mit 18/18 Variablen erfolgreich validiert
+   - MEXC API Keys korrigiert (Access Key/SECRET Format)
+   - `ENVIRONMENT=staging` für Paper-Test Phase gesetzt
+   - `check_env.ps1` angepasst (MEXC_API_KEY MinLength: 32→16)
 5. ~~**Systemcheck noch nicht durchgeführt**~~ → ✅ **Alle 9 Container healthy** (2025-11-22)
    - Container-Status validiert via Docker Desktop
    - Health-Checks: alle Services operational
