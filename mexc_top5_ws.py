@@ -12,7 +12,7 @@ from websocket import WebSocketApp
 from flask import Flask, jsonify
 
 REST_BASE = os.getenv("MEXC_BASE", "https://contract.mexc.com")
-WS_URL = "wss://contract.mexc.com/ws"
+WS_URL = "wss://contract.mexc.com/edge"
 LOOKBACK_MIN = int(os.getenv("LOOKBACK_MIN", "15"))
 KL_INTERVAL = "Min1"
 DATA_STALL_SEC = 30
@@ -132,29 +132,46 @@ def on_message(ws, message):
 def on_open(ws, chunk):
     for s in chunk:
         sub = {
-            "op": "sub",
-            "channel": "sub.kline",
-            "symbol": s,
-            "interval": KL_INTERVAL,
+            "method": "sub.kline",
+            "param": {
+                "symbol": s,
+                "interval": KL_INTERVAL,
+            }
         }
         ws.send(json.dumps(sub))
         time.sleep(0.005)
 
 
+def on_error(ws, error):
+    print(f"[WS ERROR] {error}", file=sys.stderr)
+
+
+def on_close(ws, close_status_code, close_msg):
+    print(f"[WS CLOSE] Code={close_status_code}, Msg={close_msg}", file=sys.stderr)
+
+
 def make_ws(chunk):
     return WebSocketApp(
-        WS_URL, on_message=on_message, on_open=lambda ws: on_open(ws, chunk)
+        WS_URL,
+        on_message=on_message,
+        on_open=lambda ws: on_open(ws, chunk),
+        on_error=on_error,
+        on_close=on_close,
     )
 
 
 def ws_worker(chunk):
     backoff = 1.0
+    reconnect_count = 0
     while True:
         try:
+            reconnect_count += 1
+            print(f"[WS] Connecting chunk (attempt {reconnect_count})...", file=sys.stderr)
             ws = make_ws(chunk)
             ws.run_forever()
+            print(f"[WS] Disconnected (attempt {reconnect_count})", file=sys.stderr)
         except Exception as e:
-            print("WS Fehler (Chunk) -> reconnect:", e, file=sys.stderr)
+            print(f"[WS ERROR] Chunk reconnect #{reconnect_count}: {e}", file=sys.stderr)
         time.sleep(backoff)
         backoff = min(backoff * 2.0, 30.0)
 
