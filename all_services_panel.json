@@ -1,0 +1,261 @@
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "df53l13ov7gu8c"
+  },
+  "description": "Alle Services und Container nach Funktion gruppiert",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "left",
+        "cellOptions": {
+          "type": "color-background"
+        },
+        "inspect": false
+      },
+      "mappings": [
+        {
+          "options": {
+            "0": {
+              "color": "red",
+              "index": 1,
+              "text": "❌ DOWN"
+            },
+            "1": {
+              "color": "green",
+              "index": 0,
+              "text": "✅ UP"
+            }
+          },
+          "type": "value"
+        }
+      ],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "red",
+            "value": null
+          },
+          {
+            "color": "green",
+            "value": 1
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Kategorie"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 180
+          },
+          {
+            "id": "custom.cellOptions",
+            "value": {
+              "type": "auto"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Container"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 220
+          },
+          {
+            "id": "custom.cellOptions",
+            "value": {
+              "type": "auto"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Status"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 100
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 12,
+    "w": 10,
+    "x": 0,
+    "y": 10
+  },
+  "id": 204,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": ["sum"],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": false,
+        "displayName": "Kategorie"
+      }
+    ]
+  },
+  "pluginVersion": "12.2.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"signal_engine\"}, \"kategorie\", \"📊 Analysis\", \"\", \"\"), \"container\", \"cdb_core (Signal Engine)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Core"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"risk_manager\"}, \"kategorie\", \"🛡️ Risk Management\", \"\", \"\"), \"container\", \"cdb_risk (Risk Manager)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Risk"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(circuit_breaker_active or on() (up{job=\"risk_manager\"} * 0), \"kategorie\", \"🛡️ Risk Management\", \"\", \"\"), \"container\", \"└─ Circuit Breaker\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "CircuitBreaker"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"execution_service\"}, \"kategorie\", \"💰 Execution\", \"\", \"\"), \"container\", \"cdb_execution (Paper Trading)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Execution"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"adaptive_intensity\"}, \"kategorie\", \"⚡ Optimization\", \"\", \"\"), \"container\", \"cdb_adaptive_intensity\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Adaptive"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"prometheus\"}, \"kategorie\", \"📡 API & Data\", \"\", \"\"), \"container\", \"cdb_ws (Market Data API)\", \"\", \"\") or label_replace(label_replace(vector(1), \"kategorie\", \"📡 API & Data\", \"\", \"\"), \"container\", \"cdb_ws (Market Data API)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "WS",
+      "hide": false
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(pg_up or vector(1), \"kategorie\", \"💾 Data Storage\", \"\", \"\"), \"container\", \"cdb_postgres (Database)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Postgres",
+      "hide": false
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(redis_up or vector(1), \"kategorie\", \"💾 Data Storage\", \"\", \"\"), \"container\", \"cdb_redis (Message Bus)\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Redis",
+      "hide": false
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(up{job=\"prometheus\"}, \"kategorie\", \"📈 Monitoring\", \"\", \"\"), \"container\", \"cdb_prometheus\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Prometheus"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "label_replace(label_replace(grafana_build_info or vector(1), \"kategorie\", \"📈 Monitoring\", \"\", \"\"), \"container\", \"cdb_grafana\", \"\", \"\")",
+      "format": "table",
+      "instant": true,
+      "refId": "Grafana",
+      "hide": false
+    }
+  ],
+  "title": "🔧 System Overview",
+  "transformations": [
+    {
+      "id": "merge",
+      "options": {}
+    },
+    {
+      "id": "organize",
+      "options": {
+        "excludeByName": {
+          "Time": true,
+          "__name__": true,
+          "instance": true,
+          "job": true,
+          "service": true
+        },
+        "indexByName": {
+          "Value": 3,
+          "container": 2,
+          "kategorie": 1
+        },
+        "renameByName": {
+          "Value": "Status",
+          "container": "Container",
+          "kategorie": "Kategorie"
+        }
+      }
+    }
+  ],
+  "type": "table"
+}
