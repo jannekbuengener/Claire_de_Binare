@@ -10,6 +10,7 @@ from backoffice.services.adaptive_intensity.dry_wet import (
     compute_kpis,
     compute_score,
     derive_parameters,
+    publish_params_to_redis,
 )
 
 
@@ -52,3 +53,16 @@ def test_clamp_bounds():
     assert clamp(-1) == 0
     assert clamp(2) == 1
     assert math.isclose(clamp(0.5), 0.5)
+
+
+def test_publish_params_to_redis():
+    class FakeRedis:
+        def __init__(self):
+            self.store = {}
+
+        def setex(self, key, ttl, value):
+            self.store[(key, ttl)] = value
+
+    r = FakeRedis()
+    publish_params_to_redis(r, {"dry_wet_score": 50, "max_position_pct": 0.1}, ttl_seconds=60)
+    assert ("adaptive_intensity:current_params", 60) in r.store
