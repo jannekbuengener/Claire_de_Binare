@@ -251,6 +251,11 @@ RE nutzt RiskConfig (Paper-Test-Konfiguration).
 
 RE produziert RiskDecision und ggf. alerts.
 
+**State-Konsistenz (N1 Zusatz):**
+- Postgres ist Single Source of Truth für Risk/Exposure (Portfolio-Snapshots).
+- Beim Start: DB-Snapshot laden, Exposure ableiten und Redis-Cache `risk_state:persistence` überschreiben, falls Drift >5%.
+- Laufzeit: Auto-Heal korrigiert Redis-Divergenzen (>5%) ohne Trading zu blockieren; Redis bleibt Cache/Transport.
+
 Die Details zu:
 
 Pre-Checks (Kill Switch, Cooldown),
@@ -417,4 +422,3 @@ Das System verwendet **ausschließlich das global installierte Python**, gesteue
 - `USE_SYSTEM_PYTHON=true`
 
 Lokale Python-Installationen innerhalb des Projektordners sind deaktiviert.
-

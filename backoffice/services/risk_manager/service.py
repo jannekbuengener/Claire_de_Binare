@@ -14,7 +14,14 @@ from flask import Flask, jsonify, Response
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
-from threading import Thread
+from threading import Thread, Event
+
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+except ImportError:  # pragma: no cover - handled gracefully in runtime
+    psycopg2 = None
+    RealDictCursor = None
 
 try:
     from .config import config
@@ -53,6 +60,9 @@ stats = {
     "orders_rejected_execution": 0,
     "last_order_result": None,
     "status": "initializing",
+    "risk_state_inconsistency_total": 0,
+    "risk_state_resync_total": 0,
+    "risk_state_recovery_total": 0,
 }
 
 # Risk-State
@@ -68,6 +78,8 @@ class RiskManager:
         self.pubsub: Optional[redis.client.PubSub] = None
         self.pubsub_results: Optional[redis.client.PubSub] = None
         self._order_result_thread: Optional[Thread] = None
+        self._heal_thread: Optional[Thread] = None
+        self._heal_stop_event: Event = Event()
         self.running = False
 
         # Cache für dynamische Parameter (updated aus Redis)
@@ -83,6 +95,180 @@ class RiskManager:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+    # =========================================================================
+    # DB (Source of Truth)
+    # =========================================================================
+
+    def _postgres_available(self) -> bool:
+        if psycopg2 is None:
+            logger.warning("psycopg2 nicht installiert - DB-Sync deaktiviert")
+            return False
+        return True
+
+    def _get_db_connection(self):
+        """Create a new Postgres connection (caller closes)."""
+        return psycopg2.connect(
+            host=self.config.postgres_host,
+            port=self.config.postgres_port,
+            dbname=self.config.postgres_db,
+            user=self.config.postgres_user,
+            password=self.config.postgres_password,
+        )
+
+    def _fetch_latest_snapshot(self) -> Optional[dict]:
+        """Fetch the latest portfolio snapshot from Postgres."""
+        if not self._postgres_available():
+            return None
+        try:
+            with self._get_db_connection() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(
+                        """
+                        SELECT
+                            total_equity,
+                            available_balance,
+                            daily_pnl,
+                            total_exposure_pct,
+                            open_positions,
+                            timestamp
+                        FROM portfolio_snapshots
+                        ORDER BY timestamp DESC
+                        LIMIT 1
+                        """
+                    )
+                    row = cur.fetchone()
+                    return dict(row) if row else None
+        except Exception as exc:
+            logger.warning("DB-Snapshot konnte nicht geladen werden: %s", exc)
+            return None
+
+    @staticmethod
+    def _normalize_exposure_pct(raw_value: float) -> float:
+        try:
+            value = float(raw_value or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+        if value < 0:
+            return 0.0
+        if value > 1:
+            return value / 100.0
+        return value
+
+    def _apply_db_snapshot_to_state(self, snapshot: dict) -> float:
+        """Apply DB snapshot to in-memory risk_state. Returns derived exposure."""
+        equity = float(snapshot.get("total_equity") or snapshot.get("equity") or 0.0)
+        exposure_pct = self._normalize_exposure_pct(snapshot.get("total_exposure_pct"))
+        exposure_value = equity * exposure_pct
+
+        risk_state.total_exposure = exposure_value
+        risk_state.daily_pnl = float(snapshot.get("daily_pnl") or 0.0)
+        risk_state.open_positions = int(snapshot.get("open_positions") or 0)
+        risk_state.positions = {}
+        risk_state.last_prices = {}
+        risk_state.pending_orders = 0
+        # leave circuit_breaker_active/signals counters untouched on sync
+        return exposure_value
+
+    def _read_redis_state(self) -> Optional[dict]:
+        """Read persisted state from Redis without mutating local state."""
+        try:
+            data = self.redis_client.get("risk_state:persistence")
+            return json.loads(data) if data else None
+        except Exception as exc:
+            logger.warning("Redis-State konnte nicht gelesen werden: %s", exc)
+            return None
+
+    def perform_startup_sync(self):
+        """Sync DB -> RiskState -> Redis on startup, favoring DB as truth."""
+        db_snapshot = self._fetch_latest_snapshot()
+        if not db_snapshot:
+            logger.warning(
+                "Kein Portfolio-Snapshot in DB gefunden - starte mit frischem State"
+            )
+            return
+
+        db_exposure = self._apply_db_snapshot_to_state(db_snapshot)
+        redis_state = self._read_redis_state()
+        redis_exposure = 0.0
+        if redis_state:
+            redis_exposure = float(redis_state.get("total_exposure") or 0.0)
+
+        drift = 0.0
+        if db_exposure or redis_exposure:
+            denominator = db_exposure if db_exposure != 0 else max(redis_exposure, 1.0)
+            drift = abs(redis_exposure - db_exposure) / denominator
+
+        if drift > 0.05:
+            stats["risk_state_inconsistency_total"] += 1
+            stats["risk_state_resync_total"] += 1
+            logger.warning(
+                "RESET REDIS - DB in control (startup). db_exposure=%.2f redis_exposure=%.2f drift=%.3f",
+                db_exposure,
+                redis_exposure,
+                drift,
+            )
+            self.save_risk_state_to_redis()
+        else:
+            logger.info(
+                "Startup-Sync erfolgreich: DB-Exposure=%.2f, Redis-Exposure=%.2f, Drift=%.3f",
+                db_exposure,
+                redis_exposure,
+                drift,
+            )
+            # Optional soft refresh to Redis if none existed
+            if redis_state is None:
+                self.save_risk_state_to_redis()
+
+    def _auto_heal_tick(self):
+        """Single heal tick comparing DB truth vs Redis cache."""
+        db_snapshot = self._fetch_latest_snapshot()
+        if not db_snapshot:
+            logger.debug("Auto-Heal: kein DB-Snapshot gefunden")
+            return
+
+        db_exposure = self._apply_db_snapshot_to_state(db_snapshot)
+        redis_state = self._read_redis_state()
+        redis_exposure = (
+            float(redis_state.get("total_exposure") or 0.0) if redis_state else 0.0
+        )
+
+        denominator = db_exposure if db_exposure != 0 else max(redis_exposure, 1.0)
+        drift = abs(redis_exposure - db_exposure) / denominator if denominator else 0.0
+
+        if drift > 0.05:
+            stats["risk_state_inconsistency_total"] += 1
+            stats["risk_state_recovery_total"] += 1
+            logger.warning(
+                "State mismatch: triggering DB->Redis recovery. db_exposure=%.2f redis_exposure=%.2f drift=%.3f",
+                db_exposure,
+                redis_exposure,
+                drift,
+            )
+            self.save_risk_state_to_redis()
+        else:
+            logger.debug(
+                "Auto-Heal Check OK: db_exposure=%.2f redis_exposure=%.2f drift=%.3f",
+                db_exposure,
+                redis_exposure,
+                drift,
+            )
+
+    def _start_heal_loop(self, interval_seconds: int = 30):
+        """Start background auto-heal loop."""
+        if self._heal_thread and self._heal_thread.is_alive():
+            return
+
+        def _loop():
+            while not self._heal_stop_event.is_set():
+                try:
+                    self._auto_heal_tick()
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.warning("Auto-Heal Fehler: %s", exc)
+                self._heal_stop_event.wait(interval_seconds)
+
+        self._heal_thread = Thread(target=_loop, daemon=True)
+        self._heal_thread.start()
 
     def connect_redis(self):
         """Redis-Verbindung"""
@@ -109,18 +295,21 @@ class RiskManager:
                 f"Subscribed zu Order-Result Topic: {self.config.input_topic_order_results}"
             )
 
-            # Risk-State aus Redis laden (falls vorhanden)
-            self.load_risk_state_from_redis()
+            # Risk-State Sync: DB -> Redis (Truth), Redis als Cache
+            self.perform_startup_sync()
 
             # Initial: Lade dynamische Parameter
             self.update_dynamic_params()
+
+            # Auto-Healing aktivieren
+            self._start_heal_loop()
 
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
     def load_risk_state_from_redis(self):
-        """Lädt risk_state aus Redis (Persistence bei Restart)"""
+        """Lädt risk_state aus Redis (Persistence bei Restart). Returns dict or None."""
         global risk_state
         try:
             state_data = self.redis_client.get("risk_state:persistence")
@@ -138,17 +327,20 @@ class RiskManager:
                 risk_state.pending_orders = state_dict.get("pending_orders", 0)
                 risk_state.last_prices = state_dict.get("last_prices", {})
                 logger.info(
-                    f"✅ Risk-State aus Redis geladen: Exposure={risk_state.total_exposure:.2f}, "
+                    f"Risk-State aus Redis geladen: Exposure={risk_state.total_exposure:.2f}, "
                     f"Positions={risk_state.open_positions}, PnL={risk_state.daily_pnl:.2f}"
                 )
+                return state_dict
             else:
                 logger.info(
-                    "ℹ️ Kein persistierter Risk-State gefunden - starte mit frischem State"
+                    "Kein persistierter Risk-State gefunden - starte mit frischem State"
                 )
+                return None
         except Exception as e:
             logger.warning(
-                f"⚠️ Risk-State-Load fehlgeschlagen: {e} - verwende frischen State"
+                f"Risk-State-Load fehlgeschlagen: {e} - verwende frischen State"
             )
+            return None
 
     def save_risk_state_to_redis(self):
         """Speichert risk_state in Redis mit 7-Tage TTL"""
@@ -512,6 +704,9 @@ class RiskManager:
             self.pubsub.close()
         if self.pubsub_results:
             self.pubsub_results.close()
+        if self._heal_thread and self._heal_thread.is_alive():
+            self._heal_stop_event.set()
+            self._heal_thread.join(timeout=2)
         if self._order_result_thread and self._order_result_thread.is_alive():
             self._order_result_thread.join(timeout=2)
         if self.redis_client:
@@ -577,7 +772,16 @@ def metrics():
         f"risk_pending_orders_total {risk_state.pending_orders}\n\n"
         "# HELP risk_total_exposure_value Gesamtposition (Notional)\n"
         "# TYPE risk_total_exposure_value gauge\n"
-        f"risk_total_exposure_value {risk_state.total_exposure}\n"
+        f"risk_total_exposure_value {risk_state.total_exposure}\n\n"
+        "# HELP risk_state_inconsistency_total Detektierte State-Divergenzen\n"
+        "# TYPE risk_state_inconsistency_total counter\n"
+        f"risk_state_inconsistency_total {stats['risk_state_inconsistency_total']}\n\n"
+        "# HELP risk_state_resync_total Startup-Sync Events (DB -> Redis)\n"
+        "# TYPE risk_state_resync_total counter\n"
+        f"risk_state_resync_total {stats['risk_state_resync_total']}\n\n"
+        "# HELP risk_state_recovery_total Auto-Heal Resync Events\n"
+        "# TYPE risk_state_recovery_total counter\n"
+        f"risk_state_recovery_total {stats['risk_state_recovery_total']}\n"
     )
     return Response(body, mimetype="text/plain")
 

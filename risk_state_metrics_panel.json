@@ -1,0 +1,132 @@
+{
+  "title": "Risk State Integrity",
+  "description": "Risk Manager state consistency (DB truth, Redis cache, auto-heal).",
+  "datasource": {
+    "type": "prometheus",
+    "uid": "df53l13ov7gu8c"
+  },
+  "gridPos": {
+    "h": 12,
+    "w": 8,
+    "x": 8,
+    "y": 10
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Drift Detections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "risk_state_inconsistency_total",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Startup Resyncs",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "risk_state_resync_total",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Auto-Heal Recoveries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "risk_state_recovery_total",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Exposure (Redis cache)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "risk_total_exposure_value",
+          "legendFormat": "redis_cache",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table"
+        }
+      }
+    }
+  ],
+  "alert": {
+    "name": "Risk State Drift Detected",
+    "conditions": [
+      {
+        "evaluator": {
+          "params": [0],
+          "type": "gt"
+        },
+        "operator": {
+          "type": "and"
+        },
+        "query": {
+          "params": ["C", "5m", "now"]
+        },
+        "reducer": {
+          "type": "avg"
+        },
+        "type": "query"
+      }
+    ],
+    "executionErrorState": "alerting",
+    "noDataState": "no_data",
+    "for": "5m",
+    "notifications": [],
+    "datasource": {
+      "type": "prometheus",
+      "uid": "df53l13ov7gu8c"
+    }
+  },
+  "targets": [
+    {
+      "expr": "risk_state_inconsistency_total",
+      "refId": "C",
+      "instant": false
+    }
+  }
+}

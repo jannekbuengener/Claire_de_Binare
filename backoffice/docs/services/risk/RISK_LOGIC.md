@@ -85,7 +85,14 @@ def on_position_update(position):
 2. `docker compose logs cdb_risk --tail 200`
 3. `redis-cli -a $REDIS_PASSWORD lrange alerts -10 -1`
 
+## 8) State Sync & Auto-Heal
+
+- Quelle: Postgres `portfolio_snapshots` (jüngster Snapshot = Wahrheit).
+- Startup: Snapshot laden → Exposure = `equity * total_exposure_pct` → RiskState setzen → Redis-Key `risk_state:persistence` überschreiben, wenn Drift >5% zwischen DB und Redis.
+- Laufzeit: Auto-Heal-Loop prüft Drift >5% und triggert DB→Redis-Reset statt zu blockieren.
+- Redis ist Cache/Transport, nicht Truth. Entscheidungen basieren auf dem DB-abgeleiteten State.
+- Metriken (Prometheus): `risk_state_inconsistency_total`, `risk_state_resync_total`, `risk_state_recovery_total`, `risk_total_exposure_value`.
+
 ---
 
 Stand: 2025-11-02 • Besitzer: Risk-Team Claire de Binare
-

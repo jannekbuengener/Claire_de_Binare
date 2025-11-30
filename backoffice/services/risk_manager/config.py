@@ -33,6 +33,13 @@ class RiskConfig:
     output_topic_orders: str = "orders"
     output_topic_alerts: str = "alerts"
 
+    # Postgres (Source of Truth fuer Risk/Exposure)
+    postgres_host: str = os.getenv("POSTGRES_HOST", "cdb_postgres")
+    postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    postgres_db: str = os.getenv("POSTGRES_DB", "claire_de_binare")
+    postgres_user: str = os.getenv("POSTGRES_USER", "claire_user")
+    postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
+
     # Fake Balance für Testing (später von Exchange holen)
     test_balance: float = float(os.getenv("TEST_BALANCE", "10000"))
 
