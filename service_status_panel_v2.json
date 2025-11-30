@@ -194,4 +194,25 @@
     }
   ],
   "type": "table"
+},
+{
+  "title": "Dry/Wet Score",
+  "description": "Adaptive Intensity Dry/Wet metrics",
+  "datasource": {
+    "type": "prometheus",
+    "uid": "df53l13ov7gu8c"
+  },
+  "gridPos": {
+    "h": 10,
+    "w": 8,
+    "x": 8,
+    "y": 10
+  },
+  "targets": [
+    {
+      "expr": "dry_wet_score",
+      "refId": "A",
+      "instant": true
+    }
+  ]
 }
