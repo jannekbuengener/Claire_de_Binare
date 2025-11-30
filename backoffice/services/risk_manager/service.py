@@ -70,6 +70,12 @@ class RiskManager:
         self._order_result_thread: Optional[Thread] = None
         self.running = False
 
+        # Cache für dynamische Parameter (updated aus Redis)
+        self.dynamic_params = {
+            "max_position_pct": self.config.max_position_pct,
+            "max_exposure_pct": self.config.max_exposure_pct,
+        }
+
         # Validiere Config
         try:
             self.config.validate()
@@ -105,6 +111,9 @@ class RiskManager:
 
             # Risk-State aus Redis laden (falls vorhanden)
             self.load_risk_state_from_redis()
+
+            # Initial: Lade dynamische Parameter
+            self.update_dynamic_params()
 
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
@@ -168,10 +177,38 @@ class RiskManager:
         except Exception as e:
             logger.error(f"❌ Risk-State-Save fehlgeschlagen: {e}")
 
+    def update_dynamic_params(self):
+        """Holt aktuelle dynamische Parameter aus Redis (von Adaptive Intensity Service)"""
+        try:
+            params_json = self.redis_client.get("adaptive_intensity:current_params")
+
+            if params_json:
+                import json
+                params = json.loads(params_json)
+
+                # Update cache
+                self.dynamic_params["max_position_pct"] = params.get(
+                    "max_position_pct", self.config.max_position_pct
+                )
+                self.dynamic_params["max_exposure_pct"] = params.get(
+                    "max_exposure_pct", self.config.max_exposure_pct
+                )
+
+                logger.info(
+                    f"🔄 Dynamic params updated: "
+                    f"Max Position={self.dynamic_params['max_position_pct']*100:.1f}%, "
+                    f"Max Exposure={self.dynamic_params['max_exposure_pct']*100:.1f}%"
+                )
+            else:
+                logger.debug("No dynamic params in Redis - using ENV fallback")
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch dynamic params: {e} - using fallback")
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
-        # Beispiel: Max 10% des Kapitals pro Position
-        max_position_size = self.config.test_balance * self.config.max_position_pct
+        # Hole DYNAMISCHE Max Position (updated alle 30s von Adaptive Intensity)
+        max_position_size = self.config.test_balance * self.dynamic_params["max_position_pct"]
 
         # Vereinfachte Berechnung (später mit echtem Portfolio)
         estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
@@ -186,7 +223,8 @@ class RiskManager:
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
-        max_exposure = self.config.test_balance * self.config.max_exposure_pct
+        # Hole DYNAMISCHE Max Exposure (updated alle 30s von Adaptive Intensity)
+        max_exposure = self.config.test_balance * self.dynamic_params["max_exposure_pct"]
 
         if risk_state.total_exposure >= max_exposure:
             return (
@@ -271,7 +309,8 @@ class RiskManager:
 
     def calculate_position_size(self, signal: Signal) -> float:
         """Berechnet Position-Size basierend auf Confidence"""
-        max_size = self.config.test_balance * self.config.max_position_pct
+        # Hole DYNAMISCHE Max Position (updated alle 30s von Adaptive Intensity)
+        max_size = self.config.test_balance * self.dynamic_params["max_position_pct"]
 
         # Confidence-basiert (höhere Confidence = größere Position)
         position_size = max_size * signal.confidence
@@ -412,8 +451,12 @@ class RiskManager:
         stats["started_at"] = datetime.now().isoformat()
 
         logger.info("🚀 Risk-Manager gestartet")
-        logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
-        logger.info(f"   Max Exposure: {self.config.max_exposure_pct*100}%")
+        logger.info(
+            f"   Max Position: {self.dynamic_params['max_position_pct']*100:.1f}% (DYNAMIC)"
+        )
+        logger.info(
+            f"   Max Exposure: {self.dynamic_params['max_exposure_pct']*100:.1f}% (DYNAMIC)"
+        )
         logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
         logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}%")
 

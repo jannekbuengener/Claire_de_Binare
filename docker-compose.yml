@@ -281,6 +281,65 @@ services:
         aliases:
           - db_writer
 
+  cdb_adaptive_intensity:
+    build:
+      context: ./backoffice/services/adaptive_intensity
+      dockerfile: Dockerfile
+    container_name: cdb_adaptive_intensity
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8005:8005"
+    volumes:
+      - ./backoffice/services/adaptive_intensity:/app
+      - adaptive_logs:/logs
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    environment:
+      # Override port (cdb_paper_runner uses 8004)
+      - ADAPTIVE_PORT=8005
+      # PostgreSQL
+      - POSTGRES_HOST=cdb_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=claire_de_binare
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      # Redis
+      - REDIS_HOST=cdb_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # Update Frequency (30s for real-time)
+      - ADAPTIVE_UPDATE_INTERVAL_SEC=30
+      # Lookback window
+      - ADAPTIVE_LOOKBACK_TRADES=300
+      # Score Weights
+      - ADAPTIVE_WINRATE_WEIGHT=0.4
+      - ADAPTIVE_PF_WEIGHT=0.4
+      - ADAPTIVE_DD_WEIGHT=0.2
+      # Parameter Ranges (min at score=0.0, max at score=1.0)
+      - ADAPTIVE_THRESHOLD_MIN=3.0
+      - ADAPTIVE_THRESHOLD_MAX=1.5
+      - ADAPTIVE_RSI_MIN=60.0
+      - ADAPTIVE_RSI_MAX=40.0
+      - ADAPTIVE_VOLUME_MIN=2.0
+      - ADAPTIVE_VOLUME_MAX=0.5
+      - ADAPTIVE_POSITION_MIN=0.08
+      - ADAPTIVE_POSITION_MAX=0.12
+      - ADAPTIVE_EXPOSURE_MIN=0.40
+      - ADAPTIVE_EXPOSURE_MAX=0.80
+      # Smooth Transitions
+      - ADAPTIVE_MAX_CHANGE=0.05
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      cdb_network:
+        aliases:
+          - adaptive_intensity
+
   cdb_paper_runner:
     build:
       context: ./services/cdb_paper_runner
@@ -332,6 +391,8 @@ volumes:
   signal_data:
     driver: local
   risk_logs:
+    driver: local
+  adaptive_logs:
     driver: local
   paper_runner_data:
     driver: local
