@@ -1,0 +1,68 @@
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "df53l13ov7gu8c"
+  },
+  "description": "Total signals generated since start",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "yellow",
+            "value": 100
+          },
+          {
+            "color": "blue",
+            "value": 500
+          }
+        ]
+      },
+      "unit": "short"
+    }
+  },
+  "gridPos": {
+    "h": 4,
+    "w": 3,
+    "x": 3,
+    "y": 1
+  },
+  "id": 201,
+  "options": {
+    "colorMode": "background",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": ["lastNotNull"],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "12.2.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "expr": "signals_generated_total",
+      "refId": "A"
+    }
+  ],
+  "title": "Total Signals",
+  "type": "stat"
+}
