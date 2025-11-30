@@ -1,0 +1,205 @@
+[WS] Connecting chunk (attempt 2)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 2)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 2)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 2)
+[WS] Connecting chunk (attempt 3)...
+[WS] Connecting chunk (attempt 3)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 3)
+[WS] Connecting chunk (attempt 3)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 3)
+[WS] Connecting chunk (attempt 3)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 3)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 3)
+[WS] Connecting chunk (attempt 3)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 3)
+[WS] Connecting chunk (attempt 4)...
+[WS] Connecting chunk (attempt 4)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 4)
+[WS] Connecting chunk (attempt 4)...
+[WS] Connecting chunk (attempt 4)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 4)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 4)
+[WS] Connecting chunk (attempt 4)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 4)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 4)
+
+[2025-11-29 20:52:31 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 5)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 5)
+[WS] Connecting chunk (attempt 5)...
+[WS] Connecting chunk (attempt 5)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 5)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 5)
+[WS] Connecting chunk (attempt 5)...
+[WS] Connecting chunk (attempt 5)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 5)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 5)
+127.0.0.1 - - [29/Nov/2025 20:52:46] "GET /health HTTP/1.1" 200 -
+
+[2025-11-29 20:52:48 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 6)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 6)
+[WS] Connecting chunk (attempt 6)...
+[WS] Connecting chunk (attempt 6)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 6)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 6)
+[WS] Connecting chunk (attempt 6)...
+[WS] Connecting chunk (attempt 6)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 6)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 6)
+
+[2025-11-29 20:53:03 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+127.0.0.1 - - [29/Nov/2025 20:53:18] "GET /health HTTP/1.1" 200 -
+
+[2025-11-29 20:53:21 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 7)...
+[WS] Connecting chunk (attempt 7)...
+[WS] Connecting chunk (attempt 7)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 7)
+[WS] Connecting chunk (attempt 7)...
+[WS] Connecting chunk (attempt 7)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 7)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 7)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 7)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 7)
+
+[2025-11-29 20:53:36 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+127.0.0.1 - - [29/Nov/2025 20:53:51] "GET /health HTTP/1.1" 200 -
+
+[2025-11-29 20:53:53 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 8)...
+[WS] Connecting chunk (attempt 8)...
+[WS] Connecting chunk (attempt 8)...
+[WS] Connecting chunk (attempt 8)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 8)
+[WS] Connecting chunk (attempt 8)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 8)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 8)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 8)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 8)
+
+[2025-11-29 20:54:08 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+127.0.0.1 - - [29/Nov/2025 20:54:24] "GET /health HTTP/1.1" 200 -
+
+[2025-11-29 20:54:26 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 9)...
+[WS] Connecting chunk (attempt 9)...
+[WS] Connecting chunk (attempt 9)...
+[WS] Connecting chunk (attempt 9)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 9)
+[WS] Connecting chunk (attempt 9)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 9)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 9)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 9)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 9)
+
+[2025-11-29 20:54:41 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+127.0.0.1 - - [29/Nov/2025 20:54:56] "GET /health HTTP/1.1" 200 -
+
+[2025-11-29 20:54:58 UTC] Top movers (15m):
+Noch keine Daten – warte auf Klines...
+[WS] Connecting chunk (attempt 10)...
+[WS] Connecting chunk (attempt 10)...
+[WS] Connecting chunk (attempt 10)...
+[WS] Connecting chunk (attempt 10)...
+[WS] Connecting chunk (attempt 10)...
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 10)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 10)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 10)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 10)
+[WS ERROR] scheme https is invalid
+[WS CLOSE] Code=None, Msg=None
+[WS] Disconnected (attempt 10)

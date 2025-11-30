@@ -281,6 +281,34 @@ services:
         aliases:
           - db_writer
 
+  cdb_paper_runner:
+    build:
+      context: ./services/cdb_paper_runner
+      dockerfile: Dockerfile
+    container_name: cdb_paper_runner
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8004:8004"
+    volumes:
+      - ./logs:/app/logs
+      - paper_runner_data:/app/data
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+      - cdb_core
+      - cdb_risk
+      - cdb_execution
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      cdb_network:
+        aliases:
+          - paper_runner
+
 # ====================================================================
 # LEGACY SERVICE - ENTFERNT (ADR-037)
 # ====================================================================
@@ -304,6 +332,8 @@ volumes:
   signal_data:
     driver: local
   risk_logs:
+    driver: local
+  paper_runner_data:
     driver: local
 
 # ====================================================================

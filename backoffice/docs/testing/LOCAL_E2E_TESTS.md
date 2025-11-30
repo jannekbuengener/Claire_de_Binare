@@ -1,9 +1,5 @@
 # Local E2E Tests - Claire de Binare
-
-> **Dokumentation für lokale End-to-End Tests**
-> Erstellt: 2025-11-19
-> **Letztes Update**: 2025-11-23 (✨ Neue Tests: CLI, Chaos, Backup)
-> Status: ✅ Implementiert & Erweitert (123 Tests total)
+**Vollständige lokale Test-Suite mit Docker Compose**
 
 ---
 
@@ -11,514 +7,565 @@
 
 1. [Übersicht](#übersicht)
 2. [Test-Kategorien](#test-kategorien)
-3. [Voraussetzungen](#voraussetzungen)
-4. [Schnellstart](#schnellstart)
-5. [Test-Ausführung](#test-ausführung)
-6. [Test-Beschreibungen](#test-beschreibungen)
-7. [Troubleshooting](#troubleshooting)
-8. [Integration mit CI/CD](#integration-mit-cicd)
+3. [Setup & Voraussetzungen](#setup--voraussetzungen)
+4. [Ausführung](#ausführung)
+5. [Test-Szenarien](#test-szenarien)
+6. [Troubleshooting](#troubleshooting)
+7. [CI vs. Lokal](#ci-vs-lokal)
 
 ---
 
-## Übersicht
+## 1. Übersicht
 
-Das Claire-Projekt unterscheidet zwischen **CI-Tests** (schnell, mit Mocks) und **lokalen E2E-Tests** (mit echten Containern).
+Die lokale E2E-Test-Suite testet das **vollständige Claire de Binare System** mit **echten Docker-Containern**, realistischen Event-Flows und Performance unter Last.
 
 ### Warum lokale-only Tests?
 
-E2E-Tests sind:
-- **Zu langsam** für CI (>10s Laufzeit)
-- **Ressourcen-intensiv** (benötigen Docker-Container)
-- **Nur lokal sinnvoll** für manuelle System-Validierung
+Diese Tests sind **bewusst NICHT in CI**:
+- ✅ **Ressourcenintensiv**: 9 Docker-Container, Redis, PostgreSQL
+- ✅ **Zeitintensiv**: 60+ Sekunden pro Test-Suite
+- ✅ **Destruktiv**: Stoppen/Starten von Containern
+- ✅ **Realistisch**: Echte Datenbank, echte Message-Bus, echte Services
 
-### Test-Architektur
+### Test-Struktur
 
 ```
 tests/
-├── unit/                     # Unit-Tests (CI + lokal)
-│   ├── test_risk_engine_core.py
-│   └── test_risk_engine_edge_cases.py
-├── integration/              # Integration mit Mocks (CI + lokal)
-│   └── test_event_pipeline.py
-└── e2e/                      # E2E mit echten Containern (NUR lokal)
-    ├── test_docker_compose_full_stack.py
-    ├── test_redis_postgres_integration.py
-    └── test_event_flow_pipeline.py
+├── e2e/                        # E2E-Tests (Docker erforderlich)
+│   ├── test_docker_compose_full_stack.py
+│   ├── test_event_flow_pipeline.py
+│   └── test_redis_postgres_integration.py
+│
+├── local/                      # Lokale-only Tests (NEU!)
+│   ├── test_full_system_stress.py
+│   ├── test_analytics_performance.py
+│   └── test_docker_lifecycle.py
+│
+├── unit/                       # Unit-Tests (CI)
+├── integration/                # Integration-Tests mit Mocks (CI)
+└── conftest.py
 ```
 
 ---
 
-## Test-Kategorien
+## 2. Test-Kategorien
 
-### Pytest-Marker
+### 2.1 E2E-Tests (`@pytest.mark.e2e`)
+**18 Tests** - Basis End-to-End mit Docker Compose
 
-| Marker | Beschreibung | CI | Lokal |
-|--------|--------------|:--:|:-----:|
-| `@pytest.mark.unit` | Schnelle Unit-Tests | ✅ | ✅ |
-| `@pytest.mark.integration` | Integration mit Mocks | ✅ | ✅ |
-| `@pytest.mark.e2e` | End-to-End mit Containern | ❌ | ✅ |
-| `@pytest.mark.local_only` | Explizit nur lokal | ❌ | ✅ |
-| `@pytest.mark.slow` | Tests mit >10s Laufzeit | ❌ | ✅ |
-| `@pytest.mark.chaos` | **🆕 Chaos/Resilience Tests (DESTRUKTIV!)** | ❌ | ✅ |
+| Test-Datei | Tests | Beschreibung |
+|-----------|-------|--------------|
+| `test_docker_compose_full_stack.py` | 5 | Container Health, HTTP-Endpoints |
+| `test_event_flow_pipeline.py` | 5 | Market-Data → Signal → Risk → Order |
+| `test_redis_postgres_integration.py` | 8 | Redis Pub/Sub, PostgreSQL CRUD |
 
-### Test-Scopes
-
-**CI-Tests** (GitHub Actions):
+**Ausführung**:
 ```bash
-pytest -m "not e2e and not local_only"
+pytest -v -m e2e
+# oder
+make test-e2e
 ```
-- ✅ Unit-Tests
-- ✅ Integration-Tests (mit Mocks)
-- ❌ E2E-Tests
-- ⚡ Laufzeit: <5s
 
-**Lokale E2E-Tests**:
-```bash
-pytest -m e2e
-```
-- ✅ Docker Compose Stack-Validierung
-- ✅ Redis & PostgreSQL Integration
-- ✅ Event-Flow Pipeline
-- 🐢 Laufzeit: 30-60s
+**Voraussetzung**: Docker Compose Stack läuft (`docker compose up -d`)
 
 ---
 
-## Voraussetzungen
+### 2.2 Local-Only Tests (`@pytest.mark.local_only`)
+**12+ Tests** - Erweiterte System-Tests
 
-### 1. Dependencies installieren
+#### A) Stress-Tests (`test_full_system_stress.py`)
+**4 Tests** - System unter hoher Last
+
+| Test | Events | Duration | Validiert |
+|------|--------|----------|-----------|
+| `test_stress_100_market_data_events` | 100 | ~15s | Redis Throughput, DB Writer |
+| `test_stress_concurrent_signal_and_order_flow` | 125 | ~10s | Concurrency, Multi-Channel |
+| `test_stress_portfolio_snapshot_frequency` | 20 | ~30s | DB Write Performance |
+| `test_all_docker_services_under_load` | 20 | ~10s | Service Stability |
+
+**Ausführung**:
+```bash
+pytest -v -m "local_only and slow" tests/local/test_full_system_stress.py
+# oder
+make test-local-stress
+```
+
+---
+
+#### B) Performance-Tests (`test_analytics_performance.py`)
+**6 Tests** - Query-Performance mit realen Daten
+
+| Test | Query-Type | Max-Duration | Validiert |
+|------|-----------|--------------|-----------|
+| `test_query_performance_signals_aggregation` | GROUP BY | 500ms | Index-Nutzung |
+| `test_query_performance_portfolio_snapshots_timeseries` | Time-Series | 1s | Timestamp-Index |
+| `test_query_performance_trades_join_orders` | JOIN | 1.5s | FK-Index |
+| `test_query_performance_full_text_search` | JSONB | 2s | JSONB-Queries |
+| `test_database_index_effectiveness` | EXPLAIN | - | Index-Check |
+| `test_analytics_query_tool_integration` | CLI-Tool | 10s | query_analytics.py |
+
+**Ausführung**:
+```bash
+pytest -v -m local_only tests/local/test_analytics_performance.py
+# oder
+make test-local-performance
+```
+
+---
+
+#### C) Docker Lifecycle-Tests (`test_docker_lifecycle.py`)
+**7 Tests** - Container-Lifecycle & Recovery
+
+⚠️ **DESTRUKTIV**: Diese Tests starten Container neu!
+
+| Test | Aktion | Destruktiv? | Validiert |
+|------|--------|-------------|-----------|
+| `test_docker_compose_stop_start_cycle` | Stop → Start | ⚠️ Ja | Service-Recovery |
+| `test_docker_compose_restart_individual_service` | Restart cdb_core | ⚠️ Ja | Einzelner Service |
+| `test_docker_compose_recreate_service` | Force-Recreate | ⚠️ Ja | Container-Erstellung |
+| `test_docker_compose_down_up_full_cycle` | Down → Up | ⚠️⚠️ Sehr | Vollständiger Cycle |
+| `test_docker_compose_logs_no_errors` | Log-Check | Nein | Error-Monitoring |
+| `test_docker_compose_volume_persistence` | Restart → Check Data | ⚠️ Ja | Volume-Persistenz |
+
+**Ausführung**:
+```bash
+pytest -v -m local_only tests/local/test_docker_lifecycle.py -s
+# oder
+make test-local-lifecycle
+```
+
+⚠️ **Warnung**: Diese Tests können laufende Container unterbrechen!
+
+---
+
+## 3. Setup & Voraussetzungen
+
+### 3.1 System-Requirements
+
+- **Docker Desktop** (oder Docker Engine + Docker Compose)
+- **Python 3.11+**
+- **8GB RAM minimum** (16GB empfohlen)
+- **10GB freier Speicher**
+
+### 3.2 Installation
 
 ```bash
+# 1. Repository klonen
+cd Claire_de_Binare_Cleanroom
+
+# 2. Dependencies installieren
 pip install -r requirements-dev.txt
+
+# 3. ENV-Datei prüfen
+cat .env  # Sollte POSTGRES_PASSWORD, REDIS_PASSWORD enthalten
+
+# 4. Docker Compose Stack starten
+docker compose up -d
+
+# 5. Warten bis alle Services healthy sind
+docker compose ps
+
+# Erwartete Ausgabe:
+# cdb_postgres     healthy
+# cdb_redis        healthy
+# cdb_core         healthy
+# cdb_risk         healthy
+# cdb_execution    healthy
+# cdb_db_writer    healthy (oder starting)
+# ... (9 Services total)
 ```
 
-### 2. .env-Datei konfigurieren
+### 3.3 ENV-Variablen
 
-Erstelle `.env` im Projekt-Root:
+Wichtig für lokale Tests:
 
 ```bash
-# Redis
-REDIS_PASSWORD=claire_redis_secret_2024
-
 # PostgreSQL
+POSTGRES_HOST=localhost      # Für Host-Maschine
+POSTGRES_PORT=5432
+POSTGRES_DB=claire_de_binare
 POSTGRES_USER=claire_user
 POSTGRES_PASSWORD=claire_db_secret_2024
-POSTGRES_DB=claire_de_binare
 
-# Grafana (für Monitoring)
-GRAFANA_PASSWORD=admin
+# Redis
+REDIS_HOST=localhost        # Für Host-Maschine
+REDIS_PORT=6379
+REDIS_PASSWORD=claire_redis_secret_2024
 ```
 
-### 3. Docker Compose starten
-
-```bash
-docker compose up -d
-```
-
-Warte 10-15 Sekunden, bis alle Container healthy sind:
-
-```bash
-docker compose ps
-```
-
-Erwartete Ausgabe:
-```
-NAME            STATUS
-cdb_redis       Up (healthy)
-cdb_postgres    Up (healthy)
-cdb_ws          Up (healthy)
-cdb_core        Up (healthy)
-cdb_risk        Up (healthy)
-cdb_execution   Up (healthy)
-cdb_prometheus  Up (healthy)
-cdb_grafana     Up (healthy)
-```
+**Hinweis**: In Docker-Containern sind Hostnames `cdb_postgres` / `cdb_redis`.
 
 ---
 
-## Schnellstart
+## 4. Ausführung
 
-### Variante 1: Mit Makefile (Linux/Mac)
+### 4.1 Quick Start
 
 ```bash
-# Alle CI-Tests (Unit + Integration, ohne E2E)
-make test
+# 1. Docker starten (falls nicht läuft)
+docker compose up -d
 
-# Nur Unit-Tests
-make test-unit
+# 2. Alle lokalen Tests ausführen
+pytest -v -m local_only
+```
 
-# Nur E2E-Tests (benötigt Docker)
+### 4.2 Makefile-Targets
+
+```bash
+# Übersicht
+make help
+
+# E2E-Tests (18 Tests, ~10s)
 make test-e2e
 
-# Vollständig: Docker starten + E2E-Tests
+# Alle lokalen Tests (~60s)
+make test-local
+
+# Stress-Tests (100+ Events, ~60s)
+make test-local-stress
+
+# Performance-Tests (Query-Speed, ~15s)
+make test-local-performance
+
+# Lifecycle-Tests (DESTRUKTIV!, ~120s)
+make test-local-lifecycle
+
+# Vollständiger System-Test (Docker + E2E + Local)
 make test-full-system
 ```
 
-### Variante 2: Direkt mit pytest (Windows/Linux/Mac)
+### 4.3 Pytest Direct
 
 ```bash
-# CI-Tests (schnell, ohne E2E)
-pytest -v -m "not e2e and not local_only"
+# Alle E2E + Local
+pytest -v -m "e2e or local_only"
 
-# Nur E2E-Tests
-pytest -v -m e2e
-
-# Nur lokale-only Tests
-pytest -v -m local_only
+# Nur langsame Tests
+pytest -v -m "slow"
 
 # Bestimmte Test-Datei
-pytest -v tests/e2e/test_docker_compose_full_stack.py
+pytest -v tests/local/test_full_system_stress.py
+
+# Mit Live-Output
+pytest -v -s -m local_only
+
+# Stop bei erstem Fehler
+pytest -v -x -m e2e
 ```
 
 ---
 
-## Test-Ausführung
+## 5. Test-Szenarien
 
-### 1. CI-Tests (schnell, automatisch in GitHub Actions)
+### 5.1 Szenario: Vollständiger System-Test
 
-```bash
-pytest -v -m "not e2e and not local_only"
-```
-
-**Ergebnis**:
-```
-======================== 12 passed, 2 skipped, 18 deselected =========================
-Laufzeit: ~0.5s
-```
-
-- ✅ 12 Unit-Tests bestanden
-- ⏭️ 2 Integration-Tests geskippt (Placeholders)
-- 🚫 18 E2E-Tests deselektiert (nicht in CI)
-
-### 2. E2E-Tests (lokal, mit Docker)
-
-**Voraussetzung**: Docker Compose läuft (`docker compose up -d`)
+**Ziel**: Alle Services unter Last validieren
 
 ```bash
-pytest -v -m e2e
-```
-
-**Erwartetes Ergebnis**:
-```
-tests/e2e/test_docker_compose_full_stack.py::test_docker_compose_stack_is_running PASSED
-tests/e2e/test_docker_compose_full_stack.py::test_docker_compose_containers_are_healthy PASSED
-tests/e2e/test_docker_compose_full_stack.py::test_http_health_endpoints_respond PASSED
-tests/e2e/test_docker_compose_full_stack.py::test_services_respond_with_valid_health_json PASSED
-tests/e2e/test_docker_compose_full_stack.py::test_docker_compose_config_is_valid PASSED
-
-tests/e2e/test_redis_postgres_integration.py::test_redis_connection PASSED
-tests/e2e/test_redis_postgres_integration.py::test_redis_pub_sub_basic PASSED
-tests/e2e/test_redis_postgres_integration.py::test_redis_set_get PASSED
-tests/e2e/test_redis_postgres_integration.py::test_redis_event_bus_simulation PASSED
-tests/e2e/test_redis_postgres_integration.py::test_postgres_connection PASSED
-tests/e2e/test_redis_postgres_integration.py::test_postgres_tables_exist PASSED
-tests/e2e/test_redis_postgres_integration.py::test_postgres_insert_select_signal PASSED
-tests/e2e/test_redis_postgres_integration.py::test_redis_to_postgres_flow PASSED
-
-tests/e2e/test_event_flow_pipeline.py::test_market_data_event_published PASSED
-tests/e2e/test_event_flow_pipeline.py::test_signal_engine_responds_to_market_data PASSED
-tests/e2e/test_event_flow_pipeline.py::test_risk_manager_validates_signal PASSED
-tests/e2e/test_event_flow_pipeline.py::test_full_event_pipeline_simulation PASSED
-tests/e2e/test_event_flow_pipeline.py::test_all_services_are_healthy_for_event_flow PASSED
-
-======================== 18 passed in 35s =========================
-```
-
-### 3. Coverage-Report (ohne E2E)
-
-```bash
-pytest --cov=services --cov=backoffice/services --cov-report=html -m "not e2e and not local_only"
-```
-
-Öffne: `htmlcov/index.html`
-
----
-
-## Test-Beschreibungen
-
-### tests/e2e/test_docker_compose_full_stack.py
-
-**Zweck**: Validiert Docker Compose Stack
-
-| Test | Beschreibung |
-|------|-------------|
-| `test_docker_compose_stack_is_running` | Alle Container laufen |
-| `test_docker_compose_containers_are_healthy` | Alle Health-Checks bestehen |
-| `test_http_health_endpoints_respond` | HTTP /health Endpoints antworten |
-| `test_services_respond_with_valid_health_json` | Health-JSON ist valide |
-| `test_docker_compose_config_is_valid` | docker-compose.yml Syntax OK |
-
-### tests/e2e/test_redis_postgres_integration.py
-
-**Zweck**: Testet echte Redis & PostgreSQL Integration
-
-| Test | Beschreibung |
-|------|-------------|
-| `test_redis_connection` | Redis-Verbindung funktioniert |
-| `test_redis_pub_sub_basic` | Pub/Sub Pattern funktioniert |
-| `test_redis_set_get` | SET/GET Operations |
-| `test_redis_event_bus_simulation` | Event-Bus Pattern (market_data → signals) |
-| `test_postgres_connection` | PostgreSQL-Verbindung funktioniert |
-| `test_postgres_tables_exist` | Erwartete Tabellen existieren |
-| `test_postgres_insert_select_signal` | INSERT/SELECT in signals-Tabelle |
-| `test_redis_to_postgres_flow` | Cross-Service: Redis → PostgreSQL |
-
-### tests/e2e/test_event_flow_pipeline.py
-
-**Zweck**: Testet vollständigen Event-Flow
-
-| Test | Beschreibung |
-|------|-------------|
-| `test_market_data_event_published` | Market-Data Events werden gepublished |
-| `test_signal_engine_responds_to_market_data` | Signal-Engine reagiert auf Market-Data |
-| `test_risk_manager_validates_signal` | Risk-Manager validiert Signale |
-| `test_full_event_pipeline_simulation` | End-to-End: Market-Data → DB |
-| `test_all_services_are_healthy_for_event_flow` | Alle Services sind healthy |
-
----
-
-## Troubleshooting
-
-### Problem: "Docker Compose Stack nicht gestartet"
-
-**Symptom**:
-```
-pytest.skip: Docker Compose Stack nicht gestartet.
-```
-
-**Lösung**:
-```bash
-# .env-Datei prüfen (siehe oben)
+# 1. System starten
 docker compose up -d
 
-# Warte 10s
-sleep 10
+# 2. Warten auf Health
+sleep 30
 
-# Status prüfen
+# 3. E2E-Tests
+pytest -v -m e2e
+
+# 4. Stress-Tests
+pytest -v tests/local/test_full_system_stress.py::test_stress_100_market_data_events
+
+# 5. Performance-Tests
+pytest -v tests/local/test_analytics_performance.py
+
+# Erwartete Dauer: ~90s
+```
+
+**Success-Kriterien**:
+- ✅ Alle Container healthy
+- ✅ E2E-Tests: 18/18 passed
+- ✅ Stress-Tests: 4/4 passed
+- ✅ Performance-Tests: 6/6 passed
+
+---
+
+### 5.2 Szenario: Performance-Debugging
+
+**Ziel**: Langsame Queries identifizieren
+
+```bash
+# 1. Datenbank mit Test-Daten füllen
+pytest -v tests/local/test_full_system_stress.py::test_stress_concurrent_signal_and_order_flow
+
+# 2. Performance-Tests ausführen
+pytest -v -s tests/local/test_analytics_performance.py
+
+# 3. Ausgabe analysieren
+# Erwartete Ausgabe:
+#   ✓ Query completed in 245ms
+#   ✓ Returned 10 rows
+#   📊 Top Symbols by Signal Count:
+#     - BTCUSDT (buy): 45 signals
+```
+
+**Fehlersuche**:
+- Query > 500ms? → Index fehlt
+- Query > 2s? → EXPLAIN ANALYZE prüfen
+
+---
+
+### 5.3 Szenario: Recovery-Test
+
+**Ziel**: Service-Ausfälle simulieren
+
+```bash
+# 1. Services starten
+docker compose up -d
+
+# 2. Einzelnen Service crashen lassen
+docker compose stop cdb_core
+
+# 3. Prüfen: Andere Services stabil?
 docker compose ps
+
+# 4. Service neu starten
+docker compose up -d cdb_core
+
+# 5. Lifecycle-Test ausführen
+pytest -v tests/local/test_docker_lifecycle.py::test_docker_compose_restart_individual_service
 ```
 
-### Problem: "Redis nicht erreichbar"
+---
 
-**Symptom**:
-```
-redis.ConnectionError: Connection refused
+## 6. Troubleshooting
+
+### 6.1 Container nicht healthy
+
+**Problem**:
+```bash
+docker compose ps
+# cdb_core    unhealthy
 ```
 
 **Lösung**:
 ```bash
-# Redis-Container prüfen
-docker compose logs cdb_redis
+# Logs prüfen
+docker compose logs cdb_core --tail=50
 
-# Passwort in .env korrekt?
-cat .env | grep REDIS_PASSWORD
+# Health-Check manuell testen
+curl -fsS http://localhost:8001/health
 
 # Container neu starten
-docker compose restart cdb_redis
+docker compose restart cdb_core
+
+# Warten auf Health
+sleep 20
+docker compose ps cdb_core
 ```
 
-### Problem: "PostgreSQL nicht erreichbar"
+---
 
-**Symptom**:
+### 6.2 PostgreSQL Connection Refused
+
+**Problem**:
 ```
-psycopg2.OperationalError: Connection refused
-```
-
-**Lösung**:
-```bash
-# PostgreSQL-Container prüfen
-docker compose logs cdb_postgres
-
-# .env-Variablen korrekt?
-cat .env | grep POSTGRES
-
-# Container neu starten
-docker compose restart cdb_postgres
-```
-
-### Problem: "Health-Check schlägt fehl"
-
-**Symptom**:
-```
-assert is_healthy, "Container 'cdb_core' ist nicht healthy"
+psycopg2.OperationalError: connection refused
 ```
 
 **Lösung**:
 ```bash
-# Container-Logs prüfen
-docker compose logs cdb_core
+# 1. Prüfen: Container läuft?
+docker compose ps cdb_postgres
 
-# Health-Status prüfen
-docker inspect cdb_core | grep -i health
+# 2. Prüfen: Port exposed?
+docker compose ps | grep 5432
 
-# Container neu bauen
-docker compose up -d --build cdb_core
+# 3. ENV-Variable setzen
+export POSTGRES_HOST=localhost
+
+# 4. Passwort prüfen
+grep POSTGRES_PASSWORD .env
 ```
 
-### Problem: Tests sind zu langsam
+---
 
-**Symptom**:
-E2E-Tests dauern >60s
+### 6.3 Redis Authentication Error
 
-**Erklärung**:
-Das ist normal! E2E-Tests mit echten Containern sind langsam.
+**Problem**:
+```
+redis.exceptions.AuthenticationError: Authentication required
+```
+
+**Lösung**:
+```bash
+# ENV-Variable setzen
+export REDIS_PASSWORD=claire_redis_secret_2024
+
+# Oder: In Test-Fixture anpassen
+redis.Redis(
+    host='localhost',
+    port=6379,
+    password='claire_redis_secret_2024'
+)
+```
+
+---
+
+### 6.4 Tests zu langsam
+
+**Problem**: Tests dauern >5 Minuten
 
 **Optimierung**:
-- Führe nur geänderte Test-Dateien aus:
-  ```bash
-  pytest -v tests/e2e/test_docker_compose_full_stack.py
-  ```
-- Nutze `pytest-xdist` für parallele Ausführung:
-  ```bash
-  pip install pytest-xdist
-  pytest -v -m e2e -n auto
-  ```
+```bash
+# Nur schnelle Tests
+pytest -v -m "e2e and not slow"
+
+# Parallel ausführen (mit pytest-xdist)
+pip install pytest-xdist
+pytest -v -m e2e -n 4
+
+# Bestimmte Tests skippenexport SKIP_SLOW_TESTS=1
+pytest -v -m "e2e and not slow"
+```
 
 ---
 
-## Integration mit CI/CD
+### 6.5 Docker Out of Memory
 
-### GitHub Actions (.github/workflows/ci.yaml)
+**Problem**: Container crashen mit OOM
 
-E2E-Tests sind **explizit deaktiviert** in CI:
+**Lösung**:
+```bash
+# Docker-Ressourcen erhöhen (Docker Desktop)
+# Settings → Resources → Memory: 8GB+
+
+# Container-Stats prüfen
+docker stats
+
+# Ungenutzte Ressourcen aufräumen
+docker system prune -a
+docker volume prune
+```
+
+---
+
+## 7. CI vs. Lokal
+
+### 7.1 Test-Trennung
+
+| Test-Typ | Marker | CI | Lokal | Duration | Requires Docker |
+|----------|--------|----|----|----------|-----------------|
+| **Unit** | `@pytest.mark.unit` | ✅ | ✅ | <1s | ❌ |
+| **Integration** | `@pytest.mark.integration` | ✅ | ✅ | <5s | ❌ (Mocks) |
+| **E2E** | `@pytest.mark.e2e` | ❌ | ✅ | 10-60s | ✅ |
+| **Local-Only** | `@pytest.mark.local_only` | ❌ | ✅ | 60-300s | ✅ |
+
+### 7.2 CI-Pipeline (.github/workflows/tests.yml)
 
 ```yaml
-- run: pytest -q -m "not e2e and not local_only"
+# CI führt NUR aus:
+pytest -v -m "not e2e and not local_only"
+
+# Explizit NICHT in CI:
+# - E2E-Tests (brauchen Docker Compose)
+# - Local-Only Tests (zu ressourcenintensiv)
+# - Slow Tests (>10s)
 ```
 
-**Warum?**
-- ❌ Zu langsam (>30s)
-- ❌ Benötigt Docker-in-Docker
-- ❌ Ressourcen-intensiv
-- ✅ Lokal ausreichend validiert
-
-### Pre-Commit Hooks (.pre-commit-config.yaml)
-
-E2E-Tests sind **explizit deaktiviert** in Pre-Commit:
-
-```yaml
-args: ["-q", "-m", "not e2e and not local_only"]
-```
-
-**Warum?**
-- ⚡ Commits sollen schnell sein (<5s)
-- 🚫 Keine Container-Starts bei jedem Commit
-- ✅ Unit + Integration-Tests reichen
-
----
-
-## Workflow-Empfehlung
-
-### Tägliche Entwicklung
+### 7.3 Pre-Commit Hooks
 
 ```bash
-# 1. Feature entwickeln
-# 2. Unit-Tests schreiben & ausführen
-pytest -v tests/test_risk_engine_core.py
-
-# 3. Pre-Commit Hook (automatisch bei Commit)
-git add .
-git commit -m "feat: add daily drawdown test"
-# → Führt automatisch Unit + Integration-Tests aus
-
-# 4. Push → CI läuft automatisch
-git push
-```
-
-### Vor großen Releases
-
-```bash
-# 1. Docker Stack starten
-docker compose up -d
-
-# 2. Alle E2E-Tests ausführen
-pytest -v -m e2e
-
-# 3. Coverage prüfen
-pytest --cov=services --cov-report=html
-
-# 4. Manuell validieren
-# - Öffne http://localhost:3000 (Grafana)
-# - Öffne http://localhost:8000/health (Screener)
-# - Prüfe Logs: docker compose logs
+# Pre-Commit führt NUR Unit-Tests aus
+# .pre-commit-config.yaml:
+hooks:
+  - id: pytest
+    args: ["-m", "unit", "--tb=short"]
 ```
 
 ---
 
-## Nächste Schritte
+## 8. Erweiterte Szenarien
 
-### Geplante Erweiterungen
+### 8.1 Custom Stress-Test schreiben
 
-- [ ] **CLI-Tests**: `claire run-paper`, `claire run-scenarios`
-- [ ] **Performance-Tests**: Load-Testing mit `locust`
-- [ ] **Replay-Tests**: Event-Sourcing Replay-Validierung
-- [ ] **Chaos-Tests**: Container-Ausfälle simulieren
-- [ ] **Security-Tests**: Penetration Testing
+```python
+# tests/local/test_custom_stress.py
+import pytest
 
-### Bekannte Einschränkungen
+@pytest.mark.local_only
+@pytest.mark.slow
+def test_custom_stress_scenario(redis_client, postgres_conn):
+    """Custom Stress-Test für spezifisches Szenario"""
 
-- ⚠️ E2E-Tests setzen `.env`-Datei voraus (nicht in Git)
-- ⚠️ Grafana/Prometheus-Tests fehlen noch
-- ⚠️ Multi-Container Orchestration ohne Kubernetes
+    # 1. Setup: Baseline messen
+    cursor = postgres_conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM signals")
+    baseline = cursor.fetchone()[0]
 
----
+    # 2. Load: Events publizieren
+    for i in range(200):
+        event = {"type": "signal", "symbol": "BTCUSDT", ...}
+        redis_client.publish("signals", json.dumps(event))
 
-## Zusammenfassung
+    # 3. Validation: DB-Count prüfen
+    time.sleep(5)
+    cursor.execute("SELECT COUNT(*) FROM signals")
+    after = cursor.fetchone()[0]
 
-### Was wurde implementiert?
-
-✅ **Test-Struktur**:
-- 3 E2E-Test-Dateien mit 18 Tests
-- Saubere Trennung: CI vs. lokale Tests
-- Pytest-Marker: `e2e`, `local_only`, `slow`
-
-✅ **Infrastruktur**:
-- Makefile mit sinnvollen Targets
-- pytest.ini mit erweiterten Markern
-- Pre-Commit Hooks (ohne E2E)
-- CI/CD Integration (ohne E2E)
-
-✅ **Dokumentation**:
-- Dieser Guide
-- Inline-Kommentare in Test-Dateien
-- Troubleshooting-Sektion
-
-### Wie startet man lokale E2E-Tests?
-
-```bash
-# 1. Dependencies
-pip install -r requirements-dev.txt
-
-# 2. .env konfigurieren
-cp .env.example .env  # Falls vorhanden
-# Oder manuell erstellen (siehe oben)
-
-# 3. Docker starten
-docker compose up -d
-
-# 4. E2E-Tests ausführen
-pytest -v -m e2e
-```
-
-### Wie stellt man sicher, dass CI nicht blockiert wird?
-
-✅ CI führt **nur** aus:
-```bash
-pytest -m "not e2e and not local_only"
-```
-
-✅ Pre-Commit Hooks führen **nur** aus:
-```bash
-pytest -m "not e2e and not local_only"
-```
-
-✅ E2E-Tests werden **nur manuell** gestartet:
-```bash
-pytest -m e2e  # Explizit
+    assert after > baseline, "Events not persisted"
 ```
 
 ---
 
-**Version**: 1.0
-**Autor**: Claire Local Test Orchestrator
-**Letzte Aktualisierung**: 2025-11-19
-**Maintainer**: Claire de Binare Team
+### 8.2 Performance-Baseline definieren
+
+```python
+# tests/local/conftest.py
+import pytest
+
+@pytest.fixture(scope="session")
+def performance_baseline():
+    """Performance-Baseline für Regression-Tests"""
+    return {
+        "query_signals_aggregation_ms": 500,
+        "query_portfolio_timeseries_ms": 1000,
+        "query_trades_join_ms": 1500,
+        "stress_100_events_sec": 15,
+    }
+
+@pytest.mark.local_only
+def test_performance_regression(performance_baseline):
+    """Prüfe: Performance nicht schlechter als Baseline"""
+    # ... Test-Logik
+    assert elapsed_ms < performance_baseline["query_signals_aggregation_ms"]
+```
+
+---
+
+## 9. Abschluss-Checklist
+
+Vor Commit lokaler Tests:
+
+- [ ] Alle E2E-Tests bestehen (18/18)
+- [ ] Alle Local-Only Tests bestehen
+- [ ] Docker Compose Stack läuft stabil
+- [ ] Keine CRITICAL/ERROR Logs in Services
+- [ ] Makefile-Targets funktionieren
+- [ ] Dokumentation aktualisiert
+- [ ] CI-Tests unverändert (keine E2E in CI!)
+
+---
+
+## 10. Kontakt & Support
+
+**Issues**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/issues
+
+**Dokumentation**:
+- `TESTING_GUIDE.md` - Allgemeine Test-Richtlinien
+- `E2E_PAPER_TEST_REPORT.md` - E2E-Test-Report
+- `README_ANALYTICS.md` - Analytics Query Tool
+
+---
+
+**Status**: ✅ Operational
+**Letzte Aktualisierung**: 2025-11-20
+**Test-Coverage**: 135+ Tests (18 E2E, 12+ Local-Only)

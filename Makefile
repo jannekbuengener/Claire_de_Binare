@@ -1,7 +1,7 @@
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -27,6 +27,14 @@ help:
 	@echo "  make docker-up               - Starte alle Container"
 	@echo "  make docker-down             - Stoppe alle Container"
 	@echo "  make docker-health           - Prüfe Health-Status aller Container"
+	@echo ""
+	@echo "Paper Trading (14-Tage Test):"
+	@echo "  make systemcheck             - Pre-Flight-Checks vor Start"
+	@echo "  make paper-trading-start     - Starte Paper Trading Runner"
+	@echo "  make paper-trading-logs      - Zeige Paper Trading Logs (live)"
+	@echo "  make paper-trading-stop      - Stoppe Paper Trading Runner"
+	@echo "  make daily-check             - Täglicher Gesundheitscheck"
+	@echo "  make backup                  - PostgreSQL Backup (manuell)"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -115,6 +123,41 @@ docker-health:
 	@echo ""
 	@echo "Health-Check Details:"
 	@docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep cdb_ || true
+
+# ============================================================================
+# Paper Trading (14-Tage Test)
+# ============================================================================
+
+systemcheck:
+	@echo "🔍 Führe Pre-Flight-Checks aus..."
+	python backoffice/scripts/systemcheck.py
+
+daily-check:
+	@echo "📊 Führe täglichen Gesundheitscheck aus..."
+	python backoffice/scripts/daily_check.py
+
+backup:
+	@echo "💾 Führe PostgreSQL Backup aus..."
+	powershell.exe -ExecutionPolicy Bypass -File backoffice/scripts/backup_postgres.ps1
+
+paper-trading-start: systemcheck
+	@echo "🚀 Starte Paper Trading Runner..."
+	@echo "⚠️  Stelle sicher, dass alle anderen Container laufen: make docker-up"
+	docker compose up -d cdb_paper_runner
+	@echo ""
+	@echo "✅ Paper Trading Runner gestartet!"
+	@echo "   Logs anzeigen: make paper-trading-logs"
+	@echo "   Health-Check: curl http://localhost:8004/health"
+	@echo "   Grafana: http://localhost:3000"
+
+paper-trading-logs:
+	@echo "📜 Paper Trading Logs (Ctrl+C zum Beenden)..."
+	docker compose logs -f cdb_paper_runner
+
+paper-trading-stop:
+	@echo "🛑 Stoppe Paper Trading Runner..."
+	docker compose stop cdb_paper_runner
+	@echo "✅ Paper Trading Runner gestoppt"
 
 # ============================================================================
 # Zusätzliche Hilfsfunktionen
