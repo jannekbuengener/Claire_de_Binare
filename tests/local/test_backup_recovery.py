@@ -16,8 +16,6 @@ import pytest
 import subprocess
 import psycopg2
 import time
-import os
-from pathlib import Path
 from datetime import datetime
 
 
@@ -200,9 +198,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     after_insert_count = cursor.fetchone()[0]
 
     print(f"    ✓ After insert: {after_insert_count} snapshots")
-    assert (
-        after_insert_count == baseline_count + 1
-    ), "Test snapshot should be inserted"
+    assert after_insert_count == baseline_count + 1, "Test snapshot should be inserted"
 
     # Step 4: Drop and Recreate Database (simulate catastrophic failure)
     print("  💥 Step 4: Drop and recreate database (simulate disaster)...")
@@ -278,7 +274,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
         if "error" in stderr_lower and "warning" not in stderr_lower:
             pytest.fail(f"Restore failed: {result.stderr}")
         else:
-            print(f"    ⚠️  Restore completed with warnings (acceptable)")
+            print("    ⚠️  Restore completed with warnings (acceptable)")
 
     print("    ✓ Restore completed")
 

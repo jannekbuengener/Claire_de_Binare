@@ -103,9 +103,70 @@ class RiskManager:
                 f"Subscribed zu Order-Result Topic: {self.config.input_topic_order_results}"
             )
 
+            # Risk-State aus Redis laden (falls vorhanden)
+            self.load_risk_state_from_redis()
+
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
+
+    def load_risk_state_from_redis(self):
+        """Lädt risk_state aus Redis (Persistence bei Restart)"""
+        global risk_state
+        try:
+            state_data = self.redis_client.get("risk_state:persistence")
+            if state_data:
+                state_dict = json.loads(state_data)
+                risk_state.total_exposure = state_dict.get("total_exposure", 0.0)
+                risk_state.daily_pnl = state_dict.get("daily_pnl", 0.0)
+                risk_state.open_positions = state_dict.get("open_positions", 0)
+                risk_state.signals_blocked = state_dict.get("signals_blocked", 0)
+                risk_state.signals_approved = state_dict.get("signals_approved", 0)
+                risk_state.circuit_breaker_active = state_dict.get(
+                    "circuit_breaker_active", False
+                )
+                risk_state.positions = state_dict.get("positions", {})
+                risk_state.pending_orders = state_dict.get("pending_orders", 0)
+                risk_state.last_prices = state_dict.get("last_prices", {})
+                logger.info(
+                    f"✅ Risk-State aus Redis geladen: Exposure={risk_state.total_exposure:.2f}, "
+                    f"Positions={risk_state.open_positions}, PnL={risk_state.daily_pnl:.2f}"
+                )
+            else:
+                logger.info(
+                    "ℹ️ Kein persistierter Risk-State gefunden - starte mit frischem State"
+                )
+        except Exception as e:
+            logger.warning(
+                f"⚠️ Risk-State-Load fehlgeschlagen: {e} - verwende frischen State"
+            )
+
+    def save_risk_state_to_redis(self):
+        """Speichert risk_state in Redis mit 7-Tage TTL"""
+        try:
+            state_dict = {
+                "total_exposure": risk_state.total_exposure,
+                "daily_pnl": risk_state.daily_pnl,
+                "open_positions": risk_state.open_positions,
+                "signals_blocked": risk_state.signals_blocked,
+                "signals_approved": risk_state.signals_approved,
+                "circuit_breaker_active": risk_state.circuit_breaker_active,
+                "positions": risk_state.positions,
+                "pending_orders": risk_state.pending_orders,
+                "last_prices": risk_state.last_prices,
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            self.redis_client.setex(
+                "risk_state:persistence",
+                7 * 24 * 60 * 60,  # 7 Tage TTL
+                json.dumps(state_dict),
+            )
+            logger.info(
+                f"💾 Risk-State → Redis: Exposure={risk_state.total_exposure:.2f}, "
+                f"Pos={risk_state.open_positions}, Approved={risk_state.signals_approved}"
+            )
+        except Exception as e:
+            logger.error(f"❌ Risk-State-Save fehlgeschlagen: {e}")
 
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
@@ -141,6 +202,7 @@ class RiskManager:
 
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
+            self.save_risk_state_to_redis()  # Persist circuit breaker activation
             return (
                 False,
                 f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}",
@@ -191,6 +253,7 @@ class RiskManager:
             signal_id=signal.timestamp,
             reason=signal.reason,
             timestamp=int(time.time()),
+            price=signal.price,  # Pass signal price to execution
             client_id=f"{signal.symbol}-{signal.timestamp}",
         )
 
@@ -200,6 +263,9 @@ class RiskManager:
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
         risk_state.pending_orders += 1
+
+        # Persist risk_state nach Order-Approval
+        self.save_risk_state_to_redis()
 
         return order
 
@@ -268,6 +334,9 @@ class RiskManager:
         risk_state.open_positions = sum(
             1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
         )
+
+        # Persist risk_state nach Exposure-Update
+        self.save_risk_state_to_redis()
 
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""

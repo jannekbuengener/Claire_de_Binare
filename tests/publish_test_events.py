@@ -171,7 +171,9 @@ def main():
 
     if auto_publish and auto_publish.lower() in ("1", "true", "yes", "y", "on"):
         print("\n" + "=" * 60)
-        print("📤 Auto-publish enabled via CDB_AUTO_PUBLISH; skipping confirmation prompt.")
+        print(
+            "📤 Auto-publish enabled via CDB_AUTO_PUBLISH; skipping confirmation prompt."
+        )
     else:
         print("\n" + "=" * 60)
         try:

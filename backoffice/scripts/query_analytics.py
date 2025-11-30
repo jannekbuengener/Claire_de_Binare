@@ -17,6 +17,7 @@ from psycopg2.extras import RealDictCursor
 
 if sys.platform == "win32":
     import codecs
+
     sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, errors="replace")
 
 # datetime and timedelta available if needed for future queries

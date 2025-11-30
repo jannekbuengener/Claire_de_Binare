@@ -37,6 +37,7 @@ class Order:
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
+    price: Optional[float] = None  # Signal price for realistic execution
     stop_loss_pct: Optional[float] = None
     client_id: Optional[str] = None
     timestamp: Optional[int | float | str] = None
@@ -56,6 +57,9 @@ class Order:
             symbol=payload["symbol"],
             side=side,
             quantity=float(payload["quantity"]),
+            price=(
+                float(payload["price"]) if payload.get("price") is not None else None
+            ),
             stop_loss_pct=(
                 float(payload["stop_loss_pct"])
                 if payload.get("stop_loss_pct") is not None

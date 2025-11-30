@@ -58,11 +58,10 @@ class Signal:
             "timestamp": self.timestamp,
             "price": self.price,
             "pct_change": self.pct_change,
-            "source": "momentum_strategy",     # Quelle des Signals
+            "source": "momentum_strategy",  # Quelle des Signals
         }
 
     @staticmethod
     def generate_reason(pct_change: float, threshold: float) -> str:
         """Generiert Begründung für Signal"""
         return f"Momentum: {pct_change:+.2f}% (Schwelle: {threshold}%)"
-

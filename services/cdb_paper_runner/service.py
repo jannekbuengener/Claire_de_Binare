@@ -43,8 +43,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(f"logs/paper_trading_{datetime.now().strftime('%Y%m%d')}.log")
-    ]
+        logging.FileHandler(
+            f"logs/paper_trading_{datetime.now().strftime('%Y%m%d')}.log"
+        ),
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -80,16 +82,18 @@ class PaperTradingRunner:
         Path("logs/events").mkdir(exist_ok=True)
 
         # Event log file (daily rotation)
-        self.event_log_file = f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+        self.event_log_file = (
+            f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+        )
 
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info("PAPER TRADING RUNNER INITIALIZED")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"  Start Time:  {self.start_time}")
         logger.info(f"  End Time:    {self.end_time}")
         logger.info(f"  Duration:    {self.duration} days")
         logger.info(f"  Event Log:   {self.event_log_file}")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
     def _init_redis(self):
         """Initialize Redis connection"""
@@ -101,7 +105,7 @@ class PaperTradingRunner:
                 db=int(os.getenv("REDIS_DB", "0")),
                 socket_connect_timeout=10,
                 socket_keepalive=True,
-                health_check_interval=30
+                health_check_interval=30,
             )
             r.ping()
             logger.info("✅ Redis connected")
@@ -120,7 +124,7 @@ class PaperTradingRunner:
                 database=os.getenv("POSTGRES_DB", "claire_de_binare"),
                 user=os.getenv("POSTGRES_USER", "claire_user"),
                 password=os.getenv("POSTGRES_PASSWORD", ""),
-                connect_timeout=10
+                connect_timeout=10,
             )
             logger.info("✅ PostgreSQL connected")
             return conn
@@ -139,9 +143,13 @@ class PaperTradingRunner:
         """
         try:
             # Rotate log file daily
-            current_log_file = f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+            current_log_file = (
+                f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+            )
             if current_log_file != self.event_log_file:
-                logger.info(f"Rotating event log: {self.event_log_file} → {current_log_file}")
+                logger.info(
+                    f"Rotating event log: {self.event_log_file} → {current_log_file}"
+                )
                 self.event_log_file = current_log_file
 
             # Write event as JSON line
@@ -149,7 +157,7 @@ class PaperTradingRunner:
                 log_entry = {
                     "timestamp": datetime.now().isoformat(),
                     "channel": channel,
-                    "event": event
+                    "event": event,
                 }
                 f.write(json.dumps(log_entry) + "\n")
 
@@ -217,7 +225,7 @@ class PaperTradingRunner:
                 self.email_alerter.send_alert(
                     "Health Check Failed",
                     f"Error: {e}\nLast successful check: {self.last_health_check}",
-                    severity="CRITICAL"
+                    severity="CRITICAL",
                 )
 
     def daily_report(self):
@@ -225,7 +233,9 @@ class PaperTradingRunner:
         while self.running:
             # Sleep until next midnight
             now = datetime.now()
-            tomorrow = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+            tomorrow = (now + timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             sleep_seconds = (tomorrow - now).total_seconds()
 
             time.sleep(sleep_seconds)
@@ -238,18 +248,14 @@ class PaperTradingRunner:
                 report = self._generate_daily_report()
 
                 # Log report
-                logger.info("\n" + "="*60)
+                logger.info("\n" + "=" * 60)
                 logger.info("DAILY REPORT")
-                logger.info("="*60)
+                logger.info("=" * 60)
                 logger.info(report)
-                logger.info("="*60)
+                logger.info("=" * 60)
 
                 # Send email
-                self.email_alerter.send_alert(
-                    "Daily Report",
-                    report,
-                    severity="INFO"
-                )
+                self.email_alerter.send_alert("Daily Report", report, severity="INFO")
 
             except Exception as e:
                 logger.error(f"Daily report failed: {e}")
@@ -259,29 +265,35 @@ class PaperTradingRunner:
         try:
             with self.postgres_conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # Portfolio snapshot
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT total_equity, daily_pnl, total_realized_pnl,
                            open_positions, total_exposure_pct
                     FROM portfolio_snapshots
                     ORDER BY timestamp DESC
                     LIMIT 1
-                """)
+                """
+                )
                 portfolio = cursor.fetchone()
 
                 # Signals today
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) as count
                     FROM signals
                     WHERE DATE(timestamp) = CURRENT_DATE
-                """)
+                """
+                )
                 signals_today = cursor.fetchone()["count"]
 
                 # Trades today
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) as count
                     FROM trades
                     WHERE DATE(timestamp) = CURRENT_DATE
-                """)
+                """
+                )
                 trades_today = cursor.fetchone()["count"]
 
                 # Uptime
@@ -325,7 +337,7 @@ System Health:
         self.email_alerter.send_alert(
             "Paper Trading Started",
             f"14-day test started at {self.start_time}\nEnd time: {self.end_time}",
-            severity="INFO"
+            severity="INFO",
         )
 
         # Start background threads
@@ -355,7 +367,7 @@ System Health:
         self.email_alerter.send_alert(
             "Paper Trading Stopped",
             f"Test stopped after {(datetime.now() - self.start_time).days} days\nTotal events logged: {self.event_count}",
-            severity="WARNING"
+            severity="WARNING",
         )
 
         # Close connections
@@ -382,18 +394,17 @@ def health():
 
     if runner and runner.running:
         uptime = runner.get_uptime_seconds()
-        return jsonify({
-            "status": "ok",
-            "service": "paper_trading_runner",
-            "uptime_seconds": uptime,
-            "events_logged": runner.event_count,
-            "last_health_check": runner.last_health_check.isoformat()
-        })
+        return jsonify(
+            {
+                "status": "ok",
+                "service": "paper_trading_runner",
+                "uptime_seconds": uptime,
+                "events_logged": runner.event_count,
+                "last_health_check": runner.last_health_check.isoformat(),
+            }
+        )
     else:
-        return jsonify({
-            "status": "stopped",
-            "service": "paper_trading_runner"
-        }), 503
+        return jsonify({"status": "stopped", "service": "paper_trading_runner"}), 503
 
 
 @app.route("/status")
@@ -402,15 +413,17 @@ def status():
     global runner
 
     if runner and runner.running:
-        return jsonify({
-            "status": "running",
-            "start_time": runner.start_time.isoformat(),
-            "end_time": runner.end_time.isoformat(),
-            "duration_days": runner.duration,
-            "uptime_seconds": runner.get_uptime_seconds(),
-            "events_logged": runner.event_count,
-            "event_log_file": runner.event_log_file
-        })
+        return jsonify(
+            {
+                "status": "running",
+                "start_time": runner.start_time.isoformat(),
+                "end_time": runner.end_time.isoformat(),
+                "duration_days": runner.duration,
+                "uptime_seconds": runner.get_uptime_seconds(),
+                "events_logged": runner.event_count,
+                "event_log_file": runner.event_log_file,
+            }
+        )
     else:
         return jsonify({"status": "stopped"}), 503
 
@@ -440,8 +453,7 @@ def main():
 
     # Start Flask in background thread
     flask_thread = threading.Thread(
-        target=lambda: app.run(host="0.0.0.0", port=8004, debug=False),
-        daemon=True
+        target=lambda: app.run(host="0.0.0.0", port=8004, debug=False), daemon=True
     )
     flask_thread.start()
 

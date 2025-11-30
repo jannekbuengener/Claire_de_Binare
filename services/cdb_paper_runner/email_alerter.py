@@ -31,7 +31,9 @@ class EmailAlerter:
 
         if not self.enabled:
             logger.warning("⚠️  Email alerts DISABLED - missing ENV variables")
-            logger.warning("   Required: ALERT_EMAIL_FROM, ALERT_EMAIL_TO, ALERT_EMAIL_PASSWORD")
+            logger.warning(
+                "   Required: ALERT_EMAIL_FROM, ALERT_EMAIL_TO, ALERT_EMAIL_PASSWORD"
+            )
         else:
             logger.info(f"✅ Email alerts ENABLED - sending to {self.receiver_email}")
 
@@ -88,7 +90,9 @@ This is an automated alert from Claire de Binare Paper Trading System.
 
         except smtplib.SMTPAuthenticationError as e:
             logger.error(f"❌ Email authentication failed: {e}")
-            logger.error("   Check ALERT_EMAIL_PASSWORD (use Gmail App Password, not account password)")
+            logger.error(
+                "   Check ALERT_EMAIL_PASSWORD (use Gmail App Password, not account password)"
+            )
             return False
         except smtplib.SMTPException as e:
             logger.error(f"❌ SMTP error: {e}")
@@ -105,5 +109,5 @@ This is an automated alert from Claire de Binare Paper Trading System.
         return self.send_alert(
             "Email Alert Test",
             "This is a test alert to verify email configuration.",
-            severity="INFO"
+            severity="INFO",
         )

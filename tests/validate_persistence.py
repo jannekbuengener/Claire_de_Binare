@@ -6,7 +6,6 @@ Validates that test events were correctly persisted to PostgreSQL
 
 import os
 import sys
-from datetime import datetime
 
 import psycopg2
 
@@ -61,13 +60,15 @@ def validate_signals(conn):
         return issues
 
     # Check signal_type (should be lowercase)
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, symbol, signal_type, confidence,
                TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') AS ts
         FROM signals
         ORDER BY id DESC
         LIMIT 5
-    """)
+    """
+    )
 
     print("\n📋 Latest 5 signals:")
     print(f"{'ID':<5} {'Symbol':<10} {'Type':<6} {'Confidence':<12} {'Timestamp':<20}")
@@ -81,7 +82,9 @@ def validate_signals(conn):
             issues.append(f"Signal {id_} has invalid signal_type '{signal_type}'")
             print(f"❌ {id_:<5} {symbol:<10} {signal_type:<6} INVALID (not lowercase!)")
         else:
-            print(f"✅ {id_:<5} {symbol:<10} {signal_type:<6} {float(confidence):<12.2f} {ts:<20}")
+            print(
+                f"✅ {id_:<5} {symbol:<10} {signal_type:<6} {float(confidence):<12.2f} {ts:<20}"
+            )
 
     # Check for uppercase signal_type (should NOT exist after fix)
     cursor.execute("SELECT COUNT(*) FROM signals WHERE signal_type IN ('BUY', 'SELL')")
@@ -89,7 +92,9 @@ def validate_signals(conn):
 
     if uppercase_count > 0:
         issues.append(f"Found {uppercase_count} signals with UPPERCASE signal_type")
-        print(f"\n❌ WARNING: Found {uppercase_count} signals with UPPERCASE signal_type!")
+        print(
+            f"\n❌ WARNING: Found {uppercase_count} signals with UPPERCASE signal_type!"
+        )
     else:
         print("\n✅ All signals have lowercase signal_type")
 
@@ -117,16 +122,20 @@ def validate_orders(conn):
         return issues
 
     # Check side (should be lowercase)
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, symbol, side, approved, status,
                TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') AS ts
         FROM orders
         ORDER BY id DESC
         LIMIT 5
-    """)
+    """
+    )
 
     print("\n📋 Latest 5 orders:")
-    print(f"{'ID':<5} {'Symbol':<10} {'Side':<6} {'Approved':<10} {'Status':<10} {'Created At':<20}")
+    print(
+        f"{'ID':<5} {'Symbol':<10} {'Side':<6} {'Approved':<10} {'Status':<10} {'Created At':<20}"
+    )
     print("-" * 80)
 
     for row in cursor.fetchall():
@@ -138,10 +147,14 @@ def validate_orders(conn):
             print(f"❌ {id_:<5} {symbol:<10} {side:<6} INVALID!")
         else:
             approved_str = "✅ Yes" if approved else "❌ No"
-            print(f"✅ {id_:<5} {symbol:<10} {side:<6} {approved_str:<10} {status:<10} {ts:<20}")
+            print(
+                f"✅ {id_:<5} {symbol:<10} {side:<6} {approved_str:<10} {status:<10} {ts:<20}"
+            )
 
     # Check for UPPERCASE side (should NOT exist after fix)
-    cursor.execute("SELECT COUNT(*) FROM orders WHERE side IN ('BUY', 'SELL', 'LONG', 'SHORT')")
+    cursor.execute(
+        "SELECT COUNT(*) FROM orders WHERE side IN ('BUY', 'SELL', 'LONG', 'SHORT')"
+    )
     uppercase_count = cursor.fetchone()[0]
 
     if uppercase_count > 0:
@@ -175,16 +188,20 @@ def validate_trades(conn):
         return issues
 
     # Check side and slippage
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, symbol, side, price, slippage_bps,
                TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') AS ts
         FROM trades
         ORDER BY id DESC
         LIMIT 5
-    """)
+    """
+    )
 
     print("\n📋 Latest 5 trades:")
-    print(f"{'ID':<5} {'Symbol':<10} {'Side':<6} {'Price':<12} {'Slippage (bps)':<15} {'Timestamp':<20}")
+    print(
+        f"{'ID':<5} {'Symbol':<10} {'Side':<6} {'Price':<12} {'Slippage (bps)':<15} {'Timestamp':<20}"
+    )
     print("-" * 80)
 
     for row in cursor.fetchall():
@@ -199,7 +216,9 @@ def validate_trades(conn):
                 slippage_str = "N/A"
             else:
                 slippage_str = f"{float(slippage_bps):.2f}"
-            print(f"✅ {id_:<5} {symbol:<10} {side:<6} {float(price):<12.2f} {slippage_str:<15} {ts:<20}")
+            print(
+                f"✅ {id_:<5} {symbol:<10} {side:<6} {float(price):<12.2f} {slippage_str:<15} {ts:<20}"
+            )
 
     # Check for UPPERCASE side
     cursor.execute("SELECT COUNT(*) FROM trades WHERE side IN ('BUY', 'SELL')")
@@ -236,16 +255,20 @@ def validate_portfolio_snapshots(conn):
         return issues
 
     # Check total_exposure_pct (should be 0.0-1.0, NOT 0.0-0.01)
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT id, total_equity, total_exposure_pct, daily_pnl,
                TO_CHAR(timestamp, 'YYYY-MM-DD HH24:MI:SS') AS ts
         FROM portfolio_snapshots
         ORDER BY id DESC
         LIMIT 5
-    """)
+    """
+    )
 
     print("\n📋 Latest 5 snapshots:")
-    print(f"{'ID':<5} {'Equity':<12} {'Exposure %':<12} {'Daily PnL':<12} {'Timestamp':<20}")
+    print(
+        f"{'ID':<5} {'Equity':<12} {'Exposure %':<12} {'Daily PnL':<12} {'Timestamp':<20}"
+    )
     print("-" * 70)
 
     exposure_issues = []
@@ -258,13 +281,21 @@ def validate_portfolio_snapshots(conn):
         # Check if exposure looks wrong (e.g., 0.0005 instead of 0.05)
         if 0 < exposure_val < 0.01:
             exposure_issues.append((id_, exposure_val))
-            print(f"⚠️  {id_:<5} {float(equity):<12.2f} {exposure_val:<12.6f} ← SUSPICIOUS! {float(daily_pnl):<12.2f} {ts:<20}")
+            print(
+                f"⚠️  {id_:<5} {float(equity):<12.2f} {exposure_val:<12.6f} ← SUSPICIOUS! {float(daily_pnl):<12.2f} {ts:<20}"
+            )
         else:
-            print(f"✅ {id_:<5} {float(equity):<12.2f} {exposure_val:<12.4f} {float(daily_pnl):<12.2f} {ts:<20}")
+            print(
+                f"✅ {id_:<5} {float(equity):<12.2f} {exposure_val:<12.4f} {float(daily_pnl):<12.2f} {ts:<20}"
+            )
 
     if exposure_issues:
-        issues.append(f"Found {len(exposure_issues)} snapshots with suspicious exposure values")
-        print(f"\n❌ WARNING: Found {len(exposure_issues)} snapshots with suspicious exposure values!")
+        issues.append(
+            f"Found {len(exposure_issues)} snapshots with suspicious exposure values"
+        )
+        print(
+            f"\n❌ WARNING: Found {len(exposure_issues)} snapshots with suspicious exposure values!"
+        )
         print("   Expected: 0.05 (5%), 0.30 (30%)")
         print("   Found:    0.0005, 0.003, etc. (too small!)")
         print("   This indicates the double-division bug might still exist!")
@@ -283,7 +314,8 @@ def summary(conn):
 
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT
             'signals' AS table_name, COUNT(*) AS row_count FROM signals
         UNION ALL
@@ -294,7 +326,8 @@ def summary(conn):
         SELECT 'portfolio_snapshots', COUNT(*) FROM portfolio_snapshots
         UNION ALL
         SELECT 'positions', COUNT(*) FROM positions
-    """)
+    """
+    )
 
     print(f"\n{'Table':<25} {'Rows':<10}")
     print("-" * 35)
@@ -343,6 +376,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Validation failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

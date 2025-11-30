@@ -14,6 +14,7 @@ from flask import Flask, jsonify, Response
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
+from collections import defaultdict, deque
 
 # Lokale Imports
 try:
@@ -60,6 +61,9 @@ class SignalEngine:
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
 
+        # Price history für RSI-Berechnung (14 Perioden)
+        self.price_history = defaultdict(lambda: deque(maxlen=15))  # 15 für RSI-14
+
         # Validiere Config
         try:
             self.config.validate()
@@ -93,6 +97,47 @@ class SignalEngine:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
+    def calculate_rsi(self, symbol: str, current_price: float) -> Optional[float]:
+        """
+        Berechnet RSI (Relative Strength Index) für ein Symbol
+
+        Returns:
+            RSI-Wert (0-100) oder None wenn nicht genug Daten
+        """
+        # Aktuellen Preis zur History hinzufügen
+        self.price_history[symbol].append(current_price)
+
+        # Mindestens 14 Datenpunkte benötigt für RSI-14
+        if len(self.price_history[symbol]) < 14:
+            return None
+
+        prices = list(self.price_history[symbol])
+
+        # Preisänderungen berechnen
+        gains = []
+        losses = []
+
+        for i in range(1, len(prices)):
+            change = prices[i] - prices[i - 1]
+            if change > 0:
+                gains.append(change)
+                losses.append(0)
+            else:
+                gains.append(0)
+                losses.append(abs(change))
+
+        # Durchschnittliche Gains/Losses (letzte 14 Perioden)
+        avg_gain = sum(gains[-14:]) / 14
+        avg_loss = sum(losses[-14:]) / 14
+
+        if avg_loss == 0:
+            return 100.0  # Alle Gains, kein Loss
+
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        return round(rsi, 2)
+
     def process_market_data(self, data: dict) -> Optional[Signal]:
         """
         Verarbeitet Marktdaten und generiert ggf. Signal
@@ -110,6 +155,14 @@ class SignalEngine:
                 if market_data.volume < self.config.min_volume:
                     logger.debug(
                         f"{market_data.symbol}: Volume zu niedrig ({market_data.volume})"
+                    )
+                    return None
+
+                # RSI-Check (nur LONG wenn RSI > 50)
+                rsi = self.calculate_rsi(market_data.symbol, market_data.price)
+                if rsi is not None and rsi <= 50.0:
+                    logger.debug(
+                        f"{market_data.symbol}: RSI zu niedrig ({rsi:.1f} <= 50.0) - überverkauft"
                     )
                     return None
 

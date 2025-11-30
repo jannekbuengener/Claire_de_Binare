@@ -95,7 +95,8 @@ def on_message(ws, message):
         s = d.get("symbol")
         c = d.get("c")
         ts = d.get("t")
-        v = d.get("vol")
+        v = d.get("q")  # MEXC uses "q" for volume (quantity), not "vol"
+        # Note: "a" is the amount in USDT, "q" is volume in contracts
         if s and c is not None and ts:
             try:
                 price = float(c)
@@ -136,7 +137,7 @@ def on_open(ws, chunk):
             "param": {
                 "symbol": s,
                 "interval": KL_INTERVAL,
-            }
+            },
         }
         ws.send(json.dumps(sub))
         time.sleep(0.005)
@@ -166,12 +167,16 @@ def ws_worker(chunk):
     while True:
         try:
             reconnect_count += 1
-            print(f"[WS] Connecting chunk (attempt {reconnect_count})...", file=sys.stderr)
+            print(
+                f"[WS] Connecting chunk (attempt {reconnect_count})...", file=sys.stderr
+            )
             ws = make_ws(chunk)
             ws.run_forever()
             print(f"[WS] Disconnected (attempt {reconnect_count})", file=sys.stderr)
         except Exception as e:
-            print(f"[WS ERROR] Chunk reconnect #{reconnect_count}: {e}", file=sys.stderr)
+            print(
+                f"[WS ERROR] Chunk reconnect #{reconnect_count}: {e}", file=sys.stderr
+            )
         time.sleep(backoff)
         backoff = min(backoff * 2.0, 30.0)
 

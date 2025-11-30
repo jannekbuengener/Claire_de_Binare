@@ -15,7 +15,6 @@ Ausführung:
 import pytest
 import subprocess
 import os
-import json
 from pathlib import Path
 
 
@@ -230,7 +229,7 @@ def test_query_analytics_portfolio_summary(cli_env):
     if len(found_keywords) > 0:
         print(f"  ✅ Portfolio metrics found: {found_keywords}")
     else:
-        print(f"  ⚠️  No portfolio metrics in output")
+        print("  ⚠️  No portfolio metrics in output")
 
     print("✅ --portfolio-summary command works")
 
@@ -283,7 +282,7 @@ def test_query_analytics_trade_statistics(cli_env):
     if len(found_keywords) > 0:
         print(f"  ✅ Statistics metrics found: {found_keywords}")
     else:
-        print(f"  ⚠️  No statistics in output")
+        print("  ⚠️  No statistics in output")
 
     print("✅ --trade-statistics command works")
 

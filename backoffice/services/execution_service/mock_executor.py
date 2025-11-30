@@ -65,7 +65,12 @@ class MockExecutor:
 
         if success:
             # Simulate successful execution with slippage
-            base_price = self._simulate_price(order.symbol)
+            # Use signal price from order, or fallback to simulation if not provided
+            base_price = (
+                order.price
+                if order.price is not None
+                else self._simulate_price(order.symbol)
+            )
             slippage = self._simulate_slippage(order.quantity)
 
             # Apply slippage based on order side
@@ -83,7 +88,7 @@ class MockExecutor:
                 quantity=order.quantity,
                 filled_quantity=filled_quantity,
                 status=OrderStatus.FILLED.value,
-                price=round(execution_price, 2),
+                price=round(execution_price, 8),  # 8 decimals for crypto precision
                 client_id=client_id,
                 error_message=None,
                 timestamp=datetime.utcnow().isoformat(),
