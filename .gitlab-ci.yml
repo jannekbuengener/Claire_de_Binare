@@ -8,27 +8,44 @@ cache:
     - .cache/pip
 
 stages:
+  - lint
   - test
 
-before_script:
-  - python --version
-  - pip install --upgrade pip
-  - pip install pytest
-  - |
-    if [ -f requirements.txt ]; then
-      echo "Installing project dependencies from requirements.txt..."
-      pip install -r requirements.txt
-    else
-      echo "No requirements.txt found, skipping dependency install."
-    fi
+.before_install: &before_install |
+  set -e
+  python --version
+  pip install --upgrade pip
+  pip install ruff black pytest pytest-cov
+  if [ -f requirements-dev.txt ]; then
+    pip install -r requirements-dev.txt
+  elif [ -f requirements.txt ]; then
+    pip install -r requirements.txt
+  fi
 
-pytest:
+lint:
+  stage: lint
+  script:
+    - *before_install
+    - ruff .
+    - black --check .
+  rules:
+    - changes:
+        - "**/*.py"
+        - pyproject.toml
+        - requirements*.txt
+        - .gitlab-ci.yml
+
+test:
   stage: test
   script:
-    - |
-      echo "Running pytest..."
-      if [ -d tests ] || ls -1 *_test.py test_*.py 2>/dev/null; then
-        pytest -q
-      else
-        echo "No tests found, skipping pytest."
-      fi
+    - *before_install
+    - pytest -v -m "not e2e and not local_only" --junitxml=report.xml --cov=services --cov=backoffice/services --cov-report=xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+    paths:
+      - report.xml
+      - coverage.xml
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_PIPELINE_SOURCE == "merge_request_event"'
