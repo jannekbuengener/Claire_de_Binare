@@ -255,6 +255,7 @@ RE produziert RiskDecision und ggf. alerts.
 - Postgres ist Single Source of Truth für Risk/Exposure (Portfolio-Snapshots).
 - Beim Start: DB-Snapshot laden, Exposure ableiten und Redis-Cache `risk_state:persistence` überschreiben, falls Drift >5%.
 - Laufzeit: Auto-Heal korrigiert Redis-Divergenzen (>5%) ohne Trading zu blockieren; Redis bleibt Cache/Transport.
+- Adaptive Risk-Intensity: `adaptive_intensity/dry_wet.py` berechnet aus den letzten Trades einen Score (DRY↔WET) und stellt dynamische Risk-Parameter über Redis bereit.
 
 Die Details zu:
 
