@@ -11,6 +11,7 @@ from backoffice.services.adaptive_intensity.dry_wet import (
     compute_score,
     derive_parameters,
     publish_params_to_redis,
+    compute_and_publish,
 )
 
 
@@ -66,3 +67,29 @@ def test_publish_params_to_redis():
     r = FakeRedis()
     publish_params_to_redis(r, {"dry_wet_score": 50, "max_position_pct": 0.1}, ttl_seconds=60)
     assert ("adaptive_intensity:current_params", 60) in r.store
+
+
+def test_compute_and_publish_with_mocked_dependencies(monkeypatch):
+    # Fake trades to produce a decent score
+    trades = [Trade(pnl=1.0, timestamp=0)] * 200 + [Trade(pnl=-0.2, timestamp=0)] * 100
+
+    # Capture publish output
+    captured = {}
+
+    def fake_fetch(limit):
+        return trades
+
+    def fake_publish(redis_client, params, ttl_seconds=120):
+        captured["params"] = params
+        captured["ttl"] = ttl_seconds
+
+    monkeypatch.setattr("backoffice.services.adaptive_intensity.dry_wet.fetch_trades_from_db", fake_fetch)
+    monkeypatch.setattr("backoffice.services.adaptive_intensity.dry_wet.publish_params_to_redis", fake_publish)
+
+    params = compute_and_publish(redis_client=None, limit=50)
+
+    assert params["window_trades"] == len(trades)
+    assert params["dry_wet_score"] >= 0
+    assert "max_exposure_pct" in params
+    assert captured["ttl"] == 120
+    assert captured["params"]["window_trades"] == len(trades)
