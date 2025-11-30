@@ -1,0 +1,34 @@
+image: python:3.11
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+stages:
+  - test
+
+before_script:
+  - python --version
+  - pip install --upgrade pip
+  - pip install pytest
+  - |
+    if [ -f requirements.txt ]; then
+      echo "Installing project dependencies from requirements.txt..."
+      pip install -r requirements.txt
+    else
+      echo "No requirements.txt found, skipping dependency install."
+    fi
+
+pytest:
+  stage: test
+  script:
+    - |
+      echo "Running pytest..."
+      if [ -d tests ] || ls -1 *_test.py test_*.py 2>/dev/null; then
+        pytest -q
+      else
+        echo "No tests found, skipping pytest."
+      fi
