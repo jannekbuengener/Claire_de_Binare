@@ -256,6 +256,7 @@ RE produziert RiskDecision und ggf. alerts.
 - Beim Start: DB-Snapshot laden, Exposure ableiten und Redis-Cache `risk_state:persistence` überschreiben, falls Drift >5%.
 - Laufzeit: Auto-Heal korrigiert Redis-Divergenzen (>5%) ohne Trading zu blockieren; Redis bleibt Cache/Transport.
 - Adaptive Risk-Intensity: `adaptive_intensity/dry_wet.py` berechnet aus den letzten Trades einen Score (DRY↔WET) und stellt dynamische Risk-Parameter über Redis bereit.
+- Dry/Wet Service: `adaptive_intensity/dry_wet_service.py` looped score/params nach Redis (`adaptive_intensity:current_params`), Prometheus-Metriken exponiert `/metrics`.
 
 Die Details zu:
 

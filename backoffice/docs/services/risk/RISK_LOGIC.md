@@ -102,6 +102,7 @@ def on_position_update(position):
 - Mapping auf Parameter: `signal_threshold_pct`, `max_exposure_pct`, `max_position_pct`.
 - Publikation: Redis-Key `adaptive_intensity:current_params` (Risk Manager liest dynamische Parameter).
 - Metriken: `dry_wet_score` (Gauge, optional), `dry_wet_window_trades_total`, `dry_wet_last_update_timestamp` (bei Bedarf ergänzen).
+- Service: `adaptive_intensity/dry_wet_service.py` berechnet/publiziert zyklisch und exponiert `/metrics`, `/status`, `/health`.
 
 ---
 
