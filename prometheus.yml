@@ -37,3 +37,12 @@ scrape_configs:
           instance: 'risk_manager'
           service: 'risk'
     metrics_path: '/metrics'
+
+  # Adaptive Intensity Service
+  - job_name: 'adaptive_intensity'
+    static_configs:
+      - targets: ['adaptive_intensity:8005']
+        labels:
+          instance: 'adaptive_intensity'
+          service: 'optimization'
+    metrics_path: '/metrics'
