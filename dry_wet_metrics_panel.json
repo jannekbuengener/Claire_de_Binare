@@ -1,0 +1,112 @@
+{
+  "title": "Dry/Wet Score",
+  "description": "Adaptive Intensity Dry/Wet metrics",
+  "datasource": {
+    "type": "prometheus",
+    "uid": "df53l13ov7gu8c"
+  },
+  "gridPos": {
+    "h": 10,
+    "w": 8,
+    "x": 16,
+    "y": 10
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Dry/Wet Score",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "dry_wet_score",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Trades in Window",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "dry_wet_window_trades_total",
+          "refId": "A",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Winrate & PF",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "df53l13ov7gu8c"
+      },
+      "targets": [
+        {
+          "expr": "dry_wet_winrate",
+          "legendFormat": "winrate",
+          "refId": "A"
+        },
+        {
+          "expr": "dry_wet_profit_factor",
+          "legendFormat": "profit_factor",
+          "refId": "B"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table"
+        }
+      }
+    }
+  ],
+  "alert": {
+    "name": "Dry/Wet Score Low",
+    "conditions": [
+      {
+        "evaluator": {
+          "params": [30],
+          "type": "lt"
+        },
+        "operator": {
+          "type": "and"
+        },
+        "query": {
+          "params": ["C", "5m", "now"]
+        },
+        "reducer": {
+          "type": "avg"
+        },
+        "type": "query"
+      }
+    ],
+    "executionErrorState": "alerting",
+    "noDataState": "no_data",
+    "for": "5m",
+    "notifications": [],
+    "datasource": {
+      "type": "prometheus",
+      "uid": "df53l13ov7gu8c"
+    }
+  },
+  "targets": [
+    {
+      "expr": "dry_wet_score",
+      "refId": "C",
+      "instant": false
+    }
+  ]
+}
