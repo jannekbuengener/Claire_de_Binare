@@ -188,7 +188,7 @@ class ProfileManager:
 
         # Erstelle Transition-Event
         transition = ProfileTransition(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             from_profile=old_profile,
             to_profile=new_profile,
             reason=reason,
@@ -227,7 +227,7 @@ class ProfileManager:
 
         # Erstelle Dummy-Metrics für manuelle Transition
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=0,
             lookback_trades=self.analyzer.lookback_trades,
             winrate=0.0,
@@ -239,7 +239,7 @@ class ProfileManager:
         )
 
         transition = ProfileTransition(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             from_profile=self.current_profile,
             to_profile=profile,
             reason=reason,

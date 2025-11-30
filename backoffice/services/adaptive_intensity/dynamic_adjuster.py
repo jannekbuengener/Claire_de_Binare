@@ -194,7 +194,7 @@ class DynamicAdjuster:
         self.last_score = normalized_score
 
         return PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=normalized_score,
             winrate_score=winrate_score,
             profit_factor_score=pf_score,
@@ -225,7 +225,7 @@ class DynamicAdjuster:
             return min_val + (max_val - min_val) * score
 
         params = DynamicParameters(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             performance_score=score,
             # Signal Engine
             signal_threshold_pct=interpolate(self.threshold_range, score),

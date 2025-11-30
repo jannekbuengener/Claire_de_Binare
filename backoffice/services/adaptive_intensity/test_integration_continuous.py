@@ -51,7 +51,7 @@ class TestFullEventFlow:
                 "size": 0.01,
                 "execution_price": 50000.0,
                 "slippage_bps": 2.0,
-                "timestamp": datetime.utcnow(),
+                "timestamp": datetime.now(datetime.UTC),
                 "pnl": 50.0 if i % 3 == 0 else -30.0,  # 58% Winrate
                 "metadata": {},
             }
@@ -134,7 +134,7 @@ class TestFullEventFlow:
         """Test: Redis → Signal Engine konsumiert Parameter"""
         # Simuliere gespeicherte Parameter in Redis
         params = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "performance_score": 0.65,
             "signal_threshold_pct": 2.0,
             "rsi_threshold": 45.0,
@@ -160,7 +160,7 @@ class TestFullEventFlow:
         """Test: Redis → Risk Manager konsumiert Parameter"""
         # Simuliere gespeicherte Parameter in Redis
         params = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "performance_score": 0.65,
             "signal_threshold_pct": 2.0,
             "rsi_threshold": 45.0,
@@ -189,7 +189,7 @@ class TestParameterPropagation:
         """Test: Parameter-Updates propagieren korrekt"""
         # Initial Parameters
         params_v1 = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "performance_score": 0.50,
             "signal_threshold_pct": 2.25,
             "rsi_threshold": 50.0,
@@ -198,7 +198,7 @@ class TestParameterPropagation:
 
         # Updated Parameters (bessere Performance)
         params_v2 = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "performance_score": 0.70,
             "signal_threshold_pct": 1.90,  # Aggressiver
             "rsi_threshold": 44.0,  # Lockerer
@@ -261,7 +261,7 @@ class TestContinuousUpdateLoop:
         # Simuliere Performance-Verbesserung von 0.40 → 0.70 über 3 Updates
         metrics_sequence = [
             PerformanceMetrics(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(datetime.UTC),
                 trade_count=300,
                 lookback_trades=300,
                 winrate=0.45,
@@ -272,7 +272,7 @@ class TestContinuousUpdateLoop:
                 avg_loss=40.0,
             ),
             PerformanceMetrics(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(datetime.UTC),
                 trade_count=300,
                 lookback_trades=300,
                 winrate=0.60,
@@ -283,7 +283,7 @@ class TestContinuousUpdateLoop:
                 avg_loss=35.0,
             ),
             PerformanceMetrics(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(datetime.UTC),
                 trade_count=300,
                 lookback_trades=300,
                 winrate=0.65,
@@ -397,7 +397,7 @@ class TestPerformanceScenarios:
 
         # Tag 1: Schlechte Performance
         metrics_day1 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.48,
@@ -414,7 +414,7 @@ class TestPerformanceScenarios:
 
         # Tag 3: Nach Winning Streak
         metrics_day3 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.62,
@@ -441,7 +441,7 @@ class TestPerformanceScenarios:
 
         # Tag 1: Gute Performance
         metrics_day1 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.60,
@@ -458,7 +458,7 @@ class TestPerformanceScenarios:
 
         # Tag 3: Nach Losing Streak
         metrics_day3 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.46,

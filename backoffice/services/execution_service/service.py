@@ -61,7 +61,7 @@ stats = {
     "orders_received": 0,
     "orders_filled": 0,
     "orders_rejected": 0,
-    "start_time": datetime.utcnow().isoformat(),
+    "start_time": datetime.now(datetime.UTC).isoformat(),
     "last_result": None,
 }
 
@@ -274,7 +274,7 @@ def metrics():
     uptime_seconds = max(
         0.0,
         (
-            datetime.utcnow() - datetime.fromisoformat(stats["start_time"])
+            datetime.now(datetime.UTC) - datetime.fromisoformat(stats["start_time"])
         ).total_seconds(),
     )
 

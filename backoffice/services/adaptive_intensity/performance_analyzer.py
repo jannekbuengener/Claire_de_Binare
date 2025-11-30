@@ -114,7 +114,7 @@ class PerformanceAnalyzer:
             conn.close()
 
             return PerformanceMetrics(
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(datetime.UTC),
                 trade_count=trade_count,
                 lookback_trades=self.lookback_trades,
                 winrate=metrics["winrate"],
@@ -232,7 +232,7 @@ class PerformanceAnalyzer:
             Anzahl Circuit Breaker Events
         """
         try:
-            seven_days_ago = datetime.utcnow() - timedelta(days=7)
+            seven_days_ago = datetime.now(datetime.UTC) - timedelta(days=7)
 
             cursor.execute(
                 """

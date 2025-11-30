@@ -47,7 +47,7 @@ def profile_manager(mock_analyzer):
 def test_upgrade_criteria_met():
     """Test: Upgrade-Kriterien erfüllt → should upgrade"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.62,  # > 60% ✓
@@ -67,7 +67,7 @@ def test_upgrade_criteria_met():
 def test_upgrade_criteria_not_enough_trades():
     """Test: Nicht genug Trades → kein Upgrade"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=250,  # < 300 ✗
         lookback_trades=300,
         winrate=0.65,
@@ -85,7 +85,7 @@ def test_upgrade_criteria_not_enough_trades():
 def test_upgrade_criteria_winrate_too_low():
     """Test: Winrate zu niedrig → kein Upgrade"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.58,  # < 60% ✗
@@ -103,7 +103,7 @@ def test_upgrade_criteria_winrate_too_low():
 def test_downgrade_criteria_low_winrate():
     """Test: Winrate < 50% → Downgrade erforderlich"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.48,  # < 50% ✗
@@ -122,7 +122,7 @@ def test_downgrade_criteria_low_winrate():
 def test_downgrade_criteria_high_drawdown():
     """Test: Drawdown > 5% → Downgrade erforderlich"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.52,
@@ -140,7 +140,7 @@ def test_downgrade_criteria_high_drawdown():
 def test_downgrade_criteria_circuit_breaker():
     """Test: Circuit Breaker aktiv → sofortiger Downgrade"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.55,
@@ -158,7 +158,7 @@ def test_downgrade_criteria_circuit_breaker():
 def test_stable_performance_should_stay():
     """Test: Performance stabil → kein Wechsel"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.55,  # 50-60% → ok
@@ -256,7 +256,7 @@ def test_upgrade_dry_to_neutral(profile_manager, mock_analyzer):
 
     # Mock Performance: Upgrade-Kriterien erfüllt
     good_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.62,
@@ -287,7 +287,7 @@ def test_upgrade_neutral_to_wet(profile_manager, mock_analyzer):
 
     # Mock Performance: Upgrade-Kriterien erfüllt
     excellent_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=310,
         lookback_trades=300,
         winrate=0.65,
@@ -316,7 +316,7 @@ def test_downgrade_wet_to_neutral(profile_manager, mock_analyzer):
 
     # Mock Performance: Downgrade-Kriterien erfüllt
     bad_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.48,  # < 50%
@@ -344,7 +344,7 @@ def test_downgrade_neutral_to_dry(profile_manager, mock_analyzer):
 
     # Mock Performance: Sehr schlechte Performance
     terrible_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.42,  # < 50%
@@ -373,7 +373,7 @@ def test_circuit_breaker_forces_dry(profile_manager, mock_analyzer):
 
     # Mock Performance: Circuit Breaker aktiv
     circuit_breaker_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.52,  # sonst ok
@@ -399,7 +399,7 @@ def test_no_transition_when_stable(profile_manager, mock_analyzer):
     """Test: Keine Transition bei stabiler Performance"""
     # Mock Performance: Stabil (keine Upgrade/Downgrade-Kriterien)
     stable_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.55,  # 50-60%
@@ -427,7 +427,7 @@ def test_auto_adjust_disabled_no_transition(profile_manager, mock_analyzer):
 
     # Mock Performance: Upgrade-Kriterien erfüllt
     good_metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.65,

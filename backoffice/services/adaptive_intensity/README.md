@@ -432,7 +432,7 @@ Beispiel-Test:
 def test_upgrade_criteria():
     """Test dass Upgrade bei guter Performance erfolgt"""
     metrics = PerformanceMetrics(
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(datetime.UTC),
         trade_count=300,
         lookback_trades=300,
         winrate=0.62,  # > 60%

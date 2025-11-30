@@ -76,7 +76,7 @@ class DatabaseWriter:
             datetime object compatible with PostgreSQL timestamp with time zone
         """
         if timestamp_value is None:
-            return datetime.utcnow()
+            return datetime.now(datetime.UTC)
 
         # If integer (Unix timestamp), convert to datetime
         if isinstance(timestamp_value, int):
@@ -94,7 +94,7 @@ class DatabaseWriter:
                 logger.warning(
                     f"Invalid timestamp format: {timestamp_value}, using current time"
                 )
-                return datetime.utcnow()
+            return datetime.now(datetime.UTC)
 
         # If already datetime, return as-is
         if isinstance(timestamp_value, datetime):
@@ -104,7 +104,7 @@ class DatabaseWriter:
         logger.warning(
             f"Unknown timestamp type: {type(timestamp_value)}, using current time"
         )
-        return datetime.utcnow()
+        return datetime.now(datetime.UTC)
 
     @staticmethod
     def normalize_side(value: str) -> str:

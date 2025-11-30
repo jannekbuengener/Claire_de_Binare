@@ -45,7 +45,7 @@ class TestPerformanceScoreCalculation:
     def test_perfect_performance(self, adjuster, mock_analyzer):
         """Test: Perfekte Performance → Score 1.0"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=1.0,  # 100%
@@ -70,7 +70,7 @@ class TestPerformanceScoreCalculation:
     def test_worst_performance(self, adjuster, mock_analyzer):
         """Test: Schlechteste Performance → Score 0.0"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.0,  # 0%
@@ -94,7 +94,7 @@ class TestPerformanceScoreCalculation:
     def test_average_performance(self, adjuster, mock_analyzer):
         """Test: Durchschnittliche Performance → Score ~0.5"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.50,  # 50%
@@ -116,7 +116,7 @@ class TestPerformanceScoreCalculation:
     def test_good_performance_example(self, adjuster, mock_analyzer):
         """Test: Gute Performance wie im Beispiel → Score ~0.66"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.58,  # 58%
@@ -144,7 +144,7 @@ class TestPerformanceScoreCalculation:
     def test_insufficient_trades(self, adjuster, mock_analyzer):
         """Test: Zu wenig Trades → None zurückgeben"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=30,  # < 50 Mindest-Trades
             lookback_trades=300,
             winrate=0.60,
@@ -168,7 +168,7 @@ class TestDynamicParameterCalculation:
     def test_score_zero_parameters(self, adjuster):
         """Test: Score 0.0 → MIN-Werte (konservativ)"""
         score = PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=0.0,
             winrate_score=0.0,
             profit_factor_score=0.0,
@@ -190,7 +190,7 @@ class TestDynamicParameterCalculation:
     def test_score_one_parameters(self, adjuster):
         """Test: Score 1.0 → MAX-Werte (aggressiv)"""
         score = PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=1.0,
             winrate_score=1.0,
             profit_factor_score=1.0,
@@ -212,7 +212,7 @@ class TestDynamicParameterCalculation:
     def test_linear_interpolation_mid_score(self, adjuster):
         """Test: Score 0.5 → Mittelwerte"""
         score = PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=0.5,
             winrate_score=0.5,
             profit_factor_score=0.5,
@@ -243,7 +243,7 @@ class TestDynamicParameterCalculation:
     def test_linear_interpolation_example_662(self, adjuster):
         """Test: Score 0.662 → Werte wie im Beispiel"""
         score = PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=0.662,
             winrate_score=0.58,
             profit_factor_score=0.70,
@@ -269,7 +269,7 @@ class TestEdgeCases:
     def test_zero_trades(self, adjuster, mock_analyzer):
         """Test: 0 Trades → None"""
         metrics = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=0,
             lookback_trades=300,
             winrate=0.0,
@@ -288,7 +288,7 @@ class TestEdgeCases:
     def test_timestamp_in_parameters(self, adjuster):
         """Test: Timestamp wird korrekt gesetzt"""
         score = PerformanceScore(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             score=0.5,
             winrate_score=0.5,
             profit_factor_score=0.5,
@@ -304,7 +304,7 @@ class TestEdgeCases:
         assert params.timestamp is not None
         assert isinstance(params.timestamp, datetime)
         # Timestamp sollte ca. jetzt sein (innerhalb 1 Sekunde)
-        now = datetime.utcnow()
+        now = datetime.now(datetime.UTC)
         assert abs((now - params.timestamp).total_seconds()) < 1.0
 
 
@@ -315,7 +315,7 @@ class TestIntegrationScenarios:
         """Test: Performance verbessert sich graduell"""
         # t=0: Mittelmäßige Performance
         metrics1 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.52,
@@ -332,7 +332,7 @@ class TestIntegrationScenarios:
 
         # t=30: Bessere Performance
         metrics2 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.55,
@@ -360,7 +360,7 @@ class TestIntegrationScenarios:
         """Test: Performance verschlechtert sich"""
         # t=0: Gute Performance
         metrics1 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.58,
@@ -377,7 +377,7 @@ class TestIntegrationScenarios:
 
         # t=30: Schlechtere Performance
         metrics2 = PerformanceMetrics(
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(datetime.UTC),
             trade_count=300,
             lookback_trades=300,
             winrate=0.54,

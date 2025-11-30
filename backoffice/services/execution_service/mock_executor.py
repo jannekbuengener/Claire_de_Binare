@@ -91,7 +91,7 @@ class MockExecutor:
                 price=round(execution_price, 8),  # 8 decimals for crypto precision
                 client_id=client_id,
                 error_message=None,
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=datetime.now(datetime.UTC).isoformat(),
             )
 
             # Store order
@@ -111,7 +111,7 @@ class MockExecutor:
                 price=None,
                 client_id=client_id,
                 error_message="Mock rejection: Insufficient liquidity",
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=datetime.now(datetime.UTC).isoformat(),
             )
 
             return result
