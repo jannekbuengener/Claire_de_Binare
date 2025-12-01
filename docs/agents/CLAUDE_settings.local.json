@@ -90,7 +90,12 @@
       "Bash(docker-compose stop:*)",
       "Bash(timeout 600 docker exec:*)",
       "Bash(timeout 60 cmd:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(jq:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
