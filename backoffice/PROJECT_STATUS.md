@@ -1,8 +1,8 @@
-# PROJECT STATUS - Claire de Binare Cleanroom
+# PROJECT STATUS - Claire de Binare Claire de Binare
 
 **Datum**: 2025-11-22
 **Version**: 1.3.0-persistence-stable
-**Environment**: Cleanroom (All Systems Operational ✅)
+**Environment**: Claire de Binare (All Systems Operational ✅)
 **Letztes Update**: 17:00 UTC
 
 ---
@@ -38,12 +38,12 @@
 
 ```
 [========================================] 100%
-    CLEANROOM ETABLIERT - N1 PHASE AKTIV
+    Claire de Binare ETABLIERT - N1 PHASE AKTIV
 ```
 
 
 ### Aktuelle Phase: **N1 - Paper-Test Ready**
-- ✅ Cleanroom-Migration abgeschlossen (2025-11-16)
+- ✅ Claire de Binare-Migration abgeschlossen (2025-11-16)
 - ✅ Pipelines abgeschlossen (4/4)
 - ✅ Kanonisches Schema erstellt
 - ✅ Security-Hardening dokumentiert (Score aktuell: 95 %)
@@ -109,7 +109,7 @@ _Keine aktiven HOCH-Blocker_ ✅
 | 2025-11-19  | **Risk-Engine Coverage erreicht**            | ✅ **23 Tests implementiert**     |
 | 2025-11-19  | **MEXC Perpetuals & Position Sizing**        | ✅ **78 Tests implementiert**     |
 | 2025-11-18  | MEXC-API-Key ip-gebunden + limitiert         | ✅ Safety-Layer Exchange-Seite    |
-| 2025-11-16  | Cleanroom-Migration durchgeführt             | ✅ Repo vollständig kanonisiert   |
+| 2025-11-16  | Claire de Binare-Migration durchgeführt             | ✅ Repo vollständig kanonisiert   |
 | 2025-11-16  | Pipelines abgeschlossen                      | ✅ 31 Artefakte erstellt          |
 | 2025-11-16  | Security verbessert                          | ✅ 70 % → 95 % Score              |
 
@@ -288,9 +288,9 @@ Tools: Docker Desktop, Gordon (Docker AI), VS Code / IDE
 
 Repository
 
-Path: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom
+Path: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
 
-Branch: main (cleanroom)
+Branch: main (Claire de Binare)
 
 Remote: TBD
 
@@ -315,7 +315,7 @@ Keine automatisierte Backup-Ausführung (nur Skript-Idee)
 
 Lessons Learned
 
-Cleanroom-Ansatz bewährt sich
+Claire de Binare-Ansatz bewährt sich
 
 Kanonisches Schema + KODEX als Single Source of Truth hilfreich
 
@@ -325,8 +325,8 @@ API-Key-Hardening (IP-Bindung + Handelspar-Limitierung) ist guter Sicherheitsgew
 
 🤝 TEAM
 Rolle	Name	Status	Letzte Aktion
-Projektleiter	Jannek	🟢 Aktiv	Cleanroom-Nullpunkt & API-Setup
-IT-Chef	Claude	🟢 Aktiv	Cleanroom-Audit & Architektur-Kodex
+Projektleiter	Jannek	🟢 Aktiv	Claire de Binare-Nullpunkt & API-Setup
+IT-Chef	Claude	🟢 Aktiv	Claire de Binare-Audit & Architektur-Kodex
 Server-Admin	Gordon	⏸️ Standby	Wartet auf pytest-/Compose-Befehle
 📞 SUPPORT
 

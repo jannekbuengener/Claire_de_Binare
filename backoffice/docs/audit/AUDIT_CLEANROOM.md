@@ -1,4 +1,4 @@
-# Audit – Claire_de_Binare Cleanroom
+# Audit – Claire_de_Binare Claire de Binare
 
 Dieses Dokument definiert das Audit-Verhalten für das Projekt **Claire_de_Binare** (interne Schreibweise) bzw. **„Claire de Binare“** (externe Schreibweise) und beschreibt, was bei dem Kommando **„audit“** passiert.
 
@@ -34,7 +34,7 @@ Der Audit sorgt dafür, dass:
 Der Audit geht davon aus, dass das Repo in etwa so strukturiert ist:
 
 ```text
-Claire_de_Binare_Cleanroom/
+Claire_de_Binare/
 ├── backoffice/
 │   ├── docs/
 │   │   ├── architecture/        # N1_ARCHITEKTUR, System-Diagramme
@@ -106,11 +106,11 @@ project:
       severity: "high"
       finding_code: "NAMING-PROJECT-001"
 
-  repo_root: "Claire_de_Binare_Cleanroom"
-  base_path_windows: "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare_Cleanroom"
+  repo_root: "Claire_de_Binare"
+  base_path_windows: "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare"
 
 folders:
-  root: "Claire_de_Binare_Cleanroom"
+  root: "Claire_de_Binare"
   structure:
     backoffice:
       docs:
@@ -252,7 +252,7 @@ audit_types:
     description: "Redundanz eliminieren, Kanon-Quellen definieren, Archiv bereinigen"
   - id: "pre_migration_audit"
     priority: 6
-    description: "Finale Cleanroom-Bereitschaft vor Migration"
+    description: "Finale Claire de Binare-Bereitschaft vor Migration"
 
 audit_flow:
   stop_on_uncertainty: true
@@ -325,7 +325,7 @@ audit_flow:
       rationale: "Letzte Ampel vor produktiver Nutzung"
       tasks:
         - "Offene Findings der Phasen 1–5 prüfen"
-        - "Cleanroom-Struktur final validieren"
+        - "Claire de Binare-Struktur final validieren"
       required_outputs:
         - "Abgenommener AUDIT_PLAN.md"
         - "Status-Update in PROJECT_STATUS.md"
@@ -470,7 +470,7 @@ reporting:
 progress_model:
   example_status:
     migration_progress: 95
-    label: "Cleanroom-Migration"
+    label: "Claire de Binare-Migration"
     phases:
       - "Struktur aufgebaut"
       - "Audit-Plan erstellt"
@@ -537,7 +537,7 @@ Wenn du das Kommando **„audit“** verwendest, passiert aus Sicht der Logik ob
    Ziel: Keine Doku-Schattenwelten, kein wildes Archiv voller halbfertiger Texte, sondern klare Kanon-Dokumente plus ein aufgeräumtes, nachvollziehbares Archiv.
 
 7. **Pre-Migration-Audit (Schritt 6)**  
-   Zum Schluss wird geprüft, ob der Cleanroom wirklich „bereit“ ist:
+   Zum Schluss wird geprüft, ob der Claire de Binare wirklich „bereit“ ist:
    - Offene Findings aus allen Phasen werden gesammelt, priorisiert und entweder geschlossen oder bewusst akzeptiert (mit Begründung).
    - `AUDIT_PLAN.md` und `PROJECT_STATUS.md` werden aktualisiert, damit klar ist:
      - Wie weit die Migration/Modernisierung ist.

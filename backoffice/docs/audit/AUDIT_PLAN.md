@@ -1,4 +1,4 @@
-# 🔍 AUDIT-PLAN FÜR CLAIRE DE BINARE CLEANROOM
+# 🔍 AUDIT-PLAN FÜR CLAIRE DE BINARE Claire de Binare
 
 **Datum**: 2025-01-14  
 **Version**: 1.0  
@@ -189,7 +189,7 @@ curl -f http://localhost:8083/health  # execution
 cat > backoffice/PROJECT_STATUS.md << 'EOF'
 # PROJECT STATUS - Claire de Binare
 **Datum**: $(date +%Y-%m-%d)
-**Version**: Cleanroom 1.0
+**Version**: Claire de Binare 1.0
 **Status**: Pre-Deployment
 
 ## Container-Status
@@ -269,7 +269,7 @@ Doku einhängen
 
  In KODEX – Claire de Binare.md und PROJECT_STATUS.md kurz auf das Onboarding-Dokument verweisen.
 
- In README einen kurzen Absatz ergänzen: „Startpunkt: CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION“.
+ In README einen kurzen Absatz ergänzen: „Startpunkt: Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION“.
 
 Python-Artefakte & Ignore-Regeln
 
@@ -291,17 +291,17 @@ mexc_top5_ws-Serviceisierung
 
 README & Top-Level-Doku
 
- README auf Cleanroom-Nullpunkt + N1-Phase aktualisieren.
+ README auf Claire de Binare-Nullpunkt + N1-Phase aktualisieren.
 
  Klarstellen: backoffice/docs/ = Single Source of Truth, tests/ vs. backoffice/docs/tests/ trennen.
 
- Commit: „docs: align README with cleanroom baseline and N1 phase“.
+ Commit: „docs: align README with Claire de Binare baseline and N1 phase“.
 
 Archiv-Rolle klarziehen
 
  In backoffice/docs/infra/repo_map.md Rolle von archive/ als historischer Bereich beschreiben.
 
- In AUDIT_CLEANROOM.md sicherstellen, dass archive/ als historisch bewertet wird, nicht als Strukturfehler.
+ In AUDIT_Claire de Binare.md sicherstellen, dass archive/ als historisch bewertet wird, nicht als Strukturfehler.
 
  Optional: später per ADR entscheiden, ob archive/ in einen Unterordner von backoffice/docs/ migriert werden soll.
 

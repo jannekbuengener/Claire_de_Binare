@@ -14,7 +14,7 @@ Alles andere fliegt konsequent raus.
 
 ---
 
-# **README – Claire de Binare (Cleanroom Edition)**
+# **README – Claire de Binare (Claire de Binare Edition)**
 
 *Einfacher Einstieg. Klare Struktur. Schneller Überblick.*
 
@@ -44,7 +44,7 @@ Diese drei Dateien erklären dir alles, was du wissen musst:
 
 ### **1. Onboarding & Navigation**
 
-📘 **`CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md`**
+📘 **`Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md`**
 → Der perfekte Einstieg.
 → Was liegt wo? Wie ist das Repo aufgebaut?
 → Welche Dateien wichtig sind (und welche nicht).
@@ -73,7 +73,7 @@ Diese drei Dateien erklären dir alles, was du wissen musst:
 
 ## 🔧 **Technischer Zustand – kompakter Überblick**
 
-🏁 **Status: Cleanroom vollständig hergestellt**
+🏁 **Status: Claire de Binare vollständig hergestellt**
 📌 Phase: **N1 – Paper Test**
 ✔ MEXC-API-Keys eingerichtet (IP-gebunden + Handelspaare limitiert)
 ✔ .env sauber, sicher und clean
@@ -96,7 +96,7 @@ Für Details sieh dir an:
 
 | Bereich                           | Datei                                         |
 | --------------------------------- | --------------------------------------------- |
-| Einstieg                          | `CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md` |
+| Einstieg                          | `Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md` |
 | Regeln & Prinzipien               | `KODEX – Claire de Binare.md`                 |
 | Systemdesign                      | `backoffice/docs/architecture/N1_ARCHITEKTUR.md` |
 | Projekt-Fortschritt               | `backoffice/PROJECT_STATUS.md`                |

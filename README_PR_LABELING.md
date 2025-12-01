@@ -2,7 +2,7 @@
 
 ## 📋 Übersicht
 
-Dieses Verzeichnis enthält ein vollautomatisches Label-System für alle Pull Requests im Claire de Binare Cleanroom Repository.
+Dieses Verzeichnis enthält ein vollautomatisches Label-System für alle Pull Requests im Claire de Binare Claire de Binare Repository.
 
 ## 🚀 Schnellstart
 
@@ -202,7 +202,7 @@ gh auth login
 **Debugging**:
 ```bash
 # Prüfe Berechtigungen
-gh repo view jannekbuengener/Claire_de_Binare_Cleanroom
+gh repo view jannekbuengener/Claire_de_Binare
 
 # Prüfe vorhandene Labels
 gh label list
@@ -349,4 +349,4 @@ Bei Fragen oder Problemen: **Jannek Büngener**
 
 **Version**: 1.0.0
 **Erstellt**: 2025-11-22
-**Repository**: jannekbuengener/Claire_de_Binare_Cleanroom
+**Repository**: jannekbuengener/Claire_de_Binare

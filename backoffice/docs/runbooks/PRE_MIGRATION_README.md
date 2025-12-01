@@ -59,7 +59,7 @@ cd sandbox
 **Erwartetes Ergebnis**:
 ```
 ✅ ALLE CHECKS BESTANDEN
-Status: ✅ GO für Cleanroom-Migration
+Status: ✅ GO für Claire de Binare-Migration
 ```
 
 ### Option 2: Manuell (Schritt-für-Schritt)
@@ -162,7 +162,7 @@ MEXC_API_SECRET=<SET_IN_ENV>
 ### 1. Status-Änderung
 
 - **Vorher**: ⚠️ **CONDITIONAL GO**
-- **Nachher**: ✅ **GO für Cleanroom-Migration**
+- **Nachher**: ✅ **GO für Claire de Binare-Migration**
 
 ### 2. Risiko-Level
 
@@ -171,11 +171,11 @@ MEXC_API_SECRET=<SET_IN_ENV>
 
 ### 3. Nächste Schritte
 
-Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf":
+Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Claire de Binare-Migration-Ablauf":
 
 **Phase 1**: Pre-Migration (✅ Abgeschlossen nach diesem Guide)
 **Phase 2**: Migration (2-3h)
-- Dateien aus sandbox/ ins Cleanroom-Repo kopieren
+- Dateien aus sandbox/ ins Claire de Binare-Repo kopieren
 - DECISION_LOG.md mit ADRs ergänzen
 **Phase 3**: Validierung (1h)
 - docker compose up -d

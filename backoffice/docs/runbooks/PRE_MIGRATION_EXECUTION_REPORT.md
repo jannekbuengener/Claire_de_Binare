@@ -2,13 +2,13 @@
 
 **Datum**: 2025-11-16
 **Status**: ✅ **ABGESCHLOSSEN**
-**Resultat**: ✅ **GO für Cleanroom-Migration**
+**Resultat**: ✅ **GO für Claire de Binare-Migration**
 
 ---
 
 ## Executive Summary
 
-Alle 4 CRITICAL Pre-Migration-Tasks wurden erfolgreich ausgeführt und validiert. Das System ist jetzt bereit für die Cleanroom-Migration.
+Alle 4 CRITICAL Pre-Migration-Tasks wurden erfolgreich ausgeführt und validiert. Das System ist jetzt bereit für die Claire de Binare-Migration.
 
 **Status-Änderung**:
 - **Vorher**: ⚠️ CONDITIONAL GO (4 CRITICAL-Risiken)
@@ -250,17 +250,17 @@ docker compose logs -f
 
 ---
 
-### 3. Cleanroom-Migration starten
+### 3. Claire de Binare-Migration starten
 
-Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf"
+Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Claire de Binare-Migration-Ablauf"
 
 **Phase 2 - Migration (2-3h)**:
-- [ ] Dateien aus sandbox/ ins Cleanroom-Repo kopieren:
+- [ ] Dateien aus sandbox/ ins Claire de Binare-Repo kopieren:
   - `canonical_schema.yaml` → `backoffice/docs/`
   - `canonical_readiness_report.md` → `backoffice/docs/`
   - `infra_templates.md` → `backoffice/templates/`
   - `output.md` → `backoffice/docs/SYSTEM_REFERENCE.md`
-- [ ] `.env.template` ins Cleanroom-Root kopieren
+- [ ] `.env.template` ins Claire de Binare-Root kopieren
 - [ ] `docker-compose.yml` aktualisieren
 - [ ] DECISION_LOG.md mit ADRs ergänzen:
   - ADR-XXX: ENV-Naming-Konvention (Dezimal)
@@ -268,7 +268,7 @@ Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf"
   - ADR-XXX: Secrets-Management-Policy
 
 **Phase 3 - Validierung (1h)**:
-- [ ] `docker compose up -d` im Cleanroom-Repo
+- [ ] `docker compose up -d` im Claire de Binare-Repo
 - [ ] Health-Checks prüfen (alle Services healthy?)
 - [ ] pytest (alle Tests bestehen?)
 - [ ] Smoke-Test: market_data → signals → orders → order_results
@@ -328,7 +328,7 @@ Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf"
 
 - **4/4 CRITICAL-Tasks**: ✅ Erledigt
 - **15/15 Validierungs-Checks**: ✅ PASS (1 WARNING akzeptabel)
-- **Status**: ✅ GO für Cleanroom-Migration
+- **Status**: ✅ GO für Claire de Binare-Migration
 - **Risiko-Level**: 🟢 LOW
 - **Geschätzte Zeit**: ~10 Min (automatisiert)
 
@@ -336,5 +336,5 @@ Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf"
 
 ---
 
-**Nächster Meilenstein**: Cleanroom-Repo-Überführung (Phase 2)
+**Nächster Meilenstein**: Claire de Binare-Repo-Überführung (Phase 2)
 **Geschätzter Aufwand**: 2-3 Stunden

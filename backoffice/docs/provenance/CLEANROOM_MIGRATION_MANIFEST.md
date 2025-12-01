@@ -1,16 +1,16 @@
-# Cleanroom Migration Manifest - Claire de Binare (HISTORISCH)
+# Claire de Binare Migration Manifest - Claire de Binare (HISTORISCH)
 
 **Erstellt**: 2025-11-16
 **Migration durchgeführt**: 2025-11-16
 **Status**: ✅ **MIGRATION ABGESCHLOSSEN**
 
-> **Historischer Kontext**: Dieses Manifest dokumentiert die erfolgreich durchgeführte Migration vom Backup-Repo in das Cleanroom-Repository (2025-11-16). Das Dokument dient als Template für zukünftige Repository-Migrationen.
+> **Historischer Kontext**: Dieses Manifest dokumentiert die erfolgreich durchgeführte Migration vom Backup-Repo in das Claire de Binare-Repository (2025-11-16). Das Dokument dient als Template für zukünftige Repository-Migrationen.
 
 ---
 
 ## Übersicht
 
-Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire_de_binare - Kopie`) ins Cleanroom-Repo übertragen wurden.
+Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire_de_binare - Kopie`) ins Claire de Binare-Repo übertragen wurden.
 
 **Ziel (erreicht)**: Sauberes, kanonisches System ohne Legacy-Ballast, Secrets oder Inkonsistenzen.
 
@@ -40,7 +40,7 @@ Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire
 
 ### 1. Kanonische Dokumentation (sandbox/ → backoffice/docs/)
 
-| Source (Backup-Repo) | Target (Cleanroom-Repo) | Aktion |
+| Source (Backup-Repo) | Target (Claire de Binare-Repo) | Aktion |
 |----------------------|-------------------------|--------|
 | `sandbox/canonical_schema.yaml` | `backoffice/docs/canonical_schema.yaml` | COPY |
 | `sandbox/canonical_model_overview.md` | `backoffice/docs/canonical_model_overview.md` | COPY |
@@ -56,7 +56,7 @@ Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire
 
 ### 2. Infra-Templates (sandbox/ → backoffice/templates/)
 
-| Source (Backup-Repo) | Target (Cleanroom-Repo) | Aktion |
+| Source (Backup-Repo) | Target (Claire de Binare-Repo) | Aktion |
 |----------------------|-------------------------|--------|
 | `sandbox/infra_templates.md` | `backoffice/templates/infra_templates.md` | COPY |
 | `sandbox/project_template.md` | `backoffice/templates/project_template.md` | COPY |
@@ -68,7 +68,7 @@ Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire
 
 ### 3. Konfiguration (Root → Root)
 
-| Source (Backup-Repo) | Target (Cleanroom-Repo) | Aktion |
+| Source (Backup-Repo) | Target (Claire de Binare-Repo) | Aktion |
 |----------------------|-------------------------|--------|
 | `.env.template` | `.env.template` | COPY (bereinigte Version) |
 | `docker-compose.yml` | `docker-compose.yml` | COPY + REVIEW (cdb_signal_gen entfernt) |
@@ -115,7 +115,7 @@ Dieses Manifest definierte präzise, welche Dateien aus dem Backup-Repo (`claire
 
 ### 6. Backoffice-Dokumentation (bestehend, zu aktualisieren)
 
-Diese Dateien existieren bereits im Cleanroom-Repo und müssen **aktualisiert** werden:
+Diese Dateien existieren bereits im Claire de Binare-Repo und müssen **aktualisiert** werden:
 
 | Datei | Aktion | Details |
 |-------|--------|---------|
@@ -222,7 +222,7 @@ fi
 
 ## Migration-Execution-Plan
 
-### Phase 1: Vorbereitung (Cleanroom-Repo)
+### Phase 1: Vorbereitung (Claire de Binare-Repo)
 
 ```bash
 # 1. Neues Repo initialisieren (falls noch nicht geschehen)
@@ -239,13 +239,13 @@ mkdir -p tests/integration
 
 ---
 
-### Phase 2: Datei-Transfer (Backup → Cleanroom)
+### Phase 2: Datei-Transfer (Backup → Claire de Binare)
 
 **Automatisiert** (empfohlen):
 
 ```powershell
-# Script wird erstellt: sandbox/cleanroom_migration_script.ps1
-.\cleanroom_migration_script.ps1 -SourceRepo "C:\...\claire_de_binare - Kopie" -TargetRepo "C:\...\claire_de_binare_clean"
+# Script wird erstellt: sandbox/Claire de Binare_migration_script.ps1
+.\Claire de Binare_migration_script.ps1 -SourceRepo "C:\...\claire_de_binare - Kopie" -TargetRepo "C:\...\claire_de_binare_clean"
 ```
 
 **Manuell** (Alternative):
@@ -287,7 +287,7 @@ Copy-Item -Recurse "tests/integration" "$TargetRepo/tests/"
 ### Phase 3: DECISION_LOG.md aktualisieren
 
 ```powershell
-# Im Cleanroom-Repo
+# Im Claire de Binare-Repo
 code backoffice/docs/DECISION_LOG.md
 ```
 
@@ -300,7 +300,7 @@ code backoffice/docs/DECISION_LOG.md
 
 ---
 
-### Phase 4: Validierung (Cleanroom-Repo)
+### Phase 4: Validierung (Claire de Binare-Repo)
 
 ```bash
 # 1. Git-Status prüfen
@@ -334,7 +334,7 @@ docker compose logs cdb_core cdb_risk cdb_execution
 
 ---
 
-### Phase 5: Initial Commit (Cleanroom-Repo)
+### Phase 5: Initial Commit (Claire de Binare-Repo)
 
 ```bash
 # 1. Staging
@@ -346,7 +346,7 @@ git diff --cached --name-only | grep -q "^\.env$"
 
 # 3. Commit
 git commit -m "$(cat <<'EOF'
-feat: initial cleanroom migration - canonical system v1.0
+feat: initial Claire de Binare migration - canonical system v1.0
 
 Migrated from backup repo after 4-pipeline canonicalization:
 - Pipeline 1: Document transfer & audit
@@ -369,7 +369,7 @@ EOF
 )"
 
 # 4. Tag erstellen
-git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
+git tag -a v1.0-Claire de Binare -m "Claire de Binare baseline after 4-pipeline migration"
 ```
 
 ---
@@ -426,4 +426,4 @@ git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
 
 ---
 
-**Viel Erfolg bei der Cleanroom-Migration!** 🚀
+**Viel Erfolg bei der Claire de Binare-Migration!** 🚀

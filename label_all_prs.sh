@@ -1,11 +1,11 @@
 #!/bin/bash
 # label_all_prs.sh - Versieht alle Pull Requests mit passenden Labels
-# Erstellt für: Claire de Binare Cleanroom
+# Erstellt für: Claire de Binare Claire de Binare
 # Datum: 2025-11-22
 
 set -e
 
-REPO="jannekbuengener/Claire_de_Binare_Cleanroom"
+REPO="jannekbuengener/Claire_de_Binare"
 
 echo "🏷️  Label-Bot für Claire de Binare Pull Requests"
 echo "=================================================="

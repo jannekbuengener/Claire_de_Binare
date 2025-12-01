@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 label_all_prs.py - Automatisches Label-System für Pull Requests
-Erstellt für: Claire de Binare Cleanroom
+Erstellt für: Claire de Binare Claire de Binare
 Datum: 2025-11-22
 
 Verwendet die GitHub API über gh CLI oder direkt über requests.
@@ -327,7 +327,7 @@ class PRLabeler:
 
 def main():
     """Main Entry Point"""
-    repo = "jannekbuengener/Claire_de_Binare_Cleanroom"
+    repo = "jannekbuengener/Claire_de_Binare"
 
     # Argument Parsing (optional)
     if len(sys.argv) > 1:

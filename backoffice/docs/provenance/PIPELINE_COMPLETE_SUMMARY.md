@@ -296,7 +296,7 @@ EOF
 
 ---
 
-## Cleanroom-Migration-Ablauf
+## Claire de Binare-Migration-Ablauf
 
 ### Phase 1: Pre-Migration (3-4h)
 - [ ] SR-001: Secrets bereinigen
@@ -306,7 +306,7 @@ EOF
 - [ ] `docker compose config --quiet` → kein Fehler
 
 ### Phase 2: Migration (2-3h)
-- [ ] Dateien aus `sandbox/` ins Cleanroom-Repo kopieren:
+- [ ] Dateien aus `sandbox/` ins Claire de Binare-Repo kopieren:
   - `canonical_schema.yaml` → `backoffice/docs/`
   - `canonical_readiness_report.md` → `backoffice/docs/`
   - `infra_templates.md` → `backoffice/templates/`
@@ -359,7 +359,7 @@ EOF
 - 9 Security-Risiken (SR-001 bis SR-009) dokumentiert
 - 10 Konflikte identifiziert und gelöst/dokumentiert
 
-**Status**: ⚠️ **CONDITIONAL GO** für Cleanroom-Migration
+**Status**: ⚠️ **CONDITIONAL GO** für Claire de Binare-Migration
 **Nächster Schritt**: Pre-Migration-Tasks ausführen (3-4h Aufwand)
 **Risiko-Level nach Pre-Migration**: 🟢 LOW
 

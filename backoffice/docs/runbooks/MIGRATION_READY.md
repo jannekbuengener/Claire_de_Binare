@@ -1,10 +1,10 @@
-# ✅ Cleanroom-Migration - HISTORISCH
+# ✅ Claire de Binare-Migration - HISTORISCH
 
 **Datum der Migration**: 2025-11-16
 **Status**: ✅ **ABGESCHLOSSEN**
-**Aktueller Stand**: Migration erfolgreich durchgeführt, Cleanroom ist aktiv
+**Aktueller Stand**: Migration erfolgreich durchgeführt, Claire de Binare ist aktiv
 
-> **Historischer Kontext**: Dieses Dokument beschreibt die Vorbereitungen für die Cleanroom-Migration vom 2025-11-16. Die Migration wurde erfolgreich durchgeführt. Das Cleanroom-Repository ist seit diesem Datum der aktuelle, kanonische Stand. Siehe ADR-039 für Details.
+> **Historischer Kontext**: Dieses Dokument beschreibt die Vorbereitungen für die Claire de Binare-Migration vom 2025-11-16. Die Migration wurde erfolgreich durchgeführt. Das Claire de Binare-Repository ist seit diesem Datum der aktuelle, kanonische Stand. Siehe ADR-039 für Details.
 
 ---
 
@@ -15,7 +15,7 @@
 | **Pipeline 1-4** | ✅ DONE | Alle 4 Pipelines abgeschlossen (18 Dokumente erstellt) |
 | **Pre-Migration** | ✅ DONE | 4 CRITICAL-Tasks behoben, Validierung: ✅ PASS |
 | **Migration-Vorbereitung** | ✅ DONE | Manifest, ADRs, Scripts erstellt |
-| **Cleanroom-Migration** | ✅ **ABGESCHLOSSEN** | Erfolgreich durchgeführt am 2025-11-16 |
+| **Claire de Binare-Migration** | ✅ **ABGESCHLOSSEN** | Erfolgreich durchgeführt am 2025-11-16 |
 
 ---
 
@@ -25,8 +25,8 @@
 
 | Datei | Zweck | Größe |
 |-------|-------|-------|
-| **CLEANROOM_MIGRATION_MANIFEST.md** | Vollständiges Migrations-Handbuch | ~800 Zeilen |
-| **cleanroom_migration_script.ps1** | Automatisiertes Migration-Script | ~350 Zeilen |
+| **Claire de Binare_MIGRATION_MANIFEST.md** | Vollständiges Migrations-Handbuch | ~800 Zeilen |
+| **Claire de Binare_migration_script.ps1** | Automatisiertes Migration-Script | ~350 Zeilen |
 | **ADRs_FOR_DECISION_LOG.md** | 3 fertige ADRs zum Einfügen | ~600 Zeilen |
 
 ### 2. Kanonische Dokumentation (wird migriert)
@@ -76,16 +76,16 @@
 cd "C:\Users\janne\Documents\GitHub\Workspaces\claire_de_binare - Kopie\sandbox"
 
 # Dry-Run (Vorschau)
-.\cleanroom_migration_script.ps1 -TargetRepo "C:\Path\To\Cleanroom\Repo" -DryRun
+.\Claire de Binare_migration_script.ps1 -TargetRepo "C:\Path\To\Claire de Binare\Repo" -DryRun
 
 # Echte Ausführung
-.\cleanroom_migration_script.ps1 -TargetRepo "C:\Path\To\Cleanroom\Repo"
+.\Claire de Binare_migration_script.ps1 -TargetRepo "C:\Path\To\Claire de Binare\Repo"
 ```
 
 **Ausgabe**:
 ```
 ==================================================================
-Claire de Binare - Cleanroom Migration
+Claire de Binare - Claire de Binare Migration
 ==================================================================
 
 [KATEGORIE 1] Kanonische Dokumentation...
@@ -132,7 +132,7 @@ Claire de Binare - Cleanroom Migration
 [KATEGORIE 7] Migration-Historie (optional)...
   ✅ PIPELINE_COMPLETE_SUMMARY.md
   ✅ PRE_MIGRATION_EXECUTION_REPORT.md
-  ✅ CLEANROOM_MIGRATION_MANIFEST.md
+  ✅ Claire de Binare_MIGRATION_MANIFEST.md
   ✅ ADRs_FOR_DECISION_LOG.md
   → 4/4 Dateien kopiert
 
@@ -153,10 +153,10 @@ Migration - Zusammenfassung
 
 ### Option 2: Manuell (2-3h)
 
-Siehe `CLEANROOM_MIGRATION_MANIFEST.md` → Abschnitt "Migration-Execution-Plan"
+Siehe `Claire de Binare_MIGRATION_MANIFEST.md` → Abschnitt "Migration-Execution-Plan"
 
 **Schritte**:
-1. Verzeichnisstruktur im Cleanroom-Repo erstellen
+1. Verzeichnisstruktur im Claire de Binare-Repo erstellen
 2. Dateien manuell kopieren (siehe Datei-Transfer-Matrix)
 3. ADRs in DECISION_LOG.md einfügen
 4. Validierung durchführen
@@ -307,7 +307,7 @@ git diff --cached --name-only | grep -q "^\.env$"
 
 # Commit
 git commit -m "$(cat <<'EOF'
-feat: initial cleanroom migration - canonical system v1.0
+feat: initial Claire de Binare migration - canonical system v1.0
 
 Migrated from backup repo after 4-pipeline canonicalization:
 - Pipeline 1: Document transfer & audit
@@ -330,7 +330,7 @@ EOF
 )"
 
 # Tag erstellen
-git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
+git tag -a v1.0-Claire de Binare -m "Claire de Binare baseline after 4-pipeline migration"
 
 # Push (optional, nur wenn Remote-Repo existiert)
 # git remote add origin <URL>
@@ -361,7 +361,7 @@ git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
 
 | Metrik | Vorher | Nachher |
 |--------|--------|---------|
-| **Repo-Status** | Backup (mit Secrets) | Cleanroom (sauber) |
+| **Repo-Status** | Backup (mit Secrets) | Claire de Binare (sauber) |
 | **Security** | 70% (3 CRITICAL-Risiken) | 95% |
 | **Completeness** | 85% | 100% |
 | **Consistency** | 90% | 100% |
@@ -427,7 +427,7 @@ git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
 
 ---
 
-**Das Claire de Binare-System ist jetzt vollständig migrations-bereit und wartet auf Cleanroom-Überführung!** 🚀
+**Das Claire de Binare-System ist jetzt vollständig migrations-bereit und wartet auf Claire de Binare-Überführung!** 🚀
 
 **Status**: ✅ **READY TO MIGRATE**
 **Geschätzter Aufwand**: 1-2 Stunden (automatisiert)
@@ -474,9 +474,9 @@ Projektname: Claire-de-Binare
 
 SOURCE_REPO (Arbeitskopie): claire_de_binare - Kopie
 
-TARGET_REPO (Cleanroom): Claire_de_Binare_Cleanroom
+TARGET_REPO (Claire de Binare): Claire_de_Binare
 
-Status: ✅ READY FOR CLEANROOM MIGRATION
+Status: ✅ READY FOR Claire de Binare MIGRATION
 
 Produktionsnahe Staging-Tests: in 1–2 Stunden realistisch erreichbar (nach Migration & Deployment)
 
@@ -508,10 +508,10 @@ canonical_system_map.md
 project_template.md / infra_templates.md / env_index.md
 → Templates & ENV-Struktur für Claire-de-Binare und neue Projekte.
 
-3. Nächster Schritt: Cleanroom-Migration starten
+3. Nächster Schritt: Claire de Binare-Migration starten
 
-Der nächste logische Schritt ist die Migration ins Cleanroom-Repo
-Claire_de_Binare_Cleanroom.
+Der nächste logische Schritt ist die Migration ins Claire de Binare-Repo
+Claire_de_Binare.
 
 Es gibt zwei Wege:
 
@@ -522,17 +522,17 @@ Im SOURCE_REPO ins Verzeichnis sandbox/ wechseln.
 Den in PRE_MIGRATION_EXECUTION_REPORT.md beschriebenen Migration-Schnellstart verwenden
 (Migration-Script ausführen, inkl. ggf. Dry-Run/Preview, falls vorhanden).
 
-Nach der Ausführung im Cleanroom-Repo Claire_de_Binare_Cleanroom prüfen:
+Nach der Ausführung im Claire de Binare-Repo Claire_de_Binare prüfen:
 
 Sind Kanon-Docs vorhanden?
 
 Sind Templates vorhanden?
 
-Gibt es ein CLEANROOM_MIGRATION_SUMMARY.md?
+Gibt es ein Claire de Binare_MIGRATION_SUMMARY.md?
 
 Ergebnis validieren:
 
-Cleanroom-Struktur konsistent?
+Claire de Binare-Struktur konsistent?
 
 Keine Secrets in .env.template?
 
@@ -542,9 +542,9 @@ Option 2 – Manuell (2–3 Stunden)
 
 sandbox/PIPELINE_COMPLETE_SUMMARY.md und sandbox/canonical_system_map.md lesen.
 
-sandbox/cleanroom_migration_plan.md (falls vorhanden) als Leitplanke nutzen.
+sandbox/Claire de Binare_migration_plan.md (falls vorhanden) als Leitplanke nutzen.
 
-Im Cleanroom-Repo Claire_de_Binare_Cleanroom Zielstruktur anlegen, z. B.:
+Im Claire de Binare-Repo Claire_de_Binare Zielstruktur anlegen, z. B.:
 
 docs/architecture/
 
@@ -572,7 +572,7 @@ project_template.md, infra_templates.md, env_index.md
 
 relevante Security-/Provenance-/Architecture-Dokus.
 
-Im Cleanroom ein CLEANROOM_MIGRATION_SUMMARY.md anlegen:
+Im Claire de Binare ein Claire de Binare_MIGRATION_SUMMARY.md anlegen:
 
 Was migriert wurde
 
@@ -582,9 +582,9 @@ Was noch offen ist (Hardening, Tests, weitere ADRs).
 
 4. Nach der Migration: Staging & Tests
 
-Nach erfolgreicher Migration ins Cleanroom-Repo:
+Nach erfolgreicher Migration ins Claire de Binare-Repo:
 
-Im Cleanroom .env.template prüfen.
+Im Claire de Binare .env.template prüfen.
 
 Lokal eine .env erzeugen (nicht committen):
 
@@ -592,7 +592,7 @@ Lokal eine .env erzeugen (nicht committen):
 
 <SET_IN_ENV>-Platzhalter mit echten Werten befüllen (nur lokal).
 
-Docker-Stack für Staging/Test starten (z. B. im Cleanroom-Repo):
+Docker-Stack für Staging/Test starten (z. B. im Claire de Binare-Repo):
 
 docker compose up -d
 
@@ -622,7 +622,7 @@ Integrationstests für Event-Flows
 
 E2E-Tests für die wichtigsten Trading- und Risk-Szenarien.
 
-Diese Schritte sind wichtig für „echte Production“, blockieren aber nicht mehr die Cleanroom-Migration.
+Diese Schritte sind wichtig für „echte Production“, blockieren aber nicht mehr die Claire de Binare-Migration.
 
 6. Fazit
 
@@ -630,7 +630,7 @@ Claire-de-Binare ist vollständig kanonisiert und dokumentiert.
 
 Alle CRITICAL-Risiken sind behoben.
 
-Migration in den Cleanroom ist ready to run.
+Migration in den Claire de Binare ist ready to run.
 
 Staging-/produktnahe Tests sind in 1–2 Stunden realistisch erreichbar.
 

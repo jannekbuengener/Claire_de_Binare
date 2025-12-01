@@ -1,4 +1,4 @@
-# Repository-Map - Claire de Binare (Cleanroom)
+# Repository-Map - Claire de Binare (Claire de Binare)
 
 **Erstellt von**: claire-architect
 **Datum**: 2025-11-16

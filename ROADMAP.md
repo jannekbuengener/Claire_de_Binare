@@ -149,7 +149,7 @@ Diese Aufgaben blockieren den Production-Release:
 **Erreicht**:
 - ✅ KODEX etabliert
 - ✅ ADRs dokumentiert
-- ✅ Cleanroom-Migration
+- ✅ Claire de Binare-Migration
 - ✅ Security-Hardening (95% Score)
 - ✅ Architecture-Decisions
 

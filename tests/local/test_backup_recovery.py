@@ -502,7 +502,7 @@ def test_automated_backup_script_concept():
         """
   📋 Beispiel für Cronjob (täglich um 02:00 Uhr):
 
-  0 2 * * * /home/user/Claire_de_Binare_Cleanroom/backoffice/scripts/backup_postgres.sh >> /var/log/claire_backup.log 2>&1
+  0 2 * * * /home/user/Claire_de_Binare/backoffice/scripts/backup_postgres.sh >> /var/log/claire_backup.log 2>&1
   """
     )
 

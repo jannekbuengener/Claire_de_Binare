@@ -1,7 +1,7 @@
 # N1 – Systemarchitektur für die Paper-Test-Phase
 
 **Projekt:** Claire de Binare  
-**Phase:** N1 – Post-Cleanroom / Paper-Test-Vorbereitung  
+**Phase:** N1 – Post-Claire de Binare / Paper-Test-Vorbereitung  
 **Status:** Entwurf stabil, für weitere N1-Spezifikationen freigegeben  
 
 ---

@@ -426,7 +426,7 @@ Nach erfolgreicher Implementierung der E2E-Test-Suite (2025-11-19) existierten *
 
 ---
 
-## ADR-039: Cleanroom-Repository als kanonische Codebasis etabliert
+## ADR-039: Claire de Binare-Repository als kanonische Codebasis etabliert
 
 **Datum**: 2025-01-17
 **Status**: ✅ Akzeptiert
@@ -434,19 +434,19 @@ Nach erfolgreicher Implementierung der E2E-Test-Suite (2025-11-19) existierten *
 
 ### Kontext
 
-Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (2025-11-16) und Abschluss aller Kanonisierungs-Pipelines existierte eine **ambivalente Dokumentationslage**:
+Nach erfolgreicher Migration vom Backup-Repository in das Claire de Binare-Repository (2025-11-16) und Abschluss aller Kanonisierungs-Pipelines existierte eine **ambivalente Dokumentationslage**:
 
 **Probleme**:
 1. **Namensinkonsistenz**: 28 Dateien verwendeten noch "Claire de Binare" statt "Claire de Binare"
-2. **Status-Verwirrung**: Cleanroom wurde in vielen Dokumenten als "Ziel-Repo" oder "migrations-bereit" beschrieben, obwohl die Migration bereits erfolgt war
-3. **Redundante Migrations-Dokumente**: 6 Dokumente (MIGRATION_READY.md, PRE_MIGRATION_*.md, CLEANROOM_MIGRATION_MANIFEST.md) beschrieben die Migration als bevorstehende Aktion
+2. **Status-Verwirrung**: Claire de Binare wurde in vielen Dokumenten als "Ziel-Repo" oder "migrations-bereit" beschrieben, obwohl die Migration bereits erfolgt war
+3. **Redundante Migrations-Dokumente**: 6 Dokumente (MIGRATION_READY.md, PRE_MIGRATION_*.md, Claire de Binare_MIGRATION_MANIFEST.md) beschrieben die Migration als bevorstehende Aktion
 4. **Unklare Single Source of Truth**: Unklar, ob `backoffice/docs/` oder Root-Dateien die gültige Version darstellten
 
-**Fragestellung**: Wie etablieren wir das Cleanroom-Repository eindeutig als aktuellen, kanonischen Stand und vermeiden zukünftige Verwirrung?
+**Fragestellung**: Wie etablieren wir das Claire de Binare-Repository eindeutig als aktuellen, kanonischen Stand und vermeiden zukünftige Verwirrung?
 
 ### Entscheidung
 
-**Das Cleanroom-Repository (`Claire_de_Binare_Cleanroom`) ist ab 2025-01-17 die einzige kanonische Codebasis und Dokumentationsquelle des Projekts.**
+**Das Claire de Binare-Repository (`Claire_de_Binare`) ist ab 2025-01-17 die einzige kanonische Codebasis und Dokumentationsquelle des Projekts.**
 
 **Durchgeführte Maßnahmen**:
 
@@ -457,14 +457,14 @@ Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (
    - Hinweis in KODEX ergänzt: "Frühere Dokumente verwenden teilweise 'Claire de Binare'; gilt als historisch"
 
 2. **Nullpunkt-Definition**:
-   - `PROJECT_STATUS.md`: Phase auf "N1 - Paper-Test-Vorbereitung" aktualisiert (100% Cleanroom etabliert)
-   - `EXECUTIVE_SUMMARY.md`: Status von "migrations-bereit" → "ABGESCHLOSSEN - CLEANROOM AKTIV"
+   - `PROJECT_STATUS.md`: Phase auf "N1 - Paper-Test-Vorbereitung" aktualisiert (100% Claire de Binare etabliert)
+   - `EXECUTIVE_SUMMARY.md`: Status von "migrations-bereit" → "ABGESCHLOSSEN - Claire de Binare AKTIV"
    - Historischer Kontext ergänzt: Migration vom 2025-11-16 ist abgeschlossen
    - Nächste Schritte fokussieren auf N1-Phase (siehe `N1_ARCHITEKTUR.md`)
 
 3. **Migrations-Dokumente historisiert**:
    - Alle PRE_MIGRATION_* und MIGRATION_READY-Dokumente als "Historische Migration 2025-11-16" gekennzeichnet
-   - Migration-Scripts (`cleanroom_migration_script.ps1`) als **Template/Referenz** für zukünftige Migrationen deklariert
+   - Migration-Scripts (`Claire de Binare_migration_script.ps1`) als **Template/Referenz** für zukünftige Migrationen deklariert
    - Keine aktiven Aufforderungen mehr, "Migration auszuführen"
 
 4. **Archiv-Struktur bestätigt**:
@@ -480,7 +480,7 @@ Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (
 ### Begründung
 
 **Warum jetzt?**
-- Cleanroom-Migration ist seit 2 Monaten abgeschlossen, aber Dokumentation reflektierte dies nicht
+- Claire de Binare-Migration ist seit 2 Monaten abgeschlossen, aber Dokumentation reflektierte dies nicht
 - Neue Team-Mitglieder oder KI-Agenten könnten durch "migrations-bereit"-Formulierungen verwirrt werden
 - Vorbereitung für N1-Phase erfordert klaren, stabilen Ausgangspunkt
 
@@ -498,7 +498,7 @@ Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (
 
 **Positiv**:
 - ➕ **Eindeutige Single Source of Truth**: `backoffice/docs/` ist die kanonische Dokumentation
-- ➕ **Vereinfachtes Onboarding**: Neue Contributors sehen sofort, dass Cleanroom der aktuelle Stand ist
+- ➕ **Vereinfachtes Onboarding**: Neue Contributors sehen sofort, dass Claire de Binare der aktuelle Stand ist
 - ➕ **Klare Phasen-Trennung**: Migration (abgeschlossen) vs. N1 (aktuell) vs. Produktion (zukünftig)
 - ➕ **Konsistente Namensgebung**: "Claire de Binare" als verbindliche Projektbezeichnung
 
@@ -513,7 +513,7 @@ Nach erfolgreicher Migration vom Backup-Repository in das Cleanroom-Repository (
 ### Nächste Schritte
 
 1. ✅ ADR-039 in DECISION_LOG integriert
-2. ⏳ CLEANROOM_BASELINE_SUMMARY.md erstellen (Übersicht aller Änderungen)
+2. ⏳ Claire de Binare_BASELINE_SUMMARY.md erstellen (Übersicht aller Änderungen)
 3. ⏳ Alle verbleibenden Docs mit "Binaire" aktualisieren (Service-Docs, Schema, etc.)
 4. ⏳ N1-Phase starten: Test-Infrastruktur aufsetzen (siehe PROJECT_STATUS.md)
 
@@ -2249,11 +2249,11 @@ cdb_risk (Risk Manager)
 
 **Datum**: 2025-11-16
 **Status**: ✅ Akzeptiert
-**Verantwortlicher**: jannekbuengener (via Cleanroom-Migration Pipeline 4)
+**Verantwortlicher**: jannekbuengener (via Claire de Binare-Migration Pipeline 4)
 
 ### Kontext
 
-Nach Abschluss der Pre-Migration-Tasks (SR-001 bis SR-003 behoben, cdb_signal_gen entfernt per ADR-037) steht das Cleanroom-Repo vor dem ersten produktiven Start. Die übliche Test-Strategie wäre:
+Nach Abschluss der Pre-Migration-Tasks (SR-001 bis SR-003 behoben, cdb_signal_gen entfernt per ADR-037) steht das Claire de Binare-Repo vor dem ersten produktiven Start. Die übliche Test-Strategie wäre:
 
 1. Unit-Tests für alle Services (pytest)
 2. Integration-Tests für Event-Flows
@@ -2272,7 +2272,7 @@ Nach Abschluss der Pre-Migration-Tasks (SR-001 bis SR-003 behoben, cdb_signal_ge
 
 **Gewählte Strategie: Option C + A** (aus DECISION-004 in CLAUDE.md)
 
-**Phase 1 - Cleanroom-Migration (JETZT)**:
+**Phase 1 - Claire de Binare-Migration (JETZT)**:
 1. **Smoke-Test als Acceptance-Kriterium**:
    - Manueller End-to-End-Test des Event-Flows: `market_data → signals → orders → order_results`
    - Verifizierung über Docker-Logs (keine automatisierten Assertions)
@@ -2283,7 +2283,7 @@ Nach Abschluss der Pre-Migration-Tasks (SR-001 bis SR-003 behoben, cdb_signal_ge
      - Keine CRITICAL-Fehler in Logs
 
 2. **Initial Commit nach Smoke-Test**:
-   - Wenn Smoke-Test besteht → Git-Commit + Tag `v1.0-cleanroom`
+   - Wenn Smoke-Test besteht → Git-Commit + Tag `v1.0-Claire de Binare`
    - Wenn Smoke-Test fehlschlägt → Blocker identifizieren, fixen, wiederholen
 
 **Phase 2 - Post-Migration (SPÄTER)**:
@@ -2396,7 +2396,7 @@ cdb_risk  | Order-Result empfangen: MOCK_7f444f31 status=FILLED qty=500.0000
 - **Pre-Migration Task**: Alle 4 Pipelines abgeschlossen (SR-001 bis SR-003 behoben)
 - **DECISION-004**: Smoke-Test-Strategie (CLAUDE.md, Zeilen 1434-1574)
 - **Smoke-Test-Log**: 2025-11-16, Event BTC_USDT, Flow komplett
-- **Pipeline**: Pipeline 4 - Kanonische Systemrekonstruktion + Cleanroom-Migration
+- **Pipeline**: Pipeline 4 - Kanonische Systemrekonstruktion + Claire de Binare-Migration
 - **Canonical Schema**: `backoffice/docs/canonical_schema.yaml` (Referenz für Event-Validierung)
 
 ---

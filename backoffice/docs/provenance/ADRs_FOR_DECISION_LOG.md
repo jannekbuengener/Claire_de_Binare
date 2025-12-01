@@ -1,8 +1,8 @@
-# ADRs für DECISION_LOG.md - Cleanroom-Migration
+# ADRs für DECISION_LOG.md - Claire de Binare-Migration
 
 **Erstellt**: 2025-11-16
 **Anzahl**: 3 neue ADRs
-**Einfügen in**: `backoffice/docs/DECISION_LOG.md` (Cleanroom-Repo)
+**Einfügen in**: `backoffice/docs/DECISION_LOG.md` (Claire de Binare-Repo)
 
 ---
 
@@ -357,7 +357,7 @@ cdb_risk (Risk Manager)
 
 ## Einfüge-Anleitung
 
-1. **Datei öffnen**: `backoffice/docs/DECISION_LOG.md` (im Cleanroom-Repo)
+1. **Datei öffnen**: `backoffice/docs/DECISION_LOG.md` (im Claire de Binare-Repo)
 
 2. **Letzte ADR-Nummer finden**: Suche nach höchster ADR-XXX (z.B. ADR-034)
 

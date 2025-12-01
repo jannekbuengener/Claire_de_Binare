@@ -39,7 +39,7 @@ ALERT_EMAIL_TO=deine-email@gmail.com
 # Als Administrator in PowerShell ausführen:
 schtasks /create `
   /tn "Claire_Hourly_Backup" `
-  /tr "powershell.exe -ExecutionPolicy Bypass -File C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom\backoffice\scripts\backup_postgres.ps1" `
+  /tr "powershell.exe -ExecutionPolicy Bypass -File C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare\backoffice\scripts\backup_postgres.ps1" `
   /sc hourly `
   /st 00:00 `
   /ru SYSTEM
@@ -65,7 +65,7 @@ schtasks /query /tn "Claire_Hourly_Backup" /v
 5. **Actions Tab**:
    - New Action
    - Program: `powershell.exe`
-   - Arguments: `-ExecutionPolicy Bypass -File "C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom\backoffice\scripts\backup_postgres.ps1"`
+   - Arguments: `-ExecutionPolicy Bypass -File "C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare\backoffice\scripts\backup_postgres.ps1"`
 6. **Conditions Tab**:
    - Start only if computer is on AC power: ☐ (DEAKTIVIEREN)
 7. **Settings Tab**:

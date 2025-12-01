@@ -1,8 +1,8 @@
 # ============================================================================
 # HISTORICAL TEMPLATE - Documents 2025-11-16 migration
 # ============================================================================
-# Repository : Claire_de_Binare_Cleanroom
-# Context    : Migration from backup repo into Cleanroom baseline
+# Repository : Claire_de_Binare
+# Context    : Migration from backup repo into Claire de Binare baseline
 # Status     : Historical reference only (do not re-run on current baseline)
 #
 # Original Header:

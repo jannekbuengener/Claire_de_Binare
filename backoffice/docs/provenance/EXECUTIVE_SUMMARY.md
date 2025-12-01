@@ -2,10 +2,10 @@
 
 **Projekt**: Claire de Binare - Paper Trading System
 **Zeitraum**: 2025-11-16
-**Status**: ✅ **ABGESCHLOSSEN - CLEANROOM AKTIV**
-**Deliverable**: Vollständig kanonisiertes System im Cleanroom-Repository
+**Status**: ✅ **ABGESCHLOSSEN - Claire de Binare AKTIV**
+**Deliverable**: Vollständig kanonisiertes System im Claire de Binare-Repository
 
-> **Historischer Kontext**: Dieses Dokument beschreibt die erfolgte Kanonisierung und Migration vom Backup-Repository in das Cleanroom-Repository (2025-11-16). Das Cleanroom-Repository ist seit diesem Datum der aktuelle, kanonische Stand des Projekts.
+> **Historischer Kontext**: Dieses Dokument beschreibt die erfolgte Kanonisierung und Migration vom Backup-Repository in das Claire de Binare-Repository (2025-11-16). Das Claire de Binare-Repository ist seit diesem Datum der aktuelle, kanonische Stand des Projekts.
 
 ---
 
@@ -47,8 +47,8 @@ Transformation eines unstrukturierten Backup-Repos mit Secrets, Inkonsistenzen u
 
 | Artefakt | Zweck | Umfang |
 |----------|-------|--------|
-| **CLEANROOM_MIGRATION_MANIFEST.md** | Vollständiges Migrations-Handbuch | 800+ Zeilen, Datei-Transfer-Matrix |
-| **cleanroom_migration_script.ps1** | Automatisiertes PowerShell-Script | 350+ Zeilen, 7 Kategorien |
+| **Claire de Binare_MIGRATION_MANIFEST.md** | Vollständiges Migrations-Handbuch | 800+ Zeilen, Datei-Transfer-Matrix |
+| **Claire de Binare_migration_script.ps1** | Automatisiertes PowerShell-Script | 350+ Zeilen, 7 Kategorien |
 | **ADRs_FOR_DECISION_LOG.md** | 3 fertige ADRs zum Einfügen | 600+ Zeilen (ADR-035, ADR-036, ADR-037) |
 | **MIGRATION_READY.md** | Checkliste & Schnellstart | 600+ Zeilen |
 
@@ -127,7 +127,7 @@ alerts (System-wide)
 
 ---
 
-### Nachher (Cleanroom-Ready)
+### Nachher (Claire de Binare-Ready)
 
 | Kategorie | Score | Details |
 |-----------|-------|---------|
@@ -250,10 +250,10 @@ alerts (System-wide)
 │  └── Status: ✅ GO                                              │
 │                                                                 │
 │         │                                                       │
-│         │ cleanroom_migration_script.ps1                       │
+│         │ Claire de Binare_migration_script.ps1                       │
 │         ↓                                                       │
 │                                                                 │
-│  CLEANROOM-REPO (Ziel)                                         │
+│  Claire de Binare-REPO (Ziel)                                         │
 │  ├── ✅ Keine Secrets                                          │
 │  ├── ✅ Konsistente ENV-Naming                                 │
 │  ├── ✅ Kanonisches Modell                                     │
@@ -319,10 +319,10 @@ alerts (System-wide)
 cd "C:\Users\janne\Documents\GitHub\Workspaces\claire_de_binare - Kopie\sandbox"
 
 # Option 1: Automatisiert (15 Min)
-.\cleanroom_migration_script.ps1 -TargetRepo "C:\Path\To\Cleanroom\Repo"
+.\Claire de Binare_migration_script.ps1 -TargetRepo "C:\Path\To\Claire de Binare\Repo"
 
 # Option 2: Manuell (2-3h)
-# Siehe CLEANROOM_MIGRATION_MANIFEST.md
+# Siehe Claire de Binare_MIGRATION_MANIFEST.md
 ```
 
 ---
@@ -430,14 +430,14 @@ cd "$TargetRepo"
 ### Für User
 
 1. **MIGRATION_READY.md** - Schnellstart-Guide
-2. **cleanroom_migration_script.ps1** - 1-Click-Migration
+2. **Claire de Binare_migration_script.ps1** - 1-Click-Migration
 3. **ADRs_FOR_DECISION_LOG.md** - Copy-Paste-ready ADRs
 
 ### Für Architektur-Team
 
 4. **canonical_schema.yaml** - Single Source of Truth
 5. **canonical_model_overview.md** - Strukturdefinition
-6. **CLEANROOM_MIGRATION_MANIFEST.md** - Vollständige Anleitung
+6. **Claire de Binare_MIGRATION_MANIFEST.md** - Vollständige Anleitung
 
 ### Für Compliance/Security
 
@@ -459,11 +459,11 @@ cd "$TargetRepo"
 - ✅ Security-Score: 95%
 - ✅ Risk-Level: LOW
 
-**Status**: ✅ **READY FOR CLEANROOM MIGRATION**
+**Status**: ✅ **READY FOR Claire de Binare MIGRATION**
 
 ---
 
-**Next Action**: Migration-Script ausführen → Cleanroom-Repo-Überführung → Production-Deployment
+**Next Action**: Migration-Script ausführen → Claire de Binare-Repo-Überführung → Production-Deployment
 
 **Estimated Time-to-Production**: 2-3 Stunden (inkl. Migration + Validierung)
 

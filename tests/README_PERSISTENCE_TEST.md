@@ -25,7 +25,7 @@ docker compose up -d --build
 docker compose ps
 
 # 3. Test-Events publishen
-cd /home/user/Claire_de_Binare_Cleanroom
+cd /home/user/Claire_de_Binare
 python tests/publish_test_events.py
 
 # 4. Persistenz validieren
@@ -99,7 +99,7 @@ export POSTGRES_PASSWORD=claire_db_secret_2024
 ### **Schritt 4: Test-Events publishen**
 
 ```bash
-cd /home/user/Claire_de_Binare_Cleanroom
+cd /home/user/Claire_de_Binare
 python tests/publish_test_events.py
 ```
 
@@ -364,9 +364,9 @@ python tests/publish_test_events.py
 
 ## 📚 **Weiterführende Infos**
 
-- **db_writer.py**: `/home/user/Claire_de_Binare_Cleanroom/backoffice/services/db_writer/db_writer.py`
-- **DATABASE_SCHEMA.sql**: `/home/user/Claire_de_Binare_Cleanroom/backoffice/docs/DATABASE_SCHEMA.sql`
-- **Test-Events**: `/home/user/Claire_de_Binare_Cleanroom/tests/test_events.json`
+- **db_writer.py**: `/home/user/Claire_de_Binare/backoffice/services/db_writer/db_writer.py`
+- **DATABASE_SCHEMA.sql**: `/home/user/Claire_de_Binare/backoffice/docs/DATABASE_SCHEMA.sql`
+- **Test-Events**: `/home/user/Claire_de_Binare/tests/test_events.json`
 
 ---
 

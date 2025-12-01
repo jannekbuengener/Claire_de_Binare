@@ -9,11 +9,11 @@
 
 ## 1. Mission Accomplished
 
-Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 offiziell als **neuer Nullpunkt** etabliert.
+Das **Claire de Binare-Repository (`Claire_de_Binare`)** ist ab 2025-01-17 offiziell als **neuer Nullpunkt** etabliert.
 
 **Kernziele erreicht**:
 - ✅ Namenskonvention von "Binaire" auf "Binare" normalisiert
-- ✅ Cleanroom als Ist-Zustand (nicht "Ziel-Repo") etabliert
+- ✅ Claire de Binare als Ist-Zustand (nicht "Ziel-Repo") etabliert
 - ✅ Migration vom 2025-11-16 als abgeschlossen historisiert
 - ✅ N1-Phase (Paper-Test) als nächstes Ziel definiert
 - ✅ Single Source of Truth eindeutig festgelegt
@@ -38,7 +38,7 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 | `KODEX – Claire de Binare.md` | Alle "Binaire" → "Binare" + Hinweis ergänzt | ✅ Done |
 | `architecture/N1_ARCHITEKTUR.md` | Zeile 11: "Binaire" → "Binare" | ✅ Done |
 | `provenance/EXECUTIVE_SUMMARY.md` | Titel & Inhalt: "Binaire" → "Binare" | ✅ Done |
-| `infra/repo_map.md` | Titel: "Binaire (Cleanroom-Kopie)" → "Binare (Cleanroom)" | ✅ Done |
+| `infra/repo_map.md` | Titel: "Binaire (Claire de Binare-Kopie)" → "Binare (Claire de Binare)" | ✅ Done |
 | `provenance/INDEX.md` | "Binaire" → "Binare" + Status aktualisiert | ✅ Done |
 | `schema/canonical_readiness_report.md` | Titel: "Binaire" → "Binare" | ✅ Done |
 | `runbooks/MIGRATION_READY.md` | Titel & Zeile 88: "Binaire" → "Binare" | ✅ Done |
@@ -47,14 +47,14 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 
 ---
 
-### 2.3 Status-Bereinigung (Cleanroom als Ist-Zustand)
+### 2.3 Status-Bereinigung (Claire de Binare als Ist-Zustand)
 
 | Datei | Änderung | Status |
 |-------|----------|--------|
-| `PROJECT_STATUS.md` | Phase: "95% Migration" → "100% Cleanroom etabliert - N1 Phase aktiv" | ✅ Done |
+| `PROJECT_STATUS.md` | Phase: "95% Migration" → "100% Claire de Binare etabliert - N1 Phase aktiv" | ✅ Done |
 | `PROJECT_STATUS.md` | Nächste Schritte: Migration → N1 (Paper-Test) | ✅ Done |
 | `PROJECT_STATUS.md` | Letzte Erfolge: Migration als abgeschlossen markiert | ✅ Done |
-| `provenance/EXECUTIVE_SUMMARY.md` | Status: "migrations-bereit" → "ABGESCHLOSSEN - CLEANROOM AKTIV" | ✅ Done |
+| `provenance/EXECUTIVE_SUMMARY.md` | Status: "migrations-bereit" → "ABGESCHLOSSEN - Claire de Binare AKTIV" | ✅ Done |
 | `provenance/EXECUTIVE_SUMMARY.md` | Historischer Kontext ergänzt | ✅ Done |
 
 **Total**: 2 Dateien mit Status-Bereinigung
@@ -68,7 +68,7 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 | `runbooks/MIGRATION_READY.md` | Titel: "BEREIT" → "HISTORISCH", Kontext ergänzt | ✅ Done |
 | `runbooks/MIGRATION_READY.md` | Status-Tabelle: "⏭️ BEREIT" → "✅ ABGESCHLOSSEN" | ✅ Done |
 | `runbooks/pre_migration_checklist.md` | Titel: "Checklist" → "HISTORISCH", Kontext ergänzt | ✅ Done |
-| `provenance/CLEANROOM_MIGRATION_MANIFEST.md` | Titel: "Bereit" → "HISTORISCH", Kontext ergänzt | ✅ Done |
+| `provenance/Claire de Binare_MIGRATION_MANIFEST.md` | Titel: "Bereit" → "HISTORISCH", Kontext ergänzt | ✅ Done |
 
 **Total**: 3 Migrations-Dokumente historisiert
 
@@ -79,7 +79,7 @@ Das **Cleanroom-Repository (`Claire_de_Binare_Cleanroom`)** ist ab 2025-01-17 of
 | Datei | Änderung | Status |
 |-------|----------|--------|
 | `DECISION_LOG.md` | ADR-039 erstellt und als neueste ADR eingefügt | ✅ Done |
-| `provenance/CLEANROOM_BASELINE_SUMMARY.md` | Komplett neu erstellt (Summary-Dokument) | ✅ Done |
+| `provenance/Claire de Binare_BASELINE_SUMMARY.md` | Komplett neu erstellt (Summary-Dokument) | ✅ Done |
 
 **Total**: 2 neue Provenance-Dokumente
 
@@ -91,11 +91,11 @@ Nach Abschluss aller Änderungen verbleiben **6 Dateien** mit "Claire de Binare"
 
 | Datei | Kontext | Korrekt? |
 |-------|---------|----------|
-| `audit/AUDIT_CLEANROOM.md` | Liste ungültiger Varianten (Zeile 21, 92, 405) | ✅ Ja - bewusste Auflistung |
+| `audit/AUDIT_Claire de Binare.md` | Liste ungültiger Varianten (Zeile 21, 92, 405) | ✅ Ja - bewusste Auflistung |
 | `DECISION_LOG.md` | ADR-039 beschreibt die Namensänderung | ✅ Ja - historische Referenz |
 | `knowledge/extracted_knowledge.md` | Historisches Pipeline-Artefakt (unverändert) | ✅ Ja - archiviert |
 | `KODEX – Claire de Binare.md` | Hinweis: "Frühere Dokumente verwenden 'Binaire'" | ✅ Ja - erklärender Hinweis |
-| `provenance/CLEANROOM_BASELINE_SUMMARY.md` | Dokumentiert Vorher/Nachher-Zustand | ✅ Ja - Teil der Dokumentation |
+| `provenance/Claire de Binare_BASELINE_SUMMARY.md` | Dokumentiert Vorher/Nachher-Zustand | ✅ Ja - Teil der Dokumentation |
 | `schema/audit_schema.yaml` | Liste ungültiger Varianten (Zeile 16, 329) | ✅ Ja - Schema-Definition |
 
 **Fazit**: Keine weiteren Änderungen erforderlich. Alle "Binaire"-Vorkommen sind bewusst und korrekt.
@@ -149,7 +149,7 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 ### 5.3 Aktuelle Projektphase
 
 **Phase**: N1 - Paper-Test-Vorbereitung
-**Status**: Cleanroom etabliert (100%)
+**Status**: Claire de Binare etabliert (100%)
 **Referenz**: `backoffice/docs/architecture/N1_ARCHITEKTUR.md`
 
 **Nächste Schritte** (aus PROJECT_STATUS.md):
@@ -165,12 +165,12 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 
 ### 6.1 ADR-039
 
-**Titel**: Cleanroom-Repository als kanonische Codebasis etabliert
+**Titel**: Claire de Binare-Repository als kanonische Codebasis etabliert
 **Datum**: 2025-01-17
 **Pfad**: `backoffice/docs/DECISION_LOG.md` (Zeile 3-94)
 
-**Problem**: Ambivalente Dokumentation (Cleanroom als "Ziel" vs. Ist-Zustand)
-**Entscheidung**: Cleanroom ist ab 2025-01-17 die einzige kanonische Codebasis
+**Problem**: Ambivalente Dokumentation (Claire de Binare als "Ziel" vs. Ist-Zustand)
+**Entscheidung**: Claire de Binare ist ab 2025-01-17 die einzige kanonische Codebasis
 **Konsequenzen**:
 - ➕ Eindeutige Single Source of Truth
 - ➕ Vereinfachtes Onboarding
@@ -178,9 +178,9 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 
 ---
 
-### 6.2 CLEANROOM_BASELINE_SUMMARY.md
+### 6.2 Claire de Binare_BASELINE_SUMMARY.md
 
-**Pfad**: `backoffice/docs/provenance/CLEANROOM_BASELINE_SUMMARY.md`
+**Pfad**: `backoffice/docs/provenance/Claire de Binare_BASELINE_SUMMARY.md`
 **Zweck**: Übersicht aller Änderungen + Checkliste für Contributors
 **Inhalt**:
 - Single Source of Truth definiert
@@ -200,7 +200,7 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 | Alle STATUS-Dokumente aktualisiert? | ✅ Ja (PROJECT_STATUS, EXECUTIVE_SUMMARY) |
 | Migrations-Dokumente historisiert? | ✅ Ja (3 Runbooks) |
 | ADR erstellt? | ✅ Ja (ADR-039) |
-| Summary erstellt? | ✅ Ja (CLEANROOM_BASELINE_SUMMARY) |
+| Summary erstellt? | ✅ Ja (Claire de Binare_BASELINE_SUMMARY) |
 
 ---
 
@@ -209,7 +209,7 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 | Check | Status |
 |-------|--------|
 | Kein "Binaire" in aktiven Dokumenten? | ✅ Ja (nur bewusste Ausnahmen) |
-| Cleanroom als Ist-Zustand beschrieben? | ✅ Ja (nicht mehr "Ziel") |
+| Claire de Binare als Ist-Zustand beschrieben? | ✅ Ja (nicht mehr "Ziel") |
 | Migration als abgeschlossen markiert? | ✅ Ja (2025-11-16) |
 | N1-Phase als nächstes Ziel? | ✅ Ja (Paper-Test) |
 
@@ -221,7 +221,7 @@ Folgende Ordner bleiben **unverändert** und behalten historische Schreibweisen:
 |-------|--------|
 | KODEX-Dateiname in anderen Docs aktualisiert? | ✅ Ja (keine Broken Links) |
 | ADR-039 in DECISION_LOG integriert? | ✅ Ja (Zeile 3) |
-| CLEANROOM_BASELINE_SUMMARY verlinkt ADR-039? | ✅ Ja |
+| Claire de Binare_BASELINE_SUMMARY verlinkt ADR-039? | ✅ Ja |
 
 ---
 
@@ -231,10 +231,10 @@ Gemäß CLAUDE.md Abschnitt 5 ("Abschluss-Output"):
 
 | Kriterium | Status |
 |-----------|--------|
-| **Nullpunkt definiert?** | ✅ Ja - 2025-01-17, Cleanroom = aktueller Stand |
+| **Nullpunkt definiert?** | ✅ Ja - 2025-01-17, Claire de Binare = aktueller Stand |
 | **Single Source of Truth dokumentiert?** | ✅ Ja - `backoffice/docs/` |
 | **Wichtige Änderungen tabellarisch?** | ✅ Ja - siehe Abschnitt 2 |
-| **Checkliste für Contributors?** | ✅ Ja - in CLEANROOM_BASELINE_SUMMARY |
+| **Checkliste für Contributors?** | ✅ Ja - in Claire de Binare_BASELINE_SUMMARY |
 | **Keine Zukunfts-Migration-Verweise?** | ✅ Ja - alle historisiert |
 
 **Fazit**: Alle Kriterien erfüllt. Workflow abgeschlossen.
@@ -245,13 +245,13 @@ Gemäß CLAUDE.md Abschnitt 5 ("Abschluss-Output"):
 
 ### Vorher (2025-01-16)
 - ❌ 28 Dateien mit inkonsistenter Namensgebung ("Binaire")
-- ❌ Cleanroom als "Ziel-Repo" oder "migrations-bereit" beschrieben
+- ❌ Claire de Binare als "Ziel-Repo" oder "migrations-bereit" beschrieben
 - ❌ Migration-Status unklar (95% vs. 100% vs. "bereit")
 - ❌ Nächste Schritte fokussieren auf "Migration ausführen"
 
 ### Nachher (2025-01-17)
 - ✅ **Namenskonvention etabliert**: "Claire de Binare" verbindlich (7 Dateien aktualisiert)
-- ✅ **Cleanroom = Ist-Zustand**: 100% etabliert, nicht mehr "Ziel"
+- ✅ **Claire de Binare = Ist-Zustand**: 100% etabliert, nicht mehr "Ziel"
 - ✅ **Migration abgeschlossen**: Historisiert (2025-11-16), 3 Runbooks markiert
 - ✅ **N1-Phase aktiv**: Paper-Test-Vorbereitung als nächstes Ziel
 - ✅ **Single Source of Truth**: `backoffice/docs/` eindeutig definiert
@@ -262,8 +262,8 @@ Gemäß CLAUDE.md Abschnitt 5 ("Abschluss-Output"):
 ## 10. Nächste Schritte
 
 ### Immediate (Optional)
-- [ ] Git-Commit erstellen: "feat: Establish cleanroom baseline (ADR-039)"
-- [ ] Git-Tag erstellen: `v1.0.1-cleanroom-baseline`
+- [ ] Git-Commit erstellen: "feat: Establish Claire de Binare baseline (ADR-039)"
+- [ ] Git-Tag erstellen: `v1.0.1-Claire de Binare-baseline`
 
 ### N1-Phase (Siehe PROJECT_STATUS.md)
 - [ ] Test-Infrastruktur aufsetzen (pytest, coverage)

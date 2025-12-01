@@ -151,7 +151,7 @@ make test-local-lifecycle
 
 ```bash
 # 1. Repository klonen
-cd Claire_de_Binare_Cleanroom
+cd Claire_de_Binare
 
 # 2. Dependencies installieren
 pip install -r requirements-dev.txt
@@ -557,7 +557,7 @@ Vor Commit lokaler Tests:
 
 ## 10. Kontakt & Support
 
-**Issues**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/issues
+**Issues**: https://github.com/jannekbuengener/Claire_de_Binare/issues
 
 **Dokumentation**:
 - `TESTING_GUIDE.md` - Allgemeine Test-Richtlinien
