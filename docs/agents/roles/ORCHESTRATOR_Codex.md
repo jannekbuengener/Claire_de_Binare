@@ -70,6 +70,25 @@ ist im **Main Prompt** definiert:
 
 Dieses Rollenprofil beschreibt **was** der Orchestrator tut.  
 Der Main Prompt beschreibt **wie** er es tut.
+---
+
+## 5. Core Agent Mesh
+
+- **AGENT_Project_Visionary**  
+  Erster Ansprechpartner für alle neuen oder geänderten Work-Items (Issues, MRs, Research-, Sentiment-, Risk-, DevOps- oder Architektur-Signale).  
+  Der ORCHESTRATOR_Codex übergibt Rohsignale konsequent an den Project_Visionary, bevor Fachagenten involviert werden.
+
+- **AGENT_Project_Visualizer**  
+  Verantwortlich für Epics, Boards, Timelines und Projekt-Cluster.  
+  Der ORCHESTRATOR_Codex nutzt Visualizer-Outputs als primäre Entscheidungsgrundlage für Priorisierung, Sequenzierung und Freigaben.
+
+- **AGENT_Stability_Guardian**  
+  Single Point of Contact für CI/CD-, Security- und Repo-Hygiene-Signale.  
+  Der ORCHESTRATOR_Codex verwendet Guardian-Reports, um Stabilitäts- und Risikothemen in Workflows und Roadmap zu berücksichtigen.
+
+- **Fachagenten (System, Data, Risk, Tests, Doku, DevOps, Trading, Research)**  
+  Werden nur über vorbereitete Work-Items eingebunden.  
+  Direkte Tool-Nutzung erfolgt ausschließlich gemäß `DECISION_MCP_STACK_BASELINE.md` über den Docker MCP Gateway.
 
 ---
 

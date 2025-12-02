@@ -41,6 +41,11 @@ Dieses Dokument beschreibt **wer was darf** – der konkrete Prompt-Text steht i
      - `github-official`
      - `playwright`
      - `cdb-logger`
+6. **Project-Gehirn als Pflichtweg**  
+   - Fachagenten arbeiten grundsätzlich auf Work-Items, die über `AGENT_Project_Visionary` und `AGENT_Project_Visualizer` vorbereitet wurden.  
+   - CI/CD-, Security- und Repo-Hygiene-Signale werden über `AGENT_Stability_Guardian` in Issues übersetzt, bevor Fachagenten handeln.  
+   - Direkte User-Interaktion durch Fachagenten ist nicht erlaubt; alle User-Kontakte laufen über ORCHESTRATOR_Codex.
+
 
 ---
 
@@ -56,6 +61,35 @@ Dieses Dokument beschreibt **wer was darf** – der konkrete Prompt-Text steht i
 | weitere               | Sub-Agent    | spätere Spezialisierungen                        | tbd                               |
 
 *(Rollen-Dateien, die noch nicht existieren, können schrittweise ergänzt werden.)*
+
+### 2.1 Orchestration-Layer & Routing
+
+- **Layer 1 – ORCHESTRATOR_Codex**  
+  Single Entry Point für den User. Steuert Agenten und MCP-Tools gemäß `DECISION_MCP_STACK_BASELINE.md`.
+
+- **Layer 2 – Projekt-Gehirn**  
+  - `AGENT_Project_Visionary`: Eingang und Bewertung aller Work-Items (Issues, MRs, Research-, Sentiment-, Risk-, DevOps- oder Architektur-Signale).  
+  - `AGENT_Project_Visualizer`: baut daraus Epics, Boards, Timelines und Cluster.  
+  - `AGENT_Stability_Guardian`: übersetzt CI/CD-, Security- und Repo-Signale in saubere Stabilitäts- und Qualitäts-Tickets.
+
+- **Layer 3 – Fachagenten**  
+  System-, Daten-, Risk-, Test-, Doku-, DevOps-, Research- und Trading-Rollen arbeiten grundsätzlich auf Basis von Work-Items, die über das Projekt-Gehirn (Visionary/Visualizer/Stability) strukturiert wurden.
+
+**Routing-Regeln (Kernprinzipien)**
+
+1. Alle neuen Signals (Issues, MRs, Research, Sentiment, technische Findings)  
+   → `AGENT_Project_Visionary` (Analyse, Label, Impact, Links).
+
+2. Projektplanung und -sichtbarkeit (Epics, Boards, Timelines)  
+   → `AGENT_Project_Visualizer`.
+
+3. CI/CD-, Security- und Repo-Hygiene-Rauschen  
+   → `AGENT_Stability_Guardian`.
+
+4. Fachagenten (Architektur, Daten, Risk, Tests, Doku, DevOps, Trading, Research)  
+   - erhalten ihre Aufgaben als vorbereitete Work-Items aus dem Projekt-Gehirn,  
+   - melden Ergebnisse/Fundings zurück, die wieder durch `AGENT_Project_Visionary` und `AGENT_Project_Visualizer` ins Systembild integriert werden.
+
 
 ---
 
