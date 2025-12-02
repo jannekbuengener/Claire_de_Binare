@@ -130,3 +130,5 @@ Dieses Dokument beschreibt **wer was darf** – der konkrete Prompt-Text steht i
 3. **Keine Task-Prompts direkt hier**  
    - Spezifische Arbeits-Prompts gehören in `prompts/…`.  
    - `AGENTS.md` bleibt clean als Governance-/Index-Schicht.
+
+

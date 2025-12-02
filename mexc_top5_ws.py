@@ -12,7 +12,13 @@ from websocket import WebSocketApp
 from flask import Flask, jsonify
 
 REST_BASE = os.getenv("MEXC_BASE", "https://contract.mexc.com")
-WS_URL = "wss://contract.mexc.com/edge"
+WS_URL = os.getenv("MEXC_WS_URL") or os.getenv("WS_URL") or "wss://contract.mexc.com/ws"
+if not WS_URL.startswith(("ws://", "wss://")):
+    raise ValueError(
+        f"Invalid WS URL scheme: {WS_URL} (must start with ws:// or wss://). "
+        "Check MEXC_WS_URL/WS_URL and proxy settings (unset HTTPS_PROXY for WS)."
+    )
+print(f"[WS CONFIG] Using WS_URL={WS_URL}")
 LOOKBACK_MIN = int(os.getenv("LOOKBACK_MIN", "15"))
 KL_INTERVAL = "Min1"
 DATA_STALL_SEC = 30

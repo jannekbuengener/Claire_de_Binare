@@ -11,7 +11,7 @@ import logging
 import logging.config
 import redis
 from flask import Flask, jsonify, Response
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pathlib import Path
 from threading import Thread, Event
@@ -239,12 +239,12 @@ class RiskManager:
         if drift > 0.05:
             stats["risk_state_inconsistency_total"] += 1
             stats["risk_state_recovery_total"] += 1
-                logger.warning(
-                    "State mismatch: triggering DB->Redis recovery. db_exposure=%.2f redis_exposure=%.2f drift=%.3f",
-                    db_exposure,
-                    redis_exposure,
-                    drift,
-                )
+            logger.warning(
+                "State mismatch: triggering DB->Redis recovery. db_exposure=%.2f redis_exposure=%.2f drift=%.3f",
+                db_exposure,
+                redis_exposure,
+                drift,
+            )
             self.save_risk_state_to_redis()
         else:
             logger.debug(
@@ -326,18 +326,17 @@ class RiskManager:
                 risk_state.positions = state_dict.get("positions", {})
                 risk_state.pending_orders = state_dict.get("pending_orders", 0)
                 risk_state.last_prices = state_dict.get("last_prices", {})
-            logger.info(
-                "Risk-State aus Redis geladen: exposure=%.2f positions=%d pnl=%.2f",
-                risk_state.total_exposure,
-                risk_state.open_positions,
-                risk_state.daily_pnl,
-            )
-                return state_dict
-            else:
                 logger.info(
-                    "Kein persistierter Risk-State gefunden - starte mit frischem State"
+                    "Risk-State aus Redis geladen: exposure=%.2f positions=%d pnl=%.2f",
+                    risk_state.total_exposure,
+                    risk_state.open_positions,
+                    risk_state.daily_pnl,
                 )
-                return None
+                return state_dict
+            logger.info(
+                "Kein persistierter Risk-State gefunden - starte mit frischem State"
+            )
+            return None
         except Exception as e:
             logger.warning(
                 "Risk-State-Load fehlgeschlagen: %s - verwende frischen State", e
@@ -357,7 +356,7 @@ class RiskManager:
                 "positions": risk_state.positions,
                 "pending_orders": risk_state.pending_orders,
                 "last_prices": risk_state.last_prices,
-                "timestamp": datetime.now(datetime.UTC).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             }
             self.redis_client.setex(
                 "risk_state:persistence",
