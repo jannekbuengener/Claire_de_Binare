@@ -1,3 +1,84 @@
+## Architektur (Entwurf)
+
+### 1.1 Core-Services (zwingend)
+- cdb_postgres  
+- cdb_redis  
+- cdb_ws  
+- cdb_core  
+- cdb_risk  
+- cdb_execution  
+- cdb_db_writer  
+
+### 1.2 Optional (fachlich sinnvoll, aber nicht kritisch)
+- cdb_paper_runner  
+- cdb_adaptive_intensity  
+
+### 1.3 Nice-to-Have (separat auslagerbar)
+- cdb_prometheus  
+- cdb_grafana  
+
+**Ziel:** Core läuft isoliert stabil. Monitoring optional via zweitem Compose-File.
+
+---
+
+## 2. Design-Prinzipien aus dem heutigen Tag
+
+### 2.1 Single Source of Truth
+- Status quo wird **nicht** durch Doku bestimmt, sondern durch  
+  **Code + Compose + Secrets + Runtime**.
+
+### 2.2 Secrets-Trennung
+- `.env` = nur neutrale Variablen  
+- `./cdb_secrets/*.txt` = echte Passwörter/Keys  
+- Docker liest Secrets nur read-only  
+
+### 2.3 Plateau-Prinzip
+- Plateau → runterkühlen → validieren → aufräumen → weitermachen.
+
+### 2.4 Supervisor/Orchestrator
+- Codex soll Supervisor sein  
+- Holt Agents, führt selbst nicht aus  
+- Aggregiert Ergebnisse  
+- Jannek entscheidet, Chat berät  
+
+### 2.5 Audit-Modus
+- Optional später: „CDB-Doctor“-Script  
+  - prüft `.env`, Secrets, Docker-Dependencies, Runtime
+
+### 2.6 Doku auslagern
+- Operatives Repo bleibt minimal  
+- Doku/Archiv in eigenes Repo  
+- Keine Altlasten im Code-Repo  
+
+### 2.7 Prometheus-Bewertung
+- Kein Kernbestandteil  
+- Kein technischer Zwang  
+- Optional oder auslagern  
+
+### 2.8 Konsistenz in Postgres
+- EIN User (z. B. cdb_user)  
+- EIN Passwort (aus Secret)  
+- Rechte klar vergeben  
+
+### 2.9 WebSocket-Härtung
+- Immer `wss://contract.mexc.com/ws`  
+- Proxies vermeiden  
+
+### 2.10 Runtime-first
+- Entscheidungen basieren auf: „läuft / läuft nicht“  
+- Nicht auf theoretischen Dokumentständen  
+
+---
+
+## 3. Offene To-Dos
+- Supervisor-Playbook  
+- CDB-Doctor  
+- Minimal-Compose finalisieren  
+- Doku migrieren  
+- Core säubern  
+
+---
+
 # AGENTS – CLAIRE-DE-BINARE
 
 Single Source of Truth für:
@@ -130,5 +211,3 @@ Dieses Dokument beschreibt **wer was darf** – der konkrete Prompt-Text steht i
 3. **Keine Task-Prompts direkt hier**  
    - Spezifische Arbeits-Prompts gehören in `prompts/…`.  
    - `AGENTS.md` bleibt clean als Governance-/Index-Schicht.
-
-
