@@ -164,7 +164,7 @@ M9 - Production Release 1.0                           open   0 issues
 gh issue edit <issue-number> --milestone "M1 - Foundation & Governance Setup"
 
 # Via Web-UI
-https://github.com/jannekbuengener/Claire_de_Binare/milestones
+https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestones
 ```
 
 ### Milestone-Status prüfen

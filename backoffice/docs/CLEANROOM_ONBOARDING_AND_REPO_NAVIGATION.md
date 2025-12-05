@@ -1,10 +1,10 @@
-# Claire de Binare ONBOARDING AND REPO NAVIGATION
+# CLEANROOM ONBOARDING AND REPO NAVIGATION
 # Claire de Binare – Repository Guide
 
 **Version**: 1.0
 **Last Updated**: 2025-01-18
 **Status**: Active
-**Repository**: `Claire_de_Binare`
+**Repository**: `Claire_de_Binare_Cleanroom`
 
 ---
 
@@ -38,7 +38,7 @@ This document provides a comprehensive orientation for new contributors to the C
 ### Top-Level Overview
 
 ```
-Claire_de_Binare/
+Claire_de_Binare_Cleanroom/
 ├── backoffice/              # Active codebase and canonical documentation
 │   ├── docs/                # Single Source of Truth for all documentation
 │   ├── services/            # Service implementations (signal_engine, risk_manager, execution_service)
@@ -92,7 +92,7 @@ Data models and canonical schemas
 #### `provenance/`
 Project history, migration records, baselines
 - **EXECUTIVE_SUMMARY.md** – Canonicalization status
-- **Claire de Binare_BASELINE_SUMMARY.md** – Nullpunkt definition summary
+- **CLEANROOM_BASELINE_SUMMARY.md** – Nullpunkt definition summary
 - **CANONICAL_SOURCES.yaml** – Provenance declarations
 - **NULLPUNKT_DEFINITION_REPORT.md** – Baseline establishment report
 
@@ -115,7 +115,7 @@ Infrastructure and repository metadata
 
 #### `audit/`
 Audit documentation and validation
-- **AUDIT_Claire de Binare.md** – Claire de Binare audit findings
+- **AUDIT_CLEANROOM.md** – Cleanroom audit findings
 - **AUDIT_PLAN.md** – Audit procedures
 
 #### `meetings/`
@@ -330,21 +330,21 @@ If documentation is unclear or contradictory:
 
 ## Migration History
 
-**Note**: The Claire de Binare repository represents the **canonical baseline** as of 2025-11-16.
+**Note**: The Cleanroom repository represents the **canonical baseline** as of 2025-11-16.
 
-All migration from backup repositories is **complete**. Documents referencing "sandbox" or "migration to Claire de Binare" describe historical processes, not future actions.
+All migration from backup repositories is **complete**. Documents referencing "sandbox" or "migration to cleanroom" describe historical processes, not future actions.
 
 See:
 - `backoffice/docs/runbooks/MIGRATION_READY.md` (historical record)
-- `backoffice/docs/provenance/Claire de Binare_BASELINE_SUMMARY.md` (nullpunkt summary)
-- ADR-039 in `DECISION_LOG.md` (establishes Claire de Binare as canonical)
+- `backoffice/docs/provenance/CLEANROOM_BASELINE_SUMMARY.md` (nullpunkt summary)
+- ADR-039 in `DECISION_LOG.md` (establishes Cleanroom as canonical)
 
 ---
 
 ## Roadmap Phases
 
 ### Phase 0: Migration (COMPLETED 2025-11-16)
-Established Claire de Binare as canonical repository
+Established Cleanroom as canonical repository
 
 ### Phase N1: Paper-Test (CURRENT)
 Simulated trading environment with risk validation

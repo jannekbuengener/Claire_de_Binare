@@ -1,4 +1,4 @@
-# BASELINE COMPLETION REPORT – Claire de Binare Claire de Binare
+# BASELINE COMPLETION REPORT – Claire de Binare Cleanroom
 
 **Report Date**: 2025-01-18
 **Status**: ✅ **PHASE 1 COMPLETE**
@@ -11,7 +11,7 @@
 
 **Phase 1: Naming Normalization has been successfully completed.**
 
-All active documentation in the Claire de Binare Claire de Binare repository has been normalized to use the canonical project name **"Claire de Binare"** (not "Binaire"). Historical and educational references have been preserved as intended.
+All active documentation in the Claire de Binare Cleanroom repository has been normalized to use the canonical project name **"Claire de Binare"** (not "Binaire"). Historical and educational references have been preserved as intended.
 
 ### Key Achievements
 
@@ -19,7 +19,7 @@ All active documentation in the Claire de Binare Claire de Binare repository has
 - ✅ **2 provenance/runbook files** normalized
 - ✅ **1 onboarding document** created (no normalization needed)
 - ✅ **3 migration scripts** marked as historical templates
-- ✅ **1 duplicate file** removed (`infra/Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md`)
+- ✅ **1 duplicate file** removed (`infra/CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md`)
 - ✅ **0 files** incorrectly modified (all exclusions respected)
 
 ---
@@ -68,7 +68,7 @@ Based on `grep -r "Binaire" backoffice/docs`:
 
 | File | Purpose | Status |
 |------|---------|--------|
-| **Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md** | Comprehensive onboarding guide for new contributors | ✅ Created |
+| **CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md** | Comprehensive onboarding guide for new contributors | ✅ Created |
 
 **Content**:
 - Project overview and quick start guide
@@ -78,7 +78,7 @@ Based on `grep -r "Binaire" backoffice/docs`:
 - Roadmap phases (N1, N2, N3)
 - Reference quick links
 
-**Location**: `backoffice/docs/Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md`
+**Location**: `backoffice/docs/CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md`
 
 ### 2.4 Migration Scripts (3 files)
 
@@ -86,7 +86,7 @@ All three migration scripts updated with historical template headers:
 
 | File | Change | Status |
 |------|--------|--------|
-| **Claire de Binare_migration_script.ps1** | Added historical template header | ✅ Updated |
+| **cleanroom_migration_script.ps1** | Added historical template header | ✅ Updated |
 | **pre_migration_tasks.ps1** | Added historical template header | ✅ Updated |
 | **pre_migration_validation.ps1** | Added historical template header | ✅ Updated |
 
@@ -95,8 +95,8 @@ All three migration scripts updated with historical template headers:
 # ============================================================================
 # HISTORICAL TEMPLATE - Documents 2025-11-16 migration
 # ============================================================================
-# Repository : Claire_de_Binare
-# Context    : Migration from backup repo into Claire de Binare baseline
+# Repository : Claire_de_Binare_Cleanroom
+# Context    : Migration from backup repo into Cleanroom baseline
 # Status     : Historical reference only (do not re-run on current baseline)
 #
 # Original Header:
@@ -110,7 +110,7 @@ All three migration scripts updated with historical template headers:
 
 | File | Reason | Status |
 |------|--------|--------|
-| **infra/Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md** | Duplicate of canonical version in `backoffice/docs/` | ✅ Removed |
+| **infra/CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md** | Duplicate of canonical version in `backoffice/docs/` | ✅ Removed |
 
 ---
 
@@ -123,7 +123,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 | File | Reason for Exclusion | Example Content |
 |------|---------------------|-----------------|
 | **schema/audit_schema.yaml** | Lists invalid variants for validation | Lines 16-20, 329-331: Lists "Claire de Binare" as invalid variant |
-| **audit/AUDIT_Claire de Binare.md** | Educational documentation of naming issues | Contains intentional "invalid variants" examples |
+| **audit/AUDIT_CLEANROOM.md** | Educational documentation of naming issues | Contains intentional "invalid variants" examples |
 
 **Status**: ✅ **CORRECT** - These files MUST list "Binaire" to document what NOT to use.
 
@@ -133,11 +133,11 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 |------|---------------------|-----------------|
 | **DECISION_LOG.md** | Documents ADR-039 which EXPLAINS the change from "Binaire" | Lines 14, 28-29: "28 Dateien verwendeten noch 'Claire de Binare'" |
 | **Single Source of Truth.md** | Explains that "Binaire" is historical/invalid | Line 127: "Die Schreibweise 'Claire de Binare' gilt als historisch/ungültig" |
-| **provenance/Claire de Binare_BASELINE_SUMMARY.md** | Documents what WAS changed | Lines 15, 42-47: Explains normalization FROM "Binaire" TO "Binare" |
+| **provenance/CLEANROOM_BASELINE_SUMMARY.md** | Documents what WAS changed | Lines 15, 42-47: Explains normalization FROM "Binaire" TO "Binare" |
 | **provenance/NULLPUNKT_DEFINITION_REPORT.md** | Reports on the nullpunkt changes | Lines 15, 30: Documents old name → new name |
 | **knowledge/extracted_knowledge.md** | Immutable pipeline output | Line [various]: Pipeline extraction artifact |
 | **knowledge/input.md** | Immutable pipeline output | Line [various]: Pipeline extraction artifact |
-| **Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md** | Explains naming convention | Lines 138-139: "Use 'Binare' (NOT 'Binaire')" |
+| **CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md** | Explains naming convention | Lines 138-139: "Use 'Binare' (NOT 'Binaire')" |
 
 **Status**: ✅ **CORRECT** - These references document what WAS or should NOT BE used, and must be preserved.
 
@@ -173,7 +173,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 | Type | Count | Details |
 |------|-------|---------|
 | **Files normalized** | 4 | 2 service docs, 2 provenance/runbook docs |
-| **Files created** | 1 | Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md |
+| **Files created** | 1 | CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md |
 | **Files removed** | 1 | Duplicate onboarding file |
 | **Scripts updated** | 3 | All migration scripts marked as historical |
 | **Total edits** | 8 | 4 normalizations + 3 script headers + 1 removal |
@@ -182,7 +182,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 
 | Type | Count | Details |
 |------|-------|---------|
-| **Audit/educational** | 2 | audit_schema.yaml, AUDIT_Claire de Binare.md |
+| **Audit/educational** | 2 | audit_schema.yaml, AUDIT_CLEANROOM.md |
 | **Historical explanatory** | 6 | DECISION_LOG, Single Source of Truth, provenance docs |
 | **Pipeline artifacts** | 2 | knowledge/extracted_knowledge.md, knowledge/input.md |
 | **Total preserved** | 10 | All exclusions correctly maintained |
@@ -205,7 +205,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 ## 7. Remaining Work (Future Phases)
 
 ### Phase 2: Create Navigation Documents ✅ COMPLETE
-- ✅ **Claire de Binare_ONBOARDING_AND_REPO_NAVIGATION.md** created
+- ✅ **CLEANROOM_ONBOARDING_AND_REPO_NAVIGATION.md** created
 - ⏳ **STRUCTURE_CLEANUP_PLAN.md** (already exists, no updates needed for Phase 1)
 
 ### Phase 3: Verification (PENDING)
@@ -235,7 +235,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 | Exclusion Type | Files | Status |
 |----------------|-------|--------|
 | **Archive files** | `archive/*` | ✅ Not scanned or modified |
-| **AUDIT_Claire de Binare.md** | Invalid variants list | ✅ Preserved (intentional "Binaire" references) |
+| **AUDIT_CLEANROOM.md** | Invalid variants list | ✅ Preserved (intentional "Binaire" references) |
 | **Knowledge extraction** | `knowledge/*.md` | ✅ Preserved (immutable pipeline outputs) |
 | **Historical explanations** | DECISION_LOG, provenance docs | ✅ Preserved (document what WAS changed) |
 
@@ -245,7 +245,7 @@ The following files contain "Binaire" but were **correctly excluded** from norma
 
 ### Immediate (Before Commit)
 1. ✅ Review this completion report
-2. ⏳ Run final verification: `grep -rn "Binaire" backoffice/docs --exclude-dir=knowledge --exclude=audit_schema.yaml --exclude=AUDIT_Claire de Binare.md`
+2. ⏳ Run final verification: `grep -rn "Binaire" backoffice/docs --exclude-dir=knowledge --exclude=audit_schema.yaml --exclude=AUDIT_CLEANROOM.md`
 3. ⏳ Verify no unintended file changes: `git diff --name-only`
 
 ### Short-Term (Phase 2 & 3)

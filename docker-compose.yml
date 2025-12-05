@@ -11,37 +11,26 @@ services:
     container_name: cdb_redis
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: >
-      /bin/sh -c
-      "REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
+    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
     healthcheck:
-      test: ["CMD", "sh", "-c", "REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-); [ -z \"$$REDIS_PASSWORD\" ] && REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1); redis-cli -a $$REDIS_PASSWORD ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 3s
       retries: 3
     networks:
-      cdb_network:
-        aliases:
-          - redis
+      - cdb_network
 
   cdb_postgres:
     image: postgres:15-alpine
     container_name: cdb_postgres
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - postgres_password
     environment:
       POSTGRES_DB: claire_de_binare
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     ports:
       - "5432:5432"
     volumes:
@@ -87,10 +76,8 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD not set}
       GF_USERS_ALLOW_SIGN_UP: "false"
-    secrets:
-      - grafana_password
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
@@ -116,33 +103,12 @@ services:
     container_name: cdb_ws
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
-      - mexc_api_key
-      - mexc_api_secret
     ports:
       - "8000:8000"
     volumes:
       - ./logs:/app/logs
     depends_on:
       - cdb_redis
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      MEXC_API_KEY_FILE: /run/secrets/mexc_api_key
-      MEXC_API_SECRET_FILE: /run/secrets/mexc_api_secret
-      REDIS_HOST: cdb_redis
-      WS_URL: ${MEXC_WS_URL}
-      HTTPS_PROXY:
-      https_proxy:
-      HTTP_PROXY:
-      http_proxy:
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export MEXC_API_KEY=$$(cat /run/secrets/mexc_api_key);
-       export MEXC_API_SECRET=$$(cat /run/secrets/mexc_api_secret);
-       exec python -u app.py"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
       interval: 30s
@@ -203,8 +169,6 @@ services:
     container_name: cdb_core
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
     ports:
       - "8001:8001"
     volumes:
@@ -213,14 +177,6 @@ services:
     depends_on:
       - cdb_redis
       - cdb_ws
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      REDIS_HOST: cdb_redis
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       exec python -u service.py"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
       interval: 30s
@@ -245,9 +201,6 @@ services:
     container_name: cdb_risk
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
-      - postgres_password
     ports:
       - "8002:8002"
     volumes:
@@ -256,17 +209,6 @@ services:
     depends_on:
       - cdb_redis
       - cdb_core
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      REDIS_HOST: cdb_redis
-      POSTGRES_HOST: cdb_postgres
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password);
-       exec python -u service.py"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8002/health"]
       interval: 30s
@@ -291,10 +233,6 @@ services:
     container_name: cdb_execution
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
-      - postgres_password
-      - smtp_password
     ports:
       - "8003:8003"
     volumes:
@@ -303,19 +241,6 @@ services:
       - cdb_redis
       - cdb_risk
       - cdb_postgres
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      ALERT_EMAIL_PASSWORD_FILE: /run/secrets/smtp_password
-      REDIS_HOST: cdb_redis
-      POSTGRES_HOST: cdb_postgres
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password);
-       export ALERT_EMAIL_PASSWORD=$$(cat /run/secrets/smtp_password);
-       exec python -u service.py"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8003/health"]
       interval: 30s
@@ -341,9 +266,6 @@ services:
     container_name: cdb_db_writer
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
-      - postgres_password
     volumes:
       - ./backoffice/services/db_writer:/app
     depends_on:
@@ -354,82 +276,10 @@ services:
       interval: 10s
       timeout: 3s
       retries: 1
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      REDIS_HOST: cdb_redis
-      POSTGRES_HOST: cdb_postgres
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password);
-       exec python -u db_writer.py"
     networks:
       cdb_network:
         aliases:
           - db_writer
-
-  cdb_adaptive_intensity:
-    build:
-      context: ./backoffice/services/adaptive_intensity
-      dockerfile: Dockerfile
-    container_name: cdb_adaptive_intensity
-    restart: unless-stopped
-    env_file: .env
-    secrets:
-      - redis_password
-      - postgres_password
-    ports:
-      - "8005:8005"
-    volumes:
-      - ./backoffice/services/adaptive_intensity:/app
-      - adaptive_logs:/logs
-    depends_on:
-      - cdb_redis
-      - cdb_postgres
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      ADAPTIVE_PORT: 8005
-      POSTGRES_HOST: cdb_postgres
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: claire_de_binare
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      REDIS_HOST: cdb_redis
-      REDIS_PORT: 6379
-      ADAPTIVE_UPDATE_INTERVAL_SEC: 30
-      ADAPTIVE_LOOKBACK_TRADES: 300
-      ADAPTIVE_WINRATE_WEIGHT: 0.4
-      ADAPTIVE_PF_WEIGHT: 0.4
-      ADAPTIVE_DD_WEIGHT: 0.2
-      # Parameter Ranges (min at score=0.0, max at score=1.0)
-      ADAPTIVE_THRESHOLD_MIN: 3.0
-      ADAPTIVE_THRESHOLD_MAX: 1.5
-      ADAPTIVE_RSI_MIN: 60.0
-      ADAPTIVE_RSI_MAX: 40.0
-      ADAPTIVE_VOLUME_MIN: 2.0
-      ADAPTIVE_VOLUME_MAX: 0.5
-      ADAPTIVE_POSITION_MIN: 0.08
-      ADAPTIVE_POSITION_MAX: 0.12
-      ADAPTIVE_EXPOSURE_MIN: 0.40
-      ADAPTIVE_EXPOSURE_MAX: 0.80
-      ADAPTIVE_MAX_CHANGE: 0.05
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8005/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password);
-       exec python -m continuous_service"
-    networks:
-      cdb_network:
-        aliases:
-          - adaptive_intensity
 
   cdb_paper_runner:
     build:
@@ -438,11 +288,6 @@ services:
     container_name: cdb_paper_runner
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
-      - postgres_password
-      - smtp_password
-      - openai_key
     ports:
       - "8004:8004"
     volumes:
@@ -454,21 +299,6 @@ services:
       - cdb_core
       - cdb_risk
       - cdb_execution
-    environment:
-      REDIS_PASSWORD_FILE: /run/secrets/redis_password
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-      ALERT_EMAIL_PASSWORD_FILE: /run/secrets/smtp_password
-      OPENAI_API_KEY_FILE: /run/secrets/openai_key
-      REDIS_HOST: cdb_redis
-      POSTGRES_HOST: cdb_postgres
-    command: >
-      /bin/sh -c
-      "export REDIS_PASSWORD=$$(grep -E '^REDIS_PASSWORD=' /run/secrets/redis_password | head -n1 | cut -d= -f2-);
-       [ -z \"$$REDIS_PASSWORD\" ] && export REDIS_PASSWORD=$$(cat /run/secrets/redis_password | head -n1);
-       export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password);
-       export ALERT_EMAIL_PASSWORD=$$(cat /run/secrets/smtp_password);
-       export OPENAI_API_KEY=$$(cat /run/secrets/openai_key);
-       exec python -u service.py"
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8004/health"]
       interval: 30s
@@ -503,8 +333,6 @@ volumes:
     driver: local
   risk_logs:
     driver: local
-  adaptive_logs:
-    driver: local
   paper_runner_data:
     driver: local
 
@@ -514,19 +342,3 @@ volumes:
 networks:
   cdb_network:
     driver: bridge
-
-secrets:
-  redis_password:
-    file: ./cdb_secrets/redis_password.txt
-  postgres_password:
-    file: ./cdb_secrets/postgres_password.txt
-  grafana_password:
-    file: ./cdb_secrets/grafana_password.txt
-  mexc_api_key:
-    file: ./cdb_secrets/mexc_api_key.txt
-  mexc_api_secret:
-    file: ./cdb_secrets/mexc_api_secret.txt
-  smtp_password:
-    file: ./cdb_secrets/smtp_password.txt
-  openai_key:
-    file: ./cdb_secrets/openai_key.txt

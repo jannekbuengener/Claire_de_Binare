@@ -480,30 +480,30 @@ Abläufe versteht und korrekt mit den definierten Schnittstellen interagiert.
 
 N1\_ARCHITEKTUR.md 
 
-https://github.com/jannekbuengener/Claire\_de\_Binare\_Claire de Binare/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/architecture/N1\_ARCHITEKTUR.md 
+https://github.com/jannekbuengener/Claire\_de\_Binare\_Cleanroom/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/architecture/N1\_ARCHITEKTUR.md 
 
 31 32 33 34 35 37 38 39 40 44 56 
 
 RISK\_LOGIC.md 
 
-https://github.com/jannekbuengener/Claire\_de\_Binare\_Claire de Binare/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/services/risk/RISK\_LOGIC.md 
+https://github.com/jannekbuengener/Claire\_de\_Binare\_Cleanroom/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/services/risk/RISK\_LOGIC.md 
 
 36 41 62 63 66 67 68 
 
 README.md 
 
-https://github.com/jannekbuengener/Claire\_de\_Binare\_Claire de Binare/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/services/risk\_manager/README.md 
+https://github.com/jannekbuengener/Claire\_de\_Binare\_Cleanroom/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/services/risk\_manager/README.md 
 
 42 43 45 
 
 output.md 
 
-https://github.com/jannekbuengener/Claire\_de\_Binare\_Claire de Binare/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/knowledge/output.md 
+https://github.com/jannekbuengener/Claire\_de\_Binare\_Cleanroom/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/knowledge/output.md 
 
 58 59 61 64 65 
 
 env\_index.md 
 
-https://github.com/jannekbuengener/Claire\_de\_Binare\_Claire de Binare/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/infra/env\_index.md 
+https://github.com/jannekbuengener/Claire\_de\_Binare\_Cleanroom/blob/238cdaea1f9c505d83e04387138e9e431ff034b1/ backoffice/docs/infra/env\_index.md 
 
 11

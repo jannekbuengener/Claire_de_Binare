@@ -44,7 +44,7 @@ Da dies interaktiv ist, folge dieser **manuellen Anleitung**:
 **Automatisch alle Issues importieren**:
 1. Im Project → **"+ Add items"**
 2. Dropdown: **"Add items from repository"**
-3. Repo wählen: `jannekbuengener/Claire_de_Binare`
+3. Repo wählen: `jannekbuengener/Claire_de_Binare_Cleanroom`
 4. Alle Issues auswählen (20 Issues)
 5. **"Add selected items"**
 
@@ -125,8 +125,8 @@ M9 - Release 1.0:        [░░░░░░░░░░] 0% (0/0 closed)
 Nach Setup verfügbar:
 
 - **Project Board**: https://github.com/users/jannekbuengener/projects/[PROJECT_NUMBER]
-- **Milestones**: https://github.com/jannekbuengener/Claire_de_Binare/milestones
-- **Issues**: https://github.com/jannekbuengener/Claire_de_Binare/issues
+- **Milestones**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestones
+- **Issues**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/issues
 
 ---
 

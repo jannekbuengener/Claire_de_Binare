@@ -1,7 +1,7 @@
 # PROVENANCE.md -- Kompakte Provenance-Matrix für KI
 
 Dieses Dokument beschreibt die minimale, maschinenrelevante
-Provenance-Struktur des Claire de Binare-Systems. Alle menschlichen
+Provenance-Struktur des Cleanroom-Systems. Alle menschlichen
 Prozessberichte wurden entfernt. Es bleiben ausschließlich
 deterministische, KI-relevante Herkunftsangaben.
 

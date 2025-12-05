@@ -4,13 +4,13 @@
 **Migration durchgeführt**: 2025-11-16
 **Status**: ✅ **ABGESCHLOSSEN**
 
-> **Historischer Kontext**: Diese Checkliste dokumentiert die Pre-Migration-Tasks für die Claire de Binare-Migration vom 2025-11-16. Alle Tasks wurden erfolgreich abgeschlossen. Dieses Dokument dient als Template für zukünftige Migrationen.
+> **Historischer Kontext**: Diese Checkliste dokumentiert die Pre-Migration-Tasks für die Cleanroom-Migration vom 2025-11-16. Alle Tasks wurden erfolgreich abgeschlossen. Dieses Dokument dient als Template für zukünftige Migrationen.
 
 ---
 
 ## Übersicht
 
-Diese Checkliste beschreibt die 4 CRITICAL Pre-Migration-Tasks, die vor der Claire de Binare-Migration durchgeführt wurden. Alle Aufgaben wurden erfolgreich abgeschlossen.
+Diese Checkliste beschreibt die 4 CRITICAL Pre-Migration-Tasks, die vor der Cleanroom-Migration durchgeführt wurden. Alle Aufgaben wurden erfolgreich abgeschlossen.
 
 ---
 
@@ -311,7 +311,7 @@ cd sandbox
 **Erwartetes Ergebnis**:
 ```
 ✅ ALLE CHECKS BESTANDEN
-Status: ✅ GO für Claire de Binare-Migration
+Status: ✅ GO für Cleanroom-Migration
 ```
 
 ### 2. Manuelle Checks
@@ -389,9 +389,9 @@ docker exec cdb_redis redis-cli -a <REDIS_PASSWORD> PUBLISH market_data '{"symbo
 docker compose logs cdb_core cdb_risk cdb_execution
 ```
 
-### 4. Claire de Binare-Migration starten
+### 4. Cleanroom-Migration starten
 
-Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Claire de Binare-Migration-Ablauf"
+Siehe `PIPELINE_COMPLETE_SUMMARY.md` → Abschnitt "Cleanroom-Migration-Ablauf"
 
 ---
 
@@ -429,7 +429,7 @@ docker compose config --services
 ⚠️ **NIEMALS in Haupt-Repo mergen!**
 
 **Lösungen**:
-1. **Claire de Binare-Ansatz** (empfohlen): Nur bereinigte Dateien ins neue Repo kopieren
+1. **Cleanroom-Ansatz** (empfohlen): Nur bereinigte Dateien ins neue Repo kopieren
 2. **Git-Filter-Branch** (advanced): Git-History bereinigen (siehe Git-Doku)
 3. **Neues Repo** (safe): Alten Repo archivieren, neues Repo mit sauberer History starten
 
@@ -446,7 +446,7 @@ docker compose config --services
 - [ ] **Git-Check**: Keine Secrets in History
 - [ ] **Compose-Check**: `docker compose config --quiet` → kein Fehler
 
-**Status nach Abschluss**: ✅ **GO für Claire de Binare-Migration**
+**Status nach Abschluss**: ✅ **GO für Cleanroom-Migration**
 
 ---
 

@@ -27,7 +27,7 @@ backoffice/docs/schema/
 Canonical Schema, Readiness-Reports, Modell-Übersichten
 
 backoffice/docs/audit/
-Claire de Binare-Audits, Audit-Plan, Audit-Schema
+Cleanroom-Audits, Audit-Plan, Audit-Schema
 
 backoffice/docs/infra/
 Infra-Wissen, Env-Index, Repo-Map, Strukturpläne (inkl. dieses Dokuments)
@@ -71,9 +71,9 @@ backoffice/docs/KODEX – Claire de Binare.md
 – Projektprinzipien, Zielbild, Namenskonventionen, Guardrails
 
 backoffice/docs/provenance/EXECUTIVE_SUMMARY.md
-– Überblick über die Canonicalization und den Claire de Binare-Kontext
+– Überblick über die Canonicalization und den Cleanroom-Kontext
 
-backoffice/docs/provenance/Claire de Binare_BASELINE_SUMMARY.md
+backoffice/docs/provenance/CLEANROOM_BASELINE_SUMMARY.md
 – Kurzfassung der Nullpunkt-Definition
 
 backoffice/docs/provenance/NULLPUNKT_DEFINITION_REPORT.md
@@ -86,7 +86,7 @@ backoffice/PROJECT_STATUS.md
 – Aktueller Projektstatus und N1-Backlog auf hoher Ebene
 
 backoffice/docs/DECISION_LOG.md
-– ADRs (insbesondere ADR-039 zum Claire de Binare-Nullpunkt)
+– ADRs (insbesondere ADR-039 zum Cleanroom-Nullpunkt)
 
 Danach lohnt der Blick in:
 
@@ -94,7 +94,7 @@ backoffice/docs/services/*.md – Dienste im Detail
 
 backoffice/docs/schema/*.yaml / .md – Datenmodell und Schema
 
-backoffice/docs/audit/AUDIT_Claire de Binare.md – Audit-Sicht auf die Struktur
+backoffice/docs/audit/AUDIT_CLEANROOM.md – Audit-Sicht auf die Struktur
 
 4. Arbeitsregeln in diesem Repository
 
@@ -108,11 +108,11 @@ Relevante Struktur- oder Technologieentscheidungen werden als ADR in DECISION_LO
 
 Code-Änderungen ohne ADR bei größeren Themen (z. B. neue Services, geänderte Datenwege) sind zu vermeiden.
 
-Claire de Binare ist Kanon
+Cleanroom ist Kanon
 
 Historische Repositories, Sandboxen und Backups sind nur noch Referenz/Historie.
 
-Neue Arbeit findet ausschließlich in Claire_de_Binare statt.
+Neue Arbeit findet ausschließlich in Claire_de_Binare_Cleanroom statt.
 
 Trennung von Doku und Code
 
@@ -134,13 +134,13 @@ Empfohlener Ablauf für neue Teammitglieder:
 
 README im Repo-Root lesen.
 
-Dieses Dokument (Claire de Binare ONBOARDING & REPO NAVIGATION) überfliegen.
+Dieses Dokument (CLEANROOM ONBOARDING & REPO NAVIGATION) überfliegen.
 
 KODEX & Executive Summary
 
 KODEX komplett lesen.
 
-EXECUTIVE_SUMMARY + Claire de Binare_BASELINE_SUMMARY lesen.
+EXECUTIVE_SUMMARY + CLEANROOM_BASELINE_SUMMARY lesen.
 
 Architektur verstehen
 

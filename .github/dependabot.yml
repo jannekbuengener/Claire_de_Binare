@@ -1,14 +1,6 @@
-- name: Upload Status Badge
-
-  uses: colinparsonscom/upload-status-badge@v0.1.8
-
 version: 2
 
 updates:
-  - package-ecosystem: "npm"
-    directory: "/mcp_servers/agents-sync-server"
-    schedule:
-      interval: "weekly"
   - package-ecosystem: "docker"
     directory: "/"
     schedule:

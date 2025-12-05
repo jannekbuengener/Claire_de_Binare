@@ -46,7 +46,6 @@ class Order:
     signal_id: int
     reason: str
     timestamp: int
-    price: float  # Signal-Price für realistische Execution
     client_id: Optional[str] = None
     type: Literal["order"] = "order"  # Type-safe event type
 
@@ -60,7 +59,6 @@ class Order:
             "signal_id": self.signal_id,
             "reason": self.reason,
             "timestamp": self.timestamp,
-            "price": self.price,
             "client_id": self.client_id,
         }
 

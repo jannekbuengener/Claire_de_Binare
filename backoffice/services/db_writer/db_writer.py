@@ -76,7 +76,7 @@ class DatabaseWriter:
             datetime object compatible with PostgreSQL timestamp with time zone
         """
         if timestamp_value is None:
-            return datetime.now(datetime.UTC)
+            return datetime.utcnow()
 
         # If integer (Unix timestamp), convert to datetime
         if isinstance(timestamp_value, int):
@@ -86,25 +86,21 @@ class DatabaseWriter:
         if isinstance(timestamp_value, str):
             try:
                 # Handle ISO format with 'Z' suffix
-                if timestamp_value.endswith("Z"):
-                    timestamp_value = timestamp_value[:-1] + "+00:00"
+                if timestamp_value.endswith('Z'):
+                    timestamp_value = timestamp_value[:-1] + '+00:00'
                 return datetime.fromisoformat(timestamp_value)
             except ValueError:
                 # Fallback to current time if parsing fails
-                logger.warning(
-                    f"Invalid timestamp format: {timestamp_value}, using current time"
-                )
-            return datetime.now(datetime.UTC)
+                logger.warning(f"Invalid timestamp format: {timestamp_value}, using current time")
+                return datetime.utcnow()
 
         # If already datetime, return as-is
         if isinstance(timestamp_value, datetime):
             return timestamp_value
 
         # Fallback
-        logger.warning(
-            f"Unknown timestamp type: {type(timestamp_value)}, using current time"
-        )
-        return datetime.now(datetime.UTC)
+        logger.warning(f"Unknown timestamp type: {type(timestamp_value)}, using current time")
+        return datetime.utcnow()
 
     @staticmethod
     def normalize_side(value: str) -> str:

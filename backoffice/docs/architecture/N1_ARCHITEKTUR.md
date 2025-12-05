@@ -1,7 +1,7 @@
 # N1 – Systemarchitektur für die Paper-Test-Phase
 
 **Projekt:** Claire de Binare  
-**Phase:** N1 – Post-Claire de Binare / Paper-Test-Vorbereitung  
+**Phase:** N1 – Post-Cleanroom / Paper-Test-Vorbereitung  
 **Status:** Entwurf stabil, für weitere N1-Spezifikationen freigegeben  
 
 ---
@@ -251,13 +251,6 @@ RE nutzt RiskConfig (Paper-Test-Konfiguration).
 
 RE produziert RiskDecision und ggf. alerts.
 
-**State-Konsistenz (N1 Zusatz):**
-- Postgres ist Single Source of Truth für Risk/Exposure (Portfolio-Snapshots).
-- Beim Start: DB-Snapshot laden, Exposure ableiten und Redis-Cache `risk_state:persistence` überschreiben, falls Drift >5%.
-- Laufzeit: Auto-Heal korrigiert Redis-Divergenzen (>5%) ohne Trading zu blockieren; Redis bleibt Cache/Transport.
-- Adaptive Risk-Intensity: `adaptive_intensity/dry_wet.py` berechnet aus den letzten Trades einen Score (DRY↔WET) und stellt dynamische Risk-Parameter über Redis bereit.
-- Dry/Wet Service: `adaptive_intensity/dry_wet_service.py` looped score/params nach Redis (`adaptive_intensity:current_params`), Prometheus-Metriken exponiert `/metrics`.
-
 Die Details zu:
 
 Pre-Checks (Kill Switch, Cooldown),
@@ -424,3 +417,4 @@ Das System verwendet **ausschließlich das global installierte Python**, gesteue
 - `USE_SYSTEM_PYTHON=true`
 
 Lokale Python-Installationen innerhalb des Projektordners sind deaktiviert.
+

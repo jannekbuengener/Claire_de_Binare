@@ -1,8 +1,8 @@
-# PROJECT STATUS - Claire de Binare Claire de Binare
+# PROJECT STATUS - Claire de Binare Cleanroom
 
 **Datum**: 2025-01-14  
-**Version**: 1.0.0-Claire de Binare  
-**Environment**: Claire de Binare (Pre-Deployment)  
+**Version**: 1.0.0-cleanroom  
+**Environment**: Cleanroom (Pre-Deployment)  
 **Letztes Update**: 18:45 CET
 
 ---
@@ -11,7 +11,7 @@
 
 ### Container-Status (Docker Desktop – zuletzt geprüfter Lauf)
 
-> Hinweis: Diese Tabelle beschreibt den **Soll-Zustand** laut Claire de Binare/N1-Architektur.  
+> Hinweis: Diese Tabelle beschreibt den **Soll-Zustand** laut Cleanroom/N1-Architektur.  
 > Nach jedem Systemcheck werden Status + Health aktualisiert.
 
 | Service        | Container       | Status             | Health           | Port  | Kommentar                    |
@@ -39,12 +39,12 @@
 
 ```
 [========================================] 100%
-    Claire de Binare ETABLIERT - N1 PHASE AKTIV
+    CLEANROOM ETABLIERT - N1 PHASE AKTIV
 ```
 
 
 ### Aktuelle Phase: **N1 - Paper-Test-Vorbereitung**
-- ✅ Claire de Binare-Migration abgeschlossen (2025-11-16)
+- ✅ Cleanroom-Migration abgeschlossen (2025-11-16)
 - ✅ Pipelines abgeschlossen (4/4)
 - ✅ Kanonisches Schema erstellt
 - ✅ Security-Hardening dokumentiert (Score aktuell: 95 %)
@@ -84,11 +84,11 @@
 
 | Datum       | Aktion                                       | Ergebnis                          |
 |-------------|----------------------------------------------|-----------------------------------|
-| 2025-11-16  | Claire de Binare-Migration durchgeführt             | ✅ Repo vollständig kanonisiert   |
+| 2025-11-16  | Cleanroom-Migration durchgeführt             | ✅ Repo vollständig kanonisiert   |
 | 2025-11-16  | Pipelines abgeschlossen                      | ✅ 31 Artefakte erstellt          |
 | 2025-11-16  | Security verbessert                          | ✅ 70 % → 95 % Score              |
-| 2025-01-14  | Ordnerstruktur etabliert                     | ✅ Claire de Binare-Struktur aktiv       |
-| 2025-01-17  | Nullpunkt definiert                          | ✅ Claire de Binare = aktueller Stand    |
+| 2025-01-14  | Ordnerstruktur etabliert                     | ✅ Cleanroom-Struktur aktiv       |
+| 2025-01-17  | Nullpunkt definiert                          | ✅ Cleanroom = aktueller Stand    |
 | 2025-01-18  | Architecture Refactoring Plan dokumentiert   | ✅ STRUCTURE_CLEANUP_PLAN.md      |
 | 2025-11-18  | MEXC-API-Key ip-gebunden + auf BTC/USDC/USDE limitiert | ✅ Safety-Layer Exchange-Seite |
 
@@ -254,9 +254,9 @@ Tools: Docker Desktop, Gordon (Docker AI), VS Code / IDE
 
 Repository
 
-Path: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
+Path: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom
 
-Branch: main (Claire de Binare)
+Branch: main (cleanroom)
 
 Remote: TBD
 
@@ -281,7 +281,7 @@ Keine automatisierte Backup-Ausführung (nur Skript-Idee)
 
 Lessons Learned
 
-Claire de Binare-Ansatz bewährt sich
+Cleanroom-Ansatz bewährt sich
 
 Kanonisches Schema + KODEX als Single Source of Truth hilfreich
 
@@ -291,8 +291,8 @@ API-Key-Hardening (IP-Bindung + Handelspar-Limitierung) ist guter Sicherheitsgew
 
 🤝 TEAM
 Rolle	Name	Status	Letzte Aktion
-Projektleiter	Jannek	🟢 Aktiv	Claire de Binare-Nullpunkt & API-Setup
-IT-Chef	Claude	🟢 Aktiv	Claire de Binare-Audit & Architektur-Kodex
+Projektleiter	Jannek	🟢 Aktiv	Cleanroom-Nullpunkt & API-Setup
+IT-Chef	Claude	🟢 Aktiv	Cleanroom-Audit & Architektur-Kodex
 Server-Admin	Gordon	⏸️ Standby	Wartet auf pytest-/Compose-Befehle
 📞 SUPPORT
 

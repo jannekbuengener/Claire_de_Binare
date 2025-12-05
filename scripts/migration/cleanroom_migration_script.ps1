@@ -1,13 +1,13 @@
 # ============================================================================
 # HISTORICAL TEMPLATE - Documents 2025-11-16 migration
 # ============================================================================
-# Repository : Claire_de_Binare
-# Context    : Migration from backup repo into Claire de Binare baseline
+# Repository : Claire_de_Binare_Cleanroom
+# Context    : Migration from backup repo into Cleanroom baseline
 # Status     : Historical reference only (do not re-run on current baseline)
 #
 # Original Header:
-# Claire de Binare - Claire de Binare Migration Script
-# ZWECK: Automatisierte Migration vom Backup-Repo ins Claire de Binare-Repo
+# Claire de Binare - Cleanroom Migration Script
+# ZWECK: Automatisierte Migration vom Backup-Repo ins Cleanroom-Repo
 # AUTOR: Pipeline 4 - Multi-Agenten-System
 # DATUM: 2025-11-16
 # ============================================================================
@@ -27,7 +27,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "Claire de Binare - Claire de Binare Migration" -ForegroundColor Cyan
+Write-Host "Claire de Binare - Cleanroom Migration" -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Source Repo: $SourceRepo" -ForegroundColor Gray
@@ -252,7 +252,7 @@ $filesCopied = 0
 
 $filesCopied += Copy-File-Safe -Source "sandbox\PIPELINE_COMPLETE_SUMMARY.md" -Target "backoffice\docs\PIPELINE_COMPLETE_SUMMARY.md" -Description "PIPELINE_COMPLETE_SUMMARY.md"
 $filesCopied += Copy-File-Safe -Source "sandbox\PRE_MIGRATION_EXECUTION_REPORT.md" -Target "backoffice\docs\PRE_MIGRATION_EXECUTION_REPORT.md" -Description "PRE_MIGRATION_EXECUTION_REPORT.md"
-$filesCopied += Copy-File-Safe -Source "sandbox\Claire de Binare_MIGRATION_MANIFEST.md" -Target "backoffice\docs\Claire de Binare_MIGRATION_MANIFEST.md" -Description "Claire de Binare_MIGRATION_MANIFEST.md"
+$filesCopied += Copy-File-Safe -Source "sandbox\CLEANROOM_MIGRATION_MANIFEST.md" -Target "backoffice\docs\CLEANROOM_MIGRATION_MANIFEST.md" -Description "CLEANROOM_MIGRATION_MANIFEST.md"
 $filesCopied += Copy-File-Safe -Source "sandbox\ADRs_FOR_DECISION_LOG.md" -Target "backoffice\docs\ADRs_FOR_DECISION_LOG.md" -Description "ADRs_FOR_DECISION_LOG.md"
 
 Write-Host "  → $filesCopied/4 Dateien kopiert" -ForegroundColor Cyan
@@ -351,5 +351,5 @@ Write-Host "7. Health-Checks prüfen: docker compose ps" -ForegroundColor White
 Write-Host "8. Tests ausführen: pytest -v" -ForegroundColor White
 Write-Host "9. Git initial commit" -ForegroundColor White
 Write-Host ""
-Write-Host "Für Details siehe: backoffice\docs\Claire de Binare_MIGRATION_MANIFEST.md" -ForegroundColor Cyan
+Write-Host "Für Details siehe: backoffice\docs\CLEANROOM_MIGRATION_MANIFEST.md" -ForegroundColor Cyan
 Write-Host ""

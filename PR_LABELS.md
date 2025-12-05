@@ -2,7 +2,7 @@
 
 ## Übersicht
 
-Dieses Dokument beschreibt das automatische Label-System für alle Pull Requests im Claire de Binare Claire de Binare Repository.
+Dieses Dokument beschreibt das automatische Label-System für alle Pull Requests im Claire de Binare Cleanroom Repository.
 
 ## Ausführung
 
@@ -95,7 +95,7 @@ Nach Ausführung prüfen:
 
 ```bash
 # Alle PRs mit Labels anzeigen
-gh pr list --repo jannekbuengener/Claire_de_Binare --state all --limit 50
+gh pr list --repo jannekbuengener/Claire_de_Binare_Cleanroom --state all --limit 50
 
 # Spezifische Label-Gruppe anzeigen
 gh pr list --label "testing" --state all

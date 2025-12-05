@@ -26,9 +26,9 @@
 |---|-------|--------|
 | #25 | ENV Validation durchführen | 🔴 OPEN (CRITICAL) |
 | #37 | ✅ KODEX & ADRs erstellt | ✅ CLOSED |
-| #33 | ✅ Claire de Binare-Migration | ✅ CLOSED |
+| #33 | ✅ Cleanroom-Migration | ✅ CLOSED |
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/1
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/1
 
 ---
 
@@ -39,7 +39,7 @@
 |---|-------|--------|
 | #35 | ✅ N1-Architektur dokumentiert | ✅ CLOSED |
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/2
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/2
 
 ---
 
@@ -53,7 +53,7 @@
 
 **Next Action**: Starte mit #21 (pytest Setup)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/3
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/3
 
 ---
 
@@ -64,7 +64,7 @@
 |---|-------|--------|
 | #39 | ✅ Redis Event-Bus definiert | ✅ CLOSED |
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/4
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/4
 
 ---
 
@@ -81,7 +81,7 @@
 
 **Next Action**: #23 Portfolio Manager (DIESE WOCHE)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/5
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/5
 
 ---
 
@@ -95,7 +95,7 @@
 
 **Next Action**: #26 Systemcheck (SOFORT)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/6
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/6
 
 ---
 
@@ -109,7 +109,7 @@
 
 **Next Action**: #27 Execution Simulator (HEUTE)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/7
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/7
 
 ---
 
@@ -125,7 +125,7 @@
 
 **Next Action**: POST-N1 (#29, #30)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/8
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/8
 
 ---
 
@@ -134,7 +134,7 @@
 
 **Status**: Keine Issues zugeordnet (Future Planning)
 
-**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare/milestone/9
+**🔗 URL**: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestone/9
 
 ---
 
@@ -203,15 +203,15 @@ gh api repos/:owner/:repo/milestones --jq '.[] | {
 ## 📊 Web-UI Links
 
 **Milestone-Übersicht**:
-https://github.com/jannekbuengener/Claire_de_Binare/milestones
+https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/milestones
 
 **Issue-Board** (nach Project-Setup):
 https://github.com/users/jannekbuengener/projects
 
 **Label-Filter**:
-- N1-Phase: https://github.com/jannekbuengener/Claire_de_Binare/labels/n1-phase
-- Critical: https://github.com/jannekbuengener/Claire_de_Binare/labels/critical
-- Blocker: https://github.com/jannekbuengener/Claire_de_Binare/labels/blocker
+- N1-Phase: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/labels/n1-phase
+- Critical: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/labels/critical
+- Blocker: https://github.com/jannekbuengener/Claire_de_Binare_Cleanroom/labels/blocker
 
 ---
 

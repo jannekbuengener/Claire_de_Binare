@@ -2,7 +2,7 @@
 
 **Erstellt von**: Alle Agenten (Pipeline 4)
 **Datum**: 2025-11-16
-**Zweck**: Go/No-Go Bewertung für Claire de Binare-Migration
+**Zweck**: Go/No-Go Bewertung für Cleanroom-Migration
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Status**: ⚠️ **CONDITIONAL GO** - Migration möglich mit kritischen Vorarbeiten
 
-Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Kritische Lücken und Konflikte sind identifiziert und dokumentiert. Eine Claire de Binare-Migration ist möglich, erfordert jedoch die Behebung von 3 CRITICAL-Level-Risiken vor der Überführung.
+Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Kritische Lücken und Konflikte sind identifiziert und dokumentiert. Eine Cleanroom-Migration ist möglich, erfordert jedoch die Behebung von 3 CRITICAL-Level-Risiken vor der Überführung.
 
 ---
 
@@ -43,7 +43,7 @@ Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Krit
 **CRITICAL-Level Risiken** (müssen vor Migration behoben werden):
 1. **SR-001**: Exposed Secrets in ` - Kopie.env` (POSTGRES_PASSWORD=Jannek8$)
    - **Aktion**: Secrets durch `<SET_IN_ENV>` ersetzen, Datei umbenennen zu `.env.template`
-   - **Deadline**: Vor erstem Commit in Claire de Binare-Repo
+   - **Deadline**: Vor erstem Commit in Cleanroom-Repo
 
 2. **SR-002**: ENV-Naming-Konflikt (Prozent vs. Dezimal)
    - **Aktion**: Alle Risk-Parameter auf Dezimal-Konvention umstellen (`*_PCT` Suffix, Werte 0.0-1.0)
@@ -151,7 +151,7 @@ Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Krit
 3. ✅ **MEXC-API-ENV ergänzen** (SR-003): `MEXC_API_KEY`, `MEXC_API_SECRET` in `.env.template`
 4. ✅ **cdb_signal_gen entfernen**: Service aus docker-compose.yml (Legacy)
 
-**Nach Behebung dieser 4 Punkte**: ✅ **GO** für Claire de Binare-Migration
+**Nach Behebung dieser 4 Punkte**: ✅ **GO** für Cleanroom-Migration
 
 ---
 
@@ -181,8 +181,8 @@ Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Krit
 - [ ] canonical_schema.yaml finalisieren (Workflows hinzufügen)
 
 ### 2. Migration (1 Tag)
-- [ ] Claire de Binare_migration_plan.md ausführen
-- [ ] Dateien ins Claire de Binare-Repo übertragen
+- [ ] cleanroom_migration_plan.md ausführen
+- [ ] Dateien ins Cleanroom-Repo übertragen
 - [ ] DECISION_LOG.md mit ADRs ergänzen
 - [ ] Tests ausführen (docker compose up -d, Health-Checks)
 
@@ -196,9 +196,9 @@ Das kanonische Systemmodell ist zu **85% vollständig** und **konsistent**. Krit
 
 ## Empfehlung
 
-**GO für Claire de Binare-Migration** - vorbehaltlich Behebung der 4 kritischen Punkte (geschätzter Aufwand: 3-4 Stunden).
+**GO für Cleanroom-Migration** - vorbehaltlich Behebung der 4 kritischen Punkte (geschätzter Aufwand: 3-4 Stunden).
 
-Das kanonische Systemmodell ist stabil genug für die Überführung ins Claire de Binare-Repo. Alle Kernkomponenten sind vollständig dokumentiert, Konflikte identifiziert und Lösungen definiert. Die verbleibenden Risiken sind managbar und können post-Migration behoben werden.
+Das kanonische Systemmodell ist stabil genug für die Überführung ins Cleanroom-Repo. Alle Kernkomponenten sind vollständig dokumentiert, Konflikte identifiziert und Lösungen definiert. Die verbleibenden Risiken sind managbar und können post-Migration behoben werden.
 
 ---
 

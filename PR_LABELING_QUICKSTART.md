@@ -214,7 +214,7 @@ gh auth login
 
 1. Prüfe ob du Schreibrechte auf dem Repository hast:
    ```bash
-   gh repo view jannekbuengener/Claire_de_Binare
+   gh repo view jannekbuengener/Claire_de_Binare_Cleanroom
    ```
 
 2. Prüfe ob Labels existieren:

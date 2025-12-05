@@ -36,8 +36,8 @@ sandbox/
 │
 ├── MIGRATION-ARTIFACTS/
 │   ├── MIGRATION_READY.md                 ⭐ START HERE - Schnellstart
-│   ├── Claire de Binare_MIGRATION_MANIFEST.md    ⭐ CRITICAL - Vollständiges Handbuch
-│   ├── Claire de Binare_migration_script.ps1     ⭐ SCRIPT - Automatisierung
+│   ├── CLEANROOM_MIGRATION_MANIFEST.md    ⭐ CRITICAL - Vollständiges Handbuch
+│   ├── cleanroom_migration_script.ps1     ⭐ SCRIPT - Automatisierung
 │   ├── ADRs_FOR_DECISION_LOG.md           ⭐ CRITICAL - 3 fertige ADRs
 │   ├── PIPELINE_COMPLETE_SUMMARY.md       → Alle 4 Pipelines
 │   ├── PRE_MIGRATION_EXECUTION_REPORT.md  → Pre-Migration Nachweis
@@ -62,7 +62,7 @@ sandbox/
 | Priorität | Datei | Zweck |
 |-----------|-------|-------|
 | **1** | `MIGRATION_READY.md` | Schnellstart-Guide - HIER STARTEN |
-| **2** | `Claire de Binare_migration_script.ps1` | Migration ausführen (15 Min) |
+| **2** | `cleanroom_migration_script.ps1` | Migration ausführen (15 Min) |
 | **3** | `ADRs_FOR_DECISION_LOG.md` | ADRs für DECISION_LOG.md |
 | **4** | `.env.template` | Bereinigte ENV-Template |
 
@@ -75,7 +75,7 @@ sandbox/
 | **Kanonisches Modell** | `canonical_schema.yaml` | 9 Services, 21 ENV, 7 Risk-Parameter, 5 Events |
 | **Architektur** | `canonical_model_overview.md` | Entity-Kategorien, Beziehungen |
 | **Bewertung** | `canonical_readiness_report.md` | 6 Kategorien, CONDITIONAL GO → GO |
-| **Migration** | `Claire de Binare_MIGRATION_MANIFEST.md` | Datei-Transfer-Matrix, Execution-Plan |
+| **Migration** | `CLEANROOM_MIGRATION_MANIFEST.md` | Datei-Transfer-Matrix, Execution-Plan |
 
 ---
 
@@ -98,7 +98,7 @@ sandbox/
 |-----|--------|-----------|
 | **Markdown-Docs** | 26 | canonical_model_overview.md, MIGRATION_READY.md, ... |
 | **YAML/Config** | 1 | canonical_schema.yaml |
-| **PowerShell-Scripts** | 3 | Claire de Binare_migration_script.ps1, pre_migration_tasks.ps1, ... |
+| **PowerShell-Scripts** | 3 | cleanroom_migration_script.ps1, pre_migration_tasks.ps1, ... |
 | **ENV-Templates** | 1 | .env.template |
 | **TOTAL** | **31** | — |
 
@@ -126,7 +126,7 @@ sandbox/
 **Inhalt**: 9 Services, 21 ENV, 7 Risk-Parameter, 5 Events
 **Verwendung**: Code-Generierung, Validierung, Dokumentation
 
-### 3. Claire de Binare_migration_script.ps1
+### 3. cleanroom_migration_script.ps1
 **Zweck**: 1-Click-Migration
 **Inhalt**: Automatisiertes Kopieren von 20+ Dateien
 **Aufwand**: 15 Minuten (statt 2-3h manuell)
@@ -139,7 +139,7 @@ sandbox/
 ### 5. .env.template
 **Zweck**: Bereinigte Konfiguration
 **Inhalt**: 7 Risk-Parameter (Dezimal), alle Secrets als Platzhalter
-**Verwendung**: Basis für .env im Claire de Binare-Repo
+**Verwendung**: Basis für .env im Cleanroom-Repo
 
 ---
 
@@ -166,8 +166,8 @@ sandbox/
 **Für**: DevOps, Release-Manager
 **Dateien**:
 - `MIGRATION_READY.md` - Schnellstart
-- `Claire de Binare_MIGRATION_MANIFEST.md` - Vollständiges Handbuch
-- `Claire de Binare_migration_script.ps1` - Automatisierung
+- `CLEANROOM_MIGRATION_MANIFEST.md` - Vollständiges Handbuch
+- `cleanroom_migration_script.ps1` - Automatisierung
 - `ADRs_FOR_DECISION_LOG.md` - ADRs
 
 **Verwendung**:
@@ -216,11 +216,11 @@ sandbox/
 3. `canonical_schema.yaml` überfliegen
 
 ### Phase 2: Migration vorbereiten (10 Min)
-4. Claire de Binare-Repo erstellen
+4. Cleanroom-Repo erstellen
 5. Migration-Script-Parameter festlegen
 
 ### Phase 3: Migration ausführen (15 Min)
-6. `Claire de Binare_migration_script.ps1` ausführen
+6. `cleanroom_migration_script.ps1` ausführen
 7. Output validieren
 8. ADRs in DECISION_LOG.md einfügen
 
@@ -233,7 +233,7 @@ sandbox/
 
 ### Phase 5: Deployment (15 Min)
 14. Git initial commit
-15. Tag erstellen (v1.0-Claire de Binare)
+15. Tag erstellen (v1.0-cleanroom)
 16. (Optional) Push to remote
 
 **Total**: ~1h 15min (von 0 zu Production-ready)
@@ -245,7 +245,7 @@ sandbox/
 ### Migration erfolgreich, wenn:
 
 - [ ] Alle 31 Dateien in sandbox/ vorhanden
-- [ ] `Claire de Binare_migration_script.ps1` ausgeführt
+- [ ] `cleanroom_migration_script.ps1` ausgeführt
 - [ ] 3 ADRs in DECISION_LOG.md eingefügt
 - [ ] .env erstellt (alle Platzhalter ersetzt)
 - [ ] docker compose config --quiet → Exit Code 0
@@ -269,7 +269,7 @@ Get-ChildItem *.md | Select-Object Name
 **Lösung**: PowerShell Execution Policy
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-.\Claire de Binare_migration_script.ps1 -TargetRepo "..."
+.\cleanroom_migration_script.ps1 -TargetRepo "..."
 ```
 
 ### Problem: "Welche Datei für was?"
@@ -281,7 +281,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ### Für schnelle Migration (User)
 1. `MIGRATION_READY.md` (Schnellstart)
-2. `Claire de Binare_migration_script.ps1` ausführen
+2. `cleanroom_migration_script.ps1` ausführen
 3. `ADRs_FOR_DECISION_LOG.md` (Copy-Paste)
 
 ### Für technisches Verständnis (Developer)
@@ -301,7 +301,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 ### Bei Fragen zu:
 
-**Migration**: Siehe `Claire de Binare_MIGRATION_MANIFEST.md` → Troubleshooting
+**Migration**: Siehe `CLEANROOM_MIGRATION_MANIFEST.md` → Troubleshooting
 **Scripts**: Siehe `pre_migration_checklist.md` → Troubleshooting
 **Kanonischem Modell**: Siehe `canonical_model_overview.md` → Usage Notes
 **ADRs**: Siehe `ADRs_FOR_DECISION_LOG.md` → Einfüge-Anleitung

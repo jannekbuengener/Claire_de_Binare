@@ -16,6 +16,8 @@ import pytest
 import subprocess
 import psycopg2
 import time
+import os
+from pathlib import Path
 from datetime import datetime
 
 
@@ -198,7 +200,9 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     after_insert_count = cursor.fetchone()[0]
 
     print(f"    ✓ After insert: {after_insert_count} snapshots")
-    assert after_insert_count == baseline_count + 1, "Test snapshot should be inserted"
+    assert (
+        after_insert_count == baseline_count + 1
+    ), "Test snapshot should be inserted"
 
     # Step 4: Drop and Recreate Database (simulate catastrophic failure)
     print("  💥 Step 4: Drop and recreate database (simulate disaster)...")
@@ -274,7 +278,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
         if "error" in stderr_lower and "warning" not in stderr_lower:
             pytest.fail(f"Restore failed: {result.stderr}")
         else:
-            print("    ⚠️  Restore completed with warnings (acceptable)")
+            print(f"    ⚠️  Restore completed with warnings (acceptable)")
 
     print("    ✓ Restore completed")
 
@@ -502,7 +506,7 @@ def test_automated_backup_script_concept():
         """
   📋 Beispiel für Cronjob (täglich um 02:00 Uhr):
 
-  0 2 * * * /home/user/Claire_de_Binare/backoffice/scripts/backup_postgres.sh >> /var/log/claire_backup.log 2>&1
+  0 2 * * * /home/user/Claire_de_Binare_Cleanroom/backoffice/scripts/backup_postgres.sh >> /var/log/claire_backup.log 2>&1
   """
     )
 

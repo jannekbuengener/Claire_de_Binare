@@ -10,7 +10,7 @@
 
 Das kanonische Systemmodell ist die **Single Source of Truth** für alle Aspekte des Claire-de-Binare-Systems.
 Es bildet die Grundlage für:
-- Claire de Binare-Migration
+- Cleanroom-Migration
 - Automatische Code-Generierung
 - Deployment-Automation
 - Test-Suite-Generierung

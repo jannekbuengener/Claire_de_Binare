@@ -113,7 +113,7 @@ docker compose ps
 - CPU: TBD
 
 **Network**:
-- Bridge Network: `cdb_network` ✅
+- Bridge Network: `claire_de_binare_cleanroom_cdb_network` ✅
 - Alle Container im gleichen Netzwerk
 - Inter-Service-Communication funktioniert (E2E-Tests passed)
 

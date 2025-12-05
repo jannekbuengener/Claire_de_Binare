@@ -30,7 +30,7 @@ class Position:
     unrealized_pnl: float
     realized_pnl: float = 0.0
     stop_loss: Optional[float] = None
-    entry_timestamp: str = field(default_factory=lambda: datetime.now(datetime.UTC).isoformat())
+    entry_timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     @property
     def notional_value(self) -> float:
@@ -57,7 +57,7 @@ class PortfolioState:
     daily_pnl: float
     daily_volume: float
     num_trades: int
-    timestamp: str = field(default_factory=lambda: datetime.now(datetime.UTC).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     @property
     def total_exposure(self) -> float:

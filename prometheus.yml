@@ -14,35 +14,26 @@ scrape_configs:
   # Execution Service
   - job_name: 'execution_service'
     static_configs:
-      - targets: ['cdb_execution:8003']
+      - targets: ['execution_service:8003']
         labels:
           instance: 'execution_service'
           service: 'trading'
     metrics_path: '/metrics'
-
+    
   # Signal Engine
   - job_name: 'signal_engine'
     static_configs:
-      - targets: ['cdb_core:8001']
+      - targets: ['signal_engine:8001']
         labels:
           instance: 'signal_engine'
           service: 'analysis'
     metrics_path: '/metrics'
-
+    
   # Risk Manager
   - job_name: 'risk_manager'
     static_configs:
-      - targets: ['cdb_risk:8002']
+      - targets: ['risk_manager:8002']
         labels:
           instance: 'risk_manager'
           service: 'risk'
-    metrics_path: '/metrics'
-
-  # Adaptive Intensity Service
-  - job_name: 'adaptive_intensity'
-    static_configs:
-      - targets: ['cdb_adaptive_intensity:8005']
-        labels:
-          instance: 'adaptive_intensity'
-          service: 'optimization'
     metrics_path: '/metrics'

@@ -7,10 +7,10 @@
 # STRUKTUR-CLEANUP-PLAN (Post-Nullpunkt – Claire de Binare)
 
 Stand: 2025-01-17  
-Repository: `Claire_de_Binare`  
-Kontext: Claire de Binare-Nullpunkt ist definiert, Dokumentation ist konsolidiert. Dieses Dokument beschreibt die geplanten Struktur-Cleanups, die auf diesem Nullpunkt aufsetzen.
+Repository: `Claire_de_Binare_Cleanroom`  
+Kontext: Cleanroom-Nullpunkt ist definiert, Dokumentation ist konsolidiert. Dieses Dokument beschreibt die geplanten Struktur-Cleanups, die auf diesem Nullpunkt aufsetzen.
 
-Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumentierten Prinzipien und das N1-Zielbild anpassen – ohne den Nullpunkt oder die Claire de Binare-Dokumente zu verändern.
+Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumentierten Prinzipien und das N1-Zielbild anpassen – ohne den Nullpunkt oder die Cleanroom-Dokumente zu verändern.
 
 ---
 
@@ -26,7 +26,7 @@ Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumen
    - `archive/` bleibt historisches Material. Keine aktiven Workflows dort etablieren.
 
 4. **Keine Änderung am Nullpunkt**  
-   - Claire de Binare_BASELINE-Dokumente und ADR-039 bleiben unverändert und dienen als Referenz.
+   - CLEANROOM_BASELINE-Dokumente und ADR-039 bleiben unverändert und dienen als Referenz.
 
 ---
 
@@ -51,7 +51,7 @@ Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumen
 
 1. In `backoffice/docs/infra/repo_map.md` einen kurzen Abschnitt ergänzen:
    - Beschreibung der Rolle von `archive/` (historisch, read-only).
-2. In `backoffice/docs/audit/AUDIT_Claire de Binare.md` sicherstellen:
+2. In `backoffice/docs/audit/AUDIT_CLEANROOM.md` sicherstellen:
    - `archive/` wird als historischer Bereich markiert, nicht als Verstoß.
 3. Optional (spätere Phase): Umzug nach `backoffice/docs/archive/` diskutieren und ggf. per ADR entscheiden.
 
@@ -141,7 +141,7 @@ Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumen
 1. In `backoffice/docs/tests/` ein kurzes Index-Dokument (falls noch nicht vorhanden) pflegen, das beschreibt:
    - Zweck des Ordners
    - Beziehung zu `tests/`
-2. In README und im Claire de Binare-Onboarding-Dokument (Onboarding & Repo Navigation):
+2. In README und im Cleanroom-Onboarding-Dokument (Onboarding & Repo Navigation):
    - Kurzen Hinweis ergänzen, dass:
      - `tests/` = ausführbare Tests
      - `backoffice/docs/tests/` = Testkonzepte, Testpläne, Coverage-Übersicht
@@ -162,13 +162,13 @@ Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumen
 
 **Zielbild**
 
-- README spiegelt den Claire de Binare-Nullpunkt und die N1-Phase wider.
+- README spiegelt den Cleanroom-Nullpunkt und die N1-Phase wider.
 - README verweist auf:
   - KODEX
   - EXECUTIVE_SUMMARY
-  - Claire de Binare_BASELINE_SUMMARY
+  - CLEANROOM_BASELINE_SUMMARY
   - N1_ARCHITEKTUR
-  - Claire de Binare-Onboarding-Dokument
+  - Cleanroom-Onboarding-Dokument
 
 **Konkrete Schritte**
 
@@ -181,7 +181,7 @@ Ziel: Die physische Repository-Struktur (Ordner, Dateien, Caches) an die dokumen
 
 **Empfohlener Commit**
 
-- „docs: align README with Claire de Binare baseline and N1 phase“
+- „docs: align README with cleanroom baseline and N1 phase“
 
 ---
 
@@ -200,8 +200,8 @@ Zur Reduktion von Risiko und Merge-Konflikten:
 
 3. **README-/Onboarding-Commit**
    - README aktualisieren.
-   - Claire de Binare-Onboarding-/Repo-Navigation-Dokument verlinken.
-   - Commit: „docs: update onboarding and repo navigation for Claire de Binare baseline“
+   - Cleanroom-Onboarding-/Repo-Navigation-Dokument verlinken.
+   - Commit: „docs: update onboarding and repo navigation for cleanroom baseline“
 
 4. **Optionaler Archiv-Commit**
    - Nur wenn später gewünscht und per ADR entschieden:
@@ -216,9 +216,9 @@ Diese Liste kann in zukünftige Audits oder Projektpläne übernommen werden:
 
 - [ ] Prüfen, ob alle `__pycache__`-Verzeichnisse entfernt und in `.gitignore` abgedeckt sind.  
 - [ ] `mexc_top5_ws.py` in einen sauberen Service (`backoffice/services/screener_ws/`) überführen.  
-- [ ] README an Claire de Binare-Nullpunkt und N1-Phase anpassen.  
+- [ ] README an Cleanroom-Nullpunkt und N1-Phase anpassen.  
 - [ ] Kurzen Hinweis auf Trennung `tests/` vs. `backoffice/docs/tests/` in README und Test-Doku ergänzen.  
-- [ ] Rolle von `archive/` in `repo_map.md` und `AUDIT_Claire de Binare.md` klar als historischer Bereich definieren.  
+- [ ] Rolle von `archive/` in `repo_map.md` und `AUDIT_CLEANROOM.md` klar als historischer Bereich definieren.  
 - [ ] Optional: Entscheidung treffen (per ADR), ob `archive/` langfristig in einen Unterordner von `backoffice/docs/` migriert werden soll.
 
-Dieses Dokument dient als operative Brücke zwischen der definierten Claire de Binare-Dokumentation und den noch ausstehenden Strukturänderungen im Repository.
+Dieses Dokument dient als operative Brücke zwischen der definierten Cleanroom-Dokumentation und den noch ausstehenden Strukturänderungen im Repository.

@@ -85,25 +85,7 @@ def on_position_update(position):
 2. `docker compose logs cdb_risk --tail 200`
 3. `redis-cli -a $REDIS_PASSWORD lrange alerts -10 -1`
 
-## 8) State Sync & Auto-Heal
-
-- Quelle: Postgres `portfolio_snapshots` (jüngster Snapshot = Wahrheit).
-- Startup: Snapshot laden → Exposure = `equity * total_exposure_pct` → RiskState setzen → Redis-Key `risk_state:persistence` überschreiben, wenn Drift >5% zwischen DB und Redis.
-- Laufzeit: Auto-Heal-Loop prüft Drift >5% und triggert DB→Redis-Reset statt zu blockieren.
-- Redis ist Cache/Transport, nicht Truth. Entscheidungen basieren auf dem DB-abgeleiteten State.
-- Metriken (Prometheus): `risk_state_inconsistency_total`, `risk_state_resync_total`, `risk_state_recovery_total`, `risk_total_exposure_value`.
-
-## 9) Adaptive Dry/Wet Scoring (Risk-Intensity)
-
-- Modul: `backoffice/services/adaptive_intensity/dry_wet.py`
-- Eingang: letzte N=300 Trades aus Postgres (PnL).
-- Kennzahlen: Winrate, Profit Factor, max Drawdown.
-- Score 0..100 → DRY (0) bis WET (100).
-- Mapping auf Parameter: `signal_threshold_pct`, `max_exposure_pct`, `max_position_pct`.
-- Publikation: Redis-Key `adaptive_intensity:current_params` (Risk Manager liest dynamische Parameter).
-- Metriken: `dry_wet_score` (Gauge, optional), `dry_wet_window_trades_total`, `dry_wet_last_update_timestamp` (bei Bedarf ergänzen).
-- Service: `adaptive_intensity/dry_wet_service.py` berechnet/publiziert zyklisch und exponiert `/metrics`, `/status`, `/health`.
-
 ---
 
 Stand: 2025-11-02 • Besitzer: Risk-Team Claire de Binare
+

@@ -103,7 +103,6 @@ CREATE TABLE trades (
     execution_price DECIMAL(18, 8) NOT NULL,
     slippage_bps DECIMAL(10, 2), -- Slippage in Basis Points
     fees DECIMAL(18, 8) DEFAULT 0.0,
-    pnl DECIMAL(18, 8), -- Profit/Loss for closed positions (NULL for open positions)
 
     -- Timestamps
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,

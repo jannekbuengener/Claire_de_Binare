@@ -14,7 +14,6 @@ from flask import Flask, jsonify, Response
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
-from collections import defaultdict, deque
 
 # Lokale Imports
 try:
@@ -61,16 +60,6 @@ class SignalEngine:
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
 
-        # Price history für RSI-Berechnung (14 Perioden)
-        self.price_history = defaultdict(lambda: deque(maxlen=15))  # 15 für RSI-14
-
-        # Cache für dynamische Parameter (updated aus Redis)
-        self.dynamic_params = {
-            "threshold_pct": self.config.threshold_pct,
-            "rsi_threshold": 50.0,
-            "volume_multiplier": 1.0,
-        }
-
         # Validiere Config
         try:
             self.config.validate()
@@ -100,110 +89,27 @@ class SignalEngine:
             self.pubsub.subscribe(self.config.input_topic)
             logger.info(f"Subscribed zu Topic: {self.config.input_topic}")
 
-            # Initial: Lade dynamische Parameter
-            self.update_dynamic_params()
-
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
-
-    def update_dynamic_params(self):
-        """Holt aktuelle dynamische Parameter aus Redis (von Adaptive Intensity Service)"""
-        try:
-            params_json = self.redis_client.get("adaptive_intensity:current_params")
-
-            if params_json:
-                import json
-                params = json.loads(params_json)
-
-                # Update cache
-                self.dynamic_params["threshold_pct"] = params.get("signal_threshold_pct", self.config.threshold_pct)
-                self.dynamic_params["rsi_threshold"] = params.get("rsi_threshold", 50.0)
-                self.dynamic_params["volume_multiplier"] = params.get("volume_multiplier", 1.0)
-
-                logger.info(
-                    f"🔄 Dynamic params updated: "
-                    f"Threshold={self.dynamic_params['threshold_pct']:.2f}%, "
-                    f"RSI={self.dynamic_params['rsi_threshold']:.1f}"
-                )
-            else:
-                logger.debug("No dynamic params in Redis - using ENV fallback")
-
-        except Exception as e:
-            logger.warning(f"Failed to fetch dynamic params: {e} - using fallback")
-
-    def calculate_rsi(self, symbol: str, current_price: float) -> Optional[float]:
-        """
-        Berechnet RSI (Relative Strength Index) für ein Symbol
-
-        Returns:
-            RSI-Wert (0-100) oder None wenn nicht genug Daten
-        """
-        # Aktuellen Preis zur History hinzufügen
-        self.price_history[symbol].append(current_price)
-
-        # Mindestens 14 Datenpunkte benötigt für RSI-14
-        if len(self.price_history[symbol]) < 14:
-            return None
-
-        prices = list(self.price_history[symbol])
-
-        # Preisänderungen berechnen
-        gains = []
-        losses = []
-
-        for i in range(1, len(prices)):
-            change = prices[i] - prices[i - 1]
-            if change > 0:
-                gains.append(change)
-                losses.append(0)
-            else:
-                gains.append(0)
-                losses.append(abs(change))
-
-        # Durchschnittliche Gains/Losses (letzte 14 Perioden)
-        avg_gain = sum(gains[-14:]) / 14
-        avg_loss = sum(losses[-14:]) / 14
-
-        if avg_loss == 0:
-            return 100.0  # Alle Gains, kein Loss
-
-        rs = avg_gain / avg_loss
-        rsi = 100 - (100 / (1 + rs))
-
-        return round(rsi, 2)
 
     def process_market_data(self, data: dict) -> Optional[Signal]:
         """
         Verarbeitet Marktdaten und generiert ggf. Signal
 
         Momentum-Strategie:
-        - BUY wenn pct_change > threshold (DYNAMISCH aus Redis!)
+        - BUY wenn pct_change > threshold
         - Confidence basiert auf Stärke des Momentums
         """
         try:
             market_data = MarketData.from_dict(data)
 
-            # Hole DYNAMISCHE Threshold (updated alle 30s von Adaptive Intensity)
-            threshold = self.dynamic_params["threshold_pct"]
-            rsi_threshold = self.dynamic_params["rsi_threshold"]
-            volume_multiplier = self.dynamic_params["volume_multiplier"]
-
-            # Prüfe Momentum-Schwelle (DYNAMISCH!)
-            if market_data.pct_change >= threshold:
-                # Volume-Check (mit dynamischem Multiplier)
-                min_volume = self.config.min_volume * volume_multiplier
-                if market_data.volume < min_volume:
+            # Prüfe Momentum-Schwelle
+            if market_data.pct_change >= self.config.threshold_pct:
+                # Volume-Check
+                if market_data.volume < self.config.min_volume:
                     logger.debug(
-                        f"{market_data.symbol}: Volume zu niedrig ({market_data.volume} < {min_volume:.0f})"
-                    )
-                    return None
-
-                # RSI-Check (DYNAMISCHER Threshold!)
-                rsi = self.calculate_rsi(market_data.symbol, market_data.price)
-                if rsi is not None and rsi <= rsi_threshold:
-                    logger.debug(
-                        f"{market_data.symbol}: RSI zu niedrig ({rsi:.1f} <= {rsi_threshold:.1f})"
+                        f"{market_data.symbol}: Volume zu niedrig ({market_data.volume})"
                     )
                     return None
 
@@ -216,7 +122,7 @@ class SignalEngine:
                     side="BUY",
                     confidence=confidence,
                     reason=Signal.generate_reason(
-                        market_data.pct_change, threshold  # Use dynamic threshold
+                        market_data.pct_change, self.config.threshold_pct
                     ),
                     timestamp=int(time.time()),
                     price=market_data.price,
@@ -225,8 +131,7 @@ class SignalEngine:
 
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
-                    f"({signal.pct_change:+.2f}%, Confidence: {signal.confidence:.2f}, "
-                    f"Threshold: {threshold:.2f}%)"
+                    f"({signal.pct_change:+.2f}%, Confidence: {signal.confidence:.2f})"
                 )
                 return signal
 

@@ -20,6 +20,7 @@ import time
 import redis
 import psycopg2
 import json
+from datetime import datetime, UTC
 
 
 def run_docker_compose(args, timeout=30):
@@ -286,7 +287,9 @@ def test_postgres_crash_and_recovery():
     print(f"    ✓ After restart: {after_count} snapshots")
 
     # Data should be preserved (Volume-Persistence)
-    assert after_count == baseline_count, f"Data lost: {baseline_count} → {after_count}"
+    assert (
+        after_count == baseline_count
+    ), f"Data lost: {baseline_count} → {after_count}"
 
     print("    ✓ No data loss")
 
@@ -354,7 +357,7 @@ def test_core_service_crash_partial_failure():
     other_services = ["cdb_redis", "cdb_postgres", "cdb_risk", "cdb_execution"]
     still_healthy = [svc for svc in other_services if after_failure[svc]]
 
-    print("    ✓ cdb_core is down")
+    print(f"    ✓ cdb_core is down")
     print(f"    ✓ {len(still_healthy)}/4 other services still healthy: {still_healthy}")
 
     # At least 3/4 anderen Services sollten noch laufen (keine Cascading Failure)

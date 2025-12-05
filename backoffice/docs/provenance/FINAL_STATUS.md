@@ -1,6 +1,6 @@
 # Claire de Binare - Final Status Report
 
-**Projekt**: Kanonisierung & Claire de Binare-Migration
+**Projekt**: Kanonisierung & Cleanroom-Migration
 **Datum**: 2025-11-16
 **Status**: ✅ **100% COMPLETE - READY FOR MIGRATION**
 
@@ -19,7 +19,7 @@
 ║  ✅ Security-Score: 70% → 95% (+25%)                             ║
 ║  ✅ Risiko-Level: MEDIUM → LOW                                   ║
 ║                                                                   ║
-║  Status: READY FOR Claire de Binare MIGRATION                           ║
+║  Status: READY FOR CLEANROOM MIGRATION                           ║
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
@@ -58,8 +58,8 @@
 | Artefakt | Status | Umfang |
 |----------|--------|--------|
 | **MIGRATION_READY.md** | ✅ DONE | ~600 Zeilen |
-| **Claire de Binare_MIGRATION_MANIFEST.md** | ✅ DONE | ~800 Zeilen |
-| **Claire de Binare_migration_script.ps1** | ✅ DONE | ~350 Zeilen |
+| **CLEANROOM_MIGRATION_MANIFEST.md** | ✅ DONE | ~800 Zeilen |
+| **cleanroom_migration_script.ps1** | ✅ DONE | ~350 Zeilen |
 | **ADRs_FOR_DECISION_LOG.md** | ✅ DONE | ~600 Zeilen (3 ADRs) |
 | **PRE_MIGRATION_EXECUTION_REPORT.md** | ✅ DONE | ~400 Zeilen |
 | **EXECUTIVE_SUMMARY.md** | ✅ DONE | ~600 Zeilen |
@@ -133,7 +133,7 @@ sandbox/
 │
 ├── MIGRATION-ARTIFACTS (7)
 │   ├── MIGRATION_READY.md              ⭐ START HERE
-│   ├── Claire de Binare_migration_script.ps1  ⭐ EXECUTE
+│   ├── cleanroom_migration_script.ps1  ⭐ EXECUTE
 │   ├── ADRs_FOR_DECISION_LOG.md        ⭐ CRITICAL
 │   └── ... (4 weitere)
 │
@@ -191,17 +191,17 @@ sandbox/
 
 ### Phase 1: Migration (15-30 Min) ⏳
 
-1. **Claire de Binare-Repo erstellen/vorbereiten**
+1. **Cleanroom-Repo erstellen/vorbereiten**
    ```powershell
-   mkdir C:\Path\To\Claire de Binare\Repo
-   cd C:\Path\To\Claire de Binare\Repo
+   mkdir C:\Path\To\Cleanroom\Repo
+   cd C:\Path\To\Cleanroom\Repo
    git init
    ```
 
 2. **Migration-Script ausführen**
    ```powershell
    cd "C:\Users\janne\Documents\GitHub\Workspaces\claire_de_binare - Kopie\sandbox"
-   .\Claire de Binare_migration_script.ps1 -TargetRepo "C:\Path\To\Claire de Binare\Repo"
+   .\cleanroom_migration_script.ps1 -TargetRepo "C:\Path\To\Cleanroom\Repo"
    ```
 
 3. **ADRs in DECISION_LOG.md einfügen**
@@ -256,12 +256,12 @@ sandbox/
 9. **Git initial commit erstellen**
    ```bash
    git add .
-   git commit -m "feat: initial Claire de Binare migration - canonical system v1.0"
+   git commit -m "feat: initial cleanroom migration - canonical system v1.0"
    ```
 
 10. **Git Tag erstellen**
     ```bash
-    git tag -a v1.0-Claire de Binare -m "Claire de Binare baseline after 4-pipeline migration"
+    git tag -a v1.0-cleanroom -m "Cleanroom baseline after 4-pipeline migration"
     ```
 
 ---
@@ -298,7 +298,7 @@ sandbox/
 
 ### ⏳ Migration ausstehend (TODO)
 
-- [ ] Claire de Binare-Repo erstellt
+- [ ] Cleanroom-Repo erstellt
 - [ ] Migration-Script ausgeführt
 - [ ] 3 ADRs in DECISION_LOG.md
 - [ ] .env erstellt (Platzhalter ersetzt)
@@ -307,7 +307,7 @@ sandbox/
 - [ ] pytest → Alle Tests PASSED
 - [ ] Smoke-Test → Event-Flow funktioniert
 - [ ] Git initial commit → Erfolgreich (OHNE .env!)
-- [ ] Git Tag erstellt (v1.0-Claire de Binare)
+- [ ] Git Tag erstellt (v1.0-cleanroom)
 
 ### ⏳ Post-Migration (Nice-to-have)
 
@@ -338,7 +338,7 @@ sandbox/
 
 ---
 
-**Status**: ✅ **READY FOR Claire de Binare MIGRATION**
+**Status**: ✅ **READY FOR CLEANROOM MIGRATION**
 **Aufwand bis Production**: ~1-2 Stunden
 **Risiko-Level**: 🟢 LOW
 

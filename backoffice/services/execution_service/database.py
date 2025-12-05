@@ -7,6 +7,8 @@ import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional
+from datetime import datetime
+import time
 from contextlib import contextmanager
 
 try:
@@ -62,31 +64,39 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    # Insert into orders table (schema uses: size, order_type, filled_size, avg_fill_price)
+                    # Insert into orders table
                     cur.execute(
                         """
                         INSERT INTO orders (
-                            symbol, side, order_type,
-                            size, price, filled_size, avg_fill_price,
-                            status, approved, submitted_at, filled_at
+                            order_id, symbol, side, type,
+                            quantity, price, filled_quantity, average_price,
+                            status, exchange_order_id, submitted_at, filled_at
                         ) VALUES (
-                            %s, %s, %s,
                             %s, %s, %s, %s,
-                            %s, %s, NOW(), %s
+                            %s, %s, %s, %s,
+                            %s, %s, %s, %s
                         )
+                        ON CONFLICT (order_id) 
+                        DO UPDATE SET
+                            filled_quantity = EXCLUDED.filled_quantity,
+                            average_price = EXCLUDED.average_price,
+                            status = EXCLUDED.status,
+                            filled_at = EXCLUDED.filled_at
                     """,
                         (
+                            result.order_id,
                             result.symbol,
-                            result.side.lower(),  # Schema uses lowercase
-                            "market",  # Schema uses lowercase
+                            result.side,
+                            "MARKET",  # Default order type
                             result.quantity,
                             result.price,
                             result.filled_quantity,
-                            result.price,  # avg_fill_price = price for now
-                            result.status.lower(),  # Schema uses lowercase
-                            True,  # approved (already passed risk checks)
+                            result.price,  # average_price = price for now
+                            result.status,
+                            result.order_id,  # exchange_order_id = order_id for mock
+                            int(time.time()),  # submitted_at as Unix timestamp
                             (
-                                "NOW()"
+                                int(time.time())
                                 if result.status == OrderStatus.FILLED.value
                                 else None
                             ),
@@ -113,28 +123,32 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    # Insert into trades table (schema uses: size, price, execution_price, timestamp)
+                    # Convert timestamp string to Unix timestamp
+                    timestamp = int(
+                        datetime.fromisoformat(result.timestamp).timestamp()
+                    )
+
+                    # Insert into trades table
                     cur.execute(
                         """
                         INSERT INTO trades (
-                            symbol, side, price, size,
-                            execution_price, status, timestamp,
-                            exchange, exchange_trade_id
+                            order_id, symbol, side,
+                            quantity, entry_price, 
+                            status, entry_timestamp
                         ) VALUES (
-                            %s, %s, %s, %s,
-                            %s, %s, NOW(),
+                            %s, %s, %s,
+                            %s, %s,
                             %s, %s
                         )
                     """,
                         (
+                            result.order_id,
                             result.symbol,
-                            result.side.lower(),  # Schema uses lowercase
-                            result.price,
+                            result.side,
                             result.filled_quantity,
-                            result.price,  # execution_price same as price for mock
-                            "filled",  # Schema uses lowercase
-                            "MEXC",  # exchange
-                            result.order_id,  # exchange_trade_id stores our mock order_id
+                            result.price,
+                            "OPEN",  # Trade starts as OPEN
+                            timestamp,
                         ),
                     )
 
@@ -146,14 +160,14 @@ class Database:
             return False
 
     def get_order_by_id(self, order_id: str) -> Optional[dict]:
-        """Retrieve order by database id"""
+        """Retrieve order by order_id"""
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute(
                         """
-                        SELECT * FROM orders
-                        WHERE id = %s
+                        SELECT * FROM orders 
+                        WHERE order_id = %s
                     """,
                         (order_id,),
                     )
@@ -172,8 +186,8 @@ class Database:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     cur.execute(
                         """
-                        SELECT * FROM orders
-                        ORDER BY created_at DESC
+                        SELECT * FROM orders 
+                        ORDER BY submitted_at DESC 
                         LIMIT %s
                     """,
                         (limit,),

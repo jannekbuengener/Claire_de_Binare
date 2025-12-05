@@ -62,7 +62,7 @@ Event-Flow Pipeline: Market Data → Signal → Risk → Execution → DB/Report
 Docker Stack: 9 containers (cdb_postgres, cdb_redis, cdb_db_writer, cdb_ws, cdb_core, cdb_risk, cdb_execution, cdb_prometheus, cdb_grafana)
 Test Infrastructure: 122 tests (90 Unit, 14 Integration, 18 E2E)
 3. Files and Code Sections
-File: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare\CLAUDE.md
+File: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom\CLAUDE.md
 Why Important: Main operational manual for Claude as Incident-Analyst & Optimizer in Paper-Trading Phase
 
 Changes Made:
@@ -198,7 +198,7 @@ Runbook integration: Connected CLAUDE.md to detailed PAPER_TRADING_INCIDENT_ANAL
 "zieh das bitte nochmal grade" [followed by comprehensive requirements for CLAUDE.md restructuring with focus on Paper-Trading terminology and 3-day blocks]
 "ja" (approval to proceed with implementation)
 "habe hier noch finale infos" [providing ZERO-ACTIVITY-INCIDENT rule details]
-"umsetzen C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare" (confirming implementation directory)
+"umsetzen C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Cleanroom" (confirming implementation directory)
 "kannst du mir diese als dl geben bitte?" (requesting summary as download/document)
 7. Pending Tasks
 All tasks completed. The CLAUDE.md file has been fully updated with:
@@ -215,7 +215,7 @@ Most Recent Work: Final verification and confirmation that CLAUDE.md is complete
 
 Specific Details:
 
-File location confirmed: C:\Users\janne\.claude-worktrees\Claire_de_Binare\quirky-goodall\CLAUDE.md
+File location confirmed: C:\Users\janne\.claude-worktrees\Claire_de_Binare_Cleanroom\quirky-goodall\CLAUDE.md
 All sections verified as updated (Executive Summary, Sections 2.3, 3.3, 15, 16)
 ZERO-ACTIVITY-INCIDENT rule integrated in two locations (Section 2.3 operative rules and Section 15 detailed procedure)
 Footer updated: "Letztes Update: 2025-11-29 (Final: ZERO-ACTIVITY-INCIDENT Regel integriert)"

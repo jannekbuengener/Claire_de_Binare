@@ -15,7 +15,7 @@ Dieses Dokument ist der zentrale Einstiegspunkt: Es sagt dir, wo der aktuelle St
 * Completeness: **85% → 100%**
 * Consistency: **90% → 100%**
 * Risiko-Level: **MEDIUM → LOW**
-* Status: **✅ READY FOR Claire de Binare MIGRATION**
+* Status: **✅ READY FOR CLEANROOM MIGRATION**
 * Zeit bis „erste produktionsnahe Tests“: **1–2 Stunden**
 
 Details zum Status:
@@ -31,14 +31,14 @@ Details zum Status:
   `claire_de_binare - Kopie`
   → Hier liegen alle Analyse-, Pipeline- und Kanon-Artefakte im Ordner `sandbox/`.
 
-* **TARGET_REPO (Claire de Binare):**
-  `Claire_de_Binare_Claire de Binare`
+* **TARGET_REPO (Cleanroom):**
+  `Claire_de_Binare_Cleanroom`
   → Wird nach der Migration die zentrale, aufgeräumte Quelle für Architektur, Doku und Templates.
 
 Grundregel:
 
 * Änderungen, Experimente, Rekonstruktionen → im **SOURCE_REPO/sandbox/**
-* Saubere, stabile Referenz für das System → im **Claire de Binare-Repo**, nach der Migration.
+* Saubere, stabile Referenz für das System → im **Cleanroom-Repo**, nach der Migration.
 
 ---
 
@@ -84,9 +84,9 @@ Templates & Infra:
 
 ## 4. Was du als Nächstes tun kannst
 
-### A) Migration ins Claire de Binare-Repo starten
+### A) Migration ins Cleanroom-Repo starten
 
-Wenn du die Claire de Binare-Migration durchführen willst:
+Wenn du die Cleanroom-Migration durchführen willst:
 
 1. `sandbox/MIGRATION_READY.md` lesen
 2. Den dort beschriebenen **Schnellstart** nutzen
@@ -95,7 +95,7 @@ Wenn du die Claire de Binare-Migration durchführen willst:
    * Manuell: Migration-Plan (2–3 Stunden)
 
 Ziel:
-→ Kanon, Doku und Templates sauber ins **Claire de Binare-Repo `Claire_de_Binare_Claire de Binare`** überführen.
+→ Kanon, Doku und Templates sauber ins **Cleanroom-Repo `Claire_de_Binare_Cleanroom`** überführen.
 
 ### B) System lokal testen / in Staging bringen
 
@@ -132,7 +132,7 @@ Wenn eine neue KI-Session oder ein neues Tool mit Claire-de-Binare arbeiten soll
 
 * Claire-de-Binare ist **fachlich und technisch vollständig modelliert**.
 * Alle CRITICAL-Risiken sind behoben, die Pre-Migration ist durch.
-* Der nächste logische Schritt ist die **Migration ins Claire de Binare-Repo**.
+* Der nächste logische Schritt ist die **Migration ins Cleanroom-Repo**.
 * Danach: Tests, Hardening-Finetuning, produktionsnahe Deployments.
 
 Startpunkt für die Arbeit:

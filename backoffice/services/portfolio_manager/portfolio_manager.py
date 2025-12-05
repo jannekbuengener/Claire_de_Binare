@@ -96,7 +96,7 @@ class PortfolioManager:
             }
 
         # Handle timestamp (might be bytes or string from mock)
-        timestamp_raw = data.get(b"timestamp", datetime.now(datetime.UTC).isoformat())
+        timestamp_raw = data.get(b"timestamp", datetime.utcnow().isoformat())
         timestamp = (
             timestamp_raw.decode()
             if isinstance(timestamp_raw, bytes)
@@ -327,7 +327,7 @@ class PortfolioManager:
         )
 
         return PortfolioSnapshot(
-            timestamp=datetime.now(datetime.UTC).isoformat(),
+            timestamp=datetime.utcnow().isoformat(),
             equity=state.equity,
             cash=state.cash,
             total_exposure=state.total_exposure,

@@ -9,7 +9,7 @@ import sys
 import logging
 import logging.config
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from flask import Flask, jsonify, Response
 import redis
@@ -61,7 +61,7 @@ stats = {
     "orders_received": 0,
     "orders_filled": 0,
     "orders_rejected": 0,
-    "start_time": datetime.now(timezone.utc).isoformat(),
+    "start_time": datetime.utcnow().isoformat(),
     "last_result": None,
 }
 
@@ -274,8 +274,7 @@ def metrics():
     uptime_seconds = max(
         0.0,
         (
-            datetime.now(timezone.utc)
-            - datetime.fromisoformat(stats["start_time"])
+            datetime.utcnow() - datetime.fromisoformat(stats["start_time"])
         ).total_seconds(),
     )
 

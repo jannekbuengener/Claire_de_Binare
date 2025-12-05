@@ -12,13 +12,7 @@ from websocket import WebSocketApp
 from flask import Flask, jsonify
 
 REST_BASE = os.getenv("MEXC_BASE", "https://contract.mexc.com")
-WS_URL = os.getenv("MEXC_WS_URL") or os.getenv("WS_URL") or "wss://contract.mexc.com/ws"
-if not WS_URL.startswith(("ws://", "wss://")):
-    raise ValueError(
-        f"Invalid WS URL scheme: {WS_URL} (must start with ws:// or wss://). "
-        "Check MEXC_WS_URL/WS_URL and proxy settings (unset HTTPS_PROXY for WS)."
-    )
-print(f"[WS CONFIG] Using WS_URL={WS_URL}")
+WS_URL = "wss://contract.mexc.com/edge"
 LOOKBACK_MIN = int(os.getenv("LOOKBACK_MIN", "15"))
 KL_INTERVAL = "Min1"
 DATA_STALL_SEC = 30
@@ -101,8 +95,7 @@ def on_message(ws, message):
         s = d.get("symbol")
         c = d.get("c")
         ts = d.get("t")
-        v = d.get("q")  # MEXC uses "q" for volume (quantity), not "vol"
-        # Note: "a" is the amount in USDT, "q" is volume in contracts
+        v = d.get("vol")
         if s and c is not None and ts:
             try:
                 price = float(c)
@@ -143,7 +136,7 @@ def on_open(ws, chunk):
             "param": {
                 "symbol": s,
                 "interval": KL_INTERVAL,
-            },
+            }
         }
         ws.send(json.dumps(sub))
         time.sleep(0.005)
@@ -173,16 +166,12 @@ def ws_worker(chunk):
     while True:
         try:
             reconnect_count += 1
-            print(
-                f"[WS] Connecting chunk (attempt {reconnect_count})...", file=sys.stderr
-            )
+            print(f"[WS] Connecting chunk (attempt {reconnect_count})...", file=sys.stderr)
             ws = make_ws(chunk)
             ws.run_forever()
             print(f"[WS] Disconnected (attempt {reconnect_count})", file=sys.stderr)
         except Exception as e:
-            print(
-                f"[WS ERROR] Chunk reconnect #{reconnect_count}: {e}", file=sys.stderr
-            )
+            print(f"[WS ERROR] Chunk reconnect #{reconnect_count}: {e}", file=sys.stderr)
         time.sleep(backoff)
         backoff = min(backoff * 2.0, 30.0)
 
