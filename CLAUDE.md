@@ -1,5 +1,18 @@
 # CLAUDE.md – KI-Agent-Protokoll für Claire de Binare
 
+> **Provider-übergreifendes Basisdokument**  
+> Dieses Dokument gilt nicht nur für Claude selbst, sondern als gemeinsame, fachliche Referenz
+> für **alle Agenten**, die im Kontext von *Claire de Binare (CDB)* arbeiten:
+>
+> - Codex Orchestrator und alle Sub-Agenten aus `AGENTS.md`
+> - externe Provider-Agents (Gemini, Copilot, Codex CLI, andere Modelle), wenn sie auf das CDB-Repo/Setup zugreifen
+> - lokale CLI-Agents (z. B. `bernd-codex`, `sabine-gemini-miner`, `peter-copilot`, `dietmar-codex-cli`)
+>
+> Egal welcher Anbieter oder welches Modell arbeitet:
+> - **Phase:** Diese Version ist für **N1 – Paper-Trading mit 3-Tage-Blöcken** gültig.
+> - **Handlungsrahmen:** Nur Paper-Trading; Live-Trading ist Incident, kein Feature.
+> - **Governance:** Entscheidend sind `AGENTS.md`, `GOVERNANCE_AND_RIGHTS.md` und dieses Dokument.
+
 ## 1. Zweck dieses Dokuments
 
 Dieses Dokument definiert deinen Auftrag, deinen Arbeitsmodus und deine Outputs als KI-Agent **Claude** im Projekt **Claire de Binare – Autonomer Krypto-Trading-Bot**.
@@ -732,3 +745,47 @@ Market Data → Signal Engine → Risk Manager → Execution → PostgreSQL
 - Optional: Update PROJECT_STATUS.md with recovery details
 
 Bei kritischen Architekturbrüchen oder neuen Incidents: 6-Layer-Analysis durchführen und Runbook konsultieren.
+
+---
+
+## 18. Integration mit AGENT-Basis, Codex & CLI-Agents
+
+### 18.1 Beziehung zu `AGENTS.md`
+
+- `AGENTS.md` definiert die **Rollen, Rechte und Workflows** für alle Codex-/Provider-Agenten.
+- Jede Rolle in `AGENT_*.md` ist eine Spezialisierung, die auf diesem CLAUDE.md als
+  **kontextuelle Realität von CDB** aufbaut.
+- Der **Codex Orchestrator** lädt zuerst `AGENTS.md` und `GOVERNANCE_AND_RIGHTS.md` und betrachtet
+  diese `CLAUDE.md` als verbindliche Beschreibung des aktuellen Systemzustands und der Phase.
+
+### 18.2 Verwendung durch Codex & Provider-Agenten (Gemini, Copilot, Codex CLI)
+
+Wenn ein externer Anbieter-Agent über den Codex-Orchestrator oder die CLI-Bridge gespawnt wird
+(z. B. Gemini, Copilot, Codex-CLI):
+
+1. **Kontext:**  
+   Er muss diese `CLAUDE.md` als Beschreibung von:
+   - Phase (Paper vs. Live),
+   - Risiko-Modell (Zero-Activity-Incidents etc.),
+   - Services & Event-Flow,
+   - Test- und Block-Logik
+   verstehen und respektieren.
+
+2. **Grenzen:**  
+   - Paper-Trading bleibt Standardmodus. Live-Trading darf nur nach explizitem Risk-Workflow
+     und User-Genehmigung empfohlen werden – **nie stillschweigend aktivieren**.:contentReference[oaicite:6]{index=6}
+   - Kein Agent (egal welcher Anbieter) darf Secrets, Keys oder produktive ENV-Daten in Doku oder Logs schreiben.
+
+3. **Empfohlener Ablauf für Provider-Agenten:**
+   - Schritt 1: `CLAUDE.md` + `GOVERNANCE_AND_RIGHTS.md` lesen und wichtigsten Kontext extrahieren.
+   - Schritt 2: Rollenbeschreibung aus dem passenden `AGENT_*.md` anwenden (z. B. Risk Architect, DevOps, Gemini Analyst).:contentReference[oaicite:7]{index=7}  
+   - Schritt 3: Reports im Format `PROMPT_Analysis_Report_Format` liefern.:contentReference[oaicite:8]{index=8}
+   - Schritt 4: Änderungen nur in einer Delivery-Phase und nur nach Orchestrator-Approval vorschlagen.
+
+### 18.3 Mapping zu CLI-Agents (Beispiele)
+
+- `bernd-codex`: liest `CLAUDE.md`, `AGENTS.md`, `GOVERNANCE_AND_RIGHTS.md` und koordiniert alle Unteragenten.
+- `sabine-gemini-miner`, `horst-gemini-analyst`, `gudrun-gemini-sentiment`: verwenden diese `CLAUDE.md`, um zu verstehen,
+  in welcher Phase das System ist und welche Daten/Risiken relevant sind.
+- `peter-copilot` und `dietmar-codex-cli`: nutzen `CLAUDE.md`, um nur solche Code-/Prompt-Vorschläge
+  zu erzeugen, die in Phase N1 erlaubt und sinnvoll sind.

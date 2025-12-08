@@ -92,3 +92,34 @@ Konflikt identifizieren, Regel nennen, Alternative vorschlagen.
 ## 9. Startprompt
 
 "Bereit. Welche Aufgabe steht heute im Fokus?"
+
+---
+
+## 10. Verwendung mit CLI-Agents & Gemini CLI
+
+Dieses Dokument fungiert als **Canonical/Governance-Referenz** für alle
+Gemini-basierten Rollen im Claire-Ökosystem, z. B.:
+
+- AGENT_Gemini_Data_Miner
+- AGENT_Gemini_Research_Analyst
+- AGENT_Gemini_Sentiment_Scanner
+- externe Gemini-CLI-Agents, die über den CLI-Bridge (`CLinkTool`) oder direkt über die Shell gestartet werden.
+
+Wenn ein Gemini-Agent startet, gilt:
+
+1. **Erste Bezugspunkte**
+   - `GEMINI.md` → Canonical/Governance-Rahmen, Audit-Phasen, Systemmodell.
+   - `AGENTS.md` → konkrete Rolle des jeweiligen Agents (Mission, Responsibilities, Inputs/Outputs).
+   - `CLAUDE.md` → aktueller Systemzustand, Phase (Paper vs. Live), Event-Flow, Zero-Activity-Regeln.
+
+2. **CLI-Bridge / clink**
+   - Wird ein Gemini-Agent über die CLI (z. B. `gemini` Binary) oder über `CLinkTool` gestartet, dann:
+     - nutzt er `GEMINI.md` als **Cleanroom-Regelwerk**,  
+     - liest seine Rollendefinition aus `AGENT_Gemini_*.md`,  
+     - respektiert die Phasen- und Risk-Regeln aus `CLAUDE.md`.
+
+3. **Output-Standard**
+   - Analysen und Governance-Reports sollen das Format `PROMPT_Analysis_Report_Format` verwenden.
+   - Go/No-Go-Empfehlungen müssen sich auf das Readiness-/Risk-Modell und die vier Hauptdokumente stützen:
+     `GEMINI.md`, `CLAUDE.md`, `AGENTS.md`, `GOVERNANCE_AND_RIGHTS.md`.
+

@@ -12,28 +12,37 @@ scrape_configs:
           service: 'monitoring'
 
   # Execution Service
-  - job_name: 'execution_service'
+  - job_name: 'cdb_execution'
     static_configs:
-      - targets: ['execution_service:8003']
+      - targets: ['cdb_execution:8003']
         labels:
-          instance: 'execution_service'
+          instance: 'cdb_execution'
           service: 'trading'
     metrics_path: '/metrics'
-    
+
   # Signal Engine
-  - job_name: 'signal_engine'
+  - job_name: 'cdb_core'
     static_configs:
-      - targets: ['signal_engine:8001']
+      - targets: ['cdb_core:8001']
         labels:
-          instance: 'signal_engine'
+          instance: 'cdb_core'
           service: 'analysis'
     metrics_path: '/metrics'
-    
+
   # Risk Manager
-  - job_name: 'risk_manager'
+  - job_name: 'cdb_risk'
     static_configs:
-      - targets: ['risk_manager:8002']
+      - targets: ['cdb_risk:8002']
         labels:
-          instance: 'risk_manager'
+          instance: 'cdb_risk'
           service: 'risk'
+    metrics_path: '/metrics'
+
+  # WebSocket Screener
+  - job_name: 'cdb_ws'
+    static_configs:
+      - targets: ['cdb_ws:8000']
+        labels:
+          instance: 'cdb_ws'
+          service: 'market_data'
     metrics_path: '/metrics'

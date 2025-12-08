@@ -95,9 +95,25 @@
       "Bash(npm update:*)",
       "mcp__MCP_DOCKER__list_directory",
       "Bash(docker-compose ps:*)",
-      "Bash(docker-compose logs:*)"
+      "Bash(docker-compose logs:*)",
+      "mcp__MCP_DOCKER__browser_navigate",
+      "Bash(netstat:*)",
+      "Bash(chmod:*)",
+      "Bash(jq:*)",
+      "Bash(stat:*)",
+      "Bash(date:*)",
+      "Bash(docker ps:*)",
+      "Bash(bash:*)",
+      "mcp__MCP_DOCKER__directory_tree",
+      "Bash(wsl --status:*)",
+      "mcp__MCP_DOCKER__write_file"
     ],
     "deny": [],
     "ask": []
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare\\.claude\\statusline.sh\"",
+    "padding": 0
   }
 }

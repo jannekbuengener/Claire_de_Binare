@@ -2,10 +2,8 @@
 archive/
 .vscode/
 .github/
-.claude/
 .git/
 venv/
-.venv/
 env/
 ENV/
 integrations/
@@ -19,6 +17,7 @@ docker_audit/
 .editorconfig
 .gitattributes
 nul
+.venv
 
 # Dateitypen ausschließen
 *.pyc

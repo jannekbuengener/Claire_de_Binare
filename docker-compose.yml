@@ -80,6 +80,9 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./backoffice/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./backoffice/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./backoffice/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus
     healthcheck:

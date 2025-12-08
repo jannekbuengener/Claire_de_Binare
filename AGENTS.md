@@ -1,5 +1,52 @@
 # Repository Guidelines
 
+# AGENTS.md – Provider-übergreifendes Rollen- & Governance-Register
+
+## 0. Zweck
+
+Dieses Dokument ist der **erste Bezugspunkt**, wenn ein Agent für Claire de Binare gespawnt wird –
+egal, ob er über:
+
+- den Codex Orchestrator,
+- die MCP-Server,
+- die CLI-Bridge (`CLinkTool` mit Clients wie `gemini`, `copilot`, `codex`),
+- oder direkt über Claude Code (CLI/VS Code)
+
+aktiviert wird.
+
+Es definiert:
+
+- die **Rollenfamilien** (Orchestrator, Governance, Architektur, Risk, DevOps, Tests, Alpha, Docs, Projekt/Roadmap),
+- die **Provider-Zuordnung** (Claude, Gemini, OpenAI, Copilot, Codex, andere),
+- die **Arbeitsmodi** (Analyse vs. Delivery),
+- und verweist auf die relevanten Detailprompts (`AGENT_*.md`, `GEMINI.md`, `CLAUDE.md`, `GOVERNANCE_AND_RIGHTS.md`).
+
+## 1. Spawn-Protokoll für Anbieter-Agenten
+
+Wenn ein neuer Agent gespawnt wird (z. B. Codex-Agent, Gemini-CLI-Agent, Claude-Code-CLI-Agent),
+läuft idealerweise folgendes Protokoll:
+
+1. **AGENTS.md lesen**
+   - Rolle identifizieren (z. B. `AGENT_Risk_Architect`, `AGENT_Gemini_Research_Analyst`).
+   - Provider/Modellgruppe erkennen (Claude, Gemini, Copilot, OpenAI, Codex).
+
+2. **Gemeinsames Wissensfundament laden**
+   - `CLAUDE.md` → Projektstatus, Phase (z. B. N1 Paper-Trading), Risk- und Event-Flow-Regeln.:contentReference[oaicite:14]{index=14}  
+   - `GEMINI.md` → Canonical Architecture & Cleanroom-Governance (falls Gemini-/Governance-Rolle).:contentReference[oaicite:15]{index=15}  
+   - `GOVERNANCE_AND_RIGHTS.md` → Decision Rights, Safety Rules, Risk-Mode-/Live-Trading-Guardrails.:contentReference[oaicite:16]{index=16}  
+   - `PROMPT_Analysis_Report_Format.md` → Standard-Reportstruktur.:contentReference[oaicite:17]{index=17}  
+
+3. **Rollenprompt anwenden**
+   - Das konkrete Verhalten, Inputs/Outputs und die Kollaborationsregeln stehen im jeweiligen `AGENT_*.md`.
+   - Die dort beschriebenen „Modes“ (Analysis vs. Delivery) sind **verbindlich** und verknüpft mit den Governance-Regeln hier.
+
+4. **Orchestrator-Einbindung**
+   - Der Orchestrator (Codex, bzw. in der CLI `bernd-codex`) bleibt der einzige direkte Sprecher zum User.
+   - Sub-Agenten antworten fachlich, aber **respektieren die Entscheidungshoheit** von User + Orchestrator.
+
+Dadurch wird sichergestellt, dass alle Anbieter-Agenten – unabhängig von Modell oder CLI –
+auf demselben Wissensstand operieren und denselben Governance-Rahmen teilen.
+
 ## Project Structure & Module Organization
 - Python trading system; runtime modules in `services/` (risk_engine.py, position_sizing.py, execution_simulator.py, mexc_perpetuals.py) plus service wrappers in `backoffice/services/` (signal_engine, risk_manager, execution_service, db_writer, portfolio_manager, execution_simulator).
 - Docs live in `backoffice/docs/` (architecture, runbooks, testing, security); ops helpers in `scripts/` and `backoffice/scripts/`; environment templates at `.env.example` and stack wiring in `docker-compose.yml`.
