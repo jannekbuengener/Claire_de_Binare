@@ -134,30 +134,34 @@ _Keine aktiven HOCH-Blocker_ ✅
 
 ## 🎯 NÄCHSTE SCHRITTE
 
-### Phase N1: Paper-Test-Vorbereitung
+> **📋 Zentrale TODO-Liste**: Siehe `backoffice/docs/TODO_CONSOLIDATED.md` für vollständige Aufgabenliste mit Priorisierung (P0-P4).
+>
+> Dieses Dokument zeigt nur einen Überblick der wichtigsten nächsten Schritte. Für Details, Zeitschätzungen und vollständige Task-Liste siehe TODO_CONSOLIDATED.md.
 
-**SOFORT (< 1h)**  
+### Phase N1: Paper-Test-Vorbereitung (P0-P1)
+
+**SOFORT (< 1h)** - siehe TODO_CONSOLIDATED.md P0
 - [ ] **ENV-Validation ausführen**
-  - `backoffice/automation/check_env.ps1` gegen `.env` laufen lassen
-  - Ergebnis hier dokumentieren (OK / WARN / ERROR)
-- [ ] **Systemcheck #1 durchführen** (siehe Systemcheck-Checkliste unten)
-  - Container starten, Health prüfen, Status-Tabelle aktualisieren
+- [ ] **Systemcheck #1 durchführen**
+- [x] **Root Cleanup** → ✅ **Abgeschlossen** (2025-12-10)
 
-**HEUTE (< 4h)**
-- [x] ~~pytest-Basisstruktur anlegen~~ → ✅ **Abgeschlossen** (2025-11-19)
-- [x] ~~Erste Unit-Tests für Risk-Manager~~ → ✅ **23 Tests implementiert** (2025-11-19)
-- [x] ~~Execution-Simulator-Grundstruktur~~ → ✅ **23 Tests implementiert** (2025-11-19)
-
-**DIESE WOCHE**  
+**DIESE WOCHE (< 1 Woche)** - siehe TODO_CONSOLIDATED.md P1
 - [ ] Portfolio & State Manager implementieren
-- [ ] End-to-End Paper-Test (Event-Flow `market_data → signals → orders → order_results`) durchspielen
-- [ ] Logging & Analytics Layer aktivieren (Persistenz + einfache Auswertung)
+- [ ] End-to-End Paper-Test durchspielen
+- [ ] Logging & Analytics Layer aktivieren
 
-### Post-N1: Produktionsvorbereitung
-- [ ] Infra-Hardening (SR-004, SR-005 – Redis/Postgres/Grafana/Prometheus)
-- [ ] CI/CD Pipeline aufsetzen (Build + Tests + Linting)
-- [ ] Grafana-Dashboards konfigurieren (Equity, Drawdown, Alerts)
-- [ ] PostgreSQL-Backup-Job laut Backup-Strategie automatisieren
+### Post-N1: Produktionsvorbereitung (P2-P3)
+
+**Mittelfristig (1-2 Monate)** - siehe TODO_CONSOLIDATED.md P2
+- [ ] Infra-Hardening (SR-004, SR-005)
+- [ ] CI/CD Pipeline erweitern (Trivy, Branch Protection, Conventional Commits)
+- [ ] Grafana-Dashboards konfigurieren
+- [ ] PostgreSQL-Backup-Job automatisieren
+
+**Langfristig (3+ Monate)** - siehe TODO_CONSOLIDATED.md P3
+- [ ] HashiCorp Vault Integration
+- [ ] SonarQube Integration
+- [ ] MCP Infrastruktur
 
 ---
 

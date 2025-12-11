@@ -1,0 +1,9 @@
+{
+  "ui": {
+    "showMemoryUsage": true
+  },
+  "tools": {
+    "truncateToolOutputLines": 500,
+    "truncateToolOutputThreshold": 20000
+  }
+}

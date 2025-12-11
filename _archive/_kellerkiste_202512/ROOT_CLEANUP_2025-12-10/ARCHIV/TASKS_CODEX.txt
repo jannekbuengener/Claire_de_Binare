@@ -1,0 +1,119 @@
+TASK 16 — CDB_Filetype_Inventory
+
+Erzeuge tools/cdb_filetype_inventory.py, das alle Dateitypen zählt und reportet.
+
+TASK 17 — CDB_Dead_Comment_Scanner
+
+Finde auskommentierten Code, # TODO remove, etc. in allen .py-Files.
+
+TASK 18 — CDB_Duplicate_Code_Detector
+
+Erkenne verdächtig ähnliche Codeblöcke (Best-Effort über Hashes).
+
+TASK 19 — CDB_Missing_Docstring_Finder
+
+Markiere alle Python-Funktionen ohne Docstring.
+
+TASK 20 — CDB_Long_Function_Analyzer
+
+Liste Funktionen > X Zeilen (default 50).
+
+TASK 21 — CDB_Class_Map_Builder
+
+Erzeuge Übersicht aller Klassen im Repo + Methoden.
+
+TASK 22 — CDB_Function_Map_Builder
+
+Erzeuge Übersicht aller Funktionen + Dateipfade.
+
+TASK 23 — CDB_Empty_File_Detector
+
+Finde leere Dateien oder Dateien < 5 Zeilen.
+
+TASK 24 — CDB_Import_Cycle_Scanner
+
+Erkenne potenzielle Zyklen im Import-Graphen (Best Effort).
+
+TASK 25 — CDB_Constant_Usage_Matrix
+
+Mappe, wo numerische Konstanten mehrfach vorkommen.
+
+TASK 26 — CDB_Comment_Density_Auditor
+
+Zähle Kommentarquote pro Datei (Kommentare/Code).
+
+TASK 27 — CDB_Module_Size_Profiler
+
+Reportiere Größe der Module in Zeilen + Komplexität (einfacher Proxy).
+
+TASK 28 — CDB_Time_Stamp_Report
+
+Zeige letzte Änderung aller Dateien + sortiert nach Alter.
+
+TASK 29 — CDB_Regex_Sniper
+
+Durchsuche Repo nach konfigurierbaren Regex-Mustern, generiere Trefferliste.
+
+TASK 30 — CDB_Keyword_Heatmap
+
+Erstelle Heatmap, wo bestimmte Schlüsselwörter im Repo auftreten.
+
+TASK 31 — CDB_Architecture_Boundary_Checker
+
+Prüfe, ob Services voneinander unerlaubt importieren.
+
+TASK 32 — CDB_Complexity_Threshold_Report
+
+Warnung, wenn Dateien > X Funktionen oder > X Klassen haben.
+
+TASK 33 — CDB_File_Similarity_Cluster
+
+Clustere Dateien nach Ähnlichkeit (Hashing).
+
+TASK 34 — CDB_License_Header_Checker
+
+Prüfe fehlende Lizenzheader/Projektheader.
+
+TASK 35 — CDB_Big_Object_Finder
+
+Finde Python-Dateien mit extrem großen Listen/Dicts/Hardcoded-Daten.
+
+TASK 36 — CDB_Missing_Init_Finder
+
+Prüfe, wo __init__.py fehlt.
+
+TASK 37 — CDB_Mixed_Encoding_Detector
+
+Erkenne Dateien, die nicht UTF-8 sind.
+
+TASK 38 — CDB_Misplaced_Config_Finder
+
+Markiere .env, YAML oder JSON-Dateien außerhalb erwarteter Ordner.
+
+TASK 39 — CDB_Unsafe_Print_Usage_Scanner
+
+Finde Stellen, wo print() statt Logging verwendet wird.
+
+TASK 40 — CDB_Argument_Parser_Mapper
+
+Mappe alle Stellen im Repo, die eigene CLI-Argumente definieren.
+
+TASK 41 — CDB_Data_Dir_Auditor
+
+Analysiere Ordner wie data/, ob dort unversionierte Dateien liegen oder Chaos herrscht.
+
+TASK 42 — CDB_Json_Schema_Extractor
+
+Extrahiere alle JSON-Strukturen (Best Effort) für spätere Schema-Analysen.
+
+TASK 43 — CDB_Folder_Structure_Snapshot
+
+Erzeuge lesbares Baumdiagramm der Ordnerstruktur.
+
+TASK 44 — CDB_Top10_Largest_Files
+
+Liste die 10 größten Dateien im gesamten Repo.
+
+TASK 45 — CDB_Low_Level_AntiPattern_Scanner
+
+Scanne nach Dingen wie eval(), exec(), bare except:, pass, etc.

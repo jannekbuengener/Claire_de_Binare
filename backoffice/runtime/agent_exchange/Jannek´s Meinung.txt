@@ -1,0 +1,118 @@
+REPO REBUILD – für Claude
+1. Ich lege im Root einen Ordner NEU/ an.
+
+Dieser Ordner ist der neue Sammelpunkt für alle absolut essentiellen Bestandteile des Systems.
+
+2. Dein Auftrag bleibt Analyse-Mode (nichts ausführen), aber mit erweitertem Scope
+
+Claude soll eine vollständige Liste aller Dateien erstellen, die für einen Wiederaufbau des Systems zwingend benötigt werden:
+
+A) Essentielle Konfigurations- & Laufzeitdaten
+
+.env
+
+.env.example
+
+alle sicherheitsrelevanten Variablen, die zum Boot des Systems nötig sind
+
+jegliche config-Files, die den Betrieb definieren
+
+B) Infrastruktur / Deployment
+
+alle Dockerfiles (jede Service-Definition)
+
+docker-compose.yml
+
+Ports, Hardening, Cap-Drops, ReadOnly-Flags
+
+Build-Skripte oder Init-Skripte
+
+C) Start-, Wartungs- und Ops-Skripte
+
+Shell-/PowerShell-/Python-Skripte, die:
+
+Services starten
+
+Logs rotieren
+
+Datenbanken initialisieren
+
+Health Checks triggern
+
+D) Services / Engine / Code
+
+gesamter Anwendungscode unter services/
+
+alle Python-Module
+
+Core-Engine / Risk / Execution / WS / etc.
+
+E) Tests
+
+alle relevanten:
+
+Unit Tests
+
+Integration Tests
+
+E2E Tests
+
+lokale Tests (local_only)
+
+Diese Tests erfassen das Verhalten des Systems und sind für einen späteren Neuaufbau unverzichtbar.
+
+F) Kanonische Doku
+
+Nur diese (!) Dokumente gelten als Wahrheit:
+
+CDB_FOUNDATION.md (Technische Wahrheit)
+
+CDB_GOVERNANCE.md (Regeln, Rollen, Rechte)
+
+AGENTS.md und agent_*.md (Agenten-Definitionen)
+
+CDB_WORKFLOWS.md
+
+CDB_INSIGHTS.md (Risiken, Roadmap)
+
+Alles andere = Legacy (später Archiv/Trash).
+
+G) Sonstige systemkritische Dateien
+
+Schema-Dateien (z. B. PostgreSQL .sql)
+
+Migrationsdateien
+
+Message-Bus-Themen, Payload-Spezifikationen
+
+Monitoring-Konfigurationen (Prometheus/Grafana)
+
+Alles, was für echten Betrieb notwendig ist
+
+3. Alles Essenzielle wird in NEU/ geworfen – ungeordnet, kreuz & quer
+
+Keine Struktur.
+Keine Sortierung.
+Nur Essentials Dump.
+
+Ziel: 1 Ort = komplette Wahrheit.
+
+4. Das alte Repo wird lokal archiviert und nie wieder verwendet
+
+Es bleibt als historisches Backup auf deiner Festplatte.
+
+5. Der Neuaufbau beginnt in der nächsten Session
+
+Dort bauen wir: ein minimalistisches, sauberes Engine-Repo ein getrenntes Doku-Repo / Wiki klare Governance komplette Neuordnung
+
+6. Wichtige Claude-Regeln 
+
+Claude soll: Dateien nur identifizieren Pläne liefern keine Dateien bewegen keine Strukturen ändern auf Freigabe für Delivery warten.
+
+
+Claude, Auftrag (Analyse-Mode):
+Identifiziere alle essentiellen Dateien für einen vollständigen System-Neuaufbau:
+.env, Dockerfiles, docker-compose, Skripte, Services-Code, Tests, Migrations, Monitoring, sowie alle kanonischen CDB_* Dokumente.
+Diese sollen später in NEU/ gesammelt werden.
+Erstelle eine vollständige Essentials-Liste und einen Plan für die Migration – ohne Aktionen.
+Warte danach auf meine Freigabe.
