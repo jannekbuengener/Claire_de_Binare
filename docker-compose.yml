@@ -127,38 +127,6 @@ services:
     networks:
       - cdb_network
 
-  # cdb_rest: DISABLED - mexc_top_movers.py nicht im Source-Repo gefunden
-  # Sobald mexc_top_movers.py verfügbar ist, Service wieder aktivieren
-  # cdb_rest:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #     args:
-  #       SCRIPT_NAME: mexc_top_movers.py
-  #   container_name: cdb_rest
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   command: ["/bin/sh", "-c", "while true; do python -u app.py; echo '[bot_rest] Warte 300s bis zum nächsten Durchlauf...'; sleep 300; done"]
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - ./logs:/app/logs
-  #   depends_on:
-  #     - cdb_redis
-  #   security_opt:
-  #     - no-new-privileges:true
-  #   cap_drop:
-  #     - ALL
-  #   tmpfs:
-  #     - /tmp
-  #   networks:
-  #     - cdb_network
-  #   healthcheck:
-  #     test: ["CMD", "true"]
-  #     interval: 30s
-  #     timeout: 3s
-  #     retries: 3
-
   # ====================================================================
   # MVP SERVICES - Vorbereitet für Entwicklung
   # ====================================================================
@@ -311,14 +279,6 @@ services:
       cdb_network:
         aliases:
           - paper_runner
-
-# ====================================================================
-# LEGACY SERVICE - ENTFERNT (ADR-037)
-# ====================================================================
-# cdb_signal_gen wurde entfernt:
-# - Dockerfile.signal_gen fehlt
-# - Funktionalität wird von cdb_core (Signal Engine) übernommen
-# - Siehe ADR-037 in backoffice/docs/DECISION_LOG.md
 
 # ====================================================================
 # VOLUMES - Persistente Daten
