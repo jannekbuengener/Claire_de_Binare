@@ -1,7 +1,7 @@
 # Claire de Binare - Core Dependencies
 
 # === SOFORT BENÖTIGT ===
-requests==2.31.0
+requests==2.32.4
 pandas==2.1.4
 websocket-client==1.7.0
 flask==3.1.2
