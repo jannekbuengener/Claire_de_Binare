@@ -1,38 +1,13 @@
 """
-Risk Manager - Data Models
+Risk Manager - Data Models (risk_manager specific)
+
+Signal model moved to backoffice.services.common.models (canonical definition).
 """
 
 from dataclasses import dataclass, field
 from typing import Literal, Optional
 import time
 from datetime import datetime
-
-
-@dataclass
-class Signal:
-    """Signal vom Signal-Engine"""
-
-    symbol: str
-    side: Literal["BUY", "SELL"]
-    confidence: float
-    reason: str
-    timestamp: int
-    price: float
-    pct_change: float
-    type: Literal["signal"] = "signal"  # Type-safe event type
-
-    @classmethod
-    def from_dict(cls, data: dict):
-        return cls(
-            symbol=data["symbol"],
-            side=data["side"],
-            confidence=float(data["confidence"]),
-            reason=data["reason"],
-            timestamp=int(data["timestamp"]),
-            price=float(data["price"]),
-            pct_change=float(data["pct_change"]),
-            type=data.get("type", "signal"),
-        )
 
 
 @dataclass

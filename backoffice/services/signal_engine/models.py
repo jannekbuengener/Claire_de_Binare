@@ -1,6 +1,8 @@
 """
 Signal Engine - Data Models
-Datenklassen für Market-Data und Signals
+Datenklassen für Market-Data (signal_engine specific)
+
+Signal model moved to backoffice.services.common.models (canonical definition).
 """
 
 from dataclasses import dataclass
@@ -31,38 +33,4 @@ class MarketData:
             interval=data.get("interval", "15m"),
             type=data.get("type", "market_data"),
         )
-
-
-@dataclass
-class Signal:
-    """Trading-Signal"""
-
-    symbol: str
-    side: Literal["BUY", "SELL"]
-    confidence: float  # 0.0 - 1.0
-    reason: str
-    timestamp: int
-    price: float
-    pct_change: float
-    type: Literal["signal"] = "signal"  # Type-safe event type
-
-    def to_dict(self) -> dict:
-        """Konvertiert zu Dictionary für Redis"""
-        return {
-            "type": self.type,
-            "symbol": self.symbol,
-            "side": self.side,
-            "signal_type": self.side.lower(),  # DB-kompatibel: 'buy'/'sell'
-            "confidence": self.confidence,
-            "reason": self.reason,
-            "timestamp": self.timestamp,
-            "price": self.price,
-            "pct_change": self.pct_change,
-            "source": "momentum_strategy",     # Quelle des Signals
-        }
-
-    @staticmethod
-    def generate_reason(pct_change: float, threshold: float) -> str:
-        """Generiert Begründung für Signal"""
-        return f"Momentum: {pct_change:+.2f}% (Schwelle: {threshold}%)"
 

@@ -18,10 +18,15 @@ from pathlib import Path
 # Lokale Imports
 try:
     from .config import config
-    from .models import MarketData, Signal
+    from .models import MarketData
+    from ..common.models import Signal
 except ImportError:
     from config import config
-    from models import MarketData, Signal
+    from models import MarketData
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from common.models import Signal
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
