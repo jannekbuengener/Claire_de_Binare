@@ -139,7 +139,7 @@ def evaluate_signal(
     if equity > 0:
         exposure_pct += notional / equity
 
-    if exposure_pct > float(risk_config.get("MAX_EXPOSURE_PCT", 1.0)):
+    if exposure_pct > float(risk_config.get("MAX_TOTAL_EXPOSURE_PCT", 1.0)):
         return RiskDecision(
             approved=False,
             reason="max_exposure_reached",
@@ -274,7 +274,7 @@ def evaluate_signal_v2(
     if equity > 0:
         exposure_pct += notional / equity
 
-    if exposure_pct > float(risk_config.get("MAX_EXPOSURE_PCT", 1.0)):
+    if exposure_pct > float(risk_config.get("MAX_TOTAL_EXPOSURE_PCT", 1.0)):
         return EnhancedRiskDecision(
             approved=False,
             reason="max_exposure_reached",
@@ -413,7 +413,9 @@ def load_risk_config() -> Dict:
         "ACCOUNT_EQUITY": float(os.getenv("ACCOUNT_EQUITY", "100000.0")),
         "MAX_POSITION_PCT": float(os.getenv("MAX_POSITION_PCT", "0.10")),
         "MAX_DRAWDOWN_PCT": float(os.getenv("MAX_DRAWDOWN_PCT", "0.05")),
-        "MAX_EXPOSURE_PCT": float(os.getenv("MAX_EXPOSURE_PCT", "0.50")),
+        "MAX_TOTAL_EXPOSURE_PCT": float(
+            os.getenv("MAX_TOTAL_EXPOSURE_PCT") or os.getenv("MAX_EXPOSURE_PCT", "0.30")
+        ),
         "STOP_LOSS_PCT": float(os.getenv("STOP_LOSS_PCT", "0.02")),
         "MAX_SLIPPAGE_BPS": float(os.getenv("MAX_SLIPPAGE_BPS", "100.0")),
     }

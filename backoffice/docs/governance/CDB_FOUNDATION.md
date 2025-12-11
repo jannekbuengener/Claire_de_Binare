@@ -155,6 +155,8 @@ These are the primary risk parameters that govern the system's behavior. They ar
 | Total Exposure Limit       | `MAX_TOTAL_EXPOSURE_PCT`    | `0.30`  | 4     | **Soft Stop**. Block new orders.                    |
 | Position Size Limit        | `MAX_POSITION_PCT`          | `0.10`  | 5     | Trim order size to fit limit.                       |
 
+**Note on Backwards Compatibility:** The system supports `MAX_EXPOSURE_PCT` as a deprecated alias for `MAX_TOTAL_EXPOSURE_PCT`. If both are set, `MAX_TOTAL_EXPOSURE_PCT` takes precedence. New deployments should use `MAX_TOTAL_EXPOSURE_PCT` exclusively.
+
 ---
 
 ## 10. Glossary

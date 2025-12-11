@@ -23,7 +23,9 @@ class RiskConfig:
 
     # Risk-Limits (aus .env)
     max_position_pct: float = float(os.getenv("MAX_POSITION_PCT", "0.10"))
-    max_exposure_pct: float = float(os.getenv("MAX_EXPOSURE_PCT", "0.50"))
+    max_total_exposure_pct: float = float(
+        os.getenv("MAX_TOTAL_EXPOSURE_PCT") or os.getenv("MAX_EXPOSURE_PCT", "0.30")
+    )
     max_daily_drawdown_pct: float = float(os.getenv("MAX_DAILY_DRAWDOWN_PCT", "0.05"))
     stop_loss_pct: float = float(os.getenv("STOP_LOSS_PCT", "0.02"))
 
@@ -40,8 +42,8 @@ class RiskConfig:
         """Validiert Konfiguration"""
         if self.max_position_pct <= 0 or self.max_position_pct > 1:
             raise ValueError("MAX_POSITION_PCT muss zwischen 0 und 1 liegen")
-        if self.max_exposure_pct <= 0 or self.max_exposure_pct > 1:
-            raise ValueError("MAX_EXPOSURE_PCT muss zwischen 0 und 1 liegen")
+        if self.max_total_exposure_pct <= 0 or self.max_total_exposure_pct > 1:
+            raise ValueError("MAX_TOTAL_EXPOSURE_PCT muss zwischen 0 und 1 liegen")
         return True
 
 

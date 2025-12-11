@@ -55,7 +55,7 @@ def standard_risk_config():
         "ACCOUNT_EQUITY": 100000.0,
         "MAX_POSITION_PCT": 0.10,
         "MAX_DRAWDOWN_PCT": 0.05,
-        "MAX_EXPOSURE_PCT": 1.0,  # 100% (less restrictive for tests)
+        "MAX_TOTAL_EXPOSURE_PCT": 1.0,  # 100% (less restrictive for tests)
         "STOP_LOSS_PCT": 0.02,
         "MAX_SLIPPAGE_BPS": 300.0,  # More tolerant for tests (realistic for high vol)
         # Perpetuals

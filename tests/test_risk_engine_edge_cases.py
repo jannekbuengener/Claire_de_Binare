@@ -23,7 +23,7 @@ from services import risk_engine
 
 @pytest.mark.unit
 def test_evaluate_signal_exposure_limit_exceeded(risk_config, sample_signal_event):
-    """Signal wird blockiert wenn total_exposure_pct > MAX_EXPOSURE_PCT."""
+    """Signal wird blockiert wenn total_exposure_pct > MAX_TOTAL_EXPOSURE_PCT."""
 
     # Arrange: Portfolio hat bereits 28% Exposure
     state = {
