@@ -2,7 +2,7 @@
 # Claire de Binare Trading Bot
 
 # Web Framework
-flask==3.0.0
+flask==3.1.2
 
 # Redis Client
 redis==5.0.1
