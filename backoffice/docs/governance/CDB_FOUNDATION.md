@@ -59,6 +59,8 @@ flowchart TD
 
 All services run as Docker containers orchestrated by `docker-compose`.
 
+### 3.1. Active Services
+
 | Service ID      | Container Name  | Responsibility                                           | Ports (Host:Cont) | Key Dependencies | Security Hardening |
 |-----------------|-----------------|----------------------------------------------------------|-------------------|------------------|:------------------:|
 | `cdb_redis`     | `cdb_redis`     | Central message bus and cache.                           | `6379:6379`       | -                | ❌                 |
@@ -69,8 +71,17 @@ All services run as Docker containers orchestrated by `docker-compose`.
 | `cdb_core`      | `cdb_core`      | Generates trading signals from market data.              | `8001:8001`       | `cdb_redis`      | ✅                 |
 | `cdb_risk`      | `cdb_risk`      | Applies risk rules to signals and approves orders.       | `8002:8002`       | `cdb_redis`      | ✅                 |
 | `cdb_execution` | `cdb_execution` | Executes (simulates) orders and persists results.        | `8003:8003`       | `cdb_redis`, `cdb_postgres` | ✅ (non-root)      |
-| `cdb_rest`      | `cdb_rest`      | **(Disabled)** Poll-based data ingestion.                | `8080:8080`       | `cdb_redis`      | ⚠️ (read-only=false)|
-| `cdb_signal_gen`| `cdb_signal_gen`| **(Orphaned)** Legacy service. Build will fail.          | -                 | `cdb_redis`      | ❌                 |
+| `cdb_db_writer` | `cdb_db_writer` | Persists market data, signals, orders to PostgreSQL.     | None (internal)   | `cdb_redis`, `cdb_postgres` | ❌                 |
+| `cdb_paper_runner` | `cdb_paper_runner` | Paper trading orchestrator and simulation engine.     | `8004:8004`       | `cdb_redis`, `cdb_postgres`, `cdb_core`, `cdb_risk`, `cdb_execution` | ✅ (non-root, read-only fs) |
+
+### 3.2. Legacy Services (Removed from Active Deployment)
+
+The following services have been formally deprecated and removed from the active system. See ADR-037 in the decision log for details.
+
+| Service ID      | Container Name  | Status                                                   | Reason for Removal |
+|-----------------|-----------------|----------------------------------------------------------|--------------------|
+| `cdb_rest`      | `cdb_rest`      | Disabled (commented in docker-compose.yml)               | Missing entrypoint (`mexc_top_movers.py` not in repo), superseded by WebSocket ingestion |
+| `cdb_signal_gen`| `cdb_signal_gen`| Orphaned (Dockerfile missing, build fails)               | Functionality replaced by `cdb_core` signal engine |
 
 ---
 
