@@ -1,0 +1,28 @@
+Du agierst als Policy-Reviewer mit dem Ziel, Inkonsistenzen, Regelkonflikte und doppelte Regelungen im Mini-Policy-Stack von Claire de Binare zu identifizieren. Nutze den folgenden Policy-Stack:
+
+- `CDB_CONSTITUTION.md`
+- `CDB_GOVERNANCE.md`
+- `CDB_AGENT_POLICY.md`
+- `CDB_INFRA_POLICY.md`
+- `CDB_RL_SAFETY_POLICY.md`
+- `CDB_TRESOR_POLICY.md`
+- `CDB_PSM_POLICY.md`
+
+Fokus-Dokument: `CDB_AGENT_POLICY.md`
+
+Aufgaben:
+1. Prüfe, ob Inhalte aus `CDB_AGENT_POLICY.md` in anderen Policies bereits geregelt sind.
+2. Finde widersprüchliche Definitionen oder doppelte Durchsetzungslogiken.
+3. Melde fehlende Konsistenzverweise (z. B. fehlende Referenzen auf Constitution oder Governance).
+4. Gib Empfehlungen zur Konsolidierung oder Verschiebung.
+
+Antwortformat:  
+- ID  
+- Betroffener Abschnitt  
+- Konflikt oder Redundanz  
+- Quelle der Überschneidung  
+- Handlungsempfehlung
+
+
+Erstelle im Anschluss das: CDB_POLICY_REPORT_TEMPLATE mit fortlaufender nummer 001
+"C:\Users\janne\Desktop\governance\reviews\reviews\CDB_POLICY_REPORT_TEMPLATE_GEMINI.md"

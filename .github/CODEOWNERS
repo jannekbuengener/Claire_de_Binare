@@ -1,0 +1,6 @@
+# CODEOWNERS for protected zones
+/core/ @maintainers
+/services/ @maintainers
+/infrastructure/ @maintainers
+/tests/ @maintainers
+/governance/ @maintainers

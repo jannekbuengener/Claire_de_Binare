@@ -1,0 +1,25 @@
+# CDB – Local workspaces (not versioned)
+
+# Per-machine agent scratch space (Claude/Gemini/Copilot/Codex)
+.cdb_agent_workspace/
+├─ agents/  
+├─ CLAUDE.md
+├─ GEMINI.md
+├─ COPILOT.md
+├─ AGENTS.md
+├─ NEXUS.MEMORY.md
+├─ SYSTEM_CONTEXT.md
+└─ settings.local.json
+
+
+
+# Local-only config & secrets (never commit)
+.cdb_local/
+.cdb_local/secrets/
+
+
+CDB_REPO_STRUCTURE.md
+CDB_REPO_INDEX.md
+
+
+

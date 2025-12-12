@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(workflows)",
+      "Bash(blueprints \")",
+      "Bash(blueprints)",
+      "Bash(governance \")",
+      "mcp__MCP_DOCKER__list_directory"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "outputStyle": "default"
+}

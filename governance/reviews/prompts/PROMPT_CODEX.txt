@@ -1,0 +1,66 @@
+Zusaetzliche Leitplanken (bindend)
+
+Referenzbasis:
+- Policy Review Report 001 - Claude (Technical Enforcement Review)
+- Ziel-Findings: FND-001, FND-002, FND-004; Dev-Freeze-Automation aus FND-003 ist obligatorisch.
+
+Prioritaet:
+- ZUERST alle Critical Findings (FND-001, FND-002, FND-004).
+- Danach Medium Findings (inkl. Dev-Freeze/State-Tracking).
+- Kein Ueberspringen, kein Zusammenfassen.
+
+Arbeitsweise:
+- Pruefe, ob die Policy im Pfad C:\Users\janne\Desktop\governance das Finding vollstaendig adressiert; sonst gezielte, minimale Reparaturen (Policy-Text, neue REQUIRED-Abschnitte, Cross-References).
+- Technical Enforcement ist Pflicht, nicht optional; rein deklarative Regeln gelten als unzureichend.
+- CI/CD, Branch Protection, CODEOWNERS und Hooks muessen als verbindliche Mechanismen verankert sein.
+- Wenn etwas nur durch Infrastruktur/CI ausserhalb der Policy loesbar ist: STATUS = PARTIAL, mit klarer Lueckenbeschreibung und Ownership (z.B. Repo-Admins/Platform).
+
+Implementierungspfad (REQUIRED):
+- Branch Protection & CODEOWNERS (FND-001/FND-004):
+  - PR-only Workflow fuer main/master und geschuetzte Pfade (/core, /services, /infrastructure, /governance, /tests).
+  - Reviews verpflichtend (>=1, fuer /governance und /core >=2), stale Reviews verwerfen, Force-Push/BYPASS auch fuer Admins verboten.
+  - Required Status Checks: CI Test Suite, Linting, Write-Zonen-Validierung, Secrets-Scan, Conversation Resolution.
+  - CODEOWNERS fuer kritische Zonen (mind. Maintainer-Team) + PR-Template fordert Rollback-Plan.
+- Write-Zonen-Validierung (FND-001):
+  - Allowed: CDB_KNOWLEDGE_HUB.md und .cdb_agent_workspace/*.
+  - Protected: /core, /services, /infrastructure, /tests, /governance, Tresor-Zone.
+  - CI-Gate: Script scripts/validate_write_zones.sh blockt PRs mit Verstoessen; pre-commit Hook prueft Pfade lokal; Audit-Log fuer Abweichungen.
+- Secrets-Scan (FND-002):
+  - Pre-commit: git-secrets oder gitleaks MUSS installiert und enforced sein.
+  - CI: truffleHog/detect-secrets scannt PR-Diffs; custom Regex fuer projektspezifische Tokens; Block on detection + Incident-Playbook (Rotation, Audit, PR-Hinweis).
+  - .secretsignore fuer False Positives pflegen.
+- Dev-Freeze Automation (FND-003-Aspekt):
+  - Freeze-Status-Datei .dev_freeze_status im Repo; CI prueft und blockt Merge bei aktivem Freeze.
+  - GitHub Action kommentiert PRs bei aktivem Freeze; Notification-Kanal (Slack/Email) bei Aktivierung.
+  - Unfreeze: mind. 2 Maintainer Approval + dokumentierter Commit; Post-Freeze Audit durchfuehren.
+- PR Workflow Enforcement (FND-004):
+  - Delivery nur via PR mit gruenem CI; Hotfixes ebenfalls PR-gebunden.
+  - Require Rollback-Plan im PR-Template; keine Silent Changes.
+  - Tests muessen gruen sein, alle Conversations resolved.
+
+Lieferobjekt:
+- Aktualisiere die Policy so, dass die oben genannten Enforcement-Massnahmen als REQUIRED aufgenommen werden (Text, neue Abschnitte, Querverweise).
+- Markiere jedes Finding als CLOSED oder PARTIAL mit klarer Restluecke, falls Umsetzung ausserhalb der Policy erfolgt.
+
+
+Fix-Pflicht (nicht verhandelbar):
+- Wenn ein Finding nicht vollstaendig erfuellt ist, MUSS es behoben werden.
+- Review ohne anschliessenden Fix ist unzulaessig.
+
+Output-Regel:
+- Alle Fixes sind als konkreter Policy-Text zu liefern (Ersatzblock oder Diff).
+- Reine Beschreibungen oder Empfehlungen sind nicht erlaubt.
+- Wenn kein Fix moeglich ist: STATUS = BLOCKED mit klarer Governance-Begruendung.
+
+3. Ergebnis:
+   - Wende alle Änderungen DIREKT in derselben Datei
+     PROMPT_CODEX.txt an.
+
+4. Abschluss:
+   - Committe die geänderte CDB_POLICY_REPORT_001_CLAUDE
+   - Commit Message:
+     "fix: enforce technical enforcement mandates for critical policy findings"
+
+Keine Abweichungen. Kein zusätzlicher Scope.
+
+
