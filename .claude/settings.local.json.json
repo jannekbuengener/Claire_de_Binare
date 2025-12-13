@@ -1,0 +1,44 @@
+﻿@"
+{
+  "paths": {
+    "/governance": {
+      "readOnly": true
+    },
+    "/core": {
+      "readOnly": false
+    },
+    "/services": {
+      "readOnly": false
+    },
+    "/infrastructure": {
+      "readOnly": false
+    },
+    "/scripts": {
+      "readOnly": false
+    },
+    "/tests": {
+      "readOnly": false
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(pwd:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)"
+    ],
+    "deny": [
+      "Bash(rm:*)",
+      "Bash(del:*)",
+      "Bash(rmdir:*)",
+      "Bash(rd:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)"
+    ],
+    "ask": []
+  }
+}
+"@ | Set-Content -NoNewline -Encoding UTF8 .\.claude\settings.local.json

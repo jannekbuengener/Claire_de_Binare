@@ -11,13 +11,15 @@ services:
     container_name: cdb_redis
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - redis_password
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
+    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$(cat /run/secrets/redis_password)"
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -29,15 +31,18 @@ services:
     container_name: cdb_postgres
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - postgres_password
     environment:
       POSTGRES_DB: claire_de_binare
+      POSTGRES_USER: claire_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backoffice/docs/DATABASE_SCHEMA.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U claire_user -d claire_de_binare"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -55,7 +60,7 @@ services:
     ports:
       - "19090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prom_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -72,17 +77,19 @@ services:
     image: grafana/grafana:latest
     container_name: cdb_grafana
     restart: unless-stopped
+    secrets:
+      - grafana_password
     ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?GRAFANA_PASSWORD not set}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./backoffice/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./backoffice/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./backoffice/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus
     healthcheck:
@@ -135,15 +142,17 @@ services:
 
   cdb_core:
     build:
-      context: ./backoffice/services/signal_engine
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/signal/Dockerfile
     container_name: cdb_core
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - redis_password
     ports:
       - "8001:8001"
     volumes:
-      - ./backoffice/services/signal_engine:/app
+      - ./services/signal:/app
       - signal_data:/data
     depends_on:
       - cdb_redis
@@ -167,15 +176,17 @@ services:
 
   cdb_risk:
     build:
-      context: ./backoffice/services/risk_manager
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/risk/Dockerfile
     container_name: cdb_risk
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - redis_password
     ports:
       - "8002:8002"
     volumes:
-      - ./backoffice/services/risk_manager:/app
+      - ./services/risk:/app
       - risk_logs:/logs
     depends_on:
       - cdb_redis
@@ -199,15 +210,18 @@ services:
 
   cdb_execution:
     build:
-      context: ./backoffice/services/execution_service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/execution/Dockerfile
     container_name: cdb_execution
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     ports:
       - "8003:8003"
     volumes:
-      - ./backoffice/services/execution_service:/app
+      - ./services/execution:/app
     depends_on:
       - cdb_redis
       - cdb_risk
@@ -232,13 +246,16 @@ services:
 
   cdb_db_writer:
     build:
-      context: ./backoffice/services/db_writer
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/db_writer/Dockerfile
     container_name: cdb_db_writer
     restart: unless-stopped
     env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     volumes:
-      - ./backoffice/services/db_writer:/app
+      - ./services/db_writer:/app
     depends_on:
       - cdb_redis
       - cdb_postgres
@@ -254,7 +271,7 @@ services:
 
   cdb_paper_runner:
     build:
-      context: ./services/cdb_paper_runner
+      context: ./tools/paper_trading
       dockerfile: Dockerfile
     container_name: cdb_paper_runner
     restart: unless-stopped
@@ -305,3 +322,14 @@ volumes:
 networks:
   cdb_network:
     driver: bridge
+
+# ====================================================================
+# SECRETS
+# ====================================================================
+secrets:
+  redis_password:
+    file: ./.secrets/redis_password
+  postgres_password:
+    file: ./.secrets/postgres_password
+  grafana_password:
+    file: ./.secrets/grafana_password

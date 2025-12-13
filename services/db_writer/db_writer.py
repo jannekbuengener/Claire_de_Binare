@@ -18,6 +18,7 @@ from typing import Dict, Any, Optional
 
 import redis
 import psycopg2
+from core.domain.secrets import get_secret
 
 # Logging Setup
 logging.basicConfig(
@@ -43,13 +44,14 @@ class DatabaseWriter:
         """Initialize DB Writer"""
         self.redis_host = os.getenv("REDIS_HOST", "cdb_redis")
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
-        self.redis_password = os.getenv("REDIS_PASSWORD", None)
+        self.redis_password = get_secret("redis_password", "REDIS_PASSWORD")
+        logger.info(f"Redis password loaded: {'Yes' if self.redis_password else 'No'}")
 
         self.postgres_host = os.getenv("POSTGRES_HOST", "cdb_postgres")
         self.postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
         self.postgres_db = os.getenv("POSTGRES_DB", "claire_de_binare")
         self.postgres_user = os.getenv("POSTGRES_USER", "claire_user")
-        self.postgres_password = os.getenv("POSTGRES_PASSWORD", "")
+        self.postgres_password = get_secret("postgres_password", "POSTGRES_PASSWORD", "")
 
         # Channels to subscribe to
         self.channels = ["signals", "orders", "order_results", "portfolio_snapshots"]

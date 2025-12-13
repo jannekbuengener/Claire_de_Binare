@@ -19,14 +19,11 @@ from threading import Thread
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
-    from ..common.models import Signal
 except ImportError:
     from config import config
     from models import Order, Alert, RiskState, OrderResult
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from common.models import Signal
+
+from core.domain.models import Signal
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -130,7 +127,7 @@ class RiskManager:
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
-        max_exposure = self.config.test_balance * self.config.max_exposure_pct
+        max_exposure = self.config.test_balance * self.config.max_total_exposure_pct
 
         if risk_state.total_exposure >= max_exposure:
             return (
@@ -349,7 +346,7 @@ class RiskManager:
 
         logger.info("🚀 Risk-Manager gestartet")
         logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
-        logger.info(f"   Max Exposure: {self.config.max_exposure_pct*100}%")
+        logger.info(f"   Max Exposure: {self.config.max_total_exposure_pct*100}%")
         logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
         logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}%")
 

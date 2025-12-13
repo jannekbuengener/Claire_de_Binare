@@ -10,11 +10,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Python Dependencies
-COPY requirements.txt .
+COPY services/signal/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Core Domain Models (shared)
+COPY core /app/core
+
 # Service-Code
-COPY *.py ./
+COPY services/signal/*.py ./
 
 # Nicht-Root User
 RUN useradd -m -u 1000 signaluser && \

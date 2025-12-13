@@ -17,11 +17,14 @@ RUN apt-get update \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Python Requirements
-COPY requirements.txt ./
+COPY services/execution/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Core Domain Models (shared)
+COPY core /app/core
+
 # Service-Code kopieren
-COPY . /app
+COPY services/execution/ /app
 
 # Non-Root User
 RUN useradd --create-home --uid 1000 execuser \

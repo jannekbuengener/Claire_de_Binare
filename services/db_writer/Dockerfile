@@ -8,8 +8,11 @@ WORKDIR /app
 # Install dependencies
 RUN pip install --no-cache-dir redis psycopg2-binary
 
+# Core Domain Models (shared)
+COPY core /app/core
+
 # Copy service code
-COPY db_writer.py .
+COPY services/db_writer/db_writer.py .
 
 # Health check (check if Redis is reachable - DB Writer connects to it)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

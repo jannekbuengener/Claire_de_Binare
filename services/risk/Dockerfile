@@ -6,10 +6,13 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY services/risk/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY *.py ./
+# Core Domain Models (shared)
+COPY core /app/core
+
+COPY services/risk/*.py ./
 
 RUN useradd -m -u 1000 riskuser && chown -R riskuser:riskuser /app
 USER riskuser
