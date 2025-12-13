@@ -1,0 +1,8 @@
+# Signal Engine - Requirements
+
+# Core
+redis==5.0.1
+flask==3.1.2
+
+# Utilities
+python-dotenv==1.0.0

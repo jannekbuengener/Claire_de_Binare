@@ -1,0 +1,327 @@
+{
+  "uid": "claire_dark_v1",
+  "title": "Claire de Binare - Dark Trading",
+  "description": "Minimalistic dark dashboard with deep red accents for Claire Paper Trading",
+  "tags": ["claire", "trading", "dark"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "CIRCUIT BREAKER",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "circuit_breaker_active",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {"color": "#1a1a1a", "index": 0, "text": "INACTIVE"},
+                "1": {"color": "#8b0000", "index": 1, "text": "⚠ ACTIVE"}
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#8b0000", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "ORDERS FILLED",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_orders_filled_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#8b0000", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "ORDERS REJECTED",
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_orders_rejected_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 10}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "UPTIME",
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_uptime_seconds",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "ORDER FLOW",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(execution_orders_received_total[1m])",
+          "legendFormat": "Received",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(execution_orders_filled_total[1m])",
+          "legendFormat": "Filled",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(execution_orders_rejected_total[1m])",
+          "legendFormat": "Rejected",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {"mode": "normal", "group": "A"}
+          },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "transparent", "value": null}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Received"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#ff0000"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Filled"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8b0000"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Rejected"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#4d0000"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": ["last", "max"]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "RISK METRICS",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_max_exposure_pct",
+          "legendFormat": "Max Exposure %",
+          "refId": "A"
+        },
+        {
+          "expr": "adaptive_intensity_signal_threshold_pct",
+          "legendFormat": "Signal Threshold %",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "hue",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "unit": "percent"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Max Exposure %"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8b0000"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Signal Threshold %"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#ff0000"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["last", "min", "max"]
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "PERFORMANCE SCORE",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_performance_score",
+          "legendFormat": "Score",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 40,
+            "gradientMode": "scheme",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#8b0000", "value": null},
+              {"color": "#4d0000", "value": 0.5},
+              {"color": "#ff0000", "value": 0.8}
+            ]
+          }
+        }
+      },
+      "options": {
+        "tooltip": {"mode": "single"},
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["last", "mean", "max"]
+        }
+      }
+    }
+  ]
+}

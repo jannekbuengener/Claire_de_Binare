@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+.build/
+
+# Environments
+.venv/
+venv/
+.env
+.env.*
+*.env
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.cache/
+.coverage
+htmlcov/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs & runtime artefacts
+logs/
+*.log
+
+# AI tooling / cache dirs
+.claude/
+.gemini/
+.mcp/
+
+# Archive & backup
+_archive/
+_kellerkiste_*/
+
+# Documentation build artifacts
+docs/_build/
+site/
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+.circleci/
+
+# Development files
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# Test files (exclude from production images)
+tests/
+test_*.py
+*_test.py
+pytest.ini
+.coveragerc
+
+# Requirements (install from specific file, not all)
+requirements-dev.txt
