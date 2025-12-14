@@ -7,3 +7,6 @@ pods/service-connections
 **/settings.local.json
 **/settings.local.json.json
 .env
+.secrets/
+.pytest_cache/
+__pycache__/

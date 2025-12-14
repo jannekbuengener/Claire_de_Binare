@@ -248,3 +248,111 @@ Bis dahin gilt:
   - Vollständiger Review-Bericht: `governance/reviews/reports/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md`
   - Risiko-Matrix mit 6 Risiken + Mitigations
   - Must/Should/Nice-Kategorisierung (8 Empfehlungen)
+
+---
+
+### Session 2025-12-13B – Docker-Diagnose & Golden Stack Boot
+
+- **Ziel:** Docker-Instabilität beheben, reproduzierbaren Stack-Boot etablieren, P1 Developer-Tools starten
+- **Beteiligte:** User (Jannek), Claude (Session Lead, Docker/Ops-Architekt)
+- **Kontext:** Docker-Stack instabil (7/9 healthy), Root unaufgeräumt, Developer-Tools fehlten
+
+**Durchgeführt:**
+1. **Docker-Diagnose (P0):**
+   - Root Cause: Secrets fehlten, Services ohne `get_secret()` nutzten ENV
+   - Fix: `.secrets/` von `.cdb_local/` kopiert, ENV-Variablen ergänzt
+   - Ergebnis: ✅ 9/9 Services healthy (cdb_paper_runner deaktiviert)
+
+2. **Root-Cleanup:**
+   - Gelöscht: `docker-compose.yml.backup`, `.pytest_cache/`
+   - `.gitignore` erweitert: `.secrets/`, `.pytest_cache/`, `__pycache__/`
+
+3. **Golden Stack Boot:**
+   - Erstellt: `stack_boot.ps1` (reproduzierbar, Health-Checks, 5-Phasen-Boot)
+
+4. **Developer-Tools (Specs + Start):**
+   - 8 Tools spezifiziert (cdb-stack-doctor, cdb-secrets-sync, cdb-service-logs, etc.)
+   - Implementiert: `tools/cdb-secrets-sync.ps1` (P1)
+
+**Artefakte:**
+- `stack_boot.ps1`, `tools/cdb-secrets-sync.ps1`
+- Plan: `C:\Users\janne\.claude\plans\starry-skipping-pond.md`
+
+**Handoffs:**
+- [OPEN] Codex → Implementiere `cdb-stack-doctor.ps1` (P1)
+- [OPEN] Codex → Implementiere `cdb-service-logs.ps1` (P1)
+- [OPEN] Claude → Refactor Services: `get_secret()` statt `os.getenv()` (P2)
+
+**Entscheidungen:**
+- Golden Source: `docker-compose.yml` (Root) = Single Source of Truth
+- Secrets-Flow: `.cdb_local/.secrets/` → `.secrets/` → `.env` (Workaround)
+
+---
+
+## NEU
+
+Neuer Auftrag für dich als Session Lead:
+
+Ziel:
+Definiere eine kleine Suite von Developer-Tools, die Codex später für dich umsetzt, damit du smarter und schneller mit dem Repo arbeiten kannst.
+
+Rahmen:
+- OS: Windows 10
+- Shell: PowerShell
+- Stack: Docker Desktop, aktueller Claire-de-Binare-Stack
+- Codex ist der einzige, der später den Code für diese Tools schreibt.
+
+Bitte liefere NUR Spezifikationen, KEINEN Code.
+
+Struktur deiner Antwort:
+
+## TOOL OVERVIEW
+Liste 5–8 Tools mit kurzem Einzeiler, z.B.:
+- `cdb-stack-doctor` – schneller Health-/Log-Check für den Docker-Stack
+- `cdb-scan-governance` – prüft Write-Zonen / Policy-Compliance
+- usw.
+
+## TOOL SPECS
+Für jedes Tool:
+- Name:
+- Ziel:
+- Aufruf (PowerShell-Beispiel):
+- Inputs:
+- Outputs (z.B. Exit-Codes, kurze Reports, JSON):
+- Kontext (wann nutze ich das konkret?):
+- Anforderungen an Codex (was genau gebaut werden soll, z.B. Python-Script, PowerShell, Kombination mit docker compose).
+
+## HANDOFF AN CODEX
+Kurze Liste: „Diese Specs sind ready für Codex“, inkl. Priorität (P1–P3).
+
+Wichtig:
+- Kein Code, nur klare, umsetzbare Spezifikationen.
+- Fokus auf: weniger Handarbeit, reproduzierbare Checks, schnelle Statusbilder für dich.
+
+
+Kontext:
+- OS: Windows 10
+- Shell: PowerShell 5.1+
+- Stack: Docker Desktop, docker-compose.yml im Repo-Root
+- Ich habe von Claude Spezifikationen für mehrere Tools bekommen (siehe CDB_KNOWLEDGE_HUB.md / letzten Run).
+
+Ziel:
+Implementiere ZUERST die P1-Tools als PowerShell-Skripte im Ordner `tools/`:
+
+1. cdb-secrets-sync.ps1
+2. cdb-stack-doctor.ps1
+3. cdb-service-logs.ps1
+
+Vorgaben:
+- Halte dich so nah wie möglich an die Spezifikationen von Claude
+  (Name, Ziel, Aufruf, Inputs, Outputs, Verhalten).
+- Reine PowerShell, keine zusätzlichen Abhängigkeiten.
+- Scripts sollen im Ordner `tools/` liegen (anlegen falls nicht existiert).
+- Sauberes Error-Handling (Exit-Codes wie beschrieben).
+- Hilfetext mit `.SYNOPSIS` / `.DESCRIPTION` / `.EXAMPLE`.
+
+Bitte:
+1. Lege/aktualisiere die drei `.ps1`-Dateien.
+2. Zeig mir danach den vollständigen Inhalt aller drei Dateien,
+   damit ich sie kontrollieren und commiten kann.
+3. Nimm KEINE Änderungen an Governance/Policies vor, nur im `tools/`-Bereich + ggf. .gitignore-Eintrag für `tools/*.log` o.Ä., falls sinnvoll.
