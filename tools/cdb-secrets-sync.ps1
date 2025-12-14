@@ -2,191 +2,170 @@
 
 <#
 .SYNOPSIS
-    CDB Secrets Sync - Synchronisiert Tresor-Zone mit lokalen Secrets
-
+    Synchronizes vault secrets into the workspace.
 .DESCRIPTION
-    Synchronisiert .cdb_local/.secrets/ → .secrets/ und updated .env automatisch.
-    Verhindert Redis/PostgreSQL Auth-Errors durch Passwort-Mismatches.
-
+    Copies vault files from .cdb_local/.secrets/ into .secrets/ and keeps .env entries aligned.
+    Prevents credential mismatches for Redis, PostgreSQL, and Grafana.
 .PARAMETER DryRun
-    Zeigt nur, was passieren würde (kein Write)
-
+    Shows what would be changed without writing files.
 .EXAMPLE
-    .\cdb-secrets-sync.ps1
-    .\cdb-secrets-sync.ps1 -DryRun
+    ./tools/cdb-secrets-sync.ps1
+    ./tools/cdb-secrets-sync.ps1 -DryRun
 #>
 
 param(
     [switch]$DryRun
 )
 
-$ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-# === KONFIGURATION ===
-$SOURCE_DIR = ".cdb_local\.secrets"
-$TARGET_DIR = ".secrets"
-$ENV_FILE = ".env"
-$REQUIRED_SECRETS = @("redis_password", "postgres_password", "grafana_password")
+function Write-Section($text) {
+    Write-Host ''
+    Write-Host ('== {0} ==' -f $text) -ForegroundColor Blue
+}
 
-# === FARBEN FÜR OUTPUT ===
-function Write-Success { param($Message) Write-Host "✅ $Message" -ForegroundColor Green }
-function Write-Info { param($Message) Write-Host "ℹ️  $Message" -ForegroundColor Cyan }
-function Write-Warning { param($Message) Write-Host "⚠️  $Message" -ForegroundColor Yellow }
-function Write-Error { param($Message) Write-Host "❌ $Message" -ForegroundColor Red }
+function Write-Success($text) { Write-Host ('[OK]    {0}' -f $text) -ForegroundColor Green }
+function Write-Info($text)    { Write-Host ('[INFO]  {0}' -f $text) -ForegroundColor Cyan }
+function Write-Warning($text) { Write-Host ('[WARN]  {0}' -f $text) -ForegroundColor Yellow }
+function Write-Failure($text) { Write-Host ('[FAIL]  {0}' -f $text) -ForegroundColor Red }
 
-# === HEADER ===
-Write-Host "🔐 CDB Secrets Sync" -ForegroundColor Blue
+$vaultDirectory = '.cdb_local/.secrets'
+$workspaceSecrets = '.secrets'
+$envFile = '.env'
+
+$secretMapping = @{
+    'redis_password'    = 'REDIS_PASSWORD'
+    'postgres_password' = 'POSTGRES_PASSWORD'
+    'grafana_password'  = 'GRAFANA_PASSWORD'
+}
+
+Write-Section 'Secrets sync start'
 if ($DryRun) {
-    Write-Warning "DRY RUN MODE - Keine Änderungen werden geschrieben"
-}
-Write-Host ""
-
-# === SCHRITT 1: VALIDIERUNG ===
-Write-Info "Validiere Verzeichnisse..."
-
-if (-not (Test-Path $SOURCE_DIR)) {
-    Write-Error "Source-Verzeichnis nicht gefunden: $SOURCE_DIR"
-    Write-Info "Lösung: Stelle sicher, dass .cdb_local/.secrets/ existiert (Tresor-Zone)"
-    exit 1
+    Write-Warning 'Dry run mode active; no files will be modified.'
 }
 
-if (-not (Test-Path $TARGET_DIR)) {
-    if ($DryRun) {
-        Write-Info "[DRY RUN] Würde erstellen: $TARGET_DIR"
-    } else {
-        New-Item -ItemType Directory -Path $TARGET_DIR | Out-Null
-        Write-Success "Erstellt: $TARGET_DIR"
+foreach ($path in @($vaultDirectory, $envFile)) {
+    if (-not (Test-Path $path)) {
+        Write-Failure ('Required path missing: {0}' -f $path)
+        exit 1
     }
 }
 
-if (-not (Test-Path $ENV_FILE)) {
-    Write-Error ".env nicht gefunden!"
-    Write-Info "Lösung: Kopiere .env.example → .env"
-    exit 1
+if (-not (Test-Path $workspaceSecrets)) {
+    if ($DryRun) {
+        Write-Info ('[DryRun] Would create {0}' -f $workspaceSecrets)
+    } else {
+        New-Item -ItemType Directory -Path $workspaceSecrets -Force | Out-Null
+        Write-Success ('Created {0}' -f $workspaceSecrets)
+    }
 }
 
-# === SCHRITT 2: SECRETS SYNC ===
-Write-Host "`n📋 Sync-Plan:" -ForegroundColor Blue
-
-$syncActions = @()
-
-foreach ($secretName in $REQUIRED_SECRETS) {
-    $sourcePath = Join-Path $SOURCE_DIR $secretName
-    $targetPath = Join-Path $TARGET_DIR $secretName
-
+$plans = @()
+foreach ($secretName in $secretMapping.Keys) {
+    $sourcePath = Join-Path $vaultDirectory $secretName
     if (-not (Test-Path $sourcePath)) {
-        Write-Warning "Source fehlt: $sourcePath (übersprungen)"
+        Write-Warning ('Vault secret missing: {0}' -f $secretName)
         continue
     }
 
     $sourceContent = (Get-Content $sourcePath -Raw).Trim()
+    if ([string]::IsNullOrEmpty($sourceContent)) {
+        Write-Warning ('Vault secret {0} is empty; skipping.' -f $secretName)
+        continue
+    }
 
+    $targetPath = Join-Path $workspaceSecrets $secretName
+    $action = 'Create'
     if (Test-Path $targetPath) {
-        $targetContent = (Get-Content $targetPath -Raw).Trim()
-        if ($sourceContent -eq $targetContent) {
-            Write-Success "$secretName`: Identisch (kein Update nötig)"
-            $syncActions += @{
-                Name = $secretName
-                Action = "SKIP"
-                Content = $sourceContent
-            }
+        $existing = (Get-Content $targetPath -Raw).Trim()
+        if ($existing -eq $sourceContent) {
+            $action = 'Skip'
         } else {
-            Write-Warning "$secretName`: Unterschied gefunden → Update"
-            $syncActions += @{
-                Name = $secretName
-                Action = "UPDATE"
-                Content = $sourceContent
-            }
-        }
-    } else {
-        Write-Info "$secretName`: Neu → Kopieren"
-        $syncActions += @{
-            Name = $secretName
-            Action = "CREATE"
-            Content = $sourceContent
+            $action = 'Update'
         }
     }
-}
 
-# === SCHRITT 3: SECRETS SCHREIBEN ===
-if (-not $DryRun) {
-    Write-Host "`n🔄 Schreibe Secrets..." -ForegroundColor Blue
-
-    foreach ($action in $syncActions) {
-        if ($action.Action -ne "SKIP") {
-            $targetPath = Join-Path $TARGET_DIR $action.Name
-            $action.Content | Out-File -FilePath $targetPath -Encoding ASCII -NoNewline
-            Write-Success "Geschrieben: $($action.Name)"
-        }
+    $plans += [PSCustomObject]@{
+        SecretName = $secretName
+        TargetPath = $targetPath
+        Action     = $action
+        Content    = $sourceContent
+        VarName    = $secretMapping[$secretName]
     }
+
+    Write-Info ('Plan: {0} {1}' -f $action, $secretName)
 }
 
-# === SCHRITT 4: .ENV UPDATE ===
-Write-Host "`n📝 .env Updates:" -ForegroundColor Blue
+if ($plans.Count -eq 0) {
+    Write-Warning 'No secrets were available for synchronization.'
+}
 
-$envContent = Get-Content $ENV_FILE -Raw
-$envUpdated = $false
-
-# Redis Password
-$redisSecret = $syncActions | Where-Object { $_.Name -eq "redis_password" }
-if ($redisSecret) {
-    $redisPassword = $redisSecret.Content
-    if ($envContent -match "REDIS_PASSWORD=(.*)") {
-        $currentValue = $matches[1].Trim()
-        if ($currentValue -ne $redisPassword) {
-            Write-Warning "REDIS_PASSWORD: Update erforderlich"
-            $envContent = $envContent -replace "REDIS_PASSWORD=.*", "REDIS_PASSWORD=$redisPassword"
-            $envUpdated = $true
-        } else {
-            Write-Success "REDIS_PASSWORD: Keine Änderung"
+$pendingWrites = @($plans | Where-Object { $_.Action -ne 'Skip' })
+if ($pendingWrites.Count -gt 0) {
+    Write-Section 'Writing secret files'
+    foreach ($plan in $pendingWrites) {
+        if ($DryRun) {
+            Write-Info ('[DryRun] Would write {0}' -f $plan.SecretName)
+            continue
         }
-    } else {
-        Write-Warning "REDIS_PASSWORD nicht in .env → Hinzufügen"
-        $envContent += "`nREDIS_PASSWORD=$redisPassword"
-        $envUpdated = $true
-    }
-}
-
-# PostgreSQL Password
-$postgresSecret = $syncActions | Where-Object { $_.Name -eq "postgres_password" }
-if ($postgresSecret) {
-    $postgresPassword = $postgresSecret.Content
-    if ($envContent -match "POSTGRES_PASSWORD=(.*)") {
-        $currentValue = $matches[1].Trim()
-        if ($currentValue -ne $postgresPassword) {
-            Write-Warning "POSTGRES_PASSWORD: Update erforderlich"
-            $envContent = $envContent -replace "POSTGRES_PASSWORD=.*", "POSTGRES_PASSWORD=$postgresPassword"
-            $envUpdated = $true
-        } else {
-            Write-Success "POSTGRES_PASSWORD: Keine Änderung"
-        }
-    } else {
-        Write-Warning "POSTGRES_PASSWORD nicht in .env → Hinzufügen"
-        $envContent += "`nPOSTGRES_PASSWORD=$postgresPassword"
-        $envUpdated = $true
-    }
-}
-
-# === SCHRITT 5: .ENV SCHREIBEN ===
-if ($envUpdated) {
-    if ($DryRun) {
-        Write-Info "[DRY RUN] Würde .env aktualisieren"
-    } else {
-        $envContent | Out-File -FilePath $ENV_FILE -Encoding UTF8 -NoNewline
-        Write-Success ".env aktualisiert"
+        $plan.Content | Out-File -FilePath $plan.TargetPath -Encoding ASCII -NoNewline -Force
+        Write-Success ('{0} {1}' -f $plan.Action, $plan.SecretName)
     }
 } else {
-    Write-Success ".env ist bereits aktuell"
+    Write-Info 'Secret files already match the vault.'
 }
 
-# === ZUSAMMENFASSUNG ===
-Write-Host "`n✅ Sync abgeschlossen!" -ForegroundColor Green
+Write-Section 'Updating .env'
+$envLines = [System.Collections.Generic.List[string]]::new()
+Get-Content $envFile | ForEach-Object { [void]$envLines.Add($_) }
+$envChanged = $false
 
+foreach ($plan in $plans) {
+    if (-not $plan.Content) { continue }
+    $varName = $plan.VarName
+    $lineTemplate = ('{0}=' -f $varName)
+    $matchIndex = -1
+    for ($i = 0; $i -lt $envLines.Count; $i++) {
+        if ($envLines[$i].TrimStart().StartsWith($lineTemplate)) {
+            $matchIndex = $i
+            break
+        }
+    }
+
+    if ($matchIndex -ge 0) {
+        $currentValue = $envLines[$matchIndex].Substring($lineTemplate.Length).Trim()
+        if ($currentValue -ne $plan.Content) {
+            $envLines[$matchIndex] = ('{0}{1}' -f $lineTemplate, $plan.Content)
+            $envChanged = $true
+            Write-Info ('Updated {0}' -f $varName)
+        } else {
+            Write-Success ('{0} already aligned' -f $varName)
+        }
+    } else {
+        $envLines.Add(('{0}{1}' -f $lineTemplate, $plan.Content))
+        $envChanged = $true
+        Write-Info ('Appended {0} to .env' -f $varName)
+    }
+}
+
+if ($envChanged) {
+    if ($DryRun) {
+        Write-Info '[DryRun] Would persist .env updates'
+    } else {
+        $envLines | Set-Content -Path $envFile -Encoding ASCII
+        Write-Success '.env updated with vault values'
+    }
+} else {
+    Write-Success '.env is already aligned with the vault'
+}
+
+Write-Section 'Summary'
 if ($DryRun) {
-    Write-Warning "DRY RUN: Keine Dateien wurden geändert"
-    Write-Info "Führe ohne -DryRun aus, um Änderungen zu schreiben"
+    Write-Warning 'Dry run complete; no files were modified.'
+}
+if (($pendingWrites.Count -eq 0) -and (-not $envChanged)) {
+    Write-Success 'Secrets and .env already synchronized.'
 }
 
-Write-Host ""
 exit 0

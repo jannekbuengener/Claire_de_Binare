@@ -2,33 +2,22 @@
 
 <#
 .SYNOPSIS
-    CDB Service Logs - Intelligenter Log-Viewer mit Filterung
-
+    Shows filtered and highlighted Docker service logs.
 .DESCRIPTION
-    Zeigt Docker-Container-Logs mit farblicher Hervorhebung und Filterung.
-    Unterstützt Live-Tail-Modus und Regex-basierte Log-Filterung.
-
+    Wraps docker logs with color coding, follow mode, optional regex filtering, and timestamp toggles.
 .PARAMETER ServiceName
-    Name des Services (z.B. cdb_execution, cdb_risk)
-    REQUIRED
-
+    Required service name.
 .PARAMETER Lines
-    Anzahl der letzten Log-Zeilen (default: 50)
-
+    Number of lines to retrieve when not following.
 .PARAMETER Follow
-    Live-Tail-Modus (folgt neuen Log-Einträgen)
-
+    Streams logs continuously.
 .PARAMETER Filter
-    Regex-Filter für Log-Zeilen
-
+    Regex filter applied to static output; live follow is unfiltered after the intro.
 .PARAMETER ShowTimestamps
-    Zeigt Timestamps in Logs (docker logs -t)
-
+    Enables timestamps on each log entry.
 .EXAMPLE
-    .\cdb-service-logs.ps1 -ServiceName cdb_execution
-    .\cdb-service-logs.ps1 -ServiceName cdb_risk -Lines 100
-    .\cdb-service-logs.ps1 -ServiceName cdb_core -Follow
-    .\cdb-service-logs.ps1 -ServiceName cdb_ws -Filter "ERROR|WARNING"
+    ./tools/cdb-service-logs.ps1 -ServiceName cdb_execution
+    ./tools/cdb-service-logs.ps1 -ServiceName cdb_risk -Filter 'ERROR|WARN'
 #>
 
 param(
@@ -44,154 +33,101 @@ param(
     [switch]$ShowTimestamps
 )
 
-$ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-# === KONFIGURATION ===
-$VALID_SERVICES = @(
-    "cdb_redis", "cdb_postgres", "cdb_prometheus", "cdb_grafana",
-    "cdb_ws", "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
-)
+function Write-Section($text) {
+    Write-Host ''
+    Write-Host ('== {0} ==' -f $text) -ForegroundColor Blue
+}
 
-# === FARBEN FÜR LOG-LEVELS ===
-function Write-LogLine {
-    param($Line)
+function Write-Success($text) { Write-Host ('[OK]    {0}' -f $text) -ForegroundColor Green }
+function Write-Info($text)    { Write-Host ('[INFO]  {0}' -f $text) -ForegroundColor Cyan }
+function Write-Warning($text) { Write-Host ('[WARN]  {0}' -f $text) -ForegroundColor Yellow }
+function Write-Failure($text) { Write-Host ('[FAIL]  {0}' -f $text) -ForegroundColor Red }
 
-    # Color-coding based on log level
-    if ($Line -match "ERROR|Exception|Traceback|Failed") {
-        Write-Host $Line -ForegroundColor Red
-    } elseif ($Line -match "WARNING|WARN") {
-        Write-Host $Line -ForegroundColor Yellow
-    } elseif ($Line -match "INFO") {
-        Write-Host $Line -ForegroundColor Green
-    } elseif ($Line -match "DEBUG") {
-        Write-Host $Line -ForegroundColor Gray
+$validServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_ws','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
+
+if ($ServiceName -notin $validServices) {
+    Write-Failure ('Invalid service: {0}' -f $ServiceName)
+    Write-Host 'Valid services:' -ForegroundColor Yellow
+    foreach ($svc in $validServices) {
+        Write-Host ('  - {0}' -f $svc)
+    }
+    exit 1
+}
+
+function Write-LogLine($line) {
+    if ([string]::IsNullOrWhiteSpace($line)) {
+        return
+    }
+    if ($line -match 'ERROR|Exception|Traceback|Failed') {
+        Write-Host $line -ForegroundColor Red
+    } elseif ($line -match 'WARNING|WARN') {
+        Write-Host $line -ForegroundColor Yellow
+    } elseif ($line -match 'INFO') {
+        Write-Host $line -ForegroundColor Green
     } else {
-        Write-Host $Line
+        Write-Host $line -ForegroundColor Gray
     }
 }
 
-# === HEADER ===
-Write-Host "📋 CDB Service Logs Viewer v1.0" -ForegroundColor Blue
-Write-Host "Service: $ServiceName" -ForegroundColor Cyan
+function Show-Logs([string[]]$DockerArgs, $label) {
+    Write-Section ('{0} logs' -f $label)
+    docker @DockerArgs | ForEach-Object { Write-LogLine $_ }
+}
 
-if ($Follow) {
-    Write-Host "Mode: LIVE TAIL (Ctrl+C zum Beenden)" -ForegroundColor Yellow
-} else {
-    Write-Host "Mode: Last $Lines lines" -ForegroundColor Cyan
+function Get-LogArgs($tailValue) {
+    $args = @('logs')
+    if ($ShowTimestamps) {
+        $args += '-t'
+    }
+    $args += '--tail'
+    $args += $tailValue
+    $args += $ServiceName
+    return $args
+}
+
+Write-Section ('Service logs for {0}' -f $ServiceName)
+$filterLabel = if ($Filter) { $Filter } else { 'none' }
+Write-Info ('Lines: {0}; Follow: {1}; Filter: {2}' -f $Lines, $Follow.IsPresent, $filterLabel)
+
+try {
+    $state = docker inspect --format '{{.State.Status}}' $ServiceName 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw $state
+    }
+    $state = $state.Trim()
+    Write-Info ('Container state: {0}' -f $state)
+} catch {
+    Write-Failure ('Cannot inspect {0}: {1}' -f $ServiceName, $_)
+    exit 1
 }
 
 if ($Filter) {
-    Write-Host "Filter: $Filter" -ForegroundColor Magenta
-}
-
-Write-Host "═══════════════════════════════════════════`n" -ForegroundColor Blue
-
-# === VALIDIERUNG ===
-if ($ServiceName -notin $VALID_SERVICES) {
-    Write-Host "❌ Ungültiger Service: $ServiceName" -ForegroundColor Red
-    Write-Host "`nGültige Services:" -ForegroundColor Yellow
-    $VALID_SERVICES | ForEach-Object { Write-Host "  - $_" }
-    exit 1
-}
-
-# === PRÜFE OB CONTAINER LÄUFT ===
-try {
-    $containerStatus = docker inspect $ServiceName 2>&1 | ConvertFrom-Json
-
-    if (-not $containerStatus) {
-        Write-Host "❌ Container '$ServiceName' nicht gefunden" -ForegroundColor Red
-        Write-Host "Lösung: Führe .\stack_boot.ps1 aus" -ForegroundColor Yellow
-        exit 1
-    }
-
-    $state = $containerStatus.State.Status
-
-    if ($state -ne "running") {
-        Write-Host "⚠️  Container '$ServiceName' läuft nicht (Status: $state)" -ForegroundColor Yellow
-        Write-Host "Zeige letzte Logs vor dem Stop:`n" -ForegroundColor Cyan
-    }
-} catch {
-    Write-Host "❌ Fehler beim Prüfen des Container-Status: $_" -ForegroundColor Red
-    exit 1
-}
-
-# === BUILD DOCKER LOGS COMMAND ===
-$dockerArgs = @("logs")
-
-if ($Follow -and $state -eq "running") {
-    $dockerArgs += "--follow"
-}
-
-$dockerArgs += "--tail"
-$dockerArgs += $Lines.ToString()
-
-if ($ShowTimestamps) {
-    $dockerArgs += "-t"
-}
-
-$dockerArgs += $ServiceName
-
-# === LOGS ANZEIGEN (MIT FILTERUNG) ===
-try {
-    if ($Filter) {
-        # Mit Filterung: Lese Zeilen und filtere
-        if ($Follow -and $state -eq "running") {
-            # Live-Tail mit Filter
-            Write-Host "⚠️  Live-Tail mit Filter ist limitiert (nur initiale Zeilen)" -ForegroundColor Yellow
-            Write-Host "Für vollständige Live-Filterung: Nutze -Follow ohne -Filter`n" -ForegroundColor Yellow
-
-            $initialLogs = docker logs --tail $Lines $ServiceName 2>&1
-
-            foreach ($line in $initialLogs -split "`n") {
-                if ($line -match $Filter) {
-                    Write-LogLine $line
-                }
-            }
-
-            Write-Host "`nInitiale gefilterte Logs angezeigt. Starte Live-Tail (UNGEFILTERT)...`n" -ForegroundColor Cyan
-            Start-Sleep -Seconds 1
-
-            # Starte ungefilterten Live-Tail
-            docker logs --follow --tail 0 $ServiceName 2>&1 | ForEach-Object {
+    Write-Section 'Filtered preview'
+    try {
+        docker logs --tail $Lines $ServiceName 2>&1 | ForEach-Object {
+            if ($_ -match $Filter) {
                 Write-LogLine $_
             }
-
-        } else {
-            # Statische Logs mit Filter
-            $logs = docker logs --tail $Lines $ServiceName 2>&1
-
-            $matchCount = 0
-            foreach ($line in $logs -split "`n") {
-                if ($line -match $Filter) {
-                    Write-LogLine $line
-                    $matchCount++
-                }
-            }
-
-            Write-Host "`n═══════════════════════════════════════════" -ForegroundColor Blue
-            Write-Host "Gefilterte Zeilen: $matchCount / $Lines" -ForegroundColor Cyan
         }
-    } else {
-        # Ohne Filterung: Direktes Streaming mit Farbcodierung
-        if ($Follow -and $state -eq "running") {
-            # Live-Tail
-            docker logs --follow --tail $Lines $ServiceName 2>&1 | ForEach-Object {
-                Write-LogLine $_
-            }
-        } else {
-            # Statische Logs
-            $logs = docker logs --tail $Lines $ServiceName 2>&1
-
-            foreach ($line in $logs -split "`n") {
-                Write-LogLine $line
-            }
-
-            Write-Host "`n═══════════════════════════════════════════" -ForegroundColor Blue
-            Write-Host "Log-Zeilen angezeigt: $Lines" -ForegroundColor Cyan
-        }
+    } catch {
+        Write-Warning ('Unable to read filtered logs: {0}' -f $_)
     }
-} catch {
-    Write-Host "`n❌ Fehler beim Lesen der Logs: $_" -ForegroundColor Red
-    exit 1
+    if ($Follow) {
+        Write-Info 'Starting live follow (unfiltered) after filtered preview.'
+        $followArgs = @('logs','--tail','0','--follow',$ServiceName)
+        Show-Logs $followArgs 'live follow'
+    }
+    exit 0
+}
+
+if ($Follow) {
+    $liveArgs = Get-LogArgs $Lines
+    $liveArgs += '--follow'
+    Show-Logs $liveArgs 'live follow'
+} else {
+    $staticArgs = Get-LogArgs $Lines
+    Show-Logs $staticArgs 'static output'
 }

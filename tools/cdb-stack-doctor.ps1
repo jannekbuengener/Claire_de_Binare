@@ -2,22 +2,16 @@
 
 <#
 .SYNOPSIS
-    CDB Stack Doctor - Diagnose & Health-Check für den Docker-Stack
-
+    Diagnoses the Docker stack and surfaces unhealthy services.
 .DESCRIPTION
-    Prüft Docker-Stack-Health, zeigt Unhealthy-Services mit Logs,
-    validiert Konfigurationsdateien und gibt konkrete Fix-Empfehlungen.
-
+    Verifies Docker, configuration files, secrets, and container health using docker compose.
 .PARAMETER ServiceName
-    Optional: Prüft nur einen spezifischen Service
-
+    Optional service to focus on.
 .PARAMETER ShowLogs
-    Anzahl der Log-Zeilen für unhealthy Services (default: 30)
-
+    Number of log lines to show when services are unhealthy.
 .EXAMPLE
-    .\cdb-stack-doctor.ps1
-    .\cdb-stack-doctor.ps1 -ServiceName cdb_execution
-    .\cdb-stack-doctor.ps1 -ShowLogs 50
+    ./tools/cdb-stack-doctor.ps1
+    ./tools/cdb-stack-doctor.ps1 -ServiceName cdb_execution -ShowLogs 50
 #>
 
 param(
@@ -25,217 +19,125 @@ param(
     [int]$ShowLogs = 30
 )
 
-$ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
 
-# === KONFIGURATION ===
-$COMPOSE_FILE = "docker-compose.yml"
-$ENV_FILE = ".env"
-$SECRETS_DIR = ".secrets"
-$REQUIRED_SECRETS = @("redis_password", "postgres_password", "grafana_password")
-$EXPECTED_SERVICES = @(
-    "cdb_redis", "cdb_postgres", "cdb_prometheus", "cdb_grafana",
-    "cdb_ws", "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
-)
+function Write-Section($text) {
+    Write-Host ''
+    Write-Host ('== {0} ==' -f $text) -ForegroundColor Blue
+}
 
-# === FARBEN FÜR OUTPUT ===
-function Write-Success { param($Message) Write-Host "✅ $Message" -ForegroundColor Green }
-function Write-Info { param($Message) Write-Host "ℹ️  $Message" -ForegroundColor Cyan }
-function Write-Warning { param($Message) Write-Host "⚠️  $Message" -ForegroundColor Yellow }
-function Write-Error { param($Message) Write-Host "❌ $Message" -ForegroundColor Red }
-function Write-Header { param($Message) Write-Host "`n🔍 $Message" -ForegroundColor Blue }
+function Write-Success($text) { Write-Host ('[OK]    {0}' -f $text) -ForegroundColor Green }
+function Write-Info($text)    { Write-Host ('[INFO]  {0}' -f $text) -ForegroundColor Cyan }
+function Write-Warning($text) { Write-Host ('[WARN]  {0}' -f $text) -ForegroundColor Yellow }
+function Write-Failure($text) { Write-Host ('[FAIL]  {0}' -f $text) -ForegroundColor Red }
 
-# === HEADER ===
-Write-Host "🩺 CDB Stack Doctor v1.0" -ForegroundColor Blue
-Write-Host "Diagnose gestartet: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
-Write-Host ""
+$composeFile = 'docker-compose.yml'
+$envFile = '.env'
+$secretsFolder = '.secrets'
+$requiredSecrets = @('redis_password','postgres_password','grafana_password')
+$expectedServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_ws','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
 
-# === CHECK 1: DOCKER LÄUFT? ===
-Write-Header "Check 1/5: Docker Desktop Status"
-
+Write-Section 'Docker engine'
 try {
-    $dockerInfo = docker info 2>&1 | Out-String
-    if ($dockerInfo -match "Server Version") {
-        $version = ($dockerInfo | Select-String "Server Version:\s*(.+)").Matches.Groups[1].Value.Trim()
-        Write-Success "Docker läuft (Version: $version)"
-    } else {
-        throw "Docker nicht verfügbar"
+    $dockerVersion = docker version --format '{{.Server.Version}}' 2>&1
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($dockerVersion)) {
+        throw 'Docker command failed'
+    }
+    Write-Success ('Docker is running (server {0})' -f $dockerVersion.Trim())
+} catch {
+    Write-Failure 'Docker Desktop is not accessible.'
+    Write-Info 'Start Docker Desktop and wait until it reports running.'
+    exit 1
+}
+
+Write-Section 'Configuration files'
+$configIssues = @()
+if (-not (Test-Path $composeFile)) { $configIssues += $composeFile }
+if (-not (Test-Path $envFile)) { $configIssues += $envFile }
+if (-not (Test-Path $secretsFolder)) { $configIssues += $secretsFolder }
+foreach ($secret in $requiredSecrets) {
+    $secretPath = Join-Path $secretsFolder $secret
+    if (-not (Test-Path $secretPath)) {
+        $configIssues += ('Missing secret file: {0}' -f $secret)
+    }
+}
+if ($configIssues.Count -gt 0) {
+    Write-Failure 'Configuration issues detected:'
+    foreach ($issue in $configIssues) {
+        Write-Warning $issue
+    }
+    exit 1
+}
+Write-Success 'Required configuration and secrets are present.'
+
+Write-Section 'Container health'
+try {
+    $psOutput = docker compose ps --format json 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw 'docker compose ps failed'
+    }
+    $services = if ([string]::IsNullOrWhiteSpace($psOutput)) { @() } else { $psOutput | ConvertFrom-Json }
+    if ($services -isnot [array]) {
+        $services = @($services)
     }
 } catch {
-    Write-Error "Docker Desktop läuft nicht!"
-    Write-Info "Lösung: Starte Docker Desktop und warte bis 'Docker Desktop is running' im Tray"
+    Write-Failure ('Unable to read docker compose status: {0}' -f $_)
     exit 1
 }
 
-# === CHECK 2: KONFIGURATIONSDATEIEN ===
-Write-Header "Check 2/5: Konfigurationsdateien"
-
-$configIssues = @()
-
-if (-not (Test-Path $COMPOSE_FILE)) {
-    $configIssues += "$COMPOSE_FILE fehlt"
-}
-
-if (-not (Test-Path $ENV_FILE)) {
-    $configIssues += "$ENV_FILE fehlt"
-}
-
-if (-not (Test-Path $SECRETS_DIR)) {
-    $configIssues += "$SECRETS_DIR/ Verzeichnis fehlt"
-} else {
-    foreach ($secret in $REQUIRED_SECRETS) {
-        $secretPath = Join-Path $SECRETS_DIR $secret
-        if (-not (Test-Path $secretPath)) {
-            $configIssues += "$secretPath fehlt"
-        }
-    }
-}
-
-if ($configIssues.Count -gt 0) {
-    Write-Error "Konfigurationsprobleme gefunden:"
-    $configIssues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
-    Write-Info "Lösung: Führe .\tools\cdb-secrets-sync.ps1 aus"
+if ($services.Count -eq 0) {
+    Write-Warning 'No services are running; stack does not appear to be up.'
+    Write-Info 'Consider running ./stack_boot.ps1.'
     exit 1
-} else {
-    Write-Success "Alle Konfigurationsdateien vorhanden"
 }
 
-# === CHECK 3: CONTAINER STATUS ===
-Write-Header "Check 3/5: Container Status"
-
-try {
-    $containers = docker compose ps --format json 2>&1
-
-    if (-not $containers) {
-        Write-Warning "Keine Container gefunden (Stack läuft nicht)"
-        Write-Info "Lösung: Führe .\stack_boot.ps1 aus"
+if ($ServiceName) {
+    $services = $services | Where-Object { $_.Service -eq $ServiceName }
+    if ($services.Count -eq 0) {
+        Write-Warning ('Service {0} not found in compose output.' -f $ServiceName)
         exit 1
     }
-
-    $status = $containers | ConvertFrom-Json
-
-    # Handle both single object and array
-    if ($status -isnot [array]) {
-        $status = @($status)
-    }
-
-    # Filter by ServiceName if provided
-    if ($ServiceName) {
-        $status = $status | Where-Object { $_.Service -eq $ServiceName }
-        if ($status.Count -eq 0) {
-            Write-Error "Service '$ServiceName' nicht gefunden"
-            exit 1
-        }
-    }
-
-    $runningCount = ($status | Where-Object { $_.State -eq "running" }).Count
-    $healthyCount = ($status | Where-Object { $_.Health -eq "healthy" }).Count
-    $totalCount = $status.Count
-
-    Write-Host "Running: $runningCount/$totalCount | Healthy: $healthyCount/$totalCount"
-
-} catch {
-    Write-Error "Fehler beim Lesen des Container-Status: $_"
-    exit 1
 }
 
-# === CHECK 4: UNHEALTHY SERVICES DIAGNOSE ===
-Write-Header "Check 4/5: Unhealthy Services Diagnose"
+$running = ($services | Where-Object { $_.State -eq 'running' }).Count
+$healthy = ($services | Where-Object { $_.Health -eq 'healthy' }).Count
+$total = $services.Count
+Write-Info ('Running: {0}/{1}; Healthy: {2}/{1}' -f $running, $total, $healthy)
 
-$unhealthyServices = $status | Where-Object {
-    $_.State -eq "running" -and $_.Health -ne "healthy"
-}
+$unhealthy = @($services | Where-Object { $_.State -eq 'running' -and $_.Health -ne 'healthy' })
+$stopped   = @($services | Where-Object { $_.State -ne 'running' })
 
-if ($unhealthyServices.Count -eq 0) {
-    Write-Success "Alle Services sind healthy!"
-} else {
-    Write-Warning "Unhealthy Services gefunden: $($unhealthyServices.Count)"
-    Write-Host ""
-
-    foreach ($service in $unhealthyServices) {
-        Write-Host "═══════════════════════════════════════════" -ForegroundColor Yellow
-        Write-Host "Service: $($service.Name)" -ForegroundColor Yellow
-        Write-Host "Status:  $($service.State) (Health: $($service.Health))" -ForegroundColor Yellow
-        Write-Host "═══════════════════════════════════════════" -ForegroundColor Yellow
-
-        Write-Info "Letzte $ShowLogs Log-Zeilen:"
-        Write-Host ""
-
-        try {
-            $logs = docker logs $service.Name --tail $ShowLogs 2>&1
-            Write-Host $logs -ForegroundColor Gray
-        } catch {
-            Write-Error "Konnte Logs nicht lesen: $_"
-        }
-
-        Write-Host ""
+function Show-Logs($service, $label) {
+    Write-Section ('Logs for {0} ({1})' -f $service.Service, $label)
+    try {
+        docker logs $service.Name --tail $ShowLogs 2>&1 | ForEach-Object { Write-Host $_ }
+    } catch {
+        Write-Warning ('Unable to read logs for {0}' -f $service.Service)
     }
 }
 
-# === CHECK 5: STOPPED/EXITED SERVICES ===
-Write-Header "Check 5/5: Gestoppte/Exited Services"
-
-$stoppedServices = $status | Where-Object { $_.State -ne "running" }
-
-if ($stoppedServices.Count -eq 0) {
-    Write-Success "Alle Services laufen"
-} else {
-    Write-Error "Gestoppte Services gefunden: $($stoppedServices.Count)"
-    Write-Host ""
-
-    foreach ($service in $stoppedServices) {
-        Write-Host "Service: $($service.Name)" -ForegroundColor Red
-        Write-Host "Status:  $($service.State)" -ForegroundColor Red
-
-        Write-Info "Letzte $ShowLogs Log-Zeilen:"
-        Write-Host ""
-
-        try {
-            $logs = docker logs $service.Name --tail $ShowLogs 2>&1
-            Write-Host $logs -ForegroundColor Gray
-        } catch {
-            Write-Error "Konnte Logs nicht lesen: $_"
-        }
-
-        Write-Host ""
+if ($unhealthy.Count -gt 0) {
+    Write-Warning ('Unhealthy services: {0}' -f ($unhealthy | Measure-Object).Count)
+    foreach ($entry in $unhealthy) {
+        Show-Logs $entry 'unhealthy'
     }
-
-    Write-Info "Lösung: docker compose up -d --force-recreate"
 }
 
-# === ZUSAMMENFASSUNG ===
-Write-Host "`n═══════════════════════════════════════════" -ForegroundColor Blue
-Write-Host "DIAGNOSE ZUSAMMENFASSUNG" -ForegroundColor Blue
-Write-Host "═══════════════════════════════════════════" -ForegroundColor Blue
+if ($stopped.Count -gt 0) {
+    Write-Warning ('Stopped services: {0}' -f ($stopped | Measure-Object).Count)
+    foreach ($entry in $stopped) {
+        Show-Logs $entry 'stopped'
+    }
+}
 
-$allHealthy = ($healthyCount -eq $totalCount) -and ($stoppedServices.Count -eq 0)
-
-if ($allHealthy) {
-    Write-Host "🎉 " -NoNewline -ForegroundColor Green
-    Write-Host "STACK VOLLSTÄNDIG HEALTHY ($healthyCount/$totalCount)" -ForegroundColor Green
+Write-Section 'Summary'
+if (($unhealthy.Count -eq 0) -and ($stopped.Count -eq 0)) {
+    Write-Success 'All monitored services appear healthy.'
     exit 0
-} else {
-    Write-Host "⚠️  " -NoNewline -ForegroundColor Yellow
-    Write-Host "STACK HAT PROBLEME" -ForegroundColor Yellow
-    Write-Host ""
-
-    if ($unhealthyServices.Count -gt 0) {
-        Write-Host "Unhealthy Services:" -ForegroundColor Yellow
-        $unhealthyServices | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Yellow }
-    }
-
-    if ($stoppedServices.Count -gt 0) {
-        Write-Host "Gestoppte Services:" -ForegroundColor Red
-        $stoppedServices | ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Red }
-    }
-
-    Write-Host ""
-    Write-Info "Empfohlene Fix-Schritte:"
-    Write-Host "  1. Prüfe Logs oben auf Error-Meldungen"
-    Write-Host "  2. Führe aus: docker compose up -d --force-recreate"
-    Write-Host "  3. Prüfe .secrets/ und .env Konfiguration"
-    Write-Host "  4. Bei Redis/PostgreSQL Errors: .\tools\cdb-secrets-sync.ps1"
-    Write-Host ""
-
-    exit 1
 }
+
+Write-Failure 'Stack has issues; check the logs above.'
+Write-Info 'Run ./tools/cdb-stack-doctor.ps1 again after addressing errors.'
+Write-Info 'If secrets changed, run ./tools/cdb-secrets-sync.ps1.'
+exit 1
