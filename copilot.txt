@@ -1,0 +1,125 @@
+✅ Copilot – Ultraknappe Tasklist pro PR
+
+(operativ, umsetzungsfokussiert, 5–10 Punkte)
+
+PR-01 — CI-Guard (Core-Duplikate)
+
+Ziel: Zukünftigen Schaden verhindern.
+
+Script scripts/check_core_duplicates.py erstellen
+
+Prüfen auf:
+
+services/*/core/**
+
+zusätzliche **/secrets.py
+
+Exit Code ≠ 0 bei Fund
+
+Klare Fehlermeldung (Pfad + Regel)
+
+CI-Workflow einhängen
+
+Lokalen Test: absichtliches Dummy-Duplikat → CI fail
+
+Dokumentation: 3-Zeilen-Kommentar im Script
+
+Done: CI schlägt zuverlässig fehl bei Duplikaten.
+
+PR-02 — Safe Deletes & Hygiene
+
+Ziel: Noise raus, Risiko minimal.
+
+Löschen:
+
+services/signal/models.py.backup
+
+tests/unit/test_smoke_repo.py.skip
+
+NICHT löschen: core/__init__.py
+
+Repo lokal starten (kein Testlauf nötig)
+
+Import-Smoke-Check (kurz)
+
+Done: Keine Importfehler, Repo unverändert funktionsfähig.
+
+PR-03 — Makefile Bugfix
+
+Ziel: Broken Targets reparieren.
+
+Ersetze alle backoffice/scripts/*
+
+→ infrastructure/scripts/*
+
+Keine neuen Targets
+
+Kein Refactor
+
+Kurztest: betroffene Targets laufen wieder
+
+Done: Makefile ohne tote Pfade.
+
+PR-04 — Unit-Test-Skeletons
+
+Ziel: Basisabsicherung ohne Import-Chaos.
+
+Lege 5 Testdateien an (C1)
+
+test_secrets.py vollständig aktiv
+
+Entscheide eine Import-Strategie:
+
+a) conftest.py + sys.path
+
+b) Tests klar als Host-only
+
+Keine Docker-Tests
+
+pytest tests/unit lokal grün
+
+Stop wenn: Imports nur mit Dirty-Hacks laufen.
+
+PR-05 — Compose Base / Dev Split
+
+Ziel: Prod sicher, Dev bequem.
+
+Base-Compose:
+
+keine Ports
+
+keine Bind-Mounts
+
+Dev-Compose:
+
+Bind-Mounts erlaubt
+
+read_only: false
+
+Ports offen
+
+db_writer + paper_runner hardening angleichen
+
+Kein Reverse Proxy
+
+Keine Network-Experimente
+
+Done:
+Dev = Live-Reload
+Base = Prod-safe
+
+PR-06 — Replay-Enabler (optional)
+
+Ziel: Determinismus vorbereiten, nichts brechen.
+
+Zentrale Clock-Abstraktion
+
+Random-Seed via ENV
+
+Deterministische UUID im Replay-Mode
+
+Normalbetrieb unverändert
+
+Kein Replay-Runner
+
+Stop wenn: Business-Logik betroffen.
