@@ -24,7 +24,8 @@ help:
 	@echo "  make test-full-system        - Komplett: Docker + E2E + Local"
 	@echo ""
 	@echo "Docker-Hilfsfunktionen:"
-	@echo "  make docker-up               - Starte alle Container"
+	@echo "  make docker-up               - Starte alle Container (Dev-Mode)"
+	@echo "  make docker-up-prod          - Starte alle Container (Prod-Mode)"
 	@echo "  make docker-down             - Stoppe alle Container"
 	@echo "  make docker-health           - Prüfe Health-Status aller Container"
 	@echo ""
@@ -109,13 +110,35 @@ test-full-system: docker-up docker-health test-e2e test-local
 
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack..."
-	docker compose up -d
+	@if [ -f infrastructure/compose/base.yml ]; then \
+		echo "✓ Using Compose Fragments (base + dev)"; \
+		docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d; \
+	else \
+		echo "⚠️  Fallback to legacy docker-compose.yml"; \
+		docker compose up -d; \
+	fi
+	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
+	sleep 10
+
+docker-up-prod:
+	@echo "🐳 Starte Docker Compose Stack (PRODUCTION)..."
+	@if [ -f infrastructure/compose/base.yml ]; then \
+		echo "✓ Using Compose Fragments (base + prod)"; \
+		docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/prod.yml up -d; \
+	else \
+		echo "❌ Error: Prod mode requires Compose Fragments"; \
+		exit 1; \
+	fi
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
 
 docker-down:
 	@echo "🛑 Stoppe Docker Compose Stack..."
-	docker compose down
+	@if [ -f infrastructure/compose/base.yml ]; then \
+		docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down; \
+	else \
+		docker compose down; \
+	fi
 
 docker-health:
 	@echo "🏥 Prüfe Health-Status aller Container..."
