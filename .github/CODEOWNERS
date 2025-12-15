@@ -1,6 +1,14 @@
-# CODEOWNERS for protected zones
-/core/ @maintainers
-/services/ @maintainers
-/infrastructure/ @maintainers
-/tests/ @maintainers
+# CODEOWNERS for Claire_de_Binare_Docs (Docs Hub)
+#
+# Goal: Governance/Knowledge/Agents are canonical and must not be changed without review.
+# Replace @maintainers with your GitHub username/team, e.g. @jannekbungener or @org/team.
+
+* @maintainers
+
+# Canonical zones
 /governance/ @maintainers
+/knowledge/  @maintainers
+/agents/     @maintainers
+
+# Guardrails and automation
+/.github/    @maintainers

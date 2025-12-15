@@ -1,3 +1,15 @@
+---
+relations:
+  role: event_definition
+  domain: datamodel
+  upstream:
+    - governance/CDB_PSM_POLICY.md
+  downstream:
+    - services/db_writer/db_writer.py
+    - services/execution/service.py
+    - services/risk/service.py
+    - services/signal/service.py
+---
 """
 Event Base Class für Event-Sourcing.
 Governance: CDB_PSM_POLICY.md (Append-Only Events, Replay-fähig)

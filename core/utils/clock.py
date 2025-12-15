@@ -1,3 +1,12 @@
+---
+relations:
+  role: clock_abstraction
+  domain: utility
+  upstream:
+    - governance/CDB_PSM_POLICY.md
+  downstream:
+    - tests/replay/test_deterministic_replay.py
+---
 """
 Clock Abstraction für deterministische Replay.
 Governance: CDB_PSM_POLICY.md (Event-Sourcing, Replay-fähig)

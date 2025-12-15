@@ -1,3 +1,14 @@
+---
+relations:
+  role: model_definition
+  domain: datamodel
+  upstream: []
+  downstream:
+    - services/db_writer/db_writer.py
+    - services/execution/service.py
+    - services/risk/service.py
+    - services/signal/service.py
+---
 """
 Core Domain Models - Shared across all CDB services
 Canonical definitions for Signal, Order, OrderResult, etc.

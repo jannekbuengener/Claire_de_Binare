@@ -1,12 +1,50 @@
-node_modules
-.dendron.*
-build
-seeds
-.next
-pods/service-connections
-**/settings.local.json
-**/settings.local.json.json
+###############################################################################
+# CORE RULE
+# Arbeits-Repo ist Execution-only. Alles Wissens-, Agenten- und Cache-Zeug raus.
+###############################################################################
+
+# --- Environment & Secrets ---
 .env
+.env.*
+!.env.example
 .secrets/
-.pytest_cache/
+*.key
+*.pem
+
+# --- Agent Runtimes (lokal, niemals committen) ---
+.claude/
+.gemini/
+.cdb_local/
+agents/.cdb_local/
+
+# --- Python ---
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# --- Test / Coverage ---
+.coverage
+htmlcov/
+.cache/
+
+# --- Logs (gehören ins Docs-Repo als Knowledge, nicht hier) ---
+logs/
+*.log
+
+# --- OS / Editor ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Tool / Runtime Noise ---
+node_modules/
+dist/
+build/
+
+# --- Temporary / Scratch ---
+tmp/
+temp/
+scratch/

@@ -1,3 +1,17 @@
+---
+relations:
+  role: secret_provider
+  domain: secrets
+  upstream: []
+  downstream:
+    - docker-compose.yml
+    - services/db_writer/db_writer.py
+    - services/execution/service.py
+    - services/risk/service.py
+    - services/signal/service.py
+  invariants:
+    - /run/secrets/ path is a convention for Docker secrets.
+---
 """
 Docker Secrets Helper
 Reads secrets from /run/secrets/ with fallback to environment variables

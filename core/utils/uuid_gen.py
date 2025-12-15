@@ -1,3 +1,13 @@
+---
+relations:
+  role: uuid_generator
+  domain: utility
+  upstream:
+    - governance/CDB_PSM_POLICY.md
+  downstream:
+    - core/domain/event.py
+    - tests/replay/test_deterministic_replay.py
+---
 """
 Deterministic UUID Generator für Event-Sourcing Replay.
 Governance: CDB_PSM_POLICY.md (Event-Sourcing, Determinismus)

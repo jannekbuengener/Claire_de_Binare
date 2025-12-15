@@ -1,3 +1,12 @@
+---
+relations:
+  role: seed_manager
+  domain: utility
+  upstream:
+    - governance/CDB_PSM_POLICY.md
+  downstream:
+    - tests/replay/test_deterministic_replay.py
+---
 """
 Seed Manager für deterministische Zufallszahlen.
 Governance: CDB_PSM_POLICY.md (Replay-fähig)

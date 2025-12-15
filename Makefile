@@ -1,3 +1,18 @@
+---
+relations:
+  role: build_automation
+  domain: orchestration
+  upstream:
+    - docker-compose.yml
+    - pytest.ini
+    - infrastructure/scripts/systemcheck.py
+    - infrastructure/scripts/daily_check.py
+    - infrastructure/scripts/backup_postgres.ps1
+  downstream: []
+  invariants:
+    - docker must be installed and in PATH.
+    - pytest must be installed.
+---
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
@@ -130,15 +145,15 @@ docker-health:
 
 systemcheck:
 	@echo "🔍 Führe Pre-Flight-Checks aus..."
-	python backoffice/scripts/systemcheck.py
+	python infrastructure/scripts/systemcheck.py
 
 daily-check:
 	@echo "📊 Führe täglichen Gesundheitscheck aus..."
-	python backoffice/scripts/daily_check.py
+	python infrastructure/scripts/daily_check.py
 
 backup:
 	@echo "💾 Führe PostgreSQL Backup aus..."
-	powershell.exe -ExecutionPolicy Bypass -File backoffice/scripts/backup_postgres.ps1
+	powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/backup_postgres.ps1
 
 paper-trading-start: systemcheck
 	@echo "🚀 Starte Paper Trading Runner..."
