@@ -16,7 +16,7 @@ relations:
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -50,6 +50,11 @@ help:
 	@echo "  make paper-trading-stop      - Stoppe Paper Trading Runner"
 	@echo "  make daily-check             - Täglicher Gesundheitscheck"
 	@echo "  make backup                  - PostgreSQL Backup (manuell)"
+	@echo ""
+	@echo "Repo-Hygiene & Rollback:"
+	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
+	@echo "  make cleanup                 - Aufräumen merged Branches (DRY-RUN)"
+	@echo "  make cleanup-live            - Aufräumen merged Branches (LIVE)"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -186,3 +191,25 @@ clean:
 install-dev:
 	@echo "📦 Installiere Development-Dependencies..."
 	pip install -r requirements-dev.txt
+
+# ============================================================================
+# Repo-Hygiene & Rollback (PR-02)
+# ============================================================================
+
+rollback:
+ifndef MR
+	@echo "Error: MR parameter required"
+	@echo "Usage: make rollback MR=<number>"
+	@echo "Example: make rollback MR=88"
+	@exit 1
+endif
+	@echo "🔄 Rolling back MR #$(MR)..."
+	@bash scripts/rollback_pr.sh $(MR)
+
+cleanup:
+	@echo "🧹 Cleanup merged branches (DRY-RUN)..."
+	@DRY_RUN=true bash scripts/cleanup_branches.sh 30
+
+cleanup-live:
+	@echo "⚠️  Cleanup merged branches (LIVE)..."
+	@DRY_RUN=false bash scripts/cleanup_branches.sh 30
