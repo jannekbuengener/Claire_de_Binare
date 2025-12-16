@@ -10,12 +10,18 @@
 .secrets/
 *.key
 *.pem
-
+.venv/
 # --- Agent Runtimes (lokal, niemals committen) ---
 .claude/
 .gemini/
+CLAUDE.md
+CODEX.md
+GEMINI.md
+COPILOT.md
+AGENTS.md
 .cdb_local/
 agents/.cdb_local/
+
 
 # --- Python ---
 __pycache__/
@@ -30,8 +36,12 @@ htmlcov/
 .cache/
 
 # --- Logs (gehören ins Docs-Repo als Knowledge, nicht hier) ---
+# Local runtime logs (never commit)
 logs/
+logs_local/
 *.log
+*.txt
+
 
 # --- OS / Editor ---
 .vscode/
@@ -43,8 +53,21 @@ Thumbs.db
 node_modules/
 dist/
 build/
+.sandbox/
 
 # --- Temporary / Scratch ---
 tmp/
 temp/
 scratch/
+.pytest_tmp
+
+# pytest / temp junk
+.pytest_cache/
+.pytest_tmp/
+.tmp/
+
+
+# pytest / temp junk
+.pytest_cache/
+.pytest_tmp/
+.tmp/
