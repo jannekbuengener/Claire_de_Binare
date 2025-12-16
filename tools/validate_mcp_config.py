@@ -61,9 +61,11 @@ def validate_mcp_servers(config: dict) -> list[str]:
         if not isinstance(command, str) or not command:
             errors.append(f"[mcp_servers.{name}] command must be a non-empty string")
         if not isinstance(args, list):
-            errors.append(f"[mcp_servers.{name}] args must be a non-empty list of non-empty strings")
-        elif not args or not all(isinstance(item, str) and item for item in args):
-            errors.append(f"[mcp_servers.{name}] args must be a non-empty list of non-empty strings")
+            errors.append(f"[mcp_servers.{name}] args must be a list")
+        elif not args:
+            errors.append(f"[mcp_servers.{name}] args must not be empty")
+        elif not all(isinstance(item, str) and item for item in args):
+            errors.append(f"[mcp_servers.{name}] args must contain only non-empty strings")
     return errors
 
 
