@@ -60,8 +60,8 @@ def validate_mcp_servers(config: dict) -> list[str]:
         args = section.get("args")
         if not isinstance(command, str) or not command:
             errors.append(f"[mcp_servers.{name}] command must be a non-empty string")
-        if not isinstance(args, list) or not all(isinstance(item, str) and item for item in args):
-            errors.append(f"[mcp_servers.{name}] args must be a list of non-empty strings")
+        if not isinstance(args, list) or not args or not all(isinstance(item, str) and item for item in args):
+            errors.append(f"[mcp_servers.{name}] args must be a non-empty list of non-empty strings")
     return errors
 
 
@@ -95,7 +95,7 @@ def validate_canonical_paths(config: dict) -> list[str]:
                 errors.append("[canonical_paths] logs must be a non-empty list of paths")
             else:
                 for idx, entry in enumerate(value):
-                    errors.extend(_validate_path_root(entry, allowed_root, f"logs[{idx}]") )
+                    errors.extend(_validate_path_root(entry, allowed_root, f"logs[{idx}]"))
         elif key != "allowed_root":
             errors.extend(_validate_path_root(value, allowed_root, key))
     return errors
@@ -121,9 +121,15 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    config = load_config(args.config)
-
     errors: list[str] = []
+    try:
+        config = load_config(args.config)
+    except FileNotFoundError:
+        errors.append(f"Configuration file not found: {args.config}")
+        return summarize(errors)
+    except tomllib.TOMLDecodeError as e:
+        errors.append(f"Failed to parse TOML: {e}")
+        return summarize(errors)
     errors.extend(validate_agent_section(config))
     errors.extend(validate_mcp_servers(config))
     errors.extend(validate_canonical_paths(config))
