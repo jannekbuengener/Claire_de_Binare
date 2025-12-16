@@ -1,6 +1,16 @@
 """
 Core Domain Models - Shared across all CDB services
-Canonical definitions for Signal, Order, OrderResult, etc.
+Canonical definitions for Signal, Position, Order, OrderResult.
+
+relations:
+  role: model_definition
+  domain: datamodel
+  upstream: []
+  downstream:
+    - services/db_writer/db_writer.py
+    - services/execution/service.py
+    - services/risk/service.py
+    - services/signal/service.py
 """
 
 from dataclasses import dataclass
@@ -11,56 +21,79 @@ import time
 
 @dataclass
 class Signal:
-    """Trading-Signal (canonical definition)"""
+    """Trading signal with lightweight fields used across services and tests."""
 
-    symbol: str
-    side: Literal["BUY", "SELL"]
-    confidence: float  # 0.0 - 1.0
-    reason: str
-    timestamp: int
-    price: float
-    pct_change: float
+    signal_id: str | None = None
+    symbol: str = ""
+    direction: str = ""
+    strength: float = 0.0
+    timestamp: float | int = 0.0
+    side: Literal["BUY", "SELL"] | None = None
+    confidence: float | None = None  # 0.0 - 1.0
+    reason: str | None = None
+    price: float | None = None
+    pct_change: float | None = None
     type: Literal["signal"] = "signal"  # Type-safe event type
 
+    def __post_init__(self):
+        # Backfill legacy fields from simplified inputs.
+        if self.side is None and self.direction:
+            self.side = self.direction
+        if self.confidence is None:
+            self.confidence = self.strength
+
     def to_dict(self) -> dict:
-        """Konvertiert zu Dictionary für Redis"""
+        """Convert to a plain dictionary for transport."""
         return {
             "type": self.type,
+            "signal_id": self.signal_id,
             "symbol": self.symbol,
+            "direction": self.direction,
+            "strength": self.strength,
+            "timestamp": self.timestamp,
             "side": self.side,
             "confidence": self.confidence,
             "reason": self.reason,
-            "timestamp": self.timestamp,
             "price": self.price,
             "pct_change": self.pct_change,
         }
 
-    @staticmethod
-    def generate_reason(pct_change: float, threshold: float) -> str:
-        """Generiert Begründung für Signal"""
-        return f"Momentum: {pct_change:+.2f}% (Schwelle: {threshold}%)"
+
+@dataclass
+class Position:
+    """Trading position for portfolio tracking."""
+
+    position_id: str
+    symbol: str
+    size: float
+    entry_price: float
+    current_price: float
 
 
 @dataclass
 class Order:
-    """Order für Execution-Service (canonical definition)"""
+    """Order for execution service."""
 
-    symbol: str
-    side: Literal["BUY", "SELL"]
-    quantity: float
-    stop_loss_pct: float
-    signal_id: int
-    reason: str
-    timestamp: int
+    order_id: str | None = None
+    symbol: str = ""
+    side: Literal["BUY", "SELL"] = "BUY"
+    quantity: float = 0.0
+    price: float | None = None
+    stop_loss_pct: float | None = None
+    signal_id: str | None = None
+    reason: str | None = None
+    timestamp: int | float | None = None
     client_id: Optional[str] = None
     type: Literal["order"] = "order"  # Type-safe event type
 
     def to_dict(self) -> dict:
         return {
             "type": self.type,
+            "order_id": self.order_id,
             "symbol": self.symbol,
             "side": self.side,
             "quantity": self.quantity,
+            "price": self.price,
             "stop_loss_pct": self.stop_loss_pct,
             "signal_id": self.signal_id,
             "reason": self.reason,

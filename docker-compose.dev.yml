@@ -1,0 +1,75 @@
+# Claire de Binare - Docker Compose (Dev Overlay)
+# Entwicklungs-Overlay: Bind-Mounts und Ports für lokale Entwicklung
+
+services:
+  cdb_redis:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_redis
+    ports:
+      - "6379:6379"
+
+  cdb_postgres:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_postgres
+    ports:
+      - "5432:5432"
+
+  cdb_prometheus:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_prometheus
+    ports:
+      - "9090:9090"
+
+  cdb_grafana:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_grafana
+    ports:
+      - "3000:3000"
+
+  cdb_ws:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_ws
+    read_only: false
+
+  cdb_core:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_core
+    volumes:
+      - ./services/signal:/app
+    read_only: false
+
+  cdb_risk:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_risk
+    volumes:
+      - ./services/risk:/app
+    read_only: false
+
+  cdb_execution:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_execution
+    volumes:
+      - ./services/execution:/app
+    read_only: false
+
+  cdb_db_writer:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_db_writer
+    volumes:
+      - ./services/db_writer:/app
+    read_only: false
+
+  cdb_paper_runner:
+    extends:
+      file: docker-compose.base.yml
+      service: cdb_paper_runner
+    read_only: false

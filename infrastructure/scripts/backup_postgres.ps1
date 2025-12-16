@@ -1,3 +1,12 @@
+---
+relations:
+  role: backup_script
+  domain: automation
+  upstream:
+    - docker-compose.yml
+  downstream:
+    - Makefile
+---
 # PostgreSQL Backup Script - Claire de Binare
 # Stündliche Backups für 14-Tage Paper Trading Test
 #

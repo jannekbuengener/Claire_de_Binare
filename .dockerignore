@@ -1,3 +1,17 @@
+---
+relations:
+  role: ignore_file
+  domain: config
+  upstream: []
+  downstream:
+    - Dockerfile
+    - services/db_writer/Dockerfile
+    - services/execution/Dockerfile
+    - services/market/Dockerfile
+    - services/risk/Dockerfile
+    - services/signal/Dockerfile
+    - tools/paper_trading/Dockerfile
+---
 # Python
 __pycache__/
 *.py[cod]

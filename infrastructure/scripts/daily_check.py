@@ -1,3 +1,12 @@
+---
+relations:
+  role: system_check
+  domain: automation
+  upstream:
+    - docker-compose.yml
+  downstream:
+    - Makefile
+---
 """
 Daily Check Script - Claire de Binare
 Täglicher Gesundheitscheck während Paper Trading

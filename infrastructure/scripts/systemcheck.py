@@ -1,3 +1,12 @@
+---
+relations:
+  role: system_check
+  domain: automation
+  upstream:
+    - docker-compose.yml
+  downstream:
+    - Makefile
+---
 """
 Systemcheck Script - Claire de Binare
 Pre-Flight-Checks vor Paper Trading Start

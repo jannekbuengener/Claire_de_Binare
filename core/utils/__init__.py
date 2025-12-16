@@ -1,8 +1,8 @@
-"""Core Domain Models - Shared across all services
+"""Core Utilities für CDB.
 
 relations:
   role: package_initializer
-  domain: datamodel
+  domain: utility
   upstream: []
   downstream:
     - services/db_writer/db_writer.py
