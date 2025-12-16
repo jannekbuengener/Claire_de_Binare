@@ -1,0 +1,42 @@
+{
+  "labels": [
+    { "name": "type:bug", "color": "d73a4a", "description": "Bug fix" },
+    { "name": "type:feature", "color": "1976d2", "description": "New feature" },
+    { "name": "type:testing", "color": "9c27b0", "description": "Testing related" },
+    { "name": "type:docs", "color": "00bcd4", "description": "Documentation" },
+    { "name": "type:chore", "color": "CCCCCC", "description": "Maintenance & Cleanup" },
+    { "name": "type:security", "color": "D93F0B", "description": "Security Issue" },
+
+    { "name": "scope:core", "color": "1D76DB", "description": "Trading Engine Core" },
+    { "name": "scope:infra", "color": "0E8A16", "description": "Infrastructure & DevOps" },
+    { "name": "scope:ci", "color": "B60205", "description": "CI/CD Pipelines" },
+    { "name": "scope:docs", "color": "0075CA", "description": "Documentation" },
+    { "name": "scope:security", "color": "FBCA04", "description": "Security & Hardening" },
+
+    { "name": "prio:must", "color": "D73A4A", "description": "Critical - Must Have" },
+    { "name": "prio:should", "color": "FF9800", "description": "High Priority - Should Have" },
+    { "name": "prio:nice", "color": "4CAF50", "description": "Nice to Have" },
+
+    { "name": "status:ready", "color": "4CAF50", "description": "Ready for work" },
+    { "name": "status:blocked", "color": "000000", "description": "Blocked by dependencies" },
+    { "name": "status:in-review", "color": "FFA500", "description": "Under review" },
+
+    { "name": "python", "color": "3572A5", "description": "Python-Code, Module, Typisierung, Abhängigkeiten und Runtime-Bugs." },
+    { "name": "docker", "color": "21ceff", "description": "Pull requests that update docker code" },
+    { "name": "postgres", "color": "336791", "description": "PostgreSQL related" },
+    { "name": "redis", "color": "dc382d", "description": "Redis message bus" },
+    { "name": "infrastructure", "color": "0e8a16", "description": "DevOps/Infrastructure" },
+    { "name": "security", "color": "fbca04", "description": "Security hardening" },
+    { "name": "monitoring", "color": "006b75", "description": "Metrics/Dashboards" },
+    { "name": "testing", "color": "FBCA04", "description": "Unit-, Integrations- und E2E-Tests, Coverage und Teststabilität." },
+    { "name": "ci-cd", "color": "B60205", "description": "Build-, Test- und Deploy-Pipelines, Linting und Release-Automation." },
+    { "name": "github-actions", "color": "0052CC", "description": "GitHub Actions Workflows, Runner, Secrets und Pipeline-Orchestrierung." },
+    { "name": "dependencies", "color": "0366d6", "description": "Pull requests that update a dependency file" },
+
+    { "name": "milestone:m3", "color": "795548", "description": "Milestone M3 - Risk Layer" },
+    { "name": "milestone:m5", "color": "795548", "description": "Milestone M5 - Persistenz" },
+    { "name": "milestone:m6", "color": "795548", "description": "Milestone M6 - Docker" },
+    { "name": "milestone:m7", "color": "795548", "description": "Milestone M7 - Testnet" },
+    { "name": "milestone:m8", "color": "795548", "description": "Milestone M8 - Security" }
+  ]
+}
