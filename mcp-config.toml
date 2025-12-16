@@ -1,0 +1,51 @@
+# Validated MCP agent config.
+# Run `make mcp-config-validate` after edits to catch TOML and path issues early.
+agent_mode = "autonomous"
+agent_output_style = "status_only"
+agent_retry_policy = "on_error"
+auto_model_switch = true
+execution_env = "wsl"
+fail_fast = true
+max_output_tokens = 300
+model = "gpt-5.1-codex-max"
+model_fast = "copilot/gpt-5-codex-mini"
+model_reasoning_effort = "xhigh"
+project_root = "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare"
+verbosity = "compact"
+
+[mcp_servers]
+
+[mcp_servers.MCP_DOCKER]
+command = "docker.exe"
+args = ["mcp", "gateway", "run"]
+
+[mcp_servers.filesystem_docs]
+command = "docker.exe"
+args = [
+  "run", "-i", "--rm",
+  "-v", "C:\\Users\\janne\\Documents:/local-docs",
+  "mcp/filesystem", "/local-docs"
+]
+
+[notice]
+hide_full_access_warning = true
+hide_gpt-5.1-codex-max_migration_prompt = true
+
+[features]
+enable_experimental_windows_sandbox = true
+
+[projects."C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare_Docs"]
+trust_level = "trusted"
+
+[projects."C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare"]
+trust_level = "trusted"
+
+[canonical_paths]
+docs_hub_index = "/local-docs/docs/DOCS_HUB_INDEX.md"
+knowledge_hub = "/local-docs/docs/knowledge/CDB_KNOWLEDGE_HUB.md"
+governance = "/local-docs/docs/governance/NEXUS.MEMORY.yaml"
+working_repo_index = "/local-docs/working/WORKING_REPO_INDEX.md"
+working_agents = "/local-docs/working/AGENTS.md"
+codex = "/local-docs/working/CODEX.md"
+logs = ["/local-docs/working/logs/", "/local-docs/docs/knowledge/logs/"]
+allowed_root = "/local-docs"
