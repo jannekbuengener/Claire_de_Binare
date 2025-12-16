@@ -171,3 +171,7 @@ clean:
 install-dev:
 	@echo "📦 Installiere Development-Dependencies..."
 	pip install -r requirements-dev.txt
+
+mcp-config-validate:
+	@echo "🔎 Validiere mcp-config.toml..."
+	python tools/validate_mcp_config.py
