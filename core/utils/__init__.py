@@ -1,4 +1,5 @@
----
+"""Core Utilities für CDB.
+
 relations:
   role: package_initializer
   domain: utility
@@ -8,5 +9,4 @@ relations:
     - services/execution/service.py
     - services/risk/service.py
     - services/signal/service.py
----
-"""Core Utilities für CDB."""
+"""

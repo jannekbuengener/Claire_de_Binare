@@ -1,4 +1,7 @@
----
+"""
+Deterministic UUID Generator for Event-Sourcing Replay.
+Governance: CDB_PSM_POLICY.md (Event-Sourcing, Determinismus)
+
 relations:
   role: uuid_generator
   domain: utility
@@ -7,10 +10,6 @@ relations:
   downstream:
     - core/domain/event.py
     - tests/replay/test_deterministic_replay.py
----
-"""
-Deterministic UUID Generator für Event-Sourcing Replay.
-Governance: CDB_PSM_POLICY.md (Event-Sourcing, Determinismus)
 """
 
 import uuid
@@ -19,38 +18,32 @@ from typing import Optional
 
 
 class UUIDGenerator:
-    """Generiert deterministische UUIDs für Replay."""
+    """Generates deterministic UUIDs for replay scenarios."""
 
     def __init__(self, seed: Optional[int] = None):
         self._seed = seed
         self._counter = 0
 
     def generate(self) -> uuid.UUID:
-        """Generiert UUID (deterministisch wenn Seed gesetzt)."""
+        """Generate a UUID (deterministic when a seed is set)."""
         if self._seed is None:
-            # Echtes UUID4 (Produktion)
             return uuid.uuid4()
-        else:
-            # Deterministisches UUID (Replay)
-            return self.generate_deterministic_uuid(self._seed, self._counter)
+        return self.generate_deterministic_uuid(self._seed, self._counter)
 
     def generate_deterministic_uuid(self, seed: int, counter: int) -> uuid.UUID:
-        """
-        Generiert deterministisches UUID aus Seed + Counter.
-
-        Args:
-            seed: Basis-Seed
-            counter: Sequenz-Counter
-
-        Returns:
-            UUID v5 (deterministisch)
-        """
-        # Hash aus Seed + Counter
-        namespace = uuid.UUID('00000000-0000-0000-0000-000000000000')
+        """Generate a deterministic UUID derived from seed and counter."""
+        namespace = uuid.UUID("00000000-0000-0000-0000-000000000000")
         name = f"{seed}-{counter}"
 
-        # Increment counter für nächsten Call
+        # Increment counter for next call
         self._counter += 1
 
-        # UUID v5 (SHA1-basiert, deterministisch)
         return uuid.uuid5(namespace, name)
+
+
+def generate_uuid(deterministic: bool = False, seed: Optional[int] = None) -> str:
+    """Convenience wrapper to generate either random or deterministic UUIDs."""
+    if deterministic:
+        generator = UUIDGenerator(seed if seed is not None else 0)
+        return str(generator.generate())
+    return str(uuid.uuid4())

@@ -68,7 +68,7 @@ test-integration:
 
 test-coverage:
 	@echo "📊 Führe Tests mit Coverage-Report aus..."
-	pytest --cov=services --cov=backoffice/services --cov-report=html --cov-report=term -m "not e2e and not local_only"
+	pytest --cov=services --cov=infrastructure/scripts --cov-report=html --cov-report=term -m "not e2e and not local_only"
 	@echo "📄 Coverage-Report: htmlcov/index.html"
 
 # ============================================================================

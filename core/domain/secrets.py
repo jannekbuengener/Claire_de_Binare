@@ -1,4 +1,7 @@
----
+"""
+Docker Secrets Helper
+Reads secrets from /run/secrets/ with fallback to environment variables
+
 relations:
   role: secret_provider
   domain: secrets
@@ -11,10 +14,6 @@ relations:
     - services/signal/service.py
   invariants:
     - /run/secrets/ path is a convention for Docker secrets.
----
-"""
-Docker Secrets Helper
-Reads secrets from /run/secrets/ with fallback to environment variables
 """
 import os
 from pathlib import Path

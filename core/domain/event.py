@@ -1,4 +1,7 @@
----
+"""
+Event Base Class für Event-Sourcing.
+Governance: CDB_PSM_POLICY.md (Append-Only Events, Replay-fähig)
+
 relations:
   role: event_definition
   domain: datamodel
@@ -9,18 +12,23 @@ relations:
     - services/execution/service.py
     - services/risk/service.py
     - services/signal/service.py
----
-"""
-Event Base Class für Event-Sourcing.
-Governance: CDB_PSM_POLICY.md (Append-Only Events, Replay-fähig)
 """
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict
+from enum import StrEnum
 import hashlib
 import json
 import uuid
+
+
+class EventType(StrEnum):
+    """Supported event types for the system."""
+
+    SIGNAL_GENERATED = "SIGNAL_GENERATED"
+    ORDER_PLACED = "ORDER_PLACED"
+    POSITION_OPENED = "POSITION_OPENED"
 
 
 @dataclass
@@ -35,7 +43,7 @@ class Event:
     """
 
     event_id: str
-    event_type: str
+    event_type: EventType | str
     timestamp: datetime
     payload: Dict[str, Any]
     stream_id: str = ""
@@ -63,7 +71,7 @@ class Event:
     @classmethod
     def create(
         cls,
-        event_type: str,
+        event_type: EventType | str,
         payload: Dict[str, Any],
         timestamp: datetime,
         stream_id: str = "",

@@ -1,4 +1,5 @@
----
+"""Core Domain Models - Shared across all services
+
 relations:
   role: package_initializer
   domain: datamodel
@@ -8,5 +9,4 @@ relations:
     - services/execution/service.py
     - services/risk/service.py
     - services/signal/service.py
----
-"""Core Domain Models - Shared across all services"""
+"""
