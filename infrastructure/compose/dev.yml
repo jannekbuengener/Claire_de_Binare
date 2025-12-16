@@ -1,0 +1,108 @@
+# Claire de Binare - Dev Overrides
+# Port-Bindings, Debug-Volumes, Relaxed Security
+
+services:
+  # Override Base Services with Port-Bindings
+  cdb_redis:
+    ports:
+      - "6379:6379"
+
+  cdb_postgres:
+    ports:
+      - "5432:5432"
+
+  cdb_prometheus:
+    ports:
+      - "19090:9090"
+
+  cdb_grafana:
+    ports:
+      - "3000:3000"
+
+  # Application Services (Dev-Only)
+  cdb_ws:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SCRIPT_NAME: mexc_top5_ws.py
+    container_name: cdb_ws
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_core:
+    build:
+      context: ../..
+      dockerfile: services/signal/Dockerfile
+    container_name: cdb_core
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    networks:
+      - cdb_network
+
+  cdb_risk:
+    build:
+      context: ../..
+      dockerfile: services/risk/Dockerfile
+    container_name: cdb_risk
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8002:8000"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    networks:
+      - cdb_network
+
+  cdb_execution:
+    build:
+      context: ../..
+      dockerfile: services/execution/Dockerfile
+    container_name: cdb_execution
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8003:8000"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    networks:
+      - cdb_network
+
+  cdb_db_writer:
+    build:
+      context: ../..
+      dockerfile: services/db_writer/Dockerfile
+    container_name: cdb_db_writer
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    networks:
+      - cdb_network
