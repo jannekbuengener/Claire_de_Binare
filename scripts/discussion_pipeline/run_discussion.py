@@ -81,6 +81,12 @@ Environment:
     )
 
     parser.add_argument(
+        "--create-issue",
+        action="store_true",
+        help="Automatically create GitHub issue if pipeline succeeds (requires GITHUB_TOKEN)"
+    )
+
+    parser.add_argument(
         "--version",
         action="version",
         version="Discussion Pipeline v0.1.0"
@@ -127,6 +133,31 @@ Environment:
         console.print(f"  Digest:   {thread_dir / 'DIGEST.md'}")
         console.print(f"  Manifest: {thread_dir / 'manifest.json'}")
         console.print(f"  Outputs:  {thread_dir}/")
+
+        # Auto-create GitHub issue if requested
+        if args.create_issue:
+            import json
+            manifest_file = thread_dir / "manifest.json"
+            with open(manifest_file, "r") as f:
+                manifest = json.load(f)
+
+            # Only create issue if status is completed (not gated)
+            if manifest.get("status") == "completed":
+                console.print(f"\n[bold]Creating GitHub issue...[/bold]")
+                try:
+                    from github.issue_creator import GitHubIssueCreator
+
+                    creator = GitHubIssueCreator(dry_run=False)
+                    issue_url = creator.create_issue_from_thread(thread_dir)
+
+                    console.print(f"[bold green]✅ Issue created:[/bold green] {issue_url}")
+                except Exception as e:
+                    console.print(f"[bold red]Failed to create issue:[/bold red] {e}")
+                    console.print(f"[dim]You can create it manually later with:[/dim]")
+                    console.print(f"[dim]  python create_github_issue.py {manifest['thread_id']}[/dim]")
+            else:
+                console.print(f"\n[yellow]Pipeline gated - no issue created.[/yellow]")
+                console.print(f"[dim]Review gate file and decide, then create issue manually if approved.[/dim]")
 
     except FileNotFoundError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
