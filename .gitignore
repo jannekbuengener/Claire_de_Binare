@@ -71,3 +71,10 @@ scratch/
 .pytest_cache/
 .pytest_tmp/
 .tmp/
+
+# --- Agent Configuration (from PR #125) ---
+# Lokale MCP-Konfiguration mit Windows-spezifischen Pfaden
+mcp-config.toml.local
+
+# Temporäre Agent-Workspace-Dateien
+.cdb_agent_workspace/
