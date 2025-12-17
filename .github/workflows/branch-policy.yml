@@ -1,0 +1,109 @@
+name: Branch Policy Enforcement
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - main
+      - develop
+
+jobs:
+  validate-branch-name:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch name
+        run: |
+          branch_name="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "Branch name: $branch_name"
+          
+          # Allow main and develop branches
+          if [[ "$branch_name" == "main" || "$branch_name" == "develop" ]]; then
+            echo "✅ Main/develop branch allowed"
+            exit 0
+          fi
+          
+          # Validate feature branch naming convention
+          if [[ "$branch_name" =~ ^feature/[a-z0-9-]+$ ]]; then
+            echo "✅ Valid feature branch name: $branch_name"
+          elif [[ "$branch_name" =~ ^hotfix/[a-z0-9-]+$ ]]; then
+            echo "✅ Valid hotfix branch name: $branch_name"
+          elif [[ "$branch_name" =~ ^bugfix/[a-z0-9-]+$ ]]; then
+            echo "✅ Valid bugfix branch name: $branch_name"
+          elif [[ "$branch_name" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "✅ Valid release branch name: $branch_name"
+          else
+            echo "❌ Invalid branch name: $branch_name"
+            echo "Branch names must follow these patterns:"
+            echo "  - feature/short-description (lowercase, hyphens only)"
+            echo "  - hotfix/short-description (lowercase, hyphens only)"
+            echo "  - bugfix/short-description (lowercase, hyphens only)"
+            echo "  - release/vX.Y.Z (semantic version)"
+            exit 1
+          fi
+
+  validate-feature-workflow:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'feature/')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check feature workflow compliance
+        run: |
+          echo "🔍 Validating feature workflow compliance..."
+          
+          # Check if PR follows feature workflow template
+          if ! grep -q "## Agent Approvals" .github/pull_request_template.md; then
+            echo "❌ PR template missing agent approvals section"
+            exit 1
+          fi
+          
+          # Check for feature flag configuration (if feature flags directory exists)
+          if [ -d "config" ]; then
+            echo "✅ Configuration directory present"
+          fi
+          
+          # Check for test files
+          if [ -d "tests" ]; then
+            echo "✅ Tests directory present"
+          else
+            echo "⚠️  No tests directory found"
+          fi
+          
+          echo "✅ Basic feature workflow validation passed"
+
+  enforce-pr-template:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check PR template usage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+            
+            const body = pr.body || '';
+            const requiredSections = [
+              '## Feature Overview',
+              '## Technical Overview', 
+              '## Test Evidence',
+              '## Code Quality',
+              '## Deployment & Rollback',
+              '## Documentation',
+              '## Agent Approvals'
+            ];
+            
+            const missingSections = requiredSections.filter(section => 
+              !body.includes(section)
+            );
+            
+            if (missingSections.length > 0) {
+              core.setFailed(`PR is missing required sections: ${missingSections.join(', ')}`);
+            } else {
+              console.log('✅ All required PR template sections present');
+            }

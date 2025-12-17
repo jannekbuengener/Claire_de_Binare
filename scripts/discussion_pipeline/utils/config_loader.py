@@ -75,12 +75,18 @@ class ConfigLoader:
         if self._validate_docs_hub(sibling_docs):
             return sibling_docs.resolve()
 
-        # Strategy 4: Fallback - show helpful error
+        # Strategy 4: Local docs folder (compressed structure)
+        local_docs = working_repo / "docs"
+        if self._validate_docs_hub(local_docs):
+            return local_docs.resolve()
+
+        # Strategy 5: Fallback - show helpful error
         raise FileNotFoundError(
             "Could not locate Docs Hub workspace.\n\n"
             "Tried:\n"
             f"1. DOCS_HUB_PATH env var: {env_path or 'not set'}\n"
-            f"2. Sibling directory: {sibling_docs} (not found)\n\n"
+            f"2. Sibling directory: {sibling_docs} (not found)\n"
+            f"3. Local docs folder: {local_docs} (not found/invalid)\n\n"
             "Please either:\n"
             "- Set DOCS_HUB_PATH environment variable\n"
             "- Use --docs-hub CLI argument\n"
@@ -103,8 +109,7 @@ class ConfigLoader:
         # Check for expected Docs Hub structure
         required_paths = [
             path / "config" / "pipeline_rules.yaml",
-            path / "discussions",
-            path / "docs"
+            path / "discussions"
         ]
 
         return all(p.exists() for p in required_paths)

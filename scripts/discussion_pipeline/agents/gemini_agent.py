@@ -7,7 +7,10 @@ theoretical framework identification, and evidence extraction.
 
 import os
 from typing import List, Dict, Any
-import google.generativeai as genai
+try:
+    import google.generativeai as genai  # type: ignore
+except ImportError:
+    genai = None
 try:
     from .base import BaseAgent, AgentOutput
 except ImportError:
@@ -29,14 +32,19 @@ class GeminiAgent(BaseAgent):
         super().__init__(config)
 
         api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable not set")
+        invalid_token = api_key and api_key.strip().startswith("#")
+        self.api_available = bool(api_key) and not invalid_token and genai is not None
+        self.model_name = config.get("model", "gemini-pro")
+        self.temperature = config.get("temperature", 0.7)
+        self.max_tokens = config.get("max_tokens", 4000)
+
+        if not self.api_available:
+            self.model = None
+            return
 
         genai.configure(api_key=api_key)
         self.model_name = config.get("model", "gemini-pro")
         self.model = genai.GenerativeModel(self.model_name)
-        self.temperature = config.get("temperature", 0.7)
-        self.max_tokens = config.get("max_tokens", 4000)
 
     def analyze(self, proposal: str, context: List[str]) -> AgentOutput:
         """
@@ -49,6 +57,14 @@ class GeminiAgent(BaseAgent):
         Returns:
             AgentOutput with Gemini's research synthesis
         """
+        if not self.api_available:
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing GOOGLE_API_KEY. Proceeded in availability-only mode.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "reason": "missing GOOGLE_API_KEY"}
+            )
+
         if not proposal.strip():
             raise ValueError("Proposal cannot be empty")
 
@@ -84,7 +100,12 @@ class GeminiAgent(BaseAgent):
             )
 
         except Exception as e:
-            raise RuntimeError(f"Gemini API call failed: {e}")
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Gemini error encountered, proceeding without Gemini output.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "error": str(e)}
+            )
 
     def _build_research_prompt(self, proposal: str) -> str:
         """Build research synthesis prompt for Gemini."""

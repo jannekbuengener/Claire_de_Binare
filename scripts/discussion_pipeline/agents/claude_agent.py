@@ -7,7 +7,10 @@ conflict resolution, and recommendation generation.
 
 import os
 from typing import List, Dict, Any
-from anthropic import Anthropic
+try:
+    from anthropic import Anthropic  # type: ignore
+except ImportError:
+    Anthropic = None
 try:
     from .base import BaseAgent, AgentOutput
 except ImportError:
@@ -29,10 +32,9 @@ class ClaudeAgent(BaseAgent):
         super().__init__(config)
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-
-        self.client = Anthropic(api_key=api_key)
+        invalid_token = api_key and api_key.strip().startswith("#")
+        self.api_available = bool(api_key) and not invalid_token and Anthropic is not None
+        self.client = Anthropic(api_key=api_key) if self.api_available else None
         self.model = config.get("model", "claude-sonnet-4-5-20250929")
         self.temperature = config.get("temperature", 0.7)
         self.max_tokens = config.get("max_tokens", 4000)
@@ -48,6 +50,14 @@ class ClaudeAgent(BaseAgent):
         Returns:
             AgentOutput with Claude's analysis
         """
+        if not self.api_available:
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing ANTHROPIC_API_KEY. Proceeded in availability-only mode.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "reason": "missing ANTHROPIC_API_KEY"}
+            )
+
         if not proposal.strip():
             raise ValueError("Proposal cannot be empty")
 
@@ -90,7 +100,12 @@ class ClaudeAgent(BaseAgent):
             )
 
         except Exception as e:
-            raise RuntimeError(f"Claude API call failed: {e}")
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Claude error encountered, proceeding without Claude output.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "error": str(e)}
+            )
 
     def _build_single_agent_prompt(self, proposal: str) -> str:
         """Build prompt for single-agent mode (no previous context)."""

@@ -203,7 +203,8 @@ python scripts/discussion_pipeline/create_github_issue.py {thread_id}
 ### If REVISE:
 ```bash
 # Resume pipeline with additional agents or context
-python scripts/discussion_pipeline/resume_discussion.py {thread_id} --agent <agent_name>
+# Note: Resume functionality pending implementation
+# python scripts/discussion_pipeline/run_discussion.py {thread_id} --preset iterative
 ```
 
 ### If REJECT:

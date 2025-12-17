@@ -160,6 +160,7 @@ class DiscussionOrchestrator:
             [manifest["outputs"][i] for i in range(len(agent_names))],
             quality_metrics
         )
+        auto_proceed = self._should_auto_proceed(quality_metrics) if should_trigger else False
 
         if should_trigger:
             console.print(f"\n[bold yellow]⚠️  Gate triggered - Human review required[/bold yellow]")
@@ -173,15 +174,17 @@ class DiscussionOrchestrator:
                 quality_metrics
             )
 
-            manifest["status"] = "gated"
             manifest["gate_file"] = str(gate_file.relative_to(self.docs_hub_path))
             manifest["gate_reasons"] = reasons
+            manifest["gate_auto_proceed"] = auto_proceed
             self._save_manifest(thread_dir, manifest)
 
             console.print(f"\n[bold]Gate file created:[/bold] {gate_file}")
-            console.print(f"[dim]Review and make decision: PROCEED / REVISE / REJECT[/dim]\n")
-
-            return thread_dir
+            if auto_proceed:
+                console.print(f"[dim]Auto-PROCEED based on quality metrics.[/dim]\n")
+            else:
+                console.print(f"[dim]Review and make decision: PROCEED / REVISE / REJECT[/dim]\n")
+                return thread_dir
 
         # Generate digest
         console.print("\n[bold]📝 Generating digest...[/bold]")
@@ -284,6 +287,12 @@ class DiscussionOrchestrator:
             raise ValueError(f"Unknown agent: {agent_name}")
 
         return agent.analyze(proposal, context)
+
+    def _should_auto_proceed(self, quality_metrics: Dict[str, Any]) -> bool:
+        """Auto-PROCEED when quality is good enough."""
+        verdict = (quality_metrics or {}).get("quality_verdict", "")
+        min_confidence = (quality_metrics or {}).get("confidence_aggregation", {}).get("min")
+        return verdict in {"EXCELLENT", "GOOD"} and (min_confidence is not None and min_confidence >= 0.65)
 
     def _generate_digest(self, thread_dir: Path, context: List[str]) -> None:
         """

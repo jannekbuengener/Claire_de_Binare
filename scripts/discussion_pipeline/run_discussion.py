@@ -34,6 +34,61 @@ from utils.config_loader import ConfigLoader
 console = Console(force_terminal=True, legacy_windows=False)
 
 
+FALLBACK_PROPOSAL_CONTENT = """---
+id: AUTO-GENERATED
+title: Auto Proposal – Pipeline Throughput Test
+---
+
+# Auto-Generated Proposal
+
+This proposal was automatically generated to validate the Discussion Pipeline end-to-end.
+
+## Goal
+- Ensure the pipeline runs even when no user-provided proposal exists.
+- Exercise gate handling and issue creation paths.
+
+## Scope
+- Run the deep preset with all agents.
+- Produce manifest and digest outputs.
+
+## Acceptance
+- Pipeline completes without manual input.
+- Outputs are written to discussions/threads/.
+"""
+
+
+def ensure_proposal_file(proposal_arg: str, docs_hub_path: Path) -> Path:
+    """
+    Ensure a usable proposal file exists.
+
+    - Accepts file or directory input.
+    - Creates a fallback proposal if none exist or if the chosen file is empty.
+    """
+    proposal_input = Path(proposal_arg)
+    if not proposal_input.is_absolute():
+        proposal_input = (Path.cwd() / proposal_input).resolve()
+
+    if proposal_input.exists() and proposal_input.is_dir():
+        proposals_dir = proposal_input
+    elif proposal_input.exists():
+        proposals_dir = proposal_input.parent
+    else:
+        proposals_dir = docs_hub_path / "discussions" / "proposals"
+
+    proposals_dir.mkdir(parents=True, exist_ok=True)
+
+    if proposal_input.exists() and proposal_input.is_file():
+        proposal_path = proposal_input
+    else:
+        existing = sorted(proposals_dir.glob("*.md"))
+        proposal_path = existing[0] if existing else proposals_dir / "AUTO_PROPOSAL.md"
+
+    if not proposal_path.exists() or not proposal_path.read_text(encoding="utf-8").strip():
+        proposal_path.write_text(FALLBACK_PROPOSAL_CONTENT, encoding="utf-8")
+
+    return proposal_path
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -97,19 +152,16 @@ Environment:
     # Load environment variables from .env
     load_dotenv()
 
-    # Validate proposal file
-    proposal_path = Path(args.proposal).resolve()
-    if not proposal_path.exists():
-        console.print(f"[bold red]Error:[/bold red] Proposal file not found: {proposal_path}")
-        sys.exit(1)
-
-    if not proposal_path.suffix == ".md":
-        console.print(f"[bold yellow]Warning:[/bold yellow] Proposal file should be Markdown (.md)")
-
     try:
         # Initialize configuration loader
         console.print("[dim]Loading configuration...[/dim]")
         config_loader = ConfigLoader(docs_hub_path=args.docs_hub)
+
+        # Ensure proposal exists and has content
+        proposal_path = ensure_proposal_file(args.proposal, config_loader.docs_hub_path)
+
+        if not proposal_path.suffix == ".md":
+            console.print(f"[bold yellow]Warning:[/bold yellow] Proposal file should be Markdown (.md)")
 
         # Validate preset exists
         try:

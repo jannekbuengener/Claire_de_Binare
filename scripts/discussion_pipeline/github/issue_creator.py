@@ -6,10 +6,27 @@ and links back to discussion threads.
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from github import Github, GithubException
+from importlib import import_module
+
+
+def _import_pygithub():
+    """Import PyGithub without being shadowed by the local github package."""
+    original_sys_path = list(sys.path)
+    sys.path = [p for p in original_sys_path if "discussion_pipeline" not in Path(p).name]
+    try:
+        github_module = import_module("github")
+        return getattr(github_module, "Github", None), getattr(github_module, "GithubException", Exception)
+    except Exception:
+        return None, Exception
+    finally:
+        sys.path = original_sys_path
+
+
+Github, GithubException = _import_pygithub()
 
 
 class GitHubIssueCreator:
@@ -32,22 +49,25 @@ class GitHubIssueCreator:
             repo_name: GitHub repository (owner/repo). Auto-detected if None.
             dry_run: If True, preview issue without creating
         """
-        self.dry_run = dry_run
-
-        # Get GitHub token
         github_token = os.getenv("GITHUB_TOKEN")
-        if not github_token and not dry_run:
-            raise ValueError("GITHUB_TOKEN environment variable not set")
+        self.token_missing = not github_token
+        self.dry_run = dry_run or self.token_missing
 
-        if not dry_run:
+        if Github is None:
+            self.dry_run = True
+            self.github = None
+        elif not self.dry_run:
             self.github = Github(github_token)
         else:
             self.github = None
 
         # Auto-detect or use provided repo
-        self.repo_name = repo_name or self._detect_repo_name()
+        try:
+            self.repo_name = repo_name or self._detect_repo_name()
+        except Exception:
+            self.repo_name = repo_name or "unknown/unknown"
 
-        if not dry_run and self.github:
+        if not self.dry_run and self.github:
             try:
                 self.repo = self.github.get_repo(self.repo_name)
             except GithubException as e:
@@ -119,17 +139,17 @@ class GitHubIssueCreator:
         issue_labels = labels or self._infer_labels(manifest)
 
         if self.dry_run:
-            # Preview mode
-            print("\n" + "="*80)
-            print("DRY RUN - Issue Preview")
-            print("="*80)
-            print(f"\nRepository: {self.repo_name}")
-            print(f"Title: {issue_title}")
-            print(f"Labels: {', '.join(issue_labels)}")
-            print("\nBody:")
-            print("-"*80)
-            print(issue_body)
-            print("="*80)
+            docs_hub = thread_dir.parents[2]
+            draft_file = self._write_issue_draft(
+                docs_hub,
+                manifest.get("thread_id", "UNKNOWN"),
+                issue_title,
+                issue_body,
+                issue_labels
+            )
+            manifest["github_issue_draft"] = str(draft_file.relative_to(docs_hub))
+            with open(manifest_file, "w", encoding="utf-8") as f:
+                json.dump(manifest, f, indent=2)
             return None
 
         # Create issue
@@ -162,12 +182,46 @@ class GitHubIssueCreator:
         template_path = docs_hub / "docs" / "templates" / "github_issue.md"
 
         if not template_path.exists():
-            raise FileNotFoundError(
-                f"Default template not found: {template_path}\n"
-                "Please create template or specify --template"
+            template_path.parent.mkdir(parents=True, exist_ok=True)
+            template_path.write_text(
+                "# {proposal_name}\n\n{agent_summaries}\n\nQuality: {quality_verdict}\nDisagreements: {disagreement_count}\nEcho Score: {echo_chamber_score}\nThread: {thread_path}\n",
+                encoding="utf-8"
             )
 
         return template_path
+
+    def _write_issue_draft(
+        self,
+        docs_hub: Path,
+        thread_id: str,
+        issue_title: str,
+        issue_body: str,
+        issue_labels: List[str]
+    ) -> Path:
+        """Persist a local issue draft when running in dry-run mode."""
+        issues_dir = docs_hub / "discussions" / "issues"
+        issues_dir.mkdir(parents=True, exist_ok=True)
+
+        draft_file = issues_dir / f"{thread_id}_issue.md"
+        draft_file.write_text(
+            f"# {issue_title}\n\nLabels: {', '.join(issue_labels)}\n\n{issue_body}",
+            encoding="utf-8"
+        )
+
+        draft_json = issues_dir / f"{thread_id}_issue.json"
+        draft_json.write_text(
+            json.dumps(
+                {
+                    "title": issue_title,
+                    "labels": issue_labels,
+                    "body": issue_body
+                },
+                indent=2
+            ),
+            encoding="utf-8"
+        )
+
+        return draft_file
 
     def _render_template(
         self,

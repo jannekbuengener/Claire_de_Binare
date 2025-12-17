@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "docPipeline": {
+      "command": "node",
+      "args": ["server.js"],
+      "cwd": "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\mcp-doc-pipeline",
+      "timeout": 60000,
+      "includeTools": [
+        "list_batch",
+        "clean_document",
+        "clean_batch",
+        "suggest_merges",
+        "merge_documents",
+        "propose_structure"
+      ],
+      "trust": false
+    }
+  }
+}

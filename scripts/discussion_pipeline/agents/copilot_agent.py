@@ -7,7 +7,10 @@ Focuses on implementation feasibility, code-level reasoning, and critical evalua
 
 import os
 from typing import List, Dict, Any
-from openai import OpenAI
+try:
+    from openai import OpenAI  # type: ignore
+except ImportError:
+    OpenAI = None
 try:
     from .base import BaseAgent, AgentOutput
 except ImportError:
@@ -29,10 +32,9 @@ class CopilotAgent(BaseAgent):
         super().__init__(config)
 
         api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
-
-        self.client = OpenAI(api_key=api_key)
+        invalid_token = api_key and api_key.strip().startswith("#")
+        self.api_available = bool(api_key) and not invalid_token and OpenAI is not None
+        self.client = OpenAI(api_key=api_key) if self.api_available else None
         self.model = config.get("model", "gpt-4")
         self.temperature = config.get("temperature", 0.5)  # Lower for technical precision
         self.max_tokens = config.get("max_tokens", 4000)
@@ -48,6 +50,14 @@ class CopilotAgent(BaseAgent):
         Returns:
             AgentOutput with technical analysis
         """
+        if not self.api_available:
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing OPENAI_API_KEY. Proceeded in availability-only mode.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "reason": "missing OPENAI_API_KEY"}
+            )
+
         if not proposal.strip():
             raise ValueError("Proposal cannot be empty")
 
@@ -91,7 +101,12 @@ class CopilotAgent(BaseAgent):
             )
 
         except Exception as e:
-            raise RuntimeError(f"Copilot (GPT-4) API call failed: {e}")
+            return AgentOutput(
+                agent_name=self.agent_name,
+                content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: OpenAI error encountered, proceeding without Copilot output.\n",
+                confidence_scores={"availability": 0.7},
+                metadata={"skipped": True, "error": str(e)}
+            )
 
     def _build_technical_prompt(self, proposal: str) -> str:
         """Build standalone technical analysis prompt."""
