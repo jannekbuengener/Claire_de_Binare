@@ -4,9 +4,9 @@ Governance: CDB_PSM_POLICY.md (Deterministische Replays)
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
-from core.utils.clock import SystemClock, FixedClock
+from core.utils.clock import FixedClock
 from core.utils.seed import SeedManager
 from core.utils.uuid_gen import UUIDGenerator
 from core.domain.event import Event

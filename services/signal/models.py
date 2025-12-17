@@ -33,4 +33,3 @@ class MarketData:
             interval=data.get("interval", "15m"),
             type=data.get("type", "market_data"),
         )
-

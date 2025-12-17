@@ -27,6 +27,7 @@ sys.path.insert(0, str(project_root))
 # MOCK FIXTURES (External Dependencies)
 # ============================================
 
+
 @pytest.fixture
 def mock_redis() -> Mock:
     """
@@ -72,6 +73,7 @@ def mock_postgres() -> Mock:
 # DOMAIN MODEL FACTORIES
 # ============================================
 
+
 @pytest.fixture
 def signal_factory() -> Callable[..., Signal]:
     """
@@ -81,13 +83,14 @@ def signal_factory() -> Callable[..., Signal]:
         def test_foo(signal_factory):
             signal = signal_factory(symbol="BTCUSDT", signal_type="buy")
     """
+
     def _create_signal(
         symbol: str = "BTCUSDT",
         signal_type: str = "buy",
         timestamp: datetime | None = None,
         price: Decimal | None = None,
         confidence: float = 0.75,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> Signal:
         if timestamp is None:
             timestamp = datetime.now(timezone.utc)
@@ -102,7 +105,7 @@ def signal_factory() -> Callable[..., Signal]:
             timestamp=timestamp,
             price=price,
             confidence=confidence,
-            metadata=metadata
+            metadata=metadata,
         )
 
     return _create_signal
@@ -117,6 +120,7 @@ def order_factory() -> Callable[..., Order]:
         def test_foo(order_factory):
             order = order_factory(symbol="BTCUSDT", side="buy", quantity=0.1)
     """
+
     def _create_order(
         symbol: str = "BTCUSDT",
         side: str = "buy",
@@ -124,7 +128,7 @@ def order_factory() -> Callable[..., Order]:
         order_type: str = "market",
         price: Decimal | None = None,
         timestamp: datetime | None = None,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> Order:
         if quantity is None:
             quantity = Decimal("0.1")
@@ -140,7 +144,7 @@ def order_factory() -> Callable[..., Order]:
             order_type=order_type,
             price=price,
             timestamp=timestamp,
-            metadata=metadata
+            metadata=metadata,
         )
 
     return _create_order
@@ -155,13 +159,14 @@ def order_result_factory() -> Callable[..., OrderResult]:
         def test_foo(order_result_factory):
             result = order_result_factory(status="filled")
     """
+
     def _create_order_result(
         order_id: str = "test-order-123",
         status: str = "filled",
         filled_quantity: Decimal | None = None,
         avg_price: Decimal | None = None,
         timestamp: datetime | None = None,
-        metadata: dict | None = None
+        metadata: dict | None = None,
     ) -> OrderResult:
         if filled_quantity is None:
             filled_quantity = Decimal("0.1")
@@ -178,7 +183,7 @@ def order_result_factory() -> Callable[..., OrderResult]:
             filled_quantity=filled_quantity,
             avg_price=avg_price,
             timestamp=timestamp,
-            metadata=metadata
+            metadata=metadata,
         )
 
     return _create_order_result
@@ -187,6 +192,7 @@ def order_result_factory() -> Callable[..., OrderResult]:
 # ============================================
 # CONFIGURATION FIXTURES
 # ============================================
+
 
 @pytest.fixture
 def test_config() -> dict:

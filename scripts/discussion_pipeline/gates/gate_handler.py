@@ -35,9 +35,7 @@ class GateHandler:
         self.gates_dir.mkdir(parents=True, exist_ok=True)
 
     def should_trigger_gate(
-        self,
-        outputs: List[Dict[str, Any]],
-        quality_metrics: Dict[str, Any]
+        self, outputs: List[Dict[str, Any]], quality_metrics: Dict[str, Any]
     ) -> tuple[bool, List[str]]:
         """
         Determine if gate should be triggered.
@@ -96,7 +94,7 @@ class GateHandler:
         thread_id: str,
         reasons: List[str],
         thread_dir: Path,
-        quality_metrics: Dict[str, Any]
+        quality_metrics: Dict[str, Any],
     ) -> Path:
         """
         Create gate review file for human decision.
@@ -113,10 +111,7 @@ class GateHandler:
         gate_file = self.gates_dir / f"GATE_{thread_id}.md"
 
         content = self._build_gate_content(
-            thread_id,
-            reasons,
-            thread_dir,
-            quality_metrics
+            thread_id, reasons, thread_dir, quality_metrics
         )
 
         gate_file.write_text(content, encoding="utf-8")
@@ -127,7 +122,7 @@ class GateHandler:
         thread_id: str,
         reasons: List[str],
         thread_dir: Path,
-        quality_metrics: Dict[str, Any]
+        quality_metrics: Dict[str, Any],
     ) -> str:
         """Build gate review markdown content."""
         timestamp = datetime.utcnow().isoformat() + "Z"

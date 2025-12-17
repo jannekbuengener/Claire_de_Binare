@@ -1,5 +1,5 @@
 """Unit tests for core.utils.clock module."""
-import pytest
+
 from core.utils.clock import Clock
 
 

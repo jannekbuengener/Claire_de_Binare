@@ -51,7 +51,9 @@ class DatabaseWriter:
         self.postgres_port = int(os.getenv("POSTGRES_PORT", "5432"))
         self.postgres_db = os.getenv("POSTGRES_DB", "claire_de_binare")
         self.postgres_user = os.getenv("POSTGRES_USER", "claire_user")
-        self.postgres_password = get_secret("postgres_password", "POSTGRES_PASSWORD", "")
+        self.postgres_password = get_secret(
+            "postgres_password", "POSTGRES_PASSWORD", ""
+        )
 
         # Channels to subscribe to
         self.channels = ["signals", "orders", "order_results", "portfolio_snapshots"]
@@ -88,12 +90,14 @@ class DatabaseWriter:
         if isinstance(timestamp_value, str):
             try:
                 # Handle ISO format with 'Z' suffix
-                if timestamp_value.endswith('Z'):
-                    timestamp_value = timestamp_value[:-1] + '+00:00'
+                if timestamp_value.endswith("Z"):
+                    timestamp_value = timestamp_value[:-1] + "+00:00"
                 return datetime.fromisoformat(timestamp_value)
             except ValueError:
                 # Fallback to current time if parsing fails
-                logger.warning(f"Invalid timestamp format: {timestamp_value}, using current time")
+                logger.warning(
+                    f"Invalid timestamp format: {timestamp_value}, using current time"
+                )
                 return datetime.utcnow()
 
         # If already datetime, return as-is
@@ -101,7 +105,9 @@ class DatabaseWriter:
             return timestamp_value
 
         # Fallback
-        logger.warning(f"Unknown timestamp type: {type(timestamp_value)}, using current time")
+        logger.warning(
+            f"Unknown timestamp type: {type(timestamp_value)}, using current time"
+        )
         return datetime.utcnow()
 
     @staticmethod

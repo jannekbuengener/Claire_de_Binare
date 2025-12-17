@@ -83,7 +83,10 @@ def ensure_proposal_file(proposal_arg: str, docs_hub_path: Path) -> Path:
         existing = sorted(proposals_dir.glob("*.md"))
         proposal_path = existing[0] if existing else proposals_dir / "AUTO_PROPOSAL.md"
 
-    if not proposal_path.exists() or not proposal_path.read_text(encoding="utf-8").strip():
+    if (
+        not proposal_path.exists()
+        or not proposal_path.read_text(encoding="utf-8").strip()
+    ):
         proposal_path.write_text(FALLBACK_PROPOSAL_CONTENT, encoding="utf-8")
 
     return proposal_path
@@ -111,40 +114,34 @@ Environment:
   GOOGLE_API_KEY      Required for Gemini agent (Phase 2)
   GITHUB_TOKEN        Required for GitHub integration (Phase 3)
   DOCS_HUB_PATH       Optional path to Docs Hub workspace
-        """
+        """,
     )
 
-    parser.add_argument(
-        "proposal",
-        type=str,
-        help="Path to proposal markdown file"
-    )
+    parser.add_argument("proposal", type=str, help="Path to proposal markdown file")
 
     parser.add_argument(
         "--preset",
         type=str,
         default="quick",
         choices=["quick", "standard", "technical", "deep", "iterative"],
-        help="Pipeline preset to use (default: quick)"
+        help="Pipeline preset to use (default: quick)",
     )
 
     parser.add_argument(
         "--docs-hub",
         type=str,
         default=None,
-        help="Path to Docs Hub workspace (auto-detected if not specified)"
+        help="Path to Docs Hub workspace (auto-detected if not specified)",
     )
 
     parser.add_argument(
         "--create-issue",
         action="store_true",
-        help="Automatically create GitHub issue if pipeline succeeds (requires GITHUB_TOKEN)"
+        help="Automatically create GitHub issue if pipeline succeeds (requires GITHUB_TOKEN)",
     )
 
     parser.add_argument(
-        "--version",
-        action="version",
-        version="Discussion Pipeline v0.1.0"
+        "--version", action="version", version="Discussion Pipeline v0.1.0"
     )
 
     args = parser.parse_args()
@@ -161,11 +158,13 @@ Environment:
         proposal_path = ensure_proposal_file(args.proposal, config_loader.docs_hub_path)
 
         if not proposal_path.suffix == ".md":
-            console.print(f"[bold yellow]Warning:[/bold yellow] Proposal file should be Markdown (.md)")
+            console.print(
+                "[bold yellow]Warning:[/bold yellow] Proposal file should be Markdown (.md)"
+            )
 
         # Validate preset exists
         try:
-            preset_config = config_loader.get_pipeline_preset(args.preset)
+            _preset_config = config_loader.get_pipeline_preset(args.preset)
         except KeyError as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             sys.exit(1)
@@ -175,13 +174,12 @@ Environment:
 
         # Run pipeline
         thread_dir = orchestrator.run_pipeline(
-            proposal_path=proposal_path,
-            preset=args.preset
+            proposal_path=proposal_path, preset=args.preset
         )
 
         # Success message
-        console.print(f"[bold green]Success![/bold green] Discussion completed.")
-        console.print(f"\n[bold]Output files:[/bold]")
+        console.print("[bold green]Success![/bold green] Discussion completed.")
+        console.print("\n[bold]Output files:[/bold]")
         console.print(f"  Digest:   {thread_dir / 'DIGEST.md'}")
         console.print(f"  Manifest: {thread_dir / 'manifest.json'}")
         console.print(f"  Outputs:  {thread_dir}/")
@@ -189,27 +187,34 @@ Environment:
         # Auto-create GitHub issue if requested
         if args.create_issue:
             import json
+
             manifest_file = thread_dir / "manifest.json"
             with open(manifest_file, "r") as f:
                 manifest = json.load(f)
 
             # Only create issue if status is completed (not gated)
             if manifest.get("status") == "completed":
-                console.print(f"\n[bold]Creating GitHub issue...[/bold]")
+                console.print("\n[bold]Creating GitHub issue...[/bold]")
                 try:
                     from github.issue_creator import GitHubIssueCreator
 
                     creator = GitHubIssueCreator(dry_run=False)
                     issue_url = creator.create_issue_from_thread(thread_dir)
 
-                    console.print(f"[bold green]✅ Issue created:[/bold green] {issue_url}")
+                    console.print(
+                        f"[bold green]✅ Issue created:[/bold green] {issue_url}"
+                    )
                 except Exception as e:
                     console.print(f"[bold red]Failed to create issue:[/bold red] {e}")
-                    console.print(f"[dim]You can create it manually later with:[/dim]")
-                    console.print(f"[dim]  python create_github_issue.py {manifest['thread_id']}[/dim]")
+                    console.print("[dim]You can create it manually later with:[/dim]")
+                    console.print(
+                        f"[dim]  python create_github_issue.py {manifest['thread_id']}[/dim]"
+                    )
             else:
-                console.print(f"\n[yellow]Pipeline gated - no issue created.[/yellow]")
-                console.print(f"[dim]Review gate file and decide, then create issue manually if approved.[/dim]")
+                console.print("\n[yellow]Pipeline gated - no issue created.[/yellow]")
+                console.print(
+                    "[dim]Review gate file and decide, then create issue manually if approved.[/dim]"
+                )
 
     except FileNotFoundError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
@@ -226,6 +231,7 @@ Environment:
     except Exception as e:
         console.print(f"[bold red]Unexpected error:[/bold red] {e}")
         import traceback
+
         console.print(f"\n[dim]{traceback.format_exc()}[/dim]")
         sys.exit(1)
 

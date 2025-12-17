@@ -15,12 +15,15 @@ relations:
   invariants:
     - /run/secrets/ path is a convention for Docker secrets.
 """
+
 import os
 from pathlib import Path
 from typing import Optional
 
 
-def get_secret(secret_name: str, env_var: str, default: Optional[str] = None) -> Optional[str]:
+def get_secret(
+    secret_name: str, env_var: str, default: Optional[str] = None
+) -> Optional[str]:
     """
     Read secret from Docker Secrets file or environment variable
 

@@ -5,8 +5,6 @@ Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
 """
 
 import pytest
-from unittest.mock import Mock, patch
-from decimal import Decimal
 
 # TODO: Import actual service when implementation is stable
 # from services.execution.service import ExecutionService

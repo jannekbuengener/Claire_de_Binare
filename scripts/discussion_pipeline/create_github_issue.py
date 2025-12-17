@@ -50,47 +50,45 @@ Examples:
 
 Environment:
   GITHUB_TOKEN   Required for creating issues (not needed for --dry-run)
-        """
+        """,
     )
 
     parser.add_argument(
-        "thread_id",
-        type=str,
-        help="Thread ID (e.g., THREAD_1765955316)"
+        "thread_id", type=str, help="Thread ID (e.g., THREAD_1765955316)"
     )
 
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Preview issue without creating (no GITHUB_TOKEN needed)"
+        help="Preview issue without creating (no GITHUB_TOKEN needed)",
     )
 
     parser.add_argument(
         "--repo",
         type=str,
         default=None,
-        help="GitHub repository (owner/repo). Auto-detected if not specified."
+        help="GitHub repository (owner/repo). Auto-detected if not specified.",
     )
 
     parser.add_argument(
         "--labels",
         type=str,
         default=None,
-        help="Comma-separated list of labels to apply"
+        help="Comma-separated list of labels to apply",
     )
 
     parser.add_argument(
         "--template",
         type=str,
         default=None,
-        help="Custom issue template path (uses default if not specified)"
+        help="Custom issue template path (uses default if not specified)",
     )
 
     parser.add_argument(
         "--docs-hub",
         type=str,
         default=None,
-        help="Path to Docs Hub workspace (auto-detected if not specified)"
+        help="Path to Docs Hub workspace (auto-detected if not specified)",
     )
 
     args = parser.parse_args()
@@ -116,38 +114,37 @@ Environment:
         # Parse labels
         labels = None
         if args.labels:
-            labels = [l.strip() for l in args.labels.split(",")]
+            labels = [label.strip() for label in args.labels.split(",")]
 
         # Parse template
         template_path = None
         if args.template:
             template_path = Path(args.template)
             if not template_path.exists():
-                console.print(f"[bold red]Error:[/bold red] Template not found: {template_path}")
+                console.print(
+                    f"[bold red]Error:[/bold red] Template not found: {template_path}"
+                )
                 sys.exit(1)
 
         # Initialize issue creator
         if args.dry_run:
-            console.print("[bold yellow]DRY RUN MODE - No issue will be created[/bold yellow]\n")
+            console.print(
+                "[bold yellow]DRY RUN MODE - No issue will be created[/bold yellow]\n"
+            )
 
-        creator = GitHubIssueCreator(
-            repo_name=args.repo,
-            dry_run=args.dry_run
-        )
+        creator = GitHubIssueCreator(repo_name=args.repo, dry_run=args.dry_run)
 
         # Create issue
         issue_url = creator.create_issue_from_thread(
-            thread_dir=thread_dir,
-            template_path=template_path,
-            labels=labels
+            thread_dir=thread_dir, template_path=template_path, labels=labels
         )
 
         if issue_url:
-            console.print(f"\n[bold green]✅ Issue created successfully![/bold green]")
+            console.print("\n[bold green]✅ Issue created successfully![/bold green]")
             console.print(f"[bold]URL:[/bold] {issue_url}\n")
         elif args.dry_run:
-            console.print(f"\n[bold yellow]Preview complete.[/bold yellow]")
-            console.print(f"[dim]Remove --dry-run to create issue.[/dim]\n")
+            console.print("\n[bold yellow]Preview complete.[/bold yellow]")
+            console.print("[dim]Remove --dry-run to create issue.[/dim]\n")
 
     except FileNotFoundError as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
@@ -164,6 +161,7 @@ Environment:
     except Exception as e:
         console.print(f"[bold red]Unexpected error:[/bold red] {e}")
         import traceback
+
         console.print(f"\n[dim]{traceback.format_exc()}[/dim]")
         sys.exit(1)
 

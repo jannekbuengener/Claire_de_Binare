@@ -7,6 +7,7 @@ conflict resolution, and recommendation generation.
 
 import os
 from typing import List, Dict, Any
+
 try:
     from anthropic import Anthropic  # type: ignore
 except ImportError:
@@ -33,7 +34,9 @@ class ClaudeAgent(BaseAgent):
 
         api_key = os.getenv("ANTHROPIC_API_KEY")
         invalid_token = api_key and api_key.strip().startswith("#")
-        self.api_available = bool(api_key) and not invalid_token and Anthropic is not None
+        self.api_available = (
+            bool(api_key) and not invalid_token and Anthropic is not None
+        )
         self.client = Anthropic(api_key=api_key) if self.api_available else None
         self.model = config.get("model", "claude-sonnet-4-5-20250929")
         self.temperature = config.get("temperature", 0.7)
@@ -55,7 +58,7 @@ class ClaudeAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing ANTHROPIC_API_KEY. Proceeded in availability-only mode.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "reason": "missing ANTHROPIC_API_KEY"}
+                metadata={"skipped": True, "reason": "missing ANTHROPIC_API_KEY"},
             )
 
         if not proposal.strip():
@@ -77,9 +80,7 @@ class ClaudeAgent(BaseAgent):
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
                 system=system_message,
-                messages=[
-                    {"role": "user", "content": prompt}
-                ]
+                messages=[{"role": "user", "content": prompt}],
             )
 
             content = response.content[0].text
@@ -96,7 +97,7 @@ class ClaudeAgent(BaseAgent):
                     "temperature": self.temperature,
                     "input_tokens": response.usage.input_tokens,
                     "output_tokens": response.usage.output_tokens,
-                }
+                },
             )
 
         except Exception as e:
@@ -104,7 +105,7 @@ class ClaudeAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Claude error encountered, proceeding without Claude output.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "error": str(e)}
+                metadata={"skipped": True, "error": str(e)},
             )
 
     def _build_single_agent_prompt(self, proposal: str) -> str:
@@ -165,10 +166,9 @@ Focus on:
 
     def _build_multi_agent_prompt(self, proposal: str, context: List[str]) -> str:
         """Build prompt for multi-agent mode (synthesizing previous outputs)."""
-        context_section = "\n\n---\n\n".join([
-            f"## Agent {i+1} Analysis\n\n{output}"
-            for i, output in enumerate(context)
-        ])
+        context_section = "\n\n---\n\n".join(
+            [f"## Agent {i+1} Analysis\n\n{output}" for i, output in enumerate(context)]
+        )
 
         return f"""# Meta-Synthesis Task
 

@@ -76,9 +76,7 @@ class QualityMetrics:
         try:
             # TF-IDF vectorization
             vectorizer = TfidfVectorizer(
-                stop_words='english',
-                max_features=500,
-                ngram_range=(1, 2)
+                stop_words="english", max_features=500, ngram_range=(1, 2)
             )
             tfidf_matrix = vectorizer.fit_transform(clean_outputs)
 
@@ -87,7 +85,9 @@ class QualityMetrics:
 
             # Average pairwise similarity (excluding diagonal)
             n = len(similarities)
-            total_similarity = similarities.sum() - n  # Subtract diagonal (self-similarity = 1.0)
+            total_similarity = (
+                similarities.sum() - n
+            )  # Subtract diagonal (self-similarity = 1.0)
             avg_similarity = total_similarity / (n * (n - 1))
 
             return float(avg_similarity)
@@ -114,24 +114,16 @@ class QualityMetrics:
             if scores:
                 agent_avg = np.mean(list(scores.values()))
                 all_scores.append(agent_avg)
-                per_agent[f"agent_{i+1}"] = {
-                    "avg": float(agent_avg),
-                    "scores": scores
-                }
+                per_agent[f"agent_{i+1}"] = {"avg": float(agent_avg), "scores": scores}
 
         if not all_scores:
-            return {
-                "min": None,
-                "max": None,
-                "avg": None,
-                "per_agent": {}
-            }
+            return {"min": None, "max": None, "avg": None, "per_agent": {}}
 
         return {
             "min": float(np.min(all_scores)),
             "max": float(np.max(all_scores)),
             "avg": float(np.mean(all_scores)),
-            "per_agent": per_agent
+            "per_agent": per_agent,
         }
 
     @staticmethod
@@ -149,7 +141,7 @@ class QualityMetrics:
             # Find end of frontmatter
             end_marker = markdown.find("---", 3)
             if end_marker != -1:
-                return markdown[end_marker + 3:].strip()
+                return markdown[end_marker + 3 :].strip()
 
         return markdown.strip()
 
@@ -173,7 +165,7 @@ class QualityMetrics:
                 "disagreement_count": 0,
                 "echo_chamber_score": None,
                 "confidence_aggregation": {},
-                "quality_verdict": "NO_DATA"
+                "quality_verdict": "NO_DATA",
             }
 
         # Extract confidence scores from each output
@@ -189,16 +181,14 @@ class QualityMetrics:
 
         # Quality verdict
         verdict = QualityMetrics._determine_verdict(
-            disagreement_count,
-            echo_score,
-            confidence_agg.get("min")
+            disagreement_count, echo_score, confidence_agg.get("min")
         )
 
         return {
             "disagreement_count": disagreement_count,
             "echo_chamber_score": echo_score,
             "confidence_aggregation": confidence_agg,
-            "quality_verdict": verdict
+            "quality_verdict": verdict,
         }
 
     @staticmethod
@@ -213,6 +203,7 @@ class QualityMetrics:
 
         try:
             import yaml
+
             frontmatter = markdown[3:end_marker].strip()
             data = yaml.safe_load(frontmatter)
             return data.get("confidence_scores", {}) if data else {}
@@ -221,9 +212,7 @@ class QualityMetrics:
 
     @staticmethod
     def _determine_verdict(
-        disagreement_count: int,
-        echo_score: float,
-        min_confidence: float
+        disagreement_count: int, echo_score: float, min_confidence: float
     ) -> str:
         """
         Determine overall quality verdict.

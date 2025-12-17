@@ -16,10 +16,14 @@ from importlib import import_module
 def _import_pygithub():
     """Import PyGithub without being shadowed by the local github package."""
     original_sys_path = list(sys.path)
-    sys.path = [p for p in original_sys_path if "discussion_pipeline" not in Path(p).name]
+    sys.path = [
+        p for p in original_sys_path if "discussion_pipeline" not in Path(p).name
+    ]
     try:
         github_module = import_module("github")
-        return getattr(github_module, "Github", None), getattr(github_module, "GithubException", Exception)
+        return getattr(github_module, "Github", None), getattr(
+            github_module, "GithubException", Exception
+        )
     except Exception:
         return None, Exception
     finally:
@@ -78,12 +82,13 @@ class GitHubIssueCreator:
     def _detect_repo_name(self) -> str:
         """Auto-detect GitHub repo from git remote."""
         import subprocess
+
         try:
             result = subprocess.run(
                 ["git", "remote", "get-url", "origin"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             remote_url = result.stdout.strip()
 
@@ -102,7 +107,7 @@ class GitHubIssueCreator:
         self,
         thread_dir: Path,
         template_path: Optional[Path] = None,
-        labels: Optional[List[str]] = None
+        labels: Optional[List[str]] = None,
     ) -> Optional[str]:
         """
         Create GitHub issue from discussion thread.
@@ -125,7 +130,9 @@ class GitHubIssueCreator:
 
         # Check if already completed
         if manifest.get("status") not in ["completed", "gated"]:
-            raise ValueError(f"Thread not ready for issue creation. Status: {manifest.get('status')}")
+            raise ValueError(
+                f"Thread not ready for issue creation. Status: {manifest.get('status')}"
+            )
 
         # Load template
         if template_path is None:
@@ -145,7 +152,7 @@ class GitHubIssueCreator:
                 manifest.get("thread_id", "UNKNOWN"),
                 issue_title,
                 issue_body,
-                issue_labels
+                issue_labels,
             )
             manifest["github_issue_draft"] = str(draft_file.relative_to(docs_hub))
             with open(manifest_file, "w", encoding="utf-8") as f:
@@ -155,16 +162,14 @@ class GitHubIssueCreator:
         # Create issue
         try:
             issue = self.repo.create_issue(
-                title=issue_title,
-                body=issue_body,
-                labels=issue_labels
+                title=issue_title, body=issue_body, labels=issue_labels
             )
 
             # Update manifest with issue link
             manifest["github_issue"] = {
                 "number": issue.number,
                 "url": issue.html_url,
-                "created_at": issue.created_at.isoformat()
+                "created_at": issue.created_at.isoformat(),
             }
 
             with open(manifest_file, "w", encoding="utf-8") as f:
@@ -185,7 +190,7 @@ class GitHubIssueCreator:
             template_path.parent.mkdir(parents=True, exist_ok=True)
             template_path.write_text(
                 "# {proposal_name}\n\n{agent_summaries}\n\nQuality: {quality_verdict}\nDisagreements: {disagreement_count}\nEcho Score: {echo_chamber_score}\nThread: {thread_path}\n",
-                encoding="utf-8"
+                encoding="utf-8",
             )
 
         return template_path
@@ -196,7 +201,7 @@ class GitHubIssueCreator:
         thread_id: str,
         issue_title: str,
         issue_body: str,
-        issue_labels: List[str]
+        issue_labels: List[str],
     ) -> Path:
         """Persist a local issue draft when running in dry-run mode."""
         issues_dir = docs_hub / "discussions" / "issues"
@@ -205,29 +210,22 @@ class GitHubIssueCreator:
         draft_file = issues_dir / f"{thread_id}_issue.md"
         draft_file.write_text(
             f"# {issue_title}\n\nLabels: {', '.join(issue_labels)}\n\n{issue_body}",
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         draft_json = issues_dir / f"{thread_id}_issue.json"
         draft_json.write_text(
             json.dumps(
-                {
-                    "title": issue_title,
-                    "labels": issue_labels,
-                    "body": issue_body
-                },
-                indent=2
+                {"title": issue_title, "labels": issue_labels, "body": issue_body},
+                indent=2,
             ),
-            encoding="utf-8"
+            encoding="utf-8",
         )
 
         return draft_file
 
     def _render_template(
-        self,
-        template_path: Path,
-        manifest: Dict[str, Any],
-        thread_dir: Path
+        self, template_path: Path, manifest: Dict[str, Any], thread_dir: Path
     ) -> str:
         """
         Render issue template with manifest data.
@@ -245,7 +243,9 @@ class GitHubIssueCreator:
         # Extract data for template
         thread_id = manifest.get("thread_id", "UNKNOWN")
         proposal_path = manifest.get("proposal_path", "")
-        proposal_name = Path(proposal_path).name if proposal_path else "Unknown Proposal"
+        proposal_name = (
+            Path(proposal_path).name if proposal_path else "Unknown Proposal"
+        )
         pipeline = " → ".join(manifest.get("pipeline", []))
 
         # Quality metrics
@@ -268,7 +268,7 @@ class GitHubIssueCreator:
             "{echo_chamber_score}": echo_str,
             "{agent_summaries}": agent_summaries,
             "{thread_path}": str(thread_dir.relative_to(thread_dir.parents[2])),
-            "{repo_name}": self.repo_name if self.repo_name else "unknown"
+            "{repo_name}": self.repo_name if self.repo_name else "unknown",
         }
 
         # Replace variables
@@ -279,9 +279,7 @@ class GitHubIssueCreator:
         return rendered
 
     def _extract_agent_summaries(
-        self,
-        manifest: Dict[str, Any],
-        thread_dir: Path
+        self, manifest: Dict[str, Any], thread_dir: Path
     ) -> str:
         """Extract key points from each agent's output."""
         summaries = []
@@ -307,7 +305,7 @@ class GitHubIssueCreator:
         if content.startswith("---"):
             end_marker = content.find("---", 3)
             if end_marker != -1:
-                content = content[end_marker + 3:].strip()
+                content = content[end_marker + 3 :].strip()
 
         # Take first section or paragraph
         lines = content.split("\n")

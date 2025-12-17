@@ -107,10 +107,7 @@ class ConfigLoader:
             return False
 
         # Check for expected Docs Hub structure
-        required_paths = [
-            path / "config" / "pipeline_rules.yaml",
-            path / "discussions"
-        ]
+        required_paths = [path / "config" / "pipeline_rules.yaml", path / "discussions"]
 
         return all(p.exists() for p in required_paths)
 
@@ -153,9 +150,7 @@ class ConfigLoader:
         config = self.load_config()
         if preset_name not in config["pipelines"]:
             available = list(config["pipelines"].keys())
-            raise KeyError(
-                f"Unknown preset: {preset_name}. Available: {available}"
-            )
+            raise KeyError(f"Unknown preset: {preset_name}. Available: {available}")
 
         return config["pipelines"][preset_name]
 
@@ -175,9 +170,7 @@ class ConfigLoader:
         config = self.load_config()
         if agent_name not in config["agents"]:
             available = list(config["agents"].keys())
-            raise KeyError(
-                f"Unknown agent: {agent_name}. Available: {available}"
-            )
+            raise KeyError(f"Unknown agent: {agent_name}. Available: {available}")
 
         return config["agents"][agent_name]
 

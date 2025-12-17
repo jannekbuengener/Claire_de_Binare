@@ -1,5 +1,5 @@
 """Unit tests for core.utils.seed module."""
-import pytest
+
 from core.utils.seed import Seed
 
 

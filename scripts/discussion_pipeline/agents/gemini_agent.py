@@ -7,6 +7,7 @@ theoretical framework identification, and evidence extraction.
 
 import os
 from typing import List, Dict, Any
+
 try:
     import google.generativeai as genai  # type: ignore
 except ImportError:
@@ -62,7 +63,7 @@ class GeminiAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing GOOGLE_API_KEY. Proceeded in availability-only mode.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "reason": "missing GOOGLE_API_KEY"}
+                metadata={"skipped": True, "reason": "missing GOOGLE_API_KEY"},
             )
 
         if not proposal.strip():
@@ -94,9 +95,17 @@ class GeminiAgent(BaseAgent):
                 metadata={
                     "model": self.model_name,
                     "temperature": self.temperature,
-                    "prompt_token_count": response.usage_metadata.prompt_token_count if hasattr(response, 'usage_metadata') else None,
-                    "candidates_token_count": response.usage_metadata.candidates_token_count if hasattr(response, 'usage_metadata') else None,
-                }
+                    "prompt_token_count": (
+                        response.usage_metadata.prompt_token_count
+                        if hasattr(response, "usage_metadata")
+                        else None
+                    ),
+                    "candidates_token_count": (
+                        response.usage_metadata.candidates_token_count
+                        if hasattr(response, "usage_metadata")
+                        else None
+                    ),
+                },
             )
 
         except Exception as e:
@@ -104,7 +113,7 @@ class GeminiAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Gemini error encountered, proceeding without Gemini output.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "error": str(e)}
+                metadata={"skipped": True, "error": str(e)},
             )
 
     def _build_research_prompt(self, proposal: str) -> str:

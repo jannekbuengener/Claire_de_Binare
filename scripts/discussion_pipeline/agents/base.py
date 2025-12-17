@@ -23,6 +23,7 @@ class AgentOutput:
         timestamp: ISO 8601 timestamp
         metadata: Additional agent-specific data
     """
+
     agent_name: str
     content: str
     confidence_scores: Dict[str, float] = field(default_factory=dict)
@@ -33,10 +34,12 @@ class AgentOutput:
         """Convert to dictionary for JSON serialization."""
         return {
             "agent": self.agent_name,
-            "content_preview": self.content[:200] + "..." if len(self.content) > 200 else self.content,
+            "content_preview": (
+                self.content[:200] + "..." if len(self.content) > 200 else self.content
+            ),
             "confidence_scores": self.confidence_scores,
             "timestamp": self.timestamp,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -101,6 +104,7 @@ class BaseAgent(ABC):
                 return None
 
             import yaml
+
             frontmatter = content[3:end_marker].strip()
             return yaml.safe_load(frontmatter)
         except Exception:

@@ -1,3 +1,4 @@
+"""
 ---
 relations:
   role: system_check
@@ -7,7 +8,7 @@ relations:
   downstream:
     - Makefile
 ---
-"""
+
 Systemcheck Script - Claire de Binare
 Pre-Flight-Checks vor Paper Trading Start
 
@@ -32,7 +33,6 @@ Exit Codes:
 import sys
 import os
 import subprocess
-import time
 from datetime import datetime
 from pathlib import Path
 import shutil
@@ -40,6 +40,7 @@ import shutil
 # Optional imports (graceful fallback)
 try:
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -47,13 +48,17 @@ except ImportError:
 
 try:
     import psycopg2
+
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
-    print("[WARN]  Warning: 'psycopg2' module not installed. PostgreSQL checks disabled.")
+    print(
+        "[WARN]  Warning: 'psycopg2' module not installed. PostgreSQL checks disabled."
+    )
 
 try:
     import redis
+
     REDIS_AVAILABLE = True
 except ImportError:
     REDIS_AVAILABLE = False
@@ -93,9 +98,9 @@ class SystemCheck:
 
     def check_env_variables(self):
         """Check required ENV variables"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("1. ENV-VARIABLEN CHECK")
-        self.log("="*60)
+        self.log("=" * 60)
 
         required_vars = [
             # Redis
@@ -140,9 +145,9 @@ class SystemCheck:
 
     def check_docker_containers(self):
         """Check Docker container status"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("2. DOCKER CONTAINER STATUS")
-        self.log("="*60)
+        self.log("=" * 60)
 
         try:
             # docker compose ps
@@ -150,7 +155,7 @@ class SystemCheck:
                 ["docker", "compose", "ps", "--format", "json"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode != 0:
@@ -159,23 +164,39 @@ class SystemCheck:
 
             # Parse output (simplified - just check if services are running)
             import json
+
             try:
-                containers = [json.loads(line) for line in result.stdout.strip().split('\n') if line]
-            except:
+                containers = [
+                    json.loads(line)
+                    for line in result.stdout.strip().split("\n")
+                    if line
+                ]
+            except Exception:
                 # Fallback: just check if docker is running
                 self.log(f"  Running containers: {len(result.stdout.splitlines())}")
                 containers = []
 
             expected_services = [
-                "cdb_redis", "cdb_postgres", "cdb_prometheus", "cdb_grafana",
-                "cdb_ws", "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
+                "cdb_redis",
+                "cdb_postgres",
+                "cdb_prometheus",
+                "cdb_grafana",
+                "cdb_ws",
+                "cdb_core",
+                "cdb_risk",
+                "cdb_execution",
+                "cdb_db_writer",
             ]
 
             all_healthy = True
             for service in expected_services:
                 # Check if service exists in ps output
-                service_found = any(service in str(c) for c in containers) if containers else False
-                if service_found or not containers:  # If no JSON parsing, assume OK if docker compose ps succeeded
+                service_found = (
+                    any(service in str(c) for c in containers) if containers else False
+                )
+                if (
+                    service_found or not containers
+                ):  # If no JSON parsing, assume OK if docker compose ps succeeded
                     self.log(f"  {service:25s}: Running")
                 else:
                     self.log(f"  {service:25s}: [FAIL] Not Found")
@@ -192,9 +213,9 @@ class SystemCheck:
 
     def check_service_health_endpoints(self):
         """Check HTTP /health endpoints"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("3. SERVICE HEALTH ENDPOINTS")
-        self.log("="*60)
+        self.log("=" * 60)
 
         if not REQUESTS_AVAILABLE:
             self.log("  Skipped (requests module not installed)")
@@ -226,9 +247,9 @@ class SystemCheck:
 
     def check_postgresql(self):
         """Check PostgreSQL connection and schema"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("4. POSTGRESQL CONNECTION & SCHEMA")
-        self.log("="*60)
+        self.log("=" * 60)
 
         if not PSYCOPG2_AVAILABLE:
             self.log("  Skipped (psycopg2 module not installed)")
@@ -247,22 +268,30 @@ class SystemCheck:
                 database=os.getenv("POSTGRES_DB", "claire_de_binare"),
                 user=os.getenv("POSTGRES_USER", "claire_user"),
                 password=os.getenv("POSTGRES_PASSWORD", ""),
-                connect_timeout=5
+                connect_timeout=5,
             )
 
             self.log(f"  Connection: [OK] OK (Host: {host})")
 
             # Check tables
             with conn.cursor() as cursor:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT table_name
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
                     ORDER BY table_name;
-                """)
+                """
+                )
                 tables = [row[0] for row in cursor.fetchall()]
 
-                required_tables = ["signals", "orders", "trades", "positions", "portfolio_snapshots"]
+                required_tables = [
+                    "signals",
+                    "orders",
+                    "trades",
+                    "positions",
+                    "portfolio_snapshots",
+                ]
                 all_tables_present = all(table in tables for table in required_tables)
 
                 self.log(f"  Tables found: {', '.join(tables)}")
@@ -280,9 +309,9 @@ class SystemCheck:
 
     def check_redis(self):
         """Check Redis connection"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("5. REDIS CONNECTION & PUB/SUB")
-        self.log("="*60)
+        self.log("=" * 60)
 
         if not REDIS_AVAILABLE:
             self.log("  Skipped (redis module not installed)")
@@ -299,7 +328,7 @@ class SystemCheck:
                 port=int(os.getenv("REDIS_PORT", "6379")),
                 password=os.getenv("REDIS_PASSWORD"),
                 db=int(os.getenv("REDIS_DB", "0")),
-                socket_connect_timeout=5
+                socket_connect_timeout=5,
             )
 
             # Ping test
@@ -321,15 +350,17 @@ class SystemCheck:
 
     def check_disk_space(self):
         """Check available disk space (min 30 GB für stündliche Backups)"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("6. DISK SPACE CHECK")
-        self.log("="*60)
+        self.log("=" * 60)
 
         try:
             # Check backup drive F:\ (where backups are actually stored)
             backup_drive = "F:\\"
             if not Path(backup_drive).exists():
-                self.log(f"  [WARN] Backup drive {backup_drive} not found, checking current drive")
+                self.log(
+                    f"  [WARN] Backup drive {backup_drive} not found, checking current drive"
+                )
                 backup_drive = os.getcwd()
 
             # Get disk usage
@@ -352,8 +383,10 @@ class SystemCheck:
             if sufficient:
                 self.log(f"  [OK] Sufficient space ({free_gb} GB >= {MIN_FREE_GB} GB)")
             else:
-                self.log(f"  [FAIL] Insufficient space ({free_gb} GB < {MIN_FREE_GB} GB)")
-                self.log(f"  [WARN]  Stündliche Backups benötigen ~17 GB für 14 Tage")
+                self.log(
+                    f"  [FAIL] Insufficient space ({free_gb} GB < {MIN_FREE_GB} GB)"
+                )
+                self.log("  [WARN]  Stündliche Backups benötigen ~17 GB für 14 Tage")
 
             return self.check_result(sufficient, f"Disk Space >= {MIN_FREE_GB} GB")
 
@@ -363,9 +396,9 @@ class SystemCheck:
 
     def check_risk_config(self):
         """Check Risk-Engine configuration values"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("7. RISK-ENGINE CONFIGURATION")
-        self.log("="*60)
+        self.log("=" * 60)
 
         risk_params = {
             "MAX_POSITION_PCT": 0.10,
@@ -395,27 +428,31 @@ class SystemCheck:
 
     def summary(self):
         """Print summary"""
-        self.log("\n" + "="*60)
+        self.log("\n" + "=" * 60)
         self.log("SYSTEMCHECK SUMMARY")
-        self.log("="*60)
+        self.log("=" * 60)
         self.log(f"  Passed: {self.checks_passed}")
         self.log(f"  Failed: {self.checks_failed}")
         self.log(f"  Total:  {self.checks_passed + self.checks_failed}")
         self.log(f"\n  Log saved to: {self.log_file}")
 
         if self.checks_failed == 0:
-            self.log("\n[OK] ALL CHECKS PASSED - System bereit für Paper Trading Start!")
+            self.log(
+                "\n[OK] ALL CHECKS PASSED - System bereit für Paper Trading Start!"
+            )
             return 0
         else:
-            self.log(f"\n[FAIL] {self.checks_failed} CHECKS FAILED - Bitte Fehler beheben vor Start!")
+            self.log(
+                f"\n[FAIL] {self.checks_failed} CHECKS FAILED - Bitte Fehler beheben vor Start!"
+            )
             return 1
 
     def run_all(self):
         """Run all checks"""
-        self.log("="*60)
+        self.log("=" * 60)
         self.log("CLAIRE DE BINARE - SYSTEMCHECK")
         self.log(f"Timestamp: {self.timestamp}")
-        self.log("="*60)
+        self.log("=" * 60)
 
         self.check_env_variables()
         self.check_docker_containers()

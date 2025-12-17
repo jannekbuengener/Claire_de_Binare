@@ -7,6 +7,7 @@ Focuses on implementation feasibility, code-level reasoning, and critical evalua
 
 import os
 from typing import List, Dict, Any
+
 try:
     from openai import OpenAI  # type: ignore
 except ImportError:
@@ -36,7 +37,9 @@ class CopilotAgent(BaseAgent):
         self.api_available = bool(api_key) and not invalid_token and OpenAI is not None
         self.client = OpenAI(api_key=api_key) if self.api_available else None
         self.model = config.get("model", "gpt-4")
-        self.temperature = config.get("temperature", 0.5)  # Lower for technical precision
+        self.temperature = config.get(
+            "temperature", 0.5
+        )  # Lower for technical precision
         self.max_tokens = config.get("max_tokens", 4000)
 
     def analyze(self, proposal: str, context: List[str]) -> AgentOutput:
@@ -55,7 +58,7 @@ class CopilotAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing OPENAI_API_KEY. Proceeded in availability-only mode.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "reason": "missing OPENAI_API_KEY"}
+                metadata={"skipped": True, "reason": "missing OPENAI_API_KEY"},
             )
 
         if not proposal.strip():
@@ -65,7 +68,9 @@ class CopilotAgent(BaseAgent):
         if len(context) == 0:
             # Single-agent mode (unlikely for Copilot)
             prompt = self._build_technical_prompt(proposal)
-            system_message = "You are a technical architect. Analyze implementation feasibility."
+            system_message = (
+                "You are a technical architect. Analyze implementation feasibility."
+            )
         else:
             # Multi-agent mode: Challenge previous analysis
             prompt = self._build_critical_analysis_prompt(proposal, context)
@@ -76,7 +81,7 @@ class CopilotAgent(BaseAgent):
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_message},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
@@ -97,7 +102,7 @@ class CopilotAgent(BaseAgent):
                     "prompt_tokens": response.usage.prompt_tokens,
                     "completion_tokens": response.usage.completion_tokens,
                     "total_tokens": response.usage.total_tokens,
-                }
+                },
             )
 
         except Exception as e:
@@ -105,7 +110,7 @@ class CopilotAgent(BaseAgent):
                 agent_name=self.agent_name,
                 content="---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: OpenAI error encountered, proceeding without Copilot output.\n",
                 confidence_scores={"availability": 0.7},
-                metadata={"skipped": True, "error": str(e)}
+                metadata={"skipped": True, "error": str(e)},
             )
 
     def _build_technical_prompt(self, proposal: str) -> str:
@@ -185,10 +190,12 @@ confidence_scores:
 
     def _build_critical_analysis_prompt(self, proposal: str, context: List[str]) -> str:
         """Build prompt for critical evaluation of previous analysis."""
-        previous_analysis = "\n\n---\n\n".join([
-            f"## Previous Agent Analysis {i+1}\n\n{output}"
-            for i, output in enumerate(context)
-        ])
+        previous_analysis = "\n\n---\n\n".join(
+            [
+                f"## Previous Agent Analysis {i+1}\n\n{output}"
+                for i, output in enumerate(context)
+            ]
+        )
 
         return f"""# Critical Technical Analysis
 

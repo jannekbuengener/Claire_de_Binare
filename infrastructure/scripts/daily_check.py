@@ -1,3 +1,4 @@
+"""
 ---
 relations:
   role: system_check
@@ -7,7 +8,7 @@ relations:
   downstream:
     - Makefile
 ---
-"""
+
 Daily Check Script - Claire de Binare
 Täglicher Gesundheitscheck während Paper Trading
 
@@ -27,7 +28,6 @@ Output:
     - Markdown-Report in logs/daily_reports/report_YYYYMMDD.md
 """
 
-import sys
 import os
 import subprocess
 from datetime import datetime, timedelta
@@ -37,6 +37,7 @@ from pathlib import Path
 try:
     import psycopg2
     from psycopg2.extras import RealDictCursor
+
     PSYCOPG2_AVAILABLE = True
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -49,7 +50,9 @@ class DailyCheck:
     def __init__(self):
         self.timestamp = datetime.now()
         self.report_lines = []
-        self.report_file = f"logs/daily_reports/report_{self.timestamp.strftime('%Y%m%d')}.md"
+        self.report_file = (
+            f"logs/daily_reports/report_{self.timestamp.strftime('%Y%m%d')}.md"
+        )
         self.ensure_report_dir()
 
     def ensure_report_dir(self):
@@ -70,7 +73,7 @@ class DailyCheck:
                 ["docker", "compose", "ps", "--format", "table"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             if result.returncode == 0:
@@ -99,11 +102,12 @@ class DailyCheck:
                 database=os.getenv("POSTGRES_DB", "claire_de_binare"),
                 user=os.getenv("POSTGRES_USER", "claire_user"),
                 password=os.getenv("POSTGRES_PASSWORD", ""),
-                connect_timeout=5
+                connect_timeout=5,
             )
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT
                         timestamp,
                         total_equity,
@@ -116,7 +120,8 @@ class DailyCheck:
                     FROM portfolio_snapshots
                     ORDER BY timestamp DESC
                     LIMIT 1
-                """)
+                """
+                )
                 row = cursor.fetchone()
 
                 if row:
@@ -124,15 +129,19 @@ class DailyCheck:
                     self.log("|--------|-------|")
                     self.log(f"| Timestamp | {row['timestamp']} |")
                     self.log(f"| **Total Equity** | **${row['total_equity']:,.2f}** |")
-                    self.log(f"| Available Balance | ${row['available_balance']:,.2f} |")
+                    self.log(
+                        f"| Available Balance | ${row['available_balance']:,.2f} |"
+                    )
                     self.log(f"| Daily P&L | ${row['daily_pnl']:,.2f} |")
                     self.log(f"| Realized P&L | ${row['total_realized_pnl']:,.2f} |")
-                    self.log(f"| Unrealized P&L | ${row['total_unrealized_pnl']:,.2f} |")
+                    self.log(
+                        f"| Unrealized P&L | ${row['total_unrealized_pnl']:,.2f} |"
+                    )
                     self.log(f"| Open Positions | {row['open_positions']} |")
                     self.log(f"| Total Exposure | {row['total_exposure_pct']:.2%} |")
 
                     # Status emoji
-                    if row['daily_pnl'] >= 0:
+                    if row["daily_pnl"] >= 0:
                         self.log("\n✅ **Daily P&L: Positive**")
                     else:
                         self.log("\n⚠️  **Daily P&L: Negative**")
@@ -158,24 +167,28 @@ class DailyCheck:
                 database=os.getenv("POSTGRES_DB", "claire_de_binare"),
                 user=os.getenv("POSTGRES_USER", "claire_user"),
                 password=os.getenv("POSTGRES_PASSWORD", ""),
-                connect_timeout=5
+                connect_timeout=5,
             )
 
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 # Signals today
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) as count
                     FROM signals
                     WHERE DATE(timestamp) = CURRENT_DATE
-                """)
+                """
+                )
                 signals_today = cursor.fetchone()["count"]
 
                 # Trades today
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) as count
                     FROM trades
                     WHERE DATE(timestamp) = CURRENT_DATE
-                """)
+                """
+                )
                 trades_today = cursor.fetchone()["count"]
 
                 # Total signals/trades
@@ -226,6 +239,7 @@ class DailyCheck:
 
         try:
             import shutil
+
             total, used, free = shutil.disk_usage(os.getcwd())
 
             free_gb = free // (1024**3)
@@ -258,7 +272,8 @@ class DailyCheck:
             # Find backups from last 24 hours
             yesterday = datetime.now() - timedelta(days=1)
             recent_backups = [
-                f for f in backup_dir.glob("*.zip")
+                f
+                for f in backup_dir.glob("*.zip")
                 if f.stat().st_mtime > yesterday.timestamp()
             ]
 
@@ -268,10 +283,14 @@ class DailyCheck:
                 for backup in sorted(recent_backups, reverse=True)[:5]:
                     size_mb = backup.stat().st_size / (1024**2)
                     mtime = datetime.fromtimestamp(backup.stat().st_mtime)
-                    self.log(f"  - {backup.name} ({size_mb:.2f} MB) - {mtime.strftime('%Y-%m-%d %H:%M')}")
+                    self.log(
+                        f"  - {backup.name} ({size_mb:.2f} MB) - {mtime.strftime('%Y-%m-%d %H:%M')}"
+                    )
             else:
                 self.log("⚠️  **No backups in last 24h**")
-                self.log("   Run: `powershell .\\backoffice\\scripts\\backup_postgres.ps1`")
+                self.log(
+                    "   Run: `powershell .\\backoffice\\scripts\\backup_postgres.ps1`"
+                )
 
         except Exception as e:
             self.log(f"❌ **Backup check failed**: {e}")
@@ -282,7 +301,9 @@ class DailyCheck:
             with open(self.report_file, "w", encoding="utf-8") as f:
                 # Add header
                 f.write(f"# Daily Report - {self.timestamp.strftime('%Y-%m-%d')}\n\n")
-                f.write(f"Generated: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                f.write(
+                    f"Generated: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                )
                 f.write("---\n\n")
 
                 # Write report content
@@ -308,7 +329,9 @@ class DailyCheck:
         self.check_backup_status()
 
         self.log("\n---\n")
-        self.log(f"**Report generated**: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        self.log(
+            f"**Report generated**: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+        )
 
         self.save_report()
 

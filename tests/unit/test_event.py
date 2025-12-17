@@ -1,5 +1,5 @@
 """Unit tests for core.domain.event module."""
-import pytest
+
 from core.domain.event import Event, EventType
 
 
@@ -9,7 +9,7 @@ def test_event_creation():
         event_id="evt_001",
         event_type=EventType.SIGNAL_GENERATED,
         payload={"signal_id": "sig_001"},
-        timestamp=1000.0
+        timestamp=1000.0,
     )
     assert event.event_id == "evt_001"
     assert event.event_type == EventType.SIGNAL_GENERATED

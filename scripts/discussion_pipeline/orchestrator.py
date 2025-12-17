@@ -8,10 +8,9 @@ and output generation.
 import json
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from datetime import datetime
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 try:
     from .agents.base import AgentOutput
@@ -58,11 +57,7 @@ class DiscussionOrchestrator:
         self.config = config_loader.load_config()
         self.docs_hub_path = config_loader.docs_hub_path
 
-    def run_pipeline(
-        self,
-        proposal_path: Path,
-        preset: str = "quick"
-    ) -> Path:
+    def run_pipeline(self, proposal_path: Path, preset: str = "quick") -> Path:
         """
         Execute the discussion pipeline.
 
@@ -97,9 +92,7 @@ class DiscussionOrchestrator:
 
         # Initialize manifest
         manifest = self._init_manifest(
-            proposal_path=str(proposal_path),
-            pipeline=agent_names,
-            preset=preset
+            proposal_path=str(proposal_path), pipeline=agent_names, preset=preset
         )
 
         # Execute agents sequentially
@@ -109,11 +102,15 @@ class DiscussionOrchestrator:
             step_num = i + 1
             total_steps = len(agent_names)
 
-            console.print(f"[bold]🤖 Running {agent_name}[/bold] (Step {step_num}/{total_steps})")
+            console.print(
+                f"[bold]🤖 Running {agent_name}[/bold] (Step {step_num}/{total_steps})"
+            )
 
             try:
                 # Execute agent
-                output = self._run_agent(agent_name, proposal_content, context[1:])  # Skip proposal itself in context
+                output = self._run_agent(
+                    agent_name, proposal_content, context[1:]
+                )  # Skip proposal itself in context
 
                 # Save output to file
                 output_file = thread_dir / f"{step_num:02d}_{agent_name}_output.md"
@@ -121,7 +118,9 @@ class DiscussionOrchestrator:
 
                 console.print(f"[green]✅ {agent_name} completed[/green]")
                 if output.confidence_scores:
-                    scores_str = ", ".join([f"{k}: {v:.2f}" for k, v in output.confidence_scores.items()])
+                    scores_str = ", ".join(
+                        [f"{k}: {v:.2f}" for k, v in output.confidence_scores.items()]
+                    )
                     console.print(f"   [dim]Confidence: {scores_str}[/dim]")
 
                 # Update manifest
@@ -145,33 +144,38 @@ class DiscussionOrchestrator:
         quality_metrics = QualityMetrics.analyze_discussion(thread_dir)
 
         manifest["quality_metrics"] = quality_metrics
-        console.print(f"   [dim]Disagreements: {quality_metrics['disagreement_count']}[/dim]")
+        console.print(
+            f"   [dim]Disagreements: {quality_metrics['disagreement_count']}[/dim]"
+        )
         if quality_metrics.get("echo_chamber_score") is not None:
-            console.print(f"   [dim]Echo chamber score: {quality_metrics['echo_chamber_score']:.2f}[/dim]")
-        console.print(f"   [dim]Quality verdict: {quality_metrics['quality_verdict']}[/dim]")
+            console.print(
+                f"   [dim]Echo chamber score: {quality_metrics['echo_chamber_score']:.2f}[/dim]"
+            )
+        console.print(
+            f"   [dim]Quality verdict: {quality_metrics['quality_verdict']}[/dim]"
+        )
 
         # Check if gate should be triggered
         gate_handler = GateHandler(
-            self.config_loader.get_gate_config(),
-            self.docs_hub_path
+            self.config_loader.get_gate_config(), self.docs_hub_path
         )
 
         should_trigger, reasons = gate_handler.should_trigger_gate(
-            [manifest["outputs"][i] for i in range(len(agent_names))],
-            quality_metrics
+            [manifest["outputs"][i] for i in range(len(agent_names))], quality_metrics
         )
-        auto_proceed = self._should_auto_proceed(quality_metrics) if should_trigger else False
+        auto_proceed = (
+            self._should_auto_proceed(quality_metrics) if should_trigger else False
+        )
 
         if should_trigger:
-            console.print(f"\n[bold yellow]⚠️  Gate triggered - Human review required[/bold yellow]")
+            console.print(
+                "\n[bold yellow]⚠️  Gate triggered - Human review required[/bold yellow]"
+            )
             for reason in reasons:
                 console.print(f"   [dim]- {reason}[/dim]")
 
             gate_file = gate_handler.create_gate_file(
-                manifest["thread_id"],
-                reasons,
-                thread_dir,
-                quality_metrics
+                manifest["thread_id"], reasons, thread_dir, quality_metrics
             )
 
             manifest["gate_file"] = str(gate_file.relative_to(self.docs_hub_path))
@@ -181,9 +185,11 @@ class DiscussionOrchestrator:
 
             console.print(f"\n[bold]Gate file created:[/bold] {gate_file}")
             if auto_proceed:
-                console.print(f"[dim]Auto-PROCEED based on quality metrics.[/dim]\n")
+                console.print("[dim]Auto-PROCEED based on quality metrics.[/dim]\n")
             else:
-                console.print(f"[dim]Review and make decision: PROCEED / REVISE / REJECT[/dim]\n")
+                console.print(
+                    "[dim]Review and make decision: PROCEED / REVISE / REJECT[/dim]\n"
+                )
                 return thread_dir
 
         # Generate digest
@@ -195,7 +201,7 @@ class DiscussionOrchestrator:
         manifest["completed_at"] = datetime.utcnow().isoformat() + "Z"
         self._save_manifest(thread_dir, manifest)
 
-        console.print(f"\n[bold green]✅ Pipeline completed successfully![/bold green]")
+        console.print("\n[bold green]✅ Pipeline completed successfully![/bold green]")
         console.print(f"[bold]Results:[/bold] {thread_dir / 'DIGEST.md'}\n")
 
         return thread_dir
@@ -219,10 +225,7 @@ class DiscussionOrchestrator:
         return thread_dir
 
     def _init_manifest(
-        self,
-        proposal_path: str,
-        pipeline: List[str],
-        preset: str
+        self, proposal_path: str, pipeline: List[str], preset: str
     ) -> Dict[str, Any]:
         """
         Initialize pipeline manifest.
@@ -246,7 +249,7 @@ class DiscussionOrchestrator:
             "outputs": [],
             "started_at": datetime.utcnow().isoformat() + "Z",
             "completed_at": None,
-            "error": None
+            "error": None,
         }
 
     def _save_manifest(self, thread_dir: Path, manifest: Dict[str, Any]) -> None:
@@ -256,10 +259,7 @@ class DiscussionOrchestrator:
             json.dump(manifest, f, indent=2)
 
     def _run_agent(
-        self,
-        agent_name: str,
-        proposal: str,
-        context: List[str]
+        self, agent_name: str, proposal: str, context: List[str]
     ) -> AgentOutput:
         """
         Execute a specific agent.
@@ -291,8 +291,12 @@ class DiscussionOrchestrator:
     def _should_auto_proceed(self, quality_metrics: Dict[str, Any]) -> bool:
         """Auto-PROCEED when quality is good enough."""
         verdict = (quality_metrics or {}).get("quality_verdict", "")
-        min_confidence = (quality_metrics or {}).get("confidence_aggregation", {}).get("min")
-        return verdict in {"EXCELLENT", "GOOD"} and (min_confidence is not None and min_confidence >= 0.65)
+        min_confidence = (
+            (quality_metrics or {}).get("confidence_aggregation", {}).get("min")
+        )
+        return verdict in {"EXCELLENT", "GOOD"} and (
+            min_confidence is not None and min_confidence >= 0.65
+        )
 
     def _generate_digest(self, thread_dir: Path, context: List[str]) -> None:
         """
@@ -337,7 +341,9 @@ class DiscussionOrchestrator:
             if output_file.exists():
                 full_output = output_file.read_text(encoding="utf-8")
                 # Extract first 300 chars as preview
-                preview = full_output[:300] + "..." if len(full_output) > 300 else full_output
+                preview = (
+                    full_output[:300] + "..." if len(full_output) > 300 else full_output
+                )
                 digest_content += f"""```
 {preview}
 ```

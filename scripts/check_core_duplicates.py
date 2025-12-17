@@ -5,7 +5,6 @@ Rule 1: No services/*/core/** directories.
 Rule 2: No additional secrets.py files (except core/domain/secrets.py).
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -15,21 +14,23 @@ def check_duplicates():
     root_dir = Path.cwd()
 
     # Rule 1: Check for services/*/core/**
-    services_dir = root_dir / 'services'
+    services_dir = root_dir / "services"
     if services_dir.exists():
         for service_path in services_dir.iterdir():
             if service_path.is_dir():
-                core_path = service_path / 'core'
+                core_path = service_path / "core"
                 if core_path.exists():
-                    violations.append(f"FORBIDDEN: core duplicate at {core_path.relative_to(root_dir)}")
+                    violations.append(
+                        f"FORBIDDEN: core duplicate at {core_path.relative_to(root_dir)}"
+                    )
 
     # Rule 2: Check for secrets.py files (except core/domain/secrets.py)
-    for secrets_file in root_dir.rglob('secrets.py'):
-        if '.git' in secrets_file.parts or '__pycache__' in secrets_file.parts:
+    for secrets_file in root_dir.rglob("secrets.py"):
+        if ".git" in secrets_file.parts or "__pycache__" in secrets_file.parts:
             continue
         rel_path = secrets_file.relative_to(root_dir)
         # Whitelist: core/domain/secrets.py is allowed
-        if rel_path != Path('core/domain/secrets.py'):
+        if rel_path != Path("core/domain/secrets.py"):
             violations.append(f"FORBIDDEN: secrets.py at {rel_path}")
 
     if violations:
