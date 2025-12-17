@@ -10,3 +10,10 @@ pods/service-connections
 .secrets/
 .pytest_cache/
 __pycache__/
+
+# Agent Configuration (lokale Entwicklungsumgebung)
+# Die lokale Version enthält Windows-spezifische Pfade und sollte nicht committed werden
+mcp-config.toml.local
+
+# Agent Workspace (temporäre Dateien)
+.cdb_agent_workspace/

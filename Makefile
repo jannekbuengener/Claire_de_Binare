@@ -35,6 +35,11 @@ help:
 	@echo "  make paper-trading-stop      - Stoppe Paper Trading Runner"
 	@echo "  make daily-check             - Täglicher Gesundheitscheck"
 	@echo "  make backup                  - PostgreSQL Backup (manuell)"
+	@echo ""
+	@echo "🤖 Agent-Konfiguration:"
+	@echo "  make agent-help              - Zeige Agent-Setup-Befehle"
+	@echo "  make agent-status            - Zeige aktuelle Agent-Konfiguration"
+	@echo "  make agent-docs              - Zeige Agent-Setup-Dokumentation"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -175,3 +180,99 @@ install-dev:
 mcp-config-validate:
 	@echo "🔎 Validiere mcp-config.toml..."
 	python tools/validate_mcp_config.py
+
+# ============================================================================
+# Agent Configuration Management
+# ============================================================================
+
+agent-help:
+	@echo "🤖 Agent Configuration Commands:"
+	@echo ""
+	@echo "  make agent-status            - Zeige aktuelle Agent-Konfiguration"
+	@echo "  make agent-config-local      - Aktiviere lokale Entwicklungs-Config (Windows/WSL2)"
+	@echo "  make agent-config-ci         - Aktiviere CI/CD-Config (Linux/Production)"
+	@echo "  make agent-validate          - Validiere Agent-Konfiguration"
+	@echo "  make agent-docs              - Zeige Agent-Setup-Dokumentation"
+	@echo ""
+
+agent-status:
+	@echo "🤖 Agent Configuration Status:"
+	@echo ""
+	@if [ -f "mcp-config.toml" ]; then \
+		echo "📄 Aktive Konfiguration: mcp-config.toml"; \
+		echo ""; \
+		grep "^model = " mcp-config.toml || echo "  Modell: nicht konfiguriert"; \
+		grep "^execution_env = " mcp-config.toml || echo "  Umgebung: nicht konfiguriert"; \
+		grep "^project_root = " mcp-config.toml || echo "  Projekt-Root: nicht konfiguriert"; \
+		echo ""; \
+		if grep -q "/local-docs/" mcp-config.toml; then \
+			echo "⚠️  Warnung: Externe Mount-Punkte (/local-docs/) konfiguriert"; \
+			echo "   Diese funktionieren nur in lokaler Windows-Entwicklungsumgebung"; \
+		fi; \
+	else \
+		echo "❌ Keine mcp-config.toml gefunden!"; \
+	fi
+
+agent-config-local:
+	@echo "🏠 Aktiviere lokale Entwicklungs-Konfiguration..."
+	@if [ -f "mcp-config.toml.local" ]; then \
+		cp mcp-config.toml.local mcp-config.toml; \
+		echo "✅ Lokale Konfiguration aktiviert (Windows/WSL2 mit externen Mounts)"; \
+	else \
+		echo "⚠️  mcp-config.toml.local nicht gefunden, verwende aktuelle mcp-config.toml"; \
+	fi
+	@echo "   Siehe AGENT_SETUP.md für weitere Informationen"
+
+agent-config-ci:
+	@echo "☁️  Aktiviere CI/CD-Konfiguration..."
+	@if [ -f "mcp-config.ci.toml" ]; then \
+		cp mcp-config.ci.toml mcp-config.toml; \
+		echo "✅ CI/CD-Konfiguration aktiviert (Linux/Production mit repo-internen Pfaden)"; \
+		echo ""; \
+		echo "📝 Nächste Schritte:"; \
+		echo "   1. Setze API-Keys als Umgebungsvariablen:"; \
+		echo "      export ANTHROPIC_API_KEY=\"sk-ant-...\""; \
+		echo "      export OPENAI_API_KEY=\"sk-...\""; \
+		echo "   2. Validiere Konfiguration: make agent-validate"; \
+	else \
+		echo "❌ mcp-config.ci.toml nicht gefunden!"; \
+		exit 1; \
+	fi
+
+agent-validate:
+	@echo "🔍 Validiere Agent-Konfiguration..."
+	@if [ -f "mcp-config.toml" ]; then \
+		echo "✅ mcp-config.toml gefunden"; \
+		if grep -q "gpt-5.1-codex-max\|copilot/gpt-5-codex-mini" mcp-config.toml; then \
+			echo "⚠️  Warnung: Platzhalter-Modellnamen gefunden"; \
+			echo "   Für Produktion sollten gültige Modellnamen verwendet werden:"; \
+			echo "   - Claude: claude-3-5-sonnet-20241022 oder claude-3-opus-20240229"; \
+			echo "   - GPT-4: gpt-4-turbo-preview oder gpt-4"; \
+		fi; \
+		if [ -z "$$ANTHROPIC_API_KEY" ] && [ -z "$$OPENAI_API_KEY" ]; then \
+			echo "⚠️  Warnung: Keine API-Keys gefunden (ANTHROPIC_API_KEY, OPENAI_API_KEY)"; \
+		fi; \
+		echo ""; \
+		echo "📚 Agent-Definitionen:"; \
+		for agent in CLAUDE.md CODEX.md GEMINI.md COPILOT.md; do \
+			if [ -f "$$agent" ]; then \
+				echo "  ✅ $$agent"; \
+			else \
+				echo "  ❌ $$agent fehlt!"; \
+			fi; \
+		done; \
+	else \
+		echo "❌ mcp-config.toml nicht gefunden!"; \
+		exit 1; \
+	fi
+
+agent-docs:
+	@echo "📖 Agent-Setup-Dokumentation:"
+	@echo ""
+	@if [ -f "AGENT_SETUP.md" ]; then \
+		head -50 AGENT_SETUP.md; \
+		echo ""; \
+		echo "📄 Vollständige Dokumentation: cat AGENT_SETUP.md"; \
+	else \
+		echo "❌ AGENT_SETUP.md nicht gefunden!"; \
+	fi

@@ -1,5 +1,8 @@
 # Validated MCP agent config.
 # Run `make mcp-config-validate` after edits to catch TOML and path issues early.
+# 
+# WICHTIG: Diese Datei enthält lokale Windows-Entwicklungsumgebung-Einstellungen.
+# Für CI/CD und andere Umgebungen muss eine angepasste Konfiguration verwendet werden.
 agent_mode = "autonomous"
 agent_output_style = "status_only"
 agent_retry_policy = "on_error"
@@ -7,8 +10,12 @@ auto_model_switch = true
 execution_env = "wsl"
 fail_fast = true
 max_output_tokens = 300
-model = "gpt-5.1-codex-max"
-model_fast = "copilot/gpt-5-codex-mini"
+# Hinweis: Diese Modellnamen sind Platzhalter für die lokale Entwicklung
+# In Produktion sollten gültige Claude/GPT-4 API-Modelle konfiguriert werden:
+# - Claude: "claude-3-5-sonnet-20241022" oder "claude-3-opus-20240229"  
+# - GPT-4: "gpt-4-turbo-preview" oder "gpt-4"
+model = "gpt-5.1-codex-max"  # Lokaler Platzhalter
+model_fast = "copilot/gpt-5-codex-mini"  # Lokaler Platzhalter
 model_reasoning_effort = "xhigh"
 project_root = "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare"
 verbosity = "compact"
@@ -41,6 +48,8 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [canonical_paths]
+# Lokale Windows-Entwicklungsumgebung (externe Mount-Punkte)
+# Diese Pfade funktionieren nur auf dem lokalen Windows-System mit gemounteten Docs
 docs_hub_index = "/local-docs/docs/DOCS_HUB_INDEX.md"
 knowledge_hub = "/local-docs/docs/knowledge/CDB_KNOWLEDGE_HUB.md"
 governance = "/local-docs/docs/governance/NEXUS.MEMORY.yaml"
@@ -49,3 +58,11 @@ working_agents = "/local-docs/working/AGENTS.md"
 codex = "/local-docs/working/CODEX.md"
 logs = ["/local-docs/working/logs/", "/local-docs/docs/knowledge/logs/"]
 allowed_root = "/local-docs"
+
+# Alternative: Repo-interne Pfade (für CI/CD und Umgebungen ohne externe Mounts)
+# Auskommentieren und obige Pfade deaktivieren, wenn externe Mounts nicht verfügbar sind:
+# knowledge_hub = "./CDB_KNOWLEDGE_HUB.md"
+# governance = "./governance/NEXUS.MEMORY.yaml"
+# codex = "./CODEX.md"
+# logs = ["./logs/"]
+# allowed_root = "."
