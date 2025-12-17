@@ -78,6 +78,7 @@ Beispiel:
 
 ### 2.1 Aktuelle Handoffs
 
+- [DONE] Claude → User: Agent-Setup dokumentiert, Issue "warum kommt denn codex und claude nicht?" gelöst (2025-12-17)
 - [DONE] Codex → Claude: P1-Tools implementiert (2025-12-14, Session 2025-12-14A)
 - [OPEN] Claude → Service-Refactoring: `get_secret()` statt `os.getenv()` (P2)
 
@@ -100,6 +101,17 @@ Beispiel:
   **Referenzen:** `CDB_REPO_STRUCTURE.md` (v1), `CDB_REPO_INDEX.md` aktualisiert.
 
 ### 3.1 Aktuelle Entscheidungen
+
+- **2025-12-17 – User + Claude (GitHub Copilot Agent)**
+  **Entscheidung:** Agent-Konfiguration dokumentiert und CI-tauglich gemacht.
+  **Problem:** "warum kommt denn codex und claude nicht?" - MCP-Config referenzierte nicht-existente Modelle und externe Pfade.
+  **Lösung:**
+  - `mcp-config.ci.toml` für CI/CD erstellt (Linux, repo-interne Pfade)
+  - `AGENT_SETUP.md` umfassende Dokumentation
+  - `QUICKSTART_AGENTS.md` für schnelle Problemlösung
+  - Makefile um Agent-Management erweitert (`make agent-help`, `agent-status`, `agent-validate`)
+  **Referenzen:** `AGENT_SETUP.md`, `QUICKSTART_AGENTS.md`, `mcp-config.ci.toml`
+  **Status:** Dokumentiert, getestet, committed.
 
 - **2025-12-14 – User + Claude + Codex**
   **Entscheidung:** P1 Developer-Tools erfolgreich implementiert und validiert.
@@ -176,6 +188,52 @@ Bis dahin gilt:
 ---
 
 ## 6. Session Notes Archive
+
+### Session 2025-12-17A – Agent-Setup-Dokumentation & MCP-Config-Fix
+
+- **Ziel:** Issue "warum kommt denn codex und claude nicht?" beheben - Agent-Integration dokumentieren
+- **Beteiligte:** User (Jannek), Claude (GitHub Copilot Agent - Session Lead)
+- **Kontext:** MCP-Config referenzierte nicht-existente Modelle, externe Pfade funktionierten nicht in CI/CD
+- **Problem-Analyse:**
+  - Root Cause 1: `mcp-config.toml` nutzte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5-codex-mini`)
+  - Root Cause 2: Externe Mount-Punkte `/local-docs/` nur in lokaler Windows-Umgebung verfügbar
+  - Root Cause 3: Keine Dokumentation zur Agent-Aktivierung und -Konfiguration
+- **Durchgeführte Änderungen:**
+  - ✅ `mcp-config.toml` dokumentiert mit Warnungen und Hinweisen
+  - ✅ `mcp-config.ci.toml` erstellt (Linux-optimiert, repo-interne Pfade, Production-Modelle)
+  - ✅ `AGENT_SETUP.md` umfassende Dokumentation erstellt (6KB, 8 Hauptsektionen)
+  - ✅ `QUICKSTART_AGENTS.md` Quick-Start-Guide für sofortige Problemlösung
+  - ✅ Makefile um 6 Agent-Management-Targets erweitert
+  - ✅ `.gitignore` aktualisiert (`mcp-config.toml.local`, `.cdb_agent_workspace/`)
+- **Makefile-Targets (neu):**
+  - `make agent-help` - Agent-Setup-Befehle anzeigen
+  - `make agent-status` - Aktuelle Konfiguration prüfen
+  - `make agent-config-local` - Lokale Windows-Config aktivieren
+  - `make agent-config-ci` - CI/CD-Config aktivieren
+  - `make agent-validate` - Validierung (Config + Agent-Definitionen + API-Keys)
+  - `make agent-docs` - Dokumentation anzeigen
+- **Dokumentation:**
+  - **AGENT_SETUP.md**: Agent-Rollen, Konfiguration, Aktivierung, Troubleshooting, Governance
+  - **QUICKSTART_AGENTS.md**: TL;DR-Lösung, Cheat Sheet, Modell-Namen
+  - **mcp-config.ci.toml**: Production-ready Config mit Claude/GPT-4
+- **Testing:**
+  - ✅ `make agent-status` zeigt korrekte Warnungen
+  - ✅ `make agent-validate` erkennt Platzhalter-Modelle und fehlende API-Keys
+  - ✅ Alle Agent-Definitionen (CLAUDE.md, CODEX.md, GEMINI.md, COPILOT.md) vorhanden
+- **Artefakte:**
+  - `/AGENT_SETUP.md` (5.9KB, vollständige Anleitung)
+  - `/QUICKSTART_AGENTS.md` (4KB, TL;DR)
+  - `/mcp-config.ci.toml` (CI/CD-Config)
+  - `/mcp-config.toml.local` (Backup der Windows-Config)
+  - `Makefile` (6 neue Targets)
+- **Handoffs:**
+  - [DONE] Claude → User: Agent-Setup dokumentiert, Issue gelöst
+- **Nächste Schritte:**
+  - User setzt API-Keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`)
+  - User wählt Config (lokal oder CI) via `make agent-config-*`
+  - User validiert Setup via `make agent-validate`
+
+---
 
 ### Session 2025-12-14A – Codex P1-Tools Delivery & Validation
 
