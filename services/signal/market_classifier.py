@@ -407,9 +407,9 @@ class MarketClassifier:
 
         # Check confidence threshold
         if current_metrics.confidence < min_confidence:
-            recommendation["reason"] = (
-                f"Low confidence ({current_metrics.confidence:.2f} < {min_confidence})"
-            )
+            recommendation[
+                "reason"
+            ] = f"Low confidence ({current_metrics.confidence:.2f} < {min_confidence})"
             recommendation["risk_level"] = "high"
             return recommendation
 

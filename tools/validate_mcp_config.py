@@ -60,8 +60,12 @@ def validate_mcp_servers(config: dict) -> list[str]:
         args = section.get("args")
         if not isinstance(command, str) or not command:
             errors.append(f"[mcp_servers.{name}] command must be a non-empty string")
-        if not isinstance(args, list) or not all(isinstance(item, str) and item for item in args):
-            errors.append(f"[mcp_servers.{name}] args must be a list of non-empty strings")
+        if not isinstance(args, list) or not all(
+            isinstance(item, str) and item for item in args
+        ):
+            errors.append(
+                f"[mcp_servers.{name}] args must be a list of non-empty strings"
+            )
     return errors
 
 
@@ -92,10 +96,14 @@ def validate_canonical_paths(config: dict) -> list[str]:
     for key, value in paths.items():
         if key == "logs":
             if not isinstance(value, list) or not value:
-                errors.append("[canonical_paths] logs must be a non-empty list of paths")
+                errors.append(
+                    "[canonical_paths] logs must be a non-empty list of paths"
+                )
             else:
                 for idx, entry in enumerate(value):
-                    errors.extend(_validate_path_root(entry, allowed_root, f"logs[{idx}]") )
+                    errors.extend(
+                        _validate_path_root(entry, allowed_root, f"logs[{idx}]")
+                    )
         elif key != "allowed_root":
             errors.extend(_validate_path_root(value, allowed_root, key))
     return errors

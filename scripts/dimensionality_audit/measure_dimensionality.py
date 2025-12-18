@@ -15,7 +15,6 @@ Output:
     - Reduction Opportunities (kategorisiert)
 """
 
-import os
 import json
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -165,7 +164,9 @@ class DimensionalityAuditor:
             recommendation = "Prototype both HJB and BSDE. Use HJB for subsystems, BSDE for non-Markovian cases."
         else:
             framework = "BSDE-Dominated (d > 20)"
-            recommendation = "BSDE becomes necessary. Requires 2x headcount + 6-12 month ramp-up."
+            recommendation = (
+                "BSDE becomes necessary. Requires 2x headcount + 6-12 month ramp-up."
+            )
 
         return {
             "components": [asdict(c) for c in self.components],
@@ -225,7 +226,9 @@ class DimensionalityAuditor:
         for opp in audit_result["decomposition_opportunities"]:
             report_lines.append(f"### {opp['type']}")
             report_lines.append(f"- **Feasibility:** {opp['feasibility']}")
-            report_lines.append(f"- **Potential Reduction:** {opp['potential_reduction']}")
+            report_lines.append(
+                f"- **Potential Reduction:** {opp['potential_reduction']}"
+            )
             report_lines.append(f"- **Notes:** {opp['notes']}")
             report_lines.append("")
 
@@ -277,9 +280,9 @@ def main():
     )
     args = parser.parse_args()
 
-    repo_root = (
-        Path(__file__).parent.parent.parent
-    )  # scripts/dimensionality_audit/ → repo root
+    repo_root = Path(
+        __file__
+    ).parent.parent.parent  # scripts/dimensionality_audit/ → repo root
     auditor = DimensionalityAuditor(repo_root)
 
     output_path = (

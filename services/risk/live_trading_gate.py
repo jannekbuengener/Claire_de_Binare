@@ -131,9 +131,9 @@ class LiveTradingGate:
 
             if risk_level == "medium":
                 validation["authorization_level"] = AuthorizationLevel.LIMITED
-                validation["reason"] = (
-                    "Limited authorization due to medium risk assessment"
-                )
+                validation[
+                    "reason"
+                ] = "Limited authorization due to medium risk assessment"
             else:
                 validation["valid"] = False
                 validation["reason"] = f"Test failed with {risk_level} risk assessment"

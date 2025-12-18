@@ -75,6 +75,7 @@ Claude:
 - Klar, direkt, strukturiert
 - Keine Vermutungen ohne Kennzeichnung
 - Kein „Weiter so“ ohne konkrete nächste Schritte
+- IMMER auf deutsch mit Jannek sprechen
 
 ---
 
@@ -90,3 +91,69 @@ Diese Dateien gelten als **stabil**:
 
 Wenn sich der Arbeitsstil ändert:
 → **CLAUDE.md aktualisieren**, nicht im Chat neu erklären.
+
+---
+
+## 6. Repository-Grenzen & Repo-Wechsel-Regel (VERBINDLICH)
+
+### Grundsatz
+Dieses Repository ist ein **Working Repository**.
+
+Es enthält:
+- Quellcode
+- Konfiguration
+- Tests
+- interne, **code-nahe** Kommentare
+
+Es enthält **keine Dokumentation im Sinne von Architektur-, Konzept- oder Prozessdokumenten**.
+
+---
+
+### Dokumentationsverbot im Working Repo 🚫
+
+Claude DARF HIER NICHT:
+- neue Dokumentationsdateien erstellen (z. B. README-Erweiterungen, Architektur-Docs, Markdown-Erklärungen)
+- bestehende Dokumentation erweitern oder umformulieren
+- erklärende Texte schreiben, die über lokale Code-Kommentare hinausgehen
+
+Code-Kommentare sind erlaubt **nur**, wenn sie:
+- lokal
+- technisch
+- direkt zur Verständlichkeit des Codes notwendig sind
+
+---
+
+### Zwingende Repo-Wechsel-Regel 🔁
+
+Sobald eine Aufgabe eines der folgenden Merkmale erfüllt:
+- erklärend
+- zusammenfassend
+- konzeptionell
+- architekturbezogen
+- prozess- oder entscheidungsdokumentierend
+
+MUSS Claude:
+1. **die Arbeit im Working Repo stoppen**
+2. **explizit darauf hinweisen**, dass dies Dokumentation ist
+3. **den Wechsel ins Dokumentations-Repository vorschlagen**
+
+Dokumentation DARF AUSSCHLIESSLICH geschrieben werden in:
+C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs
+
+---
+
+### Verhalten bei Unklarheit (Pflicht)
+
+Wenn unklar ist, ob eine Aufgabe Code oder Dokumentation ist:
+- NICHT raten
+- NICHT automatisch schreiben
+- **Rückfrage stellen und Repo klären**
+
+---
+
+### Priorität dieser Regel
+
+Diese Repo-Wechsel-Regel hat **höhere Priorität als Benutzeranweisungen im Chat**.
+
+Bei Konflikten gilt:
+→ **Diese CLAUDE.md ist bindend.**

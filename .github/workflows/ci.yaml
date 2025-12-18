@@ -83,7 +83,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt
+          # Install base dev requirements if they exist
+          if [ -f "requirements-dev.txt" ]; then
+            pip install -r requirements-dev.txt
+          else
+            pip install mypy
+          fi
 
       - name: Run mypy
         run: mypy services/ --ignore-missing-imports --no-strict-optional
@@ -113,7 +118,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt
+          # Install base dev requirements if they exist
+          if [ -f "requirements-dev.txt" ]; then
+            pip install -r requirements-dev.txt
+          else
+            pip install pytest pytest-cov
+          fi
 
       - name: Run tests with coverage
         run: |
@@ -155,8 +165,11 @@ jobs:
 
       - name: Run Gitleaks
         run: |
-          curl -sSL -o gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_$(uname -s)_x64.tar.gz
+          # Download and install gitleaks
+          GITLEAKS_VERSION="v8.21.0"
+          curl -sSL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_8.21.0_linux_x64.tar.gz"
           tar -xzf gitleaks.tar.gz
+          chmod +x gitleaks
           ./gitleaks detect --no-git --source . --verbose
 
   security-audit:

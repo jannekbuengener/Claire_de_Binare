@@ -23,6 +23,12 @@ jobs:
             exit 0
           fi
           
+          # Allow dependabot branches
+          if [[ "$branch_name" =~ ^dependabot/ ]]; then
+            echo "✅ Valid dependabot branch name: $branch_name"
+            exit 0
+          fi
+          
           # Validate feature branch naming convention
           if [[ "$branch_name" =~ ^feature/[a-z0-9-]+$ ]]; then
             echo "✅ Valid feature branch name: $branch_name"
@@ -39,6 +45,7 @@ jobs:
             echo "  - hotfix/short-description (lowercase, hyphens only)"
             echo "  - bugfix/short-description (lowercase, hyphens only)"
             echo "  - release/vX.Y.Z (semantic version)"
+            echo "  - dependabot/* (automatic dependency updates)"
             exit 1
           fi
 
