@@ -236,3 +236,11 @@ cleanup:
 cleanup-live:
 	@echo "⚠️  Cleanup merged branches (LIVE)..."
 	@DRY_RUN=false bash scripts/cleanup_branches.sh 30
+
+# ============================================================================
+# MCP Config Validation
+# ============================================================================
+
+mcp-config-validate:
+	@echo "🔎 Validiere mcp-config.toml..."
+	python tools/validate_mcp_config.py

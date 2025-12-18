@@ -1,6 +1,6 @@
 # Validated MCP agent config.
 # Run `make mcp-config-validate` after edits to catch TOML and path issues early.
-# 
+#
 # WICHTIG: Diese Datei enthält lokale Windows-Entwicklungsumgebung-Einstellungen.
 # Für CI/CD und andere Umgebungen muss eine angepasste Konfiguration verwendet werden.
 agent_mode = "autonomous"
@@ -12,7 +12,7 @@ fail_fast = true
 max_output_tokens = 300
 # Hinweis: Diese Modellnamen sind Platzhalter für die lokale Entwicklung
 # In Produktion sollten gültige Claude/GPT-4 API-Modelle konfiguriert werden:
-# - Claude: "claude-3-5-sonnet-20241022" oder "claude-3-opus-20240229"  
+# - Claude: "claude-3-5-sonnet-20241022" oder "claude-3-opus-20240229"
 # - GPT-4: "gpt-4-turbo-preview" oder "gpt-4"
 model = "gpt-5.1-codex-max"  # Lokaler Platzhalter
 model_fast = "copilot/gpt-5-codex-mini"  # Lokaler Platzhalter
