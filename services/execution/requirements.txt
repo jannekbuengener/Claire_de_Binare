@@ -11,13 +11,13 @@ redis==5.0.1
 psycopg2-binary==2.9.9
 
 # HTTP Client (für MEXC API)
-requests==2.31.0
+requests==2.32.4
 
 # Async Support
 aiohttp==3.12.14
 
 # Crypto & Signing (für MEXC API)
-cryptography==42.0.4
+cryptography==44.0.1
 
 # Environment Variables
 python-dotenv==1.0.0
