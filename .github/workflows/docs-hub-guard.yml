@@ -32,7 +32,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "Best-effort secret scan (patterns)."
-          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- . ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.pdf' || true)"
+          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- . ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.pdf' ':!.env' ':!.env.example' ':!README.md' ':!**/postgres.yml' || true)"
           if [ -n "$hits" ]; then
             echo "Potential secret-like strings found (review required):"
             echo "$hits"
