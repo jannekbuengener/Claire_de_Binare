@@ -327,10 +327,11 @@ networks:
 # ====================================================================
 # SECRETS
 # ====================================================================
+# Secrets sind zentral unter ../.cdb_local/.secrets/ gespeichert
 secrets:
   redis_password:
-    file: ./.secrets/redis_password
+    file: ../.cdb_local/.secrets/redis_password
   postgres_password:
-    file: ./.secrets/postgres_password
+    file: ../.cdb_local/.secrets/postgres_password
   grafana_password:
-    file: ./.secrets/grafana_password
+    file: ../.cdb_local/.secrets/grafana_password

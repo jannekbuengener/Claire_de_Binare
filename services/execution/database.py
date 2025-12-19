@@ -5,6 +5,7 @@ Claire de Binare Trading Bot
 
 import logging
 import psycopg2
+import psycopg2.extras
 from psycopg2.extras import RealDictCursor
 from typing import Optional
 from datetime import datetime
@@ -208,7 +209,7 @@ class Database:
                     # Count orders by status
                     cur.execute(
                         """
-                        SELECT 
+                        SELECT
                             COUNT(*) FILTER (WHERE status = 'FILLED') as filled,
                             COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected,
                             COUNT(*) FILTER (WHERE status = 'PENDING') as pending,
@@ -228,3 +229,130 @@ class Database:
         except Exception as e:
             logger.error(f"Failed to get stats: {e}")
             return {"filled": 0, "rejected": 0, "pending": 0, "total": 0}
+
+    # ========================================================================
+    # PAPER TRADING METHODS (Migration 003 Schema)
+    # ========================================================================
+
+    def save_paper_order(self, result: ExecutionResult) -> bool:
+        """
+        Save paper trading order to paper_orders table
+        Returns True on success, False on failure
+        """
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # Get metadata if available
+                    metadata = result.metadata if hasattr(result, 'metadata') and result.metadata else {}
+
+                    # Extract metadata fields
+                    slippage_pct = metadata.get('slippage_pct')
+                    fee_amount = metadata.get('fee_amount', 0)
+                    fee_type = metadata.get('fee_type')
+
+                    # Insert into paper_orders
+                    cur.execute(
+                        """
+                        INSERT INTO paper_orders (
+                            order_id, client_id, symbol, side, order_type,
+                            quantity, filled_quantity, filled_price,
+                            status, slippage_pct, fees_usdt, fee_type,
+                            created_at, filled_at, metadata
+                        ) VALUES (
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s,
+                            %s, %s, %s, %s,
+                            NOW(), %s, %s
+                        )
+                        ON CONFLICT (order_id)
+                        DO UPDATE SET
+                            filled_quantity = EXCLUDED.filled_quantity,
+                            filled_price = EXCLUDED.filled_price,
+                            status = EXCLUDED.status,
+                            filled_at = EXCLUDED.filled_at,
+                            updated_at = NOW()
+                        """,
+                        (
+                            result.order_id,
+                            result.client_id,
+                            result.symbol,
+                            result.side,
+                            'MARKET',  # Default order type
+                            result.quantity,
+                            result.filled_quantity,
+                            result.price,
+                            result.status,
+                            slippage_pct,
+                            fee_amount,
+                            fee_type,
+                            (
+                                datetime.now()
+                                if result.status == OrderStatus.FILLED.value
+                                else None
+                            ),
+                            psycopg2.extras.Json(metadata) if metadata else None
+                        ),
+                    )
+
+                    logger.info(f"Saved paper order to database: {result.order_id}")
+                    return True
+
+        except Exception as e:
+            logger.error(f"Failed to save paper order: {e}")
+            return False
+
+    def save_paper_fill(self, result: ExecutionResult, fill_id: str = None) -> bool:
+        """
+        Save paper trading fill to paper_fills table
+        Only for FILLED orders (or PARTIAL fills in future)
+        Returns True on success, False on failure
+        """
+        if result.status not in [OrderStatus.FILLED.value, 'PARTIAL', 'PARTIALLY_FILLED']:
+            return True  # Not a fill, skip silently
+
+        try:
+            with self.get_connection() as conn:
+                with conn.cursor() as cur:
+                    # Generate fill_id if not provided
+                    if not fill_id:
+                        fill_id = f"{result.order_id}-fill-{int(time.time()*1000)}"
+
+                    # Get metadata
+                    metadata = result.metadata if hasattr(result, 'metadata') and result.metadata else {}
+                    fee_amount = metadata.get('fee_amount', 0)
+                    fee_type = metadata.get('fee_type')
+
+                    # Insert into paper_fills
+                    cur.execute(
+                        """
+                        INSERT INTO paper_fills (
+                            fill_id, order_id, symbol,
+                            quantity, price,
+                            fees_usdt, fee_type,
+                            filled_at, metadata
+                        ) VALUES (
+                            %s, %s, %s,
+                            %s, %s,
+                            %s, %s,
+                            NOW(), %s
+                        )
+                        ON CONFLICT (fill_id) DO NOTHING
+                        """,
+                        (
+                            fill_id,
+                            result.order_id,
+                            result.symbol,
+                            result.filled_quantity,
+                            result.price,
+                            fee_amount,
+                            fee_type,
+                            psycopg2.extras.Json(metadata) if metadata else None
+                        ),
+                    )
+
+                    logger.info(f"Saved paper fill to database: {fill_id}")
+                    return True
+
+        except Exception as e:
+            logger.error(f"Failed to save paper fill: {e}")
+            return False

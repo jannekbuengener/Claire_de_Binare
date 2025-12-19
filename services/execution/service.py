@@ -217,9 +217,14 @@ def process_order(order_data: dict):
 
         # Save to PostgreSQL
         if db:
+            # Legacy tables (backwards compatibility)
             db.save_order(result)
             if schema_status == "FILLED":
                 db.save_trade(result)
+
+            # Paper Trading tables (Migration 003 schema)
+            db.save_paper_order(result)
+            db.save_paper_fill(result)
 
         return result
     except (KeyError, ValueError) as err:
