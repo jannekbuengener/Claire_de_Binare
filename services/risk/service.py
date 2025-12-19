@@ -111,8 +111,17 @@ class RiskManager:
 
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
-        # Beispiel: Max 10% des Kapitals pro Position
-        max_position_size = self.config.test_balance * self.config.max_position_pct
+        # REAL BALANCE - NO MORE FAKE test_balance
+        from .balance_fetcher import RealBalanceFetcher
+        
+        if self.config.use_real_balance:
+            balance_fetcher = RealBalanceFetcher()
+            current_balance = balance_fetcher.get_usdt_balance()
+        else:
+            current_balance = self.config.fallback_balance
+            
+        # Max 10% des REAL Kapitals pro Position
+        max_position_size = current_balance * self.config.max_position_pct
 
         # Vereinfachte Berechnung (später mit echtem Portfolio)
         estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
@@ -127,7 +136,16 @@ class RiskManager:
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
-        max_exposure = self.config.test_balance * self.config.max_total_exposure_pct
+        # REAL BALANCE - NO MORE FAKE
+        from .balance_fetcher import RealBalanceFetcher
+        
+        if self.config.use_real_balance:
+            balance_fetcher = RealBalanceFetcher()
+            current_balance = balance_fetcher.get_usdt_balance()
+        else:
+            current_balance = self.config.fallback_balance
+            
+        max_exposure = current_balance * self.config.max_total_exposure_pct
 
         if risk_state.total_exposure >= max_exposure:
             return (
@@ -139,7 +157,16 @@ class RiskManager:
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
-        max_drawdown = self.config.test_balance * self.config.max_daily_drawdown_pct
+        # REAL BALANCE - NO MORE FAKE
+        from .balance_fetcher import RealBalanceFetcher
+        
+        if self.config.use_real_balance:
+            balance_fetcher = RealBalanceFetcher()
+            current_balance = balance_fetcher.get_usdt_balance()
+        else:
+            current_balance = self.config.fallback_balance
+            
+        max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
@@ -207,7 +234,16 @@ class RiskManager:
 
     def calculate_position_size(self, signal: Signal) -> float:
         """Berechnet Position-Size basierend auf Confidence"""
-        max_size = self.config.test_balance * self.config.max_position_pct
+        # REAL BALANCE - NO MORE FAKE
+        from .balance_fetcher import RealBalanceFetcher
+        
+        if self.config.use_real_balance:
+            balance_fetcher = RealBalanceFetcher()
+            current_balance = balance_fetcher.get_usdt_balance()
+        else:
+            current_balance = self.config.fallback_balance
+            
+        max_size = current_balance * self.config.max_position_pct
 
         # Confidence-basiert (höhere Confidence = größere Position)
         position_size = max_size * signal.confidence

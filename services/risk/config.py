@@ -36,8 +36,9 @@ class RiskConfig:
     output_topic_orders: str = "orders"
     output_topic_alerts: str = "alerts"
 
-    # Fake Balance für Testing (später von Exchange holen)
-    test_balance: float = float(os.getenv("TEST_BALANCE", "10000"))
+    # REAL BALANCE - NO MORE FAKE TEST_BALANCE
+    use_real_balance: bool = os.getenv("USE_REAL_BALANCE", "true").lower() == "true"
+    fallback_balance: float = float(os.getenv("FALLBACK_BALANCE", "100"))  # Minimal fallback
 
     def validate(self) -> bool:
         """Validiert Konfiguration"""

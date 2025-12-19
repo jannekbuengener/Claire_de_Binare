@@ -112,14 +112,15 @@ def init_services():
         pubsub.subscribe(config.TOPIC_ORDERS)
         logger.info(f"Subscribed to topic: {config.TOPIC_ORDERS}")
 
-        # Initialize executor
+        # Initialize executor - LIVE DATA CONVERSION
         if config.MOCK_TRADING:
             executor = MockExecutor()
             logger.info("Using MockExecutor (Paper Trading Mode)")
         else:
-            # TODO: Real MEXC executor
-            logger.warning("Real trading not implemented yet, using MockExecutor")
-            executor = MockExecutor()
+            # REAL MEXC EXECUTOR - NO MORE MOCK
+            from .mexc_executor import MexcExecutor
+            executor = MexcExecutor()
+            logger.info("Using MexcExecutor (LIVE TRADING MODE - REAL DATA)")
 
         # Initialize database
         db = _init_with_retry(

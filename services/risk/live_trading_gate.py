@@ -69,25 +69,50 @@ class LiveTradingGate:
         return auth_response
 
     def _load_latest_test_results(self, system_id: str) -> Optional[Dict[str, Any]]:
-        """Load latest 72-hour test results"""
+        """Load latest 72-hour test results - REAL VALIDATION ONLY"""
         try:
-            # In a real implementation, this would load from database
-            # For now, return a simulated test result
+            # REAL VALIDATION RESULTS - NO MORE FAKE
+            from .real_validation_fetcher import RealValidationFetcher
+            
+            validation_fetcher = RealValidationFetcher()
+            real_results = validation_fetcher.get_latest_72h_results()
+            
+            if not real_results:
+                self.logger.warning("No real 72-hour validation results found")
+                return None
+                
+            if not real_results.get('test_passed', False):
+                self.logger.warning(f"Last validation failed: {real_results.get('error', 'Unknown')}")
+                return None
+                
+            # Convert real results to expected format
             return {
-                "test_completed": True,
-                "duration_hours": 72.0,
+                "test_completed": real_results.get('test_completed', False),
+                "duration_hours": real_results.get('duration_hours', 0),
                 "validation_result": {
-                    "overall_pass": True,
-                    "risk_assessment": "low",
+                    "overall_pass": real_results.get('test_passed', False),
+                    "risk_assessment": "low" if real_results.get('sharpe_ratio', 0) > 1.0 else "medium",
                     "criteria_results": {
-                        "min_win_rate": {"pass": True, "actual": 0.55},
-                        "max_drawdown": {"pass": True, "actual": 0.08},
+                        "min_win_rate": {
+                            "pass": real_results.get('win_rate', 0) >= 0.45,
+                            "actual": real_results.get('win_rate', 0)
+                        },
+                        "max_drawdown": {
+                            "pass": real_results.get('max_drawdown', 1) <= 0.1,
+                            "actual": real_results.get('max_drawdown', 1)
+                        },
+                        "sharpe_ratio": {
+                            "pass": real_results.get('sharpe_ratio', 0) >= 0.5,
+                            "actual": real_results.get('sharpe_ratio', 0)
+                        }
                     },
                 },
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": real_results.get('timestamp', ''),
+                "real_validation": True  # Mark as real validation
             }
+            
         except Exception as e:
-            self.logger.error(f"Failed to load test results: {e}")
+            self.logger.error(f"Failed to load REAL test results: {e}")
             return None
 
     def _validate_test_results(self, test_results: Dict[str, Any]) -> Dict[str, Any]:
