@@ -122,7 +122,7 @@ jobs:
           if [ -f "requirements-dev.txt" ]; then
             pip install -r requirements-dev.txt
           else
-            pip install pytest pytest-cov
+            pip install pytest pytest-cov psycopg2-binary redis
           fi
 
       - name: Run tests with coverage
