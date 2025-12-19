@@ -18,12 +18,10 @@ from threading import Thread
 
 try:
     from .config import config
-    from .models import Order, Alert, RiskState, OrderResult
+    from .models import Order, Alert, RiskState, OrderResult, Signal
 except ImportError:
     from config import config
-    from models import Order, Alert, RiskState, OrderResult
-
-from core.domain.models import Signal
+    from models import Order, Alert, RiskState, OrderResult, Signal
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
