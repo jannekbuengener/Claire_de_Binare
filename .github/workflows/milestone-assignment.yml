@@ -1,3 +1,8 @@
+# ⚠️ DEPRECATED: This workflow is deprecated as of label consolidation.
+# Milestone labels (milestone:m1-m9) have been removed in favor of GitHub's native Milestones.
+# Epic labels (epic:*) have been removed in favor of GitHub Projects.
+# Please use GitHub Milestones and Projects features directly instead of labels.
+
 name: 'Milestone Assignment & Epic Labeling'
 
 on:

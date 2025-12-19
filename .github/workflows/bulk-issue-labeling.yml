@@ -53,14 +53,14 @@ jobs:
               // Stabilization Issues (156-160) 
               "Stabilization": {
                 issueNumbers: [156, 157, 158, 159, 160],
-                labels: ["prio:must", "stabilization", "type:bug"],
+                labels: ["prio:must", "type:bug"],
                 titlePatterns: ["STABILIZATION", "Infrastructure Emergency"]
               },
               
               // Security Issues (97-106)
               "Security": {
                 issueNumbers: [97, 98, 99, 100, 101, 102, 103, 104, 105, 106],
-                labels: ["security", "scope:security", "milestone:m8", "type:security"],
+                labels: ["type:security", "prio:must"],
                 titlePatterns: ["Security", "Hardening", "Penetration", "OWASP"]
               },
               
@@ -74,7 +74,7 @@ jobs:
               // Testing Issues (91-95, 113)
               "Testing": {
                 issueNumbers: [91, 92, 93, 94, 95, 113],
-                labels: ["testing", "type:testing", "prio:should", "milestone:m7"],
+                labels: ["testing", "prio:should"],
                 titlePatterns: ["E2E", "Test", "Performance"]
               },
               
@@ -88,7 +88,7 @@ jobs:
               // Infrastructure Issues (114, 121-123, 135, 139, 140)
               "Infrastructure": {
                 issueNumbers: [114, 121, 122, 123, 135, 139, 140],
-                labels: ["infrastructure", "scope:infra", "prio:should"],
+                labels: ["scope:infra", "prio:should"],
                 titlePatterns: ["Docker", "CI/CD", "GitHub"]
               },
               
@@ -102,14 +102,14 @@ jobs:
               // Monitoring Issues (96)
               "Monitoring": {
                 issueNumbers: [96],
-                labels: ["monitoring", "scope:infra", "prio:should"],
+                labels: ["scope:monitoring", "prio:should"],
                 titlePatterns: ["Grafana", "Monitoring"]
               },
               
               // Automation Issues (144, 145, 146, 169, 170)
               "Automation": {
                 issueNumbers: [144, 145, 146, 169, 170],
-                labels: ["github-actions", "type:feature", "prio:should"],
+                labels: ["scope:ci", "type:feature", "prio:should"],
                 titlePatterns: ["AUTOMATION", "Workflow", "Smart"]
               },
               

@@ -71,7 +71,7 @@ jobs:
                   /stabilization/i, /system broken/i, /infrastructure emergency/i,
                   /code reality audit/i, /governance enforcement/i
                 ],
-                labels: ['prio:must', 'type:bug', 'stabilization']
+                labels: ['prio:must', 'type:bug']
               },
               
               // Security Issues
@@ -81,7 +81,7 @@ jobs:
                   /container hardening/i, /rbac/i, /ssl/i, /tls/i, /owasp/i,
                   /trivy/i, /incident response/i
                 ],
-                labels: ['security', 'scope:security', 'type:security']
+                labels: ['type:security', 'prio:must']
               },
               
               // Trading Core Issues
@@ -100,7 +100,7 @@ jobs:
                   /docker/i, /container/i, /ci\/cd/i, /deployment/i, /devops/i,
                   /pipeline/i, /build/i, /infrastructure/i
                 ],
-                labels: ['infrastructure', 'scope:infra', 'prio:should']
+                labels: ['scope:infra', 'prio:should']
               },
               
               // Testing Issues
@@ -109,7 +109,7 @@ jobs:
                   /test/i, /e2e/i, /integration test/i, /unit test/i, /performance/i,
                   /coverage/i, /resilience/i, /benchmark/i
                 ],
-                labels: ['testing', 'type:testing', 'prio:should']
+                labels: ['testing', 'prio:should']
               },
               
               // Documentation Issues
@@ -127,7 +127,7 @@ jobs:
                   /monitoring/i, /grafana/i, /prometheus/i, /dashboard/i,
                   /alerting/i, /metrics/i, /observability/i
                 ],
-                labels: ['monitoring', 'scope:infra', 'prio:should']
+                labels: ['scope:monitoring', 'prio:should']
               }
             };
             
@@ -153,27 +153,6 @@ jobs:
                 ],
                 label: 'prio:nice'
               }
-            };
-            
-            // Milestone detection (enhanced)
-            const milestoneRules = {
-              'm1': { patterns: [/m1/i, /foundation/i, /setup/i, /basic/i, /stabilization/i], label: 'milestone:m1' },
-              'm2': { patterns: [/m2/i, /core services/i, /basic trading/i], label: 'milestone:m2' },
-              'm3': { patterns: [/m3/i, /risk layer/i, /risk management/i], label: 'milestone:m3' },
-              'm4': { patterns: [/m4/i, /market data/i, /data pipeline/i], label: 'milestone:m4' },
-              'm5': { patterns: [/m5/i, /persistenz/i, /database/i, /storage/i], label: 'milestone:m5' },
-              'm6': { patterns: [/m6/i, /docker/i, /container/i, /deployment/i], label: 'milestone:m6' },
-              'm7': { patterns: [/m7/i, /testnet/i, /paper trading/i, /test/i, /e2e/i], label: 'milestone:m7' },
-              'm8': { patterns: [/m8/i, /security/i, /hardening/i, /penetration/i, /owasp/i], label: 'milestone:m8' },
-              'm9': { patterns: [/m9/i, /production/i, /live trading/i, /release/i, /mexc/i], label: 'milestone:m9' }
-            };
-            
-            // Epic detection
-            const epicRules = {
-              'ml-foundation': { patterns: [/ml foundation/i, /machine learning/i, /ai/i, /deep research/i], label: 'epic:ml-foundation' },
-              'stabilization': { patterns: [/stabilization/i, /emergency/i, /critical/i, /infrastructure emergency/i], label: 'epic:stabilization' },
-              'paper-trading': { patterns: [/paper trading/i, /testnet/i, /simulation/i, /test infrastructure/i], label: 'epic:paper-trading' },
-              'live-trading': { patterns: [/live trading/i, /production/i, /mexc/i, /real trading/i], label: 'epic:live-trading' }
             };
             
             // Agent assignment detection  
@@ -220,26 +199,6 @@ jobs:
                 }
               });
               
-              // Apply milestone rules
-              Object.entries(milestoneRules).forEach(([milestone, rule]) => {
-                if (rule.patterns.some(pattern => pattern.test(content))) {
-                  if (!existingLabels.includes(rule.label) && !newLabels.includes(rule.label)) {
-                    newLabels.push(rule.label);
-                    console.log(`  Adding milestone label: ${rule.label}`);
-                  }
-                }
-              });
-              
-              // Apply epic rules
-              Object.entries(epicRules).forEach(([epic, rule]) => {
-                if (rule.patterns.some(pattern => pattern.test(content))) {
-                  if (!existingLabels.includes(rule.label) && !newLabels.includes(rule.label)) {
-                    newLabels.push(rule.label);
-                    console.log(`  Adding epic label: ${rule.label}`);
-                  }
-                }
-              });
-              
               // Apply agent rules
               Object.entries(agentRules).forEach(([agent, rule]) => {
                 if (rule.patterns.some(pattern => pattern.test(content))) {
@@ -250,47 +209,47 @@ jobs:
                 }
               });
               
-              // Issue number specific rules for known patterns (enhanced with milestones & epics)
+              // Issue number specific rules for known patterns
               const issueSpecificRules = {
                 // ML Foundation Issues (192-200)
                 mlFoundation: {
                   range: [192, 200],
-                  labels: ['type:research', 'scope:core', 'prio:should', 'epic:ml-foundation']
+                  labels: ['scope:core', 'prio:should']
                 },
                 // Stabilization Issues (156-160) 
                 stabilization: {
                   range: [156, 160],
-                  labels: ['prio:must', 'stabilization', 'type:bug', 'milestone:m1', 'epic:stabilization']
+                  labels: ['prio:must', 'type:bug']
                 },
                 // Security Issues (97-106)
                 security: {
                   range: [97, 106], 
-                  labels: ['security', 'scope:security', 'milestone:m8', 'type:security']
+                  labels: ['type:security', 'prio:must']
                 },
                 // Trading Issues (171-188)
                 trading: {
                   range: [171, 188],
-                  labels: ['prio:must', 'scope:core', 'trading', 'milestone:m9', 'epic:live-trading']
+                  labels: ['prio:must', 'scope:core']
                 },
                 // Testing Issues (91-95)
                 testing: {
                   range: [91, 95],
-                  labels: ['testing', 'type:testing', 'milestone:m7', 'epic:paper-trading']
+                  labels: ['testing', 'prio:should']
                 },
                 // Documentation Issues (117-120)
                 documentation: {
                   range: [117, 120],
-                  labels: ['type:docs', 'scope:docs', 'prio:should', 'milestone:m1']
+                  labels: ['type:docs', 'scope:docs', 'prio:should']
                 },
                 // Infrastructure Issues (121-123)
                 infrastructure: {
                   range: [121, 123],
-                  labels: ['infrastructure', 'scope:infra', 'prio:should', 'milestone:m6']
+                  labels: ['scope:infra', 'prio:should']
                 },
                 // Governance Issues (163-167)
                 governance: {
                   range: [163, 167],
-                  labels: ['governance', 'type:docs', 'prio:must', 'milestone:m1', 'epic:stabilization']
+                  labels: ['type:docs', 'prio:must']
                 }
               };
               
