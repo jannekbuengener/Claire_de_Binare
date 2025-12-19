@@ -19,9 +19,11 @@ from threading import Thread
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult, Signal
+    from .mexc_client import MexcClient
 except ImportError:
     from config import config
     from models import Order, Alert, RiskState, OrderResult, Signal
+    from mexc_client import MexcClient
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -69,6 +71,9 @@ class RiskManager:
         self.pubsub_results: Optional[redis.client.PubSub] = None
         self._order_result_thread: Optional[Thread] = None
         self.running = False
+        self.mexc_client: Optional[MexcClient] = None
+        self._cached_balance: float = 0.0
+        self._last_balance_fetch: float = 0.0
 
         # Validiere Config
         try:
@@ -77,6 +82,24 @@ class RiskManager:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+        # Initialize MEXC Client für Live Balance
+        if self.config.use_live_balance:
+            try:
+                self.mexc_client = MexcClient(
+                    api_key=self.config.mexc_api_key,
+                    api_secret=self.config.mexc_api_secret,
+                    testnet=self.config.mexc_testnet,
+                )
+                logger.info("💰 Live Balance Mode aktiviert - fetching from MEXC")
+                # Initial balance fetch
+                self._update_balance_cache()
+            except Exception as e:
+                logger.error(f"❌ MEXC Client initialization failed: {e}")
+                logger.warning("⚠️  Falling back to test balance")
+                self.config.use_live_balance = False
+        else:
+            logger.info(f"💵 Test Balance Mode: ${self.config.test_balance:,.2f}")
 
     def connect_redis(self):
         """Redis-Verbindung"""
@@ -107,10 +130,42 @@ class RiskManager:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
+    def _update_balance_cache(self):
+        """Fetch live balance from MEXC and cache it"""
+        if not self.mexc_client:
+            return
+
+        try:
+            balance = self.mexc_client.get_balance("USDT")
+            self._cached_balance = balance
+            self._last_balance_fetch = time.time()
+            logger.info(f"💰 Live Balance updated: ${balance:,.2f} USDT")
+        except Exception as e:
+            logger.error(f"❌ Failed to fetch live balance: {e}")
+            # Keep using cached balance or fall back to test
+            if self._cached_balance == 0:
+                logger.warning("⚠️  No cached balance, using test balance")
+                self._cached_balance = self.config.test_balance
+
+    def get_balance(self) -> float:
+        """
+        Get current balance (either live from MEXC or test balance)
+
+        Returns:
+            Current balance in USDT
+        """
+        if self.config.use_live_balance and self.mexc_client:
+            # Refresh cache every 60 seconds
+            if time.time() - self._last_balance_fetch > 60:
+                self._update_balance_cache()
+            return self._cached_balance
+        else:
+            return self.config.test_balance
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # Beispiel: Max 10% des Kapitals pro Position
-        max_position_size = self.config.test_balance * self.config.max_position_pct
+        max_position_size = self.get_balance() * self.config.max_position_pct
 
         # Vereinfachte Berechnung (später mit echtem Portfolio)
         estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
@@ -125,7 +180,7 @@ class RiskManager:
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
-        max_exposure = self.config.test_balance * self.config.max_total_exposure_pct
+        max_exposure = self.get_balance() * self.config.max_total_exposure_pct
 
         if risk_state.total_exposure >= max_exposure:
             return (
@@ -137,7 +192,7 @@ class RiskManager:
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
-        max_drawdown = self.config.test_balance * self.config.max_daily_drawdown_pct
+        max_drawdown = self.get_balance() * self.config.max_daily_drawdown_pct
 
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
@@ -205,7 +260,7 @@ class RiskManager:
 
     def calculate_position_size(self, signal: Signal) -> float:
         """Berechnet Position-Size basierend auf Confidence"""
-        max_size = self.config.test_balance * self.config.max_position_pct
+        max_size = self.get_balance() * self.config.max_position_pct
 
         # Confidence-basiert (höhere Confidence = größere Position)
         position_size = max_size * signal.confidence

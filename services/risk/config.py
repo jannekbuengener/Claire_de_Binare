@@ -35,8 +35,14 @@ class RiskConfig:
     output_topic_orders: str = "orders"
     output_topic_alerts: str = "alerts"
 
-    # Fake Balance für Testing (später von Exchange holen)
+    # Balance Configuration
+    use_live_balance: bool = os.getenv("USE_LIVE_BALANCE", "false").lower() == "true"
     test_balance: float = float(os.getenv("TEST_BALANCE", "10000"))
+
+    # MEXC API (for live balance fetching)
+    mexc_api_key: Optional[str] = os.getenv("MEXC_API_KEY")
+    mexc_api_secret: Optional[str] = os.getenv("MEXC_API_SECRET")
+    mexc_testnet: bool = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
     def validate(self) -> bool:
         """Validiert Konfiguration"""
