@@ -21,6 +21,7 @@ MEXC_TESTNET = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
 # Trading Mode
 MOCK_TRADING = os.getenv("MOCK_TRADING", "true").lower() == "true"
+DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"  # Safety: log orders without executing
 
 # Redis Configuration
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")

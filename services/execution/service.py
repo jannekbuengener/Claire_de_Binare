@@ -19,11 +19,13 @@ try:
     from . import config
     from .models import Order, ExecutionResult
     from .mock_executor import MockExecutor
+    from .live_executor import LiveExecutor
     from .database import Database
 except ImportError:
     import config
     from models import Order, ExecutionResult
     from mock_executor import MockExecutor
+    from live_executor import LiveExecutor
     from database import Database
 
 # Logging setup mit zentraler Konfiguration
@@ -115,11 +117,21 @@ def init_services():
         # Initialize executor
         if config.MOCK_TRADING:
             executor = MockExecutor()
-            logger.info("Using MockExecutor (Paper Trading Mode)")
+            logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
         else:
-            # TODO: Real MEXC executor
-            logger.warning("Real trading not implemented yet, using MockExecutor")
-            executor = MockExecutor()
+            # Real MEXC executor
+            dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
+            testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
+
+            executor = LiveExecutor(testnet=testnet, dry_run=dry_run)
+
+            if dry_run:
+                logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
+            else:
+                mode = "TESTNET" if testnet else "LIVE"
+                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
+
+
 
         # Initialize database
         db = _init_with_retry(
