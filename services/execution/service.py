@@ -119,6 +119,7 @@ def init_services():
         else:
             # REAL MEXC EXECUTOR - NO MORE MOCK
             from .mexc_executor import MexcExecutor
+
             executor = MexcExecutor()
             logger.info("Using MexcExecutor (LIVE TRADING MODE - REAL DATA)")
 

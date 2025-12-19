@@ -113,13 +113,13 @@ class RiskManager:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
         from .balance_fetcher import RealBalanceFetcher
-        
+
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
             current_balance = self.config.fallback_balance
-            
+
         # Max 10% des REAL Kapitals pro Position
         max_position_size = current_balance * self.config.max_position_pct
 
@@ -138,13 +138,13 @@ class RiskManager:
         """Prüft Gesamt-Exposure"""
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
-        
+
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
             current_balance = self.config.fallback_balance
-            
+
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
         if risk_state.total_exposure >= max_exposure:
@@ -159,13 +159,13 @@ class RiskManager:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
-        
+
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
             current_balance = self.config.fallback_balance
-            
+
         max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
         if risk_state.daily_pnl <= -max_drawdown:
@@ -236,13 +236,13 @@ class RiskManager:
         """Berechnet Position-Size basierend auf Confidence"""
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
-        
+
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
             current_balance = self.config.fallback_balance
-            
+
         max_size = current_balance * self.config.max_position_pct
 
         # Confidence-basiert (höhere Confidence = größere Position)

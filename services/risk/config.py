@@ -38,7 +38,9 @@ class RiskConfig:
 
     # REAL BALANCE - NO MORE FAKE TEST_BALANCE
     use_real_balance: bool = os.getenv("USE_REAL_BALANCE", "true").lower() == "true"
-    fallback_balance: float = float(os.getenv("FALLBACK_BALANCE", "100"))  # Minimal fallback
+    fallback_balance: float = float(
+        os.getenv("FALLBACK_BALANCE", "100")
+    )  # Minimal fallback
 
     def validate(self) -> bool:
         """Validiert Konfiguration"""
