@@ -115,7 +115,7 @@ class Alert:
 
 @dataclass
 class RiskState:
-    """Aktueller Risk-Status"""
+    """Aktueller Risk-Status mit erweiterten Safety Tracking"""
 
     total_exposure: float = 0.0
     daily_pnl: float = 0.0
@@ -123,6 +123,20 @@ class RiskState:
     signals_blocked: int = 0
     signals_approved: int = 0
     circuit_breaker_active: bool = False
-    positions: dict[str, float] = field(default_factory=dict)
+    circuit_breaker_triggered_at: Optional[int] = None  # Timestamp when circuit breaker was triggered
+    emergency_stop_active: bool = False  # Emergency kill switch status
+    positions: dict[str, float] = field(default_factory=dict)  # symbol -> quantity
     pending_orders: int = 0
-    last_prices: dict[str, float] = field(default_factory=dict)
+    last_prices: dict[str, float] = field(default_factory=dict)  # symbol -> last_price
+
+    def get_position_count(self) -> int:
+        """Get number of open positions"""
+        return sum(1 for qty in self.positions.values() if abs(qty) > 1e-6)
+
+    def get_symbol_position(self, symbol: str) -> float:
+        """Get current position size for symbol"""
+        return abs(self.positions.get(symbol, 0.0))
+
+    def has_position(self, symbol: str) -> bool:
+        """Check if position exists for symbol"""
+        return abs(self.positions.get(symbol, 0.0)) > 1e-6

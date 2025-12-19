@@ -113,6 +113,82 @@ class RiskManager:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
+    def check_emergency_stop(self) -> tuple[bool, str]:
+        """
+        Layer 0: Emergency Kill Switch (Redis-based)
+
+        Checks if emergency stop is active via Redis key.
+        This is the HIGHEST priority check - overrides all other risk checks.
+
+        Returns:
+            (approved, reason)
+        """
+        if not self.config.check_emergency_stop:
+            return True, "Emergency stop check disabled"
+
+        try:
+            emergency_stop = self.redis_client.get(self.config.emergency_stop_key)
+            if emergency_stop and emergency_stop.lower() in ('1', 'true', 'yes'):
+                risk_state.emergency_stop_active = True
+                return False, "🚨 EMERGENCY STOP ACTIVE - All trading halted"
+
+            risk_state.emergency_stop_active = False
+            return True, "No emergency stop"
+
+        except Exception as e:
+            logger.error(f"Failed to check emergency stop: {e}")
+            # Fail-safe: If Redis check fails, block trading
+            return False, f"Emergency stop check failed: {e}"
+
+    def check_max_open_positions(self) -> tuple[bool, str]:
+        """
+        Layer 1.5: Maximum Open Positions Check
+
+        Prevents opening too many positions simultaneously.
+
+        Returns:
+            (approved, reason)
+        """
+        current_positions = risk_state.get_position_count()
+
+        if current_positions >= self.config.max_open_positions:
+            return (
+                False,
+                f"Max open positions reached: {current_positions}/{self.config.max_open_positions}"
+            )
+
+        return True, f"Open positions OK: {current_positions}/{self.config.max_open_positions}"
+
+    def check_symbol_position_limit(self, signal: Signal) -> tuple[bool, str]:
+        """
+        Layer 1.6: Per-Symbol Position Limit
+
+        Checks if symbol already has maximum allowed positions.
+
+        Returns:
+            (approved, reason)
+        """
+        # Check if we already have a position in this symbol
+        if risk_state.has_position(signal.symbol):
+            current_position_count = 1  # We track one position per symbol
+            if current_position_count >= self.config.max_positions_per_symbol:
+                return (
+                    False,
+                    f"Symbol {signal.symbol} already has {current_position_count} position(s) (max: {self.config.max_positions_per_symbol})"
+                )
+
+        # Check absolute symbol limit (if configured)
+        symbol_limit = self.config.get_symbol_limit(signal.symbol)
+        if symbol_limit is not None:
+            current_qty = risk_state.get_symbol_position(signal.symbol)
+            if current_qty >= symbol_limit:
+                return (
+                    False,
+                    f"Symbol position limit: {current_qty:.4f} >= {symbol_limit} {signal.symbol}"
+                )
+
+        return True, f"Symbol position OK for {signal.symbol}"
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # Get current balance (live or fallback)
@@ -146,23 +222,81 @@ class RiskManager:
         return True, "Exposure OK"
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
-        """Prüft Daily-Drawdown (Circuit Breaker)"""
+        """
+        Layer 1: Circuit Breaker (Enhanced with Cooldown)
+
+        Checks daily drawdown limit and enforces cooldown period.
+
+        Returns:
+            (approved, reason)
+        """
         current_balance = self.balance_provider.get_total_balance_usdt()
         max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
+        # Check if circuit breaker is active
+        if risk_state.circuit_breaker_active:
+            # Check cooldown period
+            if risk_state.circuit_breaker_triggered_at is not None:
+                cooldown_seconds = self.config.circuit_breaker_cooldown_minutes * 60
+                elapsed = int(time.time()) - risk_state.circuit_breaker_triggered_at
+
+                if elapsed < cooldown_seconds:
+                    remaining = cooldown_seconds - elapsed
+                    return (
+                        False,
+                        f"🚨 Circuit Breaker active - Cooldown: {remaining//60}m {remaining%60}s remaining"
+                    )
+
+                # Cooldown expired - check if auto-reset enabled
+                if self.config.circuit_breaker_auto_reset:
+                    logger.warning("Circuit breaker cooldown expired - auto-resetting")
+                    risk_state.circuit_breaker_active = False
+                    risk_state.circuit_breaker_triggered_at = None
+                else:
+                    return (
+                        False,
+                        "🚨 Circuit Breaker active - Manual reset required (cooldown expired)"
+                    )
+
+        # Check drawdown limit
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
+            risk_state.circuit_breaker_triggered_at = int(time.time())
             return (
                 False,
-                f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}",
+                f"🚨 Circuit Breaker TRIGGERED! Daily Loss: ${risk_state.daily_pnl:.2f} <= -${max_drawdown:.2f}",
             )
 
-        return True, "Drawdown OK"
+        return True, f"Drawdown OK (${risk_state.daily_pnl:.2f} / -${max_drawdown:.2f} limit)"
 
     def process_signal(self, signal: Signal) -> Optional[Order]:
-        """Prüft Signal gegen alle Risk-Layers"""
+        """
+        Prüft Signal gegen alle Risk-Layers (Enhanced Multi-Layer Safety)
 
-        # Layer 1: Circuit Breaker
+        Risk Layers (in order):
+            0. Emergency Stop (Redis kill switch)
+            1. Circuit Breaker (daily drawdown)
+            1.5. Max Open Positions
+            1.6. Per-Symbol Position Limit
+            2. Total Exposure Limit
+            3. Position Size Limit
+
+        Returns:
+            Order if approved, None if blocked
+        """
+
+        # Layer 0: Emergency Stop (HIGHEST PRIORITY)
+        ok, reason = self.check_emergency_stop()
+        if not ok:
+            self.send_alert(
+                "CRITICAL", "EMERGENCY_STOP", reason, {"signal": signal.symbol}
+            )
+            logger.critical(f"🚨🚨🚨 {reason}")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        # Layer 1: Circuit Breaker (Drawdown)
         ok, reason = self.check_drawdown_limit()
         if not ok:
             self.send_alert(
@@ -173,25 +307,47 @@ class RiskManager:
             risk_state.signals_blocked += 1
             return None
 
-        # Layer 2: Exposure-Limit
+        # Layer 1.5: Max Open Positions
+        ok, reason = self.check_max_open_positions()
+        if not ok:
+            self.send_alert(
+                "WARNING", "POSITION_LIMIT", reason, {"signal": signal.symbol}
+            )
+            logger.warning(f"⚠️ {reason}")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        # Layer 1.6: Per-Symbol Position Limit
+        ok, reason = self.check_symbol_position_limit(signal)
+        if not ok:
+            self.send_alert(
+                "WARNING", "SYMBOL_LIMIT", reason, {"signal": signal.symbol}
+            )
+            logger.warning(f"⚠️ {reason}")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        # Layer 2: Total Exposure Limit
         ok, reason = self.check_exposure_limit()
         if not ok:
-            self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
+            self.send_alert("WARNING", "EXPOSURE_LIMIT", reason, {"signal": signal.symbol})
             logger.warning(f"⚠️ {reason}")
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
 
-        # Layer 3: Position-Size
+        # Layer 3: Position Size Limit
         ok, reason = self.check_position_limit(signal)
         if not ok:
-            self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
+            self.send_alert("WARNING", "POSITION_SIZE", reason, {"signal": signal.symbol})
             logger.warning(f"⚠️ {reason}")
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
 
-        # Alle Checks passed → Order erstellen
+        # ✅ All safety checks passed → Create order
         quantity = self.calculate_position_size(signal)
 
         order = Order(
@@ -206,7 +362,7 @@ class RiskManager:
         )
 
         logger.info(
-            f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
+            f"✅ Order approved (passed 6 safety layers): {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
@@ -348,16 +504,30 @@ class RiskManager:
             logger.info("Order-Result Listener beendet")
 
     def run(self):
-        """Hauptschleife"""
+        """Hauptschleife mit erweiterten Safety Logs"""
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = datetime.now().isoformat()
 
-        logger.info("🚀 Risk-Manager gestartet")
-        logger.info(f"   Max Position: {self.config.max_position_pct*100}%")
-        logger.info(f"   Max Exposure: {self.config.max_total_exposure_pct*100}%")
-        logger.info(f"   Max Drawdown: {self.config.max_daily_drawdown_pct*100}%")
-        logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}%")
+        logger.info("🚀 Risk-Manager gestartet (Enhanced Safety v2.0)")
+        logger.info("=" * 60)
+        logger.info("📊 RISK LIMITS:")
+        logger.info(f"   Max Position Size: {self.config.max_position_pct*100}% of balance")
+        logger.info(f"   Max Total Exposure: {self.config.max_total_exposure_pct*100}% of balance")
+        logger.info(f"   Max Daily Drawdown: {self.config.max_daily_drawdown_pct*100}% (Circuit Breaker)")
+        logger.info(f"   Stop-Loss: {self.config.stop_loss_pct*100}% per trade")
+        logger.info("")
+        logger.info("🛡️ SAFETY CONTROLS:")
+        logger.info(f"   Emergency Stop: {'ENABLED' if self.config.check_emergency_stop else 'DISABLED'}")
+        logger.info(f"   Max Open Positions: {self.config.max_open_positions}")
+        logger.info(f"   Max Positions per Symbol: {self.config.max_positions_per_symbol}")
+        logger.info(f"   Circuit Breaker Cooldown: {self.config.circuit_breaker_cooldown_minutes} minutes")
+        logger.info(f"   Circuit Breaker Auto-Reset: {'ENABLED' if self.config.circuit_breaker_auto_reset else 'DISABLED'}")
+        if self.config.per_symbol_limits:
+            logger.info(f"   Per-Symbol Limits: {len(self.config.per_symbol_limits)} configured")
+            for symbol, limit in self.config.per_symbol_limits.items():
+                logger.info(f"      {symbol}: max {limit}")
+        logger.info("=" * 60)
 
         if self.pubsub_results and (
             self._order_result_thread is None
@@ -435,19 +605,34 @@ def health():
 
 @app.route("/status")
 def status():
+    """Enhanced status endpoint with comprehensive safety state"""
     return jsonify(
         {
             **stats,
             "risk_state": {
                 "total_exposure": risk_state.total_exposure,
                 "daily_pnl": risk_state.daily_pnl,
-                "open_positions": risk_state.open_positions,
+                "open_positions": risk_state.get_position_count(),
                 "signals_approved": risk_state.signals_approved,
                 "signals_blocked": risk_state.signals_blocked,
-                "circuit_breaker": risk_state.circuit_breaker_active,
                 "positions": risk_state.positions,
                 "pending_orders": risk_state.pending_orders,
                 "last_prices": risk_state.last_prices,
+            },
+            "safety_status": {
+                "emergency_stop_active": risk_state.emergency_stop_active,
+                "circuit_breaker_active": risk_state.circuit_breaker_active,
+                "circuit_breaker_triggered_at": risk_state.circuit_breaker_triggered_at,
+                "max_open_positions": config.max_open_positions,
+                "current_open_positions": risk_state.get_position_count(),
+            },
+            "risk_limits": {
+                "max_position_pct": config.max_position_pct,
+                "max_total_exposure_pct": config.max_total_exposure_pct,
+                "max_daily_drawdown_pct": config.max_daily_drawdown_pct,
+                "max_open_positions": config.max_open_positions,
+                "max_positions_per_symbol": config.max_positions_per_symbol,
+                "per_symbol_limits": config.per_symbol_limits,
             },
         }
     )
