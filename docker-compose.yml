@@ -108,10 +108,11 @@ services:
   cdb_grafana:
     image: grafana/grafana:latest
     container_name: cdb_grafana
-    restart: unless-stopped
-    secrets:
-      - grafana_password
-    ports:
+      restart: unless-stopped
+      secrets:
+        - grafana_password
+        - postgres_password
+      ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
