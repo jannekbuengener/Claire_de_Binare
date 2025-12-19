@@ -6,7 +6,6 @@ Lädt und validiert Umgebungsvariablen
 import os
 from dataclasses import dataclass
 from typing import Optional
-from core.domain.secrets import get_secret
 
 
 @dataclass
@@ -20,7 +19,7 @@ class SignalConfig:
     # Redis
     redis_host: str = os.getenv("REDIS_HOST", "redis")
     redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
-    redis_password: Optional[str] = get_secret("redis_password", "REDIS_PASSWORD")
+    redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
     redis_db: int = int(os.getenv("REDIS_DB", "0"))
 
     # Signal-Parameter

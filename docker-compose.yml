@@ -1,35 +1,3 @@
----
-relations:
-  role: stack_definition
-  domain: orchestration
-  upstream:
-    - .env
-    - ./.secrets/redis_password
-    - ./.secrets/postgres_password
-    - ./.secrets/grafana_password
-    - ./infrastructure/monitoring/prometheus.yml
-    - ./infrastructure/monitoring/grafana/provisioning/datasources
-    - ./infrastructure/monitoring/grafana/provisioning/dashboards
-    - ./infrastructure/monitoring/grafana/dashboards
-    - services/signal/Dockerfile
-    - services/risk/Dockerfile
-    - services/execution/Dockerfile
-    - services/db_writer/Dockerfile
-    - ./services/signal
-    - ./services/risk
-    - ./services/execution
-    - ./services/db_writer
-    - ./logs
-  downstream:
-    - services/signal/Dockerfile
-    - services/risk/Dockerfile
-    - services/execution/Dockerfile
-    - services/db_writer/Dockerfile
-  invariants:
-    - Secret files must exist.
-    - Referenced Dockerfiles must be valid.
-    - Volume paths must be valid.
----
 # Claire de Binare - Docker Compose Setup
 # Vollständige Infrastruktur für autonomen Trading-Bot
 
@@ -62,7 +30,6 @@ services:
     image: postgres:15-alpine
     container_name: cdb_postgres
     restart: unless-stopped
-    env_file: .env
     secrets:
       - postgres_password
     environment:
@@ -254,7 +221,7 @@ services:
       - "8003:8003"
     volumes:
       - ./services/execution:/app
-    depends_on:.
+    depends_on:
       - cdb_redis
       - cdb_risk
       - cdb_postgres
@@ -360,8 +327,8 @@ networks:
 # ====================================================================
 secrets:
   redis_password:
-    file: ./.secrets/redis_password
+    file: ../.cdb_local/.secrets/redis_password
   postgres_password:
-    file: ./.secrets/postgres_password
+    file: ../.cdb_local/.secrets/postgres_password
   grafana_password:
-    file: ./.secrets/grafana_password
+    file: ../.cdb_local/.secrets/grafana_password
