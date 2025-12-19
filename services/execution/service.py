@@ -3,6 +3,7 @@ Execution Service - Main Entry Point
 Claire de Binare Trading Bot
 """
 
+import os
 import json
 import signal
 import sys
@@ -19,11 +20,13 @@ try:
     from . import config
     from .models import Order, ExecutionResult
     from .mock_executor import MockExecutor
+    from .live_executor import LiveExecutor
     from .database import Database
 except ImportError:
     import config
     from models import Order, ExecutionResult
     from mock_executor import MockExecutor
+    from live_executor import LiveExecutor
     from database import Database
 
 # Logging setup mit zentraler Konfiguration
@@ -117,9 +120,25 @@ def init_services():
             executor = MockExecutor()
             logger.info("Using MockExecutor (Paper Trading Mode)")
         else:
-            # TODO: Real MEXC executor
-            logger.warning("Real trading not implemented yet, using MockExecutor")
-            executor = MockExecutor()
+            # Live trading mode - use MEXC API
+            if not config.MEXC_API_KEY or not config.MEXC_API_SECRET:
+                logger.critical("MEXC_API_KEY and MEXC_API_SECRET required for live trading!")
+                raise ValueError("Missing MEXC API credentials")
+
+            # SAFETY: dry_run=True by default until paper trading is validated
+            dry_run_mode = os.getenv("LIVE_TRADING_ENABLED", "false").lower() != "true"
+
+            executor = LiveExecutor(
+                api_key=config.MEXC_API_KEY,
+                api_secret=config.MEXC_API_SECRET,
+                testnet=config.MEXC_TESTNET,
+                dry_run=dry_run_mode  # Only execute real trades if LIVE_TRADING_ENABLED=true
+            )
+
+            if dry_run_mode:
+                logger.warning("LiveExecutor in DRY RUN mode - using real prices but NOT executing orders")
+            else:
+                logger.critical("⚠️ LiveExecutor - REAL MONEY TRADING ENABLED ⚠️")
 
         # Initialize database
         db = _init_with_retry(

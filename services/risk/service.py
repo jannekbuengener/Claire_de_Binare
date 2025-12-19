@@ -72,6 +72,10 @@ class RiskManager:
         self._order_result_thread: Optional[Thread] = None
         self.running = False
 
+        # Initialize Balance Provider (read-only, safe)
+        self.balance_provider = BalanceProvider.from_env()
+        logger.info("Balance Provider initialized")
+
         # Validiere Config
         try:
             self.config.validate()
@@ -111,8 +115,11 @@ class RiskManager:
 
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
+        # Get current balance (live or fallback)
+        current_balance = self.balance_provider.get_total_balance_usdt()
+
         # Beispiel: Max 10% des Kapitals pro Position
-        max_position_size = self.config.test_balance * self.config.max_position_pct
+        max_position_size = current_balance * self.config.max_position_pct
 
         # Vereinfachte Berechnung (später mit echtem Portfolio)
         estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
@@ -120,14 +127,15 @@ class RiskManager:
         if estimated_position > max_position_size:
             return (
                 False,
-                f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f}",
+                f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f} (Balance: ${current_balance:,.2f})",
             )
 
-        return True, "Position OK"
+        return True, f"Position OK (Balance: ${current_balance:,.2f})"
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
-        max_exposure = self.config.test_balance * self.config.max_total_exposure_pct
+        current_balance = self.balance_provider.get_total_balance_usdt()
+        max_exposure = current_balance * self.config.max_total_exposure_pct
 
         if risk_state.total_exposure >= max_exposure:
             return (
@@ -139,7 +147,8 @@ class RiskManager:
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
-        max_drawdown = self.config.test_balance * self.config.max_daily_drawdown_pct
+        current_balance = self.balance_provider.get_total_balance_usdt()
+        max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
         if risk_state.daily_pnl <= -max_drawdown:
             risk_state.circuit_breaker_active = True
