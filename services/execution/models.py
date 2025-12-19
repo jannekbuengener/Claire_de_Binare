@@ -3,8 +3,8 @@ Data Models for Execution Service
 Claire de Binare Trading Bot
 """
 
-from typing import Literal, Optional
-from dataclasses import dataclass
+from typing import Literal, Optional, Dict, Any
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 
@@ -24,6 +24,7 @@ class OrderStatus(str, Enum):
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     FILLED = "FILLED"
+    PARTIAL = "PARTIAL"  # Alias for PARTIALLY_FILLED
     PARTIALLY_FILLED = "PARTIALLY_FILLED"
     REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
@@ -107,6 +108,7 @@ class ExecutionResult:
     error_message: Optional[str] = None
     timestamp: Optional[str] = None
     type: Literal["order_result"] = "order_result"
+    metadata: Optional[Dict[str, Any]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.timestamp is None:

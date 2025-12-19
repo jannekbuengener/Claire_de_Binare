@@ -19,13 +19,15 @@ from threading import Thread
 try:
     from . import config
     from .models import Order, ExecutionResult
-    from .mock_executor import MockExecutor
+    from .mock_executor import MockExecutor  # Legacy
+    from .enhanced_mock_executor import EnhancedMockExecutor  # v2.0
     from .live_executor import LiveExecutor
     from .database import Database
 except ImportError:
     import config
     from models import Order, ExecutionResult
-    from mock_executor import MockExecutor
+    from mock_executor import MockExecutor  # Legacy
+    from enhanced_mock_executor import EnhancedMockExecutor  # v2.0
     from live_executor import LiveExecutor
     from database import Database
 
@@ -117,8 +119,16 @@ def init_services():
 
         # Initialize executor
         if config.MOCK_TRADING:
-            executor = MockExecutor()
-            logger.info("Using MockExecutor (Paper Trading Mode)")
+            # Use enhanced mock executor with realistic simulation
+            use_enhanced = os.getenv("USE_ENHANCED_MOCK", "true").lower() == "true"
+
+            if use_enhanced:
+                executor = EnhancedMockExecutor()
+                logger.info("Using EnhancedMockExecutor v2.0 (Paper Trading Mode with metrics)")
+            else:
+                # Legacy mock executor
+                executor = MockExecutor()
+                logger.info("Using MockExecutor (Legacy Paper Trading Mode)")
         else:
             # Live trading mode - use MEXC API
             if not config.MEXC_API_KEY or not config.MEXC_API_SECRET:
