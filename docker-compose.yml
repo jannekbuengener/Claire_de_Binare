@@ -182,6 +182,8 @@ services:
     env_file: .env
     secrets:
       - redis_password
+      - mexc_api_key
+      - mexc_api_secret
     ports:
       - "8002:8002"
     volumes:
@@ -217,6 +219,8 @@ services:
     secrets:
       - redis_password
       - postgres_password
+      - mexc_api_key
+      - mexc_api_secret
     ports:
       - "8003:8003"
     volumes:
@@ -332,3 +336,7 @@ secrets:
     file: ../.cdb_local/.secrets/postgres_password
   grafana_password:
     file: ../.cdb_local/.secrets/grafana_password
+  mexc_api_key:
+    file: ../.cdb_local/.secrets/mexc_api_key
+  mexc_api_secret:
+    file: ../.cdb_local/.secrets/mexc_api_secret
