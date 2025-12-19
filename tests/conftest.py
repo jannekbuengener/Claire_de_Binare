@@ -13,8 +13,14 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
-from redis import Redis
 import psycopg2
+
+try:
+    from redis import Redis
+except ModuleNotFoundError:
+    # Fallback stub for test mocks when redis isn't installed in CI.
+    class Redis:  # type: ignore[no-redef]
+        pass
 
 from core.domain.models import Signal, Order, OrderResult
 
