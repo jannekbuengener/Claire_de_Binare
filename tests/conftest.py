@@ -22,6 +22,7 @@ except ModuleNotFoundError:
     class Redis:  # type: ignore[no-redef]
         pass
 
+
 from core.domain.models import Signal, Order, OrderResult
 
 # Add project root to sys.path for imports
