@@ -1,35 +1,3 @@
----
-relations:
-  role: stack_definition
-  domain: orchestration
-  upstream:
-    - .env
-    - ./.secrets/redis_password
-    - ./.secrets/postgres_password
-    - ./.secrets/grafana_password
-    - ./infrastructure/monitoring/prometheus.yml
-    - ./infrastructure/monitoring/grafana/provisioning/datasources
-    - ./infrastructure/monitoring/grafana/provisioning/dashboards
-    - ./infrastructure/monitoring/grafana/dashboards
-    - services/signal/Dockerfile
-    - services/risk/Dockerfile
-    - services/execution/Dockerfile
-    - services/db_writer/Dockerfile
-    - ./services/signal
-    - ./services/risk
-    - ./services/execution
-    - ./services/db_writer
-    - ./logs
-  downstream:
-    - services/signal/Dockerfile
-    - services/risk/Dockerfile
-    - services/execution/Dockerfile
-    - services/db_writer/Dockerfile
-  invariants:
-    - Secret files must exist.
-    - Referenced Dockerfiles must be valid.
-    - Volume paths must be valid.
----
 # Claire de Binare - Docker Compose Setup
 # Vollständige Infrastruktur für autonomen Trading-Bot
 
@@ -108,11 +76,11 @@ services:
   cdb_grafana:
     image: grafana/grafana:latest
     container_name: cdb_grafana
-      restart: unless-stopped
-      secrets:
-        - grafana_password
-        - postgres_password
-      ports:
+    restart: unless-stopped
+    secrets:
+      - grafana_password
+      - postgres_password
+    ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
@@ -255,7 +223,7 @@ services:
       - "8003:8003"
     volumes:
       - ./services/execution:/app
-    depends_on:.
+    depends_on:
       - cdb_redis
       - cdb_risk
       - cdb_postgres
