@@ -3,7 +3,6 @@ relations:
   role: entrypoint
   domain: documentation
   upstream:
-    - REPO_INDEX.md
     - docker-compose.yml
   downstream: []
 ---
@@ -24,4 +23,4 @@ This repository contains all the necessary components to run and develop Claire 
 
 To get started with this project, you will need to have Docker and Python installed. The `docker-compose.yml` file in the root directory defines the services required for local development.
 
-For a detailed index of the repository, please refer to the `REPO_INDEX.md` file.
+For a detailed index of the repository, see the documentation in the Docs Hub repository.
