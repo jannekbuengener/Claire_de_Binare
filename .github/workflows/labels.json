@@ -33,10 +33,19 @@
     { "name": "github-actions", "color": "0052CC", "description": "GitHub Actions Workflows, Runner, Secrets und Pipeline-Orchestrierung." },
     { "name": "dependencies", "color": "0366d6", "description": "Pull requests that update a dependency file" },
 
+    { "name": "milestone:m1", "color": "795548", "description": "Milestone M1 - Foundation" },
+    { "name": "milestone:m2", "color": "795548", "description": "Milestone M2 - Core Services" },
     { "name": "milestone:m3", "color": "795548", "description": "Milestone M3 - Risk Layer" },
+    { "name": "milestone:m4", "color": "795548", "description": "Milestone M4 - Market Data" },
     { "name": "milestone:m5", "color": "795548", "description": "Milestone M5 - Persistenz" },
     { "name": "milestone:m6", "color": "795548", "description": "Milestone M6 - Docker" },
     { "name": "milestone:m7", "color": "795548", "description": "Milestone M7 - Testnet" },
-    { "name": "milestone:m8", "color": "795548", "description": "Milestone M8 - Security" }
+    { "name": "milestone:m8", "color": "795548", "description": "Milestone M8 - Security" },
+    { "name": "milestone:m9", "color": "795548", "description": "Milestone M9 - Production" },
+    
+    { "name": "epic:ml-foundation", "color": "8E24AA", "description": "ML Foundation Epic" },
+    { "name": "epic:stabilization", "color": "8E24AA", "description": "System Stabilization Epic" },
+    { "name": "epic:paper-trading", "color": "8E24AA", "description": "Paper Trading Epic" },
+    { "name": "epic:live-trading", "color": "8E24AA", "description": "Live Trading Epic" }
   ]
 }
