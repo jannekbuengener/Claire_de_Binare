@@ -1,0 +1,341 @@
+name: 🤖 Emoji Fix Bot
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR Number zum Fixen'
+        required: true
+        type: string
+
+jobs:
+  emoji-bot:
+    name: 🤖 Emoji Bot Handler
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event.issue.pull_request && 
+       (contains(github.event.comment.body, '/emoji-fix') || 
+        contains(github.event.comment.body, '/emoji-check') ||
+        contains(github.event.comment.body, '/emoji-whitelist')))
+    
+    steps:
+    - name: 📥 Checkout Code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: 🔍 Get PR Info
+      id: pr-info
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const prNumber = context.payload.issue?.number || '${{ github.event.inputs.pr_number }}';
+          
+          const pr = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+          });
+          
+          return {
+            number: prNumber,
+            head_sha: pr.data.head.sha,
+            head_ref: pr.data.head.ref,
+            base_ref: pr.data.base.ref
+          };
+    
+    - name: 📥 Checkout PR Branch
+      run: |
+        git fetch origin
+        git checkout ${{ fromJson(steps.pr-info.outputs.result).head_ref }}
+    
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: 📦 Install Dependencies
+      run: |
+        pip install regex emoji pyyaml
+    
+    - name: 🤖 Process Bot Command
+      id: bot-command
+      run: |
+        COMMENT_BODY="${{ github.event.comment.body }}"
+        
+        if [[ "$COMMENT_BODY" == *"/emoji-fix"* ]]; then
+          echo "command=fix" >> $GITHUB_OUTPUT
+          echo "🔧 Auto-Fix Befehl erkannt"
+        elif [[ "$COMMENT_BODY" == *"/emoji-check"* ]]; then
+          echo "command=check" >> $GITHUB_OUTPUT
+          echo "🔍 Check Befehl erkannt"
+        elif [[ "$COMMENT_BODY" == *"/emoji-whitelist"* ]]; then
+          echo "command=whitelist" >> $GITHUB_OUTPUT
+          echo "📝 Whitelist Befehl erkannt"
+          
+          # Extrahiere Emojis aus Kommentar
+          EMOJIS=$(echo "$COMMENT_BODY" | grep -oP '/emoji-whitelist\s+\K.*' || echo "")
+          echo "whitelist_emojis=$EMOJIS" >> $GITHUB_OUTPUT
+        else
+          echo "command=check" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: 🔧 Execute Auto-Fix
+      if: steps.bot-command.outputs.command == 'fix'
+      run: |
+        echo "🔧 Führe Auto-Fix aus..."
+        
+        # Erstelle Backup
+        git add -A
+        git stash push -m "backup-before-emoji-fix"
+        
+        # Führe Fix aus
+        python .github/scripts/advanced-emoji-filter.py \
+          --config .github/emoji-config.yaml \
+          --auto-fix \
+          --github-actions
+        
+        # Prüfe Änderungen
+        if git diff --quiet; then
+          echo "✅ Keine Emojis zu fixen gefunden"
+          echo "fix_applied=false" >> $GITHUB_ENV
+        else
+          echo "🔧 Emojis wurden entfernt"
+          echo "fix_applied=true" >> $GITHUB_ENV
+          
+          # Commit Änderungen
+          git config --local user.email "action@github.com"
+          git config --local user.name "Emoji Fix Bot"
+          git add .
+          git commit -m "🤖 Auto-fix: Emojis entfernt durch Bot-Befehl
+
+Ausgeführt durch: @${{ github.event.comment.user.login }}
+Command: /emoji-fix
+PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
+          
+          git push origin ${{ fromJson(steps.pr-info.outputs.result).head_ref }}
+        fi
+    
+    - name: 📝 Update Whitelist
+      if: steps.bot-command.outputs.command == 'whitelist'
+      run: |
+        echo "📝 Update Whitelist..."
+        
+        EMOJIS="${{ steps.bot-command.outputs.whitelist_emojis }}"
+        
+        if [ -n "$EMOJIS" ]; then
+          # Backup Config
+          cp .github/emoji-config.yaml .github/emoji-config.yaml.backup
+          
+          # Füge Emojis zur Whitelist hinzu
+          python -c "
+import yaml
+import sys
+
+config_path = '.github/emoji-config.yaml'
+emojis = '$EMOJIS'.strip().split()
+
+with open(config_path, 'r') as f:
+    config = yaml.safe_load(f)
+
+if 'whitelist' not in config:
+    config['whitelist'] = {}
+if 'comments_allowed' not in config['whitelist']:
+    config['whitelist']['comments_allowed'] = []
+
+# Füge neue Emojis hinzu
+for emoji in emojis:
+    if emoji not in config['whitelist']['comments_allowed']:
+        config['whitelist']['comments_allowed'].append(emoji)
+
+with open(config_path, 'w') as f:
+    yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+print(f'Emojis zur Whitelist hinzugefügt: {emojis}')
+"
+          
+          # Commit Update
+          git config --local user.email "action@github.com"
+          git config --local user.name "Emoji Fix Bot"
+          git add .github/emoji-config.yaml
+          git commit -m "📝 Whitelist Update: Emojis hinzugefügt
+
+Emojis: $EMOJIS
+Ausgeführt durch: @${{ github.event.comment.user.login }}
+Command: /emoji-whitelist
+PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
+          
+          git push origin ${{ fromJson(steps.pr-info.outputs.result).head_ref }}
+          echo "whitelist_updated=true" >> $GITHUB_ENV
+        fi
+    
+    - name: 🔍 Run Check
+      if: steps.bot-command.outputs.command == 'check' || env.fix_applied == 'true' || env.whitelist_updated == 'true'
+      run: |
+        echo "🔍 Führe erneuten Check aus..."
+        
+        python .github/scripts/advanced-emoji-filter.py \
+          --config .github/emoji-config.yaml \
+          --github-actions || true
+        
+        # Lese Ergebnisse
+        if [ -f emoji-report.json ]; then
+          BLOCKED_COUNT=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data['blocked_count'])")
+          echo "blocked_count=$BLOCKED_COUNT" >> $GITHUB_ENV
+        else
+          echo "blocked_count=0" >> $GITHUB_ENV
+        fi
+    
+    - name: 💬 Reply to Comment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const command = '${{ steps.bot-command.outputs.command }}';
+          const fixApplied = process.env.fix_applied === 'true';
+          const whitelistUpdated = process.env.whitelist_updated === 'true';
+          const blockedCount = process.env.blocked_count || '0';
+          
+          let replyText = `🤖 **Emoji Bot Response**\n\n`;
+          
+          if (command === 'fix') {
+            if (fixApplied) {
+              replyText += `✅ **Auto-Fix erfolgreich ausgeführt!**\n\n`;
+              replyText += `🔧 Emojis wurden automatisch entfernt und committed.\n`;
+              replyText += `📋 Verbleibende blockierte Emojis: ${blockedCount}\n\n`;
+              
+              if (blockedCount > 0) {
+                replyText += `⚠️ Einige Emojis konnten nicht automatisch entfernt werden. Bitte manuell überprüfen.\n`;
+              } else {
+                replyText += `🎉 Alle blockierten Emojis wurden erfolgreich entfernt!\n`;
+              }
+            } else {
+              replyText += `ℹ️ **Keine Emojis zum Fixen gefunden.**\n\n`;
+              replyText += `✅ Der Code ist bereits emoji-frei!\n`;
+            }
+          } else if (command === 'whitelist') {
+            if (whitelistUpdated) {
+              replyText += `✅ **Whitelist erfolgreich aktualisiert!**\n\n`;
+              replyText += `📝 Emojis wurden zur Whitelist hinzugefügt: ${{ steps.bot-command.outputs.whitelist_emojis }}\n`;
+              replyText += `📋 Verbleibende blockierte Emojis: ${blockedCount}\n`;
+            } else {
+              replyText += `❌ **Whitelist-Update fehlgeschlagen.**\n\n`;
+              replyText += `⚠️ Bitte Emoji-Liste im Format '/emoji-whitelist 😀 😎 ✅' angeben.\n`;
+            }
+          } else {
+            replyText += `🔍 **Check-Ergebnisse:**\n\n`;
+            replyText += `📋 Aktuelle blockierte Emojis: ${blockedCount}\n`;
+            
+            if (blockedCount > 0) {
+              replyText += `\n⚠️ Es wurden noch Emojis gefunden. Nutze:\n`;
+              replyText += `- \`/emoji-fix\` für automatisches Entfernen\n`;
+              replyText += `- \`/emoji-whitelist 😀 😎\` für Whitelist-Update\n`;
+            } else {
+              replyText += `\n🎉 Keine blockierten Emojis gefunden!\n`;
+            }
+          }
+          
+          replyText += `\n**Verfügbare Befehle:**\n`;
+          replyText += `- \`/emoji-check\` - Status überprüfen\n`;
+          replyText += `- \`/emoji-fix\` - Automatisch fixen\n`;
+          replyText += `- \`/emoji-whitelist 😀 😎 ✅\` - Emojis zur Whitelist hinzufügen\n`;
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: replyText
+          });
+    
+    - name: 🏷️ Update PR Labels
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const blockedCount = parseInt(process.env.blocked_count || '0');
+          const prNumber = ${{ fromJson(steps.pr-info.outputs.result).number }};
+          
+          // Entferne alte Labels
+          const labelsToRemove = ['emoji-detected', 'needs-review', 'emoji-fixed'];
+          
+          for (const label of labelsToRemove) {
+            try {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            } catch (error) {
+              // Label existiert nicht, ignorieren
+            }
+          }
+          
+          // Füge neues Label hinzu
+          const newLabel = blockedCount > 0 ? 'emoji-detected' : 'emoji-fixed';
+          
+          await github.rest.issues.addLabels({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            labels: [newLabel]
+          });
+
+  help-command:
+    name: ❓ Bot Help
+    runs-on: ubuntu-latest
+    if: |
+      github.event.issue.pull_request && 
+      (contains(github.event.comment.body, '/emoji-help') || 
+       contains(github.event.comment.body, '/emoji'))
+    
+    steps:
+    - name: 💬 Show Help
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const helpText = `
+          ## 🤖 Emoji Bot Hilfe
+          
+          **Verfügbare Befehle:**
+          
+          ### 🔍 Check & Status
+          - \`/emoji-check\` - Überprüft aktuellen Emoji-Status
+          - \`/emoji\` - Zeigt diese Hilfe an
+          
+          ### 🔧 Auto-Fix
+          - \`/emoji-fix\` - Entfernt automatisch alle blockierten Emojis
+          
+          ### 📝 Whitelist Management  
+          - \`/emoji-whitelist 😀 😎 ✅\` - Fügt Emojis zur Whitelist hinzu
+          - \`/emoji-whitelist ⚠️ 🔥 💡\` - Erlaubt spezifische Emojis
+          
+          ### 💡 Tipps
+          
+          **Erlaubte Emojis standardmäßig:**
+          - ✅ Checkmark (für TODOs)
+          - ❌ X-Mark (für Fehler)
+          - ⚠️ Warning (für Warnungen)
+          
+          **Workflow:**
+          1. Bot erkennt Emojis → PR wird blockiert
+          2. Nutze \`/emoji-fix\` für automatische Entfernung
+          3. Oder \`/emoji-whitelist 😀\` um spezifische Emojis zu erlauben
+          4. Bot updated automatisch den PR-Status
+          
+          **Sicherheit:**
+          - Emojis in Code-Kontext werden immer blockiert
+          - Emojis in Kommentaren können whitelisted werden
+          - Auto-Fix erstellt automatisch Backups
+          
+          ---
+          *Emoji Bot v2.0 - Automatisierte Emoji-Qualitätskontrolle*
+          `;
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: helpText
+          });

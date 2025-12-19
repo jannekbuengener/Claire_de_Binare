@@ -1,0 +1,58 @@
+# Pre-commit Hook Configuration für Emoji-Filter
+repos:
+  - repo: local
+    hooks:
+      - id: emoji-filter
+        name: 🚫 Emoji Filter
+        entry: python .github/scripts/advanced-emoji-filter.py
+        args: [--config, .github/emoji-config.yaml, --path, .]
+        language: python
+        additional_dependencies: [regex, emoji, pyyaml]
+        files: \.(py|js|ts|jsx|tsx|java|cpp|c|cs|php|rb|go|rs)$
+        exclude: ^(node_modules/|\.git/|__pycache__/|build/|dist/)
+        
+      - id: emoji-config-validator
+        name: ⚙️ Emoji Config Validator
+        entry: python
+        args: [-c, "
+import yaml; 
+import sys;
+try:
+    with open('.github/emoji-config.yaml') as f: 
+        config = yaml.safe_load(f);
+    required = ['detection', 'whitelist', 'actions'];
+    missing = [k for k in required if k not in config];
+    if missing:
+        print(f'❌ Missing config sections: {missing}');
+        sys.exit(1);
+    print('✅ Emoji config valid');
+except Exception as e:
+    print(f'❌ Config error: {e}');
+    sys.exit(1);
+"]
+        language: python
+        additional_dependencies: [pyyaml]
+        files: \.github/emoji-config\.yaml$
+        always_run: false
+        
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: .*\.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        
+  # Optional: Weitere Code-Quality Hooks
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        args: [--line-length=88]
+        
+  - repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=88, --extend-ignore=E203,W503]
