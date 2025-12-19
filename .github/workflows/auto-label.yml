@@ -32,7 +32,7 @@ jobs:
             }
 
             // Tech tags
-            if (title.includes('test') || title.includes('coverage') || body.includes('test')) {
+            if (/\btest\b/i.test(title) || /\bcoverage\b/i.test(title) || /\btest\b/i.test(body)) {
               labels.push('testing');
             }
 
