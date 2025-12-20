@@ -1,0 +1,15 @@
+{
+  "summary": {
+    "files_scanned": 105,
+    "emojis_found": 107,
+    "blocked_emojis": 106,
+    "whitelisted_emojis": 1
+  },
+  "timestamp": "2025-12-19T06:46:58.451220",
+  "by_severity": {
+    "warning": [
+      {
+        "file_path": "scripts\\check_core_duplicates.py",
+        "line_number": 37,
+        "column": 16,
+        "emoji": 

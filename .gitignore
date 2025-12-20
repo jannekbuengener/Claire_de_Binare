@@ -78,3 +78,5 @@ mcp-config.toml.local
 
 # Temporäre Agent-Workspace-Dateien
 .cdb_agent_workspace/
+
+gha-creds-*.json
