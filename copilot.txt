@@ -1,0 +1,88 @@
+ROLE: Copilot = Branch Consolidation Agent (Both Repos)
+MISSION: Logisch zusammenführen, hochpushen, aber NICHT löschen. Keine History-Rewrites auf shared branches. Alles über Integration-Branches + PRs.
+
+REPOS:
+A) WORKING: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
+B) DOCS:    C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs
+
+NON-NEGOTIABLE RULES:
+- NO delete branches.
+- NO force-push to main (or protected branches).
+- NO “merge alles irgendwie”. Nur kontrollierte Reihenfolge.
+- JE Repo: 1 canonical Integration-Branch:
+  - WORKING: consolidate/mainline
+  - DOCS:    consolidate/docs-mainline
+- Alles auditierbar: Report committen:
+  - WORKING: docs/reviews/BRANCH_CONSOLIDATION_REPORT.md
+  - DOCS:    knowledge/reviews/BRANCH_CONSOLIDATION_REPORT.md (oder gleichwertig, repo-typisch)
+
+OUTPUT (MUSS):
+1) Branch-Inventar (remote+local) inkl. last-commit-date + Status-Klassifizierung:
+   - merged / identical / active / stale / duplicate / WIP / release/hotfix
+2) “Canonical Truth” Entscheidung pro Repo (welcher Stand ist der aktuellste sinnvolle)
+3) Integration-Branch pro Repo, push to origin
+4) PR(s) pro Repo: Integration-Branch -> main (oder -> default branch)
+5) “Nothing lost”-Liste: welche Branches NICHT gemerged wurden + warum (bleiben bestehen)
+
+EXECUTION ORDER (EXAKT):
+PHASE 0 — Safety (je Repo)
+- cd in repo
+- git status (muss clean sein; wenn nicht: stop, liste untracked/modified)
+- git fetch --all --prune
+- git branch safety/<repo>-before-consolidation-YYYYMMDD-HHMM (von aktuellem HEAD)
+- git tag safety/<repo>-YYYYMMDD-HHMM
+
+PHASE 1 — Inventory (je Repo)
+- Liste remote branches nach last commit:
+  - git for-each-ref --sort=-committerdate refs/remotes/ --format="%(committerdate:iso8601) %(refname:short)" 
+- Für Top N (mind. 50): show last commit subject + author:
+  - git log -1 --pretty=format:"%h %ad %an %s" <branch>
+- Markiere:
+  - already merged into origin/main
+  - identical to origin/main
+  - has unique commits vs origin/main (git log origin/main..branch --oneline | measure)
+- Schreibe Tabelle in REPORT
+
+PHASE 2 — Choose Canonical (je Repo)
+- Default baseline = origin/main
+- Wenn es einen klaren “aktuellen Arbeitsbranch” gibt (z.B. copilot/* oder improve-*): begründen mit:
+  - recency + unique commits + relevance (docs/agents/knowledge)
+- Entscheidung dokumentieren: “Canonical candidate = X”
+- ABER: Integration-Branch immer FROM origin/main (nicht von random branch), dann geordnet rein mergen.
+
+PHASE 3 — Consolidation (je Repo)
+- git checkout -B consolidate/<name> origin/main
+- Merge-Reihenfolge (strict):
+  1) infra/ci/config fixes
+  2) docs/governance/agents
+  3) features
+  4) formatting/housekeeping
+- Pro merge:
+  - git merge --no-ff <branch>
+  - Bei Konflikt: minimal lösen, commit message: "merge: resolve conflicts from <branch>"
+- Wenn >3 konfliktlastige Branches: STOP → split into multiple PRs vorschlagen.
+
+PHASE 4 — Push + PR (je Repo)
+- git push -u origin consolidate/<name>
+- Erstelle PR: consolidate/<name> -> main (oder default branch)
+- KEIN direktes push nach main.
+
+PHASE 5 — Final Check (je Repo)
+- git status muss clean
+- REPORT finalisieren mit:
+  - was gemerged wurde (ordered list)
+  - was offen bleibt (WIP list)
+  - Risiken / nächste Schritte
+
+STOP CONDITIONS (MUST STOP + ASK):
+- Wenn main remote ahead ist und merge/rebase unklar: STOP + Plan vorschlagen (fast-forward vs rebase).
+- Wenn secrets/.env/.secrets in Branches auftauchen: STOP + flag.
+- Wenn default branch nicht "main" ist: STOP + confirm target.
+
+COMMUNICATION:
+- Drucke jeden Git-Befehl bevor du ihn ausführst.
+- Am Ende: gib nur diese 4 Dinge aus:
+  1) Repo A PR-Link(s)
+  2) Repo B PR-Link(s)
+  3) Pfade der Reports
+  4) Kurze Next-Steps-Liste (max 8 bullets)

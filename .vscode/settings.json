@@ -1,5 +1,117 @@
 {
-    "terminal.integrated.tabs.defaultColor": "terminal.ansiRed",
-    "terminal.integrated.tabs.defaultIcon": "symbol-variable",
-    "terminal.integrated.cwd": "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare"
+  "emoji-filter.enable": true,
+  "emoji-filter.configPath": ".github/emoji-config.yaml",
+  "emoji-filter.autoFix": false,
+  "emoji-filter.showWarnings": true,
+  
+  // Emoji-Highlighting in VSCode
+  "editor.unicodeHighlight.ambiguousCharacters": true,
+  "editor.unicodeHighlight.invisibleCharacters": true,
+  "editor.unicodeHighlight.nonBasicASCII": true,
+  
+  // Custom Task für Emoji-Check
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "🔍 Emoji Check",
+        "type": "shell",
+        "command": "python",
+        "args": [
+          ".github/scripts/advanced-emoji-filter.py",
+          "--config", ".github/emoji-config.yaml",
+          "--format", "markdown"
+        ],
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        },
+        "problemMatcher": {
+          "owner": "emoji-filter",
+          "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+          }
+        }
+      },
+      {
+        "label": "🔧 Emoji Auto-Fix",
+        "type": "shell",
+        "command": "python", 
+        "args": [
+          ".github/scripts/advanced-emoji-filter.py",
+          "--config", ".github/emoji-config.yaml",
+          "--auto-fix"
+        ],
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "shared"
+        }
+      }
+    ]
+  },
+  
+  // Snippets für Whitelist-Updates
+  "snippets": {
+    "emoji-whitelist-comment": {
+      "prefix": "emoji-wl-comment",
+      "body": [
+        "# Whitelist: $1 - $2"
+      ],
+      "description": "Emoji Whitelist Kommentar"
+    },
+    "emoji-allowed": {
+      "prefix": "emoji-ok",
+      "body": [
+        "# ✅ Allowed emoji: $1"
+      ],
+      "description": "Erlaubtes Emoji markieren"
+    }
+  },
+  
+  // File Watcher für automatische Checks
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/*.emoji-backup": true,
+    "**/emoji-report.*": true
+  },
+  
+  // Extensions Empfehlungen
+  "extensions.recommendations": [
+    "ms-python.python",
+    "ms-vscode.vscode-json", 
+    "redhat.vscode-yaml",
+    "github.vscode-github-actions",
+    "ms-vscode.test-adapter-converter"
+  ],
+  
+  // Workspace-spezifische Einstellungen
+  "python.defaultInterpreterPath": "python",
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.formatting.provider": "black",
+  
+  // Git Integration
+  "git.detectSubmodules": false,
+  "git.ignoreSubmodules": true,
+  
+  // Search excludes
+  "search.exclude": {
+    "**/*.emoji-backup": true,
+    "**/emoji-report.*": true,
+    "**/.pytest_cache": true,
+    "**/__pycache__": true
+  }
 }
