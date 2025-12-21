@@ -20,7 +20,8 @@ from typing import Any, Dict
 from enum import StrEnum
 import hashlib
 import json
-import uuid
+
+from core.utils.uuid_gen import generate_uuid
 
 
 class EventType(StrEnum):
@@ -80,7 +81,9 @@ class Event:
     ) -> "Event":
         """Factory Method für Event-Erstellung."""
         if event_id is None:
-            event_id = str(uuid.uuid4())
+            payload_json = json.dumps(payload, sort_keys=True)
+            name = f"{event_type}|{stream_id}|{sequence_number}|{timestamp.isoformat()}|{payload_json}"
+            event_id = generate_uuid(name=name)
 
         return cls(
             event_id=event_id,

@@ -9,13 +9,14 @@ import sys
 import logging
 import logging.config
 import time
-import uuid
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, jsonify, Response
 import redis
 from threading import Thread
 
+from core.utils.clock import utcnow
+from core.utils.uuid_gen import generate_uuid_hex
 try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
@@ -64,7 +65,7 @@ stats = {
     "orders_received": 0,
     "orders_filled": 0,
     "orders_rejected": 0,
-    "start_time": datetime.utcnow().isoformat(),
+    "start_time": utcnow().isoformat(),
     "last_result": None,
 }
 bot_shutdown_active = False
@@ -194,8 +195,11 @@ def process_order(order_data: dict):
         if bot_shutdown_active or (
             order.strategy_id and order.strategy_id in blocked_strategy_ids
         ) or (order.bot_id and order.bot_id in blocked_bot_ids):
+            shutdown_id = generate_uuid_hex(
+                name=f"shutdown:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
+            )
             result = ExecutionResult(
-                order_id=f"SHUTDOWN_{uuid.uuid4().hex[:8]}",
+                order_id=f"SHUTDOWN_{shutdown_id}",
                 symbol=order.symbol,
                 side=order.side,
                 quantity=order.quantity,
@@ -204,7 +208,7 @@ def process_order(order_data: dict):
                 price=None,
                 client_id=order.client_id,
                 error_message="Order blocked by bot shutdown",
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
@@ -375,7 +379,7 @@ def metrics():
     uptime_seconds = max(
         0.0,
         (
-            datetime.utcnow() - datetime.fromisoformat(stats["start_time"])
+            utcnow() - datetime.fromisoformat(stats["start_time"])
         ).total_seconds(),
     )
 
