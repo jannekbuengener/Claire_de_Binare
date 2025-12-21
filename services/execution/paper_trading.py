@@ -13,6 +13,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import time
 
+from core.utils.clock import utcnow
 
 class OrderType(Enum):
     """Order types for paper trading"""
@@ -50,7 +51,7 @@ class PaperOrder:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow()
+            self.created_at = utcnow()
 
 
 @dataclass
@@ -119,7 +120,7 @@ class PaperTradingEngine:
 
         # File handler for paper trading logs
         file_handler = logging.FileHandler(
-            f"logs/paper_trading_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.log"
+            f"logs/paper_trading_{utcnow().strftime('%Y%m%d_%H%M%S')}.log"
         )
         file_handler.setLevel(log_level)
 
@@ -140,13 +141,13 @@ class PaperTradingEngine:
     def start_paper_trading(self):
         """Start paper trading session"""
         self.is_active = True
-        self.start_time = datetime.utcnow()
+        self.start_time = utcnow()
         self.logger.info("Paper trading session started")
 
     def stop_paper_trading(self):
         """Stop paper trading session"""
         self.is_active = False
-        self.end_time = datetime.utcnow()
+        self.end_time = utcnow()
         self.logger.info("Paper trading session stopped")
 
         # Calculate final performance metrics
@@ -154,7 +155,7 @@ class PaperTradingEngine:
 
     def update_market_price(self, symbol: str, price: float):
         """Update market price for symbol"""
-        timestamp = datetime.utcnow()
+        timestamp = utcnow()
 
         # Store current price
         self.market_prices[symbol] = price
@@ -335,7 +336,7 @@ class PaperTradingEngine:
     def _execute_order(self, order: PaperOrder, fill_price: float):
         """Execute an order"""
         order.status = OrderStatus.FILLED
-        order.filled_at = datetime.utcnow()
+        order.filled_at = utcnow()
         order.filled_price = fill_price
 
         # Update balance and positions
@@ -395,7 +396,7 @@ class PaperTradingEngine:
             total_quantity = position.quantity + quantity
             position.average_price = total_value / total_quantity
             position.quantity = total_quantity
-            position.updated_at = datetime.utcnow()
+            position.updated_at = utcnow()
         else:
             # Create new position
             self.positions[symbol] = PaperPosition(
@@ -405,8 +406,8 @@ class PaperTradingEngine:
                 current_price=price,
                 unrealized_pnl=0.0,
                 realized_pnl=0.0,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
+                created_at=utcnow(),
+                updated_at=utcnow(),
             )
 
     def _close_or_reduce_position(
@@ -421,7 +422,7 @@ class PaperTradingEngine:
 
         position.quantity -= quantity
         position.realized_pnl += realized_pnl
-        position.updated_at = datetime.utcnow()
+        position.updated_at = utcnow()
 
         # Remove position if quantity is zero
         if position.quantity <= 0:
@@ -437,7 +438,7 @@ class PaperTradingEngine:
             position.unrealized_pnl = (
                 current_price - position.average_price
             ) * position.quantity
-            position.updated_at = datetime.utcnow()
+            position.updated_at = utcnow()
 
     def _calculate_final_metrics(self):
         """Calculate final performance metrics"""

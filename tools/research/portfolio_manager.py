@@ -12,6 +12,7 @@ from datetime import datetime
 
 import redis
 
+from core.utils.clock import utcnow
 try:
     from .models import Position, PositionSide, PortfolioState, PortfolioSnapshot
 except ImportError:
@@ -96,7 +97,7 @@ class PortfolioManager:
             }
 
         # Handle timestamp (might be bytes or string from mock)
-        timestamp_raw = data.get(b"timestamp", datetime.utcnow().isoformat())
+        timestamp_raw = data.get(b"timestamp", utcnow().isoformat())
         timestamp = (
             timestamp_raw.decode()
             if isinstance(timestamp_raw, bytes)
@@ -327,7 +328,7 @@ class PortfolioManager:
         )
 
         return PortfolioSnapshot(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=utcnow().isoformat(),
             equity=state.equity,
             cash=state.cash,
             total_exposure=state.total_exposure,

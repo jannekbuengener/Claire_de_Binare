@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from enum import Enum
 
+from core.utils.clock import utcnow
 
 class AuthorizationLevel(Enum):
     """Live trading authorization levels"""
@@ -146,7 +147,7 @@ class LiveTradingGate:
         test_timestamp = datetime.fromisoformat(test_results.get("timestamp", ""))
         max_age = timedelta(days=30)  # Test results valid for 30 days
 
-        if datetime.utcnow() - test_timestamp > max_age:
+        if utcnow() - test_timestamp > max_age:
             validation["valid"] = False
             validation["reason"] = "Test results expired - retest required"
             validation["authorization_level"] = AuthorizationLevel.DENIED
@@ -192,7 +193,7 @@ class LiveTradingGate:
             "authorized": auth_level != AuthorizationLevel.DENIED,
             "authorization_level": auth_level.value,
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "valid_until": self._calculate_expiry(auth_level),
             "restrictions": self._get_restrictions(auth_level),
         }
@@ -215,7 +216,7 @@ class LiveTradingGate:
 
         # Full authorization valid for 90 days, limited for 30 days
         days = 90 if auth_level == AuthorizationLevel.FULL else 30
-        expiry = datetime.utcnow() + timedelta(days=days)
+        expiry = utcnow() + timedelta(days=days)
 
         return expiry.isoformat()
 
@@ -260,7 +261,7 @@ class LiveTradingGate:
             return False
 
         expiry = datetime.fromisoformat(valid_until)
-        return datetime.utcnow() < expiry
+        return utcnow() < expiry
 
     def revoke_authorization(self, system_id: str, reason: str) -> Dict[str, Any]:
         """Revoke live trading authorization"""
@@ -268,7 +269,7 @@ class LiveTradingGate:
             "system_id": system_id,
             "revoked": True,
             "reason": reason,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "requires_retest": True,
         }
 

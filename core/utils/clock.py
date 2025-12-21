@@ -11,8 +11,11 @@ relations:
     - tests/replay/test_deterministic_replay.py
 """
 
+from __future__ import annotations
+
 import time
-from datetime import datetime, timezone
+from datetime import datetime
+from typing import Iterable, Optional, Protocol
 
 
 class Clock:
@@ -51,7 +54,7 @@ class SystemClock:
     """Wall-clock time (UTC)."""
 
     def now(self) -> datetime:
-        return datetime.now(timezone.utc)
+        return datetime.utcnow()
 
 
 class FixedClock:
@@ -66,3 +69,45 @@ class FixedClock:
     def set_time(self, new_time: datetime) -> None:
         """Set a new fixed time for test sequences."""
         self._fixed_time = new_time
+
+
+class ClockProvider(Protocol):
+    """Protocol for injectable clock sources."""
+
+    def now(self) -> datetime:
+        """Return current UTC time as datetime."""
+
+
+class ReplayClock:
+    """Replay-driven clock that returns a deterministic sequence of timestamps."""
+
+    def __init__(self, timestamps: Iterable[datetime], fallback: Optional[datetime] = None):
+        self._iterator = iter(timestamps)
+        self._last_time = fallback
+
+    def now(self) -> datetime:
+        try:
+            self._last_time = next(self._iterator)
+        except StopIteration:
+            if self._last_time is None:
+                raise RuntimeError("ReplayClock has no timestamps and no fallback set")
+        return self._last_time
+
+
+_DEFAULT_CLOCK: ClockProvider = SystemClock()
+
+
+def set_default_clock(clock: ClockProvider) -> None:
+    """Set the global default clock for deterministic replay/testing."""
+    global _DEFAULT_CLOCK
+    _DEFAULT_CLOCK = clock
+
+
+def get_default_clock() -> ClockProvider:
+    """Get the global default clock instance."""
+    return _DEFAULT_CLOCK
+
+
+def utcnow(clock: Optional[ClockProvider] = None) -> datetime:
+    """Return current UTC time using the injected clock (or default)."""
+    return (clock or _DEFAULT_CLOCK).now()

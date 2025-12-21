@@ -11,7 +11,8 @@ Features:
 
 import logging
 from typing import Optional, Dict, Any
-from datetime import datetime
+
+from core.utils.clock import utcnow
 
 try:
     from .models import Order, ExecutionResult, OrderStatus
@@ -159,7 +160,7 @@ class LiveExecutor:
             price=order.price,
             execution_price=execution_price,
             status=status,
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
             exchange="MEXC",
             exchange_order_id=str(response.get("orderId")),
             error_message=None,
@@ -190,7 +191,7 @@ class LiveExecutor:
             price=order.price,
             execution_price=order.price or 0.0,
             status=OrderStatus.FILLED,
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
             exchange="DRY_RUN",
             exchange_order_id="DRY_RUN",
             error_message=None,
@@ -210,7 +211,7 @@ class LiveExecutor:
             price=order.price,
             execution_price=0.0,
             status=OrderStatus.REJECTED,
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
             exchange="MEXC",
             exchange_order_id="",
             error_message=error,

@@ -14,6 +14,7 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 import logging
 
+from core.utils.clock import utcnow
 logger = logging.getLogger(__name__)
 
 
@@ -65,7 +66,7 @@ class EmailAlerter:
 Claire de Binare Paper Trading Alert
 
 Severity: {severity}
-Time: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+Time: {utcnow().strftime("%Y-%m-%d %H:%M:%S")}
 Subject: {subject}
 
 {message}

@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 import logging
 
+from core.utils.clock import utcnow
 
 class MarketPhase(Enum):
     """Market phase classifications"""
@@ -104,7 +105,7 @@ class MarketClassifier:
                 volatility_score=0.0,
                 momentum=0.0,
                 confidence=0.0,
-                timestamp=datetime.utcnow(),
+                timestamp=utcnow(),
                 lookback_period=0,
             )
 
@@ -135,7 +136,7 @@ class MarketClassifier:
             volatility_score=volatility_score,
             momentum=momentum,
             confidence=confidence,
-            timestamp=timestamps[-1] if timestamps else datetime.utcnow(),
+            timestamp=timestamps[-1] if timestamps else utcnow(),
             lookback_period=periods,
         )
 
@@ -301,7 +302,7 @@ class MarketClassifier:
             periods = list(self.lookback_periods.keys())
 
         summary = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "data_points": len(self.price_history),
             "timeframes": {},
         }
@@ -359,7 +360,7 @@ class MarketClassifier:
         Returns:
             Dictionary with phase percentages
         """
-        cutoff_time = datetime.utcnow() - timedelta(hours=hours_back)
+        cutoff_time = utcnow() - timedelta(hours=hours_back)
 
         recent_classifications = [
             m for m in self.classification_history if m.timestamp >= cutoff_time
