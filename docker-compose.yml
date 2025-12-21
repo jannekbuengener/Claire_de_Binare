@@ -78,6 +78,7 @@ services:
     restart: unless-stopped
     secrets:
       - grafana_password
+      - postgres_password
     ports:
       - "3000:3000"
     environment:
