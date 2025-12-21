@@ -15,6 +15,7 @@ from typing import Optional
 import redis
 from flask import Flask, jsonify, Response
 
+from core.utils.clock import utcnow
 try:
     from .config import config
     from .models import Candle, compute_adx, compute_atr
@@ -154,7 +155,7 @@ class RegimeService:
 
         self.running = True
         stats["status"] = "running"
-        stats["started_at"] = datetime.utcnow().isoformat()
+        stats["started_at"] = utcnow().isoformat()
         last_id = "0-0"
         logger.info("Regime-Service gestartet")
 

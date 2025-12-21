@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import threading
 
+from core.utils.clock import utcnow
 # Flask for health endpoint
 from flask import Flask, jsonify
 
@@ -44,7 +45,7 @@ logging.basicConfig(
     handlers=[
         logging.StreamHandler(sys.stdout),
         logging.FileHandler(
-            f"logs/paper_trading_{datetime.now().strftime('%Y%m%d')}.log"
+            f"logs/paper_trading_{utcnow().strftime('%Y%m%d')}.log"
         ),
     ],
 )
@@ -65,10 +66,10 @@ class PaperTradingRunner:
             duration_days (int): Test duration in days (default: 14)
         """
         self.duration = duration_days
-        self.start_time = datetime.now()
+        self.start_time = utcnow()
         self.end_time = self.start_time + timedelta(days=duration_days)
         self.running = True
-        self.last_health_check = datetime.now()
+        self.last_health_check = utcnow()
         self.event_count = 0
         self.alert_sent_times = {}  # Debounce alerts
 
@@ -83,7 +84,7 @@ class PaperTradingRunner:
 
         # Event log file (daily rotation)
         self.event_log_file = (
-            f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+            f"logs/events/events_{utcnow().strftime('%Y%m%d')}.jsonl"
         )
 
         logger.info("=" * 60)
@@ -144,7 +145,7 @@ class PaperTradingRunner:
         try:
             # Rotate log file daily
             current_log_file = (
-                f"logs/events/events_{datetime.now().strftime('%Y%m%d')}.jsonl"
+                f"logs/events/events_{utcnow().strftime('%Y%m%d')}.jsonl"
             )
             if current_log_file != self.event_log_file:
                 logger.info(
@@ -155,7 +156,7 @@ class PaperTradingRunner:
             # Write event as JSON line
             with open(self.event_log_file, "a", encoding="utf-8") as f:
                 log_entry = {
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": utcnow().isoformat(),
                     "channel": channel,
                     "event": event,
                 }
@@ -213,10 +214,10 @@ class PaperTradingRunner:
                     cursor.execute("SELECT 1")
 
                 # Update last health check time
-                self.last_health_check = datetime.now()
+                self.last_health_check = utcnow()
 
                 # Check if test is complete
-                if datetime.now() >= self.end_time:
+                if utcnow() >= self.end_time:
                     logger.info("⏰ Test duration completed - stopping runner")
                     self.stop()
 
@@ -232,7 +233,7 @@ class PaperTradingRunner:
         """Generate daily report (runs at midnight)"""
         while self.running:
             # Sleep until next midnight
-            now = datetime.now()
+            now = utcnow()
             tomorrow = (now + timedelta(days=1)).replace(
                 hour=0, minute=0, second=0, microsecond=0
             )
@@ -297,13 +298,13 @@ class PaperTradingRunner:
                 trades_today = cursor.fetchone()["count"]
 
                 # Uptime
-                uptime = datetime.now() - self.start_time
-                days_remaining = (self.end_time - datetime.now()).days
+                uptime = utcnow() - self.start_time
+                days_remaining = (self.end_time - utcnow()).days
 
                 report = f"""
 Paper Trading Daily Report
 
-Date: {datetime.now().strftime('%Y-%m-%d')}
+Date: {utcnow().strftime('%Y-%m-%d')}
 Uptime: {uptime.days} days, {uptime.seconds // 3600} hours
 Days Remaining: {days_remaining}
 
@@ -366,7 +367,7 @@ System Health:
         # Send shutdown alert
         self.email_alerter.send_alert(
             "Paper Trading Stopped",
-            f"Test stopped after {(datetime.now() - self.start_time).days} days\nTotal events logged: {self.event_count}",
+            f"Test stopped after {(utcnow() - self.start_time).days} days\nTotal events logged: {self.event_count}",
             severity="WARNING",
         )
 
@@ -380,7 +381,7 @@ System Health:
 
     def get_uptime_seconds(self):
         """Get uptime in seconds"""
-        return (datetime.now() - self.start_time).total_seconds()
+        return (utcnow() - self.start_time).total_seconds()
 
 
 # Global runner instance

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from core.utils.clock import utcnow
 
 class OrderSide(str, Enum):
     """Order side: BUY or SELL"""
@@ -76,11 +77,11 @@ class Order:
             try:
                 timestamp_value = int(float(timestamp_value))
             except ValueError:
-                timestamp_value = int(datetime.utcnow().timestamp())
+                timestamp_value = int(utcnow().timestamp())
         elif isinstance(timestamp_value, float):
             timestamp_value = int(timestamp_value)
         elif timestamp_value is None:
-            timestamp_value = int(datetime.utcnow().timestamp())
+            timestamp_value = int(utcnow().timestamp())
 
         payload = {
             "type": self.type,
@@ -120,7 +121,7 @@ class ExecutionResult:
 
     def __post_init__(self) -> None:
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utcnow().isoformat()
 
     @staticmethod
     def _schema_status(status: str) -> str:
@@ -147,11 +148,11 @@ class ExecutionResult:
                 try:
                     timestamp_value = int(float(timestamp_value))
                 except ValueError:
-                    timestamp_value = int(datetime.utcnow().timestamp())
+                    timestamp_value = int(utcnow().timestamp())
         elif isinstance(timestamp_value, float):
             timestamp_value = int(timestamp_value)
         elif timestamp_value is None:
-            timestamp_value = int(datetime.utcnow().timestamp())
+            timestamp_value = int(utcnow().timestamp())
 
         payload = {
             "type": self.type,

@@ -9,11 +9,11 @@ Features:
 - Price impact modeling
 """
 
-import uuid
-import random
 import time
-from datetime import datetime
 from typing import Optional
+
+from core.utils.clock import utcnow
+from core.utils.seed import Seed, SeedManager
 
 try:
     from .models import Order, ExecutionResult, OrderStatus
@@ -30,6 +30,7 @@ class MockExecutor:
         min_latency_ms: int = 50,
         max_latency_ms: int = 200,
         base_slippage_pct: float = 0.02,
+        seed_manager: Optional[SeedManager] = None,
     ):
         """
         Initialize Mock Executor
@@ -45,6 +46,7 @@ class MockExecutor:
         self.min_latency_ms = min_latency_ms
         self.max_latency_ms = max_latency_ms
         self.base_slippage_pct = base_slippage_pct
+        self._seed_manager = seed_manager or SeedManager(Seed.get())
 
     def execute_order(self, order: Order) -> ExecutionResult:
         """
@@ -53,15 +55,18 @@ class MockExecutor:
         Returns ExecutionResult with simulated data
         """
         # Simulate execution latency
-        latency_ms = random.randint(self.min_latency_ms, self.max_latency_ms)
+        latency_ms = self._seed_manager.random_int(
+            self.min_latency_ms, self.max_latency_ms
+        )
         time.sleep(latency_ms / 1000.0)  # Convert ms to seconds
 
         # Generate order ID
-        order_id = f"MOCK_{uuid.uuid4().hex[:8]}"
-        client_id = order.client_id or f"CDB_{uuid.uuid4().hex[:8]}"
+        order_suffix = f"{self._seed_manager.random_int(0, 99999999):08d}"
+        order_id = f"MOCK_{order_suffix}"
+        client_id = order.client_id or f"CDB_{order_suffix}"
 
         # Simulate success/failure
-        success = random.random() < self.success_rate
+        success = self._seed_manager.random_float() < self.success_rate
 
         if success:
             # Simulate successful execution with slippage
@@ -86,7 +91,7 @@ class MockExecutor:
                 price=round(execution_price, 2),
                 client_id=client_id,
                 error_message=None,
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
             )
 
             # Store order
@@ -106,7 +111,7 @@ class MockExecutor:
                 price=None,
                 client_id=client_id,
                 error_message="Mock rejection: Insufficient liquidity",
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
             )
 
             return result
@@ -124,7 +129,7 @@ class MockExecutor:
             base_price = 100
 
         # Add random variance (-0.1% to +0.1%)
-        variance = random.uniform(-0.001, 0.001)
+        variance = self._seed_manager.random_uniform(-0.001, 0.001)
         price = base_price * (1 + variance)
 
         return round(price, 2)
@@ -149,7 +154,7 @@ class MockExecutor:
         size_factor = min(quantity / 10.0, 2.0)  # Cap at 2x
 
         # Random component (market conditions)
-        random_factor = random.uniform(0.5, 1.5)
+        random_factor = self._seed_manager.random_uniform(0.5, 1.5)
 
         total_slippage = base * size_factor * random_factor
 

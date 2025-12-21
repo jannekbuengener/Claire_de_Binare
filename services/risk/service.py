@@ -17,6 +17,7 @@ from typing import Optional
 from pathlib import Path
 from threading import Thread
 
+from core.utils.clock import utcnow
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
@@ -569,7 +570,7 @@ class RiskManager:
         """Hauptschleife"""
         self.running = True
         stats["status"] = "running"
-        stats["started_at"] = datetime.now().isoformat()
+        stats["started_at"] = utcnow().isoformat()
 
         logger.info("🚀 Risk-Manager gestartet")
         logger.info(f"   Max Position: {self.config.max_position_pct*100}%")

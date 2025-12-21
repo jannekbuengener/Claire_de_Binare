@@ -11,6 +11,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from dataclasses import dataclass
 from enum import Enum
 
+from core.utils.clock import utcnow
 
 class RiskLevel(Enum):
     """Risk level classifications"""
@@ -93,7 +94,7 @@ class RiskMetrics:
 
     def initialize_tracking(self, initial_equity: float):
         """Initialize performance tracking"""
-        self.start_time = datetime.utcnow()
+        self.start_time = utcnow()
         self.peak_equity = initial_equity
         self.equity_curve = [(self.start_time, initial_equity)]
         self.logger.info(
@@ -109,7 +110,7 @@ class RiskMetrics:
         metrics = self.calculate_comprehensive_metrics()
 
         validation_results = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "test_duration_hours": self._get_test_duration_hours(),
             "overall_pass": True,
             "criteria_results": {},
@@ -173,14 +174,14 @@ class RiskMetrics:
             profit_factor=1.2,
             recovery_factor=0.0,
             calmar_ratio=0.0,
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
         )
 
     def _get_test_duration_hours(self) -> float:
         """Get test duration in hours"""
         if not self.start_time:
             return 0.0
-        return (datetime.utcnow() - self.start_time).total_seconds() / 3600
+        return (utcnow() - self.start_time).total_seconds() / 3600
 
     def _generate_recommendations(
         self, failed_criteria: List[str], metrics: PerformanceMetrics

@@ -372,8 +372,9 @@ class EmergencyStop:
 # services/execution/audit_logger.py
 import logging
 import json
-from datetime import datetime
 from pathlib import Path
+
+from core.utils.clock import utcnow
 
 class AuditLogger:
     """Immutable audit trail for all trading operations"""
@@ -383,7 +384,7 @@ class AuditLogger:
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Separate log file per day
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = utcnow().strftime("%Y-%m-%d")
         log_file = self.log_dir / f"audit_{today}.jsonl"
 
         self.logger = logging.getLogger("audit")
@@ -396,7 +397,7 @@ class AuditLogger:
     def log_order(self, event_type: str, order_data: dict, result: dict = None):
         """Log order event"""
         entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "event_type": event_type,
             "order": order_data,
             "result": result,

@@ -11,10 +11,10 @@ import logging
 import logging.config
 import redis
 from flask import Flask, jsonify, Response
-from datetime import datetime
 from typing import Optional
 from pathlib import Path
 
+from core.utils.clock import utcnow
 # Lokale Imports
 try:
     from .config import config
@@ -164,7 +164,7 @@ class SignalEngine:
         """Hauptschleife"""
         self.running = True
         stats["status"] = "running"
-        stats["started_at"] = datetime.now().isoformat()
+        stats["started_at"] = utcnow().isoformat()
 
         logger.info("🚀 Signal-Engine gestartet")
         logger.info(f"   Schwelle: {self.config.threshold_pct}%")

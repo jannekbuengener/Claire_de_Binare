@@ -18,6 +18,7 @@ from typing import Optional
 import redis
 from flask import Flask, jsonify, Response
 
+from core.utils.clock import utcnow
 try:
     from .config import config
 except ImportError:
@@ -305,7 +306,7 @@ class AllocationService:
             self.connect_redis()
         self.running = True
         stats["status"] = "running"
-        stats["started_at"] = datetime.utcnow().isoformat()
+        stats["started_at"] = utcnow().isoformat()
         last_regime_id = "0-0"
         last_fill_id = "0-0"
         last_shutdown_id = "0-0"

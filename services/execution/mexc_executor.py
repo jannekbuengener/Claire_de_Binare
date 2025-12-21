@@ -7,12 +7,12 @@ import requests
 import time
 import hashlib
 import hmac
-import uuid
 from typing import Optional
-from datetime import datetime
 from .models import Order, ExecutionResult, OrderStatus
 from .config import MEXC_API_KEY, MEXC_API_SECRET, MEXC_BASE_URL, MEXC_TESTNET
 
+from core.utils.clock import utcnow
+from core.utils.uuid_gen import generate_uuid_hex
 
 class MexcExecutor:
     """Real MEXC API Executor - NO MORE MOCK DATA"""
@@ -112,7 +112,7 @@ class MexcExecutor:
                 status=OrderStatus.FILLED.value,  # Assume filled for now
                 filled_price=current_price,
                 filled_quantity=order.quantity,
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
                 error_message=None,
             )
 
@@ -120,13 +120,16 @@ class MexcExecutor:
 
         except Exception as e:
             # Return error result
+            error_id = generate_uuid_hex(
+                name=f"error:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
+            )
             return ExecutionResult(
-                order_id=f"ERROR_{uuid.uuid4().hex[:8]}",
+                order_id=f"ERROR_{error_id}",
                 client_id=order.client_id,
                 status=OrderStatus.REJECTED.value,
                 filled_price=0.0,
                 filled_quantity=0.0,
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
                 error_message=f"MEXC API Error: {str(e)}",
             )
 
@@ -141,7 +144,7 @@ class MexcExecutor:
                 status=result["status"].lower(),
                 filled_price=float(result.get("price", 0)),
                 filled_quantity=float(result.get("executedQty", 0)),
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=utcnow().isoformat(),
                 error_message=None,
             )
         except Exception:

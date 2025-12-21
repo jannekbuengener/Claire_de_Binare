@@ -35,6 +35,13 @@ class SeedManager:
         """Generate a deterministic random integer."""
         return self._rng.randint(min_val, max_val)
 
+    def random_float(self) -> float:
+        """Generate a deterministic random float in [0.0, 1.0)."""
+        return self._rng.random()
+
+    def random_uniform(self, min_val: float, max_val: float) -> float:
+        """Generate a deterministic random float in [min_val, max_val]."""
+        return self._rng.uniform(min_val, max_val)
 
 _GLOBAL_SEED_MANAGER = SeedManager()
 
@@ -58,3 +65,13 @@ class Seed:
     def random_int(cls, min_val: int = 0, max_val: int = 1000000) -> int:
         """Generate a deterministic random integer using the shared manager."""
         return cls._manager.random_int(min_val, max_val)
+
+    @classmethod
+    def random_float(cls) -> float:
+        """Generate a deterministic random float using the shared manager."""
+        return cls._manager.random_float()
+
+    @classmethod
+    def random_uniform(cls, min_val: float, max_val: float) -> float:
+        """Generate a deterministic random float using the shared manager."""
+        return cls._manager.random_uniform(min_val, max_val)

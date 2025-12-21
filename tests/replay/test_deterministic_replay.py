@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 
 from core.utils.clock import FixedClock
 from core.utils.seed import SeedManager
-from core.utils.uuid_gen import UUIDGenerator
+from core.utils.uuid_gen import DeterministicUUIDGenerator
 from core.domain.event import Event
 
 
@@ -46,8 +46,8 @@ def test_uuid_generator_determinism():
     """Test: Gleicher Seed → Identische UUIDs."""
     seed = 42
 
-    gen1 = UUIDGenerator(seed)
-    gen2 = UUIDGenerator(seed)
+    gen1 = DeterministicUUIDGenerator(seed)
+    gen2 = DeterministicUUIDGenerator(seed)
 
     # Generiere UUIDs
     uuids1 = [gen1.generate() for _ in range(5)]
@@ -78,7 +78,7 @@ def test_event_replay_determinism():
     # Setup: Fixed Clock + UUID Generator
     fixed_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
     clock = FixedClock(fixed_time)
-    uuid_gen = UUIDGenerator(seed=42)
+    uuid_gen = DeterministicUUIDGenerator(seed=42)
 
     # Erstelle Events
     events_run1 = []
@@ -94,7 +94,7 @@ def test_event_replay_determinism():
 
     # Replay: Gleiche Clock + UUID Generator
     clock2 = FixedClock(fixed_time)
-    uuid_gen2 = UUIDGenerator(seed=42)
+    uuid_gen2 = DeterministicUUIDGenerator(seed=42)
 
     events_run2 = []
     for i in range(3):

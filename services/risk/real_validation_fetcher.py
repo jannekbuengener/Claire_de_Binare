@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional, Dict
 from pathlib import Path
 
+from core.utils.clock import utcnow
 
 class RealValidationFetcher:
     """Fetch REAL 72-hour validation results - NO MORE FAKE"""
@@ -80,7 +81,7 @@ class RealValidationFetcher:
 
         # Calculate validation age
         end_time = datetime.fromisoformat(result["end_time"])
-        hours_ago = (datetime.utcnow() - end_time).total_seconds() / 3600
+        hours_ago = (utcnow() - end_time).total_seconds() / 3600
 
         # Validation expires after 7 days
         if hours_ago > 168:  # 7 days
@@ -114,7 +115,7 @@ class RealValidationFetcher:
         conn = sqlite3.connect(self.validation_db_path)
         cursor = conn.cursor()
 
-        start_time = datetime.utcnow().isoformat()
+        start_time = utcnow().isoformat()
 
         cursor.execute(
             """
@@ -171,7 +172,7 @@ class RealValidationFetcher:
         conn = sqlite3.connect(self.validation_db_path)
         cursor = conn.cursor()
 
-        end_time = datetime.utcnow().isoformat()
+        end_time = utcnow().isoformat()
 
         cursor.execute(
             """
