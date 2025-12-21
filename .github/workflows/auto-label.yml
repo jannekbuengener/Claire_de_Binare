@@ -21,14 +21,19 @@ jobs:
               labels.push('type:bug');
             } else if (title.includes('feature') || title.includes('add') || title.includes('implement')) {
               labels.push('type:feature');
-            } else if (title.includes('test') || title.includes('coverage')) {
-              labels.push('type:testing');
+            } else if (title.includes('refactor')) {
+              labels.push('type:refactor');
             } else if (title.includes('docs') || title.includes('documentation')) {
               labels.push('type:docs');
-            } else if (title.includes('chore') || title.includes('cleanup') || title.includes('refactor')) {
+            } else if (title.includes('chore') || title.includes('cleanup')) {
               labels.push('type:chore');
             } else if (title.includes('security') || title.includes('vulnerability')) {
               labels.push('type:security');
+            }
+
+            // Tech tags
+            if (/\btest\b/i.test(title) || /\bcoverage\b/i.test(title) || /\btest\b/i.test(body)) {
+              labels.push('testing');
             }
 
             // Scope detection
@@ -36,12 +41,14 @@ jobs:
               labels.push('scope:ci');
             } else if (body.includes('docker') || body.includes('infra') || body.includes('deployment')) {
               labels.push('scope:infra');
-            } else if (body.includes('security') || body.includes('hardening')) {
-              labels.push('scope:security');
             } else if (body.includes('trading') || body.includes('risk') || body.includes('execution')) {
               labels.push('scope:core');
             } else if (body.includes('documentation') || body.includes('docs')) {
               labels.push('scope:docs');
+            } else if (body.includes('postgres') || body.includes('redis') || body.includes('database')) {
+              labels.push('scope:data');
+            } else if (body.includes('prometheus') || body.includes('grafana') || body.includes('monitoring')) {
+              labels.push('scope:monitoring');
             }
 
             // Priority detection
