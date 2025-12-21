@@ -55,13 +55,13 @@ class MarketData:
 
     symbol: str
     price: float
+    pct_change: float
+    timestamp: int
     open: float | None = None
     high: float | None = None
     low: float | None = None
     close: float | None = None
     volume: float = 0.0
-    pct_change: float
-    timestamp: int
     interval: str = "15m"
     venue: str | None = None
     type: Literal["market_data"] = "market_data"  # Type-safe event type

@@ -126,6 +126,8 @@ class ExecutionResult:
     @staticmethod
     def _schema_status(status: str) -> str:
         """Mappt interne Stati auf EVENT_SCHEMA-Konstanten"""
+        if isinstance(status, Enum):
+            status = status.value
         if status in {"FILLED", "REJECTED", "ERROR"}:
             return status
         if status in {OrderStatus.FAILED.value, OrderStatus.CANCELLED.value}:

@@ -18,12 +18,21 @@ from pathlib import Path
 from threading import Thread
 
 from core.utils.clock import utcnow
+
 try:
-    from .config import config
-    from .models import Order, Alert, RiskState, OrderResult
-except ImportError:
     from config import config
+except ImportError:
+    from services.risk.config import config
+
+try:
     from models import Order, Alert, RiskState, OrderResult
+except ImportError:
+    from services.risk.models import Order, Alert, RiskState, OrderResult
+
+try:
+    from balance_fetcher import RealBalanceFetcher
+except ImportError:
+    from services.risk.balance_fetcher import RealBalanceFetcher
 
 from core.domain.models import Signal
 
@@ -97,6 +106,9 @@ class RiskManager:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
 
+    def _guard_active(self) -> bool:
+        return not self.config.e2e_disable_circuit_breaker
+
     def connect_redis(self):
         """Redis-Verbindung"""
         try:
@@ -166,7 +178,7 @@ class RiskManager:
     def _listen_regime_stream(self):
         if not self.redis_client or not self.config.regime_stream:
             return
-        last_id = "0-0"
+        last_id = "$"
         while self.running:
             try:
                 response = self.redis_client.xread(
@@ -189,7 +201,7 @@ class RiskManager:
     def _listen_allocation_stream(self):
         if not self.redis_client or not self.config.allocation_stream:
             return
-        last_id = "0-0"
+        last_id = "$"
         while self.running:
             try:
                 response = self.redis_client.xread(
@@ -244,13 +256,11 @@ class RiskManager:
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
+        if self.config.use_live_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         # Max 10% des REAL Kapitals pro Position
         max_position_size = current_balance * self.config.max_position_pct
@@ -269,13 +279,11 @@ class RiskManager:
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
+        if self.config.use_live_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
@@ -290,13 +298,11 @@ class RiskManager:
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
+        if self.config.use_live_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
@@ -323,8 +329,9 @@ class RiskManager:
             risk_state.signals_blocked += 1
             return None
 
-        if signal.strategy_id in shutdown_strategy_ids or (
-            signal.bot_id and signal.bot_id in shutdown_bot_ids
+        if self._guard_active() and (
+            signal.strategy_id in shutdown_strategy_ids
+            or (signal.bot_id and signal.bot_id in shutdown_bot_ids)
         ):
             logger.warning("Signal blockiert: Bot-Shutdown aktiv")
             stats["orders_blocked"] += 1
@@ -338,44 +345,53 @@ class RiskManager:
             risk_state.signals_blocked += 1
             return None
 
-        if risk_off_active and not self._is_reduce_only_allowed(signal):
+        if self._guard_active() and risk_off_active and not self._is_reduce_only_allowed(signal):
             logger.warning("Signal blockiert: Risk-Off Reduce-Only")
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
 
-        # Layer 1: Circuit Breaker
-        ok, reason = self.check_drawdown_limit()
-        if not ok:
-            self.send_alert(
-                "CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol}
-            )
-            if not self._circuit_shutdown_emitted:
-                self.emit_bot_shutdown(reason)
-                self._circuit_shutdown_emitted = True
-            logger.warning(f"🚨 {reason}")
-            stats["orders_blocked"] += 1
-            risk_state.signals_blocked += 1
-            return None
+        if self._guard_active():
+            # Layer 1: Circuit Breaker
+            ok, reason = self.check_drawdown_limit()
+            if not ok:
+                self.send_alert(
+                    "CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol}
+                )
+                if not self._circuit_shutdown_emitted:
+                    self.emit_bot_shutdown(
+                        reason,
+                        strategy_id=signal.strategy_id,
+                        bot_id=signal.bot_id,
+                        causing_event_id=signal.signal_id or signal.client_id,
+                    )
+                    self._circuit_shutdown_emitted = True
+                logger.warning(f"⚠️ {reason}")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
 
-        # Layer 2: Exposure-Limit
-        ok, reason = self.check_exposure_limit()
-        if not ok:
-            self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
-            logger.warning(f"⚠️ {reason}")
-            stats["orders_blocked"] += 1
-            risk_state.signals_blocked += 1
-            return None
+            # Layer 2: Exposure-Limit
+            ok, reason = self.check_exposure_limit()
+            if not ok:
+                self.send_alert(
+                    "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
+                )
+                logger.warning(f"⚠️ {reason}")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
 
-        # Layer 3: Position-Size
-        ok, reason = self.check_position_limit(signal)
-        if not ok:
-            self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
-            logger.warning(f"⚠️ {reason}")
-            stats["orders_blocked"] += 1
-            risk_state.signals_blocked += 1
-            return None
-
+            # Layer 3: Position-Size
+            ok, reason = self.check_position_limit(signal)
+            if not ok:
+                self.send_alert(
+                    "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
+                )
+                logger.warning(f"⚠️ {reason}")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
         # Alle Checks passed → Order erstellen
         allocation = self._get_allocation_state(signal.strategy_id)
         quantity = self.calculate_position_size(signal, allocation.allocation_pct)
@@ -405,13 +421,11 @@ class RiskManager:
     def calculate_position_size(self, signal: Signal, allocation_pct: float) -> float:
         """Berechnet Position-Size basierend auf Allokation"""
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
+        if self.config.use_live_balance:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_size = current_balance * self.config.max_position_pct
 
@@ -424,11 +438,17 @@ class RiskManager:
     def send_order(self, order: Order):
         """Publiziert Order"""
         try:
-            message = json.dumps(order.to_dict(), ensure_ascii=False)
+            order_payload = order.to_dict()
+            message = json.dumps(order_payload, ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
             if self.redis_client:
+                sanitized_payload = {
+                    key: value
+                    for key, value in order_payload.items()
+                    if value is not None
+                }
                 self.redis_client.xadd(
-                    self.config.orders_stream, json.loads(message), maxlen=10000
+                    self.config.orders_stream, sanitized_payload, maxlen=10000
                 )
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
@@ -454,20 +474,31 @@ class RiskManager:
             logger.error(f"Fehler beim Alert-Publishing: {e}")
 
     def emit_bot_shutdown(
-        self, reason: str, strategy_id: str | None = None, bot_id: str | None = None
+        self,
+        reason: str,
+        strategy_id: str | None = None,
+        bot_id: str | None = None,
+        causing_event_id: str | None = None,
     ) -> None:
         """Publiziert BotShutdownEvent mit Safety-Priorität."""
+        if not self._guard_active():
+            logger.debug("Circuit-breaker disabled; skip emit for %s", reason)
+            return
+
         if not self.redis_client or not self.config.bot_shutdown_stream:
             return
         payload = {
             "ts": int(time.time()),
-            "reason": reason,
+            "source_service": "risk_manager",
+            "reason_code": reason,
             "priority": "SAFETY",
         }
         if strategy_id:
             payload["strategy_id"] = strategy_id
         if bot_id:
             payload["bot_id"] = bot_id
+        if causing_event_id:
+            payload["causing_event_id"] = causing_event_id
         self.redis_client.xadd(self.config.bot_shutdown_stream, payload, maxlen=10000)
         logger.warning("Bot-Shutdown emittiert: %s", payload)
 
@@ -597,7 +628,10 @@ class RiskManager:
             )
             self._allocation_thread.start()
             logger.info("Allocation-Stream Listener Thread gestartet")
-        if self._shutdown_thread is None or not self._shutdown_thread.is_alive():
+        if (
+            self._shutdown_thread is None
+            or not self._shutdown_thread.is_alive()
+        ) and self._guard_active():
             self._shutdown_thread = Thread(
                 target=self._listen_shutdown_stream, daemon=True
             )

@@ -12,8 +12,12 @@ Verwendung:
 import sys
 import os
 import argparse
-import psycopg2
-from psycopg2.extras import RealDictCursor
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+except ModuleNotFoundError:  # pragma: no cover - import-time dependency check
+    psycopg2 = None
+    RealDictCursor = None
 
 if sys.platform == "win32":
     import codecs
@@ -32,6 +36,10 @@ class AnalyticsQuery:
 
     def __init__(self):
         """Initialize database connection"""
+        if psycopg2 is None:
+            raise RuntimeError(
+                "Missing dependency: psycopg2. Install it to use this tool."
+            )
         # Use localhost by default (for host machine), cdb_postgres in Docker
         default_host = "localhost" if not os.getenv("DOCKER_ENV") else "cdb_postgres"
 
@@ -277,7 +285,13 @@ def main():
         # If no arguments, show usage
         if not any(vars(args).values()):
             parser.print_help()
-
+    except Exception as exc:
+        if psycopg2 is not None and isinstance(exc, psycopg2.Error):
+            message = getattr(exc, "pgerror", None) or str(exc)
+            print(f"ERROR: Database query failed: {message}", file=sys.stderr)
+        else:
+            print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
     finally:
         query.close()
     return 0

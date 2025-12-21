@@ -63,6 +63,13 @@ class RiskConfig:
     mexc_api_secret: Optional[str] = _read_secret("mexc_api_secret", "MEXC_API_SECRET") or None
     mexc_testnet: bool = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
+    # Circuit Breaker (for E2E)
+    e2e_disable_circuit_breaker: bool = os.getenv("E2E_DISABLE_CIRCUIT_BREAKER", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
     def validate(self) -> bool:
         """Validiert Konfiguration"""
         if self.max_position_pct <= 0 or self.max_position_pct > 1:

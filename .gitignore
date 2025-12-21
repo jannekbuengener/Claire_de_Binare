@@ -97,3 +97,5 @@ scripts/
 AGENTS.md
 .gemini/
 gha-creds-*.json
+!infrastructure/scripts/
+!infrastructure/scripts/query_analytics.py

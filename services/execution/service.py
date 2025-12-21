@@ -124,6 +124,10 @@ def init_services():
         if config.MOCK_TRADING:
             executor = MockExecutor()
             logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
+        elif config.DRY_RUN:
+            testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
+            executor = LiveExecutor(testnet=testnet, dry_run=True)
+            logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
         else:
             # Real MEXC executor with enhanced capabilities
             try:
@@ -132,15 +136,10 @@ def init_services():
                 logger.info("Using MexcExecutor (LIVE TRADING MODE - REAL DATA)")
             except ImportError:
                 # Fallback to LiveExecutor
-                dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
                 testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
-                executor = LiveExecutor(testnet=testnet, dry_run=dry_run)
-                
-                if dry_run:
-                    logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
-                else:
-                    mode = "TESTNET" if testnet else "LIVE"
-                    logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
+                executor = LiveExecutor(testnet=testnet, dry_run=False)
+                mode = "TESTNET" if testnet else "LIVE"
+                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
 
         # Initialize database
         db = _init_with_retry(
@@ -168,8 +167,15 @@ def _publish_result(result: ExecutionResult) -> None:
         config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
     )
     if config.STREAM_ORDER_RESULTS:
-        redis_client.xadd(config.STREAM_ORDER_RESULTS, event_payload, maxlen=10000)
-    logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
+        try:
+            redis_client.xadd(config.STREAM_ORDER_RESULTS, event_payload, maxlen=10000)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to publish result to stream %s: %s", config.STREAM_ORDER_RESULTS, exc)
+    logger.info(
+        "Published result to %s (stream=%s)",
+        config.TOPIC_ORDER_RESULTS,
+        config.STREAM_ORDER_RESULTS,
+    )
 
     if db:
         db.save_order(result)

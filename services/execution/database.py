@@ -3,6 +3,7 @@ Database Layer for Execution Service
 Claire de Binare Trading Bot
 """
 
+import json
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -61,6 +62,26 @@ class Database:
         Save order to orders table
         Returns True on success, False on failure
         """
+        status = ExecutionResult._schema_status(result.status)
+        status_db = (
+            "filled"
+            if status == "FILLED"
+            else "rejected"
+            if status in {"REJECTED", "ERROR"}
+            else "pending"
+        )
+        price_value = float(result.price) if result.price and result.price > 0 else 1.0
+        rejection_reason = (
+            result.error_message if status_db == "rejected" else None
+        )
+        metadata = {
+            "order_id": result.order_id,
+            "client_id": result.client_id,
+            "strategy_id": result.strategy_id,
+            "bot_id": result.bot_id,
+            "raw_status": status,
+        }
+
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
@@ -68,38 +89,35 @@ class Database:
                     cur.execute(
                         """
                         INSERT INTO orders (
-                            order_id, symbol, side, type,
-                            quantity, price, filled_quantity, average_price,
-                            status, exchange_order_id, submitted_at, filled_at
+                            symbol, side, order_type, price, size,
+                            approved, rejection_reason, status,
+                            filled_size, avg_fill_price, submitted_at, filled_at,
+                            metadata
                         ) VALUES (
+                            %s, %s, %s, %s, %s,
+                            %s, %s, %s,
                             %s, %s, %s, %s,
-                            %s, %s, %s, %s,
-                            %s, %s, %s, %s
+                            %s
                         )
-                        ON CONFLICT (order_id) 
-                        DO UPDATE SET
-                            filled_quantity = EXCLUDED.filled_quantity,
-                            average_price = EXCLUDED.average_price,
-                            status = EXCLUDED.status,
-                            filled_at = EXCLUDED.filled_at
                     """,
                         (
-                            result.order_id,
                             result.symbol,
-                            result.side,
-                            "MARKET",  # Default order type
-                            result.quantity,
-                            result.price,
-                            result.filled_quantity,
-                            result.price,  # average_price = price for now
-                            result.status,
-                            result.order_id,  # exchange_order_id = order_id for mock
-                            int(time.time()),  # submitted_at as Unix timestamp
+                            result.side.lower(),
+                            "market",
+                            price_value,
+                            float(result.quantity),
+                            True,
+                            rejection_reason,
+                            status_db,
+                            float(result.filled_quantity),
+                            price_value,
+                            datetime.utcnow(),
                             (
-                                int(time.time())
-                                if result.status == OrderStatus.FILLED.value
+                                datetime.utcnow()
+                                if status_db == "filled"
                                 else None
                             ),
+                            json.dumps(metadata),
                         ),
                     )
 
@@ -116,39 +134,48 @@ class Database:
         Only called for FILLED orders
         Returns True on success, False on failure
         """
-        if result.status != OrderStatus.FILLED.value:
+        if ExecutionResult._schema_status(result.status) != "FILLED":
             logger.warning(f"Skipping trade save - order not filled: {result.order_id}")
             return False
+
+        price_value = float(result.price) if result.price and result.price > 0 else 1.0
 
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    # Convert timestamp string to Unix timestamp
-                    timestamp = int(
-                        datetime.fromisoformat(result.timestamp).timestamp()
-                    )
-
                     # Insert into trades table
                     cur.execute(
                         """
                         INSERT INTO trades (
                             order_id, symbol, side,
-                            quantity, entry_price, 
-                            status, entry_timestamp
+                            price, size,
+                            status, execution_price,
+                            exchange, exchange_trade_id, metadata
                         ) VALUES (
                             %s, %s, %s,
                             %s, %s,
-                            %s, %s
+                            %s, %s,
+                            %s, %s, %s
                         )
                     """,
                         (
-                            result.order_id,
+                            None,
                             result.symbol,
-                            result.side,
-                            result.filled_quantity,
-                            result.price,
-                            "OPEN",  # Trade starts as OPEN
-                            timestamp,
+                            result.side.lower(),
+                            price_value,
+                            float(result.filled_quantity),
+                            "filled",
+                            price_value,
+                            result.exchange if hasattr(result, "exchange") else None,
+                            result.order_id,
+                            json.dumps(
+                                {
+                                    "order_id": result.order_id,
+                                    "client_id": result.client_id,
+                                    "strategy_id": result.strategy_id,
+                                    "bot_id": result.bot_id,
+                                }
+                            ),
                         ),
                     )
 
