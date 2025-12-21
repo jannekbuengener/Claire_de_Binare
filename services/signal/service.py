@@ -99,7 +99,6 @@ class SignalEngine:
 
         Momentum-Strategie:
         - BUY wenn pct_change > threshold
-        - Confidence basiert auf Stärke des Momentums
         """
         try:
             market_data = MarketData.from_dict(data)
@@ -113,25 +112,24 @@ class SignalEngine:
                     )
                     return None
 
-                # Confidence berechnen (linear mit pct_change)
-                confidence = min(market_data.pct_change / 10.0, 1.0)
 
                 # Signal generieren
                 signal = Signal(
                     symbol=market_data.symbol,
                     side="BUY",
-                    confidence=confidence,
                     reason=Signal.generate_reason(
                         market_data.pct_change, self.config.threshold_pct
                     ),
                     timestamp=int(time.time()),
                     price=market_data.price,
                     pct_change=market_data.pct_change,
+                    strategy_id=self.config.strategy_id,
+                    bot_id=self.config.bot_id,
                 )
 
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
-                    f"({signal.pct_change:+.2f}%, Confidence: {signal.confidence:.2f})"
+                    f"({signal.pct_change:+.2f}%)"
                 )
                 return signal
 
@@ -146,6 +144,10 @@ class SignalEngine:
         try:
             message = json.dumps(signal.to_dict())
             self.redis_client.publish(self.config.output_topic, message)
+            if self.redis_client:
+                self.redis_client.xadd(
+                    self.config.output_stream, signal.to_dict(), maxlen=10000
+                )
 
             # Statistik
             stats["signals_generated"] += 1

@@ -45,6 +45,14 @@ class RiskConfig:
     input_topic_order_results: str = "order_results"
     output_topic_orders: str = "orders"
     output_topic_alerts: str = "alerts"
+    orders_stream: str = os.getenv("RISK_ORDERS_STREAM", "stream.orders")
+    regime_stream: str = os.getenv("RISK_REGIME_STREAM", "stream.regime_signals")
+    allocation_stream: str = os.getenv(
+        "RISK_ALLOCATION_STREAM", "stream.allocation_decisions"
+    )
+    bot_shutdown_stream: str = os.getenv(
+        "RISK_BOT_SHUTDOWN_STREAM", "stream.bot_shutdown"
+    )
 
     # Balance Configuration
     use_live_balance: bool = os.getenv("USE_LIVE_BALANCE", "false").lower() == "true"

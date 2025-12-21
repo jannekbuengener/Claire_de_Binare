@@ -11,6 +11,7 @@ import logging
 import logging.config
 import redis
 from flask import Flask, jsonify, Response
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 from pathlib import Path
@@ -59,6 +60,16 @@ stats = {
 
 # Risk-State
 risk_state = RiskState()
+current_regime = "UNKNOWN"
+risk_off_active = False
+shutdown_strategy_ids = set()
+shutdown_bot_ids = set()
+
+
+@dataclass
+class AllocationState:
+    allocation_pct: float = 0.0
+    cooldown_until: int | None = None
 
 
 class RiskManager:
@@ -70,7 +81,12 @@ class RiskManager:
         self.pubsub: Optional[redis.client.PubSub] = None
         self.pubsub_results: Optional[redis.client.PubSub] = None
         self._order_result_thread: Optional[Thread] = None
+        self._regime_thread: Optional[Thread] = None
+        self._allocation_thread: Optional[Thread] = None
+        self._shutdown_thread: Optional[Thread] = None
         self.running = False
+        self.allocation_state: dict[str, AllocationState] = {}
+        self._circuit_shutdown_emitted = False
 
         # Validiere Config
         try:
@@ -109,6 +125,121 @@ class RiskManager:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
+    @staticmethod
+    def _parse_timestamp(value) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str):
+            try:
+                return int(datetime.fromisoformat(value).timestamp())
+            except ValueError:
+                try:
+                    return int(float(value))
+                except ValueError:
+                    return None
+        return None
+
+    def _get_allocation_state(self, strategy_id: str) -> AllocationState:
+        return self.allocation_state.get(strategy_id, AllocationState())
+
+    def _allocation_allowed(self, strategy_id: str) -> tuple[bool, str]:
+        state = self._get_allocation_state(strategy_id)
+        if state.cooldown_until and state.cooldown_until > int(time.time()):
+            return False, "Cooldown aktiv"
+        if state.allocation_pct <= 0:
+            return False, "Keine Allokation"
+        return True, "Allokation OK"
+
+    def _is_reduce_only_allowed(self, signal: Signal) -> bool:
+        position = risk_state.positions.get(signal.symbol, 0.0)
+        if abs(position) < 1e-9:
+            return False
+        if position > 0 and signal.side == "SELL":
+            return True
+        if position < 0 and signal.side == "BUY":
+            return True
+        return False
+
+    def _listen_regime_stream(self):
+        if not self.redis_client or not self.config.regime_stream:
+            return
+        last_id = "0-0"
+        while self.running:
+            try:
+                response = self.redis_client.xread(
+                    {self.config.regime_stream: last_id}, block=1000, count=10
+                )
+                if not response:
+                    continue
+                for _, entries in response:
+                    for entry_id, payload in entries:
+                        last_id = entry_id
+                        regime = payload.get("regime", "UNKNOWN")
+                        global current_regime, risk_off_active
+                        current_regime = regime
+                        risk_off_active = regime == "HIGH_VOL_CHAOTIC"
+                        logger.info("Regime-Update: %s (risk_off=%s)", regime, risk_off_active)
+            except Exception as err:  # noqa: BLE001
+                logger.error("Regime-Stream Fehler: %s", err)
+                time.sleep(1)
+
+    def _listen_allocation_stream(self):
+        if not self.redis_client or not self.config.allocation_stream:
+            return
+        last_id = "0-0"
+        while self.running:
+            try:
+                response = self.redis_client.xread(
+                    {self.config.allocation_stream: last_id}, block=1000, count=10
+                )
+                if not response:
+                    continue
+                for _, entries in response:
+                    for entry_id, payload in entries:
+                        last_id = entry_id
+                        strategy_id = payload.get("strategy_id")
+                        if not strategy_id:
+                            continue
+                        allocation_pct = float(payload.get("allocation_pct", 0.0))
+                        cooldown_until = self._parse_timestamp(payload.get("cooldown_until"))
+                        self.allocation_state[strategy_id] = AllocationState(
+                            allocation_pct=allocation_pct,
+                            cooldown_until=cooldown_until,
+                        )
+            except Exception as err:  # noqa: BLE001
+                logger.error("Allocation-Stream Fehler: %s", err)
+                time.sleep(1)
+
+    def _listen_shutdown_stream(self):
+        if not self.redis_client or not self.config.bot_shutdown_stream:
+            return
+        last_id = "0-0"
+        while self.running:
+            try:
+                response = self.redis_client.xread(
+                    {self.config.bot_shutdown_stream: last_id}, block=1000, count=10
+                )
+                if not response:
+                    continue
+                for _, entries in response:
+                    for entry_id, payload in entries:
+                        last_id = entry_id
+                        strategy_id = payload.get("strategy_id")
+                        bot_id = payload.get("bot_id")
+                        if strategy_id:
+                            shutdown_strategy_ids.add(strategy_id)
+                        if bot_id:
+                            shutdown_bot_ids.add(bot_id)
+                        logger.warning(
+                            "Bot-Shutdown empfangen: strategy_id=%s bot_id=%s",
+                            strategy_id,
+                            bot_id,
+                        )
+            except Exception as err:  # noqa: BLE001
+                logger.error("Shutdown-Stream Fehler: %s", err)
+                time.sleep(1)
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
@@ -180,12 +311,47 @@ class RiskManager:
     def process_signal(self, signal: Signal) -> Optional[Order]:
         """Prüft Signal gegen alle Risk-Layers"""
 
+        if not signal.strategy_id:
+            self.send_alert(
+                "CRITICAL",
+                "MISSING_STRATEGY_ID",
+                "Signal ohne strategy_id abgelehnt",
+                {"symbol": signal.symbol},
+            )
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        if signal.strategy_id in shutdown_strategy_ids or (
+            signal.bot_id and signal.bot_id in shutdown_bot_ids
+        ):
+            logger.warning("Signal blockiert: Bot-Shutdown aktiv")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        allowed, alloc_reason = self._allocation_allowed(signal.strategy_id)
+        if not allowed:
+            logger.warning("Signal blockiert: %s", alloc_reason)
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        if risk_off_active and not self._is_reduce_only_allowed(signal):
+            logger.warning("Signal blockiert: Risk-Off Reduce-Only")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         # Layer 1: Circuit Breaker
         ok, reason = self.check_drawdown_limit()
         if not ok:
             self.send_alert(
                 "CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol}
             )
+            if not self._circuit_shutdown_emitted:
+                self.emit_bot_shutdown(reason)
+                self._circuit_shutdown_emitted = True
             logger.warning(f"🚨 {reason}")
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
@@ -210,7 +376,8 @@ class RiskManager:
             return None
 
         # Alle Checks passed → Order erstellen
-        quantity = self.calculate_position_size(signal)
+        allocation = self._get_allocation_state(signal.strategy_id)
+        quantity = self.calculate_position_size(signal, allocation.allocation_pct)
 
         order = Order(
             symbol=signal.symbol,
@@ -221,6 +388,8 @@ class RiskManager:
             reason=signal.reason,
             timestamp=int(time.time()),
             client_id=f"{signal.symbol}-{signal.timestamp}",
+            strategy_id=signal.strategy_id,
+            bot_id=signal.bot_id,
         )
 
         logger.info(
@@ -232,8 +401,8 @@ class RiskManager:
 
         return order
 
-    def calculate_position_size(self, signal: Signal) -> float:
-        """Berechnet Position-Size basierend auf Confidence"""
+    def calculate_position_size(self, signal: Signal, allocation_pct: float) -> float:
+        """Berechnet Position-Size basierend auf Allokation"""
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
 
@@ -245,10 +414,10 @@ class RiskManager:
 
         max_size = current_balance * self.config.max_position_pct
 
-        # Confidence-basiert (höhere Confidence = größere Position)
-        position_size = max_size * signal.confidence
+        # Allokationsbasiert (keine Confidence im Control-Pfad)
+        position_size = max_size * max(allocation_pct, 0.0)
 
-        # Vereinfacht: Menge proportional zur Confidence, Mindestmenge 0
+        # Vereinfacht: Menge proportional zur Allokation, Mindestmenge 0
         return max(position_size, 0.0)
 
     def send_order(self, order: Order):
@@ -256,6 +425,10 @@ class RiskManager:
         try:
             message = json.dumps(order.to_dict(), ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
+            if self.redis_client:
+                self.redis_client.xadd(
+                    self.config.orders_stream, json.loads(message), maxlen=10000
+                )
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
             logger.error(f"Fehler beim Order-Publishing: {e}")
@@ -278,6 +451,24 @@ class RiskManager:
             logger.warning(f"Alert: [{level}] {code}: {message}")
         except Exception as e:
             logger.error(f"Fehler beim Alert-Publishing: {e}")
+
+    def emit_bot_shutdown(
+        self, reason: str, strategy_id: str | None = None, bot_id: str | None = None
+    ) -> None:
+        """Publiziert BotShutdownEvent mit Safety-Priorität."""
+        if not self.redis_client or not self.config.bot_shutdown_stream:
+            return
+        payload = {
+            "ts": int(time.time()),
+            "reason": reason,
+            "priority": "SAFETY",
+        }
+        if strategy_id:
+            payload["strategy_id"] = strategy_id
+        if bot_id:
+            payload["bot_id"] = bot_id
+        self.redis_client.xadd(self.config.bot_shutdown_stream, payload, maxlen=10000)
+        logger.warning("Bot-Shutdown emittiert: %s", payload)
 
     def _update_exposure(self, result: OrderResult):
         """Aktualisiert Exposure basierend auf Order-Result"""
@@ -395,6 +586,22 @@ class RiskManager:
             )
             self._order_result_thread.start()
             logger.info("Order-Result Listener Thread gestartet")
+        if self._regime_thread is None or not self._regime_thread.is_alive():
+            self._regime_thread = Thread(target=self._listen_regime_stream, daemon=True)
+            self._regime_thread.start()
+            logger.info("Regime-Stream Listener Thread gestartet")
+        if self._allocation_thread is None or not self._allocation_thread.is_alive():
+            self._allocation_thread = Thread(
+                target=self._listen_allocation_stream, daemon=True
+            )
+            self._allocation_thread.start()
+            logger.info("Allocation-Stream Listener Thread gestartet")
+        if self._shutdown_thread is None or not self._shutdown_thread.is_alive():
+            self._shutdown_thread = Thread(
+                target=self._listen_shutdown_stream, daemon=True
+            )
+            self._shutdown_thread.start()
+            logger.info("Shutdown-Stream Listener Thread gestartet")
 
         try:
             for message in self.pubsub.listen():

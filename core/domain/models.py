@@ -24,6 +24,8 @@ class Signal:
     """Trading signal with lightweight fields used across services and tests."""
 
     signal_id: str | None = None
+    strategy_id: str | None = None
+    bot_id: str | None = None
     symbol: str = ""
     direction: str = ""
     strength: float = 0.0
@@ -39,14 +41,32 @@ class Signal:
         # Backfill legacy fields from simplified inputs.
         if self.side is None and self.direction:
             self.side = self.direction
-        if self.confidence is None:
-            self.confidence = self.strength
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Signal":
+        """Create a Signal from a transport payload."""
+        return cls(
+            signal_id=data.get("signal_id"),
+            strategy_id=data.get("strategy_id"),
+            bot_id=data.get("bot_id"),
+            symbol=data.get("symbol", ""),
+            direction=data.get("direction", ""),
+            strength=float(data.get("strength", 0.0)),
+            timestamp=data.get("timestamp", 0.0),
+            side=data.get("side"),
+            confidence=data.get("confidence"),
+            reason=data.get("reason"),
+            price=data.get("price"),
+            pct_change=data.get("pct_change"),
+        )
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
         return {
             "type": self.type,
             "signal_id": self.signal_id,
+            "strategy_id": self.strategy_id,
+            "bot_id": self.bot_id,
             "symbol": self.symbol,
             "direction": self.direction,
             "strength": self.strength,

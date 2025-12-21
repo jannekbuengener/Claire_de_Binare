@@ -13,6 +13,8 @@ class Signal:
     """Trading signal with lightweight fields used across services and tests."""
 
     signal_id: str | None = None
+    strategy_id: str | None = None
+    bot_id: str | None = None
     symbol: str = ""
     direction: str = ""
     strength: float = 0.0
@@ -28,14 +30,14 @@ class Signal:
         # Backfill legacy fields from simplified inputs.
         if self.side is None and self.direction:
             self.side = self.direction
-        if self.confidence is None:
-            self.confidence = self.strength
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
         return {
             "type": self.type,
             "signal_id": self.signal_id,
+            "strategy_id": self.strategy_id,
+            "bot_id": self.bot_id,
             "symbol": self.symbol,
             "direction": self.direction,
             "strength": self.strength,
@@ -59,6 +61,8 @@ class Order:
     signal_id: int
     reason: str
     timestamp: int
+    strategy_id: str
+    bot_id: Optional[str] = None
     client_id: Optional[str] = None
     type: Literal["order"] = "order"  # Type-safe event type
 
@@ -72,6 +76,8 @@ class Order:
             "signal_id": self.signal_id,
             "reason": self.reason,
             "timestamp": self.timestamp,
+            "strategy_id": self.strategy_id,
+            "bot_id": self.bot_id,
             "client_id": self.client_id,
         }
 
@@ -87,6 +93,8 @@ class OrderResult:
     quantity: float
     filled_quantity: float
     timestamp: int
+    strategy_id: Optional[str] = None
+    bot_id: Optional[str] = None
     price: Optional[float] = None
     client_id: Optional[str] = None
     error_message: Optional[str] = None
@@ -123,6 +131,8 @@ class OrderResult:
             quantity=float(data.get("quantity", 0.0)),
             filled_quantity=float(data.get("filled_quantity", 0.0)),
             price=(float(data["price"]) if data.get("price") is not None else None),
+            strategy_id=data.get("strategy_id"),
+            bot_id=data.get("bot_id"),
             client_id=data.get("client_id"),
             error_message=data.get("error_message"),
             timestamp=ts,

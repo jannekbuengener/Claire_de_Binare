@@ -9,6 +9,7 @@ import sys
 import logging
 import logging.config
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from flask import Flask, jsonify, Response
@@ -17,13 +18,13 @@ from threading import Thread
 
 try:
     from . import config
-    from .models import Order, ExecutionResult
+    from .models import Order, ExecutionResult, OrderStatus
     from .mock_executor import MockExecutor
     from .live_executor import LiveExecutor
     from .database import Database
 except ImportError:
     import config
-    from models import Order, ExecutionResult
+    from models import Order, ExecutionResult, OrderStatus
     from mock_executor import MockExecutor
     from live_executor import LiveExecutor
     from database import Database
@@ -66,6 +67,10 @@ stats = {
     "start_time": datetime.utcnow().isoformat(),
     "last_result": None,
 }
+bot_shutdown_active = False
+blocked_strategy_ids = set()
+blocked_bot_ids = set()
+open_orders = set()
 
 
 def _init_with_retry(
@@ -149,6 +154,28 @@ def init_services():
         return False
 
 
+def _publish_result(result: ExecutionResult) -> None:
+    """Publish order result to Redis (pubsub + stream) and persist to DB."""
+    global stats
+
+    event_payload = result.to_dict()
+    stats["last_result"] = event_payload
+    if not redis_client:
+        raise RuntimeError("Redis client not initialised")
+
+    redis_client.publish(
+        config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
+    )
+    if config.STREAM_ORDER_RESULTS:
+        redis_client.xadd(config.STREAM_ORDER_RESULTS, event_payload, maxlen=10000)
+    logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
+
+    if db:
+        db.save_order(result)
+        if ExecutionResult._schema_status(result.status) == "FILLED":
+            db.save_trade(result)
+
+
 def process_order(order_data: dict):
     """Process incoming order"""
     global stats
@@ -163,6 +190,27 @@ def process_order(order_data: dict):
         order = Order.from_event(order_data)
 
         stats["orders_received"] += 1
+
+        if bot_shutdown_active or (
+            order.strategy_id and order.strategy_id in blocked_strategy_ids
+        ) or (order.bot_id and order.bot_id in blocked_bot_ids):
+            result = ExecutionResult(
+                order_id=f"SHUTDOWN_{uuid.uuid4().hex[:8]}",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message="Order blocked by bot shutdown",
+                timestamp=datetime.utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            stats["orders_rejected"] += 1
+            _publish_result(result)
+            return result
 
         logger.info(
             "Processing order: %s %s qty=%.4f",
@@ -179,6 +227,9 @@ def process_order(order_data: dict):
         if result is None:
             raise RuntimeError("Executor returned no result")
 
+        result.strategy_id = order.strategy_id
+        result.bot_id = order.bot_id
+
         # Update stats
         schema_status = ExecutionResult._schema_status(result.status)
         if schema_status == "FILLED":
@@ -190,22 +241,7 @@ def process_order(order_data: dict):
                 "Order rejected: %s - %s", result.order_id, result.error_message
             )
 
-        # Publish result
-        event_payload = result.to_dict()
-        stats["last_result"] = event_payload
-        if not redis_client:
-            raise RuntimeError("Redis client not initialised")
-
-        redis_client.publish(
-            config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
-        )
-        logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
-
-        # Save to PostgreSQL
-        if db:
-            db.save_order(result)
-            if schema_status == "FILLED":
-                db.save_trade(result)
+        _publish_result(result)
 
         return result
     except (KeyError, ValueError) as err:
@@ -242,6 +278,56 @@ def message_loop():
             time.sleep(1)
 
     logger.info("Message loop stopped")
+
+
+def _handle_bot_shutdown(payload: dict) -> None:
+    """Handle bot shutdown events with safety priority."""
+    global bot_shutdown_active
+
+    strategy_id = payload.get("strategy_id")
+    bot_id = payload.get("bot_id")
+    if strategy_id:
+        blocked_strategy_ids.add(strategy_id)
+    if bot_id:
+        blocked_bot_ids.add(bot_id)
+
+    bot_shutdown_active = True
+    logger.warning(
+        "Bot shutdown active (strategy_id=%s, bot_id=%s, reason=%s)",
+        strategy_id,
+        bot_id,
+        payload.get("reason"),
+    )
+
+    if executor:
+        for order_id in list(open_orders):
+            try:
+                executor.cancel_order(order_id)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Cancel failed for %s: %s", order_id, exc)
+        open_orders.clear()
+
+
+def listen_bot_shutdown():
+    """Listen for bot shutdown events from Redis stream."""
+    if not redis_client or not config.STREAM_BOT_SHUTDOWN:
+        return
+
+    last_id = "0-0"
+    while running:
+        try:
+            response = redis_client.xread(
+                {config.STREAM_BOT_SHUTDOWN: last_id}, block=1000, count=10
+            )
+            if not response:
+                continue
+            for _, entries in response:
+                for entry_id, payload in entries:
+                    last_id = entry_id
+                    _handle_bot_shutdown(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Bot shutdown stream error: %s", exc)
+            time.sleep(1)
 
 
 # Health Check Endpoint
@@ -353,6 +439,9 @@ def main():
     message_thread = Thread(target=message_loop, daemon=True)
     message_thread.start()
     logger.info("Message loop started")
+    shutdown_thread = Thread(target=listen_bot_shutdown, daemon=True)
+    shutdown_thread.start()
+    logger.info("Bot-shutdown listener started")
 
     # Start Flask app
     try:

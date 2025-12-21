@@ -26,10 +26,13 @@ class SignalConfig:
     threshold_pct: float = float(os.getenv("SIGNAL_THRESHOLD_PCT", "3.0"))
     lookback_minutes: int = int(os.getenv("SIGNAL_LOOKBACK_MIN", "15"))
     min_volume: float = float(os.getenv("SIGNAL_MIN_VOLUME", "100000"))
+    strategy_id: str = os.getenv("SIGNAL_STRATEGY_ID", "")
+    bot_id: Optional[str] = os.getenv("SIGNAL_BOT_ID")
 
     # Topics
     input_topic: str = "market_data"
     output_topic: str = "signals"
+    output_stream: str = os.getenv("SIGNAL_OUTPUT_STREAM", "stream.signals")
 
     def validate(self) -> bool:
         """Validiert Konfiguration"""
@@ -37,6 +40,8 @@ class SignalConfig:
             raise ValueError("SIGNAL_THRESHOLD_PCT muss > 0 sein")
         if self.lookback_minutes <= 0:
             raise ValueError("SIGNAL_LOOKBACK_MIN muss > 0 sein")
+        if not self.strategy_id:
+            raise ValueError("SIGNAL_STRATEGY_ID muss gesetzt sein")
         return True
 
 

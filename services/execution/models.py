@@ -38,6 +38,8 @@ class Order:
     side: Literal["BUY", "SELL"]
     quantity: float
     stop_loss_pct: Optional[float] = None
+    strategy_id: Optional[str] = None
+    bot_id: Optional[str] = None
     client_id: Optional[str] = None
     timestamp: Optional[int | float | str] = None
     type: Literal["order"] = "order"
@@ -61,6 +63,8 @@ class Order:
                 if payload.get("stop_loss_pct") is not None
                 else None
             ),
+            strategy_id=payload.get("strategy_id"),
+            bot_id=payload.get("bot_id"),
             client_id=payload.get("client_id"),
             timestamp=payload.get("timestamp"),
         )
@@ -87,6 +91,10 @@ class Order:
         }
         if self.stop_loss_pct is not None:
             payload["stop_loss_pct"] = self.stop_loss_pct
+        if self.strategy_id is not None:
+            payload["strategy_id"] = self.strategy_id
+        if self.bot_id is not None:
+            payload["bot_id"] = self.bot_id
         if self.client_id is not None:
             payload["client_id"] = self.client_id
         return payload
@@ -102,6 +110,8 @@ class ExecutionResult:
     quantity: float
     filled_quantity: float
     status: str
+    strategy_id: Optional[str] = None
+    bot_id: Optional[str] = None
     client_id: Optional[str] = None
     price: Optional[float] = None
     error_message: Optional[str] = None
@@ -153,6 +163,10 @@ class ExecutionResult:
             "filled_quantity": self.filled_quantity,
             "timestamp": timestamp_value,
         }
+        if self.strategy_id is not None:
+            payload["strategy_id"] = self.strategy_id
+        if self.bot_id is not None:
+            payload["bot_id"] = self.bot_id
         if self.price is not None:
             payload["price"] = self.price
         if self.client_id is not None:

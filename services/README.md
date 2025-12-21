@@ -7,5 +7,7 @@
 ## Key entrypoints
 *   [DB Writer Service (services/db_writer/)](services/db_writer/)
 *   [Execution Service (services/execution/)](services/execution/)
+*   [Regime Service (services/regime/)](services/regime/)
 *   [Risk Service (services/risk/)](services/risk/)
 *   [Signal Service (services/signal/)](services/signal/)
+*   [Allocation Service (services/allocation/)](services/allocation/)

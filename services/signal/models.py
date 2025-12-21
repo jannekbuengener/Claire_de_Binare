@@ -12,6 +12,8 @@ class Signal:
     """Trading signal with lightweight fields used across services and tests."""
 
     signal_id: str | None = None
+    strategy_id: str | None = None
+    bot_id: str | None = None
     symbol: str = ""
     direction: str = ""
     strength: float = 0.0
@@ -27,14 +29,14 @@ class Signal:
         # Backfill legacy fields from simplified inputs.
         if self.side is None and self.direction:
             self.side = self.direction
-        if self.confidence is None:
-            self.confidence = self.strength
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
         return {
             "type": self.type,
             "signal_id": self.signal_id,
+            "strategy_id": self.strategy_id,
+            "bot_id": self.bot_id,
             "symbol": self.symbol,
             "direction": self.direction,
             "strength": self.strength,
@@ -53,10 +55,15 @@ class MarketData:
 
     symbol: str
     price: float
-    volume: float
+    open: float | None = None
+    high: float | None = None
+    low: float | None = None
+    close: float | None = None
+    volume: float = 0.0
     pct_change: float
     timestamp: int
     interval: str = "15m"
+    venue: str | None = None
     type: Literal["market_data"] = "market_data"  # Type-safe event type
 
     @classmethod
@@ -65,9 +72,14 @@ class MarketData:
         return cls(
             symbol=data["symbol"],
             price=float(data["price"]),
-            volume=float(data["volume"]),
+            open=(float(data["open"]) if data.get("open") is not None else None),
+            high=(float(data["high"]) if data.get("high") is not None else None),
+            low=(float(data["low"]) if data.get("low") is not None else None),
+            close=(float(data["close"]) if data.get("close") is not None else None),
+            volume=float(data.get("volume", 0.0)),
             pct_change=float(data["pct_change"]),
             timestamp=int(data["timestamp"]),
             interval=data.get("interval", "15m"),
+            venue=data.get("venue"),
             type=data.get("type", "market_data"),
         )
