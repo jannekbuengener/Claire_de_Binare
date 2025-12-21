@@ -13,6 +13,11 @@ COPY email_alerter.py .
 # Create logs directory
 RUN mkdir -p /app/logs /app/logs/events
 
+# Non-Root User
+RUN useradd --create-home --uid 1000 marketuser \
+    && chown -R marketuser:marketuser /app
+USER marketuser
+
 # Expose health endpoint port
 EXPOSE 8004
 

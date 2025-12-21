@@ -21,7 +21,10 @@ if sys.platform == "win32":
     sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, errors="replace")
 
 # datetime and timedelta available if needed for future queries
-from tabulate import tabulate
+try:
+    from tabulate import tabulate
+except ModuleNotFoundError:  # pragma: no cover - import-time dependency check
+    tabulate = None
 
 
 class AnalyticsQuery:
@@ -32,13 +35,24 @@ class AnalyticsQuery:
         # Use localhost by default (for host machine), cdb_postgres in Docker
         default_host = "localhost" if not os.getenv("DOCKER_ENV") else "cdb_postgres"
 
-        self.conn = psycopg2.connect(
-            host=os.getenv("POSTGRES_HOST", default_host),
-            port=int(os.getenv("POSTGRES_PORT", "5432")),
-            database=os.getenv("POSTGRES_DB", "claire_de_binare"),
-            user=os.getenv("POSTGRES_USER", "claire_user"),
-            password=os.getenv("POSTGRES_PASSWORD", ""),
-        )
+        try:
+            self.conn = psycopg2.connect(
+                host=os.getenv("POSTGRES_HOST", default_host),
+                port=int(os.getenv("POSTGRES_PORT", "5432")),
+                database=os.getenv("POSTGRES_DB", "claire_de_binare"),
+                user=os.getenv("POSTGRES_USER", "claire_user"),
+                password=os.getenv("POSTGRES_PASSWORD", ""),
+            )
+        except psycopg2.Error as exc:
+            raise RuntimeError(
+                "PostgreSQL connection failed. Check POSTGRES_* env vars and DB availability."
+            ) from exc
+
+    def _require_tabulate(self) -> bool:
+        if tabulate is None:
+            print("Missing dependency: tabulate. Install it to print tables.")
+            return False
+        return True
 
     def last_signals(self, limit=10):
         """Get last N signals"""
@@ -55,6 +69,8 @@ class AnalyticsQuery:
             rows = cursor.fetchall()
 
             if rows:
+                if not self._require_tabulate():
+                    return
                 print(f"\n📊 Last {len(rows)} Signals:\n")
                 print(tabulate(rows, headers="keys", tablefmt="grid"))
             else:
@@ -75,6 +91,8 @@ class AnalyticsQuery:
             rows = cursor.fetchall()
 
             if rows:
+                if not self._require_tabulate():
+                    return
                 print(f"\n💼 Last {len(rows)} Trades:\n")
                 print(tabulate(rows, headers="keys", tablefmt="grid"))
             else:
@@ -132,6 +150,8 @@ class AnalyticsQuery:
             rows = cursor.fetchall()
 
             if rows:
+                if not self._require_tabulate():
+                    return
                 print(f"\n📈 Daily P&L (Last {days} days):\n")
                 print(tabulate(rows, headers="keys", tablefmt="grid", floatfmt=".2f"))
             else:
@@ -185,6 +205,8 @@ class AnalyticsQuery:
             rows = cursor.fetchall()
 
             if rows:
+                if not self._require_tabulate():
+                    return
                 print(f"\n📌 Open Positions ({len(rows)}):\n")
                 print(tabulate(rows, headers="keys", tablefmt="grid", floatfmt=".2f"))
             else:
@@ -226,7 +248,11 @@ def main():
     args = parser.parse_args()
 
     # Initialize query tool
-    query = AnalyticsQuery()
+    try:
+        query = AnalyticsQuery()
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
     try:
         # Execute requested queries
@@ -254,7 +280,8 @@ def main():
 
     finally:
         query.close()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

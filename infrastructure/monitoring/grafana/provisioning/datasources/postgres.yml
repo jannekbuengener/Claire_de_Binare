@@ -8,7 +8,7 @@ datasources:
     database: claire_de_binare
     user: claire_user
     secureJsonData:
-      password: claire_db_secret_2024
+      password: $__file{/run/secrets/postgres_password}
     jsonData:
       sslmode: disable
       maxOpenConns: 10

@@ -114,24 +114,27 @@ def init_services():
         pubsub.subscribe(config.TOPIC_ORDERS)
         logger.info(f"Subscribed to topic: {config.TOPIC_ORDERS}")
 
-        # Initialize executor
+        # Initialize executor - LIVE DATA CONVERSION
         if config.MOCK_TRADING:
             executor = MockExecutor()
             logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
         else:
-            # Real MEXC executor
-            dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
-            testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
-
-            executor = LiveExecutor(testnet=testnet, dry_run=dry_run)
-
-            if dry_run:
-                logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
-            else:
-                mode = "TESTNET" if testnet else "LIVE"
-                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
-
-
+            # Real MEXC executor with enhanced capabilities
+            try:
+                from .mexc_executor import MexcExecutor
+                executor = MexcExecutor()
+                logger.info("Using MexcExecutor (LIVE TRADING MODE - REAL DATA)")
+            except ImportError:
+                # Fallback to LiveExecutor
+                dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
+                testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
+                executor = LiveExecutor(testnet=testnet, dry_run=dry_run)
+                
+                if dry_run:
+                    logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
+                else:
+                    mode = "TESTNET" if testnet else "LIVE"
+                    logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
 
         # Initialize database
         db = _init_with_retry(
