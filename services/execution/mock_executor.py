@@ -112,6 +112,11 @@ class MockExecutor:
                 client_id=client_id,
                 error_message="Mock rejection: Insufficient liquidity",
                 timestamp=utcnow().isoformat(),
+                # Rejection diagnostics
+                source_service="execution",
+                reject_reason_code="INSUFFICIENT_LIQUIDITY",
+                reject_stage="execution",
+                causing_event_id=client_id,
             )
 
             return result

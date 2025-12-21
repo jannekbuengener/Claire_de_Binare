@@ -31,6 +31,18 @@ class OrderStatus(str, Enum):
     FAILED = "FAILED"
 
 
+class RejectionReason(str, Enum):
+    """Structured rejection reason codes"""
+
+    BOT_SHUTDOWN = "BOT_SHUTDOWN"
+    STRATEGY_BLOCKED = "STRATEGY_BLOCKED"
+    BOT_BLOCKED = "BOT_BLOCKED"
+    INSUFFICIENT_LIQUIDITY = "INSUFFICIENT_LIQUIDITY"
+    EXCHANGE_ERROR = "EXCHANGE_ERROR"
+    API_ERROR = "API_ERROR"
+    E2E_CIRCUIT_BREAKER = "E2E_CIRCUIT_BREAKER"
+
+
 @dataclass
 class Order:
     """Order from Risk Manager (EVENT_SCHEMA kompatibel)"""
@@ -119,6 +131,12 @@ class ExecutionResult:
     timestamp: Optional[str] = None
     type: Literal["order_result"] = "order_result"
 
+    # Rejection diagnostics
+    source_service: Optional[str] = None
+    reject_reason_code: Optional[str] = None
+    reject_stage: Optional[str] = None
+    causing_event_id: Optional[str] = None
+
     def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = utcnow().isoformat()
@@ -176,6 +194,14 @@ class ExecutionResult:
             payload["client_id"] = self.client_id
         if self.error_message is not None:
             payload["error_message"] = self.error_message
+        if self.source_service is not None:
+            payload["source_service"] = self.source_service
+        if self.reject_reason_code is not None:
+            payload["reject_reason_code"] = self.reject_reason_code
+        if self.reject_stage is not None:
+            payload["reject_stage"] = self.reject_stage
+        if self.causing_event_id is not None:
+            payload["causing_event_id"] = self.causing_event_id
         return payload
 
 

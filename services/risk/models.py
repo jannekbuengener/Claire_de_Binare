@@ -100,6 +100,12 @@ class OrderResult:
     error_message: Optional[str] = None
     type: Literal["order_result"] = "order_result"
 
+    # Rejection diagnostics
+    source_service: Optional[str] = None
+    reject_reason_code: Optional[str] = None
+    reject_stage: Optional[str] = None
+    causing_event_id: Optional[str] = None
+
     @classmethod
     def from_dict(cls, data: dict) -> "OrderResult":
         ts_raw = data.get("timestamp")
@@ -136,6 +142,11 @@ class OrderResult:
             client_id=data.get("client_id"),
             error_message=data.get("error_message"),
             timestamp=ts,
+            # Rejection diagnostics
+            source_service=data.get("source_service"),
+            reject_reason_code=data.get("reject_reason_code"),
+            reject_stage=data.get("reject_stage"),
+            causing_event_id=data.get("causing_event_id"),
         )
 
 

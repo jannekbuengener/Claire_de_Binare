@@ -4,6 +4,7 @@ Claire de Binare Trading Bot
 """
 
 import json
+import os
 import signal
 import sys
 import logging
@@ -72,6 +73,9 @@ bot_shutdown_active = False
 blocked_strategy_ids = set()
 blocked_bot_ids = set()
 open_orders = set()
+
+# E2E Testing: Circuit Breaker Disable Flag
+E2E_DISABLE_CIRCUIT_BREAKER = os.getenv("E2E_DISABLE_CIRCUIT_BREAKER", "0").lower() in {"1", "true", "yes"}
 
 
 def _init_with_retry(
@@ -204,6 +208,18 @@ def process_order(order_data: dict):
             shutdown_id = generate_uuid_hex(
                 name=f"shutdown:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
             )
+
+            # Determine specific rejection reason
+            if bot_shutdown_active:
+                reason_code = "BOT_SHUTDOWN"
+                error_msg = "Order blocked by global bot shutdown"
+            elif order.strategy_id in blocked_strategy_ids:
+                reason_code = "STRATEGY_BLOCKED"
+                error_msg = f"Strategy {order.strategy_id} is blocked"
+            else:
+                reason_code = "BOT_BLOCKED"
+                error_msg = f"Bot {order.bot_id} is blocked"
+
             result = ExecutionResult(
                 order_id=f"SHUTDOWN_{shutdown_id}",
                 symbol=order.symbol,
@@ -213,10 +229,15 @@ def process_order(order_data: dict):
                 status=OrderStatus.REJECTED.value,
                 price=None,
                 client_id=order.client_id,
-                error_message="Order blocked by bot shutdown",
+                error_message=error_msg,
                 timestamp=utcnow().isoformat(),
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
+                # Rejection diagnostics
+                source_service="execution",
+                reject_reason_code=reason_code,
+                reject_stage="pre_execution",
+                causing_event_id=order.client_id,
             )
             stats["orders_rejected"] += 1
             _publish_result(result)
@@ -293,6 +314,16 @@ def message_loop():
 def _handle_bot_shutdown(payload: dict) -> None:
     """Handle bot shutdown events with safety priority."""
     global bot_shutdown_active
+
+    # Respect E2E_DISABLE_CIRCUIT_BREAKER flag
+    if E2E_DISABLE_CIRCUIT_BREAKER:
+        logger.info(
+            "E2E_DISABLE_CIRCUIT_BREAKER=1: Ignoring bot_shutdown event (strategy=%s, bot=%s, reason=%s)",
+            payload.get("strategy_id"),
+            payload.get("bot_id"),
+            payload.get("reason_code", payload.get("reason")),
+        )
+        return
 
     strategy_id = payload.get("strategy_id")
     bot_id = payload.get("bot_id")
