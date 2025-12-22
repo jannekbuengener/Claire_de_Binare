@@ -50,6 +50,8 @@ class Order:
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
+    price: Optional[float] = None
+    order_type: str = "market"
     stop_loss_pct: Optional[float] = None
     strategy_id: Optional[str] = None
     bot_id: Optional[str] = None
@@ -71,6 +73,12 @@ class Order:
             symbol=payload["symbol"],
             side=side,
             quantity=float(payload["quantity"]),
+            price=(
+                float(payload["price"])
+                if payload.get("price") is not None
+                else None
+            ),
+            order_type=payload.get("order_type") or "market",
             stop_loss_pct=(
                 float(payload["stop_loss_pct"])
                 if payload.get("stop_loss_pct") is not None
@@ -127,6 +135,11 @@ class ExecutionResult:
     bot_id: Optional[str] = None
     client_id: Optional[str] = None
     price: Optional[float] = None
+    order_type: Optional[str] = None
+    execution_price: Optional[float] = None
+    exchange: Optional[str] = None
+    exchange_order_id: Optional[str] = None
+    metadata: Optional[dict] = None
     error_message: Optional[str] = None
     timestamp: Optional[str] = None
     type: Literal["order_result"] = "order_result"
@@ -138,6 +151,8 @@ class ExecutionResult:
     causing_event_id: Optional[str] = None
 
     def __post_init__(self) -> None:
+        if isinstance(self.timestamp, datetime):
+            self.timestamp = self.timestamp.isoformat()
         if self.timestamp is None:
             self.timestamp = utcnow().isoformat()
 

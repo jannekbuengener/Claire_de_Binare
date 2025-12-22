@@ -12,10 +12,11 @@ These tests validate the P0 paper trading scenarios against a local Docker Compo
 - Redis and Postgres credentials available in the environment:
   - `REDIS_PASSWORD`
   - `POSTGRES_PASSWORD`
+  - The E2E harness loads `.env` via python-dotenv when available.
 
 ## Run
 ```bash
-E2E_RUN=1 pytest -m e2e tests/e2e/test_paper_trading_p0.py
+E2E_RUN=1 E2E_DISABLE_CIRCUIT_BREAKER=1 pytest -m e2e tests/e2e/test_paper_trading_p0.py
 ```
 
 ## Circuit-breaker resets
