@@ -113,6 +113,7 @@ services:
       args:
         SCRIPT_NAME: mexc_top5_ws.py
     container_name: cdb_ws
+    profiles: ["ws"]
     restart: unless-stopped
     env_file: .env
     ports:
