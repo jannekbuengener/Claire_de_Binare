@@ -160,7 +160,6 @@ services:
       - signal_data:/data
     depends_on:
       - cdb_redis
-      - cdb_ws
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
       interval: 30s
