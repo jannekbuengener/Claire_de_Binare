@@ -20,9 +20,11 @@ E2E_RUN=1 E2E_DISABLE_CIRCUIT_BREAKER=1 pytest -m e2e tests/e2e/test_paper_tradi
 ```
 
 ## Circuit-breaker resets
-- The harness now clears `stream.bot_shutdown` automatically before each run by calling `redis-cli DEL/UNLINK` to guarantee there are no stuck guard events.
-- Optionally set `E2E_DISABLE_CIRCUIT_BREAKER=1` when running the stack to skip the risk manager’s bot-shutdown guard and let the paper-trading orders flow for testing. The default `0` keeps the safety logic active outside of E2E runs.
+- The harness clears the bot-shutdown stream plus related E2E streams/keys (orders, order_results, allocation, risk_state) before each run to avoid stale events.
+- For strong isolation, set `E2E_RUN_ID` (or `RISK_NAMESPACE`) when starting the stack; stream names are prefixed with `e2e.<run_id>.`.
+- Optionally set `E2E_DISABLE_CIRCUIT_BREAKER=1` when running the stack to skip the risk manager's bot-shutdown guard and let the paper-trading orders flow for testing. The default `0` keeps the safety logic active outside of E2E runs.
+- Manual resets are operator-only; see `docs/RISK_GUARDS.md` for the reset runbook and guard details.
 
 ## Notes
 - Tests skip with a clear reason when services or credentials are missing.
-- TC-P0-003 is currently skipped because the drawdown guard is not wired into runtime state.
+- TC-P0-003 uses runtime drawdown state; ensure risk manager is running before executing the suite.

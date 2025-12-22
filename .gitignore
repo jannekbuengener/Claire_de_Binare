@@ -8,6 +8,7 @@ simple_test.*
 quick_test.*
 real_test*
 *_backup.py
+!tests/e2e/test_paper_trading_p0.py
 
 # Emoji filter outputs
 emoji-report.*

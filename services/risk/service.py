@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-
 """
 Risk Manager - Main Service
 Multi-Layer Risk Management
@@ -94,9 +95,11 @@ class RiskManager:
         self._regime_thread: Optional[Thread] = None
         self._allocation_thread: Optional[Thread] = None
         self._shutdown_thread: Optional[Thread] = None
+        self._reset_thread: Optional[Thread] = None
         self.running = False
         self.allocation_state: dict[str, AllocationState] = {}
         self._circuit_shutdown_emitted = False
+        self._risk_state_loaded = False
 
         # Validiere Config
         try:
@@ -108,6 +111,119 @@ class RiskManager:
 
     def _guard_active(self) -> bool:
         return not self.config.e2e_disable_circuit_breaker
+
+    def _current_balance(self) -> float:
+        if self.config.use_live_balance:
+            try:
+                balance_fetcher = RealBalanceFetcher()
+                return balance_fetcher.get_usdt_balance()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Live balance fetch failed, fallback to test balance: %s", exc)
+                return self.config.test_balance
+        return self.config.test_balance
+
+    def _equity_for_limits(self) -> float:
+        if risk_state.equity > 0:
+            return risk_state.equity
+        return self._current_balance()
+
+    @staticmethod
+    def _bot_key(strategy_id: Optional[str], bot_id: Optional[str]) -> str:
+        return bot_id or strategy_id or "unknown"
+
+    def _sync_shutdown_sets(self) -> None:
+        shutdown_strategy_ids.clear()
+        shutdown_bot_ids.clear()
+        shutdown_strategy_ids.update(risk_state.shutdown_strategy_ids)
+        shutdown_bot_ids.update(risk_state.shutdown_bot_ids)
+
+    def _persist_risk_state(self) -> None:
+        if not self.redis_client or not self.config.risk_state_key:
+            return
+        try:
+            self.redis_client.set(
+                self.config.risk_state_key, json.dumps(risk_state.to_dict())
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Risk-State Persistierung fehlgeschlagen: %s", exc)
+
+    def _load_risk_state(self) -> None:
+        if not self.redis_client or not self.config.risk_state_key:
+            return
+        try:
+            raw = self.redis_client.get(self.config.risk_state_key)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Risk-State Laden fehlgeschlagen: %s", exc)
+            return
+        if not raw:
+            return
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            logger.warning("Risk-State JSON ungültig: %s", exc)
+            return
+
+        risk_state.apply_snapshot(payload)
+        self._sync_shutdown_sets()
+        if risk_state.circuit_breaker_active:
+            self._circuit_shutdown_emitted = True
+        self._risk_state_loaded = True
+
+    def _ensure_trading_day(self) -> None:
+        # Daily reset uses UTC calendar date for deterministic replay.
+        today = utcnow().date().isoformat()
+        if not risk_state.trading_day:
+            risk_state.trading_day = today
+        if risk_state.trading_day != today:
+            self._reset_daily_state(today, reason="new_day")
+
+    def _reset_daily_state(self, trading_day: str, reason: str) -> None:
+        risk_state.reset_daily_metrics(trading_day)
+        if (
+            risk_state.circuit_breaker_active
+            and (risk_state.circuit_breaker_reason or "").upper().startswith("DAILY_DRAWDOWN")
+        ):
+            risk_state.reset_circuit_breaker()
+            self._circuit_shutdown_emitted = False
+            logger.info("Circuit breaker reset (%s)", reason)
+        self._persist_risk_state()
+
+    def _maybe_reset_circuit_breaker(self) -> None:
+        if not risk_state.circuit_breaker_active:
+            return
+        cooldown = self.config.circuit_breaker_cooldown_sec
+        if cooldown <= 0 or not risk_state.circuit_breaker_triggered_at:
+            return
+        now_ts = int(time.time())
+        if now_ts - risk_state.circuit_breaker_triggered_at >= cooldown:
+            risk_state.reset_circuit_breaker()
+            self._circuit_shutdown_emitted = False
+            logger.info("Circuit breaker cooldown abgelaufen; Reset aktiviert")
+            self._persist_risk_state()
+
+    def _trigger_circuit_breaker(
+        self,
+        reason: str,
+        strategy_id: Optional[str] = None,
+        bot_id: Optional[str] = None,
+        causing_event_id: Optional[str] = None,
+    ) -> None:
+        if not reason:
+            reason = "CIRCUIT_BREAKER"
+        risk_state.circuit_breaker_active = True
+        risk_state.circuit_breaker_reason = reason
+        if not risk_state.circuit_breaker_triggered_at:
+            risk_state.circuit_breaker_triggered_at = int(time.time())
+        if not self._circuit_shutdown_emitted:
+            self.emit_bot_shutdown(
+                reason,
+                strategy_id=strategy_id,
+                bot_id=bot_id,
+                causing_event_id=causing_event_id,
+            )
+            self._circuit_shutdown_emitted = True
+        self._persist_risk_state()
+
 
     def connect_redis(self):
         """Redis-Verbindung"""
@@ -133,6 +249,21 @@ class RiskManager:
             logger.info(
                 f"Subscribed zu Order-Result Topic: {self.config.input_topic_order_results}"
             )
+
+            self._load_risk_state()
+            balance = self._current_balance()
+            risk_state.initialize_equity(balance, utcnow().date().isoformat())
+            risk_state.update_equity()
+            if risk_state.max_drawdown_pct >= self.config.max_daily_drawdown_pct:
+                risk_state.circuit_breaker_active = True
+                if not risk_state.circuit_breaker_reason:
+                    risk_state.circuit_breaker_reason = "DAILY_DRAWDOWN"
+                if not risk_state.circuit_breaker_triggered_at:
+                    risk_state.circuit_breaker_triggered_at = int(time.time())
+                self._circuit_shutdown_emitted = True
+            self._ensure_trading_day()
+            self._sync_shutdown_sets()
+            self._persist_risk_state()
 
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
@@ -243,24 +374,81 @@ class RiskManager:
                         bot_id = payload.get("bot_id")
                         if strategy_id:
                             shutdown_strategy_ids.add(strategy_id)
+                            if strategy_id not in risk_state.shutdown_strategy_ids:
+                                risk_state.shutdown_strategy_ids.append(strategy_id)
                         if bot_id:
                             shutdown_bot_ids.add(bot_id)
+                            if bot_id not in risk_state.shutdown_bot_ids:
+                                risk_state.shutdown_bot_ids.append(bot_id)
                         logger.warning(
                             "Bot-Shutdown empfangen: strategy_id=%s bot_id=%s",
                             strategy_id,
                             bot_id,
                         )
+                        self._persist_risk_state()
             except Exception as err:  # noqa: BLE001
                 logger.error("Shutdown-Stream Fehler: %s", err)
+                time.sleep(1)
+
+    def _apply_risk_reset(self, payload: dict) -> None:
+        reset_type = str(payload.get("reset_type", "all")).lower()
+        strategy_id = payload.get("strategy_id")
+        bot_id = payload.get("bot_id")
+        today = utcnow().date().isoformat()
+
+        if strategy_id:
+            shutdown_strategy_ids.discard(strategy_id)
+            risk_state.shutdown_strategy_ids = [
+                sid for sid in risk_state.shutdown_strategy_ids if sid != strategy_id
+            ]
+        if bot_id:
+            shutdown_bot_ids.discard(bot_id)
+            risk_state.shutdown_bot_ids = [
+                bid for bid in risk_state.shutdown_bot_ids if bid != bot_id
+            ]
+
+        if not strategy_id and not bot_id:
+            if reset_type in {"all", "circuit_breaker"}:
+                risk_state.reset_circuit_breaker()
+                self._circuit_shutdown_emitted = False
+            if reset_type in {"all", "drawdown", "daily"}:
+                risk_state.reset_daily_metrics(today)
+            if reset_type in {"all", "shutdown"}:
+                shutdown_strategy_ids.clear()
+                shutdown_bot_ids.clear()
+                risk_state.shutdown_strategy_ids = []
+                risk_state.shutdown_bot_ids = []
+
+        logger.warning(
+            "Risk-Reset empfangen: type=%s strategy_id=%s bot_id=%s",
+            reset_type,
+            strategy_id,
+            bot_id,
+        )
+        self._persist_risk_state()
+
+    def _listen_risk_reset_stream(self):
+        if not self.redis_client or not self.config.risk_reset_stream:
+            return
+        last_id = "$"
+        while self.running:
+            try:
+                response = self.redis_client.xread(
+                    {self.config.risk_reset_stream: last_id}, block=1000, count=10
+                )
+                if not response:
+                    continue
+                for _, entries in response:
+                    for entry_id, payload in entries:
+                        last_id = entry_id
+                        self._apply_risk_reset(payload)
+            except Exception as err:  # noqa: BLE001
+                logger.error("Risk-Reset Stream Fehler: %s", err)
                 time.sleep(1)
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
-        if self.config.use_live_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
-        else:
-            current_balance = self.config.test_balance
+        current_balance = self._current_balance()
 
         # Max 10% des REAL Kapitals pro Position
         max_position_size = current_balance * self.config.max_position_pct
@@ -279,11 +467,7 @@ class RiskManager:
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure"""
         # REAL BALANCE - NO MORE FAKE
-        if self.config.use_live_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
-        else:
-            current_balance = self.config.test_balance
+        current_balance = self._current_balance()
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
@@ -295,28 +479,79 @@ class RiskManager:
 
         return True, "Exposure OK"
 
-    def check_drawdown_limit(self) -> tuple[bool, str]:
-        """Prüft Daily-Drawdown (Circuit Breaker)"""
-        # REAL BALANCE - NO MORE FAKE
-        if self.config.use_live_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
-        else:
-            current_balance = self.config.test_balance
+    def _resolve_signal_price(self, signal: Signal) -> float:
+        if signal.price is not None:
+            try:
+                return float(signal.price)
+            except (TypeError, ValueError):
+                return 0.0
+        last_price = risk_state.last_prices.get(signal.symbol)
+        return float(last_price) if last_price is not None else 0.0
 
-        max_drawdown = current_balance * self.config.max_daily_drawdown_pct
+    def check_bot_symbol_limits(self, signal: Signal, quantity: float) -> tuple[bool, str]:
+        """Prueft Bot/Symbol Limits"""
+        if quantity <= 0:
+            return False, "Ordergroesse ist 0"
 
-        if risk_state.daily_pnl <= -max_drawdown:
-            risk_state.circuit_breaker_active = True
+        if signal.side not in {"BUY", "SELL"}:
+            return False, "Order-Seite fehlt"
+
+        price = self._resolve_signal_price(signal)
+        if price <= 0:
+            return False, "Preis fehlt fuer Risiko-Limits"
+
+        equity = self._equity_for_limits()
+        max_symbol_exposure = equity * self.config.max_symbol_exposure_pct
+        signed_qty = quantity if signal.side == "BUY" else -quantity
+
+        current_symbol_qty = risk_state.positions.get(signal.symbol, 0.0)
+        new_symbol_qty = current_symbol_qty + signed_qty
+        new_symbol_exposure = abs(new_symbol_qty) * price
+        if new_symbol_exposure > max_symbol_exposure:
             return (
                 False,
-                f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}",
+                f"Symbol-Exposure zu hoch: {new_symbol_exposure:.2f} > {max_symbol_exposure:.2f}",
+            )
+
+        bot_key = self._bot_key(signal.strategy_id, signal.bot_id)
+        bot_positions = risk_state.bot_positions.get(bot_key, {})
+        max_bot_exposure = equity * self.config.max_bot_exposure_pct
+        bot_total_exposure = 0.0
+        for sym, qty in bot_positions.items():
+            sym_price = price if sym == signal.symbol else risk_state.last_prices.get(sym)
+            if sym_price is None:
+                return False, f"Preis fehlt fuer Bot-Exposure ({sym})"
+            sym_qty = new_symbol_qty if sym == signal.symbol else qty
+            bot_total_exposure += abs(sym_qty) * float(sym_price)
+        if signal.symbol not in bot_positions:
+            bot_total_exposure += abs(signed_qty) * price
+        if bot_total_exposure > max_bot_exposure:
+            return (
+                False,
+                f"Bot-Exposure zu hoch: {bot_total_exposure:.2f} > {max_bot_exposure:.2f}",
+            )
+
+        return True, "Bot/Symbol Limits OK"
+
+
+    def check_drawdown_limit(self) -> tuple[bool, str]:
+        """Prueft Daily-Drawdown (Circuit Breaker)"""
+        max_drawdown_pct = self.config.max_daily_drawdown_pct
+        if risk_state.max_drawdown_pct >= max_drawdown_pct:
+            risk_state.circuit_breaker_active = True
+            risk_state.circuit_breaker_reason = "DAILY_DRAWDOWN"
+            risk_state.circuit_breaker_triggered_at = int(time.time())
+            return (
+                False,
+                f"Circuit Breaker! Drawdown {risk_state.max_drawdown_pct:.4f} >= {max_drawdown_pct:.4f}",
             )
 
         return True, "Drawdown OK"
 
     def process_signal(self, signal: Signal) -> Optional[Order]:
-        """Prüft Signal gegen alle Risk-Layers"""
+        """Prueft Signal gegen alle Risk-Layers"""
+        self._ensure_trading_day()
+        self._maybe_reset_circuit_breaker()
 
         if not signal.strategy_id:
             self.send_alert(
@@ -325,6 +560,24 @@ class RiskManager:
                 "Signal ohne strategy_id abgelehnt",
                 {"symbol": signal.symbol},
             )
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
+        if self._guard_active() and risk_state.circuit_breaker_active:
+            reason = risk_state.circuit_breaker_reason or "CIRCUIT_BREAKER_ACTIVE"
+            self.send_alert(
+                "CRITICAL", "CIRCUIT_BREAKER", reason, {"signal": signal.symbol}
+            )
+            if not self._circuit_shutdown_emitted:
+                self.emit_bot_shutdown(
+                    reason,
+                    strategy_id=signal.strategy_id,
+                    bot_id=signal.bot_id,
+                    causing_event_id=signal.signal_id or signal.client_id,
+                )
+                self._circuit_shutdown_emitted = True
+            logger.warning("Signal blockiert: Circuit Breaker aktiv (%s)", reason)
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
             return None
@@ -351,6 +604,14 @@ class RiskManager:
             risk_state.signals_blocked += 1
             return None
 
+        allocation = self._get_allocation_state(signal.strategy_id)
+        quantity = self.calculate_position_size(signal, allocation.allocation_pct)
+        if quantity <= 0:
+            logger.warning("Signal blockiert: Ordergroesse ist 0")
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         if self._guard_active():
             # Layer 1: Circuit Breaker
             ok, reason = self.check_drawdown_limit()
@@ -366,9 +627,10 @@ class RiskManager:
                         causing_event_id=signal.signal_id or signal.client_id,
                     )
                     self._circuit_shutdown_emitted = True
-                logger.warning(f"⚠️ {reason}")
+                logger.warning(f"?? {reason}")
                 stats["orders_blocked"] += 1
                 risk_state.signals_blocked += 1
+                self._persist_risk_state()
                 return None
 
             # Layer 2: Exposure-Limit
@@ -377,7 +639,7 @@ class RiskManager:
                 self.send_alert(
                     "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
                 )
-                logger.warning(f"⚠️ {reason}")
+                logger.warning(f"?? {reason}")
                 stats["orders_blocked"] += 1
                 risk_state.signals_blocked += 1
                 return None
@@ -388,14 +650,23 @@ class RiskManager:
                 self.send_alert(
                     "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
                 )
-                logger.warning(f"⚠️ {reason}")
+                logger.warning(f"?? {reason}")
                 stats["orders_blocked"] += 1
                 risk_state.signals_blocked += 1
                 return None
-        # Alle Checks passed → Order erstellen
-        allocation = self._get_allocation_state(signal.strategy_id)
-        quantity = self.calculate_position_size(signal, allocation.allocation_pct)
 
+            # Layer 4: Bot/Symbol Limits
+            ok, reason = self.check_bot_symbol_limits(signal, quantity)
+            if not ok:
+                self.send_alert(
+                    "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
+                )
+                logger.warning(f"?? {reason}")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
+
+        # Alle Checks passed - Order erstellen
         order = Order(
             symbol=signal.symbol,
             side=signal.side,
@@ -410,7 +681,7 @@ class RiskManager:
         )
 
         logger.info(
-            f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
+            f"? Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
@@ -421,20 +692,16 @@ class RiskManager:
     def calculate_position_size(self, signal: Signal, allocation_pct: float) -> float:
         """Berechnet Position-Size basierend auf Allokation"""
         # REAL BALANCE - NO MORE FAKE
-        if self.config.use_live_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
-        else:
-            current_balance = self.config.test_balance
-
+        current_balance = self._current_balance()
+    
         max_size = current_balance * self.config.max_position_pct
-
+    
         # Allokationsbasiert (keine Confidence im Control-Pfad)
         position_size = max_size * max(allocation_pct, 0.0)
-
+    
         # Vereinfacht: Menge proportional zur Allokation, Mindestmenge 0
         return max(position_size, 0.0)
-
+    
     def send_order(self, order: Order):
         """Publiziert Order"""
         try:
@@ -499,39 +766,37 @@ class RiskManager:
             payload["bot_id"] = bot_id
         if causing_event_id:
             payload["causing_event_id"] = causing_event_id
+
+        if strategy_id:
+            shutdown_strategy_ids.add(strategy_id)
+            if strategy_id not in risk_state.shutdown_strategy_ids:
+                risk_state.shutdown_strategy_ids.append(strategy_id)
+        if bot_id:
+            shutdown_bot_ids.add(bot_id)
+            if bot_id not in risk_state.shutdown_bot_ids:
+                risk_state.shutdown_bot_ids.append(bot_id)
         self.redis_client.xadd(self.config.bot_shutdown_stream, payload, maxlen=10000)
+        self._persist_risk_state()
         logger.warning("Bot-Shutdown emittiert: %s", payload)
 
     def _update_exposure(self, result: OrderResult):
         """Aktualisiert Exposure basierend auf Order-Result"""
-        direction = 1 if result.side == "BUY" else -1
-        delta = direction * result.filled_quantity
-        if delta == 0:
+        if result.price is None or result.filled_quantity <= 0:
             return
-
-        current = risk_state.positions.get(result.symbol, 0.0)
-        new_position = current + delta
-        if abs(new_position) < 1e-6:
-            risk_state.positions.pop(result.symbol, None)
-            risk_state.last_prices.pop(result.symbol, None)
-        else:
-            risk_state.positions[result.symbol] = new_position
-            if result.price is not None:
-                risk_state.last_prices[result.symbol] = result.price
-
-        if result.price is not None:
-            risk_state.last_prices[result.symbol] = result.price
-
-        risk_state.total_exposure = sum(
-            abs(qty) * risk_state.last_prices.get(symbol, 0.0)
-            for symbol, qty in risk_state.positions.items()
-        )
-        risk_state.open_positions = sum(
-            1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
+        bot_key = self._bot_key(result.strategy_id, result.bot_id)
+        risk_state.apply_fill(
+            result.symbol,
+            result.side,
+            result.filled_quantity,
+            float(result.price),
+            bot_key=bot_key,
         )
 
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
+        self._ensure_trading_day()
+        self._maybe_reset_circuit_breaker()
+
         stats["order_results_received"] += 1
         stats["last_order_result"] = {
             "order_id": result.order_id,
@@ -548,6 +813,19 @@ class RiskManager:
 
         if result.status == "FILLED":
             self._update_exposure(result)
+            risk_state.record_execution_success()
+            if self._guard_active():
+                ok, reason = self.check_drawdown_limit()
+                if not ok:
+                    self.send_alert(
+                        "CRITICAL", "CIRCUIT_BREAKER", reason, {"symbol": result.symbol}
+                    )
+                    self._trigger_circuit_breaker(
+                        reason,
+                        strategy_id=result.strategy_id,
+                        bot_id=result.bot_id,
+                        causing_event_id=result.client_id,
+                    )
         else:
             stats["orders_rejected_execution"] += 1
             self.send_alert(
@@ -560,6 +838,28 @@ class RiskManager:
                     "client_id": result.client_id,
                 },
             )
+
+            if self._guard_active():
+                now_ts = int(time.time())
+                reason_code = result.reject_reason_code or (
+                    "EXECUTION_REJECTED" if result.status == "REJECTED" else "EXECUTION_ERROR"
+                )
+                triggered = risk_state.record_execution_failure(
+                    now_ts,
+                    reason_code,
+                    max_consecutive=self.config.circuit_breaker_max_consecutive_failures,
+                    max_failures=self.config.circuit_breaker_max_failures,
+                    window_sec=self.config.circuit_breaker_failure_window_sec,
+                )
+                if triggered:
+                    self._trigger_circuit_breaker(
+                        reason_code,
+                        strategy_id=result.strategy_id,
+                        bot_id=result.bot_id,
+                        causing_event_id=result.client_id,
+                    )
+
+        self._persist_risk_state()
 
     def listen_order_results(self):
         """Hintergrund-Listener für order_result Topic"""
@@ -638,6 +938,11 @@ class RiskManager:
             self._shutdown_thread.start()
             logger.info("Shutdown-Stream Listener Thread gestartet")
 
+        if self._reset_thread is None or not self._reset_thread.is_alive():
+            self._reset_thread = Thread(target=self._listen_risk_reset_stream, daemon=True)
+            self._reset_thread.start()
+            logger.info("Risk-Reset Listener Thread gestartet")
+
         try:
             for message in self.pubsub.listen():
                 if not self.running:
@@ -676,6 +981,8 @@ class RiskManager:
         self.running = False
         stats["status"] = "stopped"
 
+        self._persist_risk_state()
+
         if self.pubsub:
             self.pubsub.close()
         if self.pubsub_results:
@@ -710,13 +1017,26 @@ def status():
             "risk_state": {
                 "total_exposure": risk_state.total_exposure,
                 "daily_pnl": risk_state.daily_pnl,
+                "equity": risk_state.equity,
+                "initial_balance": risk_state.initial_balance,
+                "daily_equity_start": risk_state.daily_equity_start,
+                "peak_equity": risk_state.peak_equity,
+                "current_drawdown_pct": risk_state.current_drawdown_pct,
+                "max_drawdown_pct": risk_state.max_drawdown_pct,
+                "realized_pnl": risk_state.realized_pnl,
+                "unrealized_pnl": risk_state.unrealized_pnl,
                 "open_positions": risk_state.open_positions,
                 "signals_approved": risk_state.signals_approved,
                 "signals_blocked": risk_state.signals_blocked,
                 "circuit_breaker": risk_state.circuit_breaker_active,
+                "circuit_breaker_reason": risk_state.circuit_breaker_reason,
+                "circuit_breaker_triggered_at": risk_state.circuit_breaker_triggered_at,
+                "trading_day": risk_state.trading_day,
                 "positions": risk_state.positions,
                 "pending_orders": risk_state.pending_orders,
                 "last_prices": risk_state.last_prices,
+                "shutdown_strategy_ids": risk_state.shutdown_strategy_ids,
+                "shutdown_bot_ids": risk_state.shutdown_bot_ids,
             },
         }
     )

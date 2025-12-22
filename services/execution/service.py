@@ -75,7 +75,9 @@ blocked_bot_ids = set()
 open_orders = set()
 
 # E2E Testing: Circuit Breaker Disable Flag
-E2E_DISABLE_CIRCUIT_BREAKER = os.getenv("E2E_DISABLE_CIRCUIT_BREAKER", "0").lower() in {"1", "true", "yes"}
+E2E_DISABLE_CIRCUIT_BREAKER = os.getenv(
+    "E2E_DISABLE_CIRCUIT_BREAKER", "0"
+).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _init_with_retry(
@@ -349,6 +351,26 @@ def _handle_bot_shutdown(payload: dict) -> None:
         open_orders.clear()
 
 
+def _handle_risk_reset(payload: dict) -> None:
+    """Handle risk reset events to clear shutdown state."""
+    global bot_shutdown_active
+
+    reset_type = str(payload.get("reset_type", "all")).lower()
+    if reset_type not in {"all", "shutdown", "circuit_breaker"}:
+        return
+
+    bot_shutdown_active = False
+    blocked_strategy_ids.clear()
+    blocked_bot_ids.clear()
+    open_orders.clear()
+    logger.warning(
+        "Risk reset applied (type=%s, strategy_id=%s, bot_id=%s)",
+        reset_type,
+        payload.get("strategy_id"),
+        payload.get("bot_id"),
+    )
+
+
 def listen_bot_shutdown():
     """Listen for bot shutdown events from Redis stream."""
     if not redis_client or not config.STREAM_BOT_SHUTDOWN:
@@ -368,6 +390,28 @@ def listen_bot_shutdown():
                     _handle_bot_shutdown(payload)
         except Exception as exc:  # noqa: BLE001
             logger.error("Bot shutdown stream error: %s", exc)
+            time.sleep(1)
+
+
+def listen_risk_reset():
+    """Listen for risk reset events from Redis stream."""
+    if not redis_client or not config.STREAM_RISK_RESET:
+        return
+
+    last_id = "$"
+    while running:
+        try:
+            response = redis_client.xread(
+                {config.STREAM_RISK_RESET: last_id}, block=1000, count=10
+            )
+            if not response:
+                continue
+            for _, entries in response:
+                for entry_id, payload in entries:
+                    last_id = entry_id
+                    _handle_risk_reset(payload)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Risk reset stream error: %s", exc)
             time.sleep(1)
 
 
@@ -483,6 +527,9 @@ def main():
     shutdown_thread = Thread(target=listen_bot_shutdown, daemon=True)
     shutdown_thread.start()
     logger.info("Bot-shutdown listener started")
+    reset_thread = Thread(target=listen_risk_reset, daemon=True)
+    reset_thread.start()
+    logger.info("Risk-reset listener started")
 
     # Start Flask app
     try:

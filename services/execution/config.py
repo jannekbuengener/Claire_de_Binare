@@ -34,6 +34,25 @@ def _read_secret(secret_name: str, fallback_env: str = None) -> str:
 
     return ""
 
+
+def _apply_namespace(namespace: str, value: str) -> str:
+    if not namespace:
+        return value
+    prefix = f"{namespace}."
+    if value.startswith(prefix):
+        return value
+    return f"{prefix}{value}"
+
+
+def _resolve_namespace() -> str:
+    namespace = os.getenv("RISK_NAMESPACE", "").strip()
+    if namespace:
+        return namespace
+    run_id = os.getenv("E2E_RUN_ID", "").strip()
+    if run_id:
+        return f"e2e.{run_id}"
+    return ""
+
 # Service Info
 SERVICE_NAME = "execution_service"
 SERVICE_VERSION = "0.1.0"
@@ -54,6 +73,7 @@ REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+RISK_NAMESPACE = _resolve_namespace()
 
 # PostgreSQL Configuration
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "cdb_postgres")
@@ -73,6 +93,11 @@ TOPIC_ORDER_RESULTS = "order_results"  # Publish: Execution results
 TOPIC_ALERTS = "alerts"  # Publish: Execution alerts
 STREAM_ORDER_RESULTS = os.getenv("STREAM_ORDER_RESULTS", "order_results")
 STREAM_BOT_SHUTDOWN = os.getenv("STREAM_BOT_SHUTDOWN", "stream.bot_shutdown")
+STREAM_RISK_RESET = os.getenv("RISK_RESET_STREAM", "stream.risk_reset")
+if RISK_NAMESPACE:
+    STREAM_ORDER_RESULTS = _apply_namespace(RISK_NAMESPACE, STREAM_ORDER_RESULTS)
+    STREAM_BOT_SHUTDOWN = _apply_namespace(RISK_NAMESPACE, STREAM_BOT_SHUTDOWN)
+    STREAM_RISK_RESET = _apply_namespace(RISK_NAMESPACE, STREAM_RISK_RESET)
 
 # Order Configuration
 MAX_RETRIES = 3

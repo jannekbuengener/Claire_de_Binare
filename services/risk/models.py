@@ -182,6 +182,278 @@ class RiskState:
     signals_blocked: int = 0
     signals_approved: int = 0
     circuit_breaker_active: bool = False
+    circuit_breaker_reason: Optional[str] = None
+    circuit_breaker_triggered_at: Optional[int] = None
+    circuit_breaker_consecutive_failures: int = 0
+    circuit_breaker_failure_timestamps: list[int] = field(default_factory=list)
+    initial_balance: float = 0.0
+    equity: float = 0.0
+    peak_equity: float = 0.0
+    current_drawdown_pct: float = 0.0
+    max_drawdown_pct: float = 0.0
+    daily_equity_start: float = 0.0
+    trading_day: str = ""
+    realized_pnl: float = 0.0
+    unrealized_pnl: float = 0.0
     positions: dict[str, float] = field(default_factory=dict)
+    avg_prices: dict[str, float] = field(default_factory=dict)
+    bot_positions: dict[str, dict[str, float]] = field(default_factory=dict)
+    bot_avg_prices: dict[str, dict[str, float]] = field(default_factory=dict)
+    bot_realized_pnl: dict[str, float] = field(default_factory=dict)
     pending_orders: int = 0
     last_prices: dict[str, float] = field(default_factory=dict)
+    shutdown_strategy_ids: list[str] = field(default_factory=list)
+    shutdown_bot_ids: list[str] = field(default_factory=list)
+
+    def initialize_equity(self, balance: float, trading_day: str) -> None:
+        if self.initial_balance <= 0:
+            self.initial_balance = balance
+        if self.equity <= 0:
+            self.equity = balance
+        if self.daily_equity_start <= 0:
+            self.daily_equity_start = balance
+        if self.peak_equity <= 0:
+            self.peak_equity = balance
+        if not self.trading_day:
+            self.trading_day = trading_day
+
+    def update_equity(self) -> None:
+        # PSM not wired; equity is a local mark-to-market fallback.
+        unrealized = 0.0
+        for symbol, qty in self.positions.items():
+            price = self.last_prices.get(symbol)
+            avg = self.avg_prices.get(symbol)
+            if price is None or avg is None:
+                continue
+            unrealized += (price - avg) * qty
+
+        self.unrealized_pnl = unrealized
+        self.equity = self.initial_balance + self.realized_pnl + self.unrealized_pnl
+        self.daily_pnl = self.equity - self.daily_equity_start
+
+        if self.peak_equity <= 0:
+            self.peak_equity = max(self.equity, 1.0)
+
+        if self.equity > self.peak_equity:
+            self.peak_equity = self.equity
+
+        if self.peak_equity > 0:
+            self.current_drawdown_pct = (self.peak_equity - self.equity) / self.peak_equity
+        else:
+            self.current_drawdown_pct = 0.0
+        if self.current_drawdown_pct > self.max_drawdown_pct:
+            self.max_drawdown_pct = self.current_drawdown_pct
+
+        self.total_exposure = sum(
+            abs(qty) * self.last_prices.get(symbol, 0.0)
+            for symbol, qty in self.positions.items()
+        )
+        self.open_positions = sum(
+            1 for qty in self.positions.values() if abs(qty) > 1e-6
+        )
+
+    def reset_daily_metrics(self, trading_day: str) -> None:
+        baseline = self.equity if self.equity > 0 else 1.0
+        self.daily_equity_start = self.equity
+        self.peak_equity = baseline
+        self.current_drawdown_pct = 0.0
+        self.max_drawdown_pct = 0.0
+        self.daily_pnl = 0.0
+        self.trading_day = trading_day
+
+    @staticmethod
+    def _apply_fill_to_book(
+        positions: dict[str, float],
+        avg_prices: dict[str, float],
+        symbol: str,
+        side: Literal["BUY", "SELL"],
+        quantity: float,
+        price: float,
+    ) -> float:
+        signed_qty = quantity if side == "BUY" else -quantity
+        if abs(signed_qty) < 1e-12:
+            return 0.0
+
+        current_qty = positions.get(symbol, 0.0)
+        current_avg = avg_prices.get(symbol, price)
+        realized = 0.0
+
+        if abs(current_qty) < 1e-12:
+            positions[symbol] = signed_qty
+            avg_prices[symbol] = price
+            return 0.0
+
+        if current_qty * signed_qty > 0:
+            new_qty = current_qty + signed_qty
+            weighted_value = (abs(current_qty) * current_avg) + (abs(signed_qty) * price)
+            avg_prices[symbol] = weighted_value / abs(new_qty)
+            positions[symbol] = new_qty
+            return 0.0
+
+        closing_qty = min(abs(current_qty), abs(signed_qty))
+        pnl_per_unit = price - current_avg
+        realized = pnl_per_unit * closing_qty * (1 if current_qty > 0 else -1)
+        new_qty = current_qty + signed_qty
+
+        if abs(new_qty) < 1e-12:
+            positions.pop(symbol, None)
+            avg_prices.pop(symbol, None)
+        else:
+            positions[symbol] = new_qty
+            if current_qty * new_qty < 0:
+                avg_prices[symbol] = price
+
+        return realized
+
+    def apply_fill(
+        self,
+        symbol: str,
+        side: Literal["BUY", "SELL"],
+        quantity: float,
+        price: float,
+        bot_key: Optional[str] = None,
+    ) -> float:
+        realized = self._apply_fill_to_book(
+            self.positions, self.avg_prices, symbol, side, quantity, price
+        )
+        self.realized_pnl += realized
+        self.last_prices[symbol] = price
+
+        if bot_key:
+            bot_positions = self.bot_positions.setdefault(bot_key, {})
+            bot_avg_prices = self.bot_avg_prices.setdefault(bot_key, {})
+            bot_realized = self._apply_fill_to_book(
+                bot_positions, bot_avg_prices, symbol, side, quantity, price
+            )
+            self.bot_realized_pnl[bot_key] = self.bot_realized_pnl.get(bot_key, 0.0) + bot_realized
+
+        self.update_equity()
+        return realized
+
+    def record_execution_success(self) -> None:
+        self.circuit_breaker_consecutive_failures = 0
+
+    def record_execution_failure(
+        self,
+        now_ts: int,
+        reason: str,
+        max_consecutive: int,
+        max_failures: int,
+        window_sec: int,
+    ) -> bool:
+        if self.circuit_breaker_active:
+            return True
+
+        self.circuit_breaker_consecutive_failures += 1
+        self.circuit_breaker_failure_timestamps.append(now_ts)
+        if window_sec > 0:
+            cutoff = now_ts - window_sec
+            self.circuit_breaker_failure_timestamps = [
+                ts for ts in self.circuit_breaker_failure_timestamps if ts >= cutoff
+            ]
+
+        if (
+            self.circuit_breaker_consecutive_failures >= max_consecutive
+            or len(self.circuit_breaker_failure_timestamps) >= max_failures
+        ):
+            self.circuit_breaker_active = True
+            self.circuit_breaker_reason = reason
+            self.circuit_breaker_triggered_at = now_ts
+            return True
+
+        return False
+
+    def reset_circuit_breaker(self) -> None:
+        self.circuit_breaker_active = False
+        self.circuit_breaker_reason = None
+        self.circuit_breaker_triggered_at = None
+        self.circuit_breaker_consecutive_failures = 0
+        self.circuit_breaker_failure_timestamps = []
+
+    def to_dict(self) -> dict:
+        return {
+            "total_exposure": self.total_exposure,
+            "daily_pnl": self.daily_pnl,
+            "open_positions": self.open_positions,
+            "signals_blocked": self.signals_blocked,
+            "signals_approved": self.signals_approved,
+            "circuit_breaker_active": self.circuit_breaker_active,
+            "circuit_breaker_reason": self.circuit_breaker_reason,
+            "circuit_breaker_triggered_at": self.circuit_breaker_triggered_at,
+            "circuit_breaker_consecutive_failures": self.circuit_breaker_consecutive_failures,
+            "circuit_breaker_failure_timestamps": list(self.circuit_breaker_failure_timestamps),
+            "initial_balance": self.initial_balance,
+            "equity": self.equity,
+            "peak_equity": self.peak_equity,
+            "current_drawdown_pct": self.current_drawdown_pct,
+            "max_drawdown_pct": self.max_drawdown_pct,
+            "daily_equity_start": self.daily_equity_start,
+            "trading_day": self.trading_day,
+            "realized_pnl": self.realized_pnl,
+            "unrealized_pnl": self.unrealized_pnl,
+            "positions": self.positions,
+            "avg_prices": self.avg_prices,
+            "bot_positions": self.bot_positions,
+            "bot_avg_prices": self.bot_avg_prices,
+            "bot_realized_pnl": self.bot_realized_pnl,
+            "pending_orders": self.pending_orders,
+            "last_prices": self.last_prices,
+            "shutdown_strategy_ids": list(self.shutdown_strategy_ids),
+            "shutdown_bot_ids": list(self.shutdown_bot_ids),
+        }
+
+    def apply_snapshot(self, data: dict) -> None:
+        self.total_exposure = float(data.get("total_exposure", self.total_exposure))
+        self.daily_pnl = float(data.get("daily_pnl", self.daily_pnl))
+        self.open_positions = int(data.get("open_positions", self.open_positions))
+        self.signals_blocked = int(data.get("signals_blocked", self.signals_blocked))
+        self.signals_approved = int(
+            data.get("signals_approved", self.signals_approved)
+        )
+        self.circuit_breaker_active = bool(
+            data.get("circuit_breaker_active", self.circuit_breaker_active)
+        )
+        self.circuit_breaker_reason = data.get(
+            "circuit_breaker_reason", self.circuit_breaker_reason
+        )
+        self.circuit_breaker_triggered_at = data.get(
+            "circuit_breaker_triggered_at", self.circuit_breaker_triggered_at
+        )
+        self.circuit_breaker_consecutive_failures = int(
+            data.get(
+                "circuit_breaker_consecutive_failures",
+                self.circuit_breaker_consecutive_failures,
+            )
+        )
+        self.circuit_breaker_failure_timestamps = list(
+            data.get(
+                "circuit_breaker_failure_timestamps",
+                self.circuit_breaker_failure_timestamps,
+            )
+        )
+        self.initial_balance = float(data.get("initial_balance", self.initial_balance))
+        self.equity = float(data.get("equity", self.equity))
+        self.peak_equity = float(data.get("peak_equity", self.peak_equity))
+        self.current_drawdown_pct = float(
+            data.get("current_drawdown_pct", self.current_drawdown_pct)
+        )
+        self.max_drawdown_pct = float(
+            data.get("max_drawdown_pct", self.max_drawdown_pct)
+        )
+        self.daily_equity_start = float(
+            data.get("daily_equity_start", self.daily_equity_start)
+        )
+        self.trading_day = data.get("trading_day", self.trading_day)
+        self.realized_pnl = float(data.get("realized_pnl", self.realized_pnl))
+        self.unrealized_pnl = float(data.get("unrealized_pnl", self.unrealized_pnl))
+        self.positions = dict(data.get("positions", self.positions))
+        self.avg_prices = dict(data.get("avg_prices", self.avg_prices))
+        self.bot_positions = dict(data.get("bot_positions", self.bot_positions))
+        self.bot_avg_prices = dict(data.get("bot_avg_prices", self.bot_avg_prices))
+        self.bot_realized_pnl = dict(data.get("bot_realized_pnl", self.bot_realized_pnl))
+        self.pending_orders = int(data.get("pending_orders", self.pending_orders))
+        self.last_prices = dict(data.get("last_prices", self.last_prices))
+        self.shutdown_strategy_ids = list(
+            data.get("shutdown_strategy_ids", self.shutdown_strategy_ids)
+        )
+        self.shutdown_bot_ids = list(data.get("shutdown_bot_ids", self.shutdown_bot_ids))
