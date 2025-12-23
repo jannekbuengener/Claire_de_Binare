@@ -39,10 +39,3 @@ scrape_configs:
     metrics_path: '/metrics'
 
   # WebSocket Screener
-  - job_name: 'cdb_ws'
-    static_configs:
-      - targets: ['cdb_ws:8000']
-        labels:
-          instance: 'cdb_ws'
-          service: 'market_data'
-    metrics_path: '/metrics'

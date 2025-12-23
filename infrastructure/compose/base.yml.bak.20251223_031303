@@ -1,0 +1,104 @@
+# Claire de Binare - Base Infrastructure
+# Core Services (Redis, Postgres, Prometheus, Grafana)
+# No Port-Bindings (internal only)
+
+services:
+  cdb_redis:
+    image: redis:7-alpine
+    container_name: cdb_redis
+    restart: unless-stopped
+    env_file: .env
+    secrets:
+      - redis_password
+    volumes:
+      - redis_data:/data
+    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$(cat /run/secrets/redis_password)"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_postgres:
+    image: postgres:15-alpine
+    container_name: cdb_postgres
+    restart: unless-stopped
+    env_file: .env
+    secrets:
+      - postgres_password
+    environment:
+      POSTGRES_DB: claire_de_binare
+      POSTGRES_USER: claire_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U claire_user -d claire_de_binare"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_prometheus:
+    image: prom/prometheus:latest
+    container_name: cdb_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_grafana:
+    image: grafana/grafana:latest
+    container_name: cdb_grafana
+    restart: unless-stopped
+    secrets:
+      - grafana_password
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - cdb_prometheus
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
+volumes:
+  redis_data:
+  postgres_data:
+  prom_data:
+  grafana_data:
+
+networks:
+  cdb_network:
+    driver: bridge
+
+secrets:
+  redis_password:
+    file: ./.secrets/redis_password.txt
+  postgres_password:
+    file: ./.secrets/postgres_password.txt
+  grafana_password:
+    file: ./.secrets/grafana_password.txt

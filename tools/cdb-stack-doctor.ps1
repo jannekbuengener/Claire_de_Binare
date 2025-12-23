@@ -36,7 +36,7 @@ $composeFile = 'docker-compose.yml'
 $envFile = '.env'
 $secretsFolder = '.secrets'
 $requiredSecrets = @('redis_password','postgres_password','grafana_password')
-$expectedServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_ws','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
+$expectedServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
 
 Write-Section 'Docker engine'
 try {

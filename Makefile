@@ -162,7 +162,7 @@ docker-down:
 
 docker-health:
 	@echo "🏥 Prüfe Health-Status aller Container..."
-	@docker compose ps | grep -E "(cdb_redis|cdb_postgres|cdb_ws|cdb_core|cdb_risk|cdb_execution)" || true
+	@docker compose ps | grep -E "(cdb_redis|cdb_postgres|cdb_core|cdb_risk|cdb_execution)" || true
 	@echo ""
 	@echo "Health-Check Details:"
 	@docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep cdb_ || true

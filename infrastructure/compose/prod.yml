@@ -40,22 +40,6 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Application Services with Enhanced Security
-  cdb_ws:
-    restart: on-failure
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp
-    read_only: true
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-
   cdb_core:
     restart: on-failure
     security_opt:

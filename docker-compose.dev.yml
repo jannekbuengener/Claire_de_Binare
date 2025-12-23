@@ -30,12 +30,6 @@ services:
     ports:
       - "3000:3000"
 
-  cdb_ws:
-    extends:
-      file: docker-compose.base.yml
-      service: cdb_ws
-    read_only: false
-
   cdb_core:
     extends:
       file: docker-compose.base.yml

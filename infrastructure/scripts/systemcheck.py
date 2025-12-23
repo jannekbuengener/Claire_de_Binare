@@ -181,7 +181,6 @@ class SystemCheck:
                 "cdb_postgres",
                 "cdb_prometheus",
                 "cdb_grafana",
-                "cdb_ws",
                 "cdb_core",
                 "cdb_risk",
                 "cdb_execution",
@@ -222,7 +221,6 @@ class SystemCheck:
             return self.check_result(True, "Service Health Check (Skipped)")
 
         endpoints = {
-            "cdb_ws (Screener)": "http://localhost:8000/health",
             "cdb_core (Signal Engine)": "http://localhost:8001/health",
             "cdb_risk (Risk Manager)": "http://localhost:8002/health",
             "cdb_execution (Execution)": "http://localhost:8003/health",

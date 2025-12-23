@@ -49,7 +49,7 @@ docker compose up -d  # Nutzt root-level docker-compose.yml
 - **Port-Bindings**: Alle Services extern erreichbar
 - **Debug-Volumes**: Logs gemountet
 - **Relaxed Security**: Kein read-only, CAP_DROP
-- **Application Services**: cdb_ws, cdb_core, cdb_risk, cdb_execution, cdb_db_writer
+- **Application Services**: cdb_core, cdb_risk, cdb_execution, cdb_db_writer
 
 ### prod.yml
 - **Zweck**: Production Overrides

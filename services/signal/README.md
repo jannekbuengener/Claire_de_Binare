@@ -11,11 +11,11 @@ generiert und auf das Redis-Topic `signals` publiziert.
 - Eingehende Topics: `market_data`
 - Ausgehende Topics: `signals`
 - Port/Endpoints: `8001` (`/health`, `/status`, `/metrics`)
-- Abhängigkeiten: Redis (`cdb_redis`), Bot WS Screener (`cdb_ws`)
+- Abhängigkeiten: Redis (`cdb_redis`)
 
 ```mermaid
 flowchart LR
-   FEED[Bot WS Screener] -->|market_data| SIGNAL[Signal Engine]
+   FEED[Market Data Feed] -->|market_data| SIGNAL[Signal Engine]
    SIGNAL -->|signals| RISK[Risk Manager]
 ```
 

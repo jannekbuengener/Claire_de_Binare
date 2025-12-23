@@ -1,5 +1,5 @@
 ---
-relations:
+x-relations:
   role: stack_definition
   domain: orchestration
   upstream:
@@ -95,6 +95,7 @@ services:
     restart: unless-stopped
     secrets:
       - grafana_password
+      - postgres_password
     configs:
       - source: grafana_datasource_postgres
         target: /etc/grafana/provisioning/datasources/postgres.yml
@@ -139,46 +140,19 @@ services:
     networks:
       - cdb_network
 
-  cdb_ws:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SCRIPT_NAME: mexc_top5_ws.py
-    container_name: cdb_ws
-    restart: unless-stopped
-    env_file: .env
-    volumes:
-      - logs_data:/app/logs
-    depends_on:
-      - cdb_redis
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp
-    read_only: true
-    networks:
-      - cdb_network
-
   cdb_core:
     build:
-      context: .
+      context: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
       dockerfile: services/signal/Dockerfile
     container_name: cdb_core
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - .cdb_local/.secrets/.env.compose
     secrets:
       - redis_password
     depends_on:
       - cdb_redis
-      - cdb_ws
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8001/health"]
       interval: 30s
@@ -198,11 +172,13 @@ services:
 
   cdb_risk:
     build:
-      context: .
+      context: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
       dockerfile: services/risk/Dockerfile
     container_name: cdb_risk
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - .cdb_local/.secrets/.env.compose
     secrets:
       - redis_password
     volumes:
@@ -229,11 +205,13 @@ services:
 
   cdb_execution:
     build:
-      context: .
+      context: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
       dockerfile: services/execution/Dockerfile
     container_name: cdb_execution
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - .cdb_local/.secrets/.env.compose
     secrets:
       - redis_password
       - postgres_password
@@ -261,11 +239,13 @@ services:
 
   cdb_db_writer:
     build:
-      context: .
+      context: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
       dockerfile: services/db_writer/Dockerfile
     container_name: cdb_db_writer
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - .cdb_local/.secrets/.env.compose
     secrets:
       - redis_password
       - postgres_password
@@ -291,11 +271,13 @@ services:
 
   cdb_paper_runner:
     build:
-      context: ./tools/paper_trading
-      dockerfile: Dockerfile
+      context: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
+      dockerfile: tools/paper_trading/Dockerfile
     container_name: cdb_paper_runner
     restart: unless-stopped
-    env_file: .env
+    env_file:
+      - .env
+      - .cdb_local/.secrets/.env.compose
     volumes:
       - logs_data:/app/logs
       - paper_runner_data:/app/data

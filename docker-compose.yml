@@ -104,41 +104,6 @@ services:
       - cdb_network
 
   # ====================================================================
-  # SCREENER - Bestehende Implementierung
-  # ====================================================================
-
-  cdb_ws:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        SCRIPT_NAME: mexc_top5_ws.py
-    container_name: cdb_ws
-    profiles: ["ws"]
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./logs:/app/logs
-    depends_on:
-      - cdb_redis
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    tmpfs:
-      - /tmp
-    read_only: true
-    networks:
-      - cdb_network
-
-  # ====================================================================
   # MVP SERVICES - Vorbereitet für Entwicklung
   # ====================================================================
   # Hinweis: Diese Services sind noch nicht implementiert

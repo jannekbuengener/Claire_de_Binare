@@ -32,7 +32,7 @@ Set-StrictMode -Version Latest
 $COMPOSE_FILE = "docker-compose.yml"
 $EXPECTED_SERVICES = @(
     "cdb_redis", "cdb_postgres", "cdb_prometheus", "cdb_grafana",
-    "cdb_ws", "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
+    "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
 )
 $HEALTH_CHECK_TIMEOUT_SEC = 60
 $HEALTH_CHECK_INTERVAL_SEC = 5
