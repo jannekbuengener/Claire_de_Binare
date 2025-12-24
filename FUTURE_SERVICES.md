@@ -25,11 +25,14 @@ This document tracks services that have Dockerfiles or implementation code but a
 - `cdb_promtail` - Log collector
 
 **Application Services** (in `infrastructure/compose/dev.yml`):
-- `cdb_ws` - WebSocket service (root `Dockerfile`)
 - `cdb_core` - Core signal processing (`services/signal/Dockerfile`)
 - `cdb_risk` - Risk management (`services/risk/Dockerfile`)
 - `cdb_execution` - Order execution (`services/execution/Dockerfile`)
 - `cdb_db_writer` - Database writer (`services/db_writer/Dockerfile`)
+
+**Stub Services** (Dockerfiles + stubs exist, not enabled):
+- `cdb_ws` - WebSocket service (`services/ws/Dockerfile`) - **Stub created 2025-12-24**
+- `cdb_market` - Market data service (`services/market/Dockerfile`) - **Stub created 2025-12-24**
 
 ---
 
@@ -86,22 +89,32 @@ This document tracks services that have Dockerfiles or implementation code but a
 
 ### 2. `services/market/Dockerfile`
 
-**Status**: 🔜 Not integrated
+**Status**: ⏸️ Stub Created - Implementation Required
 
 **Purpose**: Market data ingestion and processing
 
-**Current State**:
-- Dockerfile exists
-- Service code presumably exists in `services/market/`
-- Not defined in any compose file
-- Not mentioned in `stack_up.ps1` target services
+**Current State** (Updated 2025-12-24):
+- ✅ Dockerfile exists
+- ✅ **service.py stub created** (health endpoint only on port 8004)
+- ✅ **email_alerter.py stub created** (template for alerts)
+- ✅ requirements.txt exists
+- ❌ **Business logic NOT implemented** (marked as TODO in stubs)
+- ❌ Not defined in any compose file
+- ❌ Not mentioned in `stack_up.ps1` target services
 
-**Integration Requirements**:
-1. Add service definition to `infrastructure/compose/dev.yml`
-2. Configure port binding (127.0.0.1:XXXX:8000)
-3. Add to `stack_up.ps1` target services list
-4. Create healthcheck
-5. Verify dependencies (likely Redis + Postgres)
+**Stubs Include**:
+- Flask health endpoint for Docker HEALTHCHECK
+- Logging setup
+- TODO comments for actual implementation
+- No secrets or credentials
+
+**Integration Requirements** (After Implementation):
+1. Implement market data fetching logic (exchange APIs)
+2. Implement Redis pub/sub for data distribution
+3. Implement Postgres persistence for historical data
+4. Configure environment variables (MARKET_DATA_SOURCE, etc.)
+5. Add service definition to `infrastructure/compose/dev.yml`
+6. Add to `stack_up.ps1` target services list
 
 **Suggested Compose Config**:
 ```yaml
@@ -127,7 +140,68 @@ This document tracks services that have Dockerfiles or implementation code but a
 
 ---
 
-### 3. `services/regime/Dockerfile`
+### 3. `services/ws/Dockerfile`
+
+**Status**: ⏸️ Stub Created - Implementation Required
+
+**Purpose**: Real-time WebSocket connections to exchange APIs
+
+**Current State** (Created 2025-12-24):
+- ✅ **Dockerfile created** (services/ws/Dockerfile, Port 8000)
+- ✅ **service.py stub created** (health endpoint only)
+- ✅ **requirements.txt created** (websockets, flask, redis)
+- ✅ Includes core modules (COPY core /app/core)
+- ❌ **Business logic NOT implemented** (marked as TODO in stub)
+- ❌ Not defined in any compose file
+- ❌ Not mentioned in `stack_up.ps1` target services
+
+**Stubs Include**:
+- Flask health endpoint for Docker HEALTHCHECK on port 8000
+- Logging setup
+- TODO comments for WebSocket client implementation
+- No secrets or credentials
+
+**Integration Requirements** (After Implementation):
+1. Implement WebSocket client for exchange APIs (MEXC, Binance, etc.)
+2. Implement connection management (reconnection, heartbeat)
+3. Implement data stream handling (order book, trades, klines)
+4. Implement Redis pub/sub for data distribution
+5. Configure environment variables (WS_EXCHANGE, WS_SYMBOLS, WS_URI, etc.)
+6. Add service definition to `infrastructure/compose/dev.yml`
+7. Add to `stack_up.ps1` target services list
+
+**Suggested Compose Config**:
+```yaml
+  cdb_ws:
+    build:
+      context: ../..
+      dockerfile: services/ws/Dockerfile
+    container_name: cdb_ws
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      WS_EXCHANGE: mexc  # or binance, etc.
+      WS_SYMBOLS: BTC/USDT,ETH/USDT  # comma-separated
+    ports:
+      - "127.0.0.1:8000:8000"  # Health endpoint
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+    networks:
+      - cdb_network
+```
+
+**Note**: Dockerfile includes non-root user (wsuser) and built-in HEALTHCHECK ✅
+
+**Historical Note**: Previously referenced as using root Dockerfile (mexc_top5_ws.py),
+which never existed. Now properly organized in services/ws/ directory structure.
+
+---
+
+### 4. `services/regime/Dockerfile`
 
 **Status**: ⏸️ Blocked - Missing Environment Configuration
 
