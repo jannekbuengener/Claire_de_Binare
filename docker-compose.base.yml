@@ -1,4 +1,27 @@
-﻿---
+﻿# ⚠️ DEPRECATED - DO NOT MODIFY THIS FILE ⚠️
+#
+# This file is LEGACY and will be removed in a future update.
+#
+# ✅ USE INSTEAD: infrastructure/compose/base.yml
+#
+# Why deprecated:
+# - Located at project root (breaks separation of concerns)
+# - Duplicate configuration with canonical base.yml
+# - Part of legacy monolithic compose structure
+#
+# Migration:
+#   OLD: docker-compose -f docker-compose.base.yml up
+#   NEW: .\infrastructure\scripts\stack_up.ps1
+#
+# See LEGACY_FILES.md for complete migration guide.
+#
+# Timeline:
+# - ✅ Canonical file created: infrastructure/compose/base.yml
+# - ✅ All configs migrated
+# - ⏳ THIS FILE - Deprecation warnings added
+# - 🔜 Will be removed after verification period
+#
+---
 x-relations:
   role: stack_definition
   domain: orchestration
