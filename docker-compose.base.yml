@@ -18,8 +18,9 @@
 # Timeline:
 # - ✅ Canonical file created: infrastructure/compose/base.yml
 # - ✅ All configs migrated
-# - ⏳ THIS FILE - Deprecation warnings added
-# - 🔜 Will be removed after verification period
+# - ✅ Deprecation warnings added
+# - ✅ Reference removed from stack_up.ps1 (2025-12-24)
+# - 🔜 SAFE TO DELETE - No longer referenced by any scripts
 #
 ---
 x-relations:

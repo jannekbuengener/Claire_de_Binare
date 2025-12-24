@@ -25,9 +25,10 @@ try {
     }
 
     # Build compose file list based on profile and switches
+    # NOTE: Removed legacy docker-compose.base.yml reference (2025-12-24)
+    # Using canonical infrastructure/compose/base.yml only
     $composeArgs = @(
         '--env-file', '.\.cdb_local\.secrets\.env.compose',
-        '-f', 'docker-compose.base.yml',
         '-f', 'infrastructure\compose\base.yml'
     )
 
