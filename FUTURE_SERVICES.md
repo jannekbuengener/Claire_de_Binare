@@ -162,7 +162,7 @@ This document tracks services that have Dockerfiles or implementation code but a
 
 ### 4. `cdb_paper_runner`
 
-**Status**: 🔜 Planned
+**Status**: 🔜 Planned → ✅ Dockerfile Found in Legacy
 
 **Purpose**: Paper trading simulation runner
 
@@ -171,8 +171,15 @@ This document tracks services that have Dockerfiles or implementation code but a
 - Mentioned in `COMPOSE_LAYERS.md` documentation
 - Placeholder in `infrastructure/compose/rollback.yml`
 - Implementation exists: `services/execution/paper_trading.py`
-- No dedicated Dockerfile (likely uses execution Dockerfile)
+- **✅ LEGACY DOCKERFILE DISCOVERED**: `Dockerfile_cdb_paper_runner` in quarantine
 - Not defined in any active compose file
+
+**Legacy Dockerfile Details**:
+- Port: 8004 (matches our allocation!)
+- Main file: `service.py`
+- Features: Email alerting (`email_alerter.py`)
+- Log structure: `/app/logs` + `/app/logs/events`
+- See `LEGACY_ANALYSIS.md` for full details
 
 **Integration Decision Required**:
 - **Option A**: Dedicated service with own container
@@ -185,17 +192,17 @@ This document tracks services that have Dockerfiles or implementation code but a
   - Pros: No persistent container
   - Cons: No real-time monitoring
 
-**Suggested Compose Config** (Option A):
+**Suggested Compose Config** (Option A - Using Legacy Dockerfile):
 ```yaml
   cdb_paper_runner:
     build:
       context: ../..
-      dockerfile: services/execution/Dockerfile
-      args:
-        SCRIPT_NAME: paper_trading.py
+      dockerfile: services/paper_runner/Dockerfile  # Copy from legacy Dockerfile_cdb_paper_runner
     container_name: cdb_paper_runner
     restart: unless-stopped
     env_file: .env
+    ports:
+      - "127.0.0.1:8004:8004"  # Legacy Dockerfile uses 8004
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -204,6 +211,8 @@ This document tracks services that have Dockerfiles or implementation code but a
     networks:
       - cdb_network
 ```
+
+**Note**: Before integration, copy `Dockerfile_cdb_paper_runner` from quarantine to `services/paper_runner/Dockerfile`
 
 ---
 
