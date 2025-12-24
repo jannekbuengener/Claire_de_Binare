@@ -37,22 +37,28 @@ This document tracks services that have Dockerfiles or implementation code but a
 
 ### 1. `services/allocation/Dockerfile`
 
-**Status**: 🔜 Not integrated
+**Status**: ⏸️ Blocked - Missing Environment Configuration
 
 **Purpose**: Position allocation and portfolio management
 
 **Current State**:
-- Dockerfile exists
-- Service code presumably exists in `services/allocation/`
-- Not defined in any compose file
-- Not mentioned in `stack_up.ps1` target services
+- ✅ Dockerfile exists and builds successfully
+- ✅ Service code exists in `services/allocation/`
+- ✅ Added to `infrastructure/compose/dev.yml` (currently disabled)
+- ✅ Dockerfile fixed to include `COPY core /app/core`
+- ❌ **Blocker**: Missing required environment variables
 
-**Integration Requirements**:
-1. Add service definition to `infrastructure/compose/dev.yml`
-2. Configure port binding (127.0.0.1:XXXX:8000)
-3. Add to `stack_up.ps1` target services list
-4. Create healthcheck
-5. Document in COMPOSE_LAYERS.md
+**Blocking Environment Variables** (from `config.py`):
+- `ALLOCATION_REGIME_MIN_STABLE_SECONDS` (required, no default)
+- `ALLOCATION_RULES_JSON` (required, no default)
+- Optional: `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, etc.
+
+**Integration Requirements** (to unblock):
+1. ✅ Add service definition to `infrastructure/compose/dev.yml` - DONE (disabled)
+2. ✅ Configure port binding - DONE (127.0.0.1:8005:8005)
+3. ✅ Fix Dockerfile to include core modules - DONE
+4. ❌ **TODO**: Configure required environment variables in `.env` file
+5. ✅ Document in COMPOSE_LAYERS.md - DONE
 
 **Suggested Compose Config**:
 ```yaml
@@ -123,22 +129,23 @@ This document tracks services that have Dockerfiles or implementation code but a
 
 ### 3. `services/regime/Dockerfile`
 
-**Status**: 🔜 Not integrated
+**Status**: ⏸️ Blocked - Missing Environment Configuration
 
 **Purpose**: Market regime detection and classification
 
 **Current State**:
-- Dockerfile exists
-- Service code presumably exists in `services/regime/`
-- Not defined in any compose file
-- Not mentioned in `stack_up.ps1` target services
+- ✅ Dockerfile exists and builds successfully
+- ✅ Service code exists in `services/regime/`
+- ✅ Added to `infrastructure/compose/dev.yml` (currently disabled)
+- ✅ Dockerfile fixed to include `COPY core /app/core`
+- ❌ **Blocker**: Missing required environment variables (check `config.py`)
 
-**Integration Requirements**:
-1. Add service definition to `infrastructure/compose/dev.yml`
-2. Configure port binding (127.0.0.1:XXXX:8000)
-3. Add to `stack_up.ps1` target services list
-4. Create healthcheck
-5. Verify dependencies
+**Integration Requirements** (to unblock):
+1. ✅ Add service definition to `infrastructure/compose/dev.yml` - DONE (disabled)
+2. ✅ Configure port binding - DONE (127.0.0.1:8006:8006)
+3. ✅ Fix Dockerfile to include core modules - DONE
+4. ❌ **TODO**: Configure required environment variables in `.env` file
+5. ✅ Document in COMPOSE_LAYERS.md - DONE
 
 **Suggested Compose Config**:
 ```yaml

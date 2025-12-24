@@ -16,8 +16,12 @@ The Claire de Binare stack uses a **multi-layer compose architecture** to separa
 ### Profile Overlays
 - **`infrastructure/compose/dev.yml`** - Development profile
   - Port bindings for local access (127.0.0.1 only)
-  - Application services (cdb_core, cdb_risk, cdb_execution, cdb_db_writer, cdb_paper_runner, cdb_ws)
+  - Application services:
+    - ✅ Active: cdb_core (signal), cdb_risk, cdb_execution, cdb_db_writer
+    - ⏸️ Disabled (missing config): cdb_allocation, cdb_regime
+    - ⏸️ Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
   - Debug volumes (logs mounted for easy access)
+  - Port mappings: Fixed to match Dockerfile EXPOSE directives (PORT:PORT instead of PORT:8000)
 
 ### Feature Overlays
 - **`infrastructure/compose/logging.yml`** - Centralized logging

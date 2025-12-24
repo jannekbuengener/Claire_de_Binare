@@ -13,6 +13,9 @@ RUN apt-get update && apt-get install -y \
 COPY services/regime/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Core Domain Models (shared)
+COPY core /app/core
+
 # Service-Code
 COPY services/regime/*.py ./
 
