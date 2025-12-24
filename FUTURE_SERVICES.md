@@ -64,7 +64,7 @@ This document tracks services that have Dockerfiles or implementation code but a
     restart: unless-stopped
     env_file: .env
     ports:
-      - "127.0.0.1:8004:8000"  # Next available port
+      - "127.0.0.1:8005:8005"  # Dockerfile EXPOSE 8005
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -73,6 +73,8 @@ This document tracks services that have Dockerfiles or implementation code but a
     networks:
       - cdb_network
 ```
+
+**Note**: Dockerfile includes non-root user (allocuser) and built-in HEALTHCHECK ✅
 
 ---
 
@@ -105,7 +107,7 @@ This document tracks services that have Dockerfiles or implementation code but a
     restart: unless-stopped
     env_file: .env
     ports:
-      - "127.0.0.1:8005:8000"  # Next available port
+      - "127.0.0.1:8004:8004"  # Dockerfile EXPOSE 8004
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -114,6 +116,8 @@ This document tracks services that have Dockerfiles or implementation code but a
     networks:
       - cdb_network
 ```
+
+**Note**: Dockerfile includes non-root user (marketuser) and built-in HEALTHCHECK ✅
 
 ---
 
@@ -146,7 +150,7 @@ This document tracks services that have Dockerfiles or implementation code but a
     restart: unless-stopped
     env_file: .env
     ports:
-      - "127.0.0.1:8006:8000"  # Next available port
+      - "127.0.0.1:8006:8006"  # Dockerfile EXPOSE 8006 (fixed from 8004 conflict)
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -155,6 +159,8 @@ This document tracks services that have Dockerfiles or implementation code but a
     networks:
       - cdb_network
 ```
+
+**Note**: Dockerfile includes non-root user (regimeuser) and built-in HEALTHCHECK ✅
 
 ---
 
@@ -274,13 +280,18 @@ This document tracks services that have Dockerfiles or implementation code but a
 - 8002: cdb_risk (risk management)
 - 8003: cdb_execution (order execution)
 
-**Future Allocations**:
-- 8004: cdb_allocation (position allocation)
-- 8005: cdb_market (market data)
-- 8006: cdb_regime (regime detection)
-- 8007: cdb_paper_runner (paper trading) - if Option A chosen
+**Future Allocations** (Dockerfile EXPOSE values):
+- 8004: cdb_market (market data) - Dockerfile ready ✅
+- 8005: cdb_allocation (position allocation) - Dockerfile ready ✅
+- 8006: cdb_regime (regime detection) - Dockerfile ready ✅
+- 8007: cdb_paper_runner (paper trading) - Dockerfile in quarantine
 
-**Note**: All future port bindings MUST use `127.0.0.1:XXXX:8000` format (localhost-only, per Criterion B).
+**Port Mapping Pattern**:
+- Services expose their designated ports internally (8001, 8002, 8003, etc.)
+- External bindings MUST use `127.0.0.1:PORT:PORT` format (localhost-only, per Criterion B)
+- Example: `127.0.0.1:8004:8004` for market service
+
+**Note**: Current dev.yml uses `XXXX:8000` mapping pattern which conflicts with Dockerfile EXPOSE directives. Services actually listen on their designated ports (8001-8007), not on 8000.
 
 ---
 

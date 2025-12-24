@@ -31,6 +31,10 @@ RUN useradd --create-home --uid 1000 execuser \
 	&& chown -R execuser:execuser /app
 USER execuser
 
+# Health-Check
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+	CMD curl -f http://localhost:8003/health || exit 1
+
 # Exposed Port
 EXPOSE 8003
 
