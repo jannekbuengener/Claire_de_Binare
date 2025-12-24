@@ -47,7 +47,7 @@ services:
     container_name: cdb_prometheus
     restart: unless-stopped
     volumes:
-      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prom_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -72,9 +72,9 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus
     healthcheck:
@@ -97,8 +97,8 @@ networks:
 
 secrets:
   redis_password:
-    file: ./.secrets/redis_password.txt
+    file: ../../../.cdb_local/.secrets/redis_password
   postgres_password:
-    file: ./.secrets/postgres_password.txt
+    file: ../../../.cdb_local/.secrets/postgres_password
   grafana_password:
-    file: ./.secrets/grafana_password.txt
+    file: ../../../.cdb_local/.secrets/grafana_password

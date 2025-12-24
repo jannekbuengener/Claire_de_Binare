@@ -1,0 +1,29 @@
+# Rollback Overlay
+# Pins services to specific tagged images for rollback capability
+# Usage: Used internally by stack_rollback.ps1
+# Set ROLLBACK_TAG environment variable before using
+
+services:
+  cdb_core:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_core:${ROLLBACK_TAG:-latest}
+    build: null
+
+  cdb_risk:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_risk:${ROLLBACK_TAG:-latest}
+    build: null
+
+  cdb_execution:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_execution:${ROLLBACK_TAG:-latest}
+    build: null
+
+  cdb_db_writer:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_db_writer:${ROLLBACK_TAG:-latest}
+    build: null
+
+  cdb_paper_runner:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_paper_runner:${ROLLBACK_TAG:-latest}
+    build: null
+
+  cdb_ws:
+    image: ${COMPOSE_PROJECT_NAME:-claire_de_binare}_cdb_ws:${ROLLBACK_TAG:-latest}
+    build: null
