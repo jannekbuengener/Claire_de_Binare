@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Upgrade pip to fix CVE-2025-8869 (CVSS 5.9)
+RUN pip install --upgrade pip==25.3
+
 # Python Dependencies
 COPY services/signal/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

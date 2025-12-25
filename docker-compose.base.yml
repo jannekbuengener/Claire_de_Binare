@@ -1,5 +1,29 @@
+﻿# ⚠️ DEPRECATED - DO NOT MODIFY THIS FILE ⚠️
+#
+# This file is LEGACY and will be removed in a future update.
+#
+# ✅ USE INSTEAD: infrastructure/compose/base.yml
+#
+# Why deprecated:
+# - Located at project root (breaks separation of concerns)
+# - Duplicate configuration with canonical base.yml
+# - Part of legacy monolithic compose structure
+#
+# Migration:
+#   OLD: docker-compose -f docker-compose.base.yml up
+#   NEW: .\infrastructure\scripts\stack_up.ps1
+#
+# See LEGACY_FILES.md for complete migration guide.
+#
+# Timeline:
+# - ✅ Canonical file created: infrastructure/compose/base.yml
+# - ✅ All configs migrated
+# - ✅ Deprecation warnings added
+# - ✅ Reference removed from stack_up.ps1 (2025-12-24)
+# - 🔜 SAFE TO DELETE - No longer referenced by any scripts
+#
 ---
-relations:
+x-relations:
   role: stack_definition
   domain: orchestration
   upstream:
@@ -346,11 +370,11 @@ networks:
 
 secrets:
   redis_password:
-    file: ./.secrets/redis_password
+    file: ../.cdb_local/.secrets/redis_password
   postgres_password:
-    file: ./.secrets/postgres_password
+    file: ../.cdb_local/.secrets/postgres_password
   grafana_password:
-    file: ./.secrets/grafana_password
+    file: ../.cdb_local/.secrets/grafana_password
 
 configs:
   prometheus_config:

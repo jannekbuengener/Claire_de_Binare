@@ -1,5 +1,29 @@
-# Claire de Binare - Docker Compose Setup
+# ⚠️ DEPRECATED - DO NOT MODIFY THIS FILE ⚠️
+#
+# This file is LEGACY and will be removed in a future update.
+#
+# ✅ USE INSTEAD: infrastructure/compose/base.yml + infrastructure/compose/dev.yml
+#
+# Why deprecated:
+# - Monolithic configuration (no environment separation)
+# - No overlay support for different profiles
+# - Hardcoded dev-specific settings
+#
+# Migration:
+#   OLD: docker-compose up
+#   NEW: .\infrastructure\scripts\stack_up.ps1
+#
+# See LEGACY_FILES.md for complete migration guide.
+#
+# Timeline:
+# - ✅ Configs migrated to infrastructure/compose/base.yml + dev.yml
+# - ⏳ THIS FILE - Deprecation warnings added
+# - 🔜 Will be removed after verification period
+#
+# ============================================================================
+# Claire de Binare - Docker Compose Setup (LEGACY)
 # Vollständige Infrastruktur für autonomen Trading-Bot
+# ============================================================================
 
 services:
   # ====================================================================

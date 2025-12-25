@@ -1,5 +1,30 @@
-# Claire de Binare - Docker Compose (Dev Overlay)
+# ⚠️ DEPRECATED - DO NOT MODIFY THIS FILE ⚠️
+#
+# This file is LEGACY and will be removed in a future update.
+#
+# ✅ USE INSTEAD: infrastructure/compose/dev.yml
+#
+# Why deprecated:
+# - Located at project root (not part of infrastructure directory)
+# - Legacy file structure
+# - Duplicate configuration with canonical dev.yml
+#
+# Migration:
+#   OLD: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   NEW: .\infrastructure\scripts\stack_up.ps1 -Profile dev
+#
+# See LEGACY_FILES.md for complete migration guide.
+#
+# Timeline:
+# - ✅ File moved to infrastructure/compose/dev.yml
+# - ✅ Port bindings updated to 127.0.0.1 (localhost-only)
+# - ⏳ THIS FILE - Deprecation warnings added
+# - 🔜 Will be removed after verification period
+#
+# ============================================================================
+# Claire de Binare - Docker Compose (Dev Overlay) - LEGACY
 # Entwicklungs-Overlay: Bind-Mounts und Ports für lokale Entwicklung
+# ============================================================================
 
 services:
   cdb_redis:

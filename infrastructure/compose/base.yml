@@ -4,17 +4,17 @@
 
 services:
   cdb_redis:
-    image: redis:7-alpine
+    image: redis:7.4.1-alpine
     container_name: cdb_redis
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - redis_password
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$(cat /run/secrets/redis_password)"
+    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -22,20 +22,20 @@ services:
       - cdb_network
 
   cdb_postgres:
-    image: postgres:15-alpine
+    image: postgres:15.11-alpine
     container_name: cdb_postgres
     restart: unless-stopped
     env_file: .env
-    secrets:
-      - postgres_password
     environment:
       POSTGRES_DB: claire_de_binare
-      POSTGRES_USER: claire_user
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U claire_user -d claire_de_binare"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claire_user} -d claire_de_binare"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -47,7 +47,7 @@ services:
     container_name: cdb_prometheus
     restart: unless-stopped
     volumes:
-      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prom_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -64,17 +64,16 @@ services:
     image: grafana/grafana:latest
     container_name: cdb_grafana
     restart: unless-stopped
-    secrets:
-      - grafana_password
+    env_file: .env
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-      - ./infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus
     healthcheck:
@@ -94,11 +93,3 @@ volumes:
 networks:
   cdb_network:
     driver: bridge
-
-secrets:
-  redis_password:
-    file: ./.secrets/redis_password.txt
-  postgres_password:
-    file: ./.secrets/postgres_password.txt
-  grafana_password:
-    file: ./.secrets/grafana_password.txt
