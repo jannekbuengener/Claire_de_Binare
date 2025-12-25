@@ -68,38 +68,34 @@ class Database:
                     cur.execute(
                         """
                         INSERT INTO orders (
-                            order_id, symbol, side, type,
-                            quantity, price, filled_quantity, average_price,
-                            status, exchange_order_id, submitted_at, filled_at
+                            symbol, side, order_type,
+                            size, price, filled_size, avg_fill_price,
+                            status, submitted_at, filled_at,
+                            metadata
                         ) VALUES (
+                            %s, %s, %s,
                             %s, %s, %s, %s,
-                            %s, %s, %s, %s,
-                            %s, %s, %s, %s
+                            %s, to_timestamp(%s), to_timestamp(%s),
+                            %s
                         )
-                        ON CONFLICT (order_id) 
-                        DO UPDATE SET
-                            filled_quantity = EXCLUDED.filled_quantity,
-                            average_price = EXCLUDED.average_price,
-                            status = EXCLUDED.status,
-                            filled_at = EXCLUDED.filled_at
+                        RETURNING id
                     """,
                         (
-                            result.order_id,
                             result.symbol,
-                            result.side,
-                            "MARKET",  # Default order type
-                            result.quantity,
+                            result.side.lower(),  # lowercase for schema constraint
+                            "market",  # order_type
+                            result.quantity,  # maps to size
                             result.price,
-                            result.filled_quantity,
-                            result.price,  # average_price = price for now
-                            result.status,
-                            result.order_id,  # exchange_order_id = order_id for mock
-                            int(time.time()),  # submitted_at as Unix timestamp
+                            result.filled_quantity,  # maps to filled_size
+                            result.price,  # avg_fill_price = price for now
+                            result.status.lower(),  # lowercase for schema constraint
+                            int(time.time()),  # submitted_at
                             (
                                 int(time.time())
                                 if result.status == OrderStatus.FILLED.value
                                 else None
-                            ),
+                            ),  # filled_at
+                            '{"order_id": "' + result.order_id + '"}'  # store order_id in metadata
                         ),
                     )
 
@@ -132,23 +128,27 @@ class Database:
                     cur.execute(
                         """
                         INSERT INTO trades (
-                            order_id, symbol, side,
-                            quantity, entry_price, 
-                            status, entry_timestamp
+                            symbol, side,
+                            price, size, execution_price,
+                            status, timestamp,
+                            metadata
                         ) VALUES (
-                            %s, %s, %s,
                             %s, %s,
-                            %s, %s
+                            %s, %s, %s,
+                            %s, to_timestamp(%s),
+                            %s
                         )
+                        RETURNING id
                     """,
                         (
-                            result.order_id,
                             result.symbol,
-                            result.side,
-                            result.filled_quantity,
-                            result.price,
-                            "OPEN",  # Trade starts as OPEN
-                            timestamp,
+                            result.side.lower(),  # lowercase for schema constraint
+                            result.price,  # price
+                            result.filled_quantity,  # maps to size
+                            result.price,  # execution_price = price for mock
+                            "filled",  # Trade status (lowercase to match schema check constraint)
+                            timestamp,  # Unix timestamp
+                            '{"order_id": "' + result.order_id + '"}'  # store order_id in metadata
                         ),
                     )
 
