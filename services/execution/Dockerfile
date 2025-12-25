@@ -8,6 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Upgrade pip to fix CVE-2025-8869 (CVSS 5.9)
+RUN pip install --upgrade pip==25.3
+
 # System-Abhängigkeiten (für Healthcheck & Psycopg2)
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \

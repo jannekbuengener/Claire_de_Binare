@@ -2,6 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Upgrade pip to fix CVE-2025-8869 (CVSS 5.9)
+RUN pip install --upgrade pip==25.3
+
 # System dependencies
 RUN apt-get update && apt-get install -y \
     curl \
