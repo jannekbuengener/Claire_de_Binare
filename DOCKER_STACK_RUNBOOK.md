@@ -313,6 +313,41 @@ docker exec cdb_postgres psql -U claire_user -d postgres -c "DROP DATABASE clair
 docker exec cdb_postgres psql -U claire_user -d postgres -c "CREATE DATABASE claire_de_binare;"
 ```
 
+**Database Schema Initialization**:
+
+**CRITICAL**: Init scripts in `/docker-entrypoint-initdb.d/` only run on **first startup** when `postgres_data` volume is empty.
+
+**Dev: Force Schema Reload** (wipes all data):
+```powershell
+cd infrastructure/compose
+docker-compose -f base.yml -f dev.yml down
+docker volume rm claire_de_binare_postgres_data
+docker-compose -f base.yml -f dev.yml up -d
+```
+
+**Prod: Apply Schema Manually** (preserves data):
+```powershell
+# Apply base schema
+Get-Content infrastructure/database/schema.sql | docker exec -i cdb_postgres psql -U claire_user -d claire_de_binare
+
+# Apply migration 002
+Get-Content infrastructure/database/migrations/002_orders_price_nullable.sql | docker exec -i cdb_postgres psql -U claire_user -d claire_de_binare
+```
+
+**Verify Schema Loaded**:
+```powershell
+docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "\dt"
+# Expected: orders, trades, signals, positions, portfolio_snapshots, schema_version
+```
+
+**Troubleshooting**:
+- If tables don't exist after first startup → check postgres logs:
+  ```powershell
+  docker logs cdb_postgres | Select-String "initdb"
+  ```
+- Look for "running /docker-entrypoint-initdb.d/01-schema.sql"
+- If schema wasn't loaded → volume wasn't empty (remove and recreate)
+
 ---
 
 ### Redis
