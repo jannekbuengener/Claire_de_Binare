@@ -1,12 +1,12 @@
 # Emoji Filter System .gitignore
 
 # Test files (we don't want to commit these)
-# Allow official test suite in tests/ directory
-!tests/**/*.py
-!tests/**/*.js
 # Block ad-hoc test files in root/services
 *test*.py
 *test*.js
+# Allow official test suite in tests/ directory (must come AFTER wildcard)
+!tests/**/*.py
+!tests/**/*.js
 debug_*.py
 simple_test.*
 quick_test.*
