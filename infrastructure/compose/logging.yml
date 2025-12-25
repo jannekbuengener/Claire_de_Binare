@@ -1,0 +1,28 @@
+# Logging Overlay - Loki + Promtail
+# Add centralized log aggregation to the stack
+# Usage: Automatically included when stack_up.ps1 is called with -Logging flag
+
+services:
+  cdb_loki:
+    image: grafana/loki:2.9.3
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ../../infrastructure/monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+
+  cdb_promtail:
+    image: grafana/promtail:2.9.3
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ../../infrastructure/monitoring/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      cdb_loki:
+        condition: service_started
+
+volumes:
+  loki_data:
+    driver: local

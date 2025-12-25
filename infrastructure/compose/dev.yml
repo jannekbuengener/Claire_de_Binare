@@ -1,47 +1,51 @@
 # Claire de Binare - Dev Overrides
 # Port-Bindings, Debug-Volumes, Relaxed Security
+# Network Isolation: All ports bound to localhost (127.0.0.1) only
 
 services:
   # Override Base Services with Port-Bindings
   cdb_redis:
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   cdb_postgres:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   cdb_prometheus:
     ports:
-      - "19090:9090"
+      - "127.0.0.1:19090:9090"
 
   cdb_grafana:
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
   # Application Services (Dev-Only)
-  cdb_ws:
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        SCRIPT_NAME: mexc_top5_ws.py
-    container_name: cdb_ws
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "8000:8000"
-    volumes:
-      - ../../logs:/app/logs
-    depends_on:
-      - cdb_redis
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    networks:
-      - cdb_network
+
+  # WebSocket Service - DISABLED: No root Dockerfile exists
+  # TODO: Create Dockerfile in repo root or move to services/ws/Dockerfile
+  # cdb_ws:
+  #   build:
+  #     context: ../..
+  #     dockerfile: Dockerfile
+  #     args:
+  #       SCRIPT_NAME: mexc_top5_ws.py
+  #   container_name: cdb_ws
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   ports:
+  #     - "127.0.0.1:8000:8000"
+  #   volumes:
+  #     - ../../logs:/app/logs
+  #   depends_on:
+  #     - cdb_redis
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+  #     interval: 30s
+  #     timeout: 5s
+  #     retries: 3
+  #   networks:
+  #     - cdb_network
 
   cdb_core:
     build:
@@ -50,8 +54,12 @@ services:
     container_name: cdb_core
     restart: unless-stopped
     env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: claire_redis_secret_2024
+      POSTGRES_HOST: cdb_postgres
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8001"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -67,8 +75,12 @@ services:
     container_name: cdb_risk
     restart: unless-stopped
     env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: claire_redis_secret_2024
+      POSTGRES_HOST: cdb_postgres
     ports:
-      - "8002:8000"
+      - "127.0.0.1:8002:8002"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -84,8 +96,12 @@ services:
     container_name: cdb_execution
     restart: unless-stopped
     env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: claire_redis_secret_2024
+      POSTGRES_HOST: cdb_postgres
     ports:
-      - "8003:8000"
+      - "127.0.0.1:8003:8003"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -101,8 +117,69 @@ services:
     container_name: cdb_db_writer
     restart: unless-stopped
     env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: claire_redis_secret_2024
+      POSTGRES_HOST: cdb_postgres
     depends_on:
       - cdb_redis
       - cdb_postgres
     networks:
       - cdb_network
+
+  # Market Data Service - DISABLED: No service.py implementation yet
+  # TODO: Implement service.py and email_alerter.py before enabling
+  # cdb_market:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/market/Dockerfile
+  #   container_name: cdb_market
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   ports:
+  #     - "127.0.0.1:8004:8004"
+  #   volumes:
+  #     - ../../logs:/app/logs
+  #   depends_on:
+  #     - cdb_redis
+  #     - cdb_postgres
+  #   networks:
+  #     - cdb_network
+
+  # Position Allocation Service - DISABLED: Missing required env vars
+  # TODO: Configure ALLOCATION_REGIME_MIN_STABLE_SECONDS and ALLOCATION_RULES_JSON
+  # cdb_allocation:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/allocation/Dockerfile
+  #   container_name: cdb_allocation
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   ports:
+  #     - "127.0.0.1:8005:8005"
+  #   volumes:
+  #     - ../../logs:/app/logs
+  #   depends_on:
+  #     - cdb_redis
+  #     - cdb_postgres
+  #   networks:
+  #     - cdb_network
+
+  # Market Regime Detection Service - DISABLED: Missing required env vars
+  # TODO: Check regime service config.py for required env vars
+  # cdb_regime:
+  #   build:
+  #     context: ../..
+  #     dockerfile: services/regime/Dockerfile
+  #   container_name: cdb_regime
+  #   restart: unless-stopped
+  #   env_file: .env
+  #   ports:
+  #     - "127.0.0.1:8006:8006"
+  #   volumes:
+  #     - ../../logs:/app/logs
+  #   depends_on:
+  #     - cdb_redis
+  #     - cdb_postgres
+  #   networks:
+  #     - cdb_network

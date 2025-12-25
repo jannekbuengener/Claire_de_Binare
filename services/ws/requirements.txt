@@ -1,0 +1,4 @@
+# WebSocket Service Dependencies
+flask==3.1.2
+redis==5.0.1
+websockets==13.1
