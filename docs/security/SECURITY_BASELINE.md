@@ -120,10 +120,10 @@ docker ps --format "table {{.Names}}\t{{.Status}}"  # 9/9 healthy
 
 ## Next Steps
 
-### Phase 1 Remaining Work
-- [ ] Configure CI Security Scan Gate (.github/workflows/security-scan.yml)
-- [ ] Schedule weekly vulnerability scans
-- [ ] Document gosu CVE allowlist for CI
+### Phase 1 Completed ✅
+- [x] Configure CI Security Scan Gate (.github/workflows/security-scan.yml)
+- [x] Schedule weekly vulnerability scans
+- [x] Document gosu CVE allowlist for CI
 
 ### Phase 2 Targets
 - [ ] Paper Trading end-to-end flow validation
@@ -134,10 +134,10 @@ docker ps --format "table {{.Names}}\t{{.Status}}"  # 9/9 healthy
 
 ## Audit Trail
 
-**Commit**: [To be filled after commit]
+**Commit**: d4a5c1a (Security: Phase 1 baseline - pip 25.3 + base image pins)
 **GitHub Issues**:
 - Closes #251 (Base Image Upgrade)
-- Closes #253 (CI Scan Gate) - pending workflow creation
+- Closes #253 (CI Scan Gate)
 - Progress #248 (Auth Consistency - ENV-based secrets already migrated)
 
 **Agent**: Claude (Claude Code) - Infrastructure & Security owner per ROAD_TO_GLORY.md
