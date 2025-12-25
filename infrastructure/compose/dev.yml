@@ -56,8 +56,11 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: claire_redis_secret_2024
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-default_strategy}
     ports:
       - "127.0.0.1:8001:8001"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
@@ -77,8 +80,10 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: claire_redis_secret_2024
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "127.0.0.1:8002:8002"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
@@ -98,8 +103,10 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: claire_redis_secret_2024
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "127.0.0.1:8003:8003"  # Fixed: PORT:PORT mapping (was :8000)
     volumes:
@@ -119,8 +126,10 @@ services:
     env_file: .env
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: claire_redis_secret_2024
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
       - cdb_redis
       - cdb_postgres
