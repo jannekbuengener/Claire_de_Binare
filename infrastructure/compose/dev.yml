@@ -22,30 +22,33 @@ services:
 
   # Application Services (Dev-Only)
 
-  # WebSocket Service - DISABLED: No root Dockerfile exists
-  # TODO: Create Dockerfile in repo root or move to services/ws/Dockerfile
-  # cdb_ws:
-  #   build:
-  #     context: ../..
-  #     dockerfile: Dockerfile
-  #     args:
-  #       SCRIPT_NAME: mexc_top5_ws.py
-  #   container_name: cdb_ws
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   ports:
-  #     - "127.0.0.1:8000:8000"
-  #   volumes:
-  #     - ../../logs:/app/logs
-  #   depends_on:
-  #     - cdb_redis
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
-  #     interval: 30s
-  #     timeout: 5s
-  #     retries: 3
-  #   networks:
-  #     - cdb_network
+  cdb_ws:
+    build:
+      context: ../..
+      dockerfile: services/ws/Dockerfile
+    container_name: cdb_ws
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_HOST: cdb_redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_postgres
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
 
   cdb_core:
     build:
