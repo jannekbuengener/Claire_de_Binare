@@ -713,6 +713,290 @@ Query: {container_name=~"cdb_.*"} |= "error" or "fatal" or "exception"
 
 ---
 
+## E2E Regression Shield (CI & Local)
+
+**Purpose**: Automated protection against regressions in Paper Trading flow (Order → Execution → order_results).
+
+**Coverage**: 4 test cases validating Pub/Sub flow, schema contracts, stream persistence, and subscriber health.
+
+**Status**: ✅ Active on every PR (`.github/workflows/e2e-tests.yml`)
+
+---
+
+### Running E2E Tests Locally
+
+**Prerequisites**:
+- Stack running: `.\infrastructure\scripts\stack_up.ps1 -Logging`
+- Redis accessible: `docker exec cdb_redis redis-cli ping`
+- Core services healthy: `docker ps` shows 9+ containers running
+
+**Run Tests**:
+```powershell
+# From repository root
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py -v --no-cov -rs
+```
+
+**Expected Output**:
+```
+test_order_to_execution_flow PASSED        [25%]
+test_order_results_schema PASSED           [50%]
+test_stream_persistence PASSED             [75%]
+test_subscriber_count PASSED               [100%]
+
+4 passed in ~15s
+```
+
+**Environment Variables**:
+- `E2E_RUN=1` - **Required** to enable E2E tests (safety gate)
+- `REDIS_PASSWORD` - Optional, defaults to `claire_redis_secret_2024`
+
+---
+
+### CI Trigger Rules
+
+**Workflow**: `.github/workflows/e2e-tests.yml`
+
+**Triggers on PR changes to**:
+- `services/**` (any service code changes)
+- `tests/e2e/**` (test changes)
+- `infrastructure/**` (compose files, configs, database schema)
+- `.github/workflows/e2e-tests.yml` (workflow itself)
+
+**Manual Trigger**:
+```
+GitHub Actions → E2E Tests - Paper Trading → Run workflow
+```
+
+**Timeout**: 15 minutes (entire workflow)
+
+**When Does It NOT Run**:
+- Changes to `docs/**` only
+- Changes to `scripts/**` (non-infrastructure)
+- Changes to `.md` files only
+
+---
+
+### CI Workflow Steps
+
+1. **Checkout** - Get PR code
+2. **Setup Python 3.11** - Install pytest + redis-py
+3. **Start Stack** - `docker-compose -f base.yml -f dev.yml up -d`
+4. **Health Checks** (60s timeout each):
+   - Redis: `redis-cli ping` returns `PONG`
+   - Postgres: `pg_isready` confirms accepting connections
+   - Core services: Wait 10s, then `docker compose ps`
+5. **Run E2E Tests** - `E2E_RUN=1 pytest tests/e2e/test_paper_trading_p0.py -v --no-cov -rs`
+6. **Capture Logs on Failure**:
+   - `docker compose ps` (service status)
+   - `docker compose logs --tail=300` (last 300 lines)
+7. **Upload Artifacts** - Logs saved for 7 days
+8. **Cleanup** - `docker-compose down -v` (always runs)
+
+---
+
+### Artifacts & Logs (CI Failures)
+
+**Where to Find**:
+1. Go to failed PR check
+2. Click "Details" on "E2E Tests - Paper Trading"
+3. Scroll to bottom → "Artifacts" section
+4. Download `e2e-failure-logs` (ZIP file)
+
+**Retention**: 7 days
+
+**What's Included**:
+- `docker compose ps` output (service health status)
+- Last 300 lines of logs from all services
+- Timestamp of failure
+
+**Logs Location (local)**:
+```powershell
+# If tests fail locally, check:
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml logs --tail=300
+
+# Specific service:
+docker logs cdb_execution --tail=100
+docker logs cdb_risk --tail=100
+```
+
+---
+
+### Troubleshooting Tree
+
+#### Test Failure: "Could not connect to Redis"
+
+**Diagnostic Commands**:
+```powershell
+# 1. Check Redis container running
+docker ps | Select-String "cdb_redis"
+
+# 2. Check Redis accepts connections
+docker exec cdb_redis redis-cli ping
+# Expected: PONG
+
+# 3. Check password (if AUTH error)
+docker exec cdb_redis redis-cli -a claire_redis_secret_2024 ping
+
+# 4. Check port mapping (if running tests from host)
+docker port cdb_redis
+# Expected: 6379/tcp -> 0.0.0.0:6379
+```
+
+**Fix**:
+- If container not running → check `docker logs cdb_redis`
+- If AUTH error → verify `REDIS_PASSWORD` env var
+- If port not mapped → use internal hostname `cdb_redis` instead of `localhost`
+
+---
+
+#### Test Failure: "No order_result received after 10 seconds"
+
+**Diagnostic Commands**:
+```powershell
+# 1. Check execution service is running and subscribed
+docker logs cdb_execution --tail=50 | Select-String "orders"
+# Expected: "Subscribed to channel: orders"
+
+# 2. Check if execution service is processing orders
+docker logs cdb_execution --tail=50 | Select-String "order"
+
+# 3. Check subscriber count on orders channel
+docker exec cdb_redis redis-cli PUBSUB NUMSUB orders
+# Expected: orders <count>  (count should be >= 1)
+
+# 4. Manually test order publishing
+docker exec cdb_redis redis-cli PUBLISH orders '{"order_id":"test-123","symbol":"BTC/USDT","side":"BUY","quantity":0.001}'
+# Expected: Returns number of subscribers (should be >= 1)
+```
+
+**Fix**:
+- If execution not subscribed → restart: `docker restart cdb_execution`
+- If execution crashed → check logs: `docker logs cdb_execution --tail=100`
+- If order_results not published → verify execution service publish logic (see #225)
+
+---
+
+#### Test Failure: "Expected at least 2 subscribers on order_results"
+
+**Diagnostic Commands**:
+```powershell
+# 1. Check current subscriber count
+docker exec cdb_redis redis-cli PUBSUB NUMSUB order_results
+# Expected: order_results 2 (or more)
+
+# 2. Check which services should subscribe
+# Expected subscribers: cdb_risk, cdb_db_writer (minimum)
+docker logs cdb_risk --tail=30 | Select-String "order_results"
+docker logs cdb_db_writer --tail=30 | Select-String "order_results"
+# Expected: "Subscribed to channel: order_results" or similar
+
+# 3. Check if services are running
+docker ps --format "table {{.Names}}\t{{.Status}}" | Select-String -Pattern "cdb_risk|cdb_db_writer"
+```
+
+**Fix**:
+- If subscriber count = 0 → all subscribers crashed or not started
+- If subscriber count = 1 → one service down (check which)
+- Restart missing subscriber: `docker restart cdb_risk` or `docker restart cdb_db_writer`
+
+---
+
+#### Test Failure: "Stream length did not increase"
+
+**Diagnostic Commands**:
+```powershell
+# 1. Check if stream.fills exists
+docker exec cdb_redis redis-cli EXISTS stream.fills
+# Expected: 1 (exists)
+
+# 2. Check stream length
+docker exec cdb_redis redis-cli XLEN stream.fills
+# Should be > 0 if any orders processed
+
+# 3. Read latest entries
+docker exec cdb_redis redis-cli XREVRANGE stream.fills + - COUNT 5
+
+# 4. Check execution service XADD logic
+docker logs cdb_execution --tail=50 | Select-String "stream"
+```
+
+**Fix**:
+- If stream doesn't exist → execution service not adding events (check logs)
+- If stream exists but not growing → execution service not processing orders
+- Verify `config.STREAM_ORDER_RESULTS` is set in execution service
+
+---
+
+#### Test Failure: "Timestamp must be Unix int, got str"
+
+**Root Cause**: Schema mismatch - execution service sending ISO string instead of Unix int.
+
+**Diagnostic Commands**:
+```powershell
+# 1. Manually subscribe and check payload format
+docker exec -it cdb_redis redis-cli
+> SUBSCRIBE order_results
+# Trigger an order, observe the JSON payload
+
+# 2. Check execution service to_dict() logic
+# File: services/execution/models.py
+# ExecutionResult.to_dict() should return timestamp as int, not string
+```
+
+**Fix**:
+- Update `ExecutionResult.to_dict()` to send Unix timestamp (int)
+- See Issue #225 for reference fix
+- DO NOT change receiver schema - sender must align
+
+---
+
+### Definition of Done (Phase 2 PRs)
+
+**All Phase 2 feature PRs must**:
+
+✅ **E2E Workflow Green** - All 4 tests pass in CI
+
+✅ **No E2E Skip** - Tests actually run (not skipped due to missing `E2E_RUN=1`)
+
+✅ **Logs Reviewed on Fail** - If tests fail, PR author must:
+   - Download artifacts from CI
+   - Check service logs for root cause
+   - Fix issue before merge (no "merge anyway" exceptions)
+
+**Verification Command**:
+```powershell
+# Before creating PR, run locally:
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
+
+# All 4 tests must pass
+```
+
+---
+
+### Future Enhancements
+
+**Not Implemented (Optional)**:
+- ❌ Nightly regression runs (PR-only sufficient for now)
+- ❌ Error case coverage (rejected orders, timeouts) - separate issue
+- ❌ Performance benchmarks (latency tracking) - Phase 3
+
+**When to Add Nightly**:
+- If PR-only misses intermittent failures
+- If external dependency instability (Docker registry, etc.)
+- If team requests scheduled confidence checks
+
+**How to Add Nightly**:
+```yaml
+# Add to .github/workflows/e2e-tests.yml trigger section:
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+```
+
+---
+
 ## Contact & Escalation
 
 ### Self-Service Tools
