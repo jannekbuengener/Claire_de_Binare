@@ -296,9 +296,10 @@ class RiskManager:
         
         # #226E: Deterministic reset - check cooldown based on event timestamp
         if risk_state.circuit_breaker_active:
-            # Get current timestamp from most recent event (use time.time() as fallback)
+            # Use last event timestamp for deterministic cooldown check
+            # Fallback to time.time() if no events processed yet
             import time
-            current_ts = int(time.time())
+            current_ts = risk_state.last_event_timestamp if risk_state.last_event_timestamp > 0 else int(time.time())
             elapsed = current_ts - risk_state.circuit_breaker_triggered_at
             
             if elapsed >= self.config.circuit_breaker_cooldown_seconds:
@@ -531,6 +532,8 @@ class RiskManager:
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
         stats["order_results_received"] += 1
+        # #226 Update last event timestamp for deterministic cooldown reset
+        risk_state.last_event_timestamp = result.timestamp
         stats["last_order_result"] = {
             "order_id": result.order_id,
             "status": result.status,

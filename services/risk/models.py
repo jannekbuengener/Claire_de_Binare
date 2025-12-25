@@ -185,6 +185,7 @@ class RiskState:
     # Circuit Breaker State (#230)
     circuit_breaker_triggered_at: int = 0
     circuit_breaker_reason: str = ""
+    last_event_timestamp: int = 0  # For deterministic cooldown reset (#226)
     failure_history: list[dict] = field(default_factory=list)
     consecutive_failures: int = 0
     shutdown_strategy_ids: list[str] = field(default_factory=list)
@@ -338,6 +339,7 @@ class RiskState:
             "max_drawdown_pct": self.max_drawdown_pct,
             "circuit_breaker_triggered_at": self.circuit_breaker_triggered_at,
             "circuit_breaker_reason": self.circuit_breaker_reason,
+            "last_event_timestamp": self.last_event_timestamp,
             "failure_history": list(self.failure_history),
             "consecutive_failures": self.consecutive_failures,
             "shutdown_strategy_ids": list(self.shutdown_strategy_ids),
@@ -372,6 +374,7 @@ class RiskState:
         # Circuit breaker state
         self.circuit_breaker_triggered_at = int(snapshot.get("circuit_breaker_triggered_at", 0))
         self.circuit_breaker_reason = str(snapshot.get("circuit_breaker_reason", ""))
+        self.last_event_timestamp = int(snapshot.get("last_event_timestamp", 0))
         self.consecutive_failures = int(snapshot.get("consecutive_failures", 0))
 
         # List fields (defensive conversion)

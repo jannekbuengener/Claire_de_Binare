@@ -442,6 +442,16 @@ def test_drawdown_guard_blocks_signal(redis_client, unique_order_id):
     3. Publish signal to 'signals' channel
     4. Assert: No order published to 'orders' channel (blocked by drawdown guard)
     """
+    # Step 0: Inject allocation for test strategy to bypass allocation check
+    allocation_event = {
+        "strategy_id": "test-strat",
+        "allocation_pct": 0.5,
+        "reason": "E2E test allocation",
+        "timestamp": int(time.time())
+    }
+    redis_client.xadd("stream.allocation_decisions", allocation_event)
+    time.sleep(0.3)  # Allow risk service to process allocation
+    
     # Step 1: Inject BUY order_result to establish position
     buy_timestamp = int(time.time())
     buy_result = {
@@ -540,7 +550,16 @@ def test_circuit_breaker_trigger_and_reset(redis_client, unique_order_id):
     3. Inject order_result with timestamp beyond cooldown → Assert breaker resets
     4. Publish signal → Assert allowed (if CIRCUIT_BREAKER_ENABLED=true)
     """
+    # Step 0: Inject allocation for test strategy to bypass allocation check
     base_timestamp = int(time.time())
+    allocation_event = {
+        "strategy_id": "test-strat",
+        "allocation_pct": 0.5,
+        "reason": "E2E test allocation",
+        "timestamp": base_timestamp
+    }
+    redis_client.xadd("stream.allocation_decisions", allocation_event)
+    time.sleep(0.3)  # Allow risk service to process allocation
 
     # Step 1: Inject consecutive failures to trigger circuit breaker
     for i in range(3):  # Default MAX_CONSECUTIVE_FAILURES = 3
