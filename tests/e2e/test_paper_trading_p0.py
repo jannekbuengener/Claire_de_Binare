@@ -300,6 +300,131 @@ def test_subscriber_count(redis_client):
     assert subscriber_count >= 2, f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
 
 
+def test_replay_determinism(redis_client, unique_order_id, tmp_path):
+    """
+    Test: Deterministic replay produces identical output
+
+    **Validates:**
+    - Same stream entries → same replay output (hash match)
+    - Replay processes events in deterministic order
+    - Output is stable across multiple runs
+
+    **Purpose:** Ensures replay is truly deterministic (#258)
+
+    **Method:**
+    1. Inject test order to ensure stream has data
+    2. Capture stream state (XLEN)
+    3. Run replay twice with same parameters
+    4. Compare SHA256 hashes of output files
+    5. Assert hashes are identical
+    """
+    import hashlib
+    import subprocess
+    import sys
+
+    # Inject test order to ensure stream has data
+    order_payload = {
+        "order_id": unique_order_id,
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 0.001
+    }
+    redis_client.publish("orders", json.dumps(order_payload))
+
+    # Wait for execution and stream persistence
+    time.sleep(3)
+
+    # Verify stream has data
+    stream_name = "stream.fills"
+    try:
+        stream_length = redis_client.xlen(stream_name)
+    except redis.ResponseError:
+        pytest.fail(f"Stream '{stream_name}' does not exist")
+
+    assert stream_length > 0, f"Stream is empty (length={stream_length})"
+
+    # Get stream ID range to replay
+    entries = redis_client.xrevrange(stream_name, count=min(10, stream_length))
+    assert len(entries) > 0, "Could not read stream entries"
+
+    # Use first and last entry IDs as range
+    from_id = entries[-1][0]  # Oldest in our sample
+    to_id = entries[0][0]     # Newest in our sample
+    count = len(entries)
+
+    # Prepare output files
+    replay_run1 = tmp_path / "replay_run1.jsonl"
+    replay_run2 = tmp_path / "replay_run2.jsonl"
+
+    # Run replay twice with identical parameters
+    replay_cmd = [
+        sys.executable, "-m", "tools.replay.replay",
+        "--from-id", from_id,
+        "--to-id", to_id,
+        "--count", str(count),
+        "--out", str(replay_run1)
+    ]
+
+    # First run
+    result1 = subprocess.run(
+        replay_cmd,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "CDB_REPLAY": "1"}
+    )
+    assert result1.returncode == 0, f"Replay run 1 failed: {result1.stderr}"
+
+    # Second run (change output file only)
+    replay_cmd[-1] = str(replay_run2)
+    result2 = subprocess.run(
+        replay_cmd,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "CDB_REPLAY": "1"}
+    )
+    assert result2.returncode == 0, f"Replay run 2 failed: {result2.stderr}"
+
+    # Verify both output files exist
+    assert replay_run1.exists(), "Replay run 1 output file not created"
+    assert replay_run2.exists(), "Replay run 2 output file not created"
+
+    # Calculate SHA256 hashes
+    def calculate_hash(file_path):
+        sha256 = hashlib.sha256()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                sha256.update(chunk)
+        return sha256.hexdigest()
+
+    hash1 = calculate_hash(replay_run1)
+    hash2 = calculate_hash(replay_run2)
+
+    # Determinism assertion: hashes must match
+    assert hash1 == hash2, (
+        f"Replay output is NOT deterministic!\n"
+        f"Run 1 hash: {hash1}\n"
+        f"Run 2 hash: {hash2}\n"
+        f"Files: {replay_run1}, {replay_run2}\n"
+        f"Range: {from_id} → {to_id} (count={count})"
+    )
+
+    # Additional validation: verify output is not empty
+    with open(replay_run1, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+        assert len(lines) > 0, "Replay output is empty"
+        assert len(lines) == count, f"Expected {count} lines, got {len(lines)}"
+
+        # Verify each line is valid JSON
+        for i, line in enumerate(lines):
+            try:
+                event = json.loads(line)
+                assert "stream_id" in event, f"Line {i+1} missing stream_id"
+                assert "timestamp" in event, f"Line {i+1} missing timestamp"
+                assert "order_id" in event, f"Line {i+1} missing order_id"
+            except json.JSONDecodeError as e:
+                pytest.fail(f"Line {i+1} is not valid JSON: {e}")
+
+
 if __name__ == "__main__":
     # Allow running tests directly with: python -m pytest tests/e2e/test_paper_trading_p0.py -v
     pytest.main([__file__, "-v", "-s"])
