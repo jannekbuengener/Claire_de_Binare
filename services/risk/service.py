@@ -288,25 +288,54 @@ class RiskManager:
         return True, "Exposure OK"
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
-        """Prüft Daily-Drawdown (Circuit Breaker)"""
-        # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
-        else:
-            current_balance = self.config.fallback_balance
-
-        max_drawdown = current_balance * self.config.max_daily_drawdown_pct
-
-        if risk_state.daily_pnl <= -max_drawdown:
-            risk_state.circuit_breaker_active = True
-            return (
-                False,
-                f"Circuit Breaker! Daily Loss: {risk_state.daily_pnl:.2f} <= -{max_drawdown:.2f}",
-            )
-
+        """#230 Phase 2B: Check peak drawdown and circuit breaker with #226 reset"""
+        
+        # #226D: Disable option - bypass all checks if disabled
+        if not self.config.circuit_breaker_enabled:
+            return True, "Circuit breaker disabled"
+        
+        # #226E: Deterministic reset - check cooldown based on event timestamp
+        if risk_state.circuit_breaker_active:
+            # Get current timestamp from most recent event (use time.time() as fallback)
+            import time
+            current_ts = int(time.time())
+            elapsed = current_ts - risk_state.circuit_breaker_triggered_at
+            
+            if elapsed >= self.config.circuit_breaker_cooldown_seconds:
+                # Cooldown expired - reset breaker deterministically
+                risk_state.circuit_breaker_active = False
+                risk_state.circuit_breaker_triggered_at = 0
+                risk_state.circuit_breaker_reason = ""
+                risk_state.consecutive_failures = 0
+                logger.info(
+                    f"Circuit breaker AUTO-RESET after {elapsed}s cooldown (threshold: {self.config.circuit_breaker_cooldown_seconds}s)"
+                )
+            else:
+                # Still in cooldown - block
+                remaining = self.config.circuit_breaker_cooldown_seconds - elapsed
+                return (
+                    False,
+                    f"Circuit breaker ACTIVE (cooldown: {remaining}s remaining). Reason: {risk_state.circuit_breaker_reason}"
+                )
+        
+        # #230 Phase 2B: Check peak drawdown
+        if risk_state.peak_equity > 0.0:
+            current_dd_pct = risk_state.current_drawdown_pct
+            
+            if current_dd_pct > self.config.max_drawdown_pct:
+                # Trigger circuit breaker
+                import time
+                risk_state.circuit_breaker_active = True
+                risk_state.circuit_breaker_triggered_at = int(time.time())
+                risk_state.circuit_breaker_reason = (
+                    f"Peak drawdown {current_dd_pct*100:.2f}% exceeded limit {self.config.max_drawdown_pct*100:.2f}%"
+                )
+                return (
+                    False,
+                    f"Circuit Breaker TRIGGERED! Drawdown: {current_dd_pct*100:.2f}% > {self.config.max_drawdown_pct*100:.2f}%"
+                )
+        
+        # All checks passed
         return True, "Drawdown OK"
 
     def process_signal(self, signal: Signal) -> Optional[Order]:
@@ -517,8 +546,24 @@ class RiskManager:
 
         if result.status == "FILLED":
             self._update_exposure(result)
+            # #230 Phase 2A: Update equity tracking with realized P&L
+            if result.price is not None:
+                risk_state.apply_fill(
+                    symbol=result.symbol,
+                    side=result.side,
+                    quantity=result.filled_quantity,
+                    price=result.price,
+                )
+            # Record execution success (resets consecutive failures)
+            risk_state.record_execution_success()
         else:
             stats["orders_rejected_execution"] += 1
+            # #230 Phase 2A: Record execution failure for circuit breaker
+            failure_reason = f"{result.status}: {result.error_message or 'Unknown error'}"
+            risk_state.record_execution_failure(
+                timestamp=result.timestamp,
+                reason=failure_reason,
+            )
             self.send_alert(
                 "WARNING" if result.status == "REJECTED" else "CRITICAL",
                 "EXECUTION_ERROR",

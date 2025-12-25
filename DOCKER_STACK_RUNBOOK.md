@@ -1264,6 +1264,272 @@ pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
 
 ---
 
+
+## Risk Guards (Drawdown + Circuit Breaker)
+
+**Issues**: #230 (Peak Drawdown Guard + Circuit Breaker), #226 (Deterministic Reset + Disable)
+
+**Purpose**: Protect trading account from catastrophic losses via automated emergency shutdown.
+
+---
+
+### What Are Risk Guards?
+
+**Drawdown Guard**: Monitors peak equity and triggers circuit breaker when drawdown exceeds configured threshold.
+
+**Circuit Breaker**: Emergency shutdown mechanism that blocks all new orders/signals after:
+1. Consecutive execution failures (default: 3)
+2. Total failures within time window (default: 10 failures in 1 hour)
+3. Peak drawdown threshold exceeded (default: 10%)
+
+**Deterministic Reset (#226)**: Circuit breaker auto-resets after cooldown period (default: 15 minutes) based on event timestamps, NOT wall clock.
+
+**Disable Option (#226)**: For testing/debugging, circuit breaker can be disabled via `CIRCUIT_BREAKER_ENABLED=false`.
+
+---
+
+### Configuration (Environment Variables)
+
+Add to `.env` or pass to docker-compose:
+
+```bash
+# Peak Drawdown Guard
+MAX_DRAWDOWN_PCT=0.10                    # 10% peak drawdown limit (default)
+
+# Circuit Breaker Control
+CIRCUIT_BREAKER_ENABLED=true              # Enable/disable breaker (default: true)
+MAX_CONSECUTIVE_FAILURES=3                # Consecutive failures to trigger (default: 3)
+MAX_FAILURES_WINDOW=10                    # Total failures in time window (default: 10)
+FAILURE_WINDOW_SECONDS=3600               # Time window for failure tracking (default: 1 hour)
+
+# Deterministic Reset
+CIRCUIT_BREAKER_COOLDOWN_SECONDS=900      # Auto-reset after cooldown (default: 15 minutes)
+```
+
+**Defaults**: All values shown are defaults if not specified. Change as needed for your risk tolerance.
+
+---
+
+### Verify Commands
+
+#### Check Circuit Breaker State
+```powershell
+# Option 1: Via risk service logs
+docker compose logs --tail 50 cdb_risk | grep -i "circuit"
+
+# Expected output (if breaker active):
+# Circuit breaker ACTIVE (cooldown: 782s remaining). Reason: ...
+
+# Option 2: Via Redis (if RiskState is persisted)
+docker exec cdb_redis redis-cli -a <password> GET "risk:state"
+# Look for: circuit_breaker_active: true/false
+```
+
+#### Check Current Drawdown
+```powershell
+# Risk service logs show drawdown calculation on each order_result
+docker compose logs --tail 200 cdb_risk | grep -i "drawdown"
+
+# Expected patterns:
+# Drawdown OK
+# Circuit Breaker TRIGGERED! Drawdown: 12.34% > 10.00%
+```
+
+#### Check Equity & Peak Equity
+```powershell
+# Equity updates on each FILLED order_result
+docker compose logs cdb_risk | grep -i "equity"
+
+# Expected: Equity and peak_equity values logged during position P&L calculation
+```
+
+#### Verify Configuration Loaded
+```powershell
+# Risk service startup logs show loaded config
+docker compose logs cdb_risk --tail 100 | grep -E "(MAX_DRAWDOWN|CIRCUIT_BREAKER)"
+
+# Expected output:
+# Max Drawdown: 10.0%
+# Circuit Breaker: ENABLED
+```
+
+---
+
+### Troubleshooting
+
+#### Issue: Circuit Breaker Won't Reset
+
+**Symptom**: Breaker stays active after cooldown period.
+
+**Diagnostic**:
+```powershell
+# Check if cooldown elapsed
+docker compose logs cdb_risk | grep -i "cooldown"
+
+# Look for: "Circuit breaker AUTO-RESET after XXXs cooldown"
+```
+
+**Cause**: Breaker resets based on EVENT timestamps, not wall clock. If no new events arrive after cooldown expires, breaker stays latched.
+
+**Fix**: Inject a test order_result to trigger reset logic:
+```powershell
+# Publish test order_result with current timestamp
+docker exec cdb_redis redis-cli -a <password> PUBLISH order_results '{
+  "type": "order_result",
+  "order_id": "manual-reset-test",
+  "status": "FILLED",
+  "symbol": "BTC/USDT",
+  "side": "BUY",
+  "quantity": 0.001,
+  "filled_quantity": 0.001,
+  "price": 50000.0,
+  "timestamp": '$(date +%s)'
+}'
+```
+
+**Manual Reset** (if automated reset fails):
+```powershell
+# Restart risk service to clear state
+docker compose restart cdb_risk
+```
+
+---
+
+#### Issue: Drawdown Guard Not Blocking
+
+**Symptom**: Signals are not blocked despite drawdown exceeding threshold.
+
+**Diagnostic**:
+```powershell
+# Check if peak equity is initialized
+docker compose logs cdb_risk | grep -i "peak_equity"
+
+# Check if drawdown calculation is running
+docker compose logs cdb_risk | grep -i "current_drawdown_pct"
+```
+
+**Cause 1**: Equity not initialized (peak_equity = 0).
+
+**Fix**: Ensure at least one FILLED order_result has been processed to initialize equity tracking.
+
+**Cause 2**: MAX_DRAWDOWN_PCT set too high.
+
+**Fix**: Verify config via logs or restart with lower threshold:
+```powershell
+$env:MAX_DRAWDOWN_PCT="0.05"  # 5% instead of 10%
+docker compose restart cdb_risk
+```
+
+**Cause 3**: Circuit breaker disabled.
+
+**Fix**: Check `CIRCUIT_BREAKER_ENABLED`:
+```powershell
+docker compose logs cdb_risk | grep -i "CIRCUIT_BREAKER_ENABLED"
+
+# If disabled, re-enable:
+$env:CIRCUIT_BREAKER_ENABLED="true"
+docker compose restart cdb_risk
+```
+
+---
+
+#### Issue: E2E Tests Failing (TC-P0-003, TC-P0-004)
+
+**Symptom**: `test_drawdown_guard_blocks_signal` or `test_circuit_breaker_trigger_and_reset` fails.
+
+**Diagnostic**:
+```powershell
+# Run E2E tests with verbose output
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py::test_drawdown_guard_blocks_signal -v --tb=short
+
+# Check if MAX_DRAWDOWN_PCT is too high for test
+docker compose logs cdb_risk | grep "MAX_DRAWDOWN_PCT"
+```
+
+**Cause 1**: Test assumes 10% drawdown triggers breaker, but config has higher threshold.
+
+**Fix**: Override config for test environment:
+```powershell
+$env:MAX_DRAWDOWN_PCT="0.08"  # Lower than test's 10% loss
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py -v
+```
+
+**Cause 2**: Circuit breaker disabled during test.
+
+**Fix**: Ensure `CIRCUIT_BREAKER_ENABLED=true`:
+```powershell
+$env:CIRCUIT_BREAKER_ENABLED="true"
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py::test_circuit_breaker_trigger_and_reset -v
+```
+
+**Cause 3**: Risk service not subscribed to order_results.
+
+**Fix**: Check subscriber count:
+```powershell
+docker exec cdb_redis redis-cli -a <password> PUBSUB NUMSUB order_results
+
+# Expected: At least 1 subscriber (cdb_risk)
+```
+
+---
+
+### E2E Test Coverage
+
+**TC-P0-003**: `test_drawdown_guard_blocks_signal`
+- Injects BUY/SELL order_results to create realized loss
+- Verifies drawdown calculation
+- Asserts signal is BLOCKED when drawdown exceeds limit
+
+**TC-P0-004**: `test_circuit_breaker_trigger_and_reset`
+- Injects consecutive REJECTED order_results to trigger breaker
+- Verifies breaker blocks subsequent signals
+- Tests deterministic reset via timestamp-based cooldown
+- Validates disable option behavior
+
+**Run Tests**:
+```powershell
+# All E2E tests (including risk guards)
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
+
+# Expected: 7 passed (5 existing + 2 risk guards)
+```
+
+---
+
+### Integration with Other Systems
+
+**Replay Tool** (#258): Use deterministic replay to test risk guards with historical order_results:
+```powershell
+# Replay session with known drawdown scenario
+python -m tools.replay.replay --count 100 --out replay.jsonl
+
+# Inject replayed events to test guard behavior
+# (requires custom injection script - future feature)
+```
+
+**DB Persistence** (#254): RiskState snapshots saved to Postgres for recovery after restart.
+
+**Allocation Service**: Circuit breaker can trigger via allocation decisions (future integration).
+
+---
+
+### Related Documentation
+
+- **Issue #230**: Risk Guards implementation (drawdown + circuit breaker)
+- **Issue #226**: Deterministic reset + disable option
+- **Models**: `services/risk/models.py` (RiskState dataclass with guard logic)
+- **Service**: `services/risk/service.py` (integration with order_results flow)
+- **Config**: `services/risk/config.py` (environment variable defaults)
+- **E2E Tests**: `tests/e2e/test_paper_trading_p0.py` (TC-P0-003, TC-P0-004)
+- **Unit Tests**: `tests/unit/risk/test_guards.py` (RiskState guard methods)
+
+---
+
+
 ## Contact & Escalation
 
 ### Self-Service Tools

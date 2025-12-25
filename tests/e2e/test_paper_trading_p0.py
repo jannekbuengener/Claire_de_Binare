@@ -425,6 +425,239 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
                 pytest.fail(f"Line {i+1} is not valid JSON: {e}")
 
 
+
+
+def test_drawdown_guard_blocks_signal(redis_client, unique_order_id):
+    """
+    TC-P0-003: Drawdown Guard E2E Test
+
+    **Validates:**
+    - Equity tracking updates correctly from order_results
+    - Drawdown calculation triggers circuit breaker
+    - Risk service blocks new signals when drawdown exceeded
+
+    **Flow:**
+    1. Initialize equity via direct order_result injection (BUY at 100)
+    2. Inject SELL order_result at 90 → creates 10% realized loss
+    3. Publish signal to 'signals' channel
+    4. Assert: No order published to 'orders' channel (blocked by drawdown guard)
+    """
+    # Step 1: Inject BUY order_result to establish position
+    buy_timestamp = int(time.time())
+    buy_result = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-buy",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 100.0,
+        "timestamp": buy_timestamp,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot"
+    }
+
+    redis_client.publish("order_results", json.dumps(buy_result))
+    time.sleep(0.5)  # Allow risk service to process
+
+    # Step 2: Inject SELL order_result at loss to trigger drawdown
+    sell_timestamp = buy_timestamp + 10
+    sell_result = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-sell",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "SELL",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 90.0,  # 10% loss → if MAX_DRAWDOWN_PCT=0.10, this triggers breaker
+        "timestamp": sell_timestamp,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot"
+    }
+
+    redis_client.publish("order_results", json.dumps(sell_result))
+    time.sleep(1.0)  # Allow risk service to process and trigger circuit breaker
+
+    # Step 3: Subscribe to 'orders' channel to detect if signal gets through
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("orders")
+
+    # Clear pending messages
+    for _ in range(3):
+        pubsub.get_message(timeout=0.1)
+
+    # Step 4: Publish test signal
+    signal_payload = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "direction": "BUY",
+        "strength": 0.8,
+        "timestamp": sell_timestamp + 5
+    }
+
+    redis_client.publish("signals", json.dumps(signal_payload))
+
+    # Step 5: Wait and verify NO order published (blocked by drawdown guard)
+    order_message = None
+    for _ in range(10):  # 5 seconds timeout
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message = message
+            break
+        time.sleep(0.5)
+
+    # Cleanup
+    pubsub.unsubscribe("orders")
+    pubsub.close()
+
+    # Assertion: Signal should be BLOCKED (no order published)
+    # NOTE: This test may fail if MAX_DRAWDOWN_PCT is set too high (>0.10)
+    # For deterministic testing, consider injecting config via env before test
+    assert order_message is None, (
+        f"Expected signal to be BLOCKED by drawdown guard, but order was published: {order_message}"
+    )
+
+
+def test_circuit_breaker_trigger_and_reset(redis_client, unique_order_id):
+    """
+    TC-P0-004: Circuit Breaker Trigger and Deterministic Reset (#230 + #226)
+
+    **Validates:**
+    - Circuit breaker triggers after consecutive failures
+    - Risk service blocks new signals when breaker active
+    - Deterministic reset via cooldown (#226E)
+    - Disable option (#226D)
+
+    **Flow:**
+    1. Inject 3 consecutive REJECTED order_results (trigger breaker)
+    2. Publish signal → Assert blocked
+    3. Inject order_result with timestamp beyond cooldown → Assert breaker resets
+    4. Publish signal → Assert allowed (if CIRCUIT_BREAKER_ENABLED=true)
+    """
+    base_timestamp = int(time.time())
+
+    # Step 1: Inject consecutive failures to trigger circuit breaker
+    for i in range(3):  # Default MAX_CONSECUTIVE_FAILURES = 3
+        failure_result = {
+            "type": "order_result",
+            "order_id": f"{unique_order_id}-fail-{i}",
+            "status": "REJECTED",
+            "symbol": "BTC/USDT",
+            "side": "BUY",
+            "quantity": 0.001,
+            "filled_quantity": 0.0,
+            "price": None,
+            "timestamp": base_timestamp + i,
+            "strategy_id": "test-strat",
+            "bot_id": "test-bot",
+            "error_message": f"Test failure {i+1}"
+        }
+        redis_client.publish("order_results", json.dumps(failure_result))
+        time.sleep(0.3)
+
+    time.sleep(1.0)  # Allow risk service to process and trigger breaker
+
+    # Step 2: Subscribe to orders and publish signal (should be blocked)
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("orders")
+
+    for _ in range(3):
+        pubsub.get_message(timeout=0.1)
+
+    signal_payload = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal-1",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "direction": "BUY",
+        "strength": 0.7,
+        "timestamp": base_timestamp + 10
+    }
+
+    redis_client.publish("signals", json.dumps(signal_payload))
+
+    # Wait and verify BLOCKED
+    order_message_1 = None
+    for _ in range(10):
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message_1 = message
+            break
+        time.sleep(0.5)
+
+    # Assertion: Signal should be BLOCKED
+    assert order_message_1 is None, (
+        f"Expected signal to be BLOCKED by circuit breaker, but order was published: {order_message_1}"
+    )
+
+    # Step 3: Inject SUCCESS order_result with timestamp beyond cooldown to trigger reset
+    # Default CIRCUIT_BREAKER_COOLDOWN_SECONDS = 900 (15 minutes)
+    # Inject event with timestamp = triggered_at + 901 seconds
+    reset_timestamp = base_timestamp + 1000  # Well beyond cooldown
+
+    success_result = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-success",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 0.001,
+        "filled_quantity": 0.001,
+        "price": 50000.0,
+        "timestamp": reset_timestamp,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot"
+    }
+
+    redis_client.publish("order_results", json.dumps(success_result))
+    time.sleep(1.0)  # Allow processing
+
+    # Step 4: Publish another signal (should be ALLOWED after reset)
+    signal_payload_2 = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal-2",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "SELL",
+        "direction": "SELL",
+        "strength": 0.6,
+        "timestamp": reset_timestamp + 5
+    }
+
+    redis_client.publish("signals", json.dumps(signal_payload_2))
+
+    # Wait for order (should be PUBLISHED after reset)
+    order_message_2 = None
+    for _ in range(10):
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message_2 = message
+            break
+        time.sleep(0.5)
+
+    # Cleanup
+    pubsub.unsubscribe("orders")
+    pubsub.close()
+
+    # Assertion: Signal should be ALLOWED after cooldown reset
+    # NOTE: This assumes CIRCUIT_BREAKER_ENABLED=true (default)
+    # If breaker is disabled via E2E_DISABLE_CIRCUIT_BREAKER, this test becomes trivial
+    if os.getenv("CIRCUIT_BREAKER_ENABLED", "true").lower() != "false":
+        assert order_message_2 is not None, (
+            f"Expected signal to be ALLOWED after cooldown reset, but no order was published"
+        )
+
+
+
 if __name__ == "__main__":
     # Allow running tests directly with: python -m pytest tests/e2e/test_paper_trading_p0.py -v
     pytest.main([__file__, "-v", "-s"])
