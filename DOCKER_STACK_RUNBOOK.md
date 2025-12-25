@@ -997,6 +997,273 @@ on:
 
 ---
 
+## Deterministic Replay (#258)
+
+**Purpose**: Reproducible replay of paper-trading sessions from `stream.fills` for debugging and risk testing.
+
+**Status**: ✅ Active (MVP complete)
+
+**Use Cases**:
+- Bug reproduction (replay exact sequence that caused error)
+- Risk metric testing (deterministic drawdown/circuit breaker validation)
+- Regression testing (verify behavior doesn't change)
+
+---
+
+### Running Replay Locally
+
+**Prerequisites**:
+- Stack running with `stream.fills` populated
+- Redis accessible
+- Python environment with dependencies
+
+**Basic Usage**:
+```powershell
+# Replay last 50 events
+python -m tools.replay.replay --count 50 --out artifacts/replay.jsonl
+
+# Replay specific ID range
+python -m tools.replay.replay `
+  --from-id "1734962388000-0" `
+  --to-id "1734962390000-0" `
+  --out artifacts/replay.jsonl
+
+# With hash verification (determinism proof)
+python -m tools.replay.replay --count 50 --out replay.jsonl --verify-hash
+```
+
+**Output**: JSONL file with one event per line (sorted keys for determinism)
+
+---
+
+### Determinism Verification
+
+**Proof Method**: Run replay twice with identical parameters, compare SHA256 hashes.
+
+**Commands**:
+```powershell
+# Run 1
+python -m tools.replay.replay --count 50 --out artifacts/run1.jsonl --verify-hash
+
+# Run 2 (same parameters)
+python -m tools.replay.replay --count 50 --out artifacts/run2.jsonl --verify-hash
+
+# Compare hashes (PowerShell)
+(Get-FileHash artifacts\run1.jsonl).Hash -eq (Get-FileHash artifacts\run2.jsonl).Hash
+# Expected: True (hashes match → deterministic)
+```
+
+**What Guarantees Determinism**:
+- Events read in Stream ID order (XRANGE lexicographic sort)
+- Sorted dict keys in JSONL output
+- No `datetime.now()` usage in replay path
+- Fixed input window (same from/to IDs for both runs)
+
+---
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `CDB_REPLAY` | `0` | Enable replay mode (safety gate, set to `1`) |
+| `CDB_REPLAY_COUNT` | `10` | Number of entries to replay |
+| `CDB_REPLAY_FROM_ID` | `-` | Start stream ID (oldest) |
+| `CDB_REPLAY_TO_ID` | `+` | End stream ID (newest) |
+| `CDB_REPLAY_SEED` | none | Random seed (optional, not used in MVP) |
+| `CDB_REPLAY_OUTPUT` | stdout | Output file path |
+| `REDIS_PASSWORD` | `claire_redis_secret_2024` | Redis password |
+
+**Example** (environment mode):
+```powershell
+$env:CDB_REPLAY="1"
+$env:CDB_REPLAY_COUNT="100"
+python -m tools.replay.replay
+```
+
+---
+
+### Replay Output Format
+
+**JSONL** (one event per line, sorted keys):
+```json
+{"filled_quantity":0.001,"order_id":"e2e-test-123","quantity":0.001,"side":"BUY","status":"FILLED","stream_id":"1734962388123-0","symbol":"BTC/USDT","timestamp":1734962388,"type":"order_result"}
+```
+
+**Required Fields**: `stream_id`, `type`, `order_id`, `status`, `symbol`, `side`, `quantity`, `filled_quantity`, `timestamp`
+
+**Optional Fields**: `price`, `strategy_id`, `bot_id`, `client_id`, `error_message`
+
+**Full Schema**: See `docs/contracts/REPLAY_CONTRACT.md`
+
+---
+
+### Troubleshooting
+
+#### Error: "Stream 'stream.fills' does not exist"
+
+**Diagnostic**:
+```powershell
+docker exec cdb_redis redis-cli EXISTS stream.fills
+# Expected: 1 (exists)
+```
+
+**Fix**:
+- If `0` → stream not created yet
+  - Trigger order execution: inject test order via `orders` channel
+  - Verify execution service is running: `docker logs cdb_execution --tail=50`
+- If stream should exist → check execution service config:
+  - `STREAM_ORDER_RESULTS` should be `stream.fills`
+
+---
+
+#### Error: "Could not connect to Redis"
+
+**Diagnostic**:
+```powershell
+# Check Redis container
+docker ps | Select-String "cdb_redis"
+
+# Test connection
+docker exec cdb_redis redis-cli ping
+# Expected: PONG
+```
+
+**Fix**:
+- If container not running → restart stack
+- If AUTH error → verify `REDIS_PASSWORD` env var
+- If using `localhost` → try `cdb_redis` instead (internal network)
+
+---
+
+#### Replay Output is Empty
+
+**Diagnostic**:
+```powershell
+# Check stream length
+docker exec cdb_redis redis-cli XLEN stream.fills
+# Expected: > 0
+
+# Check stream content
+docker exec cdb_redis redis-cli XREVRANGE stream.fills + - COUNT 3
+```
+
+**Possible Causes**:
+1. **Stream is empty** → no orders executed yet (inject test order)
+2. **ID range invalid** → verify `--from-id` and `--to-id` exist in stream
+3. **Count too small** → increase `--count` parameter
+
+---
+
+#### Hash Mismatch (Non-Deterministic Output)
+
+**This should NEVER happen** (indicates replay bug or env contamination).
+
+**Diagnostic Steps**:
+```powershell
+# 1. Verify input window is fixed
+# Check from_id/to_id are identical between runs
+
+# 2. Check for time-based contamination
+# Verify no datetime.now() in replay code path
+
+# 3. Check for randomness
+# Set CDB_REPLAY_SEED if random operations exist
+
+# 4. Compare outputs line-by-line
+diff artifacts\run1.jsonl artifacts\run2.jsonl
+```
+
+**If Hash Mismatch Persists**:
+- Check `tools/replay/replay.py` for non-deterministic code
+- Verify stream hasn't changed between runs (unlikely with fixed IDs)
+- Report bug to #258 with:
+  - from_id/to_id range
+  - Both output files
+  - Diff of first mismatch
+
+---
+
+### E2E Test Coverage
+
+**Test**: `test_replay_determinism` in `tests/e2e/test_paper_trading_p0.py`
+
+**What It Validates**:
+1. Injects test order → ensures stream has data
+2. Captures stream ID range (last 10 entries)
+3. Runs replay twice with **identical** parameters
+4. Calculates SHA256 hashes of both outputs
+5. **Asserts hashes are identical** (determinism proof)
+
+**Running Test**:
+```powershell
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py::test_replay_determinism -v --no-cov
+```
+
+**Expected Output**:
+```
+test_replay_determinism PASSED
+```
+
+**On Failure**:
+- Hash mismatch → outputs differ (determinism violated)
+- Error message shows:
+  - Both SHA256 hashes
+  - Stream ID range used
+  - Output file paths for manual inspection
+
+---
+
+### Integration with Risk Testing
+
+**Future Use Case** (not yet implemented):
+
+```powershell
+# 1. Capture historical session
+python -m tools.replay.replay --count 1000 --out session_001.jsonl
+
+# 2. Test risk rules against replay
+# (Risk service with replay mode - future implementation)
+python -m services.risk.replay --input session_001.jsonl --rules drawdown_30pct
+
+# 3. Verify circuit breaker triggers at correct point
+# Deterministic replay ensures same trigger point every time
+```
+
+**Blocks**: Risk-Metriken implementation (#258 follow-up)
+
+---
+
+### Definition of Done (Replay)
+
+For any code changes affecting replay:
+
+✅ **E2E Test Passes** - `test_replay_determinism` green in CI
+
+✅ **Hash Stability** - Manual verification shows identical hashes across 2+ runs
+
+✅ **Contract Compliance** - Output matches `docs/contracts/REPLAY_CONTRACT.md`
+
+✅ **No Regressions** - Existing E2E tests (order flow, schema, persistence) still pass
+
+**Verification Command** (before PR):
+```powershell
+# Full E2E suite including replay
+$env:E2E_RUN="1"
+pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
+# Expected: 5 passed (4 existing + 1 replay determinism)
+```
+
+---
+
+### Related Documentation
+
+- **Contract**: `docs/contracts/REPLAY_CONTRACT.md` (stream.fills schema)
+- **Implementation**: `tools/replay/replay.py` (runner code)
+- **Issue**: #258 (Deterministic Replay)
+
+---
+
 ## Contact & Escalation
 
 ### Self-Service Tools
