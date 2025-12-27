@@ -98,6 +98,6 @@ Claire_de_Binare_Docs/
 .cdb_local/
 .claude/
 scripts/
-AGENTS.md
+# AGENTS.md - Now tracked as pointer to Docs Hub canonical (was ignored pre-consolidation)
 .gemini/
 gha-creds-*.json
