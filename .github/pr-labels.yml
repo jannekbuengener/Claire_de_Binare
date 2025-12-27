@@ -59,3 +59,30 @@ size:
     M: "size:M"
     L: "size:L"
     XL: "size:XL"
+
+# Enforcement Configuration (Issue #144)
+# MVP Phase 1: Non-blocking checks (warnings only)
+# Phase 2: Enable blocking for validated rules
+enforcement:
+  enabled: true
+
+  # Governance enforcement
+  governance_blocking: false  # MVP: false, Phase 2: true
+  governance_override_command: "/governance-override"
+  governance_override_permissions: ["write", "admin"]
+
+  # Template enforcement
+  template_blocking: false  # MVP: false to avoid disruption
+  required_sections:
+    - "## Feature Overview"
+    - "## Technical Overview"
+    - "## Test Evidence"
+    - "## Code Quality"
+    - "## Deployment & Rollback"
+    - "## Documentation"
+    - "## Agent Approvals"
+
+  # Size enforcement
+  size_blocking: false  # MVP: false, Phase 2: true
+  xl_requires_justification: true
+  xl_justification_command: "/size-xl-justified"
