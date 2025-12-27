@@ -98,6 +98,7 @@ Claire_de_Binare_Docs/
 .cdb_local/
 .claude/
 scripts/
+!.github/scripts/
 AGENTS.md
 .gemini/
 gha-creds-*.json
