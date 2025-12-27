@@ -1,0 +1,88 @@
+version: 1
+
+area_labels:
+  - label: "area:ci"
+    paths: [".github/**", "ci/**", ".devcontainer/**"]
+  - label: "area:tests"
+    paths: ["tests/**"]
+  - label: "area:infra"
+    paths: ["docker/**", "infra/**", "compose*.yml", "compose*.yaml", "**/docker-compose*.yml"]
+  - label: "area:services"
+    paths: ["services/**"]
+  - label: "area:core"
+    paths: ["src/**", "cdb_core/**"]
+
+title_labels:
+  - label: "type:bug"
+    regex: "(?i)(\\bbug\\b|\\bfix\\b|hotfix|\\bdefect\\b|🐛)"
+  - label: "type:feature"
+    regex: "(?i)(\\bfeat\\b|\\bfeature\\b|enhancement|✨)"
+  - label: "priority:high"
+    regex: "(?i)(priority:\\s*high|p0|p1|critical)"
+  - label: "priority:medium"
+    regex: "(?i)(priority:\\s*medium|p2)"
+  - label: "agent:claude"
+    regex: "(?i)\\bclaude\\b"
+  - label: "agent:codex"
+    regex: "(?i)\\bcodex\\b"
+  - label: "agent:copilot"
+    regex: "(?i)\\bcopilot\\b"
+
+governance:
+  enabled: true
+  violation_label: "governance:review-required"
+  # Regeln sind bewusst pragmatisch fürs WORKING Repo:
+  # Root-Docs (*.md) sind i.d.R. Docs Hub, außer wenige Ausnahmen.
+  rules:
+    - name: "Root markdown docs in working repo"
+      match_paths: ["*.md"]
+      exclude_paths: ["README.md", "CHANGELOG.md", "LICENSE", ".github/**"]
+    - name: "Docs-Hub-only namespaces touched in working repo"
+      match_paths: ["knowledge/**", "governance/**", "agents/**"]
+
+review:
+  enabled: true
+  draft_label: "review:draft"
+  ready_label: "review:ready"
+
+size:
+  enabled: true
+  # file_count thresholds (inclusive upper bound)
+  thresholds:
+    XS: 1
+    S: 5
+    M: 15
+    L: 30
+  labels:
+    XS: "size:XS"
+    S: "size:S"
+    M: "size:M"
+    L: "size:L"
+    XL: "size:XL"
+
+# Enforcement Configuration (Issue #144)
+# MVP Phase 1: Non-blocking checks (warnings only)
+# Phase 2: Enable blocking for validated rules
+enforcement:
+  enabled: true
+
+  # Governance enforcement
+  governance_blocking: false  # MVP: false, Phase 2: true
+  governance_override_command: "/governance-override"
+  governance_override_permissions: ["write", "admin"]
+
+  # Template enforcement
+  template_blocking: false  # MVP: false to avoid disruption
+  required_sections:
+    - "## Feature Overview"
+    - "## Technical Overview"
+    - "## Test Evidence"
+    - "## Code Quality"
+    - "## Deployment & Rollback"
+    - "## Documentation"
+    - "## Agent Approvals"
+
+  # Size enforcement
+  size_blocking: false  # MVP: false, Phase 2: true
+  xl_requires_justification: true
+  xl_justification_command: "/size-xl-justified"

@@ -1,0 +1,61 @@
+name: PR Governance Check
+
+# Fork-safe workflow for blocking governance checks
+# Builds on Issue #145 (Smart PR Auto-Labeling)
+# Architecture: .github/ARCHITECTURE_ISSUE_144.md
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review]
+
+permissions:
+  contents: read          # Read repo files
+  pull-requests: write    # Post comments
+  checks: write           # Set check status
+  statuses: write         # Set commit status
+
+jobs:
+  governance-enforcement:
+    name: Governance Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout base repo (fork-safe)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml requests
+
+      - name: Run governance checks (fork-safe)
+        id: governance_check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_IS_DRAFT: ${{ github.event.pull_request.draft }}
+          EVENT_ACTION: ${{ github.event.action }}
+          CONFIG_PATH: .github/pr-labels.yml
+        run: |
+          python .github/scripts/pr_governance_check.py
+
+      - name: Report status
+        if: always()
+        run: |
+          if [ "${{ steps.governance_check.outcome }}" = "success" ]; then
+            echo "✅ All governance checks passed"
+          else
+            echo "⚠️ Governance checks had warnings (non-blocking in MVP)"
+          fi
