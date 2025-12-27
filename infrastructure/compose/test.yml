@@ -1,0 +1,103 @@
+# Claire de Binare - Test Overlay
+# Isolated test stack for E2E tests
+# Usage: docker compose -f base.yml -f test.yml up --abort-on-container-exit
+
+services:
+  # Override Redis with test-specific config
+  cdb_redis:
+    container_name: cdb_redis_test
+    volumes:
+      - redis_test_data:/data  # Isolated test volume
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    # Inherit healthcheck from base.yml
+
+  # Override Postgres with test-specific config
+  cdb_postgres:
+    container_name: cdb_postgres_test
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data  # Isolated test volume
+      - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
+    environment:
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Inherit healthcheck from base.yml
+
+  # Test Runner Service - Executes pytest in container
+  cdb_test_runner:
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.test
+    container_name: cdb_test_runner
+    env_file: .env
+    environment:
+      # Database connection (test stack)
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Redis connection (test stack)
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      PYTEST_CURRENT_TEST: "1"
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+    volumes:
+      # Mount source code (read-only)
+      - ../../core:/app/core:ro
+      - ../../services:/app/services:ro
+      - ../../tests:/app/tests:ro
+
+      # Mount test fixtures (read-only)
+      - ../../infrastructure:/app/infrastructure:ro
+
+      # Mount logs (writable)
+      - ../../logs:/app/logs
+
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+
+    networks:
+      - cdb_network
+
+    # Run E2E tests and exit
+    command: >
+      sh -c "
+        echo '============================================' &&
+        echo 'E2E Test Runner Starting...' &&
+        echo '============================================' &&
+        echo 'Waiting for services to be ready...' &&
+        sleep 5 &&
+        echo 'Running E2E tests...' &&
+        pytest -m e2e tests/ -v --tb=short --no-cov -p no:cacheprovider --maxfail=3 &&
+        echo '============================================' &&
+        echo 'E2E Tests Complete!' &&
+        echo '============================================'
+      "
+
+# Test-specific volumes (not shared with dev/prod)
+volumes:
+  redis_test_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+
+# Reuse network from base.yml
+networks:
+  cdb_network:
+    external: true
+    name: cdb_network
