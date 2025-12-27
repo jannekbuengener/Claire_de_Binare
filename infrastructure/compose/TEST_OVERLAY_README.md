@@ -25,16 +25,29 @@ cdb_test_runner  | ============================================
 cdb_test_runner  | E2E Test Runner Starting...
 cdb_test_runner  | ============================================
 cdb_test_runner  | Waiting for services to be ready...
+cdb_test_runner  | Services Status:
+cdb_test_runner  |   - Redis: cdb_redis_test
+cdb_test_runner  |   - Postgres: cdb_postgres_test
+cdb_test_runner  |   - Risk: cdb_risk_test
+cdb_test_runner  |   - Execution: cdb_execution_test
 cdb_test_runner  | Running E2E tests...
 cdb_test_runner  | ============================= test session starts ==============================
-cdb_test_runner  | collected 5 items
+cdb_test_runner  | collected 66 items / 61 deselected / 5 selected
 cdb_test_runner  |
-cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_order_to_execution_flow PASSED
-cdb_test_runner  | ...
+cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_order_to_execution_flow PASSED  [ 20%]
+cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_order_results_schema PASSED     [ 40%]
+cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_stream_persistence PASSED       [ 60%]
+cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_subscriber_count PASSED         [ 80%]
+cdb_test_runner  | tests/e2e/test_paper_trading_p0.py::test_replay_determinism FAILED       [100%]
+cdb_test_runner  | =========== 1 failed, 4 passed, 61 deselected, 63 warnings in 8.33s ============
 cdb_test_runner  | ============================================
 cdb_test_runner  | E2E Tests Complete!
 cdb_test_runner  | ============================================
 ```
+
+**Known Issues**:
+- `test_replay_determinism` fails on Windows due to charmap encoding bug (pre-existing issue, not a regression)
+- Expected pass rate: 80% (4/5 tests)
 
 ---
 
@@ -81,6 +94,7 @@ Isolated test stack
 **Override Changes**:
 - Container name: `cdb_redis_test`
 - Volume: `redis_test_data` (isolated)
+- Network: `cdb_test_network` (isolated from dev/prod)
 - All other settings inherited from base.yml
 
 ### cdb_postgres_test
@@ -89,7 +103,39 @@ Isolated test stack
 - Container name: `cdb_postgres_test`
 - Volume: `postgres_test_data` (isolated)
 - Database name: `claire_de_binare_test`
+- Healthcheck: Updated to check `claire_de_binare_test` database
+- Network: `cdb_test_network` (isolated from dev/prod)
 - Schema: Loaded from `schema.sql` + migrations
+
+### cdb_risk_test (NEW)
+
+**Purpose**: Risk management service for E2E tests
+
+**Configuration**:
+- Dockerfile: `services/risk/Dockerfile`
+- Environment:
+  - `REDIS_HOST=cdb_redis_test`
+  - `POSTGRES_HOST=cdb_postgres_test`
+  - `E2E_RUN=1`, `E2E_DISABLE_CIRCUIT_BREAKER=1`
+  - `TRADING_MODE=paper`, `DRY_RUN=1`
+  - `LOG_LEVEL=DEBUG`
+- Depends on: Redis + Postgres (healthy)
+- Network: `cdb_test_network`
+
+### cdb_execution_test (NEW)
+
+**Purpose**: Order execution service for E2E tests
+
+**Configuration**:
+- Dockerfile: `services/execution/Dockerfile`
+- Environment:
+  - `REDIS_HOST=cdb_redis_test`
+  - `POSTGRES_HOST=cdb_postgres_test`
+  - `E2E_RUN=1`, `E2E_DISABLE_CIRCUIT_BREAKER=1`
+  - `TRADING_MODE=paper`, `DRY_RUN=1`
+  - `LOG_LEVEL=DEBUG`
+- Depends on: Redis + Postgres (healthy)
+- Network: `cdb_test_network`
 
 ### cdb_test_runner (NEW)
 

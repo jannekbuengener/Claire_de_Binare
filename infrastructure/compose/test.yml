@@ -1,5 +1,5 @@
 # Claire de Binare - Test Overlay
-# Isolated test stack for E2E tests
+# Isolated E2E test stack with all services
 # Usage: docker compose -f base.yml -f test.yml up --abort-on-container-exit
 
 services:
@@ -11,6 +11,8 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     # Inherit healthcheck from base.yml
+    networks:
+      - cdb_test_network
 
   # Override Postgres with test-specific config
   cdb_postgres:
@@ -23,7 +25,102 @@ services:
       POSTGRES_DB: claire_de_binare_test
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    # Inherit healthcheck from base.yml
+    # Override healthcheck to use test database name
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claire_user} -d claire_de_binare_test"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_test_network
+
+  # Risk Service (Test Instance)
+  cdb_risk_test:
+    build:
+      context: ../..
+      dockerfile: services/risk/Dockerfile
+    container_name: cdb_risk_test
+    env_file: .env
+    environment:
+      # Point to test infrastructure
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      TRADING_MODE: paper
+      DRY_RUN: "1"
+      LOG_LEVEL: DEBUG
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_test_network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Execution Service (Test Instance)
+  cdb_execution_test:
+    build:
+      context: ../..
+      dockerfile: services/execution/Dockerfile
+    container_name: cdb_execution_test
+    env_file: .env
+    environment:
+      # Point to test infrastructure
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      TRADING_MODE: paper
+      DRY_RUN: "1"
+      LOG_LEVEL: DEBUG
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_test_network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   # Test Runner Service - Executes pytest in container
   cdb_test_runner:
@@ -70,9 +167,13 @@ services:
         condition: service_healthy
       cdb_postgres:
         condition: service_healthy
+      cdb_risk_test:
+        condition: service_healthy
+      cdb_execution_test:
+        condition: service_healthy
 
     networks:
-      - cdb_network
+      - cdb_test_network
 
     # Run E2E tests and exit
     command: >
@@ -81,7 +182,12 @@ services:
         echo 'E2E Test Runner Starting...' &&
         echo '============================================' &&
         echo 'Waiting for services to be ready...' &&
-        sleep 5 &&
+        sleep 10 &&
+        echo 'Services Status:' &&
+        echo '  - Redis: cdb_redis_test' &&
+        echo '  - Postgres: cdb_postgres_test' &&
+        echo '  - Risk: cdb_risk_test' &&
+        echo '  - Execution: cdb_execution_test' &&
         echo 'Running E2E tests...' &&
         pytest -m e2e tests/ -v --tb=short --no-cov -p no:cacheprovider --maxfail=3 &&
         echo '============================================' &&
@@ -96,8 +202,8 @@ volumes:
   postgres_test_data:
     driver: local
 
-# Reuse network from base.yml
+# Test-specific network (isolated from dev/prod)
 networks:
-  cdb_network:
-    external: true
-    name: cdb_network
+  cdb_test_network:
+    driver: bridge
+    name: cdb_test_network
