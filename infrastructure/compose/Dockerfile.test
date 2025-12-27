@@ -36,6 +36,13 @@ ENV LANG=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV PYTHONIOENCODING=utf-8
 
+# Create non-root user for test execution
+RUN useradd --create-home --uid 1000 testuser && \
+    chown -R testuser:testuser /app
+
+# Switch to non-root user
+USER testuser
+
 # Health check (test runner should exit after tests)
 HEALTHCHECK NONE
 
