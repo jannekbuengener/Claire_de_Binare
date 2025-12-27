@@ -1,0 +1,211 @@
+name: PR Quality Gates (Soft Mode)
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, labeled, unlabeled, ready_for_review]
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  quality-gates:
+    name: Quality Gate Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout base repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          # SECURITY: Only checkout base, never PR head with pull_request_target
+
+      - name: Extract PR Labels
+        id: labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get PR labels via GitHub API (fork-safe)
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          LABELS=$(gh pr view "$PR_NUMBER" --json labels --jq '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+          echo "labels=$LABELS" >> $GITHUB_OUTPUT
+          echo "Found labels: $LABELS"
+
+      - name: Gate 1 - Governance Check
+        id: governance
+        env:
+          LABELS: ${{ steps.labels.outputs.labels }}
+        run: |
+          echo "## 🔍 Governance Gate" >> $GITHUB_STEP_SUMMARY
+
+          if echo "$LABELS" | grep -q "governance:review-required"; then
+            echo "⚠️ **WARNING:** PR modifies governance-controlled files" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Files require Architecture Council review:" >> $GITHUB_STEP_SUMMARY
+            echo "- Root markdown docs (excluding README/CHANGELOG)" >> $GITHUB_STEP_SUMMARY
+            echo "- Docs-Hub namespaces (knowledge/, governance/, agents/)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::PR contains governance-controlled changes - Architecture Council review required"
+            echo "status=warn" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No governance restrictions detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Gate 2 - Review Status Check
+        id: review_status
+        env:
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
+          LABELS: ${{ steps.labels.outputs.labels }}
+        run: |
+          echo "## 📝 Review Status Gate" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$IS_DRAFT" = "true" ] || echo "$LABELS" | grep -q "review:draft"; then
+            echo "ℹ️ **NOTICE:** PR is in DRAFT mode" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Mark PR as 'Ready for Review' when complete." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::PR is in draft state - not ready for review"
+            echo "status=draft" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q "review:ready"; then
+            echo "✅ PR is ready for review" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=ready" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ Review status label not yet set (auto-labeling pending)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=pending" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Gate 3 - Size Gate
+        id: size_gate
+        env:
+          LABELS: ${{ steps.labels.outputs.labels }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "## 📏 Size Gate" >> $GITHUB_STEP_SUMMARY
+
+          if echo "$LABELS" | grep -q "size:XL"; then
+            echo "⚠️ **WARNING:** PR is XL size (>30 files changed)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # Check for justification comment
+            COMMENTS=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body')
+            if echo "$COMMENTS" | grep -iq "justification\|why xl\|split reason"; then
+              echo "✅ Justification comment found" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "status=justified" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️ **Justification missing** - Please add comment explaining:" >> $GITHUB_STEP_SUMMARY
+              echo "- Why this PR cannot be split into smaller changes" >> $GITHUB_STEP_SUMMARY
+              echo "- What steps reduce review risk" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "::warning::XL PR missing justification comment"
+              echo "status=warn" >> $GITHUB_OUTPUT
+            fi
+          elif echo "$LABELS" | grep -q "size:L"; then
+            echo "ℹ️ PR is Large (21-30 files) - consider splitting if possible" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=notice" >> $GITHUB_OUTPUT
+          else
+            echo "✅ PR size is within recommended limits" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=pass" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Gate 4 - Template Check
+        id: template_check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "## 📋 Template Gate" >> $GITHUB_STEP_SUMMARY
+
+          # Basic template section detection (without file checkout)
+          MISSING_SECTIONS=""
+
+          if ! echo "$PR_BODY" | grep -qi "## description\|## summary\|## changes"; then
+            MISSING_SECTIONS="${MISSING_SECTIONS}- Description/Summary section\n"
+          fi
+
+          if ! echo "$PR_BODY" | grep -qi "## testing\|## test plan\|tested"; then
+            MISSING_SECTIONS="${MISSING_SECTIONS}- Testing section\n"
+          fi
+
+          if ! echo "$PR_BODY" | grep -qi "## checklist"; then
+            MISSING_SECTIONS="${MISSING_SECTIONS}- Checklist section\n"
+          fi
+
+          if [ -n "$MISSING_SECTIONS" ]; then
+            echo "ℹ️ **NOTICE:** PR template may be incomplete" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Missing sections:" >> $GITHUB_STEP_SUMMARY
+            echo -e "$MISSING_SECTIONS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::PR template sections incomplete - consider using standard template"
+            echo "status=incomplete" >> $GITHUB_OUTPUT
+          else
+            echo "✅ PR template appears complete" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "status=complete" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate Summary
+        if: always()
+        env:
+          GOVERNANCE: ${{ steps.governance.outputs.status }}
+          REVIEW: ${{ steps.review_status.outputs.status }}
+          SIZE: ${{ steps.size_gate.outputs.status }}
+          TEMPLATE: ${{ steps.template_check.outputs.status }}
+        run: |
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎯 Quality Gates Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Governance
+          if [ "$GOVERNANCE" = "warn" ]; then
+            echo "| 🔍 Governance | ⚠️ Review Required |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔍 Governance | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Review Status
+          if [ "$REVIEW" = "draft" ]; then
+            echo "| 📝 Review Status | ℹ️ Draft |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$REVIEW" = "ready" ]; then
+            echo "| 📝 Review Status | ✅ Ready |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📝 Review Status | ⏳ Pending Label |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Size
+          if [ "$SIZE" = "warn" ]; then
+            echo "| 📏 Size | ⚠️ XL - Justification Missing |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$SIZE" = "justified" ]; then
+            echo "| 📏 Size | ✅ XL - Justified |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$SIZE" = "notice" ]; then
+            echo "| 📏 Size | ℹ️ Large |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📏 Size | ✅ Pass |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Template
+          if [ "$TEMPLATE" = "incomplete" ]; then
+            echo "| 📋 Template | ℹ️ Incomplete |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📋 Template | ✅ Complete |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**ℹ️ Soft Mode:** These checks are informational only and do not block merging." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # SOFT MODE: Always exit 0
+          echo "::notice::Quality gates complete - all checks are non-blocking (soft mode)"
+          exit 0
