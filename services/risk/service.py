@@ -18,6 +18,7 @@ from pathlib import Path
 from threading import Thread
 
 from core.utils.clock import utcnow
+from core.auth import validate_all_auth
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
@@ -730,6 +731,16 @@ def signal_handler(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+
+    # Validate Redis auth before startup
+    from core.auth import validate_redis_auth
+    redis_ok, redis_msg = validate_redis_auth(
+        config.redis_host, config.redis_port, config.redis_password, config.redis_db
+    )
+    if not redis_ok:
+        logger.critical("Auth validation FAILED. Service cannot start.")
+        logger.critical(f"Redis: {redis_msg}")
+        sys.exit(1)
 
     manager = RiskManager()
     manager.connect_redis()

@@ -17,6 +17,7 @@ from threading import Thread
 
 from core.utils.clock import utcnow
 from core.utils.uuid_gen import generate_uuid_hex
+from core.auth import validate_all_auth
 try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
@@ -429,6 +430,18 @@ def main():
     logger.info(f"Starting {config.SERVICE_NAME} v{config.SERVICE_VERSION}")
     logger.info(f"Port: {config.SERVICE_PORT}")
     logger.info(f"Mode: {'MOCK' if config.MOCK_TRADING else 'LIVE'}")
+
+    # Validate auth credentials before startup
+    validate_all_auth(
+        config.REDIS_HOST,
+        config.REDIS_PORT,
+        config.REDIS_PASSWORD,
+        config.POSTGRES_HOST,
+        config.POSTGRES_PORT,
+        config.POSTGRES_USER,
+        config.POSTGRES_PASSWORD,
+        config.POSTGRES_DB,
+    )
 
     # Register signal handlers
     signal.signal(signal.SIGTERM, signal_handler)
