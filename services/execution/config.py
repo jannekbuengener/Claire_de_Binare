@@ -4,35 +4,10 @@ Claire de Binare Trading Bot
 """
 
 import os
-from pathlib import Path
 from dotenv import load_dotenv
+from core.secrets import read_secret
 
 load_dotenv()
-
-
-def _read_secret(secret_name: str, fallback_env: str = None) -> str:
-    """
-    Read secret from Docker secrets or fallback to environment variable.
-
-    Supports both production (Docker secrets) and development (.env) workflows.
-
-    Args:
-        secret_name: Name of the Docker secret file
-        fallback_env: Environment variable name for development fallback
-
-    Returns:
-        Secret value as string, empty string if not found
-    """
-    # Try Docker secret first
-    secret_path = Path(f"/run/secrets/{secret_name}")
-    if secret_path.is_file():
-        return secret_path.read_text().strip()
-
-    # Fallback to environment variable
-    if fallback_env:
-        return os.getenv(fallback_env, "")
-
-    return ""
 
 # Service Info
 SERVICE_NAME = "execution_service"
@@ -40,8 +15,8 @@ SERVICE_VERSION = "0.1.0"
 SERVICE_PORT = 8003
 
 # MEXC API Configuration (Docker secrets with .env fallback)
-MEXC_API_KEY = _read_secret("mexc_api_key", "MEXC_API_KEY")
-MEXC_API_SECRET = _read_secret("mexc_api_secret", "MEXC_API_SECRET")
+MEXC_API_KEY = read_secret("mexc_api_key", "MEXC_API_KEY")
+MEXC_API_SECRET = read_secret("mexc_api_secret", "MEXC_API_SECRET")
 MEXC_BASE_URL = os.getenv("MEXC_BASE_URL", "https://contract.mexc.com")
 MEXC_TESTNET = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
