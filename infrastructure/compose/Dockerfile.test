@@ -31,6 +31,11 @@ RUN pip install --no-cache-dir \
 # Set Python path
 ENV PYTHONPATH=/app
 
+# Force UTF-8 encoding (prevents Windows charmap issues)
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONIOENCODING=utf-8
+
 # Health check (test runner should exit after tests)
 HEALTHCHECK NONE
 

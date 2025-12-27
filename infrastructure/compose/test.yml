@@ -63,6 +63,9 @@ services:
       # Python settings
       PYTHONUNBUFFERED: "1"
       PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -107,6 +110,9 @@ services:
       # Python settings
       PYTHONUNBUFFERED: "1"
       PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -150,11 +156,15 @@ services:
       # Python settings
       PYTHONUNBUFFERED: "1"
       PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     volumes:
       # Mount source code (read-only)
       - ../../core:/app/core:ro
       - ../../services:/app/services:ro
       - ../../tests:/app/tests:ro
+      - ../../tools:/app/tools:ro
 
       # Mount test fixtures (read-only)
       - ../../infrastructure:/app/infrastructure:ro
