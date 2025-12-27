@@ -11,7 +11,7 @@ from typing import Optional
 def _read_secret(secret_name: str, fallback_env: str = None) -> str:
     """Read secret from Docker secrets or fallback to environment variable"""
     secret_path = Path(f"/run/secrets/{secret_name}")
-    if secret_path.exists():
+    if secret_path.is_file():
         return secret_path.read_text().strip()
     if fallback_env:
         return os.getenv(fallback_env, "")

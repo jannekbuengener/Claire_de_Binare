@@ -25,7 +25,7 @@ def _read_secret(secret_name: str, fallback_env: str = None) -> str:
     """
     # Try Docker secret first
     secret_path = Path(f"/run/secrets/{secret_name}")
-    if secret_path.exists():
+    if secret_path.is_file():
         return secret_path.read_text().strip()
 
     # Fallback to environment variable
