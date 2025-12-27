@@ -89,6 +89,7 @@ def unique_order_id():
     return f"e2e-test-{int(time.time() * 1000)}"
 
 
+@pytest.mark.e2e
 def test_order_to_execution_flow(redis_client, unique_order_id):
     """
     Test: Order → Execution → order_results publishing
@@ -147,6 +148,7 @@ def test_order_to_execution_flow(redis_client, unique_order_id):
     assert "status" in payload, "Missing status in payload"
 
 
+@pytest.mark.e2e
 def test_order_results_schema(redis_client, unique_order_id):
     """
     Test: order_results payload schema validation
@@ -216,6 +218,7 @@ def test_order_results_schema(redis_client, unique_order_id):
     assert payload["status"] in valid_statuses, f"Invalid status: {payload['status']}"
 
 
+@pytest.mark.e2e
 def test_stream_persistence(redis_client, unique_order_id):
     """
     Test: order_results persisted to stream.fills
@@ -279,6 +282,7 @@ def test_stream_persistence(redis_client, unique_order_id):
         pytest.fail(f"Stream timestamp is not a valid integer: {timestamp_str}")
 
 
+@pytest.mark.e2e
 def test_subscriber_count(redis_client):
     """
     Test: Verify order_results channel has active subscribers
@@ -300,6 +304,7 @@ def test_subscriber_count(redis_client):
     assert subscriber_count >= 2, f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
 
 
+@pytest.mark.e2e
 def test_replay_determinism(redis_client, unique_order_id, tmp_path):
     """
     Test: Deterministic replay produces identical output

@@ -1,3 +1,4 @@
+import pytest
 """Unit tests for core.utils.clock module."""
 
 import re
@@ -7,6 +8,7 @@ from pathlib import Path
 from core.utils.clock import Clock, FixedClock, SystemClock, set_default_clock, utcnow
 
 
+@pytest.mark.unit
 def test_clock_now_returns_float():
     """Test that Clock.now() returns a float timestamp."""
     result = Clock.now()
@@ -14,6 +16,7 @@ def test_clock_now_returns_float():
     assert result > 0
 
 
+@pytest.mark.unit
 def test_clock_deterministic_mode():
     """Test Clock in deterministic mode."""
     Clock.set_deterministic(True, start_time=1000.0)
@@ -23,6 +26,7 @@ def test_clock_deterministic_mode():
     Clock.set_deterministic(False)
 
 
+@pytest.mark.unit
 def test_clock_injection_fixed():
     """Test injected fixed clock for deterministic timestamps."""
     fixed_time = datetime(2020, 1, 1, 0, 0, 0)
@@ -33,6 +37,7 @@ def test_clock_injection_fixed():
         set_default_clock(SystemClock())
 
 
+@pytest.mark.unit
 def test_guardrails_no_forbidden_calls():
     """Ensure forbidden calls stay confined to allowed utility modules."""
     root = Path(__file__).resolve().parents[2]

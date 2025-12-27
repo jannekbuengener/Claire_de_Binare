@@ -1,10 +1,12 @@
 """Unit tests for core.domain.event module."""
 
+import pytest
 from datetime import datetime, timezone
 
 from core.domain.event import Event, EventType
 
 
+@pytest.mark.unit
 def test_event_creation():
     """Test Event model creation."""
     event = Event(
@@ -18,6 +20,7 @@ def test_event_creation():
     assert event.payload["signal_id"] == "sig_001"
 
 
+@pytest.mark.unit
 def test_event_type_enum():
     """Test EventType enum values."""
     assert hasattr(EventType, "SIGNAL_GENERATED")
@@ -25,6 +28,7 @@ def test_event_type_enum():
     assert hasattr(EventType, "POSITION_OPENED")
 
 
+@pytest.mark.unit
 def test_event_id_deterministic_for_same_payload():
     """Event IDs should be deterministic for identical payloads."""
     timestamp = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -48,6 +52,7 @@ def test_event_id_deterministic_for_same_payload():
     assert event1.event_id == event2.event_id
 
 
+@pytest.mark.unit
 def test_event_id_changes_on_payload_change():
     """Event IDs should change when payload content changes."""
     timestamp = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)

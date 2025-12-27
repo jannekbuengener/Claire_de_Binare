@@ -103,6 +103,7 @@ def external_client():
     return mexc_client.MexcClient(api_key=api_key, api_secret=api_secret, testnet=True)
 
 
+@pytest.mark.integration
 class TestMexcTestnetOffline:
     """Offline integration tests that validate request signing and response handling."""
 
