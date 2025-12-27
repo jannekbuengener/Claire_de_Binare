@@ -144,6 +144,38 @@ services:
     networks:
       - cdb_network
 
+  # Paper Trading Runner Service
+  # Automated 14-day paper trading test with event logging
+  cdb_paper_runner:
+    build:
+      context: ../..
+      dockerfile: tools/paper_trading/Dockerfile
+    container_name: cdb_paper_runner
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PAPER_TRADING_DURATION_DAYS=${PAPER_TRADING_DURATION_DAYS:-14}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:8004:8004"  # Health endpoint + status API
+    volumes:
+      - ../../logs:/app/logs
+      - ../../tools/paper_trading:/app/tools/paper_trading:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_network
+
   # Market Data Service - DISABLED: No service.py implementation yet
   # TODO: Implement service.py and email_alerter.py before enabling
   # cdb_market:
