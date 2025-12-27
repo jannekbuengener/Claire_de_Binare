@@ -49,6 +49,32 @@ class Signal:
             "pct_change": self.pct_change,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Signal":
+        """Create Signal from dictionary (inverse of to_dict)."""
+        return cls(
+            signal_id=data.get("signal_id"),
+            strategy_id=data.get("strategy_id"),
+            bot_id=data.get("bot_id"),
+            symbol=data.get("symbol", ""),
+            direction=data.get("direction", ""),
+            strength=float(data.get("strength", 0.0)),
+            timestamp=float(data.get("timestamp", 0.0)),
+            side=data.get("side"),
+            confidence=(
+                float(data["confidence"])
+                if data.get("confidence") is not None
+                else None
+            ),
+            reason=data.get("reason"),
+            price=(float(data["price"]) if data.get("price") is not None else None),
+            pct_change=(
+                float(data["pct_change"])
+                if data.get("pct_change") is not None
+                else None
+            ),
+        )
+
 
 @dataclass
 class Order:
