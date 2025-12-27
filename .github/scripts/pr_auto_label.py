@@ -1,7 +1,6 @@
 import os
 import re
 import fnmatch
-import json
 from typing import Dict, List, Tuple, Set
 
 import requests
@@ -27,16 +26,21 @@ OWNER, NAME = REPO.split("/", 1)
 SIZE_LABEL_PREFIX = "size:"
 REVIEW_LABEL_PREFIX = "review:"
 
+
 def gh(method: str, path: str, **kwargs):
     url = f"{API}{path}"
     r = requests.request(method, url, headers=HEADERS, **kwargs)
     if r.status_code >= 400:
-        raise RuntimeError(f"GitHub API {method} {path} failed: {r.status_code} {r.text}")
+        raise RuntimeError(
+            f"GitHub API {method} {path} failed: {r.status_code} {r.text}"
+        )
     return r
+
 
 def load_config() -> Dict:
     with open(CONFIG_PATH, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
 
 def list_pr_files() -> List[str]:
     files = []
@@ -54,9 +58,11 @@ def list_pr_files() -> List[str]:
         page += 1
     return files
 
+
 def get_issue_labels() -> List[str]:
     r = gh("GET", f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}")
-    return [l["name"] for l in r.json().get("labels", [])]
+    return [label["name"] for label in r.json().get("labels", [])]
+
 
 def ensure_label_exists(label: str):
     # Create label if missing; ignore "already exists"
@@ -78,17 +84,27 @@ def ensure_label_exists(label: str):
         gh(
             "POST",
             f"/repos/{OWNER}/{NAME}/labels",
-            json={"name": label, "color": color, "description": "managed by pr-auto-label"},
+            json={
+                "name": label,
+                "color": color,
+                "description": "managed by pr-auto-label",
+            },
         )
     except RuntimeError as e:
         if "already_exists" in str(e) or "Validation Failed" in str(e):
             return
         raise
 
+
 def add_labels(labels: List[str]):
     if not labels:
         return
-    gh("POST", f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/labels", json={"labels": labels})
+    gh(
+        "POST",
+        f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/labels",
+        json={"labels": labels},
+    )
+
 
 def remove_label(label: str):
     # 404 is fine if label not present
@@ -98,8 +114,10 @@ def remove_label(label: str):
         return
     raise RuntimeError(f"DELETE {url} failed: {r.status_code} {r.text}")
 
+
 def match_any(path: str, globs: List[str]) -> bool:
     return any(fnmatch.fnmatch(path, g) for g in globs)
+
 
 def compute_size_label(cfg: Dict, file_count: int) -> str:
     th = cfg["size"]["thresholds"]
@@ -113,6 +131,7 @@ def compute_size_label(cfg: Dict, file_count: int) -> str:
     if file_count <= th["L"]:
         return labels["L"]
     return labels["XL"]
+
 
 def governance_violations(cfg: Dict, files: List[str]) -> Tuple[bool, List[str]]:
     g = cfg.get("governance", {})
@@ -131,14 +150,21 @@ def governance_violations(cfg: Dict, files: List[str]) -> Tuple[bool, List[str]]
                 continue
             hit.append(f)
         if hit:
-            violations.append(f"{name}: {', '.join(hit[:10])}{' …' if len(hit) > 10 else ''}")
+            violations.append(
+                f"{name}: {', '.join(hit[:10])}{' …' if len(hit) > 10 else ''}"
+            )
     return (len(violations) > 0), violations
+
 
 def post_governance_comment(violations: List[str]):
     marker = "<!-- pr-auto-label:governance -->"
 
     # Avoid spam: check last 50 comments for marker
-    r = gh("GET", f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/comments", params={"per_page": 50})
+    r = gh(
+        "GET",
+        f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/comments",
+        params={"per_page": 50},
+    )
     for c in r.json():
         if marker in c.get("body", ""):
             return
@@ -147,12 +173,15 @@ def post_governance_comment(violations: List[str]):
         f"{marker}\n"
         "## ⚠️ Governance Review Required\n"
         "This PR touches paths that are typically Docs-Hub-only or root documentation.\n\n"
-        "**Signals:**\n"
-        + "\n".join([f"- {v}" for v in violations])
-        + "\n\n"
+        "**Signals:**\n" + "\n".join([f"- {v}" for v in violations]) + "\n\n"
         "Action: confirm this is intentional, otherwise move docs to the Docs Hub.\n"
     )
-    gh("POST", f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/comments", json={"body": body})
+    gh(
+        "POST",
+        f"/repos/{OWNER}/{NAME}/issues/{PR_NUMBER}/comments",
+        json={"body": body},
+    )
+
 
 def main():
     cfg = load_config()
@@ -192,16 +221,16 @@ def main():
         wanted.add(cfg["governance"]["violation_label"])
 
     # Ensure labels exist
-    for l in sorted(wanted):
-        ensure_label_exists(l)
+    for label in sorted(wanted):
+        ensure_label_exists(label)
 
     # Remove conflicting managed labels (size + review)
     existing = get_issue_labels()
-    for l in existing:
-        if l.startswith(SIZE_LABEL_PREFIX):
-            remove_label(l)
-        if l.startswith(REVIEW_LABEL_PREFIX):
-            remove_label(l)
+    for label in existing:
+        if label.startswith(SIZE_LABEL_PREFIX):
+            remove_label(label)
+        if label.startswith(REVIEW_LABEL_PREFIX):
+            remove_label(label)
 
     # Apply
     add_labels(sorted(wanted))
@@ -218,12 +247,13 @@ def main():
             f.write(f"- PR: #{PR_NUMBER}\n")
             f.write(f"- Files changed: {file_count}\n")
             f.write("- Labels applied:\n")
-            for l in sorted(wanted):
-                f.write(f"  - {l}\n")
+            for label in sorted(wanted):
+                f.write(f"  - {label}\n")
             if has_gov:
                 f.write("\n### Governance flags\n")
                 for d in gov_details:
                     f.write(f"- {d}\n")
+
 
 if __name__ == "__main__":
     main()
