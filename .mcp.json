@@ -2,17 +2,21 @@
   "mcpServers": {
     "MCP_DOCKER": {
       "command": "docker",
-      "args": ["mcp", "gateway", "run"],
+      "args": [
+        "mcp",
+        "gateway",
+        "run"
+      ],
       "env": {
         "LOCALAPPDATA": "C:\\Users\\janne\\AppData\\Local",
         "ProgramData": "C:\\ProgramData",
-        "ProgramFiles": "C:\\Program Files"
+        "ProgramFiles": "C:\\Program Files",
+        "GRAFANA_URL": "http://host.docker.internal:3000",
+        "GRAFANA_API_KEY": "glsa_bqljopBuWofyzBgap0YWvxc8ehsoJk4Y_55e85867",
+        "REDIS_HOST": "host.docker.internal",
+        "REDIS_PORT": "6379",
+        "REDIS_PASSWORD": "claire_redis_secret_2024"
       },
-      "type": "stdio"
-    },
-    "github": {
-      "command": "docker",
-      "args": ["attach", "mcp_github"],
       "type": "stdio"
     }
   }

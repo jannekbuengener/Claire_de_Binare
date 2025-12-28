@@ -1,36 +1,39 @@
-# MCP Agent Configuration für CI/CD und Production
-# Diese Datei ist für Umgebungen ohne lokale Windows-Mounts optimiert
+# MCP Agent Configuration für CI/CD (Linux Runner)
+# Robust: Keine Windows-Pfade, keine externen Mounts.
 
 agent_mode = "autonomous"
 agent_output_style = "status_only"
 agent_retry_policy = "on_error"
 auto_model_switch = true
-execution_env = "linux"  # CI/CD läuft typischerweise auf Linux
+
+execution_env = "linux"
 fail_fast = true
 max_output_tokens = 300
-# Produktions-Modelle (benötigt API-Keys in Environment)
-# Setze ANTHROPIC_API_KEY oder OPENAI_API_KEY als Umgebungsvariablen
-model = "claude-3-5-sonnet-20241022"  # Claude für Session Lead
-model_fast = "gpt-4"  # GPT-4 für schnelle Analysen
-model_reasoning_effort = "high"
-project_root = "/home/runner/work/Claire_de_Binare/Claire_de_Binare"
 verbosity = "compact"
 
+# CI-Modelle (brauchen API Keys als Env Vars, z.B. ANTHROPIC_API_KEY / OPENAI_API_KEY)
+model = "claude-3-5-sonnet-20241022"
+model_fast = "gpt-4"
+model_reasoning_effort = "high"
+
+# GitHub Actions Standardpfad (falls du anders baust: anpassen)
+project_root = "/home/runner/work/Claire_de_Binare/Claire_de_Binare"
+
 [mcp_servers]
-# MCP Server-Konfiguration für CI/CD
-# Docker-basierte Konfiguration wird hier nicht benötigt
+# In CI musst du Docker-MCP nicht zwingend starten.
+# Wenn du es brauchst, kannst du MCP_DOCKER hier aktivieren:
+#
+# [mcp_servers.MCP_DOCKER]
+# command = "docker"
+# args = ["mcp", "gateway", "run"]
 
 [notice]
 hide_full_access_warning = true
 
 [features]
-enable_experimental_windows_sandbox = false  # Deaktiviert für Linux
-
-[projects]
-# CI/CD-spezifische Projekt-Konfiguration
+enable_experimental_windows_sandbox = false
 
 [canonical_paths]
-# Repo-interne Pfade (funktionieren in jeder Umgebung)
 knowledge_hub = "./CDB_KNOWLEDGE_HUB.md"
 governance = "./governance/NEXUS.MEMORY.yaml"
 codex = "./CODEX.md"
@@ -39,9 +42,5 @@ gemini = "./GEMINI.md"
 copilot = "./COPILOT.md"
 logs = ["./logs/"]
 allowed_root = "."
-
-# Agent-Definitionen im Repo
 agents_dir = "./.claude/agents"
-
-# Governance-Dokumente
 governance_dir = "./governance"
