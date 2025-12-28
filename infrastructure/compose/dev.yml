@@ -50,11 +50,11 @@ services:
     networks:
       - cdb_network
 
-  cdb_core:
+  cdb_signal:
     build:
       context: ../..
       dockerfile: services/signal/Dockerfile
-    container_name: cdb_core
+    container_name: cdb_signal
     restart: unless-stopped
     env_file: .env
     environment:
@@ -63,14 +63,20 @@ services:
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-default_strategy}
+      SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-paper}
+      SIGNAL_PORT: "8005"
     ports:
-      - "127.0.0.1:8001:8001"  # Fixed: PORT:PORT mapping (was :8000)
+      - "127.0.0.1:8005:8005"
     volumes:
       - ../../logs:/app/logs
     depends_on:
       - cdb_redis
       - cdb_postgres
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - cdb_network
 

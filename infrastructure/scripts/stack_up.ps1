@@ -88,7 +88,7 @@ try {
         'cdb_prometheus',
         'cdb_grafana',
         # Applikation
-        'cdb_core',
+        'cdb_signal',
         'cdb_risk',
         'cdb_execution',
         'cdb_db_writer',

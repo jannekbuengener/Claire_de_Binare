@@ -13,7 +13,7 @@ Write-Host ""
 # Erwartete AKTIV-Services (aus SERVICE_CATALOG.md)
 $expectedServices = @{
     # Applikation
-    "cdb_core"         = @{ Type = "App"; Required = $true }
+    "cdb_signal"       = @{ Type = "App"; Required = $true }
     "cdb_risk"         = @{ Type = "App"; Required = $true }
     "cdb_execution"    = @{ Type = "App"; Required = $true }
     "cdb_db_writer"    = @{ Type = "App"; Required = $true }
@@ -40,9 +40,8 @@ $disabledServices = @{
 }
 
 # GAP-Services (Code existiert, kein Compose)
-$gapServices = @{
-    "cdb_signal" = "services/signal/ existiert mit Dockerfile, kein Compose-Eintrag"
-}
+# Aktuell keine GAPs - cdb_signal wurde aktiviert (2025-12-28)
+$gapServices = @{}
 
 # Prüfung
 Write-Host "[1/4] Laufende Container..." -ForegroundColor Yellow

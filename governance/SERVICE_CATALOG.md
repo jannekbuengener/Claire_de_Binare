@@ -22,13 +22,12 @@
 
 | Service | Container | Code | Dockerfile | Compose | Status | Begründung |
 |---------|-----------|------|------------|---------|--------|------------|
-| **Core** | cdb_core | core/ | via dev.yml | ✅ aktiv | **AKTIV** | Hauptapplikation, FastAPI Gateway |
+| **Signal** | cdb_signal | services/signal/ (6 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Signal Engine, Momentum-Strategie |
 | **Risk** | cdb_risk | services/risk/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Risk Management, Circuit Breaker |
 | **Execution** | cdb_execution | services/execution/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Order Execution, MEXC Integration |
 | **DB Writer** | cdb_db_writer | services/db_writer/ (db_writer.py) | ✅ | ✅ aktiv | **AKTIV** | PostgreSQL Persistenz |
 | **WebSocket** | cdb_ws | services/ws/ (service.py) | ✅ | ✅ aktiv | **AKTIV** | Market Data Stream |
 | **Paper Runner** | cdb_paper_runner | tools/paper_trading/ (service.py, 15k lines) | ✅ | ✅ aktiv | **AKTIV** | Paper Trading Orchestrator |
-| **Signal** | - | services/signal/ (6 files, 280 LOC service.py) | ✅ | ❌ FEHLT | **GAP** | **KRITISCH: Vollständige Implementierung, kein Compose-Eintrag** |
 | **Allocation** | cdb_allocation | services/allocation/ (3 files, 378 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (ALLOCATION_*) |
 | **Regime** | cdb_regime | services/regime/ (4 files, 213 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (REGIME_*) |
 | **Market** | cdb_market | services/market/ (2 files, 82 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert laut stack_up.ps1: "not implemented" |
@@ -60,27 +59,16 @@
 
 ---
 
-## GAP-Analyse (KRITISCH)
+## GAP-Analyse
 
-### 1. Signal Service - NICHT DEPLOYED
+### Aktuell keine kritischen GAPs
 
-**Problem:** `services/signal/` enthält vollständige Implementierung:
-- `service.py` (280 LOC) - FastAPI Service
-- `market_classifier.py` - Market Regime Classification
-- `optimizer.py` - Strategy Optimization
-- `models.py` - Data Models
-- `config.py` - Configuration
-- `Dockerfile` - Build Definition
+✅ **Signal Service** wurde am 2025-12-28 aktiviert:
+- Container: `cdb_signal` (Port 8005)
+- Vorher: War als `cdb_core` fehlbenannt
+- Fix: Umbenennung + korrekter Port
 
-**Aber:** Kein Eintrag in irgendeiner Compose-Datei gefunden.
-
-**Risiko:** Kernkomponente eines Trading-Systems fehlt im Stack.
-
-**Action Required:**
-- [ ] Klären: Warum wurde Signal nie in Compose aufgenommen?
-- [ ] Entscheidung: Aktivieren oder explizit als "GEPLANT" markieren?
-
-### 2. Allocation/Regime/Market - BEREIT aber deaktiviert
+### Allocation/Regime/Market - BEREIT aber deaktiviert
 
 Diese Services haben vollständigen Code, sind aber in `dev.yml` auskommentiert.
 
@@ -153,3 +141,4 @@ docker compose \
 |-------|----------|-------|
 | 2025-12-28 | Initiale Erstellung nach Governance-Review | Claude |
 | 2025-12-28 | GAP identifiziert: Signal Service fehlt in Compose | Claude |
+| 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
