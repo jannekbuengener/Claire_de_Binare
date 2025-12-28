@@ -2,6 +2,9 @@
 # Core Services (Redis, Postgres, Prometheus, Grafana)
 # No Port-Bindings (internal only)
 
+# Issue #232: Deterministic project naming via STACK_NAME
+name: ${STACK_NAME:-cdb}
+
 services:
   cdb_redis:
     image: redis@sha256:7b41dcf34e03669764c2f84b5bd7bc21f4949e3c4efdd1e4bfb6df58da60f3a7  # redis:7.4.1-alpine
