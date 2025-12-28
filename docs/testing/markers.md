@@ -34,6 +34,15 @@ pytest -m "unit"
 E2E_RUN=1 pytest -m "e2e" -v
 ```
 
+### Run Deterministic E2E Tests (Issue #226)
+```bash
+# Disable circuit breakers to prevent random test failures
+E2E_RUN=1 E2E_DISABLE_CIRCUIT_BREAKER=1 pytest -m "e2e" -v
+```
+Circuit breakers (drawdown, error_rate, loss_limit, frequency) can trigger
+during E2E tests due to simulated edge cases. Set `E2E_DISABLE_CIRCUIT_BREAKER=1`
+to bypass all breakers for fully deterministic test runs.
+
 ### Run Only Integration Tests
 ```bash
 pytest -m "integration"

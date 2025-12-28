@@ -2,11 +2,17 @@
 Circuit Breakers
 
 Emergency stop mechanisms for critical error scenarios during paper trading testing.
+
+Issue #226: E2E_DISABLE_CIRCUIT_BREAKER support for deterministic tests.
 """
 
+import os
 from enum import Enum
 from typing import Dict, Any, List
 import logging
+
+# E2E Mode: Disable circuit breakers for deterministic tests (Issue #226)
+E2E_DISABLE_CIRCUIT_BREAKER = os.getenv("E2E_DISABLE_CIRCUIT_BREAKER", "").lower() in ("1", "true")
 
 
 class CircuitBreakerType(Enum):
@@ -34,6 +40,11 @@ class CircuitBreaker:
     def check_breakers(self, metrics: Dict[str, Any]) -> Dict[str, Any]:
         """Check if any circuit breakers should be triggered"""
         result = {"triggered": False, "reasons": []}
+
+        # Issue #226: Skip all breakers in E2E mode for deterministic tests
+        if E2E_DISABLE_CIRCUIT_BREAKER:
+            self.logger.debug("Circuit breakers disabled (E2E_DISABLE_CIRCUIT_BREAKER=1)")
+            return result
 
         for breaker_type, config in self.breakers.items():
             if config["active"] and self._should_trigger(breaker_type, metrics, config):

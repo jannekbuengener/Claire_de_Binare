@@ -50,7 +50,7 @@ Vollständige Dokumentation der Docker Compose Infrastruktur.
 |---------|--------------|--------------|
 | Market Data | WebSocket-Daten von MEXC | Redis |
 | Signal Engine | RL-basierte Signal-Generierung | Redis |
-| Risk Manager | Position Sizing, Circuit Breaker | Redis, Postgres |
+| Risk Manager | Position Sizing, Circuit Breaker (E2E-disable via env) | Redis, Postgres |
 | Execution | Order-Routing zu MEXC | Redis, Postgres |
 | DB Writer | Event Persistence | Postgres |
 
