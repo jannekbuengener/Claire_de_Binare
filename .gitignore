@@ -112,7 +112,8 @@ Claire_de_Binare/
 Claire_de_Binare_Docs/
 .cdb_local/
 .claude/
-scripts/
+/scripts/
+!infrastructure/scripts/
 # AGENTS.md - Now tracked as pointer to Docs Hub canonical (was ignored pre-consolidation)
 .gemini/
 gha-creds-*.json

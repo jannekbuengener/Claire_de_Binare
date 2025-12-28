@@ -80,19 +80,25 @@ try {
         Write-Host "TLS enabled (Redis + PostgreSQL encrypted)" -ForegroundColor Green
     }
 
+    # SERVICE_CATALOG.md: Alle AKTIV-Services (Stand 2025-12-28)
     $targetServices = @(
+        # Infrastruktur
         'cdb_redis',
         'cdb_postgres',
         'cdb_prometheus',
         'cdb_grafana',
+        # Applikation
         'cdb_core',
         'cdb_risk',
         'cdb_execution',
-        'cdb_db_writer'
-        # 'cdb_allocation',    # Missing required env vars (ALLOCATION_REGIME_MIN_STABLE_SECONDS, etc.)
-        # 'cdb_regime',        # Missing required env vars
-        # 'cdb_market',        # Not yet implemented (no service.py)
-        # 'cdb_paper_runner'   # Not yet implemented
+        'cdb_db_writer',
+        'cdb_ws',
+        'cdb_paper_runner'
+        # BEREIT aber deaktiviert (siehe SERVICE_CATALOG.md):
+        # 'cdb_allocation',    # Fehlende Env-Vars (ALLOCATION_*)
+        # 'cdb_regime',        # Fehlende Env-Vars (REGIME_*)
+        # 'cdb_market',        # service.py existiert, aber in dev.yml auskommentiert
+        # GAP: cdb_signal - Code existiert, kein Compose-Eintrag!
     )
 
     function Invoke-StackCompose {
@@ -106,7 +112,7 @@ try {
     if ($Logging -or $StrictHealth -or $NetworkIsolation -or $TLS) {
         Write-Host "Overlays: $(if($Logging){'Logging '})$(if($StrictHealth){'StrictHealth '})$(if($NetworkIsolation){'NetworkIsolation '})$(if($TLS){'TLS'})" -ForegroundColor Yellow
     }
-    Write-Host "(cdb_ws intentionally excluded; Dockerfile remains outside this tree)`n" -ForegroundColor Gray
+    Write-Host "Referenz: governance/SERVICE_CATALOG.md`n" -ForegroundColor Gray
 
     $upArgs = @('up', '-d')
     if ($Rebuild.IsPresent) {
@@ -168,6 +174,15 @@ try {
     }
 
     Invoke-StackCompose -CommandArgs @('ps')
+
+    # Stack-Vollständigkeitsprüfung (Governance)
+    Write-Host "`n=== Stack Verification ===" -ForegroundColor Cyan
+    $verifyScript = Join-Path $scriptDir 'stack_verify.ps1'
+    if (Test-Path $verifyScript) {
+        & $verifyScript
+    } else {
+        Write-Warning "stack_verify.ps1 nicht gefunden - manuelle Prüfung erforderlich"
+    }
 } finally {
     Pop-Location
 }
