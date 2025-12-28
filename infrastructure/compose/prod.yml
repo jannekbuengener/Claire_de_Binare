@@ -56,7 +56,7 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  cdb_core:
+  cdb_signal:
     restart: on-failure
     security_opt:
       - no-new-privileges:true
