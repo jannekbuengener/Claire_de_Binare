@@ -1,0 +1,29 @@
+# Delivery Gate Approval
+# This file controls whether code changes can be merged to main.
+# Only humans may modify this file (Constitution §4.2).
+#
+# Usage:
+#   - Set approved: true when ready for release
+#   - Set approved: false to block merges
+#
+# CI checks this file and blocks PRs if not approved.
+
+delivery:
+  approved: true
+  reason: "Governance Audit Phase 1 complete - ready for continuous delivery"
+  approved_by: "jannek"
+  approved_at: "2025-12-28T18:00:00Z"
+
+# Exceptions: PRs with these labels bypass the gate
+exceptions:
+  labels:
+    - "docs-only"
+    - "ci-only"
+    - "emergency"
+
+# History
+history:
+  - date: "2025-12-28"
+    action: "initial"
+    by: "claude-code"
+    reason: "Created delivery gate for governance compliance"
