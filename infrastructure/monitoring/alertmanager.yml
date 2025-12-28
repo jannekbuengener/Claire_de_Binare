@@ -77,14 +77,14 @@ inhibit_rules:
 # Receivers
 receivers:
   - name: 'default-receiver'
-    # Webhook to logging service
+    # Webhook to signal service
     webhook_configs:
-      - url: 'http://cdb_core:8001/alerts'
+      - url: 'http://cdb_signal:8005/alerts'
         send_resolved: true
 
   - name: 'critical-receiver'
     webhook_configs:
-      - url: 'http://cdb_core:8001/alerts/critical'
+      - url: 'http://cdb_signal:8005/alerts/critical'
         send_resolved: true
     # Add email/Slack/PagerDuty for production
     # email_configs:
@@ -92,12 +92,12 @@ receivers:
 
   - name: 'high-priority-receiver'
     webhook_configs:
-      - url: 'http://cdb_core:8001/alerts/high'
+      - url: 'http://cdb_signal:8005/alerts/high'
         send_resolved: true
 
   - name: 'trading-halt-receiver'
     webhook_configs:
-      - url: 'http://cdb_core:8001/alerts/trading-halt'
+      - url: 'http://cdb_signal:8005/alerts/trading-halt'
         send_resolved: true
     # This receiver triggers kill-switch webhook
     # In production: add PagerDuty/OpsGenie integration

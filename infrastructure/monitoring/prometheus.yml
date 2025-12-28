@@ -32,11 +32,11 @@ scrape_configs:
     metrics_path: '/metrics'
 
   # Signal Engine
-  - job_name: 'cdb_core'
+  - job_name: 'cdb_signal'
     static_configs:
-      - targets: ['cdb_core:8001']
+      - targets: ['cdb_signal:8005']
         labels:
-          instance: 'cdb_core'
+          instance: 'cdb_signal'
           service: 'analysis'
     metrics_path: '/metrics'
 
