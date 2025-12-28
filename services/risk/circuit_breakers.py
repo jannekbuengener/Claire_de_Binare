@@ -26,7 +26,8 @@ class CircuitBreaker:
         self.breakers = {
             CircuitBreakerType.ERROR_RATE: {"threshold": 0.1, "active": True},
             CircuitBreakerType.DRAWDOWN: {"threshold": 0.15, "active": True},
-            CircuitBreakerType.LOSS_LIMIT: {"threshold": 0.05, "active": True},
+            CircuitBreakerType.LOSS_LIMIT: {"threshold": 0.05, "active": True},  # 5% max loss
+            CircuitBreakerType.FREQUENCY: {"threshold": 60, "active": True},  # Max 60 orders/min
         }
         self.triggered_breakers: List[str] = []
 
@@ -48,9 +49,26 @@ class CircuitBreaker:
         metrics: Dict[str, Any],
         config: Dict[str, Any],
     ) -> bool:
-        """Check if specific breaker should trigger"""
+        """Check if specific breaker should trigger.
+
+        Metrics expected:
+            - drawdown: float (0.0 - 1.0) - Current drawdown from peak
+            - error_rate: float (0.0 - 1.0) - Rate of failed operations
+            - loss_pct: float (0.0 - 1.0) - Current loss as percentage of initial capital
+            - orders_per_minute: int - Order frequency for rate limiting
+        """
         if breaker_type == CircuitBreakerType.DRAWDOWN:
             return metrics.get("drawdown", 0) > config["threshold"]
         elif breaker_type == CircuitBreakerType.ERROR_RATE:
             return metrics.get("error_rate", 0) > config["threshold"]
+        elif breaker_type == CircuitBreakerType.LOSS_LIMIT:
+            # CRITICAL: Loss limit must be enforced to prevent unlimited losses
+            loss_pct = metrics.get("loss_pct", 0)
+            return loss_pct > config["threshold"]
+        elif breaker_type == CircuitBreakerType.FREQUENCY:
+            # Rate limiting: Too many orders indicates algo gone wild
+            orders_per_minute = metrics.get("orders_per_minute", 0)
+            return orders_per_minute > config.get("threshold", 60)
+
+        self.logger.warning(f"Unknown breaker type: {breaker_type}")
         return False

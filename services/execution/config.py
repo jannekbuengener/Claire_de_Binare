@@ -30,11 +30,11 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
 
-# PostgreSQL Configuration
+# PostgreSQL Configuration (Docker secrets with env fallback)
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "cdb_postgres")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
 POSTGRES_USER = os.getenv("POSTGRES_USER", "cdb_user")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "cdb_secure_password_2025")
+POSTGRES_PASSWORD = read_secret("postgres_password", "POSTGRES_PASSWORD")  # No hardcoded default!
 POSTGRES_DB = os.getenv("POSTGRES_DB", "claire_de_binare")
 
 DATABASE_URL = os.getenv(

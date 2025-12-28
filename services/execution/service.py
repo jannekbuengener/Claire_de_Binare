@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 from flask import Flask, jsonify, Response
 import redis
-from threading import Thread
+from threading import Thread, Lock
 
 from core.utils.clock import utcnow
 from core.utils.uuid_gen import generate_uuid_hex
@@ -62,6 +62,9 @@ redis_client = None
 pubsub = None
 db = None
 running = True
+
+# Thread-safe stats with lock (Fix for Issue #306)
+_stats_lock = Lock()
 stats = {
     "orders_received": 0,
     "orders_filled": 0,
@@ -69,10 +72,31 @@ stats = {
     "start_time": utcnow().isoformat(),
     "last_result": None,
 }
+
+# Thread-safe sets with lock (Fix for Issue #306)
+_orders_lock = Lock()
 bot_shutdown_active = False
 blocked_strategy_ids = set()
 blocked_bot_ids = set()
 open_orders = set()
+
+
+def increment_stat(key: str, value: int = 1) -> None:
+    """Thread-safe stats increment"""
+    with _stats_lock:
+        stats[key] += value
+
+
+def set_stat(key: str, value) -> None:
+    """Thread-safe stats set"""
+    with _stats_lock:
+        stats[key] = value
+
+
+def get_stats_copy() -> dict:
+    """Thread-safe stats read"""
+    with _stats_lock:
+        return stats.copy()
 
 
 def _init_with_retry(
@@ -158,10 +182,8 @@ def init_services():
 
 def _publish_result(result: ExecutionResult) -> None:
     """Publish order result to Redis (pubsub + stream) and persist to DB."""
-    global stats
-
     event_payload = result.to_dict()
-    stats["last_result"] = event_payload
+    set_stat("last_result", event_payload)  # Thread-safe
     if not redis_client:
         raise RuntimeError("Redis client not initialised")
 
@@ -180,8 +202,6 @@ def _publish_result(result: ExecutionResult) -> None:
 
 def process_order(order_data: dict):
     """Process incoming order"""
-    global stats
-
     try:
         if order_data.get("type") not in (None, "order"):
             logger.warning(
@@ -191,7 +211,7 @@ def process_order(order_data: dict):
 
         order = Order.from_event(order_data)
 
-        stats["orders_received"] += 1
+        increment_stat("orders_received")  # Thread-safe
 
         if bot_shutdown_active or (
             order.strategy_id and order.strategy_id in blocked_strategy_ids
@@ -213,7 +233,7 @@ def process_order(order_data: dict):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
-            stats["orders_rejected"] += 1
+            increment_stat("orders_rejected")  # Thread-safe
             _publish_result(result)
             return result
 
@@ -235,13 +255,13 @@ def process_order(order_data: dict):
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
 
-        # Update stats
+        # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
         if schema_status == "FILLED":
-            stats["orders_filled"] += 1
+            increment_stat("orders_filled")
             logger.info("Order filled: %s at %s", result.order_id, result.price)
         else:
-            stats["orders_rejected"] += 1
+            increment_stat("orders_rejected")
             logger.warning(
                 "Order rejected: %s - %s", result.order_id, result.error_message
             )
@@ -251,11 +271,11 @@ def process_order(order_data: dict):
         return result
     except (KeyError, ValueError) as err:
         logger.error("Fehlerhafte Orderdaten: %s", err)
-        stats["orders_rejected"] += 1
+        increment_stat("orders_rejected")  # Thread-safe
         return None
     except Exception as e:
         logger.error(f"Error processing order: {e}")
-        stats["orders_rejected"] += 1
+        increment_stat("orders_rejected")  # Thread-safe
         return None
 
 
@@ -377,23 +397,26 @@ def status():
 @app.route("/metrics", methods=["GET"])
 def metrics():
     """Metrics endpoint for Prometheus"""
+    # Thread-safe stats read (Fix for Issue #306)
+    current_stats = get_stats_copy()
+
     uptime_seconds = max(
         0.0,
         (
-            utcnow() - datetime.fromisoformat(stats["start_time"])
+            utcnow() - datetime.fromisoformat(current_stats["start_time"])
         ).total_seconds(),
     )
 
     body = (
         "# HELP execution_orders_received_total Anzahl eingegangener Orders\n"
         "# TYPE execution_orders_received_total counter\n"
-        f"execution_orders_received_total {stats['orders_received']}\n"
+        f"execution_orders_received_total {current_stats['orders_received']}\n"
         "# HELP execution_orders_filled_total Anzahl erfolgreich ausgefuehrter Orders\n"
         "# TYPE execution_orders_filled_total counter\n"
-        f"execution_orders_filled_total {stats['orders_filled']}\n"
+        f"execution_orders_filled_total {current_stats['orders_filled']}\n"
         "# HELP execution_orders_rejected_total Anzahl abgelehnter Orders\n"
         "# TYPE execution_orders_rejected_total counter\n"
-        f"execution_orders_rejected_total {stats['orders_rejected']}\n"
+        f"execution_orders_rejected_total {current_stats['orders_rejected']}\n"
         "# HELP execution_uptime_seconds Service Laufzeit in Sekunden\n"
         "# TYPE execution_uptime_seconds gauge\n"
         f"execution_uptime_seconds {uptime_seconds}\n"

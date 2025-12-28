@@ -80,6 +80,16 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# Secrets - CRITICAL: Never commit secrets to repo
+.secrets/
+*.secret
+*.key
+*.pem
+
+# MCP configuration (contains API keys)
+.mcp.json
+mcp-config.toml
+
 # Cache
 .cache/
 .npm
