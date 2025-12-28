@@ -4,7 +4,8 @@ param(
     [string]$Profile = 'dev',
     [switch]$Logging,
     [switch]$StrictHealth,
-    [switch]$NetworkIsolation
+    [switch]$NetworkIsolation,
+    [switch]$TLS
 )
 
 Set-StrictMode -Version Latest
@@ -58,6 +59,27 @@ try {
         Write-Host "Network isolation enabled (internal: true)" -ForegroundColor Cyan
     }
 
+    if ($TLS) {
+        # Verify TLS certificates exist
+        # Path: Documents/.cdb_local/tls (4 levels up from repo root)
+        $documentsDir = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $repoRoot))
+        $tlsDir = Join-Path $documentsDir '.cdb_local\tls'
+        if (-not (Test-Path $tlsDir)) {
+            Write-Error "TLS certificates not found at $tlsDir"
+            Write-Error "Run: bash infrastructure/tls/generate_certs.sh $tlsDir"
+            exit 1
+        }
+        $requiredCerts = @('ca.crt', 'redis.crt', 'redis.key', 'postgres.crt', 'postgres.key', 'client.crt', 'client.key')
+        $missingCerts = $requiredCerts | Where-Object { -not (Test-Path (Join-Path $tlsDir $_)) }
+        if ($missingCerts) {
+            Write-Error "Missing TLS certificates: $($missingCerts -join ', ')"
+            Write-Error "Run: bash infrastructure/tls/generate_certs.sh $tlsDir"
+            exit 1
+        }
+        $composeArgs += '-f', 'infrastructure\compose\tls.yml'
+        Write-Host "TLS enabled (Redis + PostgreSQL encrypted)" -ForegroundColor Green
+    }
+
     $targetServices = @(
         'cdb_redis',
         'cdb_postgres',
@@ -81,8 +103,8 @@ try {
 
     Write-Host "=== Starting Claire de Binare Stack ===" -ForegroundColor Cyan
     Write-Host "Profile: $Profile" -ForegroundColor Yellow
-    if ($Logging -or $StrictHealth -or $NetworkIsolation) {
-        Write-Host "Overlays: $(if($Logging){'Logging '})$(if($StrictHealth){'StrictHealth '})$(if($NetworkIsolation){'NetworkIsolation'})" -ForegroundColor Yellow
+    if ($Logging -or $StrictHealth -or $NetworkIsolation -or $TLS) {
+        Write-Host "Overlays: $(if($Logging){'Logging '})$(if($StrictHealth){'StrictHealth '})$(if($NetworkIsolation){'NetworkIsolation '})$(if($TLS){'TLS'})" -ForegroundColor Yellow
     }
     Write-Host "(cdb_ws intentionally excluded; Dockerfile remains outside this tree)`n" -ForegroundColor Gray
 

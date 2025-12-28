@@ -1,0 +1,107 @@
+# Claire de Binare - TLS Overlay
+# Issue #103: TLS/SSL Implementation
+#
+# Enables TLS for:
+# - Redis (port 6379 with TLS)
+# - PostgreSQL (port 5432 with SSL)
+#
+# Prerequisites:
+#   1. Generate certificates: ./infrastructure/tls/generate_certs.sh
+#   2. Certificates in: ../.cdb_local/tls/
+#
+# Usage:
+#   docker-compose -f base.yml -f tls.yml up -d
+#   OR via stack_up.ps1 -TLS
+
+services:
+  cdb_redis:
+    # Override command to enable TLS
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass $${REDIS_PASSWORD}
+      --tls-port 6379
+      --port 0
+      --tls-cert-file /tls/redis.crt
+      --tls-key-file /tls/redis.key
+      --tls-ca-cert-file /tls/ca.crt
+      --tls-auth-clients optional
+      --tls-replication yes
+    volumes:
+      - redis_data:/data
+      - ../../../../../.cdb_local/tls:/tls:ro
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli --tls --cert /tls/client.crt --key /tls/client.key --cacert /tls/ca.crt -a $$REDIS_PASSWORD ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  cdb_postgres:
+    # PostgreSQL SSL configuration via environment and mounted config
+    environment:
+      POSTGRES_DB: claire_de_binare
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
+      # TLS certificates
+      - ../../../../../.cdb_local/tls/postgres.crt:/var/lib/postgresql/server.crt:ro
+      - ../../../../../.cdb_local/tls/postgres.key:/var/lib/postgresql/server.key:ro
+      - ../../../../../.cdb_local/tls/ca.crt:/var/lib/postgresql/root.crt:ro
+      # SSL configuration script
+      - ../../infrastructure/tls/postgres_ssl_init.sh:/docker-entrypoint-initdb.d/00-ssl-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claire_user} -d claire_de_binare"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Application services with TLS client configuration
+  cdb_ws:
+    environment:
+      REDIS_TLS: "true"
+      REDIS_CA_CERT: /tls/ca.crt
+      POSTGRES_SSLMODE: verify-ca
+      POSTGRES_SSLROOTCERT: /tls/ca.crt
+    volumes:
+      - ../../../../../.cdb_local/tls:/tls:ro
+
+  cdb_core:
+    environment:
+      REDIS_TLS: "true"
+      REDIS_CA_CERT: /tls/ca.crt
+      POSTGRES_SSLMODE: verify-ca
+      POSTGRES_SSLROOTCERT: /tls/ca.crt
+    volumes:
+      - ../../../../../.cdb_local/tls:/tls:ro
+
+  cdb_risk:
+    environment:
+      REDIS_TLS: "true"
+      REDIS_CA_CERT: /tls/ca.crt
+      POSTGRES_SSLMODE: verify-ca
+      POSTGRES_SSLROOTCERT: /tls/ca.crt
+    volumes:
+      - ../../../../../.cdb_local/tls:/tls:ro
+
+  cdb_execution:
+    environment:
+      REDIS_TLS: "true"
+      REDIS_CA_CERT: /tls/ca.crt
+      POSTGRES_SSLMODE: verify-ca
+      POSTGRES_SSLROOTCERT: /tls/ca.crt
+    volumes:
+      - ../../../../../.cdb_local/tls:/tls:ro
+
+  cdb_db_writer:
+    environment:
+      REDIS_TLS: "true"
+      REDIS_CA_CERT: /tls/ca.crt
+      POSTGRES_SSLMODE: verify-ca
+      POSTGRES_SSLROOTCERT: /tls/ca.crt
+    volumes:
+      - ../../../../../.cdb_local/tls:/tls:ro
