@@ -90,6 +90,11 @@ yarn-error.log*
 .mcp.json
 mcp-config.toml
 
+# Legacy docker-compose files (migrated to infrastructure/compose/)
+docker-compose.yml
+docker-compose.base.yml
+docker-compose.dev.yml
+
 # Cache
 .cache/
 .npm
