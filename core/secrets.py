@@ -21,7 +21,7 @@ def read_secret(secret_name: str, fallback_env: Optional[str] = None) -> str:
     """
     Read secret from Docker secrets or fallback to environment variable.
 
-    Supports both production (Docker secrets) and development (.env) workflows.
+    Supports Docker secrets (/run/secrets/) with environment variable fallback.
 
     Priority order:
     1. Docker secret file: /run/secrets/{secret_name}
@@ -77,7 +77,7 @@ def read_secret_file(file_path: str, fallback_env: Optional[str] = None) -> str:
     """
     Read secret from a file path or fallback to environment variable.
 
-    Used for secrets stored as file paths in .env (e.g., Windows development).
+    Used for secrets stored as file paths (e.g., ~/Documents/.secrets/.cdb/).
 
     Priority order:
     1. File at {file_path}

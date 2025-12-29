@@ -40,7 +40,9 @@ services:
       context: ../..
       dockerfile: services/risk/Dockerfile
     container_name: cdb_risk_test
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       # Point to test infrastructure
       REDIS_HOST: cdb_redis_test
@@ -87,7 +89,9 @@ services:
       context: ../..
       dockerfile: services/execution/Dockerfile
     container_name: cdb_execution_test
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       # Point to test infrastructure
       REDIS_HOST: cdb_redis_test
@@ -134,7 +138,9 @@ services:
       context: ../..
       dockerfile: infrastructure/compose/Dockerfile.test
     container_name: cdb_test_runner
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       # Database connection (test stack)
       POSTGRES_HOST: cdb_postgres_test
