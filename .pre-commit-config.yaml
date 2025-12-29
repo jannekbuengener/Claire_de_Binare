@@ -1,5 +1,14 @@
-# Pre-commit Hook Configuration für Emoji-Filter
+# =============================================================================
+# Claire de Binare - Pre-commit Hooks Configuration
+# =============================================================================
+
 repos:
+  # SECRET SCANNING - CRITICAL (Blueprint-compliant)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.1
+    hooks:
+      - id: gitleaks
+        name: 🔐 Detect secrets with Gitleaks
   - repo: local
     hooks:
       - id: emoji-filter
@@ -36,13 +45,20 @@ except Exception as e:
         always_run: false
         
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
+      - id: detect-private-key
+        name: 🔑 Detect private keys
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+        name: 📦 Check for large files
       - id: trailing-whitespace
         exclude: .*\.md$
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-json
+      - id: check-merge-conflict
+        name: 🔀 Check for merge conflicts
         
   # Optional: Weitere Code-Quality Hooks
   - repo: https://github.com/psf/black

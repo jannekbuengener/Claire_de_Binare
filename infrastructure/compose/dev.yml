@@ -1,6 +1,11 @@
 # Claire de Binare - Dev Overrides
 # Port-Bindings, Debug-Volumes, Relaxed Security
 # Network Isolation: All ports bound to localhost (127.0.0.1) only
+#
+# SECRETS ARCHITECTURE:
+# - All secrets read from /run/secrets/ files
+# - Entrypoint exports secrets as env vars for Python apps
+# - Not visible in `docker inspect` output
 
 services:
   # Override Base Services with Port-Bindings
@@ -21,6 +26,7 @@ services:
       - "127.0.0.1:3000:3000"
 
   # Application Services (Dev-Only)
+  # All use entrypoint pattern to read secrets from /run/secrets/
 
   cdb_ws:
     build:
@@ -28,13 +34,14 @@ services:
       dockerfile: services/ws/Dockerfile
     container_name: cdb_ws
     restart: unless-stopped
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -56,15 +63,16 @@ services:
       dockerfile: services/signal/Dockerfile
     container_name: cdb_signal
     restart: unless-stopped
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-paper}
       SIGNAL_PORT: "8005"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8005:8005"
     volumes:
@@ -86,15 +94,16 @@ services:
       dockerfile: services/risk/Dockerfile
     container_name: cdb_risk
     restart: unless-stopped
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
-      - "127.0.0.1:8002:8002"  # Fixed: PORT:PORT mapping (was :8000)
+      - "127.0.0.1:8002:8002"
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -109,15 +118,16 @@ services:
       dockerfile: services/execution/Dockerfile
     container_name: cdb_execution
     restart: unless-stopped
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
-      - "127.0.0.1:8003:8003"  # Fixed: PORT:PORT mapping (was :8000)
+      - "127.0.0.1:8003:8003"
     volumes:
       - ../../logs:/app/logs
     depends_on:
@@ -132,13 +142,14 @@ services:
       dockerfile: services/db_writer/Dockerfile
     container_name: cdb_db_writer
     restart: unless-stopped
-    env_file: .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
       REDIS_HOST: cdb_redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u db_writer.py"]
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
       interval: 30s
@@ -151,20 +162,24 @@ services:
       - cdb_network
 
   # Paper Trading Runner Service
-  # Automated 14-day paper trading test with event logging
   cdb_paper_runner:
     build:
       context: ../..
       dockerfile: tools/paper_trading/Dockerfile
     container_name: cdb_paper_runner
     restart: unless-stopped
-    env_file:
-      - .env
+    secrets:
+      - redis_password
+      - postgres_password
     environment:
-      - PAPER_TRADING_DURATION_DAYS=${PAPER_TRADING_DURATION_DAYS:-14}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      REDIS_HOST: cdb_redis
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      PAPER_TRADING_DURATION_DAYS: ${PAPER_TRADING_DURATION_DAYS:-14}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python tools/paper_trading/service.py"]
     ports:
-      - "127.0.0.1:8004:8004"  # Health endpoint + status API
+      - "127.0.0.1:8004:8004"
     volumes:
       - ../../logs:/app/logs
       - ../../tools/paper_trading:/app/tools/paper_trading:ro
@@ -181,60 +196,3 @@ services:
         condition: service_healthy
     networks:
       - cdb_network
-
-  # Market Data Service - DISABLED: No service.py implementation yet
-  # TODO: Implement service.py and email_alerter.py before enabling
-  # cdb_market:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/market/Dockerfile
-  #   container_name: cdb_market
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   ports:
-  #     - "127.0.0.1:8004:8004"
-  #   volumes:
-  #     - ../../logs:/app/logs
-  #   depends_on:
-  #     - cdb_redis
-  #     - cdb_postgres
-  #   networks:
-  #     - cdb_network
-
-  # Position Allocation Service - DISABLED: Missing required env vars
-  # TODO: Configure ALLOCATION_REGIME_MIN_STABLE_SECONDS and ALLOCATION_RULES_JSON
-  # cdb_allocation:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/allocation/Dockerfile
-  #   container_name: cdb_allocation
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   ports:
-  #     - "127.0.0.1:8005:8005"
-  #   volumes:
-  #     - ../../logs:/app/logs
-  #   depends_on:
-  #     - cdb_redis
-  #     - cdb_postgres
-  #   networks:
-  #     - cdb_network
-
-  # Market Regime Detection Service - DISABLED: Missing required env vars
-  # TODO: Check regime service config.py for required env vars
-  # cdb_regime:
-  #   build:
-  #     context: ../..
-  #     dockerfile: services/regime/Dockerfile
-  #   container_name: cdb_regime
-  #   restart: unless-stopped
-  #   env_file: .env
-  #   ports:
-  #     - "127.0.0.1:8006:8006"
-  #   volumes:
-  #     - ../../logs:/app/logs
-  #   depends_on:
-  #     - cdb_redis
-  #     - cdb_postgres
-  #   networks:
-  #     - cdb_network
