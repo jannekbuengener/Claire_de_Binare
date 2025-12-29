@@ -78,3 +78,55 @@ curl http://127.0.0.1:8000/metrics | grep -E "(decoded_messages_total|decode_err
 **Connection drops:**
 - Check logs for reconnect attempts with backoff
 - Normal: backoff increases exponentially (1s → 2s → 4s → 10s cap)
+
+**Messages decoded but redis_publish_total = 0:**
+- **Issue #342 (RESOLVED 2025-12-29):** Protobuf field name mismatch
+- Verify metrics: `decoded_messages_total > 0` AND `redis_publish_total > 0`
+- If publish = 0: Check logs for `[redis] published market_data` entries
+- Root cause was incorrect field names in `decode_message()`:
+  - Must use `publicAggreDeals` (camelCase), not `publicdeals`/`publicDeals`
+  - Must use `deals` field, not `dealsList`/`deals_list`
+  - Must use `eventType` (camelCase), not `eventtype`
+
+## End-to-End Pipeline Verification
+
+After starting cdb_ws in mexc_pb mode, verify the full trading pipeline:
+
+**1. WebSocket Service (cdb_ws)**
+```bash
+curl http://127.0.0.1:8000/metrics | grep -E "decoded_messages_total|redis_publish_total"
+# Expected:
+#   decoded_messages_total > 0
+#   redis_publish_total > 0  ← CRITICAL: Must be non-zero
+```
+
+**2. Redis Pub/Sub**
+```bash
+docker exec cdb_redis redis-cli -a $(cat ~/.secrets/.cdb/REDIS_PASSWORD) SUBSCRIBE market_data
+# Expected: Continuous stream of JSON messages with MEXC trade data
+# Press Ctrl+C to exit
+```
+
+**3. Signal Service (cdb_signal)**
+```bash
+docker logs cdb_signal --tail 20
+# Expected: Log entries indicating market data processing
+# Note: pct_change errors are a separate issue (not part of WS service)
+```
+
+**4. Health Check All Services**
+```bash
+docker ps --filter "name=cdb_" --format "table {{.Names}}\t{{.Status}}"
+# Expected: All services show "Up" with healthy status
+```
+
+## Known Issues
+
+### Resolved
+- **Issue #342** (2025-12-29): Protobuf field name mismatch causing 0 Redis publishes
+  - **Fix:** Commit 1315430
+  - **Symptom:** `decoded_messages_total > 0` but `redis_publish_total = 0`
+  - **Solution:** Corrected field names to camelCase (`publicAggreDeals`, `eventType`)
+
+### Active
+- **cdb_signal pct_change KeyError:** Separate issue in signal processing logic (not WS service)
