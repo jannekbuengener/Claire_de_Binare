@@ -56,10 +56,10 @@ class MarketData:
     # Required fields (no defaults) must come first
     symbol: str
     price: float
-    pct_change: float
     timestamp: int
 
     # Optional fields (with defaults) come after
+    pct_change: float | None = None  # Optional: calculated by signal engine if missing
     open: float | None = None
     high: float | None = None
     low: float | None = None
@@ -72,16 +72,20 @@ class MarketData:
     @classmethod
     def from_dict(cls, data: dict):
         """Erstellt MarketData aus Dictionary"""
+        # Handle pct_change with fallback for backward compatibility
+        pct_change_raw = data.get("pct_change")
+        pct_change = float(pct_change_raw) if pct_change_raw is not None else None
+
         return cls(
             symbol=data["symbol"],
             price=float(data["price"]),
+            timestamp=int(data.get("timestamp", 0) or data.get("ts_ms", 0)),
+            pct_change=pct_change,
             open=(float(data["open"]) if data.get("open") is not None else None),
             high=(float(data["high"]) if data.get("high") is not None else None),
             low=(float(data["low"]) if data.get("low") is not None else None),
             close=(float(data["close"]) if data.get("close") is not None else None),
             volume=float(data.get("volume", 0.0)),
-            pct_change=float(data["pct_change"]),
-            timestamp=int(data["timestamp"]),
             interval=data.get("interval", "15m"),
             venue=data.get("venue"),
             type=data.get("type", "market_data"),

@@ -103,6 +103,13 @@ class SignalEngine:
         try:
             market_data = MarketData.from_dict(data)
 
+            # Skip if pct_change is missing (raw trade data without calculated change)
+            if market_data.pct_change is None:
+                logger.debug(
+                    f"{market_data.symbol}: pct_change missing (raw trade data), skipping signal generation"
+                )
+                return None
+
             # Prüfe Momentum-Schwelle
             if market_data.pct_change >= self.config.threshold_pct:
                 # Volume-Check
