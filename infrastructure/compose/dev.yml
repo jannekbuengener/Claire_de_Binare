@@ -75,6 +75,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-paper}
       SIGNAL_PORT: "8005"
+      SIGNAL_THRESHOLD_PCT: "0.005"  # Issue #345: Evidence-based: 100ms trades max ~0.014%, most <0.01%
+      SIGNAL_MIN_VOLUME: "0"  # DISABLED: Raw trades use 'qty' field, not 'volume' (TODO: fix field mapping)
+      LOG_LEVEL: "DEBUG"  # Enable detailed logging for signal generation debugging
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8005:8005"

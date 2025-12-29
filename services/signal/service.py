@@ -3,6 +3,7 @@ Signal Engine - Main Service
 Momentum-basierte Signal-Generierung
 """
 
+import os
 import sys
 import json
 import time
@@ -33,8 +34,10 @@ if logging_config_path.exists():
         logging.config.dictConfig(logging_conf)
 else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
+    # Respect LOG_LEVEL env var (Issue #345 debugging)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
@@ -131,9 +134,7 @@ class SignalEngine:
                 signal = Signal(
                     symbol=market_data.symbol,
                     side="BUY",
-                    reason=Signal.generate_reason(
-                        market_data.pct_change, self.config.threshold_pct
-                    ),
+                    reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",
                     timestamp=int(time.time()),
                     price=market_data.price,
                     pct_change=market_data.pct_change,

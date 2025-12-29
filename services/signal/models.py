@@ -32,20 +32,25 @@ class Signal:
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
+        # Filter out None values for Redis compatibility (xadd doesn't accept None)
         return {
-            "type": self.type,
-            "signal_id": self.signal_id,
-            "strategy_id": self.strategy_id,
-            "bot_id": self.bot_id,
-            "symbol": self.symbol,
-            "direction": self.direction,
-            "strength": self.strength,
-            "timestamp": self.timestamp,
-            "side": self.side,
-            "confidence": self.confidence,
-            "reason": self.reason,
-            "price": self.price,
-            "pct_change": self.pct_change,
+            k: v
+            for k, v in {
+                "type": self.type,
+                "signal_id": self.signal_id,
+                "strategy_id": self.strategy_id,
+                "bot_id": self.bot_id,
+                "symbol": self.symbol,
+                "direction": self.direction,
+                "strength": self.strength,
+                "timestamp": self.timestamp,
+                "side": self.side,
+                "confidence": self.confidence,
+                "reason": self.reason,
+                "price": self.price,
+                "pct_change": self.pct_change,
+            }.items()
+            if v is not None
         }
 
 
