@@ -49,8 +49,10 @@ def redis_client():
     1. cdb_redis:6379 (internal Docker network)
     2. localhost:6379 (if port mapped)
     """
-    # Get password from environment or use default
-    password = os.getenv("REDIS_PASSWORD", "claire_redis_secret_2024")
+    # Get password from environment - NO FALLBACK (security)
+    password = os.getenv("REDIS_PASSWORD")
+    if not password:
+        pytest.fail("REDIS_PASSWORD environment variable not set. Load secrets first.")
 
     # Try internal docker network first
     try:

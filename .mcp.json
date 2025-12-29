@@ -12,10 +12,8 @@
         "ProgramData": "C:\\ProgramData",
         "ProgramFiles": "C:\\Program Files",
         "GRAFANA_URL": "http://host.docker.internal:3000",
-        "GRAFANA_API_KEY": "glsa_bqljopBuWofyzBgap0YWvxc8ehsoJk4Y_55e85867",
         "REDIS_HOST": "host.docker.internal",
-        "REDIS_PORT": "6379",
-        "REDIS_PASSWORD": "claire_redis_secret_2024"
+        "REDIS_PORT": "6379"
       },
       "type": "stdio"
     }

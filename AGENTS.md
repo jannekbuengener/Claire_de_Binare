@@ -1,47 +1,15 @@
-# AGENTS — Pointer to Canonical Registry
+# AGENTS (Working Repo Pointer)
 
-⚠️ **THIS IS A POINTER FILE — NOT THE CANONICAL REGISTRY**
+Dieses Repository (`Claire_de_Binare`) ist **Execution Only**.
 
-## Canonical Location
+✅ **Kanonische Agenten-Registry / Rollen / Trust-Score-Regeln** liegen im Docs Hub:
 
-The **authoritative AGENTS registry** is located at:
-
-```
-C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs\agents\AGENTS.md
-```
-
-## Why This Pointer Exists
-
-- **Working Repo** (this repo): Code execution only
-- **Docs Hub**: Single source of truth for governance, knowledge, and agent definitions
-
-**ALL AGENTS MUST LOAD FROM DOCS HUB**, not from this file.
-
-## Agent Role Files
-
-All agent-specific role files are in Docs Hub:
-
-- `Claire_de_Binare_Docs\agents\CLAUDE.md`
-- `Claire_de_Binare_Docs\agents\CODEX.md`
-- `Claire_de_Binare_Docs\agents\COPILOT.md`
-- `Claire_de_Binare_Docs\agents\GEMINI.md`
-
-## Local Workspace State
-
-Machine-local agent state (not committed) is in:
-
-```
-Claire_de_Binare_Docs\.local\workspaces-root\.cdb_local\agents\
-```
-
-## Migration Note
-
-This pointer was created during the **Workspaces Root Consolidation** (Dec 2025) to enforce the canonical separation:
-
-- **Before:** AGENTS.md lived in Working Repo root
-- **After:** AGENTS.md lives in Docs Hub; this file is a pointer
-
----
-
-**For the full canonical AGENTS registry, refer to:**
 `C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs\agents\AGENTS.md`
+
+## Pflicht
+Jeder Agent MUSS:
+1) die kanonische `AGENTS.md` im Docs Hub laden
+2) danach seine eigene Rollendatei (`CLAUDE.md`, `CODEX.md`, `GEMINI.md` …) laden
+3) die Governance- & Trust-Entry-Points aus der kanonischen `AGENTS.md` beachten
+
+❗ Keine Kopien, keine Ableitungen, keine „lokalen Regeln“ in diesem Working Repo.

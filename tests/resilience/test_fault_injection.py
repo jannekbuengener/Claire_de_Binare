@@ -45,7 +45,7 @@ MAX_RECOVERY_TIME_SECONDS = 30
 @pytest.fixture(scope="module")
 def redis_client():
     """Redis client for health checks."""
-    password = os.getenv("REDIS_PASSWORD", "claire_redis_secret_2024")
+    password = os.environ["REDIS_PASSWORD"]  # No fallback - must be set
     client = redis.Redis(
         host="localhost",
         port=6379,
@@ -89,7 +89,7 @@ def wait_for_service(service_name: str, max_wait: int = 30) -> float:
 def check_redis_connectivity() -> bool:
     """Check if Redis is accessible."""
     try:
-        password = os.getenv("REDIS_PASSWORD", "claire_redis_secret_2024")
+        password = os.environ["REDIS_PASSWORD"]  # No fallback - must be set
         client = redis.Redis(host="localhost", port=6379, password=password, socket_timeout=2)
         client.ping()
         client.close()
