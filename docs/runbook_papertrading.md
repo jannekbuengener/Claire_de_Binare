@@ -25,7 +25,8 @@ Get-Content .env | Select-String "MEXC_TESTNET"
 # Expected: MEXC_TESTNET=true
 
 # Step 3: Verify secret files exist
-ls C:\Users\janne\Documents\.secrets\.cdb\
+ls $env:SECRETS_PATH
+# Or on Linux/Mac: ls ~/Documents/.secrets/.cdb/
 # Expected: REDIS_PASSWORD, POSTGRES_PASSWORD, GRAFANA_PASSWORD (all FILES, not directories)
 ```
 
@@ -218,18 +219,19 @@ docker logs cdb_core --tail 50 | Select-String "signal"
 **Quick Fix**:
 ```powershell
 # Step 1: Verify secret files exist and are FILES (not directories)
-ls C:\Users\janne\Documents\.secrets\.cdb\
+ls $env:SECRETS_PATH
+# Or on Linux/Mac: ls ~/Documents/.secrets/.cdb/
 
 # Expected: All should be files with size > 0 bytes
 # -rw-r--r-- REDIS_PASSWORD (e.g., 24 bytes)
 # -rw-r--r-- POSTGRES_PASSWORD (any size > 0)
 
 # Step 2: If directories exist, they're INVALID
-# Fix: Create actual files with password content
-"your_password_here" | Out-File -FilePath C:\Users\janne\Documents\.secrets\.cdb\POSTGRES_PASSWORD -NoNewline -Encoding ASCII
+# Fix: Create actual files with password content (use init-secrets.ps1 or:)
+"your_password_here" | Out-File -FilePath "$env:SECRETS_PATH\POSTGRES_PASSWORD" -NoNewline -Encoding ASCII
 
 # Step 3: Verify file contents (should be plain text password)
-Get-Content C:\Users\janne\Documents\.secrets\.cdb\POSTGRES_PASSWORD
+Get-Content "$env:SECRETS_PATH\POSTGRES_PASSWORD"
 
 # Step 4: Restart stack
 docker-compose down
