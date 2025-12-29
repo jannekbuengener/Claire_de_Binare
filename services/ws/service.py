@@ -15,6 +15,7 @@ import os
 import sys
 import threading
 from flask import Flask, jsonify
+from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from mexc_v3_client import MexcV3Client
 
@@ -32,6 +33,12 @@ app = Flask(__name__)
 # Global state
 ws_client = None
 ws_mode = None
+
+# Prometheus metrics
+decoded_messages_total = Gauge("decoded_messages_total", "Total decoded WS messages")
+decode_errors_total = Gauge("decode_errors_total", "Total WS decode errors")
+ws_connected = Gauge("ws_connected", "WS connection status (0/1)")
+last_message_ts_ms = Gauge("last_message_ts_ms", "Last message timestamp (ms)")
 
 
 @app.route("/health", methods=["GET"])
@@ -57,6 +64,19 @@ def health():
             health_data["last_message_age_ms"] = None
 
     return jsonify(health_data), 200
+
+
+@app.route("/metrics", methods=["GET"])
+def metrics():
+    """Prometheus metrics endpoint"""
+    client = ws_client  # Local copy, reduces race risk
+    if client is not None:
+        m = client.get_metrics()
+        decoded_messages_total.set(m.get("decoded_messages_total", 0))
+        decode_errors_total.set(m.get("decode_errors_total", 0))
+        ws_connected.set(m.get("ws_connected", 0))
+        last_message_ts_ms.set(m.get("last_message_ts_ms", 0))
+    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
 
 
 def start_flask_server():
