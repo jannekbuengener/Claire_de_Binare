@@ -19,9 +19,11 @@ from core.utils.clock import utcnow
 try:
     from .config import config
     from .models import MarketData, Signal
+    from .price_buffer import PriceBuffer
 except ImportError:
     from config import config
     from models import MarketData, Signal
+    from price_buffer import PriceBuffer
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -59,6 +61,7 @@ class SignalEngine:
         self.redis_client: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
+        self.price_buffer = PriceBuffer()  # Stateful pct_change calculation (Issue #345)
 
         # Validiere Config
         try:
@@ -103,12 +106,16 @@ class SignalEngine:
         try:
             market_data = MarketData.from_dict(data)
 
-            # Skip if pct_change is missing (raw trade data without calculated change)
+            # Calculate pct_change if missing (raw trade data from cdb_ws)
+            # Issue #345: Stateful calculation using price history buffer
             if market_data.pct_change is None:
-                logger.debug(
-                    f"{market_data.symbol}: pct_change missing (raw trade data), skipping signal generation"
+                market_data.pct_change = self.price_buffer.calculate_pct_change(
+                    market_data.symbol, market_data.price
                 )
-                return None
+                logger.debug(
+                    f"{market_data.symbol}: pct_change calculated from price buffer "
+                    f"(@ ${market_data.price:.2f} → {market_data.pct_change:+.4f}%)"
+                )
 
             # Prüfe Momentum-Schwelle
             if market_data.pct_change >= self.config.threshold_pct:
