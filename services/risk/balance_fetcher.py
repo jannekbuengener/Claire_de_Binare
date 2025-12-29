@@ -12,7 +12,7 @@ import hmac
 import os
 import logging
 from typing import Dict, Optional
-from core.domain.secrets import get_secret
+from core.secrets import read_secret
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +26,9 @@ class RealBalanceFetcher:
     """Fetch REAL balance from MEXC - NO MORE test_balance=10000"""
 
     def __init__(self):
-        self.api_key = os.getenv("MEXC_API_KEY") or get_secret("mexc_api_key")
-        self.api_secret = os.getenv("MEXC_API_SECRET") or get_secret("mexc_api_secret")
+        # Use unified secret loader: Docker secrets first, then env fallback
+        self.api_key = read_secret("mexc_api_key", "MEXC_API_KEY")
+        self.api_secret = read_secret("mexc_api_secret", "MEXC_API_SECRET")
         self.base_url = os.getenv("MEXC_BASE_URL", "https://contract.mexc.com")
 
         if not self.api_key or not self.api_secret:
