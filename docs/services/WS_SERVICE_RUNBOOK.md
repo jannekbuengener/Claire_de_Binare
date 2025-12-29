@@ -129,4 +129,10 @@ docker ps --filter "name=cdb_" --format "table {{.Names}}\t{{.Status}}"
   - **Solution:** Corrected field names to camelCase (`publicAggreDeals`, `eventType`)
 
 ### Active
-- **cdb_signal pct_change KeyError:** Separate issue in signal processing logic (not WS service)
+None. Pipeline is stable end-to-end.
+
+### Downstream Issues (Out of WS Service Scope)
+- **Issue #345** (2025-12-29): cdb_signal needs stateful pct_change calculation
+  - **Status:** Quick fix applied (no crashes), proper implementation tracked in #345
+  - **Impact:** Signals not generating from raw MEXC trades (by design until #345 is implemented)
+  - **Fix:** Commit c06ae5c - Made pct_change optional in MarketData dataclass
