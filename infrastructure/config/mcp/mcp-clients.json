@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "graphiti-memory": {
+      "transport": "http",
+      "url": "http://localhost:8000/mcp/",
+      "description": "Graphiti MCP Server for Auto-Claude persistent memory with FalkorDB knowledge graph"
+    }
+  },
+  "_instructions": {
+    "integration": "To integrate with Auto-Claude, merge this configuration into your .mcp.json file or Claude settings",
+    "prerequisites": [
+      "Start memory stack: docker compose -f infrastructure/compose/memory.yml up -d",
+      "Run initialization: ./infrastructure/scripts/init-memory.sh (or .ps1 on Windows)",
+      "Wait for Graphiti MCP Server health: http://localhost:8000/health"
+    ],
+    "available_methods": [
+      "add_episode - Write memory entries",
+      "search - Semantic search of memories",
+      "get_entity - Retrieve specific entities",
+      "get_episodes - List episodes"
+    ]
+  }
+}
