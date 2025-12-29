@@ -19,6 +19,7 @@ COPY core /app/core
 
 # Service code
 COPY services/ws/*.py ./
+COPY services/ws/mexc_proto_gen /app/mexc_proto_gen
 
 # Create logs directory
 RUN mkdir -p /app/logs /app/logs/events

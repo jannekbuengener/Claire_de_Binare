@@ -30,14 +30,6 @@ logger = logging.getLogger(__name__)
 WS_URL = "wss://wbs-api.mexc.com/ws"
 
 
-def _pick_list_field(obj, candidates):
-    """Helper: pick first available field from candidates"""
-    for name in candidates:
-        if hasattr(obj, name):
-            return getattr(obj, name)
-    return None
-
-
 def decode_message(raw: bytes) -> dict:
     """
     Decode MEXC Protobuf message.
@@ -49,21 +41,23 @@ def decode_message(raw: bytes) -> dict:
     w = wrapper_pb2.PushDataV3ApiWrapper()
     try:
         w.ParseFromString(raw)
-    except Exception:
+    except Exception as e:
+        logger.debug(f"[decode] wrapper parse failed: {e}, trying direct")
         w = None
 
     if w is not None:
         channel = getattr(w, "channel", "")
         symbol = getattr(w, "symbol", "")
 
-        # Some schemas use oneof; tolerant approach
-        publicdeals = getattr(w, "publicdeals", None)
-        if publicdeals is None:
-            publicdeals = getattr(w, "publicDeals", None)
+        # MEXC uses publicAggreDeals (camelCase) field in wrapper
+        publicAggreDeals = getattr(w, "publicAggreDeals", None)
 
-        if publicdeals:
-            deals_list = _pick_list_field(publicdeals, ["dealsList", "deals_list"])
-            eventtype = getattr(publicdeals, "eventtype", "") or getattr(publicdeals, "eventType", "")
+        if publicAggreDeals is not None:
+            # PublicAggreDealsV3Api has 'deals' field (not dealsList)
+            deals_list = getattr(publicAggreDeals, "deals", [])
+            eventtype = getattr(publicAggreDeals, "eventType", "")
+            deals_count = len(deals_list) if deals_list else 0
+            logger.debug(f"[decode] wrapper_publicdeals: channel={channel}, symbol={symbol}, deals_count={deals_count}")
             return {
                 "kind": "wrapper_publicdeals",
                 "channel": channel,
@@ -71,12 +65,16 @@ def decode_message(raw: bytes) -> dict:
                 "eventtype": eventtype,
                 "deals": deals_list if deals_list is not None else [],
             }
+        else:
+            logger.debug(f"[decode] wrapper has no publicAggreDeals field, channel={channel}")
 
     # Fallback: raw message is deals proto directly
     d = deals_pb2.PublicAggreDealsV3Api()
     d.ParseFromString(raw)
-    deals_list = _pick_list_field(d, ["dealsList", "deals_list"])
-    eventtype = getattr(d, "eventtype", "") or getattr(d, "eventType", "")
+    deals_list = getattr(d, "deals", [])
+    eventtype = getattr(d, "eventType", "")
+    deals_count = len(deals_list) if deals_list else 0
+    logger.debug(f"[decode] deals_direct: eventtype={eventtype}, deals_count={deals_count}")
     return {"kind": "deals_direct", "eventtype": eventtype, "deals": deals_list if deals_list is not None else []}
 
 
@@ -207,7 +205,13 @@ class MexcV3Client:
                     self.last_message_ts = int(time.time() * 1000)
 
                     deals = decoded_obj.get("deals") or []
+                    deals_count = len(deals)
+
+                    if deals_count == 0:
+                        logger.debug(f"[message_loop] decoded but 0 deals (kind={decoded_obj.get('kind')})")
+
                     if deals and self.on_trade:
+                        logger.debug(f"[message_loop] emitting {deals_count} deals to on_trade callback")
                         for deal in deals:
                             event = normalize_deal(self.symbol, deal)
                             self.on_trade(event)

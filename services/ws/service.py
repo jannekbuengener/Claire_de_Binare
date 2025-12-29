@@ -6,22 +6,26 @@ Modes (controlled by WS_SOURCE env):
 - mexc_pb: MEXC WebSocket V3 Protobuf client
 
 Port: 8000
-Dependencies: None (Redis integration deferred to D4+)
+Dependencies: Redis (market_data publisher)
 """
 
 import asyncio
+import json
 import logging
 import os
 import sys
 import threading
 from flask import Flask, jsonify
-from prometheus_client import Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
+import redis
 
 from mexc_v3_client import MexcV3Client
 
 # Basic logging setup
+log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
+log_level = getattr(logging, log_level_name, logging.INFO)
 logging.basicConfig(
-    level=logging.INFO,
+    level=log_level,
     format="%(asctime)s [%(levelname)s] ws_service: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
@@ -33,12 +37,15 @@ app = Flask(__name__)
 # Global state
 ws_client = None
 ws_mode = None
+redis_client = None
 
 # Prometheus metrics
 decoded_messages_total = Gauge("decoded_messages_total", "Total decoded WS messages")
 decode_errors_total = Gauge("decode_errors_total", "Total WS decode errors")
 ws_connected = Gauge("ws_connected", "WS connection status (0/1)")
 last_message_ts_ms = Gauge("last_message_ts_ms", "Last message timestamp (ms)")
+redis_publish_total = Counter("redis_publish_total", "Total Redis publishes")
+redis_publish_errors_total = Counter("redis_publish_errors_total", "Redis publish errors")
 
 
 @app.route("/health", methods=["GET"])
@@ -62,6 +69,16 @@ def health():
             health_data["last_message_age_ms"] = now_ms - metrics["last_message_ts_ms"]
         else:
             health_data["last_message_age_ms"] = None
+
+    # Redis status
+    if redis_client:
+        try:
+            redis_client.ping()
+            health_data["redis_connected"] = True
+        except Exception:
+            health_data["redis_connected"] = False
+    else:
+        health_data["redis_connected"] = False
 
     return jsonify(health_data), 200
 
@@ -87,19 +104,47 @@ def start_flask_server():
 
 async def run_mexc_client():
     """Start MEXC WebSocket client"""
-    global ws_client
+    global ws_client, redis_client
 
     symbol = os.getenv("MEXC_SYMBOL", "BTCUSDT")
     interval = os.getenv("MEXC_INTERVAL", "100ms")
     ping_interval = int(os.getenv("WS_PING_INTERVAL", "20"))
     reconnect_max = int(os.getenv("WS_RECONNECT_MAX", "10"))
 
+    # Redis connection
+    redis_host = os.getenv("REDIS_HOST", "cdb_redis")
+    redis_port = int(os.getenv("REDIS_PORT", "6379"))
+    redis_password = os.getenv("REDIS_PASSWORD", "")
+
+    try:
+        redis_client = redis.Redis(
+            host=redis_host,
+            port=redis_port,
+            password=redis_password if redis_password else None,
+            db=0,
+            decode_responses=True,
+        )
+        redis_client.ping()
+        logger.info(f"Redis connected: {redis_host}:{redis_port}")
+    except Exception as e:
+        logger.error(f"Redis connection failed: {e}")
+        logger.error("Service will continue but market_data will NOT be published!")
+
     logger.info(f"Starting MEXC WS client: symbol={symbol}, interval={interval}")
 
     def on_trade(event):
-        """Trade event callback (for now: just log sample)"""
-        # TODO D4+: Publish to Redis/Queue
-        logger.debug(f"[trade] {event}")
+        """Trade event callback: Publish to Redis market_data topic"""
+        if redis_client:
+            try:
+                message = json.dumps(event)
+                redis_client.publish("market_data", message)
+                redis_publish_total.inc()
+                logger.debug(f"[redis] published market_data: {event['symbol']} @ {event['price']}")
+            except Exception as e:
+                redis_publish_errors_total.inc()
+                logger.error(f"[redis] publish error: {e}")
+        else:
+            logger.warning(f"[redis] not connected, dropping trade: {event}")
 
     ws_client = MexcV3Client(
         symbol=symbol,
