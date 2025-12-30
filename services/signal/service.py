@@ -16,6 +16,7 @@ from typing import Optional
 from pathlib import Path
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_signal
 # Lokale Imports
 try:
     from .config import config
@@ -157,11 +158,13 @@ class SignalEngine:
     def publish_signal(self, signal: Signal):
         """Publiziert Signal auf Redis"""
         try:
-            message = json.dumps(signal.to_dict())
+            # Sanitize payload (Issue #349: None-filtering + contract v1.0 enforcement)
+            sanitized = sanitize_signal(signal.to_dict())
+            message = json.dumps(sanitized)
             self.redis_client.publish(self.config.output_topic, message)
             if self.redis_client:
                 self.redis_client.xadd(
-                    self.config.output_stream, signal.to_dict(), maxlen=10000
+                    self.config.output_stream, sanitized, maxlen=10000
                 )
 
             # Statistik
