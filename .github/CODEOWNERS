@@ -3,24 +3,34 @@
 # Goal: Critical execution paths require maintainer review for safety/stability
 # Scope: Trading engine core, services, infrastructure, CI/CD
 #
-# Replace @maintainers with actual GitHub username/team (e.g. @jannekbuengener)
+# Workaround for GitHub Free Tier (kein echter Branch Protection verfügbar)
+# Echte Branch Protection erfordert GitHub Pro oder Public Repository.
+# Issue: #353
 
 # Default: All execution code requires review
-* @maintainers
+* @jannekbuengener
 
 # Critical Execution Paths
-/core/                   @maintainers   # Trading engine domain models
-/services/               @maintainers   # Risk, Execution, Core services
-/infrastructure/         @maintainers   # Docker, compose, database schema
+/core/                   @jannekbuengener   # Trading engine domain models
+/services/               @jannekbuengener   # Risk, Execution, Core services
+/infrastructure/         @jannekbuengener   # Docker, compose, database schema
 
 # Testing & Quality
-/tests/                  @maintainers   # E2E, unit, integration tests
-/tools/                  @maintainers   # Paper trading, utilities
+/tests/                  @jannekbuengener   # E2E, unit, integration tests
+/tools/                  @jannekbuengener   # Paper trading, utilities
 
 # Build & Dependencies
-/Makefile                @maintainers   # Build automation
-/requirements.txt        @maintainers   # Python dependencies
-/docker-compose*.yml     @maintainers   # Stack configuration
+/Makefile                @jannekbuengener   # Build automation
+/requirements.txt        @jannekbuengener   # Python dependencies
+/docker-compose*.yml     @jannekbuengener   # Stack configuration
 
 # CI/CD & Guardrails
-/.github/                @maintainers   # Workflows, actions, CODEOWNERS
+/.github/                @jannekbuengener   # Workflows, actions, CODEOWNERS
+
+# Governance & Policies (Critical)
+/docs/governance/*       @jannekbuengener   # Governance Policies
+/knowledge/governance/*  @jannekbuengener   # Canonical Governance (Docs Repo Pointer)
+
+# Secrets & Config (High Risk)
+/.env.example            @jannekbuengener   # Environment template
+/infrastructure/secrets/* @jannekbuengener  # Secrets management
