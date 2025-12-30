@@ -1,0 +1,84 @@
+# Alertmanager Configuration
+# Issue: #352
+# Purpose: Route alerts from Prometheus to notification channels
+
+global:
+  resolve_timeout: 5m
+
+# Route tree for alert distribution
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+
+  # Child routes for specific alert types
+  routes:
+    # Critical Alerts (immediate notification)
+    - match:
+        severity: critical
+      receiver: 'critical-receiver'
+      group_wait: 0s
+      repeat_interval: 5m
+
+    # High Severity (grouped notification)
+    - match:
+        severity: high
+      receiver: 'high-receiver'
+      group_wait: 30s
+      repeat_interval: 1h
+
+    # Warning Alerts (grouped notification)
+    - match:
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 1m
+      repeat_interval: 4h
+
+# Notification receivers
+receivers:
+  # Default receiver (placeholder for future integration)
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook'  # Placeholder (local webhook for testing)
+        send_resolved: true
+
+  # Critical receiver (e.g., PagerDuty, Slack, Email)
+  - name: 'critical-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/critical'
+        send_resolved: true
+
+  # High severity receiver
+  - name: 'high-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/high'
+        send_resolved: true
+
+  # Warning receiver
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/warning'
+        send_resolved: true
+
+# Inhibition rules (prevent noise)
+inhibit_rules:
+  # Inhibit warning/high alerts if critical alert is firing for same service
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service', 'instance']
+
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'high'
+    equal: ['alertname', 'service', 'instance']
+
+  - source_match:
+      severity: 'high'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service', 'instance']

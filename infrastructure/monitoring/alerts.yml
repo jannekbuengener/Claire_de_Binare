@@ -164,3 +164,19 @@ groups:
         annotations:
           summary: "Prometheus target {{ $labels.job }} is down"
           description: "Metrics collection interrupted for {{ $labels.instance }}."
+
+  # =============================================================================
+  # TEST ALERTS - For Alertmanager Validation
+  # =============================================================================
+  - name: test_alerts
+    interval: 15s
+    rules:
+      - alert: AlertmanagerTest
+        expr: vector(1)
+        for: 0s
+        labels:
+          severity: warning
+          service: test
+        annotations:
+          summary: "Alertmanager test alert (always firing)"
+          description: "This alert fires continuously to validate Alertmanager routing. Safe to silence."
