@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 import threading
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import redis
 
@@ -93,7 +93,7 @@ def metrics():
         decode_errors_total.set(m.get("decode_errors_total", 0))
         ws_connected.set(m.get("ws_connected", 0))
         last_message_ts_ms.set(m.get("last_message_ts_ms", 0))
-    return generate_latest(), 200, {"Content-Type": CONTENT_TYPE_LATEST}
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 
 def start_flask_server():
