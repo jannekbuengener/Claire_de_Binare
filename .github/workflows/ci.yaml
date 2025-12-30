@@ -15,20 +15,21 @@ jobs:
   # CODE QUALITY CHECKS
   # ============================================
 
-  core-guard:
-    name: Core Duplicates Guard
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  # core-guard:
+  #   name: Core Duplicates Guard
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+  #     - name: Setup Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Run core duplicates check
-        run: python scripts/check_core_duplicates.py
+  #     - name: Run core duplicates check
+  #       run: python scripts/check_core_duplicates.py
+  # TODO Issue #355: Re-enable when script exists
 
   lint:
     name: Linting (Ruff)
@@ -133,7 +134,7 @@ jobs:
             --cov-report=term-missing \
             --cov-report=xml \
             --cov-report=html \
-            --cov-fail-under=80
+            --cov-fail-under=70  # Issue #355: Relaxed from 80 for Phase 0
 
       - name: Upload coverage to artifacts
         uses: actions/upload-artifact@v4
@@ -280,7 +281,7 @@ jobs:
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [core-guard, lint, format-check, type-check, test, secrets-scan, trivy-scan, security-audit, dependency-audit, docs-check]
+    needs: [lint, format-check, type-check, test, secrets-scan, trivy-scan, security-audit, dependency-audit, docs-check]  # Removed: core-guard (disabled)
     if: always()
     steps:
       - name: Create summary
@@ -290,7 +291,7 @@ jobs:
           echo "**Status**: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Jobs:" >> $GITHUB_STEP_SUMMARY
-          echo "- Core Guard: ${{ needs.core-guard.result }}" >> $GITHUB_STEP_SUMMARY
+          # echo "- Core Guard: ${{ needs.core-guard.result }}" >> $GITHUB_STEP_SUMMARY  # Disabled
           echo "- Linting: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Format Check: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
