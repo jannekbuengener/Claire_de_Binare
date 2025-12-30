@@ -1,0 +1,92 @@
+[
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574400000,
+    "price": "50000.00",
+    "trade_qty": "1.0",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574460000,
+    "price": "50500.00",
+    "trade_qty": "0.5",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574520000,
+    "price": "51000.00",
+    "trade_qty": "0.75",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574580000,
+    "price": "51500.00",
+    "trade_qty": "1.2",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574640000,
+    "price": "52000.00",
+    "trade_qty": "0.8",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574700000,
+    "price": "52500.00",
+    "trade_qty": "1.0",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574760000,
+    "price": "53000.00",
+    "trade_qty": "0.6",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574820000,
+    "price": "53500.00",
+    "trade_qty": "0.9",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574880000,
+    "price": "54000.00",
+    "trade_qty": "1.1",
+    "side": "buy"
+  },
+  {
+    "schema_version": "v1.0",
+    "source": "stub",
+    "symbol": "BTCUSDT",
+    "ts_ms": 1735574940000,
+    "price": "54500.00",
+    "trade_qty": "0.7",
+    "side": "buy"
+  }
+]
