@@ -3,6 +3,7 @@ Risk Manager - Main Service
 Multi-Layer Risk Management
 """
 
+import os
 import sys
 import json
 import time
@@ -36,8 +37,10 @@ if logging_config_path.exists():
         logging.config.dictConfig(logging_conf)
 else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
+    # Respect LOG_LEVEL env var (Issue #347 - Dev vs Prod logging policy)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
