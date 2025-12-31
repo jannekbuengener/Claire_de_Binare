@@ -3,6 +3,8 @@ CDB Agent SDK - Spezialisierte Agenten
 
 Jeder Agent hat eine klare, abgegrenzte Verantwortung.
 Kein Agent überschreitet seine Governance-Grenzen.
+
+Bei 3+ Agenten wird der Orchestrator automatisch aktiviert (CLAUDE.md §1.1).
 """
 
 from .dataflow_observer import (
@@ -29,8 +31,19 @@ from .change_impact_analyst import (
     create_change_impact_analyst_options,
     run_change_impact_analyst,
 )
+from .orchestrator import (
+    ORCHESTRATOR_PROMPT,
+    ORCHESTRATOR_TOOLS,
+    create_orchestrator_options,
+    run_orchestrator,
+)
 
 __all__ = [
+    # Orchestrator (Multi-Agent Koordination)
+    "ORCHESTRATOR_PROMPT",
+    "ORCHESTRATOR_TOOLS",
+    "create_orchestrator_options",
+    "run_orchestrator",
     # Data Flow & Observability Engineer
     "DATAFLOW_OBSERVER_PROMPT",
     "DATAFLOW_OBSERVER_TOOLS",

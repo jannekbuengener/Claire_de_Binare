@@ -35,7 +35,7 @@ if logging_config_path.exists():
         logging.config.dictConfig(logging_conf)
 else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
-    # Respect LOG_LEVEL env var (Issue #345 debugging)
+    # Respect LOG_LEVEL env var (Issue #347 - Dev vs Prod logging policy)
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
         level=getattr(logging, log_level, logging.INFO),

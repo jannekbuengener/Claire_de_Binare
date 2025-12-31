@@ -97,7 +97,7 @@ Claire_de_Binare/
 
 ### Docs Hub (Separate Repo)
 📍 **Repository:** `Claire_de_Binare_Docs` (separate workspace)
-**Access:** `C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs`
+**Access:** `D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs`
 
 **Contents:**
 - Strategic planning documents

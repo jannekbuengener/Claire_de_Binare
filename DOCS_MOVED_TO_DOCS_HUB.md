@@ -13,7 +13,7 @@ Working Repo contains **executable code only**. All documentation has been migra
 
 ## Canonical Documentation Location
 
-**Docs Hub**: `C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs`
+**Docs Hub**: `D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs`
 
 ## Migrated Files
 
@@ -40,7 +40,7 @@ Working Repo contains **executable code only**. All documentation has been migra
 
 ```powershell
 # Open Docs Hub
-cd "C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs"
+cd "D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs"
 
 # View operations runbook
 cat knowledge/operations/DOCKER_STACK_RUNBOOK.md
