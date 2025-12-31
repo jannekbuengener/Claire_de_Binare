@@ -87,14 +87,15 @@ Deterministisches market_data Fixture für reproducible Tests.
 ```powershell
 # 1. Start Stack (mit Logging für Debugging)
 .\infrastructure\scripts\stack_up.ps1 -Logging
+# stack_up exports required secrets (e.g., REDIS_PASSWORD) into the session
 
 # 2. Run E2E Smoke Test
-.\.venv\Scripts\python.exe -m pytest tests\e2e\test_smoke_pipeline.py -v --tb=short
+.\.venv\Scripts\python.exe -m pytest tests\e2e -m e2e -v --tb=short
 
 # 3. Repeat 3x für Determinismus-Check
 for ($i=1; $i -le 3; $i++) {
     Write-Host "Run $i/3..."
-    .\.venv\Scripts\python.exe -m pytest tests\e2e\test_smoke_pipeline.py -v
+    .\.venv\Scripts\python.exe -m pytest tests\e2e -m e2e -v
 }
 ```
 
@@ -108,10 +109,10 @@ for ($i=1; $i -le 3; $i++) {
 ### CI (GitHub Actions)
 
 Automatisch bei:
-- Push auf `main` (paths: `tests/e2e/**`, `services/**`)
-- Pull Requests
+- Pull Requests (paths: `tests/e2e/**`, `services/**`, `infrastructure/**`)
+- Manuell via `workflow_dispatch`
 
-**Workflow:** `.github/workflows/e2e.yml`
+**Workflow:** `.github/workflows/e2e-tests.yml`
 
 ---
 
@@ -127,7 +128,7 @@ docker ps --filter name=cdb_ --format "table {{.Names}}\t{{.Status}}"
 docker exec cdb_redis redis-cli SUBSCRIBE market_data
 
 # Prometheus metrics
-curl http://localhost:9090/api/v1/query?query=signals_generated_total
+curl http://localhost:19090/api/v1/query?query=signals_generated_total
 ```
 
 ### 2. Check Logs
