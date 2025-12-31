@@ -16,6 +16,7 @@
 aiohttp==3.12.14
 cryptography==44.0.1
 flask==3.1.2
+werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
 psycopg2-binary==2.9.9
 python-dateutil==2.8.2
 python-dotenv==1.0.0

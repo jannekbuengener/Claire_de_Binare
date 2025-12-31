@@ -1,9 +1,11 @@
+import pytest
 """Unit tests for core.domain.secrets module."""
 
 from unittest.mock import patch
 from core.domain.secrets import get_secret
 
 
+@pytest.mark.unit
 def test_get_secret_from_docker_secrets(tmp_path):
     """Test reading secret from Docker secrets file."""
     secret_file = tmp_path / "test_secret"
@@ -17,6 +19,7 @@ def test_get_secret_from_docker_secrets(tmp_path):
         assert result == "my_secret_value"
 
 
+@pytest.mark.unit
 def test_get_secret_from_environment():
     """Test reading secret from environment variable when Docker secret doesn't exist."""
     with patch("core.domain.secrets.Path") as mock_path:
@@ -26,6 +29,7 @@ def test_get_secret_from_environment():
             assert result == "env_value"
 
 
+@pytest.mark.unit
 def test_get_secret_default_value():
     """Test returning default value when neither Docker secret nor env var exists."""
     with patch("core.domain.secrets.Path") as mock_path:
@@ -35,6 +39,7 @@ def test_get_secret_default_value():
             assert result == "default_value"
 
 
+@pytest.mark.unit
 def test_get_secret_strips_whitespace(tmp_path):
     """Test that secret values are stripped of leading/trailing whitespace."""
     with patch("core.domain.secrets.Path") as mock_path:

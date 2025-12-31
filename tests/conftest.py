@@ -222,6 +222,17 @@ def test_config() -> dict:
 
 
 # ============================================
+# DATABASE FIXTURES (Deterministic State)
+# ============================================
+
+# Import DB fixtures from fixtures module
+from tests.fixtures.db_fixtures import reset_db, seed_db, clean_db
+
+# Re-export for easy access in tests
+__all__ = ["reset_db", "seed_db", "clean_db"]
+
+
+# ============================================
 # MARKERS (bereits in pytest.ini definiert)
 # ============================================
 # - unit: Unit-Tests (schnell, isoliert)

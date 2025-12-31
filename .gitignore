@@ -80,6 +80,44 @@ yarn-error.log*
 .env.local
 .env.*.local
 
+# =============================================================================
+# SECRETS - CRITICAL: Never commit secrets to repo (Blueprint-compliant)
+# =============================================================================
+.secrets/
+!.secrets.example/
+secrets/
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+*.ppk
+credentials
+*service-account*.json
+
+# Cloud credentials
+.aws/
+.azure/
+.gcloud/
+
+# Decrypted SOPS files
+*.decrypted.*
+
+# Compose directory secrets symlink
+infrastructure/compose/.secrets
+
+# =============================================================================
+
+# MCP configuration (contains API keys)
+.mcp.json
+mcp-config.toml
+
+# Legacy docker-compose files (migrated to infrastructure/compose/)
+docker-compose.yml
+docker-compose.base.yml
+docker-compose.dev.yml
+
 # Cache
 .cache/
 .npm
@@ -97,7 +135,24 @@ Claire_de_Binare/
 Claire_de_Binare_Docs/
 .cdb_local/
 .claude/
-scripts/
-AGENTS.md
+/scripts/
+!infrastructure/scripts/
+# AGENTS.md - Now tracked as pointer to Docs Hub canonical (was ignored pre-consolidation)
 .gemini/
 gha-creds-*.json
+
+# Auto Claude data directory
+.auto-claude/
+
+# Git worktrees metadata
+.worktrees/
+
+# Build artifacts
+..cdb_local.compose_rendered.yml
+*_rendered.yml
+
+# Orchestrator outputs and analysis files
+.orchestrator_outputs/
+.orchestrator_*.md
+*_analysis.json
+*_categorization.txt

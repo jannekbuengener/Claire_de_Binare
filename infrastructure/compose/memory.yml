@@ -1,0 +1,89 @@
+# Claire de Binare - Memory Backend Stack
+# Graphiti MCP Server (with FalkorDB) + Ollama (Local LLM/Embeddings)
+# Standalone feature overlay for persistent agent memory
+# Usage: docker compose -f infrastructure/compose/memory.yml up -d
+#
+# ARCHITECTURE:
+# - cdb_graphiti: Combined Graphiti MCP + FalkorDB (internal :6379)
+# - cdb_ollama: Local LLM and embedding model provider
+# - MCP endpoint at /mcp/ for Auto-Claude integration
+#
+# SECURITY:
+# - FalkorDB port 6379 NOT exposed (internal only)
+# - All ports bound to 127.0.0.1 (localhost only)
+# - Environment variables for configuration (no secrets files)
+
+name: ${STACK_NAME:-cdb}-memory
+
+services:
+  cdb_ollama:
+    image: ollama/ollama:latest
+    container_name: cdb_ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - cdb_ollama_data:/root/.ollama
+    environment:
+      # Ollama configuration
+      OLLAMA_HOST: "0.0.0.0"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:11434/api/tags > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - cdb_memory_network
+
+  cdb_graphiti:
+    image: zepai/graphiti-falkordb:latest
+    container_name: cdb_graphiti
+    restart: unless-stopped
+    ports:
+      # MCP endpoint only - FalkorDB 6379 NOT exposed (security)
+      - "127.0.0.1:8000:8000"
+      # FalkorDB Browser (optional, for debugging)
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - cdb_graphiti_data:/var/lib/falkordb/data
+    environment:
+      # Ollama as LLM/Embedding provider (OpenAI-compatible API)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-ollama}
+      OPENAI_API_BASE: ${OPENAI_API_BASE:-http://cdb_ollama:11434/v1}
+      OPENAI_MODEL: ${OPENAI_MODEL:-deepseek-r1:7b}
+      MODEL_NAME: ${MODEL_NAME:-deepseek-r1:7b}
+      # Embedding configuration
+      EMBEDDER_PROVIDER: ${EMBEDDER_PROVIDER:-openai}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-768}
+      # Database configuration (internal to combined container)
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-falkordb}
+      FALKORDB_URI: ${FALKORDB_URI:-redis://localhost:6379}
+      # Graphiti settings
+      GRAPHITI_GROUP_ID: ${GRAPHITI_GROUP_ID:-auto-claude}
+      SEMAPHORE_LIMIT: ${SEMAPHORE_LIMIT:-10}
+      GRAPHITI_TELEMETRY_ENABLED: ${GRAPHITI_TELEMETRY_ENABLED:-false}
+      # FalkorDB Browser (1=enabled, 0=disabled)
+      BROWSER: ${BROWSER:-1}
+    depends_on:
+      cdb_ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - cdb_memory_network
+
+volumes:
+  cdb_ollama_data:
+    driver: local
+  cdb_graphiti_data:
+    driver: local
+
+networks:
+  cdb_memory_network:
+    driver: bridge

@@ -68,12 +68,12 @@ class Database:
                     cur.execute(
                         """
                         INSERT INTO orders (
-                            symbol, side, order_type,
+                            order_id, symbol, side, order_type,
                             size, price, filled_size, avg_fill_price,
                             status, submitted_at, filled_at,
                             metadata
                         ) VALUES (
-                            %s, %s, %s,
+                            %s, %s, %s, %s,
                             %s, %s, %s, %s,
                             %s, to_timestamp(%s), to_timestamp(%s),
                             %s
@@ -81,6 +81,7 @@ class Database:
                         RETURNING id
                     """,
                         (
+                            result.order_id,  # order_id as column (Fix Issue #224)
                             result.symbol,
                             result.side.lower(),  # lowercase for schema constraint
                             "market",  # order_type
@@ -95,7 +96,7 @@ class Database:
                                 if result.status == OrderStatus.FILLED.value
                                 else None
                             ),  # filled_at
-                            '{"order_id": "' + result.order_id + '"}'  # store order_id in metadata
+                            '{"source": "execution_service"}'  # metadata (order_id now in column)
                         ),
                     )
 

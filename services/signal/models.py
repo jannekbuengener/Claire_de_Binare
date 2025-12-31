@@ -32,20 +32,25 @@ class Signal:
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
+        # Filter out None values for Redis compatibility (xadd doesn't accept None)
         return {
-            "type": self.type,
-            "signal_id": self.signal_id,
-            "strategy_id": self.strategy_id,
-            "bot_id": self.bot_id,
-            "symbol": self.symbol,
-            "direction": self.direction,
-            "strength": self.strength,
-            "timestamp": self.timestamp,
-            "side": self.side,
-            "confidence": self.confidence,
-            "reason": self.reason,
-            "price": self.price,
-            "pct_change": self.pct_change,
+            k: v
+            for k, v in {
+                "type": self.type,
+                "signal_id": self.signal_id,
+                "strategy_id": self.strategy_id,
+                "bot_id": self.bot_id,
+                "symbol": self.symbol,
+                "direction": self.direction,
+                "strength": self.strength,
+                "timestamp": self.timestamp,
+                "side": self.side,
+                "confidence": self.confidence,
+                "reason": self.reason,
+                "price": self.price,
+                "pct_change": self.pct_change,
+            }.items()
+            if v is not None
         }
 
 
@@ -56,10 +61,10 @@ class MarketData:
     # Required fields (no defaults) must come first
     symbol: str
     price: float
-    pct_change: float
     timestamp: int
 
     # Optional fields (with defaults) come after
+    pct_change: float | None = None  # Optional: calculated by signal engine if missing
     open: float | None = None
     high: float | None = None
     low: float | None = None
@@ -72,16 +77,20 @@ class MarketData:
     @classmethod
     def from_dict(cls, data: dict):
         """Erstellt MarketData aus Dictionary"""
+        # Handle pct_change with fallback for backward compatibility
+        pct_change_raw = data.get("pct_change")
+        pct_change = float(pct_change_raw) if pct_change_raw is not None else None
+
         return cls(
             symbol=data["symbol"],
             price=float(data["price"]),
+            timestamp=int(data.get("timestamp", 0) or data.get("ts_ms", 0)),
+            pct_change=pct_change,
             open=(float(data["open"]) if data.get("open") is not None else None),
             high=(float(data["high"]) if data.get("high") is not None else None),
             low=(float(data["low"]) if data.get("low") is not None else None),
             close=(float(data["close"]) if data.get("close") is not None else None),
             volume=float(data.get("volume", 0.0)),
-            pct_change=float(data["pct_change"]),
-            timestamp=int(data["timestamp"]),
             interval=data.get("interval", "15m"),
             venue=data.get("venue"),
             type=data.get("type", "market_data"),

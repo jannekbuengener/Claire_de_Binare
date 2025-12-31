@@ -1,20 +1,28 @@
 # Claire de Binare - Base Infrastructure
 # Core Services (Redis, Postgres, Prometheus, Grafana)
 # No Port-Bindings (internal only)
+#
+# SECRETS ARCHITECTURE (Blueprint-compliant):
+# - Secrets mounted to /run/secrets/ (not in environment variables)
+# - Not visible in `docker inspect` output
+# - Official images use _FILE pattern where supported
+
+# Issue #232: Deterministic project naming via STACK_NAME
+name: ${STACK_NAME:-cdb}
 
 services:
   cdb_redis:
-    image: redis:7.4.1-alpine
+    image: redis:7-alpine
     container_name: cdb_redis
     restart: unless-stopped
-    env_file: .env
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - redis_data:/data
-    command: /bin/sh -c "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$REDIS_PASSWORD"
+    secrets:
+      - redis_password
+    # Read password from /run/secrets/ file
+    command: ["sh", "-c", "redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass $$(cat /run/secrets/redis_password)"]
     healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$REDIS_PASSWORD ping"]
+      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -22,14 +30,16 @@ services:
       - cdb_network
 
   cdb_postgres:
-    image: postgres:15.11-alpine
+    image: postgres:15-alpine
     container_name: cdb_postgres
     restart: unless-stopped
-    env_file: .env
     environment:
       POSTGRES_DB: claire_de_binare
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Official Postgres image supports _FILE pattern
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
@@ -43,7 +53,7 @@ services:
       - cdb_network
 
   cdb_prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.51.0
     container_name: cdb_prometheus
     restart: unless-stopped
     volumes:
@@ -61,14 +71,16 @@ services:
       - cdb_network
 
   cdb_grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     container_name: cdb_grafana
     restart: unless-stopped
-    env_file: .env
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      # Grafana supports _FILE pattern via __FILE suffix
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
       GF_USERS_ALLOW_SIGN_UP: "false"
+    secrets:
+      - grafana_password
     volumes:
       - grafana_data:/var/lib/grafana
       - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -83,6 +95,16 @@ services:
       retries: 3
     networks:
       - cdb_network
+
+# Secrets from Single Source of Truth
+# Path set via SECRETS_PATH environment variable (default: ~/Documents/.secrets/.cdb)
+secrets:
+  redis_password:
+    file: ${SECRETS_PATH}/REDIS_PASSWORD
+  postgres_password:
+    file: ${SECRETS_PATH}/POSTGRES_PASSWORD
+  grafana_password:
+    file: ${SECRETS_PATH}/GRAFANA_PASSWORD
 
 volumes:
   redis_data:

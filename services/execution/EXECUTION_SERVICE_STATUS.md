@@ -93,14 +93,14 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", "6380"))  # war: 6379
 ```
 
 ### Fix #2: Database-Passwort aus ENV
-**Problem**: Passwort hardcoded in config.py  
-**Lösung**: Aus Environment Variable laden
+**Problem**: Passwort hardcoded in config.py
+**Lösung**: Docker secrets mit ENV fallback (kein hardcoded Default)
 ```python
-# config.py Zeile 28-31
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-   f"postgresql://postgres:{os.getenv('POSTGRES_PASSWORD', 'cdb_secure_password_2025')}@cdb_postgres:5432/claire_de_binare"
-)
+# config.py - uses core.secrets.read_secret
+POSTGRES_PASSWORD = read_secret("postgres_password", "POSTGRES_PASSWORD")
+DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+```
+⚠️ POSTGRES_PASSWORD muss via Docker secret oder ENV gesetzt sein!
 ```
 
 ### Fix #3: Dockerfile vereinfacht
@@ -146,7 +146,7 @@ Mögliche Fehler:
 
 **3. Interaktiver Test**
 ```powershell
-docker run -it --rm --network cdb_network -e REDIS_HOST=cdb_redis -e REDIS_PORT=6380 -e POSTGRES_PASSWORD=cdb_secure_password_2025 cdb_execution:latest /bin/bash
+docker run -it --rm --network cdb_network -e REDIS_HOST=cdb_redis -e REDIS_PORT=6380 -e POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD cdb_execution:latest /bin/bash
 
 # Im Container:
 python service.py

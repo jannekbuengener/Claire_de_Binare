@@ -3,6 +3,7 @@
 
 # Web Framework
 flask==3.1.2
+werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
 
 # Redis Client
 redis==5.0.1

@@ -2,6 +2,17 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+# Alert Rules
+rule_files:
+  - "alerts.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
 scrape_configs:
   # Prometheus selbst
   - job_name: 'prometheus'
@@ -21,11 +32,11 @@ scrape_configs:
     metrics_path: '/metrics'
 
   # Signal Engine
-  - job_name: 'cdb_core'
+  - job_name: 'cdb_signal'
     static_configs:
-      - targets: ['cdb_core:8001']
+      - targets: ['cdb_signal:8005']
         labels:
-          instance: 'cdb_core'
+          instance: 'cdb_signal'
           service: 'analysis'
     metrics_path: '/metrics'
 

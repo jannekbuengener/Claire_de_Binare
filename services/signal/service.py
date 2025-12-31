@@ -3,6 +3,7 @@ Signal Engine - Main Service
 Momentum-basierte Signal-Generierung
 """
 
+import os
 import sys
 import json
 import time
@@ -19,9 +20,11 @@ from core.utils.clock import utcnow
 try:
     from .config import config
     from .models import MarketData, Signal
+    from .price_buffer import PriceBuffer
 except ImportError:
     from config import config
     from models import MarketData, Signal
+    from price_buffer import PriceBuffer
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -31,8 +34,10 @@ if logging_config_path.exists():
         logging.config.dictConfig(logging_conf)
 else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
+    # Respect LOG_LEVEL env var (Issue #347 - Dev vs Prod logging policy)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
@@ -59,6 +64,7 @@ class SignalEngine:
         self.redis_client: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
+        self.price_buffer = PriceBuffer()  # Stateful pct_change calculation (Issue #345)
 
         # Validiere Config
         try:
@@ -103,6 +109,17 @@ class SignalEngine:
         try:
             market_data = MarketData.from_dict(data)
 
+            # Calculate pct_change if missing (raw trade data from cdb_ws)
+            # Issue #345: Stateful calculation using price history buffer
+            if market_data.pct_change is None:
+                market_data.pct_change = self.price_buffer.calculate_pct_change(
+                    market_data.symbol, market_data.price
+                )
+                logger.debug(
+                    f"{market_data.symbol}: pct_change calculated from price buffer "
+                    f"(@ ${market_data.price:.2f} → {market_data.pct_change:+.4f}%)"
+                )
+
             # Prüfe Momentum-Schwelle
             if market_data.pct_change >= self.config.threshold_pct:
                 # Volume-Check
@@ -117,9 +134,7 @@ class SignalEngine:
                 signal = Signal(
                     symbol=market_data.symbol,
                     side="BUY",
-                    reason=Signal.generate_reason(
-                        market_data.pct_change, self.config.threshold_pct
-                    ),
+                    reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",
                     timestamp=int(time.time()),
                     price=market_data.price,
                     pct_change=market_data.pct_change,
