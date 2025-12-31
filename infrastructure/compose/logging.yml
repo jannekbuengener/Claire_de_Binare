@@ -1,8 +1,29 @@
-# Logging Overlay - Loki + Promtail
-# Add centralized log aggregation to the stack
+# Logging Overlay - Loki + Promtail + Alertmanager
+# Add centralized log aggregation and alert routing to the stack
 # Usage: Automatically included when stack_up.ps1 is called with -Logging flag
 
 services:
+  cdb_alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: cdb_alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - ../../infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - cdb_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9093/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - cdb_prometheus
+
   cdb_loki:
     image: grafana/loki:2.9.3
     container_name: cdb_loki
@@ -37,4 +58,6 @@ services:
 
 volumes:
   loki_data:
+    driver: local
+  alertmanager_data:
     driver: local
