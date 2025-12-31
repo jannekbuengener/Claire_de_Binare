@@ -1,5 +1,7 @@
 name: 'Close stale issues and PRs'
 on:
+  workflow_dispatch:
+    # Manual: gh workflow run stale.yml --ref <branch>
   schedule:
     - cron: '0 0 * * *'  # Daily at midnight UTC
 
