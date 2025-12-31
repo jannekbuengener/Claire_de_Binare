@@ -43,6 +43,9 @@ services:
   # Application Services with Enhanced Security
   cdb_ws:
     restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -58,6 +61,9 @@ services:
 
   cdb_signal:
     restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -71,6 +77,9 @@ services:
 
   cdb_risk:
     restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -84,6 +93,9 @@ services:
 
   cdb_execution:
     restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -97,6 +109,9 @@ services:
 
   cdb_db_writer:
     restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
     security_opt:
       - no-new-privileges:true
     cap_drop:

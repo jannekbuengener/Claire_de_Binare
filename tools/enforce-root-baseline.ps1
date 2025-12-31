@@ -16,8 +16,8 @@ Supports dry-run mode for validation and live cleanup mode for enforcement.
 #>
 [CmdletBinding()]
 param(
-    [string]$WorkingRepoPath = 'C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare',
-    [string]$DocsHubPath = 'C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare_Docs',
+    [string]$WorkingRepoPath = 'D:\Dev\Workspaces\Repos\Claire_de_Binare',
+    [string]$DocsHubPath = 'D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs',
     [switch]$DryRun,
     [switch]$AutoCleanup,
     [switch]$Force

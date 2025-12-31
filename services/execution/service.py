@@ -3,6 +3,7 @@ Execution Service - Main Entry Point
 Claire de Binare Trading Bot
 """
 
+import os
 import json
 import signal
 import sys
@@ -45,9 +46,10 @@ if logging_config_path.exists():
         logging_conf = json.load(cfg_file)
         logging.config.dictConfig(logging_conf)
 else:
-    # Fallback zu basicConfig
+    # Fallback zu basicConfig (Issue #347 - Dev vs Prod logging policy)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=getattr(logging, config.LOG_LEVEL),
+        level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
