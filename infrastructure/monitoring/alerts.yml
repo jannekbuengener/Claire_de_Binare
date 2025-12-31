@@ -173,10 +173,10 @@ groups:
     rules:
       - alert: AlertmanagerTest
         expr: vector(1)
-        for: 0s
+        for: 30s
         labels:
           severity: warning
           service: test
         annotations:
-          summary: "Alertmanager test alert (always firing)"
-          description: "This alert fires continuously to validate Alertmanager routing. Safe to silence."
+          summary: "Alertmanager test alert (pending then firing)"
+          description: "This alert fires after 30s to validate Alertmanager routing. Safe to silence."

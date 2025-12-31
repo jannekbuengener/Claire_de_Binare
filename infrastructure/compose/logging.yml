@@ -43,7 +43,7 @@ services:
       - '--config.file=/etc/alertmanager/config.yml'
       - '--storage.path=/alertmanager'
     volumes:
-      - ../../infrastructure/monitoring/alertmanager-config.yml:/etc/alertmanager/config.yml:ro
+      - ../../infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/config.yml:ro
       - alertmanager_data:/alertmanager
     networks:
       - cdb_network

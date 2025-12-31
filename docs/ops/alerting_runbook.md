@@ -35,8 +35,8 @@ Start-Process "http://localhost:9090/targets"
 # Prometheus Expression Browser
 # Navigate to: http://localhost:9090/graph
 
-# Execute test expression (always fires):
-ALERTS{alertname="AlwaysFiring"}
+# Execute test expression (pending then firing after 30s):
+ALERTS{alertname="AlertmanagerTest"}
 
 # Check Alertmanager UI:
 Start-Process "http://localhost:9093"
@@ -128,15 +128,15 @@ groups:
   - name: test_alerts
     interval: 15s
     rules:
-      - alert: AlwaysFiring
+      - alert: AlertmanagerTest
         expr: vector(1)
-        for: 0s
+        for: 30s
         labels:
           severity: warning
           service: test
         annotations:
-          summary: "Test alert (always firing)"
-          description: "This alert fires continuously for testing purposes"
+          summary: "Alertmanager test alert (pending then firing)"
+          description: "This alert fires after 30s for testing purposes"
 ```
 
 **Reload Prometheus Config:**
@@ -200,7 +200,7 @@ docker inspect cdb_alertmanager | Select-String NetworkMode
 
 ```powershell
 # 1. Check receiver config
-cat infrastructure/monitoring/alertmanager-config.yml | Select-String -Pattern "receiver|webhook"
+cat infrastructure/monitoring/alertmanager.yml | Select-String -Pattern "receiver|webhook"
 
 # 2. Check Alertmanager logs for webhook attempts
 docker logs cdb_alertmanager | Select-String -Pattern "webhook|notify"
@@ -217,7 +217,7 @@ Invoke-WebRequest http://localhost:9099/webhook -Method POST -Body '{"test": "al
 # This is normal until real notification channel is configured (Slack, PagerDuty, etc.)
 
 # To configure real receiver, edit:
-# infrastructure/monitoring/alertmanager-config.yml
+# infrastructure/monitoring/alertmanager.yml
 # Replace webhook_configs with:
 # - slack_configs (for Slack)
 # - pagerduty_configs (for PagerDuty)
