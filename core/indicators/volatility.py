@@ -176,7 +176,25 @@ class ATR(Indicator):
         Verwendet Close als High und Low (approximiert).
         Für genaue ATR: update_ohlc() verwenden.
         """
-        return self.update_ohlc(high=price, low=price, close=price)
+        if self._prev_close is None:
+            self._prev_close = price
+            return None
+
+        true_range = 0.0
+        self._true_ranges.append(true_range)
+        self._prev_close = price
+        self._values.append(true_range)
+
+        if len(self._true_ranges) < self._period:
+            return None
+
+        if not self._initialized:
+            self._result = sum(self._true_ranges) / self._period
+            self._initialized = True
+        else:
+            self._result = (self._result * (self._period - 1) + true_range) / self._period
+
+        return self._result
 
     def reset(self) -> None:
         super().reset()

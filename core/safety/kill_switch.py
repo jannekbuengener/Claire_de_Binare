@@ -12,9 +12,10 @@ CRITICAL SAFETY:
 import os
 import logging
 from pathlib import Path
-from datetime import datetime
 from typing import Optional, Tuple
 from enum import Enum
+
+from core.utils.clock import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class KillSwitch:
                 "state": KillSwitchState.ACTIVE.value,
                 "reason": KillSwitchReason.SYSTEM_ERROR.value,
                 "message": f"State file read error: {e}",
-                "activated_at": datetime.utcnow().isoformat(),
+                "activated_at": utcnow().isoformat(),
             }
 
     def _write_state(
@@ -120,7 +121,7 @@ class KillSwitch:
     ):
         """Write state to file with audit trail."""
         try:
-            timestamp = datetime.utcnow().isoformat()
+            timestamp = utcnow().isoformat()
 
             content = (
                 f"state={state.value}\n"
@@ -222,7 +223,7 @@ class KillSwitch:
             >>> ks.is_active()
             True
         """
-        activated_at = datetime.utcnow().isoformat()
+        activated_at = utcnow().isoformat()
 
         full_message = message
         if operator:

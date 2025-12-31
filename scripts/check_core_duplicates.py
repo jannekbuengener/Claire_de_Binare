@@ -21,7 +21,8 @@ def check_duplicates():
                 core_path = service_path / "core"
                 if core_path.exists():
                     violations.append(
-                        f"FORBIDDEN: core duplicate at {core_path.relative_to(root_dir)}"
+                        "FORBIDDEN: core duplicate at "
+                        f"{core_path.relative_to(root_dir).as_posix()}"
                     )
 
     # Rule 2: Check for secrets.py files (except core/domain/secrets.py)
@@ -31,15 +32,17 @@ def check_duplicates():
         rel_path = secrets_file.relative_to(root_dir)
         # Whitelist: core/domain/secrets.py is allowed
         if rel_path != Path("core/domain/secrets.py"):
-            violations.append(f"FORBIDDEN: secrets.py at {rel_path}")
+            violations.append(
+                f"FORBIDDEN: secrets.py at {rel_path.as_posix()}"
+            )
 
     if violations:
-        print("❌ CI-Guard FAILED")
+        print("CI-Guard FAILED")
         for v in violations:
             print(f"  {v}")
         sys.exit(1)
     else:
-        print("✅ CI-Guard PASSED")
+        print("CI-Guard PASSED")
         sys.exit(0)
 
 
