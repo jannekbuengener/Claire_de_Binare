@@ -490,39 +490,69 @@ USER APPROVAL für P1-001 Branch Protection Aktivierung (keine Code-Changes, nur
 
 ---
 
-## Session Status (2025-12-31 13:00 CET)
+## Session Status (2025-12-31 13:30 CET)
 
 **Branch:** main
-**Latest Commit:** 950c7bd (Issue #347 merged via PR #402)
+**Latest Commit:** 4d53cb3 (Issue #355 analysis + PR #396 review)
 **Stack:** 12/12 Services healthy
 **Session Lead:** Claude
 
 ### ✅ Completed This Session
-- **Issue #347**: Dev vs Prod Logging Policy ✅ **MERGED**
-  - Fixed cdb_risk hardcoded log level
-  - Added ENV/LOG_LEVEL to all services in dev.yml + prod.yml
-  - Validated: DEBUG logs in dev, env vars correct
-  - PR #402 merged, branch deleted
 
-- **Issue #355**: CI/CD Analysis ✅ **COMPLETE** (Implementation BLOCKED)
-  - Root Cause Analysis: 2 critical blockers identified
-    1. **EXTERNAL**: GitHub billing/spending limit (Issue #400) - ALL 26 workflows failing
-    2. **DEPENDENCY**: Contracts tests not in main (only in Issue #356 branch)
-  - Evidence: Validated all secrets configured, no workflow config issues
-  - Recovery plan documented: `.orchestrator_issue_355_analysis.md`
-  - **Recommendation**: Pivot to Issue #356 (unblocks #355 + productive use of time)
+#### 1. Issue #347: Dev vs Prod Logging Policy ✅ **MERGED** (PR #402)
+- Fixed cdb_risk hardcoded log level
+- Added ENV/LOG_LEVEL to all services in dev.yml + prod.yml
+- Validated: DEBUG logs in dev, env vars correct
+- **Commit**: 950c7bd
 
-### 🔴 BLOCKED - Requires User Action
-- **Issue #355**: CI/CD back to green
-  - Blocker 1: User must fix GitHub billing/spending limit
-  - Blocker 2: Merge Issue #356 first OR remove contracts from required checks
-  - Status: Analysis complete, implementation blocked
+#### 2. Issue #355: CI/CD Failure Analysis ✅ **COMPLETE**
+- **Root Cause**: 2 critical blockers identified
+  1. **EXTERNAL**: GitHub billing/spending limit (Issue #400) - ALL 26 workflows failing
+  2. **DEPENDENCY**: Contracts tests not in main (exist in PR #396)
+- **Evidence**: All 5 secrets configured ✓, No workflow config issues found
+- **Recovery Plan**: `.orchestrator_issue_355_analysis.md` (comprehensive)
+- **Commit**: 4d53cb3
 
-### 📋 Priority Queue (P0 Issues) - UPDATED
-1. **#356** - Canonical Message Contracts (RECOMMENDED NEXT - unblocks #355)
-2. **#355** - CI/CD back to green (BLOCKED - billing + dependency)
-3. **#354** - Deterministic E2E Test Path
-4. **#352** - Enable Alertmanager
+#### 3. Issue #356 + PR #396: Contract Implementation Review ✅ **READY TO MERGE**
+- **Reviewed**: Full PR #396 implementation
+  - JSON Schemas: market_data + signal (v1.0)
+  - Validation Tests: 19/19 PASSING locally
+  - CI Workflow: contracts.yml configured
+  - Documentation: README + MIGRATION guide
+  - Examples: 4 JSON files (valid + invalid)
+- **Status**: 100% code-complete, blocked ONLY by billing
+- **Assessment**: `.orchestrator_pr_396_ready.md` (detailed readiness report)
+- **Recommendation**: **MERGE immediately** after billing fix
+
+### 🔴 BLOCKED - Single External Dependency
+
+**GitHub Billing/Spending Limit** (Issue #400)
+- **Impact**: Blocks BOTH Issue #355 AND PR #396
+- **Evidence**: All 26 workflows failing with payment error
+- **Resolution**: User must fix GitHub billing settings
+- **ETA**: Unknown (external user action)
+
+**Downstream Effects**:
+- Issue #355 (CI/CD): Cannot achieve 3 green runs until billing fixed
+- PR #396 (Contracts): All CI checks failing (but code is valid)
+- Issue #354, #352, #349: Also blocked by CI failures
+
+### 📋 Priority Queue (P0 Issues) - FINAL STATUS
+
+1. **#400** - GitHub Billing Fix (EXTERNAL - User action required) 🔴 **CRITICAL BLOCKER**
+2. **#396** - Merge Contracts PR (READY - waiting for #400) ✅ **CODE-COMPLETE**
+3. **#355** - CI/CD back to green (READY - waiting for #396 + #400)
+4. **#354** - Deterministic E2E Test Path
+5. **#352** - Enable Alertmanager
+
+### 🎯 Unblock Path (Clear Action Plan)
+
+**Step 1: User fixes GitHub billing** → Unblocks ALL CI/CD
+**Step 2: Merge PR #396** (< 5 min) → Provides contracts check, completes #356
+**Step 3: Achieve 3 green runs** (< 1 hour) → Completes #355
+**Step 4: Continue with #354, #352** → Full P0 completion
+
+**Total Time After Billing Fix**: ~2 hours to clear all blockers
 
 ### 🚨 Critical Findings (Governance Audit)
 - **P1-001 Branch Protection**: DEFINED but NOT ENFORCED
