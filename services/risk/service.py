@@ -254,7 +254,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         # Max 10% des REAL Kapitals pro Position
         max_position_size = current_balance * self.config.max_position_pct
@@ -279,7 +279,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
@@ -300,7 +300,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
@@ -415,7 +415,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_size = current_balance * self.config.max_position_pct
 
