@@ -1,0 +1,87 @@
+version: 2
+
+updates:
+  # 1) GitHub Actions (Workflows)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 10
+    labels:
+      - "area:ci"
+      - "scope:workflow"
+      - "dependabot"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  # 2) Python / pip (Root, falls requirements/pyproject dort liegen)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:10"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 10
+    labels:
+      - "area:deps"
+      - "scope:config"
+      - "dependabot"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # 3) Python / pip (Services, falls dort eigene requirements/pyproject liegen)
+  - package-ecosystem: "pip"
+    directory: "/services"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:20"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 10
+    labels:
+      - "area:deps"
+      - "scope:services"
+      - "dependabot"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # 4) Docker (falls Dockerfiles/Compose unter infrastructure liegen)
+  - package-ecosystem: "docker"
+    directory: "/infrastructure"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:30"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 10
+    labels:
+      - "area:infra"
+      - "scope:infra"
+      - "dependabot"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # 5) Docker (falls Dockerfiles direkt im Root oder unter docker/ liegen)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:40"
+      timezone: "Europe/Berlin"
+    open-pull-requests-limit: 10
+    labels:
+      - "area:infra"
+      - "scope:infra"
+      - "dependabot"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"

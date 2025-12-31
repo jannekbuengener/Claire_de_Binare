@@ -156,3 +156,7 @@ gha-creds-*.json
 .orchestrator_*.md
 *_analysis.json
 *_categorization.txt
+
+.worktree_backup_*.txt
+.worktrees_backup/
+
