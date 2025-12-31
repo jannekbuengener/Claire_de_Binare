@@ -1,0 +1,26 @@
+# CODEOWNERS for Claire_de_Binare (Working Repo - Execution Only)
+#
+# Goal: Critical execution paths require maintainer review for safety/stability
+# Scope: Trading engine core, services, infrastructure, CI/CD
+#
+# Replace @maintainers with actual GitHub username/team (e.g. @jannekbuengener)
+
+# Default: All execution code requires review
+* @maintainers
+
+# Critical Execution Paths
+/core/                   @maintainers   # Trading engine domain models
+/services/               @maintainers   # Risk, Execution, Core services
+/infrastructure/         @maintainers   # Docker, compose, database schema
+
+# Testing & Quality
+/tests/                  @maintainers   # E2E, unit, integration tests
+/tools/                  @maintainers   # Paper trading, utilities
+
+# Build & Dependencies
+/Makefile                @maintainers   # Build automation
+/requirements.txt        @maintainers   # Python dependencies
+/docker-compose*.yml     @maintainers   # Stack configuration
+
+# CI/CD & Guardrails
+/.github/                @maintainers   # Workflows, actions, CODEOWNERS

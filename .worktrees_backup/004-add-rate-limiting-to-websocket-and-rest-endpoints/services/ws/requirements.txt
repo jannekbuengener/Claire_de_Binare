@@ -1,0 +1,9 @@
+# WebSocket Service Dependencies
+flask==3.1.2
+werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
+redis==5.0.1
+websockets==13.1
+prometheus_client==0.21.1
+
+# Protobuf for MEXC V3 WebSocket (D2 Spike)
+protobuf>=4.25.0

@@ -1,0 +1,51 @@
+# Strict Healthchecks Overlay
+# Replaces weak healthchecks and adds service dependencies
+# Usage: Automatically included when stack_up.ps1 is called with -StrictHealth flag
+# Requires: healthchecks-mounts.yml to be loaded first
+
+services:
+  cdb_db_writer:
+    healthcheck:
+      test: ['CMD', 'python', '/healthchecks/db_writer_redis_ping.py']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+
+  cdb_redis:
+    healthcheck:
+      start_period: 30s
+
+  cdb_postgres:
+    healthcheck:
+      start_period: 30s
+
+  cdb_signal:
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+      cdb_ws:
+        condition: service_healthy
+
+  cdb_risk:
+    depends_on:
+      cdb_signal:
+        condition: service_healthy
+      cdb_redis:
+        condition: service_healthy
+
+  cdb_execution:
+    depends_on:
+      cdb_risk:
+        condition: service_healthy
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy

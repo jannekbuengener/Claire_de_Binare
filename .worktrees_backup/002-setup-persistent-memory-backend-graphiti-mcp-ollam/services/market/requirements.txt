@@ -1,0 +1,4 @@
+# Market Data Service Dependencies
+flask==3.1.2
+redis==5.0.1
+psycopg2-binary==2.9.9

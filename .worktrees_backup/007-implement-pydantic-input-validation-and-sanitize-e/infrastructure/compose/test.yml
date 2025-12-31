@@ -1,0 +1,225 @@
+# Claire de Binare - Test Overlay
+# Isolated E2E test stack with all services
+# Usage: docker compose -f base.yml -f test.yml up --abort-on-container-exit
+
+services:
+  # Override Redis with test-specific config
+  cdb_redis:
+    container_name: cdb_redis_test
+    volumes:
+      - redis_test_data:/data  # Isolated test volume
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    # Inherit healthcheck from base.yml
+    networks:
+      - cdb_test_network
+
+  # Override Postgres with test-specific config
+  cdb_postgres:
+    container_name: cdb_postgres_test
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data  # Isolated test volume
+      - ../../infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../infrastructure/database/migrations/002_orders_price_nullable.sql:/docker-entrypoint-initdb.d/02-migration-002.sql:ro
+    environment:
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Override healthcheck to use test database name
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-claire_user} -d claire_de_binare_test"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - cdb_test_network
+
+  # Risk Service (Test Instance)
+  cdb_risk_test:
+    build:
+      context: ../..
+      dockerfile: services/risk/Dockerfile
+    container_name: cdb_risk_test
+    secrets:
+      - redis_password
+      - postgres_password
+    environment:
+      # Point to test infrastructure
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      TRADING_MODE: paper
+      DRY_RUN: "1"
+      LOG_LEVEL: DEBUG
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_test_network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Execution Service (Test Instance)
+  cdb_execution_test:
+    build:
+      context: ../..
+      dockerfile: services/execution/Dockerfile
+    container_name: cdb_execution_test
+    secrets:
+      - redis_password
+      - postgres_password
+    environment:
+      # Point to test infrastructure
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      TRADING_MODE: paper
+      DRY_RUN: "1"
+      LOG_LEVEL: DEBUG
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_test_network
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Test Runner Service - Executes pytest in container
+  cdb_test_runner:
+    build:
+      context: ../..
+      dockerfile: infrastructure/compose/Dockerfile.test
+    container_name: cdb_test_runner
+    secrets:
+      - redis_password
+      - postgres_password
+    environment:
+      # Database connection (test stack)
+      POSTGRES_HOST: cdb_postgres_test
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: claire_de_binare_test
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+      # Redis connection (test stack)
+      REDIS_HOST: cdb_redis_test
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+      # Test environment flags
+      E2E_RUN: "1"
+      E2E_DISABLE_CIRCUIT_BREAKER: "1"
+      PYTEST_CURRENT_TEST: "1"
+
+      # Python settings
+      PYTHONUNBUFFERED: "1"
+      PYTHONPATH: /app
+      PYTHONIOENCODING: utf-8
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    volumes:
+      # Mount source code (read-only)
+      - ../../core:/app/core:ro
+      - ../../services:/app/services:ro
+      - ../../tests:/app/tests:ro
+      - ../../tools:/app/tools:ro
+
+      # Mount test fixtures (read-only)
+      - ../../infrastructure:/app/infrastructure:ro
+
+      # Mount logs (writable)
+      - ../../logs:/app/logs
+
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+      cdb_postgres:
+        condition: service_healthy
+      cdb_risk_test:
+        condition: service_healthy
+      cdb_execution_test:
+        condition: service_healthy
+
+    networks:
+      - cdb_test_network
+
+    # Run E2E tests and exit
+    command: >
+      sh -c "
+        echo '============================================' &&
+        echo 'E2E Test Runner Starting...' &&
+        echo '============================================' &&
+        echo 'Waiting for services to be ready...' &&
+        sleep 10 &&
+        echo 'Services Status:' &&
+        echo '  - Redis: cdb_redis_test' &&
+        echo '  - Postgres: cdb_postgres_test' &&
+        echo '  - Risk: cdb_risk_test' &&
+        echo '  - Execution: cdb_execution_test' &&
+        echo 'Running E2E tests...' &&
+        pytest -m e2e tests/ -v --tb=short --no-cov -p no:cacheprovider --maxfail=3 &&
+        echo '============================================' &&
+        echo 'E2E Tests Complete!' &&
+        echo '============================================'
+      "
+
+# Test-specific volumes (not shared with dev/prod)
+volumes:
+  redis_test_data:
+    driver: local
+  postgres_test_data:
+    driver: local
+
+# Test-specific network (isolated from dev/prod)
+networks:
+  cdb_test_network:
+    driver: bridge
+    name: cdb_test_network

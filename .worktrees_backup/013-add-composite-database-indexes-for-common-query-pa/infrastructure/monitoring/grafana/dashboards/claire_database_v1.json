@@ -1,0 +1,334 @@
+{
+  "uid": "claire_database_v1",
+  "title": "Claire - Database Metrics",
+  "description": "PostgreSQL & Redis monitoring - Connections, Query Performance, Memory - Yellow/Orange/Black theme",
+  "tags": ["claire", "database", "postgres", "redis", "monitoring"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m"]
+  },
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "POSTGRES STATUS",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "pg_up",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "DOWN", "color": "#dc2626"}}},
+            {"type": "value", "options": {"1": {"text": "UP", "color": "#f59e0b"}}}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#f59e0b", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "REDIS STATUS",
+      "gridPos": {"h": 4, "w": 4, "x": 4, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "redis_up",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"type": "value", "options": {"0": {"text": "DOWN", "color": "#dc2626"}}},
+            {"type": "value", "options": {"1": {"text": "UP", "color": "#f59e0b"}}}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#f59e0b", "value": 1}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "PG CONNECTIONS",
+      "gridPos": {"h": 4, "w": 4, "x": 8, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "pg_stat_activity_count",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#ea580c", "value": 50},
+              {"color": "#dc2626", "value": 90}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "REDIS MEMORY",
+      "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "redis_memory_used_bytes / 1024 / 1024",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MB",
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#ea580c", "value": 200},
+              {"color": "#dc2626", "value": 240}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "REDIS KEYS",
+      "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "redis_db_keys{db=\"db0\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "STREAM FILLS",
+      "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "redis_stream_length{stream=\"stream.fills\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "PostgreSQL Query Performance",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(pg_stat_statements_total_time_seconds[5m])",
+          "legendFormat": "Query Time Rate",
+          "refId": "A"
+        },
+        {
+          "expr": "pg_stat_statements_calls",
+          "legendFormat": "Total Calls",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Query Time Rate"},
+            "properties": [{"id": "color", "value": {"fixedColor": "#f59e0b", "mode": "fixed"}}]
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Redis Operations/sec",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(redis_commands_processed_total[1m])",
+          "legendFormat": "Commands/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "redis_connected_clients",
+          "legendFormat": "Connected Clients",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Commands/sec"},
+            "properties": [{"id": "color", "value": {"fixedColor": "#ea580c", "mode": "fixed"}}]
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "PostgreSQL Connections Over Time",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 12},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "pg_stat_activity_count{state=\"active\"}",
+          "legendFormat": "Active",
+          "refId": "A"
+        },
+        {
+          "expr": "pg_stat_activity_count{state=\"idle\"}",
+          "legendFormat": "Idle",
+          "refId": "B"
+        },
+        {
+          "expr": "pg_stat_activity_count{state=\"idle in transaction\"}",
+          "legendFormat": "Idle in Transaction",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "stacking": {"mode": "normal"}
+          }
+        }
+      }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Redis Memory Usage",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 12},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "redis_memory_used_bytes / 1024 / 1024",
+          "legendFormat": "Used MB",
+          "refId": "A"
+        },
+        {
+          "expr": "redis_memory_max_bytes / 1024 / 1024",
+          "legendFormat": "Max MB",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "MB",
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Max MB"},
+            "properties": [{"id": "custom.lineStyle", "value": {"fill": "dash"}}]
+          }
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": "table",
+      "title": "Slow Queries (Last Hour)",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 18},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "topk(10, pg_stat_statements_mean_time_seconds)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left"
+          }
+        }
+      }
+    }
+  ]
+}

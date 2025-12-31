@@ -1,0 +1,53 @@
+name: Copilot Housekeeping
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  housekeeping:
+    runs-on: ubuntu-latest
+    environment: copilot
+
+    steps:
+      - name: Show effective config (vars)
+        shell: bash
+        run: |
+          echo "STAGE=${{ vars.STAGE }}"
+          echo "DRY_RUN=${{ vars.DRY_RUN }}"
+          echo "CLOSE_STALE_ISSUES=${{ vars.CLOSE_STALE_ISSUES }}"
+          echo "CLOSE_STALE_PRS=${{ vars.CLOSE_STALE_PRS }}"
+          echo "STALE_DAYS=${{ vars.STALE_DAYS }}"
+          echo "DEFAULT_MILESTONE=${{ vars.DEFAULT_MILESTONE }}"
+          echo "DEFAULT_LABELS=${{ vars.DEFAULT_LABELS }}"
+
+      - name: Install GitHub CLI
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gh jq
+
+      - name: Authenticate GH CLI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh auth status
+
+      - name: Report open issues & PRs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "== Open Issues (top 50) =="
+          gh issue list --limit 50 --state open --json number,title,labels,updatedAt,author             | jq -r '.[] | "#\(.number)  \(.title)  [labels:\(.labels|map(.name)|join(","))]  updated:\(.updatedAt)"'
+
+          echo ""
+          echo "== Open PRs (top 50) =="
+          gh pr list --limit 50 --state open --json number,title,labels,updatedAt,author             | jq -r '.[] | "#\(.number)  \(.title)  [labels:\(.labels|map(.name)|join(","))]  updated:\(.updatedAt)"'
