@@ -1,6 +1,8 @@
 name: Performance Monitor
 
 on:
+  workflow_dispatch:
+    # Manual: gh workflow run performance-monitor.yml --ref <branch>
   push:
     branches: [ main ]
   pull_request:
