@@ -269,3 +269,49 @@ class TestContractEvolution:
 
         assert "$comment" in signal_schema
         assert "direction" in signal_schema["$comment"]  # direction→side migration
+
+
+class TestRuntimeMapping:
+    """Runtime checks for contract-aligned payloads."""
+
+    def test_market_data_from_dict_trade_qty(self):
+        """MarketData.from_dict accepts trade_qty and maps to volume."""
+        from services.signal.models import MarketData
+
+        payload = {
+            "schema_version": "v1.0",
+            "source": "mexc",
+            "symbol": "BTCUSDT",
+            "ts_ms": 1735574400000,
+            "price": "50000.50",
+            "trade_qty": "1.5",
+            "side": "buy",
+        }
+
+        market_data = MarketData.from_dict(payload)
+        assert market_data.trade_qty == 1.5
+        assert market_data.volume == 1.5
+
+    def test_signal_to_dict_matches_schema(self):
+        """Signal.to_dict output matches signal schema."""
+        from services.signal.models import Signal
+
+        schema = load_json(SIGNAL_SCHEMA)
+        validator = Draft7Validator(schema)
+        signal = Signal(
+            signal_id="sig-20251230-btcusdt-001",
+            strategy_id="momentum-v2",
+            symbol="BTCUSDT",
+            side="BUY",
+            timestamp=1735574400,
+            strength=0.85,
+            confidence=0.92,
+            price=50100.50,
+            reason="Test signal",
+        )
+
+        payload = signal.to_dict()
+        errors = list(validator.iter_errors(payload))
+        assert len(errors) == 0, (
+            f"Signal payload failed validation: {errors[0].message if errors else 'unknown error'}"
+        )
