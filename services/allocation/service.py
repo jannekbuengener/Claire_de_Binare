@@ -19,6 +19,7 @@ import redis
 from flask import Flask, jsonify, Response
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_payload
 try:
     from .config import config
 except ImportError:
@@ -226,7 +227,8 @@ class AllocationService:
             "schema_version": self.config.schema_version,
             "source_version": self.config.source_version,
         }
-        self.redis_client.xadd(self.config.output_stream, payload, maxlen=10000)
+        sanitized = sanitize_payload(payload)
+        self.redis_client.xadd(self.config.output_stream, sanitized, maxlen=10000)
         stats["decisions_emitted"] += 1
 
     def _recompute_allocations(self, ts: int):

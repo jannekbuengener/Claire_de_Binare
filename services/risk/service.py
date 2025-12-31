@@ -19,6 +19,7 @@ from pathlib import Path
 from threading import Thread
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_payload
 from core.auth import validate_all_auth
 try:
     from .config import config
@@ -428,11 +429,12 @@ class RiskManager:
     def send_order(self, order: Order):
         """Publiziert Order"""
         try:
-            message = json.dumps(order.to_dict(), ensure_ascii=False)
+            payload = sanitize_payload(order.to_dict())
+            message = json.dumps(payload, ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
             if self.redis_client:
                 self.redis_client.xadd(
-                    self.config.orders_stream, json.loads(message), maxlen=10000
+                    self.config.orders_stream, payload, maxlen=10000
                 )
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
@@ -472,8 +474,9 @@ class RiskManager:
             payload["strategy_id"] = strategy_id
         if bot_id:
             payload["bot_id"] = bot_id
-        self.redis_client.xadd(self.config.bot_shutdown_stream, payload, maxlen=10000)
-        logger.warning("Bot-Shutdown emittiert: %s", payload)
+        sanitized = sanitize_payload(payload)
+        self.redis_client.xadd(self.config.bot_shutdown_stream, sanitized, maxlen=10000)
+        logger.warning("Bot-Shutdown emittiert: %s", sanitized)
 
     def _update_exposure(self, result: OrderResult):
         """Aktualisiert Exposure basierend auf Order-Result"""

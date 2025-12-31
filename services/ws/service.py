@@ -20,6 +20,7 @@ from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATE
 import redis
 
 from mexc_v3_client import MexcV3Client
+from core.utils.redis_payload import sanitize_market_data
 
 # Basic logging setup
 log_level_name = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -136,7 +137,9 @@ async def run_mexc_client():
         """Trade event callback: Publish to Redis market_data topic"""
         if redis_client:
             try:
-                message = json.dumps(event)
+                # Sanitize payload (Issue #349: None-filtering + contract v1.0 enforcement)
+                sanitized = sanitize_market_data(event)
+                message = json.dumps(sanitized)
                 redis_client.publish("market_data", message)
                 redis_publish_total.inc()
                 logger.debug(f"[redis] published market_data: {event['symbol']} @ {event['price']}")
