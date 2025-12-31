@@ -17,6 +17,7 @@ import redis
 from threading import Thread, Lock
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_payload
 from core.utils.uuid_gen import generate_uuid_hex
 from core.auth import validate_all_auth
 try:
@@ -184,7 +185,7 @@ def init_services():
 
 def _publish_result(result: ExecutionResult) -> None:
     """Publish order result to Redis (pubsub + stream) and persist to DB."""
-    event_payload = result.to_dict()
+    event_payload = sanitize_payload(result.to_dict())
     set_stat("last_result", event_payload)  # Thread-safe
     if not redis_client:
         raise RuntimeError("Redis client not initialised")

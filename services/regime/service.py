@@ -16,6 +16,7 @@ import redis
 from flask import Flask, jsonify, Response
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_payload
 try:
     from .config import config
     from .models import Candle, compute_adx, compute_atr
@@ -84,9 +85,10 @@ class RegimeService:
             "source_version": self.config.source_version,
             "schema_version": self.config.schema_version,
         }
-        self.redis_client.xadd(self.config.output_stream, payload, maxlen=10000)
+        sanitized = sanitize_payload(payload)
+        self.redis_client.xadd(self.config.output_stream, sanitized, maxlen=10000)
         stats["regime_changes"] += 1
-        stats["last_regime"] = payload
+        stats["last_regime"] = sanitized
         logger.info(
             "Regime-Signal: %s %s %s",
             candle.symbol,
