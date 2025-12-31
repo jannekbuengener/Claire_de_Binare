@@ -1,0 +1,43 @@
+name: Core Guard
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core-guard:
+    name: Check Core Duplicates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Core Guard Check
+        run: python scripts/check_core_duplicates.py
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "✅ Core Guard check passed"
+          else
+            echo "❌ Core Guard check failed"
+            echo ""
+            echo "Core Guard detects:"
+            echo "1. Duplicate core/ directories in services/*"
+            echo "2. Additional secrets.py files (only core/domain/secrets.py is allowed)"
+            echo ""
+            echo "Fix violations before merging."
+          fi
