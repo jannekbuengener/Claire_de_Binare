@@ -385,9 +385,146 @@ Pipeline: cdb_ws (OK) → cdb_signal (0 signals) → cdb_risk (0 orders) → cdb
 
 ---
 
-**Status:** Block T1 ✅ COMPLETE | Pipeline ACTIVATED
-**Current Sprint:** Work Blocks Execution (Week 1/16)
-**Completed:** Issues #224 (DB Fix), #345 (pct_change stateful), #229 (investigated)
-**Pipeline:** READY TO GENERATE SIGNALS (waiting for market movement >3%)
-**Next:** Monitor pipeline or continue to Block M1 (Observability)
+---
+
+## 🚨 Governance Audit (2025-12-29 20:00)
+
+### KRITISCHER FUND: 60-70% Canon-zu-Runtime Drift
+
+**Audit-Typ:** Governance & Canon Drift Analysis (CDB vs Freqtrade Benchmark)
+**Auditor:** Claude (agent_canonical-governance)
+**Report:** `knowledge/logs/sessions/2025-12-29-governance-drift-audit.md`
+
+### Executive Summary
+
+**PARADOX IDENTIFIZIERT:**
+- **CDB:** Exzellente Governance-Dokumentation, aber kritischer Enforcement-Drift (60-70%)
+- **Freqtrade:** Minimal dokumentierte Governance, aber minimaler Drift (5-10%)
+
+**ROOT CAUSE:**
+CDB ist **"Over-governed, Under-enforced"** → Governance existiert nur als Dokumentation, nicht als technischer Enforcement.
+
+### Kritische Findings
+
+#### 1. P1-001 Branch Protection: NICHT AKTIV ❌
+**Canon sagt:** "PRs only auf main"
+**Governance definiert:** Branch Policy Workflow existiert
+**Runtime zeigt:** `{"enabled": false}` → Direct commits auf main möglich
+
+**Impact:** KRITISCH (Governance komplett umgehbar)
+
+#### 2. CI/CD Workflows: FAILING ⚠️
+**Recent Runs:** 10/10 Workflows mit `action_required`
+- CI/CD Pipeline
+- Delivery Gate
+- Docs Hub Guard
+- Branch Policy
+- Gitleaks
+
+**Impact:** HOCH (Merge-Gates nicht funktionsfähig)
+
+#### 3. Service Contracts: NICHT IMPLEMENTIERT ❌
+**Canon sagt:** "Contracts als Enforcement (P0-001)"
+**Code hat:** Duck-Typing + Dataclasses
+**Runtime zeigt:** KeyErrors möglich (Issue #345 war Beispiel)
+
+**Impact:** MITTEL (Runtime-Instabilität)
+
+### Drift-Analyse (4-Layer-Modell)
+
+```
+CANON      ✅ EXZELLENT (CLAUDE.md, AGENTS.md, Roadmap)
+  ↓ Drift 20% (Governance definiert, aber nicht erzwungen)
+GOVERNANCE ⚠️ DEFINIERT, NICHT AKTIV
+  ↓ Drift 50% (Code implementiert nur Teilmenge)
+CODE       ⚠️ TEILWEISE (Contracts fehlen, E2E flaky)
+  ↓ Drift 70% (Runtime blockt durch Enforcement-Gaps)
+RUNTIME    ⚠️ LOKAL FUNKTIONIEREND, NICHT PRODUKTIV
+```
+
+### Freqtrade-Benchmark (Vergleich)
+
+**Warum funktioniert Freqtrade trotz minimaler Governance?**
+1. Kleine Core-Team (2-3 Personen) → Kultur > Prozess
+2. Tests als Enforcement (75%+ Coverage)
+3. Community Reviews als soziale Governance
+
+**Lektion für CDB:**
+Freqtrade-Modell ist **NICHT skalierbar** auf Multi-Agent-Architektur.
+CDB braucht **"Governance as Code"** (technisch erzwungen).
+
+### Sofort-Maßnahmen (KRITISCH)
+
+**HEUTE (30min):**
+1. **P1-001 Branch Protection aktivieren**
+   ```bash
+   gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection -X PUT \
+     -F required_status_checks='{"strict":true,"contexts":["CI/CD Pipeline","Delivery Gate"]}' \
+     -F enforce_admins=true \
+     -F required_pull_request_reviews='{"required_approving_review_count":1}'
+   ```
+   **Ergebnis:** Direct commits auf main unmöglich (technisch erzwungen)
+
+**DIESE WOCHE:**
+2. **Issue #355: CI/CD back to green** (1-2 Tage)
+   - Failing Workflows debuggen
+   - Required Status Checks erzwingen
+
+**NÄCHSTEN MONAT:**
+3. **P0-001: Service Contracts implementieren** (2-3 Wochen)
+   - Protobuf Schemas für alle Messages
+   - Contract Tests (Producer/Consumer)
+
+### Recommendation
+
+**Strategie-Shift erforderlich:**
+```
+VON: "Governance als Dokumentation"
+ZU:  "Governance as Code"
+```
+
+**Prinzip:** Governance-Regel → CI/CD Enforcement → Merge blockiert bei Verstoß
+
+**Evidence-Based Decision Required:**
+USER APPROVAL für P1-001 Branch Protection Aktivierung (keine Code-Changes, nur GitHub Settings).
+
+---
+
+## Session Status (2025-12-31 13:00 CET)
+
+**Branch:** main
+**Latest Commit:** 950c7bd (Issue #347 merged via PR #402)
+**Stack:** 12/12 Services healthy
 **Session Lead:** Claude
+
+### ✅ Completed This Session
+- **Issue #347**: Dev vs Prod Logging Policy ✅ **MERGED**
+  - Fixed cdb_risk hardcoded log level
+  - Added ENV/LOG_LEVEL to all services in dev.yml + prod.yml
+  - Validated: DEBUG logs in dev, env vars correct
+  - PR #402 merged, branch deleted
+
+- **Issue #355**: CI/CD Analysis ✅ **COMPLETE** (Implementation BLOCKED)
+  - Root Cause Analysis: 2 critical blockers identified
+    1. **EXTERNAL**: GitHub billing/spending limit (Issue #400) - ALL 26 workflows failing
+    2. **DEPENDENCY**: Contracts tests not in main (only in Issue #356 branch)
+  - Evidence: Validated all secrets configured, no workflow config issues
+  - Recovery plan documented: `.orchestrator_issue_355_analysis.md`
+  - **Recommendation**: Pivot to Issue #356 (unblocks #355 + productive use of time)
+
+### 🔴 BLOCKED - Requires User Action
+- **Issue #355**: CI/CD back to green
+  - Blocker 1: User must fix GitHub billing/spending limit
+  - Blocker 2: Merge Issue #356 first OR remove contracts from required checks
+  - Status: Analysis complete, implementation blocked
+
+### 📋 Priority Queue (P0 Issues) - UPDATED
+1. **#356** - Canonical Message Contracts (RECOMMENDED NEXT - unblocks #355)
+2. **#355** - CI/CD back to green (BLOCKED - billing + dependency)
+3. **#354** - Deterministic E2E Test Path
+4. **#352** - Enable Alertmanager
+
+### 🚨 Critical Findings (Governance Audit)
+- **P1-001 Branch Protection**: DEFINED but NOT ENFORCED
+- **60-70% Canon→Runtime Drift**
+- **CI/CD Enforcement Gap**: Workflows failing, no protection active
