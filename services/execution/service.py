@@ -193,7 +193,11 @@ def _publish_result(result: ExecutionResult) -> None:
         config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
     )
     if config.STREAM_ORDER_RESULTS:
-        redis_client.xadd(config.STREAM_ORDER_RESULTS, event_payload, maxlen=10000)
+        stream_payload = {
+            key: value for key, value in event_payload.items() if value is not None
+        }
+        redis_client.xadd(config.STREAM_ORDER_RESULTS, stream_payload, maxlen=10000)
+        logger.info("Published result to stream %s", config.STREAM_ORDER_RESULTS)
     logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
 
     if db:
