@@ -11,6 +11,7 @@ import signal
 import logging
 import logging.config
 import redis
+import uuid
 from flask import Flask, jsonify, Response
 from typing import Optional
 from pathlib import Path
@@ -132,6 +133,7 @@ class SignalEngine:
 
                 # Signal generieren
                 signal = Signal(
+                    signal_id=f"sig-{uuid.uuid4().hex}",
                     symbol=market_data.symbol,
                     side="BUY",
                     reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",

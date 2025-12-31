@@ -83,12 +83,17 @@ def normalize_deal(symbol: str, deal) -> dict:
     Normalize MEXC deal to TradeAgg format.
 
     MEXC fields: price, quantity, tradetype (1=buy, 2=sell), time (ms)
-    CDB format: source, symbol, ts_ms, price, qty, side, raw_ref
+    CDB format: schema_version, source, symbol, ts_ms, price, trade_qty, side
     """
     price = str(getattr(deal, "price", ""))
-    qty = str(getattr(deal, "quantity", "")) or str(getattr(deal, "qty", ""))
+    trade_qty = str(getattr(deal, "quantity", "")) or str(getattr(deal, "qty", ""))
     t = int(getattr(deal, "tradetype", 0) or getattr(deal, "tradeType", 0) or 0)
     ts = int(getattr(deal, "time", 0) or getattr(deal, "ts", 0) or 0)
+    trade_id = (
+        getattr(deal, "tradeId", None)
+        or getattr(deal, "tradeid", None)
+        or getattr(deal, "id", None)
+    )
 
     side = "unknown"
     if t == 1:
@@ -96,14 +101,20 @@ def normalize_deal(symbol: str, deal) -> dict:
     elif t == 2:
         side = "sell"
 
-    return {
+    payload = {
+        "schema_version": "v1.0",
         "source": "mexc",
         "symbol": symbol,
         "ts_ms": ts,
         "price": price,
-        "qty": qty,
+        "trade_qty": trade_qty,
         "side": side,
     }
+
+    if trade_id:
+        payload["trade_id"] = str(trade_id)
+
+    return payload
 
 
 class MexcV3Client:
