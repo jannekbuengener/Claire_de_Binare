@@ -9,12 +9,16 @@ Tests the core pipeline:
 """
 
 import json
+import os
 import time
 from pathlib import Path
 
 import pytest
 import redis
 import requests
+
+# Mark all tests in this module as E2E for selective runs.
+pytestmark = pytest.mark.e2e
 
 
 # Fixtures path
@@ -25,27 +29,37 @@ MARKET_DATA_FIXTURE = FIXTURES_DIR / "market_data.json"
 @pytest.fixture(scope="module")
 def redis_client():
     """Redis client for publishing market_data"""
-    client = redis.Redis(
-        host="localhost",
-        port=6379,
-        password="",  # Update wenn Redis Password gesetzt
-        db=0,
-        decode_responses=True,
-    )
+    password = os.getenv("REDIS_PASSWORD")
+    if not password:
+        pytest.fail("REDIS_PASSWORD environment variable not set. Load secrets first.")
 
-    # Health check
-    try:
-        client.ping()
-    except redis.ConnectionError as e:
-        pytest.skip(f"Redis not available: {e}")
+    env_host = os.getenv("REDIS_HOST")
+    targets = [env_host] if env_host else ["localhost", "cdb_redis"]
+    last_error = None
 
-    return client
+    for host in targets:
+        try:
+            client = redis.Redis(
+                host=host,
+                port=6379,
+                password=password,
+                db=0,
+                decode_responses=True,
+                socket_timeout=5,
+            )
+            client.ping()
+            return client
+        except (redis.ConnectionError, redis.TimeoutError, redis.AuthenticationError) as e:
+            last_error = e
+            continue
+
+    pytest.fail(f"Could not connect to Redis (tried {', '.join(targets)}): {last_error}")
 
 
 @pytest.fixture(scope="module")
 def prometheus_url():
     """Prometheus base URL"""
-    return "http://localhost:9090"
+    return os.getenv("PROMETHEUS_URL", "http://localhost:19090")
 
 
 def load_market_data_fixture():
@@ -94,7 +108,7 @@ def get_prometheus_metric(prometheus_url, metric_name):
             return value
         return None
     except requests.RequestException as e:
-        pytest.skip(f"Prometheus not available: {e}")
+        pytest.fail(f"Prometheus not available: {e}")
         return None
 
 
