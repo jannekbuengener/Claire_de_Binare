@@ -570,149 +570,257 @@ def test_tc_p0_002_risk_position_limit_block(redis_client):
 
 
 @pytest.mark.e2e
-def test_tc_p0_003_daily_drawdown_stop(redis_client):
+def test_tc_p0_003_daily_drawdown_stop(redis_client, unique_order_id):
     """
     TC-P0-003: Daily Drawdown Stop
 
     **Scenario:**
-    1. Set drawdown threshold via Redis
-    2. Simulate drawdown exceeding threshold
-    3. Submit new order
-    4. Risk service should BLOCK all new orders
+    1. Seed allocation for strategy
+    2. Inject order_results to create a positive equity peak
+    3. Inject a loss that exceeds max drawdown
+    4. Publish signal
+    5. Risk service should BLOCK the signal (no order published)
 
     **Validates:**
-    - Drawdown monitoring works
-    - Trading halts when drawdown exceeded
-    - System enters "RISK_OFF" mode
+    - Drawdown monitoring uses order_results
+    - Circuit breaker activates on drawdown breach
+    - Signals are blocked when breaker is active
     """
-    order_id = f"e2e-drawdown-{int(time.time() * 1000)}"
+    base_timestamp = int(time.time())
 
-    # Set circuit breaker state to simulate exceeded drawdown
-    # This depends on how your circuit breaker reads state
-    redis_client.set("circuit_breaker:drawdown:exceeded", "1")
-    redis_client.set("circuit_breaker:drawdown:value", "0.12")  # 12% drawdown
+    allocation_event = {
+        "strategy_id": "test-strat",
+        "allocation_pct": 0.5,
+        "reason": "E2E test allocation",
+        "timestamp": base_timestamp,
+    }
+    redis_client.xadd("stream.allocation_decisions", allocation_event)
+    time.sleep(0.3)
 
-    try:
-        # Subscribe to order_results
-        pubsub = redis_client.pubsub()
-        pubsub.subscribe("order_results")
-        for _ in range(3):
-            pubsub.get_message(timeout=0.1)
+    # Establish a positive equity peak
+    buy_profit = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-peak-buy",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 100.0,
+        "timestamp": base_timestamp + 1,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+    }
+    sell_profit = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-peak-sell",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "SELL",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 200.0,  # +100 realized PnL -> peak equity > 0
+        "timestamp": base_timestamp + 10,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+    }
+    redis_client.publish("order_results", json.dumps(buy_profit))
+    redis_client.publish("order_results", json.dumps(sell_profit))
+    time.sleep(0.8)
 
-        # Submit order (should be blocked due to drawdown)
-        order_payload = {
-            "order_id": order_id,
-            "symbol": "ETH/USDT",
-            "side": "BUY",
-            "quantity": 0.1,
-            "type": "MARKET",
-            "source": "e2e_test_drawdown"
-        }
-        redis_client.publish("orders", json.dumps(order_payload))
+    # Create drawdown > MAX_DRAWDOWN_PCT
+    buy_loss = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-dd-buy",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 100.0,
+        "timestamp": base_timestamp + 20,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+    }
+    sell_loss = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-dd-sell",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "SELL",
+        "quantity": 1.0,
+        "filled_quantity": 1.0,
+        "price": 70.0,  # 30% loss -> should exceed default 10% max drawdown
+        "timestamp": base_timestamp + 30,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+    }
+    redis_client.publish("order_results", json.dumps(buy_loss))
+    redis_client.publish("order_results", json.dumps(sell_loss))
+    time.sleep(1.0)
 
-        # Wait for result
-        result_message = None
-        for _ in range(20):
-            message = pubsub.get_message(timeout=0.5)
-            if message and message["type"] == "message":
-                result_message = message
-                break
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("orders")
+    for _ in range(3):
+        pubsub.get_message(timeout=0.1)
 
-        pubsub.unsubscribe("order_results")
-        pubsub.close()
+    signal_payload = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "direction": "BUY",
+        "strength": 0.8,
+        "timestamp": base_timestamp + 35,
+    }
+    redis_client.publish("signals", json.dumps(signal_payload))
 
-        # Check result
-        if result_message:
-            payload = json.loads(result_message["data"])
+    order_message = None
+    for _ in range(10):
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message = message
+            break
+        time.sleep(0.5)
 
-            # Should NOT be FILLED when drawdown exceeded
-            if payload["status"] in ["FILLED", "filled"]:
-                print(
-                    f"⚠️ TC-P0-003 WARNING: Order was FILLED despite drawdown flag!\n"
-                    f"This may indicate circuit breaker is not reading from Redis.\n"
-                    f"Payload: {payload}"
-                )
-            else:
-                print(f"✅ TC-P0-003 PASSED: Order blocked with status={payload['status']}")
-        else:
-            # No response could mean order was silently dropped (also valid behavior)
-            print("⚠️ TC-P0-003: No response received (order may have been silently blocked)")
+    pubsub.unsubscribe("orders")
+    pubsub.close()
 
-    finally:
-        # Cleanup: Remove drawdown flags
-        redis_client.delete("circuit_breaker:drawdown:exceeded")
-        redis_client.delete("circuit_breaker:drawdown:value")
+    assert order_message is None, (
+        "TC-P0-003 FAILED: Expected signal to be blocked by drawdown guard, "
+        f"but order was published: {order_message}"
+    )
 
 
 @pytest.mark.e2e
-def test_tc_p0_004_circuit_breaker_trigger(redis_client):
+def test_tc_p0_004_circuit_breaker_trigger(redis_client, unique_order_id):
     """
-    TC-P0-004: Circuit Breaker Trigger
+    TC-P0-004: Circuit Breaker Trigger + Deterministic Reset
 
     **Scenario:**
-    1. Activate circuit breaker via Redis key
-    2. Submit order
-    3. Order should be BLOCKED
+    1. Inject consecutive REJECTED order_results to trigger breaker
+    2. Publish signal -> should be blocked
+    3. Inject FILLED order_result with timestamp beyond cooldown
+    4. Publish signal -> should be allowed (if breaker enabled)
 
     **Validates:**
-    - Circuit breaker mechanism works
-    - Orders blocked when breaker active
-    - System protection is functional
+    - Circuit breaker triggers on consecutive failures
+    - Breaker blocks signals while active
+    - Deterministic cooldown reset (#226E) re-allows signals
     """
-    order_id = f"e2e-circuit-{int(time.time() * 1000)}"
+    base_timestamp = int(time.time())
 
-    # Activate circuit breaker
-    redis_client.set("circuit_breaker:active", "1")
-    redis_client.set("circuit_breaker:reason", "e2e_test_trigger")
+    allocation_event = {
+        "strategy_id": "test-strat",
+        "allocation_pct": 0.5,
+        "reason": "E2E test allocation",
+        "timestamp": base_timestamp,
+    }
+    redis_client.xadd("stream.allocation_decisions", allocation_event)
+    time.sleep(0.3)
 
-    try:
-        # Subscribe to order_results
-        pubsub = redis_client.pubsub()
-        pubsub.subscribe("order_results")
-        for _ in range(3):
-            pubsub.get_message(timeout=0.1)
-
-        # Submit order (should be blocked by circuit breaker)
-        order_payload = {
-            "order_id": order_id,
+    for i in range(3):
+        failure_result = {
+            "type": "order_result",
+            "order_id": f"{unique_order_id}-fail-{i}",
+            "status": "REJECTED",
             "symbol": "BTC/USDT",
-            "side": "SELL",
+            "side": "BUY",
             "quantity": 0.001,
-            "type": "MARKET",
-            "source": "e2e_test_circuit_breaker"
+            "filled_quantity": 0.0,
+            "price": None,
+            "timestamp": base_timestamp + i,
+            "strategy_id": "test-strat",
+            "bot_id": "test-bot",
+            "error_message": f"Test failure {i + 1}",
         }
-        redis_client.publish("orders", json.dumps(order_payload))
+        redis_client.publish("order_results", json.dumps(failure_result))
+        time.sleep(0.3)
 
-        # Wait for result
-        result_message = None
-        for _ in range(20):
-            message = pubsub.get_message(timeout=0.5)
-            if message and message["type"] == "message":
-                result_message = message
-                break
+    time.sleep(1.0)
 
-        pubsub.unsubscribe("order_results")
-        pubsub.close()
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe("orders")
+    for _ in range(3):
+        pubsub.get_message(timeout=0.1)
 
-        # Check result
-        if result_message:
-            payload = json.loads(result_message["data"])
+    signal_payload = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal-1",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "direction": "BUY",
+        "strength": 0.7,
+        "timestamp": base_timestamp + 10,
+    }
+    redis_client.publish("signals", json.dumps(signal_payload))
 
-            if payload["status"] in ["FILLED", "filled"]:
-                pytest.fail(
-                    f"TC-P0-004 CRITICAL FAILURE: Order FILLED despite circuit breaker active!\n"
-                    f"Circuit breaker is NOT working!\n"
-                    f"Payload: {payload}"
-                )
-            else:
-                print(f"✅ TC-P0-004 PASSED: Circuit breaker blocked order, status={payload['status']}")
-        else:
-            print("⚠️ TC-P0-004: No response received (order may have been silently blocked)")
+    order_message_1 = None
+    for _ in range(10):
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message_1 = message
+            break
+        time.sleep(0.5)
 
-    finally:
-        # Cleanup: Deactivate circuit breaker
-        redis_client.delete("circuit_breaker:active")
-        redis_client.delete("circuit_breaker:reason")
+    assert order_message_1 is None, (
+        "TC-P0-004 FAILED: Expected signal to be blocked by circuit breaker, "
+        f"but order was published: {order_message_1}"
+    )
+
+    reset_timestamp = base_timestamp + 1000
+    success_result = {
+        "type": "order_result",
+        "order_id": f"{unique_order_id}-success",
+        "status": "FILLED",
+        "symbol": "BTC/USDT",
+        "side": "BUY",
+        "quantity": 0.001,
+        "filled_quantity": 0.001,
+        "price": 50000.0,
+        "timestamp": reset_timestamp,
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+    }
+    redis_client.publish("order_results", json.dumps(success_result))
+    time.sleep(1.0)
+
+    for _ in range(3):
+        pubsub.get_message(timeout=0.1)
+
+    signal_payload_2 = {
+        "type": "signal",
+        "signal_id": f"{unique_order_id}-signal-2",
+        "strategy_id": "test-strat",
+        "bot_id": "test-bot",
+        "symbol": "BTC/USDT",
+        "side": "SELL",
+        "direction": "SELL",
+        "strength": 0.6,
+        "timestamp": reset_timestamp + 5,
+    }
+    redis_client.publish("signals", json.dumps(signal_payload_2))
+
+    order_message_2 = None
+    for _ in range(10):
+        message = pubsub.get_message(timeout=0.5)
+        if message and message["type"] == "message" and message["channel"] == "orders":
+            order_message_2 = message
+            break
+        time.sleep(0.5)
+
+    pubsub.unsubscribe("orders")
+    pubsub.close()
+
+    if os.getenv("CIRCUIT_BREAKER_ENABLED", "true").lower() != "false":
+        assert order_message_2 is not None, (
+            "TC-P0-004 FAILED: Expected signal to be allowed after cooldown reset, "
+            "but no order was published"
+        )
 
 
 @pytest.mark.e2e

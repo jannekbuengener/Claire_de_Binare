@@ -30,6 +30,16 @@ class RiskConfig:
     max_daily_drawdown_pct: float = float(os.getenv("MAX_DAILY_DRAWDOWN_PCT", "0.05"))
     stop_loss_pct: float = float(os.getenv("STOP_LOSS_PCT", "0.02"))
 
+    # #230 Risk Guards - Peak Drawdown & Circuit Breaker
+    max_drawdown_pct: float = float(os.getenv("MAX_DRAWDOWN_PCT", "0.10"))
+    circuit_breaker_enabled: bool = os.getenv("CIRCUIT_BREAKER_ENABLED", "true").lower() == "true"
+    max_consecutive_failures: int = int(os.getenv("MAX_CONSECUTIVE_FAILURES", "3"))
+    max_failures_window: int = int(os.getenv("MAX_FAILURES_WINDOW", "10"))
+    failure_window_seconds: int = int(os.getenv("FAILURE_WINDOW_SECONDS", "3600"))
+
+    # #226 Circuit Breaker - Deterministic Reset
+    circuit_breaker_cooldown_seconds: int = int(os.getenv("CIRCUIT_BREAKER_COOLDOWN_SECONDS", "900"))
+
     # Topics
     input_topic: str = "signals"
     input_topic_order_results: str = "order_results"
