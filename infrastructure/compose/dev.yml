@@ -38,6 +38,8 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
@@ -70,6 +72,8 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
@@ -77,7 +81,6 @@ services:
       SIGNAL_PORT: "8005"
       SIGNAL_THRESHOLD_PCT: "0.005"  # Issue #345: Evidence-based: 100ms trades max ~0.014%, most <0.01%
       SIGNAL_MIN_VOLUME: "0"  # DISABLED: Raw trades use 'qty' field, not 'volume' (TODO: fix field mapping)
-      LOG_LEVEL: "DEBUG"  # Enable detailed logging for signal generation debugging
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8005:8005"
@@ -104,6 +107,8 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
@@ -128,6 +133,8 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
@@ -152,6 +159,8 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
@@ -178,11 +187,12 @@ services:
       - redis_password
       - postgres_password
     environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       PAPER_TRADING_DURATION_DAYS: ${PAPER_TRADING_DURATION_DAYS:-14}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python tools/paper_trading/service.py"]
     ports:
       - "127.0.0.1:8004:8004"

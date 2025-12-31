@@ -143,3 +143,16 @@ gha-creds-*.json
 
 # Auto Claude data directory
 .auto-claude/
+
+# Git worktrees metadata
+.worktrees/
+
+# Build artifacts
+..cdb_local.compose_rendered.yml
+*_rendered.yml
+
+# Orchestrator outputs and analysis files
+.orchestrator_outputs/
+.orchestrator_*.md
+*_analysis.json
+*_categorization.txt
