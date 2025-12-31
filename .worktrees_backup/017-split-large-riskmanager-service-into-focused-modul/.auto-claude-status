@@ -1,0 +1,25 @@
+{
+  "active": true,
+  "spec": "017-split-large-riskmanager-service-into-focused-modul",
+  "state": "complete",
+  "subtasks": {
+    "completed": 0,
+    "total": 0,
+    "in_progress": 1,
+    "failed": 0
+  },
+  "phase": {
+    "current": "",
+    "id": 0,
+    "total": 0
+  },
+  "workers": {
+    "active": 0,
+    "max": 1
+  },
+  "session": {
+    "number": 2,
+    "started_at": "2025-12-29T22:53:20.709777"
+  },
+  "last_update": "2025-12-29T22:54:14.217398"
+}

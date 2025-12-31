@@ -1,0 +1,313 @@
+{
+  "uid": "claire_risk_v1",
+  "title": "Claire - Risk Manager",
+  "description": "Risk analysis and circuit breaker monitoring - Semantic colors",
+  "tags": ["claire", "risk", "semantic"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m"]
+  },
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "CIRCUIT BREAKER",
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "circuit_breaker_active",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {"color": "#22c55e", "index": 0, "text": "✓ SAFE"},
+                "1": {"color": "#ef4444", "index": 1, "text": "⚠ TRIPPED"}
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#22c55e", "value": null},
+              {"color": "#ef4444", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "MAX EXPOSURE",
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_max_exposure_pct",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#22c55e", "value": null},
+              {"color": "#16a34a", "value": 30},
+              {"color": "#f97316", "value": 50},
+              {"color": "#ef4444", "value": 80}
+            ]
+          }
+        }
+      },
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "ORDERS BLOCKED",
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_orders_rejected_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#22c55e", "value": null},
+              {"color": "#f97316", "value": 10},
+              {"color": "#ea580c", "value": 50},
+              {"color": "#ef4444", "value": 100}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "EXPOSURE TIMELINE",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_max_exposure_pct",
+          "legendFormat": "Max Exposure %",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 30,
+            "gradientMode": "hue",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#60a5fa", "value": null},
+              {"color": "#3b82f6", "value": 50},
+              {"color": "#2563eb", "value": 80}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Max Exposure %"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#3b82f6"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["last", "max", "mean"]
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "RISK THRESHOLDS",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 18},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_signal_threshold_pct",
+          "legendFormat": "Signal Threshold",
+          "refId": "A"
+        },
+        {
+          "expr": "adaptive_intensity_rsi_threshold",
+          "legendFormat": "RSI Threshold",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "spanNulls": false,
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Signal Threshold"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#3b82f6"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "RSI Threshold"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#60a5fa"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "gauge",
+      "title": "PERFORMANCE SCORE",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 18},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "adaptive_intensity_performance_score",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#ef4444", "value": null},
+              {"color": "#f97316", "value": 0.3},
+              {"color": "#16a34a", "value": 0.6},
+              {"color": "#22c55e", "value": 0.8}
+            ]
+          }
+        }
+      },
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "RISK EVENTS LOG",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 28},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT TO_TIMESTAMP(timestamp/1000) as time, symbol, reason, ROUND(confidence::numeric, 2) as confidence FROM signals WHERE confidence < 0.5 ORDER BY timestamp DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "confidence"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "gradient-gauge"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "#ef4444", "value": null},
+                    {"color": "#f97316", "value": 0.3},
+                    {"color": "#22c55e", "value": 0.5}
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ]
+}

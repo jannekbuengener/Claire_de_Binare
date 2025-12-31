@@ -1,0 +1,27 @@
+[project]
+name = "cdb-agent-sdk"
+version = "0.1.0"
+description = "Claude Agent SDK Agenten für CDB (Claire de Binare) - Observability, Determinism, Governance, Impact"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "claude-agent-sdk>=0.1.18",
+]
+
+[project.scripts]
+cdb-dataflow = "cdb_agent_sdk.agents.dataflow_observer:main"
+cdb-determinism = "cdb_agent_sdk.agents.determinism_inspector:main"
+cdb-governance = "cdb_agent_sdk.agents.governance_auditor:main"
+cdb-impact = "cdb_agent_sdk.agents.change_impact_analyst:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cdb_agent_sdk"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

@@ -1,0 +1,254 @@
+name: 'Bulk Issue Labeling - All Issues'
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (test mode - no changes)'
+        required: false
+        type: boolean
+        default: true
+      issue_range_start:
+        description: 'Start issue number (optional)'
+        required: false
+        type: number
+      issue_range_end:
+        description: 'End issue number (optional)'  
+        required: false
+        type: number
+
+jobs:
+  bulk-label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Bulk Label Issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const dryRun = ${{ inputs.dry_run }};
+            const rangeStart = ${{ inputs.issue_range_start }} || null;
+            const rangeEnd = ${{ inputs.issue_range_end }} || null;
+            
+            console.log('🏷️  Claire de Binare Bulk Issue Labeling');
+            console.log(`Repository: ${context.repo.owner}/${context.repo.repo}`);
+            console.log(`Dry Run: ${dryRun}`);
+            
+            if (dryRun) {
+              console.log('🔍 DRY RUN MODE - No changes will be made');
+            }
+            
+            // Comprehensive issue categorization
+            const labelingRules = {
+              // ML/Research Issues (192-200)
+              "ML_Research": {
+                issueNumbers: [192, 193, 194, 195, 196, 197, 198, 199, 200],
+                labels: ["type:research", "scope:core", "prio:should"],
+                titlePatterns: ["ML Foundation", "Machine Learning", "Deep Research"]
+              },
+              
+              // Stabilization Issues (156-160) 
+              "Stabilization": {
+                issueNumbers: [156, 157, 158, 159, 160],
+                labels: ["prio:must", "type:bug"],
+                titlePatterns: ["STABILIZATION", "Infrastructure Emergency"]
+              },
+              
+              // Security Issues (97-106)
+              "Security": {
+                issueNumbers: [97, 98, 99, 100, 101, 102, 103, 104, 105, 106],
+                labels: ["type:security", "prio:must"],
+                titlePatterns: ["Security", "Hardening", "Penetration", "OWASP"]
+              },
+              
+              // Trading Core Issues (171-188)
+              "Trading": {
+                issueNumbers: [171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188],
+                labels: ["prio:must", "scope:core", "trading"],
+                titlePatterns: ["Trading", "MEXC", "Live Trading", "Execution"]
+              },
+              
+              // Testing Issues (91-95, 113)
+              "Testing": {
+                issueNumbers: [91, 92, 93, 94, 95, 113],
+                labels: ["testing", "prio:should"],
+                titlePatterns: ["E2E", "Test", "Performance"]
+              },
+              
+              // Documentation Issues (108, 117-120)
+              "Documentation": {
+                issueNumbers: [108, 117, 118, 119, 120],
+                labels: ["type:docs", "scope:docs", "prio:should"],
+                titlePatterns: ["docs:", "Documentation", "Guide"]
+              },
+              
+              // Infrastructure Issues (114, 121-123, 135, 139, 140)
+              "Infrastructure": {
+                issueNumbers: [114, 121, 122, 123, 135, 139, 140],
+                labels: ["scope:infra", "prio:should"],
+                titlePatterns: ["Docker", "CI/CD", "GitHub"]
+              },
+              
+              // Governance Issues (143, 150, 163, 165-167)
+              "Governance": {
+                issueNumbers: [143, 150, 163, 165, 166, 167],
+                labels: ["governance", "type:docs", "prio:should"],
+                titlePatterns: ["GOVERNANCE", "Canonical", "Violations"]
+              },
+              
+              // Monitoring Issues (96)
+              "Monitoring": {
+                issueNumbers: [96],
+                labels: ["scope:monitoring", "prio:should"],
+                titlePatterns: ["Grafana", "Monitoring"]
+              },
+              
+              // Automation Issues (144, 145, 146, 169, 170)
+              "Automation": {
+                issueNumbers: [144, 145, 146, 169, 170],
+                labels: ["scope:ci", "type:feature", "prio:should"],
+                titlePatterns: ["AUTOMATION", "Workflow", "Smart"]
+              },
+              
+              // Analysis Issues (147, 151)
+              "Analysis": {
+                issueNumbers: [147, 151],
+                labels: ["type:research", "prio:should"],
+                titlePatterns: ["AI-RESEARCH", "Analysis"]
+              },
+              
+              // Hygiene Issues (136-138)
+              "Hygiene": {
+                issueNumbers: [136, 137, 138],
+                labels: ["type:docs", "prio:nice", "governance"],
+                titlePatterns: ["CDB-HYGIENE", "Migrate"]
+              }
+            };
+            
+            // Agent assignments
+            const agentRules = {
+              "agent:codex": [113, 116, 136, 137, 138, 139, 148, 149, 156, 175],
+              "agent:copilot": [114, 118, 119, 120, 121, 122, 123, 124, 144, 145],
+              "agent:gemini": [110, 115, 117, 143, 150, 151, 157, 165, 166],
+              "agent:claude": [107, 108, 109, 128, 158, 167]
+            };
+            
+            // Get all open issues
+            let allIssues = [];
+            let page = 1;
+            
+            while (true) {
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100,
+                page: page
+              });
+              
+              const issuesOnly = issues.filter(issue => !issue.pull_request);
+              allIssues = allIssues.concat(issuesOnly);
+              
+              if (issues.length < 100) break;
+              page++;
+            }
+            
+            console.log(`Found ${allIssues.length} open issues`);
+            
+            // Filter by range if specified
+            let issuesToProcess = allIssues;
+            if (rangeStart || rangeEnd) {
+              issuesToProcess = allIssues.filter(issue => {
+                return (!rangeStart || issue.number >= rangeStart) && 
+                       (!rangeEnd || issue.number <= rangeEnd);
+              });
+              console.log(`Filtered to ${issuesToProcess.length} issues in range [${rangeStart || 'start'}, ${rangeEnd || 'end'}]`);
+            }
+            
+            let totalProcessed = 0;
+            let totalLabeled = 0;
+            
+            // Process category-based rules
+            for (const [category, rule] of Object.entries(labelingRules)) {
+              console.log(`\n📋 Processing ${category} issues...`);
+              
+              for (const issueNumber of rule.issueNumbers) {
+                const issue = issuesToProcess.find(i => i.number === issueNumber);
+                if (!issue) continue;
+                
+                totalProcessed++;
+                
+                const existingLabels = issue.labels.map(l => l.name);
+                const newLabels = rule.labels.filter(label => !existingLabels.includes(label));
+                
+                if (newLabels.length > 0) {
+                  console.log(`  Issue #${issueNumber}: "${issue.title}"`);
+                  console.log(`    Adding labels: ${newLabels.join(', ')}`);
+                  
+                  if (!dryRun) {
+                    try {
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        labels: newLabels
+                      });
+                      console.log(`    ✅ Added labels to issue #${issueNumber}`);
+                      totalLabeled++;
+                    } catch (error) {
+                      console.error(`    ❌ Failed to add labels to issue #${issueNumber}: ${error.message}`);
+                    }
+                  } else {
+                    console.log(`    🔍 DRY RUN: Would add ${newLabels.length} labels`);
+                    totalLabeled++;
+                  }
+                } else {
+                  console.log(`  Issue #${issueNumber} already properly labeled`);
+                }
+              }
+            }
+            
+            // Process agent assignments
+            console.log(`\n👥 Processing agent assignments...`);
+            for (const [agentLabel, issueNumbers] of Object.entries(agentRules)) {
+              for (const issueNumber of issueNumbers) {
+                const issue = issuesToProcess.find(i => i.number === issueNumber);
+                if (!issue) continue;
+                
+                const existingLabels = issue.labels.map(l => l.name);
+                
+                if (!existingLabels.includes(agentLabel)) {
+                  console.log(`  Issue #${issueNumber} needs agent label: ${agentLabel}`);
+                  
+                  if (!dryRun) {
+                    try {
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        labels: [agentLabel]
+                      });
+                      console.log(`    ✅ Added ${agentLabel} to issue #${issueNumber}`);
+                    } catch (error) {
+                      console.error(`    ❌ Failed to add ${agentLabel} to issue #${issueNumber}: ${error.message}`);
+                    }
+                  } else {
+                    console.log(`    🔍 DRY RUN: Would add ${agentLabel}`);
+                  }
+                }
+              }
+            }
+            
+            // Summary
+            console.log(`\n📊 Summary:`);
+            console.log(`  Total issues processed: ${totalProcessed}`);
+            console.log(`  Issues labeled: ${totalLabeled}`);
+            
+            if (dryRun) {
+              console.log(`\n💡 Run with dry_run=false to apply changes`);
+            } else {
+              console.log(`\n✅ Bulk labeling completed!`);
+            }

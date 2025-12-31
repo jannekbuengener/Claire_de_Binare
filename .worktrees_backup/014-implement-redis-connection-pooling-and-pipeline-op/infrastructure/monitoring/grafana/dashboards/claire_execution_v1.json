@@ -1,0 +1,354 @@
+{
+  "uid": "claire_execution_v1",
+  "title": "Claire - Execution Engine",
+  "description": "Live trade execution monitoring - Toxic Green/Black theme",
+  "tags": ["claire", "execution", "green"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s"]
+  },
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "ORDERS FILLED",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_orders_filled_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#0a0a0a", "value": null},
+              {"color": "#16a34a", "value": 1},
+              {"color": "#22c55e", "value": 10},
+              {"color": "#84cc16", "value": 50}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "ORDERS RECEIVED",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_orders_received_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#0a0a0a", "value": null},
+              {"color": "#10b981", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "FILL RATE",
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "(execution_orders_filled_total / execution_orders_received_total) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#0a0a0a", "value": null},
+              {"color": "#16a34a", "value": 20},
+              {"color": "#22c55e", "value": 50},
+              {"color": "#84cc16", "value": 80}
+            ]
+          }
+        }
+      },
+      "options": {
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "UPTIME",
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "execution_uptime_seconds",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#0a0a0a", "value": null},
+              {"color": "#10b981", "value": 60}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "EXECUTION FLOW (Real-time)",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(execution_orders_received_total[30s])",
+          "legendFormat": "Received/s",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(execution_orders_filled_total[30s])",
+          "legendFormat": "Filled/s",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(execution_orders_rejected_total[30s])",
+          "legendFormat": "Rejected/s",
+          "refId": "C"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "fillOpacity": 40,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "unit": "short"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Received/s"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#84cc16"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Filled/s"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#22c55e"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Rejected/s"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#16a34a"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["last", "max"]
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "ORDER RESULTS TIMELINE",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(order_results_received_total[1m])",
+          "legendFormat": "Results/min",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "gradientMode": "hue",
+            "spanNulls": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Results/min"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#22c55e"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "single"},
+        "legend": {"displayMode": "hidden"}
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "TOTAL RESULTS",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "order_results_received_total",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#0a0a0a", "value": null},
+              {"color": "#16a34a", "value": 1},
+              {"color": "#22c55e", "value": 50},
+              {"color": "#84cc16", "value": 100}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value",
+        "orientation": "vertical"
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "RECENT TRADES (Live)",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 26},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT TO_TIMESTAMP(timestamp/1000) as time, symbol, side, ROUND(quantity::numeric, 4) as qty, ROUND(price::numeric, 2) as price, status FROM trades ORDER BY timestamp DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "side"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "buy": {"color": "#22c55e", "index": 0},
+                      "sell": {"color": "#84cc16", "index": 1}
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "status"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "filled": {"color": "#22c55e", "index": 0},
+                      "rejected": {"color": "#16a34a", "index": 1},
+                      "pending": {"color": "#10b981", "index": 2}
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ]
+}

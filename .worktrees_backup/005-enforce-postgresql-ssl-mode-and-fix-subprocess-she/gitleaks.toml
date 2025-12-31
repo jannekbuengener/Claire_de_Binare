@@ -1,0 +1,44 @@
+# Gitleaks Configuration for Claire de Binare
+# https://github.com/gitleaks/gitleaks
+#
+# Issue #313: Configure gitleaks secret-scanning in CI
+
+title = "Claire de Binare Gitleaks Config"
+
+[extend]
+# Use default gitleaks rules as baseline
+useDefault = true
+
+# Additional custom rules for trading/crypto context
+[[rules]]
+id = "mexc-api-key"
+description = "MEXC Exchange API Key"
+regex = '''(?i)(mexc|mx)[_-]?(api)?[_-]?(key|secret)['":\s=]+[a-zA-Z0-9]{32,}'''
+keywords = ["mexc", "mx_api"]
+
+[[rules]]
+id = "trading-api-key"
+description = "Generic Trading API Key Pattern"
+regex = '''(?i)(trading|exchange|broker)[_-]?(api)?[_-]?(key|secret)['":\s=]+[a-zA-Z0-9]{16,}'''
+keywords = ["trading_api", "exchange_api", "broker_api"]
+
+# Allowlist - files/patterns that should be ignored
+[allowlist]
+description = "Global allowlist"
+paths = [
+    # Test fixtures with fake secrets
+    '''tests/fixtures/.*''',
+    # Documentation examples
+    '''docs/.*\.md''',
+    # Example/template files
+    '''.*\.example''',
+    '''.*\.template''',
+    # Lock files
+    '''.*lock\.json''',
+    '''.*lock\.yaml''',
+]
+
+# Entropy settings - reduce false positives
+[entropy]
+# Disable entropy-based detection (high false positive rate)
+enabled = false

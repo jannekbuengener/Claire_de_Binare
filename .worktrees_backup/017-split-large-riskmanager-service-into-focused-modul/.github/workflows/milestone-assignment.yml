@@ -1,0 +1,291 @@
+# ⚠️ DEPRECATED: This workflow is deprecated as of label consolidation.
+# Milestone labels (milestone:m1-m9) have been removed in favor of GitHub's native Milestones.
+# Epic labels (epic:*) have been removed in favor of GitHub Projects.
+# Please use GitHub Milestones and Projects features directly instead of labels.
+
+name: 'Milestone Assignment & Epic Labeling'
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (test mode - no changes)'
+        required: false
+        type: boolean
+        default: true
+      assign_milestones:
+        description: 'Also assign GitHub milestones (not just labels)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  milestone-assignment:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Assign Milestones and Epic Labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const dryRun = ${{ inputs.dry_run }};
+            const assignMilestones = ${{ inputs.assign_milestones }};
+            
+            console.log('🏁 Claire de Binare Milestone & Epic Assignment');
+            console.log(`Repository: ${context.repo.owner}/${context.repo.repo}`);
+            console.log(`Dry Run: ${dryRun}`);
+            console.log(`Assign GitHub Milestones: ${assignMilestones}`);
+            
+            // Detaillierte Milestone-Zuordnung basierend auf Issue-Analyse
+            const milestoneRules = {
+              // M1 - Foundation (Infrastructure Setup)
+              "M1_Foundation": {
+                issueNumbers: [135, 139, 163, 148, 149], // Basic setup, environment, governance
+                milestoneLabel: "milestone:m1",
+                epicLabel: "epic:stabilization",
+                milestoneName: "M1 - Foundation"
+              },
+              
+              // M2 - Core Services (Basic Trading Services)  
+              "M2_CoreServices": {
+                issueNumbers: [43, 148], // Basic service implementation
+                milestoneLabel: "milestone:m2", 
+                epicLabel: null,
+                milestoneName: "M2 - Core Services"
+              },
+              
+              // M3 - Risk Layer
+              "M3_RiskLayer": {
+                issueNumbers: [43], // Risk-related issues
+                milestoneLabel: "milestone:m3",
+                epicLabel: null,
+                milestoneName: "M3 - Risk Layer"  
+              },
+              
+              // M5 - Persistenz
+              "M5_Persistenz": {
+                issueNumbers: [43], // Database and persistence
+                milestoneLabel: "milestone:m5",
+                epicLabel: null,
+                milestoneName: "M5 - Persistenz"
+              },
+              
+              // M6 - Docker
+              "M6_Docker": {
+                issueNumbers: [140, 98, 101, 103], // Container hardening, infrastructure
+                milestoneLabel: "milestone:m6", 
+                epicLabel: null,
+                milestoneName: "M6 - Docker"
+              },
+              
+              // M7 - Testnet (Paper Trading)
+              "M7_Testnet": {
+                issueNumbers: [
+                  91, 92, 93, 94, 95, 96, // Testing infrastructure
+                  113, 121, 123, // Testing implementation
+                  172, 176, 180, 181 // Paper trading validation
+                ],
+                milestoneLabel: "milestone:m7",
+                epicLabel: "epic:paper-trading", 
+                milestoneName: "M7 - Testnet"
+              },
+              
+              // M8 - Security (Security Hardening)
+              "M8_Security": {
+                issueNumbers: [
+                  97, 98, 99, 100, 101, 102, 103, 104, 105, 106, // Security roadmap
+                  122, 140, // Security reports and hardening
+                  174, 185 // Production security
+                ],
+                milestoneLabel: "milestone:m8",
+                epicLabel: null,
+                milestoneName: "M8 - Security"
+              },
+              
+              // M9 - Production (Live Trading)
+              "M9_Production": {
+                issueNumbers: [
+                  171, 173, 174, 175, 177, 178, 179, // Live trading implementation
+                  182, 183, 184, 186, 187, 188, // Production readiness
+                  195 // Production MLOps
+                ],
+                milestoneLabel: "milestone:m9",
+                epicLabel: "epic:live-trading",
+                milestoneName: "M9 - Production"
+              },
+              
+              // ML Foundation Epic (Spanning multiple milestones)
+              "ML_Foundation": {
+                issueNumbers: [
+                  192, 193, 194, 195, 196, 197, 198, 199, 200 // Complete ML roadmap
+                ],
+                milestoneLabel: null, // These span multiple milestones
+                epicLabel: "epic:ml-foundation",
+                milestoneName: null
+              },
+              
+              // Stabilization Epic (High priority fixes)
+              "Stabilization": {
+                issueNumbers: [
+                  156, 157, 158, 159, 160, // Core stabilization
+                  164, 165, 166, 167, 168, // Governance fixes
+                  150, 151, 154, 162 // Infrastructure fixes  
+                ],
+                milestoneLabel: "milestone:m1", // Foundation milestone
+                epicLabel: "epic:stabilization", 
+                milestoneName: "M1 - Foundation"
+              }
+            };
+            
+            // Get all open issues
+            let allIssues = [];
+            let page = 1;
+            
+            while (true) {
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100,
+                page: page
+              });
+              
+              const issuesOnly = issues.filter(issue => !issue.pull_request);
+              allIssues = allIssues.concat(issuesOnly);
+              
+              if (issues.length < 100) break;
+              page++;
+            }
+            
+            console.log(`Found ${allIssues.length} open issues`);
+            
+            // Get existing milestones from GitHub
+            let githubMilestones = {};
+            if (assignMilestones) {
+              try {
+                const { data: milestones } = await github.rest.issues.listMilestones({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  state: 'open'
+                });
+                
+                milestones.forEach(milestone => {
+                  githubMilestones[milestone.title] = milestone.number;
+                });
+                
+                console.log(`Found ${Object.keys(githubMilestones).length} GitHub milestones`);
+              } catch (error) {
+                console.error('Failed to fetch GitHub milestones:', error.message);
+              }
+            }
+            
+            let totalProcessed = 0;
+            let totalLabeled = 0;
+            let totalMilestonesAssigned = 0;
+            
+            // Process milestone rules
+            for (const [ruleName, rule] of Object.entries(milestoneRules)) {
+              console.log(`\n🏁 Processing ${ruleName}...`);
+              
+              for (const issueNumber of rule.issueNumbers) {
+                const issue = allIssues.find(i => i.number === issueNumber);
+                if (!issue) {
+                  console.log(`  Issue #${issueNumber} not found (may be closed)`);
+                  continue;
+                }
+                
+                totalProcessed++;
+                console.log(`  Issue #${issueNumber}: "${issue.title}"`);
+                
+                const existingLabels = issue.labels.map(l => l.name);
+                const labelsToAdd = [];
+                
+                // Add milestone label if specified
+                if (rule.milestoneLabel && !existingLabels.includes(rule.milestoneLabel)) {
+                  labelsToAdd.push(rule.milestoneLabel);
+                }
+                
+                // Add epic label if specified  
+                if (rule.epicLabel && !existingLabels.includes(rule.epicLabel)) {
+                  labelsToAdd.push(rule.epicLabel);
+                }
+                
+                // Add labels
+                if (labelsToAdd.length > 0) {
+                  console.log(`    Adding labels: ${labelsToAdd.join(', ')}`);
+                  
+                  if (!dryRun) {
+                    try {
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        labels: labelsToAdd
+                      });
+                      console.log(`    ✅ Added labels to issue #${issueNumber}`);
+                      totalLabeled++;
+                    } catch (error) {
+                      console.error(`    ❌ Failed to add labels: ${error.message}`);
+                    }
+                  } else {
+                    console.log(`    🔍 DRY RUN: Would add ${labelsToAdd.length} labels`);
+                    totalLabeled++;
+                  }
+                }
+                
+                // Assign GitHub milestone if requested and available
+                if (assignMilestones && rule.milestoneName && githubMilestones[rule.milestoneName]) {
+                  const milestoneId = githubMilestones[rule.milestoneName];
+                  
+                  if (!issue.milestone || issue.milestone.number !== milestoneId) {
+                    console.log(`    Assigning GitHub milestone: ${rule.milestoneName}`);
+                    
+                    if (!dryRun) {
+                      try {
+                        await github.rest.issues.update({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          issue_number: issueNumber,
+                          milestone: milestoneId
+                        });
+                        console.log(`    ✅ Assigned milestone to issue #${issueNumber}`);
+                        totalMilestonesAssigned++;
+                      } catch (error) {
+                        console.error(`    ❌ Failed to assign milestone: ${error.message}`);
+                      }
+                    } else {
+                      console.log(`    🔍 DRY RUN: Would assign milestone ${rule.milestoneName}`);
+                      totalMilestonesAssigned++;
+                    }
+                  } else {
+                    console.log(`    Milestone already assigned correctly`);
+                  }
+                } else if (assignMilestones && rule.milestoneName && !githubMilestones[rule.milestoneName]) {
+                  console.log(`    ⚠️  GitHub milestone "${rule.milestoneName}" not found`);
+                }
+              }
+            }
+            
+            // Summary
+            console.log(`\n📊 Summary:`);
+            console.log(`  Total issues processed: ${totalProcessed}`);
+            console.log(`  Issues labeled: ${totalLabeled}`);
+            console.log(`  Milestones assigned: ${totalMilestonesAssigned}`);
+            
+            if (dryRun) {
+              console.log(`\n💡 Run with dry_run=false to apply changes`);
+            } else {
+              console.log(`\n✅ Milestone assignment completed!`);
+            }
+            
+            // Milestone distribution report
+            console.log(`\n📋 Planned Milestone Distribution:`);
+            console.log(`  M1 - Foundation: Infrastructure, Governance, Basic Setup`);
+            console.log(`  M7 - Testnet: Paper Trading, Testing Infrastructure`);
+            console.log(`  M8 - Security: Security Hardening, Penetration Testing`);
+            console.log(`  M9 - Production: Live Trading, Production Deployment`);
+            console.log(`  ML Foundation Epic: Spans multiple milestones`);
+            console.log(`  Stabilization Epic: Critical fixes for M1`);

@@ -1,0 +1,5 @@
+# Market Data Service Dependencies
+flask==3.1.2
+werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
+redis==5.0.1
+psycopg2-binary==2.9.9

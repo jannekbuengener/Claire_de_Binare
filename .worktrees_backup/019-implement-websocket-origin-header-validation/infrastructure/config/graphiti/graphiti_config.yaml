@@ -1,0 +1,29 @@
+# Graphiti MCP Server Configuration
+# Note: Environment variables take precedence over this configuration file.
+# This file serves as documentation and fallback defaults for the Graphiti MCP Server.
+
+server:
+  transport: http
+  port: 8000
+
+llm:
+  provider: openai
+  model: deepseek-r1:7b
+  api_base: http://cdb_ollama:11434/v1
+  api_key: ollama  # Non-empty placeholder required for Ollama
+
+embedder:
+  provider: openai
+  model: nomic-embed-text
+  embedding_dim: 768
+  api_base: http://cdb_ollama:11434/v1
+  api_key: ollama  # Non-empty placeholder required for Ollama
+
+database:
+  provider: falkordb
+  uri: redis://localhost:6379  # Internal to combined graphiti-falkordb container
+
+settings:
+  group_id: auto-claude
+  semaphore_limit: 10
+  telemetry_enabled: false

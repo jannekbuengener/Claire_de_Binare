@@ -1,0 +1,288 @@
+name: 'Comprehensive Issue Auto-Labeling'
+
+on:
+  issues:
+    types: [opened, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to label (optional - leave empty for bulk update)'
+        required: false
+        type: string
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    
+    steps:
+      - name: Auto-label Issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Comprehensive issue labeling system for Claire de Binare
+            
+            const issueNumber = context.payload.issue?.number || 
+                               (context.payload.inputs?.issue_number ? 
+                                parseInt(context.payload.inputs.issue_number) : null);
+            
+            // If no specific issue, process recently updated issues
+            let issuesToProcess = [];
+            
+            if (issueNumber) {
+              // Process specific issue
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+              issuesToProcess = [issue];
+            } else if (context.payload.issue) {
+              // Process triggered issue
+              issuesToProcess = [context.payload.issue];
+            } else {
+              // Bulk processing - get all open issues
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                per_page: 100
+              });
+              issuesToProcess = issues.filter(issue => !issue.pull_request);
+            }
+            
+            // Comprehensive labeling rules
+            const labelingRules = {
+              // ML/Research Issues
+              ml_research: {
+                patterns: [
+                  /ml foundation/i, /machine learning/i, /deep research/i, 
+                  /lstm/i, /transformer/i, /feature engineering/i, /model/i,
+                  /ai/i, /reinforcement learning/i, /explainable ai/i
+                ],
+                labels: ['type:research', 'scope:core', 'prio:should']
+              },
+              
+              // Stabilization Issues  
+              stabilization: {
+                patterns: [
+                  /stabilization/i, /system broken/i, /infrastructure emergency/i,
+                  /code reality audit/i, /governance enforcement/i
+                ],
+                labels: ['prio:must', 'type:bug']
+              },
+              
+              // Security Issues
+              security: {
+                patterns: [
+                  /security/i, /hardening/i, /penetration test/i, /vulnerability/i,
+                  /container hardening/i, /rbac/i, /ssl/i, /tls/i, /owasp/i,
+                  /trivy/i, /incident response/i
+                ],
+                labels: ['type:security', 'prio:must']
+              },
+              
+              // Trading Core Issues
+              trading: {
+                patterns: [
+                  /trading/i, /execution/i, /mexc/i, /live trading/i, /paper trading/i,
+                  /order/i, /position/i, /risk management/i, /market data/i,
+                  /signal/i, /portfolio/i
+                ],
+                labels: ['scope:core', 'trading', 'prio:should']
+              },
+              
+              // Infrastructure Issues
+              infrastructure: {
+                patterns: [
+                  /docker/i, /container/i, /ci\/cd/i, /deployment/i, /devops/i,
+                  /pipeline/i, /build/i, /infrastructure/i
+                ],
+                labels: ['scope:infra', 'prio:should']
+              },
+              
+              // Testing Issues
+              testing: {
+                patterns: [
+                  /test/i, /e2e/i, /integration test/i, /unit test/i, /performance/i,
+                  /coverage/i, /resilience/i, /benchmark/i
+                ],
+                labels: ['testing', 'prio:should']
+              },
+              
+              // Documentation Issues
+              documentation: {
+                patterns: [
+                  /docs/i, /documentation/i, /guide/i, /readme/i, /manual/i,
+                  /template/i, /migration/i, /governance/i
+                ],
+                labels: ['type:docs', 'scope:docs', 'prio:nice']
+              },
+              
+              // Monitoring Issues
+              monitoring: {
+                patterns: [
+                  /monitoring/i, /grafana/i, /prometheus/i, /dashboard/i,
+                  /alerting/i, /metrics/i, /observability/i
+                ],
+                labels: ['scope:monitoring', 'prio:should']
+              }
+            };
+            
+            // Priority detection rules
+            const priorityRules = {
+              critical: {
+                patterns: [
+                  /critical/i, /urgent/i, /emergency/i, /blocker/i, /asap/i,
+                  /blocks production/i, /system broken/i
+                ],
+                label: 'prio:must'
+              },
+              high: {
+                patterns: [
+                  /high priority/i, /important/i, /should/i, /security/i,
+                  /stabilization/i, /production/i
+                ],
+                label: 'prio:should'  
+              },
+              nice: {
+                patterns: [
+                  /nice to have/i, /optional/i, /enhancement/i, /improvement/i
+                ],
+                label: 'prio:nice'
+              }
+            };
+            
+            // Agent assignment detection  
+            const agentRules = {
+              codex: { patterns: [/codex/i, /@codex/i, /implementation/i], label: 'agent:codex' },
+              copilot: { patterns: [/copilot/i, /@copilot/i, /github/i], label: 'agent:copilot' },
+              gemini: { patterns: [/gemini/i, /@gemini/i, /audit/i, /review/i], label: 'agent:gemini' },
+              claude: { patterns: [/claude/i, /@claude/i, /coordination/i], label: 'agent:claude' }
+            };
+            
+            // Process each issue
+            for (const issue of issuesToProcess) {
+              const title = (issue.title || '').toLowerCase();
+              const body = (issue.body || '').toLowerCase();
+              const content = title + ' ' + body;
+              const existingLabels = issue.labels?.map(l => l.name) || [];
+              const newLabels = [];
+              
+              console.log(`Processing issue #${issue.number}: ${issue.title}`);
+              
+              // Apply category rules
+              Object.entries(labelingRules).forEach(([category, rule]) => {
+                if (rule.patterns.some(pattern => pattern.test(content))) {
+                  rule.labels.forEach(label => {
+                    if (!existingLabels.includes(label) && !newLabels.includes(label)) {
+                      newLabels.push(label);
+                      console.log(`  Adding ${category} label: ${label}`);
+                    }
+                  });
+                }
+              });
+              
+              // Apply priority rules
+              Object.entries(priorityRules).forEach(([priority, rule]) => {
+                if (rule.patterns.some(pattern => pattern.test(content))) {
+                  // Remove existing priority labels first
+                  const priorityLabels = ['prio:must', 'prio:should', 'prio:nice'];
+                  const hasPriority = existingLabels.some(l => priorityLabels.includes(l));
+                  
+                  if (!hasPriority && !newLabels.includes(rule.label)) {
+                    newLabels.push(rule.label);
+                    console.log(`  Adding priority label: ${rule.label}`);
+                  }
+                }
+              });
+              
+              // Apply agent rules
+              Object.entries(agentRules).forEach(([agent, rule]) => {
+                if (rule.patterns.some(pattern => pattern.test(content))) {
+                  if (!existingLabels.includes(rule.label) && !newLabels.includes(rule.label)) {
+                    newLabels.push(rule.label);
+                    console.log(`  Adding agent label: ${rule.label}`);
+                  }
+                }
+              });
+              
+              // Issue number specific rules for known patterns
+              const issueSpecificRules = {
+                // ML Foundation Issues (192-200)
+                mlFoundation: {
+                  range: [192, 200],
+                  labels: ['scope:core', 'prio:should']
+                },
+                // Stabilization Issues (156-160) 
+                stabilization: {
+                  range: [156, 160],
+                  labels: ['prio:must', 'type:bug']
+                },
+                // Security Issues (97-106)
+                security: {
+                  range: [97, 106], 
+                  labels: ['type:security', 'prio:must']
+                },
+                // Trading Issues (171-188)
+                trading: {
+                  range: [171, 188],
+                  labels: ['prio:must', 'scope:core']
+                },
+                // Testing Issues (91-95)
+                testing: {
+                  range: [91, 95],
+                  labels: ['testing', 'prio:should']
+                },
+                // Documentation Issues (117-120)
+                documentation: {
+                  range: [117, 120],
+                  labels: ['type:docs', 'scope:docs', 'prio:should']
+                },
+                // Infrastructure Issues (121-123)
+                infrastructure: {
+                  range: [121, 123],
+                  labels: ['scope:infra', 'prio:should']
+                },
+                // Governance Issues (163-167)
+                governance: {
+                  range: [163, 167],
+                  labels: ['type:docs', 'prio:must']
+                }
+              };
+              
+              // Apply issue-specific rules
+              Object.entries(issueSpecificRules).forEach(([category, rule]) => {
+                const [min, max] = rule.range;
+                if (issue.number >= min && issue.number <= max) {
+                  rule.labels.forEach(label => {
+                    if (!existingLabels.includes(label) && !newLabels.includes(label)) {
+                      newLabels.push(label);
+                      console.log(`  Adding ${category} range label: ${label}`);
+                    }
+                  });
+                }
+              });
+              
+              // Apply labels if any were determined
+              if (newLabels.length > 0) {
+                console.log(`  Adding ${newLabels.length} new labels to issue #${issue.number}`);
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: newLabels
+                  });
+                  console.log(`  ✅ Successfully labeled issue #${issue.number}`);
+                } catch (error) {
+                  console.error(`  ❌ Failed to label issue #${issue.number}:`, error);
+                }
+              } else {
+                console.log(`  ℹ️  No new labels needed for issue #${issue.number}`);
+              }
+            }
+            
+            console.log(`Processed ${issuesToProcess.length} issues`);

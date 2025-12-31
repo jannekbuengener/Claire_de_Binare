@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alert Rules
+rule_files:
+  - "alerts.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "alertmanager:9093"
+
+scrape_configs:
+  # Prometheus selbst
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          service: 'monitoring'
+
+  # Execution Service
+  - job_name: 'cdb_execution'
+    static_configs:
+      - targets: ['cdb_execution:8003']
+        labels:
+          instance: 'cdb_execution'
+          service: 'trading'
+    metrics_path: '/metrics'
+
+  # Signal Engine
+  - job_name: 'cdb_signal'
+    static_configs:
+      - targets: ['cdb_signal:8005']
+        labels:
+          instance: 'cdb_signal'
+          service: 'analysis'
+    metrics_path: '/metrics'
+
+  # Risk Manager
+  - job_name: 'cdb_risk'
+    static_configs:
+      - targets: ['cdb_risk:8002']
+        labels:
+          instance: 'cdb_risk'
+          service: 'risk'
+    metrics_path: '/metrics'
+
+  # WebSocket Screener
+  - job_name: 'cdb_ws'
+    static_configs:
+      - targets: ['cdb_ws:8000']
+        labels:
+          instance: 'cdb_ws'
+          service: 'market_data'
+    metrics_path: '/metrics'

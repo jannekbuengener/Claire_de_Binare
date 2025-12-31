@@ -1,0 +1,33 @@
+D:/Dev/Workspaces/Repos/Claire_de_Binare                                                                                       53bf29f [main]
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/001-analysiere-dieses-repository-ganzheitlich-und-gib-  4254426 [auto-claude/001-analysiere-dieses-repository-ganzheitlich-und-gib-] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/002-setup-persistent-memory-backend-graphiti-mcp-ollam  879ec4e [auto-claude/002-setup-persistent-memory-backend-graphiti-mcp-ollam] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/003-implement-api-authentication-for-all-service-endpo  979d75a [auto-claude/003-implement-api-authentication-for-all-service-endpo] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/004-add-rate-limiting-to-websocket-and-rest-endpoints   aeef226 [auto-claude/004-add-rate-limiting-to-websocket-and-rest-endpoints] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/005-enforce-postgresql-ssl-mode-and-fix-subprocess-she  8989d17 [auto-claude/005-enforce-postgresql-ssl-mode-and-fix-subprocess-she] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/006-add-security-headers-middleware-to-all-http-respon  0514c25 [auto-claude/006-add-security-headers-middleware-to-all-http-respon] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/007-implement-pydantic-input-validation-and-sanitize-e  e5f611f [auto-claude/007-implement-pydantic-input-validation-and-sanitize-e] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/008-standardize-dashboard-color-themes-for-cognitive-l  712fd0f [auto-claude/008-standardize-dashboard-color-themes-for-cognitive-l] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/009-add-macd-indicator-to-core-indicators-module        c398849 [auto-claude/009-add-macd-indicator-to-core-indicators-module] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/010-implement-database-connection-pooling-for-high-fre  c398849 [auto-claude/010-implement-database-connection-pooling-for-high-fre] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/011-replace-synchronous-requests-with-async-aiohttp-fo  c398849 [auto-claude/011-replace-synchronous-requests-with-async-aiohttp-fo] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/012-batch-database-inserts-in-db-writer-service         c398849 [auto-claude/012-batch-database-inserts-in-db-writer-service] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/013-add-composite-database-indexes-for-common-query-pa  c398849 [auto-claude/013-add-composite-database-indexes-for-common-query-pa] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/014-implement-redis-connection-pooling-and-pipeline-op  c398849 [auto-claude/014-implement-redis-connection-pooling-and-pipeline-op] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/015-migrate-direct-redis-redis-calls-to-centralized-fa  c398849 [auto-claude/015-migrate-direct-redis-redis-calls-to-centralized-fa] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/016-refactor-repeated-balance-fetcher-imports-in-riskm  c398849 [auto-claude/016-refactor-repeated-balance-fetcher-imports-in-riskm] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/017-split-large-riskmanager-service-into-focused-modul  c398849 [auto-claude/017-split-large-riskmanager-service-into-focused-modul] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/018-remove-sensitive-configuration-details-from-log-ou  c398849 [auto-claude/018-remove-sensitive-configuration-details-from-log-ou] prunable
+C:/Users/janne/Documents/GitHub/Workspaces/Claire_de_Binare/.worktrees/019-implement-websocket-origin-header-validation        c398849 [auto-claude/019-implement-websocket-origin-header-validation] prunable
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-341                                                                  d187865 [341-fixmonitoring-cdb_ws-metrics-export-broken-prometheus-scraping-fehlschl??gt]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-348                                                                  4482f53 [348-p2roter_faden002-align-network-naming-docs-vs-compose]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-349                                                                  363ad19 [349-p2roter_faden003-standardize-redis-payload-sanitization-no-none-in-xadd]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-352                                                                  d213cfe [352-p0roter_faden004-enable-alertmanager-alert-routing-+-test-alert]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-354                                                                  8dcb498 [354-p0roter_faden006-deterministic-e2e-test-path-local-+-ci]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-355                                                                  ef9af49 [355-p0roter_faden007-cicd-back-to-green-actions-+-guards]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-356                                                                  b307d0a [356-p0roter_faden008-canonical-message-contracts-market_data-signals]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-401                                                                  140ae8f [401-add-workflow-dispatch-performance-monitor]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-403                                                                  e78f8f8 [403-add-workflow-dispatch-all-schedules]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-405                                                                  f48b5c5 [405-ci-health-check-script]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-406                                                                  0fc58b6 [406-contract-validation-cli]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-407                                                                  a4ed120 [407-verify-stack-health-script]
+D:/Dev/Workspaces/Repos/Claire_de_Binare/.worktrees/issue-408                                                                  5078411 [408-contract-precommit-hook]
