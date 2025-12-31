@@ -1,0 +1,62 @@
+name: trivy
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  schedule:
+    - cron: "42 14 * * 3"
+
+permissions:
+  contents: read
+
+jobs:
+  trivy-image:
+    name: Trivy (Container Image)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Optional aber empfehlenswert: Buildx für reproduzierbares Build + Cache
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Trivy DB Cache (macht Runs schneller/stabiler)
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: trivy-${{ runner.os }}-${{ github.workflow }}-${{ github.sha }}
+          restore-keys: |
+            trivy-${{ runner.os }}-${{ github.workflow }}-
+            trivy-${{ runner.os }}-
+
+      # Wichtig: Kein Fake-Registry-Name. Nutze einen lokalen Tag.
+      - name: Build image (local tag)
+        run: |
+          docker build -t cdb:${{ github.sha }} .
+
+      - name: Run Trivy (SARIF)
+        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe
+        with:
+          image-ref: "cdb:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
