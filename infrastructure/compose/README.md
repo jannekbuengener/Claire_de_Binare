@@ -40,7 +40,7 @@ docker compose up -d  # Nutzt root-level docker-compose.yml
 ### base.yml
 - **Zweck**: Core Infrastructure (immer benötigt)
 - **Services**: Redis, Postgres, Prometheus, Grafana
-- **Netzwerk**: cdb_network (bridge)
+- **Netzwerk**: `cdb_network` (bridge, Docker-Name: `${STACK_NAME:-cdb}_cdb_network`)
 - **Volumes**: Named Volumes (redis_data, postgres_data, etc.)
 - **Secrets**: Via ./.secrets/ Dateien
 

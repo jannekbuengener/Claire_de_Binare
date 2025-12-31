@@ -428,6 +428,7 @@ audit.log_order("ORDER_REJECTED", order_data, {"reason": "Insufficient balance"}
 # docker-compose.yml
 networks:
   cdb_network:
+    # Docker network name: ${STACK_NAME:-cdb}_cdb_network
     driver: bridge
     ipam:
       config:

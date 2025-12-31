@@ -115,7 +115,7 @@ chmod +x infrastructure/scripts/init-memory.sh
 
 [1/4] Starting memory stack containers...
 [+] Running 3/3
- ✔ Network cdb_memory_network  Created
+ ✔ Network ${STACK_NAME:-cdb}-memory_cdb_memory_network  Created
  ✔ Container cdb_ollama        Started
  ✔ Container cdb_graphiti      Started
 

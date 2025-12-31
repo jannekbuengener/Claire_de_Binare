@@ -11,7 +11,7 @@ The Claire de Binare stack uses a **multi-layer compose architecture** to separa
   - Core infrastructure services (Redis, Postgres, Prometheus, Grafana)
   - Production-ready defaults (no port bindings, secret-based auth)
   - Healthchecks for infrastructure services
-  - Network: `cdb_network` (bridge)
+  - Network: `cdb_network` (bridge, Docker-Name: `${STACK_NAME:-cdb}_cdb_network`)
 
 ### Profile Overlays
 - **`infrastructure/compose/dev.yml`** - Development profile

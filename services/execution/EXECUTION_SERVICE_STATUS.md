@@ -146,7 +146,7 @@ Mögliche Fehler:
 
 **3. Interaktiver Test**
 ```powershell
-docker run -it --rm --network cdb_network -e REDIS_HOST=cdb_redis -e REDIS_PORT=6380 -e POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD cdb_execution:latest /bin/bash
+docker run -it --rm --network ${STACK_NAME:-cdb}_cdb_network -e REDIS_HOST=cdb_redis -e REDIS_PORT=6380 -e POSTGRES_PASSWORD=$env:POSTGRES_PASSWORD cdb_execution:latest /bin/bash 
 
 # Im Container:
 python service.py

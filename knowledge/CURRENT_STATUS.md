@@ -124,7 +124,7 @@ signals_generated: 0  ← Expected (raw trade data has no pct_change)
 **Solution:**
 - Updated `infrastructure/compose/logging.yml`:
   - Added `container_name: cdb_loki` + `cdb_promtail`
-  - Added `networks: cdb_network` (integration with Grafana)
+  - Added `networks: cdb_network` (Docker name `${STACK_NAME:-cdb}_cdb_network`)
   - Added healthcheck for Loki
   - Updated Promtail dependency to `service_healthy`
 

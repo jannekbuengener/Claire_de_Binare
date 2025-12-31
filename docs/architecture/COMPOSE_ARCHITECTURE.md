@@ -63,6 +63,8 @@ networks:
 ```
 
 Alle Services kommunizieren über `cdb_network`. Keine externen Port-Bindings in base.yml (Security).
+Docker erstellt den tatsächlichen Network-Namen als `${STACK_NAME:-cdb}_cdb_network`
+(Standard: `cdb_cdb_network`) via `name: ${STACK_NAME:-cdb}` in `base.yml`.
 
 ## Volumes
 
@@ -88,7 +90,7 @@ Alle Services kommunizieren über `cdb_network`. Keine externen Port-Bindings in
 ```bash
 # Stack
 STACK_NAME=cdb
-NETWORK=cdb_network
+NETWORK=${STACK_NAME:-cdb}_cdb_network
 
 # Credentials (via Docker Secrets)
 REDIS_PASSWORD=<path-to-secret>

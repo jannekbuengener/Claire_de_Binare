@@ -16,7 +16,7 @@
 | Certificate-based Auth | ✅ Ready | `POSTGRES_SSLMODE=verify-ca` |
 | Non-default User | ✅ Done | `claire_user` (not postgres) |
 | Health Checks | ✅ Done | All compose files |
-| Network Isolation | ✅ Done | Docker network `cdb_network` |
+| Network Isolation | ✅ Done | Docker network `${STACK_NAME:-cdb}_cdb_network` (compose: `cdb_network`) |
 
 ### ⏳ Pending Implementation
 
@@ -231,7 +231,7 @@ log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
 ### Network Security
 
 Already implemented via Docker:
-- ✅ Internal network (`cdb_network`)
+- ✅ Internal network (`${STACK_NAME:-cdb}_cdb_network`, compose: `cdb_network`)
 - ✅ No direct external exposure (ports bound to 127.0.0.1)
 - ✅ Service-to-service communication only
 

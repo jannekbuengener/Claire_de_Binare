@@ -17,7 +17,7 @@ Das CDB Trading-System ist technisch stabil und funktional (12/12 Services healt
 
 **Kritische Findings:**
 1. **SECRETS_PATH nicht existent** → Secrets-Management gebrochen
-2. **Docker Network nicht gefunden** → cdb_network existiert nicht (falscher Name im Config)
+2. **Docker Network nicht gefunden** → cdb_network existiert nicht (Docker-Name ist `${STACK_NAME:-cdb}_cdb_network`)
 3. **MUST-READ Dateien fehlen** → SYSTEM.CONTEXT.md, EXPANDED_ECOSYSTEM_ROADMAP.md nicht im Working Repo
 4. **E2E Tests fehlen** → nur 1 E2E Test-Datei vorhanden (Block T1 inkomplett)
 5. **Governance Docs nicht synchronisiert** → Canon vs Working Repo Mismatch
@@ -51,7 +51,7 @@ Das CDB Trading-System ist technisch stabil und funktional (12/12 Services healt
 ### Tier 2: Diese Woche (High Priority)
 
 4. **[HIGH] Docker Network Name Mismatch** (Infrastructure #2)
-   - cdb_network existiert nicht (heißt `claire_de_binare_cdb_network`)
+   - cdb_network existiert nicht (Docker-Name: `${STACK_NAME:-cdb}_cdb_network`, Default `cdb_cdb_network`)
    - **Action:** Dokumentation aktualisieren ODER Compose `networks:` explizit benennen
    - **Impact:** Confusion bei Troubleshooting
 
@@ -116,7 +116,7 @@ Das CDB Trading-System ist technisch stabil und funktional (12/12 Services healt
    - Document findings in Issue
 
 5. **Fix Docker Network Naming** (30 min)
-   - Option A: Update docs to use `claire_de_binare_cdb_network`
+   - Option A: Update docs to use `${STACK_NAME:-cdb}_cdb_network`
    - Option B: Add `networks: cdb_network: name: cdb_network` to Compose
    - Preference: Option B (cleaner, matches docs)
 

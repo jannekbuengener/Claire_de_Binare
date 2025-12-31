@@ -77,7 +77,7 @@ make docker-up
 
 **What it does:**
 1. Reads `infrastructure/compose/base.yml` + `dev.yml`
-2. Creates network (`cdb_network`)
+2. Creates network (`${STACK_NAME:-cdb}_cdb_network` Docker name; logical `cdb_network`)
 3. Creates volumes (redis_data, postgres_data, etc.)
 4. Starts infrastructure services (Redis, Postgres, Prometheus, Grafana)
 5. Starts application services (core, risk, execution, db_writer)
@@ -88,7 +88,7 @@ make docker-up
 🐳 Starte Docker Compose Stack...
 ✓ Using Compose Fragments (base + dev)
 [+] Running 9/9
- ✔ Network cdb_network         Created
+ ✔ Network ${STACK_NAME:-cdb}_cdb_network         Created
  ✔ Container cdb_redis          Healthy
  ✔ Container cdb_postgres       Healthy
  ✔ Container cdb_prometheus     Healthy
@@ -139,7 +139,7 @@ make docker-down
  ✔ Container cdb_prometheus     Removed
  ✔ Container cdb_postgres       Removed
  ✔ Container cdb_redis          Removed
- ✔ Network cdb_network          Removed
+ ✔ Network ${STACK_NAME:-cdb}_cdb_network          Removed
 ```
 
 **Data safety:**
@@ -263,7 +263,7 @@ docker volume ls | Select-String "cdb_"
 **Expected result:**
 - ✅ 8 containers running
 - ✅ All show "(healthy)" in status
-- ✅ 1 network (`cdb_network`)
+- ✅ 1 network (`${STACK_NAME:-cdb}_cdb_network`)
 - ✅ 4 volumes (redis_data, postgres_data, prometheus_data, grafana_data)
 
 ---

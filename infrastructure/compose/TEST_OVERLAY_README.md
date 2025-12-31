@@ -256,13 +256,13 @@ docker logs cdb_test_runner
 
 **Symptom**:
 ```
-ERROR: Network cdb_network declared as external, but could not be found
+ERROR: Network ${STACK_NAME:-cdb}_cdb_network declared as external, but could not be found
 ```
 
 **Fix**:
 ```bash
 # Create network manually
-docker network create cdb_network
+docker network create ${STACK_NAME:-cdb}_cdb_network
 
 # Or start dev stack first (creates network)
 docker compose -f base.yml -f dev.yml up -d
@@ -435,7 +435,7 @@ See `.env` file for all required variables. Key test-specific vars:
 
 ### Network Configuration
 
-- Network name: `cdb_network` (external, created by base.yml)
+- Network name: `${STACK_NAME:-cdb}_cdb_network` (external, created by base.yml)
 - Driver: bridge
 - Isolation: All test containers on same network for connectivity
 
