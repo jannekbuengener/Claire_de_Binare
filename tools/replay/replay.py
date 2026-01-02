@@ -14,7 +14,7 @@ Environment Variables:
 
 Determinism Guarantees:
     - Events processed in Stream ID order (lexicographic)
-    - No datetime.now() calls (uses event timestamps)
+    - No wall-clock datetime calls (uses event timestamps)
     - Fixed random seed if CDB_REPLAY_SEED set
     - Stable JSONL output (sorted keys)
 
@@ -26,7 +26,6 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime
 from typing import Optional
 
 import redis

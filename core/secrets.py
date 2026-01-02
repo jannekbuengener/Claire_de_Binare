@@ -152,7 +152,8 @@ def validate_secrets(*secret_names: str) -> bool:
             missing.append(name)
 
     if missing:
-        logger.error(f"Missing required secrets: {', '.join(missing)}")
+        missing_labels = [str(item) for item in missing]
+        logger.error(f"Missing required secrets: {', '.join(missing_labels)}")
         return False
 
     return True

@@ -25,8 +25,12 @@ try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
 except ImportError:
-    from config import config
-    from models import Order, Alert, RiskState, OrderResult
+    # Fallback for script/importlib execution: ensure repo root is on sys.path.
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from services.risk.config import config
+    from services.risk.models import Order, Alert, RiskState, OrderResult
 
 from core.domain.models import Signal
 

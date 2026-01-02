@@ -140,6 +140,7 @@ def validate_all_auth(
         logger.critical(f"Auth validation FAILED. Service cannot start.")
         logger.critical(f"Redis: {redis_msg}")
         sys.exit(1)
+        return False
 
     # Validate Postgres
     pg_ok, pg_msg = validate_postgres_auth(
@@ -149,6 +150,7 @@ def validate_all_auth(
         logger.critical(f"Auth validation FAILED. Service cannot start.")
         logger.critical(f"Postgres: {pg_msg}")
         sys.exit(1)
+        return False
 
     logger.info("✅ All auth validations passed. Service ready to start.")
     return True

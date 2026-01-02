@@ -37,7 +37,7 @@ def test_clean_repo_passes():
         returncode, stdout, stderr = run_check_duplicates(test_dir)
 
         assert returncode == 0, f"Expected success, got {returncode}\nStdout: {stdout}\nStderr: {stderr}"
-        assert "✅ CI-Guard PASSED" in stdout
+        assert "CI-Guard PASSED" in stdout
 
 
 def test_services_core_duplicate_fails():
@@ -53,7 +53,7 @@ def test_services_core_duplicate_fails():
         returncode, stdout, stderr = run_check_duplicates(test_dir)
 
         assert returncode == 1, f"Expected failure, got {returncode}\nStdout: {stdout}"
-        assert "❌ CI-Guard FAILED" in stdout
+        assert "CI-Guard FAILED" in stdout
         assert "FORBIDDEN: core duplicate" in stdout
         assert "services/signal/core" in stdout
 
@@ -74,7 +74,7 @@ def test_secrets_py_duplicate_fails():
         returncode, stdout, stderr = run_check_duplicates(test_dir)
 
         assert returncode == 1, f"Expected failure, got {returncode}\nStdout: {stdout}"
-        assert "❌ CI-Guard FAILED" in stdout
+        assert "CI-Guard FAILED" in stdout
         assert "FORBIDDEN: secrets.py" in stdout
         assert "services/risk/secrets.py" in stdout
 
@@ -92,7 +92,7 @@ def test_multiple_violations_all_reported():
         returncode, stdout, stderr = run_check_duplicates(test_dir)
 
         assert returncode == 1
-        assert "❌ CI-Guard FAILED" in stdout
+        assert "CI-Guard FAILED" in stdout
         # Should report all 3 violations
         assert stdout.count("FORBIDDEN") == 3
 
@@ -115,4 +115,4 @@ def test_gitignore_and_pycache_ignored():
         returncode, stdout, stderr = run_check_duplicates(test_dir)
 
         assert returncode == 0
-        assert "✅ CI-Guard PASSED" in stdout
+        assert "CI-Guard PASSED" in stdout
