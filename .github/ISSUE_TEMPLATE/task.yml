@@ -1,0 +1,43 @@
+
+name: Task
+description: Standard task (DoD required)
+title: "SCOPE - Phase N - Meta"
+labels: ["task"]
+body:
+  - type: input
+    id: scope
+    attributes:
+      label: Scope
+      description: Short scope identifier (e.g. STACK, SECURITY, CI)
+      placeholder: "SECURITY"
+    validations:
+      required: true
+
+  - type: input
+    id: phase
+    attributes:
+      label: Phase
+      description: Roadmap phase number
+      placeholder: "1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_why
+    attributes:
+      label: What / Why
+      description: What is changing and why?
+    validations:
+      required: true
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of Done
+      description: Concrete, checkable items
+      value: |
+        - [ ] Change implemented
+        - [ ] Tests/validation run
+        - [ ] Docs updated (if needed)
+    validations:
+      required: true

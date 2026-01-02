@@ -11,22 +11,25 @@ import signal
 import logging
 import logging.config
 import redis
-import uuid
 from flask import Flask, jsonify, Response
 from typing import Optional
 from pathlib import Path
 
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
-# Lokale Imports
+from core.utils.uuid_gen import generate_uuid_hex
 try:
     from .config import config
     from .models import MarketData, Signal
     from .price_buffer import PriceBuffer
 except ImportError:
-    from config import config
-    from models import MarketData, Signal
-    from price_buffer import PriceBuffer
+    # Fallback for script/importlib execution: ensure repo root is on sys.path.
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from services.signal.config import config
+    from services.signal.models import MarketData, Signal
+    from services.signal.price_buffer import PriceBuffer
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -134,7 +137,7 @@ class SignalEngine:
 
                 # Signal generieren
                 signal = Signal(
-                    signal_id=f"sig-{uuid.uuid4().hex}",
+                    signal_id=f"sig-{generate_uuid_hex(length=32)}",
                     symbol=market_data.symbol,
                     side="BUY",
                     reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",

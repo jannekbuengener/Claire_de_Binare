@@ -6,6 +6,7 @@ Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
 """
 
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 from unittest.mock import MagicMock, Mock
@@ -241,3 +242,111 @@ __all__ = ["reset_db", "seed_db", "clean_db"]
 # - local_only: Tests, die nur lokal laufen
 # - slow: Langsame Tests (>1s)
 # - chaos: Chaos-Engineering-Tests
+
+
+# ============================================
+# DETERMINISTIC GATE (Issue #427)
+# ============================================
+
+E2E_NODEID_PREFIX = "tests/e2e/test_smoke_pipeline.py::"
+E2E_EXPECTED_COUNT = 5
+TOTAL_MIN_PASS = 267
+
+
+@dataclass
+class _GateState:
+    total_pass: int = 0
+    e2e_pass: int = 0
+    e2e_total: int = 0
+    total_collected: int = 0
+    enabled: bool = False
+
+
+_GATE_STATE: _GateState | None = None
+
+
+def pytest_sessionstart(session):
+    global _GATE_STATE
+    _GATE_STATE = _GateState(enabled=_should_enable_gate(session.config))
+
+
+def _should_enable_gate(config) -> bool:
+    args = [str(arg).replace("\\", "/").rstrip("/") for arg in config.args]
+    if "tests" not in args:
+        return False
+    if config.option.keyword:
+        return False
+    if config.option.markexpr:
+        return False
+    if getattr(config.option, "last_failed", False):
+        return False
+    if getattr(config.option, "failedfirst", False):
+        return False
+    if getattr(config.option, "collectonly", False):
+        return False
+    return True
+
+
+def pytest_runtest_logreport(report):
+    if report.when != "call":
+        return
+
+    global _GATE_STATE
+    if _GATE_STATE is None:
+        _GATE_STATE = _GateState()
+    if not _GATE_STATE.enabled:
+        return
+
+    if report.passed:
+        _GATE_STATE.total_pass += 1
+
+    if report.nodeid.startswith(E2E_NODEID_PREFIX):
+        _GATE_STATE.e2e_total += 1
+        if report.passed:
+            _GATE_STATE.e2e_pass += 1
+
+
+def pytest_collection_finish(session):
+    if _GATE_STATE is None:
+        return
+    if not _GATE_STATE.enabled:
+        return
+    _GATE_STATE.total_collected = len(session.items)
+
+
+def pytest_sessionfinish(session, exitstatus):
+    if _GATE_STATE is None:
+        return
+    if not _GATE_STATE.enabled:
+        return
+
+    gate_failed = False
+    if _GATE_STATE.e2e_total != E2E_EXPECTED_COUNT:
+        gate_failed = True
+    if _GATE_STATE.e2e_pass != E2E_EXPECTED_COUNT:
+        gate_failed = True
+    if _GATE_STATE.total_pass < TOTAL_MIN_PASS:
+        gate_failed = True
+
+    if gate_failed and session.exitstatus == 0:
+        session.exitstatus = 1
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    if _GATE_STATE is None:
+        return
+    if not _GATE_STATE.enabled:
+        return
+
+    total_collected = _GATE_STATE.total_collected
+    pass_rate = 0.0
+    if total_collected > 0:
+        pass_rate = (_GATE_STATE.total_pass / total_collected) * 100
+
+    terminalreporter.write_line(
+        f"E2E: {_GATE_STATE.e2e_pass}/{E2E_EXPECTED_COUNT} PASS"
+    )
+    terminalreporter.write_line(
+        f"Total: {_GATE_STATE.total_pass}/{total_collected} PASS"
+    )
+    terminalreporter.write_line(f"Pass-Rate: {pass_rate:.2f}%")

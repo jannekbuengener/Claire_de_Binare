@@ -20,6 +20,7 @@ import sys
 import pytest
 import requests_mock
 import logging
+from urllib.parse import urlparse, parse_qsl
 from typing import Any, Dict
 
 # Add services to path
@@ -57,14 +58,15 @@ def external_client():
 
 def _validate_request_signature(request, client):
     """Validate that request parameters include proper signature."""
-    params = request.qs
+    query = urlparse(request.path_url).query
+    params = dict(parse_qsl(query, keep_blank_values=True))
     # Check for required signature params
     assert "timestamp" in params, "Missing timestamp in request"
     assert "signature" in params, "Missing signature in request"
 
     # Validate signature matches expected value
-    signature = params["signature"][0]
-    unsigned = {k: v[0] for k, v in params.items() if k != "signature"}
+    signature = params["signature"]
+    unsigned = {k: v for k, v in params.items() if k != "signature"}
     expected_signature = client._sign_request(unsigned)
     assert signature == expected_signature, f"Invalid signature: {signature} != {expected_signature}"
 
@@ -129,7 +131,9 @@ class TestMexcTestnetOffline:
         def custom_matcher(request):
             _validate_request_signature(request, offline_client)
             # Verify orderId is in params
-            assert "orderId" in request.qs
+            query = urlparse(request.path_url).query
+            params = dict(parse_qsl(query, keep_blank_values=True))
+            assert "orderId" in params
             return True
 
         requests_mock.get(
