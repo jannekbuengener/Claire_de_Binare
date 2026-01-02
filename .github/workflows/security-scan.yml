@@ -36,7 +36,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'table'
@@ -45,20 +45,20 @@ jobs:
           output: 'trivy-${{ matrix.image }}.txt'
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
           output: 'trivy-${{ matrix.image }}.sarif'
 
       - name: Upload Trivy Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: trivy-base-${{ matrix.image }}-${{ github.run_number }}
           path: trivy-*.txt
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         if: always()
         with:
           sarif_file: 'trivy-${{ matrix.image }}.sarif'
@@ -80,7 +80,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
         run: |
@@ -88,7 +88,7 @@ jobs:
             -t cdb_${{ matrix.service }}:scan .
 
       - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
           format: 'table'
@@ -97,7 +97,7 @@ jobs:
           output: 'trivy-cdb_${{ matrix.service }}.txt'
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         if: always()
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
@@ -106,13 +106,13 @@ jobs:
 
       - name: Upload Trivy Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
           path: trivy-*.txt
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         if: always()
         with:
           sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
@@ -136,7 +136,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Docker Scout Scan
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
         with:
           command: cves
           image: ${{ matrix.image }}
@@ -150,7 +150,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-${{ matrix.image }}-${{ github.run_number }}
           path: scan-${{ matrix.image }}.txt
@@ -174,7 +174,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
         run: |
@@ -182,7 +182,7 @@ jobs:
             -t claire_de_binare-cdb_${{ matrix.service }}:scan .
 
       - name: Docker Scout Scan
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
         with:
           command: cves
           image: claire_de_binare-cdb_${{ matrix.service }}:scan
@@ -197,7 +197,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}
           path: scan-cdb_${{ matrix.service }}.txt
@@ -210,7 +210,7 @@ jobs:
     if: always()
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Summary
         run: |
