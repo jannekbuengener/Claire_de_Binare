@@ -58,7 +58,7 @@ jobs:
       - name: Start Docker Compose stack
         run: |
           docker compose -f infrastructure/compose/base.yml \
-                         -f infrastructure/compose/monitoring.yml \
+                         -f infrastructure/compose/dev.yml \
                          -f infrastructure/compose/logging.yml \
                          up -d
 
@@ -120,7 +120,7 @@ jobs:
         if: always()
         run: |
           docker compose -f infrastructure/compose/base.yml \
-                         -f infrastructure/compose/monitoring.yml \
+                         -f infrastructure/compose/dev.yml \
                          -f infrastructure/compose/logging.yml \
                          down -v
 

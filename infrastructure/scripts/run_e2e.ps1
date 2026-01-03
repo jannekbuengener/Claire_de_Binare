@@ -94,7 +94,7 @@ if ($elapsed -ge $maxWait) {
     Write-Error "Timeout waiting for services to be healthy. Check: docker ps"
     if (-not $SkipTeardown) {
         Write-Host "🧹 Tearing down stack..." -ForegroundColor Yellow
-        docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/monitoring.yml -f infrastructure/compose/logging.yml down
+        docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml down
     }
     exit 1
 }
@@ -124,7 +124,7 @@ Write-Host ""
 # Step 4: Teardown (unless skipped)
 if (-not $SkipTeardown) {
     Write-Host "🧹 Tearing down stack..." -ForegroundColor Yellow
-    docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/monitoring.yml -f infrastructure/compose/logging.yml down
+    docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml down
 
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Stack teardown failed (non-fatal)"
