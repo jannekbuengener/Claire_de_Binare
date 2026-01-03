@@ -22,9 +22,6 @@ jobs:
       fail-fast: true
       matrix:
         service:
-          - name: cdb_core
-            dockerfile: services/core/Dockerfile
-            context: .
           - name: cdb_risk
             dockerfile: services/risk/Dockerfile
             context: .
