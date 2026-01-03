@@ -1,0 +1,60 @@
+name: Branch Protection (Workflow-based)
+
+# Workaround für GitHub Free Tier (kein echter Branch Protection verfügbar)
+# Blockiert direkte Pushes auf main post-merge (nicht ideal, aber besser als nichts)
+# Issue: #353
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  enforce-pr-only:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if push originated from PR merge
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+          # PR Merge Messages haben Format: "Merge pull request #XXX from ..."
+          if [[ "$COMMIT_MSG" == *"Merge pull request"* ]] || [[ "$COMMIT_MSG" == *"Squashed commit"* ]]; then
+            echo "✅ Push originated from PR merge"
+            echo "Commit: ${{ github.sha }}"
+            echo "Author: ${{ github.actor }}"
+            echo "Message: $COMMIT_MSG"
+            exit 0
+          fi
+
+          # Emergency Bypass (für kritische Fixes, z.B. GitHub Actions selbst kaputt)
+          if [[ "$COMMIT_MSG" == *"[EMERGENCY]"* ]]; then
+            echo "⚠️  EMERGENCY BYPASS detected"
+            echo "Commit: ${{ github.sha }}"
+            echo "Author: ${{ github.actor }}"
+            echo "Reason: Emergency Fix"
+            exit 0
+          fi
+
+          # Direkt-Push blockieren
+          echo "❌ ERROR: Direct push to main detected!"
+          echo ""
+          echo "Branch Protection Policy: PRs only on main"
+          echo ""
+          echo "Workflow:"
+          echo "  1. Create feature branch: gh issue develop <issue-number> -c"
+          echo "  2. Make changes + commit"
+          echo "  3. Push branch: git push origin <branch-name>"
+          echo "  4. Create PR: gh pr create"
+          echo ""
+          echo "Emergency Bypass (nur für kritische Fixes):"
+          echo "  git commit -m \"[EMERGENCY] Fix critical issue\""
+          echo ""
+          exit 1
+
+      - name: Record Evidence
+        if: success()
+        run: |
+          echo "Branch Protection Check: PASSED"
+          echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
