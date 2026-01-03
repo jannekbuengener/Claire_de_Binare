@@ -47,7 +47,7 @@ jobs:
         run: pip install ruff
 
       - name: Run Ruff
-        run: ruff check . --output-format=github
+        run: ruff check . --output-format=github --exclude .worktrees_backup/**
 
   format-check:
     name: Format Check (Black)
