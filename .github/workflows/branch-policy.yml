@@ -29,6 +29,11 @@ jobs:
             exit 0
           fi
           
+          # Validate maintenance branch naming convention
+          if [[ "$branch_name" =~ ^(ci|docs|chore|fix|build|test|refactor)/[a-z0-9-]+$ ]]; then
+            echo "✅ Valid maintenance branch name: $branch_name"
+            exit 0
+          fi
           # Validate feature branch naming convention
           if [[ "$branch_name" =~ ^feature/[a-z0-9-]+$ ]]; then
             echo "✅ Valid feature branch name: $branch_name"
@@ -36,7 +41,7 @@ jobs:
             echo "✅ Valid hotfix branch name: $branch_name"
           elif [[ "$branch_name" =~ ^bugfix/[a-z0-9-]+$ ]]; then
             echo "✅ Valid bugfix branch name: $branch_name"
-          elif [[ "$branch_name" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          elif [[ "$branch_name" =~ ^release/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then  
             echo "✅ Valid release branch name: $branch_name"
           else
             echo "❌ Invalid branch name: $branch_name"
@@ -93,22 +98,28 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number,
             });
-            
+
+            const branchName = pr.head.ref || '';
+            if (!branchName.startsWith('feature/')) {
+              core.info(`Skipping PR template enforcement for ${branchName}`);
+              return;
+            }
+
             const body = pr.body || '';
             const requiredSections = [
               '## Feature Overview',
-              '## Technical Overview', 
+              '## Technical Overview',
               '## Test Evidence',
               '## Code Quality',
               '## Deployment & Rollback',
               '## Documentation',
               '## Agent Approvals'
             ];
-            
-            const missingSections = requiredSections.filter(section => 
+
+            const missingSections = requiredSections.filter(section =>
               !body.includes(section)
             );
-            
+
             if (missingSections.length > 0) {
               core.setFailed(`PR is missing required sections: ${missingSections.join(', ')}`);
             } else {

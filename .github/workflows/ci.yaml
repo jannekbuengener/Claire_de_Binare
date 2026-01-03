@@ -2,21 +2,69 @@ name: CI/CD Pipeline
 
 on:
   pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'knowledge/**'
+      - 'README.md'
+      - 'CODEX_CI_MANDATE_WORK_AND_DOCS.md'
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'docs/**'
+      - 'knowledge/**'
+      - 'README.md'
+      - 'CODEX_CI_MANDATE_WORK_AND_DOCS.md'
   workflow_dispatch:  # Manueller Trigger
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: '3.12'
   CACHE_VERSION: 1
 
 jobs:
+  detect-changes:
+    name: Detect path categories
+    runs-on: ubuntu-latest
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+      docs: ${{ steps.filter.outputs.docs }}
+      infrastructure: ${{ steps.filter.outputs.infrastructure }}
+      tests: ${{ steps.filter.outputs.tests }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        with:
+          filters: |
+            code:
+              - 'core/**'
+              - 'services/**'
+              - 'infrastructure/**'
+              - 'scripts/**'
+            docs:
+              - 'docs/**'
+              - 'knowledge/**'
+              - 'README.md'
+            infrastructure:
+              - 'infrastructure/**'
+            tests:
+              - 'tests/**'
   # ============================================
   # CODE QUALITY CHECKS
   # ============================================
 
   core-guard:
     name: Core Duplicates Guard
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -32,6 +80,8 @@ jobs:
 
   lint:
     name: Linting (Ruff)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -51,6 +101,8 @@ jobs:
 
   format-check:
     name: Format Check (Black)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -70,6 +122,8 @@ jobs:
 
   type-check:
     name: Type Checking (mypy)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -100,6 +154,8 @@ jobs:
 
   test:
     name: Tests (Python ${{ matrix.python-version }})
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.tests == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -158,6 +214,8 @@ jobs:
 
   secrets-scan:
     name: Secret Scanning (Gitleaks)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -176,6 +234,8 @@ jobs:
 
   trivy-scan:
     name: Container Scan (Trivy)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -192,6 +252,8 @@ jobs:
 
   security-audit:
     name: Security Audit (Bandit)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -219,6 +281,8 @@ jobs:
 
   dependency-audit:
     name: Dependency Audit (pip-audit)
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.code == 'true' || needs.detect-changes.outputs.infrastructure == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -251,6 +315,8 @@ jobs:
 
   docs-check:
     name: Documentation Checks
+    needs: detect-changes
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.docs == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code

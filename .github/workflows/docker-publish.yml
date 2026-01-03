@@ -1,10 +1,22 @@
 
 name: Build & Push Containers (GHCR)
 
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
+    paths:
+      - 'services/**/Dockerfile'
+      - 'infrastructure/**'
+      - '.github/workflows/docker-publish.yml'
   push:
     branches: ["main"]
+    paths:
+      - 'services/**/Dockerfile'
+      - 'infrastructure/**'
+      - '.github/workflows/docker-publish.yml'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +25,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+  IMAGE_NAMESPACE: jannekbuengener
+  IMAGE_REPO: claire_de_binare
 
 jobs:
   build:
@@ -57,7 +70,7 @@ jobs:
           file: ${{ matrix.service.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:main
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_REPO }}-${{ matrix.service.name }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.IMAGE_REPO }}-${{ matrix.service.name }}:main
           cache-from: type=gha
           cache-to: type=gha,mode=max

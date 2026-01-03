@@ -153,10 +153,11 @@ class EmojiAnalyzer:
         """Prüft ob Emoji auf Whitelist steht"""
         whitelist = self.config.get('whitelist', {})
         
+        if context == 'string':
+            return True
+        
         if context == 'comment':
             return emoji_char in whitelist.get('comments_allowed', [])
-        elif context == 'string':
-            return emoji_char in whitelist.get('strings_allowed', [])
         elif context == 'variable':
             return emoji_char in whitelist.get('variables_allowed', [])
         

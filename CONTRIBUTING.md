@@ -111,6 +111,15 @@ pytest tests/ -v --cov=core --cov=services
 pytest tests/e2e/ -v -m e2e
 ```
 
+## Local Sanity Checks
+
+Use these commands to mirror the CI jobs locally before GitHub Actions is available:
+
+- `ruff check .`
+- `black --check --diff .`
+- `mypy services/ --ignore-missing-imports --no-strict-optional`
+- `python -m pytest -v -m "not e2e and not local_only"`
+
 ## Code Style
 
 ### Python

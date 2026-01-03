@@ -11,8 +11,18 @@ name: Gitleaks Secret Scan
 on:
   push:
     branches: [main, develop]
+    paths-ignore:
+      - 'docs/**'
+      - 'knowledge/**'
+      - 'README.md'
+      - 'CODE_OF_CONDUCT.md'
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - 'docs/**'
+      - 'knowledge/**'
+      - 'README.md'
+      - 'CODE_OF_CONDUCT.md'
   schedule:
     - cron: '0 3 * * 0'  # Weekly Sunday 03:00 UTC
   workflow_dispatch:
