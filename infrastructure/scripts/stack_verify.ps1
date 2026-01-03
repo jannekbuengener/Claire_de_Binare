@@ -1,6 +1,6 @@
 # stack_verify.ps1 - Automatische Stack-Vollständigkeitsprüfung
 # Governance: Muss bei jedem Stack-Start ausgeführt werden
-# Referenz: governance/SERVICE_CATALOG.md
+# Referenz: knowledge/governance/SERVICE_CATALOG.md
 
 $ErrorActionPreference = "Continue"
 
@@ -10,7 +10,7 @@ Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Erwartete AKTIV-Services (aus SERVICE_CATALOG.md)
+# Erwartete AKTIV-Services (aus knowledge/governance/SERVICE_CATALOG.md)
 $expectedServices = @{
     # Applikation
     "cdb_signal"       = @{ Type = "App"; Required = $true }
