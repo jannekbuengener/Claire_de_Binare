@@ -7,3 +7,7 @@ infrastructure/monitoring/grafana/provisioning/datasources/postgres.yml:generic-
 
 # Demo Sidekiq token in README
 README.md:sidekiq-secret:42
+
+# Ignore noisy backup directories and scripts
+.worktrees_backup/.*:.*
+infrastructure/scripts/security_audit.sh:.*
