@@ -1,107 +1,83 @@
-# Claire de Binare - AlertManager Configuration
-# Issue #96: Monitoring & Alerting
-
+# Alertmanager Configuration
+# Issue: #352
+# Purpose: Route alerts from Prometheus to notification channels
 global:
-  # Global timeout settings
   resolve_timeout: 5m
 
-  # SMTP configuration (placeholder - configure for production)
-  # smtp_smarthost: 'smtp.example.com:587'
-  # smtp_from: 'alertmanager@claire-trading.local'
-  # smtp_auth_username: 'alertmanager'
-  # smtp_auth_password: '<secret>'
-
-# Route tree
+# Route tree for alert distribution
 route:
-  # Default receiver
   receiver: 'default-receiver'
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
 
-  # Group alerts by these labels
-  group_by: ['alertname', 'severity', 'service']
-
-  # Wait before sending first notification
-  group_wait: 30s
-
-  # Wait before sending subsequent notifications
-  group_interval: 5m
-
-  # Wait before sending resolved notification
-  repeat_interval: 4h
-
-  # Child routes for specific severities
+  # Child routes for specific alert types
   routes:
-    # Critical alerts - immediate notification
+    # Critical alerts (immediate notification)
     - match:
         severity: critical
       receiver: 'critical-receiver'
-      group_wait: 10s
-      repeat_interval: 1h
-      continue: true
+      group_wait: 0s
+      repeat_interval: 5m
 
-    # High priority alerts
+    # High severity (grouped notification)
     - match:
         severity: high
-      receiver: 'high-priority-receiver'
-      group_wait: 1m
-      repeat_interval: 2h
+      receiver: 'high-receiver'
+      group_wait: 30s
+      repeat_interval: 1h
 
-    # Circuit breaker specific
+    # Warning alerts (grouped notification)
     - match:
-        alertname: CircuitBreakerTriggered
-      receiver: 'trading-halt-receiver'
-      group_wait: 0s
-      repeat_interval: 30m
+        severity: warning
+      receiver: 'warning-receiver'
+      group_wait: 1m
+      repeat_interval: 4h
 
-# Inhibition rules - prevent notification floods
+# Notification receivers
+receivers:
+  # Default receiver (placeholder for future integration)
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook'  # Placeholder (local webhook for testing)
+        send_resolved: true
+
+  # Critical receiver (e.g., PagerDuty, Slack, Email)
+  - name: 'critical-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/critical'
+        send_resolved: true
+
+  # High severity receiver
+  - name: 'high-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/high'
+        send_resolved: true
+
+  # Warning receiver
+  - name: 'warning-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9099/webhook/warning'
+        send_resolved: true
+
+# Inhibition rules (prevent noise)
 inhibit_rules:
-  # If service is down, suppress all other alerts for that service
-  - source_match:
-      alertname: 'ServiceDown'
-    target_match_re:
-      alertname: '.+'
-    equal: ['service']
-
-  # If database is down, suppress order processing alerts
-  - source_match:
-      alertname: 'DatabaseConnectionLost'
-    target_match:
-      alertname: 'OrderProcessingDelayed'
-
-  # If critical alert fires, suppress warnings for same service
+  # Inhibit warning/high alerts if critical alert is firing for same service
   - source_match:
       severity: 'critical'
     target_match:
       severity: 'warning'
-    equal: ['service']
+    equal: ['alertname', 'service', 'instance']
 
-# Receivers
-receivers:
-  - name: 'default-receiver'
-    # Webhook to signal service
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts'
-        send_resolved: true
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'high'
+    equal: ['alertname', 'service', 'instance']
 
-  - name: 'critical-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/critical'
-        send_resolved: true
-    # Add email/Slack/PagerDuty for production
-    # email_configs:
-    #   - to: 'oncall@claire-trading.local'
-
-  - name: 'high-priority-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/high'
-        send_resolved: true
-
-  - name: 'trading-halt-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/trading-halt'
-        send_resolved: true
-    # This receiver triggers kill-switch webhook
-    # In production: add PagerDuty/OpsGenie integration
-
-# Templates (optional)
-templates:
-  - '/etc/alertmanager/templates/*.tmpl'
+  - source_match:
+      severity: 'high'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'service', 'instance']

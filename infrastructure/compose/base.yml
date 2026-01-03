@@ -58,6 +58,7 @@ services:
     restart: unless-stopped
     volumes:
       - ../../infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prom_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
