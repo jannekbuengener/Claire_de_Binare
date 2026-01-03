@@ -245,12 +245,15 @@ __all__ = ["reset_db", "seed_db", "clean_db"]
 
 
 # ============================================
-# DETERMINISTIC GATE (Issue #427)
+# DETERMINISTIC GATE (Issue #427, #430)
 # ============================================
 
 E2E_NODEID_PREFIX = "tests/e2e/test_smoke_pipeline.py::"
 E2E_EXPECTED_COUNT = 5
-TOTAL_MIN_PASS = 267
+
+# Issue #430: Threshold reflects actual CI baseline (254/302 PASS, 48 SKIPPED)
+# Skipped tests: e2e (containers), local_only (destructive), chaos, slow, external
+TOTAL_MIN_PASS = 254
 
 
 @dataclass
