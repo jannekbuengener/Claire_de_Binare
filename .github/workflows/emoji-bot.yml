@@ -66,8 +66,6 @@ jobs:
       env:
         COMMENT_BODY: ${{ github.event.comment.body }}
       run: |
-        COMMENT_BODY="$COMMENT_BODY"
-        
         if [[ "$COMMENT_BODY" == *"/emoji-fix"* ]]; then
           echo "command=fix" >> $GITHUB_OUTPUT
           echo "🔧 Auto-Fix Befehl erkannt"
