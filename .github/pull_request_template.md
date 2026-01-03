@@ -1,134 +1,126 @@
-# Pull Request Template
+# Pull Request
 
-## Feature Overview
-<!-- Brief description of the feature or change -->
+## Summary
+<!-- 1-3 Sätze: Was wird geändert und warum? -->
 
-## Technical Overview
-<!-- Technical implementation details and architecture decisions -->
+## Type
+<!-- Wähle EINE Option (delete others): -->
+- [ ] **Feature** - Neue Funktionalität
+- [ ] **Bug** - Fehlerbehebung
+- [ ] **Refactor** - Code-Umbau ohne Funktionsänderung
+- [ ] **Docs** - Nur Dokumentation
+- [ ] **Chore** - Wartung, Tooling, CI/CD
 
-### Components Modified
-- [ ] Core services
-- [ ] Configuration
-- [ ] Database schema
-- [ ] API endpoints
-- [ ] User interface
+---
 
-### Architecture Alignment
-- [ ] Follows established patterns
-- [ ] Respects service boundaries
-- [ ] Maintains interface compatibility
-- [ ] Adheres to design principles
+## Changes
+<!-- Bulletpoints: Was wurde konkret geändert? -->
+-
+-
+-
 
-## Test Evidence
-<!-- Evidence that the feature has been thoroughly tested -->
+---
 
+## Testing
 ### Test Coverage
-- [ ] Unit tests added/updated (≥90% coverage)
-- [ ] Integration tests added/updated (≥80% coverage)  
-- [ ] Feature tests added (100% coverage)
+- [ ] Unit Tests added/updated (≥90% coverage)
+- [ ] Integration Tests added/updated (≥80% coverage)
+- [ ] E2E/Feature Tests added (if applicable)
 - [ ] Manual testing completed
 
-### Test Results
+### Test Evidence
+<!-- REQUIRED: Link to CI run oder paste test output -->
 ```
-# Paste test execution results here
-Coverage: X%
-Tests passed: X/X
+Coverage: __%
+Tests passed: __/__
 ```
 
-### Test Strategy Validation
-- [ ] Test strategy reviewed by Test Engineer Agent
-- [ ] All test scenarios covered
-- [ ] Test data properly managed
-- [ ] CI integration working
+**CI Run:** [Link to Actions run](#)
 
-## Code Quality
-<!-- Code review and quality assessment results -->
+**Screenshots/Logs** (if UI/output changes):
+<!-- Paste screenshots or logs here -->
 
-### Review Checklist
-- [ ] Code follows project conventions
-- [ ] Security considerations addressed
-- [ ] Performance impact assessed
-- [ ] Error handling implemented
-- [ ] Logging added where appropriate
-
-### Code Review Status
-- [ ] Reviewed by Code Reviewer Agent
-- [ ] Architecture alignment validated
-- [ ] Quality standards met
-- [ ] No high-risk issues identified
-
-## Deployment & Rollback
-<!-- Deployment strategy and rollback procedures -->
-
-### Deployment Strategy
-- [ ] Feature flags configured
-- [ ] Gradual rollout planned
-- [ ] Monitoring setup complete
-- [ ] Environment sequence defined
-
-### Rollback Procedures
-- [ ] Rollback scripts tested
-- [ ] Feature flag kill-switch available
-- [ ] Data rollback strategy defined
-- [ ] Rollback validation procedures ready
-
-### DevOps Validation
-- [ ] Infrastructure impact assessed
-- [ ] Deployment automation ready
-- [ ] Monitoring and alerting configured
-- [ ] Performance baselines established
-
-## Documentation
-<!-- Documentation updates and additions -->
-
-### Documentation Updates
-- [ ] System documentation updated
-- [ ] User guides updated/created
-- [ ] API documentation updated
-- [ ] Operational procedures documented
-
-### Documentation Quality
-- [ ] Technically accurate
-- [ ] Clear and concise
-- [ ] Includes examples
-- [ ] Consistent terminology
+---
 
 ## Risk Assessment
-<!-- Risk analysis and mitigation strategies -->
+### Breaking Changes
+- [ ] **No breaking changes**
+- [ ] **Breaking changes** (describe below):
 
-### Identified Risks
-<!-- List any risks identified during development -->
+<!-- If breaking changes, describe:
+- What breaks?
+- Who is affected?
+- Migration path?
+-->
 
-### Mitigation Strategies
-<!-- How risks are being mitigated -->
+### Impact
+- [ ] **Low** - Isolated change, minimal risk
+- [ ] **Medium** - Multiple components, moderate risk
+- [ ] **High** - Critical path, high risk
 
-### Monitoring Plan
-<!-- How the feature will be monitored post-deployment -->
+### Rollback Plan
+<!-- How to revert this PR if issues arise? -->
+- [ ] Revert commit (simple rollback)
+- [ ] Feature flag kill-switch available
+- [ ] Requires data migration rollback (describe steps below)
+- [ ] Other (describe):
 
-## Agent Approvals
-<!-- Agent review status -->
+---
 
-- [ ] System Architect Agent - Architecture approved
-- [ ] Test Engineer Agent - Test strategy validated  
-- [ ] Code Reviewer Agent - Code quality approved
-- [ ] DevOps Engineer Agent - Deployment ready
-- [ ] Documentation Engineer Agent - Documentation complete
+## Documentation
+- [ ] Code comments added where needed
+- [ ] API documentation updated
+- [ ] README/Runbook updated
+- [ ] ADR created/updated (if architectural decision)
+- [ ] No documentation needed
 
-## Checklist
-<!-- Final deployment checklist -->
+**Docs Updated:**
+<!-- List files or link to docs PR -->
 
-- [ ] All tests passing
-- [ ] Code review approved
-- [ ] Documentation complete
-- [ ] Feature flags configured
-- [ ] Monitoring setup complete
-- [ ] Rollback procedures tested
-- [ ] Stakeholder approval obtained
+---
 
-## Breaking Changes
-<!-- List any breaking changes -->
-None / List breaking changes
+## Deployment
+### Deployment Strategy
+- [ ] **Direct merge** (low risk, standard deployment)
+- [ ] **Feature flag** (gradual rollout)
+- [ ] **Requires DB migration** (describe below)
+- [ ] **Requires infrastructure changes** (describe below)
 
-## Migration Notes
-<!-- Any migration steps required -->
-None / List migration steps required
+### Environment Sequence
+- [ ] Local tested
+- [ ] Dev environment ready
+- [ ] Staging tested
+- [ ] Production deployment planned
+
+---
+
+## Governance Compliance
+<!-- AUTO-CHECKED by pr-auto-label.yml (Issue #145) -->
+- [ ] No `.github/` changes (or governance-approved)
+- [ ] No root-level files modified (or docs-approved)
+- [ ] CODEOWNERS consulted if needed
+
+**Governance Override** (if needed):
+<!-- Use `/governance-override @maintainer-name` in comment -->
+
+---
+
+## Review Checklist (Author Self-Check)
+- [ ] Code follows project conventions
+- [ ] Security considerations addressed
+- [ ] Error handling implemented
+- [ ] Logging added where appropriate
+- [ ] Performance impact assessed
+- [ ] All CI checks passing
+- [ ] Linked to related issue(s)
+
+---
+
+## Related Issues
+Closes #
+Related to #
+
+---
+
+## Additional Context
+<!-- Optional: Add any context not covered above -->
