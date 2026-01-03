@@ -468,7 +468,7 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
         "symbol": "BTC/USDT",
         "side": "BUY",
         "quantity": 0.001,
-        "type": "MARKET",
+        "type": "order",  # Fixed: execution service expects "order" not "MARKET"
         "source": "e2e_test_happy_path"
     }
     redis_client.publish("orders", json.dumps(order_payload))
@@ -528,7 +528,7 @@ def test_tc_p0_002_risk_position_limit_block(redis_client):
         "symbol": "BTC/USDT",
         "side": "BUY",
         "quantity": 999.0,  # Excessive quantity
-        "type": "MARKET",
+        "type": "order",  # Fixed: execution service expects "order" not "MARKET"
         "source": "e2e_test_position_limit"
     }
     redis_client.publish("orders", json.dumps(order_payload))
@@ -605,7 +605,7 @@ def test_tc_p0_003_daily_drawdown_stop(redis_client):
             "symbol": "ETH/USDT",
             "side": "BUY",
             "quantity": 0.1,
-            "type": "MARKET",
+            "type": "order",  # Fixed: execution service expects "order" not "MARKET"
             "source": "e2e_test_drawdown"
         }
         redis_client.publish("orders", json.dumps(order_payload))
@@ -678,7 +678,7 @@ def test_tc_p0_004_circuit_breaker_trigger(redis_client):
             "symbol": "BTC/USDT",
             "side": "SELL",
             "quantity": 0.001,
-            "type": "MARKET",
+            "type": "order",  # Fixed: execution service expects "order" not "MARKET"
             "source": "e2e_test_circuit_breaker"
         }
         redis_client.publish("orders", json.dumps(order_payload))
@@ -746,7 +746,7 @@ def test_tc_p0_005_data_persistence_check(redis_client, unique_order_id):
         "symbol": "BTC/USDT",
         "side": "BUY",
         "quantity": 0.001,
-        "type": "MARKET",
+        "type": "order",  # Fixed: execution service expects "order" not "MARKET"
         "source": "e2e_test_persistence"
     }
     redis_client.publish("orders", json.dumps(order_payload))
