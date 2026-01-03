@@ -3,8 +3,16 @@ name: Build & Push Containers (GHCR)
 
 on:
   pull_request:
+    paths:
+      - 'services/**/Dockerfile'
+      - 'infrastructure/**'
+      - '.github/workflows/docker-publish.yml'
   push:
     branches: ["main"]
+    paths:
+      - 'services/**/Dockerfile'
+      - 'infrastructure/**'
+      - '.github/workflows/docker-publish.yml'
   workflow_dispatch:
 
 permissions:
