@@ -63,9 +63,9 @@ jobs:
     
     - name: 🤖 Process Bot Command
       id: bot-command
+      env:
+        COMMENT_BODY: ${{ github.event.comment.body }}
       run: |
-        COMMENT_BODY="${{ github.event.comment.body }}"
-        
         if [[ "$COMMENT_BODY" == *"/emoji-fix"* ]]; then
           echo "command=fix" >> $GITHUB_OUTPUT
           echo "🔧 Auto-Fix Befehl erkannt"
