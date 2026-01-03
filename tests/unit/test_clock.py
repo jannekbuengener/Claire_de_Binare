@@ -61,6 +61,9 @@ def test_guardrails_no_forbidden_calls():
             or rel.startswith("tools/")
         ):
             continue
+        # Exclude experimental tools from strict guardrails
+        if rel.startswith("tools/experiments/"):
+            continue
         if rel in allowed:
             continue
         content = path.read_text(encoding="utf-8")

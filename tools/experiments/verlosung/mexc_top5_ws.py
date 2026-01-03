@@ -4,7 +4,7 @@ import time
 import threading
 import sys
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timezone
 import pandas as pd
 import requests
 import redis
@@ -58,7 +58,7 @@ def top5():
     if gains is None:
         return jsonify(error="no data yet"), 503
     return jsonify(
-        ts=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        ts=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"),
         top5_gainers=gains.to_dict(orient="records"),
         top5_losers=losses.to_dict(orient="records"),
     )
@@ -203,7 +203,7 @@ def printer():
     while True:
         time.sleep(15)
         gains, losses = compute_top5()
-        ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         print(f"\n[{ts}] Top movers ({LOOKBACK_MIN}m):")
         if gains is None:
             print("Noch keine Daten – warte auf Klines...")
