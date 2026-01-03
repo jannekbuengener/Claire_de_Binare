@@ -1,7 +1,7 @@
 -- DATABASE_SCHEMA.sql - Claire de Binare
 -- PostgreSQL Schema für Trading-System
 -- Erstellt: 2025-11-19
--- Version: 1.0.0
+-- Version: 1.0.2
 --
 -- Dieses Schema wird automatisch geladen beim ersten Start von cdb_postgres
 -- via docker-compose.yml → docker-entrypoint-initdb.d/01-schema.sql
@@ -48,11 +48,12 @@ COMMENT ON COLUMN signals.metadata IS 'Zusätzliche Signal-Metadaten als JSON';
 
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
+    order_id VARCHAR(100) UNIQUE,
     signal_id INTEGER REFERENCES signals(id) ON DELETE SET NULL,
     symbol VARCHAR(20) NOT NULL,
     side VARCHAR(10) NOT NULL CHECK (side IN ('buy', 'sell', 'long', 'short')),
     order_type VARCHAR(20) NOT NULL DEFAULT 'market' CHECK (order_type IN ('market', 'limit', 'stop', 'stop_limit')),
-    price DECIMAL(18, 8) NOT NULL,
+    price DECIMAL(18, 8),
     size DECIMAL(18, 8) NOT NULL,
 
     -- Risk-Validation
@@ -78,11 +79,14 @@ CREATE TABLE orders (
 );
 
 CREATE INDEX idx_orders_symbol ON orders(symbol);
+CREATE INDEX idx_orders_order_id ON orders(order_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX idx_orders_signal_id ON orders(signal_id);
 
 COMMENT ON TABLE orders IS 'Validierte Trading-Orders vom Risk-Manager';
+COMMENT ON COLUMN orders.order_id IS 'Execution Service Order ID (unique identifier for order tracking)';
+COMMENT ON COLUMN orders.price IS 'Limit-Preis (NULL für Market-Orders ohne Limit)';
 COMMENT ON COLUMN orders.approved IS 'Risk-Validation bestanden?';
 COMMENT ON COLUMN orders.rejection_reason IS 'Grund für Ablehnung (falls approved=false)';
 
@@ -261,7 +265,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 
 INSERT INTO schema_version (version, description) VALUES
-    ('1.0.0', 'Initial schema: signals, orders, trades, positions, portfolio_snapshots');
+    ('1.0.2', 'Initial schema with orders.price nullable + orders.order_id column');
 
 -- ============================================================================
 -- VACUUM & ANALYZE - Optimiere nach Schema-Erstellung

@@ -3,6 +3,7 @@ Database Layer for Execution Service
 Claire de Binare Trading Bot
 """
 
+import json
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -26,6 +27,7 @@ class Database:
 
     def __init__(self):
         self.connection_string = config.DATABASE_URL
+        self._orders_has_order_id_column = None
         self._test_connection()
 
     def _test_connection(self):
@@ -56,6 +58,19 @@ class Database:
             if conn:
                 conn.close()
 
+    def _orders_has_order_id(self, cur) -> bool:
+        """Check if orders table has order_id column (cached)."""
+        if self._orders_has_order_id_column is not None:
+            return self._orders_has_order_id_column
+        cur.execute(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_name = 'orders' AND column_name = 'order_id'
+        """
+        )
+        self._orders_has_order_id_column = cur.fetchone() is not None
+        return self._orders_has_order_id_column
+
     def save_order(self, result: ExecutionResult) -> bool:
         """
         Save order to orders table
@@ -64,41 +79,82 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
+                    metadata_payload = {"source": "execution_service"}
+                    if result.order_id:
+                        metadata_payload["order_id"] = result.order_id
+                    metadata_json = json.dumps(metadata_payload)
+
+                    has_order_id = self._orders_has_order_id(cur)
                     # Insert into orders table
-                    cur.execute(
-                        """
-                        INSERT INTO orders (
-                            order_id, symbol, side, order_type,
-                            size, price, filled_size, avg_fill_price,
-                            status, submitted_at, filled_at,
-                            metadata
-                        ) VALUES (
-                            %s, %s, %s, %s,
-                            %s, %s, %s, %s,
-                            %s, to_timestamp(%s), to_timestamp(%s),
-                            %s
-                        )
-                        RETURNING id
-                    """,
-                        (
-                            result.order_id,  # order_id as column (Fix Issue #224)
-                            result.symbol,
-                            result.side.lower(),  # lowercase for schema constraint
-                            "market",  # order_type
-                            result.quantity,  # maps to size
-                            result.price,
-                            result.filled_quantity,  # maps to filled_size
-                            result.price,  # avg_fill_price = price for now
-                            result.status.lower(),  # lowercase for schema constraint
-                            int(time.time()),  # submitted_at
+                    if has_order_id:
+                        cur.execute(
+                            """
+                            INSERT INTO orders (
+                                order_id, symbol, side, order_type,
+                                size, price, filled_size, avg_fill_price,
+                                status, submitted_at, filled_at,
+                                metadata
+                            ) VALUES (
+                                %s, %s, %s, %s,
+                                %s, %s, %s, %s,
+                                %s, to_timestamp(%s), to_timestamp(%s),
+                                %s
+                            )
+                            RETURNING id
+                        """,
                             (
-                                int(time.time())
-                                if result.status == OrderStatus.FILLED.value
-                                else None
-                            ),  # filled_at
-                            '{"source": "execution_service"}'  # metadata (order_id now in column)
-                        ),
-                    )
+                                result.order_id,
+                                result.symbol,
+                                result.side.lower(),
+                                "market",
+                                result.quantity,
+                                result.price,
+                                result.filled_quantity,
+                                result.price,
+                                result.status.lower(),
+                                int(time.time()),
+                                (
+                                    int(time.time())
+                                    if result.status == OrderStatus.FILLED.value
+                                    else None
+                                ),
+                                metadata_json,
+                            ),
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            INSERT INTO orders (
+                                symbol, side, order_type,
+                                size, price, filled_size, avg_fill_price,
+                                status, submitted_at, filled_at,
+                                metadata
+                            ) VALUES (
+                                %s, %s, %s,
+                                %s, %s, %s, %s,
+                                %s, to_timestamp(%s), to_timestamp(%s),
+                                %s
+                            )
+                            RETURNING id
+                        """,
+                            (
+                                result.symbol,
+                                result.side.lower(),
+                                "market",
+                                result.quantity,
+                                result.price,
+                                result.filled_quantity,
+                                result.price,
+                                result.status.lower(),
+                                int(time.time()),
+                                (
+                                    int(time.time())
+                                    if result.status == OrderStatus.FILLED.value
+                                    else None
+                                ),
+                                metadata_json,
+                            ),
+                        )
 
                     logger.info(f"Saved order to database: {result.order_id}")
                     return True
@@ -165,13 +221,22 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(
-                        """
-                        SELECT * FROM orders 
-                        WHERE order_id = %s
-                    """,
-                        (order_id,),
-                    )
+                    if self._orders_has_order_id(cur):
+                        cur.execute(
+                            """
+                            SELECT * FROM orders
+                            WHERE order_id = %s
+                        """,
+                            (order_id,),
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            SELECT * FROM orders
+                            WHERE metadata->>'order_id' = %s
+                        """,
+                            (order_id,),
+                        )
 
                     result = cur.fetchone()
                     return dict(result) if result else None

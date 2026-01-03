@@ -69,8 +69,14 @@ class LiveExecutor:
         Returns:
             ExecutionResult with real execution data
         """
+        order_type = getattr(order, "order_type", "MARKET")
+        order_price = getattr(order, "price", None)
         logger.info(
-            f"🚀 Executing order: {order.symbol} {order.side} {order.quantity} {order.order_type}"
+            "🚀 Executing order: %s %s %s %s",
+            order.symbol,
+            order.side,
+            order.quantity,
+            order_type,
         )
 
         # DRY RUN: Log and return mock result
@@ -82,19 +88,19 @@ class LiveExecutor:
 
         try:
             # Execute based on order type
-            if order.order_type.upper() == "MARKET":
-                response = self.client.place_market_order(
-                    symbol=order.symbol, side=order.side, quantity=float(order.quantity)
-                )
-            elif order.order_type.upper() == "LIMIT":
-                if not order.price:
-                    raise ValueError("Limit order requires price")
-                response = self.client.place_limit_order(
-                    symbol=order.symbol,
-                    side=order.side,
-                    quantity=float(order.quantity),
-                    price=float(order.price),
-                )
+        if order_type.upper() == "MARKET":
+            response = self.client.place_market_order(
+                symbol=order.symbol, side=order.side, quantity=float(order.quantity)
+            )
+        elif order_type.upper() == "LIMIT":
+            if order_price is None:
+                raise ValueError("Limit order requires price")
+            response = self.client.place_limit_order(
+                symbol=order.symbol,
+                side=order.side,
+                quantity=float(order.quantity),
+                price=float(order_price),
+            )
             else:
                 raise ValueError(f"Unsupported order type: {order.order_type}")
 
@@ -127,7 +133,7 @@ class LiveExecutor:
         """
         status_map = {
             "NEW": OrderStatus.PENDING,
-            "PARTIALLY_FILLED": OrderStatus.PARTIAL,
+            "PARTIALLY_FILLED": OrderStatus.PARTIALLY_FILLED,
             "FILLED": OrderStatus.FILLED,
             "CANCELED": OrderStatus.CANCELLED,
             "REJECTED": OrderStatus.REJECTED,
@@ -138,7 +144,7 @@ class LiveExecutor:
         status = status_map.get(mexc_status, OrderStatus.PENDING)
 
         # Get execution price
-        if status == OrderStatus.FILLED or status == OrderStatus.PARTIAL:
+        if status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
             # For filled orders, use executed price or average price
             execution_price = float(response.get("price", 0))
             if execution_price == 0:
@@ -149,26 +155,18 @@ class LiveExecutor:
 
         filled_qty = float(response.get("executedQty", 0))
 
+        order_price = getattr(order, "price", None)
         result = ExecutionResult(
             order_id=str(response.get("orderId")),
             client_id=order.client_id or response.get("clientOrderId", ""),
             symbol=order.symbol,
             side=order.side,
-            order_type=order.order_type,
             quantity=order.quantity,
             filled_quantity=filled_qty,
-            price=order.price,
-            execution_price=execution_price,
-            status=status,
-            timestamp=utcnow(),
-            exchange="MEXC",
-            exchange_order_id=str(response.get("orderId")),
+            price=execution_price or order_price,
+            status=status.value,
+            timestamp=utcnow().isoformat(),
             error_message=None,
-            metadata={
-                "mexc_response": response,
-                "testnet": self.testnet,
-                "transact_time": response.get("transactTime"),
-            },
         )
 
         logger.info(
@@ -180,42 +178,34 @@ class LiveExecutor:
 
     def _create_dry_run_result(self, order: Order) -> ExecutionResult:
         """Create mock result for dry-run mode"""
+        order_price = getattr(order, "price", None)
         return ExecutionResult(
             order_id=f"DRY_RUN_{order.client_id or 'UNKNOWN'}",
             client_id=order.client_id or "",
             symbol=order.symbol,
             side=order.side,
-            order_type=order.order_type,
             quantity=order.quantity,
             filled_quantity=order.quantity,
-            price=order.price,
-            execution_price=order.price or 0.0,
-            status=OrderStatus.FILLED,
-            timestamp=utcnow(),
-            exchange="DRY_RUN",
-            exchange_order_id="DRY_RUN",
+            price=order_price,
+            status=OrderStatus.FILLED.value,
+            timestamp=utcnow().isoformat(),
             error_message=None,
-            metadata={"dry_run": True},
         )
 
     def _create_error_result(self, order: Order, error: str) -> ExecutionResult:
         """Create error result"""
+        order_price = getattr(order, "price", None)
         return ExecutionResult(
             order_id=f"ERROR_{order.client_id or 'UNKNOWN'}",
             client_id=order.client_id or "",
             symbol=order.symbol,
             side=order.side,
-            order_type=order.order_type,
             quantity=order.quantity,
             filled_quantity=0.0,
-            price=order.price,
-            execution_price=0.0,
-            status=OrderStatus.REJECTED,
-            timestamp=utcnow(),
-            exchange="MEXC",
-            exchange_order_id="",
+            price=order_price,
+            status=OrderStatus.REJECTED.value,
+            timestamp=utcnow().isoformat(),
             error_message=error,
-            metadata={"error": error},
         )
 
     def get_balance(self, asset: str = "USDT") -> float:

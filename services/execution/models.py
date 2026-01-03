@@ -149,6 +149,8 @@ class ExecutionResult:
                     timestamp_value = int(float(timestamp_value))
                 except ValueError:
                     timestamp_value = int(utcnow().timestamp())
+        elif isinstance(timestamp_value, datetime):
+            timestamp_value = int(timestamp_value.timestamp())
         elif isinstance(timestamp_value, float):
             timestamp_value = int(timestamp_value)
         elif timestamp_value is None:
