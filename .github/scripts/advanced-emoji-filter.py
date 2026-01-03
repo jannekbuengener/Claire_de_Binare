@@ -347,11 +347,11 @@ class EmojiAnalyzer:
         report = self.generate_report()
         
         if format == "json":
-            with open("emoji-report.json", "w") as f:
+            with open("emoji-report.json", "w", encoding="utf-8") as f:
                 json.dump(report, f, indent=2, ensure_ascii=False)
                 
         elif format == "markdown":
-            with open("emoji-report.md", "w") as f:
+            with open("emoji-report.md", "w", encoding="utf-8") as f:
                 f.write("# 🚫 Emoji Detection Report\n\n")
                 f.write(f"**Scan Time:** {report['timestamp']}\n")
                 f.write(f"**Files Scanned:** {report['summary']['files_scanned']}\n")
@@ -391,7 +391,16 @@ def main():
         analyzer.auto_fix_emojis(backup=True)
     
     # Report generieren
-    analyzer.export_results(args.format)
+    formats = [args.format]
+    if args.format == "json":
+        formats.append("markdown")
+    elif args.format == "markdown":
+        formats = ["markdown", "json"]
+    else:
+        formats = [args.format, "markdown", "json"]
+    
+    for fmt in formats:
+        analyzer.export_results(fmt)
     
     # GitHub Actions Ausgaben
     if args.github_actions:
