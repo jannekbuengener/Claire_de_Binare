@@ -14,4 +14,11 @@ tests/.*:generic-api-key
 tests/.*:claire_db_secret_2024
 # Example metadata / tooling artifacts
 .mcp.json:grafana-service-account-token
-\.worktrees_backup/.*:generic-api-key
+.worktrees_backup/003-implement-api-authentication-for-all-service-endpo/tests/unit/core/test_api_auth.py:generic-api-key
+.worktrees_backup/007-implement-pydantic-input-validation-and-sanitize-e/tests/unit/execution/test_error_handling.py:generic-api-key
+tests/performance/verlosung/test_analytics_performance.py:generic-api-key
+tests/performance/verlosung/test_full_system_stress.py:generic-api-key
+tests/unit/verlosung/test_chaos_resilience.py:generic-api-key
+tests/unit/verlosung/test_backup_recovery.py:generic-api-key
+tests/unit/verlosung/test_cli_tools.py:generic-api-key
+tests/unit/verlosung/test_docker_lifecycle.py:generic-api-key
