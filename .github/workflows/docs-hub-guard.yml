@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  DOCS_HUB_CANONICAL_PATH: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents
+
 jobs:
   guard:
     runs-on: ubuntu-latest
@@ -72,5 +75,8 @@ jobs:
             fi
           done
           if [ ! -d "agents" ]; then
-            echo "Optional folder 'agents' is absent; skipping (repo uses Docs Hub canonical sources)."
+            echo "Optional folder 'agents' is absent; this Working Repo relies on the Docs Hub canonical registry."
+            if [ -n "${DOCS_HUB_CANONICAL_PATH:-}" ]; then
+              echo "Canonical agents path: ${DOCS_HUB_CANONICAL_PATH}"
+            fi
           fi

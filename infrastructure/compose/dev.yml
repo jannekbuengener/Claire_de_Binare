@@ -24,6 +24,8 @@ services:
   cdb_grafana:
     ports:
       - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
 
   # Application Services (Dev-Only)
   # All use entrypoint pattern to read secrets from /run/secrets/
@@ -46,7 +48,7 @@ services:
       WS_SOURCE: mexc_pb
       MEXC_SYMBOL: BTCUSDT
       MEXC_INTERVAL: 100ms
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && exec python -u service.py"]
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
@@ -81,7 +83,7 @@ services:
       SIGNAL_PORT: "8005"
       SIGNAL_THRESHOLD_PCT: "0.005"  # Issue #345: Evidence-based: 100ms trades max ~0.014%, most <0.01%
       SIGNAL_MIN_VOLUME: "0"  # DISABLED: Raw trades use 'qty' field, not 'volume' (TODO: fix field mapping)
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && exec python -u service.py"]
     ports:
       - "127.0.0.1:8005:8005"
     volumes:
@@ -112,7 +114,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && exec python -u service.py"]
     ports:
       - "127.0.0.1:8002:8002"
     volumes:
@@ -140,7 +142,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && : ${MEXC_API_KEY:=$(cat /run/secrets/mexc_api_key)} && : ${MEXC_API_SECRET:=$(cat /run/secrets/mexc_api_secret)} && exec python -u service.py"]
     ports:
       - "127.0.0.1:8003:8003"
     volumes:
@@ -166,7 +168,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u db_writer.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && exec python -u db_writer.py"]
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
       interval: 30s
@@ -195,7 +197,7 @@ services:
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       PAPER_TRADING_DURATION_DAYS: ${PAPER_TRADING_DURATION_DAYS:-14}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python tools/paper_trading/service.py"]
+    entrypoint: ["sh", "-c", ": ${REDIS_PASSWORD:=$(cat /run/secrets/redis_password)} && : ${POSTGRES_PASSWORD:=$(cat /run/secrets/postgres_password)} && exec python tools/paper_trading/service.py"]
     ports:
       - "127.0.0.1:8004:8004"
     volumes:

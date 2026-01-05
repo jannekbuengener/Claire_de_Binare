@@ -28,6 +28,11 @@ jobs:
         with:
           fetch-depth: 0  # Full history for PR scanning
 
+      - name: Prepare results.sarif placeholder
+        run: |
+          # Ensure the expected SARIF file exists before gitleaks runs
+          : > results.sarif
+
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
