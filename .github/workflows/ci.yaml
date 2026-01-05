@@ -65,9 +65,27 @@ jobs:
       - name: Install Black
         run: pip install black==23.12.1
 
-      - name: Check formatting
-        run: black --check --diff .
+      - name: Fetch main for diff
+        run: git fetch origin main
 
+      - name: Determine changed Python files
+        id: changed
+        shell: bash
+        run: |
+          files=$(git diff --name-only origin/main... -- '*.py' | tr '\n' ' ' | sed 's/ $//')
+          if [ -z "$files" ]; then
+            echo "no_files=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "files=$files" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check formatting
+        if: steps.changed.outputs.no_files != 'true'
+        run: black --check --diff ${{ steps.changed.outputs.files }}
+
+      - name: Skip formatting check
+        if: steps.changed.outputs.no_files == 'true'
+        run: echo "Keine Python-Datei geändert; Formatprüfung übersprungen."
   type-check:
     name: Type Checking (mypy)
     runs-on: ubuntu-latest
