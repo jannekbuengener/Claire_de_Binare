@@ -202,6 +202,8 @@ jobs:
     needs: [emoji-detection, security-check]
     runs-on: ubuntu-latest
     if: always() && needs.emoji-detection.outputs.blocked-count > 0
+    permissions:
+      issues: write
     
     steps:
     - name: 📥 Download Report
@@ -301,6 +303,8 @@ jobs:
     needs: emoji-detection
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.blocked-count > 0
+    permissions:
+      issues: write
     
     steps:
     - name: 📥 Download Report
