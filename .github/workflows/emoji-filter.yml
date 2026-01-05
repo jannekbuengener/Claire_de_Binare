@@ -262,6 +262,18 @@ jobs:
               error.message &&
               error.message.includes('Resource not accessible by integration')
             ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
               console.log(`Skipping issue action: ${error.message}`);
               return true;
             }
@@ -379,6 +391,18 @@ jobs:
           const fs = require('fs');
           
           let reportContent = '';
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
           try {
             if (fs.existsSync('emoji-report.md')) {
               reportContent = fs.readFileSync('emoji-report.md', 'utf8');
