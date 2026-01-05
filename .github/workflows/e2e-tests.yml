@@ -120,4 +120,4 @@ jobs:
         if: always()
         working-directory: infrastructure/compose
         run: |
-          docker-compose -f base.yml -f dev.yml down -v
+          docker compose -f base.yml -f dev.yml down -v
