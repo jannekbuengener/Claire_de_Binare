@@ -131,6 +131,11 @@ jobs:
           - postgres:15.11-alpine
       fail-fast: false
 
+    env:
+      SCAN_IMAGE: ${{ matrix.image }}
+      SCAN_IMAGE_LABEL: ${{ matrix.image.replace(':', '-') }}
+      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', matrix.image.replace(':', '-'), github.run_number) }}
+
     steps:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
@@ -138,14 +143,14 @@ jobs:
       - name: Save Scan Results
         if: always()
         run: |
-          docker scout cves ${{ matrix.image }} --severity critical,high > scan-${{ matrix.image }}.txt || true
+          docker scout cves ${{ env.SCAN_IMAGE }} --severity critical,high > scan-${{ env.SCAN_IMAGE_LABEL }}.txt || true
 
       - name: Upload Scan Results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: scan-${{ matrix.image }}-${{ github.run_number }}
-          path: scan-${{ matrix.image }}.txt
+          name: ${{ env.SCAN_ARTIFACT_NAME }}
+          path: scan-${{ env.SCAN_IMAGE_LABEL }}.txt
           retention-days: 30
 
   scan-custom-images:
