@@ -85,18 +85,18 @@ jobs:
         MODE="strict"
         if [ -f .github/emoji-config.yaml ]; then
           MODE=$(python - <<'PY'
-import yaml
-from pathlib import Path
+            import yaml
+            from pathlib import Path
 
-config_path = Path(".github/emoji-config.yaml")
-try:
-    config = yaml.safe_load(config_path.read_text())
-    mode = config.get("detection", {}).get("mode", "strict")
-    print(str(mode).lower())
-except Exception:
-    print("strict")
-PY
-)
+            config_path = Path(".github/emoji-config.yaml")
+            try:
+                config = yaml.safe_load(config_path.read_text())
+                mode = config.get("detection", {}).get("mode", "strict")
+                print(str(mode).lower())
+            except Exception:
+                print("strict")
+          PY
+          )
         fi
 
         ARGS="--config .github/emoji-config.yaml --path $SCAN_PATH --github-actions"
