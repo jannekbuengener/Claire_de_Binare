@@ -1,12 +1,27 @@
-"""Skeleton for the 72h validation pipeline."""
+"""Minimal validation pipeline that wires collectors to aggregators."""
 
 from __future__ import annotations
 
-from typing import Sequence
+from services.validation.aggregator import aggregate_orders
+from services.validation.collectors import (
+    ExecutionCollector,
+    ExecutionCollectorConfig,
+)
 
 
-def assemble_pipeline(collectors: Sequence[str]) -> None:
-    """Placeholder: orchestrate collectors feeding the 72h window."""
-    # TODO: hook up metrics aggregation + scheduling
-    if not collectors:
-        raise ValueError("At least one collector must be configured")
+def collect_execution_orders(window_start: str, window_end: str, db_client: object) -> list[dict]:
+    """Run a read-only collector query and return normalized orders."""
+    config = ExecutionCollectorConfig(db_client=db_client, redis_client=None)
+    collector = ExecutionCollector(config=config)
+    return collector.collect_execution_orders(window_start, window_end)
+
+
+def run_validation_window(window_start: str, window_end: str, db_client: object) -> dict:
+    """Single-shot pipeline iteration collecting + aggregating metrics."""
+    orders = collect_execution_orders(window_start, window_end, db_client)
+    summary = aggregate_orders(orders)
+    return {
+        "window_start": window_start,
+        "window_end": window_end,
+        "summary": summary,
+    }
