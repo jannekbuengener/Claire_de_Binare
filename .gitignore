@@ -146,6 +146,7 @@ gha-creds-*.json
 
 # Git worktrees metadata
 .worktrees/
+.worktrees_backup/
 
 # Build artifacts
 ..cdb_local.compose_rendered.yml
