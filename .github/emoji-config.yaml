@@ -1,11 +1,16 @@
 detection:
   mode: "lenient"
-   file_extensions: [".py", ".js", ".ts", ".java", ".cpp", ".c"]
-   exclude_dirs: [".git", "node_modules", "__pycache__", ".worktrees_backup"]
- whitelist:
-   comments_allowed: ["✅", "❌", "⚠️"]
- actions:
-   block_pr: true
- severity:
-   code: "error"
-   comments: "warning"
+  file_extensions: [".py", ".js", ".ts", ".java", ".cpp", ".c"]
+  exclude_dirs: [".git", "node_modules", "__pycache__", ".worktrees_backup"]
+  exclude_files: []
+whitelist:
+  comments_allowed: ["✅", "❌", "⚠️"]
+  strings_allowed: []
+  variables_allowed: []
+actions:
+  block_pr: true
+  create_issue: true
+  auto_fix: false
+severity:
+  code: "error"
+  comments: "warning"
