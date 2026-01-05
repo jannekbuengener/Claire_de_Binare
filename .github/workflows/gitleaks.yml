@@ -35,8 +35,18 @@ jobs:
           GITLEAKS_CONFIG: gitleaks.toml
           GITLEAKS_ENABLE_COMMENTS: true  # Comment on PRs with findings
 
+      - name: Check SARIF artifact
+        id: sarif
+        run: |
+          if [ -f results.sarif ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::results.sarif missing; skipping SARIF upload"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload SARIF
-        if: always()
+        if: steps.sarif.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         with:
           sarif_file: results.sarif

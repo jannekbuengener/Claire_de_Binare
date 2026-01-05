@@ -20,6 +20,8 @@ jobs:
   e2e_smoke:
     name: E2E Smoke Test (market_data → signal)
     runs-on: ubuntu-latest
+    env:
+      SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
 
     steps:
       - name: Checkout code
