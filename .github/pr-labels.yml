@@ -14,9 +14,9 @@ area_labels:
 
 title_labels:
   - label: "type:bug"
-    regex: "(?i)(\\bbug\\b|\\bfix\\b|hotfix|\\bdefect\\b|🐛)"
+    regex: "(?i)(\\bbug\\b|\\bfix\\b|hotfix|\\bdefect\\b)"
   - label: "type:feature"
-    regex: "(?i)(\\bfeat\\b|\\bfeature\\b|enhancement|✨)"
+    regex: "(?i)(\\bfeat\\b|\\bfeature\\b|enhancement)"
   - label: "priority:high"
     regex: "(?i)(priority:\\s*high|p0|p1|critical)"
   - label: "priority:medium"
