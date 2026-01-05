@@ -219,6 +219,30 @@ jobs:
           const fs = require('fs');
           
           let reportContent = '';
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping issue action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
           try {
             if (fs.existsSync('emoji-report.md')) {
               reportContent = fs.readFileSync('emoji-report.md', 'utf8');
@@ -263,21 +287,33 @@ jobs:
           
           if (existingIssues.data.length > 0) {
             // Update existing issue
-            await github.rest.issues.createComment({
+            try {
+              await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: existingIssues.data[0].number,
               body: `🔄 **Update:** Neuer Emoji-Detection Scan\n\n${issueBody}`
             });
+            } catch (error) {
+              if (!handlePermissionError(error)) {
+                throw error;
+              }
+            }
           } else {
             // Create new issue
-            await github.rest.issues.create({
+            try {
+              await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: issueTitle,
               body: issueBody,
               labels: ['security', 'code-quality', 'emoji-detection', 'automated']
             });
+            } catch (error) {
+              if (!handlePermissionError(error)) {
+                throw error;
+              }
+            }
           }
     
     - name: 📱 Slack Notification
@@ -350,20 +386,32 @@ jobs:
           `;
           
           // Poste Kommentar
-          await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: context.issue.number,
-            body: comment
-          });
+          try {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          } catch (error) {
+            if (!handlePermissionError(error)) {
+              throw error;
+            }
+          }
           
           // Füge Label hinzu
-          await github.rest.issues.addLabels({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: context.issue.number,
-            labels: ['emoji-detected', 'needs-review']
-          });
+          try {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['emoji-detected', 'needs-review']
+            });
+          } catch (error) {
+            if (!handlePermissionError(error)) {
+              throw error;
+            }
+          }
 
   block-merge:
     name: 🚫 Block PR Merge  
