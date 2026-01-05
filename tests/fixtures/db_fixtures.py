@@ -12,14 +12,19 @@ import psycopg2
 from pathlib import Path
 
 
+def _env(name: str, default: str) -> str:
+    value = os.getenv(name, default)
+    return value.strip() if isinstance(value, str) else value
+
+
 def get_db_connection():
     """Get PostgreSQL connection using environment variables."""
     return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST", "localhost"),
-        port=int(os.getenv("POSTGRES_PORT", "5432")),
-        user=os.getenv("POSTGRES_USER", "claire_user"),
-        password=os.getenv("POSTGRES_PASSWORD", ""),
-        database=os.getenv("POSTGRES_DB", "claire_de_binare"),
+        host=_env("POSTGRES_HOST", "localhost"),
+        port=int(_env("POSTGRES_PORT", "5432")),
+        user=_env("POSTGRES_USER", "claire_user"),
+        password=_env("POSTGRES_PASSWORD", ""),
+        database=_env("POSTGRES_DB", "claire_de_binare"),
     )
 
 
