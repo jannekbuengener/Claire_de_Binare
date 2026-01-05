@@ -11,6 +11,8 @@ actions:
   block_pr: true
   create_issue: true
   auto_fix: false
+reporting:
+  markdown_summary: true
 severity:
   code: "error"
   comments: "warning"
