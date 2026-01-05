@@ -60,7 +60,16 @@ def test_runner_sqlite_locked(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None
         return DummyConn()
 
     def fake_window(*args, **kwargs):
-        return {"summary": {"orders_total": 1, "filled_total": 1, "not_filled_total": 0, "symbols": 1, "qty_sum": 1.0, "avg_price": 100.0}}
+        return {
+            "summary": {
+                "orders_total": 1,
+                "filled_total": 1,
+                "not_filled_total": 0,
+                "symbols": 1,
+                "qty_sum": 1.0,
+                "avg_price": 100.0,
+            }
+        }
 
     monkeypatch.setattr(runner, "_connect_with_retries", dummy_connect)
     monkeypatch.setattr(runner, "run_validation_window", fake_window)

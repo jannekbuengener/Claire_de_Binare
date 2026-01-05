@@ -1,4 +1,4 @@
-"\"\"\"Unit tests for validation pipeline orchestration.\"\"\""
+'"""Unit tests for validation pipeline orchestration."""'
 
 from __future__ import annotations
 
@@ -12,10 +12,14 @@ class DummyDB:
 
 
 @pytest.mark.unit
-def test_run_validation_window_wires_collect_to_aggregate(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_validation_window_wires_collect_to_aggregate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     calls: list[tuple[str, str, object]] = []
 
-    def fake_collect(window_start: str, window_end: str, db_client: object) -> list[dict]:
+    def fake_collect(
+        window_start: str, window_end: str, db_client: object
+    ) -> list[dict]:
         calls.append((window_start, window_end, db_client))
         return [
             {"status": "FILLED", "symbol": "BTCUSDT", "qty": 0.5, "price": 42000},
@@ -23,7 +27,9 @@ def test_run_validation_window_wires_collect_to_aggregate(monkeypatch: pytest.Mo
             {"status": "FILLED", "symbol": "BTCUSDT", "qty": 0.1, "price": 42500},
         ]
 
-    monkeypatch.setattr("services.validation.pipeline.collect_execution_orders", fake_collect)
+    monkeypatch.setattr(
+        "services.validation.pipeline.collect_execution_orders", fake_collect
+    )
     window_start = "2026-01-01T00:00:00Z"
     window_end = "2026-01-03T00:00:00Z"
     dummy_db = DummyDB()
@@ -44,10 +50,14 @@ def test_run_validation_window_wires_collect_to_aggregate(monkeypatch: pytest.Mo
 
 @pytest.mark.unit
 def test_run_validation_window_empty_window(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_collect(window_start: str, window_end: str, db_client: object) -> list[dict]:
+    def fake_collect(
+        window_start: str, window_end: str, db_client: object
+    ) -> list[dict]:
         return []
 
-    monkeypatch.setattr("services.validation.pipeline.collect_execution_orders", fake_collect)
+    monkeypatch.setattr(
+        "services.validation.pipeline.collect_execution_orders", fake_collect
+    )
     window_start = "2026-01-01T00:00:00Z"
     window_end = "2026-01-01T00:05:00Z"
     dummy_db = DummyDB()

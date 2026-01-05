@@ -1,4 +1,4 @@
-"\"\"\"Unit tests for the validation aggregator.\"\"\""
+'"""Unit tests for the validation aggregator."""'
 
 from __future__ import annotations
 

@@ -120,9 +120,7 @@ class GateEvaluator:
 
         reasons = ["all criteria passed"] if overall_pass else failed
         reason = (
-            "all criteria passed"
-            if overall_pass
-            else f"failed: {', '.join(failed)}"
+            "all criteria passed" if overall_pass else f"failed: {', '.join(failed)}"
         )
 
         return {

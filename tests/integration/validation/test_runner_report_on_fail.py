@@ -19,7 +19,9 @@ class SharedConn:
 
 
 @pytest.mark.integration
-def test_runner_writes_report_on_fail(monkeypatch: pytest.MonkeyPatch, tmp_path, reset_db) -> None:
+def test_runner_writes_report_on_fail(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, reset_db
+) -> None:
     monkeypatch.setenv("VALIDATION_MIN_ORDERS", "bad")
     monkeypatch.setenv("VALIDATION_EVIDENCE_DIR", str(tmp_path))
     monkeypatch.setenv("VALIDATION_DB_PATH", str(tmp_path / "validation_results.db"))

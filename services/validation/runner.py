@@ -171,9 +171,7 @@ def run(window_start: str, window_end: str) -> Dict[str, Any]:
 
     evaluation["overall_pass"] = overall_pass
     evaluation["reasons"] = reasons
-    evaluation["reason"] = (
-        "all criteria passed" if overall_pass else ", ".join(reasons)
-    )
+    evaluation["reason"] = "all criteria passed" if overall_pass else ", ".join(reasons)
 
     criteria_used = criteria_used or evaluation.get("criteria_used", {})
     metrics = _build_metrics(summary)
@@ -229,7 +227,8 @@ def run(window_start: str, window_end: str) -> Dict[str, Any]:
 
     report["reasons"] = _derive_reasons(reasons)
     report["pass"] = overall_pass and not any(
-        reason.startswith(("invalid_", "db_", "sqlite_")) for reason in report["reasons"]
+        reason.startswith(("invalid_", "db_", "sqlite_"))
+        for reason in report["reasons"]
     )
     evaluation["overall_pass"] = report["pass"]
     evaluation["reasons"] = report["reasons"]
@@ -240,7 +239,9 @@ def run(window_start: str, window_end: str) -> Dict[str, Any]:
     evidence_root = Path(
         os.getenv("VALIDATION_EVIDENCE_DIR", "/app/data/validation_runs")
     )
-    evidence_id = str(run_id) if run_id is not None else utcnow().strftime("local-%Y%m%dT%H%M%S")
+    evidence_id = (
+        str(run_id) if run_id is not None else utcnow().strftime("local-%Y%m%dT%H%M%S")
+    )
     _write_evidence(evidence_root / evidence_id, report)
 
     return report
