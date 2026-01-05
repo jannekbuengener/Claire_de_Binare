@@ -36,7 +36,6 @@ jobs:
             knowledge
             governance
             docs
-            .github
           )
           git fetch origin main >/dev/null 2>&1 || true
           mapfile -t changed_files < <(git diff --name-only origin/main)
