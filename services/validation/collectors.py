@@ -3,32 +3,43 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Any, Iterable
 
 
 @dataclass
 class ExecutionCollectorConfig:
-    db_url: str
-    redis_url: str
+    db_client: Any
+    redis_client: Any
 
 
 class ExecutionCollector:
     """Read-only collector wrapping Execution DB and Redis connections."""
 
     def __init__(self, config: ExecutionCollectorConfig) -> None:
-        self.config = config
+        self.db_client = config.db_client
+        self.redis_client = config.redis_client
 
-    def collect_orders(self) -> Iterable[dict]:
-        """Yields order events from the Execution DB (read-only)."""
-        # TODO: replace with real query, no writes performed here.
-        query_result = [
-            {"order_id": "order-1", "symbol": "BTCUSDT", "filled_quantity": 0.1}
-        ]
-        yield from query_result
+    def collect_execution_orders(self, window_start: str, window_end: str) -> list[dict]:
+        """Return normalized order rows from Execution DB."""
+        rows = self.db_client.fetch_execution_orders(window_start, window_end)
+        normalized: list[dict] = []
+        for row in rows:
+            normalized.append(
+                {
+                    "id": row["id"],
+                    "symbol": row["symbol"],
+                    "side": row["side"].upper(),
+                    "qty": float(row["quantity"]),
+                    "price": float(row["price"]),
+                    "ts": row["timestamp"],
+                    "status": row["status"],
+                }
+            )
+        return normalized
 
-    def collect_results(self) -> Iterable[dict]:
-        """Yields result events aggregated from Redis streams."""
-        stream_result = [
-            {"result_id": "result-1", "status": "FILLED", "symbol": "BTCUSDT"}
-        ]
-        yield from stream_result
+    def collect_redis_events(
+        self, stream: str, start_id: str, end_id: str, limit: int
+    ) -> list[dict]:
+        """Stub for Redis stream reading (placeholder)."""
+        # TODO: use redis_client.xrange/xread once integration ready
+        return []
