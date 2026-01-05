@@ -56,6 +56,16 @@ whitelist:
     - "🏠"  # Home
     - "🔒"  # Lock für Security
     - "💡"  # Bulb für Tips
+    - "✅"  # Status OK
+    - "❌"  # Status Error
+    - "⚠️"  # Warnings
+    - "🚀"  # Startup logs
+    - "📊"  # Metrics
+    - "💰"  # Portfolio messages
+    - "📋"  # Checklist
+    - "🔶"  # Custom indicator
+    - "🔍"  # Search/info
+    - "🚨"  # Alerts
 
   # Erlaubte Emojis in Variablennamen (falls gewünscht)
   variables_allowed: []
