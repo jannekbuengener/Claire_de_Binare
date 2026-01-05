@@ -25,9 +25,15 @@ jobs:
       - name: Create CI Secrets Directory
         run: |
           mkdir -p $SECRETS_PATH
-          echo "${{ secrets.REDIS_PASSWORD }}" > $SECRETS_PATH/REDIS_PASSWORD
-          echo "${{ secrets.POSTGRES_PASSWORD }}" > $SECRETS_PATH/POSTGRES_PASSWORD
-          echo "${{ secrets.GRAFANA_PASSWORD }}" > $SECRETS_PATH/GRAFANA_PASSWORD
+          REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
+          POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
+          GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
+          echo "$REDIS_VAL" > $SECRETS_PATH/REDIS_PASSWORD
+          echo "$POSTGRES_VAL" > $SECRETS_PATH/POSTGRES_PASSWORD
+          echo "$GRAFANA_VAL" > $SECRETS_PATH/GRAFANA_PASSWORD
+          # Placeholder MEXC credentials for CI so docker-compose has bind sources
+          echo "${{ secrets.MEXC_API_KEY != '' && secrets.MEXC_API_KEY || 'ci-mexc-key' }}" > $SECRETS_PATH/MEXC_API_KEY.txt
+          echo "${{ secrets.MEXC_API_SECRET != '' && secrets.MEXC_API_SECRET || 'ci-mexc-secret' }}" > $SECRETS_PATH/MEXC_API_SECRET.txt
           chmod 600 $SECRETS_PATH/*
           echo "✅ Secrets created in $SECRETS_PATH"
 
@@ -50,14 +56,19 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install --no-cache-dir redis requests pytest
+          pip install --no-cache-dir redis requests pytest psycopg2-binary pytest-cov
 
       - name: Start Stack (base + dev)
         working-directory: infrastructure/compose
-        run: |
-          docker compose -f base.yml -f dev.yml up -d
         env:
           SECRETS_PATH: ${{ env.SECRETS_PATH }}
+        run: |
+          export REDIS_PASSWORD=$(cat $SECRETS_PATH/REDIS_PASSWORD)
+          export POSTGRES_PASSWORD=$(cat $SECRETS_PATH/POSTGRES_PASSWORD)
+          export GRAFANA_PASSWORD=$(cat $SECRETS_PATH/GRAFANA_PASSWORD)
+          export MEXC_API_KEY=$(cat $SECRETS_PATH/MEXC_API_KEY.txt)
+          export MEXC_API_SECRET=$(cat $SECRETS_PATH/MEXC_API_SECRET.txt)
+          docker compose -f base.yml -f dev.yml up -d
 
       - name: Health Check - Redis
         run: |
@@ -109,4 +120,4 @@ jobs:
         if: always()
         working-directory: infrastructure/compose
         run: |
-          docker-compose -f base.yml -f dev.yml down -v
+          docker compose -f base.yml -f dev.yml down -v

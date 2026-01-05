@@ -1,106 +1,18 @@
-# Emoji Filter Configuration
 detection:
-  # Erkennungs-Modi
-  mode: "strict"  # strict, warning, auto-fix
-  
-  # Dateitypen zum Scannen
-  file_extensions:
-    - ".py"
-    - ".js"
-    - ".ts"
-    - ".jsx"
-    - ".tsx"
-    - ".java"
-    - ".cpp"
-    - ".c"
-    - ".cs"
-    - ".php"
-    - ".rb"
-    - ".go"
-    - ".rs"
-    - ".swift"
-    - ".kt"
-
-  # Verzeichnisse ignorieren
-  exclude_dirs:
-    - ".git"
-    - "node_modules"
-    - "__pycache__"
-    - ".vscode"
-    - "build"
-    - "dist"
-    - "coverage"
-    - ".pytest_cache"
-
-  # Dateien ignorieren (Regex)
-  exclude_files:
-    - ".*\\.test\\.(js|ts|py)$"
-    - ".*\\.spec\\.(js|ts|py)$"
-    - "README\\.md$"
-    - "CHANGELOG\\.md$"
-
-# Whitelist für erlaubte Emojis
+  mode: "lenient"
+  file_extensions: [".py", ".js", ".ts", ".java", ".cpp", ".c"]
+  exclude_dirs: [".git", "node_modules", "__pycache__", ".worktrees_backup"]
+  exclude_files: []
 whitelist:
-  # Erlaubte Emojis in Kommentaren
-  comments_allowed:
-    - "✅"  # Checkmark für TODOs
-    - "❌"  # X für Fehler-Kommentare
-    - "⚠️"   # Warning für Warnungen
-    - "🔥"  # Fire für Performance-kritische Stellen
-    - "🚧"  # Construction für Work-in-Progress
-
-  # Erlaubte Emojis in String-Literals (für UI)
-  strings_allowed:
-    - "📧"  # Email
-    - "📞"  # Phone
-    - "🏠"  # Home
-    - "🔒"  # Lock für Security
-    - "💡"  # Bulb für Tips
-
-  # Erlaubte Emojis in Variablennamen (falls gewünscht)
+  comments_allowed: ["✅", "❌", "⚠️"]
+  strings_allowed: []
   variables_allowed: []
-
-# Aktionen bei Fund
 actions:
-  # Block PR?
   block_pr: true
-  
-  # Erstelle Issue?
   create_issue: true
-  
-  # Sende Slack Notification?
-  slack_notification: true
-  
-  # Auto-Fix versuchen?
   auto_fix: false
-  
-  # Backup vor Auto-Fix?
-  backup_before_fix: true
-
-# Reporting
 reporting:
-  # Detaillierte Reports
-  detailed: true
-  
-  # Markdown Summary
   markdown_summary: true
-  
-  # JSON Export für weitere Tools
-  json_export: true
-  
-  # Statistiken sammeln
-  statistics: true
-
-# Severity Levels
 severity:
-  # Emojis in Code (Funktionen, Klassen)
   code: "error"
-  
-  # Emojis in Kommentaren
   comments: "warning"
-  
-  # Emojis in Strings
-  strings: "info"
-  
-  # Emojis in Tests
-  tests: "info"

@@ -15,7 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # App code
 COPY core /app/core
 COPY services/signal /app/services/signal
-
 # Ensure python package layout for module execution
 RUN mkdir -p /app/services \
   && touch /app/services/__init__.py \

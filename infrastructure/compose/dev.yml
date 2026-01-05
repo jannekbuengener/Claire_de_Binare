@@ -24,6 +24,8 @@ services:
   cdb_grafana:
     ports:
       - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
 
   # Application Services (Dev-Only)
   # All use entrypoint pattern to read secrets from /run/secrets/
@@ -132,6 +134,8 @@ services:
     secrets:
       - redis_password
       - postgres_password
+      - mexc_api_key
+      - mexc_api_secret
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"
