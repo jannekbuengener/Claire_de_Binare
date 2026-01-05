@@ -392,6 +392,9 @@ def main():
     
     # Report generieren
     analyzer.export_results(args.format)
+
+    if args.format == 'json' and analyzer.config.get('reporting', {}).get('markdown_summary', False):
+        analyzer.export_results('markdown')
     
     # GitHub Actions Ausgaben
     if args.github_actions:
