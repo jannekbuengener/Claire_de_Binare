@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable
 
+from psycopg2.extras import RealDictCursor
+
 
 @dataclass
 class ExecutionCollectorConfig:
@@ -21,18 +23,31 @@ class ExecutionCollector:
 
     def collect_execution_orders(self, window_start: str, window_end: str) -> list[dict]:
         """Return normalized order rows from Execution DB."""
-        rows = self.db_client.fetch_execution_orders(window_start, window_end)
+        with self.db_client.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT id, symbol, side, size, COALESCE(avg_fill_price, price) AS effective_price,
+                       price, submitted_at, status
+                FROM orders
+                WHERE submitted_at >= %s AND submitted_at <= %s
+                ORDER BY submitted_at ASC
+                """,
+                (window_start, window_end),
+            )
+            rows = cur.fetchall()
+
         normalized: list[dict] = []
         for row in rows:
+            price = row["effective_price"]
             normalized.append(
                 {
                     "id": row["id"],
                     "symbol": row["symbol"],
                     "side": row["side"].upper(),
-                    "qty": float(row["quantity"]),
-                    "price": float(row["price"]),
-                    "ts": row["timestamp"],
-                    "status": row["status"],
+                    "qty": float(row["size"]),
+                    "price": float(price) if price is not None else 0.0,
+                    "ts": row["submitted_at"].isoformat(),
+                    "status": row["status"].upper(),
                 }
             )
         return normalized
