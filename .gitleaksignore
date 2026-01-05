@@ -9,3 +9,4 @@ infrastructure/monitoring/grafana/provisioning/datasources/postgres.yml:generic-
 README.md:sidekiq-secret:42
 # Dummy secrets inside Verlosung tests (used for simulations)
 tests/unit/verlosung/**:generic-api-key
+tests/**:claire_db_secret_2024
