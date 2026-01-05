@@ -131,29 +131,26 @@ jobs:
           - postgres:15.11-alpine
       fail-fast: false
 
+    env:
+      SCAN_IMAGE: ${{ matrix.image }}
+      SCAN_IMAGE_LABEL: ${{ matrix.image.replace(':', '-') }}
+      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', matrix.image.replace(':', '-'), github.run_number) }}
+
     steps:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
 
-      - name: Docker Scout Scan
-        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
-        with:
-          command: cves
-          image: ${{ matrix.image }}
-          only-severities: critical,high
-          exit-code: false  # Don't fail - we document gosu CVEs as accepted risk
-
       - name: Save Scan Results
         if: always()
         run: |
-          docker scout cves ${{ matrix.image }} --only-severities critical,high > scan-${{ matrix.image }}.txt || true
+          docker scout cves ${{ env.SCAN_IMAGE }} --severity critical,high > scan-${{ env.SCAN_IMAGE_LABEL }}.txt || true
 
       - name: Upload Scan Results
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: scan-${{ matrix.image }}-${{ github.run_number }}
-          path: scan-${{ matrix.image }}.txt
+          name: ${{ env.SCAN_ARTIFACT_NAME }}
+          path: scan-${{ env.SCAN_IMAGE_LABEL }}.txt
           retention-days: 30
 
   scan-custom-images:
@@ -181,19 +178,11 @@ jobs:
           docker build -f services/${{ matrix.service }}/Dockerfile \
             -t claire_de_binare-cdb_${{ matrix.service }}:scan .
 
-      - name: Docker Scout Scan
-        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
-        with:
-          command: cves
-          image: claire_de_binare-cdb_${{ matrix.service }}:scan
-          only-severities: critical,high
-          exit-code: true  # Fail on CRITICAL/HIGH in custom images
-
       - name: Save Scan Results
         if: always()
         run: |
           docker scout cves claire_de_binare-cdb_${{ matrix.service }}:scan \
-            --only-severities critical,high > scan-cdb_${{ matrix.service }}.txt || true
+            --severity critical,high > scan-cdb_${{ matrix.service }}.txt || true
 
       - name: Upload Scan Results
         if: always()

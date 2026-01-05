@@ -78,40 +78,52 @@ jobs:
       id: scan
       run: |
         echo "🚀 Starte Emoji-Scan..."
-        
+
         AUTO_FIX="${{ github.event.inputs.auto_fix || 'false' }}"
         SCAN_PATH="${{ github.event.inputs.scan_path || '.' }}"
-        
+
+        MODE="strict"
+        if [ -f .github/emoji-config.yaml ]; then
+          MODE=$(python -c "import yaml, pathlib; config = yaml.safe_load(pathlib.Path('.github/emoji-config.yaml').read_text()); print(config.get('detection', {}).get('mode', 'strict'))")
+        fi
+
         ARGS="--config .github/emoji-config.yaml --path $SCAN_PATH --github-actions"
-        
+
         if [ "$AUTO_FIX" = "true" ]; then
           ARGS="$ARGS --auto-fix"
           echo "🔧 Auto-Fix aktiviert"
         fi
-        
+
         # Führe Scan aus
         set +e  # Erlaube Exit-Code != 0
         python .github/scripts/advanced-emoji-filter.py $ARGS
         EXIT_CODE=$?
         set -e
-        
+
         # Lese Ergebnisse
+        BLOCKED_COUNT=0
         if [ -f emoji-report.json ]; then
           EMOJIS_FOUND=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data['summary']['emojis_found'])")
           BLOCKED_COUNT=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data['blocked_count'])")
-          
+
           echo "emojis-found=$EMOJIS_FOUND" >> $GITHUB_OUTPUT
           echo "blocked-count=$BLOCKED_COUNT" >> $GITHUB_OUTPUT
           echo "report-path=emoji-report.json" >> $GITHUB_OUTPUT
-          
+
           echo "📊 Ergebnisse: $EMOJIS_FOUND Emojis gefunden, $BLOCKED_COUNT blockiert"
         else
           echo "emojis-found=0" >> $GITHUB_OUTPUT
           echo "blocked-count=0" >> $GITHUB_OUTPUT
         fi
-        
+
+        BLOCK_PR="false"
+        if [ "$BLOCKED_COUNT" -gt 0 ] && [ "$MODE" = "strict" ]; then
+          BLOCK_PR="true"
+        fi
+        echo "block-pr=$BLOCK_PR" >> $GITHUB_OUTPUT
+
         exit $EXIT_CODE
-    
+
     - name: 📊 Upload Report Artifacts
       if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -158,25 +170,26 @@ jobs:
         echo "🔍 Analysiere Sicherheitsimplikationen..."
         
         # Prüfe auf potentiell gefährliche Emojis in kritischen Bereichen
-        CRITICAL_EMOJIS=$(python -c "
+        CRITICAL_EMOJIS=$(python - <<'PY'
         import json
         try:
             with open('emoji-report.json') as f:
                 data = json.load(f)
-            
+
             critical = []
             for severity, detections in data.get('by_severity', {}).items():
                 if severity == 'error':
                     for d in detections:
                         if d['context_type'] == 'code' and not d['is_whitelisted']:
-                            critical.append(f'{d[\"file_path\"]}:{d[\"line_number\"]} - {d[\"emoji\"]}')
-            
+                            critical.append(f"{d['file_path']}:{d['line_number']} - {d['emoji']}")
+
             print(len(critical))
             for item in critical:
                 print(f'::error::{item}')
         except:
             print(0)
-        ")
+        PY
+        )
         
         echo "🚨 Kritische Emojis gefunden: $CRITICAL_EMOJIS"
         
@@ -189,6 +202,8 @@ jobs:
     needs: [emoji-detection, security-check]
     runs-on: ubuntu-latest
     if: always() && needs.emoji-detection.outputs.blocked-count > 0
+    permissions:
+      issues: write
     
     steps:
     - name: 📥 Download Report
@@ -204,6 +219,66 @@ jobs:
           const fs = require('fs');
           
           let reportContent = '';
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping issue action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
           try {
             if (fs.existsSync('emoji-report.md')) {
               reportContent = fs.readFileSync('emoji-report.md', 'utf8');
@@ -248,21 +323,33 @@ jobs:
           
           if (existingIssues.data.length > 0) {
             // Update existing issue
-            await github.rest.issues.createComment({
+            try {
+              await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: existingIssues.data[0].number,
               body: `🔄 **Update:** Neuer Emoji-Detection Scan\n\n${issueBody}`
             });
+            } catch (error) {
+              if (!handlePermissionError(error)) {
+                throw error;
+              }
+            }
           } else {
             // Create new issue
-            await github.rest.issues.create({
+            try {
+              await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: issueTitle,
               body: issueBody,
               labels: ['security', 'code-quality', 'emoji-detection', 'automated']
             });
+            } catch (error) {
+              if (!handlePermissionError(error)) {
+                throw error;
+              }
+            }
           }
     
     - name: 📱 Slack Notification
@@ -288,6 +375,8 @@ jobs:
     needs: emoji-detection
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.blocked-count > 0
+    permissions:
+      issues: write
     
     steps:
     - name: 📥 Download Report
@@ -302,6 +391,18 @@ jobs:
           const fs = require('fs');
           
           let reportContent = '';
+          const handlePermissionError = (error) => {
+            if (
+              error &&
+              error.status === 403 &&
+              error.message &&
+              error.message.includes('Resource not accessible by integration')
+            ) {
+              console.log(`Skipping PR action: ${error.message}`);
+              return true;
+            }
+            return false;
+          };
           try {
             if (fs.existsSync('emoji-report.md')) {
               reportContent = fs.readFileSync('emoji-report.md', 'utf8');
@@ -333,26 +434,38 @@ jobs:
           `;
           
           // Poste Kommentar
-          await github.rest.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: context.issue.number,
-            body: comment
-          });
+          try {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          } catch (error) {
+            if (!handlePermissionError(error)) {
+              throw error;
+            }
+          }
           
           // Füge Label hinzu
-          await github.rest.issues.addLabels({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number: context.issue.number,
-            labels: ['emoji-detected', 'needs-review']
-          });
+          try {
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['emoji-detected', 'needs-review']
+            });
+          } catch (error) {
+            if (!handlePermissionError(error)) {
+              throw error;
+            }
+          }
 
   block-merge:
     name: 🚫 Block PR Merge  
     needs: emoji-detection
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.blocked-count > 0
+    if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.blocked-count > 0 && needs.emoji-detection.outputs.block-pr == 'true'
     
     steps:
     - name: 🚫 Fail Check
