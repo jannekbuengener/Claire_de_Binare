@@ -20,6 +20,7 @@ from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.uuid_gen import generate_uuid_hex
 from core.auth import validate_all_auth
+
 try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
@@ -153,22 +154,26 @@ def init_services():
             executor = MockExecutor()
             logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
         else:
-            # Real MEXC executor with enhanced capabilities
-            try:
-                from .mexc_executor import MexcExecutor
-                executor = MexcExecutor()
-                logger.info("Using MexcExecutor (LIVE TRADING MODE - REAL DATA)")
-            except ImportError:
-                # Fallback to LiveExecutor
-                dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
-                testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
-                executor = LiveExecutor(testnet=testnet, dry_run=dry_run)
-                
-                if dry_run:
-                    logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
-                else:
-                    mode = "TESTNET" if testnet else "LIVE"
-                    logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
+            dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
+            testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
+            if not dry_run and (not config.MEXC_API_KEY or not config.MEXC_API_SECRET):
+                raise RuntimeError(
+                    "Missing MEXC API credentials for live trading. Set MEXC_API_KEY/MEXC_API_SECRET or enable DRY_RUN."
+                )
+            executor = LiveExecutor(
+                api_key=config.MEXC_API_KEY or None,
+                api_secret=config.MEXC_API_SECRET or None,
+                testnet=testnet,
+                dry_run=dry_run,
+            )
+
+            if dry_run:
+                logger.warning(
+                    "🔶 Live Executor in DRY RUN mode - orders logged but not executed"
+                )
+            else:
+                mode = "TESTNET" if testnet else "LIVE"
+                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
 
         # Initialize database
         db = _init_with_retry(
@@ -220,9 +225,11 @@ def process_order(order_data: dict):
 
         increment_stat("orders_received")  # Thread-safe
 
-        if bot_shutdown_active or (
-            order.strategy_id and order.strategy_id in blocked_strategy_ids
-        ) or (order.bot_id and order.bot_id in blocked_bot_ids):
+        if (
+            bot_shutdown_active
+            or (order.strategy_id and order.strategy_id in blocked_strategy_ids)
+            or (order.bot_id and order.bot_id in blocked_bot_ids)
+        ):
             shutdown_id = generate_uuid_hex(
                 name=f"shutdown:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
             )

@@ -24,6 +24,8 @@ services:
   cdb_grafana:
     ports:
       - "127.0.0.1:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
 
   # Application Services (Dev-Only)
   # All use entrypoint pattern to read secrets from /run/secrets/
@@ -81,7 +83,7 @@ services:
       SIGNAL_PORT: "8005"
       SIGNAL_THRESHOLD_PCT: "0.005"  # Issue #345: Evidence-based: 100ms trades max ~0.014%, most <0.01%
       SIGNAL_MIN_VOLUME: "0"  # DISABLED: Raw trades use 'qty' field, not 'volume' (TODO: fix field mapping)
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.signal.service"]
     ports:
       - "127.0.0.1:8005:8005"
     volumes:
@@ -132,6 +134,8 @@ services:
     secrets:
       - redis_password
       - postgres_password
+      - mexc_api_key
+      - mexc_api_secret
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"

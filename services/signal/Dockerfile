@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY core /app/core
 
 # Service-Code
-COPY services/signal/*.py ./
+COPY services/signal /app/services/signal
 
 # Nicht-Root User
 RUN useradd -m -u 1000 signaluser && \
@@ -35,4 +35,4 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
 EXPOSE 8001
 
 # Start
-CMD ["python", "-u", "service.py"]
+CMD ["python", "-m", "services.signal.service"]

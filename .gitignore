@@ -156,3 +156,4 @@ gha-creds-*.json
 .orchestrator_*.md
 *_analysis.json
 *_categorization.txt
+GEMINI_FINAL_REPORT_WORKING_REPO.md

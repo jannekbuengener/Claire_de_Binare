@@ -105,6 +105,10 @@ secrets:
     file: ${SECRETS_PATH}/POSTGRES_PASSWORD
   grafana_password:
     file: ${SECRETS_PATH}/GRAFANA_PASSWORD
+  mexc_api_key:
+    file: ${SECRETS_PATH}/MEXC_API_KEY.txt
+  mexc_api_secret:
+    file: ${SECRETS_PATH}/MEXC_API_SECRET.txt
 
 volumes:
   redis_data:
