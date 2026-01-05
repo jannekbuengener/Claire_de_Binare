@@ -223,6 +223,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          skip-dirs: .worktrees_backup
           severity: HIGH,CRITICAL
           exit-code: "1"
           ignore-unfixed: true
