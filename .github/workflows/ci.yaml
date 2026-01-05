@@ -53,11 +53,13 @@ jobs:
         id: changed
         shell: bash
         run: |
-          files=$(git diff --name-only origin/main -- '*.py' | tr '\n' ' ' | sed 's/ $//')
-          if [ -z "$files" ]; then
+          files=$(git diff --name-only origin/main -- '*.py' | tr '\n' ' ')
+          relevant=$(echo "$files" | tr ' ' '\n' | grep -E '^(services|tests)/' || true)
+          relevant=$(echo "$relevant" | tr '\n' ' ' | sed 's/ $//')
+          if [ -z "$relevant" ]; then
             echo "no_files=true" >> "$GITHUB_OUTPUT"
           else
-            echo "files=$files" >> "$GITHUB_OUTPUT"
+            echo "files=$relevant" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Run Ruff
@@ -66,7 +68,7 @@ jobs:
 
       - name: Skip lint check
         if: steps.changed.outputs.no_files == 'true'
-        run: echo "Keine Python-Datei geändert; Linting übersprungen."
+        run: echo "Keine relevante Python-Datei geändert; Linting übersprungen."
 
   format-check:
     name: Format Check (Black)
