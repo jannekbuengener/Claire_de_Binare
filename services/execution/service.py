@@ -20,6 +20,7 @@ from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.uuid_gen import generate_uuid_hex
 from core.auth import validate_all_auth
+
 try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
@@ -167,7 +168,9 @@ def init_services():
             )
 
             if dry_run:
-                logger.warning("🔶 Live Executor in DRY RUN mode - orders logged but not executed")
+                logger.warning(
+                    "🔶 Live Executor in DRY RUN mode - orders logged but not executed"
+                )
             else:
                 mode = "TESTNET" if testnet else "LIVE"
                 logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
@@ -218,9 +221,11 @@ def process_order(order_data: dict):
 
         increment_stat("orders_received")  # Thread-safe
 
-        if bot_shutdown_active or (
-            order.strategy_id and order.strategy_id in blocked_strategy_ids
-        ) or (order.bot_id and order.bot_id in blocked_bot_ids):
+        if (
+            bot_shutdown_active
+            or (order.strategy_id and order.strategy_id in blocked_strategy_ids)
+            or (order.bot_id and order.bot_id in blocked_bot_ids)
+        ):
             shutdown_id = generate_uuid_hex(
                 name=f"shutdown:{order.symbol}:{order.side}:{order.quantity}:{utcnow().isoformat()}"
             )

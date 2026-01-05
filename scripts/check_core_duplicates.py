@@ -34,9 +34,7 @@ def check_duplicates():
             continue
         rel_path = secrets_file.relative_to(root_dir)
         if rel_path not in allowed_secrets:
-            violations.append(
-                f"FORBIDDEN: secrets.py at {rel_path.as_posix()}"
-            )
+            violations.append(f"FORBIDDEN: secrets.py at {rel_path.as_posix()}")
 
     if violations:
         print("CI-Guard FAILED")

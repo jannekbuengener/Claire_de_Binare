@@ -7,3 +7,5 @@ infrastructure/monitoring/grafana/provisioning/datasources/postgres.yml:generic-
 
 # Demo Sidekiq token in README
 README.md:sidekiq-secret:42
+# Dummy secrets inside Verlosung tests (used for simulations)
+tests/unit/verlosung/**:generic-api-key

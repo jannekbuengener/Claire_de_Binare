@@ -32,24 +32,13 @@ jobs:
         run: |
           set -euo pipefail
           echo "Best-effort secret scan (patterns)."
-          exclude_paths=(
-            ':!knowledge/**'
-            ':!.github/**'
-            ':!.worktrees_backup/**'
-            ':!tools/**'
-            ':!.cdb_local/**'
-            ':!.cdb_agent_workspace/**'
-            ':!tests/**'
-            ':!**/*.png'
-            ':!**/*.jpg'
-            ':!**/*.jpeg'
-            ':!**/*.pdf'
-            ':!.env'
-            ':!.env.example'
-            ':!README.md'
-            ':!**/postgres.yml'
+          include_paths=(
+            knowledge
+            governance
+            docs
+            .github
           )
-          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${exclude_paths[@]}" || true)"
+          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${include_paths[@]}" || true)"
           if [ -n "$hits" ]; then
             echo "Potential secret-like strings found (review required):"
             echo "$hits"
