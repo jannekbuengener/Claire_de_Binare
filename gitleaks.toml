@@ -23,7 +23,7 @@ regex = '''(?i)(trading|exchange|broker)[_-]?(api)?[_-]?(key|secret)['":\s=]+[a-
 keywords = ["trading_api", "exchange_api", "broker_api"]
 
 # Allowlist - files/patterns that should be ignored
-[allowlist]
+[[allowlist]]
 description = "Global allowlist"
 paths = [
     # Test fixtures with fake secrets
@@ -37,8 +37,18 @@ paths = [
     '''.*lock\.json''',
     '''.*lock\.yaml''',
 ]
-values = [
+
+[[allowlist]]
+description = "Ignore fake postgres password in verlosung tests"
+regexTarget = "match"
+regexes = [
     '''claire_db_secret_2024''',
+]
+paths = [
+    '''tests/.*''',
+]
+rules = [
+    '''generic-api-key''',
 ]
 
 # Entropy settings - reduce false positives
