@@ -19,13 +19,17 @@ def _env(name: str, default: str) -> str:
 
 def get_db_connection():
     """Get PostgreSQL connection using environment variables."""
-    return psycopg2.connect(
-        host=_env("POSTGRES_HOST", "localhost"),
-        port=int(_env("POSTGRES_PORT", "5432")),
-        user=_env("POSTGRES_USER", "claire_user"),
-        password=_env("POSTGRES_PASSWORD", ""),
-        database=_env("POSTGRES_DB", "claire_de_binare"),
-    )
+    try:
+        return psycopg2.connect(
+            host=_env("POSTGRES_HOST", "localhost"),
+            port=int(_env("POSTGRES_PORT", "5432")),
+            user=_env("POSTGRES_USER", "claire_user"),
+            password=_env("POSTGRES_PASSWORD", ""),
+            database=_env("POSTGRES_DB", "claire_de_binare"),
+            connect_timeout=3,
+        )
+    except psycopg2.OperationalError as exc:
+        pytest.skip(f"Postgres not available for integration tests: {exc}")
 
 
 def execute_sql_file(conn, sql_file_path: Path):
