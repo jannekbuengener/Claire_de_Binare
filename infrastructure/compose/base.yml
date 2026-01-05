@@ -115,6 +115,7 @@ volumes:
   postgres_data:
   prom_data:
   grafana_data:
+  validation_data:
 
 networks:
   cdb_network:
