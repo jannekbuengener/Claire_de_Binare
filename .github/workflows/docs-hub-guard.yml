@@ -39,6 +39,7 @@ jobs:
             ':!tools/**'
             ':!.cdb_local/**'
             ':!.cdb_agent_workspace/**'
+            ':!tests/**'
             ':!**/*.png'
             ':!**/*.jpg'
             ':!**/*.jpeg'
