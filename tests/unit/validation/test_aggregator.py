@@ -1,4 +1,4 @@
-"\"\"\"Unit tests for the validation aggregator.\"\"\""
+'"""Unit tests for the validation aggregator."""'
 
 from __future__ import annotations
 
@@ -35,3 +35,29 @@ def test_aggregate_orders_empty() -> None:
         "qty_sum": 0,
         "avg_price": 0.0,
     }
+
+
+@pytest.mark.unit
+def test_aggregate_orders_all_rejected() -> None:
+    orders = [
+        {"status": "REJECTED", "symbol": "BTCUSDT", "qty": 0.5, "price": 42000},
+        {"status": "REJECTED", "symbol": "ETHUSDT", "qty": 0.2, "price": 2500},
+    ]
+    summary = aggregate_orders(orders)
+
+    assert summary["orders_total"] == 2
+    assert summary["filled_total"] == 0
+    assert summary["not_filled_total"] == 2
+
+
+@pytest.mark.unit
+def test_aggregate_orders_partial_fills() -> None:
+    orders = [
+        {"status": "PARTIALLY_FILLED", "symbol": "BTCUSDT", "qty": 0.5, "price": 42000},
+        {"status": "FILLED", "symbol": "ETHUSDT", "qty": 0.2, "price": 2500},
+    ]
+    summary = aggregate_orders(orders)
+
+    assert summary["orders_total"] == 2
+    assert summary["filled_total"] == 1
+    assert summary["not_filled_total"] == 1

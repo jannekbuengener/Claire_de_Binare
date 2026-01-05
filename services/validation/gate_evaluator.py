@@ -20,10 +20,61 @@ class GateThresholds:
     @classmethod
     def from_env(cls) -> "GateThresholds":
         return cls(
-            min_orders=int(os.getenv("VALIDATION_MIN_ORDERS", "1")),
-            min_fill_rate=float(os.getenv("VALIDATION_MIN_FILL_RATE", "0.45")),
-            min_qty_sum=float(os.getenv("VALIDATION_MIN_QTY_SUM", "0.0")),
+            min_orders=_parse_int_env("VALIDATION_MIN_ORDERS", 1),
+            min_fill_rate=_parse_float_env(
+                "VALIDATION_MIN_FILL_RATE", 0.45, min_value=0.0, max_value=1.0
+            ),
+            min_qty_sum=_parse_float_env(
+                "VALIDATION_MIN_QTY_SUM", 0.0, min_value=0.0, max_value=None
+            ),
         )
+
+    def as_dict(self) -> Dict[str, float | int]:
+        return {
+            "min_orders": self.min_orders,
+            "min_fill_rate": self.min_fill_rate,
+            "min_qty_sum": self.min_qty_sum,
+        }
+
+
+class ThresholdConfigError(ValueError):
+    """Raised when gate threshold environment values are invalid."""
+
+
+def _parse_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    value = raw.strip()
+    if not value:
+        raise ThresholdConfigError(f"{name} is empty")
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ThresholdConfigError(f"{name} must be an integer") from exc
+    if parsed < 0:
+        raise ThresholdConfigError(f"{name} must be >= 0")
+    return parsed
+
+
+def _parse_float_env(
+    name: str, default: float, min_value: float | None, max_value: float | None
+) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    value = raw.strip()
+    if not value:
+        raise ThresholdConfigError(f"{name} is empty")
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise ThresholdConfigError(f"{name} must be a float") from exc
+    if min_value is not None and parsed < min_value:
+        raise ThresholdConfigError(f"{name} must be >= {min_value}")
+    if max_value is not None and parsed > max_value:
+        raise ThresholdConfigError(f"{name} must be <= {max_value}")
+    return parsed
 
 
 class GateEvaluator:
@@ -38,21 +89,22 @@ class GateEvaluator:
         qty_sum = float(summary.get("qty_sum", 0.0) or 0.0)
         fill_rate = float(filled_total / orders_total) if orders_total else 0.0
 
+        criteria_used = self.thresholds.as_dict()
         criteria = {
             "min_orders": {
-                "threshold": self.thresholds.min_orders,
+                "threshold": criteria_used["min_orders"],
                 "actual": orders_total,
-                "pass": orders_total >= self.thresholds.min_orders,
+                "pass": orders_total >= criteria_used["min_orders"],
             },
             "min_fill_rate": {
-                "threshold": self.thresholds.min_fill_rate,
+                "threshold": criteria_used["min_fill_rate"],
                 "actual": fill_rate,
-                "pass": fill_rate >= self.thresholds.min_fill_rate,
+                "pass": fill_rate >= criteria_used["min_fill_rate"],
             },
             "min_qty_sum": {
-                "threshold": self.thresholds.min_qty_sum,
+                "threshold": criteria_used["min_qty_sum"],
                 "actual": qty_sum,
-                "pass": qty_sum >= self.thresholds.min_qty_sum,
+                "pass": qty_sum >= criteria_used["min_qty_sum"],
             },
         }
 
@@ -66,12 +118,17 @@ class GateEvaluator:
         else:
             risk_level = "high"
 
-        reason = "all criteria passed" if overall_pass else f"failed: {', '.join(failed)}"
+        reasons = ["all criteria passed"] if overall_pass else failed
+        reason = (
+            "all criteria passed" if overall_pass else f"failed: {', '.join(failed)}"
+        )
 
         return {
             "timestamp": utcnow().isoformat(),
             "overall_pass": overall_pass,
             "risk_assessment": risk_level,
             "criteria_results": criteria,
+            "criteria_used": criteria_used,
+            "reasons": reasons,
             "reason": reason,
         }
