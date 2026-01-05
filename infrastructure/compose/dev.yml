@@ -48,7 +48,7 @@ services:
       WS_SOURCE: mexc_pb
       MEXC_SYMBOL: BTCUSDT
       MEXC_INTERVAL: 100ms
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.signal.service"]
     ports:
       - "127.0.0.1:8000:8000"
     volumes:
