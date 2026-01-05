@@ -1,7 +1,7 @@
 # Emoji Filter Configuration
 detection:
   # Erkennungs-Modi
-  mode: "strict"  # strict, warning, auto-fix
+  mode: "warning"  # strict, warning, auto-fix
   
   # Dateitypen zum Scannen
   file_extensions:
