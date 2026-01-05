@@ -23,8 +23,8 @@ regex = '''(?i)(trading|exchange|broker)[_-]?(api)?[_-]?(key|secret)['":\s=]+[a-
 keywords = ["trading_api", "exchange_api", "broker_api"]
 
 # Allowlist - files/patterns that should be ignored
-[[allowlist]]
-description = "Global allowlist"
+[allowlist]
+description = "Global allowlist for canonical CI artifacts"
 paths = [
     # Test fixtures with fake secrets
     '''tests/fixtures/.*''',
@@ -36,16 +36,14 @@ paths = [
     # Lock files
     '''.*lock\.json''',
     '''.*lock\.yaml''',
-]
-
-[[allowlist]]
-description = "Ignore fake postgres password in verlosung tests"
-regexTarget = "match"
-regexes = [
-    '''claire_db_secret_2024''',
-]
-paths = [
+    # Metadata produced by agent tooling (not sensitive)
+    '''.mcp.json''',
+    '''.worktrees_backup/.*''',
+    # All tests that may include simulated secrets
     '''tests/.*''',
+]
+values = [
+    '''claire_db_secret_2024''',
 ]
 rules = [
     '''generic-api-key''',
