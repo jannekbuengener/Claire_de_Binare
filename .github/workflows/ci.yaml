@@ -63,6 +63,8 @@ jobs:
             git fetch origin "$base"
           fi
 
+          git fetch origin --unshallow || true
+
           files=$(git diff --name-only "$base"...HEAD -- '*.py')
 
           relevant=$(echo "$files" | tr '\n' ' ')
@@ -114,6 +116,8 @@ jobs:
           if [ -n "$base" ]; then
             git fetch origin "$base"
           fi
+
+          git fetch origin --unshallow || true
 
           files=$(git diff --name-only "$base"...HEAD -- '*.py')
 
