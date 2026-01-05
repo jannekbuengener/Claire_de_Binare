@@ -84,19 +84,7 @@ jobs:
 
         MODE="strict"
         if [ -f .github/emoji-config.yaml ]; then
-          MODE=$(python - <<'PY'
-            import yaml
-            from pathlib import Path
-
-            config_path = Path(".github/emoji-config.yaml")
-            try:
-                config = yaml.safe_load(config_path.read_text())
-                mode = config.get("detection", {}).get("mode", "strict")
-                print(str(mode).lower())
-            except Exception:
-                print("strict")
-          PY
-          )
+          MODE=$(python -c "import yaml, pathlib; config = yaml.safe_load(pathlib.Path('.github/emoji-config.yaml').read_text()); print(config.get('detection', {}).get('mode', 'strict'))")
         fi
 
         ARGS="--config .github/emoji-config.yaml --path $SCAN_PATH --github-actions"
@@ -193,7 +181,7 @@ jobs:
                 if severity == 'error':
                     for d in detections:
                         if d['context_type'] == 'code' and not d['is_whitelisted']:
-                            critical.append(f'{d[\"file_path\"]}:{d[\"line_number\"]} - {d[\"emoji\"]}')
+                            critical.append(f"{d['file_path']}:{d['line_number']} - {d['emoji']}")
             
             print(len(critical))
             for item in critical:
