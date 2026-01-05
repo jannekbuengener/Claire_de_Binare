@@ -21,6 +21,7 @@ import pytest
 import requests_mock
 import logging
 from typing import Any, Dict
+from urllib.parse import urlparse
 
 # Add services to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "services", "execution"))
@@ -171,7 +172,9 @@ class TestMexcTestnetExternal:
     def test_testnet_client_initialization(self, external_client):
         """Verify testnet client is properly initialized."""
         assert external_client is not None
-        assert "testnet" in external_client.base_url.lower() or "contract.mexc.com" in external_client.base_url
+        parsed_url = urlparse(external_client.base_url)
+        hostname = (parsed_url.hostname or "").lower()
+        assert "testnet" in hostname or hostname == "contract.mexc.com"
         logger.info("Testnet client initialized")
 
     def test_get_account_balance(self, external_client):
