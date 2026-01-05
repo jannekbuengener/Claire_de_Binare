@@ -72,7 +72,7 @@ jobs:
         id: changed
         shell: bash
         run: |
-          files=$(git diff --name-only origin/main... -- '*.py' | tr '\n' ' ' | sed 's/ $//')
+          files=$(git diff --name-only origin/main -- '*.py' | tr '\n' ' ' | sed 's/ $//')
           if [ -z "$files" ]; then
             echo "no_files=true" >> "$GITHUB_OUTPUT"
           else
