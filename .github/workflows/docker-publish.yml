@@ -14,6 +14,7 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
+  REPO_NAME_LOWER: ${{ toLower(github.event.repository.name) }}
 
 jobs:
   build:
@@ -57,7 +58,7 @@ jobs:
           file: ${{ matrix.service.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:main
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.REPO_NAME_LOWER }}-${{ matrix.service.name }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.REPO_NAME_LOWER }}-${{ matrix.service.name }}:main
           cache-from: type=gha
           cache-to: type=gha,mode=max
