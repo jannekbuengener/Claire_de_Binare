@@ -53,8 +53,17 @@ jobs:
         id: changed
         shell: bash
         run: |
-          files=$(git diff --name-only origin/main -- '*.py' | tr '\n' ' ')
-          relevant=$(echo "$files" | tr ' ' '\n' | grep -E '^(services|tests)/' || true)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}"
+            files=$(git diff --name-only "$base"...HEAD -- '*.py')
+          else
+            base="${{ github.event.before }}"
+            files=$(git diff --name-only "$base"...HEAD -- '*.py')
+          fi
+
+          relevant=$(echo "$files" | tr '\n' ' ')
+          relevant=$(echo "$relevant" | tr ' ' '\n' | grep -E '^(services|tests)/' || true)
           relevant=$(echo "$relevant" | tr '\n' ' ' | sed 's/ $//')
           if [ -z "$relevant" ]; then
             echo "no_files=true" >> "$GITHUB_OUTPUT"
@@ -93,11 +102,22 @@ jobs:
         id: changed
         shell: bash
         run: |
-          files=$(git diff --name-only origin/main -- '*.py' | tr '\n' ' ' | sed 's/ $//')
-          if [ -z "$files" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="origin/${{ github.base_ref }}"
+            git fetch origin "${{ github.base_ref }}"
+            files=$(git diff --name-only "$base"...HEAD -- '*.py')
+          else
+            base="${{ github.event.before }}"
+            files=$(git diff --name-only "$base"...HEAD -- '*.py')
+          fi
+
+          relevant=$(echo "$files" | tr '\n' ' ')
+          relevant=$(echo "$relevant" | tr ' ' '\n' | grep -E '^(services|tests)/' || true)
+          relevant=$(echo "$relevant" | tr '\n' ' ' | sed 's/ $//')
+          if [ -z "$relevant" ]; then
             echo "no_files=true" >> "$GITHUB_OUTPUT"
           else
-            echo "files=$files" >> "$GITHUB_OUTPUT"
+            echo "files=$relevant" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check formatting
