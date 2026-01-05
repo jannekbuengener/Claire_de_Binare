@@ -1,6 +1,7 @@
 name: Security Scan
 
 # Weekly scan + PR trigger for infrastructure changes
+# Issue #97: Trivy Container Scanning
 on:
   schedule:
     - cron: '0 2 * * 1'  # Monday 02:00 UTC
@@ -11,7 +12,114 @@ on:
       - '.github/workflows/security-scan.yml'
   workflow_dispatch:  # Manual trigger
 
+env:
+  TRIVY_VERSION: "0.58.0"
+
 jobs:
+  # ============================================================================
+  # TRIVY SCANNING (Issue #97)
+  # ============================================================================
+  trivy-scan-base:
+    name: Trivy - Base Images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image:
+          - redis:7.4.1-alpine
+          - postgres:15.11-alpine
+          - prom/prometheus:v3.1.0
+          - grafana/grafana:11.4.0
+      fail-fast: false
+
+    steps:
+      - name: Pull Image
+        run: docker pull ${{ matrix.image }}
+
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        with:
+          image-ref: '${{ matrix.image }}'
+          format: 'table'
+          exit-code: '0'  # Don't fail on base images - document risks
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-${{ matrix.image }}.txt'
+
+      - name: Run Trivy SARIF
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        with:
+          image-ref: '${{ matrix.image }}'
+          format: 'sarif'
+          output: 'trivy-${{ matrix.image }}.sarif'
+
+      - name: Upload Trivy Results
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-base-${{ matrix.image }}-${{ github.run_number }}
+          path: trivy-*.txt
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
+        if: always()
+        with:
+          sarif_file: 'trivy-${{ matrix.image }}.sarif'
+
+  trivy-scan-custom:
+    name: Trivy - Custom Services
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - allocation
+          - db_writer
+          - execution
+          - market
+          - regime
+          - risk
+          - signal
+          - ws
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Build Service Image
+        run: |
+          docker build -f services/${{ matrix.service }}/Dockerfile \
+            -t cdb_${{ matrix.service }}:scan .
+
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        with:
+          image-ref: 'cdb_${{ matrix.service }}:scan'
+          format: 'table'
+          exit-code: '1'  # FAIL on CRITICAL/HIGH in custom images
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-cdb_${{ matrix.service }}.txt'
+
+      - name: Run Trivy SARIF
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        if: always()
+        with:
+          image-ref: 'cdb_${{ matrix.service }}:scan'
+          format: 'sarif'
+          output: 'trivy-cdb_${{ matrix.service }}.sarif'
+
+      - name: Upload Trivy Results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
+          path: trivy-*.txt
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
+        if: always()
+        with:
+          sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
+
+  # ============================================================================
+  # DOCKER SCOUT SCANNING (Original)
+  # ============================================================================
   scan-base-images:
     name: Scan Base Images (Redis, Postgres)
     runs-on: ubuntu-latest
@@ -28,7 +136,7 @@ jobs:
         run: docker pull ${{ matrix.image }}
 
       - name: Docker Scout Scan
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
         with:
           command: cves
           image: ${{ matrix.image }}
@@ -42,7 +150,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-${{ matrix.image }}-${{ github.run_number }}
           path: scan-${{ matrix.image }}.txt
@@ -66,7 +174,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
         run: |
@@ -74,7 +182,7 @@ jobs:
             -t claire_de_binare-cdb_${{ matrix.service }}:scan .
 
       - name: Docker Scout Scan
-        uses: docker/scout-action@v1
+        uses: docker/scout-action@f8c776824083494ab0d56b8105ba2ca85c86e4de # v1
         with:
           command: cves
           image: claire_de_binare-cdb_${{ matrix.service }}:scan
@@ -89,7 +197,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}
           path: scan-cdb_${{ matrix.service }}.txt
@@ -98,15 +206,22 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on: ubuntu-latest
-    needs: [scan-base-images, scan-custom-images]
+    needs: [trivy-scan-base, trivy-scan-custom, scan-base-images, scan-custom-images]
     if: always()
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Summary
         run: |
           echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Trivy Scans (Issue #97)" >> $GITHUB_STEP_SUMMARY
+          echo "- Base Images: redis, postgres, prometheus, grafana" >> $GITHUB_STEP_SUMMARY
+          echo "- Custom Images: 8 Python services" >> $GITHUB_STEP_SUMMARY
+          echo "- SARIF reports uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Scout Scans" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Known Issues (Documented as Accepted Risk)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

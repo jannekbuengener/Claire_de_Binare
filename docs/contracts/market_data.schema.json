@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare/schemas/market_data/v1.0",
+  "title": "Market Data Message Contract",
+  "description": "Canonical schema for market data messages published via Redis Pub/Sub (market_data topic)",
+  "type": "object",
+  "required": ["schema_version", "source", "symbol", "ts_ms", "price", "trade_qty", "side"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "v1.0",
+      "description": "Schema version for contract evolution tracking"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["mexc", "binance", "bybit", "stub"],
+      "description": "Exchange/venue identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$",
+      "minLength": 3,
+      "maxLength": 20,
+      "description": "Trading pair symbol (e.g., BTCUSDT)"
+    },
+    "ts_ms": {
+      "type": "integer",
+      "minimum": 1000000000000,
+      "maximum": 9999999999999,
+      "description": "Event timestamp in milliseconds since Unix epoch"
+    },
+    "price": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$",
+      "description": "Trade price as string to preserve precision"
+    },
+    "trade_qty": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)?$",
+      "description": "Trade quantity as string to preserve precision (canonical field, replaces 'qty')"
+    },
+    "side": {
+      "type": "string",
+      "enum": ["buy", "sell", "unknown"],
+      "description": "Trade side (lowercase canonical)"
+    },
+    "trade_id": {
+      "type": "string",
+      "description": "Optional exchange-provided trade ID"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "trade_qty": "1.5",
+      "side": "buy"
+    },
+    {
+      "schema_version": "v1.0",
+      "source": "stub",
+      "symbol": "ETHUSDT",
+      "ts_ms": 1735574401000,
+      "price": "3500.00",
+      "trade_qty": "10.0",
+      "side": "sell",
+      "trade_id": "stub-12345"
+    }
+  ],
+  "$comment": "Migration notes: 'qty' field is renamed to 'trade_qty'. Old publishers should use adapter pattern until migration is complete. Volume aggregation should be calculated downstream if needed."
+}

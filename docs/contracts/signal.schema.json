@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://claire-de-binare/schemas/signal/v1.0",
+  "title": "Trading Signal Message Contract",
+  "description": "Canonical schema for trading signals published via Redis Streams (trading_signals stream)",
+  "type": "object",
+  "required": ["schema_version", "signal_id", "strategy_id", "symbol", "side", "timestamp"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "v1.0",
+      "description": "Schema version for contract evolution tracking"
+    },
+    "signal_id": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 64,
+      "description": "Unique signal identifier (UUID or deterministic hash)"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Strategy that generated the signal"
+    },
+    "bot_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Optional bot instance identifier"
+    },
+    "symbol": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+$",
+      "minLength": 3,
+      "maxLength": 20,
+      "description": "Trading pair symbol (e.g., BTCUSDT)"
+    },
+    "side": {
+      "type": "string",
+      "enum": ["BUY", "SELL"],
+      "description": "Signal direction (uppercase canonical)"
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 1000000000,
+      "maximum": 9999999999,
+      "description": "Signal generation timestamp in seconds since Unix epoch"
+    },
+    "strength": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Signal strength/magnitude (0.0-1.0)"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence level (0.0-1.0)"
+    },
+    "price": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Price at signal generation time"
+    },
+    "reason": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Human-readable signal justification"
+    },
+    "pct_change": {
+      "type": "number",
+      "description": "Percentage change that triggered signal"
+    },
+    "type": {
+      "type": "string",
+      "const": "signal",
+      "description": "Event type discriminator"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "schema_version": "v1.0",
+      "signal_id": "sig-20251230-btcusdt-001",
+      "strategy_id": "momentum-v2",
+      "bot_id": "bot-alpha-1",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "timestamp": 1735574400,
+      "strength": 0.85,
+      "confidence": 0.92,
+      "price": 50100.50,
+      "reason": "Strong uptrend momentum detected",
+      "pct_change": 2.5,
+      "type": "signal"
+    },
+    {
+      "schema_version": "v1.0",
+      "signal_id": "sig-20251230-ethusdt-002",
+      "strategy_id": "rsi-oversold",
+      "symbol": "ETHUSDT",
+      "side": "SELL",
+      "timestamp": 1735574410,
+      "strength": 0.70,
+      "confidence": 0.78,
+      "price": 3505.00,
+      "type": "signal"
+    }
+  ],
+  "$comment": "Migration notes: 'direction' field is deprecated in favor of 'side'. Timestamp changed from float to integer (seconds). All None values must be omitted from Redis publishes."
+}

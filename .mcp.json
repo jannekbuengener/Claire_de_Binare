@@ -1,18 +1,33 @@
 {
   "mcpServers": {
-    "MCP_DOCKER": {
-      "command": "docker",
-      "args": ["mcp", "gateway", "run"],
+    "grafana": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@leval/mcp-grafana"],
       "env": {
-        "LOCALAPPDATA": "C:\\Users\\janne\\AppData\\Local",
-        "ProgramData": "C:\\ProgramData",
-        "ProgramFiles": "C:\\Program Files"
+        "GRAFANA_URL": "http://localhost:3000",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "glsa_kiNdufwm7SCnbGhtAPKma0gltXXUkYd4_d98916f0"
       },
       "type": "stdio"
     },
-    "github": {
-      "command": "docker",
-      "args": ["attach", "mcp_github"],
+    "postgres": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://claire_user:ZovjIy74EVza8Mmb1RnuRSBgSphAebos@localhost:5432/claire_de_binare"
+      ],
+      "type": "stdio"
+    },
+    "time": {
+      "command": "python",
+      "args": ["-m", "mcp_server_time"],
+      "type": "stdio"
+    },
+    "desktop-commander": {
+      "command": "cmd",
+      "args": ["/c", "npx", "-y", "@wonderwhy-er/desktop-commander"],
       "type": "stdio"
     }
   }

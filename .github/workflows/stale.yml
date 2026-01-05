@@ -1,5 +1,7 @@
 name: 'Close stale issues and PRs'
 on:
+  workflow_dispatch:
+    # Manual: gh workflow run stale.yml --ref <branch>
   schedule:
     - cron: '0 0 * * *'  # Daily at midnight UTC
 
@@ -7,7 +9,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: 'This issue has been automatically marked as stale due to inactivity. It will be closed in 14 days if no further activity occurs.'

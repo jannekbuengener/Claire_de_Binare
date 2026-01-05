@@ -1,0 +1,63 @@
+
+name: Build & Push Containers (GHCR)
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - name: cdb_core
+            dockerfile: services/core/Dockerfile
+            context: .
+          - name: cdb_risk
+            dockerfile: services/risk/Dockerfile
+            context: .
+          - name: cdb_execution
+            dockerfile: services/execution/Dockerfile
+            context: .
+          - name: cdb_db_writer
+            dockerfile: services/db_writer/Dockerfile
+            context: .
+          - name: cdb_ws
+            dockerfile: services/ws/Dockerfile
+            context: .
+
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Login to GHCR
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (PR) or Build+Push (main)
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ github.event.repository.name }}-${{ matrix.service.name }}:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

@@ -9,6 +9,10 @@ on:
       - '.github/workflows/e2e-tests.yml'
   workflow_dispatch:
 
+env:
+  # Secrets are REQUIRED - workflow fails if not set (no hardcoded fallbacks)
+  SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
+
 jobs:
   e2e-paper-trading:
     runs-on: ubuntu-latest
@@ -16,31 +20,51 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Create CI Secrets Directory
+        run: |
+          mkdir -p $SECRETS_PATH
+          echo "${{ secrets.REDIS_PASSWORD }}" > $SECRETS_PATH/REDIS_PASSWORD
+          echo "${{ secrets.POSTGRES_PASSWORD }}" > $SECRETS_PATH/POSTGRES_PASSWORD
+          echo "${{ secrets.GRAFANA_PASSWORD }}" > $SECRETS_PATH/GRAFANA_PASSWORD
+          chmod 600 $SECRETS_PATH/*
+          echo "✅ Secrets created in $SECRETS_PATH"
+
+      - name: Validate Required Secrets
+        run: |
+          if [ ! -s "$SECRETS_PATH/REDIS_PASSWORD" ]; then
+            echo "❌ ERROR: REDIS_PASSWORD secret is not set in GitHub repository secrets"
+            exit 1
+          fi
+          if [ ! -s "$SECRETS_PATH/POSTGRES_PASSWORD" ]; then
+            echo "❌ ERROR: POSTGRES_PASSWORD secret is not set in GitHub repository secrets"
+            exit 1
+          fi
+          echo "✅ All required secrets are set"
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
 
       - name: Install Dependencies
         run: |
-          pip install --no-cache-dir redis pytest
+          pip install --no-cache-dir redis requests pytest
 
       - name: Start Stack (base + dev)
         working-directory: infrastructure/compose
         run: |
-          docker-compose -f base.yml -f dev.yml up -d
+          docker compose -f base.yml -f dev.yml up -d
         env:
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || 'claire_redis_secret_2024' }}
+          SECRETS_PATH: ${{ env.SECRETS_PATH }}
 
       - name: Health Check - Redis
         run: |
           echo "Waiting for Redis..."
-          timeout 60 bash -c 'until docker exec cdb_redis redis-cli -a "${REDIS_PASSWORD}" ping 2>/dev/null | grep -q PONG; do echo "Redis not ready..."; sleep 2; done'
+          REDIS_PW=$(cat $SECRETS_PATH/REDIS_PASSWORD)
+          timeout 60 bash -c "until docker exec cdb_redis redis-cli -a '${REDIS_PW}' ping 2>/dev/null | grep -q PONG; do echo 'Redis not ready...'; sleep 2; done"
           echo "✅ Redis ready"
-        env:
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || 'claire_redis_secret_2024' }}
 
       - name: Health Check - Postgres
         run: |
@@ -57,9 +81,10 @@ jobs:
 
       - name: Run E2E Tests
         run: |
-          E2E_RUN=1 pytest tests/e2e/test_paper_trading_p0.py -v --no-cov -rs
+          pytest tests/e2e/test_smoke_pipeline.py -m e2e -v --no-cov -rs
         env:
-          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || 'claire_redis_secret_2024' }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
       - name: Capture Logs on Failure
         if: failure()
@@ -72,7 +97,7 @@ jobs:
 
       - name: Upload Logs as Artifact
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: e2e-failure-logs
           path: |

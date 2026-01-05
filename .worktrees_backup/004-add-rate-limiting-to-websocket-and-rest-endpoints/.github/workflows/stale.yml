@@ -1,0 +1,23 @@
+name: 'Close stale issues and PRs'
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight UTC
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: 'This issue has been automatically marked as stale due to inactivity. It will be closed in 14 days if no further activity occurs.'
+          close-issue-message: 'This issue has been automatically closed due to inactivity.'
+          stale-pr-message: 'This PR has been automatically marked as stale due to inactivity. It will be closed in 7 days if no further activity occurs.'
+          close-pr-message: 'This PR has been automatically closed due to inactivity.'
+          days-before-stale: 90
+          days-before-close: 14
+          days-before-pr-close: 7
+          exempt-issue-labels: 'prio:must,status:blocked'
+          exempt-pr-labels: 'prio:must,status:blocked'
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'

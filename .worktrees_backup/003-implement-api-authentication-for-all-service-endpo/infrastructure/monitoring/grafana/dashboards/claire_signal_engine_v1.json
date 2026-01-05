@@ -1,0 +1,370 @@
+{
+  "uid": "claire_signal_engine_v1",
+  "title": "Claire - Signal Engine",
+  "description": "Real-time signal generation and analysis dashboard",
+  "tags": ["claire", "signals", "engine", "dark"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m"]
+  },
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "SIGNALS GENERATED",
+      "gridPos": {"h": 6, "w": 6, "x": 0, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) FROM signals WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 10},
+              {"color": "#8b0000", "value": 50},
+              {"color": "#ff0000", "value": 100}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "BUY SIGNALS",
+      "gridPos": {"h": 6, "w": 6, "x": 6, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) FROM signals WHERE signal_type = 'buy' AND timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#8b0000", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "SELL SIGNALS",
+      "gridPos": {"h": 6, "w": 6, "x": 12, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT COUNT(*) FROM signals WHERE signal_type = 'sell' AND timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "AVG CONFIDENCE",
+      "gridPos": {"h": 6, "w": 6, "x": 18, "y": 0},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT ROUND(AVG(confidence)::numeric, 2) FROM signals WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#4d0000", "value": null},
+              {"color": "#8b0000", "value": 0.3},
+              {"color": "#ff0000", "value": 0.6}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "SIGNAL GENERATION RATE",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "time_series",
+          "rawSql": "SELECT timestamp AS time, COUNT(*) as value FROM signals WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000 GROUP BY time ORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "gradientMode": "opacity",
+            "spanNulls": false,
+            "showPoints": "never"
+          },
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "transparent", "value": null}
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "value"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8b0000"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "single"},
+        "legend": {
+          "displayMode": "hidden"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "bargauge",
+      "title": "TOP SYMBOLS (Last Hour)",
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 16},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT symbol, COUNT(*) as count FROM signals WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000 GROUP BY symbol ORDER BY count DESC LIMIT 10",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 5},
+              {"color": "#8b0000", "value": 10},
+              {"color": "#ff0000", "value": 20}
+            ]
+          }
+        }
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "showUnfilled": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "piechart",
+      "title": "SIGNAL TYPE DISTRIBUTION",
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 16},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT signal_type, COUNT(*) as count FROM signals WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '1 hour') * 1000 GROUP BY signal_type",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"}
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "buy"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#8b0000"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "sell"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#ff0000"}}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "pieType": "donut",
+        "displayLabels": ["name", "percent"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["sum"]
+        }
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "RECENT SIGNALS (Live Feed)",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 26},
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "format": "table",
+          "rawSql": "SELECT TO_TIMESTAMP(timestamp/1000) as time, symbol, signal_type, ROUND(confidence::numeric, 2) as confidence, ROUND(price::numeric, 2) as price, ROUND(pct_change::numeric, 2) as pct_change, reason FROM signals ORDER BY timestamp DESC LIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "displayMode": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "signal_type"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "buy": {"color": "#8b0000", "index": 0},
+                      "sell": {"color": "#ff0000", "index": 1}
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "confidence"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "gradient-gauge"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "#1a1a1a", "value": null},
+                    {"color": "#4d0000", "value": 0.3},
+                    {"color": "#8b0000", "value": 0.5},
+                    {"color": "#ff0000", "value": 0.7}
+                  ]
+                }
+              },
+              {"id": "max", "value": 1},
+              {"id": "min", "value": 0}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "pct_change"},
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "#1a1a1a", "value": null},
+                    {"color": "#8b0000", "value": 3},
+                    {"color": "#ff0000", "value": 5}
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "footer": {
+          "show": false
+        }
+      }
+    }
+  ]
+}

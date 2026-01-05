@@ -1,0 +1,1 @@
+"""Allocation service package."""

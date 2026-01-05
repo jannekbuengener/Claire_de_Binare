@@ -10,11 +10,11 @@ Environment Variables:
     CDB_REPLAY_FROM_ID=<id>    - Start from specific stream ID
     CDB_REPLAY_TO_ID=<id>      - End at specific stream ID
     CDB_REPLAY_SEED=123        - Random seed for determinism (optional)
-    REDIS_PASSWORD             - Redis password (default: claire_redis_secret_2024)
+    REDIS_PASSWORD             - Redis password (required, no default)
 
 Determinism Guarantees:
     - Events processed in Stream ID order (lexicographic)
-    - No datetime.now() calls (uses event timestamps)
+    - No wall-clock datetime calls (uses event timestamps)
     - Fixed random seed if CDB_REPLAY_SEED set
     - Stable JSONL output (sorted keys)
 
@@ -26,7 +26,6 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime
 from typing import Optional
 
 import redis
@@ -47,7 +46,7 @@ class ReplayConfig:
         # Redis connection
         self.redis_host = os.getenv("REDIS_HOST", "localhost")
         self.redis_port = int(os.getenv("REDIS_PORT", "6379"))
-        self.redis_password = os.getenv("REDIS_PASSWORD", "claire_redis_secret_2024")
+        self.redis_password = os.getenv("REDIS_PASSWORD")  # Required, no hardcoded default
 
     def validate(self) -> None:
         """Validate configuration."""

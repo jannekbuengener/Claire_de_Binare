@@ -1,0 +1,249 @@
+# Claire de Binare - Prometheus Alert Rules
+# Issue #96: Monitoring & Alerting
+
+groups:
+  # =============================================================================
+  # CRITICAL ALERTS - Immediate Action Required
+  # =============================================================================
+  - name: critical_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has been down for more than 1 minute."
+
+      - alert: CircuitBreakerTriggered
+        expr: cdb_circuit_breaker_triggered == 1
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit Breaker triggered on {{ $labels.service }}"
+          description: "Circuit breaker type {{ $labels.breaker_type }} was triggered. Trading halted."
+
+      - alert: DatabaseConnectionLost
+        expr: pg_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL connection lost"
+          description: "Database connection has been down for 30 seconds."
+
+      - alert: RedisConnectionLost
+        expr: redis_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis connection lost"
+          description: "Redis connection has been down for 30 seconds. Order flow interrupted."
+
+      - alert: DailyDrawdownExceeded
+        expr: cdb_daily_drawdown_pct > 5
+        for: 0s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Daily Drawdown exceeded 5%"
+          description: "Current drawdown: {{ $value }}%. Trading should be halted."
+
+  # =============================================================================
+  # HIGH PRIORITY ALERTS
+  # =============================================================================
+  - name: high_priority_alerts
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(cdb_latency_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "High latency detected on {{ $labels.service }}"
+          description: "P95 latency is {{ $value }}s, exceeding 500ms threshold."
+
+      - alert: HighErrorRate
+        expr: rate(cdb_errors_total[5m]) / rate(cdb_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }}, exceeding 5% threshold."
+
+      - alert: OrderProcessingDelayed
+        expr: cdb_order_processing_seconds > 1
+        for: 2m
+        labels:
+          severity: high
+        annotations:
+          summary: "Order processing delayed"
+          description: "Order processing taking {{ $value }}s, exceeding 1s threshold."
+
+      - alert: PositionLimitApproaching
+        expr: cdb_position_utilization_pct > 80
+        for: 1m
+        labels:
+          severity: high
+        annotations:
+          summary: "Position limit approaching"
+          description: "Position utilization at {{ $value }}%. Consider reducing exposure."
+
+  # =============================================================================
+  # WARNING ALERTS
+  # =============================================================================
+  - name: warning_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on {{ $labels.container_name }}"
+          description: "Container CPU usage is {{ $value | humanizePercentage }}."
+
+      - alert: HighMemoryUsage
+        expr: container_memory_usage_bytes / container_memory_limit_bytes > 0.85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on {{ $labels.container_name }}"
+          description: "Memory usage is {{ $value | humanizePercentage }}."
+
+      - alert: LowThroughput
+        expr: rate(cdb_orders_processed_total[5m]) < 1
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low order throughput"
+          description: "Order throughput is {{ $value }}/s, below expected rate."
+
+      - alert: SignalQueueBacklog
+        expr: cdb_signal_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Signal queue backlog"
+          description: "{{ $value }} signals queued. Processing may be delayed."
+
+  # =============================================================================
+  # INFRASTRUCTURE ALERTS
+  # =============================================================================
+  - name: infrastructure_alerts
+    rules:
+      - alert: ContainerRestarting
+        expr: increase(container_restart_count[1h]) > 3
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container_name }} is restarting frequently"
+          description: "{{ $value }} restarts in the last hour."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: "Disk space low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining."
+
+      - alert: PrometheusTargetDown
+        expr: up{job!="prometheus"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus target {{ $labels.job }} is down"
+          description: "Metrics collection interrupted for {{ $labels.instance }}."
+
+  # =============================================================================
+  # SOAK TEST GATES - Issue #428 (72h Zero Restart Policy)
+  # =============================================================================
+  - name: soak_test_gates
+    interval: 30s
+    rules:
+      - alert: SoakTest_ServiceDown
+        expr: up{job=~"cdb_(redis|postgres|ws|signal|risk|execution|db_writer|paper_runner)"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          soak_test: abort
+        annotations:
+          summary: "ABORT: Critical service {{ $labels.job }} down >5min"
+          description: "Service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 5 minutes. Soak test MUST be aborted."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#abort-triggers"
+
+      - alert: SoakTest_ServiceRestartLoop
+        expr: sum(rate(container_restart_count{name=~"cdb_.*"}[1h])) by (name) > 2
+        for: 0s
+        labels:
+          severity: critical
+          soak_test: abort
+        annotations:
+          summary: "ABORT: Service {{ $labels.name }} restart loop detected"
+          description: "Container {{ $labels.name }} restarted {{ $value }} times in last hour. Zero Restart Policy violated."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#abort-triggers"
+
+      - alert: SoakTest_MemoryOOM
+        expr: container_memory_oom_kill_total{name=~"cdb_.*"} > 0
+        for: 0s
+        labels:
+          severity: critical
+          soak_test: abort
+        annotations:
+          summary: "ABORT: Container {{ $labels.name }} killed by OOM"
+          description: "Out-of-memory killer terminated {{ $labels.name }}. Memory leak or insufficient limits."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#abort-triggers"
+
+      - alert: SoakTest_DiskFull
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          soak_test: abort
+        annotations:
+          summary: "ABORT: Disk space <10% on {{ $labels.mountpoint }}"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining. System unstable."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#abort-triggers"
+
+      - alert: SoakTest_NoOrdersGenerated
+        expr: rate(orders_created_total[1h]) == 0
+        for: 1h
+        labels:
+          severity: high
+          soak_test: investigate
+        annotations:
+          summary: "INVESTIGATE: No orders generated in last hour"
+          description: "Order generation rate is 0. Check signal engine and market data flow."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#troubleshooting-common-issues"
+
+      - alert: SoakTest_HighMemoryUsage
+        expr: (container_memory_usage_bytes{name=~"cdb_.*"} / container_spec_memory_limit_bytes{name=~"cdb_.*"}) > 0.8
+        for: 30m
+        labels:
+          severity: high
+          soak_test: investigate
+        annotations:
+          summary: "INVESTIGATE: {{ $labels.name }} memory usage >80%"
+          description: "Container {{ $labels.name }} using {{ $value | humanizePercentage }} of memory limit. Potential leak."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#high-memory-usage"
+
+      - alert: SoakTest_MessageQueueStalled
+        expr: cdb_signal_queue_length > 1000
+        for: 10m
+        labels:
+          severity: critical
+          soak_test: abort
+        annotations:
+          summary: "ABORT: Message queue stalled ({{ $value }} messages)"
+          description: "Signal queue has {{ $value }} messages backed up for 10+ minutes. System deadlocked."
+          runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#message-queue-backlog"

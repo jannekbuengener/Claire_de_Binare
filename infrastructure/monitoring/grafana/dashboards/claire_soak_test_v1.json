@@ -1,0 +1,555 @@
+{
+  "uid": "claire_soak_test_v1",
+  "title": "Claire - 72h Soak Test Monitor",
+  "description": "Zero Restart Policy validation - 72-hour continuous operation monitoring (Issue #428)",
+  "tags": ["claire", "soak-test", "stability", "zero-restart"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-72h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "ABORT TRIGGERS - Critical Monitoring",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+      "collapsed": false
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "🚨 CONTAINER RESTARTS (MUST BE 0)",
+      "gridPos": {"h": 6, "w": 8, "x": 0, "y": 1},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(container_restart_count{name=~\"cdb_.*\"})",
+          "refId": "A",
+          "legendFormat": "Total Restarts"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "text": {
+          "titleSize": 16,
+          "valueSize": 48
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "red"}
+            ]
+          },
+          "unit": "none",
+          "decimals": 0
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "💾 DISK SPACE REMAINING",
+      "gridPos": {"h": 6, "w": 8, "x": 8, "y": 1},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * (node_filesystem_avail_bytes / node_filesystem_size_bytes)",
+          "refId": "A",
+          "legendFormat": "{{mountpoint}}"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 10, "color": "orange"},
+              {"value": 30, "color": "green"}
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "⏱️ TEST DURATION",
+      "gridPos": {"h": 6, "w": 8, "x": 16, "y": 1},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "time() - process_start_time_seconds{job=\"cdb_signal\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": ["lastNotNull"]
+        },
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "yellow"},
+              {"value": 86400, "color": "orange"},
+              {"value": 259200, "color": "green"}
+            ]
+          },
+          "unit": "s",
+          "decimals": 0
+        }
+      }
+    },
+    {
+      "id": 10,
+      "type": "row",
+      "title": "Service Health (8 Critical Services)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 7},
+      "collapsed": false
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "cdb_redis",
+      "gridPos": {"h": 4, "w": 3, "x": 0, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "up{job=\"cdb_redis\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "cdb_postgres",
+      "gridPos": {"h": 4, "w": 3, "x": 3, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_postgres\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "cdb_ws",
+      "gridPos": {"h": 4, "w": 3, "x": 6, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_ws\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "cdb_signal",
+      "gridPos": {"h": 4, "w": 3, "x": 9, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_signal\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "cdb_risk",
+      "gridPos": {"h": 4, "w": 3, "x": 12, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_risk\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "stat",
+      "title": "cdb_execution",
+      "gridPos": {"h": 4, "w": 3, "x": 15, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_execution\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "stat",
+      "title": "cdb_db_writer",
+      "gridPos": {"h": 4, "w": 3, "x": 18, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_db_writer\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": "stat",
+      "title": "cdb_paper_runner",
+      "gridPos": {"h": 4, "w": 3, "x": 21, "y": 8},
+      "datasource": "Prometheus",
+      "targets": [{"expr": "up{job=\"cdb_paper_runner\"}", "refId": "A"}],
+      "options": {
+        "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
+        "colorMode": "background"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN"},
+            {"type": "value", "value": "1", "text": "UP"}
+          ]
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Container Restart Tracking (72h Timeline)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 12},
+      "collapsed": false
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "CONTAINER RESTARTS OVER TIME (Zero Restart Policy)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 13},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "container_restart_count{name=~\"cdb_.*\"}",
+          "refId": "A",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["max", "last"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 1, "color": "red"}
+            ]
+          },
+          "unit": "none",
+          "min": 0
+        }
+      }
+    },
+    {
+      "id": 30,
+      "type": "row",
+      "title": "Resource Usage (Memory Leak Detection)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 21},
+      "collapsed": false
+    },
+    {
+      "id": 31,
+      "type": "timeseries",
+      "title": "MEMORY USAGE % (Threshold: 80%)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 22},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * (container_memory_usage_bytes{name=~\"cdb_.*\"} / container_spec_memory_limit_bytes{name=~\"cdb_.*\"})",
+          "refId": "A",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max", "last"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 80, "color": "yellow"},
+              {"value": 90, "color": "red"}
+            ]
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byFrameRefID", "options": "A"},
+            "properties": [
+              {
+                "id": "custom.lineWidth",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "CPU USAGE %",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 22},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "100 * sum(rate(container_cpu_usage_seconds_total{name=~\"cdb_.*\"}[5m])) by (name)",
+          "refId": "A",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max", "last"]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 50, "color": "yellow"},
+              {"value": 80, "color": "red"}
+            ]
+          },
+          "unit": "percent",
+          "min": 0
+        }
+      }
+    },
+    {
+      "id": 40,
+      "type": "row",
+      "title": "Business Metrics (Pipeline Health)",
+      "gridPos": {"h": 1, "w": 24, "x": 0, "y": 30},
+      "collapsed": false
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "ORDERS GENERATED (per hour)",
+      "gridPos": {"h": 6, "w": 12, "x": 0, "y": 31},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(orders_created_total[1h]) * 3600",
+          "refId": "A",
+          "legendFormat": "Orders/hour"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "unit": "none",
+          "min": 0
+        }
+      }
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "SIGNALS GENERATED (per hour)",
+      "gridPos": {"h": 6, "w": 12, "x": 12, "y": 31},
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "rate(signals_generated_total[1h]) * 3600",
+          "refId": "A",
+          "legendFormat": "Signals/hour"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"value": 0, "color": "red"},
+              {"value": 1, "color": "green"}
+            ]
+          },
+          "unit": "none",
+          "min": 0
+        }
+      }
+    }
+  ]
+}

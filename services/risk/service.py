@@ -3,6 +3,7 @@ Risk Manager - Main Service
 Multi-Layer Risk Management
 """
 
+import os
 import sys
 import json
 import time
@@ -18,12 +19,18 @@ from pathlib import Path
 from threading import Thread
 
 from core.utils.clock import utcnow
+from core.utils.redis_payload import sanitize_payload
+from core.auth import validate_all_auth
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
 except ImportError:
-    from config import config
-    from models import Order, Alert, RiskState, OrderResult
+    # Fallback for script/importlib execution: ensure repo root is on sys.path.
+    repo_root = Path(__file__).resolve().parents[2]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+    from services.risk.config import config
+    from services.risk.models import Order, Alert, RiskState, OrderResult
 
 from core.domain.models import Signal
 
@@ -35,8 +42,10 @@ if logging_config_path.exists():
         logging.config.dictConfig(logging_conf)
 else:
     # Fallback zu basicConfig wenn logging_config.json nicht gefunden
+    # Respect LOG_LEVEL env var (Issue #347 - Dev vs Prod logging policy)
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
-        level=logging.INFO,
+        level=getattr(logging, log_level, logging.INFO),
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
@@ -250,7 +259,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         # Max 10% des REAL Kapitals pro Position
         max_position_size = current_balance * self.config.max_position_pct
@@ -275,7 +284,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
@@ -296,7 +305,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_drawdown = current_balance * self.config.max_daily_drawdown_pct
 
@@ -411,7 +420,7 @@ class RiskManager:
             balance_fetcher = RealBalanceFetcher()
             current_balance = balance_fetcher.get_usdt_balance()
         else:
-            current_balance = self.config.fallback_balance
+            current_balance = self.config.test_balance
 
         max_size = current_balance * self.config.max_position_pct
 
@@ -424,11 +433,12 @@ class RiskManager:
     def send_order(self, order: Order):
         """Publiziert Order"""
         try:
-            message = json.dumps(order.to_dict(), ensure_ascii=False)
+            payload = sanitize_payload(order.to_dict())
+            message = json.dumps(payload, ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
             if self.redis_client:
                 self.redis_client.xadd(
-                    self.config.orders_stream, json.loads(message), maxlen=10000
+                    self.config.orders_stream, payload, maxlen=10000
                 )
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
@@ -468,8 +478,9 @@ class RiskManager:
             payload["strategy_id"] = strategy_id
         if bot_id:
             payload["bot_id"] = bot_id
-        self.redis_client.xadd(self.config.bot_shutdown_stream, payload, maxlen=10000)
-        logger.warning("Bot-Shutdown emittiert: %s", payload)
+        sanitized = sanitize_payload(payload)
+        self.redis_client.xadd(self.config.bot_shutdown_stream, sanitized, maxlen=10000)
+        logger.warning("Bot-Shutdown emittiert: %s", sanitized)
 
     def _update_exposure(self, result: OrderResult):
         """Aktualisiert Exposure basierend auf Order-Result"""
@@ -730,6 +741,16 @@ def signal_handler(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
+
+    # Validate Redis auth before startup
+    from core.auth import validate_redis_auth
+    redis_ok, redis_msg = validate_redis_auth(
+        config.redis_host, config.redis_port, config.redis_password, config.redis_db
+    )
+    if not redis_ok:
+        logger.critical("Auth validation FAILED. Service cannot start.")
+        logger.critical(f"Redis: {redis_msg}")
+        sys.exit(1)
 
     manager = RiskManager()
     manager.connect_redis()

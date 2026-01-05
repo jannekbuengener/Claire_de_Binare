@@ -1,0 +1,27 @@
+name: 🏷️ Sync Repository Labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/labels.json'
+  workflow_dispatch:
+
+jobs:
+  sync-labels:
+    name: Sync Labels from labels.json
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Sync Labels
+        uses: micnncim/action-label-syncer@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          manifest: .github/workflows/labels.json
+          prune: false

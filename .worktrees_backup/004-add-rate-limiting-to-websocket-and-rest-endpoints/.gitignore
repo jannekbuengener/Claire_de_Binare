@@ -1,0 +1,145 @@
+# Emoji Filter System .gitignore
+
+# Test files (we don't want to commit these)
+# Block ad-hoc test files in root/services
+*test*.py
+*test*.js
+# Allow official test suite in tests/ directory (must come AFTER wildcard)
+!tests/**/*.py
+!tests/**/*.js
+debug_*.py
+simple_test.*
+quick_test.*
+real_test*
+*_backup.py
+
+# Emoji filter outputs
+emoji-report.*
+*.emoji-backup
+
+# Configuration duplicates (we only want the ones in .github/)
+emoji-config.yaml
+emoji-filter-workflow.yml
+emoji-bot.yml
+advanced-emoji-filter.py
+vscode-settings.json
+strict-config.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local development
+.env
+.env.local
+.env.*.local
+
+# =============================================================================
+# SECRETS - CRITICAL: Never commit secrets to repo (Blueprint-compliant)
+# =============================================================================
+.secrets/
+!.secrets.example/
+secrets/
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+*.ppk
+credentials
+*service-account*.json
+
+# Cloud credentials
+.aws/
+.azure/
+.gcloud/
+
+# Decrypted SOPS files
+*.decrypted.*
+
+# Compose directory secrets symlink
+infrastructure/compose/.secrets
+
+# =============================================================================
+
+# MCP configuration (contains API keys)
+.mcp.json
+mcp-config.toml
+
+# Legacy docker-compose files (migrated to infrastructure/compose/)
+docker-compose.yml
+docker-compose.base.yml
+docker-compose.dev.yml
+
+# Cache
+.cache/
+.npm
+.eslintcache
+
+# Coverage
+coverage/
+*.lcov
+
+# Dependencies  
+node_modules/
+
+# Other projects in workspace (separate repos)
+Claire_de_Binare/
+Claire_de_Binare_Docs/
+.cdb_local/
+.claude/
+/scripts/
+!infrastructure/scripts/
+# AGENTS.md - Now tracked as pointer to Docs Hub canonical (was ignored pre-consolidation)
+.gemini/
+gha-creds-*.json
+
+# Auto Claude data directory
+.auto-claude/

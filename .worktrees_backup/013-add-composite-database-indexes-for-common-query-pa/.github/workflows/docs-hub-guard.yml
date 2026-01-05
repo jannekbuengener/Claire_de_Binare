@@ -1,0 +1,54 @@
+name: Docs Hub Guard
+
+on:
+  pull_request:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Block runtime artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Scanning for runtime artifacts..."
+          bad="$(git ls-files | grep -E '(^|/)(__pycache__/|\.pytest_cache/|.*\.pyc$|.*\.pyo$|.*\.log$|(^|/)logs/)' || true)"
+          if [ -n "$bad" ]; then
+            echo "Found forbidden runtime artifacts tracked in git:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Basic secret pattern scan (best-effort)
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Best-effort secret scan (patterns)."
+          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- . ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.pdf' ':!.env' ':!.env.example' ':!README.md' ':!**/postgres.yml' || true)"
+          if [ -n "$hits" ]; then
+            echo "Potential secret-like strings found (review required):"
+            echo "$hits"
+            echo ""
+            echo "If these are false positives, adjust the workflow patterns or move values to local .env/.secrets."
+            exit 1
+          fi
+
+      - name: Enforce canonical top-level folders
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Checking canonical top-level folders..."
+          for d in governance knowledge agents docs; do
+            if [ ! -d "$d" ]; then
+              echo "Missing required top-level folder: $d"
+              exit 1
+            fi
+          done
