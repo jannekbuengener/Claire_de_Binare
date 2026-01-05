@@ -25,12 +25,15 @@ jobs:
       - name: Create CI Secrets Directory
         run: |
           mkdir -p $SECRETS_PATH
-          echo "${{ secrets.REDIS_PASSWORD }}" > $SECRETS_PATH/REDIS_PASSWORD
-          echo "${{ secrets.POSTGRES_PASSWORD }}" > $SECRETS_PATH/POSTGRES_PASSWORD
-          echo "${{ secrets.GRAFANA_PASSWORD }}" > $SECRETS_PATH/GRAFANA_PASSWORD
+          REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
+          POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
+          GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
+          echo "$REDIS_VAL" > $SECRETS_PATH/REDIS_PASSWORD
+          echo "$POSTGRES_VAL" > $SECRETS_PATH/POSTGRES_PASSWORD
+          echo "$GRAFANA_VAL" > $SECRETS_PATH/GRAFANA_PASSWORD
           # Placeholder MEXC credentials for CI so docker-compose has bind sources
-          echo "ci-mexc-key" > $SECRETS_PATH/MEXC_API_KEY.txt
-          echo "ci-mexc-secret" > $SECRETS_PATH/MEXC_API_SECRET.txt
+          echo "${{ secrets.MEXC_API_KEY != '' && secrets.MEXC_API_KEY || 'ci-mexc-key' }}" > $SECRETS_PATH/MEXC_API_KEY.txt
+          echo "${{ secrets.MEXC_API_SECRET != '' && secrets.MEXC_API_SECRET || 'ci-mexc-secret' }}" > $SECRETS_PATH/MEXC_API_SECRET.txt
           chmod 600 $SECRETS_PATH/*
           echo "✅ Secrets created in $SECRETS_PATH"
 
