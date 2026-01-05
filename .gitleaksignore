@@ -8,10 +8,10 @@ infrastructure/monitoring/grafana/provisioning/datasources/postgres.yml:generic-
 # Demo Sidekiq token in README
 README.md:sidekiq-secret:42
 # Dummy secrets inside Verlosung tests (used for simulations)
-tests/unit/verlosung/**:generic-api-key
+tests/unit/verlosung/.*:generic-api-key
 # General test fixtures with synthetic secrets
-tests/**:generic-api-key
-tests/**:claire_db_secret_2024
+tests/.*:generic-api-key
+tests/.*:claire_db_secret_2024
 # Example metadata / tooling artifacts
 .mcp.json:grafana-service-account-token
-.worktrees_backup/**:generic-api-key
+\.worktrees_backup/.*:generic-api-key
