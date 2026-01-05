@@ -86,32 +86,17 @@ class LiveTradingGate:
                 self.logger.warning(
                     f"Last validation failed: {real_results.get('error', 'Unknown')}"
                 )
-                return None
+
+            validation_result = real_results.get("validation_result") or {
+                "overall_pass": real_results.get("test_passed", False),
+                "reason": real_results.get("error", "validation_result missing"),
+            }
 
             # Convert real results to expected format
             return {
                 "test_completed": real_results.get("test_completed", False),
                 "duration_hours": real_results.get("duration_hours", 0),
-                "validation_result": {
-                    "overall_pass": real_results.get("test_passed", False),
-                    "risk_assessment": "low"
-                    if real_results.get("sharpe_ratio", 0) > 1.0
-                    else "medium",
-                    "criteria_results": {
-                        "min_win_rate": {
-                            "pass": real_results.get("win_rate", 0) >= 0.45,
-                            "actual": real_results.get("win_rate", 0),
-                        },
-                        "max_drawdown": {
-                            "pass": real_results.get("max_drawdown", 1) <= 0.1,
-                            "actual": real_results.get("max_drawdown", 1),
-                        },
-                        "sharpe_ratio": {
-                            "pass": real_results.get("sharpe_ratio", 0) >= 0.5,
-                            "actual": real_results.get("sharpe_ratio", 0),
-                        },
-                    },
-                },
+                "validation_result": validation_result,
                 "timestamp": real_results.get("timestamp", ""),
                 "real_validation": True,  # Mark as real validation
             }
