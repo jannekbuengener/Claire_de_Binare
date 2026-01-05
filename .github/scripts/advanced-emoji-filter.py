@@ -363,15 +363,9 @@ class EmojiAnalyzer:
             with open("emoji-report.md", "w", encoding="utf-8") as f:
                 f.write("# 🚫 Emoji Detection Report\n\n")
                 f.write(f"**Scan Time:** {report['timestamp']}\n")
-                f.write(
-                    f"**Files Scanned:** {report['summary']['files_scanned']}\n"
-                )
-                f.write(
-                    f"**Emojis Found:** {report['summary']['emojis_found']}\n"
-                )
-                f.write(
-                    f"**Blocked:** {report['summary']['blocked_emojis']}\n"
-                )
+                f.write(f"**Files Scanned:** {report['summary']['files_scanned']}\n")
+                f.write(f"**Emojis Found:** {report['summary']['emojis_found']}\n")
+                f.write(f"**Blocked:** {report['summary']['blocked_emojis']}\n")
                 f.write(
                     f"**Whitelisted:** {report['summary']['whitelisted_emojis']}\n\n"
                 )
@@ -379,9 +373,7 @@ class EmojiAnalyzer:
                 if report["blocked_count"] > 0:
                     f.write("## ❌ Blocked Emojis\n\n")
                     for file_path, detections in report["by_file"].items():
-                        blocked = [
-                            d for d in detections if not d["is_whitelisted"]
-                        ]
+                        blocked = [d for d in detections if not d["is_whitelisted"]]
                         if blocked:
                             f.write(f"### `{file_path}`\n\n")
                             for detection in blocked:
@@ -391,6 +383,7 @@ class EmojiAnalyzer:
                                     f"({detection['severity']})\n"
                                 )
                             f.write("\n")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Advanced Emoji Filter")
