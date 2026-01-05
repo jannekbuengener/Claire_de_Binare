@@ -12,7 +12,7 @@ import yaml
 import emoji
 import argparse
 from pathlib import Path
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
@@ -351,47 +351,46 @@ class EmojiAnalyzer:
                 )
                 print(annotation)
 
-                def export_results(self, format: str = "json") -> None:
-                    """Exportiert Ergebnisse in verschiedene Formate"""
-                    report = self.generate_report()
+    def export_results(self, format: str = "json") -> None:
+        """Exportiert Ergebnisse in verschiedene Formate"""
+        report = self.generate_report()
 
-                    if format == "json":
-                        with open("emoji-report.json", "w", encoding="utf-8") as f:
-                            json.dump(report, f, indent=2, ensure_ascii=False)
+        if format == "json":
+            with open("emoji-report.json", "w", encoding="utf-8") as f:
+                json.dump(report, f, indent=2, ensure_ascii=False)
 
-                    elif format == "markdown":
-                        with open("emoji-report.md", "w", encoding="utf-8") as f:
-                            f.write("# 🚫 Emoji Detection Report\n\n")
-                            f.write(f"**Scan Time:** {report['timestamp']}\n")
-                            f.write(
-                                f"**Files Scanned:** {report['summary']['files_scanned']}\n"
-                            )
-                            f.write(
-                                f"**Emojis Found:** {report['summary']['emojis_found']}\n"
-                            )
-                            f.write(
-                                f"**Blocked:** {report['summary']['blocked_emojis']}\n"
-                            )
-                            f.write(
-                                f"**Whitelisted:** {report['summary']['whitelisted_emojis']}\n\n"
-                            )
+        elif format == "markdown":
+            with open("emoji-report.md", "w", encoding="utf-8") as f:
+                f.write("# 🚫 Emoji Detection Report\n\n")
+                f.write(f"**Scan Time:** {report['timestamp']}\n")
+                f.write(
+                    f"**Files Scanned:** {report['summary']['files_scanned']}\n"
+                )
+                f.write(
+                    f"**Emojis Found:** {report['summary']['emojis_found']}\n"
+                )
+                f.write(
+                    f"**Blocked:** {report['summary']['blocked_emojis']}\n"
+                )
+                f.write(
+                    f"**Whitelisted:** {report['summary']['whitelisted_emojis']}\n\n"
+                )
 
-                            if report["blocked_count"] > 0:
-                                f.write("## ❌ Blocked Emojis\n\n")
-                                for file_path, detections in report["by_file"].items():
-                                    blocked = [
-                                        d for d in detections if not d["is_whitelisted"]
-                                    ]
-                                    if blocked:
-                                        f.write(f"### `{file_path}`\n\n")
-                                        for detection in blocked:
-                                            f.write(
-                                                f"- **Line {detection['line_number']}:** "
-                                                f"`{detection['emoji']}` in {detection['context_type']} "
-                                                f"({detection['severity']})\n"
-                                            )
-                                        f.write("\n")
-
+                if report["blocked_count"] > 0:
+                    f.write("## ❌ Blocked Emojis\n\n")
+                    for file_path, detections in report["by_file"].items():
+                        blocked = [
+                            d for d in detections if not d["is_whitelisted"]
+                        ]
+                        if blocked:
+                            f.write(f"### `{file_path}`\n\n")
+                            for detection in blocked:
+                                f.write(
+                                    f"- **Line {detection['line_number']}:** "
+                                    f"`{detection['emoji']}` in {detection['context_type']} "
+                                    f"({detection['severity']})\n"
+                                )
+                            f.write("\n")
 
 def main():
     parser = argparse.ArgumentParser(description="Advanced Emoji Filter")
