@@ -3,6 +3,7 @@ Real 72-Hour Validation Fetcher - NO MORE FAKE RESULTS
 URGENT: Replaces simulated test results with real validation data
 """
 
+import json
 import os
 import sqlite3
 from datetime import datetime
@@ -43,11 +44,24 @@ class RealValidationFetcher:
                 largest_loss REAL DEFAULT 0.0,
                 largest_win REAL DEFAULT 0.0,
                 final_balance REAL DEFAULT 0.0,
+                summary_json TEXT,
+                validation_json TEXT,
+                report_json TEXT,
                 test_passed BOOLEAN DEFAULT FALSE,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             )
         """
         )
+
+        cursor.execute("PRAGMA table_info(validation_runs)")
+        existing = {row[1] for row in cursor.fetchall()}
+        for name, ddl in {
+            "summary_json": "summary_json TEXT",
+            "validation_json": "validation_json TEXT",
+            "report_json": "report_json TEXT",
+        }.items():
+            if name not in existing:
+                cursor.execute(f"ALTER TABLE validation_runs ADD COLUMN {ddl}")
 
         conn.commit()
         conn.close()
@@ -92,11 +106,19 @@ class RealValidationFetcher:
                 "timestamp": result["end_time"],
             }
 
+        summary_json = result.get("summary_json")
+        validation_json = result.get("validation_json")
+
+        summary = json.loads(summary_json) if summary_json else None
+        validation_result = json.loads(validation_json) if validation_json else None
+
         # Return real validation results
         return {
             "test_passed": bool(result["test_passed"]),
             "test_completed": True,
-            "duration_hours": 72,
+            "duration_hours": self._calculate_duration_hours(
+                result.get("start_time"), result.get("end_time")
+            ),
             "total_trades": result["total_trades"],
             "win_rate": result["win_rate"],
             "total_pnl": result["total_pnl"],
@@ -108,14 +130,16 @@ class RealValidationFetcher:
             "final_balance": result["final_balance"],
             "timestamp": result["end_time"],
             "validation_age_hours": hours_ago,
+            "summary": summary,
+            "validation_result": validation_result,
         }
 
-    def start_72h_validation(self) -> int:
+    def start_72h_validation(self, start_time: Optional[str] = None) -> int:
         """Start new 72-hour validation run - REAL validation"""
         conn = sqlite3.connect(self.validation_db_path)
         cursor = conn.cursor()
 
-        start_time = utcnow().isoformat()
+        start_time = start_time or utcnow().isoformat()
 
         cursor.execute(
             """
@@ -131,7 +155,14 @@ class RealValidationFetcher:
 
         return run_id
 
-    def update_validation_progress(self, run_id: int, metrics: Dict):
+    def update_validation_progress(
+        self,
+        run_id: int,
+        metrics: Dict,
+        summary: Optional[Dict] = None,
+        validation: Optional[Dict] = None,
+        report: Optional[Dict] = None,
+    ):
         """Update validation run with real trading metrics"""
         conn = sqlite3.connect(self.validation_db_path)
         cursor = conn.cursor()
@@ -147,7 +178,10 @@ class RealValidationFetcher:
                 avg_trade_duration = ?,
                 largest_loss = ?,
                 largest_win = ?,
-                final_balance = ?
+                final_balance = ?,
+                summary_json = ?,
+                validation_json = ?,
+                report_json = ?
             WHERE id = ?
         """,
             (
@@ -160,6 +194,9 @@ class RealValidationFetcher:
                 metrics.get("largest_loss", 0.0),
                 metrics.get("largest_win", 0.0),
                 metrics.get("final_balance", 0.0),
+                json.dumps(summary) if summary is not None else None,
+                json.dumps(validation) if validation is not None else None,
+                json.dumps(report) if report is not None else None,
                 run_id,
             ),
         )
@@ -167,12 +204,14 @@ class RealValidationFetcher:
         conn.commit()
         conn.close()
 
-    def complete_validation(self, run_id: int, test_passed: bool):
+    def complete_validation(
+        self, run_id: int, test_passed: bool, end_time: Optional[str] = None
+    ):
         """Mark validation as completed with pass/fail result"""
         conn = sqlite3.connect(self.validation_db_path)
         cursor = conn.cursor()
 
-        end_time = utcnow().isoformat()
+        end_time = end_time or utcnow().isoformat()
 
         cursor.execute(
             """
@@ -201,3 +240,14 @@ class RealValidationFetcher:
         # Check if validation is still valid (less than 7 days old)
         age_hours = latest.get("validation_age_hours", 999)
         return age_hours > 168  # Require new validation after 7 days
+
+    @staticmethod
+    def _calculate_duration_hours(start_time: Optional[str], end_time: Optional[str]) -> float:
+        if not start_time or not end_time:
+            return 0.0
+        try:
+            start = datetime.fromisoformat(start_time)
+            end = datetime.fromisoformat(end_time)
+        except ValueError:
+            return 0.0
+        return (end - start).total_seconds() / 3600
