@@ -119,6 +119,7 @@ services:
       - "127.0.0.1:8002:8002"
     volumes:
       - ../../logs:/app/logs
+      - validation_data:/app/data
     depends_on:
       - cdb_redis
       - cdb_postgres

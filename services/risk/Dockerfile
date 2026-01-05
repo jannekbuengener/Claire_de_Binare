@@ -15,7 +15,8 @@ COPY services/risk /app/services/risk
 
 RUN mkdir -p /app/services \
   && touch /app/services/__init__.py \
-  && touch /app/services/risk/__init__.py
+  && touch /app/services/risk/__init__.py \
+  && mkdir -p /app/data
 
 RUN useradd -m -u 1000 riskuser \
   && chown -R riskuser:riskuser /app

@@ -85,6 +85,8 @@ services:
     cap_drop:
       - ALL
     read_only: true
+    volumes:
+      - validation_data:/app/data
     deploy:
       resources:
         limits:
