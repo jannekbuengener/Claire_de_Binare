@@ -132,6 +132,8 @@ services:
     secrets:
       - redis_password
       - postgres_password
+      - mexc_api_key
+      - mexc_api_secret
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"
