@@ -37,6 +37,9 @@ paths = [
     '''.*lock\.json''',
     '''.*lock\.yaml''',
 ]
+values = [
+    '''claire_db_secret_2024''',
+]
 
 # Entropy settings - reduce false positives
 [entropy]
