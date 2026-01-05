@@ -56,7 +56,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install --no-cache-dir redis requests pytest
+          pip install --no-cache-dir redis requests pytest psycopg2-binary
 
       - name: Start Stack (base + dev)
         working-directory: infrastructure/compose
