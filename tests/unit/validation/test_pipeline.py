@@ -40,3 +40,27 @@ def test_run_validation_window_wires_collect_to_aggregate(monkeypatch: pytest.Mo
     assert summary["symbols"] == 2
     assert summary["qty_sum"] == pytest.approx(0.8)
     assert summary["avg_price"] == pytest.approx((42000 + 2500 + 42500) / 3)
+
+
+@pytest.mark.unit
+def test_run_validation_window_empty_window(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_collect(window_start: str, window_end: str, db_client: object) -> list[dict]:
+        return []
+
+    monkeypatch.setattr("services.validation.pipeline.collect_execution_orders", fake_collect)
+    window_start = "2026-01-01T00:00:00Z"
+    window_end = "2026-01-01T00:05:00Z"
+    dummy_db = DummyDB()
+
+    result = run_validation_window(window_start, window_end, dummy_db)
+
+    assert result["window_start"] == window_start
+    assert result["window_end"] == window_end
+    assert result["summary"] == {
+        "orders_total": 0,
+        "filled_total": 0,
+        "not_filled_total": 0,
+        "symbols": 0,
+        "qty_sum": 0.0,
+        "avg_price": 0.0,
+    }
