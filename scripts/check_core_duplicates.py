@@ -27,12 +27,13 @@ def check_duplicates():
 
     # Rule 2: Check for secrets.py files (except core/domain/secrets.py)
     excluded_dirs = {".git", "__pycache__", ".worktrees_backup"}
+    allowed_secrets = {Path("core/domain/secrets.py"), Path("core/secrets.py")}
+
     for secrets_file in root_dir.rglob("secrets.py"):
         if any(part in excluded_dirs for part in secrets_file.parts):
             continue
         rel_path = secrets_file.relative_to(root_dir)
-        # Whitelist: core/domain/secrets.py is allowed
-        if rel_path != Path("core/domain/secrets.py"):
+        if rel_path not in allowed_secrets:
             violations.append(
                 f"FORBIDDEN: secrets.py at {rel_path.as_posix()}"
             )
