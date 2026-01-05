@@ -1,5 +1,5 @@
- detection:
-   mode: "strict"
+detection:
+  mode: "lenient"
    file_extensions: [".py", ".js", ".ts", ".java", ".cpp", ".c"]
    exclude_dirs: [".git", "node_modules", "__pycache__", ".worktrees_backup"]
  whitelist:
