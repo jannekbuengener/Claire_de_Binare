@@ -170,25 +170,26 @@ jobs:
         echo "🔍 Analysiere Sicherheitsimplikationen..."
         
         # Prüfe auf potentiell gefährliche Emojis in kritischen Bereichen
-        CRITICAL_EMOJIS=$(python -c "
+        CRITICAL_EMOJIS=$(python - <<'PY'
         import json
         try:
             with open('emoji-report.json') as f:
                 data = json.load(f)
-            
+
             critical = []
             for severity, detections in data.get('by_severity', {}).items():
                 if severity == 'error':
                     for d in detections:
                         if d['context_type'] == 'code' and not d['is_whitelisted']:
                             critical.append(f"{d['file_path']}:{d['line_number']} - {d['emoji']}")
-            
+
             print(len(critical))
             for item in critical:
                 print(f'::error::{item}')
         except:
             print(0)
-        ")
+        PY
+        )
         
         echo "🚨 Kritische Emojis gefunden: $CRITICAL_EMOJIS"
         
