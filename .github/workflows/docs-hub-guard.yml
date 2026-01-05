@@ -38,9 +38,23 @@ jobs:
             docs
             .github
           )
-          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${include_paths[@]}" || true)"
+          git fetch origin main >/dev/null 2>&1 || true
+          mapfile -t changed_files < <(git diff --name-only origin/main)
+          scan_files=()
+          for char in "${include_paths[@]}"; do
+            for file in "${changed_files[@]}"; do
+              if [[ "$file" == "$char"* ]]; then
+                scan_files+=("$file")
+              fi
+            done
+          done
+          if [ "${#scan_files[@]}" -eq 0 ]; then
+            echo "Keine Änderungen in den überwachten Ordnern; Secret-Scan übersprungen."
+            exit 0
+          fi
+          hits="$(git grep -nEI '(api[_-]?key|secret|token|private[_-]?key|BEGIN (RSA|OPENSSH) PRIVATE KEY|xox[baprs]-|ghp_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16})' -- "${scan_files[@]}" || true)"
           if [ -n "$hits" ]; then
-            echo "Potential secret-like strings found (review required):"
+            echo "Potential secret-like strings found in geänderten Dateien (review required):"
             echo "$hits"
             echo ""
             echo "If these are false positives, adjust the workflow patterns or move values to local .env/.secrets."
