@@ -1,0 +1,104 @@
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-redis
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-redis
+  template:
+    metadata:
+      labels:
+        app: cdb-redis
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: redis
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command:
+          - sh
+          - -c
+          - |
+            redis-server \
+              --appendonly yes \
+              --maxmemory 256mb \
+              --maxmemory-policy allkeys-lru \
+              --requirepass $(cat /run/secrets/redis_password)
+        ports:
+        - containerPort: 6379
+          name: redis
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: redis_password
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: secrets
+          mountPath: /run/secrets
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - redis-cli -a $(cat /run/secrets/redis_password) ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
+        readinessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - redis-cli -a $(cat /run/secrets/redis_password) ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc
+      - name: secrets
+        secret:
+          secretName: cdb-secrets
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-redis
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: cdb-redis

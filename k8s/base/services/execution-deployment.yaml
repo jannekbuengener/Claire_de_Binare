@@ -1,0 +1,115 @@
+---
+# Execution Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-execution
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: execution
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-execution
+  template:
+    metadata:
+      labels:
+        app: cdb-execution
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: execution
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: execution
+        image: your-registry/cdb-execution:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8003
+          name: http
+        envFrom:
+        - configMapRef:
+            name: cdb-config
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: redis_password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
+        - name: MEXC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: mexc_api_key
+        - name: MEXC_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: mexc_api_secret
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}
+---
+# Execution Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-execution
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: execution
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8003
+    targetPort: 8003
+    protocol: TCP
+    name: http
+  selector:
+    app: cdb-execution

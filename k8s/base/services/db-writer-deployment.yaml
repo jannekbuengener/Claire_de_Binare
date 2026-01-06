@@ -1,0 +1,74 @@
+---
+# DB Writer Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-db-writer
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: db-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-db-writer
+  template:
+    metadata:
+      labels:
+        app: cdb-db-writer
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: db-writer
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: db-writer
+        image: your-registry/cdb-db-writer:latest
+        imagePullPolicy: Always
+        envFrom:
+        - configMapRef:
+            name: cdb-config
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: redis_password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          exec:
+            command:
+              - sh
+              - -c
+              - kill -0 1 || exit 1
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+      volumes:
+      - name: tmp
+        emptyDir: {}

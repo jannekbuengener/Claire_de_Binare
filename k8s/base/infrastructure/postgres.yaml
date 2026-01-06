@@ -1,0 +1,131 @@
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-postgres
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-postgres
+  template:
+    metadata:
+      labels:
+        app: cdb-postgres
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: cdb-config
+              key: POSTGRES_DB
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              name: cdb-config
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+        livenessProbe:
+          exec:
+            command:
+              - pg_isready
+              - -U
+              - claire_user
+              - -d
+              - claire_de_binare
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            command:
+              - pg_isready
+              - -U
+              - claire_user
+              - -d
+              - claire_de_binare
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: postgres-data-pvc
+      - name: init-scripts
+        configMap:
+          name: postgres-init-scripts
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-postgres
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: cdb-postgres
+---
+# ConfigMap for PostgreSQL init scripts
+# NOTE: You'll need to add your schema.sql and migration files here
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-scripts
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: postgres
+data:
+  01-schema.sql: |
+    -- Add your schema.sql content here
+    -- See infrastructure/database/schema.sql
+    -- This is a placeholder
+    CREATE TABLE IF NOT EXISTS placeholder (id SERIAL PRIMARY KEY);
+  02-migration-002.sql: |
+    -- Add your migration content here
+    -- See infrastructure/database/migrations/002_orders_price_nullable.sql

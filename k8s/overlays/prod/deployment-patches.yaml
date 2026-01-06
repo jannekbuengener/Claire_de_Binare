@@ -1,0 +1,97 @@
+---
+# Production Deployment Patches
+# Enhanced resource limits and replicas
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-ws
+  namespace: cdb-trading
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: ws
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-signal
+  namespace: cdb-trading
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: signal
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "1000m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-risk
+  namespace: cdb-trading
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: risk
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-execution
+  namespace: cdb-trading
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: execution
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-db-writer
+  namespace: cdb-trading
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: db-writer
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

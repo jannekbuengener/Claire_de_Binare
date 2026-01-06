@@ -1,0 +1,85 @@
+# syntax=docker/dockerfile:1.4
+
+# ============================================
+# Build Stage - Dependencies Installation
+# ============================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Security: Upgrade pip to fix CVE-2025-8869
+RUN pip install --upgrade pip==25.3
+
+# Create virtual environment for dependency isolation
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy only requirements first for better layer caching
+COPY services/risk/requirements.txt .
+
+# Install dependencies with cache mount (BuildKit feature)
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
+
+# ============================================
+# Runtime Stage - Minimal Production Image
+# ============================================
+FROM python:3.11-slim
+
+# Install only essential runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    tini \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && apt-get autoremove -y
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Copy application code
+COPY core /app/core
+COPY services/risk /app/services/risk
+
+# Create necessary directories with correct permissions
+RUN mkdir -p /app/services /app/data /app/logs \
+    && touch /app/services/__init__.py \
+    && touch /app/services/risk/__init__.py
+
+# Security: Create non-root user with specific UID
+RUN groupadd -r -g 1000 riskuser \
+    && useradd -r -u 1000 -g riskuser -m -s /sbin/nologin riskuser \
+    && chown -R riskuser:riskuser /app
+
+# Switch to non-root user
+USER riskuser
+
+# Health check configuration
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8002/health || exit 1
+
+# Metadata labels (OCI standard)
+LABEL org.opencontainers.image.title="CDB Risk Manager Service"
+LABEL org.opencontainers.image.description="Risk management service for Claire de Binare crypto trading system"
+LABEL org.opencontainers.image.vendor="CDB Team"
+LABEL org.opencontainers.image.source="https://github.com/yourusername/claire-de-binare"
+LABEL org.opencontainers.image.documentation="https://github.com/yourusername/claire-de-binare/tree/main/docs"
+LABEL maintainer="your-email@example.com"
+
+# Security labels
+LABEL security.trivy.enabled="true"
+LABEL security.non-root="true"
+
+# Expose port (documentation only - doesn't actually publish)
+EXPOSE 8002
+
+# Use tini as init system for proper signal handling
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Start application
+CMD ["python", "-u", "-m", "services.risk.service"]

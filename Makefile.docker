@@ -1,0 +1,189 @@
+# Docker Makefile für Claire de Binare
+# Verwendung: make <target>
+
+.PHONY: help build push clean test security-scan optimize-dockerfiles
+
+# Konfiguration
+REGISTRY := ghcr.io
+ORG := your-github-org
+PROJECT := claire-de-binare
+TAG := latest
+SERVICES := risk ws execution db_writer allocation market regime signal
+
+help: ## Zeige diese Hilfe
+	@echo "Verfügbare Targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+build: ## Baue alle Docker Images
+	@echo "🔨 Building all services..."
+	@for service in $(SERVICES); do \
+		echo "Building $$service..."; \
+		docker build -t $(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG) \
+			-f services/$$service/Dockerfile .; \
+	done
+	@echo "✅ All services built"
+
+build-service: ## Baue einen einzelnen Service (make build-service SERVICE=risk)
+	@echo "🔨 Building $(SERVICE)..."
+	docker build -t $(REGISTRY)/$(ORG)/$(PROJECT)-$(SERVICE):$(TAG) \
+		-f services/$(SERVICE)/Dockerfile .
+	@echo "✅ $(SERVICE) built"
+
+build-optimized: ## Baue mit optimiertem Dockerfile
+	@echo "🚀 Building with optimized Dockerfiles..."
+	@for service in $(SERVICES); do \
+		if [ -f services/$$service/Dockerfile.optimized ]; then \
+			echo "Building $$service with optimized Dockerfile..."; \
+			docker build -t $(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG)-opt \
+				-f services/$$service/Dockerfile.optimized .; \
+		fi; \
+	done
+
+push: ## Push alle Images zum Registry
+	@echo "📤 Pushing all services to registry..."
+	@for service in $(SERVICES); do \
+		echo "Pushing $$service..."; \
+		docker push $(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG); \
+	done
+	@echo "✅ All services pushed"
+
+pull: ## Pull alle Images vom Registry
+	@echo "📥 Pulling all services from registry..."
+	@for service in $(SERVICES); do \
+		echo "Pulling $$service..."; \
+		docker pull $(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG); \
+	done
+
+test: ## Starte Tests im Container
+	@echo "🧪 Running tests..."
+	docker compose -f infrastructure/compose/docker-compose.test.yml up --abort-on-container-exit
+	docker compose -f infrastructure/compose/docker-compose.test.yml down -v
+
+test-service: ## Teste einen einzelnen Service
+	@echo "🧪 Testing $(SERVICE)..."
+	docker run --rm $(REGISTRY)/$(ORG)/$(PROJECT)-$(SERVICE):$(TAG) python -m pytest
+
+security-scan: ## Security Scan mit Trivy
+	@echo "🔒 Running security scans..."
+	@for service in $(SERVICES); do \
+		echo "Scanning $$service..."; \
+		trivy image --severity HIGH,CRITICAL \
+			$(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG); \
+	done
+
+hadolint: ## Dockerfile Linting
+	@echo "🔍 Running Hadolint on Dockerfiles..."
+	@for service in $(SERVICES); do \
+		echo "Linting services/$$service/Dockerfile..."; \
+		docker run --rm -i hadolint/hadolint < services/$$service/Dockerfile || true; \
+	done
+
+dive: ## Analyze image layers with dive
+	@echo "🔬 Analyzing $(SERVICE) with dive..."
+	dive $(REGISTRY)/$(ORG)/$(PROJECT)-$(SERVICE):$(TAG)
+
+size-report: ## Zeige Image Größen
+	@echo "📊 Image Size Report:"
+	@docker images --format "table {{.Repository}}:{{.Tag}}\t{{.Size}}" | grep $(PROJECT)
+
+clean: ## Lösche lokale Images
+	@echo "🧹 Cleaning local images..."
+	@docker images | grep $(PROJECT) | awk '{print $$3}' | xargs -r docker rmi -f
+	@echo "✅ Cleanup complete"
+
+prune: ## Lösche ungenutzte Docker Ressourcen
+	@echo "🧹 Pruning unused Docker resources..."
+	docker system prune -af --volumes
+	@echo "✅ Prune complete"
+
+compose-up: ## Starte Stack mit docker compose
+	@echo "🚀 Starting Docker Compose stack..."
+	cd infrastructure/compose && docker compose up -d
+	@echo "✅ Stack started"
+
+compose-down: ## Stoppe Stack
+	@echo "🛑 Stopping Docker Compose stack..."
+	cd infrastructure/compose && docker compose down
+	@echo "✅ Stack stopped"
+
+compose-logs: ## Zeige Logs vom Stack
+	cd infrastructure/compose && docker compose logs -f
+
+compose-ps: ## Zeige Status vom Stack
+	cd infrastructure/compose && docker compose ps
+
+health-check: ## Prüfe Health Status aller Services
+	@echo "🏥 Checking service health..."
+	@for service in $(SERVICES); do \
+		echo -n "$$service: "; \
+		docker inspect --format='{{.State.Health.Status}}' \
+			$(PROJECT)-$$service 2>/dev/null || echo "not running"; \
+	done
+
+build-multiarch: ## Baue Multi-Platform Images (linux/amd64,linux/arm64)
+	@echo "🌍 Building multi-platform images..."
+	@for service in $(SERVICES); do \
+		echo "Building $$service for multiple platforms..."; \
+		docker buildx build \
+			--platform linux/amd64,linux/arm64 \
+			--push \
+			-t $(REGISTRY)/$(ORG)/$(PROJECT)-$$service:$(TAG) \
+			-f services/$$service/Dockerfile .; \
+	done
+
+optimize-dockerfiles: ## Generiere optimierte Dockerfiles
+	@echo "⚡ Generating optimized Dockerfiles..."
+	@python scripts/optimize_dockerfiles.py
+
+benchmark: ## Benchmark Build-Zeiten
+	@echo "⏱️ Benchmarking build times..."
+	@for service in $(SERVICES); do \
+		echo "Benchmarking $$service..."; \
+		time docker build -t $(PROJECT)-$$service-bench \
+			-f services/$$service/Dockerfile . 2>&1 | grep real; \
+	done
+
+update-base-images: ## Update Base Images
+	@echo "🔄 Pulling latest base images..."
+	docker pull python:3.11-slim
+	docker pull redis:7.4.1-alpine
+	docker pull postgres:15.11-alpine
+	@echo "✅ Base images updated"
+
+validate-compose: ## Validiere docker-compose.yml
+	@echo "✓ Validating docker-compose.yml..."
+	cd infrastructure/compose && docker compose config --quiet
+	@echo "✅ docker-compose.yml is valid"
+
+shell-service: ## Öffne Shell in Service Container
+	@echo "🐚 Opening shell in $(SERVICE)..."
+	docker run -it --rm --entrypoint /bin/bash \
+		$(REGISTRY)/$(ORG)/$(PROJECT)-$(SERVICE):$(TAG)
+
+debug-service: ## Debug Service mit mounted source
+	@echo "🐛 Starting $(SERVICE) in debug mode..."
+	docker run -it --rm \
+		-v $(PWD)/services/$(SERVICE):/app/services/$(SERVICE) \
+		-v $(PWD)/core:/app/core \
+		$(REGISTRY)/$(ORG)/$(PROJECT)-$(SERVICE):$(TAG)
+
+# Advanced Targets
+
+ci-build: ## CI Build (wie GitHub Actions)
+	@echo "🤖 Running CI build..."
+	docker buildx build \
+		--cache-from type=gha \
+		--cache-to type=gha,mode=max \
+		--platform linux/amd64 \
+		-t $(PROJECT)-ci-test \
+		-f services/risk/Dockerfile .
+
+compare-images: ## Vergleiche Original vs. Optimiert
+	@echo "📊 Comparing image sizes..."
+	@echo "Original Images:"
+	@docker images --format "table {{.Repository}}\t{{.Size}}" | grep $(PROJECT) | grep -v opt
+	@echo "\nOptimized Images:"
+	@docker images --format "table {{.Repository}}\t{{.Size}}" | grep $(PROJECT)-.*-opt
+
+stats: ## Zeige Docker Stats
+	docker stats --no-stream --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"

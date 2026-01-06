@@ -1,0 +1,26 @@
+---
+# Production Overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: cdb-trading
+
+patchesStrategicMerge:
+  - deployment-patches.yaml
+  - security-patches.yaml
+
+# Use specific version tags in prod
+images:
+  - name: your-registry/cdb-ws
+    newTag: v1.0.0
+  - name: your-registry/cdb-signal
+    newTag: v1.0.0
+  - name: your-registry/cdb-risk
+    newTag: v1.0.0
+  - name: your-registry/cdb-execution
+    newTag: v1.0.0
+  - name: your-registry/cdb-db-writer
+    newTag: v1.0.0
