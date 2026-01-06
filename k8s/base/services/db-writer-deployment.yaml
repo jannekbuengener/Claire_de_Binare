@@ -1,0 +1,105 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-db-writer
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: db-writer
+spec:
+  ports:
+  - port: 8004
+    targetPort: 8004
+    name: http
+  selector:
+    app: cdb-db-writer
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-db-writer
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: db-writer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-db-writer
+  template:
+    metadata:
+      labels:
+        app: cdb-db-writer
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: db-writer
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8004"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: db-writer
+        image: your-registry/cdb-db-writer:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8004
+          name: http
+        envFrom:
+        - configMapRef:
+            name: cdb-config
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: redis_password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8004
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}

@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-ws
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: websocket
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  selector:
+    app: cdb-ws
+  type: ClusterIP

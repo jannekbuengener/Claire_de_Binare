@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdb-config
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+data:
+  # Redis Configuration
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # PostgreSQL Configuration
+  POSTGRES_HOST: "postgresql"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "claire_de_binare"
+  POSTGRES_USER: "cdb_user"
+  
+  # Service Configuration
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "production"
+  
+  # Trading Configuration
+  MAX_POSITIONS: "5"
+  DEFAULT_RISK_LIMIT: "0.02"
+  
+  # Monitoring
+  PROMETHEUS_ENABLED: "true"
+  METRICS_PORT: "9090"

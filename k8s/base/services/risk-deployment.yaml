@@ -1,0 +1,105 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cdb-risk
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: risk
+spec:
+  ports:
+  - port: 8002
+    targetPort: 8002
+    name: http
+  selector:
+    app: cdb-risk
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-risk
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/component: risk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cdb-risk
+  template:
+    metadata:
+      labels:
+        app: cdb-risk
+        app.kubernetes.io/name: claire-de-binare
+        app.kubernetes.io/component: risk
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8002"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: risk
+        image: your-registry/cdb-risk:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8002
+          name: http
+        envFrom:
+        - configMapRef:
+            name: cdb-config
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: redis_password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        - name: tmp
+          mountPath: /tmp
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8002
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "300m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: tmp
+        emptyDir: {}

@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cdb-trading
+
+bases:
+  - ../../base
+
+namePrefix: dev-
+
+commonLabels:
+  environment: development
+
+configMapGenerator:
+  - name: cdb-config
+    behavior: merge
+    literals:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+
+patchesStrategicMerge:
+  - replica-patch.yaml
+  - resource-patch.yaml
+
+images:
+  - name: your-registry/cdb-ws
+    newTag: dev-latest
+  - name: your-registry/cdb-signal
+    newTag: dev-latest
+  - name: your-registry/cdb-risk
+    newTag: dev-latest
+  - name: your-registry/cdb-execution
+    newTag: dev-latest
+  - name: your-registry/cdb-db-writer
+    newTag: dev-latest
