@@ -3,24 +3,18 @@ kind: Kustomization
 
 namespace: cdb-trading
 
-bases:
+resources:
   - ../../base
 
 namePrefix: prod-
 
-commonLabels:
-  environment: production
+labels:
+  - pairs:
+      environment: production
 
-configMapGenerator:
-  - name: cdb-config
-    behavior: merge
-    literals:
-      - LOG_LEVEL=INFO
-      - ENVIRONMENT=production
-
-patchesStrategicMerge:
-  - replica-patch.yaml
-  - security-patch.yaml
+patches:
+  - path: replica-patch.yaml
+  - path: security-patch.yaml
 
 images:
   - name: your-registry/cdb-ws

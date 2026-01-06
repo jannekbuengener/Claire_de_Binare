@@ -29,9 +29,10 @@ resources:
   - services/execution-deployment.yaml
   - services/db-writer-deployment.yaml
 
-commonLabels:
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: claire-de-binare
+labels:
+  - pairs:
+      app.kubernetes.io/managed-by: kustomize
+      app.kubernetes.io/part-of: claire-de-binare
 
 images:
   - name: your-registry/cdb-ws

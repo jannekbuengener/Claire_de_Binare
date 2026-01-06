@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cdb-ws
+  namespace: cdb-trading
 spec:
   template:
     spec:
@@ -26,6 +27,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cdb-signal
+  namespace: cdb-trading
 spec:
   template:
     spec:
@@ -48,6 +50,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cdb-risk
+  namespace: cdb-trading
 spec:
   template:
     spec:
@@ -70,6 +73,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cdb-execution
+  namespace: cdb-trading
 spec:
   template:
     spec:
@@ -92,6 +96,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cdb-db-writer
+  namespace: cdb-trading
 spec:
   template:
     spec:
