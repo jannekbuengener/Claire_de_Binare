@@ -13,6 +13,8 @@ on:
 jobs:
   emoji-bot:
     name: 🤖 Emoji Bot Handler
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'workflow_dispatch' || 
