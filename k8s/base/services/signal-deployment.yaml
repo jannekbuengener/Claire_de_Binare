@@ -74,6 +74,9 @@ spec:
           readOnlyRootFilesystem: true
       volumes:
       - name: data
+        # Signal service uses PVC for model persistence and strategy state
+        # This allows model continuity across restarts
+        # For fully stateless operation, consider external model storage (S3, etc.)
         persistentVolumeClaim:
           claimName: signal-data-pvc
       - name: tmp

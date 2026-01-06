@@ -190,6 +190,11 @@ kubectl port-forward svc/prometheus 9090:9090 -n cdb-trading
 # Open http://localhost:9090
 ```
 
+**Note**: For production HA monitoring, consider:
+- Running 2+ Prometheus replicas with federation
+- Using Thanos for long-term storage and HA
+- Implementing AlertManager for alerting
+
 ### View Logs
 
 ```bash
