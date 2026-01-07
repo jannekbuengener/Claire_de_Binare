@@ -1,9 +1,0 @@
-# Ignore demo/example secrets that are not real credentials
-
-# Demo database passwords in example files
-.env:generic-api-key:8
-.env.example:generic-api-key:19
-infrastructure/monitoring/grafana/provisioning/datasources/postgres.yml:generic-api-key:11
-
-# Demo Sidekiq token in README
-README.md:sidekiq-secret:42
