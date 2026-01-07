@@ -1,12 +1,20 @@
 name: trivy
 
 on:
-  push:
-    branches: ["main"]
   pull_request:
     branches: ["main"]
+    paths:
+      - "Dockerfile"
+      - "infrastructure/**"
+      - "services/**"
+  push:
+    branches: ["main"]
+    paths:
+      - "Dockerfile"
+      - "infrastructure/**"
+      - "services/**"
   schedule:
-    - cron: "42 14 * * 3"
+    - cron: '0 6 * * 0'
 
 permissions:
   contents: read
