@@ -1,5 +1,6 @@
 [tool.black]
 line-length = 88
+extend-exclude = "services/ws/mexc_proto_gen/"
 target-version = ["py313"]
 
 [tool.ruff]
