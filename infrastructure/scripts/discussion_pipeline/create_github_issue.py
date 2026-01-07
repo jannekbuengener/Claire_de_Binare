@@ -30,8 +30,8 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from github.issue_creator import GitHubIssueCreator  # noqa: E402
-from utils.config_loader import ConfigLoader  # noqa: E402
+from github.issue_creator import GitHubIssueCreator  # noqa: E402  # noqa: E402
+from utils.config_loader import ConfigLoader  # noqa: E402  # noqa: E402
 
 
 console = Console(force_terminal=True, legacy_windows=False)
