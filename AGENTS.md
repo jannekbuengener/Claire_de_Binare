@@ -1,15 +1,10 @@
-# AGENTS (Working Repo Pointer)
+# AGENTS (Pointer)
 
-Dieses Repository (`Claire_de_Binare`) ist **Execution Only**.
+Diese Datei ist ein Read-Only-Pointer. Die kanonische AGENTS-Registry und alle Agenten-Charter liegen im Docs-Hub.
 
-✅ **Kanonische Agenten-Registry / Rollen / Trust-Score-Regeln** liegen im Docs Hub:
+Kanonischer Pfad:
+D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents\AGENTS.md
 
-`D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents\AGENTS.md`
+Scope dieser Änderung: nur Migration (move + pointer), keine inhaltlichen Änderungen an der kanonischen Datei.
 
-## Pflicht
-Jeder Agent MUSS:
-1) die kanonische `AGENTS.md` im Docs Hub laden
-2) danach seine eigene Rollendatei (`CLAUDE.md`, `CODEX.md`, `GEMINI.md` …) laden
-3) die Governance- & Trust-Entry-Points aus der kanonischen `AGENTS.md` beachten
-
-❗ Keine Kopien, keine Ableitungen, keine „lokalen Regeln“ in diesem Working Repo.
+Bitte Änderungen am Canon nur im Docs-Hub vornehmen.

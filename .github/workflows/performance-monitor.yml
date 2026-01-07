@@ -3,10 +3,9 @@ name: Performance Monitor
 on:
   push:
     branches: [ main ]
-  pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '0 6 * * *'  # Daily performance check
+    - cron: '0 6 * * 0'  # Weekly performance check
 
 jobs:
   performance-check:
