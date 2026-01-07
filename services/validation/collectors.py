@@ -55,6 +55,44 @@ class ExecutionCollector:
     def collect_redis_events(
         self, stream: str, start_id: str, end_id: str, limit: int
     ) -> list[dict]:
-        """Stub for Redis stream reading (placeholder)."""
-        # TODO: use redis_client.xrange/xread once integration ready
-        return []
+        """
+        Read events from Redis stream using XRANGE.
+
+        Args:
+            stream: Redis stream name (e.g., 'signals', 'market_events')
+            start_id: Starting stream ID (e.g., '0', '1640000000000-0')
+            end_id: Ending stream ID (e.g., '+', '1640100000000-0')
+            limit: Maximum number of entries to return
+
+        Returns:
+            List of normalized event dictionaries with 'id' and event fields
+        """
+        if not self.redis_client:
+            return []
+
+        try:
+            # Use XRANGE to read stream entries within the specified range
+            # XRANGE returns: [(stream_id, {field: value, ...}), ...]
+            entries = self.redis_client.xrange(
+                name=stream,
+                min=start_id,
+                max=end_id,
+                count=limit
+            )
+
+            # Normalize to list of dicts with stream_id included
+            normalized: list[dict] = []
+            for stream_id, fields in entries:
+                event = {"id": stream_id}
+                event.update(fields)
+                normalized.append(event)
+
+            return normalized
+
+        except Exception as e:
+            # Log error but don't crash - return empty list
+            # The logging setup from service.py should be available
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to read Redis stream '{stream}': {e}")
+            return []

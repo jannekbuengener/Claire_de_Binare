@@ -23,6 +23,19 @@ updates:
       #   update-types: ["version-update:semver-major"]
 
   # ----------------------------
+  # Worktrees backup (explicitly ignored)
+  # ----------------------------
+  - package-ecosystem: "pip"
+    directory: "/.worktrees_backup"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:05"
+      timezone: "Europe/Berlin"
+    ignore:
+      - dependency-name: "*"
+
+  # ----------------------------
   # GitHub Actions
   # ----------------------------
   - package-ecosystem: "github-actions"
