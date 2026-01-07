@@ -54,13 +54,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="origin/${{ github.base_ref }}"
+            base_ref="${{ github.base_ref }}"
+            base="origin/$base_ref"
           else
             base="${{ github.event.before }}"
           fi
 
-          if [ -n "$base" ]; then
-            git fetch origin "$base"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "$base_ref"
           fi
 
           git fetch origin --unshallow || true
@@ -108,13 +109,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="origin/${{ github.base_ref }}"
+            base_ref="${{ github.base_ref }}"
+            base="origin/$base_ref"
           else
             base="${{ github.event.before }}"
           fi
 
-          if [ -n "$base" ]; then
-            git fetch origin "$base"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "$base_ref"
           fi
 
           git fetch origin --unshallow || true
