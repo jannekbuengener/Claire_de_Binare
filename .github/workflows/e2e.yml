@@ -16,6 +16,10 @@ on:
       - 'infrastructure/compose/**'
       - '.github/workflows/e2e.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e_smoke:
     name: E2E Smoke Test (market_data → signal)

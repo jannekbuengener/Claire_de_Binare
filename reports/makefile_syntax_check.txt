@@ -1,0 +1,5 @@
+echo "🧪 Führe Unit-Tests aus..."
+pytest -v -m unit
+echo "🔌 Führe Integration-Tests aus (mit Mocks)..."
+pytest -v -m "integration and not e2e and not local_only"
+echo "✅ Alle CI-Tests erfolgreich"

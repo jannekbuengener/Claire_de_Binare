@@ -17,6 +17,8 @@ updates:
       - "python"
     commit-message:
       prefix: "deps(pip)"
+    exclude-paths:
+      - ".worktrees_backup/**"
     ignore:
       # Beispiel: Major Updates optional dämpfen
       # - dependency-name: "numpy"
@@ -37,6 +39,8 @@ updates:
       - "ci"
     commit-message:
       prefix: "deps(actions)"
+    exclude-paths:
+      - ".worktrees_backup/**"
 
   # ----------------------------
   # Docker (Root + Infra)
@@ -47,12 +51,14 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "04:30"
-      timezone: "Europe/Berlin"
+      timezone: "Europe-Berlin"
     labels:
       - "dependencies"
       - "docker"
     commit-message:
       prefix: "deps(docker)"
+    exclude-paths:
+      - ".worktrees_backup/**"
 
   - package-ecosystem: "docker"
     directory: "/infrastructure"
@@ -60,9 +66,11 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "04:30"
-      timezone: "Europe/Berlin"
+      timezone: "Europe-Berlin"
     labels:
       - "dependencies"
       - "docker"
     commit-message:
       prefix: "deps(docker)"
+    exclude-paths:
+      - ".worktrees_backup/**"

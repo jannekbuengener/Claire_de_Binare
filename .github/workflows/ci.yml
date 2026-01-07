@@ -2,14 +2,28 @@ name: ci
 
 on:
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    paths:
+      - 'core/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
   push:
     branches: [ main ]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    paths:
+      - 'core/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

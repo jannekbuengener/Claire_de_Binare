@@ -1,18 +1,3 @@
-# ---
-# relations:
-#   role: build_automation
-#   domain: orchestration
-#   upstream:
-#     - docker-compose.yml
-#     - pytest.ini
-#     - infrastructure/scripts/systemcheck.py
-#     - infrastructure/scripts/daily_check.py
-#     - infrastructure/scripts/backup_postgres.ps1
-#   downstream: []
-#   invariants:
-#     - docker must be installed and in PATH.
-#     - pytest must be installed.
-# ---
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 

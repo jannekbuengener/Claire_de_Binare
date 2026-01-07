@@ -35,8 +35,7 @@ import redis
 
 # Skip all tests if E2E_RUN is not set
 pytestmark = pytest.mark.skipif(
-    os.getenv("E2E_RUN") != "1",
-    reason="E2E tests only run when E2E_RUN=1 is set"
+    os.getenv("E2E_RUN") != "1", reason="E2E tests only run when E2E_RUN=1 is set"
 )
 
 
@@ -45,14 +44,24 @@ def redis_client():
     """
     Redis client connected to cdb_redis container.
 
+    Reads password from secret file (Docker volume mount).
+
     Tries multiple connection strategies:
     1. cdb_redis:6379 (internal Docker network)
     2. localhost:6379 (if port mapped)
     """
-    # Get password from environment - NO FALLBACK (security)
-    password = os.getenv("REDIS_PASSWORD")
+    # Read password from secret file (NO FALLBACK - security)
+    password = None
+    try:
+        with open("/run/secrets/redis_password", "r") as f:
+            password = f.read().strip()
+    except FileNotFoundError:
+        pytest.fail(
+            "Secret file /run/secrets/redis_password not found. Check Docker volume mount."
+        )
+
     if not password:
-        pytest.fail("REDIS_PASSWORD environment variable not set. Load secrets first.")
+        pytest.fail("Password file is empty. Check Docker volume mount.")
 
     # Try internal docker network first
     try:
@@ -61,7 +70,22 @@ def redis_client():
             port=6379,
             password=password,
             decode_responses=True,
-            socket_timeout=5
+            socket_timeout=5,
+        )
+        client.ping()
+        yield client
+        return
+    except (redis.ConnectionError, redis.TimeoutError):
+        pass
+
+    # Fallback to localhost (if port mapped)
+    try:
+        client = redis.Redis(
+            host="localhost",
+            port=6379,
+            password=password,
+            decode_responses=True,
+            socket_timeout=5,
         )
         client.ping()
         yield client
@@ -76,13 +100,15 @@ def redis_client():
             port=6379,
             password=password,
             decode_responses=True,
-            socket_timeout=5
+            socket_timeout=5,
         )
         client.ping()
         yield client
         return
     except (redis.ConnectionError, redis.TimeoutError):
-        pytest.fail("Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)")
+        pytest.fail(
+            "Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)"
+        )
 
 
 @pytest.fixture
@@ -120,11 +146,13 @@ def test_order_to_execution_flow(redis_client, unique_order_id):
         "order_id": unique_order_id,
         "symbol": "BTC/USDT",
         "side": "BUY",
-        "quantity": 0.001
+        "quantity": 0.001,
     }
 
     subscribers = redis_client.publish("orders", json.dumps(order_payload))
-    assert subscribers >= 1, "No subscribers on 'orders' channel - execution service not running?"
+    assert subscribers >= 1, (
+        "No subscribers on 'orders' channel - execution service not running?"
+    )
 
     # Wait for order_result (max 10 seconds)
     result_message = None
@@ -145,7 +173,9 @@ def test_order_to_execution_flow(redis_client, unique_order_id):
 
     # Parse and validate payload
     payload = json.loads(result_message["data"])
-    assert payload["type"] == "order_result", f"Expected type='order_result', got '{payload.get('type')}'"
+    assert payload["type"] == "order_result", (
+        f"Expected type='order_result', got '{payload.get('type')}'"
+    )
     assert "order_id" in payload, "Missing order_id in payload"
     assert "status" in payload, "Missing status in payload"
 
@@ -176,7 +206,7 @@ def test_order_results_schema(redis_client, unique_order_id):
         "order_id": unique_order_id,
         "symbol": "ETH/USDT",
         "side": "SELL",
-        "quantity": 0.05
+        "quantity": 0.05,
     }
 
     redis_client.publish("orders", json.dumps(order_payload))
@@ -200,23 +230,48 @@ def test_order_results_schema(redis_client, unique_order_id):
     payload = json.loads(result_message["data"])
 
     # Schema validation
-    required_fields = ["type", "order_id", "status", "symbol", "side", "quantity", "timestamp"]
+    required_fields = [
+        "type",
+        "order_id",
+        "status",
+        "symbol",
+        "side",
+        "quantity",
+        "timestamp",
+    ]
     for field in required_fields:
         assert field in payload, f"Missing required field: {field}"
 
     # Timestamp format validation (CRITICAL for #225)
     timestamp = payload["timestamp"]
-    assert isinstance(timestamp, int), f"Timestamp must be Unix int, got {type(timestamp).__name__}: {timestamp}"
+    assert isinstance(timestamp, int), (
+        f"Timestamp must be Unix int, got {type(timestamp).__name__}: {timestamp}"
+    )
 
     # Timestamp reasonableness check (should be recent)
     now = int(time.time())
-    assert abs(now - timestamp) < 60, f"Timestamp {timestamp} is not recent (now={now}, diff={abs(now - timestamp)}s)"
+    assert abs(now - timestamp) < 60, (
+        f"Timestamp {timestamp} is not recent (now={now}, diff={abs(now - timestamp)}s)"
+    )
 
     # Type field validation
-    assert payload["type"] == "order_result", f"Expected type='order_result', got '{payload['type']}'"
+    assert payload["type"] == "order_result", (
+        f"Expected type='order_result', got '{payload['type']}'"
+    )
 
     # Status validation (should be valid order status)
-    valid_statuses = ["FILLED", "PENDING", "CANCELLED", "REJECTED", "PARTIAL", "filled", "pending", "cancelled", "rejected", "partial"]
+    valid_statuses = [
+        "FILLED",
+        "PENDING",
+        "CANCELLED",
+        "REJECTED",
+        "PARTIAL",
+        "filled",
+        "pending",
+        "cancelled",
+        "rejected",
+        "partial",
+    ]
     assert payload["status"] in valid_statuses, f"Invalid status: {payload['status']}"
 
 
@@ -246,7 +301,7 @@ def test_stream_persistence(redis_client, unique_order_id):
         "order_id": unique_order_id,
         "symbol": "BTC/USDT",
         "side": "BUY",
-        "quantity": 0.002
+        "quantity": 0.002,
     }
 
     redis_client.publish("orders", json.dumps(order_payload))
@@ -260,7 +315,9 @@ def test_stream_persistence(redis_client, unique_order_id):
     except redis.ResponseError:
         pytest.fail(f"Stream '{stream_name}' does not exist after order execution")
 
-    assert final_entries > initial_entries, f"Stream length did not increase (was {initial_entries}, now {final_entries})"
+    assert final_entries > initial_entries, (
+        f"Stream length did not increase (was {initial_entries}, now {final_entries})"
+    )
 
     # Read latest entry from stream
     entries = redis_client.xrevrange(stream_name, count=1)
@@ -270,7 +327,9 @@ def test_stream_persistence(redis_client, unique_order_id):
 
     # Validate entry contains expected fields
     assert "type" in entry_data, "Stream entry missing 'type' field"
-    assert entry_data["type"] == "order_result", f"Expected type='order_result', got '{entry_data['type']}'"
+    assert entry_data["type"] == "order_result", (
+        f"Expected type='order_result', got '{entry_data['type']}'"
+    )
 
     # Timestamp validation (should be Unix int as string in stream)
     assert "timestamp" in entry_data, "Stream entry missing 'timestamp' field"
@@ -279,7 +338,9 @@ def test_stream_persistence(redis_client, unique_order_id):
     try:
         timestamp_int = int(timestamp_str)
         now = int(time.time())
-        assert abs(now - timestamp_int) < 60, f"Stream timestamp {timestamp_int} is not recent"
+        assert abs(now - timestamp_int) < 60, (
+            f"Stream timestamp {timestamp_int} is not recent"
+        )
     except ValueError:
         pytest.fail(f"Stream timestamp is not a valid integer: {timestamp_str}")
 
@@ -299,11 +360,15 @@ def test_subscriber_count(redis_client):
     pubsub_channels = redis_client.execute_command("PUBSUB", "NUMSUB", "order_results")
 
     # Response format: ['order_results', <count>]
-    assert len(pubsub_channels) == 2, f"Unexpected PUBSUB NUMSUB response: {pubsub_channels}"
+    assert len(pubsub_channels) == 2, (
+        f"Unexpected PUBSUB NUMSUB response: {pubsub_channels}"
+    )
 
     channel_name, subscriber_count = pubsub_channels
     assert channel_name == "order_results"
-    assert subscriber_count >= 2, f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
+    assert subscriber_count >= 2, (
+        f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
+    )
 
 
 @pytest.mark.e2e
@@ -334,7 +399,7 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
         "order_id": unique_order_id,
         "symbol": "BTC/USDT",
         "side": "BUY",
-        "quantity": 0.001
+        "quantity": 0.001,
     }
     redis_client.publish("orders", json.dumps(order_payload))
 
@@ -356,7 +421,7 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
 
     # Use first and last entry IDs as range
     from_id = entries[-1][0]  # Oldest in our sample
-    to_id = entries[0][0]     # Newest in our sample
+    to_id = entries[0][0]  # Newest in our sample
     count = len(entries)
 
     # Prepare output files
@@ -365,11 +430,17 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
 
     # Run replay twice with identical parameters
     replay_cmd = [
-        sys.executable, "-m", "tools.replay.replay",
-        "--from-id", from_id,
-        "--to-id", to_id,
-        "--count", str(count),
-        "--out", str(replay_run1)
+        sys.executable,
+        "-m",
+        "tools.replay.replay",
+        "--from-id",
+        from_id,
+        "--to-id",
+        to_id,
+        "--count",
+        str(count),
+        "--out",
+        str(replay_run1),
     ]
 
     # First run
@@ -377,7 +448,7 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
         replay_cmd,
         capture_output=True,
         text=True,
-        env={**os.environ, "CDB_REPLAY": "1"}
+        env={**os.environ, "CDB_REPLAY": "1"},
     )
     assert result1.returncode == 0, f"Replay run 1 failed: {result1.stderr}"
 
@@ -387,7 +458,7 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
         replay_cmd,
         capture_output=True,
         text=True,
-        env={**os.environ, "CDB_REPLAY": "1"}
+        env={**os.environ, "CDB_REPLAY": "1"},
     )
     assert result2.returncode == 0, f"Replay run 2 failed: {result2.stderr}"
 
@@ -425,11 +496,11 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
         for i, line in enumerate(lines):
             try:
                 event = json.loads(line)
-                assert "stream_id" in event, f"Line {i+1} missing stream_id"
-                assert "timestamp" in event, f"Line {i+1} missing timestamp"
-                assert "order_id" in event, f"Line {i+1} missing order_id"
+                assert "stream_id" in event, f"Line {i + 1} missing stream_id"
+                assert "timestamp" in event, f"Line {i + 1} missing timestamp"
+                assert "order_id" in event, f"Line {i + 1} missing order_id"
             except json.JSONDecodeError as e:
-                pytest.fail(f"Line {i+1} is not valid JSON: {e}")
+                pytest.fail(f"Line {i + 1} is not valid JSON: {e}")
 
 
 # =============================================================================
@@ -469,7 +540,7 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
         "side": "BUY",
         "quantity": 0.001,
         "type": "order",  # Fixed: execution service expects "order" not "MARKET"
-        "source": "e2e_test_happy_path"
+        "source": "e2e_test_happy_path",
     }
     redis_client.publish("orders", json.dumps(order_payload))
 
@@ -491,7 +562,9 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
     assert result_message is not None, "TC-P0-001 FAILED: No order_result received"
 
     payload = json.loads(result_message["data"])
-    assert payload["status"] in ["FILLED", "filled"], f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
+    assert payload["status"] in ["FILLED", "filled"], (
+        f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
+    )
     assert latency_ms < 1000, f"TC-P0-001 FAILED: Latency {latency_ms:.0f}ms > 1000ms"
 
     print(f"✅ TC-P0-001 PASSED: Happy path completed in {latency_ms:.0f}ms")
@@ -529,7 +602,7 @@ def test_tc_p0_002_risk_position_limit_block(redis_client):
         "side": "BUY",
         "quantity": 999.0,  # Excessive quantity
         "type": "order",  # Fixed: execution service expects "order" not "MARKET"
-        "source": "e2e_test_position_limit"
+        "source": "e2e_test_position_limit",
     }
     redis_client.publish("orders", json.dumps(order_payload))
 
@@ -550,7 +623,14 @@ def test_tc_p0_002_risk_position_limit_block(redis_client):
     payload = json.loads(result_message["data"])
 
     # Should be rejected OR blocked (depends on implementation)
-    valid_blocked_statuses = ["REJECTED", "rejected", "BLOCKED", "blocked", "CANCELLED", "cancelled"]
+    valid_blocked_statuses = [
+        "REJECTED",
+        "rejected",
+        "BLOCKED",
+        "blocked",
+        "CANCELLED",
+        "cancelled",
+    ]
     is_blocked = payload["status"] in valid_blocked_statuses
 
     # If FILLED, the position limit is not working!
@@ -566,7 +646,9 @@ def test_tc_p0_002_risk_position_limit_block(redis_client):
         reason = payload.get("reason", payload.get("message", "unknown"))
         print(f"⚠️ TC-P0-002 WARNING: Status={payload['status']}, Reason={reason}")
 
-    print(f"✅ TC-P0-002 PASSED: Excessive order blocked with status={payload['status']}")
+    print(
+        f"✅ TC-P0-002 PASSED: Excessive order blocked with status={payload['status']}"
+    )
 
 
 @pytest.mark.e2e
@@ -606,7 +688,7 @@ def test_tc_p0_003_daily_drawdown_stop(redis_client):
             "side": "BUY",
             "quantity": 0.1,
             "type": "order",  # Fixed: execution service expects "order" not "MARKET"
-            "source": "e2e_test_drawdown"
+            "source": "e2e_test_drawdown",
         }
         redis_client.publish("orders", json.dumps(order_payload))
 
@@ -633,10 +715,14 @@ def test_tc_p0_003_daily_drawdown_stop(redis_client):
                     f"Payload: {payload}"
                 )
             else:
-                print(f"✅ TC-P0-003 PASSED: Order blocked with status={payload['status']}")
+                print(
+                    f"✅ TC-P0-003 PASSED: Order blocked with status={payload['status']}"
+                )
         else:
             # No response could mean order was silently dropped (also valid behavior)
-            print("⚠️ TC-P0-003: No response received (order may have been silently blocked)")
+            print(
+                "⚠️ TC-P0-003: No response received (order may have been silently blocked)"
+            )
 
     finally:
         # Cleanup: Remove drawdown flags
@@ -679,7 +765,7 @@ def test_tc_p0_004_circuit_breaker_trigger(redis_client):
             "side": "SELL",
             "quantity": 0.001,
             "type": "order",  # Fixed: execution service expects "order" not "MARKET"
-            "source": "e2e_test_circuit_breaker"
+            "source": "e2e_test_circuit_breaker",
         }
         redis_client.publish("orders", json.dumps(order_payload))
 
@@ -705,9 +791,13 @@ def test_tc_p0_004_circuit_breaker_trigger(redis_client):
                     f"Payload: {payload}"
                 )
             else:
-                print(f"✅ TC-P0-004 PASSED: Circuit breaker blocked order, status={payload['status']}")
+                print(
+                    f"✅ TC-P0-004 PASSED: Circuit breaker blocked order, status={payload['status']}"
+                )
         else:
-            print("⚠️ TC-P0-004: No response received (order may have been silently blocked)")
+            print(
+                "⚠️ TC-P0-004: No response received (order may have been silently blocked)"
+            )
 
     finally:
         # Cleanup: Deactivate circuit breaker
@@ -747,7 +837,7 @@ def test_tc_p0_005_data_persistence_check(redis_client, unique_order_id):
         "side": "BUY",
         "quantity": 0.001,
         "type": "order",  # Fixed: execution service expects "order" not "MARKET"
-        "source": "e2e_test_persistence"
+        "source": "e2e_test_persistence",
     }
     redis_client.publish("orders", json.dumps(order_payload))
 
@@ -774,7 +864,9 @@ def test_tc_p0_005_data_persistence_check(redis_client, unique_order_id):
             break
 
     if not found:
-        print(f"⚠️ TC-P0-005 WARNING: Order {unique_order_id} not found in latest 5 stream entries")
+        print(
+            f"⚠️ TC-P0-005 WARNING: Order {unique_order_id} not found in latest 5 stream entries"
+        )
     else:
         print(f"✅ TC-P0-005 PASSED: Order persisted to {stream_name}")
 

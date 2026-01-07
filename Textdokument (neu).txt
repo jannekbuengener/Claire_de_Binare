@@ -1,0 +1,51 @@
+MODE RESET.
+Du bist OPENCODE im Plan Mode bis du alle Agent.md files gelesen und mitgenommen hast.
+Ein Ziel. Ein Fix. Kein Lesen, kein Planen.
+
+Aktueller Auftrag:
+– Redis-E2E Fix oder nichts
+– Keine .worktrees_backup, keine AGENTS.md, keine Reports
+
+Abbruchkriterium:
+Sobald Redis/E2E grün ist → STOP.
+
+Auftrag (nicht verhandelbar):
+
+Redis-E2E fixen (Host vs Container sauber trennen, REDIS_HOST korrekt setzen oder E2E im Container ausführen).
+
+E2E_RUN=1 → pytest -m e2e → GRÜN.
+
+Minimalen Fix committen & pushen.
+
+Nicht tun:
+– keine neuen Pläne
+– keine weiteren Reports
+– keine READ-ONLY-Diskussion
+– kein AGENTS.md-Refactoring
+
+Definition von „DONE“:
+CI grün, E2E grün, Commit existiert.
+
+Alles andere ist Ablenkung.
+
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+
+# 0) Stack muss wirklich ready sein
+docker compose ps
+docker compose logs --tail 50 cdb_redis
+
+# 1) Redis reachability (Host + Container-Netz)
+Test-NetConnection 127.0.0.1 -Port 6379
+docker exec cdb_signal sh -lc "nc -zv cdb_redis 6379"
+
+# 2) Host-run E2E erzwingen (quick win)
+$env:E2E_RUN="1"
+$env:REDIS_HOST="127.0.0.1"
+$env:REDIS_PORT="6379"
+pytest -v -m e2e
+
+# 3) Wenn jetzt grün: Commit minimal fix (nur falls Code/Config geändert wurde)
+git status -sb
+# git add <nur die betroffenen files>
+# git commit -m "fix(e2e): make redis host configurable for host-run"
+# git push

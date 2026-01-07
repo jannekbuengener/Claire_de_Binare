@@ -1,0 +1,54 @@
+# CLEANUP PLAN - DRY RUN (NICHT LÖSCHEN)
+Datum: 2026-01-07
+Issue: #332 - Triagemäßige Bereinigung von nicht zusammengeführten Zweigen
+
+## KATEGORIE 1: Auto-Claude Backup Branches (Hohes Risiko - Nach User Review)
+auto-claude/001-analysiere-dieses-repository-ganzheitlich-und-gib-   [2025-12-29]
+auto-claude/002-setup-persistent-memory-backend-graphiti-mcp-ollam    [2025-12-29]
+auto-claude/005-enforce-postgresql-ssl-mode-and-fix-subprocess-she  [2025-12-29]
+auto-claude/006-add-security-headers-middleware-to-all-http-respon  [2025-12-29]
+auto-claude/007-implement-pydantic-input-validation-and-sanitize-e  [2025-12-29]
+auto-claude/008-standardize-dashboard-color-themes-for-cognitive-   [2025-12-29]
+
+## KATEGORIE 2: Backup Branches (Mittel)
+backup/before-gemini-wipe                                                   [2025-12-22]
+backup/before-salvage                                                        [2025-12-22]
+
+## KATEGORIE 3: Test/Demo Branches (Mittel)
+test/emoji-filter-demo                                                      [2025-12-19]
+
+## KATEGORIE 4: Safety/Duplicate Branches (Niedrig)
+safety/after-gemini-commit                                                  [2025-12-17]
+safety/before-fix-20251217                                                   [2025-12-17]
+safety/working-before-consolidation-20251221-0137                          [2025-12-21]
+safety/docs-before-consolidation-20251221-0143                              [2025-12-21]
+
+## KATEGORIE 5: Feature Branches (Niedrig)
+feature/pr-01-ci-guard                                                      [2025-12-15]
+feature/pr-04-unit-tests                                                     [2025-12-15]
+feature/pr-05-compose-split                                                [2025-12-15]
+feature/pr-02-safe-deletes                                                   [2025-12-15]
+feature/pr-03-makefile-compose                                               [2025-12-15]
+feature/pr-06-replay-enabler                                                [2025-12-15]
+
+## STATISTIKEN
+- Total branches: 180
+- Merged branches: 20
+- Potential cleanup candidates: ~15
+- High-risk cleanup (auto-claude): 6
+- Medium-risk cleanup (backup, test): 3
+- Low-risk cleanup (safety, feature): 6
+
+## USER REVIEW (AUFTRAG VON BENUTZER)
+BEFORE LÖSCHEN - Bitte reviewen:
+
+1. Auto-Claude branches: Sollen diese gelöscht werden? (Backup risk)
+2. Backup branches: Sollen diese gelöscht werden? (Backup risk)
+3. Test/Demo branches: Sollen diese gelöscht werden? (Niedriger risk)
+4. Safety/Duplicate branches: Sollen diese gelöscht werden? (Duplikate)
+5. Feature branches: Sollen diese gelöscht werden? (Unveröffentlichte Features)
+
+## NÄCHSTE SCHRITTE
+1. User Review dieses Plans
+2. Approval für deletions
+3. LIVE CLEANUP ausführen (git branch -d oder git branch -D)
