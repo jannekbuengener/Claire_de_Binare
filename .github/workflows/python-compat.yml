@@ -7,7 +7,7 @@ on:
 
 jobs:
   compat:
-    name: Python compatibility matrix
+    name: Python compatibility matrix (informational)
     runs-on: ubuntu-latest
     strategy:
       matrix:
