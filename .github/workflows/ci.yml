@@ -40,7 +40,12 @@ jobs:
         run: ruff check .
 
       - name: Black
-        run: black --check .
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
+          HEAD="${{ github.sha }}"
+          FILES=$(git diff --name-only "$BASE" "$HEAD" -- '*.py' | xargs)
+          [ -z "$FILES" ] && echo "No python changes" && exit 0
+          black --config pyproject.toml --check $FILES
 
       - name: Tests
         run: pytest -q
