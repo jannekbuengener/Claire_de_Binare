@@ -1,7 +1,7 @@
 # Development and testing dependencies
 # Claire de Binare Trading Bot
 
-# Testing Framework
+# Testing Framework (Issue #21 scaffolding)
 pytest==7.4.4
 pytest-cov==4.1.0
 pytest-asyncio==0.21.1
