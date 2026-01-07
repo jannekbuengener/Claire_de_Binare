@@ -13,8 +13,8 @@ This repository contains all the necessary components to run and develop Claire 
 
 ### Gesamtfortschritt
 ```
-Issues geschlossen: 210 / 314 (66.9%)
-██████████████░░░░░░ 66.9%
+Issues geschlossen: 202 / 300 (67.3%)
+███████████████░░░░░ 67.3%
 ```
 
 ### 🏗️ Architektur-Komponenten
@@ -88,18 +88,18 @@ Issues geschlossen: 210 / 314 (66.9%)
 │  PROJEKT-REIFE: 72%                         │
 │  █████████████████░░░░░░                    │
 ├─────────────────────────────────────────────┤
-│  Code: 1607 Python-Dateien                  │
-│  Commits: 150+                              │
-│  Issues: 210 closed / 104 open              │
-│  Tests: 254 Test-Funktionen                 │
-│  Branches: 175 (nach Cleanup)               │
+│  Code: 3566 Python-Dateien                  │
+│  Commits: 261 (2025)                        │
+│  Issues: 202 closed / 98 open               │
+│  Tests: 79 Test-Dateien                     │
+│  Branches: 99 remote                        │
 │  Services: 9 healthy                        │
 │  Security: 4 Vulnerabilities behoben        │
 │  CI/CD: Grün mit Concurrency                │
 └─────────────────────────────────────────────┘
 ```
 
-*Stand: 2026-01-07*
+*Stand: 2026-01-07 (GitHub Live Data)*
 
 ---
 
