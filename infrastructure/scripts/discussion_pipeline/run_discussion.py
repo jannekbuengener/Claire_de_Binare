@@ -27,8 +27,8 @@ from dotenv import load_dotenv
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from orchestrator import DiscussionOrchestrator
-from utils.config_loader import ConfigLoader
+from orchestrator import DiscussionOrchestrator  # noqa: E402
+from utils.config_loader import ConfigLoader  # noqa: E402
 
 
 console = Console(force_terminal=True, legacy_windows=False)
