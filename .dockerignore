@@ -1,86 +1,62 @@
-# =============================================================================
-# SECRETS - NEVER SEND TO BUILD CONTEXT (Blueprint-compliant)
-# =============================================================================
-.secrets/
-secrets/
-*.pem
-*.key
-*.p12
-*.pfx
-id_rsa*
-*.ppk
-credentials
-*service-account*.json
+# =========================
+# Docker Ignore – Claire de Binare
+# Ziel: saubere, schnelle Builds ohne CI-/Dev-Altlasten
+# =========================
 
-# =============================================================================
+# --- VCS ---
+.git
+.gitignore
+.gitmodules
+.gitlab/
+.github/
 
-# Python
+# --- CI (bewusst komplett raus) ---
+.circleci/
+
+# --- Local Dev / Worktrees / Backups ---
+.worktrees_backup/
+.worktrees/
+.devcontainer/
+.vscode/
+.idea/
+
+# --- Python ---
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.so
-*.egg-info/
-*.egg
-.build/
-
-# Environments
-.venv/
-venv/
-.env
-.env.*
-*.env
-
-# Test / tooling caches
 .pytest_cache/
 .mypy_cache/
-.cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
-# Editor / OS
-.vscode/
-.idea/
+# --- Virtual Envs ---
+.venv/
+venv/
+ENV/
+
+# --- Build / Dist ---
+build/
+dist/
+*.egg-info/
+
+# --- OS ---
 .DS_Store
 Thumbs.db
 
-# Logs & runtime artefacts
-logs/
+# --- Logs / Runtime ---
 *.log
+logs/
 
-# AI tooling / cache dirs
-.claude/
-.gemini/
-.mcp/
+# --- Secrets (nie ins Image) ---
+.env
+.env.*
+*.key
+*.pem
+*.crt
 
-# Archive & backup
-_archive/
-_kellerkiste_*/
+# --- Misc ---
+tmp/
+.cache/
 
-# Documentation build artifacts
-docs/_build/
-site/
-
-# Git
-.git/
-.gitignore
-
-# CI/CD
-.github/
-.circleci/
-
-# Development files
-README.md
-CHANGELOG.md
-LICENSE
-*.md
-
-# Test files (exclude from production images)
-tests/
-test_*.py
-*_test.py
-pytest.ini
-.coveragerc
-
-# Requirements (install from specific file, not all)
-requirements-dev.txt
