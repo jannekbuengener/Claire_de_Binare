@@ -88,19 +88,19 @@ class LiveExecutor:
 
         try:
             # Execute based on order type
-        if order_type.upper() == "MARKET":
-            response = self.client.place_market_order(
-                symbol=order.symbol, side=order.side, quantity=float(order.quantity)
-            )
-        elif order_type.upper() == "LIMIT":
-            if order_price is None:
-                raise ValueError("Limit order requires price")
-            response = self.client.place_limit_order(
-                symbol=order.symbol,
-                side=order.side,
-                quantity=float(order.quantity),
-                price=float(order_price),
-            )
+            if order_type.upper() == "MARKET":
+                response = self.client.place_market_order(
+                    symbol=order.symbol, side=order.side, quantity=float(order.quantity)
+                )
+            elif order_type.upper() == "LIMIT":
+                if order_price is None:
+                    raise ValueError("Limit order requires price")
+                response = self.client.place_limit_order(
+                    symbol=order.symbol,
+                    side=order.side,
+                    quantity=float(order.quantity),
+                    price=float(order_price),
+                )
             else:
                 raise ValueError(f"Unsupported order type: {order.order_type}")
 
