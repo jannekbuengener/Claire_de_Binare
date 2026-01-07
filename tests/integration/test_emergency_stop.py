@@ -9,6 +9,7 @@ from pathlib import Path
 from core.safety.kill_switch import (
     KillSwitch,
     KillSwitchReason,
+    KillSwitchState,
     get_kill_switch_state,
 )
 
@@ -48,9 +49,7 @@ class TestEmergencyStopIntegration:
 
         # Service 1: Activate kill-switch
         ks1 = KillSwitch(state_file=str(state_file))
-        ks1.activate(
-            KillSwitchReason.CIRCUIT_BREAKER, "Daily loss limit exceeded"
-        )
+        ks1.activate(KillSwitchReason.CIRCUIT_BREAKER, "Daily loss limit exceeded")
         assert ks1.is_active() is True
 
         # Simulate service restart (new KillSwitch instance)
@@ -82,9 +81,7 @@ class TestEmergencyStopIntegration:
         assert exec_ks.is_active() is False
 
         # Risk service activates kill-switch
-        risk_ks.activate(
-            KillSwitchReason.RISK_LIMIT, "Total exposure exceeded 30%"
-        )
+        risk_ks.activate(KillSwitchReason.RISK_LIMIT, "Total exposure exceeded 30%")
 
         # Execution service should see the activation
         assert exec_ks.is_active() is True
@@ -105,9 +102,7 @@ class TestEmergencyStopIntegration:
         ks2 = KillSwitch(state_file=str(state_file))
 
         # Both try to activate (simulate race condition)
-        result1 = ks1.activate(
-            KillSwitchReason.CIRCUIT_BREAKER, "Reason 1"
-        )
+        result1 = ks1.activate(KillSwitchReason.CIRCUIT_BREAKER, "Reason 1")
         result2 = ks2.activate(KillSwitchReason.RISK_LIMIT, "Reason 2")
 
         assert result1 is True
@@ -129,9 +124,7 @@ class TestEmergencyStopIntegration:
         ks = KillSwitch(state_file=str(state_file))
 
         # Activation 1
-        ks.activate(
-            KillSwitchReason.MANUAL, "Test activation 1", operator="operator1"
-        )
+        ks.activate(KillSwitchReason.MANUAL, "Test activation 1", operator="operator1")
         state1, reason1, message1, activated_at1 = ks.get_state()
 
         assert reason1 == KillSwitchReason.MANUAL.value
