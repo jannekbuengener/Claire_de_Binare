@@ -114,6 +114,9 @@ class BaseAgent(ABC):
         """
         Build agent-specific prompt with proposal and context.
 
+        DEPRECATED: Use agent-specific prompts from prompts.py instead.
+        This base implementation is kept for backward compatibility.
+
         Args:
             proposal: Original proposal
             context: Previous agent outputs
@@ -121,6 +124,4 @@ class BaseAgent(ABC):
         Returns:
             Formatted prompt string
         """
-        # Prompts are built inline in each agent for now
-        # TODO: Extract to prompts.py in Phase 2
         return f"Proposal:\n{proposal}\n\nContext:\n" + "\n".join(context)

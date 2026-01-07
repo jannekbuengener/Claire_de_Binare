@@ -1,8 +1,0 @@
-# Healthcheck Mounts Overlay
-# Adds read-only volume mounts for external healthcheck scripts
-# Usage: Automatically included when stack_up.ps1 is called with -StrictHealth flag
-
-services:
-  cdb_db_writer:
-    volumes:
-      - ../../infrastructure/healthchecks:/healthchecks:ro
