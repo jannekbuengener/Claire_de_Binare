@@ -33,6 +33,24 @@ class Signal:
         if self.side:
             self.side = self.side.upper()
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Signal":
+        """Create a Signal from a transport payload."""
+        return cls(
+            signal_id=data.get("signal_id"),
+            strategy_id=data.get("strategy_id"),
+            bot_id=data.get("bot_id"),
+            symbol=data.get("symbol", ""),
+            direction=data.get("direction", ""),
+            strength=float(data.get("strength", 0.0)),
+            timestamp=data.get("timestamp", 0.0),
+            side=data.get("side"),
+            confidence=data.get("confidence"),
+            reason=data.get("reason"),
+            price=data.get("price"),
+            pct_change=data.get("pct_change"),
+        )
+
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
         # Filter out None values for Redis compatibility (xadd doesn't accept None)
