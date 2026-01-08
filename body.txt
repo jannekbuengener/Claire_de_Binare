@@ -1,0 +1,12 @@
+Settings-Change Request (required checks) — PR #489 unblock
+
+1. CircleCI required check name korrigieren
+   - Aktuell required: <ALTER NAME AUS SETTINGS>
+   - Reported in PR statusCheckRollup: CircleCI Pipeline (siehe Details URL)
+   Aktion: In Branch protection den alten CircleCI-required-check entfernen und exakt den reported Namen eintragen.
+
+2. review / review required check klären
+   - Wenn das ein Approval Requirement sein soll:  Require approvals = 1 aktivieren und den required status check review / review entfernen.
+   - Wenn das wirklich ein Status-Check sein soll: sicherstellen, dass ein Job mit exakt diesem Namen pro PR reported wird. Sonst required-check entfernen oder auf den tatsächlich reported Namen umstellen.
+
+Hinweis: Ohne diese Anpassungen bleibt CircleCI/review endlos rot, unabhängig von Re-runs oder Code. Sobald die Settings angepasst sind, viell. Update branch klicken oder gh pr checks 489 laufen lassen; wenn alles grün ? merge ? Step 2 auf feature/487-hardening-report-schema-v1.

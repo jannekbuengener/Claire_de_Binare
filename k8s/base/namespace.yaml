@@ -1,0 +1,11 @@
+---
+# Namespace for Claire de Binare Trading System
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cdb-trading
+  labels:
+    name: cdb-trading
+    app.kubernetes.io/name: claire-de-binare
+    app.kubernetes.io/part-of: trading-system
+    environment: production

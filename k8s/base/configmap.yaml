@@ -1,0 +1,54 @@
+---
+# ConfigMap for non-sensitive configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdb-config
+  namespace: cdb-trading
+  labels:
+    app.kubernetes.io/name: claire-de-binare
+data:
+  # Stack Configuration
+  STACK_NAME: "cdb"
+  
+  # Redis Configuration
+  REDIS_HOST: "cdb-redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  
+  # PostgreSQL Configuration
+  POSTGRES_HOST: "cdb-postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "claire_user"
+  POSTGRES_DB: "claire_de_binare"
+  
+  # Trading Configuration
+  MEXC_TESTNET: "true"
+  DRY_RUN: "true"
+  SIGNAL_STRATEGY_ID: "paper"
+  
+  # WebSocket Configuration
+  WS_SOURCE: "mexc_pb"
+  MEXC_SYMBOL: "BTCUSDT"
+  MEXC_INTERVAL: "100ms"
+  
+  # Signal Service Configuration
+  SIGNAL_PORT: "8005"
+  SIGNAL_THRESHOLD_PCT: "0.005"
+  SIGNAL_MIN_VOLUME: "0"
+  
+  # Environment
+  ENV: "production"
+  LOG_LEVEL: "WARNING"
+  
+  # Regime Service Configuration
+  REGIME_ADX_PERIOD: "14"
+  REGIME_ATR_PERIOD: "14"
+  REGIME_ADX_TREND_THRESHOLD: "25.0"
+  REGIME_ADX_RANGE_THRESHOLD: "20.0"
+  REGIME_ATR_HIGH_VOL_THRESHOLD: "0.03"
+  REGIME_CONFIRMATION_BARS: "3"
+  
+  # Allocation Service Configuration
+  ALLOCATION_REGIME_MIN_STABLE_SECONDS: "60"
+  ALLOCATION_RULES_JSON: '{"default": {"base_pct": 0.1, "max_pct": 0.5}}'

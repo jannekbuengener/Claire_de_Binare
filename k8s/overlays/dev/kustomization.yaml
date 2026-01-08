@@ -1,0 +1,26 @@
+---
+# Development Overlay
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: cdb-trading
+
+patchesStrategicMerge:
+  - configmap-patch.yaml
+  - deployment-patches.yaml
+
+# Override image tags for dev
+images:
+  - name: your-registry/cdb-ws
+    newTag: dev
+  - name: your-registry/cdb-signal
+    newTag: dev
+  - name: your-registry/cdb-risk
+    newTag: dev
+  - name: your-registry/cdb-execution
+    newTag: dev
+  - name: your-registry/cdb-db-writer
+    newTag: dev

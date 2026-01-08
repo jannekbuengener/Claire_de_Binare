@@ -1,0 +1,42 @@
+---
+# Base Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: cdb-trading
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret-template.yaml
+  - pvcs.yaml
+  - infrastructure/redis.yaml
+  - infrastructure/postgres.yaml
+  - infrastructure/prometheus.yaml
+  - infrastructure/grafana.yaml
+  - services/ws-deployment.yaml
+  - services/signal-deployment.yaml
+  - services/risk-deployment.yaml
+  - services/execution-deployment.yaml
+  - services/db-writer-deployment.yaml
+
+commonLabels:
+  app.kubernetes.io/name: claire-de-binare
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+  - name: your-registry/cdb-ws
+    newName: your-registry/cdb-ws
+    newTag: latest
+  - name: your-registry/cdb-signal
+    newName: your-registry/cdb-signal
+    newTag: latest
+  - name: your-registry/cdb-risk
+    newName: your-registry/cdb-risk
+    newTag: latest
+  - name: your-registry/cdb-execution
+    newName: your-registry/cdb-execution
+    newTag: latest
+  - name: your-registry/cdb-db-writer
+    newName: your-registry/cdb-db-writer
+    newTag: latest

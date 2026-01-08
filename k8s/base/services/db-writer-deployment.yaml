@@ -1,22 +1,24 @@
+---
+# DB Writer Service Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cdb-ws
+  name: cdb-db-writer
   namespace: cdb-trading
   labels:
     app.kubernetes.io/name: claire-de-binare
-    app.kubernetes.io/component: websocket
+    app.kubernetes.io/component: db-writer
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: cdb-ws
+      app: cdb-db-writer
   template:
     metadata:
       labels:
-        app: cdb-ws
+        app: cdb-db-writer
         app.kubernetes.io/name: claire-de-binare
-        app.kubernetes.io/component: websocket
+        app.kubernetes.io/component: db-writer
     spec:
       securityContext:
         runAsNonRoot: true
@@ -25,12 +27,9 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-      - name: ws
-        image: your-registry/cdb-ws:latest
+      - name: db-writer
+        image: your-registry/cdb-db-writer:latest
         imagePullPolicy: Always
-        ports:
-        - containerPort: 8000
-          name: http
         envFrom:
         - configMapRef:
             name: cdb-config
@@ -40,32 +39,30 @@ spec:
             secretKeyRef:
               name: cdb-secrets
               key: redis_password
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: cdb-secrets
+              key: postgres_password
         volumeMounts:
-        - name: logs
-          mountPath: /app/logs
         - name: tmp
           mountPath: /tmp
         livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
+          exec:
+            command:
+              - sh
+              - -c
+              - kill -0 1 || exit 1
           initialDelaySeconds: 30
           periodSeconds: 30
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 3
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "200m"
+            memory: "128Mi"
+            cpu: "100m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "250m"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -73,7 +70,5 @@ spec:
             - ALL
           readOnlyRootFilesystem: true
       volumes:
-      - name: logs
-        emptyDir: {}
       - name: tmp
         emptyDir: {}

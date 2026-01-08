@@ -1,86 +1,145 @@
-# =============================================================================
-# SECRETS - NEVER SEND TO BUILD CONTEXT (Blueprint-compliant)
-# =============================================================================
-.secrets/
-secrets/
-*.pem
-*.key
-*.p12
-*.pfx
-id_rsa*
-*.ppk
-credentials
-*service-account*.json
-
-# =============================================================================
+# Git
+.git/
+.gitignore
+.github/
+.gitattributes
 
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
 *.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
 *.egg-info/
+.installed.cfg
 *.egg
-.build/
+MANIFEST
 
-# Environments
+# Virtual environments
 .venv/
 venv/
-.env
-.env.*
-*.env
+ENV/
+env/
+.virtualenv/
 
-# Test / tooling caches
-.pytest_cache/
-.mypy_cache/
-.cache/
-.coverage
-htmlcov/
-
-# Editor / OS
+# IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
 .DS_Store
-Thumbs.db
 
-# Logs & runtime artefacts
-logs/
-*.log
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+pytest_cache/
+coverage.xml
+*.cover
+.cache
+nosetests.xml
 
-# AI tooling / cache dirs
-.claude/
-.gemini/
-.mcp/
-
-# Archive & backup
-_archive/
-_kellerkiste_*/
-
-# Documentation build artifacts
-docs/_build/
-site/
-
-# Git
-.git/
-.gitignore
+# Documentation
+docs/
+*.md
+README*
+LICENSE*
+CHANGELOG*
+CONTRIBUTING*
 
 # CI/CD
 .github/
-.circleci/
+.gitlab-ci.yml
+.travis.yml
+azure-pipelines.yml
 
-# Development files
-README.md
-CHANGELOG.md
-LICENSE
-*.md
+# Logs
+*.log
+logs/
+log/
 
-# Test files (exclude from production images)
-tests/
-test_*.py
-*_test.py
-pytest.ini
-.coveragerc
+# Environment files
+.env.local
+.env.*.local
+.env.development
+.env.test
 
-# Requirements (install from specific file, not all)
-requirements-dev.txt
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+
+# Docker
+docker-compose.override.yml
+Dockerfile*
+.dockerignore
+
+# Kubernetes
+k8s/
+*.yaml
+*.yml
+
+# Data & Backups
+data/
+backups/
+*.sql
+*.db
+*.sqlite
+
+# Monitoring & Profiling
+.benchmarks/
+.profiling/
+
+# Scripts & Tools (nicht für Container)
+scripts/
+tools/
+Makefile*
+
+# Worktrees & Git Artifacts
+.worktrees_backup/
+.git-rewrite/
+
+# Agent Workspaces
+.agent_briefings/
+.auto-claude/
+.cdb_agent_workspace/
+.claude/
+.gemini/
+copilot_briefing/
+
+# Local Development
+.local/
+.tmp/
+run_*/
+tmp_artifacts/
+emoji-report/
+
+# Large artifacts
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.zip
+*.tar.gz

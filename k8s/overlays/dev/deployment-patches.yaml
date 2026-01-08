@@ -1,0 +1,74 @@
+---
+# Development Deployment Patches
+# Reduce resource requirements and add NodePort services
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-ws
+  namespace: cdb-trading
+spec:
+  template:
+    spec:
+      containers:
+      - name: ws
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-signal
+  namespace: cdb-trading
+spec:
+  template:
+    spec:
+      containers:
+      - name: signal
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-risk
+  namespace: cdb-trading
+spec:
+  template:
+    spec:
+      containers:
+      - name: risk
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cdb-execution
+  namespace: cdb-trading
+spec:
+  template:
+    spec:
+      containers:
+      - name: execution
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"

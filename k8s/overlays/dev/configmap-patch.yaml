@@ -1,0 +1,11 @@
+---
+# Development ConfigMap Overrides
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdb-config
+  namespace: cdb-trading
+data:
+  ENV: "development"
+  LOG_LEVEL: "DEBUG"
+  # Port bindings are handled via Services in dev
