@@ -12,7 +12,7 @@ name: ${STACK_NAME:-cdb}
 
 services:
   cdb_redis:
-    image: redis:7-alpine
+    image: redis:7.4-alpine
     container_name: cdb_redis
     restart: unless-stopped
     volumes:
@@ -53,7 +53,7 @@ services:
       - cdb_network
 
   cdb_prometheus:
-    image: prom/prometheus:v2.51.0
+    image: prom/prometheus:v2.55.0
     container_name: cdb_prometheus
     restart: unless-stopped
     volumes:
