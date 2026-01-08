@@ -27,6 +27,14 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
 
+  cdb_postgres_exporter:
+    ports:
+      - "127.0.0.1:9187:9187"
+
+  cdb_redis_exporter:
+    ports:
+      - "127.0.0.1:9121:9121"
+
   # Application Services (Dev-Only)
   # All use entrypoint pattern to read secrets from /run/secrets/
 
