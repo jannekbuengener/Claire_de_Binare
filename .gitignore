@@ -160,3 +160,7 @@ gha-creds-*.json
 GEMINI_FINAL_REPORT_WORKING_REPO.md
 
 Repository—Überblick.md
+
+# Local development files (temporary)
+.local/
+grafana-scan.json
