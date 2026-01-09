@@ -177,8 +177,6 @@ if __name__ == "__main__":
     service.connect_redis()
 
     # Start Flask in background thread
-    from threading import Thread
-
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
     flask_thread.daemon = True
     flask_thread.start()
