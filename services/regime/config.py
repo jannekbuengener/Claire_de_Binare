@@ -23,14 +23,14 @@ def _required_float(name: str) -> float:
 @dataclass
 class RegimeConfig:
     env: str = os.getenv("ENV", "development")
-    port: int = int(os.getenv("REGIME_PORT", "8004"))
+    port: int = int(os.getenv("REGIME_PORT", "8008"))
 
     redis_host: str = os.getenv("REDIS_HOST", "redis")
     redis_port: int = int(os.getenv("REDIS_PORT", "6379"))
     redis_password: str | None = os.getenv("REDIS_PASSWORD")
     redis_db: int = int(os.getenv("REDIS_DB", "0"))
 
-    input_stream: str = os.getenv("REGIME_INPUT_STREAM", "stream.market_data")
+    input_stream: str = os.getenv("REGIME_INPUT_STREAM", "stream.candles_1m")
     output_stream: str = os.getenv("REGIME_OUTPUT_STREAM", "stream.regime_signals")
 
     adx_period: int = _required_int("REGIME_ADX_PERIOD")
