@@ -275,6 +275,8 @@ class AllocationService:
 
             prev_alloc = state.allocation_pct
             prev_cooldown = state.cooldown_until
+            is_bootstrap = state.last_updated is None  # First run after service start
+
             if state.allocation_pct > 0.0 and target == 0.0:
                 state.cooldown_until = ts + self.config.cooldown_seconds
                 reason += "|cooldown_set"
@@ -282,7 +284,9 @@ class AllocationService:
             changed = prev_alloc != target or prev_cooldown != state.cooldown_until
             state.allocation_pct = target
             state.last_updated = ts
-            if changed:
+
+            # Emit decision if changed OR on first bootstrap (to persist initial state)
+            if changed or is_bootstrap:
                 self._emit_decision(strategy_id, state, reason, ts)
 
     def _handle_regime_signal(self, payload: dict):
@@ -309,7 +313,29 @@ class AllocationService:
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = utcnow().isoformat()
+
+        # Bootstrap: Process latest regime signal to avoid missing state after restart
         last_regime_id = "0-0"
+        try:
+            regime_entries = self.redis_client.xrevrange(
+                self.config.regime_stream, "+", "-", count=1
+            )
+            if regime_entries:
+                entry_id, payload = regime_entries[0]
+                logger.info(f"Bootstrap: Processing latest regime signal {entry_id}")
+                ts = self._parse_ts(payload.get("ts"))
+                regime = payload.get("regime") or "UNKNOWN"
+                # Bootstrap: Set regime directly without stability check (trust existing signal)
+                self.current_regime = regime
+                self.regime_candidate = None
+                self.regime_candidate_since = None
+                logger.info(f"Bootstrap: Regime set to {regime}")
+                # Always recompute allocations on bootstrap
+                self._recompute_allocations(ts if ts else int(utcnow().timestamp()))
+                last_regime_id = entry_id
+        except Exception as e:
+            logger.warning(f"Bootstrap failed, starting from 0-0: {e}")
+
         last_fill_id = "0-0"
         last_shutdown_id = "0-0"
         logger.info("Allocation-Service gestartet")
