@@ -256,11 +256,9 @@ class AllocationService:
             base_alloc = float(rule.get(self.current_regime, 0.0))
             reason = f"regime={self.current_regime}"
 
+            target = base_alloc
             if self.current_regime == "HIGH_VOL_CHAOTIC":
-                target = 0.0
                 reason += "|risk_off"
-            else:
-                target = base_alloc
 
             if state.cooldown_until and state.cooldown_until <= ts:
                 state.cooldown_until = None
