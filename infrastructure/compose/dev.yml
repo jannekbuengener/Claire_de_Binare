@@ -145,7 +145,7 @@ services:
       REDIS_HOST: cdb_redis
       ALLOCATION_PORT: "8006"
       ALLOCATION_REGIME_MIN_STABLE_SECONDS: "60"
-      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.0, "UNKNOWN": 0.0}}'
+      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}}'
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8006:8006"
