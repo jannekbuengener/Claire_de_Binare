@@ -273,8 +273,10 @@ class AllocationService:
 
             if target > 0 and state.allocation_pct == 0.0:
                 if not readiness[strategy_id]:
-                    target = 0.0
                     reason += "|perf_not_ready"
+                    # Only block allocations above Early-Live threshold (0.02)
+                    if target > 0.02:
+                        target = 0.0
                 elif median_score is not None and scores[strategy_id] is not None:
                     if scores[strategy_id] <= median_score:
                         target = 0.0
