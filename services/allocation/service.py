@@ -20,6 +20,7 @@ from flask import Flask, jsonify, Response
 
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
+
 try:
     from .config import config
 except ImportError:
@@ -168,7 +169,9 @@ class AllocationService:
 
         if pos.qty * delta > 0:
             total_qty = abs(pos.qty) + abs(delta)
-            pos.avg_price = (pos.avg_price * abs(pos.qty) + price * abs(delta)) / total_qty
+            pos.avg_price = (
+                pos.avg_price * abs(pos.qty) + price * abs(delta)
+            ) / total_qty
             pos.qty += delta
             self.positions[strategy_id][symbol] = pos
             return
@@ -187,7 +190,9 @@ class AllocationService:
             pos.avg_price = price
         self.positions[strategy_id][symbol] = pos
 
-    def _compute_performance(self, strategy_id: str, ts: int) -> tuple[Optional[float], bool]:
+    def _compute_performance(
+        self, strategy_id: str, ts: int
+    ) -> tuple[Optional[float], bool]:
         trades = list(self.trades.get(strategy_id, []))
         if not trades:
             return None, False
@@ -217,13 +222,17 @@ class AllocationService:
             )
         return ema, True
 
-    def _emit_decision(self, strategy_id: str, state: AllocationState, reason: str, ts: int):
+    def _emit_decision(
+        self, strategy_id: str, state: AllocationState, reason: str, ts: int
+    ):
         payload = {
             "ts": str(ts),
             "strategy_id": strategy_id,
             "allocation_pct": f"{state.allocation_pct:.6f}",
             "reason": reason,
-            "cooldown_until": "" if state.cooldown_until is None else str(state.cooldown_until),
+            "cooldown_until": ""
+            if state.cooldown_until is None
+            else str(state.cooldown_until),
             "schema_version": self.config.schema_version,
             "source_version": self.config.source_version,
         }

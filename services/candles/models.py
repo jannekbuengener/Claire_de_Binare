@@ -11,6 +11,7 @@ from typing import Optional
 @dataclass
 class CandleWindow:
     """1-minute OHLCV aggregation window"""
+
     symbol: str
     start_ts: int  # Window start timestamp (seconds, aligned to minute)
     interval_seconds: int
@@ -44,7 +45,12 @@ class CandleWindow:
 
     def to_candle_payload(self) -> Optional[dict]:
         """Convert to candle payload for stream"""
-        if self.open is None or self.high is None or self.low is None or self.close is None:
+        if (
+            self.open is None
+            or self.high is None
+            or self.low is None
+            or self.close is None
+        ):
             return None
 
         return {
@@ -113,7 +119,7 @@ class CandleAggregator:
                 self.windows[symbol] = CandleWindow(
                     symbol=symbol,
                     start_ts=window_start,
-                    interval_seconds=self.interval_seconds
+                    interval_seconds=self.interval_seconds,
                 )
 
             # Update window

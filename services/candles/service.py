@@ -55,7 +55,9 @@ class CandleService:
         self.redis_client: Optional[redis.Redis] = None
         self.pubsub: Optional[redis.client.PubSub] = None
         self.running = False
-        self.aggregator = CandleAggregator(interval_seconds=self.config.interval_seconds)
+        self.aggregator = CandleAggregator(
+            interval_seconds=self.config.interval_seconds
+        )
 
     def connect_redis(self):
         self.redis_client = redis.Redis(
