@@ -47,6 +47,7 @@ class RiskConfig:
 
     # Balance Configuration
     use_live_balance: bool = os.getenv("USE_LIVE_BALANCE", "false").lower() == "true"
+    use_real_balance: bool = os.getenv("USE_REAL_BALANCE", "false").lower() == "true"
     test_balance: float = float(os.getenv("TEST_BALANCE", "10000"))
 
     # MEXC API (for live balance fetching) - Docker secrets with fallback
