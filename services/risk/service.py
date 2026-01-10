@@ -464,13 +464,23 @@ class RiskManager:
         else:
             current_balance = self.config.test_balance
 
-        max_size = current_balance * self.config.max_position_pct
+        max_notional_usdt = current_balance * self.config.max_position_pct
 
         # Allokationsbasiert (keine Confidence im Control-Pfad)
-        position_size = max_size * max(allocation_pct, 0.0)
+        notional_usdt = max_notional_usdt * max(allocation_pct, 0.0)
 
-        # Vereinfacht: Menge proportional zur Allokation, Mindestmenge 0
-        return max(position_size, 0.0)
+        # Hole Price vom Signal, fallback auf 0.0
+        price = float(getattr(signal, "price", 0.0) or 0.0)
+
+        if price <= 0.0:
+            logger.warning(
+                f"calculate_position_size: invalid price={price} for {signal.symbol}, returning qty=0.0"
+            )
+            return 0.0
+
+        # Konvertiere USDT-Notional zu Coin-Quantity
+        qty = notional_usdt / price
+        return float(max(qty, 0.0))
 
     def send_order(self, order: Order):
         """Publiziert Order"""
