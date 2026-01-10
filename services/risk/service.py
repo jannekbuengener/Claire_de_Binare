@@ -21,6 +21,7 @@ from threading import Thread
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.auth import validate_all_auth
+
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
@@ -61,6 +62,7 @@ stats = {
     "signals_received": 0,
     "orders_approved": 0,
     "orders_blocked": 0,
+    "orders_skipped": 0,  # NEW: qty=0, silent drops
     "alerts_generated": 0,
     "order_results_received": 0,
     "orders_rejected_execution": 0,
@@ -197,7 +199,9 @@ class RiskManager:
                         global current_regime, risk_off_active
                         current_regime = regime
                         risk_off_active = regime == "HIGH_VOL_CHAOTIC"
-                        logger.info("Regime-Update: %s (risk_off=%s)", regime, risk_off_active)
+                        logger.info(
+                            "Regime-Update: %s (risk_off=%s)", regime, risk_off_active
+                        )
             except Exception as err:  # noqa: BLE001
                 logger.error("Regime-Stream Fehler: %s", err)
                 time.sleep(1)
@@ -248,7 +252,9 @@ class RiskManager:
                         if not strategy_id:
                             continue
                         allocation_pct = float(payload.get("allocation_pct", 0.0))
-                        cooldown_until = self._parse_timestamp(payload.get("cooldown_until"))
+                        cooldown_until = self._parse_timestamp(
+                            payload.get("cooldown_until")
+                        )
                         self.allocation_state[strategy_id] = AllocationState(
                             allocation_pct=allocation_pct,
                             cooldown_until=cooldown_until,
@@ -285,6 +291,7 @@ class RiskManager:
             except Exception as err:  # noqa: BLE001
                 logger.error("Shutdown-Stream Fehler: %s", err)
                 time.sleep(1)
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
@@ -424,12 +431,26 @@ class RiskManager:
 
         # Alle Checks passed → Order erstellen
         allocation = self._get_allocation_state(signal.strategy_id)
-        quantity = self.calculate_position_size(signal, allocation.allocation_pct)
+        quantity, skip_reason = self.calculate_position_size(
+            signal, allocation.allocation_pct
+        )
+
+        # SKIP: qty=0 wegen invalid price oder sanity check
+        if quantity <= 0.0 or skip_reason:
+            logger.warning(
+                f"Signal SKIPPED: {signal.symbol} {signal.side} - {skip_reason}"
+            )
+            stats["orders_skipped"] += 1
+            return None
 
         # Mark order if Early-Live exception applies
         reason = signal.reason
         if self._is_early_live_exception(signal.strategy_id):
-            reason = f"{signal.reason}|risk_off_limited" if signal.reason else "risk_off_limited"
+            reason = (
+                f"{signal.reason}|risk_off_limited"
+                if signal.reason
+                else "risk_off_limited"
+            )
 
         order = Order(
             symbol=signal.symbol,
@@ -442,6 +463,7 @@ class RiskManager:
             client_id=f"{signal.symbol}-{signal.timestamp}",
             strategy_id=signal.strategy_id,
             bot_id=signal.bot_id,
+            price=signal.price,
         )
 
         logger.info(
@@ -453,8 +475,14 @@ class RiskManager:
 
         return order
 
-    def calculate_position_size(self, signal: Signal, allocation_pct: float) -> float:
-        """Berechnet Position-Size basierend auf Allokation"""
+    def calculate_position_size(
+        self, signal: Signal, allocation_pct: float
+    ) -> tuple[float, str | None]:
+        """Berechnet Position-Size basierend auf Allokation
+
+        Returns:
+            (quantity, skip_reason): qty=0.0 mit reason wenn skipped
+        """
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
 
@@ -464,13 +492,35 @@ class RiskManager:
         else:
             current_balance = self.config.test_balance
 
-        max_size = current_balance * self.config.max_position_pct
+        max_notional_usdt = current_balance * self.config.max_position_pct
 
         # Allokationsbasiert (keine Confidence im Control-Pfad)
-        position_size = max_size * max(allocation_pct, 0.0)
+        notional_usdt = max_notional_usdt * max(allocation_pct, 0.0)
 
-        # Vereinfacht: Menge proportional zur Allokation, Mindestmenge 0
-        return max(position_size, 0.0)
+        # Hole Price vom Signal, fallback auf 0.0
+        price = float(getattr(signal, "price", 0.0) or 0.0)
+
+        if price <= 0.0:
+            logger.warning(
+                f"calculate_position_size: invalid price={price} for {signal.symbol}, returning qty=0.0"
+            )
+            return 0.0, "Invalid price"
+
+        # Konvertiere USDT-Notional zu Coin-Quantity
+        qty = notional_usdt / price
+
+        # Dev/Paper-only sanity check: catch absurdly large quantities
+        if not self.config.use_real_balance:
+            # For BTC pairs, qty > 1.0 is extremely suspicious (likely sizing bug)
+            if "BTC" in signal.symbol and qty > 1.0:
+                logger.error(
+                    f"SANITY CHECK FAILED: qty={qty:.4f} for {signal.symbol} is absurdly large "
+                    f"(notional={notional_usdt:.2f} USDT, price={price:.2f}). "
+                    f"Possible sizing regression detected! Blocking order in dev/paper mode."
+                )
+                return 0.0, "Sanity check failed (qty too large)"
+
+        return float(max(qty, 0.0)), None
 
     def send_order(self, order: Order):
         """Publiziert Order"""
@@ -479,9 +529,7 @@ class RiskManager:
             message = json.dumps(payload, ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
             if self.redis_client:
-                self.redis_client.xadd(
-                    self.config.orders_stream, payload, maxlen=10000
-                )
+                self.redis_client.xadd(self.config.orders_stream, payload, maxlen=10000)
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
             logger.error(f"Fehler beim Order-Publishing: {e}")
@@ -681,8 +729,12 @@ class RiskManager:
 
                     except json.JSONDecodeError as e:
                         logger.warning(f"Ungültiges JSON: {e}")
+                        stats["orders_skipped"] += 1  # Silent drop: JSON parse error
                     except Exception as e:
                         logger.error(f"Fehler in Hauptschleife: {e}")
+                        stats[
+                            "orders_skipped"
+                        ] += 1  # Silent drop: Signal parsing error
 
         except KeyboardInterrupt:
             logger.info("Shutdown via Keyboard")
@@ -744,12 +796,18 @@ def status():
 @app.route("/metrics")
 def metrics():
     body = (
+        "# HELP signals_received_total Signals empfangen (Redis PubSub)\n"
+        "# TYPE signals_received_total counter\n"
+        f"signals_received_total {stats['signals_received']}\n\n"
         "# HELP orders_approved_total Orders freigegeben\n"
         "# TYPE orders_approved_total counter\n"
         f"orders_approved_total {stats['orders_approved']}\n\n"
-        "# HELP orders_blocked_total Orders blockiert\n"
+        "# HELP orders_blocked_total Orders blockiert (Risk Checks)\n"
         "# TYPE orders_blocked_total counter\n"
         f"orders_blocked_total {stats['orders_blocked']}\n\n"
+        "# HELP orders_skipped_total Orders übersprungen (qty=0, parse errors)\n"
+        "# TYPE orders_skipped_total counter\n"
+        f"orders_skipped_total {stats['orders_skipped']}\n\n"
         "# HELP circuit_breaker_active Circuit Breaker Status\n"
         "# TYPE circuit_breaker_active gauge\n"
         f"circuit_breaker_active {1 if risk_state.circuit_breaker_active else 0}\n\n"
@@ -786,6 +844,7 @@ if __name__ == "__main__":
 
     # Validate Redis auth before startup
     from core.auth import validate_redis_auth
+
     redis_ok, redis_msg = validate_redis_auth(
         config.redis_host, config.redis_port, config.redis_password, config.redis_db
     )

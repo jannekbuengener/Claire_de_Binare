@@ -240,6 +240,8 @@ services:
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"
+      MOCK_TRADING: "true"          # Explizit Paper Trading erzwingen
+      USE_REAL_BALANCE: "false"     # Sicherheitsgurt für Early-Live
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}

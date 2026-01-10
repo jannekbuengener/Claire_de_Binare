@@ -103,6 +103,25 @@ Issues geschlossen: 202 / 300 (67.3%)
 
 ---
 
+## 📚 Documentation & Governance
+
+**Canon-Dokumentation** liegt im **Docs Hub**:
+
+👉 **[Claire_de_Binare_Docs](D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs)**
+
+Enthalten im Docs Hub:
+- Governance (Constitution, Policies, Agent Charters)
+- Knowledge (Decisions, Runbooks, Architecture)
+- Agenten-Registry
+- Logs & Session-Aufzeichnungen
+
+**Dieses Repository** enthält ausschließlich:
+- Code (Services, Core, Infrastructure)
+- Tests
+- Runtime-Konfiguration
+
+---
+
 ## Getting Started
 
 To get started with this project, you will need to have Docker and Python installed. The `docker-compose.yml` file in the root directory defines the services required for local development.

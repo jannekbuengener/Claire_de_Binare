@@ -1,9 +1,9 @@
 # Claire de Binare - Current Status
 
-**Last Updated:** 2025-12-29 18:30 CET
+**Last Updated:** 2026-01-10 18:30 CET
 **Branch:** main
-**Latest Commit:** c06ae5c
-**Session:** Issue Organization & Work Blocks (67 Issues → 24 Blocks)
+**Latest Commit:** 94488ca
+**Session:** Risk Position Sizing Fix + Order Observability
 
 ---
 
@@ -18,6 +18,51 @@ MEXC WebSocket → cdb_ws (protobuf decode) → Redis (pub/sub) → cdb_signal
 - ✅ Docker Stack: 10/10 Services healthy (44min uptime)
 - ⚠️ GitHub Actions: Recent runs failing (CI/CD Pipeline, Docs Hub Guard)
 - ✅ Issues #99, #100, #156: Verified OPEN
+
+---
+
+## Recent Work (2026-01-10)
+
+### ✅ PR #538 + #539: Risk Position Sizing Fix + Order Observability (RESOLVED)
+**PRs:** #538 (e925668), #539 (94488ca)
+**Branch:** main
+**Deployed:** 2026-01-10 18:21 CET
+
+**Problem:** `calculate_position_size()` returned USDT notional directly as quantity, causing absurdly large orders (e.g., 20 BTC instead of 0.0004 BTC). Risk correctly blocked these via `max_total_exposure_pct`, resulting in "Max Exposure erreicht" spam.
+
+**Root Cause:** Missing conversion from USDT notional to base-asset quantity via division by price.
+
+**Solution (PR #538):**
+- Convert USDT notional to quantity: `qty = notional_usdt / signal.price`
+- Handle invalid price (≤ 0): return `qty=0.0` + warning log
+- Renamed variables for clarity: `max_notional_usdt`, `notional_usdt`
+
+**Solution (PR #539):**
+- Added `price: Optional[float]` field to Order model for observability
+- Orders now include `price` in Redis stream payload for debugging/forensics
+
+**Evidence:**
+- **Before Fix (18:19:36):** `quantity=20.0` (USDT as BTC), NO `price` field
+- **After Fix (18:29:07+):** `quantity=0.0002` (correct BTC qty), `price=90560.0` present
+- **Exposure Blocks:** "Max Exposure erreicht" count: 0 (eliminated)
+- **Sizing Verification:** 20 USDT / 90560 price = 0.00022 BTC ✅
+
+**Example Calculation:**
+```
+balance=10000, max_position_pct=0.1, allocation_pct=0.02, price=90560
+→ max_notional=1000 USDT
+→ notional=20 USDT
+→ qty=20/90560=0.00022 BTC (correct)
+```
+
+**Impact:**
+- Orders now correctly sized (~100,000x smaller for BTC/USDT)
+- Eliminated false-positive exposure blocks
+- Enhanced forensics: price visible in order stream
+
+**Files Changed:**
+- `services/risk/service.py` (calculate_position_size logic)
+- `services/risk/models.py` (Order.price field added)
 
 ---
 

@@ -164,3 +164,54 @@ Repository—Überblick.md
 # Local development files (temporary)
 .local/
 grafana-scan.json
+
+# =============================================================================
+# WORKING_REPO_ROOT_POLICY - Repo Hygiene (2026-01-10)
+# =============================================================================
+
+# --- build / python
+__pycache__/
+*.pyc
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+.eggs/
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- tooling artifacts / scans / reports
+reports/
+report/
+*_report/
+*_reports/
+*_scan/
+scan/
+gitleaks*
+trivy*
+grafana-scan/
+secret_scan/
+job_logs/
+*_logs/
+logs/
+run_*/
+tmp*/
+tmp_artifacts/
+.artifacts/
+.worktree_backup/
+*.log
+*.dump
+*.out
+*.tmp
+
+# =============================================================================
