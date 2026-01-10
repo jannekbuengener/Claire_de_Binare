@@ -62,6 +62,7 @@ stats = {
     "signals_received": 0,
     "orders_approved": 0,
     "orders_blocked": 0,
+    "orders_skipped": 0,  # NEW: qty=0, silent drops
     "alerts_generated": 0,
     "order_results_received": 0,
     "orders_rejected_execution": 0,
@@ -430,7 +431,15 @@ class RiskManager:
 
         # Alle Checks passed → Order erstellen
         allocation = self._get_allocation_state(signal.strategy_id)
-        quantity = self.calculate_position_size(signal, allocation.allocation_pct)
+        quantity, skip_reason = self.calculate_position_size(signal, allocation.allocation_pct)
+
+        # SKIP: qty=0 wegen invalid price oder sanity check
+        if quantity <= 0.0 or skip_reason:
+            logger.warning(
+                f"Signal SKIPPED: {signal.symbol} {signal.side} - {skip_reason}"
+            )
+            stats["orders_skipped"] += 1
+            return None
 
         # Mark order if Early-Live exception applies
         reason = signal.reason
@@ -464,8 +473,12 @@ class RiskManager:
 
         return order
 
-    def calculate_position_size(self, signal: Signal, allocation_pct: float) -> float:
-        """Berechnet Position-Size basierend auf Allokation"""
+    def calculate_position_size(self, signal: Signal, allocation_pct: float) -> tuple[float, str | None]:
+        """Berechnet Position-Size basierend auf Allokation
+
+        Returns:
+            (quantity, skip_reason): qty=0.0 mit reason wenn skipped
+        """
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
 
@@ -487,7 +500,7 @@ class RiskManager:
             logger.warning(
                 f"calculate_position_size: invalid price={price} for {signal.symbol}, returning qty=0.0"
             )
-            return 0.0
+            return 0.0, "Invalid price"
 
         # Konvertiere USDT-Notional zu Coin-Quantity
         qty = notional_usdt / price
@@ -501,9 +514,9 @@ class RiskManager:
                     f"(notional={notional_usdt:.2f} USDT, price={price:.2f}). "
                     f"Possible sizing regression detected! Blocking order in dev/paper mode."
                 )
-                return 0.0
+                return 0.0, "Sanity check failed (qty too large)"
 
-        return float(max(qty, 0.0))
+        return float(max(qty, 0.0)), None
 
     def send_order(self, order: Order):
         """Publiziert Order"""
@@ -712,8 +725,10 @@ class RiskManager:
 
                     except json.JSONDecodeError as e:
                         logger.warning(f"Ungültiges JSON: {e}")
+                        stats["orders_skipped"] += 1  # Silent drop: JSON parse error
                     except Exception as e:
                         logger.error(f"Fehler in Hauptschleife: {e}")
+                        stats["orders_skipped"] += 1  # Silent drop: Signal parsing error
 
         except KeyboardInterrupt:
             logger.info("Shutdown via Keyboard")
@@ -775,12 +790,18 @@ def status():
 @app.route("/metrics")
 def metrics():
     body = (
+        "# HELP signals_received_total Signals empfangen (Redis PubSub)\n"
+        "# TYPE signals_received_total counter\n"
+        f"signals_received_total {stats['signals_received']}\n\n"
         "# HELP orders_approved_total Orders freigegeben\n"
         "# TYPE orders_approved_total counter\n"
         f"orders_approved_total {stats['orders_approved']}\n\n"
-        "# HELP orders_blocked_total Orders blockiert\n"
+        "# HELP orders_blocked_total Orders blockiert (Risk Checks)\n"
         "# TYPE orders_blocked_total counter\n"
         f"orders_blocked_total {stats['orders_blocked']}\n\n"
+        "# HELP orders_skipped_total Orders übersprungen (qty=0, parse errors)\n"
+        "# TYPE orders_skipped_total counter\n"
+        f"orders_skipped_total {stats['orders_skipped']}\n\n"
         "# HELP circuit_breaker_active Circuit Breaker Status\n"
         "# TYPE circuit_breaker_active gauge\n"
         f"circuit_breaker_active {1 if risk_state.circuit_breaker_active else 0}\n\n"
