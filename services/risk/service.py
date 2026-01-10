@@ -172,6 +172,13 @@ class RiskManager:
             return True
         return False
 
+    def _is_early_live_exception(self, strategy_id: str) -> bool:
+        """Check if Early-Live exception applies (risk_off but small allocation)"""
+        if not risk_off_active:
+            return False
+        allocation = self._get_allocation_state(strategy_id)
+        return 0 < allocation.allocation_pct <= self.config.early_live_max_alloc
+
     def _listen_regime_stream(self):
         if not self.redis_client or not self.config.regime_stream:
             return
@@ -198,7 +205,35 @@ class RiskManager:
     def _listen_allocation_stream(self):
         if not self.redis_client or not self.config.allocation_stream:
             return
+
+        # Bootstrap: Read latest allocation to avoid missing state after restart
         last_id = "0-0"
+        try:
+            allocation_entries = self.redis_client.xrevrange(
+                self.config.allocation_stream, "+", "-", count=10
+            )
+            seen_strategies = set()
+            for entry_id, payload in allocation_entries:
+                strategy_id = payload.get("strategy_id")
+                if not strategy_id or strategy_id in seen_strategies:
+                    continue
+                seen_strategies.add(strategy_id)
+                allocation_pct = float(payload.get("allocation_pct", 0.0))
+                cooldown_until = self._parse_timestamp(payload.get("cooldown_until"))
+                self.allocation_state[strategy_id] = AllocationState(
+                    allocation_pct=allocation_pct,
+                    cooldown_until=cooldown_until,
+                )
+                logger.info(
+                    "Bootstrap allocation: strategy_id=%s allocation_pct=%.4f",
+                    strategy_id,
+                    allocation_pct,
+                )
+            if allocation_entries:
+                last_id = allocation_entries[0][0]
+        except Exception as e:
+            logger.warning(f"Allocation bootstrap failed, starting from 0-0: {e}")
+
         while self.running:
             try:
                 response = self.redis_client.xread(
@@ -348,10 +383,12 @@ class RiskManager:
             return None
 
         if risk_off_active and not self._is_reduce_only_allowed(signal):
-            logger.warning("Signal blockiert: Risk-Off Reduce-Only")
-            stats["orders_blocked"] += 1
-            risk_state.signals_blocked += 1
-            return None
+            # Early-Live exception: allow small allocations despite risk_off
+            if not self._is_early_live_exception(signal.strategy_id):
+                logger.warning("Signal blockiert: Risk-Off Reduce-Only")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
 
         # Layer 1: Circuit Breaker
         ok, reason = self.check_drawdown_limit()
@@ -389,13 +426,18 @@ class RiskManager:
         allocation = self._get_allocation_state(signal.strategy_id)
         quantity = self.calculate_position_size(signal, allocation.allocation_pct)
 
+        # Mark order if Early-Live exception applies
+        reason = signal.reason
+        if self._is_early_live_exception(signal.strategy_id):
+            reason = f"{signal.reason}|risk_off_limited" if signal.reason else "risk_off_limited"
+
         order = Order(
             symbol=signal.symbol,
             side=signal.side,
             quantity=quantity,
             stop_loss_pct=self.config.stop_loss_pct,
             signal_id=signal.timestamp,
-            reason=signal.reason,
+            reason=reason,
             timestamp=int(time.time()),
             client_id=f"{signal.symbol}-{signal.timestamp}",
             strategy_id=signal.strategy_id,
