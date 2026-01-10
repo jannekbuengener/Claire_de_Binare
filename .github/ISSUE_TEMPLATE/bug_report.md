@@ -1,12 +1,3 @@
----
-name: Bug Report
-about: Melde einen Defekt im Cleanroom-Projekt
----
+# bug_report.md
 
-## Beschreibung
-
-## Erwartetes Verhalten
-
-## Reproduktion
-
-## Zusätzliche Hinweise
+**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/github/bug_report.md`

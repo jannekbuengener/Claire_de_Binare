@@ -1,12 +1,3 @@
----
-name: Feature Request
-about: Schlage eine Verbesserung oder ein neues Feature vor
----
+# feature_request.md
 
-## Beschreibung
-
-## Nutzen
-
-## Umsetzungsideen
-
-## Abhängigkeiten
+**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/github/feature_request.md`
