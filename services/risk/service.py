@@ -491,6 +491,18 @@ class RiskManager:
 
         # Konvertiere USDT-Notional zu Coin-Quantity
         qty = notional_usdt / price
+
+        # Dev/Paper-only sanity check: catch absurdly large quantities
+        if not self.config.use_real_balance:
+            # For BTC pairs, qty > 1.0 is extremely suspicious (likely sizing bug)
+            if "BTC" in signal.symbol and qty > 1.0:
+                logger.error(
+                    f"SANITY CHECK FAILED: qty={qty:.4f} for {signal.symbol} is absurdly large "
+                    f"(notional={notional_usdt:.2f} USDT, price={price:.2f}). "
+                    f"Possible sizing regression detected! Blocking order in dev/paper mode."
+                )
+                return 0.0
+
         return float(max(qty, 0.0))
 
     def send_order(self, order: Order):
