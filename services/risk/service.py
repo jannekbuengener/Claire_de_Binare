@@ -205,7 +205,35 @@ class RiskManager:
     def _listen_allocation_stream(self):
         if not self.redis_client or not self.config.allocation_stream:
             return
+
+        # Bootstrap: Read latest allocation to avoid missing state after restart
         last_id = "0-0"
+        try:
+            allocation_entries = self.redis_client.xrevrange(
+                self.config.allocation_stream, "+", "-", count=10
+            )
+            seen_strategies = set()
+            for entry_id, payload in allocation_entries:
+                strategy_id = payload.get("strategy_id")
+                if not strategy_id or strategy_id in seen_strategies:
+                    continue
+                seen_strategies.add(strategy_id)
+                allocation_pct = float(payload.get("allocation_pct", 0.0))
+                cooldown_until = self._parse_timestamp(payload.get("cooldown_until"))
+                self.allocation_state[strategy_id] = AllocationState(
+                    allocation_pct=allocation_pct,
+                    cooldown_until=cooldown_until,
+                )
+                logger.info(
+                    "Bootstrap allocation: strategy_id=%s allocation_pct=%.4f",
+                    strategy_id,
+                    allocation_pct,
+                )
+            if allocation_entries:
+                last_id = allocation_entries[0][0]
+        except Exception as e:
+            logger.warning(f"Allocation bootstrap failed, starting from 0-0: {e}")
+
         while self.running:
             try:
                 response = self.redis_client.xread(
