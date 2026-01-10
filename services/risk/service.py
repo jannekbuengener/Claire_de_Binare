@@ -431,7 +431,9 @@ class RiskManager:
 
         # Alle Checks passed → Order erstellen
         allocation = self._get_allocation_state(signal.strategy_id)
-        quantity, skip_reason = self.calculate_position_size(signal, allocation.allocation_pct)
+        quantity, skip_reason = self.calculate_position_size(
+            signal, allocation.allocation_pct
+        )
 
         # SKIP: qty=0 wegen invalid price oder sanity check
         if quantity <= 0.0 or skip_reason:
@@ -473,7 +475,9 @@ class RiskManager:
 
         return order
 
-    def calculate_position_size(self, signal: Signal, allocation_pct: float) -> tuple[float, str | None]:
+    def calculate_position_size(
+        self, signal: Signal, allocation_pct: float
+    ) -> tuple[float, str | None]:
         """Berechnet Position-Size basierend auf Allokation
 
         Returns:
@@ -728,7 +732,9 @@ class RiskManager:
                         stats["orders_skipped"] += 1  # Silent drop: JSON parse error
                     except Exception as e:
                         logger.error(f"Fehler in Hauptschleife: {e}")
-                        stats["orders_skipped"] += 1  # Silent drop: Signal parsing error
+                        stats[
+                            "orders_skipped"
+                        ] += 1  # Silent drop: Signal parsing error
 
         except KeyboardInterrupt:
             logger.info("Shutdown via Keyboard")
