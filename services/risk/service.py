@@ -21,6 +21,7 @@ from threading import Thread
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.auth import validate_all_auth
+
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
@@ -197,7 +198,9 @@ class RiskManager:
                         global current_regime, risk_off_active
                         current_regime = regime
                         risk_off_active = regime == "HIGH_VOL_CHAOTIC"
-                        logger.info("Regime-Update: %s (risk_off=%s)", regime, risk_off_active)
+                        logger.info(
+                            "Regime-Update: %s (risk_off=%s)", regime, risk_off_active
+                        )
             except Exception as err:  # noqa: BLE001
                 logger.error("Regime-Stream Fehler: %s", err)
                 time.sleep(1)
@@ -248,7 +251,9 @@ class RiskManager:
                         if not strategy_id:
                             continue
                         allocation_pct = float(payload.get("allocation_pct", 0.0))
-                        cooldown_until = self._parse_timestamp(payload.get("cooldown_until"))
+                        cooldown_until = self._parse_timestamp(
+                            payload.get("cooldown_until")
+                        )
                         self.allocation_state[strategy_id] = AllocationState(
                             allocation_pct=allocation_pct,
                             cooldown_until=cooldown_until,
@@ -285,6 +290,7 @@ class RiskManager:
             except Exception as err:  # noqa: BLE001
                 logger.error("Shutdown-Stream Fehler: %s", err)
                 time.sleep(1)
+
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
@@ -429,7 +435,11 @@ class RiskManager:
         # Mark order if Early-Live exception applies
         reason = signal.reason
         if self._is_early_live_exception(signal.strategy_id):
-            reason = f"{signal.reason}|risk_off_limited" if signal.reason else "risk_off_limited"
+            reason = (
+                f"{signal.reason}|risk_off_limited"
+                if signal.reason
+                else "risk_off_limited"
+            )
 
         order = Order(
             symbol=signal.symbol,
@@ -489,9 +499,7 @@ class RiskManager:
             message = json.dumps(payload, ensure_ascii=False)
             self.redis_client.publish(self.config.output_topic_orders, message)
             if self.redis_client:
-                self.redis_client.xadd(
-                    self.config.orders_stream, payload, maxlen=10000
-                )
+                self.redis_client.xadd(self.config.orders_stream, payload, maxlen=10000)
             logger.debug(f"Order publiziert: {order.symbol}")
         except Exception as e:
             logger.error(f"Fehler beim Order-Publishing: {e}")
@@ -796,6 +804,7 @@ if __name__ == "__main__":
 
     # Validate Redis auth before startup
     from core.auth import validate_redis_auth
+
     redis_ok, redis_msg = validate_redis_auth(
         config.redis_host, config.redis_port, config.redis_password, config.redis_db
     )
