@@ -29,6 +29,7 @@ class RiskConfig:
     )
     max_daily_drawdown_pct: float = float(os.getenv("MAX_DAILY_DRAWDOWN_PCT", "0.05"))
     stop_loss_pct: float = float(os.getenv("STOP_LOSS_PCT", "0.02"))
+    early_live_max_alloc: float = float(os.getenv("EARLY_LIVE_MAX_ALLOC", "0.02"))
 
     # Topics
     input_topic: str = "signals"
