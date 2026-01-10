@@ -452,6 +452,7 @@ class RiskManager:
             client_id=f"{signal.symbol}-{signal.timestamp}",
             strategy_id=signal.strategy_id,
             bot_id=signal.bot_id,
+            price=signal.price,
         )
 
         logger.info(
