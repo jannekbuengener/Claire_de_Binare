@@ -1,0 +1,497 @@
+{
+  "uid": "cdb_system_health_v1",
+  "title": "CDB - System Health & Trade Flow",
+  "description": "Single-screen observability: System health, Trade pipeline, Risk blocks - Live-Trading readiness dashboard",
+  "tags": ["claire", "system", "health", "trade-flow", "live"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"]
+  },
+  "refresh": "10s",
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "SERVICES UP",
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "count(up{job=~\"cdb_.*\"} == 1)",
+        "refId": "A",
+        "legendFormat": "UP"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#ea580c", "value": 5},
+              {"color": "#f59e0b", "value": 8}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "POSTGRESQL",
+      "gridPos": {"h": 4, "w": 3, "x": 4, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "pg_up",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#f59e0b"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#f59e0b", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "REDIS",
+      "gridPos": {"h": 4, "w": 3, "x": 7, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "redis_up",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#f59e0b"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#f59e0b", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "CIRCUIT BREAKER",
+      "gridPos": {"h": 4, "w": 3, "x": 10, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "circuit_breaker_active",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "mappings": [
+            {"type": "value", "value": "0", "text": "OK", "color": "#f59e0b"},
+            {"type": "value", "value": "1", "text": "ACTIVE", "color": "#dc2626"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#dc2626", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "ERROR RATE",
+      "gridPos": {"h": 4, "w": 4, "x": 13, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "sum(rate(execution_orders_rejected_total[5m]))",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#ea580c", "value": 0.1},
+              {"color": "#dc2626", "value": 1}
+            ]
+          },
+          "unit": "reqps",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "MIN UPTIME",
+      "gridPos": {"h": 4, "w": 7, "x": 17, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "min(time() - process_start_time_seconds{job=~\"cdb_.*\"})",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#ea580c", "value": 60},
+              {"color": "#f59e0b", "value": 300}
+            ]
+          },
+          "unit": "s"
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "1. WS MESSAGES",
+      "gridPos": {"h": 5, "w": 5, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "rate(decoded_messages_total[1m])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 1},
+              {"color": "#8b0000", "value": 10}
+            ]
+          },
+          "unit": "ops",
+          "decimals": 1
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "2. SIGNALS",
+      "gridPos": {"h": 5, "w": 5, "x": 5, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "rate(signals_generated_total[1m])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 0.01},
+              {"color": "#8b0000", "value": 1}
+            ]
+          },
+          "unit": "ops",
+          "decimals": 2
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 13,
+      "type": "stat",
+      "title": "3. APPROVED",
+      "gridPos": {"h": 5, "w": 4, "x": 10, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "rate(orders_approved_total[1m])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 0.01},
+              {"color": "#8b0000", "value": 0.1}
+            ]
+          },
+          "unit": "ops",
+          "decimals": 3
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 14,
+      "type": "stat",
+      "title": "⚠️ BLOCKED",
+      "gridPos": {"h": 5, "w": 5, "x": 14, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "rate(orders_blocked_total[1m])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#dc2626", "value": 0.001}
+            ]
+          },
+          "unit": "ops",
+          "decimals": 3
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 15,
+      "type": "stat",
+      "title": "4. FILLED",
+      "gridPos": {"h": 5, "w": 5, "x": 19, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "rate(execution_orders_filled_total[1m])",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#4d0000", "value": 0.001},
+              {"color": "#8b0000", "value": 0.01}
+            ]
+          },
+          "unit": "ops",
+          "decimals": 3
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 21,
+      "type": "timeseries",
+      "title": "Trade Flow Pipeline (Rate)",
+      "gridPos": {"h": 8, "w": 16, "x": 0, "y": 9},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "rate(decoded_messages_total[1m])",
+          "refId": "A",
+          "legendFormat": "WS Messages"
+        },
+        {
+          "expr": "rate(signals_generated_total[1m])",
+          "refId": "B",
+          "legendFormat": "Signals"
+        },
+        {
+          "expr": "rate(orders_approved_total[1m])",
+          "refId": "C",
+          "legendFormat": "Orders Approved"
+        },
+        {
+          "expr": "rate(orders_blocked_total[1m])",
+          "refId": "D",
+          "legendFormat": "Orders BLOCKED"
+        },
+        {
+          "expr": "rate(execution_orders_filled_total[1m])",
+          "refId": "E",
+          "legendFormat": "Orders Filled"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "ops"
+        },
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Orders BLOCKED"},
+            "properties": [
+              {"id": "color", "value": {"mode": "fixed", "fixedColor": "#dc2626"}},
+              {"id": "custom.lineWidth", "value": 3}
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {"displayMode": "list", "placement": "bottom"}
+      }
+    },
+    {
+      "id": 22,
+      "type": "stat",
+      "title": "RISK BLOCKS (Total)",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 9},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{
+        "expr": "orders_blocked_total",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#f59e0b", "value": null},
+              {"color": "#ea580c", "value": 1},
+              {"color": "#dc2626", "value": 10}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value_and_name"
+      }
+    },
+    {
+      "id": 23,
+      "type": "bargauge",
+      "title": "Execution Status",
+      "gridPos": {"h": 4, "w": 8, "x": 16, "y": 13},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "execution_orders_received_total",
+          "refId": "A",
+          "legendFormat": "Received"
+        },
+        {
+          "expr": "execution_orders_filled_total",
+          "refId": "B",
+          "legendFormat": "Filled"
+        },
+        {
+          "expr": "execution_orders_rejected_total",
+          "refId": "C",
+          "legendFormat": "Rejected"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#1a1a1a", "value": null},
+              {"color": "#8b0000", "value": 1}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  },
+  "schemaVersion": 38,
+  "version": 1
+}
