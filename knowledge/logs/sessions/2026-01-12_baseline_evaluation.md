@@ -186,7 +186,7 @@ Based on 397 orders over 23.5h empirical data:
 
 **DoD Update:** "0 Restarts" → **"0 Unplanned Restarts"**
 - Planned restarts allowed IF:
-  - Marker in `maintenance.log` BEFORE event
+  - Marker in `maintenance_events.log` BEFORE event
   - Announced (if live mode)
   - < 5min downtime
   - Root cause documented
@@ -204,7 +204,7 @@ Based on 397 orders over 23.5h empirical data:
 
 2. **Monitoring Setup**:
    - ✅ Reconciliation script: `baseline_reconciliation.sh` (daily run)
-   - ✅ Maintenance log: `knowledge/logs/ops/maintenance.log` (manual marker)
+   - ✅ Maintenance log: `knowledge/ops/maintenance_events.log` (manual marker)
    - ✅ Grafana Dashboard: Panel for Planned Maintenance Events
    - ⏳ Alerting: Service restart detection (Prometheus `up` metric)
 
@@ -234,17 +234,17 @@ Based on 397 orders over 23.5h empirical data:
 ## Implementation (Issue #547)
 
 **Files Modified:**
-- NEW: `knowledge/logs/ops/maintenance.log` (restart tracking)
+- NEW: `knowledge/ops/maintenance_events.log` (restart tracking)
 - EDIT: `infrastructure/monitoring/grafana/dashboards/cdb_system_health_v1.json` (maintenance panel)
 - EDIT: Baseline DoD (this document)
 
 **Usage:**
 ```bash
 # Before planned restart:
-echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | planned | docker-compose restart (reason)" >> knowledge/logs/ops/maintenance.log
+echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | planned | docker-compose restart (reason)" >> knowledge/ops/maintenance_events.log
 
 # After unplanned restart (investigation):
-echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | unplanned | OOM-kill cdb_execution (root cause)" >> knowledge/logs/ops/maintenance.log
+echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | unplanned | OOM-kill cdb_execution (root cause)" >> knowledge/ops/maintenance_events.log
 ```
 
 **Grafana Panel:** Top row, full-width, shows last 5 maintenance events + DoD reminder
@@ -285,7 +285,7 @@ echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | unplanned | OOM-kill cdb_execution (
 - Log parsing: bash scripts (0 cost)
 - Reconciliation script: bash + docker exec (0 cost)
 - Grafana Dashboard edit: JSON file change (0 cost)
-- maintenance.log: Text file (0 cost)
+- maintenance_events.log: Text file (0 cost)
 
 **No CI runs, no new services, no infra changes.**
 

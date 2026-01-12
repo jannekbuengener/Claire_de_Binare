@@ -6,10 +6,10 @@
 #
 # Usage:
 #   Before planned restart:
-#     echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | planned | <reason>" >> knowledge/logs/ops/maintenance.log
+#     echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | planned | <reason>" >> knowledge/ops/maintenance_events.log
 #
 #   After unplanned restart (investigation):
-#     echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | unplanned | <cause>" >> knowledge/logs/ops/maintenance.log
+#     echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') | unplanned | <cause>" >> knowledge/ops/maintenance_events.log
 #
 # Shadow Mode DoD: 0 unplanned restarts in observation period
 # Planned restarts allowed IF marked here BEFORE event
