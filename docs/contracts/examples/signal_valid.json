@@ -1,0 +1,17 @@
+[
+  {
+    "description": "basic trading signal payload",
+    "payload": {
+      "schema_version": "v1.0",
+      "signal_id": "sig-001",
+      "strategy_id": "momentum-v2",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "timestamp": 1735574400,
+      "strength": 0.85,
+      "confidence": 0.92,
+      "price": 50100.5,
+      "reason": "test signal"
+    }
+  }
+]
