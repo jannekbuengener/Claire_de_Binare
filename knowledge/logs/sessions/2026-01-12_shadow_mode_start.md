@@ -26,7 +26,7 @@ Based on 24h Baseline Run empirical data (397 orders, 2026-01-11 to 2026-01-12):
 - **INVESTIGATE if:** Success Rate < 90% for 2+ consecutive days
 - **INVESTIGATE if:** Latency p95 > 300ms sustained
 
-**Planned Restarts:** Allowed IF marker in `knowledge/logs/ops/maintenance.log` BEFORE event (<5min downtime, root cause documented)
+**Planned Restarts:** Allowed IF marker in `knowledge/ops/maintenance_events.log` BEFORE event (<5min downtime, root cause documented)
 
 ---
 
@@ -109,9 +109,9 @@ docker exec cdb_prometheus wget -qO- 'http://localhost:9090/api/v1/query?query=e
 ```bash
 # Check for unplanned restarts
 docker ps --filter "name=cdb_" --format "{{.Names}}\t{{.Status}}"
-cat knowledge/logs/ops/maintenance.log | tail -5
+cat knowledge/ops/maintenance_events.log | tail -5
 
-# Expected: All services UP, no new unplanned entries in maintenance.log
+# Expected: All services UP, no new unplanned entries in maintenance_events.log
 # Rollback trigger: 2+ unplanned restarts
 ```
 
@@ -185,7 +185,7 @@ MEXC WebSocket → cdb_ws → Redis → cdb_signal → cdb_risk → cdb_executio
 - Baseline START: `knowledge/logs/sessions/2026-01-11_baseline_start.md`
 - Baseline EVALUATION: `knowledge/logs/sessions/2026-01-12_baseline_evaluation.md`
 - Reconciliation Script: `scripts/baseline_reconciliation.sh`
-- Maintenance Log: `knowledge/logs/ops/maintenance.log`
+- Maintenance Log: `knowledge/ops/maintenance_events.log`
 
 ---
 
@@ -194,7 +194,7 @@ MEXC WebSocket → cdb_ws → Redis → cdb_signal → cdb_risk → cdb_executio
 **Daily (at ~18:30 UTC for 5 days):**
 1. Run reconciliation check
 2. Collect Prometheus counters (calculate delta from T0)
-3. Check service stability (docker ps + maintenance.log)
+3. Check service stability (docker ps + maintenance_events.log)
 4. Log results in daily check files (Day 1-5)
 
 **Day 5 (2026-01-17 18:32 UTC):**
@@ -206,7 +206,7 @@ MEXC WebSocket → cdb_ws → Redis → cdb_signal → cdb_risk → cdb_executio
 
 **Monitoring:**
 - Watch Grafana Dashboard for anomalies
-- Review maintenance.log for unplanned restarts
+- Review maintenance_events.log for unplanned restarts
 - Investigate if Success Rate drops below 90%
 
 ---
