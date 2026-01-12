@@ -35,6 +35,11 @@ jobs:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
 
+      - name: Set Trivy safe image name
+        run: |
+          safe_image=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "TRIVY_SAFE_IMAGE=$safe_image" >> $GITHUB_ENV
+
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
@@ -42,26 +47,26 @@ jobs:
           format: 'table'
           exit-code: '0'  # Don't fail on base images - document risks
           severity: 'CRITICAL,HIGH'
-          output: 'trivy-${{ matrix.image }}.txt'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.txt'
 
       - name: Run Trivy SARIF
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
-          output: 'trivy-${{ matrix.image }}.sarif'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
       - name: Upload Trivy Results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: trivy-base-${{ matrix.image }}-${{ github.run_number }}
+          name: trivy-base-${{ env.TRIVY_SAFE_IMAGE }}-${{ github.run_number }}
           path: trivy-*.txt
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         if: always()
         with:
-          sarif_file: 'trivy-${{ matrix.image }}.sarif'
+          sarif_file: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
   trivy-scan-custom:
     name: Trivy - Custom Services
