@@ -1,0 +1,26 @@
+[
+  {
+    "description": "price must be string",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": 50000.5,
+      "trade_qty": "1.5",
+      "side": "buy"
+    }
+  },
+  {
+    "description": "legacy qty field rejected",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "qty": "1.5",
+      "side": "buy"
+    }
+  }
+]
