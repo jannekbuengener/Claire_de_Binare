@@ -17,10 +17,20 @@
   "style": "dark",
   "panels": [
     {
+      "id": 0,
+      "type": "text",
+      "title": "⚠️ Planned Maintenance Events",
+      "gridPos": {"h": 3, "w": 24, "x": 0, "y": 0},
+      "options": {
+        "mode": "markdown",
+        "content": "**Last 5 Events** (Source: `knowledge/logs/ops/maintenance.log`):\n\n| Timestamp | Type | Reason |\n|-----------|------|--------|\n| 2026-01-12 18:00 UTC | ⚠️ **unplanned** | Stack restart (root cause: TBD) |\n\n**Shadow Mode DoD:** 0 unplanned restarts allowed. Planned restarts require marker BEFORE event."
+      }
+    },
+    {
       "id": 1,
       "type": "stat",
       "title": "SERVICES UP",
-      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+      "gridPos": {"h": 4, "w": 4, "x": 0, "y": 3},
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "targets": [{
         "expr": "count(up{job=~\"cdb_.*\"} == 1)",
