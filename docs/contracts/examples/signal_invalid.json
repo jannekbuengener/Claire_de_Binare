@@ -1,0 +1,25 @@
+[
+  {
+    "description": "side must be uppercase",
+    "payload": {
+      "schema_version": "v1.0",
+      "signal_id": "sig-001",
+      "strategy_id": "momentum-v2",
+      "symbol": "BTCUSDT",
+      "side": "buy",
+      "timestamp": 1735574400
+    }
+  },
+  {
+    "description": "strength out of range",
+    "payload": {
+      "schema_version": "v1.0",
+      "signal_id": "sig-002",
+      "strategy_id": "momentum-v2",
+      "symbol": "BTCUSDT",
+      "side": "BUY",
+      "timestamp": 1735574400,
+      "strength": 1.5
+    }
+  }
+]
