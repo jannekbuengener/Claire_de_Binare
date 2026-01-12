@@ -133,8 +133,8 @@ jobs:
 
     env:
       SCAN_IMAGE: ${{ matrix.image }}
-      SCAN_IMAGE_LABEL: ${{ matrix.image.replace(':', '-') }}
-      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', matrix.image.replace(':', '-'), github.run_number) }}
+      SCAN_IMAGE_LABEL: ${{ replace(matrix.image, ':', '-') }}
+      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', replace(matrix.image, ':', '-'), github.run_number) }}
 
     steps:
       - name: Pull Image

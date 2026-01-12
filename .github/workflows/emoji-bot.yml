@@ -112,9 +112,9 @@ jobs:
           git add .
           git commit -m "🤖 Auto-fix: Emojis entfernt durch Bot-Befehl
 
-Ausgeführt durch: @${{ github.event.comment.user.login }}
-Command: /emoji-fix
-PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
+          Ausgeführt durch: @${{ github.event.comment.user.login }}
+          Command: /emoji-fix
+          PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
           
           git push origin ${{ fromJson(steps.pr-info.outputs.result).head_ref }}
         fi
@@ -132,30 +132,30 @@ PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
           
           # Füge Emojis zur Whitelist hinzu
           python -c "
-import yaml
-import sys
+        import yaml
+        import sys
 
-config_path = '.github/emoji-config.yaml'
-emojis = '$EMOJIS'.strip().split()
+        config_path = '.github/emoji-config.yaml'
+        emojis = '$EMOJIS'.strip().split()
 
-with open(config_path, 'r') as f:
-    config = yaml.safe_load(f)
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
 
-if 'whitelist' not in config:
-    config['whitelist'] = {}
-if 'comments_allowed' not in config['whitelist']:
-    config['whitelist']['comments_allowed'] = []
+        if 'whitelist' not in config:
+            config['whitelist'] = {}
+        if 'comments_allowed' not in config['whitelist']:
+            config['whitelist']['comments_allowed'] = []
 
-# Füge neue Emojis hinzu
-for emoji in emojis:
-    if emoji not in config['whitelist']['comments_allowed']:
-        config['whitelist']['comments_allowed'].append(emoji)
+        # Füge neue Emojis hinzu
+        for emoji in emojis:
+            if emoji not in config['whitelist']['comments_allowed']:
+                config['whitelist']['comments_allowed'].append(emoji)
 
-with open(config_path, 'w') as f:
-    yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+        with open(config_path, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
-print(f'Emojis zur Whitelist hinzugefügt: {emojis}')
-"
+        print(f'Emojis zur Whitelist hinzugefügt: {emojis}')
+        "
           
           # Commit Update
           git config --local user.email "action@github.com"
@@ -163,10 +163,10 @@ print(f'Emojis zur Whitelist hinzugefügt: {emojis}')
           git add .github/emoji-config.yaml
           git commit -m "📝 Whitelist Update: Emojis hinzugefügt
 
-Emojis: $EMOJIS
-Ausgeführt durch: @${{ github.event.comment.user.login }}
-Command: /emoji-whitelist
-PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
+          Emojis: $EMOJIS
+          Ausgeführt durch: @${{ github.event.comment.user.login }}
+          Command: /emoji-whitelist
+          PR: #${{ fromJson(steps.pr-info.outputs.result).number }}"
           
           git push origin ${{ fromJson(steps.pr-info.outputs.result).head_ref }}
           echo "whitelist_updated=true" >> $GITHUB_ENV
