@@ -133,12 +133,16 @@ jobs:
 
     env:
       SCAN_IMAGE: ${{ matrix.image }}
-      SCAN_IMAGE_LABEL: ${{ replace(matrix.image, ':', '-') }}
-      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', replace(matrix.image, ':', '-'), github.run_number) }}
 
     steps:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
+
+      - name: Set scan artifact names
+        run: |
+          label="${SCAN_IMAGE//:/-}"
+          echo "SCAN_IMAGE_LABEL=$label" >> $GITHUB_ENV
+          echo "SCAN_ARTIFACT_NAME=scan-${label}-${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
 
       - name: Save Scan Results
         if: always()
