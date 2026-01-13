@@ -460,6 +460,21 @@ def signal_handler(signum, frame):
     running = False
 
 
+def _require_live_confirmation() -> None:
+    if config.DRY_RUN and config.MOCK_TRADING:
+        return
+
+    confirmation = os.getenv("CONFIRM_LIVE_TRADING", "").lower().strip()
+    if confirmation != "true":
+        logger.critical("LIVE trading safety gate triggered.")
+        logger.critical(
+            "Set CONFIRM_LIVE_TRADING=true to proceed (DRY_RUN=%s, MOCK_TRADING=%s).",
+            config.DRY_RUN,
+            config.MOCK_TRADING,
+        )
+        sys.exit(1)
+
+
 def main():
     """Main entry point"""
     global running
@@ -467,6 +482,14 @@ def main():
     logger.info(f"Starting {config.SERVICE_NAME} v{config.SERVICE_VERSION}")
     logger.info(f"Port: {config.SERVICE_PORT}")
     logger.info(f"Mode: {'MOCK' if config.MOCK_TRADING else 'LIVE'}")
+    logger.info(
+        "Trading config: TRADING_MODE=%s DRY_RUN=%s MOCK_TRADING=%s",
+        os.getenv("TRADING_MODE", "(unset)"),
+        config.DRY_RUN,
+        config.MOCK_TRADING,
+    )
+
+    _require_live_confirmation()
 
     # Validate auth credentials before startup
     validate_all_auth(
