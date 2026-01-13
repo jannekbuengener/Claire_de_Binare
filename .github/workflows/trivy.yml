@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+env:
+  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
+  TRIVY_SUMMARY_MAX: "5"
+
 jobs:
   trivy-image:
     name: Trivy (Container Image)
@@ -51,6 +55,55 @@ jobs:
         run: |
           docker build -t cdb:${{ github.sha }} .
 
+      - name: Run Trivy (JSON)
+        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe # 7b7aa264d83dc58691451798b4d117d53d21edfe
+        with:
+          image-ref: "cdb:${{ github.sha }}"
+          format: "json"
+          output: "trivy-results.json"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          exit-code: "0"
+
+      - name: Summarize Trivy Results
+        run: |
+          set -euo pipefail
+          report="trivy-results.json"
+          echo "### Trivy (container image)" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -s "$report" ]; then
+            echo "- No report generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
+          total=$(wc -l < /tmp/trivy-high.txt | tr -d " ")
+          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -eq 0 ]; then
+            exit 0
+          fi
+          allowlist="${TRIVY_ALLOWLIST_CVES:-}"
+          if [ -n "$allowlist" ]; then
+            printf "%s\n" "${allowlist//,/\\n}" | sed '/^$/d' > /tmp/trivy-allow.txt
+            grep -v -F -x -f /tmp/trivy-allow.txt /tmp/trivy-high.txt > /tmp/trivy-disallowed.txt || true
+          else
+            cp /tmp/trivy-high.txt /tmp/trivy-disallowed.txt
+          fi
+          disallowed=$(wc -l < /tmp/trivy-disallowed.txt | tr -d " ")
+          echo "- Allowlist: ${allowlist:-none}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Disallowed: $disallowed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$disallowed" -ne 0 ]; then
+            echo "Disallowed CVEs:" >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/trivy-disallowed.txt >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Upload Trivy JSON
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: trivy-container-${{ github.run_number }}
+          path: trivy-results.json
+
       - name: Run Trivy (SARIF)
         uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe # 7b7aa264d83dc58691451798b4d117d53d21edfe
         with:
@@ -59,6 +112,7 @@ jobs:
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
+          exit-code: "0"
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
