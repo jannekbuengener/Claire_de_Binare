@@ -47,7 +47,7 @@ jobs:
         run: pip install ruff
 
       - name: Fetch main for diff
-        run: git fetch origin main
+        run: git fetch origin +refs/heads/main:refs/remotes/origin/main
 
       - name: Determine changed Python files
         id: changed
@@ -60,7 +60,8 @@ jobs:
           fi
 
           if [ -n "$base" ]; then
-            git fetch origin "$base"
+            base_fetch="${base#origin/}"
+            git fetch origin "$base_fetch"
           fi
 
           git fetch origin --unshallow || true
@@ -101,7 +102,7 @@ jobs:
         run: pip install black==23.12.1
 
       - name: Fetch main for diff
-        run: git fetch origin main
+        run: git fetch origin +refs/heads/main:refs/remotes/origin/main
 
       - name: Determine changed Python files
         id: changed
@@ -114,7 +115,8 @@ jobs:
           fi
 
           if [ -n "$base" ]; then
-            git fetch origin "$base"
+            base_fetch="${base#origin/}"
+            git fetch origin "$base_fetch"
           fi
 
           git fetch origin --unshallow || true
@@ -255,6 +257,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          trivyignores: .trivyignore
           skip-dirs: .worktrees_backup
           severity: HIGH,CRITICAL
           exit-code: "1"
