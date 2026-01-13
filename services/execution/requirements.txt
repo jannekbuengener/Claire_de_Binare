@@ -15,7 +15,7 @@ psycopg2-binary==2.9.9
 requests==2.32.4
 
 # Async Support
-aiohttp==3.12.14
+aiohttp==3.13.3
 
 # Crypto & Signing (für MEXC API)
 cryptography==44.0.1

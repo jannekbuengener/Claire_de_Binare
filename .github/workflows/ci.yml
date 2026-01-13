@@ -2,11 +2,35 @@ name: ci
 
 on:
   pull_request:
+    paths:
+      - 'core/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
   push:
     branches: [ main ]
+    paths:
+      - 'core/**'
+      - 'services/**'
+      - 'tests/**'
+      - 'infrastructure/**'
+      - '.github/workflows/**'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   ci:
@@ -20,12 +44,13 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          python-version: "3.13"
+          python-version: "3.12"
 
       - name: Install
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           pip install ruff black
         # Falls ihr kein requirements.txt habt, sag kurz Bescheid – dann passt man das sauber an.
 
@@ -33,7 +58,12 @@ jobs:
         run: ruff check .
 
       - name: Black
-        run: black --check .
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
+          HEAD="${{ github.sha }}"
+          FILES=$(git diff --name-only "$BASE" "$HEAD" -- '*.py' | xargs)
+          [ -z "$FILES" ] && echo "No python changes" && exit 0
+          black --config pyproject.toml --check $FILES
 
       - name: Tests
         run: pytest -q

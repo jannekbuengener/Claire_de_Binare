@@ -1,0 +1,10 @@
+7c86562e211ece28d589f14befdab3a0b575e051 109285 backoffice/docs/DECISION_LOG.md
+ee70fcb52a9b43e8fb4a4c140d4c999a2a47b3b3 109281 backoffice/docs/DECISION_LOG.md
+3c91d407ef71b245ebbf4bed6ae20e3514c9a522 96151 backoffice/docs/DECISION_LOG.md
+0089752cda9c9e723b94b013469283718397ef0a 92924 backoffice/docs/DECISION_LOG.md
+2d1f3c113c7ca1c952e627716752f44c205d7375 71223 docs/research/cdb_kubernetes.md
+c6ca1ca5e6394d0695cae2be7d75954ddab11f7e 71170 docs/services/cdb_redis.md
+da8867b0d854a963a283cd90b31100bb73b0b47a 71161 backoffice/docs/services/cdb_redis.md
+06bb06ab844987e916af8b1f64e76a89587c7dcc 71107 docs/research/cdb_redis.md
+88ac59d9c2c1935cb5a72a9c94a6ffc7e1fa893d 71099 docs/services/cdb_kubernetes.md
+93e4c9c8d5851699f4b14e42b0f372592c646e39 71092 backoffice/docs/services/cdb_kubernetes.md

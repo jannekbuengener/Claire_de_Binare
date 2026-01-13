@@ -1,46 +1,17 @@
 [
   {
-    "description": "Minimal valid signal message",
+    "description": "basic trading signal payload",
     "payload": {
       "schema_version": "v1.0",
-      "signal_id": "sig-20251230-btcusdt-001",
+      "signal_id": "sig-001",
       "strategy_id": "momentum-v2",
       "symbol": "BTCUSDT",
       "side": "BUY",
-      "timestamp": 1735574400
-    }
-  },
-  {
-    "description": "Full signal message with all optional fields",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-20251230-ethusdt-002",
-      "strategy_id": "rsi-oversold",
-      "bot_id": "bot-alpha-1",
-      "symbol": "ETHUSDT",
-      "side": "SELL",
-      "timestamp": 1735574410,
+      "timestamp": 1735574400,
       "strength": 0.85,
       "confidence": 0.92,
-      "price": 3505.00,
-      "reason": "RSI below 30, oversold condition",
-      "pct_change": -2.5,
-      "type": "signal"
-    }
-  },
-  {
-    "description": "Signal with high strength and confidence",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-20251230-solusdt-003",
-      "strategy_id": "breakout-v1",
-      "symbol": "SOLUSDT",
-      "side": "BUY",
-      "timestamp": 1735574420,
-      "strength": 1.0,
-      "confidence": 0.95,
-      "price": 100.50,
-      "type": "signal"
+      "price": 50100.5,
+      "reason": "test signal"
     }
   }
 ]

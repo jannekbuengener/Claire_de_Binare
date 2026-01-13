@@ -20,6 +20,7 @@ from flask import Flask, jsonify, Response
 
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
+
 try:
     from .config import config
 except ImportError:
@@ -168,7 +169,9 @@ class AllocationService:
 
         if pos.qty * delta > 0:
             total_qty = abs(pos.qty) + abs(delta)
-            pos.avg_price = (pos.avg_price * abs(pos.qty) + price * abs(delta)) / total_qty
+            pos.avg_price = (
+                pos.avg_price * abs(pos.qty) + price * abs(delta)
+            ) / total_qty
             pos.qty += delta
             self.positions[strategy_id][symbol] = pos
             return
@@ -187,7 +190,9 @@ class AllocationService:
             pos.avg_price = price
         self.positions[strategy_id][symbol] = pos
 
-    def _compute_performance(self, strategy_id: str, ts: int) -> tuple[Optional[float], bool]:
+    def _compute_performance(
+        self, strategy_id: str, ts: int
+    ) -> tuple[Optional[float], bool]:
         trades = list(self.trades.get(strategy_id, []))
         if not trades:
             return None, False
@@ -217,13 +222,17 @@ class AllocationService:
             )
         return ema, True
 
-    def _emit_decision(self, strategy_id: str, state: AllocationState, reason: str, ts: int):
+    def _emit_decision(
+        self, strategy_id: str, state: AllocationState, reason: str, ts: int
+    ):
         payload = {
             "ts": str(ts),
             "strategy_id": strategy_id,
             "allocation_pct": f"{state.allocation_pct:.6f}",
             "reason": reason,
-            "cooldown_until": "" if state.cooldown_until is None else str(state.cooldown_until),
+            "cooldown_until": ""
+            if state.cooldown_until is None
+            else str(state.cooldown_until),
             "schema_version": self.config.schema_version,
             "source_version": self.config.source_version,
         }
@@ -247,11 +256,9 @@ class AllocationService:
             base_alloc = float(rule.get(self.current_regime, 0.0))
             reason = f"regime={self.current_regime}"
 
+            target = base_alloc
             if self.current_regime == "HIGH_VOL_CHAOTIC":
-                target = 0.0
                 reason += "|risk_off"
-            else:
-                target = base_alloc
 
             if state.cooldown_until and state.cooldown_until <= ts:
                 state.cooldown_until = None
@@ -266,8 +273,10 @@ class AllocationService:
 
             if target > 0 and state.allocation_pct == 0.0:
                 if not readiness[strategy_id]:
-                    target = 0.0
                     reason += "|perf_not_ready"
+                    # Only block allocations above Early-Live threshold (0.02)
+                    if target > 0.02:
+                        target = 0.0
                 elif median_score is not None and scores[strategy_id] is not None:
                     if scores[strategy_id] <= median_score:
                         target = 0.0
@@ -275,6 +284,8 @@ class AllocationService:
 
             prev_alloc = state.allocation_pct
             prev_cooldown = state.cooldown_until
+            is_bootstrap = state.last_updated is None  # First run after service start
+
             if state.allocation_pct > 0.0 and target == 0.0:
                 state.cooldown_until = ts + self.config.cooldown_seconds
                 reason += "|cooldown_set"
@@ -282,7 +293,9 @@ class AllocationService:
             changed = prev_alloc != target or prev_cooldown != state.cooldown_until
             state.allocation_pct = target
             state.last_updated = ts
-            if changed:
+
+            # Emit decision if changed OR on first bootstrap (to persist initial state)
+            if changed or is_bootstrap:
                 self._emit_decision(strategy_id, state, reason, ts)
 
     def _handle_regime_signal(self, payload: dict):
@@ -309,7 +322,29 @@ class AllocationService:
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = utcnow().isoformat()
+
+        # Bootstrap: Process latest regime signal to avoid missing state after restart
         last_regime_id = "0-0"
+        try:
+            regime_entries = self.redis_client.xrevrange(
+                self.config.regime_stream, "+", "-", count=1
+            )
+            if regime_entries:
+                entry_id, payload = regime_entries[0]
+                logger.info(f"Bootstrap: Processing latest regime signal {entry_id}")
+                ts = self._parse_ts(payload.get("ts"))
+                regime = payload.get("regime") or "UNKNOWN"
+                # Bootstrap: Set regime directly without stability check (trust existing signal)
+                self.current_regime = regime
+                self.regime_candidate = None
+                self.regime_candidate_since = None
+                logger.info(f"Bootstrap: Regime set to {regime}")
+                # Always recompute allocations on bootstrap
+                self._recompute_allocations(ts if ts else int(utcnow().timestamp()))
+                last_regime_id = entry_id
+        except Exception as e:
+            logger.warning(f"Bootstrap failed, starting from 0-0: {e}")
+
         last_fill_id = "0-0"
         last_shutdown_id = "0-0"
         logger.info("Allocation-Service gestartet")

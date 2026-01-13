@@ -199,7 +199,11 @@ def _publish_result(result: ExecutionResult) -> None:
         config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
     )
     if config.STREAM_ORDER_RESULTS:
-        redis_client.xadd(config.STREAM_ORDER_RESULTS, event_payload, maxlen=10000)
+        stream_payload = {
+            key: value for key, value in event_payload.items() if value is not None
+        }
+        redis_client.xadd(config.STREAM_ORDER_RESULTS, stream_payload, maxlen=10000)
+        logger.info("Published result to stream %s", config.STREAM_ORDER_RESULTS)
     logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
 
     if db:
@@ -456,6 +460,21 @@ def signal_handler(signum, frame):
     running = False
 
 
+def _require_live_confirmation() -> None:
+    if config.DRY_RUN and config.MOCK_TRADING:
+        return
+
+    confirmation = os.getenv("CONFIRM_LIVE_TRADING", "").lower().strip()
+    if confirmation != "true":
+        logger.critical("LIVE trading safety gate triggered.")
+        logger.critical(
+            "Set CONFIRM_LIVE_TRADING=true to proceed (DRY_RUN=%s, MOCK_TRADING=%s).",
+            config.DRY_RUN,
+            config.MOCK_TRADING,
+        )
+        sys.exit(1)
+
+
 def main():
     """Main entry point"""
     global running
@@ -463,6 +482,14 @@ def main():
     logger.info(f"Starting {config.SERVICE_NAME} v{config.SERVICE_VERSION}")
     logger.info(f"Port: {config.SERVICE_PORT}")
     logger.info(f"Mode: {'MOCK' if config.MOCK_TRADING else 'LIVE'}")
+    logger.info(
+        "Trading config: TRADING_MODE=%s DRY_RUN=%s MOCK_TRADING=%s",
+        os.getenv("TRADING_MODE", "(unset)"),
+        config.DRY_RUN,
+        config.MOCK_TRADING,
+    )
+
+    _require_live_confirmation()
 
     # Validate auth credentials before startup
     validate_all_auth(

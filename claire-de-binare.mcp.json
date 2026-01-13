@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "redis": {
+      "enabled": true,
+      "command": "cmd",
+      "args": ["npx", "-y", "@modelcontextprotocol/redis"],
+      "env": {
+        "REDIS_PORT": "6379",
+        "REDIS_HOST": "cdb_redis"
+        "REDIS_PASSWORD": "${REDIS_PASSWORD}"
+      },
+      "type": "stdio"
+    }
+  }
+}

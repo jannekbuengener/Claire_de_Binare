@@ -2,6 +2,8 @@
 DB Writer Service - Claire de Binare
 Persistiert Events aus Redis in PostgreSQL
 
+Classification: worker (no HTTP/health endpoint; container health uses Redis ping)
+
 Funktionen:
 - Signals → PostgreSQL (signals table)
 - Orders → PostgreSQL (orders table)
@@ -12,6 +14,7 @@ Funktionen:
 import os
 import json
 import logging
+import time
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, Optional
@@ -20,12 +23,34 @@ import redis
 import psycopg2
 
 from core.utils.clock import utcnow
+from prometheus_client import Counter, Gauge, start_http_server
+
 # Logging Setup
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 logger = logging.getLogger("db_writer")
+
+# Prometheus Metrics
+METRICS_PORT = int(os.getenv("DB_WRITER_METRICS_PORT", "8010"))
+START_TIME = time.time()
+
+DB_WRITER_EVENTS_PROCESSED = Counter(
+    "db_writer_events_processed_total",
+    "Events persisted successfully.",
+    ["channel"],
+)
+DB_WRITER_EVENTS_FAILED = Counter(
+    "db_writer_events_failed_total",
+    "Events failed to persist.",
+    ["channel"],
+)
+DB_WRITER_UPTIME_SECONDS = Gauge(
+    "db_writer_uptime_seconds",
+    "Service uptime in seconds.",
+)
+DB_WRITER_UPTIME_SECONDS.set_function(lambda: max(0.0, time.time() - START_TIME))
 
 # Trade Status Definitions
 # Only filled/partial trades are persisted to trades table
@@ -288,8 +313,10 @@ class DatabaseWriter:
             logger.info(
                 f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')}"
             )
+            DB_WRITER_EVENTS_PROCESSED.labels(channel="signals").inc()
         except Exception as e:
             logger.error(f"Failed to persist signal: {e}")
+            DB_WRITER_EVENTS_FAILED.labels(channel="signals").inc()
 
     def process_order_event(self, data: Dict):
         """
@@ -335,6 +362,7 @@ class DatabaseWriter:
                 data.get("symbol"),
                 data.get("side"),
             )
+            DB_WRITER_EVENTS_PROCESSED.labels(channel="orders").inc()
         except ValueError as e:
             # Validation error (e.g., invalid price format)
             logger.error(
@@ -342,8 +370,10 @@ class DatabaseWriter:
                 data.get("symbol"),
                 e,
             )
+            DB_WRITER_EVENTS_FAILED.labels(channel="orders").inc()
         except Exception as e:
             logger.error("Failed to persist order: %s", e)
+            DB_WRITER_EVENTS_FAILED.labels(channel="orders").inc()
 
     def process_trade_event(self, data: Dict):
         """
@@ -438,6 +468,7 @@ class DatabaseWriter:
                 data.get("side"),
                 execution_price,
             )
+            DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -445,8 +476,10 @@ class DatabaseWriter:
                 data.get("symbol"),
                 e,
             )
+            DB_WRITER_EVENTS_FAILED.labels(channel="order_results").inc()
         except Exception as e:
             logger.error("Failed to persist trade: %s", e)
+            DB_WRITER_EVENTS_FAILED.labels(channel="order_results").inc()
 
     def process_portfolio_snapshot(self, data: Dict):
         """
@@ -488,8 +521,10 @@ class DatabaseWriter:
             logger.info(
                 f"✅ Portfolio snapshot persisted: ID={snapshot_id}, Equity={data.get('equity')}"
             )
+            DB_WRITER_EVENTS_PROCESSED.labels(channel="portfolio_snapshots").inc()
         except Exception as e:
             logger.error(f"Failed to persist portfolio snapshot: {e}")
+            DB_WRITER_EVENTS_FAILED.labels(channel="portfolio_snapshots").inc()
 
     def handle_message(self, message: Dict):
         """
@@ -524,6 +559,9 @@ class DatabaseWriter:
     def run(self):
         """Main event loop"""
         logger.info("Starting DB Writer Service...")
+
+        start_http_server(METRICS_PORT)
+        logger.info("Metrics server listening on :%s", METRICS_PORT)
 
         # Connect to Redis and PostgreSQL
         self.connect_redis()

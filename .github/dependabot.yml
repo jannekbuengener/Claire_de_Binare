@@ -17,10 +17,18 @@ updates:
       - "python"
     commit-message:
       prefix: "deps(pip)"
+  # ----------------------------
+  # Worktrees backup (explicitly ignored)
+  # ----------------------------
+  - package-ecosystem: "pip"
+    directory: "/.worktrees_backup"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "04:05"
+      timezone: "Europe/Berlin"
     ignore:
-      # Beispiel: Major Updates optional dämpfen
-      # - dependency-name: "numpy"
-      #   update-types: ["version-update:semver-major"]
+      - dependency-name: "*"
 
   # ----------------------------
   # GitHub Actions

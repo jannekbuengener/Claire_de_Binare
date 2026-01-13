@@ -14,8 +14,10 @@ except ImportError:
     genai = None
 try:
     from .base import BaseAgent, AgentOutput
+    from .prompts import GeminiPrompts
 except ImportError:
     from base import BaseAgent, AgentOutput
+    from prompts import GeminiPrompts
 
 
 class GeminiAgent(BaseAgent):
@@ -69,7 +71,7 @@ class GeminiAgent(BaseAgent):
         if not proposal.strip():
             raise ValueError("Proposal cannot be empty")
 
-        prompt = self._build_research_prompt(proposal)
+        prompt = GeminiPrompts.research_synthesis(proposal)
 
         try:
             # Configure generation parameters
@@ -115,100 +117,3 @@ class GeminiAgent(BaseAgent):
                 confidence_scores={"availability": 0.7},
                 metadata={"skipped": True, "error": str(e)},
             )
-
-    def _build_research_prompt(self, proposal: str) -> str:
-        """Build research synthesis prompt for Gemini."""
-        return f"""# Research Synthesis Task
-
-You are a research analyst specializing in technical knowledge extraction and synthesis.
-
-## Proposal to Analyze
-
-{proposal}
-
-## Your Task: Comprehensive Research Synthesis
-
-Provide your analysis in the following format:
-
-```markdown
----
-confidence_scores:
-  research_quality: 0.8
-  evidence_strength: 0.7
-  theoretical_soundness: 0.9
----
-
-# Research Synthesis
-
-## Theoretical Frameworks Identified
-
-**Primary Framework:**
-- Name: [Framework name]
-- Core principles: ...
-- Applicability to this proposal: ...
-- **Confidence**: 0.X
-
-**Alternative Frameworks:**
-- [Framework 2]: ...
-- [Framework 3]: ...
-
-## Evidence Base
-
-### Supporting Evidence
-1. **Claim**: [What the proposal claims]
-   - **Evidence**: [Supporting data/research/precedent]
-   - **Source confidence**: [HIGH/MEDIUM/LOW]
-   - **Strength**: 0.X
-
-2. ...
-
-### Gaps in Evidence
-- **Missing data point 1**: [What's claimed but not proven]
-- **Missing data point 2**: ...
-
-## Research Gaps & Open Questions
-
-1. **Question**: [Critical unanswered question]
-   - **Why critical**: ...
-   - **How to answer**: [Suggested research approach]
-
-2. ...
-
-## Literature Review Summary
-
-**Relevant prior work:**
-- [Paper/Project 1]: Key findings...
-- [Paper/Project 2]: Key findings...
-
-**What's novel in this proposal:**
-- ...
-
-## Risk Assessment from Research Perspective
-
-**Theoretical risks:**
-- [Risk 1]: Why this framework might not apply
-- [Risk 2]: ...
-
-**Empirical risks:**
-- [Risk 1]: What real-world data suggests
-- [Risk 2]: ...
-
-## Recommendation
-
-**Research Maturity:** [EARLY_STAGE / ESTABLISHED / PROVEN]
-
-**Confidence in viability:** 0.X
-
-**Critical next steps:**
-1. ...
-2. ...
-```
-
-Guidelines:
-- Be SPECIFIC about theoretical frameworks (name them explicitly)
-- Distinguish CLAIMS from EVIDENCE
-- Identify gaps ruthlessly - what's assumed but not proven?
-- Reference concrete prior work where possible
-- Provide confidence scores for major claims
-- Focus on RESEARCH perspective, not implementation
-"""

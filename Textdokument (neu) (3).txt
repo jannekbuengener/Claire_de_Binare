@@ -1,0 +1,33 @@
+Entscheidung
+
+👉 Ja, Schnell-Plan.
+👉 Genau diese 3 Schritte, in dieser Reihenfolge:
+
+CODEOWNERS erstellen
+Minimal, global:
+
+* @jannekbuengener
+
+
+Ziel: PR-Disziplin sofort herstellen.
+
+Branch Protection aktivieren (UI)
+Nur das Nötigste:
+
+Require PR
+
+1 Approval
+
+Required status checks (nur die existierenden)
+
+No force-push
+
+Full System Test + Paper Trading Start
+
+make test-full-system
+
+make paper-trading-start
+
+Monitoring an, 24h laufen lassen
+
+Alles andere ist Phase 2+ und jetzt NICHT relevant.
