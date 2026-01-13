@@ -76,3 +76,21 @@ scrape_configs:
           instance: 'cdb_ws'
           service: 'market_data'
     metrics_path: '/metrics'
+
+  # PostgreSQL Exporter
+  - job_name: 'cdb_postgres_exporter'
+    static_configs:
+      - targets: ['cdb_postgres_exporter:9187']
+        labels:
+          instance: 'cdb_postgres'
+          service: 'database'
+    metrics_path: '/metrics'
+
+  # Redis Exporter
+  - job_name: 'cdb_redis_exporter'
+    static_configs:
+      - targets: ['cdb_redis_exporter:9121']
+        labels:
+          instance: 'cdb_redis'
+          service: 'cache'
+    metrics_path: '/metrics'

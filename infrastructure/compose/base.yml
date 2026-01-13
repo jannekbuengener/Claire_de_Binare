@@ -96,6 +96,43 @@ services:
     networks:
       - cdb_network
 
+  cdb_postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: cdb_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME_FILE: /run/secrets/postgres_password_dsn
+    secrets:
+      - postgres_password_dsn
+    depends_on:
+      - cdb_postgres
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9187/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_redis_exporter:
+    image: bitnami/redis-exporter:latest
+    container_name: cdb_redis_exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://cdb_redis:6379
+    secrets:
+      - redis_password
+    command: ["sh", "-c", "redis_exporter --redis.addr=$$REDIS_ADDR --redis.password=$$(cat /run/secrets/redis_password)"]
+    depends_on:
+      - cdb_redis
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9121/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - cdb_network
+
 # Secrets from Single Source of Truth
 # Path set via SECRETS_PATH environment variable (default: ~/Documents/.secrets/.cdb)
 secrets:
@@ -103,6 +140,8 @@ secrets:
     file: ${SECRETS_PATH}/REDIS_PASSWORD
   postgres_password:
     file: ${SECRETS_PATH}/POSTGRES_PASSWORD
+  postgres_password_dsn:
+    file: ${SECRETS_PATH}/POSTGRES_PASSWORD_DSN
   grafana_password:
     file: ${SECRETS_PATH}/GRAFANA_PASSWORD
   mexc_api_key:
