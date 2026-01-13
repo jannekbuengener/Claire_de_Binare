@@ -8,6 +8,14 @@ Grafana läuft unter: **http://localhost:3000**
 
 ---
 
+## Minimal Observability Dashboard (v1)
+
+- Datei: `dashboards/claire_minimal_observability_v1.json`
+- Datasource: `Prometheus`
+- Targets: `cdb_signal:8005`, `cdb_execution:8003`, `cdb_db_writer:8010`, `cdb_candles:8007` (dev-only)
+
+---
+
 ## Quick Import - Freqtrade Dashboard
 
 Das Dashboard `freqtrade_dashboard.json` ist ein Community-Dashboard (gnetId: 14632) für Trading-Bot-Monitoring.
