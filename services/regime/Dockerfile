@@ -29,10 +29,10 @@ USER regimeuser
 
 # Health-Check
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-    CMD curl -f http://localhost:8006/health || exit 1
+    CMD curl -f http://localhost:8008/health || exit 1
 
 # Port
-EXPOSE 8006
+EXPOSE 8008
 
 # Start
 CMD ["python", "-u", "service.py"]

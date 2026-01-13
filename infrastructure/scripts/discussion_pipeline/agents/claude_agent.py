@@ -14,8 +14,10 @@ except ImportError:
     Anthropic = None
 try:
     from .base import BaseAgent, AgentOutput
+    from .prompts import ClaudePrompts
 except ImportError:
     from base import BaseAgent, AgentOutput
+    from prompts import ClaudePrompts
 
 
 class ClaudeAgent(BaseAgent):
@@ -67,12 +69,12 @@ class ClaudeAgent(BaseAgent):
         # Build prompt based on whether this is single-agent or multi-agent
         if len(context) == 0:
             # Single-agent mode: Direct analysis
-            prompt = self._build_single_agent_prompt(proposal)
-            system_message = "You are a strategic technical analyst. Analyze the proposal and provide structured insights."
+            prompt = ClaudePrompts.single_agent(proposal)
+            system_message = ClaudePrompts.system_message_single()
         else:
             # Multi-agent mode: Synthesis of previous agent outputs
-            prompt = self._build_multi_agent_prompt(proposal, context)
-            system_message = "You are a meta-synthesizer. Resolve conflicts, identify gaps, and provide strategic recommendations."
+            prompt = ClaudePrompts.multi_agent(proposal, context)
+            system_message = ClaudePrompts.system_message_multi()
 
         try:
             response = self.client.messages.create(
@@ -107,140 +109,6 @@ class ClaudeAgent(BaseAgent):
                 confidence_scores={"availability": 0.7},
                 metadata={"skipped": True, "error": str(e)},
             )
-
-    def _build_single_agent_prompt(self, proposal: str) -> str:
-        """Build prompt for single-agent mode (no previous context)."""
-        return f"""# Proposal Analysis Task
-
-Analyze the following technical proposal and provide structured insights.
-
-## Proposal
-
-{proposal}
-
-## Your Task
-
-Provide your analysis in the following format:
-
-```markdown
----
-confidence_scores:
-  overall_assessment: 0.8
-  feasibility: 0.7
-  clarity: 0.9
----
-
-# Executive Summary
-
-[2-3 sentence summary]
-
-## Key Insights
-
-### Strengths
-- ...
-
-### Concerns
-- ...
-
-### Open Questions
-- ...
-
-## Recommendation
-
-**Assessment:** [STRONG_YES / YES / NEUTRAL / CONCERNS / REJECT]
-
-**Confidence:** [0.0-1.0]
-
-**Rationale:** [Why this recommendation?]
-
-**Next Steps:**
-1. ...
-```
-
-Focus on:
-- **Clarity**: Is the problem well-defined?
-- **Feasibility**: Is the proposed approach realistic?
-- **Gaps**: What critical questions remain?
-- **Strategic fit**: Does this align with project goals?
-"""
-
-    def _build_multi_agent_prompt(self, proposal: str, context: List[str]) -> str:
-        """Build prompt for multi-agent mode (synthesizing previous outputs)."""
-        context_section = "\n\n---\n\n".join(
-            [f"## Agent {i+1} Analysis\n\n{output}" for i, output in enumerate(context)]
-        )
-
-        return f"""# Meta-Synthesis Task
-
-You are synthesizing multiple AI agent perspectives on a technical proposal.
-
-## Original Proposal
-
-{proposal}
-
-## Previous Agent Analyses
-
-{context_section}
-
-## Your Task: Meta-Synthesis
-
-Provide a synthesis in the following format:
-
-```markdown
----
-confidence_scores:
-  synthesis_quality: 0.8
-  conflict_resolution: 0.7
-  completeness: 0.9
----
-
-# Meta-Synthesis
-
-## Agent Alignment Analysis
-
-**Where agents agree:**
-- ...
-
-**Where agents disagree:**
-- 🔴 **Disagreement #1**: [Describe conflict]
-  - Agent A claims: ...
-  - Agent B claims: ...
-  - **My adjudication**: [Who is more accurate and why]
-  - **Confidence**: 0.X
-
-## Blind Spot Detection
-
-**What all agents missed:**
-- ...
-
-## Strategic Recommendation
-
-**Gate Decision:** [PROCEED / REVISE / REJECT]
-
-**Confidence:** 0.X
-
-**Rationale:**
-...
-
-**If PROCEED:**
-- Recommended next steps
-- Risks to monitor
-
-**If REVISE:**
-- What additional analysis is needed
-- Which agent should re-analyze
-
-**If REJECT:**
-- Why this proposal is not viable
-- What would need to change
-```
-
-Critical:
-- Be SPECIFIC when identifying disagreements
-- Show your reasoning for adjudications
-- Identify gaps that NO agent covered
-- Provide actionable next steps
-"""
 
     def _extract_confidence_scores(self, content: str) -> Dict[str, float]:
         """Extract confidence scores from YAML frontmatter."""

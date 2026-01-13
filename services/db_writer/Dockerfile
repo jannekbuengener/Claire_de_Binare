@@ -9,7 +9,7 @@ WORKDIR /app
 RUN pip install --upgrade pip==25.3
 
 # Install dependencies
-RUN pip install --no-cache-dir redis psycopg2-binary
+RUN pip install --no-cache-dir redis psycopg2-binary prometheus-client
 
 # Core Domain Models (shared)
 COPY core /app/core

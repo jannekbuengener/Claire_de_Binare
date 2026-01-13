@@ -90,6 +90,7 @@ class Order:
     strategy_id: str
     bot_id: Optional[str] = None
     client_id: Optional[str] = None
+    price: Optional[float] = None  # For observability/debugging
     type: Literal["order"] = "order"  # Type-safe event type
 
     def to_dict(self) -> dict:
@@ -105,6 +106,7 @@ class Order:
             "strategy_id": self.strategy_id,
             "bot_id": self.bot_id,
             "client_id": self.client_id,
+            "price": self.price,
         }
 
 

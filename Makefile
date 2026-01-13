@@ -1,18 +1,18 @@
----
-relations:
-  role: build_automation
-  domain: orchestration
-  upstream:
-    - docker-compose.yml
-    - pytest.ini
-    - infrastructure/scripts/systemcheck.py
-    - infrastructure/scripts/daily_check.py
-    - infrastructure/scripts/backup_postgres.ps1
-  downstream: []
-  invariants:
-    - docker must be installed and in PATH.
-    - pytest must be installed.
----
+# ---
+# relations:
+#   role: build_automation
+#   domain: orchestration
+#   upstream:
+#     - docker-compose.yml
+#     - pytest.ini
+#     - infrastructure/scripts/systemcheck.py
+#     - infrastructure/scripts/daily_check.py
+#     - infrastructure/scripts/backup_postgres.ps1
+#   downstream: []
+#   invariants:
+#     - docker must be installed and in PATH.
+#     - pytest must be installed.
+# ---
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
@@ -128,6 +128,12 @@ test-full-system: docker-up docker-health test-e2e test-local
 # Docker-Hilfsfunktionen
 # ============================================================================
 
+ifeq ($(OS),Windows_NT)
+docker-up:
+	@echo "🐳 Starte Docker Compose Stack..."
+	@pwsh -NoProfile -Command "if (Test-Path 'infrastructure/compose/base.yml') { Write-Host '✓ Using Compose Fragments (base + dev)'; docker compose -f 'infrastructure/compose/base.yml' -f 'infrastructure/compose/dev.yml' up -d } else { Write-Host '⚠️  Fallback to legacy docker-compose.yml'; docker compose up -d }"
+	@pwsh -NoProfile -Command "Start-Sleep -Seconds 10"
+else
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack..."
 	@if [ -f infrastructure/compose/base.yml ]; then \
@@ -139,6 +145,7 @@ docker-up:
 	fi
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
+endif
 
 docker-up-prod:
 	@echo "🐳 Starte Docker Compose Stack (PRODUCTION)..."

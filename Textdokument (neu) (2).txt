@@ -1,0 +1,16 @@
+Ja. Ich hab dein hochgeladenes Makefile gesehen: Zeile 1–14 sind YAML (relations: … ---). Genau das triggert Makefile:1: *** missing separator. Danach kommt erst das echte Makefile (ab den Kommentaren + .PHONY/help:). ✅
+
+Fix (minimal, sicher): YAML-Header auskommentieren oder entfernen.
+
+Nächster Schritt (OPENCODE, PowerShell):
+
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+
+# Variante A (empfohlen): YAML-Header zu Kommentaren machen (Make bleibt stabil, Info bleibt drin)
+(Get-Content .\Makefile) | ForEach-Object { if($global:i -lt 14){ "# $_" } else { $_ }; $global:i++ } |
+  Set-Content .\Makefile -Encoding utf8
+
+make -n test
+
+
+Wenn du lieber “clean” willst: Zeile 1–14 komplett löschen und dann wieder make -n test.

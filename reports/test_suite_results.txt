@@ -1,0 +1,203 @@
+ðŸ§ª FÃ¼hre Unit-Tests aus...
+pytest -v -m unit
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\janne\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Dev\Workspaces\Repos\Claire_de_Binare
+configfile: pytest.ini
+testpaths: tests
+plugins: requests-mock-1.12.1
+collecting ... collected 319 items / 190 deselected / 129 selected
+
+tests/replay/test_deterministic_replay.py::test_fixed_clock_determinism PASSED [  0%]
+tests/replay/test_deterministic_replay.py::test_seed_manager_determinism PASSED [  1%]
+tests/replay/test_deterministic_replay.py::test_uuid_generator_determinism PASSED [  2%]
+tests/replay/test_deterministic_replay.py::test_event_hash_consistency PASSED [  3%]
+tests/replay/test_deterministic_replay.py::test_event_replay_determinism PASSED [  3%]
+tests/unit/db_writer/test_service.py::test_service_initialization SKIPPED [  4%]
+tests/unit/db_writer/test_service.py::test_config_validation SKIPPED     [  5%]
+tests/unit/db_writer/test_service.py::test_event_persistence SKIPPED     [  6%]
+tests/unit/execution/test_service.py::test_service_initialization SKIPPED [  6%]
+tests/unit/execution/test_service.py::test_config_validation SKIPPED     [  7%]
+tests/unit/execution/test_service.py::test_order_submission SKIPPED      [  8%]
+tests/unit/indicators/test_indicators.py::TestSMA::test_sma_basic PASSED [  9%]
+tests/unit/indicators/test_indicators.py::TestSMA::test_sma_sliding_window PASSED [ 10%]
+tests/unit/indicators/test_indicators.py::TestSMA::test_sma_reset PASSED [ 10%]
+tests/unit/indicators/test_indicators.py::TestEMA::test_ema_first_value_is_sma PASSED [ 11%]
+tests/unit/indicators/test_indicators.py::TestEMA::test_ema_smoothing PASSED [ 12%]
+tests/unit/indicators/test_indicators.py::TestEMA::test_ema_multiplier PASSED [ 13%]
+tests/unit/indicators/test_indicators.py::TestRSI::test_rsi_all_gains PASSED [ 13%]
+tests/unit/indicators/test_indicators.py::TestRSI::test_rsi_all_losses PASSED [ 14%]
+tests/unit/indicators/test_indicators.py::TestRSI::test_rsi_neutral PASSED [ 15%]
+tests/unit/indicators/test_indicators.py::TestRSI::test_rsi_overbought_oversold PASSED [ 16%]
+tests/unit/indicators/test_indicators.py::TestMACD::test_macd_needs_warmup PASSED [ 17%]
+tests/unit/indicators/test_indicators.py::TestMACD::test_macd_calculation PASSED [ 17%]
+tests/unit/indicators/test_indicators.py::TestMACD::test_macd_crossover_detection PASSED [ 18%]
+tests/unit/indicators/test_indicators.py::TestBollingerBands::test_bollinger_bands_basic PASSED [ 19%]
+tests/unit/indicators/test_indicators.py::TestBollingerBands::test_bollinger_bands_volatility PASSED [ 20%]
+tests/unit/indicators/test_indicators.py::TestBollingerBands::test_bollinger_upper_lower_properties PASSED [ 20%]
+tests/unit/indicators/test_indicators.py::TestATR::test_atr_with_ohlc PASSED [ 21%]
+tests/unit/indicators/test_indicators.py::TestATR::test_atr_true_range_calculation PASSED [ 22%]
+tests/unit/indicators/test_indicators.py::TestATR::test_atr_simple_update PASSED [ 23%]
+tests/unit/indicators/test_indicators.py::TestIndicatorReset::test_reset_clears_state[SMA-5] PASSED [ 24%]
+tests/unit/indicators/test_indicators.py::TestIndicatorReset::test_reset_clears_state[EMA-5] PASSED [ 24%]
+tests/unit/indicators/test_indicators.py::TestIndicatorReset::test_reset_clears_state[RSI-5] PASSED [ 25%]
+tests/unit/indicators/test_indicators.py::TestIndicatorReset::test_reset_clears_state[BollingerBands-5] PASSED [ 26%]
+tests/unit/indicators/test_indicators.py::TestIndicatorReset::test_reset_clears_state[ATR-5] PASSED [ 27%]
+tests/unit/indicators/test_indicators.py::TestIndicatorValidation::test_invalid_period_raises[SMA] PASSED [ 27%]
+tests/unit/indicators/test_indicators.py::TestIndicatorValidation::test_invalid_period_raises[EMA] PASSED [ 28%]
+tests/unit/indicators/test_indicators.py::TestIndicatorValidation::test_invalid_period_raises[RSI] PASSED [ 29%]
+tests/unit/indicators/test_indicators.py::TestIndicatorValidation::test_invalid_period_raises[BollingerBands] PASSED [ 30%]
+tests/unit/indicators/test_indicators.py::TestIndicatorValidation::test_invalid_period_raises[ATR] PASSED [ 31%]
+tests/unit/indicators/test_indicators.py::TestMACDSpecific::test_macd_histogram_sign PASSED [ 31%]
+tests/unit/market/test_service.py::test_service_initialization SKIPPED   [ 32%]
+tests/unit/market/test_service.py::test_config_validation SKIPPED        [ 33%]
+tests/unit/market/test_service.py::test_market_data_ingestion SKIPPED    [ 34%]
+tests/unit/psm/test_service.py::test_service_initialization SKIPPED      [ 34%]
+tests/unit/psm/test_service.py::test_config_validation SKIPPED           [ 35%]
+tests/unit/psm/test_service.py::test_event_sourcing_replay SKIPPED       [ 36%]
+tests/unit/psm/test_service.py::test_snapshot_creation SKIPPED           [ 37%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_no_trigger_when_metrics_ok PASSED [ 37%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_individual_breaker_triggers[metrics0-drawdown] PASSED [ 38%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_individual_breaker_triggers[metrics1-error_rate] PASSED [ 39%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_individual_breaker_triggers[metrics2-loss_limit] PASSED [ 40%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_individual_breaker_triggers[metrics3-frequency] PASSED [ 41%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_multiple_breakers_trigger PASSED [ 41%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_all_breakers_trigger PASSED [ 42%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_threshold_boundary_below PASSED [ 43%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_threshold_boundary_above PASSED [ 44%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_empty_metrics PASSED [ 44%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_missing_metrics_use_zero_default PASSED [ 45%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerNormalMode::test_triggered_breakers_tracked PASSED [ 46%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerE2EMode::test_e2e_mode_disables_all_breakers PASSED [ 47%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerE2EMode::test_e2e_mode_values PASSED [ 48%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerE2EMode::test_default_mode_breakers_active PASSED [ 48%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerConfiguration::test_default_thresholds PASSED [ 49%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerConfiguration::test_all_breakers_active_by_default PASSED [ 50%]
+tests/unit/risk/test_circuit_breakers.py::TestCircuitBreakerConfiguration::test_breaker_types_enum PASSED [ 51%]
+tests/unit/risk/test_service.py::test_service_initialization PASSED      [ 51%]
+tests/unit/risk/test_service.py::test_config_validation PASSED           [ 52%]
+tests/unit/risk/test_service.py::test_allocation_allowed PASSED          [ 53%]
+tests/unit/risk/test_signal_serialization.py::test_signal_from_dict_minimal PASSED [ 54%]
+tests/unit/risk/test_signal_serialization.py::test_signal_from_dict_full PASSED [ 55%]
+tests/unit/risk/test_signal_serialization.py::test_signal_roundtrip PASSED [ 55%]
+tests/unit/risk/test_signal_serialization.py::test_signal_from_dict_type_coercion PASSED [ 56%]
+tests/unit/risk/test_signal_serialization.py::test_signal_from_dict_none_handling PASSED [ 57%]
+tests/unit/signal/test_service.py::test_service_initialization PASSED    [ 58%]
+tests/unit/signal/test_service.py::test_config_validation PASSED         [ 58%]
+tests/unit/signal/test_service.py::test_signal_generation PASSED         [ 59%]
+tests/unit/test_clock.py::test_clock_now_returns_float PASSED            [ 60%]
+tests/unit/test_clock.py::test_clock_deterministic_mode PASSED           [ 61%]
+tests/unit/test_clock.py::test_clock_injection_fixed PASSED              [ 62%]
+tests/unit/test_clock.py::test_guardrails_no_forbidden_calls PASSED      [ 62%]
+tests/unit/test_event.py::test_event_creation PASSED                     [ 63%]
+tests/unit/test_event.py::test_event_type_enum PASSED                    [ 64%]
+tests/unit/test_event.py::test_event_id_deterministic_for_same_payload PASSED [ 65%]
+tests/unit/test_event.py::test_event_id_changes_on_payload_change PASSED [ 65%]
+tests/unit/test_models.py::test_signal_creation PASSED                   [ 66%]
+tests/unit/test_models.py::test_position_creation PASSED                 [ 67%]
+tests/unit/test_models.py::test_order_creation PASSED                    [ 68%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_acquire_within_limit PASSED [ 68%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_acquire_exceeds_limit PASSED [ 69%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_tokens_expire_after_window PASSED [ 70%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_available_tokens PASSED [ 71%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_utilization PASSED [ 72%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_reset PASSED [ 72%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_invalid_max_requests PASSED [ 73%]
+tests/unit/test_rate_limiter.py::TestRateLimiterBasic::test_invalid_time_window PASSED [ 74%]
+tests/unit/test_rate_limiter.py::TestRateLimiterWaitAndAcquire::test_wait_and_acquire_immediate PASSED [ 75%]
+tests/unit/test_rate_limiter.py::TestRateLimiterWaitAndAcquire::test_wait_and_acquire_waits_for_token PASSED [ 75%]
+tests/unit/test_rate_limiter.py::TestRateLimiterWaitAndAcquire::test_wait_and_acquire_timeout PASSED [ 76%]
+tests/unit/test_rate_limiter.py::TestRateLimiterThreadSafety::test_concurrent_acquire PASSED [ 77%]
+tests/unit/test_rate_limiter.py::TestRateLimiterThreadSafety::test_concurrent_wait_and_acquire PASSED [ 78%]
+tests/unit/test_rate_limiter.py::TestMexcRateLimiters::test_mexc_limiters_initialized PASSED [ 79%]
+tests/unit/test_rate_limiter.py::TestMexcRateLimiters::test_acquire_general PASSED [ 79%]
+tests/unit/test_rate_limiter.py::TestMexcRateLimiters::test_acquire_order_uses_both_limiters PASSED [ 80%]
+tests/unit/test_rate_limiter.py::TestMexcRateLimiters::test_acquire_account_uses_both_limiters PASSED [ 81%]
+tests/unit/test_secrets.py::test_get_secret_from_docker_secrets PASSED   [ 82%]
+tests/unit/test_secrets.py::test_get_secret_from_environment PASSED      [ 82%]
+tests/unit/test_secrets.py::test_get_secret_default_value PASSED         [ 83%]
+tests/unit/test_secrets.py::test_get_secret_strips_whitespace PASSED     [ 84%]
+tests/unit/test_seed.py::test_seed_set_and_get PASSED                    [ 85%]
+tests/unit/test_seed.py::test_seed_default_none PASSED                   [ 86%]
+tests/unit/test_seed.py::test_seed_deterministic_float PASSED            [ 86%]
+tests/unit/test_seed.py::test_seed_deterministic_uniform PASSED          [ 87%]
+tests/unit/test_uuid_gen.py::test_generate_uuid_returns_string PASSED    [ 88%]
+tests/unit/test_uuid_gen.py::test_generate_uuid_deterministic_name PASSED [ 89%]
+tests/unit/test_uuid_gen.py::test_generate_uuid_seeded_changes PASSED    [ 89%]
+tests/unit/test_uuid_gen.py::test_generate_uuid_hex_length PASSED        [ 90%]
+tests/unit/validation/test_aggregator.py::test_aggregate_orders_happy_path PASSED [ 91%]
+tests/unit/validation/test_aggregator.py::test_aggregate_orders_empty PASSED [ 92%]
+tests/unit/validation/test_aggregator.py::test_aggregate_orders_all_rejected PASSED [ 93%]
+tests/unit/validation/test_aggregator.py::test_aggregate_orders_partial_fills PASSED [ 93%]
+tests/unit/validation/test_collectors.py::test_collect_execution_orders_normalizes_sql_results PASSED [ 94%]
+tests/unit/validation/test_gate_evaluator.py::test_gate_evaluator_pass PASSED [ 95%]
+tests/unit/validation/test_gate_evaluator.py::test_gate_evaluator_fail PASSED [ 96%]
+tests/unit/validation/test_gate_evaluator.py::test_gate_thresholds_invalid_env PASSED [ 96%]
+tests/unit/validation/test_pipeline.py::test_run_validation_window_wires_collect_to_aggregate PASSED [ 97%]
+tests/unit/validation/test_pipeline.py::test_run_validation_window_empty_window PASSED [ 98%]
+tests/unit/validation/test_runner_failure_modes.py::test_runner_db_unreachable PASSED [ 99%]
+tests/unit/validation/test_runner_failure_modes.py::test_runner_sqlite_locked PASSED [100%]
+
+============================== warnings summary ===============================
+core\utils\clock.py:57
+tests/unit/validation/test_gate_evaluator.py::test_gate_evaluator_pass
+tests/unit/validation/test_gate_evaluator.py::test_gate_evaluator_fail
+tests/unit/validation/test_runner_failure_modes.py::test_runner_db_unreachable
+tests/unit/validation/test_runner_failure_modes.py::test_runner_db_unreachable
+tests/unit/validation/test_runner_failure_modes.py::test_runner_sqlite_locked
+tests/unit/validation/test_runner_failure_modes.py::test_runner_sqlite_locked
+  D:\Dev\Workspaces\Repos\Claire_de_Binare\core\utils\clock.py:57: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========= 116 passed, 13 skipped, 190 deselected, 7 warnings in 3.01s =========
+Exception ignored in atexit callback <function cleanup_numbered_dir at 0x000001820D398930>:
+Traceback (most recent call last):
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\pathlib.py", line 374, in cleanup_numbered_dir
+    cleanup_dead_symlinks(root)
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\pathlib.py", line 360, in cleanup_dead_symlinks
+    left_dir.unlink()
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py", line 1042, in unlink
+    os.unlink(self)
+PermissionError: [WinError 5] Zugriff verweigert: 'C:\\Users\\janne\\AppData\\Local\\Temp\\pytest-of-janne\\pytest-current'
+ðŸ”Œ FÃ¼hre Integration-Tests aus (mit Mocks)...
+pytest -v -m "integration and not e2e and not local_only"
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\janne\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Dev\Workspaces\Repos\Claire_de_Binare
+configfile: pytest.ini
+testpaths: tests
+plugins: requests-mock-1.12.1
+collecting ... collected 319 items / 311 deselected / 8 selected
+
+tests/integration/test_execution_pipeline.py::test_process_order_publishes_real_result PASSED [ 12%]
+tests/integration/test_mexc_testnet.py::TestMexcTestnetOffline::test_get_account_balance PASSED [ 25%]
+tests/integration/test_mexc_testnet.py::TestMexcTestnetOffline::test_get_usdt_balance PASSED [ 37%]
+tests/integration/test_mexc_testnet.py::TestMexcTestnetOffline::test_get_ticker_price PASSED [ 50%]
+tests/integration/test_mexc_testnet.py::TestMexcTestnetOffline::test_get_order_status PASSED [ 62%]
+tests/integration/test_mexc_testnet.py::TestMexcTestnetOffline::test_place_order PASSED [ 75%]
+tests/integration/validation/test_pipeline_db.py::test_pipeline_window_queries_db_window SKIPPED name "cdb_postgres" to address: Name or service
+not known)                                                               [ 87%]
+tests/integration/validation/test_runner_report_on_fail.py::test_runner_writes_report_on_fail SKIPPED name "cdb_postgres" to address: Name or
+service not known)                                                       [100%]
+
+============================== warnings summary ===============================
+core\utils\clock.py:57
+tests/integration/test_execution_pipeline.py::test_process_order_publishes_real_result
+  D:\Dev\Workspaces\Repos\Claire_de_Binare\core\utils\clock.py:57: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========== 6 passed, 2 skipped, 311 deselected, 2 warnings in 5.77s ===========
+Exception ignored in atexit callback <function cleanup_numbered_dir at 0x0000016E67338930>:
+Traceback (most recent call last):
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\pathlib.py", line 374, in cleanup_numbered_dir
+    cleanup_dead_symlinks(root)
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\site-packages\_pytest\pathlib.py", line 360, in cleanup_dead_symlinks
+    left_dir.unlink()
+  File "C:\Users\janne\AppData\Local\Programs\Python\Python314\Lib\pathlib\__init__.py", line 1042, in unlink
+    os.unlink(self)
+PermissionError: [WinError 5] Zugriff verweigert: 'C:\\Users\\janne\\AppData\\Local\\Temp\\pytest-of-janne\\pytest-current'
+âœ… Alle CI-Tests erfolgreich

@@ -27,6 +27,14 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
 
+  cdb_postgres_exporter:
+    ports:
+      - "127.0.0.1:9187:9187"
+
+  cdb_redis_exporter:
+    ports:
+      - "127.0.0.1:9121:9121"
+
   # Application Services (Dev-Only)
   # All use entrypoint pattern to read secrets from /run/secrets/
 
@@ -99,6 +107,104 @@ services:
     networks:
       - cdb_network
 
+  cdb_candles:
+    build:
+      context: ../..
+      dockerfile: services/candles/Dockerfile
+    container_name: cdb_candles
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      REDIS_HOST: cdb_redis
+      CANDLE_PORT: "8007"
+      CANDLE_INTERVAL_SECONDS: "60"
+      CANDLE_INPUT_CHANNEL: "market_data"
+      CANDLE_OUTPUT_STREAM: "stream.candles_1m"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
+    ports:
+      - "127.0.0.1:8007:8007"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_ws
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_allocation:
+    build:
+      context: ../..
+      dockerfile: services/allocation/Dockerfile
+    container_name: cdb_allocation
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      REDIS_HOST: cdb_redis
+      ALLOCATION_PORT: "8006"
+      ALLOCATION_REGIME_MIN_STABLE_SECONDS: "60"
+      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}}'
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
+    ports:
+      - "127.0.0.1:8006:8006"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
+  cdb_regime:
+    build:
+      context: ../..
+      dockerfile: services/regime/Dockerfile
+    container_name: cdb_regime
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      REDIS_HOST: cdb_redis
+      REGIME_PORT: "8008"
+      REGIME_INPUT_STREAM: "stream.candles_1m"
+      REGIME_ADX_PERIOD: "14"
+      REGIME_ATR_PERIOD: "14"
+      REGIME_ADX_TREND_THRESHOLD: "25.0"
+      REGIME_ADX_RANGE_THRESHOLD: "20.0"
+      REGIME_ATR_HIGH_VOL_THRESHOLD: "2.0"
+      REGIME_CONFIRMATION_BARS: "3"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
+    ports:
+      - "127.0.0.1:8008:8008"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      - cdb_redis
+      - cdb_candles
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8008/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
   cdb_risk:
     build:
       context: ../..
@@ -108,13 +214,15 @@ services:
     secrets:
       - redis_password
       - postgres_password
+      - mexc_api_key
+      - mexc_api_secret
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.risk.service"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -m services.risk.service"]
     ports:
       - "127.0.0.1:8002:8002"
     volumes:
@@ -140,10 +248,12 @@ services:
     environment:
       ENV: "development"
       LOG_LEVEL: "DEBUG"
+      MOCK_TRADING: "true"          # Explizit Paper Trading erzwingen
+      USE_REAL_BALANCE: "false"     # Sicherheitsgurt für Early-Live
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8003:8003"
     volumes:

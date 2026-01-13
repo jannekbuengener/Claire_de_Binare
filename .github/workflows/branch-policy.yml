@@ -95,22 +95,35 @@ jobs:
             });
             
             const body = pr.body || '';
-            const requiredSections = [
+
+            // Full feature template sections
+            const featureTemplateSections = [
               '## Feature Overview',
-              '## Technical Overview', 
+              '## Technical Overview',
               '## Test Evidence',
               '## Code Quality',
               '## Deployment & Rollback',
               '## Documentation',
               '## Agent Approvals'
             ];
-            
-            const missingSections = requiredSections.filter(section => 
+
+            // Minimal template for chore/fix/docs PRs
+            const hasMinimalTemplate = body.includes('## Summary') &&
+                                       (body.match(/^##\s+/gm) || []).length >= 2;
+
+            // Check for full template
+            const missingSections = featureTemplateSections.filter(section =>
               !body.includes(section)
             );
-            
-            if (missingSections.length > 0) {
-              core.setFailed(`PR is missing required sections: ${missingSections.join(', ')}`);
+
+            const hasFullTemplate = missingSections.length === 0;
+
+            if (!hasFullTemplate && !hasMinimalTemplate) {
+              core.setFailed(`PR must use either: (1) Full feature template with sections: ${featureTemplateSections.join(', ')}, OR (2) Minimal template with "## Summary" + at least one other section`);
             } else {
-              console.log('✅ All required PR template sections present');
+              if (hasFullTemplate) {
+                console.log('✅ Full PR template present');
+              } else {
+                console.log('✅ Minimal PR template present (Summary + sections)');
+              }
             }

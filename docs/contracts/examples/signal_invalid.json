@@ -1,29 +1,6 @@
 [
   {
-    "description": "Missing required field 'schema_version'",
-    "payload": {
-      "signal_id": "sig-001",
-      "strategy_id": "momentum-v2",
-      "symbol": "BTCUSDT",
-      "side": "BUY",
-      "timestamp": 1735574400
-    },
-    "expected_error": "schema_version is required"
-  },
-  {
-    "description": "Legacy 'direction' field instead of 'side'",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-001",
-      "strategy_id": "momentum-v2",
-      "symbol": "BTCUSDT",
-      "direction": "BUY",
-      "timestamp": 1735574400
-    },
-    "expected_error": "side is required, 'direction' is deprecated"
-  },
-  {
-    "description": "Invalid side (lowercase instead of uppercase)",
+    "description": "side must be uppercase",
     "payload": {
       "schema_version": "v1.0",
       "signal_id": "sig-001",
@@ -31,58 +8,18 @@
       "symbol": "BTCUSDT",
       "side": "buy",
       "timestamp": 1735574400
-    },
-    "expected_error": "side must be uppercase: BUY, SELL"
+    }
   },
   {
-    "description": "Strength out of range (> 1.0)",
+    "description": "strength out of range",
     "payload": {
       "schema_version": "v1.0",
-      "signal_id": "sig-001",
+      "signal_id": "sig-002",
       "strategy_id": "momentum-v2",
       "symbol": "BTCUSDT",
       "side": "BUY",
       "timestamp": 1735574400,
       "strength": 1.5
-    },
-    "expected_error": "strength must be between 0.0 and 1.0"
-  },
-  {
-    "description": "Confidence out of range (< 0.0)",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-001",
-      "strategy_id": "momentum-v2",
-      "symbol": "BTCUSDT",
-      "side": "BUY",
-      "timestamp": 1735574400,
-      "confidence": -0.1
-    },
-    "expected_error": "confidence must be between 0.0 and 1.0"
-  },
-  {
-    "description": "Timestamp as float instead of integer",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-001",
-      "strategy_id": "momentum-v2",
-      "symbol": "BTCUSDT",
-      "side": "BUY",
-      "timestamp": 1735574400.123
-    },
-    "expected_error": "timestamp must be integer (seconds since epoch)"
-  },
-  {
-    "description": "Additional property not allowed",
-    "payload": {
-      "schema_version": "v1.0",
-      "signal_id": "sig-001",
-      "strategy_id": "momentum-v2",
-      "symbol": "BTCUSDT",
-      "side": "BUY",
-      "timestamp": 1735574400,
-      "custom_field": "not_allowed"
-    },
-    "expected_error": "additionalProperties not allowed"
+    }
   }
 ]

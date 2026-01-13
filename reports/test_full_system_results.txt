@@ -1,0 +1,108 @@
+ðŸ³ Starte Docker Compose Stack...
+âœ“ Using Compose Fragments (base + dev)
+time="2026-01-07T19:06:07+01:00" level=warning msg="The \"GRAFANA_PASSWORD\" variable is not set. Defaulting to a blank string."
+time="2026-01-07T19:06:07+01:00" level=warning msg="Found orphan containers ([cdb_alertmanager cdb_promtail cdb_loki]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container cdb_prometheus  Running
+ Container cdb_postgres  Running
+ Container cdb_redis  Running
+ Container cdb_paper_runner  Running
+ Container cdb_db_writer  Running
+ Container cdb_risk  Running
+ Container cdb_ws  Running
+ Container cdb_signal  Running
+ Container cdb_execution  Recreate
+ Container cdb_grafana  Recreate
+ Container cdb_grafana  Recreated
+ Container cdb_execution  Recreated
+ Container cdb_grafana  Starting
+ Container cdb_execution  Starting
+ Container cdb_redis  Waiting
+ Container cdb_postgres  Waiting
+ Container cdb_execution  Started
+ Container cdb_grafana  Started
+ Container cdb_postgres  Healthy
+ Container cdb_redis  Healthy
+â³ Warte 10s bis Container hochgefahren sind...
+sleep 10
+ðŸ¥ PrÃ¼fe Health-Status aller Container...
+cdb_execution      claire_de_binare-cdb_execution      "sh -c 'export REDIS…"   cdb_execution      13 seconds ago   Up 10 seconds (health: starting)   127.0.0.1:8003->8003/tcp
+cdb_postgres       postgres:15-alpine                  "docker-entrypoint.s…"   cdb_postgres       2 days ago       Up 19 hours (healthy)              127.0.0.1:5432->5432/tcp
+cdb_redis          redis:7-alpine                      "docker-entrypoint.s…"   cdb_redis          2 days ago       Up 19 hours (healthy)              127.0.0.1:6379->6379/tcp
+cdb_risk           claire_de_binare-cdb_risk           "sh -c 'export REDIS…"   cdb_risk           2 days ago       Up 19 hours (healthy)              127.0.0.1:8002->8002/tcp
+cdb_ws             claire_de_binare-cdb_ws             "sh -c 'export REDIS…"   cdb_ws             2 days ago       Up 19 hours (healthy)              127.0.0.1:8000->8000/tcp
+
+Health-Check Details:
+cdb_alertmanager   Up 19 hours (healthy)
+cdb_db_writer      Up 19 hours (healthy)
+cdb_execution      Up 11 seconds (health: starting)
+cdb_grafana        Up 11 seconds (health: starting)
+cdb_loki           Up 19 hours (healthy)
+cdb_paper_runner   Up 19 hours (healthy)
+cdb_postgres       Up 19 hours (healthy)
+cdb_prometheus     Up 19 hours (healthy)
+cdb_promtail       Up 19 hours
+cdb_redis          Up 19 hours (healthy)
+cdb_risk           Up 19 hours (healthy)
+cdb_signal         Up 19 hours (healthy)
+cdb_ws             Up 19 hours (healthy)
+ðŸš€ FÃ¼hre E2E-Tests aus (benÃ¶tigt laufende Container)...
+âš ï¸  Stelle sicher, dass 'docker compose up -d' lÃ¤uft!
+pytest -v -m e2e
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\janne\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Dev\Workspaces\Repos\Claire_de_Binare
+configfile: pytest.ini
+testpaths: tests
+plugins: requests-mock-1.12.1
+collecting ... collected 319 items / 304 deselected / 15 selected
+
+tests/e2e/test_paper_trading_p0.py::test_order_to_execution_flow SKIPPED [  6%]
+tests/e2e/test_paper_trading_p0.py::test_order_results_schema SKIPPED    [ 13%]
+tests/e2e/test_paper_trading_p0.py::test_stream_persistence SKIPPED (E2E
+tests only run when E2E_RUN=1 is set)                                    [ 20%]
+tests/e2e/test_paper_trading_p0.py::test_subscriber_count SKIPPED (E2E
+tests only run when E2E_RUN=1 is set)                                    [ 26%]
+tests/e2e/test_paper_trading_p0.py::test_replay_determinism SKIPPED (E2E
+tests only run when E2E_RUN=1 is set)                                    [ 33%]
+tests/e2e/test_paper_trading_p0.py::test_tc_p0_001_happy_path_market_to_trade SKIPPED [ 40%]
+tests/e2e/test_paper_trading_p0.py::test_tc_p0_002_risk_position_limit_block SKIPPED [ 46%]
+tests/e2e/test_paper_trading_p0.py::test_tc_p0_003_daily_drawdown_stop SKIPPED [ 53%]
+tests/e2e/test_paper_trading_p0.py::test_tc_p0_004_circuit_breaker_trigger SKIPPED [ 60%]
+tests/e2e/test_paper_trading_p0.py::test_tc_p0_005_data_persistence_check SKIPPED [ 66%]
+tests/e2e/test_smoke_pipeline.py::test_tc_001_happy_path_buy_signal PASSED [ 73%]
+tests/e2e/test_smoke_pipeline.py::test_tc_002_risk_guard_position_limit PASSED [ 80%]
+tests/e2e/test_smoke_pipeline.py::test_tc_003_risk_guard_test_balance_fallback PASSED [ 86%]
+tests/e2e/test_smoke_pipeline.py::test_tc_004_signal_engine_pct_change_calculation PASSED [ 93%]
+tests/e2e/test_smoke_pipeline.py::test_tc_005_payload_sanitization PASSED [100%]
+
+============================== warnings summary ===============================
+core\utils\clock.py:57
+  D:\Dev\Workspaces\Repos\Claire_de_Binare\core\utils\clock.py:57: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+========== 5 passed, 10 skipped, 304 deselected, 1 warning in 0.42s ===========
+ðŸ  FÃ¼hre local-only Tests aus...
+âš ï¸  Stelle sicher, dass 'docker compose up -d' lÃ¤uft!
+pytest -v -m local_only
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\janne\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Dev\Workspaces\Repos\Claire_de_Binare
+configfile: pytest.ini
+testpaths: tests
+plugins: requests-mock-1.12.1
+collecting ... collected 319 items / 318 deselected / 1 selected
+
+tests/chaos/test_resilience.py::test_resilience_suite_gate SKIPPED (Set
+RUN_CHAOS_TESTS=1 to execute resilience tests.)                          [100%]
+
+============================== warnings summary ===============================
+core\utils\clock.py:57
+  D:\Dev\Workspaces\Repos\Claire_de_Binare\core\utils\clock.py:57: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================ 1 skipped, 318 deselected, 1 warning in 0.39s ================
+âœ… VollstÃ¤ndiger System-Test erfolgreich (E2E + Local)

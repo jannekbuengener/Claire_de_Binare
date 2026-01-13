@@ -13,6 +13,10 @@ env:
   # Secrets are REQUIRED - workflow fails if not set (no hardcoded fallbacks)
   SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-paper-trading:
     runs-on: ubuntu-latest
@@ -30,6 +34,7 @@ jobs:
           GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
           echo "$REDIS_VAL" > $SECRETS_PATH/REDIS_PASSWORD
           echo "$POSTGRES_VAL" > $SECRETS_PATH/POSTGRES_PASSWORD
+          echo "postgresql://claire_user:${POSTGRES_VAL}@postgres:5432/claire?sslmode=disable" > $SECRETS_PATH/POSTGRES_PASSWORD_DSN
           echo "$GRAFANA_VAL" > $SECRETS_PATH/GRAFANA_PASSWORD
           # Placeholder MEXC credentials for CI so docker-compose has bind sources
           echo "${{ secrets.MEXC_API_KEY != '' && secrets.MEXC_API_KEY || 'ci-mexc-key' }}" > $SECRETS_PATH/MEXC_API_KEY.txt

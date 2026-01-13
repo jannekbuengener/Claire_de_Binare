@@ -2,13 +2,23 @@ name: CI/CD Pipeline
 
 on:
   pull_request:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   push:
     branches: [ main ]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:  # Manueller Trigger
 
 env:
   PYTHON_VERSION: '3.12'
   CACHE_VERSION: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ============================================
@@ -60,14 +70,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="origin/${{ github.base_ref }}"
+            base_ref="${{ github.base_ref }}"
+            base="origin/$base_ref"
           else
             base="${{ github.event.before }}"
           fi
 
-          if [ -n "$base" ]; then
-            base_fetch="${base#origin/}"
-            git fetch origin "$base_fetch"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "$base_ref"
           fi
 
           git fetch origin --unshallow || true
@@ -115,14 +125,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="origin/${{ github.base_ref }}"
+            base_ref="${{ github.base_ref }}"
+            base="origin/$base_ref"
           else
             base="${{ github.event.before }}"
           fi
 
-          if [ -n "$base" ]; then
-            base_fetch="${base#origin/}"
-            git fetch origin "$base_fetch"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "$base_ref"
           fi
 
           git fetch origin --unshallow || true
@@ -263,6 +273,7 @@ jobs:
         with:
           scan-type: fs
           scan-ref: .
+          trivyignores: .trivyignore
           skip-dirs: .worktrees_backup
           severity: HIGH,CRITICAL
           exit-code: "1"

@@ -40,7 +40,7 @@ def validate_redis_auth(
         client.ping()
         logger.info(f"✅ Redis auth validated: {host}:{port}")
         return True, "Redis connection successful"
-    except redis.AuthenticationError as e:
+    except redis.AuthenticationError:
         msg = f"❌ Redis authentication FAILED: Invalid password for {host}:{port}"
         logger.error(msg)
         return False, msg

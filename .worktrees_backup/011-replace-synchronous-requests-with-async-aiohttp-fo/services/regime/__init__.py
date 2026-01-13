@@ -1,1 +1,0 @@
-"""Market regime service package."""

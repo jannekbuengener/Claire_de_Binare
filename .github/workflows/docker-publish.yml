@@ -2,9 +2,13 @@
 name: Build & Push Containers (GHCR)
 
 on:
-  pull_request:
   push:
-    branches: ["main"]
+    branches: ["main", "release/*"]
+    paths:
+      - "Dockerfile"
+      - "services/**/Dockerfile"
+      - "infrastructure/compose/**"
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,7 +18,10 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
-  REPO_NAME_LOWER: ${{ toLower(github.event.repository.name) }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -24,7 +31,7 @@ jobs:
       matrix:
         service:
           - name: cdb_core
-            dockerfile: services/core/Dockerfile
+            dockerfile: services/signal/Dockerfile
             context: .
           - name: cdb_risk
             dockerfile: services/risk/Dockerfile
@@ -42,6 +49,10 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Set image repo name
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          echo "REPO_NAME_LOWER=$(echo "$repo" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Login to GHCR
         if: ${{ github.event_name != 'pull_request' }}
