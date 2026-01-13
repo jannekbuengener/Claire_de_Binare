@@ -207,7 +207,9 @@ class Database:
                             result.price,  # execution_price = price for mock
                             "filled",  # Trade status (lowercase to match schema check constraint)
                             timestamp,  # Unix timestamp
-                            '{"order_id": "' + result.order_id + '"}'  # store order_id in metadata
+                            '{"order_id": "'
+                            + result.order_id
+                            + '"}',  # store order_id in metadata
                         ),
                     )
 
