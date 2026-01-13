@@ -93,12 +93,12 @@ class Database:
                                 order_id, symbol, side, order_type,
                                 size, price, filled_size, avg_fill_price,
                                 status, submitted_at, filled_at,
-                                metadata
+                                approved, metadata
                             ) VALUES (
                                 %s, %s, %s, %s,
                                 %s, %s, %s, %s,
                                 %s, to_timestamp(%s), to_timestamp(%s),
-                                %s
+                                %s, %s
                             )
                             RETURNING id
                         """,
@@ -118,6 +118,7 @@ class Database:
                                     if result.status == OrderStatus.FILLED.value
                                     else None
                                 ),
+                                True,  # approved
                                 metadata_json,
                             ),
                         )
@@ -128,12 +129,12 @@ class Database:
                                 symbol, side, order_type,
                                 size, price, filled_size, avg_fill_price,
                                 status, submitted_at, filled_at,
-                                metadata
+                                approved, metadata
                             ) VALUES (
                                 %s, %s, %s,
                                 %s, %s, %s, %s,
                                 %s, to_timestamp(%s), to_timestamp(%s),
-                                %s
+                                %s, %s
                             )
                             RETURNING id
                         """,
@@ -152,6 +153,7 @@ class Database:
                                     if result.status == OrderStatus.FILLED.value
                                     else None
                                 ),
+                                True,  # approved
                                 metadata_json,
                             ),
                         )
