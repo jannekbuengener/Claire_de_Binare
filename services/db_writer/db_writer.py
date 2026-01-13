@@ -22,6 +22,7 @@ import redis
 import psycopg2
 
 from core.utils.clock import utcnow
+
 # Logging Setup
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
