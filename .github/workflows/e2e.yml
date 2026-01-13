@@ -8,13 +8,10 @@ on:
       - 'services/**'
       - 'infrastructure/compose/**'
       - '.github/workflows/e2e.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'tests/e2e/**'
-      - 'services/**'
-      - 'infrastructure/compose/**'
-      - '.github/workflows/e2e.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e_smoke:

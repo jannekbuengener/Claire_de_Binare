@@ -16,6 +16,10 @@ env:
   PYTHON_VERSION: '3.12'
   CACHE_VERSION: 1
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # ============================================
   # CODE QUALITY CHECKS

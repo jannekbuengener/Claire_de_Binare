@@ -1,14 +1,8 @@
 name: trivy
 
 on:
-  pull_request:
-    branches: ["main"]
-    paths:
-      - "Dockerfile"
-      - "infrastructure/**"
-      - "services/**"
   push:
-    branches: ["main"]
+    branches: ["main", "release/*"]
     paths:
       - "Dockerfile"
       - "infrastructure/**"
@@ -22,6 +16,10 @@ permissions:
 env:
   TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
   TRIVY_SUMMARY_MAX: "5"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   trivy-image:

@@ -2,9 +2,13 @@
 name: Build & Push Containers (GHCR)
 
 on:
-  pull_request:
   push:
-    branches: ["main"]
+    branches: ["main", "release/*"]
+    paths:
+      - "Dockerfile"
+      - "services/**/Dockerfile"
+      - "infrastructure/compose/**"
+      - ".github/workflows/docker-publish.yml"
   workflow_dispatch:
 
 permissions:
@@ -14,6 +18,10 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

@@ -5,7 +5,10 @@ name: Security Scan
 on:
   schedule:
     - cron: '0 2 * * 1'  # Monday 02:00 UTC
-  pull_request:
+  push:
+    branches:
+      - main
+      - 'release/*'
     paths:
       - 'services/**/Dockerfile'
       - 'infrastructure/compose/**'
@@ -16,6 +19,10 @@ env:
   TRIVY_VERSION: "0.58.0"
   TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
   TRIVY_SUMMARY_MAX: "5"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ============================================================================

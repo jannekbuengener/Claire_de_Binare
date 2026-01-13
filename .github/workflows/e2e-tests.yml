@@ -13,6 +13,10 @@ env:
   # Secrets are REQUIRED - workflow fails if not set (no hardcoded fallbacks)
   SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   e2e-paper-trading:
     runs-on: ubuntu-latest
