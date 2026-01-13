@@ -2,6 +2,8 @@
 DB Writer Service - Claire de Binare
 Persistiert Events aus Redis in PostgreSQL
 
+Classification: worker (no HTTP/health endpoint; container health uses Redis ping)
+
 Funktionen:
 - Signals → PostgreSQL (signals table)
 - Orders → PostgreSQL (orders table)
