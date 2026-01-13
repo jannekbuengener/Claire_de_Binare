@@ -8,8 +8,20 @@ Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 
 import pytest
 
+from services.execution import config, service
+
 # TODO: Import actual service when implementation is stable
 # from services.execution.service import ExecutionService
+
+
+@pytest.mark.unit
+def test_health_endpoint_reports_ok() -> None:
+    client = service.app.test_client()
+    response = client.get("/health")
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["service"] == config.SERVICE_NAME
+    assert payload["status"] == "ok"
 
 
 @pytest.mark.unit

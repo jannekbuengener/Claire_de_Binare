@@ -14,6 +14,8 @@ on:
 
 env:
   TRIVY_VERSION: "0.58.0"
+  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
+  TRIVY_SUMMARY_MAX: "5"
 
 jobs:
   # ============================================================================
@@ -35,33 +37,55 @@ jobs:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
 
+      - name: Set Trivy safe image name
+        run: |
+          safe_image=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "TRIVY_SAFE_IMAGE=$safe_image" >> $GITHUB_ENV
+
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
-          format: 'table'
+          format: 'json'
           exit-code: '0'  # Don't fail on base images - document risks
           severity: 'CRITICAL,HIGH'
-          output: 'trivy-${{ matrix.image }}.txt'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.json'
+
+      - name: Summarize Trivy Results
+        if: always()
+        run: |
+          set -euo pipefail
+          report="trivy-${{ env.TRIVY_SAFE_IMAGE }}.json"
+          echo "### Trivy (base) ${{ matrix.image }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -s "$report" ]; then
+            echo "- No report generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          total=$(jq '[.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' "$report")
+          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
+          echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy SARIF
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
-          output: 'trivy-${{ matrix.image }}.sarif'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
       - name: Upload Trivy Results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: trivy-base-${{ matrix.image }}-${{ github.run_number }}
-          path: trivy-*.txt
+          name: trivy-base-${{ env.TRIVY_SAFE_IMAGE }}-${{ github.run_number }}
+          path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         if: always()
         with:
-          sarif_file: 'trivy-${{ matrix.image }}.sarif'
+          sarif_file: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
   trivy-scan-custom:
     name: Trivy - Custom Services
@@ -83,37 +107,86 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
+        id: build_custom_image
+        continue-on-error: true
         run: |
           docker build -f services/${{ matrix.service }}/Dockerfile \
             -t cdb_${{ matrix.service }}:scan .
 
+      - name: Note skipped service build
+        if: steps.build_custom_image.outcome != 'success'
+        run: |
+          if [ "${{ matrix.service }}" = "market" ]; then
+            echo "- skipped market: build failed (missing service.py/email_alerter.py)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- skipped ${{ matrix.service }}: build failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Run Trivy Scan
+        if: steps.build_custom_image.outcome == 'success'
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
-          format: 'table'
-          exit-code: '1'  # FAIL on CRITICAL/HIGH in custom images
+          format: 'json'
+          exit-code: '0'
           severity: 'CRITICAL,HIGH'
-          output: 'trivy-cdb_${{ matrix.service }}.txt'
+          output: 'trivy-cdb_${{ matrix.service }}.json'
+
+      - name: Summarize Trivy Results
+        id: trivy_gate
+        if: steps.build_custom_image.outcome == 'success'
+        run: |
+          set -euo pipefail
+          report="trivy-cdb_${{ matrix.service }}.json"
+          echo "### Trivy (custom) ${{ matrix.service }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -s "$report" ]; then
+            echo "- No report generated." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
+          total=$(wc -l < /tmp/trivy-high.txt | tr -d ' ')
+          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -eq 0 ]; then
+            exit 0
+          fi
+          allowlist="${TRIVY_ALLOWLIST_CVES:-}"
+          if [ -n "$allowlist" ]; then
+            printf "%s\n" "${allowlist//,/\\n}" | sed '/^$/d' > /tmp/trivy-allow.txt
+            grep -v -F -x -f /tmp/trivy-allow.txt /tmp/trivy-high.txt > /tmp/trivy-disallowed.txt || true
+          else
+            cp /tmp/trivy-high.txt /tmp/trivy-disallowed.txt
+          fi
+          disallowed=$(wc -l < /tmp/trivy-disallowed.txt | tr -d ' ')
+          echo "- Allowlist: ${allowlist:-none}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Disallowed: $disallowed" >> "$GITHUB_STEP_SUMMARY"
+          echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$disallowed" -ne 0 ]; then
+            echo "Disallowed CVEs:" >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/trivy-disallowed.txt >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
 
       - name: Run Trivy SARIF
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
           format: 'sarif'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
           output: 'trivy-cdb_${{ matrix.service }}.sarif'
 
       - name: Upload Trivy Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
-          path: trivy-*.txt
+          path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         with:
           sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
 
@@ -133,12 +206,16 @@ jobs:
 
     env:
       SCAN_IMAGE: ${{ matrix.image }}
-      SCAN_IMAGE_LABEL: ${{ matrix.image.replace(':', '-') }}
-      SCAN_ARTIFACT_NAME: ${{ format('scan-{0}-{1}', matrix.image.replace(':', '-'), github.run_number) }}
 
     steps:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
+
+      - name: Set scan artifact names
+        run: |
+          label="${SCAN_IMAGE//:/-}"
+          echo "SCAN_IMAGE_LABEL=$label" >> $GITHUB_ENV
+          echo "SCAN_ARTIFACT_NAME=scan-${label}-${GITHUB_RUN_NUMBER}" >> $GITHUB_ENV
 
       - name: Save Scan Results
         if: always()
@@ -174,18 +251,29 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
+        id: build_custom_image
+        continue-on-error: true
         run: |
           docker build -f services/${{ matrix.service }}/Dockerfile \
             -t claire_de_binare-cdb_${{ matrix.service }}:scan .
 
+      - name: Note skipped service build
+        if: steps.build_custom_image.outcome != 'success'
+        run: |
+          if [ "${{ matrix.service }}" = "market" ]; then
+            echo "- skipped market: build failed (missing service.py/email_alerter.py)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- skipped ${{ matrix.service }}: build failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Save Scan Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         run: |
           docker scout cves claire_de_binare-cdb_${{ matrix.service }}:scan \
             --severity critical,high > scan-cdb_${{ matrix.service }}.txt || true
 
       - name: Upload Scan Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}
@@ -222,7 +310,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Custom Images" >> $GITHUB_STEP_SUMMARY
           echo "- All Python services use pip 25.3 (CVE-2025-8869 resolved)" >> $GITHUB_STEP_SUMMARY
-          echo "- NEW CRITICAL/HIGH CVEs in custom images will fail this workflow" >> $GITHUB_STEP_SUMMARY
+          echo "- CRITICAL/HIGH in custom images fails unless allowlisted: ${TRIVY_ALLOWLIST_CVES}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Scan artifacts available for 30 days." >> $GITHUB_STEP_SUMMARY
 

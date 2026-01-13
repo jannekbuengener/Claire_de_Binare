@@ -75,10 +75,10 @@ jobs:
               else
                 # PATCH uses old name in URL; keep name stable unless you intentionally rename.
                 gh api -X PATCH "repos/$REPO/labels/$(python - <<'PY'
-import urllib.parse,sys
-print(urllib.parse.quote(sys.argv[1]))
-PY
-"$name")"                   -f new_name="$name" -f color="$color" -f description="$desc" >/dev/null
+          import urllib.parse,sys
+          print(urllib.parse.quote(sys.argv[1]))
+          PY
+          "$name")"                   -f new_name="$name" -f color="$color" -f description="$desc" >/dev/null
               fi
             else
               echo "Create label: $name"

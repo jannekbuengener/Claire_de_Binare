@@ -1,0 +1,10 @@
+name: Gemini Dispatch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "gemini-dispatch placeholder"

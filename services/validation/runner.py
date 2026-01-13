@@ -1,4 +1,7 @@
-"""CLI runner for 72h validation windows."""
+"""CLI runner for 72h validation windows.
+
+Classification: worker/CLI (no HTTP/health endpoint).
+"""
 
 from __future__ import annotations
 
