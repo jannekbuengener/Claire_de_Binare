@@ -17,11 +17,6 @@ updates:
       - "python"
     commit-message:
       prefix: "deps(pip)"
-    ignore:
-      # Beispiel: Major Updates optional dämpfen
-      # - dependency-name: "numpy"
-      #   update-types: ["version-update:semver-major"]
-
   # ----------------------------
   # GitHub Actions
   # ----------------------------
