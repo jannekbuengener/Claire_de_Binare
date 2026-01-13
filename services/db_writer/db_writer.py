@@ -2,6 +2,8 @@
 DB Writer Service - Claire de Binare
 Persistiert Events aus Redis in PostgreSQL
 
+Classification: worker (no HTTP/health endpoint; container health uses Redis ping)
+
 Funktionen:
 - Signals → PostgreSQL (signals table)
 - Orders → PostgreSQL (orders table)
@@ -20,6 +22,7 @@ import redis
 import psycopg2
 
 from core.utils.clock import utcnow
+
 # Logging Setup
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
