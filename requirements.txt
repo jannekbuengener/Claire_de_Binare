@@ -20,6 +20,6 @@ werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
 psycopg2-binary==2.9.9
 python-dateutil==2.8.2
 python-dotenv==1.2.1
-python-json-logger==2.0.7
+python-json-logger==4.0.0
 redis==5.0.1
 requests==2.32.5
