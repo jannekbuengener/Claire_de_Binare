@@ -17,7 +17,6 @@ on:
 
 env:
   TRIVY_VERSION: "0.58.0"
-  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
   TRIVY_SUMMARY_MAX: "5"
 
 concurrency:
