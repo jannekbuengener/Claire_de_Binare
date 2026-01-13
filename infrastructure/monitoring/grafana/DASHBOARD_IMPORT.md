@@ -13,6 +13,7 @@ Grafana läuft unter: **http://localhost:3000**
 - Datei: `dashboards/claire_minimal_observability_v1.json`
 - Datasource: `Prometheus`
 - Targets: `cdb_signal:8005`, `cdb_execution:8003`, `cdb_db_writer:8010`, `cdb_candles:8007` (dev-only)
+- Stack starten: `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d` (kein root-compose)
 
 ---
 
