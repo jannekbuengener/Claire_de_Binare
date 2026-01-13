@@ -293,6 +293,12 @@ class DatabaseWriter:
             # Convert timestamp (handles Unix timestamps and ISO strings)
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
+            # Map side→signal_type for backward compatibility (Issue: signals stuck at 0)
+            # Signals emit 'side' (BUY/SELL), DB schema expects 'signal_type' (buy/sell lowercase)
+            signal_type = data.get("signal_type") or (data.get("side") or "").lower()
+            if not signal_type:
+                signal_type = "unknown"  # Guard: satisfy NOT NULL constraint
+
             cursor.execute(
                 """
                 INSERT INTO signals (symbol, signal_type, price, confidence, timestamp, source, metadata)
@@ -301,7 +307,7 @@ class DatabaseWriter:
             """,
                 (
                     data.get("symbol"),
-                    data.get("signal_type"),
+                    signal_type,
                     data.get("price"),
                     data.get("confidence", 0.5),
                     timestamp,
@@ -311,7 +317,7 @@ class DatabaseWriter:
             )
             signal_id = cursor.fetchone()[0]
             logger.info(
-                f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {data.get('signal_type')}"
+                f"✅ Signal persisted: ID={signal_id}, {data.get('symbol')} {signal_type}"
             )
             DB_WRITER_EVENTS_PROCESSED.labels(channel="signals").inc()
         except Exception as e:
