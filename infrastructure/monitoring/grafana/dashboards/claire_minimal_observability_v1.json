@@ -1,0 +1,218 @@
+{
+  "uid": "claire_minimal_observability_v1",
+  "title": "Claire - Minimal Observability",
+  "description": "Minimal service health + throughput for signal, execution, db_writer, candles (dev-only).",
+  "tags": ["claire", "observability", "minimal"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m"]
+  },
+  "refresh": "10s",
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "SIGNAL UP",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "up{job=\"cdb_signal\"}", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#16a34a"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#16a34a", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "EXECUTION UP",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "up{job=\"cdb_execution\"}", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#16a34a"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#16a34a", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "DB WRITER UP",
+      "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "up{job=\"cdb_db_writer\"}", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#16a34a"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#16a34a", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "CANDLES UP (DEV)",
+      "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {"expr": "up{job=\"cdb_candles\"}", "refId": "A"}
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {"type": "value", "value": "0", "text": "DOWN", "color": "#dc2626"},
+            {"type": "value", "value": "1", "text": "UP", "color": "#16a34a"}
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "#dc2626", "value": null},
+              {"color": "#16a34a", "value": 1}
+            ]
+          }
+        }
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Throughput (per second)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 4},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "rate(signals_generated_total[5m])",
+          "refId": "A",
+          "legendFormat": "Signals"
+        },
+        {
+          "expr": "rate(execution_orders_filled_total[5m])",
+          "refId": "B",
+          "legendFormat": "Orders Filled"
+        },
+        {
+          "expr": "rate(db_writer_events_processed_total[5m])",
+          "refId": "C",
+          "legendFormat": "DB Events"
+        },
+        {
+          "expr": "rate(candle_candles_emitted_total[5m])",
+          "refId": "D",
+          "legendFormat": "Candles"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "ops"
+        }
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {"displayMode": "list", "placement": "bottom"}
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Failures (per second)",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 12},
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [
+        {
+          "expr": "rate(execution_orders_rejected_total[5m])",
+          "refId": "A",
+          "legendFormat": "Execution Rejected"
+        },
+        {
+          "expr": "rate(db_writer_events_failed_total[5m])",
+          "refId": "B",
+          "legendFormat": "DB Writer Failed"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "showPoints": "never"
+          },
+          "unit": "ops"
+        }
+      },
+      "options": {
+        "tooltip": {"mode": "multi"},
+        "legend": {"displayMode": "list", "placement": "bottom"}
+      }
+    }
+  ]
+}

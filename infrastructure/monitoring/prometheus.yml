@@ -40,6 +40,25 @@ scrape_configs:
           service: 'analysis'
     metrics_path: '/metrics'
 
+  # Candle Aggregator (dev-only)
+  - job_name: 'cdb_candles'
+    static_configs:
+      - targets: ['cdb_candles:8007']
+        labels:
+          instance: 'cdb_candles'
+          service: 'market_data'
+          env: 'dev'
+    metrics_path: '/metrics'
+
+  # DB Writer (worker metrics)
+  - job_name: 'cdb_db_writer'
+    static_configs:
+      - targets: ['cdb_db_writer:8010']
+        labels:
+          instance: 'cdb_db_writer'
+          service: 'persistence'
+    metrics_path: '/metrics'
+
   # Risk Manager
   - job_name: 'cdb_risk'
     static_configs:

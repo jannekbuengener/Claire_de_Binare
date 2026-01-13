@@ -3,6 +3,20 @@
 
 groups:
   # =============================================================================
+  # MINIMAL OBSERVABILITY - Issue #210
+  # =============================================================================
+  - name: minimal_observability
+    rules:
+      - alert: MinimalServiceDown
+        expr: up{job=~"cdb_(execution|signal|db_writer|candles)", env!="dev"} == 0
+        for: 2m
+        labels:
+          severity: high
+        annotations:
+          summary: "Minimal service {{ $labels.job }} is down"
+          description: "{{ $labels.instance }} has been down for more than 2 minutes."
+
+  # =============================================================================
   # CRITICAL ALERTS - Immediate Action Required
   # =============================================================================
   - name: critical_alerts
