@@ -25,7 +25,7 @@ pip-audit==2.6.1
 redis==5.0.1
 flask==3.1.2
 werkzeug>=3.1.4  # Security: CVE fixes
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.11
 requests==2.32.5
 cryptography==44.0.1
 aiohttp>=3.13.3
