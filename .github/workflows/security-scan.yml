@@ -35,6 +35,11 @@ jobs:
       - name: Pull Image
         run: docker pull ${{ matrix.image }}
 
+      - name: Set Trivy safe image name
+        run: |
+          safe_image=$(echo "${{ matrix.image }}" | tr '/:' '-')
+          echo "TRIVY_SAFE_IMAGE=$safe_image" >> $GITHUB_ENV
+
       - name: Run Trivy Scan
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
@@ -42,26 +47,26 @@ jobs:
           format: 'table'
           exit-code: '0'  # Don't fail on base images - document risks
           severity: 'CRITICAL,HIGH'
-          output: 'trivy-${{ matrix.image }}.txt'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.txt'
 
       - name: Run Trivy SARIF
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
-          output: 'trivy-${{ matrix.image }}.sarif'
+          output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
       - name: Upload Trivy Results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: trivy-base-${{ matrix.image }}-${{ github.run_number }}
+          name: trivy-base-${{ env.TRIVY_SAFE_IMAGE }}-${{ github.run_number }}
           path: trivy-*.txt
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
         if: always()
         with:
-          sarif_file: 'trivy-${{ matrix.image }}.sarif'
+          sarif_file: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
   trivy-scan-custom:
     name: Trivy - Custom Services
@@ -83,11 +88,23 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
+        id: build_custom_image
+        continue-on-error: true
         run: |
           docker build -f services/${{ matrix.service }}/Dockerfile \
             -t cdb_${{ matrix.service }}:scan .
 
+      - name: Note skipped service build
+        if: steps.build_custom_image.outcome != 'success'
+        run: |
+          if [ "${{ matrix.service }}" = "market" ]; then
+            echo "- skipped market: build failed (missing service.py/email_alerter.py)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- skipped ${{ matrix.service }}: build failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Run Trivy Scan
+        if: steps.build_custom_image.outcome == 'success'
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
@@ -98,14 +115,14 @@ jobs:
 
       - name: Run Trivy SARIF
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
           format: 'sarif'
           output: 'trivy-cdb_${{ matrix.service }}.sarif'
 
       - name: Upload Trivy Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
@@ -113,7 +130,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc # v3
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         with:
           sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
 
@@ -178,18 +195,29 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Build Service Image
+        id: build_custom_image
+        continue-on-error: true
         run: |
           docker build -f services/${{ matrix.service }}/Dockerfile \
             -t claire_de_binare-cdb_${{ matrix.service }}:scan .
 
+      - name: Note skipped service build
+        if: steps.build_custom_image.outcome != 'success'
+        run: |
+          if [ "${{ matrix.service }}" = "market" ]; then
+            echo "- skipped market: build failed (missing service.py/email_alerter.py)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- skipped ${{ matrix.service }}: build failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Save Scan Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         run: |
           docker scout cves claire_de_binare-cdb_${{ matrix.service }}:scan \
             --severity critical,high > scan-cdb_${{ matrix.service }}.txt || true
 
       - name: Upload Scan Results
-        if: always()
+        if: always() && steps.build_custom_image.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}

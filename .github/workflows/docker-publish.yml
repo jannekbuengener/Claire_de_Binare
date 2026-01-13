@@ -23,7 +23,7 @@ jobs:
       matrix:
         service:
           - name: cdb_core
-            dockerfile: services/core/Dockerfile
+            dockerfile: services/signal/Dockerfile
             context: .
           - name: cdb_risk
             dockerfile: services/risk/Dockerfile
