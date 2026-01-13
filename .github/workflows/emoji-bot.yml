@@ -10,6 +10,10 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 jobs:
   emoji-bot:
     name: 🤖 Emoji Bot Handler

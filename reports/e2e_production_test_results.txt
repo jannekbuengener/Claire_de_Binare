@@ -1,0 +1,15 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\janne\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Dev\Workspaces\Repos\Claire_de_Binare
+configfile: pytest.ini
+plugins: requests-mock-1.12.1
+collecting ... collected 5 items
+
+tests/e2e/test_smoke_pipeline.py::test_tc_001_happy_path_buy_signal PASSED [ 20%]
+tests/e2e/test_smoke_pipeline.py::test_tc_002_risk_guard_position_limit PASSED [ 40%]
+tests/e2e/test_smoke_pipeline.py::test_tc_003_risk_guard_test_balance_fallback PASSED [ 60%]
+tests/e2e/test_smoke_pipeline.py::test_tc_004_signal_engine_pct_change_calculation PASSED [ 80%]
+tests/e2e/test_smoke_pipeline.py::test_tc_005_payload_sanitization PASSED [100%]
+
+============================== 5 passed in 0.04s ==============================

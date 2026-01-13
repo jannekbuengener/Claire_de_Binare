@@ -4,10 +4,13 @@ on:
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:
-
+  
 jobs:
   compat:
+    name: Python compatibility matrix (informational)
+ bugfix/519-python-compat-workflow
     name: Python compatibility matrix
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,3 +32,4 @@ jobs:
 
       - name: Quick compatibility smoke
         run: python -c "import sys; print(sys.version)"
+        
