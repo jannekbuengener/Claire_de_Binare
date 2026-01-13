@@ -17,7 +17,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
 - claude/ - Claude Workspace
 - core/ - Core Domain Models
 - docs/ - Dokumentation
-- governance/ - Governance Dateien (DELIVERY_APPROVED.yaml, SECRETS_POLICY.md)
+- governance/ - Governance Dateien (DELIVERY_APPROVED.yaml, credentials policy)
 - infrastructure/ - Infrastruktur (Compose, Database, Monitoring, Scripts)
 - knowledge/ - Knowledge Base
 - k8s/ - Kubernetes Manifeste
@@ -37,7 +37,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
 ### Vorhandene Dateien
 - AGENTS.md (396 bytes) - Pointer zu Docs-Hub
 - governance/DELIVERY_APPROVED.yaml (777 bytes) - Delivery Gate
-- governance/SECRETS_POLICY.md (2405 bytes) - Secrets Policy
+- credentials policy (governance folder, 2405 bytes)
 
 ### Fehlende Dateien
 - CODEOWNERS - **NICHT GEFUNDEN**
@@ -120,7 +120,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
 - **Makefile syntax error** - Tests können nicht ausgeführt werden
 
 ### HIGH (Schnell beheben)
-- **Secrets path mismatch** - Referenzen auf ~/.secrets/.cdb/ statt ~/Documents/.secrets/.cdb/
+- **Credentials path mismatch** - Referenzen auf ~/.credstore/.cdb/ statt ~/Documents/.credstore/.cdb/
 - **Untracked wichtige Dateien** - PRs — issues.md, Repository—Überblick.md sollten getrackt werden
 - **Governance Docs fehlen** - CDB_CONSTITUTION.md, CDB_GOVERNANCE.md fehlen
 
@@ -149,8 +149,8 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
   - `make --version` zum Validieren
 
 ### Dringlichkeit 1 (Hoch - Diese Woche)
-- [ ] Secrets path Referenzen aktualisieren
-  - Alle refs auf ~/.secrets/.cdb/ → ~/Documents/.secrets/.cdb/
+- [ ] Credentials path Referenzen aktualisieren
+  - Alle refs auf ~/.credstore/.cdb/ → ~/Documents/.credstore/.cdb/
 - [ ] Wichtige Untracked Files zum Repo hinzufügen
   - PRs — issues.md
   - Repository—Überblick.md
@@ -205,7 +205,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
    - Tests ausführen
 
 ### SHORT-TERM (Diese Woche)
-1. **Secrets Path konsolidieren**
+1. **Credentials Path konsolidieren**
    - Alle Referenzen aktualisieren
    - Dokumentation aktualisieren
    - Scripts aktualisieren
@@ -236,7 +236,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
 ### Positive Findings
 - Repo-Struktur konsistent
 - Agenten-Charts zentralisiert im Docs-Hub
-- Secrets path verifiziert und vorhanden
+- Credentials path verifiziert und vorhanden
 - 5 branches erfolgreich gelöscht
 - 54MB aus .worktrees_backup entfernt
 
@@ -244,7 +244,7 @@ Issue: #330 - Governance Audit Q1 2026 - Repo-Hygiene & Compliance
 - CODEOWNERS fehlt (Kritisch)
 - Branch Protection nicht aktiviert (Kritisch)
 - Makefile syntax error blockiert Tests (Kritisch)
-- Secrets path mismatch (Hoch)
+- Credentials path mismatch (Hoch)
 - Governance Docs unvollständig (Hoch)
 - 20 untracked Dateien (Mittel)
 

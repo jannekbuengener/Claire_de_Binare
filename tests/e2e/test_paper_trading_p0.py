@@ -150,9 +150,9 @@ def test_order_to_execution_flow(redis_client, unique_order_id):
     }
 
     subscribers = redis_client.publish("orders", json.dumps(order_payload))
-    assert subscribers >= 1, (
-        "No subscribers on 'orders' channel - execution service not running?"
-    )
+    assert (
+        subscribers >= 1
+    ), "No subscribers on 'orders' channel - execution service not running?"
 
     # Wait for order_result (max 10 seconds)
     result_message = None
@@ -173,9 +173,9 @@ def test_order_to_execution_flow(redis_client, unique_order_id):
 
     # Parse and validate payload
     payload = json.loads(result_message["data"])
-    assert payload["type"] == "order_result", (
-        f"Expected type='order_result', got '{payload.get('type')}'"
-    )
+    assert (
+        payload["type"] == "order_result"
+    ), f"Expected type='order_result', got '{payload.get('type')}'"
     assert "order_id" in payload, "Missing order_id in payload"
     assert "status" in payload, "Missing status in payload"
 
@@ -244,20 +244,20 @@ def test_order_results_schema(redis_client, unique_order_id):
 
     # Timestamp format validation (CRITICAL for #225)
     timestamp = payload["timestamp"]
-    assert isinstance(timestamp, int), (
-        f"Timestamp must be Unix int, got {type(timestamp).__name__}: {timestamp}"
-    )
+    assert isinstance(
+        timestamp, int
+    ), f"Timestamp must be Unix int, got {type(timestamp).__name__}: {timestamp}"
 
     # Timestamp reasonableness check (should be recent)
     now = int(time.time())
-    assert abs(now - timestamp) < 60, (
-        f"Timestamp {timestamp} is not recent (now={now}, diff={abs(now - timestamp)}s)"
-    )
+    assert (
+        abs(now - timestamp) < 60
+    ), f"Timestamp {timestamp} is not recent (now={now}, diff={abs(now - timestamp)}s)"
 
     # Type field validation
-    assert payload["type"] == "order_result", (
-        f"Expected type='order_result', got '{payload['type']}'"
-    )
+    assert (
+        payload["type"] == "order_result"
+    ), f"Expected type='order_result', got '{payload['type']}'"
 
     # Status validation (should be valid order status)
     valid_statuses = [
@@ -315,9 +315,9 @@ def test_stream_persistence(redis_client, unique_order_id):
     except redis.ResponseError:
         pytest.fail(f"Stream '{stream_name}' does not exist after order execution")
 
-    assert final_entries > initial_entries, (
-        f"Stream length did not increase (was {initial_entries}, now {final_entries})"
-    )
+    assert (
+        final_entries > initial_entries
+    ), f"Stream length did not increase (was {initial_entries}, now {final_entries})"
 
     # Read latest entry from stream
     entries = redis_client.xrevrange(stream_name, count=1)
@@ -327,9 +327,9 @@ def test_stream_persistence(redis_client, unique_order_id):
 
     # Validate entry contains expected fields
     assert "type" in entry_data, "Stream entry missing 'type' field"
-    assert entry_data["type"] == "order_result", (
-        f"Expected type='order_result', got '{entry_data['type']}'"
-    )
+    assert (
+        entry_data["type"] == "order_result"
+    ), f"Expected type='order_result', got '{entry_data['type']}'"
 
     # Timestamp validation (should be Unix int as string in stream)
     assert "timestamp" in entry_data, "Stream entry missing 'timestamp' field"
@@ -338,9 +338,9 @@ def test_stream_persistence(redis_client, unique_order_id):
     try:
         timestamp_int = int(timestamp_str)
         now = int(time.time())
-        assert abs(now - timestamp_int) < 60, (
-            f"Stream timestamp {timestamp_int} is not recent"
-        )
+        assert (
+            abs(now - timestamp_int) < 60
+        ), f"Stream timestamp {timestamp_int} is not recent"
     except ValueError:
         pytest.fail(f"Stream timestamp is not a valid integer: {timestamp_str}")
 
@@ -360,15 +360,15 @@ def test_subscriber_count(redis_client):
     pubsub_channels = redis_client.execute_command("PUBSUB", "NUMSUB", "order_results")
 
     # Response format: ['order_results', <count>]
-    assert len(pubsub_channels) == 2, (
-        f"Unexpected PUBSUB NUMSUB response: {pubsub_channels}"
-    )
+    assert (
+        len(pubsub_channels) == 2
+    ), f"Unexpected PUBSUB NUMSUB response: {pubsub_channels}"
 
     channel_name, subscriber_count = pubsub_channels
     assert channel_name == "order_results"
-    assert subscriber_count >= 2, (
-        f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
-    )
+    assert (
+        subscriber_count >= 2
+    ), f"Expected at least 2 subscribers on order_results, got {subscriber_count}"
 
 
 @pytest.mark.e2e
@@ -562,9 +562,10 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
     assert result_message is not None, "TC-P0-001 FAILED: No order_result received"
 
     payload = json.loads(result_message["data"])
-    assert payload["status"] in ["FILLED", "filled"], (
-        f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
-    )
+    assert payload["status"] in [
+        "FILLED",
+        "filled",
+    ], f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
     assert latency_ms < 1000, f"TC-P0-001 FAILED: Latency {latency_ms:.0f}ms > 1000ms"
 
     print(f"✅ TC-P0-001 PASSED: Happy path completed in {latency_ms:.0f}ms")
