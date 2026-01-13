@@ -50,10 +50,24 @@ jobs:
             trivy-${{ runner.os }}-${{ github.workflow }}-
             trivy-${{ runner.os }}-
 
+      - name: Select Dockerfile
+        run: |
+          set -euo pipefail
+          candidates=(Dockerfile services/signal/Dockerfile services/execution/Dockerfile)
+          for candidate in "${candidates[@]}"; do
+            if [ -f "$candidate" ]; then
+              echo "DOCKERFILE_PATH=$candidate" >> "$GITHUB_ENV"
+              echo "Selected Dockerfile: $candidate" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          done
+          echo "No Dockerfile found for Trivy scan." >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
       # Wichtig: Kein Fake-Registry-Name. Nutze einen lokalen Tag.
       - name: Build image (local tag)
         run: |
-          docker build -t cdb:${{ github.sha }} .
+          docker build -f "${DOCKERFILE_PATH}" -t cdb:${{ github.sha }} .
 
       - name: Run Trivy (JSON)
         uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe # 7b7aa264d83dc58691451798b4d117d53d21edfe
