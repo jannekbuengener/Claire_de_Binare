@@ -11,12 +11,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
-COPY requirements.txt .
+COPY services/market/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application
-COPY service.py .
-COPY email_alerter.py .
+COPY services/market/service.py .
+COPY services/market/email_alerter.py .
 
 # Create logs directory
 RUN mkdir -p /app/logs /app/logs/events
