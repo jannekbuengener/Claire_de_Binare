@@ -412,13 +412,17 @@ class RiskManager:
             return None
 
         # Layer 2: Exposure-Limit
-        ok, reason = self.check_exposure_limit()
-        if not ok:
-            self.send_alert("WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol})
-            logger.warning(f"⚠️ {reason}")
-            stats["orders_blocked"] += 1
-            risk_state.signals_blocked += 1
-            return None
+        reduce_only = self._is_reduce_only_allowed(signal)
+        if not reduce_only:
+            ok, reason = self.check_exposure_limit()
+            if not ok:
+                self.send_alert(
+                    "WARNING", "RISK_LIMIT", reason, {"signal": signal.symbol}
+                )
+                logger.warning(f"⚠️ {reason}")
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+                return None
 
         # Layer 3: Position-Size
         ok, reason = self.check_position_limit(signal)
@@ -600,6 +604,42 @@ class RiskManager:
             1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
         )
 
+    def _maybe_auto_unwind(self, result: OrderResult) -> None:
+        if not self.config.paper_auto_unwind:
+            return
+        if result.status != "FILLED":
+            return
+        if result.side != "BUY":
+            return
+        if result.strategy_id != "paper":
+            return
+        if result.filled_quantity <= 0:
+            return
+
+        order = Order(
+            symbol=result.symbol,
+            side="SELL",
+            quantity=result.filled_quantity,
+            stop_loss_pct=self.config.stop_loss_pct,
+            signal_id=int(time.time()),
+            reason=f"paper_auto_unwind:{result.order_id}",
+            timestamp=int(time.time()),
+            client_id=f"paper-unwind-{result.order_id}",
+            strategy_id=result.strategy_id,
+            bot_id=result.bot_id,
+            price=result.price,
+        )
+
+        logger.info(
+            "PAPER_AUTO_UNWIND: queued SELL %s qty=%.4f (order_id=%s)",
+            order.symbol,
+            order.quantity,
+            result.order_id,
+        )
+        stats["orders_approved"] += 1
+        risk_state.pending_orders += 1
+        self.send_order(order)
+
     def handle_order_result(self, result: OrderResult):
         """Verarbeitet Order-Result Events vom Execution-Service"""
         stats["order_results_received"] += 1
@@ -618,6 +658,7 @@ class RiskManager:
 
         if result.status == "FILLED":
             self._update_exposure(result)
+            self._maybe_auto_unwind(result)
         else:
             stats["orders_rejected_execution"] += 1
             self.send_alert(
