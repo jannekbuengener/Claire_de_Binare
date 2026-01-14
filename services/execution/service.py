@@ -198,12 +198,23 @@ def _publish_result(result: ExecutionResult) -> None:
     redis_client.publish(
         config.TOPIC_ORDER_RESULTS, json.dumps(event_payload, ensure_ascii=False)
     )
+    stream_payload = {
+        key: value for key, value in event_payload.items() if value is not None
+    }
+    if "filled_quantity" in stream_payload and "filled_size" not in stream_payload:
+        stream_payload["filled_size"] = stream_payload["filled_quantity"]
+    if "price" in stream_payload and "avg_fill_price" not in stream_payload:
+        stream_payload["avg_fill_price"] = stream_payload["price"]
+
+    streams: list[str] = []
     if config.STREAM_ORDER_RESULTS:
-        stream_payload = {
-            key: value for key, value in event_payload.items() if value is not None
-        }
-        redis_client.xadd(config.STREAM_ORDER_RESULTS, stream_payload, maxlen=10000)
-        logger.info("Published result to stream %s", config.STREAM_ORDER_RESULTS)
+        streams.append(config.STREAM_ORDER_RESULTS)
+    if "stream.order_results" not in streams:
+        streams.append("stream.order_results")
+
+    for stream in streams:
+        redis_client.xadd(stream, stream_payload, maxlen=10000)
+        logger.info("Published result to stream %s", stream)
     logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
 
     if db:

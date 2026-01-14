@@ -152,3 +152,60 @@ def test_allocation_allowed():
         allowed, reason = manager._allocation_allowed("strategy_001")
         assert allowed is True
         assert "allokation ok" in reason.lower()
+
+
+@pytest.mark.unit
+def test_exposure_limit_bypassed_for_reduce_only_sell(mock_redis, mock_postgres):
+    """
+    Test: Reduce-only SELL wird nicht durch Max-Exposure geblockt.
+    """
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.01,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+        test_balance=100.0,
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        manager.allocation_state["paper"] = AllocationState(
+            allocation_pct=0.5,
+            cooldown_until=None,
+        )
+
+        original_positions = risk_service.risk_state.positions.copy()
+        original_last_prices = risk_service.risk_state.last_prices.copy()
+        original_total_exposure = risk_service.risk_state.total_exposure
+        original_risk_off = risk_service.risk_off_active
+
+        try:
+            risk_service.risk_state.positions = {"BTCUSDT": 1.0}
+            risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+            risk_service.risk_state.total_exposure = 100000.0
+            risk_service.risk_off_active = False
+            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+            manager.calculate_position_size = MagicMock(return_value=(0.1, None))
+
+            signal = Signal(
+                strategy_id="paper",
+                symbol="BTCUSDT",
+                side="SELL",
+                price=50000.0,
+                timestamp=1,
+            )
+
+            manager.check_exposure_limit = MagicMock(
+                return_value=(False, "Max Exposure erreicht")
+            )
+
+            order = manager.process_signal(signal)
+            assert order is not None
+            assert order.side == "SELL"
+            manager.check_exposure_limit.assert_not_called()
+        finally:
+            risk_service.risk_state.positions = original_positions
+            risk_service.risk_state.last_prices = original_last_prices
+            risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_off_active = original_risk_off
