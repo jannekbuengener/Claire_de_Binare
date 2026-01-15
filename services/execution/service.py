@@ -189,7 +189,27 @@ def init_services():
 
 
 def _publish_result(result: ExecutionResult) -> None:
-    """Publish order result to Redis (pubsub + stream) and persist to DB."""
+    """Publish order result to Redis (pubsub + stream) and persist to DB.
+
+    Dual-Pattern Architecture (Issue #590):
+    ----------------------------------------
+    1. Pub/Sub Channel (config.TOPIC_ORDER_RESULTS = "order_results"):
+       - Real-time delivery to risk manager
+       - Ephemeral (no history)
+       - Consumer: services/risk/service.py (pubsub_results.subscribe)
+
+    2. Stream (stream.order_results):
+       - Audit trail / debugging
+       - Retention: maxlen=10000 (last 10k results)
+       - Consumer: NONE (intentional - stream exists for replay/analysis)
+       - Allows post-hoc investigation without requiring live consumer
+
+    3. Postgres (via db_writer):
+       - Long-term persistence
+       - Source of truth for reporting
+
+    Rationale: Pub/Sub for speed, Stream for debugging, DB for durability.
+    """
     event_payload = sanitize_payload(result.to_dict())
     set_stat("last_result", event_payload)  # Thread-safe
     if not redis_client:
