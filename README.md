@@ -105,6 +105,53 @@ Issues geschlossen: 202 / 300 (67.3%)
 
 ## Getting Started
 
-To get started with this project, you will need to have Docker and Python installed. The `docker-compose.yml` file in the root directory defines the services required for local development.
+**New Developer?** See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for comprehensive setup instructions.
 
-For a detailed index of the repository, please refer to the `REPO_INDEX.md` file.
+### Quick Setup (5 minutes)
+
+**Prerequisites**: Docker, Python 3.12+, Git
+
+```bash
+# 1. Clone repository
+git clone https://github.com/jannekbuengener/Claire_de_Binare.git
+cd Claire_de_Binare
+
+# 2. Setup environment
+cp .env.example .env
+
+# 3. Initialize secrets (Linux/Mac)
+./infrastructure/scripts/init-secrets.sh
+
+# Windows (PowerShell):
+# .\infrastructure\scripts\init-secrets.ps1
+
+# 4. Validate environment (Linux/Mac)
+./infrastructure/scripts/validate-environment.sh
+
+# 5. Start the stack
+docker compose -f infrastructure/compose/dev.yml up -d
+
+# 6. Verify health
+docker compose -f infrastructure/compose/dev.yml ps
+
+# 7. Access Grafana
+# http://localhost:3000 (admin / see GRAFANA_PASSWORD in secrets)
+```
+
+### Troubleshooting
+
+If you encounter issues:
+
+1. **Missing .env**: Run `cp .env.example .env`
+2. **Secret errors**: Run `./infrastructure/scripts/init-secrets.sh` (or `.ps1` on Windows)
+3. **Port conflicts**: Check for services using ports 6379, 5432, 3000, 9090, 8000
+4. **Permission denied**: Fix secrets permissions: `chmod 700 ~/Documents/.secrets/.cdb && chmod 600 ~/Documents/.secrets/.cdb/*`
+
+See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for detailed troubleshooting.
+
+### Documentation
+
+- **Setup Guide**: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) - Comprehensive onboarding
+- **Service Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Service implementation audit
+- **Governance**: [Governance Audit](governance-audit-2026-01-15.md) - Governance compliance
+- **Policies**: `governance/` - Project governance and policies
