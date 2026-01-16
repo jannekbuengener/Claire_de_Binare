@@ -11,7 +11,7 @@ requests-mock==1.12.1
 jsonschema==4.25.1  # Contract validation (Issue #356)
 
 # Type Checking
-mypy==1.8.0
+mypy==1.19.1
 
 # Code Quality
 black==25.12.0
