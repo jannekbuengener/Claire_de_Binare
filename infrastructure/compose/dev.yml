@@ -222,6 +222,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      PAPER_AUTO_UNWIND: ${PAPER_AUTO_UNWIND:-0}
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -m services.risk.service"]
     ports:
       - "127.0.0.1:8002:8002"
