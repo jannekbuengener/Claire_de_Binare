@@ -79,8 +79,20 @@ services:
       # Grafana supports _FILE pattern via __FILE suffix
       GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
       GF_USERS_ALLOW_SIGN_UP: "false"
+      # SMTP Configuration for Email Alerts
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: smtp.gmail.com:587
+      GF_SMTP_USER__FILE: /run/secrets/smtp_user
+      GF_SMTP_PASSWORD__FILE: /run/secrets/smtp_password
+      GF_SMTP_FROM_ADDRESS__FILE: /run/secrets/smtp_from
+      GF_SMTP_FROM_NAME: "CDB Alerts"
+      GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
     secrets:
       - grafana_password
+      - smtp_user
+      - smtp_password
+      - smtp_from
+      - alert_email_to
     volumes:
       - grafana_data:/var/lib/grafana
       - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
@@ -144,6 +156,14 @@ secrets:
     file: ${SECRETS_PATH}/POSTGRES_PASSWORD_DSN
   grafana_password:
     file: ${SECRETS_PATH}/GRAFANA_PASSWORD
+  smtp_user:
+    file: ${SECRETS_PATH}/SMTP_USER
+  smtp_password:
+    file: ${SECRETS_PATH}/SMTP_PASSWORD
+  smtp_from:
+    file: ${SECRETS_PATH}/SMTP_FROM
+  alert_email_to:
+    file: ${SECRETS_PATH}/ALERT_EMAIL_TO
   mexc_api_key:
     file: ${SECRETS_PATH}/MEXC_API_KEY.txt
   mexc_api_secret:
