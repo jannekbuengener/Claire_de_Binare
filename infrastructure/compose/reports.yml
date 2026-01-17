@@ -1,0 +1,59 @@
+# Claire de Binare - Reports Service
+# Daily Orders Summary Email Service
+#
+# Usage:
+#   docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/reports.yml up -d
+
+# Inherits project name from base.yml
+services:
+  cdb_reports:
+    build:
+      context: ../../services/reports
+      dockerfile: Dockerfile
+    container_name: cdb_reports
+    restart: unless-stopped
+    environment:
+      # Timezone for scheduling
+      TZ: UTC
+      # Database connection (optional, uses DSN from secret)
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_DB: claire_de_binare
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      # Secret file paths
+      POSTGRES_DSN_FILE: /run/secrets/postgres_password_dsn
+    secrets:
+      - postgres_password_dsn
+      - postgres_password
+      - smtp_user
+      - smtp_password
+      - smtp_from
+      - alert_email_to
+    networks:
+      - cdb_network
+    depends_on:
+      - cdb_postgres
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "daily_orders_summary.py"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+
+# Use secrets from base.yml (inherited when using multiple compose files)
+secrets:
+  postgres_password_dsn:
+    file: ${SECRETS_PATH}/POSTGRES_PASSWORD_DSN
+  postgres_password:
+    file: ${SECRETS_PATH}/POSTGRES_PASSWORD
+  smtp_user:
+    file: ${SECRETS_PATH}/SMTP_USER
+  smtp_password:
+    file: ${SECRETS_PATH}/SMTP_PASSWORD
+  smtp_from:
+    file: ${SECRETS_PATH}/SMTP_FROM
+  alert_email_to:
+    file: ${SECRETS_PATH}/ALERT_EMAIL_TO
+
+# Use network from base.yml (inherited when using multiple compose files)
+networks:
+  cdb_network:
+    driver: bridge
