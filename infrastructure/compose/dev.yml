@@ -327,3 +327,36 @@ services:
         condition: service_healthy
     networks:
       - cdb_network
+
+  # Daily Orders Summary Report Service
+  cdb_reports:
+    build:
+      context: ../../services/reports
+      dockerfile: Dockerfile
+    container_name: cdb_reports
+    restart: unless-stopped
+    secrets:
+      - postgres_password_dsn
+      - postgres_password
+      - smtp_user
+      - smtp_password
+      - smtp_from
+      - alert_email_to
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "DEBUG"
+      TZ: UTC
+      POSTGRES_HOST: cdb_postgres
+      POSTGRES_DB: claire_de_binare
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_DSN_FILE: /run/secrets/postgres_password_dsn
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "daily_orders_summary.py"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      cdb_postgres:
+        condition: service_healthy
+    networks:
+      - cdb_network

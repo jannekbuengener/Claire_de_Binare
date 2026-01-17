@@ -124,3 +124,19 @@ services:
         limits:
           cpus: '0.25'
           memory: 256M
+
+  cdb_reports:
+    restart: on-failure
+    environment:
+      ENV: "production"
+      LOG_LEVEL: "WARNING"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
