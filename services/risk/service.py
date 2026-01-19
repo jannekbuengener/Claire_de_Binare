@@ -569,7 +569,17 @@ class RiskManager:
                 logger.warning(f"⚠️ {reason}")
                 stats["orders_blocked"] += 1
                 risk_state.signals_blocked += 1
+
+                # PROACTIVE AUTO-UNWIND: If over limit and have open positions, trigger unwind
+                self._trigger_proactive_unwind()
+
                 return None
+        else:
+            # Reduce-only order bypasses exposure limit (allowed to close positions)
+            logger.info(
+                f"✅ Reduce-only SELL allowed while over limit: {signal.symbol} (closes position)"
+            )
+            stats["reduce_only_approved"] = stats.get("reduce_only_approved", 0) + 1
 
         # Layer 3: Position-Size
         ok, reason = self.check_position_limit(signal)
@@ -751,7 +761,75 @@ class RiskManager:
             1 for qty in risk_state.positions.values() if abs(qty) > 1e-6
         )
 
+    def _trigger_proactive_unwind(self) -> None:
+        """
+        Proactive auto-unwind: Generate SELL orders when over limit.
+
+        This method is called when a signal is blocked due to max_exposure.
+        If we have open positions, we generate SELL orders to reduce exposure.
+
+        This breaks the deadlock where:
+        - Exposure > limit → all BUYs blocked
+        - No BUYs → no fills → reactive unwind never triggers
+        - Position stays open forever
+
+        Solution: Proactively unwind when blocked.
+        """
+        if not self.config.paper_auto_unwind:
+            return
+
+        # Check if we have any open positions
+        if not risk_state.positions:
+            return
+
+        # Generate SELL order for each open LONG position
+        for symbol, position_qty in list(risk_state.positions.items()):
+            if position_qty <= 0:
+                continue  # Skip short positions or zero positions
+
+            # Get current price for this symbol
+            current_price = risk_state.last_prices.get(symbol, 0.0)
+            if current_price <= 0:
+                logger.warning(
+                    f"⚠️ Proactive unwind skipped for {symbol}: no price data"
+                )
+                continue
+
+            order = Order(
+                symbol=symbol,
+                side="SELL",
+                quantity=abs(position_qty),
+                stop_loss_pct=self.config.stop_loss_pct,
+                signal_id=int(time.time()),
+                reason="proactive_unwind:over_limit",
+                timestamp=int(time.time()),
+                client_id=f"proactive-unwind-{symbol}-{int(time.time())}",
+                strategy_id="paper",  # Use paper strategy for auto-unwind
+                bot_id=None,
+                price=current_price,
+            )
+
+            logger.warning(
+                f"🔄 PROACTIVE AUTO-UNWIND: queued SELL {symbol} qty={abs(position_qty):.8f} "
+                f"(exposure over limit, forcing position close)"
+            )
+            stats["proactive_unwind_triggered"] = (
+                stats.get("proactive_unwind_triggered", 0) + 1
+            )
+            stats["orders_approved"] += 1
+            risk_state.pending_orders += 1
+            self.send_order(order)
+
+            # Only unwind one position per trigger to avoid flooding
+            break
+
     def _maybe_auto_unwind(self, result: OrderResult) -> None:
+        """
+        Reactive auto-unwind: Generate SELL after BUY fills.
+
+        This is the original auto-unwind logic that triggers after successful BUY fills.
+        Complements the proactive unwind above.
+        """
         if not self.config.paper_auto_unwind:
             return
         if result.status != "FILLED":
@@ -1010,7 +1088,13 @@ def metrics():
         f"risk_pending_orders_total {risk_state.pending_orders}\n\n"
         "# HELP risk_total_exposure_value Gesamtposition (Notional)\n"
         "# TYPE risk_total_exposure_value gauge\n"
-        f"risk_total_exposure_value {risk_state.total_exposure}\n"
+        f"risk_total_exposure_value {risk_state.total_exposure}\n\n"
+        "# HELP risk_reduce_only_approved_total Reduce-only SELL orders approved while over exposure limit\n"
+        "# TYPE risk_reduce_only_approved_total counter\n"
+        f"risk_reduce_only_approved_total {stats.get('reduce_only_approved', 0)}\n\n"
+        "# HELP risk_proactive_unwind_triggered_total Proactive auto-unwind triggers (SELL orders generated when over limit)\n"
+        "# TYPE risk_proactive_unwind_triggered_total counter\n"
+        f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
     )
     return Response(body, mimetype="text/plain")
 

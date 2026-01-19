@@ -209,3 +209,206 @@ def test_exposure_limit_bypassed_for_reduce_only_sell(mock_redis, mock_postgres)
             risk_service.risk_state.last_prices = original_last_prices
             risk_service.risk_state.total_exposure = original_total_exposure
             risk_service.risk_off_active = original_risk_off
+
+
+@pytest.mark.unit
+def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
+    """
+    Test: Proactive auto-unwind generiert SELL wenn BUY blockiert wird (über Limit).
+
+    Scenario:
+    - Exposure > max_exposure
+    - Open LONG position exists
+    - BUY signal arrives → blocked by exposure limit
+    - Proactive unwind should generate SELL order
+    """
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.01,  # Very low limit (1 USD)
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+        test_balance=100.0,
+        paper_auto_unwind=True,  # Enable auto-unwind
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        manager.allocation_state["paper"] = AllocationState(
+            allocation_pct=0.5,
+            cooldown_until=None,
+        )
+
+        # Save original state
+        original_positions = risk_service.risk_state.positions.copy()
+        original_last_prices = risk_service.risk_state.last_prices.copy()
+        original_total_exposure = risk_service.risk_state.total_exposure
+        original_risk_off = risk_service.risk_off_active
+        original_stats = risk_service.stats.copy()
+
+        try:
+            # Setup: Open LONG position, exposure over limit
+            risk_service.risk_state.positions = {"BTCUSDT": 0.001}  # 0.001 BTC
+            risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+            risk_service.risk_state.total_exposure = 50.0  # 50 USD (over 1 USD limit)
+            risk_service.risk_off_active = False
+            risk_service.stats["proactive_unwind_triggered"] = 0
+
+            # Mock other checks to pass
+            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+            manager.calculate_position_size = MagicMock(return_value=(0.001, None))
+
+            # Mock send_order to capture the unwind SELL
+            sent_orders = []
+            def mock_send_order(order):
+                sent_orders.append(order)
+            manager.send_order = MagicMock(side_effect=mock_send_order)
+
+            # Incoming BUY signal (should be blocked)
+            signal = Signal(
+                strategy_id="paper",
+                symbol="BTCUSDT",
+                side="BUY",
+                price=50000.0,
+                timestamp=1,
+            )
+
+            # Process signal - should be blocked but trigger proactive unwind
+            order = manager.process_signal(signal)
+
+            # Verify: BUY signal was blocked
+            assert order is None
+
+            # Verify: Proactive unwind SELL was generated
+            assert len(sent_orders) == 1
+            unwind_order = sent_orders[0]
+            assert unwind_order.side == "SELL"
+            assert unwind_order.symbol == "BTCUSDT"
+            assert unwind_order.quantity == 0.001  # Matches position size
+            assert "proactive_unwind" in unwind_order.reason
+
+            # Verify: Stats counter incremented
+            assert risk_service.stats["proactive_unwind_triggered"] == 1
+
+        finally:
+            # Restore original state
+            risk_service.risk_state.positions = original_positions
+            risk_service.risk_state.last_prices = original_last_prices
+            risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_off_active = original_risk_off
+            risk_service.stats = original_stats
+
+
+@pytest.mark.unit
+def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(mock_redis, mock_postgres):
+    """
+    Test: Proactive unwind wird NICHT ausgelöst wenn PAPER_AUTO_UNWIND=false.
+    """
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.01,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+        test_balance=100.0,
+        paper_auto_unwind=False,  # Disabled
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        manager.allocation_state["paper"] = AllocationState(
+            allocation_pct=0.5,
+            cooldown_until=None,
+        )
+
+        original_positions = risk_service.risk_state.positions.copy()
+        original_last_prices = risk_service.risk_state.last_prices.copy()
+        original_total_exposure = risk_service.risk_state.total_exposure
+        original_risk_off = risk_service.risk_off_active
+
+        try:
+            risk_service.risk_state.positions = {"BTCUSDT": 0.001}
+            risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+            risk_service.risk_state.total_exposure = 50.0
+            risk_service.risk_off_active = False
+
+            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+            manager.calculate_position_size = MagicMock(return_value=(0.001, None))
+            manager.send_order = MagicMock()
+
+            signal = Signal(
+                strategy_id="paper",
+                symbol="BTCUSDT",
+                side="BUY",
+                price=50000.0,
+                timestamp=1,
+            )
+
+            order = manager.process_signal(signal)
+
+            # Verify: BUY blocked
+            assert order is None
+
+            # Verify: No unwind order sent (auto-unwind disabled)
+            manager.send_order.assert_not_called()
+
+        finally:
+            risk_service.risk_state.positions = original_positions
+            risk_service.risk_state.last_prices = original_last_prices
+            risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_off_active = original_risk_off
+
+
+@pytest.mark.unit
+def test_proactive_unwind_no_trigger_when_no_open_positions(mock_redis, mock_postgres):
+    """
+    Test: Proactive unwind wird NICHT ausgelöst wenn keine offenen Positionen existieren.
+    """
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.01,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+        test_balance=100.0,
+        paper_auto_unwind=True,
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        manager.allocation_state["paper"] = AllocationState(
+            allocation_pct=0.5,
+            cooldown_until=None,
+        )
+
+        original_positions = risk_service.risk_state.positions.copy()
+        original_total_exposure = risk_service.risk_state.total_exposure
+        original_risk_off = risk_service.risk_off_active
+
+        try:
+            # No open positions
+            risk_service.risk_state.positions = {}
+            risk_service.risk_state.total_exposure = 0.0
+            risk_service.risk_off_active = False
+
+            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+            manager.calculate_position_size = MagicMock(return_value=(0.001, None))
+            manager.send_order = MagicMock()
+
+            signal = Signal(
+                strategy_id="paper",
+                symbol="BTCUSDT",
+                side="BUY",
+                price=50000.0,
+                timestamp=1,
+            )
+
+            order = manager.process_signal(signal)
+
+            # Verify: BUY might be blocked by other checks, but no unwind triggered
+            manager.send_order.assert_not_called()
+
+        finally:
+            risk_service.risk_state.positions = original_positions
+            risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_off_active = original_risk_off
