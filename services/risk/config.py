@@ -22,6 +22,13 @@ class RiskConfig:
     redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
     redis_db: int = int(os.getenv("REDIS_DB", "0"))
 
+    # PostgreSQL (for positions table reconciliation)
+    postgres_host: str = os.getenv("POSTGRES_HOST", "cdb_postgres")
+    postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    postgres_db: str = os.getenv("POSTGRES_DB", "claire_de_binare")
+    postgres_user: str = os.getenv("POSTGRES_USER", "claire_user")
+    postgres_password: Optional[str] = os.getenv("POSTGRES_PASSWORD")
+
     # Risk-Limits (aus .env)
     max_position_pct: float = float(os.getenv("MAX_POSITION_PCT", "0.10"))
     max_total_exposure_pct: float = float(

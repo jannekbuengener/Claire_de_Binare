@@ -8,6 +8,7 @@ Funktionen:
 - Signals → PostgreSQL (signals table)
 - Orders → PostgreSQL (orders table)
 - Trades → PostgreSQL (trades table)
+- Positions → PostgreSQL (positions table) - Aggregates filled orders
 - Portfolio Snapshots → PostgreSQL (portfolio_snapshots table)
 """
 
@@ -475,6 +476,9 @@ class DatabaseWriter:
                 execution_price,
             )
             DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
+
+            # Update positions table (source-of-truth for current holdings)
+            self.update_position_from_trade(data)
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -486,6 +490,152 @@ class DatabaseWriter:
         except Exception as e:
             logger.error("Failed to persist trade: %s", e)
             DB_WRITER_EVENTS_FAILED.labels(channel="order_results").inc()
+
+    def update_position_from_trade(self, data: Dict):
+        """
+        Update positions table based on filled order.
+
+        Positions table is source-of-truth for current holdings.
+        This method aggregates filled orders into position state.
+
+        Logic:
+        - BUY: Opens or adds to position (increase size, recalc avg entry_price)
+        - SELL: Closes or reduces position (decrease size, realize PnL)
+        - Full close: Set closed_at timestamp
+
+        Args:
+            data: Trade/Order Result event data (same as process_trade_event)
+        """
+        # Only process filled/partial orders
+        status = (data.get("status") or "filled").lower()
+        if status not in EXECUTION_STATUSES:
+            return
+
+        try:
+            symbol = data.get("symbol")
+            side = self.normalize_side(data.get("side"))
+            execution_price = self._get_positive_decimal(
+                data.get("price") or data.get("execution_price"),
+                "execution_price",
+                data
+            )
+            execution_qty = self._get_positive_decimal(
+                data.get("quantity") or data.get("size"),
+                "execution_quantity",
+                data
+            )
+            timestamp = self.convert_timestamp(data.get("timestamp"))
+
+            cursor = self.db_conn.cursor()
+
+            # Get current position
+            cursor.execute(
+                """
+                SELECT side, size, entry_price, realized_pnl, opened_at
+                FROM positions
+                WHERE symbol = %s AND closed_at IS NULL
+                """,
+                (symbol,)
+            )
+            existing = cursor.fetchone()
+
+            if side == "buy":
+                # BUY: Open or add to position
+                if existing is None:
+                    # Open new position
+                    cursor.execute(
+                        """
+                        INSERT INTO positions
+                        (symbol, side, size, entry_price, current_price, opened_at, updated_at)
+                        VALUES (%s, 'long', %s, %s, %s, %s, %s)
+                        """,
+                        (symbol, execution_qty, execution_price, execution_price, timestamp, timestamp)
+                    )
+                    logger.info(
+                        "✅ Position opened: %s LONG %.8f @ %s",
+                        symbol, execution_qty, execution_price
+                    )
+                else:
+                    # Add to existing position (recalculate weighted avg entry price)
+                    old_side, old_size, old_entry, old_rpnl, opened_at = existing
+                    new_size = old_size + execution_qty
+
+                    # Weighted average entry price
+                    new_entry = (old_size * old_entry + execution_qty * execution_price) / new_size
+
+                    cursor.execute(
+                        """
+                        UPDATE positions
+                        SET size = %s, entry_price = %s, current_price = %s, updated_at = %s
+                        WHERE symbol = %s AND closed_at IS NULL
+                        """,
+                        (new_size, new_entry, execution_price, timestamp, symbol)
+                    )
+                    logger.info(
+                        "✅ Position increased: %s %.8f→%.8f @ %s (avg entry: %s)",
+                        symbol, old_size, new_size, execution_price, new_entry
+                    )
+
+            elif side == "sell":
+                # SELL: Close or reduce position
+                if existing is None:
+                    logger.warning(
+                        "⚠️ SELL order for %s but no open position exists - skipping position update",
+                        symbol
+                    )
+                    return
+
+                old_side, old_size, old_entry, old_rpnl, opened_at = existing
+
+                if execution_qty >= old_size:
+                    # Full close
+                    realized_pnl = float((execution_price - old_entry) * old_size)
+                    cursor.execute(
+                        """
+                        UPDATE positions
+                        SET size = 0,
+                            current_price = %s,
+                            realized_pnl = %s,
+                            closed_at = %s,
+                            updated_at = %s
+                        WHERE symbol = %s AND closed_at IS NULL
+                        """,
+                        (execution_price, realized_pnl, timestamp, timestamp, symbol)
+                    )
+                    logger.info(
+                        "✅ Position closed: %s %.8f @ %s (PnL: %.2f USD)",
+                        symbol, old_size, execution_price, realized_pnl
+                    )
+                else:
+                    # Partial close
+                    new_size = old_size - execution_qty
+                    partial_pnl = float((execution_price - old_entry) * execution_qty)
+                    new_rpnl = old_rpnl + partial_pnl
+
+                    cursor.execute(
+                        """
+                        UPDATE positions
+                        SET size = %s,
+                            current_price = %s,
+                            realized_pnl = %s,
+                            updated_at = %s
+                        WHERE symbol = %s AND closed_at IS NULL
+                        """,
+                        (new_size, execution_price, new_rpnl, timestamp, symbol)
+                    )
+                    logger.info(
+                        "✅ Position reduced: %s %.8f→%.8f @ %s (partial PnL: %.2f USD)",
+                        symbol, old_size, new_size, execution_price, partial_pnl
+                    )
+
+        except ValueError as e:
+            logger.error(
+                "Validation error updating position for %s: %s",
+                data.get("symbol"),
+                e
+            )
+        except Exception as e:
+            logger.error("Failed to update position for %s: %s", data.get("symbol"), e)
 
     def process_portfolio_snapshot(self, data: Dict):
         """

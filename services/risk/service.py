@@ -11,6 +11,7 @@ import signal
 import logging
 import logging.config
 import redis
+import psycopg2
 from flask import Flask, jsonify, Response
 from dataclasses import dataclass
 from datetime import datetime
@@ -136,6 +137,94 @@ class RiskManager:
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
+
+    def bootstrap_state_from_db(self):
+        """
+        Bootstrap risk state from positions table (source-of-truth).
+
+        Reconciles in-memory risk state with persistent DB positions.
+        This ensures risk manager operates on accurate state after restarts.
+
+        Recovery strategy:
+        - Query positions table for all open positions (closed_at IS NULL)
+        - Rebuild risk_state.positions dict from DB
+        - Calculate total_exposure from position sizes * current_prices
+        - Log reconciliation results
+
+        Called during startup before processing signals.
+        """
+        try:
+            # Connect to PostgreSQL
+            conn = psycopg2.connect(
+                host=self.config.postgres_host,
+                port=self.config.postgres_port,
+                database=self.config.postgres_db,
+                user=self.config.postgres_user,
+                password=self.config.postgres_password,
+            )
+            cursor = conn.cursor()
+
+            # Query open positions
+            cursor.execute(
+                """
+                SELECT symbol, side, size, entry_price, current_price
+                FROM positions
+                WHERE closed_at IS NULL AND size > 0
+                ORDER BY symbol
+                """
+            )
+            positions = cursor.fetchall()
+
+            if not positions:
+                logger.info("✅ Risk state bootstrap: No open positions in DB (clean state)")
+                return
+
+            # Rebuild risk state
+            global risk_state
+            total_exposure = 0.0
+
+            for symbol, side, size, entry_price, current_price in positions:
+                # Convert side to position value (long=positive, short=negative)
+                position_size = float(size) if side == "long" else -float(size)
+                risk_state.positions[symbol] = position_size
+
+                # Use current_price for exposure calculation (fallback to entry_price if NULL)
+                price = float(current_price) if current_price else float(entry_price)
+                risk_state.last_prices[symbol] = price
+
+                # Calculate notional exposure
+                exposure = abs(position_size) * price
+                total_exposure += exposure
+
+                logger.info(
+                    "  Position loaded: %s %s %.8f @ %.2f (exposure: %.2f USD)",
+                    symbol,
+                    side.upper(),
+                    abs(position_size),
+                    price,
+                    exposure,
+                )
+
+            # Update risk state
+            risk_state.total_exposure = total_exposure
+            risk_state.open_positions = len(positions)
+
+            logger.info(
+                "✅ Risk state bootstrap complete: %d positions, total exposure: %.2f USD",
+                len(positions),
+                total_exposure,
+            )
+
+            cursor.close()
+            conn.close()
+
+        except psycopg2.Error as e:
+            logger.error(f"❌ Failed to bootstrap risk state from DB: {e}")
+            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
+            # Continue startup with empty state rather than crashing
+        except Exception as e:
+            logger.error(f"❌ Unexpected error during risk state bootstrap: {e}")
+            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
 
     @staticmethod
     def _parse_timestamp(value) -> int | None:
@@ -868,40 +957,6 @@ def metrics():
     return Response(body, mimetype="text/plain")
 
 
-@app.route("/admin/reset_exposure", methods=["POST"])
-def admin_reset_exposure():
-    """Reset risk state exposure to 0 (Shadow Mode recovery only)"""
-    # Restrict to dev/shadow environments only
-    if config.env not in ["development", "shadow"]:
-        return jsonify({"error": "Only available in dev/shadow environments"}), 403
-
-    global risk_state
-    old_exposure = risk_state.total_exposure
-    old_positions_count = len(risk_state.positions)
-
-    # Reset all exposure-related state
-    risk_state.total_exposure = 0.0
-    risk_state.positions.clear()
-    risk_state.last_prices.clear()
-    risk_state.open_positions = 0
-
-    logger.warning(
-        "ADMIN: Exposure reset from %.2f to 0.0 (%d positions cleared) - Shadow Mode recovery",
-        old_exposure,
-        old_positions_count,
-    )
-
-    return jsonify(
-        {
-            "status": "ok",
-            "old_exposure": old_exposure,
-            "positions_cleared": old_positions_count,
-            "new_exposure": 0.0,
-            "message": "Risk state reset successful",
-        }
-    )
-
-
 # ===== SIGNAL HANDLER =====
 
 
@@ -930,6 +985,9 @@ if __name__ == "__main__":
 
     manager = RiskManager()
     manager.connect_redis()
+
+    # Bootstrap risk state from DB positions (source-of-truth reconciliation)
+    manager.bootstrap_state_from_db()
 
     # Flask in Thread
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
