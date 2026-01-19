@@ -240,6 +240,44 @@ groups:
           description: "Order generation rate is 0. Check signal engine and market data flow."
           runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#troubleshooting-common-issues"
 
+      - alert: TradePipelineStalled
+        expr: |
+          rate(signals_received_total[5m]) > 0
+          and (
+            (
+              rate(orders_blocked_total[5m]) > 0
+              and rate(orders_approved_total[5m]) == 0
+            )
+            or
+            (
+              rate(orders_approved_total[5m]) > 0
+              and rate(execution_orders_filled_total[5m]) == 0
+            )
+          )
+        for: 10m
+        labels:
+          severity: warning
+          component: trading_pipeline
+          issue: pipeline_stall
+        annotations:
+          summary: "Pipeline stalled: risk blockade OR execution not filling"
+          description: |
+            Signals flowing. Either Risk blocks all approvals OR Execution fills zero despite approvals.
+
+            **Diagnostic Commands:**
+            1. Check risk manager state: `docker logs cdb_risk --tail 100 | grep -i "exposure\|blocked"`
+            2. Check execution service: `docker logs cdb_execution --tail 100`
+            3. Verify database connectivity: `docker exec cdb_postgres pg_isready`
+            4. Check Redis streams: `docker exec cdb_redis redis-cli XLEN stream.orders`
+
+            **Current Flow Rates (5m):**
+            - Signals: {{ query "rate(signals_received_total[5m])" | first | value | humanize }}/s
+            - Blocked: {{ query "rate(orders_blocked_total[5m])" | first | value | humanize }}/s
+            - Approvals: {{ query "rate(orders_approved_total[5m])" | first | value | humanize }}/s
+            - Trades: {{ query "rate(execution_orders_filled_total[5m])" | first | value | humanize }}/s
+
+            **Root Cause:** Likely in-memory state drift or resource starvation.
+
       - alert: SoakTest_HighMemoryUsage
         expr: (container_memory_usage_bytes{name=~"cdb_.*"} / container_spec_memory_limit_bytes{name=~"cdb_.*"}) > 0.8
         for: 30m
