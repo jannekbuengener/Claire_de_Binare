@@ -151,6 +151,11 @@ class RiskManager:
         - Calculate total_exposure from position sizes * current_prices
         - Log reconciliation results
 
+        Safety gate:
+        - If positions table empty BUT orders show net open position:
+          FAIL-CLOSED with actionable error message
+        - Prevents starting with incorrect state
+
         Called during startup before processing signals.
         """
         try:
@@ -176,7 +181,60 @@ class RiskManager:
             positions = cursor.fetchall()
 
             if not positions:
+                # SAFETY GATE: Check for state mismatch
+                # If positions empty, but orders show net open position, FAIL
+                logger.info("Positions table empty - checking for state mismatch...")
+
+                cursor.execute(
+                    """
+                    SELECT
+                        COALESCE(SUM(CASE WHEN side = 'buy' THEN filled_size ELSE 0 END), 0) as buy_total,
+                        COALESCE(SUM(CASE WHEN side = 'sell' THEN filled_size ELSE 0 END), 0) as sell_total
+                    FROM orders
+                    WHERE status = 'filled'
+                      AND filled_size > 0
+                      AND created_at >= '2026-01-17 14:15:00'
+                    """
+                )
+                buy_total, sell_total = cursor.fetchone()
+                net_position = float(buy_total) - float(sell_total)
+
+                # Threshold: consider position "open" if net > 0.0001 BTC (~$5 at 50k)
+                POSITION_THRESHOLD = 0.0001
+
+                if abs(net_position) > POSITION_THRESHOLD:
+                    error_msg = (
+                        f"\n{'=' * 80}\n"
+                        f"❌ CRITICAL: STATE MISMATCH DETECTED\n"
+                        f"{'=' * 80}\n"
+                        f"Positions table: EMPTY (0 open positions)\n"
+                        f"Orders table:    NET {net_position:.8f} BTC\n"
+                        f"  BUY fills:     {buy_total:.8f} BTC\n"
+                        f"  SELL fills:    {sell_total:.8f} BTC\n"
+                        f"\n"
+                        f"Risk manager CANNOT start with incorrect state.\n"
+                        f"\n"
+                        f"ACTION REQUIRED:\n"
+                        f"Run positions reconciliation script to reconstruct positions table:\n"
+                        f"\n"
+                        f"  python infrastructure/scripts/reconcile_positions.py\n"
+                        f"\n"
+                        f"Or set POSTGRES_PASSWORD environment variable and run:\n"
+                        f"\n"
+                        f"  docker compose exec cdb_risk python infrastructure/scripts/reconcile_positions.py\n"
+                        f"\n"
+                        f"This will rebuild positions table from order history.\n"
+                        f"After reconciliation completes, restart risk service.\n"
+                        f"{'=' * 80}\n"
+                    )
+                    logger.critical(error_msg)
+                    cursor.close()
+                    conn.close()
+                    raise RuntimeError("State mismatch: positions table empty but orders show open position")
+
                 logger.info("✅ Risk state bootstrap: No open positions in DB (clean state)")
+                cursor.close()
+                conn.close()
                 return
 
             # Rebuild risk state
