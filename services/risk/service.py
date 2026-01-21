@@ -465,7 +465,7 @@ class RiskManager:
         return True, "Position OK"
 
     def check_exposure_limit(self) -> tuple[bool, str]:
-        """Prüft Gesamt-Exposure"""
+        """Prüft Gesamt-Exposure (filled + pending reserved)"""
         # REAL BALANCE - NO MORE FAKE
         from .balance_fetcher import RealBalanceFetcher
 
@@ -477,10 +477,14 @@ class RiskManager:
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
-        if risk_state.total_exposure >= max_exposure:
+        # PR #XXX: Include pending reserved exposure to prevent race condition
+        effective_exposure = risk_state.total_exposure + risk_state.pending_exposure_usdt
+
+        if effective_exposure >= max_exposure:
             return (
                 False,
-                f"Max Exposure erreicht: {risk_state.total_exposure:.2f} >= {max_exposure:.2f}",
+                f"Max Exposure erreicht: {effective_exposure:.2f} >= {max_exposure:.2f} "
+                f"(filled: {risk_state.total_exposure:.2f}, pending: {risk_state.pending_exposure_usdt:.2f})",
             )
 
         return True, "Exposure OK"
@@ -633,6 +637,15 @@ class RiskManager:
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
         risk_state.pending_orders += 1
+
+        # PR #XXX: Reserve exposure for pending order to prevent race condition
+        estimated_notional = order.quantity * order.price if order.price else 0.0
+        risk_state.pending_exposure_usdt += estimated_notional
+        risk_state.pending_reservations[order.client_id] = estimated_notional
+        logger.debug(
+            f"Reserved {estimated_notional:.2f} USDT exposure for {order.client_id} "
+            f"(total pending: {risk_state.pending_exposure_usdt:.2f})"
+        )
 
         return order
 
@@ -880,6 +893,17 @@ class RiskManager:
 
         if risk_state.pending_orders > 0:
             risk_state.pending_orders -= 1
+
+        # PR #XXX: Release reserved exposure when order result arrives
+        if result.client_id and result.client_id in risk_state.pending_reservations:
+            reserved = risk_state.pending_reservations.pop(result.client_id)
+            risk_state.pending_exposure_usdt = max(
+                0.0, risk_state.pending_exposure_usdt - reserved
+            )
+            logger.debug(
+                f"Released {reserved:.2f} USDT exposure for {result.client_id} "
+                f"(status={result.status}, total pending: {risk_state.pending_exposure_usdt:.2f})"
+            )
 
         if result.status == "FILLED":
             self._update_exposure(result)
