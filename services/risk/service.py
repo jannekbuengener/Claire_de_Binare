@@ -617,6 +617,15 @@ class RiskManager:
                 else "risk_off_limited"
             )
 
+        # PR #617 Hotfix: Use price fallback for exposure reservation
+        price_used = signal.price or risk_state.last_prices.get(signal.symbol, 0.0)
+        if price_used <= 0.0:
+            logger.warning(
+                f"Signal SKIPPED: {signal.symbol} {signal.side} - No valid price for exposure reservation (signal.price={signal.price}, last_price={risk_state.last_prices.get(signal.symbol, 'N/A')})"
+            )
+            stats["orders_skipped"] += 1
+            return None
+
         order = Order(
             symbol=signal.symbol,
             side=signal.side,
@@ -628,7 +637,7 @@ class RiskManager:
             client_id=f"{signal.symbol}-{signal.timestamp}",
             strategy_id=signal.strategy_id,
             bot_id=signal.bot_id,
-            price=signal.price,
+            price=price_used,
         )
 
         logger.info(
@@ -638,8 +647,8 @@ class RiskManager:
         risk_state.signals_approved += 1
         risk_state.pending_orders += 1
 
-        # PR #XXX: Reserve exposure for pending order to prevent race condition
-        estimated_notional = order.quantity * order.price if order.price else 0.0
+        # PR #617: Reserve exposure for pending order to prevent race condition
+        estimated_notional = order.quantity * price_used
         risk_state.pending_exposure_usdt += estimated_notional
         risk_state.pending_reservations[order.client_id] = estimated_notional
         logger.debug(
