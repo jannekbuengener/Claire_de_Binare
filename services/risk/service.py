@@ -640,6 +640,56 @@ class RiskManager:
             price=price_used,
         )
 
+        # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit
+        # This MUST happen AFTER order creation (when we have final qty/price)
+        # but BEFORE reservation and publish to prevent race condition
+        # Skip for reduce-only orders (they close positions, reducing exposure)
+        if not reduce_only:
+            from .balance_fetcher import RealBalanceFetcher
+
+            if self.config.use_real_balance:
+                balance_fetcher = RealBalanceFetcher()
+                current_balance = balance_fetcher.get_usdt_balance()
+            else:
+                current_balance = self.config.test_balance
+
+            max_exposure_usdt = current_balance * self.config.max_total_exposure_pct
+            estimated_notional_usdt = order.quantity * price_used
+            projected_exposure = (
+                risk_state.total_exposure
+                + risk_state.pending_exposure_usdt
+                + estimated_notional_usdt
+            )
+
+            if projected_exposure > max_exposure_usdt:
+                logger.warning(
+                    f"⛔ HARD EXPOSURE GATE: Order rejected BEFORE publish. "
+                    f"Projected exposure {projected_exposure:.2f} > limit {max_exposure_usdt:.2f} "
+                    f"(total: {risk_state.total_exposure:.2f}, pending: {risk_state.pending_exposure_usdt:.2f}, "
+                    f"new_order: {estimated_notional_usdt:.2f}, client_id: {order.client_id})"
+                )
+                self.send_alert(
+                    "WARNING",
+                    "EXPOSURE_LIMIT_PROJECTED",
+                    f"Order blocked: projected exposure {projected_exposure:.2f} > {max_exposure_usdt:.2f}",
+                    {
+                        "symbol": signal.symbol,
+                        "client_id": order.client_id,
+                        "projected_exposure": projected_exposure,
+                        "max_exposure": max_exposure_usdt,
+                        "total_exposure": risk_state.total_exposure,
+                        "pending_exposure": risk_state.pending_exposure_usdt,
+                        "new_order_notional": estimated_notional_usdt,
+                    },
+                )
+                stats["orders_blocked"] += 1
+                risk_state.signals_blocked += 1
+
+                # Trigger proactive unwind if we have open positions
+                self._trigger_proactive_unwind()
+
+                return None
+
         logger.info(
             f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
