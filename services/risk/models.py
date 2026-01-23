@@ -24,6 +24,7 @@ class Signal:
     reason: str | None = None
     price: float | None = None
     pct_change: float | None = None
+    source: str | None = None  # Sprint 2 Part 2 #620: E2E bypass trigger
     type: Literal["signal"] = "signal"  # Type-safe event type
 
     def __post_init__(self):
@@ -47,6 +48,7 @@ class Signal:
             "reason": self.reason,
             "price": self.price,
             "pct_change": self.pct_change,
+            "source": self.source,
         }
 
     @classmethod
@@ -73,6 +75,7 @@ class Signal:
                 if data.get("pct_change") is not None
                 else None
             ),
+            source=data.get("source"),
         )
 
 

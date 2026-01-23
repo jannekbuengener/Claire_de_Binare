@@ -156,7 +156,8 @@ class SignalEngine:
                     price=market_data.price,
                     pct_change=market_data.pct_change,
                     strategy_id=self.config.strategy_id,
-                    bot_id=self.config.bot_id,
+                    bot_id=market_data.bot_id or self.config.bot_id,  # Sprint 2 Part 2 #620: Prefer market_data bot_id (run_id)
+                    source=market_data.source,  # Sprint 2 Part 2 #620: Pass through source for E2E bypass
                 )
 
                 logger.info(

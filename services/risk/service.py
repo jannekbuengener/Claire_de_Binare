@@ -550,13 +550,24 @@ class RiskManager:
             risk_state.signals_blocked += 1
             return None
 
-        if risk_off_active and not self._is_reduce_only_allowed(signal):
+        # Sprint 2 Part 2 #620: E2E Bypass for deterministic testing
+        # Trigger: E2E_BYPASS_RISK_OFF=1 OR signal.source == "replay_runner"
+        e2e_bypass = (
+            os.getenv("E2E_BYPASS_RISK_OFF") == "1"
+            or getattr(signal, "source", None) == "replay_runner"
+        )
+
+        if risk_off_active and not self._is_reduce_only_allowed(signal) and not e2e_bypass:
             # Early-Live exception: allow small allocations despite risk_off
             if not self._is_early_live_exception(signal.strategy_id):
                 logger.warning("Signal blockiert: Risk-Off Reduce-Only")
                 stats["orders_blocked"] += 1
                 risk_state.signals_blocked += 1
                 return None
+        elif e2e_bypass and risk_off_active:
+            logger.info(
+                f"E2E BYPASS: Signal from {getattr(signal, 'source', 'env')} bypasses RISK_OFF (regime={current_regime})"
+            )
 
         # Layer 1: Circuit Breaker
         ok, reason = self.check_drawdown_limit()

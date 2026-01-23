@@ -24,6 +24,7 @@ class Signal:
     reason: str | None = None
     price: float | None = None
     pct_change: float | None = None
+    source: str | None = None  # Sprint 2 Part 2 #620: E2E bypass trigger (from market_data)
     type: Literal["signal"] = "signal"  # Type-safe event type
 
     def __post_init__(self):
@@ -52,6 +53,7 @@ class Signal:
                 "reason": self.reason,
                 "price": self.price,
                 "pct_change": self.pct_change,
+                "source": self.source,
             }.items()
             if v is not None
         }
@@ -69,6 +71,7 @@ class MarketData:
     # Optional fields (with defaults) come after
     schema_version: str | None = None
     source: str | None = None
+    bot_id: str | None = None  # Sprint 2 Part 2 #620: E2E run_id tracking
     trade_qty: float | None = None
     pct_change: float | None = None  # Optional: calculated by signal engine if missing
     open: float | None = None
@@ -115,6 +118,7 @@ class MarketData:
             timestamp=int(timestamp or 0),
             schema_version=data.get("schema_version"),
             source=data.get("source"),
+            bot_id=data.get("bot_id"),
             trade_qty=trade_qty,
             pct_change=pct_change,
             open=(float(data["open"]) if data.get("open") is not None else None),

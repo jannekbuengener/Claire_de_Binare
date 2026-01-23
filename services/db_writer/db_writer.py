@@ -445,6 +445,13 @@ class DatabaseWriter:
                         target_price,
                     )
 
+            # Build metadata dictionary with bot_id for E2E tracking (Sprint 2 Part 2 #620)
+            metadata = data.get("metadata", {})
+            if "bot_id" in data:
+                metadata["bot_id"] = data["bot_id"]
+            if "order_id" in data:
+                metadata["order_id"] = data["order_id"]
+
             cursor = self.db_conn.cursor()
             cursor.execute(
                 """
@@ -464,7 +471,7 @@ class DatabaseWriter:
                     data.get("fees", 0.0),
                     timestamp,
                     data.get("exchange", "MEXC"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(metadata),
                 ),
             )
             trade_id = cursor.fetchone()[0]

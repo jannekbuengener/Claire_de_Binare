@@ -39,6 +39,7 @@ class ReplayRunner:
         redis_port: int = 6379,
         redis_password: str | None = None,
         redis_db: int = 0,
+        run_id: str | None = None,
     ):
         """
         Initialize replay runner.
@@ -49,12 +50,14 @@ class ReplayRunner:
             redis_port: Redis port
             redis_password: Redis password (optional)
             redis_db: Redis database number
+            run_id: Unique run identifier for E2E tracking (Sprint 2 Part 2 #620)
         """
         self.fixture_path = Path(fixture_path)
         self.redis_host = redis_host
         self.redis_port = redis_port
         self.redis_password = redis_password
         self.redis_db = redis_db
+        self.run_id = run_id  # Sprint 2 Part 2 #620: E2E determinism tracking
         self.redis_client: redis.Redis | None = None
         self.fixture_data: Dict[str, Any] = {}
         self.ticks: List[Dict[str, Any]] = []
@@ -112,6 +115,10 @@ class ReplayRunner:
             "side": tick["side"],
             "type": "market_data",
         }
+
+        # Sprint 2 Part 2 #620: Add run_id for E2E determinism tracking
+        if self.run_id:
+            market_data["bot_id"] = self.run_id
 
         # Sanitize payload (Issue #349: contract enforcement)
         try:
