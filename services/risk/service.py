@@ -230,9 +230,13 @@ class RiskManager:
                     logger.critical(error_msg)
                     cursor.close()
                     conn.close()
-                    raise RuntimeError("State mismatch: positions table empty but orders show open position")
+                    raise RuntimeError(
+                        "State mismatch: positions table empty but orders show open position"
+                    )
 
-                logger.info("✅ Risk state bootstrap: No open positions in DB (clean state)")
+                logger.info(
+                    "✅ Risk state bootstrap: No open positions in DB (clean state)"
+                )
                 cursor.close()
                 conn.close()
                 return
@@ -278,11 +282,15 @@ class RiskManager:
 
         except psycopg2.Error as e:
             logger.error(f"❌ Failed to bootstrap risk state from DB: {e}")
-            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
+            logger.warning(
+                "⚠️ Risk manager starting with EMPTY state (no reconciliation)"
+            )
             # Continue startup with empty state rather than crashing
         except Exception as e:
             logger.error(f"❌ Unexpected error during risk state bootstrap: {e}")
-            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
+            logger.warning(
+                "⚠️ Risk manager starting with EMPTY state (no reconciliation)"
+            )
 
     @staticmethod
     def _parse_timestamp(value) -> int | None:
@@ -478,7 +486,9 @@ class RiskManager:
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
         # PR #XXX: Include pending reserved exposure to prevent race condition
-        effective_exposure = risk_state.total_exposure + risk_state.pending_exposure_usdt
+        effective_exposure = (
+            risk_state.total_exposure + risk_state.pending_exposure_usdt
+        )
 
         if effective_exposure >= max_exposure:
             return (
