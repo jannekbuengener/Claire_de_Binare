@@ -197,7 +197,7 @@ def test_raw_trade_data_pct_change_calculation():
         assert signal_2.side == "BUY"
         assert signal_2.price == 51500.0
         assert signal_2.pct_change == pytest.approx(3.0, rel=1e-9)
-        assert "Momentum: +3.0%" in signal_2.reason
+        assert "Momentum: +3.0000%" in signal_2.reason
 
         # Third trade: -1% movement (should not generate signal)
         # Formula: (51000 - 51500) / 51500 * 100 = -0.97%
@@ -243,4 +243,4 @@ def test_backward_compatibility_with_pct_change():
         # Signal should use provided pct_change value
         assert signal is not None
         assert signal.pct_change == 2.5
-        assert "Momentum: +2.5%" in signal.reason
+        assert "Momentum: +2.5000%" in signal.reason

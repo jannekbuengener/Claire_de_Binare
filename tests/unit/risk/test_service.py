@@ -6,25 +6,19 @@ Governance: CDB_AGENT_POLICY.md, CDB_RL_SAFETY_POLICY.md
 
 import pytest
 import sys
-import importlib.util
+import importlib
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from core.domain.models import Signal
 
-# Load risk service module dynamically to avoid sys.path conflicts
-services_risk_path = Path(__file__).parent.parent.parent.parent / "services" / "risk"
-service_file = services_risk_path / "service.py"
-config_file = services_risk_path / "config.py"
+# Ensure repo root is on sys.path for package imports
+repo_root = Path(__file__).resolve().parents[3]
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
 
-# Import service module
-spec_service = importlib.util.spec_from_file_location("risk_service_module", service_file)
-risk_service = importlib.util.module_from_spec(spec_service)
-spec_service.loader.exec_module(risk_service)
-
-# Import config module
-spec_config = importlib.util.spec_from_file_location("risk_config_module", config_file)
-risk_config = importlib.util.module_from_spec(spec_config)
-spec_config.loader.exec_module(risk_config)
+# Import risk modules as packages (needed for relative imports inside service)
+risk_service = importlib.import_module("services.risk.service")
+risk_config = importlib.import_module("services.risk.config")
 
 # Create aliases
 RiskManager = risk_service.RiskManager

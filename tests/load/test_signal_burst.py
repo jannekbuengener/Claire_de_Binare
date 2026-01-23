@@ -16,6 +16,9 @@ import requests
 from pathlib import Path
 from typing import Dict, List, Any
 
+if os.getenv("LOAD_TESTS") != "1":
+    pytest.skip("Load tests require running stack (set LOAD_TESTS=1)", allow_module_level=True)
+
 # Add repo root to path for imports
 repo_root = Path(__file__).resolve().parents[2]
 if str(repo_root) not in sys.path:

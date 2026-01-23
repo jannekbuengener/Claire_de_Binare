@@ -8,10 +8,11 @@ import os
 import time
 import smtplib
 import psycopg2
-from datetime import datetime, timezone, timedelta
+from datetime import timezone, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from core.utils.clock import utcnow
 
 def read_secret(path):
     """Read secret from Docker mounted file"""
@@ -254,7 +255,7 @@ def send_email(subject, body_html):
 
 def wait_until_next_run(target_hour=8):
     """Calculate seconds until next run at target_hour UTC"""
-    now = datetime.now(timezone.utc)
+    now = utcnow().replace(tzinfo=timezone.utc)
     target = now.replace(hour=target_hour, minute=0, second=0, microsecond=0)
 
     # If we've passed target hour today, schedule for tomorrow
@@ -279,7 +280,8 @@ def main():
             time.sleep(wait_seconds)
 
             # Run summary
-            print(f"[INFO] Generating daily summary for {datetime.now(timezone.utc).strftime('%Y-%m-%d')}")
+            current_time = utcnow().replace(tzinfo=timezone.utc)
+            print(f"[INFO] Generating daily summary for {current_time.strftime('%Y-%m-%d')}")
 
             # Connect to database
             conn = get_db_connection()
@@ -289,7 +291,7 @@ def main():
 
             try:
                 # Fetch summary data (last 24 hours)
-                end_time = datetime.now(timezone.utc)
+                end_time = utcnow().replace(tzinfo=timezone.utc)
                 start_time = end_time - timedelta(hours=24)
 
                 data = fetch_summary(conn, hours=24)
