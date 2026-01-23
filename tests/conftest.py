@@ -6,6 +6,7 @@ Zentrale Fixtures für Unit-, Integration- und Replay-Tests.
 Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
 """
 
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -243,6 +244,16 @@ __all__ = ["reset_db", "seed_db", "clean_db"]
 # - local_only: Tests, die nur lokal laufen
 # - slow: Langsame Tests (>1s)
 # - chaos: Chaos-Engineering-Tests
+
+
+def pytest_collection_modifyitems(config, items):
+    if os.getenv("RUN_LOAD_TESTS", "").lower() in {"1", "true", "yes"}:
+        return
+
+    skip_load = pytest.mark.skip(reason="load tests disabled (set RUN_LOAD_TESTS=1)")
+    for item in items:
+        if "load" in item.keywords:
+            item.add_marker(skip_load)
 
 
 # ============================================
