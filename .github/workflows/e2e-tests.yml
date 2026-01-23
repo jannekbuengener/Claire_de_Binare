@@ -62,6 +62,73 @@ jobs:
           fi
           echo "✅ All required secrets are set"
 
+      # --- 1) Decide mode (real vs stub) -------------------------------------------
+      - name: Decide E2E mode (REAL vs STUB)
+        id: e2e_mode
+        shell: bash
+        env:
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          set -euo pipefail
+
+          # Define "real secrets present" condition (adjust names to your repo)
+          missing=0
+          req=(SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO)
+          for k in "${req[@]}"; do
+            if [[ -z "${!k:-}" ]]; then missing=1; fi
+          done
+
+          mode="REAL"
+          if [[ "${missing}" == "1" ]]; then
+            mode="STUB"
+          fi
+
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "missing=$missing" >> "$GITHUB_OUTPUT"
+      # --- 2) If STUB, scream loudly (agent-visible) -------------------------------
+      - name:  EXCEPTION MODE ACTIVE (E2E STUB)
+        if: steps.e2e_mode.outputs.mode == 'STUB'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::warning title=CDB E2E EXCEPTION::E2E is running in STUB mode (missing secrets). This run is NOT a real integration validation."
+          echo "CDB_E2E_EXCEPTION=true" >> "$GITHUB_ENV"
+
+          {
+            echo "#  CDB E2E EXCEPTION (STUB MODE)"
+            echo ""
+            echo "**Reason:** Required secrets missing in this context (expected on PRs/forks)."
+            echo ""
+            echo "**Impact:** Pipeline may be GREEN while real E2E integration is NOT validated."
+            echo ""
+            echo "**Action:** Real E2E runs only on protected/nightly with secrets. Do not treat this as full PASS."
+          } >> "$GITHUB_STEP_SUMMARY"
+      # --- 3) Provide stub env so compose/test doesn't crash ------------------------
+      - name: Set stub secrets (CI-safe placeholders)
+        if: steps.e2e_mode.outputs.mode == 'STUB'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SMTP_FROM=ci-stub@example.invalid" >> "$GITHUB_ENV"
+          echo "SMTP_HOST=stub" >> "$GITHUB_ENV"
+          echo "SMTP_USER=stub" >> "$GITHUB_ENV"
+          echo "SMTP_PASSWORD=stub" >> "$GITHUB_ENV"
+          echo "ALERT_EMAIL_TO=ci-stub@example.invalid" >> "$GITHUB_ENV"
+
+      # --- 4) Hard fail on protected contexts if secrets are missing ---------------
+      - name: ❌ Missing secrets on protected context (HARD FAIL)
+        if: |
+          steps.e2e_mode.outputs.mode == 'STUB' &&
+          (github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+        shell: bash
+        run: |
+          echo "::error title=CDB E2E BLOCKER::Secrets missing on protected/nightly context. This is a real failure. Create issue & fix secrets."
+          exit 1
+
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
