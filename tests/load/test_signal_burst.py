@@ -17,7 +17,9 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 if os.getenv("LOAD_TESTS") != "1":
-    pytest.skip("Load tests require running stack (set LOAD_TESTS=1)", allow_module_level=True)
+    pytest.skip(
+        "Load tests require running stack (set LOAD_TESTS=1)", allow_module_level=True
+    )
 
 # Add repo root to path for imports
 repo_root = Path(__file__).resolve().parents[2]
@@ -40,7 +42,9 @@ class TestSignalBurst:
         redis_password = os.getenv("REDIS_PASSWORD")
         if not redis_password:
             # Try reading from secrets file
-            secrets_path = os.getenv("SECRETS_PATH", os.path.expanduser("~/.secrets/.cdb"))
+            secrets_path = os.getenv(
+                "SECRETS_PATH", os.path.expanduser("~/.secrets/.cdb")
+            )
             password_file = Path(secrets_path) / "REDIS_PASSWORD"
             if password_file.exists():
                 redis_password = password_file.read_text().strip()
@@ -67,7 +71,9 @@ class TestSignalBurst:
 
         redis_password = os.getenv("REDIS_PASSWORD")
         if not redis_password:
-            secrets_path = os.getenv("SECRETS_PATH", os.path.expanduser("~/.secrets/.cdb"))
+            secrets_path = os.getenv(
+                "SECRETS_PATH", os.path.expanduser("~/.secrets/.cdb")
+            )
             password_file = Path(secrets_path) / "REDIS_PASSWORD"
             if password_file.exists():
                 redis_password = password_file.read_text().strip()
@@ -118,7 +124,10 @@ class TestSignalBurst:
         return metrics
 
     def verify_pct_change_sequence(
-        self, redis_client: redis.Redis, stream_key: str = "stream.signals", count: int = 100
+        self,
+        redis_client: redis.Redis,
+        stream_key: str = "stream.signals",
+        count: int = 100,
     ) -> Dict[str, Any]:
         """
         Verify pct_change sequence in signals stream for state corruption.
@@ -224,7 +233,9 @@ class TestSignalBurst:
         assert errors_delta == 0, "Should have 0 signal processing errors"
 
         # Verify state corruption
-        corruption_check = self.verify_pct_change_sequence(redis_client, count=min(100, int(signals_delta)))
+        corruption_check = self.verify_pct_change_sequence(
+            redis_client, count=min(100, int(signals_delta))
+        )
         print(f"\nState Corruption Check:")
         print(f"  Signals checked: {corruption_check['signals_checked']}")
         print(f"  Duplicates: {corruption_check['duplicates']}")
@@ -232,7 +243,9 @@ class TestSignalBurst:
         print(f"  Missing fields: {corruption_check['missing_fields']}")
         print(f"  Corruption detected: {corruption_check['corruption_detected']}")
 
-        assert not corruption_check["corruption_detected"], "No state corruption should be detected"
+        assert not corruption_check[
+            "corruption_detected"
+        ], "No state corruption should be detected"
 
     @pytest.mark.load
     def test_signal_engine_burst_100tps(self, burst_runner, redis_client):
@@ -287,14 +300,20 @@ class TestSignalBurst:
         assert stats["ticks_published"] == 1000, "Should publish 1000 ticks"
         assert stats["errors"] == 0, "Should have 0 publishing errors"
         assert errors_delta == 0, "Should have 0 signal processing errors"
-        assert processed_delta >= 990, f"Should process ~1000 messages (got {processed_delta})"
+        assert (
+            processed_delta >= 990
+        ), f"Should process ~1000 messages (got {processed_delta})"
 
         # Performance baseline: p95 latency < 50ms (approximated by max)
         # Note: We don't have p95 here, using max as upper bound
-        assert stats["max_latency_ms"] < 100, f"Max latency should be <100ms (got {stats['max_latency_ms']:.2f}ms)"
+        assert (
+            stats["max_latency_ms"] < 100
+        ), f"Max latency should be <100ms (got {stats['max_latency_ms']:.2f}ms)"
 
         # Verify state corruption
-        corruption_check = self.verify_pct_change_sequence(redis_client, count=min(200, int(signals_delta)))
+        corruption_check = self.verify_pct_change_sequence(
+            redis_client, count=min(200, int(signals_delta))
+        )
         print(f"\nState Corruption Check:")
         print(f"  Signals checked: {corruption_check['signals_checked']}")
         print(f"  Duplicates: {corruption_check['duplicates']}")
@@ -302,7 +321,9 @@ class TestSignalBurst:
         print(f"  Missing fields: {corruption_check['missing_fields']}")
         print(f"  Corruption detected: {corruption_check['corruption_detected']}")
 
-        assert not corruption_check["corruption_detected"], "No state corruption should be detected"
+        assert not corruption_check[
+            "corruption_detected"
+        ], "No state corruption should be detected"
 
     @pytest.mark.load
     def test_signal_engine_burst_200tps(self, burst_runner, redis_client):
@@ -353,7 +374,9 @@ class TestSignalBurst:
         assert errors_delta == 0, "Should have 0 signal processing errors"
 
         # Verify state corruption
-        corruption_check = self.verify_pct_change_sequence(redis_client, count=min(200, int(signals_delta)))
+        corruption_check = self.verify_pct_change_sequence(
+            redis_client, count=min(200, int(signals_delta))
+        )
         print(f"\nState Corruption Check:")
         print(f"  Signals checked: {corruption_check['signals_checked']}")
         print(f"  Duplicates: {corruption_check['duplicates']}")
@@ -361,4 +384,6 @@ class TestSignalBurst:
         print(f"  Missing fields: {corruption_check['missing_fields']}")
         print(f"  Corruption detected: {corruption_check['corruption_detected']}")
 
-        assert not corruption_check["corruption_detected"], "No state corruption should be detected"
+        assert not corruption_check[
+            "corruption_detected"
+        ], "No state corruption should be detected"

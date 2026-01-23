@@ -31,7 +31,7 @@ def test_service_initialization(mock_redis):
         strategy_id="test_strategy",
         threshold_pct=3.0,
         lookback_minutes=15,
-        min_volume=100000.0
+        min_volume=100000.0,
     )
 
     with patch("service.config", test_config):
@@ -52,35 +52,27 @@ def test_config_validation():
     """
     # Valid config
     valid_config = SignalConfig(
-        threshold_pct=3.0,
-        lookback_minutes=15,
-        strategy_id="test_strategy"
+        threshold_pct=3.0, lookback_minutes=15, strategy_id="test_strategy"
     )
     assert valid_config.validate() is True
 
     # Invalid: threshold_pct <= 0
     invalid_config_1 = SignalConfig(
-        threshold_pct=0.0,
-        lookback_minutes=15,
-        strategy_id="test_strategy"
+        threshold_pct=0.0, lookback_minutes=15, strategy_id="test_strategy"
     )
     with pytest.raises(ValueError, match="SIGNAL_THRESHOLD_PCT muss > 0 sein"):
         invalid_config_1.validate()
 
     # Invalid: lookback_minutes <= 0
     invalid_config_2 = SignalConfig(
-        threshold_pct=3.0,
-        lookback_minutes=0,
-        strategy_id="test_strategy"
+        threshold_pct=3.0, lookback_minutes=0, strategy_id="test_strategy"
     )
     with pytest.raises(ValueError, match="SIGNAL_LOOKBACK_MIN muss > 0 sein"):
         invalid_config_2.validate()
 
     # Invalid: empty strategy_id
     invalid_config_3 = SignalConfig(
-        threshold_pct=3.0,
-        lookback_minutes=15,
-        strategy_id=""
+        threshold_pct=3.0, lookback_minutes=15, strategy_id=""
     )
     with pytest.raises(ValueError, match="SIGNAL_STRATEGY_ID muss gesetzt sein"):
         invalid_config_3.validate()
@@ -98,7 +90,7 @@ def test_signal_generation():
         strategy_id="test_strategy",
         bot_id="test_bot",
         threshold_pct=3.0,
-        min_volume=100000.0
+        min_volume=100000.0,
     )
 
     with patch("service.config", test_config):
@@ -160,7 +152,7 @@ def test_raw_trade_data_pct_change_calculation():
         strategy_id="test_strategy",
         bot_id="test_bot",
         threshold_pct=2.0,
-        min_volume=100000.0
+        min_volume=100000.0,
     )
 
     with patch("service.config", test_config):
@@ -221,9 +213,7 @@ def test_backward_compatibility_with_pct_change():
     Backward compatibility: Existing enriched market_data events should still work.
     """
     test_config = SignalConfig(
-        strategy_id="test_strategy",
-        threshold_pct=2.0,
-        min_volume=100000.0
+        strategy_id="test_strategy", threshold_pct=2.0, min_volume=100000.0
     )
 
     with patch("service.config", test_config):

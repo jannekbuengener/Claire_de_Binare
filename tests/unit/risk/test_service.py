@@ -36,7 +36,7 @@ def test_service_initialization(mock_redis, mock_postgres):
         max_position_pct=0.10,
         max_total_exposure_pct=0.30,
         max_daily_drawdown_pct=0.05,
-        stop_loss_pct=0.02
+        stop_loss_pct=0.02,
     )
 
     with patch.object(risk_service, "config", test_config):
@@ -56,42 +56,35 @@ def test_config_validation():
     Test: Config wird korrekt validiert (Hard Limits).
     """
     # Valid config
-    valid_config = RiskConfig(
-        max_position_pct=0.10,
-        max_total_exposure_pct=0.30
-    )
+    valid_config = RiskConfig(max_position_pct=0.10, max_total_exposure_pct=0.30)
     assert valid_config.validate() is True
 
     # Invalid: max_position_pct <= 0
-    invalid_config_1 = RiskConfig(
-        max_position_pct=0.0,
-        max_total_exposure_pct=0.30
-    )
-    with pytest.raises(ValueError, match="MAX_POSITION_PCT muss zwischen 0 und 1 liegen"):
+    invalid_config_1 = RiskConfig(max_position_pct=0.0, max_total_exposure_pct=0.30)
+    with pytest.raises(
+        ValueError, match="MAX_POSITION_PCT muss zwischen 0 und 1 liegen"
+    ):
         invalid_config_1.validate()
 
     # Invalid: max_position_pct > 1
-    invalid_config_2 = RiskConfig(
-        max_position_pct=1.5,
-        max_total_exposure_pct=0.30
-    )
-    with pytest.raises(ValueError, match="MAX_POSITION_PCT muss zwischen 0 und 1 liegen"):
+    invalid_config_2 = RiskConfig(max_position_pct=1.5, max_total_exposure_pct=0.30)
+    with pytest.raises(
+        ValueError, match="MAX_POSITION_PCT muss zwischen 0 und 1 liegen"
+    ):
         invalid_config_2.validate()
 
     # Invalid: max_total_exposure_pct <= 0
-    invalid_config_3 = RiskConfig(
-        max_position_pct=0.10,
-        max_total_exposure_pct=0.0
-    )
-    with pytest.raises(ValueError, match="MAX_TOTAL_EXPOSURE_PCT muss zwischen 0 und 1 liegen"):
+    invalid_config_3 = RiskConfig(max_position_pct=0.10, max_total_exposure_pct=0.0)
+    with pytest.raises(
+        ValueError, match="MAX_TOTAL_EXPOSURE_PCT muss zwischen 0 und 1 liegen"
+    ):
         invalid_config_3.validate()
 
     # Invalid: max_total_exposure_pct > 1
-    invalid_config_4 = RiskConfig(
-        max_position_pct=0.10,
-        max_total_exposure_pct=1.2
-    )
-    with pytest.raises(ValueError, match="MAX_TOTAL_EXPOSURE_PCT muss zwischen 0 und 1 liegen"):
+    invalid_config_4 = RiskConfig(max_position_pct=0.10, max_total_exposure_pct=1.2)
+    with pytest.raises(
+        ValueError, match="MAX_TOTAL_EXPOSURE_PCT muss zwischen 0 und 1 liegen"
+    ):
         invalid_config_4.validate()
 
 
@@ -102,10 +95,7 @@ def test_allocation_allowed():
 
     Governance: CDB_RL_SAFETY_POLICY.md (Deterministic Guardrails)
     """
-    test_config = RiskConfig(
-        max_position_pct=0.10,
-        max_total_exposure_pct=0.30
-    )
+    test_config = RiskConfig(max_position_pct=0.10, max_total_exposure_pct=0.30)
 
     with patch.object(risk_service, "config", test_config):
         manager = RiskManager()
@@ -118,8 +108,7 @@ def test_allocation_allowed():
 
         # Test 2: Valid allocation allowed (no cooldown)
         manager.allocation_state["strategy_001"] = AllocationState(
-            allocation_pct=0.5,
-            cooldown_until=None
+            allocation_pct=0.5, cooldown_until=None
         )
         allowed, reason = manager._allocation_allowed("strategy_001")
         assert allowed is True
@@ -128,8 +117,7 @@ def test_allocation_allowed():
         # Test 3: Active cooldown blocks
         future_timestamp = int(time.time()) + 3600  # 1 hour from now
         manager.allocation_state["strategy_001"] = AllocationState(
-            allocation_pct=0.5,
-            cooldown_until=future_timestamp
+            allocation_pct=0.5, cooldown_until=future_timestamp
         )
 
         allowed, reason = manager._allocation_allowed("strategy_001")
@@ -139,8 +127,7 @@ def test_allocation_allowed():
         # Test 4: Cooldown expired (past timestamp) allows
         past_timestamp = int(time.time()) - 3600  # 1 hour ago
         manager.allocation_state["strategy_001"] = AllocationState(
-            allocation_pct=0.5,
-            cooldown_until=past_timestamp
+            allocation_pct=0.5, cooldown_until=past_timestamp
         )
 
         allowed, reason = manager._allocation_allowed("strategy_001")
@@ -254,8 +241,10 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
 
             # Mock send_order to capture the unwind SELL
             sent_orders = []
+
             def mock_send_order(order):
                 sent_orders.append(order)
+
             manager.send_order = MagicMock(side_effect=mock_send_order)
 
             # Incoming BUY signal (should be blocked)
@@ -294,7 +283,9 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
 
 
 @pytest.mark.unit
-def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(mock_redis, mock_postgres):
+def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(
+    mock_redis, mock_postgres
+):
     """
     Test: Proactive unwind wird NICHT ausgelöst wenn PAPER_AUTO_UNWIND=false.
     """

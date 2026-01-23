@@ -14,10 +14,11 @@ from email.mime.multipart import MIMEMultipart
 
 from core.utils.clock import utcnow
 
+
 def read_secret(path):
     """Read secret from Docker mounted file"""
     try:
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             return f.read().strip()
     except Exception as e:
         print(f"[ERROR] Failed to read secret {path}: {e}")
@@ -28,15 +29,15 @@ def get_db_connection():
     """Connect to Postgres using connection string from secret"""
     try:
         # Read DSN from secret file
-        dsn_path = os.getenv('POSTGRES_DSN_FILE', '/run/secrets/postgres_password_dsn')
+        dsn_path = os.getenv("POSTGRES_DSN_FILE", "/run/secrets/postgres_password_dsn")
         dsn = read_secret(dsn_path)
 
         if not dsn:
             # Fallback: construct DSN from individual secrets
-            user = os.getenv('POSTGRES_USER', 'claire_user')
-            password = read_secret('/run/secrets/postgres_password')
-            host = os.getenv('POSTGRES_HOST', 'cdb_postgres')
-            database = os.getenv('POSTGRES_DB', 'claire_de_binare')
+            user = os.getenv("POSTGRES_USER", "claire_user")
+            password = read_secret("/run/secrets/postgres_password")
+            host = os.getenv("POSTGRES_HOST", "cdb_postgres")
+            database = os.getenv("POSTGRES_DB", "claire_de_binare")
             dsn = f"postgresql://{user}:{password}@{host}:5432/{database}"
 
         return psycopg2.connect(dsn)
@@ -106,15 +107,15 @@ def fetch_summary(conn, hours=24):
             rejections = cur.fetchall()
 
             return {
-                'total_orders': summary[0] or 0,
-                'filled': summary[1] or 0,
-                'rejected': summary[2] or 0,
-                'cancelled': summary[3] or 0,
-                'pending': summary[4] or 0,
-                'notional': float(summary[5] or 0),
-                'total_trades': summary[6] or 0,
-                'total_fees': float(summary[7] or 0),
-                'rejections': rejections
+                "total_orders": summary[0] or 0,
+                "filled": summary[1] or 0,
+                "rejected": summary[2] or 0,
+                "cancelled": summary[3] or 0,
+                "pending": summary[4] or 0,
+                "notional": float(summary[5] or 0),
+                "total_trades": summary[6] or 0,
+                "total_fees": float(summary[7] or 0),
+                "rejections": rejections,
             }
     except Exception as e:
         print(f"[ERROR] Query failed: {e}")
@@ -126,13 +127,13 @@ def format_email_body(data, start_time, end_time):
 
     # Calculate fill rate
     fill_rate = 0
-    if data['total_orders'] > 0:
-        fill_rate = (data['filled'] / data['total_orders']) * 100
+    if data["total_orders"] > 0:
+        fill_rate = (data["filled"] / data["total_orders"]) * 100
 
     # Format rejections table
     rejection_rows = ""
-    if data['rejections']:
-        for reason, count in data['rejections']:
+    if data["rejections"]:
+        for reason, count in data["rejections"]:
             rejection_rows += f"""
             <tr>
                 <td>{reason or 'Unknown'}</td>
@@ -220,27 +221,29 @@ def send_email(subject, body_html):
     try:
         # Read SMTP config from secrets
         smtp_host = "smtp.gmail.com:587"
-        smtp_user = read_secret('/run/secrets/smtp_user')
-        smtp_password = read_secret('/run/secrets/smtp_password')
-        from_address = read_secret('/run/secrets/smtp_from')
-        to_address = read_secret('/run/secrets/alert_email_to')
+        smtp_user = read_secret("/run/secrets/smtp_user")
+        smtp_password = read_secret("/run/secrets/smtp_password")
+        from_address = read_secret("/run/secrets/smtp_from")
+        to_address = read_secret("/run/secrets/alert_email_to")
 
         if not all([smtp_user, smtp_password, from_address, to_address]):
             print("[ERROR] Missing SMTP credentials")
             return False
 
         # Create message
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From'] = f"CDB Reports <{from_address}>"
-        msg['To'] = to_address
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"CDB Reports <{from_address}>"
+        msg["To"] = to_address
 
         # Attach HTML body
-        html_part = MIMEText(body_html, 'html')
+        html_part = MIMEText(body_html, "html")
         msg.attach(html_part)
 
         # Send via SMTP
-        with smtplib.SMTP(smtp_host.split(':')[0], int(smtp_host.split(':')[1])) as smtp:
+        with smtplib.SMTP(
+            smtp_host.split(":")[0], int(smtp_host.split(":")[1])
+        ) as smtp:
             smtp.starttls()
             smtp.login(smtp_user, smtp_password)
             smtp.send_message(msg)
@@ -263,7 +266,9 @@ def wait_until_next_run(target_hour=8):
         target += timedelta(days=1)
 
     wait_seconds = (target - now).total_seconds()
-    print(f"[INFO] Next run scheduled for {target.strftime('%Y-%m-%d %H:%M UTC')} (in {wait_seconds/3600:.1f}h)")
+    print(
+        f"[INFO] Next run scheduled for {target.strftime('%Y-%m-%d %H:%M UTC')} (in {wait_seconds/3600:.1f}h)"
+    )
 
     return wait_seconds
 
@@ -281,7 +286,9 @@ def main():
 
             # Run summary
             current_time = utcnow().replace(tzinfo=timezone.utc)
-            print(f"[INFO] Generating daily summary for {current_time.strftime('%Y-%m-%d')}")
+            print(
+                f"[INFO] Generating daily summary for {current_time.strftime('%Y-%m-%d')}"
+            )
 
             # Connect to database
             conn = get_db_connection()
@@ -306,7 +313,9 @@ def main():
                 # Send email
                 send_email(subject, body)
 
-                print(f"[INFO] Summary complete: {data['total_orders']} orders, {data['filled']} filled, {data['rejected']} rejected")
+                print(
+                    f"[INFO] Summary complete: {data['total_orders']} orders, {data['filled']} filled, {data['rejected']} rejected"
+                )
 
             finally:
                 conn.close()
