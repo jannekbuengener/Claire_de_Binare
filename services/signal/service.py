@@ -149,7 +149,7 @@ class SignalEngine:
                     signal_id=f"sig-{generate_uuid_hex(length=32)}",
                     symbol=market_data.symbol,
                     side="BUY",
-                    reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",
+                    reason=f"Momentum: {market_data.pct_change:+.1f}% > {self.config.threshold_pct}%",
                     timestamp=int(time.time()),
                     price=market_data.price,
                     pct_change=market_data.pct_change,

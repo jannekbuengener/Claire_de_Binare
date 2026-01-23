@@ -442,7 +442,7 @@ class RiskManager:
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
         """Prüft Positions-Limit"""
         # REAL BALANCE - NO MORE FAKE test_balance
-        from .balance_fetcher import RealBalanceFetcher
+        from services.risk.balance_fetcher import RealBalanceFetcher
 
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
@@ -467,7 +467,7 @@ class RiskManager:
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure (filled + pending reserved)"""
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
+        from services.risk.balance_fetcher import RealBalanceFetcher
 
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
@@ -492,7 +492,7 @@ class RiskManager:
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
+        from services.risk.balance_fetcher import RealBalanceFetcher
 
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
@@ -645,7 +645,7 @@ class RiskManager:
         # but BEFORE reservation and publish to prevent race condition
         # Skip for reduce-only orders (they close positions, reducing exposure)
         if not reduce_only:
-            from .balance_fetcher import RealBalanceFetcher
+            from services.risk.balance_fetcher import RealBalanceFetcher
 
             if self.config.use_real_balance:
                 balance_fetcher = RealBalanceFetcher()
@@ -717,7 +717,7 @@ class RiskManager:
             (quantity, skip_reason): qty=0.0 mit reason wenn skipped
         """
         # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
+        from services.risk.balance_fetcher import RealBalanceFetcher
 
         if self.config.use_real_balance:
             balance_fetcher = RealBalanceFetcher()
