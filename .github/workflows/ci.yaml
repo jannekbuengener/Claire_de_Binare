@@ -267,6 +267,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Ensure .trivyignore exists
+        run: |
+          if [ ! -f .trivyignore ]; then
+            touch .trivyignore
+          fi
 
       - name: Run Trivy (filesystem)
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac
