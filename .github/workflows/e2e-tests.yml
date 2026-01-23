@@ -119,6 +119,35 @@ jobs:
           echo "SMTP_PASSWORD=stub" >> "$GITHUB_ENV"
           echo "ALERT_EMAIL_TO=ci-stub@example.invalid" >> "$GITHUB_ENV"
 
+      - name: Create issue on protected exception
+        if: |
+          env.CDB_E2E_EXCEPTION == 'true' &&
+          (github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          title="[CI][E2E] STUB MODE on protected context (secrets missing)"
+          run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body=$(cat <<EOF
+          Run URL: ${run_url}
+          Run ID: ${GITHUB_RUN_ID}
+          Ref: ${GITHUB_REF}
+          Event: ${GITHUB_EVENT_NAME}
+          Expected secrets: SMTP_FROM, SMTP_HOST, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_TO
+
+          Green != Real E2E
+          EOF
+          )
+
+          if gh issue create --title "$title" --body "$body" --label "type:infra,prio:must,scope:ci,pipeline:generated"; then
+            echo "Issue created with labels."
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
+
       # --- 4) Hard fail on protected contexts if secrets are missing ---------------
       - name: ❌ Missing secrets on protected context (HARD FAIL)
         if: |
