@@ -250,11 +250,44 @@ class TestHappyPath:
             len(trades) >= 1
         ), f"Expected >= 1 trade with bot_id={run_id}, got {len(trades)}"
 
+        # Mismatch Policy Check (Sprint 2 Part 2 #620)
+        print(f"\n[3] Mismatch Policy Check")
+        mismatch = len(order_results) - len(trades)
+
+        if mismatch > 0:
+            # More order_results than trades (expected: async lag or rejected orders)
+            print(f"   WARN: {mismatch} order_results missing from DB")
+            print(f"   Likely cause: Async DB writer lag or non-execution statuses")
+            print(f"   Policy: Acceptable as long as trades >= 1")
+        elif mismatch < 0:
+            # More trades than order_results (unexpected: possible duplicates)
+            duplicate_count = abs(mismatch)
+            print(f"   WARN: {duplicate_count} more trades than order_results")
+            print(f"   Possible cause: DB duplicates or multiple executions")
+
+            # Check for actual duplicates in DB
+            order_ids_in_trades = [t[1] for t in trades if t[1]]  # Extract order_id from trades
+            unique_order_ids = set(order_ids_in_trades)
+            actual_duplicates = len(order_ids_in_trades) - len(unique_order_ids)
+
+            if actual_duplicates > 0:
+                print(f"   ERROR: Detected {actual_duplicates} duplicate order_ids in DB")
+                assert False, (
+                    f"DB integrity violation: {actual_duplicates} duplicate trades "
+                    f"with bot_id={run_id}"
+                )
+            else:
+                print(f"   No duplicates detected - may be legitimate multiple fills")
+        else:
+            # Perfect match
+            print(f"   OK: order_results == trades ({len(order_results)})")
+
         print(f"\n" + "=" * 60)
         print("SUCCESS: ALL ASSERTIONS PASSED")
         print(f"Run ID: {run_id}")
         print(f"  Order Results: {len(order_results)}")
         print(f"  Trades in DB: {len(trades)}")
+        print(f"  Mismatch: {mismatch:+d} (order_results - trades)")
         print("=" * 60)
 
 
