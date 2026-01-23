@@ -239,6 +239,38 @@ jobs:
           coverage report >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+  e2e_happy_path:
+    name: E2E Happy Path
+    runs-on: ubuntu-latest
+    needs: [test]
+    env:
+      E2E_MISMATCH_BUDGET: '3'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          if [ -f "requirements-dev.txt" ]; then
+            pip install -r requirements-dev.txt
+          else
+            pip install pytest
+          fi
+
+      - name: Log E2E mismatch budget
+        run: |
+          echo "E2E_MISMATCH_BUDGET=$E2E_MISMATCH_BUDGET"
+
+      - name: Run E2E happy path
+        run: |
+          pytest -q tests/e2e/test_smoke_pipeline.py
+
   # ============================================
   # SECURITY CHECKS
   # ============================================
@@ -369,7 +401,7 @@ jobs:
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
-    needs: [core-guard, lint, format-check, type-check, test, secrets-scan, trivy-scan, security-audit, dependency-audit, docs-check]
+    needs: [core-guard, lint, format-check, type-check, test, e2e_happy_path, secrets-scan, trivy-scan, security-audit, dependency-audit, docs-check]
     if: always()
     steps:
       - name: Create summary
@@ -384,6 +416,7 @@ jobs:
           echo "- Format Check: ${{ needs.format-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Type Check: ${{ needs.type-check.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Tests: ${{ needs.test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- E2E Happy Path: ${{ needs.e2e_happy_path.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Secret Scan: ${{ needs.secrets-scan.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Trivy Scan: ${{ needs.trivy-scan.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Audit: ${{ needs.security-audit.result }}" >> $GITHUB_STEP_SUMMARY
