@@ -32,10 +32,18 @@ jobs:
           REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
           POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
           GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
+          SMTP_USER_VAL="${{ secrets.SMTP_USER != '' && secrets.SMTP_USER || 'ci-smtp-user' }}"
+          SMTP_PASSWORD_VAL="${{ secrets.SMTP_PASSWORD != '' && secrets.SMTP_PASSWORD || 'ci-smtp-password' }}"
+          SMTP_FROM_VAL="${{ secrets.SMTP_FROM != '' && secrets.SMTP_FROM || 'ci-smtp-from@example.com' }}"
+          ALERT_EMAIL_TO_VAL="${{ secrets.ALERT_EMAIL_TO != '' && secrets.ALERT_EMAIL_TO || 'ci-alert-to@example.com' }}"
           echo "$REDIS_VAL" > $SECRETS_PATH/REDIS_PASSWORD
           echo "$POSTGRES_VAL" > $SECRETS_PATH/POSTGRES_PASSWORD
           echo "postgresql://claire_user:${POSTGRES_VAL}@postgres:5432/claire?sslmode=disable" > $SECRETS_PATH/POSTGRES_PASSWORD_DSN
           echo "$GRAFANA_VAL" > $SECRETS_PATH/GRAFANA_PASSWORD
+          echo "$SMTP_USER_VAL" > $SECRETS_PATH/SMTP_USER
+          echo "$SMTP_PASSWORD_VAL" > $SECRETS_PATH/SMTP_PASSWORD
+          echo "$SMTP_FROM_VAL" > $SECRETS_PATH/SMTP_FROM
+          echo "$ALERT_EMAIL_TO_VAL" > $SECRETS_PATH/ALERT_EMAIL_TO
           # Placeholder MEXC credentials for CI so docker-compose has bind sources
           echo "${{ secrets.MEXC_API_KEY != '' && secrets.MEXC_API_KEY || 'ci-mexc-key' }}" > $SECRETS_PATH/MEXC_API_KEY.txt
           echo "${{ secrets.MEXC_API_SECRET != '' && secrets.MEXC_API_SECRET || 'ci-mexc-secret' }}" > $SECRETS_PATH/MEXC_API_SECRET.txt
