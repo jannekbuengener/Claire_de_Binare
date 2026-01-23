@@ -34,6 +34,11 @@ pytestmark = pytest.mark.e2e
 class TestHappyPath:
     """E2E Happy Path Test Suite - Sprint 2 Part 2 #620"""
 
+    # Mismatch Budget (Governance Gate) - Sprint 2 Part 2 #620
+    # Maximum acceptable missing trades due to async DB writer lag
+    # Adjust this value to make governance stricter (lower) or more lenient (higher)
+    MISMATCH_BUDGET = 5
+
     @pytest.fixture(scope="class")
     def redis_client(self):
         """Redis client for stream verification."""
@@ -251,14 +256,27 @@ class TestHappyPath:
         ), f"Expected >= 1 trade with bot_id={run_id}, got {len(trades)}"
 
         # Mismatch Policy Check (Sprint 2 Part 2 #620)
-        print(f"\n[3] Mismatch Policy Check")
+        print(f"\n[3] Mismatch Policy Check (Budget: {self.MISMATCH_BUDGET})")
         mismatch = len(order_results) - len(trades)
 
         if mismatch > 0:
             # More order_results than trades (expected: async lag or rejected orders)
-            print(f"   WARN: {mismatch} order_results missing from DB")
-            print(f"   Likely cause: Async DB writer lag or non-execution statuses")
-            print(f"   Policy: Acceptable as long as trades >= 1")
+            print(f"   Missing Trades: {mismatch} (order_results > trades)")
+            print(f"   Budget: {mismatch}/{self.MISMATCH_BUDGET} ({'WITHIN' if mismatch <= self.MISMATCH_BUDGET else 'EXCEEDED'})")
+
+            # Governance Gate: Check against budget
+            if mismatch > self.MISMATCH_BUDGET:
+                print(f"   ERROR: Mismatch exceeds budget!")
+                print(f"   Likely causes: DB writer overloaded, excessive rejected orders, or stream corruption")
+                assert False, (
+                    f"Mismatch budget exceeded: {mismatch} missing trades (budget: {self.MISMATCH_BUDGET}). "
+                    f"This indicates excessive async lag or data loss. "
+                    f"Run ID: {run_id}"
+                )
+            else:
+                print(f"   WARN: {mismatch} order_results missing from DB (within budget)")
+                print(f"   Likely cause: Async DB writer lag or non-execution statuses")
+                print(f"   Policy: Acceptable as long as within budget")
         elif mismatch < 0:
             # More trades than order_results (unexpected: possible duplicates)
             duplicate_count = abs(mismatch)
@@ -288,6 +306,7 @@ class TestHappyPath:
         print(f"  Order Results: {len(order_results)}")
         print(f"  Trades in DB: {len(trades)}")
         print(f"  Mismatch: {mismatch:+d} (order_results - trades)")
+        print(f"  Budget Status: {abs(mismatch)}/{self.MISMATCH_BUDGET} ({'WITHIN' if abs(mismatch) <= self.MISMATCH_BUDGET else 'EXCEEDED'})")
         print("=" * 60)
 
 
