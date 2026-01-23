@@ -36,8 +36,44 @@ class TestHappyPath:
 
     # Mismatch Budget (Governance Gate) - Sprint 2 Part 2 #620
     # Maximum acceptable missing trades due to async DB writer lag
-    # Adjust this value to make governance stricter (lower) or more lenient (higher)
-    MISMATCH_BUDGET = 5
+    # Default: 5 (production-grade baseline)
+    # Override: E2E_MISMATCH_BUDGET env var (must be positive integer)
+    MISMATCH_BUDGET_DEFAULT = 5
+
+    @classmethod
+    def get_mismatch_budget(cls) -> tuple[int, str]:
+        """
+        Get mismatch budget from env or default.
+
+        Returns:
+            tuple[int, str]: (budget_value, source)
+                - budget_value: Integer budget (> 0)
+                - source: "default" or "env"
+
+        Raises:
+            ValueError: If E2E_MISMATCH_BUDGET is invalid (not int or <= 0)
+        """
+        env_budget = os.getenv("E2E_MISMATCH_BUDGET")
+
+        if env_budget is None:
+            return cls.MISMATCH_BUDGET_DEFAULT, "default"
+
+        # Validate env var
+        try:
+            budget_value = int(env_budget)
+        except ValueError as e:
+            raise ValueError(
+                f"E2E_MISMATCH_BUDGET must be a valid integer, got: '{env_budget}'. "
+                f"Example: E2E_MISMATCH_BUDGET=10"
+            ) from e
+
+        if budget_value <= 0:
+            raise ValueError(
+                f"E2E_MISMATCH_BUDGET must be positive (> 0), got: {budget_value}. "
+                f"Use default (5) or set a positive value like E2E_MISMATCH_BUDGET=10"
+            )
+
+        return budget_value, "env"
 
     @pytest.fixture(scope="class")
     def redis_client(self):
@@ -192,9 +228,13 @@ class TestHappyPath:
             - Order results in stream: >= 1 (filtered by bot_id == run_id)
             - Trades in DB: >= 1 (filtered by metadata bot_id == run_id)
         """
+        # Get mismatch budget (with fail-fast validation)
+        mismatch_budget, budget_source = self.get_mismatch_budget()
+
         print("\n" + "=" * 60)
         print("E2E HAPPY PATH TEST: Deterministic Pipeline")
         print(f"Run ID: {run_id}")
+        print(f"Mismatch Budget: {mismatch_budget} (source: {budget_source})")
         print("=" * 60)
 
         # Run replay with run_id tagging
@@ -256,20 +296,20 @@ class TestHappyPath:
         ), f"Expected >= 1 trade with bot_id={run_id}, got {len(trades)}"
 
         # Mismatch Policy Check (Sprint 2 Part 2 #620)
-        print(f"\n[3] Mismatch Policy Check (Budget: {self.MISMATCH_BUDGET})")
+        print(f"\n[3] Mismatch Policy Check (Budget: {mismatch_budget}, source: {budget_source})")
         mismatch = len(order_results) - len(trades)
 
         if mismatch > 0:
             # More order_results than trades (expected: async lag or rejected orders)
             print(f"   Missing Trades: {mismatch} (order_results > trades)")
-            print(f"   Budget: {mismatch}/{self.MISMATCH_BUDGET} ({'WITHIN' if mismatch <= self.MISMATCH_BUDGET else 'EXCEEDED'})")
+            print(f"   Budget: {mismatch}/{mismatch_budget} ({'WITHIN' if mismatch <= mismatch_budget else 'EXCEEDED'})")
 
             # Governance Gate: Check against budget
-            if mismatch > self.MISMATCH_BUDGET:
+            if mismatch > mismatch_budget:
                 print(f"   ERROR: Mismatch exceeds budget!")
                 print(f"   Likely causes: DB writer overloaded, excessive rejected orders, or stream corruption")
                 assert False, (
-                    f"Mismatch budget exceeded: {mismatch} missing trades (budget: {self.MISMATCH_BUDGET}). "
+                    f"Mismatch budget exceeded: {mismatch} missing trades (budget: {mismatch_budget}, source: {budget_source}). "
                     f"This indicates excessive async lag or data loss. "
                     f"Run ID: {run_id}"
                 )
@@ -306,7 +346,8 @@ class TestHappyPath:
         print(f"  Order Results: {len(order_results)}")
         print(f"  Trades in DB: {len(trades)}")
         print(f"  Mismatch: {mismatch:+d} (order_results - trades)")
-        print(f"  Budget Status: {abs(mismatch)}/{self.MISMATCH_BUDGET} ({'WITHIN' if abs(mismatch) <= self.MISMATCH_BUDGET else 'EXCEEDED'})")
+        print(f"  Budget Status: {abs(mismatch)}/{mismatch_budget} ({'WITHIN' if abs(mismatch) <= mismatch_budget else 'EXCEEDED'})")
+        print(f"  Budget Source: {budget_source}")
         print("=" * 60)
 
 
