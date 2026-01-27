@@ -1,0 +1,81 @@
+{
+  "run_id": "jules-divs-sync-pr703",
+  "run_type": "shadow_soak_evidence",
+  "status": "PASS",
+  "date_started": "2026-01-27T19:11:44Z",
+  "date_completed": "2026-01-27T20:57:10Z",
+  "duration_minutes": 106,
+  "environment": "production_merge",
+  "commit_sha": "c20ff775f3ffa7d84c9780cc2be31485ec3fca47",
+  "branch": "feature/julius-divs-sync",
+  "branch_deleted": true,
+  "base_branch": "main",
+  "pr_number": 703,
+  "pr_title": "sync: import Jules divs snapshot",
+  "changes": {
+    "files_changed": 21,
+    "additions": 2928,
+    "deletions": 51,
+    "files_added": 4,
+    "files_modified": 7
+  },
+  "verification": {
+    "security": {
+      "sql_injection_prevention": "PASS",
+      "gitleaks_scan": "PASS",
+      "bandit_scan": "PASS",
+      "trivy_scan": "PASS"
+    },
+    "governance": {
+      "constitution_stub": "PASS",
+      "governance_stub": "PASS",
+      "no_duplication": "PASS"
+    },
+    "regression": {
+      "risk_service_unchanged": "PASS",
+      "state_bootstrap_intact": "PASS",
+      "limits_validation_intact": "PASS",
+      "balance_fetcher_intact": "PASS"
+    },
+    "test_coverage": {
+      "new_tests_added": "PASS",
+      "injection_payload_validation": "PASS"
+    },
+    "status_checks": {
+      "python_311_tests": "SUCCESS",
+      "python_312_tests": "SUCCESS",
+      "e2e_tests": "SUCCESS",
+      "conversations_resolved": 4
+    }
+  },
+  "key_files": {
+    "services": [
+      "services/execution/database.py",
+      "services/execution/service.py",
+      "services/risk/service.py"
+    ],
+    "tests": [
+      "tests/unit/execution/test_database_security.py",
+      "tests/unit/risk/test_service.py"
+    ],
+    "governance": [
+      "CDB_CONSTITUTION.md",
+      "CDB_GOVERNANCE.md",
+      "governance_review_report.md"
+    ],
+    "config": [
+      "Makefile",
+      "claire-de-binare.mcp.json",
+      "pr_body_full.md"
+    ]
+  },
+  "risks": {
+    "identified": 0,
+    "mitigated": 0,
+    "residual": 0
+  },
+  "rollback_commit": "863d58a",
+  "rollback_command": "git revert c20ff775f3ffa7d84c9780cc2be31485ec3fca47",
+  "evidence_pack_created": "2026-01-27T21:00:23Z",
+  "evidence_pack_version": "1.0"
+}
