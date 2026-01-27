@@ -1,0 +1,56 @@
+# CDB Test Pack v2 (Upgradeable)
+
+This pack is the “safety + readiness” layer before anything touches a real market.
+
+It is built around four things you can prove with evidence packs:
+1) Planning consistency (do we all mean the same thing?)
+2) Chaos drills (does the system stay safe under stress?)
+3) Operator drills (can a human stop it fast, every time?)
+4) Mock exchange (realistic order lifecycle without real money)
+
+## What you get
+- Deterministic scenario generator (JSONL)
+- Harness scripts that produce an Evidence Pack folder
+- Templates for assertions and evidence documentation
+- A tiny Mock Exchange server (stdlib-only) as a drop-in test target
+
+## How we run it (recommended order)
+1) Planning lint → baseline “we’re aligned”
+2) Mock Exchange smoke → baseline “order lifecycle works”
+3) Chaos drill → baseline “risk + safeguards hold”
+4) Kill-switch drill → baseline “human can stop it”
+
+## Quickstart (Windows / PowerShell)
+Requirements:
+- Python 3.10+
+- PowerShell 7+
+
+### Generate a scenario
+```powershell
+python tools/chaos/generate_scenario.py --mode highvol_noise --minutes 180 --seed 1337 --out .\scenario_noise.jsonl
+```
+
+### Run a chaos drill (creates an evidence pack)
+```powershell
+.\infrastructure\scripts\run-chaos-drill.ps1 `
+  -ScenarioFile .\scenario_noise.jsonl `
+  -EvidenceDir .\evidence\2026-01-26_S-CHAOS-001 `
+  -RedisHost 127.0.0.1 -RedisPort 6379 `
+  -PromUrl http://127.0.0.1:19090
+```
+
+### Run the operator kill-switch drill (creates an evidence pack)
+```powershell
+.\tools\drills\trigger-operator-drill.ps1 -EvidenceDir .\evidence\2026-01-26_S-OPS-001
+```
+
+### Run the mock exchange (for order lifecycle tests)
+```powershell
+python tools\mock_exchange\mock_exchange.py --port 18080
+# health: http://127.0.0.1:18080/health
+```
+
+## Where to extend next
+- Expand assertions in `tools/assertions/evaluate_assertions.py` for your gates
+- Add additional Prometheus queries in `tools/metrics/metrics_snapshot.py`
+- Add more scenarios in `scenarios/catalog.yaml`

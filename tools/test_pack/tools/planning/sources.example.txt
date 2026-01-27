@@ -1,0 +1,7 @@
+# List one file path per line. Lines starting with # are comments.
+# You can also list directories; planning_lint.py will scan *.md and *.txt recursively.
+
+docs/planning/EngineeringRoadmap.md
+docs/planning/OpsPlan.md
+docs/planning/GovernanceLine.md
+docs/planning/IssuePack.md

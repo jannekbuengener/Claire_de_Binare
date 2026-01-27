@@ -1,0 +1,15 @@
+{
+  "pack_name": "cdb_test_pack_v2_plus_issue_pack",
+  "built_at": "2026-01-26T19:07:09",
+  "inputs": {
+    "cdb_test_pack_v2.zip": {
+      "sha256": "ceb1dc18d936259ad1dbb287a23d9b645ba7338bb36d62644a57eff835231a30"
+    },
+    "PROMPT_CodeX_Import_TestPack_v2.md": {
+      "sha256": "61914ecbd05f3e529dad8435601286731210f820bb8bfb5751b9cd196118c534"
+    },
+    "PROMPT_CodeX_IssuePack_CDB_LiveReadiness.md": {
+      "sha256": "401e84f8f6aa62feda8dc98da43e0efca551574946f6ce51e0dd10f75ddcf88c"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+scenarios:
+- id: S-CHAOS-001
+  name: High Volatility Noise
+  generator: tools/chaos/generate_scenario.py
+  mode: highvol_noise
+  minutes: 180
+  seed: 1337
+  intent: Stress risk/kill/circuit-breaker under noisy prices
+  evidence: templates/assertions_chaos.md
+- id: S-CHAOS-002
+  name: Whipsaw Regime Switch
+  generator: tools/chaos/generate_scenario.py
+  mode: whipsaw
+  minutes: 180
+  seed: 1337
+  intent: Stress regime detection + overtrading guards
+  evidence: templates/assertions_chaos.md
+- id: S-OPS-001
+  name: Kill-Switch Drill
+  trigger: tools/drills/trigger-operator-drill.ps1
+  intent: Human can stop order flow quickly and verifiably
+  evidence: runbooks/kill_switch_checklist.md
+- id: S-MOCK-001
+  name: Mock Exchange Smoke
+  server: tools/mock_exchange/mock_exchange.py
+  intent: Exercise order lifecycle without touching real market APIs
+  evidence: templates/evidence_pack_README.md

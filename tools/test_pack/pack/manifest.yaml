@@ -1,0 +1,23 @@
+name: cdb_test_pack
+version: '2.0'
+status: upgradeable-skeleton
+focus:
+- planning_audit
+- chaos_drills
+- operator_drills
+- mock_exchange
+principles:
+- deterministic
+- evidence_pack_first
+- rollback_safe
+- kill_switch_verified
+run_order:
+- planning_lint
+- mock_exchange_smoke
+- chaos_drill
+- operator_drill
+outputs:
+- evidence_pack/README.md
+- evidence_pack/timeline.log or timeline.json
+- reports/*.json
+- service_logs/*
