@@ -50,6 +50,13 @@ The Claire de Binare stack uses a **multi-layer compose architecture** to separa
   - Generated dynamically by `stack_rollback.ps1`
   - Not committed to Git
 
+### Standalone Stacks
+- **`infrastructure/compose/surrealdb.yml`** - SurrealDB sidecar stack (cdb_database)
+  - Joins existing `cdb_network` from base stack (external)
+  - No port bindings by default
+  - Use `surrealdb-dev.yml` for localhost-only ports
+  - Requires secrets via `SECRETS_PATH/SURREALDB_ENV`
+
 ## Legacy Files (Deprecated - Do Not Use)
 
 ### ⚠️ `docker-compose.base.yml`

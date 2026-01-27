@@ -1,0 +1,8 @@
+# SurrealDB Dev Overlay
+# Localhost-only port bindings for development
+# Usage: docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose/surrealdb-dev.yml up -d
+
+services:
+  cdb_surrealdb:
+    ports:
+      - "127.0.0.1:8000:8000"

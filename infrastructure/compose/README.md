@@ -9,6 +9,8 @@ infrastructure/compose/
 ├── base.yml    # Core Infrastructure (Redis, Postgres, Prometheus, Grafana)
 ├── dev.yml     # Dev Overrides (Port-Bindings, Debug-Volumes)
 ├── prod.yml    # Prod Overrides (Resource-Limits, Security)
+├── surrealdb.yml     # SurrealDB sidecar stack (cdb_database)
+├── surrealdb-dev.yml # SurrealDB dev ports (localhost only)
 └── README.md   # Diese Datei
 ```
 
@@ -27,6 +29,11 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/prod
 ### Legacy (Fallback)
 ```bash
 docker compose up -d  # Nutzt root-level docker-compose.yml
+```
+
+### SurrealDB Sidecar (Standalone)
+```bash
+docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose/surrealdb-dev.yml up -d
 ```
 
 ## Governance-Compliance
