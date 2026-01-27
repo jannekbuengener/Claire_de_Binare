@@ -4,9 +4,15 @@
 
 import argparse
 import json
-from datetime import datetime, timezone
+import sys
 from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from core.utils.clock import utcnow
 
 
 def _extract_values(result_payload: dict) -> list[float]:
@@ -45,7 +51,7 @@ def main() -> int:
             "evidence_links": [str(snapshot_path)],
         })
         result = {
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": utcnow().isoformat(),
             "overall_pass": False,
             "assertions": assertions,
         }
@@ -97,7 +103,7 @@ def main() -> int:
     overall_pass = all(a["pass"] for a in assertions)
 
     result = {
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": utcnow().isoformat(),
         "overall_pass": overall_pass,
         "assertions": assertions,
     }

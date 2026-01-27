@@ -5,11 +5,15 @@
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen, Request
 
+REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from core.utils.clock import utcnow
 DEFAULT_QUERIES = {
     "up_cdb": 'up{job=~"cdb_.*"}',
     "signals_received_total": "signals_received_total",
@@ -43,7 +47,7 @@ def main() -> int:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
     report = {
-        "ts": datetime.now(timezone.utc).isoformat(),
+        "ts": utcnow().isoformat(),
         "prom_url": args.prom_url,
         "queries": {},
     }

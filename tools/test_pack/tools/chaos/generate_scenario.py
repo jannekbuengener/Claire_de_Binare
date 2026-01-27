@@ -6,10 +6,16 @@
 
 import argparse
 import json
-import random
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from core.utils.seed import SeedManager
 
 
 @dataclass(frozen=True)
@@ -41,7 +47,7 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
-    rnd = random.Random(args.seed)
+    rng = SeedManager(args.seed)
     start = args.start_utc.replace("Z", "+00:00")
     t = datetime.fromisoformat(start).astimezone(timezone.utc)
 
@@ -54,11 +60,11 @@ def main() -> int:
             regime = gen_regime(args.mode, i)
 
             if regime == "NOISE":
-                shock = rnd.uniform(-2.5, 2.5)
+                shock = rng.random_uniform(-2.5, 2.5)
             elif regime == "TREND":
-                shock = rnd.uniform(-1.2, 1.2)
+                shock = rng.random_uniform(-1.2, 1.2)
             else:  # RANGE
-                shock = rnd.uniform(-0.8, 0.8)
+                shock = rng.random_uniform(-0.8, 0.8)
 
             price = max(1.0, price + shock)
             tick = Tick(

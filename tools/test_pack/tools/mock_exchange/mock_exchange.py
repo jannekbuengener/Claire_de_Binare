@@ -13,12 +13,19 @@ when you want realistic order-lifecycle tests without the real exchange.
 from __future__ import annotations
 
 import json
+import sys
 import time
-import uuid
 from dataclasses import dataclass, asdict
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict, Any, Optional
 
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from core.utils.uuid_gen import generate_uuid
 STATE: Dict[str, Any] = {
     "started_ts": time.time(),
     "orders": {},  # order_id -> dict
@@ -76,7 +83,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 return _json(self, 400, {"ok": False, "error": "bad_order_payload"})
 
-            oid = str(uuid.uuid4())
+            oid = generate_uuid()
             order = Order(order_id=oid, symbol=symbol, side=side, qty=qty, price=price, status="NEW", ts=time.time())
             STATE["orders"][oid] = asdict(order)
 
