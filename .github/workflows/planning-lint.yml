@@ -12,17 +12,17 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Checkout Docs Hub
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: jannekbuengener/Claire_de_Binare_Docs
           path: docs-hub
           token: ${{ secrets.CDB_GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -31,7 +31,7 @@ jobs:
           python tools/planning/planning_lint.py --sources docs-hub/knowledge/roadmap --out artifacts/planning_lint_report.json
 
       - name: Upload planning lint report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: planning-lint-report
           path: artifacts/planning_lint_report.json
