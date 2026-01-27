@@ -1,0 +1,31 @@
+version: 1
+mode: async_mirror
+primary_sources:
+  governance_docs: git_docs_hub
+  policies: git_docs_hub
+  ledger_events: git_ledger
+mirror_targets:
+  surrealdb:
+    write_policy: append_only
+    trading_state: disabled
+data_contract:
+  include:
+    - governance_docs
+    - policies
+    - ledger_events
+    - evidence_refs
+  exclude:
+    - orders
+    - positions
+    - risk_state
+    - fills
+idempotence:
+  source_id_fields:
+    - git_commit
+    - source_path
+    - ledger_event_id
+failure_handling:
+  block_primary_writes: false
+  retry_policy: queued_replay
+access:
+  write_endpoints: read_only_from_trading
