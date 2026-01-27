@@ -1,15 +1,17 @@
 {
   "mcpServers": {
     "grafana": {
+      "enabled": true,
       "command": "cmd",
       "args": ["/c", "npx", "-y", "@leval/mcp-grafana"],
       "env": {
         "GRAFANA_URL": "http://localhost:3000",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "glsa_kiNdufwm7SCnbGhtAPKma0gltXXUkYd4_d98916f0"
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "${GRAFANA_SERVICE_ACCOUNT_TOKEN}"
       },
       "type": "stdio"
     },
     "postgres": {
+      "enabled": true,
       "command": "cmd",
       "args": [
         "/c",

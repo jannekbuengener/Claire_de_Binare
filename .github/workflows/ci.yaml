@@ -176,6 +176,8 @@ jobs:
           else
             pip install mypy
           fi
+      - name: MCP Time smoke
+        run: python -m mcp_server_time --help
 
       - name: Run mypy
         run: mypy services/ --ignore-missing-imports --no-strict-optional
