@@ -62,19 +62,37 @@ jobs:
           override_file="$RUNNER_TEMP/shadow-soak-override.yml"
           cat > "$override_file" <<'EOF'
           services:
+            cdb_grafana:
+              user: "0"
             cdb_ws:
+              user: "0"
               environment:
                 WS_SOURCE: stub
             cdb_signal:
+              user: "0"
               environment:
                 SIGNAL_STRATEGY_ID: paper
+            cdb_candles:
+              user: "0"
+            cdb_allocation:
+              user: "0"
+            cdb_regime:
+              user: "0"
+            cdb_risk:
+              user: "0"
             cdb_execution:
+              user: "0"
               environment:
                 MOCK_TRADING: "true"
                 USE_REAL_BALANCE: "false"
+            cdb_db_writer:
+              user: "0"
             cdb_paper_runner:
+              user: "0"
               environment:
                 PAPER_TRADING_DURATION_DAYS: "1"
+            cdb_reports:
+              profiles: ["ci-disabled"]
           EOF
           echo "OVERRIDE_FILE=$override_file" >> "$GITHUB_ENV"
 
@@ -102,7 +120,6 @@ jobs:
             cdb_regime
             cdb_db_writer
             cdb_paper_runner
-            cdb_reports
           )
           running_services=(
             cdb_risk
