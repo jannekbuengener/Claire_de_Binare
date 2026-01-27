@@ -1,0 +1,5 @@
+version: 1
+surrealdb_enabled: false
+governance_source: git
+mirror_enabled: false
+notes: "Set governance_source=git for immediate rollback."
