@@ -16,7 +16,7 @@
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup format format-check
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -26,6 +26,7 @@ help:
 	@echo "  make test-unit               - Nur Unit-Tests"
 	@echo "  make test-integration        - Nur Integration-Tests (mit Mocks)"
 	@echo "  make test-coverage           - Tests mit Coverage-Report"
+	@echo "  make format-check            - Python-Format prüfen (Black)"
 	@echo ""
 	@echo "Lokale E2E-Tests (mit echten Containern):"
 	@echo "  make test-e2e                - Alle E2E-Tests (18 Tests)"
@@ -56,6 +57,7 @@ help:
 	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
 	@echo "  make cleanup                 - Aufräumen merged Branches (DRY-RUN)"
 	@echo "  make cleanup-live            - Aufräumen merged Branches (LIVE)"
+	@echo "  make format                  - Python-Dateien formatieren (Black)"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -76,6 +78,14 @@ test-coverage:
 	@echo "📊 Führe Tests mit Coverage-Report aus..."
 	pytest --cov=core --cov=services --cov=infrastructure/scripts --cov-report=html --cov-report=term --cov-fail-under=80 -m "not e2e and not local_only"
 	@echo "📄 Coverage-Report: htmlcov/index.html"
+
+format:
+	@echo "🎨 Formatiere Python-Dateien mit Black..."
+	black .
+
+format-check:
+	@echo "🔎 Prüfe Python-Format mit Black..."
+	black --check .
 
 # ============================================================================
 # Lokale E2E-Tests (mit echten Containern)
