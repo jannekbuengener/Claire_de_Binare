@@ -25,11 +25,11 @@ Other action types are imported with `event_kind=other`.
 - Each event includes `agent.id`.
 - Importer links to the **previous event** for the same agent (`prev_event_id`).
 
-## Redaction Rules (No Secrets)
+## Redaction Rules (No Sensitive Strings)
 
-The importer redacts evidence strings that look like secrets:
-- tokens/keys/passwords after `=` or `:`
-- GitHub token patterns (`ghp_...`, `gho_...`, etc.)
+The importer redacts evidence strings that look like credentials:
+- auth-like values after `=` or `:`
+- GitHub PAT-style prefixes (redacted)
 
 Redacted values are replaced with `[REDACTED]`.
 

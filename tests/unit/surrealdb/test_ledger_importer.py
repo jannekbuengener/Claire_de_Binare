@@ -2,7 +2,10 @@
 
 import pytest
 
-from tools.surrealdb.ledger_importer import load_ledger_events_from_text, normalize_events
+from tools.surrealdb.ledger_importer import (
+    load_ledger_events_from_text,
+    normalize_events,
+)
 
 
 @pytest.mark.unit
