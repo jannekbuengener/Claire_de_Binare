@@ -1,0 +1,49 @@
+version: 1
+domains:
+  trading_state:
+    canonical: postgres
+    surrealdb: none
+    writers:
+      - trading_services
+    readers:
+      - trading_pipeline
+    notes: "Orders, positions, risk, fills stay in Postgres only."
+  governance_docs:
+    canonical: git_docs_hub
+    surrealdb: mirror_read_only
+    writers:
+      - docs_owners
+    readers:
+      - governance_queries
+    notes: "SurrealDB mirrors Git; no direct edits."
+  decision_events:
+    canonical: git_ledger
+    surrealdb: append_only_mirror
+    writers:
+      - agents_via_ledger
+    readers:
+      - audit_analytics
+    notes: "SurrealDB ingest only; no edits."
+  shared_memory:
+    canonical: surrealdb
+    surrealdb: primary_scoped
+    writers:
+      - agents_scoped
+    readers:
+      - agents
+    notes: "Scoped by namespace + TTL."
+  observability_metrics:
+    canonical: prometheus_grafana
+    surrealdb: none
+    writers:
+      - observability_stack
+    readers:
+      - ops_dashboards
+    notes: "Metrics stay in Prometheus/Grafana."
+drift_rules:
+  - id: doc_hash_missing
+    description: "SurrealDB doc nodes must include Git hash reference."
+  - id: ledger_link_missing
+    description: "SurrealDB decision events must reference ledger source + event id."
+  - id: trading_state_in_surrealdb
+    description: "Any trading-state record in SurrealDB is invalid."

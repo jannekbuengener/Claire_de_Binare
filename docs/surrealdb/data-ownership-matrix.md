@@ -37,3 +37,4 @@ Postgres remains the single source of truth for all trading state.
 
 - This matrix is tracked in Git; any change requires PR review.
 - SurrealDB mirrors must reference Git commit hashes for traceability.
+- Machine-readable version: `infrastructure/config/surrealdb/ownership.yaml`
