@@ -1,0 +1,37 @@
+name: Planning Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  planning-lint:
+    name: planning/lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Checkout Docs Hub
+        uses: actions/checkout@v4
+        with:
+          repository: jannekbuengener/Claire_de_Binare_Docs
+          path: docs-hub
+          token: ${{ secrets.CDB_GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run planning lint
+        run: |
+          python tools/planning/planning_lint.py --sources docs-hub/knowledge/roadmap --out artifacts/planning_lint_report.json
+
+      - name: Upload planning lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: planning-lint-report
+          path: artifacts/planning_lint_report.json
