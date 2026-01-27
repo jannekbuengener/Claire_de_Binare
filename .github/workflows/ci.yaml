@@ -398,6 +398,15 @@ jobs:
   # BUILD SUMMARY
   # ============================================
 
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    needs: [core-guard, lint, format-check, type-check, test, e2e_happy_path, secrets-scan, trivy-scan, security-audit, dependency-audit]
+    if: always()
+    steps:
+      - name: CI aggregator
+        run: echo "CI aggregator"
+
   build-summary:
     name: Build Summary
     runs-on: ubuntu-latest
