@@ -21,19 +21,34 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
 
+          owner="${REPO%%/*}"
+          pr_number=""
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
+          else
+            pr_number=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/pulls?head=$owner:$REF_NAME&state=open" | jq -r '.[0].number // empty')
+          fi
+
+          if [ -z "$pr_number" ]; then
+            echo "No open PR found for event $EVENT_NAME on ref $REF_NAME. Exiting."
+            exit 0
+          fi
+
           pr_json=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER")
+            "https://api.github.com/repos/$REPO/pulls/$pr_number")
           author=$(echo "$pr_json" | jq -r '.user.login')
           pr_url=$(echo "$pr_json" | jq -r '.html_url')
 
           diff_file=$(mktemp)
           curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.v3.diff" \
-            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" > "$diff_file"
+            "https://api.github.com/repos/$REPO/pulls/$pr_number" > "$diff_file"
 
           diff_size=$(wc -c < "$diff_file")
           diff_snip=$(head -c 12000 "$diff_file")
@@ -60,7 +75,7 @@ jobs:
             local body="$1"
             curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
               -d "$(jq -n --arg body "$body" '{body:$body}')" \
-              "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" > /dev/null
+              "https://api.github.com/repos/$REPO/issues/$pr_number/comments" > /dev/null
           }
 
           if [ -z "$secret_value" ]; then
