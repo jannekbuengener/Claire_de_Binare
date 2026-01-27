@@ -25,7 +25,7 @@ jobs:
             exit 1
           fi
 
-          sources=$(curl -sS -H "x-goog-api-key: $api_key" https://jules.googleapis.com/v1alpha/sources)
+          sources=$(curl -sS -H "Authorization: Bearer $api_key" https://jules.googleapis.com/v1alpha/sources)
           source_name=$(echo "$sources" | jq -r '.sources[]? | select(.name | contains("github/'"$REPO"'")) | .name' | head -n1)
 
           if [ -z "$source_name" ] || [ "$source_name" = "null" ]; then
@@ -39,7 +39,7 @@ jobs:
             --arg branch "main" \
             '{prompt:$prompt, sourceContext:{source:$source}, githubRepoContext:{startingBranch:$branch}, requirePlanApproval:false}')
 
-          session=$(curl -sS -H "x-goog-api-key: $api_key" -H "Content-Type: application/json" -d "$payload" https://jules.googleapis.com/v1alpha/sessions)
+          session=$(curl -sS -H "Authorization: Bearer $api_key" -H "Content-Type: application/json" -d "$payload" https://jules.googleapis.com/v1alpha/sessions)
           session_id=$(echo "$session" | jq -r '.name')
 
           if [ -z "$session_id" ] || [ "$session_id" = "null" ]; then
@@ -68,7 +68,7 @@ jobs:
           rationale=""
 
           while [ $(date +%s) -lt $deadline ]; do
-            activities=$(curl -sS -H "x-goog-api-key: $api_key" "https://jules.googleapis.com/v1alpha/${session_id}/activities?pageSize=50")
+            activities=$(curl -sS -H "Authorization: Bearer $api_key" "https://jules.googleapis.com/v1alpha/${session_id}/activities?pageSize=50")
             combined=$(echo "$activities" | jq -r '..|strings' | tr '\n' ' ')
 
             if echo "$combined" | grep -Eiq "\bPASS\b|\bFAIL\b"; then
