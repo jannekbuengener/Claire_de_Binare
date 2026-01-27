@@ -3,6 +3,7 @@ name: AI Review Router
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 jobs:
   ai-review:
