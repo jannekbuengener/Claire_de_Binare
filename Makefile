@@ -16,7 +16,7 @@
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup format format-check
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup cleanup-live format format-check
 
 help:
 	@echo "Claire de Binare - Test Commands"
