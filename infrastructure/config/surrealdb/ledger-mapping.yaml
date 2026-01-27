@@ -1,0 +1,24 @@
+version: 1
+table: ledger_event
+id_field: event_id
+supported_actions:
+  work.start: work_start
+  branch.create: branch_create
+  pr.create: pr_create
+  pr.merge: pr_merge
+  issue.close: issue_close
+fields:
+  event_id: event_id
+  timestamp: timestamp
+  agent_id: agent.id
+  agent_vendor: agent.vendor
+  agent_role: agent.role
+  action_type: action.type
+  action_summary: action.summary
+  scope: scope
+  uncertainty: uncertainty
+  policy_refs: policy_refs
+  evidence: evidence
+  prev_event_id: prev_event_id
+  source_path: source.path
+  source_sha256: source.sha256
