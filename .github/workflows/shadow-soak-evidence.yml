@@ -112,7 +112,6 @@ jobs:
             cdb_prometheus
             cdb_grafana
             cdb_postgres_exporter
-            cdb_redis_exporter
             cdb_ws
             cdb_signal
             cdb_candles
@@ -122,6 +121,7 @@ jobs:
             cdb_paper_runner
           )
           running_services=(
+            cdb_redis_exporter
             cdb_risk
             cdb_execution
           )
