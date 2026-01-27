@@ -1,9 +1,11 @@
 name: AI Review Router
 
 on:
+  push:
+    branches-ignore:
+      - main
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_dispatch:
 
 jobs:
   ai-review:
