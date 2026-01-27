@@ -1,0 +1,109 @@
+name: Jules Gov Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  jules-gov-review:
+    name: jules/gov-review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PR_URL: ${{ github.event.pull_request.html_url }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Create Jules session
+        id: create
+        run: |
+          set -euo pipefail
+          api_key="${{ secrets.JULES_API_KEY }}"
+          if [ -z "$api_key" ]; then
+            echo "Missing JULES_API_KEY secret."
+            exit 1
+          fi
+
+          sources=$(curl -sS -H "x-goog-api-key: $api_key" https://jules.googleapis.com/v1alpha/sources)
+          source_name=$(echo "$sources" | jq -r '.sources[]? | select(.name | contains("github/'"$REPO"'")) | .name' | head -n1)
+
+          if [ -z "$source_name" ] || [ "$source_name" = "null" ]; then
+            echo "No Jules source found for $REPO"
+            exit 1
+          fi
+
+          payload=$(jq -n \
+            --arg prompt "Review this PR for governance/branch-protection compliance. Output PASS/FAIL + rationale. Reference PR URL: $PR_URL" \
+            --arg source "$source_name" \
+            --arg branch "main" \
+            '{prompt:$prompt, sourceContext:{source:$source}, githubRepoContext:{startingBranch:$branch}, requirePlanApproval:false}')
+
+          session=$(curl -sS -H "x-goog-api-key: $api_key" -H "Content-Type: application/json" -d "$payload" https://jules.googleapis.com/v1alpha/sessions)
+          session_id=$(echo "$session" | jq -r '.name')
+
+          if [ -z "$session_id" ] || [ "$session_id" = "null" ]; then
+            echo "Failed to create Jules session"
+            exit 1
+          fi
+
+          session_short=${session_id##*/}
+          echo "session_id=$session_id" >> $GITHUB_OUTPUT
+          echo "session_url=https://jules.google.com/session/$session_short" >> $GITHUB_OUTPUT
+
+      - name: Poll Jules result
+        id: poll
+        run: |
+          set -euo pipefail
+          api_key="${{ secrets.JULES_API_KEY }}"
+          session_id="${{ steps.create.outputs.session_id }}"
+
+          if [ -z "$session_id" ]; then
+            echo "Missing session id"
+            exit 1
+          fi
+
+          deadline=$(( $(date +%s) + 720 ))
+          result=""
+          rationale=""
+
+          while [ $(date +%s) -lt $deadline ]; do
+            activities=$(curl -sS -H "x-goog-api-key: $api_key" "https://jules.googleapis.com/v1alpha/${session_id}/activities?pageSize=50")
+            combined=$(echo "$activities" | jq -r '..|strings' | tr '\n' ' ')
+
+            if echo "$combined" | grep -Eiq "\bPASS\b|\bFAIL\b"; then
+              result=$(echo "$combined" | grep -Eio "\bPASS\b|\bFAIL\b" | tail -n1 | tr '[:lower:]' '[:upper:]')
+              rationale=$(echo "$combined" | grep -Eio '.{0,80}\b(PASS|FAIL)\b.{0,200}' | head -n1 | sed 's/"/\\"/g')
+              break
+            fi
+
+            sleep 15
+          done
+
+          if [ -z "$result" ]; then
+            result="FAIL"
+            rationale="Timeout waiting for Jules output."
+          fi
+
+          echo "result=$result" >> $GITHUB_OUTPUT
+          echo "rationale=$rationale" >> $GITHUB_OUTPUT
+
+      - name: Post PR comment + set status
+        run: |
+          set -euo pipefail
+          result="${{ steps.poll.outputs.result }}"
+          rationale="${{ steps.poll.outputs.rationale }}"
+          session_url="${{ steps.create.outputs.session_url }}"
+
+          body=$(jq -n --arg result "$result" --arg url "$session_url" --arg rationale "$rationale" \
+            '{body: "Jules gov-review: \($result)\n\nSession: \($url)\n\nRationale: \($rationale)"}')
+
+          curl -sS -H "Authorization: Bearer $GITHUB_TOKEN" -H "Content-Type: application/json" \
+            -d "$body" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" > /dev/null
+
+          if [ "$result" = "PASS" ]; then
+            exit 0
+          fi
+
+          exit 1
