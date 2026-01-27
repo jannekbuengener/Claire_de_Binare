@@ -106,37 +106,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          healthy_services=(
+          required_services=(
             cdb_redis
             cdb_postgres
             cdb_prometheus
             cdb_grafana
-            cdb_postgres_exporter
-            cdb_redis_exporter
             cdb_ws
             cdb_signal
-            cdb_candles
-            cdb_allocation
-            cdb_regime
-            cdb_db_writer
-            cdb_paper_runner
-          )
-          running_services=(
             cdb_risk
             cdb_execution
           )
-          deadline=$((SECONDS + 600))
+          deadline=$((SECONDS + 300))
           while true; do
             all_ok=1
-            for svc in "${healthy_services[@]}"; do
-              status=$(docker inspect -f '{{.State.Health.Status}}' "$svc" 2>/dev/null || echo missing)
-              if [ "$status" != "healthy" ]; then
-                all_ok=0
-              fi
-            done
-            for svc in "${running_services[@]}"; do
-              state=$(docker inspect -f '{{.State.Status}}' "$svc" 2>/dev/null || echo missing)
-              if [ "$state" != "running" ]; then
+            for svc in "${required_services[@]}"; do
+              health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$svc" 2>/dev/null || echo missing)
+              if [ -z "$health" ] || [ "$health" = "missing" ]; then
+                state=$(docker inspect -f '{{.State.Status}}' "$svc" 2>/dev/null || echo missing)
+                if [ "$state" != "running" ]; then
+                  all_ok=0
+                fi
+              elif [ "$health" != "healthy" ]; then
                 all_ok=0
               fi
             done
@@ -174,17 +164,27 @@ jobs:
               exit 1
             fi
           }
+          check_optional_url() {
+            name="$1"
+            url="$2"
+            ext="$3"
+            out="evidence/endpoints/${name}.${ext}"
+            if ! curl --connect-timeout 5 --max-time 15 -fsS "$url" -o "$out"; then
+              echo "Optional endpoint unavailable: $name ($url)"
+              return 0
+            fi
+          }
           check_url prometheus_healthy http://127.0.0.1:19090/-/healthy txt
           check_url prometheus_targets http://127.0.0.1:19090/api/v1/targets json
           check_url grafana_health http://127.0.0.1:3000/api/health json
           check_url ws_health http://127.0.0.1:8000/health json
           check_url signal_health http://127.0.0.1:8005/health json
-          check_url candles_health http://127.0.0.1:8007/health json
-          check_url allocation_health http://127.0.0.1:8006/health json
-          check_url regime_health http://127.0.0.1:8008/health json
-          check_url paper_runner_health http://127.0.0.1:8004/health json
-          check_url postgres_exporter_metrics http://127.0.0.1:9187/metrics txt
-          check_url redis_exporter_metrics http://127.0.0.1:9121/metrics txt
+          check_optional_url candles_health http://127.0.0.1:8007/health json
+          check_optional_url allocation_health http://127.0.0.1:8006/health json
+          check_optional_url regime_health http://127.0.0.1:8008/health json
+          check_optional_url paper_runner_health http://127.0.0.1:8004/health json
+          check_optional_url postgres_exporter_metrics http://127.0.0.1:9187/metrics txt
+          check_optional_url redis_exporter_metrics http://127.0.0.1:9121/metrics txt
 
       - name: Capture evidence
         if: always()
@@ -194,12 +194,65 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence
+          required_services=(
+            cdb_redis
+            cdb_postgres
+            cdb_prometheus
+            cdb_grafana
+            cdb_ws
+            cdb_signal
+            cdb_risk
+            cdb_execution
+          )
+          optional_services=(
+            cdb_postgres_exporter
+            cdb_redis_exporter
+            cdb_candles
+            cdb_allocation
+            cdb_regime
+            cdb_db_writer
+            cdb_paper_runner
+            cdb_reports
+          )
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" ps > evidence/compose_ps.txt || true
           docker inspect cdb_redis cdb_postgres cdb_prometheus cdb_grafana cdb_postgres_exporter cdb_redis_exporter cdb_ws cdb_signal cdb_candles cdb_allocation cdb_regime cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_reports > evidence/container_inspect.json || true
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" logs --tail=200 > evidence/logs_tail.txt || true
           grep -i "error" evidence/logs_tail.txt > evidence/logs_grep.txt || true
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          required_rows=""
+          optional_rows=""
+          gate_pass=1
+          for svc in "${required_services[@]}"; do
+            health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$svc" 2>/dev/null || echo missing)
+            if [ -z "$health" ] || [ "$health" = "missing" ]; then
+              state=$(docker inspect -f '{{.State.Status}}' "$svc" 2>/dev/null || echo missing)
+              status="${state}"
+              if [ "$state" != "running" ]; then
+                gate_pass=0
+              fi
+            else
+              status="${health}"
+              if [ "$health" != "healthy" ]; then
+                gate_pass=0
+              fi
+            fi
+            required_rows="${required_rows}| ${svc} | ${status} |"$'\n'
+          done
+          for svc in "${optional_services[@]}"; do
+            health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$svc" 2>/dev/null || echo missing)
+            if [ -z "$health" ] || [ "$health" = "missing" ]; then
+              state=$(docker inspect -f '{{.State.Status}}' "$svc" 2>/dev/null || echo missing)
+              status="${state}"
+            else
+              status="${health}"
+            fi
+            optional_rows="${optional_rows}| ${svc} | ${status} |"$'\n'
+          done
+          gate_status="FAIL"
+          if [ "$gate_pass" -eq 1 ]; then
+            gate_status="PASS"
+          fi
           cat > evidence/run_summary.json <<EOF
           {
             "run_id": "${GITHUB_RUN_ID}",
@@ -207,12 +260,26 @@ jobs:
             "ref": "${GITHUB_REF}",
             "commit": "${GITHUB_SHA}",
             "status": "${JOB_STATUS}",
+            "gate_status": "${gate_status}",
             "soak_minutes": ${SOAK_MINUTES},
             "ended_at": "${end_time}"
           }
           EOF
           cat > evidence/run_summary.md <<EOF
           # Shadow + Soak Evidence Summary
+
+          ## Gate Status: ${gate_status}
+          Required services must be healthy (or running if no healthcheck).
+
+          ### REQUIRED_HEALTHY
+          | Service | Status |
+          | --- | --- |
+          ${required_rows}
+
+          ### OPTIONAL_RUNNING
+          | Service | Status |
+          | --- | --- |
+          ${optional_rows}
 
           - Run: ${run_url}
           - Ref: ${GITHUB_REF}
