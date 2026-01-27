@@ -152,7 +152,7 @@ jobs:
             url="$2"
             ext="$3"
             out="evidence/endpoints/${name}.${ext}"
-            if ! curl -fsS "$url" -o "$out"; then
+            if ! curl --connect-timeout 5 --max-time 15 -fsS "$url" -o "$out"; then
               echo "Endpoint check failed: $name ($url)"
               exit 1
             fi
