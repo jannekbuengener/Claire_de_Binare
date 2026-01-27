@@ -169,11 +169,11 @@ def init_services():
 
             if dry_run:
                 logger.warning(
-                    "🔶 Live Executor in DRY RUN mode - orders logged but not executed"
+                    " Live Executor in DRY RUN mode - orders logged but not executed"
                 )
             else:
                 mode = "TESTNET" if testnet else "LIVE"
-                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
+                logger.warning(f" Live Executor in {mode} mode - REAL MONEY!")
 
         # Initialize database
         db = _init_with_retry(
