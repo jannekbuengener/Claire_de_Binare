@@ -1,0 +1,127 @@
+name: AI Review Router
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    name: ai/review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Run AI review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pr_json=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER")
+          author=$(echo "$pr_json" | jq -r '.user.login')
+          pr_url=$(echo "$pr_json" | jq -r '.html_url')
+
+          diff_file=$(mktemp)
+          curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/$REPO/pulls/$PR_NUMBER" > "$diff_file"
+
+          diff_size=$(wc -c < "$diff_file")
+          diff_snip=$(head -c 12000 "$diff_file")
+          if [ "$diff_size" -gt 12000 ]; then
+            diff_snip="${diff_snip}\n\n[diff truncated]"
+          fi
+
+          author_lc=$(echo "$author" | tr '[:upper:]' '[:lower:]')
+          if [[ "$author_lc" == *codex* ]]; then
+            reviewer="CLAUDE"
+            secret_name="ANTHROPIC_API_KEY"
+            secret_value="$ANTHROPIC_API_KEY"
+          elif [[ "$author_lc" == *claude* ]]; then
+            reviewer="CODEX"
+            secret_name="OPENAI_API_KEY"
+            secret_value="$OPENAI_API_KEY"
+          else
+            reviewer="GEMINI"
+            secret_name="GEMINI_API_KEY"
+            secret_value="$GEMINI_API_KEY"
+          fi
+
+          post_comment() {
+            local body="$1"
+            curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
+              -d "$(jq -n --arg body "$body" '{body:$body}')" \
+              "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" > /dev/null
+          }
+
+          if [ -z "$secret_value" ]; then
+            post_comment "Reviewer: $reviewer\nAI_REVIEW: FAIL (missing secret $secret_name)\nTop Issues:\n1. Missing secret $secret_name\n2. none\n3. none\n4. none\n5. none"
+            exit 1
+          fi
+
+          prompt=$(cat <<'PROMPT'
+You are an automated governance and correctness reviewer.
+
+Return EXACTLY this format:
+AI_REVIEW: PASS|FAIL
+Reviewer: <CLAUDE|CODEX|GEMINI>
+Top Issues:
+1. <issue or "none">
+2. <issue or "none">
+3. <issue or "none">
+4. <issue or "none">
+5. <issue or "none">
+
+Rules:
+- PASS only if no governance/safety/correctness risks.
+- Be concise and actionable.
+PROMPT
+)
+
+          prompt="$prompt\n\nPR URL: $pr_url\nAuthor: $author\n\nDiff:\n$diff_snip"
+
+          content=""
+          if [ "$reviewer" = "CLAUDE" ]; then
+            response=$(curl -sS https://api.anthropic.com/v1/messages \
+              -H "x-api-key: $secret_value" \
+              -H "anthropic-version: 2023-06-01" \
+              -H "content-type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{model:"claude-3-5-sonnet-20240620",max_tokens:800,temperature:0.2,messages:[{role:"user",content:$prompt}]}')")
+            content=$(echo "$response" | jq -r '.content[0].text // empty')
+          elif [ "$reviewer" = "CODEX" ]; then
+            response=$(curl -sS https://api.openai.com/v1/chat/completions \
+              -H "Authorization: Bearer $secret_value" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{model:"gpt-4o-mini",messages:[{role:"user",content:$prompt}],temperature:0.2,max_tokens:800}')")
+            content=$(echo "$response" | jq -r '.choices[0].message.content // empty')
+          else
+            response=$(curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$secret_value" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:800}}')")
+            content=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty')
+          fi
+
+          if [ -z "$content" ]; then
+            post_comment "Reviewer: $reviewer\nAI_REVIEW: FAIL\nTop Issues:\n1. No response from provider\n2. none\n3. none\n4. none\n5. none"
+            exit 1
+          fi
+
+          verdict=$(echo "$content" | grep -Eio 'AI_REVIEW:[[:space:]]*(PASS|FAIL)' | tail -n1 | awk '{print toupper($2)}')
+          if [ -z "$verdict" ]; then
+            verdict="FAIL"
+          fi
+
+          comment_body="Reviewer: $reviewer\n$content"
+          post_comment "$comment_body"
+
+          if [ "$verdict" = "PASS" ]; then
+            exit 0
+          fi
+
+          exit 1
