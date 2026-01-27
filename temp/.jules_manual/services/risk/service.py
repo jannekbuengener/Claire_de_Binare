@@ -213,7 +213,7 @@ class RiskManager:
                 if abs(net_position) > POSITION_THRESHOLD:
                     error_msg = (
                         f"\n{'=' * 80}\n"
-                        f"❌ CRITICAL: STATE MISMATCH DETECTED\n"
+                        f" CRITICAL: STATE MISMATCH DETECTED\n"
                         f"{'=' * 80}\n"
                         f"Positions table: EMPTY (0 open positions)\n"
                         f"Orders table:    NET {net_position:.8f} BTC\n"
@@ -240,7 +240,7 @@ class RiskManager:
                     conn.close()
                     raise RuntimeError("State mismatch: positions table empty but orders show open position")
 
-                logger.info("✅ Risk state bootstrap: No open positions in DB (clean state)")
+                logger.info(" Risk state bootstrap: No open positions in DB (clean state)")
                 cursor.close()
                 conn.close()
                 return
@@ -285,12 +285,12 @@ class RiskManager:
             conn.close()
 
         except psycopg2.Error as e:
-            logger.error(f"❌ Failed to bootstrap risk state from DB: {e}")
-            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
+            logger.error(f" Failed to bootstrap risk state from DB: {e}")
+            logger.warning(" Risk manager starting with EMPTY state (no reconciliation)")
             # Continue startup with empty state rather than crashing
         except Exception as e:
-            logger.error(f"❌ Unexpected error during risk state bootstrap: {e}")
-            logger.warning("⚠️ Risk manager starting with EMPTY state (no reconciliation)")
+            logger.error(f" Unexpected error during risk state bootstrap: {e}")
+            logger.warning(" Risk manager starting with EMPTY state (no reconciliation)")
 
     @staticmethod
     def _parse_timestamp(value) -> int | None:
@@ -602,7 +602,7 @@ class RiskManager:
         else:
             # Reduce-only order bypasses exposure limit (allowed to close positions)
             logger.info(
-                f"✅ Reduce-only SELL allowed while over limit: {signal.symbol} (closes position)"
+                f" Reduce-only SELL allowed while over limit: {signal.symbol} (closes position)"
             )
             stats["reduce_only_approved"] = stats.get("reduce_only_approved", 0) + 1
 
@@ -712,7 +712,7 @@ class RiskManager:
                 return None
 
         logger.info(
-            f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
+            f" Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
         stats["orders_approved"] += 1
         risk_state.signals_approved += 1
@@ -884,7 +884,7 @@ class RiskManager:
             current_price = risk_state.last_prices.get(symbol, 0.0)
             if current_price <= 0:
                 logger.warning(
-                    f"⚠️ Proactive unwind skipped for {symbol}: no price data"
+                    f" Proactive unwind skipped for {symbol}: no price data"
                 )
                 continue
 
@@ -903,7 +903,7 @@ class RiskManager:
             )
 
             logger.warning(
-                f"🔄 PROACTIVE AUTO-UNWIND: queued SELL {symbol} qty={abs(position_qty):.8f} "
+                f" PROACTIVE AUTO-UNWIND: queued SELL {symbol} qty={abs(position_qty):.8f} "
                 f"(exposure over limit, forcing position close)"
             )
             stats["proactive_unwind_triggered"] = (
@@ -1087,7 +1087,7 @@ class RiskManager:
 
                         stats["signals_received"] += 1
                         logger.info(
-                            f"📨 Signal empfangen: {signal.symbol} {signal.side}"
+                            f" Signal empfangen: {signal.symbol} {signal.side}"
                         )
 
                         # Risk-Checks durchführen
