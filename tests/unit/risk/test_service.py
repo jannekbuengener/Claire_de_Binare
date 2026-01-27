@@ -397,3 +397,43 @@ def test_proactive_unwind_no_trigger_when_no_open_positions(mock_redis, mock_pos
             risk_service.risk_state.positions = original_positions
             risk_service.risk_state.total_exposure = original_total_exposure
             risk_service.risk_off_active = original_risk_off
+
+
+@pytest.mark.unit
+def test_check_position_limit_enforcement(mock_redis, mock_postgres):
+    """
+    Test: check_position_limit blockiert wenn Symbol bereits am Limit ist.
+    """
+    test_config = RiskConfig(
+        max_position_pct=0.10,  # 10%
+        test_balance=1000.0,    # Max 100 USD pro Position
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        
+        # Setup: Symbol am Limit
+        risk_service.risk_state.positions = {"BTCUSDT": 0.002}  # 0.002 * 50000 = 100 USD
+        risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+        
+        signal = Signal(
+            symbol="BTCUSDT",
+            side="BUY",
+            price=50000.0,
+            timestamp=1
+        )
+        
+        # Check: Sollte blockieren
+        ok, reason = manager.check_position_limit(signal)
+        assert ok is False
+        assert "am Limit" in reason
+        
+        # Setup: Anderes Symbol nicht am Limit
+        signal_2 = Signal(
+            symbol="ETHUSDT",
+            side="BUY",
+            price=3000.0,
+            timestamp=1
+        )
+        ok, reason = manager.check_position_limit(signal_2)
+        assert ok is True
