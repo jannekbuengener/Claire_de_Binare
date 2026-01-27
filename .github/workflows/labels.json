@@ -28,6 +28,7 @@
     { "name": "redis", "color": "dc382d", "description": "Redis Pub/Sub, Streams" },
     { "name": "postgres", "color": "336791", "description": "PostgreSQL, Schemas, Queries" },
     { "name": "testing", "color": "fbca04", "description": "Test-Coverage, E2E, Fixtures" },
-    { "name": "dependencies", "color": "0366d6", "description": "Dependency Updates (Dependabot)" }
+    { "name": "dependencies", "color": "0366d6", "description": "Dependency Updates (Dependabot)" },
+    { "name": "automerge", "color": "6f42c1", "description": "PR eligible for auto-merge (Jules + checks)" }
   ]
 }

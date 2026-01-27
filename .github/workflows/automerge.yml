@@ -1,0 +1,163 @@
+name: Auto-merge (Jules + checks + label)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled, ready_for_review]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  workflow_run:
+    workflows:
+      - "CI/CD Pipeline"
+      - "Delivery Gate"
+      - "Gitleaks Secret Scan"
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AUTOMERGE_LABEL: automerge
+  JULES_LOGIN: ${{ vars.JULES_LOGIN }}
+  REQUIRED_CHECKS: ${{ vars.AUTOMERGE_REQUIRED_CHECKS || 'CI/CD Pipeline,Delivery Gate,Gitleaks Secret Scan' }}
+  MERGE_METHOD: ${{ vars.AUTOMERGE_METHOD || 'merge' }}
+
+jobs:
+  automerge:
+    if: |
+      (github.event_name != 'workflow_run') ||
+      (github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate config
+        env:
+          AUTOMERGE_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+        run: |
+          if [ -z "${AUTOMERGE_TOKEN}" ]; then
+            echo "AUTOMERGE_TOKEN secret missing"
+            exit 1
+          fi
+          if [ -z "${JULES_LOGIN}" ]; then
+            echo "JULES_LOGIN repo variable missing"
+            exit 1
+          fi
+
+      - name: Evaluate PRs and merge when eligible
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        env:
+          AUTOMERGE_TOKEN: ${{ secrets.AUTOMERGE_TOKEN }}
+        with:
+          github-token: ${{ secrets.AUTOMERGE_TOKEN }}
+          script: |
+            const core = require('@actions/core');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const julesLogin = (process.env.JULES_LOGIN || '').toLowerCase();
+            const requiredChecks = (process.env.REQUIRED_CHECKS || '')
+              .split(',')
+              .map(s => s.trim())
+              .filter(Boolean);
+            const automergeLabel = process.env.AUTOMERGE_LABEL || 'automerge';
+            const mergeMethod = process.env.MERGE_METHOD || 'merge';
+
+            async function listPRsForSha(sha) {
+              const prs = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
+                owner,
+                repo,
+                commit_sha: sha,
+              });
+              return prs;
+            }
+
+            async function getPR(number) {
+              const { data } = await github.rest.pulls.get({ owner, repo, pull_number: number });
+              return data;
+            }
+
+            async function hasJulesApproval(prNumber) {
+              const reviews = await github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+              const julesReviews = reviews.filter(r => (r.user?.login || '').toLowerCase() === julesLogin);
+              if (julesReviews.length === 0) return false;
+              const latest = julesReviews.sort((a, b) => new Date(a.submitted_at) - new Date(b.submitted_at)).pop();
+              return latest && latest.state === 'APPROVED';
+            }
+
+            async function checksGreen(sha) {
+              const checkRuns = await github.paginate(github.rest.checks.listForRef, {
+                owner,
+                repo,
+                ref: sha,
+              });
+
+              if (requiredChecks.length === 0) {
+                const { data } = await github.rest.repos.getCombinedStatusForRef({ owner, repo, ref: sha });
+                return data.state === 'success';
+              }
+
+              const byName = new Map();
+              for (const run of checkRuns) {
+                if (run.status !== 'completed') continue;
+                if (!byName.has(run.name)) {
+                  byName.set(run.name, run);
+                  continue;
+                }
+                const existing = byName.get(run.name);
+                if (new Date(run.completed_at) > new Date(existing.completed_at)) {
+                  byName.set(run.name, run);
+                }
+              }
+
+              for (const name of requiredChecks) {
+                const run = byName.get(name);
+                if (!run) return false;
+                if (run.conclusion !== 'success') return false;
+              }
+              return true;
+            }
+
+            function hasLabel(pr, label) {
+              return (pr.labels || []).some(l => (l.name || '').toLowerCase() === label.toLowerCase());
+            }
+
+            let prs = [];
+            if (context.eventName === 'pull_request' || context.eventName === 'pull_request_review') {
+              prs = [context.payload.pull_request];
+            } else if (context.eventName === 'workflow_run') {
+              const sha = context.payload.workflow_run.head_sha;
+              prs = await listPRsForSha(sha);
+            }
+
+            if (!prs || prs.length === 0) {
+              core.info('No PRs to evaluate');
+              return;
+            }
+
+            for (const prRef of prs) {
+              const pr = prRef.number ? await getPR(prRef.number) : prRef;
+              if (pr.state !== 'open' || pr.draft) continue;
+              if (pr.head?.repo?.full_name !== `${owner}/${repo}`) continue;
+              if (!hasLabel(pr, automergeLabel)) continue;
+
+              const julesApproved = await hasJulesApproval(pr.number);
+              if (!julesApproved) continue;
+
+              const checksOk = await checksGreen(pr.head.sha);
+              if (!checksOk) continue;
+
+              core.info(`Merging PR #${pr.number}`);
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: pr.number,
+                merge_method: mergeMethod,
+              });
+            }
