@@ -251,3 +251,17 @@ cleanup-live:
 mcp-config-validate:
 	@echo "🔎 Validiere mcp-config.toml..."
 	python tools/validate_mcp_config.py
+
+# ============================================================================
+# Security Scanning
+# ============================================================================
+
+security-scan:
+	@echo "🛡️  Führe Security-Scan aus..."
+	@if command -v gitleaks > /dev/null; then \
+		gitleaks detect --source . -v; \
+	else \
+		echo "⚠️  gitleaks nicht installiert, überspringe secret scanning"; \
+	fi
+	@ruff check .
+	@bandit -r core/ services/

@@ -4,15 +4,16 @@
 Dieses PR ersetzt AGENTS.md durch einen Read‑Only‑Pointer zur kanonischen AGENTS-Registry im Docs‑Hub.
 
 ## Technical Overview
-- Datei: AGENTS.md im Working‑Repo wurde durch einen Verweis auf D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents\AGENTS.md ersetzt.
+- Datei: AGENTS.md im Working‑Repo wurde durch einen Verweis auf die kanonische Registry im Docs‑Hub ersetzt.
 - Keine Code‑ oder Konfigurationsänderungen.
 
 ### Components Modified
-- [x] Core services
-- [x] Configuration
-- [x] Database schema
-- [x] API endpoints
-- [x] User interface
+- [ ] Core services
+- [ ] Configuration
+- [ ] Database schema
+- [ ] API endpoints
+- [ ] User interface
+- [x] Documentation
 
 ### Architecture Alignment
 - [x] Follows established patterns
@@ -24,9 +25,9 @@ Dieses PR ersetzt AGENTS.md durch einen Read‑Only‑Pointer zur kanonischen AG
 Keine Tests nötig (Dokumentationsänderung)
 
 ### Test Coverage
-- [x] Unit tests added/updated (≥90% coverage)
-- [x] Integration tests added/updated (≥80% coverage)
-- [x] Feature tests added (100% coverage)
+- [ ] Unit tests added/updated (≥90% coverage)
+- [ ] Integration tests added/updated (≥80% coverage)
+- [ ] Feature tests added (100% coverage)
 - [x] Manual testing completed
 
 ### Test Results
@@ -103,10 +104,10 @@ None
 
 ## Agent Approvals
 
-- [x] System Architect Agent - Architecture approved
-- [x] Test Engineer Agent - Test strategy validated
-- [x] Code Reviewer Agent - Code quality approved
-- [x] DevOps Engineer Agent - Deployment ready
+- [ ] System Architect Agent - Architecture approved (N/A)
+- [ ] Test Engineer Agent - Test strategy validated (N/A)
+- [ ] Code Reviewer Agent - Code quality approved (N/A)
+- [ ] DevOps Engineer Agent - Deployment ready (N/A)
 - [x] Documentation Engineer Agent - Documentation complete
 
 ## Checklist
