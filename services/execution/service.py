@@ -472,16 +472,31 @@ def signal_handler(signum, frame):
 
 
 def _require_live_confirmation() -> None:
-    if config.DRY_RUN and config.MOCK_TRADING:
+    """
+    Sicherheitsprüfung für Live-Trading.
+    Erfordert explizite Bestätigung, wenn echtes Geld (Mainnet + Live Executor) im Spiel ist.
+    """
+    # Sicherer Modus, wenn:
+    # 1. MOCK_TRADING aktiv ist (MockExecutor wird verwendet)
+    # 2. DRY_RUN aktiv ist (LiveExecutor loggt nur, führt nicht aus)
+    # 3. MEXC_TESTNET aktiv ist (Testnet, kein echtes Geld)
+    if config.MOCK_TRADING or config.DRY_RUN or config.MEXC_TESTNET:
         return
 
+    # Nur wenn alle oben genannten Sicherheitsnetze deaktiviert sind,
+    # ist es eine ECHTE Live-Umgebung auf dem Mainnet.
     confirmation = os.getenv("CONFIRM_LIVE_TRADING", "").lower().strip()
     if confirmation != "true":
-        logger.critical("LIVE trading safety gate triggered.")
+        logger.critical("🚨 LIVE TRADING SAFETY GATE TRIGGERED 🚨")
+        logger.critical("Sie versuchen, auf dem MAINNET ohne MOCK/DRY-RUN zu traden!")
         logger.critical(
-            "Set CONFIRM_LIVE_TRADING=true to proceed (DRY_RUN=%s, MOCK_TRADING=%s).",
+            "Setzen Sie CONFIRM_LIVE_TRADING=true, um fortzufahren."
+        )
+        logger.critical(
+            "Aktuelle Konfiguration: DRY_RUN=%s, MOCK_TRADING=%s, TESTNET=%s",
             config.DRY_RUN,
             config.MOCK_TRADING,
+            config.MEXC_TESTNET,
         )
         sys.exit(1)
 

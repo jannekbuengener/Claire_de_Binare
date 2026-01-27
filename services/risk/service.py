@@ -26,6 +26,7 @@ from core.auth import validate_all_auth
 try:
     from .config import config
     from .models import Order, Alert, RiskState, OrderResult
+    from .balance_fetcher import RealBalanceFetcher
 except ImportError:
     # Fallback for script/importlib execution: ensure repo root is on sys.path.
     repo_root = Path(__file__).resolve().parents[2]
@@ -91,6 +92,13 @@ class RiskManager:
     def __init__(self):
         self.config = config
         self.redis_client: Optional[redis.Redis] = None
+        self.balance_fetcher: Optional[RealBalanceFetcher] = None
+        if self.config.use_real_balance:
+            try:
+                self.balance_fetcher = RealBalanceFetcher()
+                logger.info("RealBalanceFetcher initialisiert")
+            except Exception as e:
+                logger.error(f"Fehler beim Initialisieren von RealBalanceFetcher: {e}")
         self.pubsub: Optional[redis.client.PubSub] = None
         self.pubsub_results: Optional[redis.client.PubSub] = None
         self._order_result_thread: Optional[Thread] = None
@@ -440,38 +448,51 @@ class RiskManager:
                 time.sleep(1)
 
     def check_position_limit(self, signal: Signal) -> tuple[bool, str]:
-        """Prüft Positions-Limit"""
-        # REAL BALANCE - NO MORE FAKE test_balance
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
+        """
+        Prüft das Positions-Limit für ein Symbol.
+        Verhindert den Aufbau von Positionen, die das konfigurierte Limit (max_position_pct) überschreiten.
+        """
+        if self.config.use_real_balance and self.balance_fetcher:
+            try:
+                current_balance = self.balance_fetcher.get_usdt_balance()
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen der Balance: {e}")
+                return False, f"Balance-Fehler: {e}"
         else:
             current_balance = self.config.test_balance
 
-        # Max 10% des REAL Kapitals pro Position
-        max_position_size = current_balance * self.config.max_position_pct
+        # Max. Notional-Wert pro Position (z.B. 10% des Kapitals)
+        max_notional_usdt = current_balance * self.config.max_position_pct
 
-        # Vereinfachte Berechnung (später mit echtem Portfolio)
-        estimated_position = max_position_size * 0.8  # 80% vom Limit nutzen
+        # Aktuelle Position und Preis ermitteln
+        current_qty = risk_state.positions.get(signal.symbol, 0.0)
+        current_price = signal.price or risk_state.last_prices.get(signal.symbol, 0.0)
 
-        if estimated_position > max_position_size:
+        if current_price <= 0:
+            # Ohne Preis können wir keine Notional-Prüfung machen.
+            # Da calculate_position_size dies auch prüft, lassen wir es hier durch.
+            return True, "Position OK (Preis unbekannt)"
+
+        current_notional = abs(current_qty) * current_price
+
+        # Wenn wir bereits am oder über dem Limit sind, blockieren wir weitere Positionsvergrößerungen.
+        # Hinweis: Reduce-only Orders werden in process_signal vorab gefiltert und umgehen Exposure-Checks.
+        if current_notional >= max_notional_usdt:
             return (
                 False,
-                f"Position zu groß: {estimated_position:.2f} > {max_position_size:.2f}",
+                f"Position für {signal.symbol} am Limit: {current_notional:.2f} >= {max_notional_usdt:.2f}",
             )
 
         return True, "Position OK"
 
     def check_exposure_limit(self) -> tuple[bool, str]:
         """Prüft Gesamt-Exposure (filled + pending reserved)"""
-        # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
+        if self.config.use_real_balance and self.balance_fetcher:
+            try:
+                current_balance = self.balance_fetcher.get_usdt_balance()
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen der Balance: {e}")
+                return False, f"Balance-Fehler: {e}"
         else:
             current_balance = self.config.test_balance
 
@@ -491,12 +512,12 @@ class RiskManager:
 
     def check_drawdown_limit(self) -> tuple[bool, str]:
         """Prüft Daily-Drawdown (Circuit Breaker)"""
-        # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
+        if self.config.use_real_balance and self.balance_fetcher:
+            try:
+                current_balance = self.balance_fetcher.get_usdt_balance()
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen der Balance: {e}")
+                return False, f"Balance-Fehler: {e}"
         else:
             current_balance = self.config.test_balance
 
@@ -716,12 +737,12 @@ class RiskManager:
         Returns:
             (quantity, skip_reason): qty=0.0 mit reason wenn skipped
         """
-        # REAL BALANCE - NO MORE FAKE
-        from .balance_fetcher import RealBalanceFetcher
-
-        if self.config.use_real_balance:
-            balance_fetcher = RealBalanceFetcher()
-            current_balance = balance_fetcher.get_usdt_balance()
+        if self.config.use_real_balance and self.balance_fetcher:
+            try:
+                current_balance = self.balance_fetcher.get_usdt_balance()
+            except Exception as e:
+                logger.error(f"Fehler beim Abrufen der Balance: {e}")
+                return 0.0, f"Balance-Fehler: {e}"
         else:
             current_balance = self.config.test_balance
 
