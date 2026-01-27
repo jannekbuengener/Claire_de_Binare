@@ -1,0 +1,230 @@
+name: Shadow + Soak Evidence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+
+env:
+  SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
+  STACK_NAME: shadow-soak-${{ github.run_id }}
+  SOAK_MINUTES: 20
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  shadow-soak-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Init evidence directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+
+      - name: Create CI secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$SECRETS_PATH"
+          REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
+          POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
+          GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
+          SMTP_USER_VAL="${{ secrets.SMTP_USER != '' && secrets.SMTP_USER || 'ci-smtp-user' }}"
+          SMTP_PASSWORD_VAL="${{ secrets.SMTP_PASSWORD != '' && secrets.SMTP_PASSWORD || 'ci-smtp-password' }}"
+          SMTP_FROM_VAL="${{ secrets.SMTP_FROM != '' && secrets.SMTP_FROM || 'ci-smtp-from@example.com' }}"
+          ALERT_EMAIL_TO_VAL="${{ secrets.ALERT_EMAIL_TO != '' && secrets.ALERT_EMAIL_TO || 'ci-alert-to@example.com' }}"
+          echo "$REDIS_VAL" > "$SECRETS_PATH/REDIS_PASSWORD"
+          echo "$POSTGRES_VAL" > "$SECRETS_PATH/POSTGRES_PASSWORD"
+          echo "postgresql://claire_user:${POSTGRES_VAL}@cdb_postgres:5432/claire_de_binare?sslmode=disable" > "$SECRETS_PATH/POSTGRES_PASSWORD_DSN"
+          echo "$GRAFANA_VAL" > "$SECRETS_PATH/GRAFANA_PASSWORD"
+          echo "$SMTP_USER_VAL" > "$SECRETS_PATH/SMTP_USER"
+          echo "$SMTP_PASSWORD_VAL" > "$SECRETS_PATH/SMTP_PASSWORD"
+          echo "$SMTP_FROM_VAL" > "$SECRETS_PATH/SMTP_FROM"
+          echo "$ALERT_EMAIL_TO_VAL" > "$SECRETS_PATH/ALERT_EMAIL_TO"
+          echo "${{ secrets.MEXC_API_KEY != '' && secrets.MEXC_API_KEY || 'ci-mexc-key' }}" > "$SECRETS_PATH/MEXC_API_KEY.txt"
+          echo "${{ secrets.MEXC_API_SECRET != '' && secrets.MEXC_API_SECRET || 'ci-mexc-secret' }}" > "$SECRETS_PATH/MEXC_API_SECRET.txt"
+          chmod 600 "$SECRETS_PATH"/*
+
+      - name: Create deterministic override
+        shell: bash
+        run: |
+          set -euo pipefail
+          override_file="$RUNNER_TEMP/shadow-soak-override.yml"
+          cat > "$override_file" <<'EOF'
+          services:
+            cdb_ws:
+              environment:
+                WS_SOURCE: stub
+            cdb_signal:
+              environment:
+                SIGNAL_STRATEGY_ID: paper
+            cdb_execution:
+              environment:
+                MOCK_TRADING: "true"
+                USE_REAL_BALANCE: "false"
+            cdb_paper_runner:
+              environment:
+                PAPER_TRADING_DURATION_DAYS: "1"
+          EOF
+          echo "OVERRIDE_FILE=$override_file" >> "$GITHUB_ENV"
+
+      - name: Start stack
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" up -d --build
+
+      - name: Wait for services healthy
+        shell: bash
+        run: |
+          set -euo pipefail
+          healthy_services=(
+            cdb_redis
+            cdb_postgres
+            cdb_prometheus
+            cdb_grafana
+            cdb_postgres_exporter
+            cdb_redis_exporter
+            cdb_ws
+            cdb_signal
+            cdb_candles
+            cdb_allocation
+            cdb_regime
+            cdb_db_writer
+            cdb_paper_runner
+            cdb_reports
+          )
+          running_services=(
+            cdb_risk
+            cdb_execution
+          )
+          deadline=$((SECONDS + 600))
+          while true; do
+            all_ok=1
+            for svc in "${healthy_services[@]}"; do
+              status=$(docker inspect -f '{{.State.Health.Status}}' "$svc" 2>/dev/null || echo missing)
+              if [ "$status" != "healthy" ]; then
+                all_ok=0
+              fi
+            done
+            for svc in "${running_services[@]}"; do
+              state=$(docker inspect -f '{{.State.Status}}' "$svc" 2>/dev/null || echo missing)
+              if [ "$state" != "running" ]; then
+                all_ok=0
+              fi
+            done
+            if [ "$all_ok" -eq 1 ]; then
+              break
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "Health check timeout"
+              docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" ps
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Soak window
+        shell: bash
+        run: |
+          set -euo pipefail
+          soak_seconds=$((SOAK_MINUTES * 60))
+          echo "Soaking for ${SOAK_MINUTES} minutes..."
+          sleep "$soak_seconds"
+
+      - name: Verify endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/endpoints
+          check_url() {
+            name="$1"
+            url="$2"
+            ext="$3"
+            out="evidence/endpoints/${name}.${ext}"
+            if ! curl -fsS "$url" -o "$out"; then
+              echo "Endpoint check failed: $name ($url)"
+              exit 1
+            fi
+          }
+          check_url prometheus_healthy http://127.0.0.1:19090/-/healthy txt
+          check_url prometheus_targets http://127.0.0.1:19090/api/v1/targets json
+          check_url grafana_health http://127.0.0.1:3000/api/health json
+          check_url ws_health http://127.0.0.1:8000/health json
+          check_url signal_health http://127.0.0.1:8005/health json
+          check_url candles_health http://127.0.0.1:8007/health json
+          check_url allocation_health http://127.0.0.1:8006/health json
+          check_url regime_health http://127.0.0.1:8008/health json
+          check_url paper_runner_health http://127.0.0.1:8004/health json
+          check_url postgres_exporter_metrics http://127.0.0.1:9187/metrics txt
+          check_url redis_exporter_metrics http://127.0.0.1:9121/metrics txt
+
+      - name: Capture evidence
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" ps > evidence/compose_ps.txt || true
+          docker inspect cdb_redis cdb_postgres cdb_prometheus cdb_grafana cdb_postgres_exporter cdb_redis_exporter cdb_ws cdb_signal cdb_candles cdb_allocation cdb_regime cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_reports > evidence/container_inspect.json || true
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" logs --tail=200 > evidence/logs_tail.txt || true
+          grep -i "error" evidence/logs_tail.txt > evidence/logs_grep.txt || true
+          run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          cat > evidence/run_summary.json <<EOF
+          {
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_url": "${run_url}",
+            "ref": "${GITHUB_REF}",
+            "commit": "${GITHUB_SHA}",
+            "status": "${JOB_STATUS}",
+            "soak_minutes": ${SOAK_MINUTES},
+            "ended_at": "${end_time}"
+          }
+          EOF
+          cat > evidence/run_summary.md <<EOF
+          # Shadow + Soak Evidence Summary
+
+          - Run: ${run_url}
+          - Ref: ${GITHUB_REF}
+          - Commit: ${GITHUB_SHA}
+          - Status: ${JOB_STATUS}
+          - Soak minutes: ${SOAK_MINUTES}
+          - Ended: ${end_time}
+
+          Artifacts:
+          - compose_ps.txt
+          - container_inspect.json
+          - endpoints/*
+          - logs_tail.txt
+          - logs_grep.txt
+          - run_summary.json
+          EOF
+
+      - name: Upload evidence artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: shadow-soak-evidence
+          path: evidence/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Teardown
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" down -v
