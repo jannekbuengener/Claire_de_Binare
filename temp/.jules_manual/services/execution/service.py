@@ -152,7 +152,7 @@ def init_services():
         # Initialize executor - LIVE DATA CONVERSION
         if config.MOCK_TRADING:
             executor = MockExecutor()
-            logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
+            logger.info(" Using MockExecutor (Paper Trading Mode)")
         else:
             dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
             testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
