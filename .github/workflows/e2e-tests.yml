@@ -176,6 +176,10 @@ jobs:
       - name: Install Dependencies
         run: |
           pip install --no-cache-dir redis requests pytest psycopg2-binary pytest-cov
+          pip install -r requirements-mcp.txt
+
+      - name: MCP Validation
+        run: make mcp-config-validate MCP_CONFIG_PATHS="tests/fixtures/mcp_smoke_config.json"
 
       - name: Start Stack (base + dev)
         working-directory: infrastructure/compose
