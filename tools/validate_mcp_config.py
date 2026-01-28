@@ -56,7 +56,7 @@ def validate_mcp_file(file_path: Path) -> bool:
                     print(f"❌ (Module '{module_name}' not found)")
                     all_ok = False
             else:
-                print(f"  Could not determine python module from args for {name}: {args}")
+                print(f"  Could NOT determine python module from args for {name}: {args}")
         elif command in ("cmd", "npx"):
             # Basic check for npx existence
             print(f"  Skipping deep validation for {command}-based server: {name}")
