@@ -37,7 +37,7 @@
 .NOTES
     Canonical secrets path: C:\Users\janne\Documents\.secrets\.cdb
     Manifest: tools/secrets/secrets.manifest.json
-    Rotation state: tools/secrets/.rotation_state.json
+    Rotation state: $SECRETS_PATH/.rotation_state.json (v1.2+)
 #>
 
 param(
@@ -62,7 +62,7 @@ $ErrorActionPreference = 'Stop'
 # =============================================================================
 $MANIFEST_PATH = Join-Path $PSScriptRoot 'secrets.manifest.json'
 $ENV_RUNTIME_PATH = Join-Path $PSScriptRoot '.env.runtime'
-$STATE_PATH = Join-Path $PSScriptRoot '.rotation_state.json'
+$STATE_PATH = $null  # Set dynamically in Main after loading manifest
 $MAX_AGE_DAYS = 90  # Rotate if older than 90 days
 
 # =============================================================================
@@ -144,11 +144,12 @@ function Test-SecretFreshness($secretName, $state) {
     }
 
     try {
-        $lastRotated = [DateTime]::Parse($secretState.last_rotated)
+        # Parse ISO 8601 format (handles timezone offsets)
+        $lastRotated = [DateTime]::Parse($secretState.last_rotated, [System.Globalization.CultureInfo]::InvariantCulture)
         $age = (Get-Date) - $lastRotated
         return $age.TotalDays -lt $MAX_AGE_DAYS
     } catch {
-        Write-Warning "Failed to parse rotation timestamp for $secretName"
+        Write-Warning "Failed to parse rotation timestamp for $secretName : $_"
         return $false  # Invalid timestamp = not fresh
     }
 }
@@ -290,7 +291,7 @@ function Invoke-Plan($manifest) {
             } elseif (-not $isFresh) {
                 $status = "UPDATE"
                 $ageInfo = if ($state.secrets.ContainsKey($secret.name) -and $state.secrets[$secret.name].last_rotated) {
-                    $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated)
+                    $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated, [System.Globalization.CultureInfo]::InvariantCulture)
                     $age = (Get-Date) - $lastRotated
                     "age: $([Math]::Round($age.TotalDays, 1)) days"
                 } else {
@@ -299,7 +300,7 @@ function Invoke-Plan($manifest) {
                 $reason = "$ageInfo (max: $MAX_AGE_DAYS days)"
             } else {
                 $status = "SKIP"
-                $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated)
+                $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated, [System.Globalization.CultureInfo]::InvariantCulture)
                 $age = (Get-Date) - $lastRotated
                 $reason = "fresh (age: $([Math]::Round($age.TotalDays, 1)) days)"
             }
@@ -385,7 +386,7 @@ function Invoke-Apply($manifest) {
 
         # Skip if fresh (unless forced)
         if ($exists -and $isFresh -and -not $Force) {
-            $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated)
+            $lastRotated = [DateTime]::Parse($state.secrets[$secret.name].last_rotated, [System.Globalization.CultureInfo]::InvariantCulture)
             $age = (Get-Date) - $lastRotated
             Write-Info "SKIP   $($secret.name) (fresh, age: $([Math]::Round($age.TotalDays, 1)) days, max: $MAX_AGE_DAYS)"
             $skipped++
@@ -506,18 +507,36 @@ function Invoke-Export($manifest) {
 # MAIN
 # =============================================================================
 function Main {
-    Write-Section "CDB Secret Rotator v1.1 (State-Based Rotation)"
+    Write-Section "CDB Secret Rotator v1.2 (State in SECRETS_PATH)"
     Write-Info "Command: $Command"
     Write-Info "Manifest: $MANIFEST_PATH"
+
+    # Load and validate manifest
+    $manifest = Read-Manifest
+    Validate-Manifest $manifest
+
+    # Set state path to canonical secrets location (v1.2 hardening)
+    $script:STATE_PATH = Join-Path $manifest.canonical_secrets_path '.rotation_state.json'
+
+    # Migration: Copy old state from repo tree if present (one-time)
+    $oldStatePath = Join-Path $PSScriptRoot '.rotation_state.json'
+    if ((Test-Path $oldStatePath) -and -not (Test-Path $script:STATE_PATH)) {
+        try {
+            Copy-Item $oldStatePath $script:STATE_PATH -Force
+            Write-Info "Migrated rotation state from repo to $($manifest.canonical_secrets_path)"
+            Write-Info "Old state file: $oldStatePath (can be deleted manually)"
+        } catch {
+            Write-Warning "Failed to migrate state file: $_"
+            Write-Warning "Using old state path as fallback"
+            $script:STATE_PATH = $oldStatePath
+        }
+    }
+
     Write-Info "Rotation state: $STATE_PATH"
     Write-Info "Max age: $MAX_AGE_DAYS days"
     if ($Force) {
         Write-Warning "Force mode: Ignoring rotation state (all secrets will rotate)"
     }
-
-    # Load and validate manifest
-    $manifest = Read-Manifest
-    Validate-Manifest $manifest
 
     # Execute command
     switch ($Command) {

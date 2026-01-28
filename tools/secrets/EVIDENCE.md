@@ -90,16 +90,17 @@ git status --ignored --porcelain | grep -E "(tools/secrets/)"
 *.runtime.env
 .secrets/*.export
 tools/secrets/.env.*
-tools/secrets/.rotation_state.json
 !tools/secrets/README.md
 !tools/secrets/evidence/**
+# Note: .rotation_state.json now lives in $SECRETS_PATH (outside repo) since v1.2
 ```
 
 ---
 
 ## 4. Rotation State Tracking
 
-**File:** `tools/secrets/.rotation_state.json` (gitignored, runtime only)
+**File:** `$SECRETS_PATH/.rotation_state.json` (v1.2+, outside repo)
+**Old location (v1.1):** `tools/secrets/.rotation_state.json` (auto-migrated on first run)
 
 **Structure:**
 ```json
@@ -108,7 +109,7 @@ tools/secrets/.rotation_state.json
   "secrets": {
     "REDIS_PASSWORD": {
       "last_rotated": "2026-01-28T15:29:26.0000000+01:00",
-      "rotated_by": "Rotate-Secrets.ps1 v1.1",
+      "rotated_by": "Rotate-Secrets.ps1 v1.2",
       "length": 32,
       "format": "base64"
     }
@@ -116,12 +117,19 @@ tools/secrets/.rotation_state.json
 }
 ```
 
-**Skip Logic (v1.1):**
+**Skip Logic (v1.1+):**
 - ❌ **Old (v1.0):** Skip if `length == expected_length` (weak - compromised secret could persist)
-- ✅ **New (v1.1):** Skip if `age < MAX_AGE_DAYS` (90 days default) (strong - freshness enforced)
+- ✅ **New (v1.1+):** Skip if `age < MAX_AGE_DAYS` (90 days default) (strong - freshness enforced)
+
+**State Location (v1.2 Hardening):**
+- ✅ State file now lives in `$SECRETS_PATH` (outside repo tree)
+- ✅ Automatic migration from old location on first run
+- ✅ Repo remains 100% metadata-free (not just value-free)
+- ✅ Zero risk of accidental state commits
 
 **Evidence:**
 - `Test-SecretFreshness()` function (Lines 129-147 in Rotate-Secrets.ps1)
+- Migration logic in Main function (v1.2)
 - Age calculation: `$age.TotalDays -lt $MAX_AGE_DAYS`
 - Force override available: `Rotate-Secrets.ps1 apply -Force`
 

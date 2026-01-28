@@ -168,6 +168,6 @@ Repository—Überblick.md
 *.runtime.env
 .secrets/*.export
 tools/secrets/.env.*
-tools/secrets/.rotation_state.json
 !tools/secrets/README.md
 !tools/secrets/evidence/**
+# Note: .rotation_state.json now lives in $SECRETS_PATH (outside repo) since v1.2
