@@ -68,6 +68,7 @@ def validate_mcp_file(file_path: Path) -> bool:
 def main():
     parser = argparse.ArgumentParser(description="Validate MCP configuration files.")
     parser.add_argument("paths", nargs="*", help="Paths to MCP config files (can be comma-separated).")
+    parser.add_argument("--allow-empty", action="store_true", help="Do not fail if no configuration files are found.")
     args = parser.parse_args()
 
     raw_paths = []
@@ -101,8 +102,14 @@ def main():
     mcp_files = sorted(list(set(mcp_files)))
 
     if not mcp_files:
-        print("⚠️  No MCP configuration files found to validate.")
-        return
+        if args.allow_empty:
+            print("⚠️  No MCP configuration files found to validate (allowed by --allow-empty).")
+            return
+        else:
+            print("❌ Error: No MCP configuration files found to validate.")
+            print("To fix this, provide paths via arguments, MCP_CONFIG_PATHS environment variable,")
+            print("or ensure .mcp.json or *.mcp.json files exist in the current directory.")
+            sys.exit(1)
 
     success = True
     for mcp_file in mcp_files:

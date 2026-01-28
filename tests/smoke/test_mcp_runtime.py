@@ -1,12 +1,16 @@
 """
 MCP Runtime Smoke Test
 Verifies that the MCP time server can be started and responds to tool calls.
-Ensures environment independence by using pinned dependencies.
+
+NOTE: This is an environment smoke test to ensure dependencies and basic IPC
+(Inter-Process Communication) are functional. It does not provide a semantic
+time correctness proof (e.g., monotonicity or precision).
 """
 
 import asyncio
 import pytest
 import sys
+import re
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -31,20 +35,26 @@ async def test_mcp_time_server_runtime():
                 tools = result.tools
 
                 tool_names = [t.name for t in tools]
-                assert 'get_current_time' in tool_names
-                assert 'convert_time' in tool_names
+                assert 'get_current_time' in tool_names, "Missing 'get_current_time' tool"
+                assert 'convert_time' in tool_names, "Missing 'convert_time' tool"
 
-                # Call a tool (deterministic check: response should be successful)
+                # Call a tool
                 response = await session.call_tool(
                     'get_current_time',
                     arguments={'timezone': 'UTC'}
                 )
 
-                assert not response.isError
-                assert len(response.content) > 0
-                assert 'UTC' in response.content[0].text
+                assert not response.isError, f"Tool call failed: {response}"
+                assert len(response.content) > 0, "Empty response content"
+
+                text = response.content[0].text
+                # Robust format check: expect something like 'Current time in UTC: 2026-01-28 22:00:00'
+                # Just checking for ISO-ish date pattern and UTC
+                assert 'UTC' in text
+                assert re.search(r'\d{4}-\d{2}-\d{2}', text), f"Response does not contain a date: {text}"
+
     except Exception as e:
-        pytest.fail(f"MCP Time Server failed to respond: {e}")
+        pytest.fail(f"MCP Time Server failed to respond or encountered an error: {e}")
 
 if __name__ == "__main__":
     asyncio.run(test_mcp_time_server_runtime())

@@ -214,7 +214,7 @@ jobs:
           pip install -r requirements-mcp.txt
 
       - name: MCP Validation
-        run: make mcp-config-validate MCP_PATHS=".mcp.json,claire-de-binare.mcp.json"
+        run: make mcp-config-validate MCP_PATHS="tests/fixtures/mcp_smoke_config.json"
 
       - name: Run tests with coverage
         run: |
@@ -269,7 +269,7 @@ jobs:
           pip install -r requirements-mcp.txt
 
       - name: MCP Validation
-        run: make mcp-config-validate MCP_PATHS=".mcp.json,claire-de-binare.mcp.json"
+        run: make mcp-config-validate MCP_PATHS="tests/fixtures/mcp_smoke_config.json"
 
       - name: Log E2E mismatch budget
         run: |
