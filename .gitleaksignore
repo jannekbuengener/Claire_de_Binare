@@ -25,3 +25,13 @@ tests/unit/verlosung/test_docker_lifecycle.py:generic-api-key
 
 # False-positive: ANSI-formatted script name in help text (Rotate-Secrets.ps1)
 tools/secrets/Rotate-Secrets.ps1:generic-api-key:338
+
+# Legacy commits (before fixture refactor PR #714) - false-positives eliminated in current files
+# Test fixture: ghp_ABCDEF1234567890 → FAKE_TEST_TOKEN_NOT_REAL (fixed in ea4be33)
+e12f529094591f848d39a427bb21b3d95d12ae9c:tests/unit/surrealdb/test_ledger_importer.py:generic-api-key:26
+
+# Documentation examples: admin:PASSWORD → admin:$GRAFANA_PASSWORD (fixed in ea4be33)
+5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:48
+5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:61
+5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:238
+5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:357
