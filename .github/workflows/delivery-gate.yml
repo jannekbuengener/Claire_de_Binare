@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   check-delivery-gate:
-    name: Check Delivery Gate
+    name: check-delivery-gate
     runs-on: ubuntu-latest
 
     steps:

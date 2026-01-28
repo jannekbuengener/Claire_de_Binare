@@ -7,8 +7,6 @@ on:
   
 jobs:
   compat:
-    name: Python compatibility matrix (informational)
- bugfix/519-python-compat-workflow
     name: Python compatibility matrix
 
     runs-on: ubuntu-latest
@@ -32,4 +30,3 @@ jobs:
 
       - name: Quick compatibility smoke
         run: python -c "import sys; print(sys.version)"
-        

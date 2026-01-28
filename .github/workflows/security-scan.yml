@@ -286,8 +286,8 @@ jobs:
           path: scan-cdb_${{ matrix.service }}.txt
           retention-days: 30
 
-  summary:
-    name: Security Scan Summary
+  security-scan:
+    name: security-scan
     runs-on: ubuntu-latest
     needs: [trivy-scan-base, trivy-scan-custom, scan-base-images, scan-custom-images]
     if: always()

@@ -5,7 +5,10 @@
       "ci",
       "e2e-tests",
       "lint",
-      "security-scan"
+      "security-scan",
+      "check-delivery-gate",
+      "secrets-scan",
+      "core-guard"
     ]
   },
   "enforce_admins": false,
