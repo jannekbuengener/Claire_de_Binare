@@ -1,0 +1,63 @@
+# Soak/Shadow Mode Resource Limits
+# Reduces I/O and memory pressure for long-running stability tests
+# Use: docker compose -f base.yml -f dev.yml -f soak.yml up
+
+services:
+  # Core monitoring services - resource constrained for stability
+  cdb_prometheus:
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+    environment:
+      # Reduce scrape frequency to lower I/O pressure
+      - PROMETHEUS_SCRAPE_INTERVAL=60s
+      - PROMETHEUS_EVAL_INTERVAL=2m
+      # WAL retention optimizations
+      - PROMETHEUS_STORAGE_TSDB_RETENTION_TIME=6h
+      - PROMETHEUS_STORAGE_TSDB_WAL_COMRESSION=true
+
+  cdb_loki:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+    environment:
+      # Reduce checkpoint frequency from 1m to 5m
+      - LOKI_INGESTOR_MAX_TRANSFER_RETRIES=3
+      - LOKI_SERVER_GRPC_MAX_RECV_MSG_SIZE=4194304
+      - LOKI_SERVER_GRPC_MAX_SEND_MSG_SIZE=4194304
+
+  cdb_grafana:
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+
+  cdb_alertmanager:
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.15'
+        reservations:
+          memory: 128M
+
+  # Optional: Reduce logging volume for all services
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+  # Global constraints for stability
+  restart: unless-stopped

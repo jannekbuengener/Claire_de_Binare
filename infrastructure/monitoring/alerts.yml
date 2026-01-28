@@ -22,7 +22,7 @@ groups:
   - name: critical_alerts
     rules:
       - alert: ServiceDown
-        expr: up == 0
+        expr: up{job=~"cdb_(execution|signal|db_writer|candles|allocation|regime|risk|ws|paper_runner|reports|alertmanager|prometheus|grafana|loki|promtail|redis|postgres|redis_exporter|postgres_exporter)"} == 0
         for: 1m
         labels:
           severity: critical
@@ -162,7 +162,7 @@ groups:
           description: "{{ $value }} restarts in the last hour."
 
       - alert: DiskSpaceLow
-        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
         for: 5m
         labels:
           severity: high
@@ -219,7 +219,7 @@ groups:
           runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#abort-triggers"
 
       - alert: SoakTest_DiskFull
-        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
         for: 5m
         labels:
           severity: critical
