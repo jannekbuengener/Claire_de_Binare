@@ -210,6 +210,26 @@ paper-trading-stop:
 	@echo "✅ Paper Trading Runner gestoppt"
 
 # ============================================================================
+# Kill-Switch (One Button) - Interface Definition (#657)
+# ============================================================================
+
+kill-switch-activate:
+	@echo "🚨 KILL-SWITCH ACTIVATION REQUESTED"
+	@echo "⚠️  Not implemented yet (See #657, #722)"
+	@echo "TODO: Implement atomic stop script"
+	@exit 1
+
+kill-switch-status:
+	@echo "🔍 Checking Kill-Switch Status..."
+	@echo "⚠️  Not implemented yet"
+	@exit 1
+
+kill-switch-release:
+	@echo "🔓 Kill-Switch Release Requested"
+	@echo "⚠️  Not implemented yet"
+	@exit 1
+
+# ============================================================================
 # Zusätzliche Hilfsfunktionen
 # ============================================================================
 
