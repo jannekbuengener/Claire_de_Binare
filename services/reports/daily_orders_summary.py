@@ -219,15 +219,17 @@ def format_email_body(data, start_time, end_time):
 def send_email(subject, body_html):
     """Send email via SMTP using Docker secrets"""
     try:
-        # Read SMTP config from secrets
-        smtp_host = "smtp.gmail.com:587"
+        # Read SMTP config from secrets or environment
+        smtp_host = read_secret("/run/secrets/smtp_host") or os.getenv(
+            "SMTP_HOST", "smtp.gmail.com:587"
+        )
         smtp_user = read_secret("/run/secrets/smtp_user")
         smtp_password = read_secret("/run/secrets/smtp_password")
         from_address = read_secret("/run/secrets/smtp_from")
         to_address = read_secret("/run/secrets/alert_email_to")
 
         if not all([smtp_user, smtp_password, from_address, to_address]):
-            print("[ERROR] Missing SMTP credentials")
+            print(f"[ERROR] Missing SMTP credentials (host: {smtp_host})")
             return False
 
         # Create message

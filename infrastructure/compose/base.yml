@@ -82,7 +82,7 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       # SMTP Configuration for Email Alerts
       GF_SMTP_ENABLED: "true"
-      GF_SMTP_HOST: smtp.gmail.com:587
+      GF_SMTP_HOST__FILE: /run/secrets/smtp_host
       GF_SMTP_USER__FILE: /run/secrets/smtp_user
       GF_SMTP_PASSWORD__FILE: /run/secrets/smtp_password
       GF_SMTP_FROM_ADDRESS__FILE: /run/secrets/smtp_from
@@ -90,6 +90,7 @@ services:
       GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
     secrets:
       - grafana_password
+      - smtp_host
       - smtp_user
       - smtp_password
       - smtp_from
@@ -180,6 +181,8 @@ secrets:
     file: ${SECRETS_PATH}/POSTGRES_PASSWORD_DSN
   grafana_password:
     file: ${SECRETS_PATH}/GRAFANA_PASSWORD
+  smtp_host:
+    file: ${SECRETS_PATH}/SMTP_HOST
   smtp_user:
     file: ${SECRETS_PATH}/SMTP_USER
   smtp_password:

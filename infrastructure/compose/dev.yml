@@ -340,6 +340,7 @@ services:
     secrets:
       - postgres_password_dsn
       - postgres_password
+      - smtp_host
       - smtp_user
       - smtp_password
       - smtp_from

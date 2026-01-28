@@ -36,14 +36,16 @@ jobs:
           REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
           POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
           GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
+          SMTP_HOST_VAL="${{ secrets.SMTP_HOST != '' && secrets.SMTP_HOST || 'smtp.gmail.com:587' }}"
           SMTP_USER_VAL="${{ secrets.SMTP_USER != '' && secrets.SMTP_USER || 'ci-smtp-user' }}"
           SMTP_PASSWORD_VAL="${{ secrets.SMTP_PASSWORD != '' && secrets.SMTP_PASSWORD || 'ci-smtp-password' }}"
           SMTP_FROM_VAL="${{ secrets.SMTP_FROM != '' && secrets.SMTP_FROM || 'ci-smtp-from@example.com' }}"
           ALERT_EMAIL_TO_VAL="${{ secrets.ALERT_EMAIL_TO != '' && secrets.ALERT_EMAIL_TO || 'ci-alert-to@example.com' }}"
           echo "$REDIS_VAL" > $SECRETS_PATH/REDIS_PASSWORD
           echo "$POSTGRES_VAL" > $SECRETS_PATH/POSTGRES_PASSWORD
-          echo "postgresql://claire_user:${POSTGRES_VAL}@postgres:5432/claire?sslmode=disable" > $SECRETS_PATH/POSTGRES_PASSWORD_DSN
+          echo "postgresql://claire_user:${POSTGRES_VAL}@cdb_postgres:5432/claire_de_binare?sslmode=disable" > $SECRETS_PATH/POSTGRES_PASSWORD_DSN
           echo "$GRAFANA_VAL" > $SECRETS_PATH/GRAFANA_PASSWORD
+          echo "$SMTP_HOST_VAL" > $SECRETS_PATH/SMTP_HOST
           echo "$SMTP_USER_VAL" > $SECRETS_PATH/SMTP_USER
           echo "$SMTP_PASSWORD_VAL" > $SECRETS_PATH/SMTP_PASSWORD
           echo "$SMTP_FROM_VAL" > $SECRETS_PATH/SMTP_FROM
@@ -76,12 +78,14 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
+          MEXC_API_SECRET: ${{ secrets.MEXC_API_SECRET }}
         run: |
           set -euo pipefail
 
           # Define "real secrets present" condition (adjust names to your repo)
           missing=0
-          req=(SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO)
+          req=(SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO MEXC_API_KEY MEXC_API_SECRET)
           for k in "${req[@]}"; do
             if [[ -z "${!k:-}" ]]; then missing=1; fi
           done
@@ -123,11 +127,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "SMTP_FROM=ci-stub@example.invalid" >> "$GITHUB_ENV"
-          echo "SMTP_HOST=stub" >> "$GITHUB_ENV"
-          echo "SMTP_USER=stub" >> "$GITHUB_ENV"
-          echo "SMTP_PASSWORD=stub" >> "$GITHUB_ENV"
-          echo "ALERT_EMAIL_TO=ci-stub@example.invalid" >> "$GITHUB_ENV"
+          echo "SMTP_FROM=ci-smtp-from@example.com" >> "$GITHUB_ENV"
+          echo "SMTP_HOST=smtp.gmail.com:587" >> "$GITHUB_ENV"
+          echo "SMTP_USER=ci-smtp-user" >> "$GITHUB_ENV"
+          echo "SMTP_PASSWORD=ci-smtp-password" >> "$GITHUB_ENV"
+          echo "ALERT_EMAIL_TO=ci-alert-to@example.com" >> "$GITHUB_ENV"
+          echo "MEXC_API_KEY=ci-mexc-key" >> "$GITHUB_ENV"
+          echo "MEXC_API_SECRET=ci-mexc-secret" >> "$GITHUB_ENV"
 
       - name: Create issue on protected exception
         if: |
@@ -146,7 +152,7 @@ jobs:
           Run ID: ${GITHUB_RUN_ID}
           Ref: ${GITHUB_REF}
           Event: ${GITHUB_EVENT_NAME}
-          Expected secrets: SMTP_FROM, SMTP_HOST, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_TO
+          Expected secrets: SMTP_FROM, SMTP_HOST, SMTP_USER, SMTP_PASSWORD, ALERT_EMAIL_TO, MEXC_API_KEY, MEXC_API_SECRET
 
           Green != Real E2E
           EOF
