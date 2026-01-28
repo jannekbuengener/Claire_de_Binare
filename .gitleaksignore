@@ -24,7 +24,7 @@ tests/unit/verlosung/test_cli_tools.py:generic-api-key
 tests/unit/verlosung/test_docker_lifecycle.py:generic-api-key
 
 # False-positive: ANSI-formatted script name in help text (Rotate-Secrets.ps1)
-tools/secrets/Rotate-Secrets.ps1:generic-api-key:338
+tools/secrets/Rotate-Secrets.ps1:generic-api-key:345
 
 # Legacy commits (before fixture refactor PR #714) - false-positives eliminated in current files
 # Test fixture: ghp_ABCDEF1234567890 → FAKE_TEST_TOKEN_NOT_REAL (fixed in ea4be33)
