@@ -18,12 +18,16 @@ HOUR=$(date +%H)
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 ARTIFACT_DIR="artifacts/soak_test_$(date +%Y%m%d)*"
 
+# Ensure script continues even if individual commands fail
+set +e
+
 # Find artifacts directory (created at test start)
 if ! ls -d ${ARTIFACT_DIR} &>/dev/null; then
   echo "⚠️  WARNING: No soak test artifacts directory found"
   echo "Expected: artifacts/soak_test_YYYYMMDD_HHMMSS/"
-  echo "Skipping monitoring checks"
-  exit 0
+  echo "Creating artifacts directory"
+  mkdir -p "artifacts/soak_test_$(date +%Y%m%d)_$(date +%H%M%S)"
+  ARTIFACT_DIR="artifacts/soak_test_$(date +%Y%m%d)_$(date +%H%M%S)"
 fi
 
 ARTIFACT_PATH=$(ls -d ${ARTIFACT_DIR} | head -1)
@@ -88,7 +92,7 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
   done
 
   echo -e "${RED}Soak Test FAILED. See $ARTIFACT_PATH for evidence.${NC}"
-  exit 1
+  # Don't exit - continue monitoring to capture full failure timeline
 else
   echo -e "${GREEN}✓ No restarts detected${NC}"
   echo "$TIMESTAMP - Hour $HOUR: No restarts" >> "$ARTIFACT_PATH/hourly_checks.log"
