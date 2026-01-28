@@ -15,11 +15,8 @@ This tool rotates **machine-readable secrets** (DB passwords, Redis, app keys) w
 # Plan what will be rotated
 .\tools\secrets\Rotate-Secrets.ps1 plan
 
-# Apply rotation (auto secrets only)
-.\tools\secrets\Rotate-Secrets.ps1 apply
-
-# Export to .env.runtime
-.\tools\secrets\Rotate-Secrets.ps1 export
+# Apply rotation and auto-export (auto secrets only)
+.\tools\secrets\Rotate-Secrets.ps1 apply -ExportAfter
 
 # Restart stack (auto-loads .env.runtime)
 .\infrastructure\scripts\stack_up.ps1
@@ -52,9 +49,16 @@ Rotates all auto secrets (rotation_mode=auto, exclude_by_default=false) and writ
 
 **Hard-fail protection:** `--IncludeManual` flag is FORBIDDEN and will cause immediate error.
 
+**Flags:**
+- `--ExportAfter` (Alias: `--Export`): Automatically run export after successful rotation
+
 **Example:**
 ```powershell
+# Apply only (manual export needed)
 .\Rotate-Secrets.ps1 apply
+
+# Apply + auto-export (recommended for incidents)
+.\Rotate-Secrets.ps1 apply -ExportAfter
 ```
 
 ### `export`

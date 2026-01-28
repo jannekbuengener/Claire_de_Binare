@@ -24,10 +24,14 @@
 .PARAMETER Force
     Force rotation even if state indicates recent rotation (use with caution)
 
+.PARAMETER ExportAfter
+    Automatically run export after successful apply (Alias: Export)
+
 .EXAMPLE
     .\Rotate-Secrets.ps1 plan
     .\Rotate-Secrets.ps1 apply
     .\Rotate-Secrets.ps1 apply -Force
+    .\Rotate-Secrets.ps1 apply -ExportAfter
     .\Rotate-Secrets.ps1 export
 
 .NOTES
@@ -44,7 +48,10 @@ param(
     [switch]$All,
     [string]$Secret,
     [switch]$IncludeManual,
-    [switch]$Force
+    [switch]$Force,
+
+    [Alias('Export')]
+    [switch]$ExportAfter
 )
 
 Set-StrictMode -Version Latest
@@ -418,15 +425,32 @@ function Invoke-Apply($manifest) {
     # Persist rotation state
     Write-RotationState $state
 
+    # Auto-export if --ExportAfter flag is set
+    if ($ExportAfter) {
+        Write-Info ""
+        Write-Info "Auto-exporting secrets (--ExportAfter flag set)..."
+        try {
+            Invoke-Export $manifest
+        } catch {
+            Write-Error "Export failed: $_"
+            exit 1
+        }
+    }
+
     Write-Section "Apply Complete"
     Write-Success "Rotated: $rotated secrets"
     if ($skipped -gt 0) {
         Write-Info "Skipped: $skipped secrets (fresh, age < $MAX_AGE_DAYS days)"
     }
     Write-Info ""
-    Write-Info "Next steps:"
-    Write-Info "  1. Run 'Rotate-Secrets.ps1 export' to generate .env.runtime"
-    Write-Info "  2. Run 'infrastructure/scripts/stack_up.ps1' to restart stack"
+    if ($ExportAfter) {
+        Write-Info "Next step:"
+        Write-Info "  1. Run 'infrastructure/scripts/stack_up.ps1' to restart stack"
+    } else {
+        Write-Info "Next steps:"
+        Write-Info "  1. Run 'Rotate-Secrets.ps1 export' to generate .env.runtime"
+        Write-Info "  2. Run 'infrastructure/scripts/stack_up.ps1' to restart stack"
+    }
 }
 
 # =============================================================================
