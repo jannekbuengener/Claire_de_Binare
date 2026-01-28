@@ -35,3 +35,6 @@ e12f529094591f848d39a427bb21b3d95d12ae9c:tests/unit/surrealdb/test_ledger_import
 5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:61
 5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:238
 5ae1df7eea9eb92b7ce0443ab44bd6dbb0a4c97a:reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md:curl-auth-user:357
+
+# EVIDENCE.md documentation (first commit) - pattern documented before redaction (fixed in 870bd37)
+ea4be334762bcdfdd46afb0c22229b1280fa1313:tools/secrets/EVIDENCE.md:generic-api-key:242
