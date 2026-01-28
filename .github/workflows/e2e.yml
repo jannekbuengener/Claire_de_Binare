@@ -49,7 +49,7 @@ jobs:
           pip install -r requirements-mcp.txt
 
       - name: MCP Validation
-        run: make mcp-config-validate
+        run: make mcp-config-validate MCP_PATHS=".mcp.json,claire-de-binare.mcp.json"
 
       - name: Create .env file
         run: |

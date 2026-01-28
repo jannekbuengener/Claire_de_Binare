@@ -52,7 +52,7 @@ jobs:
         # Falls ihr kein requirements.txt habt, sag kurz Bescheid – dann passt man das sauber an.
 
       - name: MCP Validation
-        run: make mcp-config-validate
+        run: make mcp-config-validate MCP_PATHS=".mcp.json,claire-de-binare.mcp.json"
 
       - name: Ruff
         run: ruff check .

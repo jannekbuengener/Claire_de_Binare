@@ -7,10 +7,16 @@ Specifically handles python-based servers by verifying their modules can be impo
 
 import json
 import sys
+import os
 import subprocess
+import argparse
 from pathlib import Path
 
 def validate_mcp_file(file_path: Path) -> bool:
+    if not file_path.exists():
+        print(f"❌ Config file not found: {file_path}")
+        return False
+
     print(f"🔎 Validating {file_path}...")
     try:
         with open(file_path, "r") as f:
@@ -60,17 +66,42 @@ def validate_mcp_file(file_path: Path) -> bool:
     return all_ok
 
 def main():
-    # Search for common MCP config filenames
-    root = Path(".")
-    mcp_files = list(root.glob("*.mcp.json"))
-    if root.joinpath(".mcp.json").exists():
-        mcp_files.append(root.joinpath(".mcp.json"))
+    parser = argparse.ArgumentParser(description="Validate MCP configuration files.")
+    parser.add_argument("paths", nargs="*", help="Paths to MCP config files (can be comma-separated).")
+    args = parser.parse_args()
 
-    # Deduplicate
+    raw_paths = []
+
+    # 1. Add paths from arguments (handle comma-separated strings)
+    for p in args.paths:
+        if "," in p:
+            raw_paths.extend(p.split(","))
+        else:
+            raw_paths.append(p)
+
+    # 2. Add paths from environment variable
+    env_paths = os.getenv("MCP_CONFIG_PATHS")
+    if env_paths:
+        raw_paths.extend(env_paths.split(","))
+
+    mcp_files = []
+    for p in raw_paths:
+        p_strip = p.strip()
+        if p_strip:
+            mcp_files.append(Path(p_strip))
+
+    # 3. Default search if no paths provided via args or ENV
+    if not mcp_files:
+        root = Path(".")
+        mcp_files.extend(list(root.glob("*.mcp.json")))
+        if root.joinpath(".mcp.json").exists():
+            mcp_files.append(root.joinpath(".mcp.json"))
+
+    # Deduplicate and sort
     mcp_files = sorted(list(set(mcp_files)))
 
     if not mcp_files:
-        print("⚠️  No MCP configuration files found (*.mcp.json or .mcp.json)")
+        print("⚠️  No MCP configuration files found to validate.")
         return
 
     success = True
