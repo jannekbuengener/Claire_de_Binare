@@ -34,6 +34,51 @@ function Set-SecretsPath {
     Write-Host "  [OK] SECRETS_PATH=$SECRETS_PATH" -ForegroundColor Green
 }
 
+function Load-RuntimeEnv {
+    <#
+    .SYNOPSIS
+    Auto-loads .env.runtime if present (B-lite integration for cdb-secrets-rotator).
+
+    .DESCRIPTION
+    If .env.runtime exists in tools/secrets/, loads ENV vars into current process.
+    Disable via: $env:CDB_IGNORE_RUNTIME_ENV='1'
+    #>
+
+    if ($env:CDB_IGNORE_RUNTIME_ENV -eq '1') {
+        Write-Host "  [INFO] .env.runtime auto-load disabled (CDB_IGNORE_RUNTIME_ENV=1)" -ForegroundColor Gray
+        return
+    }
+
+    $runtimeEnvPath = Join-Path $repoRoot 'tools\secrets\.env.runtime'
+    if (-not (Test-Path $runtimeEnvPath)) {
+        return  # No runtime env file, skip silently
+    }
+
+    Write-Host "`n=== Loading Runtime Env ===" -ForegroundColor Cyan
+    Write-Host "Source: $runtimeEnvPath" -ForegroundColor Gray
+
+    $loaded = 0
+    Get-Content $runtimeEnvPath | ForEach-Object {
+        $line = $_.Trim()
+        # Skip blank lines and comments
+        if ([string]::IsNullOrWhiteSpace($line) -or $line.StartsWith('#')) {
+            return
+        }
+        # Parse KEY=VALUE (split only at first =)
+        if ($line -match '^([^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2]  # Keep value as-is (may contain = or spaces)
+            [Environment]::SetEnvironmentVariable($key, $value, 'Process')
+            Write-Host "  [OK] $key (length: $($value.Length))" -ForegroundColor Green
+            $loaded++
+        }
+    }
+
+    if ($loaded -gt 0) {
+        Write-Host "  [OK] Loaded $loaded runtime secrets" -ForegroundColor Green
+    }
+}
+
 function Load-Secrets {
     <#
     .SYNOPSIS
@@ -122,6 +167,9 @@ Push-Location -LiteralPath $repoRoot
 try {
     # STEP 1: Set SECRETS_PATH for Docker Compose
     Set-SecretsPath
+
+    # STEP 1.5: Auto-load .env.runtime if present (cdb-secrets-rotator B-lite)
+    Load-RuntimeEnv
 
     # STEP 2: Load and validate secrets from single source
     Load-Secrets

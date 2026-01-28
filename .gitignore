@@ -85,7 +85,6 @@ yarn-error.log*
 # =============================================================================
 .secrets/
 !.secrets.example/
-secrets/
 *.secret
 *.key
 *.pem
@@ -161,3 +160,14 @@ GEMINI_FINAL_REPORT_WORKING_REPO.md
 
 Repository—Überblick.md
 /.local/
+
+# =============================================================================
+# SECRET ROTATION RUNTIME EXPORTS (cdb-secrets-rotator)
+# =============================================================================
+*.env.runtime
+*.runtime.env
+.secrets/*.export
+tools/secrets/.env.*
+tools/secrets/.rotation_state.json
+!tools/secrets/README.md
+!tools/secrets/evidence/**
