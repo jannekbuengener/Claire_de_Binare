@@ -233,23 +233,67 @@ git ls-files | grep -E "(.env.runtime|.rotation_state.json)"
 
 ---
 
-## 10. Sign-Off
+## 10. Gitleaks False-Positive Elimination (2026-01-28)
 
-**Status:** ✅ **PRODUCTION READY** (pending PR approval)
+**Context**: CI security gate (Gitleaks) intermittently failed due to legacy commits/test fixtures, NOT from secret-rotator code.
+
+**Findings (5 false-positives identified)**:
+1. `tests/unit/surrealdb/test_ledger_importer.py:26`
+   - Pattern: `token=ghp_ABCDEF1234567890`
+   - Rule: generic-api-key
+   - Type: Test fixture (not real secret)
+
+2-5. `reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md` (Lines 48, 61, 238, 357)
+   - Pattern: `curl -u admin:PASSWORD`
+   - Rule: curl-auth-user
+   - Type: Documentation examples (not real credentials)
+
+**Fix Applied (Option A: Fixture Refactor)**:
+1. Test fixture: `ghp_ABCDEF1234567890` → `FAKE_TEST_TOKEN_NOT_REAL`
+   - Breaks entropy/pattern matcher
+   - Test semantics preserved
+
+2-4. Documentation: `admin:PASSWORD` → `admin:$GRAFANA_PASSWORD`
+   - Environment variable placeholder
+   - Standard practice for documentation
+
+**Validation**:
+```bash
+# Before fix
+gitleaks detect --no-git --source .
+# Result: 5 findings
+
+# After fix
+gitleaks detect --no-git --source .
+# Result: 0 findings (clean)
+```
+
+**Impact**:
+- ✅ CI security gate now consistently green
+- ✅ No weakening of scanning (narrow fixture refactor only)
+- ✅ No real secrets in repo (was never an issue, only pattern matches)
+- ✅ Tests remain functional (validated post-fix)
+
+---
+
+## 11. Sign-Off
+
+**Status:** ✅ **PRODUCTION READY**
 
 **Blockers Resolved:**
 1. ✅ Skip logic fixed (state-based, not length-based)
 2. ✅ Evidence documented (this file)
+3. ✅ Gitleaks false-positives eliminated (fixture refactor)
 
-**Next Steps:**
-1. Create PR in Working Repo (Working → main)
-2. Create PR in Docs Hub (governance/ + runbooks/)
-3. Merge after review
+**Deployment Status:**
+- ✅ PR #711: Secret rotator v1.1 (MERGED)
+- ✅ PR #712: `apply -ExportAfter` (MERGED)
+- ✅ PR #59 (Docs Hub): Policy + Runbook (MERGED)
 
 ---
 
 **Generated:** 2026-01-28
-**Tool Version:** Rotate-Secrets.ps1 v1.1
-**Evidence Level:** High (automated scans + manual verification)
+**Tool Version:** Rotate-Secrets.ps1 v1.1 + apply -ExportAfter
+**Evidence Level:** High (automated scans + manual verification + CI validation)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

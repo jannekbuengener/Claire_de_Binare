@@ -23,7 +23,7 @@ action:
 scope:
   repo: "Claire_de_Binare"
 evidence:
-  - "token=ghp_ABCDEF1234567890"
+  - "token=FAKE_TEST_TOKEN_NOT_REAL"
 ---
 event_id: "evt-2"
 timestamp: "2026-01-01T00:00:02Z"

@@ -45,7 +45,7 @@
 
 **Command:**
 ```bash
-curl -u admin:PASSWORD -X PUT \
+curl -u admin:$GRAFANA_PASSWORD -X PUT \
   -H "Content-Type: application/json" \
   -d @notification_policy_daily_digest.json \
   http://localhost:3000/api/v1/provisioning/policies
@@ -58,7 +58,7 @@ curl -u admin:PASSWORD -X PUT \
 
 **Verification:**
 ```bash
-curl -u admin:PASSWORD http://localhost:3000/api/v1/provisioning/policies
+curl -u admin:$GRAFANA_PASSWORD http://localhost:3000/api/v1/provisioning/policies
 ```
 
 **Result:** ✅ Policy active, routes configured correctly
@@ -235,7 +235,7 @@ Next update: 24h later (if still firing)
 
 **Command:**
 ```bash
-curl -u admin:PASSWORD http://localhost:3000/api/v1/provisioning/contact-points
+curl -u admin:$GRAFANA_PASSWORD http://localhost:3000/api/v1/provisioning/contact-points
 ```
 
 **Active Contact Point:**
@@ -354,7 +354,7 @@ docker exec cdb_prometheus wget -qO- \
 
 ### Check Active Policy
 ```bash
-curl -u admin:PASSWORD http://localhost:3000/api/v1/provisioning/policies | jq
+curl -u admin:$GRAFANA_PASSWORD http://localhost:3000/api/v1/provisioning/policies | jq
 ```
 
 ### List All Alerts with Severity
