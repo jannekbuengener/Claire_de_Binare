@@ -88,7 +88,11 @@ services:
       GF_SMTP_FROM_ADDRESS__FILE: /run/secrets/smtp_from
       GF_SMTP_FROM_NAME: "CDB Alerts"
       GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
+      # Postgres Datasource Auth
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_PASSWORD__FILE: /run/secrets/postgres_password
     secrets:
+      - postgres_password
       - grafana_password
       - smtp_user
       - smtp_password

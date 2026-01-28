@@ -41,8 +41,8 @@ ws_mode = None
 redis_client = None
 
 # Prometheus metrics
-decoded_messages_total = Gauge("decoded_messages_total", "Total decoded WS messages")
-decode_errors_total = Gauge("decode_errors_total", "Total WS decode errors")
+decoded_messages_total = Counter("decoded_messages_total", "Total decoded WS messages")
+decode_errors_total = Counter("decode_errors_total", "Total WS decode errors")
 ws_connected = Gauge("ws_connected", "WS connection status (0/1)")
 last_message_ts_ms = Gauge("last_message_ts_ms", "Last message timestamp (ms)")
 redis_publish_total = Counter("redis_publish_total", "Total Redis publishes")
