@@ -22,3 +22,6 @@ tests/unit/verlosung/test_chaos_resilience.py:generic-api-key
 tests/unit/verlosung/test_backup_recovery.py:generic-api-key
 tests/unit/verlosung/test_cli_tools.py:generic-api-key
 tests/unit/verlosung/test_docker_lifecycle.py:generic-api-key
+
+# False-positive: ANSI-formatted script name in help text (Rotate-Secrets.ps1)
+tools/secrets/Rotate-Secrets.ps1:generic-api-key:338
