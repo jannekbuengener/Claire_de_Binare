@@ -1,0 +1,165 @@
+name: AI Review Router
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  ai-review:
+    name: ai/review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Run AI review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          owner="${REPO%%/*}"
+          pr_number=""
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            pr_number=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
+          else
+            pr_number=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/pulls?head=$owner:$REF_NAME&state=open" | jq -r '.[0].number // empty')
+          fi
+
+          if [ -z "$pr_number" ]; then
+            echo "No open PR found for event $EVENT_NAME on ref $REF_NAME. Exiting."
+            exit 0
+          fi
+
+          pr_json=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO/pulls/$pr_number")
+          author=$(echo "$pr_json" | jq -r '.user.login')
+          pr_url=$(echo "$pr_json" | jq -r '.html_url')
+
+          diff_file=$(mktemp)
+          curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.v3.diff" \
+            "https://api.github.com/repos/$REPO/pulls/$pr_number" > "$diff_file"
+
+          diff_size=$(wc -c < "$diff_file")
+          diff_snip=$(head -c 12000 "$diff_file")
+          if [ "$diff_size" -gt 12000 ]; then
+            diff_snip="${diff_snip}\n\n[diff truncated]"
+          fi
+
+          author_lc=$(echo "$author" | tr '[:upper:]' '[:lower:]')
+          if [[ "$author_lc" == *codex* ]]; then
+            reviewer="CLAUDE"
+            secret_name="ANTHROPIC_API_KEY"
+            secret_value="$ANTHROPIC_API_KEY"
+          elif [[ "$author_lc" == *claude* ]]; then
+            reviewer="CODEX"
+            secret_name="OPENAI_API_KEY"
+            secret_value="$OPENAI_API_KEY"
+          elif [[ "$author_lc" == *gemini* ]]; then
+            reviewer="CLAUDE"
+            secret_name="ANTHROPIC_API_KEY"
+            secret_value="$ANTHROPIC_API_KEY"
+          else
+            reviewer="GEMINI"
+            secret_name="GEMINI_API_KEY"
+            secret_value="$GEMINI_API_KEY"
+          fi
+
+          post_or_patch_comment() {
+            local body="$1"
+            comment_id=$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/issues/$pr_number/comments" | \
+              jq -r '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("## 🤖 Jules Review"))) | .id' | head -n 1)
+
+            if [ -n "$comment_id" ] && [ "$comment_id" != "null" ]; then
+              curl -sS -X PATCH -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg body "$body" '{body:$body}')" \
+                "https://api.github.com/repos/$REPO/issues/comments/$comment_id" > /dev/null
+            else
+              curl -sS -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/json" \
+                -d "$(jq -n --arg body "$body" '{body:$body}')" \
+                "https://api.github.com/repos/$REPO/issues/$pr_number/comments" > /dev/null
+            fi
+          }
+
+          if [ -z "$secret_value" ]; then
+            post_or_patch_comment "## 🤖 Jules Review
+
+**Reviewer:** $reviewer
+**AI_REVIEW:** ❌ FAIL (missing secret $secret_name)
+
+### Top Issues
+1. Missing secret $secret_name
+2. none
+3. none
+4. none
+5. none"
+            exit 1
+          fi
+
+          prompt=$'You are an automated governance and correctness reviewer.\n\nReturn EXACTLY this format:\nAI_REVIEW: PASS|FAIL\nReviewer: <CLAUDE|CODEX|GEMINI>\nTop Issues:\n1. <issue or \"none\">\n2. <issue or \"none\">\n3. <issue or \"none\">\n4. <issue or \"none\">\n5. <issue or \"none\">\n\nRules:\n- PASS only if no governance/safety/correctness risks.\n- Be concise and actionable.'
+
+          prompt="$prompt\n\nPR URL: $pr_url\nAuthor: $author\n\nDiff:\n$diff_snip"
+
+          content=""
+          if [ "$reviewer" = "CLAUDE" ]; then
+            response=$(curl -sS https://api.anthropic.com/v1/messages \
+              -H "x-api-key: $secret_value" \
+              -H "anthropic-version: 2023-06-01" \
+              -H "content-type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{model:"claude-3-5-sonnet-20240620",max_tokens:800,temperature:0.2,messages:[{role:"user",content:$prompt}]}')")
+            content=$(echo "$response" | jq -r '.content[0].text // empty')
+          elif [ "$reviewer" = "CODEX" ]; then
+            response=$(curl -sS https://api.openai.com/v1/chat/completions \
+              -H "Authorization: Bearer $secret_value" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{model:"gpt-4o-mini",messages:[{role:"user",content:$prompt}],temperature:0.2,max_tokens:800}')")
+            content=$(echo "$response" | jq -r '.choices[0].message.content // empty')
+          else
+            response=$(curl -sS "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$secret_value" \
+              -H "Content-Type: application/json" \
+              -d "$(jq -n --arg prompt "$prompt" '{contents:[{parts:[{text:$prompt}]}],generationConfig:{temperature:0.2,maxOutputTokens:800}}')")
+            content=$(echo "$response" | jq -r '.candidates[0].content.parts[0].text // empty')
+          fi
+
+          if [ -z "$content" ]; then
+            post_or_patch_comment "## 🤖 Jules Review
+
+**Reviewer:** $reviewer
+**AI_REVIEW:** ❌ FAIL
+
+### Top Issues
+1. No response from provider
+2. none
+3. none
+4. none
+5. none"
+            exit 1
+          fi
+
+          verdict=$(echo "$content" | grep -Eio 'AI_REVIEW:[[:space:]]*(PASS|FAIL)' | tail -n1 | awk '{print toupper($2)}')
+          if [ -z "$verdict" ]; then
+            verdict="FAIL"
+          fi
+
+          comment_body="## 🤖 Jules Review
+
+**Reviewer:** $reviewer
+$content"
+          post_or_patch_comment "$comment_body"
+
+          if [ "$verdict" = "PASS" ]; then
+            exit 0
+          fi
+
+          exit 1

@@ -5,7 +5,8 @@
       "ci",
       "e2e-tests",
       "lint",
-      "security-scan"
+      "security-scan",
+      "ai/review"
     ]
   },
   "enforce_admins": false,
