@@ -239,21 +239,21 @@ git ls-files | grep -E "(.env.runtime|.rotation_state.json)"
 
 **Findings (5 false-positives identified)**:
 1. `tests/unit/surrealdb/test_ledger_importer.py:26`
-   - Pattern: `token=ghp_ABCDEF1234567890`
+   - Pattern: `token=ghp_[REDACTED]` (fake GitHub token)
    - Rule: generic-api-key
    - Type: Test fixture (not real secret)
 
 2-5. `reports/shadow_mode/ALERTING_DIGEST_EVIDENCE.md` (Lines 48, 61, 238, 357)
-   - Pattern: `curl -u admin:PASSWORD`
+   - Pattern: `curl -u admin:[REDACTED]`
    - Rule: curl-auth-user
    - Type: Documentation examples (not real credentials)
 
 **Fix Applied (Option A: Fixture Refactor)**:
-1. Test fixture: `ghp_ABCDEF1234567890` → `FAKE_TEST_TOKEN_NOT_REAL`
+1. Test fixture: `ghp_[REDACTED]` → `FAKE_TEST_TOKEN_NOT_REAL`
    - Breaks entropy/pattern matcher
    - Test semantics preserved
 
-2-4. Documentation: `admin:PASSWORD` → `admin:$GRAFANA_PASSWORD`
+2-4. Documentation: `admin:[REDACTED]` → `admin:$GRAFANA_PASSWORD`
    - Environment variable placeholder
    - Standard practice for documentation
 
