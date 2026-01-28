@@ -28,7 +28,7 @@ SUPPORTED_ACTIONS = {
 }
 
 REDACT_PATTERNS = [
-    re.compile(r"(?i)(token|secret|password|api[_-]?key)\s*[:=]\s*[^\\s]+"),
+    re.compile(r"(?i)(token|secret|password|api[_-]?key)\s*[:=]\s*[^\s]+"),
     re.compile(r"gh[pousr]_[A-Za-z0-9_]{20,}"),
 ]
 
