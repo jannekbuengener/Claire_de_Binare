@@ -211,6 +211,10 @@ jobs:
           else
             pip install pytest pytest-cov psycopg2-binary redis
           fi
+          pip install -r requirements-mcp.txt
+
+      - name: MCP Validation
+        run: make mcp-config-validate
 
       - name: Run tests with coverage
         run: |
@@ -262,6 +266,10 @@ jobs:
           else
             pip install pytest
           fi
+          pip install -r requirements-mcp.txt
+
+      - name: MCP Validation
+        run: make mcp-config-validate
 
       - name: Log E2E mismatch budget
         run: |

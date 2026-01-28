@@ -47,8 +47,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
+          pip install -r requirements-mcp.txt
           pip install ruff black
         # Falls ihr kein requirements.txt habt, sag kurz Bescheid – dann passt man das sauber an.
+
+      - name: MCP Validation
+        run: make mcp-config-validate
 
       - name: Ruff
         run: ruff check .

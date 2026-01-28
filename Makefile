@@ -249,7 +249,7 @@ cleanup-live:
 # ============================================================================
 
 mcp-config-validate:
-	@echo "🔎 Validiere mcp-config.toml..."
+	@echo "🔎 Validiere MCP-Konfiguration..."
 	python tools/validate_mcp_config.py
 
 # ============================================================================
