@@ -1,0 +1,15 @@
+{
+  "symbol": "BTCUSDT",
+  "start_equity": 1000.0,
+  "end_equity": 999.917083,
+  "net_pnl": -0.082917,
+  "total_trades": 2927,
+  "winning_trades": 723,
+  "losing_trades": 700,
+  "win_rate": 0.508082,
+  "max_drawdown_pct": 0.001731,
+  "start_time": "2026-01-28T00:00:05+00:00",
+  "end_time": "2026-01-28T15:29:20+00:00",
+  "data_source": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\logs\\events\\events_20260128.jsonl",
+  "notes": "Metrics derived from paper trading order_results events; no new session run."
+}
