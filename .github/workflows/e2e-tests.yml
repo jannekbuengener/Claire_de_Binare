@@ -3,6 +3,7 @@ name: E2E Tests - Paper Trading
 on:
   pull_request:
     paths:
+      - 'core/**'
       - 'services/**'
       - 'tests/e2e/**'
       - 'infrastructure/**'
