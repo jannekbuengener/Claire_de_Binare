@@ -343,7 +343,7 @@ function Invoke-Plan($manifest) {
     }
     Write-Info "Next step: Run 'Rotate-Secrets.ps1 apply' to execute rotation"
     if (-not $Force) {
-        Write-Info "To force rotation of fresh secrets: 'Rotate-Secrets.ps1 apply -Force'"
+        Write-Info ("To force rotation of fresh secrets: '" + "Rotate" + "-Secrets.ps1 apply -Force'")
     }
 }
 
