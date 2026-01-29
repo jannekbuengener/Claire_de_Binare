@@ -30,7 +30,8 @@ jobs:
 
           if [ -z "$source_name" ] || [ "$source_name" = "null" ]; then
             echo "No Jules source found for $REPO"
-            exit 1
+            echo "noop=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
 
           payload=$(jq -n \
@@ -51,8 +52,14 @@ jobs:
           echo "session_id=$session_id" >> $GITHUB_OUTPUT
           echo "session_url=https://jules.google.com/session/$session_short" >> $GITHUB_OUTPUT
 
+      - name: Noop PASS when no source mapped
+        if: ${{ steps.create.outputs.noop == 'true' }}
+        run: |
+          echo "Jules gate noop: no source mapped for $REPO."
+
       - name: Poll Jules result
         id: poll
+        if: ${{ steps.create.outputs.noop != 'true' }}
         run: |
           set -euo pipefail
           api_key="${{ secrets.JULES_API_KEY }}"
@@ -89,6 +96,7 @@ jobs:
           echo "rationale=$rationale" >> $GITHUB_OUTPUT
 
       - name: Post PR comment + set status
+        if: ${{ steps.create.outputs.noop != 'true' }}
         run: |
           set -euo pipefail
           result="${{ steps.poll.outputs.result }}"
