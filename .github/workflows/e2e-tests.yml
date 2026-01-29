@@ -8,6 +8,12 @@ on:
       - 'infrastructure/**'
       - '.github/workflows/e2e-tests.yml'
   workflow_dispatch:
+    inputs:
+      allow_stub:
+        description: 'Allow STUB mode (non-protected branches only)'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   # Secrets are REQUIRED - workflow fails if not set (no hardcoded fallbacks)
@@ -76,14 +82,26 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
+          MEXC_API_SECRET: ${{ secrets.MEXC_API_SECRET }}
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
         run: |
           set -euo pipefail
 
-          # Define "real secrets present" condition (adjust names to your repo)
+          # Define "real secrets present" condition
           missing=0
-          req=(SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO)
+          req=(
+            SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO
+            REDIS_PASSWORD POSTGRES_PASSWORD MEXC_API_KEY MEXC_API_SECRET
+            GRAFANA_PASSWORD
+          )
           for k in "${req[@]}"; do
-            if [[ -z "${!k:-}" ]]; then missing=1; fi
+            if [[ -z "${!k:-}" ]]; then
+              echo "::debug::Missing secret: $k"
+              missing=1
+            fi
           done
 
           mode="REAL"
@@ -159,13 +177,20 @@ jobs:
           fi
 
       # --- 4) Hard fail on protected contexts if secrets are missing ---------------
-      - name: ❌ Missing secrets on protected context (HARD FAIL)
+      - name: ❌ Missing secrets or forbidden STUB (HARD FAIL)
         if: |
-          steps.e2e_mode.outputs.mode == 'STUB' &&
-          (github.ref == 'refs/heads/main' || github.event_name == 'schedule')
+          steps.e2e_mode.outputs.mode == 'STUB' && (
+            github.ref == 'refs/heads/main' ||
+            startsWith(github.ref, 'refs/heads/release/') ||
+            startsWith(github.ref, 'refs/heads/soak/') ||
+            startsWith(github.ref, 'refs/heads/shadow/') ||
+            github.event_name == 'schedule' ||
+            (github.event.inputs.allow_stub != 'true' && !contains(github.event.pull_request.labels.*.name, 'allow-stub'))
+          )
         shell: bash
         run: |
-          echo "::error title=CDB E2E BLOCKER::Secrets missing on protected/nightly context. This is a real failure. Create issue & fix secrets."
+          echo "::error title=CDB E2E BLOCKER::Secrets missing or STUB mode forbidden in this context. Use workflow_dispatch with allow_stub=true or the 'allow-stub' label for PRs."
+          echo "Context: ref=${{ github.ref }}, event=${{ github.event_name }}, allow_stub=${{ github.event.inputs.allow_stub }}, labels=${{ join(github.event.pull_request.labels.*.name, ', ') }}"
           exit 1
 
       - name: Set up Python

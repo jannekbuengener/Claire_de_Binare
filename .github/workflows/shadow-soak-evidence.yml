@@ -2,6 +2,12 @@ name: Shadow + Soak Evidence
 
 on:
   workflow_dispatch:
+    inputs:
+      allow_stub:
+        description: 'Allow STUB mode (non-protected branches only)'
+        required: false
+        default: 'false'
+        type: boolean
   schedule:
     - cron: "0 2 * * *"
 
@@ -36,6 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$SECRETS_PATH"
+          # Use real secrets if available, otherwise dummy (governance will block if protected)
           REDIS_VAL="${{ secrets.REDIS_PASSWORD != '' && secrets.REDIS_PASSWORD || 'ci-redis-password' }}"
           POSTGRES_VAL="${{ secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD || 'ci-postgres-password' }}"
           GRAFANA_VAL="${{ secrets.GRAFANA_PASSWORD != '' && secrets.GRAFANA_PASSWORD || 'ci-grafana-password' }}"
@@ -55,19 +62,73 @@ jobs:
           echo "${{ secrets.MEXC_API_SECRET != '' && secrets.MEXC_API_SECRET || 'ci-mexc-secret' }}" > "$SECRETS_PATH/MEXC_API_SECRET.txt"
           chmod 600 "$SECRETS_PATH"/*
 
+      - name: Decide E2E mode (REAL vs STUB)
+        id: e2e_mode
+        shell: bash
+        env:
+          MEXC_API_KEY: ${{ secrets.MEXC_API_KEY }}
+          MEXC_API_SECRET: ${{ secrets.MEXC_API_SECRET }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          GRAFANA_PASSWORD: ${{ secrets.GRAFANA_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          set -euo pipefail
+          missing=0
+          req=(
+            MEXC_API_KEY MEXC_API_SECRET REDIS_PASSWORD POSTGRES_PASSWORD
+            GRAFANA_PASSWORD SMTP_FROM SMTP_HOST SMTP_USER SMTP_PASSWORD ALERT_EMAIL_TO
+          )
+          for k in "${req[@]}"; do
+            if [[ -z "${!k:-}" ]]; then missing=1; fi
+          done
+
+          mode="REAL"
+          if [[ "${missing}" == "1" ]]; then
+            mode="STUB"
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: ❌ Missing secrets or forbidden STUB (HARD FAIL)
+        if: |
+          steps.e2e_mode.outputs.mode == 'STUB' && (
+            github.ref == 'refs/heads/main' ||
+            startsWith(github.ref, 'refs/heads/release/') ||
+            startsWith(github.ref, 'refs/heads/soak/') ||
+            startsWith(github.ref, 'refs/heads/shadow/') ||
+            github.event_name == 'schedule' ||
+            (github.event.inputs.allow_stub != 'true' && !contains(github.event.pull_request.labels.*.name, 'allow-stub'))
+          )
+        shell: bash
+        run: |
+          echo "::error title=CDB E2E BLOCKER::Secrets missing or STUB mode forbidden in this context (shadow-soak-evidence.yml)."
+          exit 1
+
       - name: Create deterministic override
         shell: bash
         run: |
           set -euo pipefail
+          mode="${{ steps.e2e_mode.outputs.mode }}"
+          ws_source="stub"
+          mock_trading="true"
+          if [[ "$mode" == "REAL" ]]; then
+            ws_source="live"
+            mock_trading="false"
+          fi
+
           override_file="$RUNNER_TEMP/shadow-soak-override.yml"
-          cat > "$override_file" <<'EOF'
+          cat > "$override_file" <<EOF
           services:
             cdb_grafana:
               user: "0"
             cdb_ws:
               user: "0"
               environment:
-                WS_SOURCE: stub
+                WS_SOURCE: $ws_source
             cdb_signal:
               user: "0"
               environment:
@@ -83,7 +144,7 @@ jobs:
             cdb_execution:
               user: "0"
               environment:
-                MOCK_TRADING: "true"
+                MOCK_TRADING: "$mock_trading"
                 USE_REAL_BALANCE: "false"
             cdb_db_writer:
               user: "0"
