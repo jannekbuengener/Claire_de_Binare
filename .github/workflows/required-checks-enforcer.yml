@@ -59,23 +59,23 @@ jobs:
 
             for name in "${REQUIRED[@]}"; do
               concl=$(echo "$JSON" | python - <<'PY'
-import json,sys
-data=json.load(sys.stdin)
-name=sys.argv[1]
-runs=data.get("check_runs",[])
-# pick latest run by started_at
-cand=[r for r in runs if r.get("name")==name]
-if not cand:
-  print("__MISSING__"); sys.exit(0)
-cand.sort(key=lambda r: (r.get("started_at") or ""), reverse=True)
-c=cand[0].get("conclusion")
-s=cand[0].get("status")
-# If not completed, conclusion is null, status is queued/in_progress
-if s != "completed":
-  print("__PENDING__"); sys.exit(0)
-print((c or "null").upper())
-PY
-"$name")
+          import json,sys
+          data=json.load(sys.stdin)
+          name=sys.argv[1]
+          runs=data.get("check_runs",[])
+          # pick latest run by started_at
+          cand=[r for r in runs if r.get("name")==name]
+          if not cand:
+            print("__MISSING__"); sys.exit(0)
+          cand.sort(key=lambda r: (r.get("started_at") or ""), reverse=True)
+          c=cand[0].get("conclusion")
+          s=cand[0].get("status")
+          # If not completed, conclusion is null, status is queued/in_progress
+          if s != "completed":
+            print("__PENDING__"); sys.exit(0)
+          print((c or "null").upper())
+          PY
+              "$name")
 
               if [[ "$concl" == "__MISSING__" ]]; then
                 echo "MISSING: $name"

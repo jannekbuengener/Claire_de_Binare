@@ -7,10 +7,7 @@ on:
   
 jobs:
   compat:
-    name: Python compatibility matrix (informational)
- bugfix/519-python-compat-workflow
     name: Python compatibility matrix
-
     runs-on: ubuntu-latest
     strategy:
       matrix:

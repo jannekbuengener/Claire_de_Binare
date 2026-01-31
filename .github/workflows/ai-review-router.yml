@@ -95,15 +95,15 @@ jobs:
           if [ -z "$secret_value" ]; then
             post_or_patch_comment "## 🤖 Jules Review
 
-**Reviewer:** $reviewer
-**AI_REVIEW:** ❌ FAIL (missing secret $secret_name)
+          **Reviewer:** $reviewer
+          **AI_REVIEW:** ❌ FAIL (missing secret $secret_name)
 
-### Top Issues
-1. Missing secret $secret_name
-2. none
-3. none
-4. none
-5. none"
+          ### Top Issues
+          1. Missing secret $secret_name
+          2. none
+          3. none
+          4. none
+          5. none"
             exit 1
           fi
 
@@ -135,15 +135,15 @@ jobs:
           if [ -z "$content" ]; then
             post_or_patch_comment "## 🤖 Jules Review
 
-**Reviewer:** $reviewer
-**AI_REVIEW:** ❌ FAIL
+          **Reviewer:** $reviewer
+          **AI_REVIEW:** ❌ FAIL
 
-### Top Issues
-1. No response from provider
-2. none
-3. none
-4. none
-5. none"
+          ### Top Issues
+          1. No response from provider
+          2. none
+          3. none
+          4. none
+          5. none"
             exit 1
           fi
 
@@ -154,8 +154,8 @@ jobs:
 
           comment_body="## 🤖 Jules Review
 
-**Reviewer:** $reviewer
-$content"
+          **Reviewer:** $reviewer
+          $content"
           post_or_patch_comment "$comment_body"
 
           if [ "$verdict" = "PASS" ]; then
