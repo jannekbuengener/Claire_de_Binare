@@ -18,6 +18,7 @@ from flask import Flask, jsonify, Response
 
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
+
 try:
     from .config import config
     from .models import Candle, compute_adx, compute_atr
@@ -61,7 +62,9 @@ class RegimeService:
         self.redis_client: Optional[redis.Redis] = None
         self.running = False
         self.candles: dict[str, deque[Candle]] = defaultdict(
-            lambda: deque(maxlen=max(self.config.adx_period, self.config.atr_period) * 5)
+            lambda: deque(
+                maxlen=max(self.config.adx_period, self.config.atr_period) * 5
+            )
         )
         self.current_regime: dict[str, str] = defaultdict(lambda: "UNKNOWN")
         self.candidate_regime: dict[str, str | None] = defaultdict(lambda: None)
@@ -80,7 +83,9 @@ class RegimeService:
             "Redis verbunden: %s:%s", self.config.redis_host, self.config.redis_port
         )
 
-    def _emit_regime(self, candle: Candle, regime: str, adx: Optional[float], atr: Optional[float]):
+    def _emit_regime(
+        self, candle: Candle, regime: str, adx: Optional[float], atr: Optional[float]
+    ):
         payload = {
             "ts": str(candle.ts),
             "symbol": candle.symbol,
@@ -222,7 +227,8 @@ class RegimeService:
                 stats["last_error"] = f"consumer_loop_error: {e}"
                 logger.exception(
                     "Consumer loop error (candles_processed=%d, last_id=%s)",
-                    stats["candles_processed"], last_id
+                    stats["candles_processed"],
+                    last_id,
                 )
                 time.sleep(1)
 
