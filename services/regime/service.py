@@ -7,6 +7,7 @@ import json
 import logging
 import logging.config
 import sys
+import time
 from collections import defaultdict, deque
 from datetime import datetime
 from pathlib import Path
@@ -46,6 +47,11 @@ stats = {
     "last_regime": None,
     "status": "initializing",
 }
+
+
+def _utc_ts() -> float:
+    """Return current UTC timestamp as float."""
+    return utcnow().timestamp()
 
 
 class RegimeService:
@@ -158,35 +164,85 @@ class RegimeService:
         self.running = True
         stats["status"] = "running"
         stats["started_at"] = utcnow().isoformat()
+        stats.setdefault("candles_processed", 0)
+        stats.setdefault("regime_changes", 0)
+        stats["consumer_errors"] = 0
+        stats["last_error"] = ""
+        stats["last_heartbeat_ts"] = _utc_ts()
+        stats["last_processed_ts"] = 0.0
+
         last_id = "0-0"
         logger.info("Regime-Service gestartet")
 
         while self.running:
-            response = self.redis_client.xread(
-                {self.config.input_stream: last_id}, block=1000, count=10
-            )
-            if not response:
-                continue
-            for _, entries in response:
-                for entry_id, payload in entries:
-                    last_id = entry_id
-                    candle = Candle.from_payload(payload)
-                    if candle is None:
-                        self._handle_missing_ohlcv(payload)
-                        continue
-                    stats["candles_processed"] += 1
-                    self._derive_regime(candle)
+            try:
+                stats["last_heartbeat_ts"] = _utc_ts()
+
+                response = self.redis_client.xread(
+                    {self.config.input_stream: last_id}, block=1000, count=10
+                )
+
+                if not response:
+                    continue
+
+                for _, entries in response:
+                    for entry_id, payload in entries:
+                        last_id = entry_id
+
+                        candle = Candle.from_payload(payload)
+                        if candle is None:
+                            self._handle_missing_ohlcv(payload)
+                            continue
+
+                        stats["candles_processed"] += 1
+                        stats["last_processed_ts"] = _utc_ts()
+                        self._derive_regime(candle)
+
+            except redis.exceptions.ConnectionError as e:
+                stats["consumer_errors"] += 1
+                stats["status"] = "reconnecting"
+                stats["last_error"] = f"redis_connection_error: {e}"
+                logger.exception("Redis connection lost – reconnecting")
+
+                time.sleep(5)
+                try:
+                    self.connect_redis()
+                    # hard proof the connection is alive
+                    self.redis_client.ping()
+                    stats["status"] = "running"
+                    logger.info("Redis reconnected successfully")
+                except Exception as reconnect_err:
+                    stats["consumer_errors"] += 1
+                    stats["last_error"] = f"redis_reconnect_failed: {reconnect_err}"
+                    logger.exception("Redis reconnect failed – will retry")
+                    time.sleep(5)
+
+            except Exception as e:
+                stats["consumer_errors"] += 1
+                stats["last_error"] = f"consumer_loop_error: {e}"
+                logger.exception(
+                    "Consumer loop error (candles_processed=%d, last_id=%s)",
+                    stats["candles_processed"], last_id
+                )
+                time.sleep(1)
 
 
 @app.route("/health")
 def health():
-    return jsonify(
-        {
-            "status": "ok" if stats["status"] == "running" else "error",
-            "service": "regime_service",
-            "version": config.source_version,
-        }
-    )
+    now = _utc_ts()
+    hb = float(stats.get("last_heartbeat_ts", 0.0))
+    age = now - hb if hb else 1e9
+    is_alive = age < 60 and stats.get("status") == "running"
+
+    payload = {
+        "status": "ok" if is_alive else "error",
+        "service": "regime_service",
+        "version": config.source_version,
+        "heartbeat_age_seconds": age,
+        "consumer_errors": stats.get("consumer_errors", 0),
+        "last_error": stats.get("last_error", ""),
+    }
+    return jsonify(payload), (200 if is_alive else 503)
 
 
 @app.route("/metrics")
@@ -194,10 +250,19 @@ def metrics():
     body = (
         "# HELP regime_candles_processed_total Anzahl verarbeiteter Candles\n"
         "# TYPE regime_candles_processed_total counter\n"
-        f"regime_candles_processed_total {stats['candles_processed']}\n\n"
+        f"regime_candles_processed_total {stats.get('candles_processed', 0)}\n\n"
         "# HELP regime_changes_total Anzahl Regime-Wechsel\n"
         "# TYPE regime_changes_total counter\n"
-        f"regime_changes_total {stats['regime_changes']}\n"
+        f"regime_changes_total {stats.get('regime_changes', 0)}\n\n"
+        "# HELP regime_consumer_errors_total Consumer loop errors\n"
+        "# TYPE regime_consumer_errors_total counter\n"
+        f"regime_consumer_errors_total {stats.get('consumer_errors', 0)}\n\n"
+        "# HELP regime_last_heartbeat_timestamp_seconds Consumer loop last heartbeat\n"
+        "# TYPE regime_last_heartbeat_timestamp_seconds gauge\n"
+        f"regime_last_heartbeat_timestamp_seconds {stats.get('last_heartbeat_ts', 0.0)}\n\n"
+        "# HELP regime_last_processed_timestamp_seconds Last candle processed timestamp\n"
+        "# TYPE regime_last_processed_timestamp_seconds gauge\n"
+        f"regime_last_processed_timestamp_seconds {stats.get('last_processed_ts', 0.0)}\n"
     )
     return Response(body, mimetype="text/plain")
 
