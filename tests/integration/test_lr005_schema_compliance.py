@@ -127,9 +127,7 @@ def test_schema_rejects_invalid_git_commit_format():
     """Test that schema rejects invalid git_commit SHA format."""
     schema = load_schema()
     invalid_snapshot = load_example("lr-snapshot-done.json")
-    invalid_snapshot["snapshot_metadata"][
-        "git_commit"
-    ] = "INVALID"  # Invalid (not hex)
+    invalid_snapshot["snapshot_metadata"]["git_commit"] = "INVALID"  # Invalid (not hex)
 
     with pytest.raises(jsonschema.ValidationError) as excinfo:
         jsonschema.validate(instance=invalid_snapshot, schema=schema)
