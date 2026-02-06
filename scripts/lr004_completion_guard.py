@@ -15,7 +15,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 try:
     import yaml
@@ -263,15 +263,14 @@ class CompletionGuard:
                 self.add_error(task_id, "V012", f"Invalid timestamp format for blocked_since: {ts}")
 
             # Track blocked tasks for reporting (always track, even if task has validation errors)
-            if status == "BLOCKED":
-                has_errors = any(e.task_id == task_id for e in self.errors)
-                self.blocked_tasks.append({
-                    "task_id": task_id,
-                    "reason_code": reason_code,
-                    "reason_text": state.get("blocked_reason_text", ""),
-                    "since": state.get("blocked_since", ""),
-                    "has_validation_errors": has_errors
-                })
+            has_errors = any(e.task_id == task_id for e in self.errors)
+            self.blocked_tasks.append({
+                "task_id": task_id,
+                "reason_code": reason_code,
+                "reason_text": state.get("blocked_reason_text", ""),
+                "since": state.get("blocked_since", ""),
+                "has_validation_errors": has_errors
+            })
 
         # Rule V014: Evidence File Existence + Path Safety
         evidence_file = state.get("evidence_file")
