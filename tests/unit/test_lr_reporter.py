@@ -18,6 +18,7 @@ import yaml
 
 # Import functions from lr_reporter
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
 from lr_reporter import (
     generate_snapshot,
@@ -41,7 +42,7 @@ def sample_tasks_manifest():
             {"task_id": "LR-001", "task_title": "Task One"},
             {"task_id": "LR-002", "task_title": "Task Two"},
             {"task_id": "LR-003", "task_title": "Task Three"},
-        ]
+        ],
     }
 
 
@@ -82,7 +83,9 @@ def sample_state_blocked():
 
 
 @pytest.fixture
-def temp_data_dir(tmp_path, sample_tasks_manifest, sample_state_done, sample_state_blocked):
+def temp_data_dir(
+    tmp_path, sample_tasks_manifest, sample_state_done, sample_state_blocked
+):
     """Create temporary data directory with sample files."""
     data_dir = tmp_path / "live-readiness"
     data_dir.mkdir()

@@ -5,8 +5,8 @@ status: "BLOCKED"
 completion_timestamp: null
 completion_author: null
 evidence_file: "docs/live-readiness/LR-005-SPEC.md"
-evidence_commit: null
+evidence_commit: "2262139"
 
-blocked_reason_code: "RC_WAIT_IMPLEMENTATION"
-blocked_reason_text: "Implementation not started (spec accepted)"
+blocked_reason_code: "RC_B400"
+blocked_reason_text: "Phase A complete, Phase B/C pending approval (spec accepted)"
 blocked_since: "2026-02-06T13:30:00Z"

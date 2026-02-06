@@ -52,18 +52,14 @@ def get_git_metadata() -> Dict[str, str]:
 
     try:
         commit = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"],
-            stderr=subprocess.DEVNULL,
-            text=True
+            ["git", "rev-parse", "HEAD"], stderr=subprocess.DEVNULL, text=True
         ).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         commit = "unknown"
 
     try:
         branch = subprocess.check_output(
-            ["git", "branch", "--show-current"],
-            stderr=subprocess.DEVNULL,
-            text=True
+            ["git", "branch", "--show-current"], stderr=subprocess.DEVNULL, text=True
         ).strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         branch = "unknown"
@@ -167,14 +163,16 @@ def generate_snapshot(data_dir: Path) -> Dict[str, Any]:
             task_entry["blocked_since_epoch"] = blocked_since_epoch
 
             # Add to blocked_details
-            blocked_details.append({
-                "task_id": task_id,
-                "task_title": task_title,
-                "reason_code": state.get("blocked_reason_code"),
-                "reason_text": state.get("blocked_reason_text"),
-                "blocked_since": blocked_since,
-                "blocked_since_epoch": blocked_since_epoch,
-            })
+            blocked_details.append(
+                {
+                    "task_id": task_id,
+                    "task_title": task_title,
+                    "reason_code": state.get("blocked_reason_code"),
+                    "reason_text": state.get("blocked_reason_text"),
+                    "blocked_since": blocked_since,
+                    "blocked_since_epoch": blocked_since_epoch,
+                }
+            )
 
         tasks.append(task_entry)
 
@@ -259,19 +257,23 @@ def render_markdown(snapshot: Dict[str, Any]) -> str:
 
         lines.append(f"| {task_id} | {title} | {icon} {status} | {details} |")
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        f"## Blocked Tasks ({summary['blocked_count']})",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            f"## Blocked Tasks ({summary['blocked_count']})",
+            "",
+        ]
+    )
 
     if blocked:
-        lines.extend([
-            "| Task ID | Title | Reason Code | Blocked Since | Reason |",
-            "|---------|-------|-------------|---------------|--------|",
-        ])
+        lines.extend(
+            [
+                "| Task ID | Title | Reason Code | Blocked Since | Reason |",
+                "|---------|-------|-------------|---------------|--------|",
+            ]
+        )
         for item in blocked:
             lines.append(
                 f"| {item['task_id']} | {item['task_title']} | "
@@ -289,31 +291,27 @@ def main():
         description="LR-005 Phase A: Live Readiness Completion Reporter"
     )
     parser.add_argument(
-        "--json",
-        action="store_true",
-        help="Output JSON snapshot to stdout"
+        "--json", action="store_true", help="Output JSON snapshot to stdout"
     )
     parser.add_argument(
-        "--markdown",
-        action="store_true",
-        help="Output Markdown snapshot to stdout"
+        "--markdown", action="store_true", help="Output Markdown snapshot to stdout"
     )
     parser.add_argument(
         "--snapshot",
         action="store_true",
-        help="Write JSON + Markdown snapshot files to output directory"
+        help="Write JSON + Markdown snapshot files to output directory",
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
         default=DEFAULT_DATA_DIR,
-        help=f"Output directory for --snapshot (default: {DEFAULT_DATA_DIR})"
+        help=f"Output directory for --snapshot (default: {DEFAULT_DATA_DIR})",
     )
     parser.add_argument(
         "--data-dir",
         type=Path,
         default=DEFAULT_DATA_DIR,
-        help=f"Input directory for STATE files (default: {DEFAULT_DATA_DIR})"
+        help=f"Input directory for STATE files (default: {DEFAULT_DATA_DIR})",
     )
 
     args = parser.parse_args()
@@ -321,7 +319,10 @@ def main():
     # Validate: at least one output mode
     if not (args.json or args.markdown or args.snapshot):
         parser.print_help()
-        print("\nERROR: Must specify at least one output mode (--json, --markdown, --snapshot)", file=sys.stderr)
+        print(
+            "\nERROR: Must specify at least one output mode (--json, --markdown, --snapshot)",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     try:
@@ -335,8 +336,9 @@ def main():
         if args.markdown:
             # Force UTF-8 encoding for stdout (Windows compatibility)
             import codecs
-            if sys.stdout.encoding != 'utf-8':
-                sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+
+            if sys.stdout.encoding != "utf-8":
+                sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, "strict")
             print(render_markdown(snapshot))
 
         if args.snapshot:
@@ -364,6 +366,7 @@ def main():
     except Exception as e:
         print(f"ERROR: Unexpected error: {e}", file=sys.stderr)
         import traceback
+
         traceback.print_exc()
         sys.exit(2)
 
