@@ -1,12 +1,12 @@
 spec_version: "1.0"
 task_id: "LR-004"
 task_title: "P0 Deterministic Completion Mechanism"
-status: "BLOCKED"
-completion_timestamp: null
-completion_author: null
+status: "DONE"
+completion_timestamp: "2026-02-06T11:20:49Z"
+completion_author: "jannekbuengener"
 evidence_file: "docs/live-readiness/LR-004-EVIDENCE.md"
 evidence_commit: "a1efea8"
 
-blocked_reason_code: "RC_B400"
-blocked_reason_text: "Implementation in progress - awaiting CI integration and full evidence"
-blocked_since: "2026-02-05T12:00:00Z"
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null
