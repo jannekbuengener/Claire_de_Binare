@@ -1,0 +1,91 @@
+{
+  "spec_version": "1.0",
+  "snapshot_metadata": {
+    "data_source": "docs\\live-readiness",
+    "git_commit": "b2d5345",
+    "git_branch": "feature/lr-005-phase-b"
+  },
+  "summary": {
+    "total_tasks": 5,
+    "done_count": 4,
+    "blocked_count": 1,
+    "completion_percentage": 80.0
+  },
+  "tasks": [
+    {
+      "task_id": "LR-001",
+      "task_title": "P0 Governance CI/CD Shield",
+      "status": "DONE",
+      "evidence_file": "docs/live-readiness/LR-001-SPEC.md",
+      "evidence_commit": "a1b2c3d",
+      "completion_timestamp": "2026-01-28T14:32:00Z",
+      "completion_author": "jannekbuengener",
+      "blocked_reason_code": null,
+      "blocked_reason_text": null,
+      "blocked_since": null,
+      "blocked_since_epoch": null
+    },
+    {
+      "task_id": "LR-002",
+      "task_title": "P0 Contract Tests",
+      "status": "DONE",
+      "evidence_file": "docs/live-readiness/LR-002-SPEC.md",
+      "evidence_commit": "b3c4d5e",
+      "completion_timestamp": "2026-01-30T10:15:00Z",
+      "completion_author": "jannekbuengener",
+      "blocked_reason_code": null,
+      "blocked_reason_text": null,
+      "blocked_since": null,
+      "blocked_since_epoch": null
+    },
+    {
+      "task_id": "LR-003",
+      "task_title": "P0 Contract Drift Guard",
+      "status": "DONE",
+      "evidence_file": "docs/live-readiness/LR-003-SPEC.md",
+      "evidence_commit": "c4d5e6f",
+      "completion_timestamp": "2026-02-04T16:42:00Z",
+      "completion_author": "jannekbuengener",
+      "blocked_reason_code": null,
+      "blocked_reason_text": null,
+      "blocked_since": null,
+      "blocked_since_epoch": null
+    },
+    {
+      "task_id": "LR-004",
+      "task_title": "P0 Deterministic Completion Mechanism",
+      "status": "DONE",
+      "evidence_file": "docs/live-readiness/LR-004-SPEC.md",
+      "evidence_commit": "d5e6f7a",
+      "completion_timestamp": "2026-02-06T11:20:49Z",
+      "completion_author": "jannekbuengener",
+      "blocked_reason_code": null,
+      "blocked_reason_text": null,
+      "blocked_since": null,
+      "blocked_since_epoch": null
+    },
+    {
+      "task_id": "LR-005",
+      "task_title": "Deterministic Completion Reporting & State Visibility",
+      "status": "BLOCKED",
+      "evidence_file": "docs/live-readiness/LR-005-SPEC.md",
+      "evidence_commit": "2262139",
+      "completion_timestamp": null,
+      "completion_author": null,
+      "blocked_reason_code": "RC_B400",
+      "blocked_reason_text": "Phase A complete, Phase B/C pending approval (spec accepted)",
+      "blocked_since": "2026-02-06T13:30:00Z",
+      "blocked_since_epoch": 1738847400
+    }
+  ],
+  "blocked_details": [
+    {
+      "task_id": "LR-005",
+      "task_title": "Deterministic Completion Reporting & State Visibility",
+      "reason_code": "RC_B400",
+      "reason_text": "Phase A complete, Phase B/C pending approval (spec accepted)",
+      "blocked_since": "2026-02-06T13:30:00Z",
+      "blocked_since_epoch": 1738847400
+    }
+  ]
+}

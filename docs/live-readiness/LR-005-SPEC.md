@@ -345,24 +345,60 @@ LR-005 specification is considered **DONE** when:
 
 ---
 
-## 11. Future Extensions (Non-Binding)
+## 11. Schema Versioning and Backward Compatibility
+
+### 11.1 Version Identification
+- All JSON snapshots include `spec_version` field (e.g., "1.0")
+- Schema file: `docs/live-readiness/LR-005-SCHEMA.json`
+- Schema is versioned inline with `spec_version` field
+
+### 11.2 Compatibility Strategy
+
+**Breaking Changes** (require `spec_version` bump, e.g., 1.0 → 2.0):
+- Removing required fields
+- Changing field types (e.g., string → integer)
+- Renaming fields
+- Changing enum values
+- Tightening validation constraints (e.g., new required fields)
+
+**Non-Breaking Changes** (allow minor additions without version bump):
+- Adding optional fields with default values
+- Relaxing validation constraints
+- Adding new enum values (if backward-compatible)
+- Documentation clarifications
+
+### 11.3 Migration Path
+When breaking changes are necessary:
+1. Increment `spec_version` in schema and reporter
+2. Document migration guide in SPEC (this file)
+3. Maintain schema files for old versions (LR-005-SCHEMA-v1.0.json, etc.)
+4. Reporter tool supports latest version only
+
+### 11.4 Validation
+- Integration tests validate examples against schema (see `tests/integration/test_lr005_schema_compliance.py`)
+- Schema validation is mandatory for all generated snapshots
+- Invalid snapshots trigger exit code 1 (validation error)
+
+---
+
+## 12. Future Extensions (Non-Binding)
 
 **The following are OUT OF SCOPE for LR-005 v1.0 but documented as potential future directions:**
 
-### 11.1 Aging Alert Thresholds (v1.1+)
+### 12.1 Aging Alert Thresholds (v1.1+)
 - Optional flag: Fail if any task blocked > N days
 - Use case: Optional CI job for SLA enforcement
 - Implementation: Separate tool consuming snapshot JSON
 
-### 11.2 Trend Analysis (v2.0+)
+### 12.2 Trend Analysis (v2.0+)
 - Compare snapshots over time (completion velocity, blocker resolution time)
 - Implementation: Separate tool consuming snapshot history
 
-### 11.3 Multi-Task-Type Support (v2.0+)
+### 12.3 Multi-Task-Type Support (v2.0+)
 - Extend to support incidents, features (not just LR tasks)
 - Requires generic task manifest schema
 
-### 11.4 Tool Implementation (Out of Scope for Spec)
+### 12.4 Tool Implementation (Out of Scope for Spec)
 - CLI interface, exit codes, output modes
 - Developer workflows
 - CI integration patterns

@@ -1,0 +1,185 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jannekbuengener/Claire_de_Binare/docs/live-readiness/LR-005-SCHEMA.json",
+  "title": "LR-005 Completion Snapshot Schema",
+  "description": "JSON Schema for LR-005 deterministic completion snapshots (spec_version 1.0)",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "snapshot_metadata",
+    "summary",
+    "tasks",
+    "blocked_details"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "description": "Schema version identifier for backward compatibility tracking",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "examples": ["1.0"]
+    },
+    "snapshot_metadata": {
+      "type": "object",
+      "description": "Git and data source metadata for snapshot provenance",
+      "required": ["data_source", "git_commit", "git_branch"],
+      "additionalProperties": false,
+      "properties": {
+        "data_source": {
+          "type": "string",
+          "description": "Absolute or relative path to docs/live-readiness directory"
+        },
+        "git_commit": {
+          "type": "string",
+          "description": "Git commit SHA (short or full) at snapshot generation time",
+          "pattern": "^[a-f0-9]{7,40}$"
+        },
+        "git_branch": {
+          "type": "string",
+          "description": "Git branch name at snapshot generation time"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregate completion statistics",
+      "required": ["total_tasks", "done_count", "blocked_count", "completion_percentage"],
+      "additionalProperties": false,
+      "properties": {
+        "total_tasks": {
+          "type": "integer",
+          "description": "Total number of LR tasks in manifest",
+          "minimum": 0
+        },
+        "done_count": {
+          "type": "integer",
+          "description": "Number of tasks with status=DONE",
+          "minimum": 0
+        },
+        "blocked_count": {
+          "type": "integer",
+          "description": "Number of tasks with status=BLOCKED",
+          "minimum": 0
+        },
+        "completion_percentage": {
+          "type": "number",
+          "description": "Percentage of tasks completed (done_count / total_tasks * 100)",
+          "minimum": 0,
+          "maximum": 100
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "description": "Full task list with status details",
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "task_title",
+          "status",
+          "evidence_file",
+          "evidence_commit"
+        ],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task identifier (e.g., LR-001)",
+            "pattern": "^LR-[0-9]{3}$"
+          },
+          "task_title": {
+            "type": "string",
+            "description": "Human-readable task title"
+          },
+          "status": {
+            "type": "string",
+            "description": "Task completion status",
+            "enum": ["DONE", "BLOCKED"]
+          },
+          "evidence_file": {
+            "type": ["string", "null"],
+            "description": "Relative path to evidence/spec file"
+          },
+          "evidence_commit": {
+            "type": ["string", "null"],
+            "description": "Git commit SHA (short) where evidence was added",
+            "pattern": "^([a-f0-9]{7,40}|null)$"
+          },
+          "completion_timestamp": {
+            "type": ["string", "null"],
+            "description": "ISO 8601 timestamp when task was completed (DONE only)",
+            "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|null)$"
+          },
+          "completion_author": {
+            "type": ["string", "null"],
+            "description": "Author who completed the task (DONE only)"
+          },
+          "blocked_reason_code": {
+            "type": ["string", "null"],
+            "description": "Reason code from taxonomy (BLOCKED only)",
+            "pattern": "^(RC_[A-Z0-9_]+|null)$"
+          },
+          "blocked_reason_text": {
+            "type": ["string", "null"],
+            "description": "Human-readable blocking reason (BLOCKED only)"
+          },
+          "blocked_since": {
+            "type": ["string", "null"],
+            "description": "ISO 8601 timestamp when task became blocked (BLOCKED only)",
+            "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|null)$"
+          },
+          "blocked_since_epoch": {
+            "type": ["integer", "null"],
+            "description": "Unix epoch seconds when task became blocked (BLOCKED only)"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "blocked_details": {
+      "type": "array",
+      "description": "Subset of BLOCKED tasks with condensed fields (shape validated, not content)",
+      "items": {
+        "type": "object",
+        "required": [
+          "task_id",
+          "task_title",
+          "reason_code",
+          "reason_text",
+          "blocked_since",
+          "blocked_since_epoch"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task identifier (e.g., LR-001)",
+            "pattern": "^LR-[0-9]{3}$"
+          },
+          "task_title": {
+            "type": "string",
+            "description": "Human-readable task title"
+          },
+          "reason_code": {
+            "type": ["string", "null"],
+            "description": "Reason code from taxonomy",
+            "pattern": "^(RC_[A-Z0-9_]+|null)$"
+          },
+          "reason_text": {
+            "type": ["string", "null"],
+            "description": "Human-readable blocking reason"
+          },
+          "blocked_since": {
+            "type": ["string", "null"],
+            "description": "ISO 8601 timestamp when task became blocked",
+            "pattern": "^([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z|null)$"
+          },
+          "blocked_since_epoch": {
+            "type": ["integer", "null"],
+            "description": "Unix epoch seconds when task became blocked"
+          }
+        }
+      }
+    }
+  }
+}
