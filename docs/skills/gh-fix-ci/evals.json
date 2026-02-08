@@ -63,8 +63,8 @@
         "gh auth switch",
         "Remediation"
       ],
-      "note": "Simulates auth failure with invalid token",
-      "skip_reason": "Requires manual testing with invalid token"
+      "note": "Simulates auth failure with invalid auth value",
+      "skip_reason": "Requires manual testing with invalid auth"
     },
     {
       "name": "required_checks_validation",
@@ -132,11 +132,11 @@
     },
     {
       "name": "security_category_detection",
-      "description": "CVE/secret detection should be categorized as SECURITY",
+      "description": "CVE/credential detection should be categorized as SECURITY",
       "mock_check_name": "gitleaks (Secrets-Alarm)",
-      "mock_log_snippet": "Secret detected: REDACTED in file services/foo.py",
+      "mock_log_snippet": "Credential detected: REDACTED in file services/foo.py",
       "expected_category": "SECURITY",
-      "expected_fix_hint": "Remove secrets, update dependencies, or add CVE to allowlist",
+      "expected_fix_hint": "Remove credentials, update dependencies, or add CVE to allowlist",
       "note": "Unit test for categorize_failure() method"
     },
     {
@@ -154,7 +154,7 @@
       "mock_check_name": "E2E Happy Path",
       "mock_log_snippet": "Redis connection refused at localhost:6379",
       "expected_category": "E2E",
-      "expected_fix_hint": "Check if STUB mode expected (PR fork?), verify secrets",
+      "expected_fix_hint": "Check if STUB mode expected (PR fork?), verify credentials",
       "note": "Unit test for categorize_failure() method"
     }
   ],
