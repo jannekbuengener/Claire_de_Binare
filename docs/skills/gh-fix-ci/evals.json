@@ -1,0 +1,192 @@
+{
+  "skill_name": "gh-fix-ci",
+  "version": "1.0.0",
+  "evals": [
+    {
+      "name": "no_failing_checks",
+      "description": "PR with all checks passing should return exit code 0",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
+      "expected_exit_code": 0,
+      "expected_output_contains": [
+        "All required checks passed",
+        "✅"
+      ],
+      "note": "PR #807 has all checks passing (as of 2026-02-08)"
+    },
+    {
+      "name": "failing_check_mypy",
+      "description": "PR with mypy type check failure should categorize as TYPE_CHECK",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 806 --repo jannekbuengener/Claire_de_Binare",
+      "expected_exit_code": 1,
+      "expected_output_contains": [
+        "Type Checking (mypy)",
+        "TYPE_CHECK",
+        "Duplicate module",
+        "Add type hints or configure mypy excludes"
+      ],
+      "note": "PR #806 had LR-004 check failure with mypy duplicate module error"
+    },
+    {
+      "name": "json_output_format",
+      "description": "JSON output should contain required fields",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare --json",
+      "expected_exit_code": 0,
+      "expected_output_json_fields": [
+        "pr_number",
+        "repo",
+        "summary",
+        "summary.total",
+        "summary.passed",
+        "summary.failed",
+        "summary.required_checks_status",
+        "failing_checks"
+      ],
+      "note": "Validates JSON output structure"
+    },
+    {
+      "name": "check_filter",
+      "description": "Filter by check name should only show matching checks",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare --check 'ci (Unit'",
+      "expected_exit_code": 0,
+      "expected_output_contains": [
+        "ci (Unit/Integration + Lint gesammelt)"
+      ],
+      "note": "Substring filter should match check name"
+    },
+    {
+      "name": "auth_failure_detection",
+      "description": "Auth failure should exit with code 2 and show remediation",
+      "command": "GH_TOKEN=invalid python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
+      "expected_exit_code": 2,
+      "expected_output_contains": [
+        "Authentication failed",
+        "gh auth switch",
+        "Remediation"
+      ],
+      "note": "Simulates auth failure with invalid token",
+      "skip_reason": "Requires manual testing with invalid token"
+    },
+    {
+      "name": "required_checks_validation",
+      "description": "Should validate all 8 required checks for main branch",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
+      "expected_exit_code": 0,
+      "expected_output_contains": [
+        "ci (Unit/Integration + Lint gesammelt)",
+        "validate-branch-name",
+        "gitleaks (Secrets-Alarm)",
+        "trivy (kritische CVEs/Supply-Chain)",
+        "Check Core Duplicates",
+        "Check Delivery Gate",
+        "guard",
+        "E2E Happy Path"
+      ],
+      "note": "Validates all required checks from DISCOVERY_REPORT.md Section 2.1"
+    },
+    {
+      "name": "polling_wait_mode",
+      "description": "With --wait flag, should poll for in-progress checks",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare --wait",
+      "expected_exit_code": 0,
+      "expected_output_contains": [
+        "Waiting for",
+        "check(s) to complete"
+      ],
+      "note": "Only shows waiting message if checks are IN_PROGRESS when run",
+      "skip_reason": "Requires PR with in-progress checks at test time"
+    },
+    {
+      "name": "matrix_job_detection",
+      "description": "Should detect and report failures across matrix jobs (Python 3.11 vs 3.12)",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 806 --repo jannekbuengener/Claire_de_Binare",
+      "expected_output_contains": [
+        "Tests (Python"
+      ],
+      "note": "PR #806 had matrix test failures (if available)",
+      "skip_reason": "Requires PR with actual matrix failures"
+    },
+    {
+      "name": "log_truncation",
+      "description": "Should truncate logs to specified lines (default 100)",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 806 --repo jannekbuengener/Claire_de_Binare --lines 50",
+      "expected_exit_code": 1,
+      "expected_output_contains": [
+        "Error Snippet (last 50 lines"
+      ],
+      "note": "Validates --lines parameter works"
+    },
+    {
+      "name": "lint_category_detection",
+      "description": "Ruff/Black failures should be categorized as LINT",
+      "mock_check_name": "ci (Ruff)",
+      "mock_log_snippet": "Ruff found 15 violations in src/foo.py",
+      "expected_category": "LINT",
+      "expected_fix_hint": "Run: black . && ruff check --fix .",
+      "note": "Unit test for categorize_failure() method"
+    },
+    {
+      "name": "security_category_detection",
+      "description": "CVE/secret detection should be categorized as SECURITY",
+      "mock_check_name": "gitleaks (Secrets-Alarm)",
+      "mock_log_snippet": "Secret detected: REDACTED in file services/foo.py",
+      "expected_category": "SECURITY",
+      "expected_fix_hint": "Remove secrets, update dependencies, or add CVE to allowlist",
+      "note": "Unit test for categorize_failure() method"
+    },
+    {
+      "name": "governance_category_detection",
+      "description": "Delivery gate failures should be categorized as GOVERNANCE",
+      "mock_check_name": "Check Delivery Gate",
+      "mock_log_snippet": "DELIVERY_APPROVED.yaml: approved != true",
+      "expected_category": "GOVERNANCE",
+      "expected_fix_hint": "Review governance requirements in knowledge/governance/",
+      "note": "Unit test for categorize_failure() method"
+    },
+    {
+      "name": "e2e_category_detection",
+      "description": "E2E failures should detect STUB mode patterns",
+      "mock_check_name": "E2E Happy Path",
+      "mock_log_snippet": "Redis connection refused at localhost:6379",
+      "expected_category": "E2E",
+      "expected_fix_hint": "Check if STUB mode expected (PR fork?), verify secrets",
+      "note": "Unit test for categorize_failure() method"
+    }
+  ],
+  "test_instructions": {
+    "setup": [
+      "Ensure gh CLI is installed and authenticated",
+      "Ensure Python 3.10+ is available",
+      "Ensure jq is installed (for gh JSON parsing)"
+    ],
+    "run_evals": [
+      "python -m pytest docs/skills/gh-fix-ci/scripts/test_inspect_pr_checks.py",
+      "OR manually test each command from evals"
+    ],
+    "manual_tests": [
+      {
+        "name": "Test on live PR with failures",
+        "steps": [
+          "Find a recent PR with failing checks: gh pr list --limit 10 --json number,statusCheckRollup --jq '.[] | select(.statusCheckRollup | any(.conclusion == \"FAILURE\")) | .number' | head -1",
+          "Run: python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr <NUMBER>",
+          "Verify exit code 1 and failing checks are listed"
+        ]
+      },
+      {
+        "name": "Test polling on in-progress PR",
+        "steps": [
+          "Push a new commit to a PR to trigger checks",
+          "Immediately run: python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr <NUMBER> --wait",
+          "Verify polling behavior (10s intervals, timeout at 10min)"
+        ]
+      },
+      {
+        "name": "Test auth failure",
+        "steps": [
+          "Set invalid token: export GITHUB_TOKEN=ghp_invalid",
+          "Run: python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807",
+          "Verify exit code 2 and remediation message shown"
+        ]
+      }
+    ]
+  }
+}

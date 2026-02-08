@@ -1,0 +1,171 @@
+---
+skill_name: gh-fix-ci
+version: 1.0.0
+created: 2026-02-08
+last_updated: 2026-02-08
+status: active
+
+description: |
+  GitHub CI Failure Inspector for Claire de Binare repository.
+  Inspects failing GitHub Actions checks on Pull Requests, providing
+  categorized failure analysis with actionable fix suggestions.
+
+author: Claude Code (Session Lead)
+maintainer: jannekbuengener
+
+canonical_location: docs/skills/gh-fix-ci/
+
+dependencies:
+  required:
+    - gh: ">=2.0.0"  # GitHub CLI
+    - python: ">=3.10"
+    - jq: "*"  # JSON processor for gh commands
+  optional:
+    - git: "*"  # For branch/repo detection
+
+files:
+  - SKILL.md
+  - scripts/inspect_pr_checks.py
+  - evals.json
+  - META.yaml
+  - DISCOVERY_REPORT.md
+
+invocation:
+  default: "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr <NUMBER>"
+  examples:
+    - command: "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807"
+      description: "Check PR #807 for failing checks"
+    - command: "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --wait"
+      description: "Poll for in-progress checks (max 10 min)"
+    - command: "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --json"
+      description: "Output as JSON"
+    - command: "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --check 'ci (Unit'"
+      description: "Filter by check name"
+
+exit_codes:
+  0: "No failing checks"
+  1: "Failing checks found"
+  2: "Tool/auth/system error"
+
+default_repo: jannekbuengener/Claire_de_Binare
+
+features:
+  - Matrix job support (Python 3.11/3.12)
+  - Polling for in-progress checks (--wait flag)
+  - Log truncation (default 100 lines, configurable)
+  - Failure categorization (LINT, TYPE_CHECK, TEST, SECURITY, GOVERNANCE, E2E)
+  - Multi-account detection (no auto-switch)
+  - Retry logic with network resilience
+  - JSON output format
+
+safety_rules:
+  - "No auto-merge"
+  - "No commits/pushes unless explicitly told"
+  - "No workflow file changes without approval"
+  - "Auth failures → hard stop + remediation"
+  - "Never auto-switch GitHub accounts"
+  - "Suggest-only fixes (no auto-apply)"
+
+required_checks:
+  - "ci (Unit/Integration + Lint gesammelt)"
+  - "validate-branch-name"
+  - "gitleaks (Secrets-Alarm)"
+  - "trivy (kritische CVEs/Supply-Chain)"
+  - "Check Core Duplicates"
+  - "Check Delivery Gate"
+  - "guard"
+  - "E2E Happy Path"
+
+failure_categories:
+  LINT:
+    check_names: ["ci (Ruff)", "Linting (Ruff)", "Format Check (Black)"]
+    keywords: ["Ruff found", "Black would reformat", "style violation"]
+    fix_command: "black . && ruff check --fix ."
+
+  TYPE_CHECK:
+    check_names: ["Type Checking (mypy)", "ci (mypy)"]
+    keywords: ["mypy error", "incompatible type", "missing return"]
+    fix_hint: "Add type hints or configure mypy excludes"
+
+  TEST:
+    check_names: ["Tests (Python", "ci (pytest)"]
+    keywords: ["FAILED tests/", "AssertionError", "test_"]
+    fix_command: "pytest tests/ -v --tb=short --maxfail=1"
+
+  SECURITY:
+    check_names: ["gitleaks", "trivy", "pip-audit"]
+    keywords: ["Secret detected", "CVE-", "vulnerability"]
+    fix_hint: "Remove secrets, update dependencies, or add CVE to allowlist"
+
+  GOVERNANCE:
+    check_names: ["Check Delivery Gate", "Check Core Duplicates"]
+    keywords: ["DELIVERY_APPROVED", "duplicate core/"]
+    fix_hint: "Review governance requirements in knowledge/governance/"
+
+  E2E:
+    check_names: ["E2E", "e2e-"]
+    keywords: ["Redis connection", "Postgres", "Docker Compose"]
+    fix_hint: "Check if STUB mode expected (PR fork?), verify secrets"
+
+configuration:
+  polling:
+    wait_statuses: ["IN_PROGRESS", "QUEUED", "PENDING"]
+    poll_interval: 10  # seconds
+    max_wait_time: 600  # 10 minutes
+    default_enabled: false  # Must use --wait flag
+
+  logs:
+    default_lines: 100
+    max_lines: 500
+    filter_keywords: ["error", "fail", "fatal", "exception", "traceback"]
+    include_context: 5  # lines before/after error
+
+  auth:
+    default_account: "jannekbuengener"
+    auto_switch: false
+    on_auth_failure: "hard_stop_with_remediation"
+
+references:
+  - name: "Discovery Report"
+    file: "DISCOVERY_REPORT.md"
+    description: "Real-world CI/CD analysis of CDB repository"
+
+  - name: "CDB Repository"
+    url: "https://github.com/jannekbuengener/Claire_de_Binare"
+    description: "Target repository for this skill"
+
+  - name: "GitHub CLI Docs"
+    url: "https://cli.github.com/manual/"
+    description: "gh CLI documentation"
+
+tags:
+  - ci
+  - github-actions
+  - debugging
+  - testing
+  - failure-analysis
+  - cdb
+
+notes: |
+  This skill was created using skill-creator (Improve workflow) based on
+  DISCOVERY_REPORT.md which analyzed 41 workflows in the CDB repository.
+
+  Key design decisions:
+  - No default polling (must use --wait) to avoid unnecessary API calls
+  - Log truncation to 100 lines by default for manageable output
+  - Failure categorization based on real-world patterns from CDB
+  - Hard stop on auth failures (never auto-switch accounts)
+  - Suggest-only fixes (no auto-apply for safety)
+
+changelog:
+  - version: 1.0.0
+    date: 2026-02-08
+    changes:
+      - Initial release
+      - Implements all features from DISCOVERY_REPORT.md
+      - Matrix job support
+      - Polling with --wait flag
+      - Failure categorization (6 categories)
+      - Multi-account detection
+      - JSON output format
+      - Exit code contract (0/1/2)
