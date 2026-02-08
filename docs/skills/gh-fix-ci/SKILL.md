@@ -114,8 +114,8 @@ Some required checks may not be present on every PR due to workflow path filters
 
 ### SECURITY
 **Check Names:** `gitleaks`, `trivy`, `pip-audit`
-**Keywords:** "Secret detected", "CVE-", "vulnerability"
-**Fix Hint:** Remove secrets, update dependencies, or add CVE to allowlist
+**Keywords:** "Credential detected", "CVE-", "vulnerability"
+**Fix Hint:** Remove credentials, update dependencies, or add CVE to allowlist
 
 ### GOVERNANCE
 **Check Names:** `Check Delivery Gate`, `Check Core Duplicates`
@@ -356,7 +356,7 @@ Available accounts: jannekbuengener, plaketten-ingo
 Remediation:
 1. Verify repository access for jannekbuengener
 2. Run: gh auth switch
-3. Or: export GITHUB_TOKEN=<your-token>
+3. Or: export GITHUB_TOKEN=<your_value>
 
 Exit code: 2
 ```

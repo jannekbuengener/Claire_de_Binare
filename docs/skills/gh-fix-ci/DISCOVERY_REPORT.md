@@ -103,7 +103,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection --jq '.re
 |---|---|---|---|
 | **ci (Unit/Integration + Lint gesammelt)** | ci.yml | HARD BLOCK | Ruff/Black formatting violations, mypy type errors, pytest failures |
 | **validate-branch-name** | branch-policy.yml | HARD BLOCK | Branch naming convention violation (must match patterns) |
-| **gitleaks (Secrets-Alarm)** | gitleaks.yml | HARD BLOCK | Credential/token detected in code |
+| **gitleaks (Secrets-Alarm)** | gitleaks.yml | HARD BLOCK | Credential/API key detected in code |
 | **trivy (kritische CVEs/Supply-Chain)** | trivy.yml | HARD BLOCK | Container image CVE above allowlist |
 | **Check Core Duplicates** | core-guard.yml | HARD BLOCK | Duplicate `core/` directories detected |
 | **Check Delivery Gate** | delivery-gate.yml | HARD BLOCK | `governance/DELIVERY_APPROVED.yaml` approval missing |
@@ -614,7 +614,7 @@ jobs:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
 ```
 
 ---

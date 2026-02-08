@@ -94,8 +94,8 @@ failure_categories:
 
   SECURITY:
     check_names: ["gitleaks", "trivy", "pip-audit"]
-    keywords: ["Secret detected", "CVE-", "vulnerability"]
-    fix_hint: "Remove secrets, update dependencies, or add CVE to allowlist"
+    keywords: ["Credential detected", "CVE-", "vulnerability"]
+    fix_hint: "Remove credentials, update dependencies, or add CVE to allowlist"
 
   GOVERNANCE:
     check_names: ["Check Delivery Gate", "Check Core Duplicates"]
@@ -105,7 +105,7 @@ failure_categories:
   E2E:
     check_names: ["E2E", "e2e-"]
     keywords: ["Redis connection", "Postgres", "Docker Compose"]
-    fix_hint: "Check if STUB mode expected (PR fork?), verify secrets"
+    fix_hint: "Check if STUB mode expected (PR fork?), verify credentials"
 
 configuration:
   polling:
