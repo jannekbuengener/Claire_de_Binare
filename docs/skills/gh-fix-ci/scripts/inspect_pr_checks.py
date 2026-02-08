@@ -214,7 +214,7 @@ class PRCheckInspector:
             )
             print("Current auth status:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
-        except:
+        except Exception:
             pass
 
         print(file=sys.stderr)
@@ -430,7 +430,6 @@ def format_human_output(pr_number: int, repo: str, failing_checks: List[FailingC
     # Use ASCII-safe characters for Windows console compatibility
     check_pass = "[OK]"
     check_fail = "[FAIL]"
-    check_wait = "[WAIT]"
 
     print(f"PR #{pr_number}: {repo}")
     print(f"Status: {summary['passed']} passed, {summary['failed']} failed, {summary['in_progress']} in_progress")

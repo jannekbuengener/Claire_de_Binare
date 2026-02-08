@@ -103,7 +103,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection --jq '.re
 |---|---|---|---|
 | **ci (Unit/Integration + Lint gesammelt)** | ci.yml | HARD BLOCK | Ruff/Black formatting violations, mypy type errors, pytest failures |
 | **validate-branch-name** | branch-policy.yml | HARD BLOCK | Branch naming convention violation (must match patterns) |
-| **gitleaks (Secrets-Alarm)** | gitleaks.yml | HARD BLOCK | Secret/token detected in code |
+| **gitleaks (Secrets-Alarm)** | gitleaks.yml | HARD BLOCK | Credential/token detected in code |
 | **trivy (kritische CVEs/Supply-Chain)** | trivy.yml | HARD BLOCK | Container image CVE above allowlist |
 | **Check Core Duplicates** | core-guard.yml | HARD BLOCK | Duplicate `core/` directories detected |
 | **Check Delivery Gate** | delivery-gate.yml | HARD BLOCK | `governance/DELIVERY_APPROVED.yaml` approval missing |
@@ -147,7 +147,7 @@ Found 1 error in 1 file (errors prevented further checking)
 
 **Failed Workflows (Last 30 runs):**
 1. `.github/workflows/e2e.yml` - FAILURE (21797091117)
-   - **Likely Cause:** E2E stub mode (secrets not available in PR context)
+   - **Likely Cause:** E2E stub mode (credentials not available in PR context)
    - **Common Pattern:** Workflows requiring Redis/Postgres in PR forks fail
 
 2. `.github/workflows/python-compat.yml` - FAILURE (21797091004)
@@ -169,7 +169,7 @@ Found 1 error in 1 file (errors prevented further checking)
 | **LINT/FORMAT** | High | ci (Ruff), ci (Black), Format Check | `Ruff found X violations`, `Black would reformat files` |
 | **TYPE_CHECK** | Medium | ci (mypy), Type Checking (mypy) | `Duplicate module`, `incompatible type`, `missing return` |
 | **TEST** | Medium | ci (pytest), Tests (Python 3.11/3.12) | `FAILED tests/...`, `AssertionError`, `NameError` |
-| **SECURITY** | Low | gitleaks, trivy, pip-audit | `Secret detected: REDACTED`, `CVE-2025-XXXXX found` |
+| **SECURITY** | Low | gitleaks, trivy, pip-audit | `Credential detected: REDACTED`, `CVE-2025-XXXXX found` |
 | **DOCKER/BUILD** | Low | trivy, Container Scan | `Image build failed`, `High severity vulnerabilities` |
 | **GOVERNANCE** | Low | Check Delivery Gate, Check Core Duplicates | `DELIVERY_APPROVED.yaml: approved != true`, `Duplicate core/ directory found` |
 | **E2E/INTEGRATION** | Medium | E2E Happy Path, e2e-paper-trading | `Redis connection refused`, `PostgreSQL not available` (stub mode) |
@@ -204,7 +204,7 @@ steps:
 - `cdb_postgres` (Port 5432)
 - `cdb_signal`, `cdb_risk`, `cdb_execution`, etc.
 
-**Constraint:** Workflows requiring services fail in PR forks (no secrets available).
+**Constraint:** Workflows requiring services fail in PR forks (no credentials available).
 
 #### Caching
 Multiple workflows use GitHub Actions cache:
@@ -396,8 +396,8 @@ failure_patterns:
 
   SECURITY:
     check_names: ["gitleaks", "trivy", "pip-audit"]
-    keywords: ["Secret detected", "CVE-", "vulnerability"]
-    auto_fix_hint: "Remove secrets, update dependencies, add CVE to allowlist"
+    keywords: ["Credential detected", "CVE-", "vulnerability"]
+    auto_fix_hint: "Remove credentials, update dependencies, add CVE to allowlist"
 
   GOVERNANCE:
     check_names: ["Check Delivery Gate", "Check Core Duplicates"]
@@ -407,7 +407,7 @@ failure_patterns:
   E2E:
     check_names: ["E2E", "e2e-"]
     keywords: ["Redis connection", "Postgres", "Docker Compose"]
-    auto_fix_hint: "Check if STUB mode expected (PR fork?), verify secrets"
+    auto_fix_hint: "Check if STUB mode expected (PR fork?), verify credentials"
 ```
 
 ### 8.3 Polling & Timeout Settings
@@ -464,7 +464,7 @@ fix_commands:
   TYPE_CHECK: "mypy . --show-error-codes"
   TEST: "pytest tests/ -v --tb=short --maxfail=1"
   E2E: "docker compose -f infrastructure/compose/compose.yml up -d && pytest tests/e2e/"
-  SECURITY_GITLEAKS: "Check gitleaks.toml allowlist, remove secrets from history"
+  SECURITY_GITLEAKS: "Check gitleaks.toml allowlist, remove credentials from history"
   SECURITY_TRIVY: "docker build . && trivy image --severity HIGH,CRITICAL <image>"
 ```
 
@@ -481,12 +481,12 @@ fix_commands:
 - Provide repo-specific guidance (e.g., "Check DELIVERY_APPROVED.yaml")
 
 ### 9.2 Stub Mode Detection
-**Finding:** E2E tests fail in PR forks due to missing secrets (STUB mode expected).
+**Finding:** E2E tests fail in PR forks due to missing credentials (STUB mode expected).
 
 **Recommendation:** gh-fix-ci should:
 - Detect PR source (fork vs. same repo)
-- Warn user if E2E failures are expected (fork, no secrets)
-- Suggest: "E2E tests require secrets; merge to main or run locally"
+- Warn user if E2E failures are expected (fork, no credentials)
+- Suggest: "E2E tests require credentials; merge to main or run locally"
 
 ### 9.3 Multiple Python Versions
 **Finding:** CI runs tests on Python 3.11 AND 3.12 (matrix strategy).
