@@ -188,7 +188,7 @@
       {
         "name": "Test auth failure",
         "steps": [
-          "Set invalid token: export GITHUB_TOKEN=ghp_invalid",
+          "Set invalid auth: export GITHUB_TOKEN=invalid_value",
           "Run: python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807",
           "Verify exit code 2 and remediation message shown"
         ]

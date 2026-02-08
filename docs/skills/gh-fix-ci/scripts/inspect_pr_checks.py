@@ -93,8 +93,8 @@ FAILURE_PATTERNS = [
     FailurePattern(
         category=FailureCategory.SECURITY,
         check_names=["gitleaks", "trivy", "pip-audit"],
-        keywords=["Secret detected", "CVE-", "vulnerability"],
-        fix_hint="Remove secrets, update dependencies, or add CVE to allowlist"
+        keywords=["Credential detected", "CVE-", "vulnerability"],
+        fix_hint="Remove credentials, update dependencies, or add CVE to allowlist"
     ),
     FailurePattern(
         category=FailureCategory.GOVERNANCE,
