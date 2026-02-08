@@ -106,7 +106,7 @@ FAILURE_PATTERNS = [
         category=FailureCategory.E2E,
         check_names=["E2E", "e2e-"],
         keywords=["Redis connection", "Postgres", "Docker Compose"],
-        fix_hint="Check if STUB mode expected (PR fork?), verify secrets"
+        fix_hint="Check if STUB mode expected (PR fork?), verify credentials"
     ),
 ]
 
