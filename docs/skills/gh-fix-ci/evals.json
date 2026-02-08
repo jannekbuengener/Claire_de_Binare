@@ -72,16 +72,22 @@
       "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
       "expected_exit_code": 0,
       "expected_output_contains": [
-        "ci (Unit/Integration + Lint gesammelt)",
-        "validate-branch-name",
-        "gitleaks (Secrets-Alarm)",
-        "trivy (kritische CVEs/Supply-Chain)",
-        "Check Core Duplicates",
-        "Check Delivery Gate",
-        "guard",
+        "All required checks passed",
+        "present"
+      ],
+      "note": "Validates all required checks from DISCOVERY_REPORT.md Section 2.1. PR #807 is docs-only so E2E Happy Path is not triggered (paths-ignore filter)."
+    },
+    {
+      "name": "required_checks_with_not_found",
+      "description": "Should report NOT_FOUND checks separately when path filters skip them",
+      "command": "python docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py --pr 807 --repo jannekbuengener/Claire_de_Binare",
+      "expected_exit_code": 0,
+      "expected_output_contains": [
+        "7/7 present",
+        "1 not triggered",
         "E2E Happy Path"
       ],
-      "note": "Validates all required checks from DISCOVERY_REPORT.md Section 2.1"
+      "note": "PR #807 has docs-only changes, so E2E Happy Path (from ci.yaml with paths-ignore: docs/**) is not triggered"
     },
     {
       "name": "polling_wait_mode",

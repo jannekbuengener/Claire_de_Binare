@@ -448,8 +448,16 @@ def format_human_output(pr_number: int, repo: str, failing_checks: List[FailingC
             print(f"  - {name}")
         print()
     elif summary["failed"] == 0:
+        # Count checks that are present (not NOT_FOUND) and passed
         passed_count = len([s for s in summary['required_checks_status'].values() if s in SUCCESS_STATUSES])
-        print(f"{check_pass} All required checks passed ({passed_count}/{len(REQUIRED_CHECKS)})")
+        present_count = len([s for s in summary['required_checks_status'].values() if s != "NOT_FOUND"])
+        not_found = [name for name, s in summary['required_checks_status'].items() if s == "NOT_FOUND"]
+
+        if not_found:
+            print(f"{check_pass} All required checks passed ({passed_count}/{present_count} present, {len(not_found)} not triggered)")
+            print(f"   Not triggered: {', '.join(not_found)}")
+        else:
+            print(f"{check_pass} All required checks passed ({passed_count}/{len(REQUIRED_CHECKS)})")
         print()
 
     # Show failing checks
