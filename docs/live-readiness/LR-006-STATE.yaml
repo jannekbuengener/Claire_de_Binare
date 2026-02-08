@@ -1,10 +1,10 @@
 spec_version: "1.0"
-task_id: "LR-006A"
+task_id: "LR-006"
 task_title: "P0 Deterministic Decision Traceability Contract"
 status: "DONE"
 completion_timestamp: "2026-02-07T09:10:00Z"
 completion_author: "jannekbuengener"
-evidence_file: "docs/live-readiness/LR-006A-EVIDENCE.md"
+evidence_file: "docs/live-readiness/LR-006-EVIDENCE.md"
 evidence_commit: "c07ffa2"
 
 blocked_reason_code: null

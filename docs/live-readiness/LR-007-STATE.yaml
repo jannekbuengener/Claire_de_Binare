@@ -5,7 +5,7 @@ status: "BLOCKED"
 completion_timestamp: null
 completion_author: null
 evidence_file: "docs/live-readiness/LR-007-SPEC.md"
-evidence_commit: null
+evidence_commit: "67e4c27"
 
 blocked_reason_code: "RC_B400"
 blocked_reason_text: "Shadow Mode validation in progress (30 days). Started 2026-02-07T12:30:00Z, target completion 2026-03-09."
