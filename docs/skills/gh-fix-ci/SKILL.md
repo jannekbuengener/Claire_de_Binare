@@ -125,7 +125,7 @@ Some required checks may not be present on every PR due to workflow path filters
 ### E2E
 **Check Names:** `E2E Happy Path`, `e2e-paper-trading`
 **Keywords:** "Redis connection", "Postgres", "Docker Compose"
-**Fix Hint:** Check if STUB mode expected (PR fork?), verify secrets available
+**Fix Hint:** Check if STUB mode expected (PR fork?), verify credentials available
 
 ---
 
@@ -270,7 +270,7 @@ Remediation:
 1. **Lint & Format:** Ruff, Black
 2. **Type Checking:** mypy
 3. **Unit/Integration Tests:** pytest (Python 3.11, 3.12 matrix)
-4. **Security Scans:** gitleaks (secrets), trivy (CVE), pip-audit (dependencies)
+4. **Security Scans:** gitleaks (credentials), trivy (CVE), pip-audit (dependencies)
 5. **Governance Gates:** Delivery Gate, Core Guard, Docs Hub Guard
 6. **E2E Integration:** Paper Trading pipeline (Redis, Postgres, Docker Compose)
 
