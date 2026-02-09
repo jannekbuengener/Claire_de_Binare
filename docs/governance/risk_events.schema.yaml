@@ -1,0 +1,86 @@
+version: 1.0
+title: "risk_events Table Schema Contract"
+description: "Canonical schema definition for risk_events audit table. Derived from code contract, not assumed."
+
+source:
+  code_file: "services/risk/service.py"
+  code_lines: "377-388"
+  last_verified: "2026-02-09T15:52:00+01:00"
+
+table: "risk_events"
+
+required:
+  - id
+  - timestamp_ms
+  - symbol
+  - decision
+  - created_at
+
+fields:
+  id:
+    type: "SERIAL"
+    constraints: "PRIMARY KEY"
+    description: "Auto-incrementing unique identifier"
+
+  timestamp_ms:
+    type: "BIGINT"
+    nullable: false
+    description: "Unix timestamp in milliseconds (event time)"
+
+  symbol:
+    type: "VARCHAR"
+    max_length: 20
+    nullable: false
+    description: "Trading pair symbol (e.g., BTCUSDT)"
+
+  decision:
+    type: "VARCHAR"
+    max_length: 10
+    nullable: false
+    description: "Risk decision outcome (BLOCK, APPROVED)"
+
+  reason_code:
+    type: "VARCHAR"
+    max_length: 20
+    nullable: true
+    description: "Decision contract reason code (e.g., RC_002)"
+
+  contract_version:
+    type: "VARCHAR"
+    max_length: 50
+    nullable: true
+    description: "Decision contract version identifier"
+
+  payload:
+    type: "JSONB"
+    nullable: true
+    description: "Full event payload (JSON)"
+
+  created_at:
+    type: "TIMESTAMPTZ"
+    nullable: false
+    default: "NOW()"
+    description: "Record creation timestamp"
+
+indexes:
+  - name: "idx_risk_events_timestamp_ms"
+    columns: ["timestamp_ms"]
+    order: "DESC"
+
+  - name: "idx_risk_events_symbol"
+    columns: ["symbol"]
+
+insert_columns:
+  # Columns used in INSERT statement (order matters)
+  - timestamp_ms
+  - symbol
+  - decision
+  - reason_code
+  - contract_version
+  - payload
+
+notes: |
+  - Spec derived from actual INSERT statement in services/risk/service.py
+  - Column order in insert_columns MUST match code expectations
+  - VARCHAR lengths verified from P0 fix (2026-02-09)
+  - contract_version increased from 10 to 50 chars after initial failure
