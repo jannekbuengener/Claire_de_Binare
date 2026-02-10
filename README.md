@@ -1,5 +1,14 @@
 Welcome to the Claire de Binare repository. This project is a complex system for algorithmic trading, featuring a microservices-based architecture, advanced data analysis, and a sophisticated governance framework.
 
+## Live Readiness Status
+
+- **Stars:** ★★★★★ (5/5)
+- **Percent complete:** 100% (7/7 LR tasks done, 0 blocked)
+- **Tasks:** DONE 7 / BLOCKED 0
+- **Blocker code:** n/a (no blocked tasks; LR-007 finalized under RC_001 for infrastructure readiness)
+- **Last verified:** 2026-02-10 15:32 CET — commit `27d2f4b9cda518821ae855009db68793cd9656cf`
+- **Audit report:** `docs/live-readiness/LR-README-AUDIT.md`
+
 ## Overview
 
 This repository contains all the necessary components to run and develop Claire de Binare, including:
