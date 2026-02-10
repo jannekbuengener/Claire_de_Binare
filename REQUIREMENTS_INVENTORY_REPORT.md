@@ -147,7 +147,7 @@
 ### 1.9 Secrets Management
 
 **Secrets Policy** (`governance/SECRETS_POLICY.md`)
-- Secrets Locations: Outside repository (`C:\Users\<username>\Documents\.secrets\.cdb\`)
+- Secrets Locations: Outside repository (e.g., `~/.secrets/.cdb/` or `%USERPROFILE%\Documents\.secrets\.cdb\`)
 - Tracked Secrets: None (no secrets in Git history)
 - CI/CD Secrets: Stored in GitHub Actions Secrets (GEMINI_API_KEY, CLAUDE_API_KEY)
 - Invariant: Rotate all secrets after clone (previous versions had secrets in history)
@@ -780,7 +780,7 @@ Layer 5: Order Validation
 - Scripts: `check_risk_events_schema_contract.py`, `check_core_duplicates.py`
 - Trigger: Push/PR to main
 
-**governance-drift-guard.yml** (`.github/workflows/governance-drift-guard.yml`)
+**docs-hub-guard.yml** (`.github/workflows/docs-hub-guard.yml`)
 - Validates: No `.claude/agents/` directory exists
 - Reason: Prevents split-brain with Docs Hub canonical definitions
 - Trigger: Push/PR to main
