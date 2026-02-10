@@ -2,12 +2,13 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 
 ## Live Readiness Status
 
+- Latest news: LR-007 PASS (RC_001) after the 2026-02-09 infrastructure stabilization (E2E deadlock fix + governance bridge), so no blocked tasks remain.
 - **Stars:** ★★★★★ (5/5)
 - **Percent complete:** 100% (7/7 LR tasks done, 0 blocked)
 - **Tasks:** DONE 7 / BLOCKED 0
-- **Blocker code:** n/a (no blocked tasks; LR-007 finalized under RC_001 for infrastructure readiness)
+- **Validator:** `python scripts/lr004_completion_guard.py --check` → PASS (all LR tasks valid)
 - **Last verified:** 2026-02-10 15:32 CET — commit `27d2f4b9cda518821ae855009db68793cd9656cf`
-- **Audit report:** `docs/live-readiness/LR-README-AUDIT.md`
+- Evidence is captured in each `docs/live-readiness/LR-0xx-STATE.yaml` entry rather than a separate audit report.
 
 ## Overview
 
