@@ -3,8 +3,8 @@
 
 **Generated**: 2026-02-09
 **Repositories Scanned**:
-- Working Repo: `D:\Dev\Workspaces\Repos\Claire_de_Binare`
-- Docs Hub: `D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs`
+- Working Repo: `./` (Claire_de_Binare repo root)
+- Docs Hub: `../Claire_de_Binare_Docs` (documentation repo)
 
 **Purpose**: Comprehensive inventory of all requirements, contracts, gates, policies, and service specifications that define deterministic logic in the CDB system.
 
@@ -480,7 +480,7 @@ Layer 5: Order Validation
 - `services/risk/models.py` (Order, Alert, RiskState)
 - `services/risk/service.py`
 - `services/risk/README.md`
-- `Claire_de_Binare_Docs/knowledge/deep-issues-lab/cdb_risk.md` (deep-dive)
+- External Docs Hub (not in this repo): `knowledge/deep-issues-lab/cdb_risk.md` (deep-dive)
 
 ### 2.7 Execution Service (Port 8003)
 
@@ -636,7 +636,7 @@ Layer 5: Order Validation
 - Ordered evaluation (panic → stale → regime → signal thresholds → exposure limits)
 - Fail-closed design (default BLOCK unless all checks pass)
 
-**Enforcement**: Part of `contracts.yml` CI workflow, pytest fails block merge
+**Enforcement**: Run in main CI workflow `.github/workflows/ci.yaml` (`contract-tests` job running `pytest -m contract`); `contracts.yml` separately runs `tests/unit/contracts/test_contracts.py` and JSON schema JSON-validity checks
 
 ### 3.3 Schema Drift Guards
 
@@ -662,15 +662,15 @@ Layer 5: Order Validation
 
 ### 3.4 Core Integrity Guards
 
-**Core Duplicate & Secrets Guard** (`infrastructure/scripts/check_core_duplicates.py`)
+**Core Duplicate & Secrets Guard** (`scripts/check_core_duplicates.py`)
 - Rule 1: No `services/*/core/**` directories allowed (prevents duplication)
 - Rule 2: No additional `secrets.py` files except `core/domain/secrets.py`
 - Gating: CI workflow `core-guard.yml` (exit code 1 blocks merge)
 
-**Governance Drift Guard** (`.github/workflows/governance-drift-guard.yml`)
+**Governance Drift Guard** (`.github/workflows/docs-hub-guard.yml`)
 - Forbids local `.claude/agents/` directory
 - Prevents split-brain with canonical definitions in `Claire_de_Binare_Docs` repo
-- Gating: Blocks if directory exists (exit code 1)
+- Gating: CI workflow `docs-hub-guard.yml` blocks if directory exists (exit code 1)
 
 ### 3.5 LR-005 Schema Compliance Tests
 
