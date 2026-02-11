@@ -18,7 +18,7 @@ requests==2.32.4
 aiohttp==3.13.3
 
 # Crypto & Signing (für MEXC API)
-cryptography==44.0.1
+cryptography==46.0.5
 
 # Environment Variables
 python-dotenv==1.0.0
