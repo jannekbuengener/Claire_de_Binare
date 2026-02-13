@@ -11,12 +11,13 @@ import os
 import signal
 import sys
 import time
-import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Thread
 from typing import Optional
+
+from core.utils.uuid_gen import generate_uuid
 
 import psycopg2
 import redis
@@ -170,8 +171,8 @@ def decide_trade(
     now_ms,
 ) -> tuple[str, str | None, dict]:
     # Generate correlation IDs for replay/audit (Correlation Backbone)
-    decision_id = str(uuid.uuid4())
-    trace_id = str(uuid.uuid4())
+    decision_id = generate_uuid()
+    trace_id = generate_uuid()
     signal_id = _get_value(signal, "signal_id")  # Preserve from Signal service
 
     now_ms_value = _parse_int(now_ms)
@@ -834,7 +835,7 @@ class RiskManager:
             # Persist blocked_order artifact for audit/replay (Correlation Backbone)
             blocked_order = {
                 "type": "blocked_order",
-                "order_id": str(uuid.uuid4()),
+                "order_id": generate_uuid(),
                 "decision_id": evidence.get("decision_id"),
                 "signal_id": evidence.get("signal_id"),
                 "trace_id": evidence.get("trace_id"),
@@ -978,7 +979,7 @@ class RiskManager:
             bot_id=signal.bot_id,
             price=price_used,
             # Correlation IDs from decide_trade evidence
-            order_id=str(uuid.uuid4()),
+            order_id=generate_uuid(),
             decision_id=evidence.get("decision_id"),
             trace_id=evidence.get("trace_id"),
         )
