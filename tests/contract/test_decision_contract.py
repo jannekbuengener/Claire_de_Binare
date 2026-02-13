@@ -8,6 +8,7 @@ from services.risk import service as risk_service
 def _base_inputs():
     now_ms = 1_700_000_000_000
     signal = {
+        "signal_id": "sig-test-0001",  # Required for correlation backbone
         "symbol": "BTCUSDT",
         "pct_change_15m": 3.5,
         "volume_15m": 200000.0,
@@ -112,7 +113,8 @@ def test_decision_rc_001_regime_block():
 @pytest.mark.contract
 def test_decision_rc_010_signal_thresholds():
     now_ms, signal, market_state, account_state, market_health = _base_inputs()
-    signal["pct_change_15m"] = 2.9
+    # Threshold is 0.03 (3% as fraction), so 0.02 (2%) should trigger RC_010
+    signal["pct_change_15m"] = 0.02
     decision, reason_code, _ = risk_service.decide_trade(
         signal, market_state, account_state, market_health, now_ms
     )
@@ -155,6 +157,7 @@ def test_decision_rc_022_slippage():
 
 @pytest.mark.contract
 def test_decision_determinism():
+    """Test that same inputs produce deterministic outputs (except for correlation IDs which are UUIDs)."""
     now_ms, signal, market_state, account_state, market_health = _base_inputs()
     first = risk_service.decide_trade(
         signal, market_state, account_state, market_health, now_ms
@@ -162,9 +165,18 @@ def test_decision_determinism():
     second = risk_service.decide_trade(
         signal, market_state, account_state, market_health, now_ms
     )
+    # Decision and reason_code must be identical
     assert first[0] == second[0]
     assert first[1] == second[1]
-    assert first[2] == second[2]
+    # Evidence must be identical except for correlation IDs (decision_id, trace_id)
+    first_evidence = {k: v for k, v in first[2].items() if k not in ("decision_id", "trace_id")}
+    second_evidence = {k: v for k, v in second[2].items() if k not in ("decision_id", "trace_id")}
+    assert first_evidence == second_evidence
+    # Correlation IDs must exist and be valid UUIDs
+    assert first[2].get("decision_id") is not None
+    assert first[2].get("trace_id") is not None
+    assert second[2].get("decision_id") is not None
+    assert second[2].get("trace_id") is not None
 
 
 @pytest.mark.contract

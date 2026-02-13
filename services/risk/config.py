@@ -45,6 +45,9 @@ class RiskConfig:
     output_topic_orders: str = "orders"
     output_topic_alerts: str = "alerts"
     orders_stream: str = os.getenv("RISK_ORDERS_STREAM", "stream.orders")
+    orders_blocked_stream: str = os.getenv(
+        "RISK_ORDERS_BLOCKED_STREAM", "stream.orders_blocked"
+    )  # Separate stream for blocked order artifacts
     regime_stream: str = os.getenv("RISK_REGIME_STREAM", "stream.regime_signals")
     allocation_stream: str = os.getenv(
         "RISK_ALLOCATION_STREAM", "stream.allocation_decisions"

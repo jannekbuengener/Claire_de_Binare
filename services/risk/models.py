@@ -113,14 +113,18 @@ class Order:
     side: Literal["BUY", "SELL"]
     quantity: float
     stop_loss_pct: float
-    signal_id: int
-    reason: str
-    timestamp: int
-    strategy_id: str
+    signal_id: str = ""  # Changed from int to str (signal_id from Signal service)
+    reason: str = ""
+    timestamp: int = 0
+    strategy_id: str = ""
     bot_id: Optional[str] = None
     client_id: Optional[str] = None
     price: Optional[float] = None  # For observability/debugging
     type: Literal["order"] = "order"  # Type-safe event type
+    # Correlation IDs for replay/audit (Correlation Backbone)
+    order_id: Optional[str] = None
+    decision_id: Optional[str] = None
+    trace_id: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -136,6 +140,10 @@ class Order:
             "bot_id": self.bot_id,
             "client_id": self.client_id,
             "price": self.price,
+            # Correlation IDs for replay/audit
+            "order_id": self.order_id,
+            "decision_id": self.decision_id,
+            "trace_id": self.trace_id,
         }
 
 

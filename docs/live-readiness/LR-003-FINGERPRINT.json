@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "generated_at": "2026-02-04T16:42:34.663529+00:00",
+  "generated_at": "2026-02-13T11:36:06.131293+00:00",
   "protected_files": [
     {
       "path": "docs/contracts/market_data.schema.json",
@@ -16,8 +16,8 @@
     },
     {
       "path": "tests/contract/test_decision_contract.py",
-      "sha256": "8e00b7e7a7384b3d4b3f1e724bfebebf2845b09aca28204a943549ad34467320"
+      "sha256": "613e498b04fdbf14c2ff93b8fa19162db14d604733b3662f8d2a74fec1d65c92"
     }
   ],
-  "combined_sha256": "d728e2e133d6d2dbd6139fe1b355ef1da30fc2eb973bdcbfb7fb5815cd90e779"
+  "combined_sha256": "a9977068e71d1553d4d8d8e7beb83ceffc0c169153746465509a49e9e395ed23"
 }
