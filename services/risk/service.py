@@ -850,8 +850,8 @@ class RiskManager:
                     sanitize_payload(blocked_order),
                     maxlen=10000,
                 )
-            except Exception as e:
-                logger.error(f"Failed to persist blocked_order artifact: {e}")
+            except Exception:
+                logger.exception("Failed to persist blocked_order artifact")
             return None
 
         if not signal.strategy_id:

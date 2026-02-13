@@ -113,10 +113,10 @@ class Order:
     side: Literal["BUY", "SELL"]
     quantity: float
     stop_loss_pct: float
-    signal_id: str = ""  # Changed from int to str (signal_id from Signal service)
-    reason: str = ""
-    timestamp: int = 0
-    strategy_id: str = ""
+    signal_id: str  # Changed from int to str (signal_id from Signal service)
+    reason: str
+    timestamp: int
+    strategy_id: str
     bot_id: Optional[str] = None
     client_id: Optional[str] = None
     price: Optional[float] = None  # For observability/debugging
