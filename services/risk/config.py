@@ -63,7 +63,9 @@ class RiskConfig:
 
     # MEXC API (for live balance fetching) - Docker secrets with fallback
     mexc_api_key: Optional[str] = read_secret("mexc_api_key", "MEXC_API_KEY") or None
-    mexc_api_secret: Optional[str] = read_secret("mexc_api_secret", "MEXC_API_SECRET") or None
+    mexc_api_secret: Optional[str] = (
+        read_secret("mexc_api_secret", "MEXC_API_SECRET") or None
+    )
     mexc_testnet: bool = os.getenv("MEXC_TESTNET", "true").lower() == "true"
 
     def validate(self) -> bool:

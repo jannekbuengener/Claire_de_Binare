@@ -169,8 +169,12 @@ def test_decision_determinism():
     assert first[0] == second[0]
     assert first[1] == second[1]
     # Evidence must be identical except for correlation IDs (decision_id, trace_id)
-    first_evidence = {k: v for k, v in first[2].items() if k not in ("decision_id", "trace_id")}
-    second_evidence = {k: v for k, v in second[2].items() if k not in ("decision_id", "trace_id")}
+    first_evidence = {
+        k: v for k, v in first[2].items() if k not in ("decision_id", "trace_id")
+    }
+    second_evidence = {
+        k: v for k, v in second[2].items() if k not in ("decision_id", "trace_id")
+    }
     assert first_evidence == second_evidence
     # Correlation IDs must exist and be valid UUIDs
     assert first[2].get("decision_id") is not None
