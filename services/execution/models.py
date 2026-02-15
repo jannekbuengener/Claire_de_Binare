@@ -10,6 +10,7 @@ from enum import Enum
 
 from core.utils.clock import utcnow
 
+
 class OrderSide(str, Enum):
     """Order side: BUY or SELL"""
 

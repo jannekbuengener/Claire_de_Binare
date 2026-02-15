@@ -1,4 +1,4 @@
-"\"\"\"Integrationstest: Execution-Service-Pipeline und Metrics Publishing.\"\"\""
+'"""Integrationstest: Execution-Service-Pipeline und Metrics Publishing."""'
 
 from __future__ import annotations
 
