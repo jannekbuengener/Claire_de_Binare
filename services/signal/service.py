@@ -114,7 +114,7 @@ class SignalEngine:
             self._pg_conn = None
             return None
 
-    def _persist_correlation_event(self, signal: "Signal") -> bool:
+    def _persist_correlation_event(self, signal: "Signal", *, event_type: str) -> bool:
         """
         Persist SIGNAL event to correlation_ledger (Phase 8C).
 
@@ -128,7 +128,7 @@ class SignalEngine:
 
         try:
             correlation_id = compute_correlation_id(signal.signal_id)
-            event_pk = compute_event_pk(signal.signal_id, "SIGNAL")
+            event_pk = compute_event_pk(signal.signal_id, event_type)
 
             conn = self._get_postgres_conn()
             if conn is None:
@@ -152,7 +152,7 @@ class SignalEngine:
                     None,  # decision_id (not applicable for SIGNAL)
                     None,  # order_id (not applicable for SIGNAL)
                     None,  # fill_id (not applicable for SIGNAL)
-                    "SIGNAL",
+                    event_type,
                     signal.symbol,
                     signal.ts_ms,
                     json.dumps(signal.to_dict()),
@@ -299,7 +299,7 @@ class SignalEngine:
             # Phase 8C: Persist SIGNAL event to correlation_ledger
             # ValueError (missing signal_id) = fail-closed (bubble up)
             # DB errors = warn-only (evidence debt, don't block trading)
-            if not self._persist_correlation_event(signal):
+            if not self._persist_correlation_event(signal, event_type="SIGNAL"):
                 logger.warning(
                     f"⚠️ correlation_ledger write failed for {signal.signal_id} (evidence debt)"
                 )
