@@ -170,6 +170,7 @@ def test_exposure_limit_bypassed_for_reduce_only_sell(mock_redis, mock_postgres)
             manager.calculate_position_size = MagicMock(return_value=(0.1, None))
 
             signal = Signal(
+                signal_id="test-sig-001",
                 strategy_id="paper",
                 symbol="BTCUSDT",
                 side="SELL",
@@ -188,7 +189,11 @@ def test_exposure_limit_bypassed_for_reduce_only_sell(mock_redis, mock_postgres)
                     return_value=(
                         risk_service.DECISION_ALLOW,
                         None,
-                        {"contract_version": risk_service.DECISION_CONTRACT_VERSION},
+                        {
+                            "contract_version": risk_service.DECISION_CONTRACT_VERSION,
+                            "signal_id": "test-sig-001",
+                            "decision_id": "test-dec-001",
+                        },
                     ),
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
@@ -261,6 +266,7 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
 
             # Incoming BUY signal (should be blocked)
             signal = Signal(
+                signal_id="test-sig-002",
                 strategy_id="paper",
                 symbol="BTCUSDT",
                 side="BUY",
@@ -276,7 +282,11 @@ def test_proactive_unwind_triggers_on_blocked_buy(mock_redis, mock_postgres):
                     return_value=(
                         risk_service.DECISION_ALLOW,
                         None,
-                        {"contract_version": risk_service.DECISION_CONTRACT_VERSION},
+                        {
+                            "contract_version": risk_service.DECISION_CONTRACT_VERSION,
+                            "signal_id": "test-sig-002",
+                            "decision_id": "test-dec-002",
+                        },
                     ),
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
@@ -346,6 +356,7 @@ def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(
             manager.send_order = MagicMock()
 
             signal = Signal(
+                signal_id="test-sig-003",
                 strategy_id="paper",
                 symbol="BTCUSDT",
                 side="BUY",
@@ -360,7 +371,11 @@ def test_proactive_unwind_no_trigger_when_auto_unwind_disabled(
                     return_value=(
                         risk_service.DECISION_ALLOW,
                         None,
-                        {"contract_version": risk_service.DECISION_CONTRACT_VERSION},
+                        {
+                            "contract_version": risk_service.DECISION_CONTRACT_VERSION,
+                            "signal_id": "test-sig-003",
+                            "decision_id": "test-dec-003",
+                        },
                     ),
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
@@ -417,6 +432,7 @@ def test_proactive_unwind_no_trigger_when_no_open_positions(mock_redis, mock_pos
             manager.send_order = MagicMock()
 
             signal = Signal(
+                signal_id="test-sig-004",
                 strategy_id="paper",
                 symbol="BTCUSDT",
                 side="BUY",
@@ -431,7 +447,11 @@ def test_proactive_unwind_no_trigger_when_no_open_positions(mock_redis, mock_pos
                     return_value=(
                         risk_service.DECISION_ALLOW,
                         None,
-                        {"contract_version": risk_service.DECISION_CONTRACT_VERSION},
+                        {
+                            "contract_version": risk_service.DECISION_CONTRACT_VERSION,
+                            "signal_id": "test-sig-004",
+                            "decision_id": "test-dec-004",
+                        },
                     ),
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),

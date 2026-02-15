@@ -35,6 +35,10 @@ class DummyDatabase:
     def save_trade(self, result: object) -> None:
         self.saved_trades.append(result.order_id)
 
+    def persist_correlation_event(self, **kwargs) -> bool:
+        """No-op stub for Phase 8C (not validated by this test)."""
+        return True
+
 
 @pytest.mark.integration
 def test_process_order_publishes_real_result(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -64,6 +68,10 @@ def test_process_order_publishes_real_result(monkeypatch: pytest.MonkeyPatch) ->
             "strategy_id": "e2e-strat",
             "bot_id": "bot-101",
             "client_id": "client-1",
+            # Phase 8C: Correlation IDs for fail-closed semantics
+            "signal_id": "test-sig-PIPE-001",
+            "decision_id": "test-dec-PIPE-001",
+            "order_id": "test-ord-PIPE-001",
         }
 
         result = service.process_order(payload)
