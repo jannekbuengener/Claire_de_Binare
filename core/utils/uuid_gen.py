@@ -114,3 +114,70 @@ def generate_decision_pk(symbol: str, ts_ms: int, evidence: dict) -> str:
     input_hash = compute_input_snapshot_hash(evidence)
     name = f"{symbol}:{ts_ms}:{input_hash}"
     return str(uuid.uuid5(DECISION_PK_NAMESPACE, name))
+
+
+# =============================================================================
+# Phase 8C: Correlation IDs End-to-End
+# =============================================================================
+
+# Namespace for correlation_id (root of correlation chain)
+CORRELATION_ROOT_NAMESPACE = uuid.UUID("c0ffe100-cafe-4000-babe-000000000001")
+
+# Namespace for event_pk (per-event idempotency key)
+CORRELATION_EVENT_NAMESPACE = uuid.UUID("c0ffe100-cafe-4000-babe-000000000002")
+
+
+def compute_correlation_id(signal_id: str) -> str:
+    """
+    Compute correlation_id (root of chain) from signal_id.
+
+    Args:
+        signal_id: The signal_id from Signal Service (e.g., "sig-abc123...")
+
+    Returns:
+        UUIDv5 string (36 chars) as correlation chain root.
+
+    Raises:
+        ValueError: If signal_id is empty/None (fail-closed).
+    """
+    if not signal_id:
+        raise ValueError("signal_id is required for correlation_id (fail-closed)")
+    return str(uuid.uuid5(CORRELATION_ROOT_NAMESPACE, signal_id))
+
+
+def compute_event_pk(
+    signal_id: str,
+    event_type: str,
+    order_id: str | None = None,
+    fill_id: str | None = None,
+) -> str:
+    """
+    Compute deterministic event_pk for idempotent correlation_ledger writes.
+
+    STRICT CANONICALIZATION:
+    - event_type: UPPERCASE (SIGNAL, DECISION, ORDER, FILL)
+    - signal_id: exact string (required, fail-closed)
+    - order_id: "-" if empty/None
+    - fill_id: "-" if empty/None
+
+    Args:
+        signal_id: The signal_id from Signal Service (required).
+        event_type: Event type (SIGNAL, DECISION, ORDER, FILL).
+        order_id: Optional order_id (for ORDER/FILL events).
+        fill_id: Optional fill_id (for FILL events).
+
+    Returns:
+        UUIDv5 string (36 chars) as event idempotency key.
+
+    Raises:
+        ValueError: If signal_id is empty/None (fail-closed).
+    """
+    if not signal_id:
+        raise ValueError("signal_id is required for event_pk (fail-closed)")
+
+    canonical_event_type = event_type.upper()
+    canonical_order_id = order_id if order_id else "-"
+    canonical_fill_id = fill_id if fill_id else "-"
+
+    input_str = f"{signal_id}|{canonical_event_type}|{canonical_order_id}|{canonical_fill_id}"
+    return str(uuid.uuid5(CORRELATION_EVENT_NAMESPACE, input_str))

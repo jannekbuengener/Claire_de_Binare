@@ -21,7 +21,12 @@ from core.utils.uuid_gen import (
     generate_uuid,
     generate_decision_pk,
     compute_input_snapshot_hash,
+    compute_correlation_id,
+    compute_event_pk,
 )
+
+# Phase 8C: Evidence debt safety valve (default: fail-closed)
+ALLOW_EVIDENCE_DEBT = os.getenv("ALLOW_EVIDENCE_DEBT", "0") == "1"
 
 import psycopg2
 import redis
@@ -493,6 +498,117 @@ class RiskManager:
         }
         return self._persist_risk_event(event)
 
+    def _persist_correlation_event(
+        self,
+        signal_id: str,
+        event_type: str,
+        symbol: str,
+        timestamp_ms: int,
+        decision_id: str | None = None,
+        order_id: str | None = None,
+        fill_id: str | None = None,
+        payload: dict | None = None,
+    ) -> bool:
+        """
+        Persist event to correlation_ledger (Phase 8C).
+
+        Fail-closed: If signal_id missing, raises ValueError.
+        ON CONFLICT (event_pk) DO NOTHING for idempotent writes.
+        """
+        if not signal_id:
+            raise ValueError("signal_id is required for correlation_ledger (fail-closed)")
+
+        try:
+            canonical_event_type = event_type.upper()
+            correlation_id = compute_correlation_id(signal_id)
+            event_pk = compute_event_pk(signal_id, canonical_event_type, order_id, fill_id)
+
+            conn = self._get_postgres_conn()
+            if conn is None:
+                logger.warning("⚠️ correlation_ledger write skipped (no DB connection)")
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute("SET LOCAL statement_timeout = '250ms'")
+            cursor.execute(
+                """
+                INSERT INTO correlation_ledger
+                    (event_pk, correlation_id, signal_id, decision_id, order_id, fill_id,
+                     event_type, symbol, timestamp_ms, payload)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (event_pk) DO NOTHING
+                """,
+                (
+                    event_pk,
+                    correlation_id,
+                    signal_id,
+                    decision_id,
+                    order_id,
+                    fill_id,
+                    canonical_event_type,
+                    symbol,
+                    timestamp_ms,
+                    json.dumps(payload) if payload else None,
+                ),
+            )
+            logger.debug(f"📊 correlation_ledger {canonical_event_type}: signal={signal_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ correlation_ledger write failed: {e}")
+            return False
+
+    def _persist_blocked_decision(
+        self,
+        signal_id: str,
+        decision_id: str,
+        symbol: str,
+        reason_code: str,
+        timestamp_ms: int,
+        evidence: dict,
+    ) -> bool:
+        """
+        Persist BLOCK decision to blocked_decisions (Phase 8C).
+
+        Uses Phase 8B decision_pk algorithm for idempotency.
+        ON CONFLICT (decision_pk) DO NOTHING.
+        """
+        if not signal_id:
+            raise ValueError("signal_id is required for blocked_decisions (fail-closed)")
+
+        try:
+            decision_pk = generate_decision_pk(symbol, timestamp_ms, evidence)
+
+            conn = self._get_postgres_conn()
+            if conn is None:
+                logger.warning("⚠️ blocked_decisions write skipped (no DB connection)")
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute("SET LOCAL statement_timeout = '250ms'")
+            cursor.execute(
+                """
+                INSERT INTO blocked_decisions
+                    (decision_pk, signal_id, decision_id, symbol, reason_code,
+                     timestamp_ms, payload)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (decision_pk) DO NOTHING
+                """,
+                (
+                    decision_pk,
+                    signal_id,
+                    decision_id,
+                    symbol,
+                    reason_code,
+                    timestamp_ms,
+                    json.dumps(evidence),
+                ),
+            )
+            logger.debug(f"📊 blocked_decisions: signal={signal_id} reason={reason_code}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ blocked_decisions write failed: {e}")
+            return False
+
     def bootstrap_state_from_db(self):
         """
         Bootstrap risk state from positions table (source-of-truth).
@@ -913,16 +1029,68 @@ class RiskManager:
             now_ms=now_ms,
         )
         self._emit_risk_event(decision, reason_code, evidence)
+
+        # Phase 8C: Persist DECISION event to correlation_ledger
+        signal_id = evidence.get("signal_id")
+        decision_id = evidence.get("decision_id")
+
+        # Fail-closed: require signal_id and decision_id for correlation
+        if not signal_id or not decision_id:
+            if ALLOW_EVIDENCE_DEBT:
+                logger.warning(
+                    f"⚠️ correlation_ledger DECISION skipped: "
+                    f"signal_id={signal_id}, decision_id={decision_id} (ALLOW_EVIDENCE_DEBT=1)"
+                )
+            else:
+                raise ValueError(
+                    f"signal_id and decision_id required for correlation_ledger DECISION "
+                    f"(signal_id={signal_id}, decision_id={decision_id})"
+                )
+        else:
+            if not self._persist_correlation_event(
+                signal_id=signal_id,
+                event_type="DECISION",
+                symbol=signal.symbol,
+                timestamp_ms=now_ms,
+                decision_id=decision_id,
+                payload=evidence,
+            ):
+                logger.warning(f"⚠️ correlation_ledger DECISION write failed (evidence debt)")
+
         if decision == DECISION_BLOCK:
             logger.warning("Decision contract BLOCK: %s", reason_code)
             stats["orders_blocked"] += 1
             risk_state.signals_blocked += 1
+
+            # Phase 8C: Persist to blocked_decisions table (fail-closed)
+            if not signal_id or not decision_id:
+                if ALLOW_EVIDENCE_DEBT:
+                    logger.warning(
+                        f"⚠️ blocked_decisions skipped: "
+                        f"signal_id={signal_id}, decision_id={decision_id} (ALLOW_EVIDENCE_DEBT=1)"
+                    )
+                else:
+                    raise ValueError(
+                        f"signal_id and decision_id required for blocked_decisions "
+                        f"(signal_id={signal_id}, decision_id={decision_id})"
+                    )
+            else:
+                if not self._persist_blocked_decision(
+                    signal_id=signal_id,
+                    decision_id=decision_id,
+                    symbol=signal.symbol,
+                    reason_code=reason_code or "UNKNOWN",
+                    timestamp_ms=now_ms,
+                    evidence=evidence,
+                ):
+                    logger.warning(f"⚠️ blocked_decisions write failed (evidence debt)")
+
             # Persist blocked_order artifact for audit/replay (Correlation Backbone)
             blocked_order = {
                 "type": "blocked_order",
                 "order_id": generate_uuid(),
-                "decision_id": evidence.get("decision_id"),
-                "signal_id": evidence.get("signal_id"),
+                "decision_id": decision_id,
+                "signal_id": signal_id,
                 "trace_id": evidence.get("trace_id"),
                 "symbol": signal.symbol,
                 "side": signal.side,

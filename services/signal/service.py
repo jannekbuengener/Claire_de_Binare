@@ -15,9 +15,16 @@ from flask import Flask, jsonify, Response
 from typing import Optional
 from pathlib import Path
 
+import psycopg2
+import psycopg2.extensions
+
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
-from core.utils.uuid_gen import generate_uuid_hex
+from core.utils.uuid_gen import (
+    generate_uuid_hex,
+    compute_correlation_id,
+    compute_event_pk,
+)
 
 try:
     from .config import config
@@ -79,6 +86,7 @@ class SignalEngine:
         self.price_buffer = (
             PriceBuffer()
         )  # Stateful pct_change calculation (Issue #345)
+        self._pg_conn: Optional[psycopg2.extensions.connection] = None  # Phase 8C
 
         # Validiere Config
         try:
@@ -87,6 +95,72 @@ class SignalEngine:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+    def _get_postgres_conn(self) -> Optional[psycopg2.extensions.connection]:
+        """Get or create Postgres connection for correlation_ledger writes."""
+        try:
+            if self._pg_conn is None or self._pg_conn.closed:
+                self._pg_conn = psycopg2.connect(
+                    host=self.config.postgres_host,
+                    port=self.config.postgres_port,
+                    database=self.config.postgres_db,
+                    user=self.config.postgres_user,
+                    password=self.config.postgres_password,
+                )
+                self._pg_conn.autocommit = True
+            return self._pg_conn
+        except Exception as e:
+            logger.error(f"❌ Failed to connect Postgres for correlation_ledger: {e}")
+            self._pg_conn = None
+            return None
+
+    def _persist_correlation_event(self, signal: "Signal") -> bool:
+        """
+        Persist SIGNAL event to correlation_ledger (Phase 8C).
+
+        Fail-closed: If signal_id missing, raises ValueError.
+        ON CONFLICT (event_pk) DO NOTHING for idempotent writes.
+        """
+        if not signal.signal_id:
+            raise ValueError("signal_id is required for correlation_ledger (fail-closed)")
+
+        try:
+            correlation_id = compute_correlation_id(signal.signal_id)
+            event_pk = compute_event_pk(signal.signal_id, "SIGNAL")
+
+            conn = self._get_postgres_conn()
+            if conn is None:
+                logger.warning("⚠️ correlation_ledger write skipped (no DB connection)")
+                return False
+
+            cursor = conn.cursor()
+            cursor.execute("SET LOCAL statement_timeout = '250ms'")
+            cursor.execute(
+                """
+                INSERT INTO correlation_ledger
+                    (event_pk, correlation_id, signal_id, decision_id, order_id, fill_id,
+                     event_type, symbol, timestamp_ms, payload)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (event_pk) DO NOTHING
+                """,
+                (
+                    event_pk,
+                    correlation_id,
+                    signal.signal_id,
+                    None,  # decision_id (not applicable for SIGNAL)
+                    None,  # order_id (not applicable for SIGNAL)
+                    None,  # fill_id (not applicable for SIGNAL)
+                    "SIGNAL",
+                    signal.symbol,
+                    signal.ts_ms,
+                    json.dumps(signal.to_dict()),
+                ),
+            )
+            logger.debug(f"📊 correlation_ledger SIGNAL: {signal.signal_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ correlation_ledger write failed: {e}")
+            return False
 
     def connect_redis(self):
         """Verbindung zu Redis herstellen"""
@@ -218,8 +292,16 @@ class SignalEngine:
         stats["errors_by_type"][error_type] += 1
 
     def publish_signal(self, signal: Signal):
-        """Publiziert Signal auf Redis"""
+        """Publiziert Signal auf Redis + correlation_ledger (Phase 8C)"""
         try:
+            # Phase 8C: Persist SIGNAL event to correlation_ledger
+            # ValueError (missing signal_id) = fail-closed (bubble up)
+            # DB errors = warn-only (evidence debt, don't block trading)
+            if not self._persist_correlation_event(signal):
+                logger.warning(
+                    f"⚠️ correlation_ledger write failed for {signal.signal_id} (evidence debt)"
+                )
+
             # Sanitize payload (Issue #349: None-filtering + contract v1.0 enforcement)
             sanitized = sanitize_signal(signal.to_dict())
             message = json.dumps(sanitized)
@@ -237,6 +319,9 @@ class SignalEngine:
                 "timestamp": signal.timestamp,
             }
 
+        except ValueError:
+            # Phase 8C: missing signal_id = fail-closed (bubble up)
+            raise
         except Exception as e:
             logger.error(f"Fehler beim Signal-Publishing: {e}")
 

@@ -44,6 +44,11 @@ class Order:
     client_id: Optional[str] = None
     timestamp: Optional[int | float | str] = None
     type: Literal["order"] = "order"
+    # Phase 8C: Correlation IDs from Risk Service
+    signal_id: Optional[str] = None
+    decision_id: Optional[str] = None
+    order_id: Optional[str] = None
+    trace_id: Optional[str] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -68,6 +73,11 @@ class Order:
             bot_id=payload.get("bot_id"),
             client_id=payload.get("client_id"),
             timestamp=payload.get("timestamp"),
+            # Phase 8C: Correlation IDs from Risk Service payload
+            signal_id=payload.get("signal_id"),
+            decision_id=payload.get("decision_id"),
+            order_id=payload.get("order_id"),  # canonical internal order_id
+            trace_id=payload.get("trace_id"),
         )
 
     def to_dict(self) -> dict:
@@ -98,6 +108,15 @@ class Order:
             payload["bot_id"] = self.bot_id
         if self.client_id is not None:
             payload["client_id"] = self.client_id
+        # Phase 8C: Correlation IDs propagation
+        if self.signal_id is not None:
+            payload["signal_id"] = self.signal_id
+        if self.decision_id is not None:
+            payload["decision_id"] = self.decision_id
+        if self.order_id is not None:
+            payload["order_id"] = self.order_id
+        if self.trace_id is not None:
+            payload["trace_id"] = self.trace_id
         return payload
 
 

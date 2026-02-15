@@ -22,6 +22,13 @@ class SignalConfig:
     redis_password: Optional[str] = os.getenv("REDIS_PASSWORD")
     redis_db: int = int(os.getenv("REDIS_DB", "0"))
 
+    # Postgres (Phase 8C: correlation_ledger writes)
+    postgres_host: str = os.getenv("POSTGRES_HOST", "cdb_postgres")
+    postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    postgres_db: str = os.getenv("POSTGRES_DB", "claire_de_binare")
+    postgres_user: str = os.getenv("POSTGRES_USER", "claire_user")
+    postgres_password: str = os.getenv("POSTGRES_PASSWORD", "")
+
     # Signal-Parameter
     threshold_pct: float = float(os.getenv("SIGNAL_THRESHOLD_PCT", "3.0"))
     lookback_minutes: int = int(os.getenv("SIGNAL_LOOKBACK_MIN", "15"))

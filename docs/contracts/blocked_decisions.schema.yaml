@@ -1,0 +1,115 @@
+version: "1.0"
+title: "blocked_decisions Table Schema Contract"
+description: "Canonical schema for BLOCK decision persistence (Phase 8C). Eliminates silent blocks."
+
+source:
+  code_file: "services/risk/service.py"
+  code_lines: "TBD after implementation"
+  last_verified: "2026-02-15T14:30:00+01:00"
+
+table: "blocked_decisions"
+
+required:
+  - id
+  - decision_pk
+  - signal_id
+  - decision_id
+  - symbol
+  - reason_code
+  - timestamp_ms
+  - created_at
+
+fields:
+  id:
+    type: "SERIAL"
+    constraints: "PRIMARY KEY"
+    description: "Auto-incrementing unique identifier"
+
+  decision_pk:
+    type: "CHAR(36)"
+    nullable: false
+    constraints: "UNIQUE"
+    description: "Deterministic idempotency key (UUIDv5 via generate_decision_pk - same as Phase 8B risk_events)"
+
+  signal_id:
+    type: "VARCHAR(80)"
+    nullable: false
+    description: "Original signal_id from Signal Service (sig-{uuid})"
+
+  decision_id:
+    type: "CHAR(36)"
+    nullable: false
+    description: "Risk Service decision UUID"
+
+  symbol:
+    type: "VARCHAR(20)"
+    nullable: false
+    description: "Trading pair symbol (e.g., BTCUSDT)"
+
+  reason_code:
+    type: "VARCHAR(20)"
+    nullable: false
+    description: "Decision contract reason code (RC_001, RC_002, etc.)"
+
+  timestamp_ms:
+    type: "BIGINT"
+    nullable: false
+    description: "Unix timestamp in milliseconds (decision time)"
+
+  created_at:
+    type: "TIMESTAMPTZ"
+    nullable: false
+    default: "NOW()"
+    description: "Record creation timestamp"
+
+  payload:
+    type: "JSONB"
+    nullable: true
+    description: "Full decision evidence payload"
+
+indexes:
+  - name: "idx_blocked_decisions_signal"
+    columns: ["signal_id"]
+
+  - name: "idx_blocked_decisions_symbol"
+    columns: ["symbol"]
+
+  - name: "idx_blocked_decisions_timestamp"
+    columns: ["timestamp_ms"]
+    order: "DESC"
+
+constraints:
+  - name: "uq_blocked_decision_pk"
+    type: "UNIQUE"
+    columns: ["decision_pk"]
+
+insert_columns:
+  # Columns used in INSERT statement (order matters)
+  - decision_pk
+  - signal_id
+  - decision_id
+  - symbol
+  - reason_code
+  - timestamp_ms
+  - payload
+
+write_path: |
+  INSERT INTO blocked_decisions (
+      decision_pk, signal_id, decision_id, symbol, reason_code, timestamp_ms, payload
+  ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+  ON CONFLICT (decision_pk) DO NOTHING;
+
+decision_pk_algorithm: |
+  # REUSE Phase 8B algorithm from core/utils/uuid_gen.py
+  from core.utils.uuid_gen import generate_decision_pk, compute_input_snapshot_hash
+
+  # Namespace: DECISION_PK_NAMESPACE = uuid.UUID("a1b2c3d4-e5f6-7890-abcd-ef1234567890")
+  # Algorithm: uuid5(NAMESPACE, f"{symbol}:{ts_ms}:{input_hash}")
+
+  decision_pk = generate_decision_pk(symbol, ts_ms, evidence)
+
+notes: |
+  - Eliminates "silent blocks" - every BLOCK decision gets a DB record
+  - decision_pk uses IDENTICAL algorithm as Phase 8B risk_events (no new namespace)
+  - ON CONFLICT (decision_pk) DO NOTHING for idempotent writes
+  - Phase 8C: Correlation IDs End-to-End

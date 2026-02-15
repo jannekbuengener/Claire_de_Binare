@@ -280,6 +280,33 @@ def process_order(order_data: dict):
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
 
+        # Phase 8C: Persist ORDER event to correlation_ledger
+        # order_id ist jetzt final (von executor zurückgegeben)
+        # TODO: FILL requires adding fill_id (or trade_id) to ExecutionResult + executor
+        # integration; until then chain is SIGNAL→DECISION→ORDER only.
+        if db:
+            timestamp_ms = int(time.time() * 1000)
+            order_payload = {
+                "signal_id": order.signal_id,
+                "decision_id": order.decision_id,
+                "order_id": result.order_id,
+                "symbol": order.symbol,
+                "side": order.side,
+                "quantity": order.quantity,
+                "strategy_id": order.strategy_id,
+                "trace_id": order.trace_id,
+            }
+            if not db.persist_correlation_event(
+                signal_id=order.signal_id,
+                event_type="ORDER",
+                symbol=order.symbol,
+                timestamp_ms=timestamp_ms,
+                decision_id=order.decision_id,
+                order_id=result.order_id,
+                payload=order_payload,
+            ):
+                logger.warning("⚠️ correlation_ledger ORDER write failed (evidence debt)")
+
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
         if schema_status == "FILLED":

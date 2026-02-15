@@ -1,0 +1,133 @@
+version: "1.0"
+title: "correlation_ledger Table Schema Contract"
+description: "Canonical schema for end-to-end correlation tracking (Phase 8C). Append-only audit trail."
+
+source:
+  code_file: "services/risk/service.py"
+  code_lines: "TBD after implementation"
+  last_verified: "2026-02-15T14:30:00+01:00"
+
+table: "correlation_ledger"
+
+required:
+  - id
+  - event_pk
+  - correlation_id
+  - event_type
+  - symbol
+  - timestamp_ms
+  - created_at
+
+fields:
+  id:
+    type: "SERIAL"
+    constraints: "PRIMARY KEY"
+    description: "Auto-incrementing unique identifier"
+
+  event_pk:
+    type: "CHAR(36)"
+    nullable: false
+    constraints: "UNIQUE"
+    description: "Deterministic idempotency key (UUIDv5 from signal_id|event_type|order_id|fill_id)"
+
+  correlation_id:
+    type: "CHAR(36)"
+    nullable: false
+    description: "Correlation chain root (UUIDv5 from signal_id via CORRELATION_ROOT_NAMESPACE)"
+
+  signal_id:
+    type: "VARCHAR(80)"
+    nullable: true
+    description: "Original signal_id from Signal Service (sig-{uuid})"
+
+  decision_id:
+    type: "CHAR(36)"
+    nullable: true
+    description: "Risk Service decision UUID"
+
+  order_id:
+    type: "VARCHAR(100)"
+    nullable: true
+    description: "Execution order_id (paper_*/MOCK_*)"
+
+  fill_id:
+    type: "VARCHAR(100)"
+    nullable: true
+    description: "Redis Stream Entry ID or exchange_trade_id"
+
+  event_type:
+    type: "VARCHAR(20)"
+    nullable: false
+    description: "Event type: SIGNAL, DECISION, ORDER, FILL"
+    allowed_values:
+      - "SIGNAL"
+      - "DECISION"
+      - "ORDER"
+      - "FILL"
+
+  symbol:
+    type: "VARCHAR(20)"
+    nullable: false
+    description: "Trading pair symbol (e.g., BTCUSDT)"
+
+  timestamp_ms:
+    type: "BIGINT"
+    nullable: false
+    description: "Unix timestamp in milliseconds (event time)"
+
+  created_at:
+    type: "TIMESTAMPTZ"
+    nullable: false
+    default: "NOW()"
+    description: "Record creation timestamp"
+
+  payload:
+    type: "JSONB"
+    nullable: true
+    description: "Full event payload (optional)"
+
+indexes:
+  - name: "idx_correlation_id"
+    columns: ["correlation_id"]
+
+  - name: "idx_correlation_signal"
+    columns: ["signal_id"]
+
+  - name: "idx_correlation_decision"
+    columns: ["decision_id"]
+
+  - name: "idx_correlation_order"
+    columns: ["order_id"]
+
+  - name: "idx_correlation_timestamp"
+    columns: ["timestamp_ms"]
+    order: "DESC"
+
+constraints:
+  - name: "uq_correlation_event_pk"
+    type: "UNIQUE"
+    columns: ["event_pk"]
+
+insert_columns:
+  # Columns used in INSERT statement (order matters)
+  - event_pk
+  - correlation_id
+  - signal_id
+  - decision_id
+  - order_id
+  - fill_id
+  - event_type
+  - symbol
+  - timestamp_ms
+  - payload
+
+namespaces:
+  correlation_root: "c0ffe100-cafe-4000-babe-000000000001"
+  correlation_event: "c0ffe100-cafe-4000-babe-000000000002"
+
+notes: |
+  - Append-only audit trail for end-to-end correlation
+  - event_pk computed via compute_event_pk() with strict canonicalization
+  - correlation_id computed via compute_correlation_id(signal_id)
+  - ON CONFLICT (event_pk) DO NOTHING for idempotent writes
+  - Phase 8C: Correlation IDs End-to-End
