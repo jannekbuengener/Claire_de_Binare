@@ -122,7 +122,9 @@ class SignalEngine:
         ON CONFLICT (event_pk) DO NOTHING for idempotent writes.
         """
         if not signal.signal_id:
-            raise ValueError("signal_id is required for correlation_ledger (fail-closed)")
+            raise ValueError(
+                "signal_id is required for correlation_ledger (fail-closed)"
+            )
 
         try:
             correlation_id = compute_correlation_id(signal.signal_id)

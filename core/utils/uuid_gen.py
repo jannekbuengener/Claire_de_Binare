@@ -179,5 +179,7 @@ def compute_event_pk(
     canonical_order_id = order_id if order_id else "-"
     canonical_fill_id = fill_id if fill_id else "-"
 
-    input_str = f"{signal_id}|{canonical_event_type}|{canonical_order_id}|{canonical_fill_id}"
+    input_str = (
+        f"{signal_id}|{canonical_event_type}|{canonical_order_id}|{canonical_fill_id}"
+    )
     return str(uuid.uuid5(CORRELATION_EVENT_NAMESPACE, input_str))

@@ -111,7 +111,9 @@ class Database:
                     f"(ALLOW_EVIDENCE_DEBT=1)"
                 )
                 return False
-            raise ValueError(f"Invalid event_type: {event_type}. Must be one of {VALID_EVENT_TYPES}")
+            raise ValueError(
+                f"Invalid event_type: {event_type}. Must be one of {VALID_EVENT_TYPES}"
+            )
 
         # Fail-closed: validate required IDs
         if not signal_id or not decision_id:
@@ -316,7 +318,9 @@ class Database:
                             result.price,  # execution_price = price for mock
                             "filled",  # Trade status (lowercase to match schema check constraint)
                             timestamp,  # Unix timestamp
-                            json.dumps({"order_id": result.order_id}),  # store order_id in metadata
+                            json.dumps(
+                                {"order_id": result.order_id}
+                            ),  # store order_id in metadata
                         ),
                     )
 

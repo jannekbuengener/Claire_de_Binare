@@ -516,12 +516,16 @@ class RiskManager:
         ON CONFLICT (event_pk) DO NOTHING for idempotent writes.
         """
         if not signal_id:
-            raise ValueError("signal_id is required for correlation_ledger (fail-closed)")
+            raise ValueError(
+                "signal_id is required for correlation_ledger (fail-closed)"
+            )
 
         try:
             canonical_event_type = event_type.upper()
             correlation_id = compute_correlation_id(signal_id)
-            event_pk = compute_event_pk(signal_id, canonical_event_type, order_id, fill_id)
+            event_pk = compute_event_pk(
+                signal_id, canonical_event_type, order_id, fill_id
+            )
 
             conn = self._get_postgres_conn()
             if conn is None:
@@ -551,7 +555,9 @@ class RiskManager:
                     json.dumps(payload) if payload else None,
                 ),
             )
-            logger.debug(f"📊 correlation_ledger {canonical_event_type}: signal={signal_id}")
+            logger.debug(
+                f"📊 correlation_ledger {canonical_event_type}: signal={signal_id}"
+            )
             return True
         except Exception as e:
             logger.error(f"❌ correlation_ledger write failed: {e}")
@@ -573,7 +579,9 @@ class RiskManager:
         ON CONFLICT (decision_pk) DO NOTHING.
         """
         if not signal_id:
-            raise ValueError("signal_id is required for blocked_decisions (fail-closed)")
+            raise ValueError(
+                "signal_id is required for blocked_decisions (fail-closed)"
+            )
 
         try:
             decision_pk = generate_decision_pk(symbol, timestamp_ms, evidence)
@@ -603,7 +611,9 @@ class RiskManager:
                     json.dumps(evidence),
                 ),
             )
-            logger.debug(f"📊 blocked_decisions: signal={signal_id} reason={reason_code}")
+            logger.debug(
+                f"📊 blocked_decisions: signal={signal_id} reason={reason_code}"
+            )
             return True
         except Exception as e:
             logger.error(f"❌ blocked_decisions write failed: {e}")
@@ -1055,7 +1065,9 @@ class RiskManager:
                 decision_id=decision_id,
                 payload=evidence,
             ):
-                logger.warning(f"⚠️ correlation_ledger DECISION write failed (evidence debt)")
+                logger.warning(
+                    f"⚠️ correlation_ledger DECISION write failed (evidence debt)"
+                )
 
         if decision == DECISION_BLOCK:
             logger.warning("Decision contract BLOCK: %s", reason_code)

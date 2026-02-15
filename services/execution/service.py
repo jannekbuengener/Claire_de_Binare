@@ -305,7 +305,9 @@ def process_order(order_data: dict):
                 order_id=result.order_id,
                 payload=order_payload,
             ):
-                logger.warning("⚠️ correlation_ledger ORDER write failed (evidence debt)")
+                logger.warning(
+                    "⚠️ correlation_ledger ORDER write failed (evidence debt)"
+                )
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
@@ -516,9 +518,7 @@ def _require_live_confirmation() -> None:
     if confirmation != "true":
         logger.critical("🚨 LIVE TRADING SAFETY GATE TRIGGERED 🚨")
         logger.critical("Sie versuchen, auf dem MAINNET ohne MOCK/DRY-RUN zu traden!")
-        logger.critical(
-            "Setzen Sie CONFIRM_LIVE_TRADING=true, um fortzufahren."
-        )
+        logger.critical("Setzen Sie CONFIRM_LIVE_TRADING=true, um fortzufahren.")
         logger.critical(
             "Aktuelle Konfiguration: DRY_RUN=%s, MOCK_TRADING=%s, TESTNET=%s",
             config.DRY_RUN,
