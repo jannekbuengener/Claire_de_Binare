@@ -17,6 +17,10 @@ from pathlib import Path
 from threading import Thread
 from typing import Optional
 
+import psycopg2
+import redis
+from flask import Flask, jsonify, Response
+
 from core.utils.uuid_gen import (
     generate_uuid,
     generate_decision_pk,
@@ -24,17 +28,10 @@ from core.utils.uuid_gen import (
     compute_correlation_id,
     compute_event_pk,
 )
-
-# Phase 8C: Evidence debt safety valve (default: fail-closed)
-ALLOW_EVIDENCE_DEBT = os.getenv("ALLOW_EVIDENCE_DEBT", "0") == "1"
-
-import psycopg2
-import redis
-from flask import Flask, jsonify, Response
-
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.auth import validate_all_auth
+from core.domain.models import Signal
 
 try:
     from .config import config
@@ -58,7 +55,8 @@ except ImportError:
     from services.risk.config import config
     from services.risk.models import Order, Alert, RiskState, OrderResult
 
-from core.domain.models import Signal
+# Phase 8C: Evidence debt safety valve (default: fail-closed)
+ALLOW_EVIDENCE_DEBT = os.getenv("ALLOW_EVIDENCE_DEBT", "0") == "1"
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
