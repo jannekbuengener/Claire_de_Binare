@@ -15,6 +15,7 @@ import time
 
 from core.utils.clock import utcnow
 
+
 class OrderType(Enum):
     """Order types for paper trading"""
 

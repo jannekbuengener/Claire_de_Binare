@@ -156,8 +156,9 @@ class LiveExecutor:
         filled_qty = float(response.get("executedQty", 0))
 
         order_price = getattr(order, "price", None)
+        order_id_str = str(response.get("orderId"))
         result = ExecutionResult(
-            order_id=str(response.get("orderId")),
+            order_id=order_id_str,
             client_id=order.client_id or response.get("clientOrderId", ""),
             symbol=order.symbol,
             side=order.side,
@@ -166,6 +167,7 @@ class LiveExecutor:
             price=execution_price or order_price,
             status=status.value,
             timestamp=utcnow().isoformat(),
+            fill_id=order_id_str if status == OrderStatus.FILLED else None,
             error_message=None,
         )
 

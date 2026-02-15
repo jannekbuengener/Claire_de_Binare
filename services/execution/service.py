@@ -280,12 +280,13 @@ def process_order(order_data: dict):
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
 
-        # Phase 8C: Persist ORDER event to correlation_ledger
+        # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # order_id ist jetzt final (von executor zurückgegeben)
-        # TODO: FILL requires adding fill_id (or trade_id) to ExecutionResult + executor
-        # integration; until then chain is SIGNAL→DECISION→ORDER only.
         if db:
             timestamp_ms = int(time.time() * 1000)
+            schema_status = ExecutionResult._schema_status(result.status)
+
+            # ORDER event (always persisted)
             order_payload = {
                 "signal_id": order.signal_id,
                 "decision_id": order.decision_id,
@@ -308,6 +309,34 @@ def process_order(order_data: dict):
                 logger.warning(
                     "⚠️ correlation_ledger ORDER write failed (evidence debt)"
                 )
+
+            # Phase 8E: FILL event (only for fully filled orders, same timestamp_ms)
+            if schema_status == "FILLED" and result.fill_id:
+                fill_payload = {
+                    "signal_id": order.signal_id,
+                    "decision_id": order.decision_id,
+                    "order_id": result.order_id,
+                    "fill_id": result.fill_id,
+                    "symbol": order.symbol,
+                    "side": order.side,
+                    "filled_quantity": result.filled_quantity,
+                    "price": result.price,
+                    "strategy_id": order.strategy_id,
+                    "trace_id": order.trace_id,
+                }
+                if not db.persist_correlation_event(
+                    signal_id=order.signal_id,
+                    event_type="FILL",
+                    symbol=order.symbol,
+                    timestamp_ms=timestamp_ms,
+                    decision_id=order.decision_id,
+                    order_id=result.order_id,
+                    fill_id=result.fill_id,
+                    payload=fill_payload,
+                ):
+                    logger.warning(
+                        "⚠️ correlation_ledger FILL write failed (evidence debt)"
+                    )
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)

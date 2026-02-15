@@ -368,8 +368,6 @@ jobs:
           python-version: '3.12'
 
       - name: Run Correlation Event Coverage Guard
-        env:
-          ALLOW_EVIDENCE_DEBT: "1"  # TEMP: FILL not yet implemented
         run: |
           python scripts/governance/check_correlation_event_coverage.py
 

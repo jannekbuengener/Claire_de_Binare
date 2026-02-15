@@ -14,6 +14,7 @@ from .config import MEXC_API_KEY, MEXC_API_SECRET, MEXC_BASE_URL, MEXC_TESTNET
 from core.utils.clock import utcnow
 from core.utils.uuid_gen import generate_uuid_hex
 
+
 class MexcExecutor:
     """Real MEXC API Executor - NO MORE MOCK DATA"""
 
@@ -106,13 +107,15 @@ class MexcExecutor:
             result = self._make_request("POST", "/api/v3/order", params)
 
             # Create execution result with REAL data
+            order_id_str = str(result["orderId"])
             execution_result = ExecutionResult(
-                order_id=result["orderId"],
+                order_id=order_id_str,
                 client_id=order.client_id,
                 status=OrderStatus.FILLED.value,  # Assume filled for now
                 filled_price=current_price,
                 filled_quantity=order.quantity,
                 timestamp=utcnow().isoformat(),
+                fill_id=order_id_str,  # Phase 8E: 1:1 mapping, always FILLED here
                 error_message=None,
             )
 

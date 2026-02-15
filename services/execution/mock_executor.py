@@ -92,6 +92,7 @@ class MockExecutor:
                 client_id=client_id,
                 error_message=None,
                 timestamp=utcnow().isoformat(),
+                fill_id=order_id,  # Phase 8E: 1:1 mapping, always FILLED in success case
             )
 
             # Store order

@@ -137,6 +137,7 @@ class ExecutionResult:
     price: Optional[float] = None
     error_message: Optional[str] = None
     timestamp: Optional[str] = None
+    fill_id: Optional[str] = None  # Phase 8E: 1:1 mapping to order_id for FILL events
     type: Literal["order_result"] = "order_result"
 
     def __post_init__(self) -> None:
