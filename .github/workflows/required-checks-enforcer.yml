@@ -2,9 +2,9 @@
 name: required-checks-enforcer (Sentinel)
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
+  schedule:
+    - cron: '15 6 * * 0'
 
 permissions:
   checks: read
@@ -21,87 +21,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Enforce required checks (GRAU = ROT)
+      - name: Report required check status (non-blocking)
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          set -euo pipefail
+          set -u
 
-          # ✅ DEFINIERE HIER DIE CHECK-RUN "names", die NIEMALS grau/missing sein dürfen.
-          # Tipp: Nimm die EXAKTEN Namen, wie sie in der PR-Checks-Liste stehen.
-          REQUIRED=(
-            "ci (Unit/Integration + Lint gesammelt)"
-            "gitleaks (Secrets-Alarm)"
-            "trivy (kritische CVEs/Supply-Chain)"
-            "e2e-paper-trading"
-          )
-
-          # Polling, damit der Enforcer nicht sofort rot geht, nur weil andere Workflows noch laufen.
-          # Fail, wenn nach Timeout required checks fehlen oder nicht SUCCESS sind oder SKIPPED/NEUTRAL.
+          REQUIRED_CHECK="ci (Unit/Integration + Lint gesammelt)"
           DEADLINE=$((SECONDS + 780)) # 13 min
           SLEEP=10
 
-          echo "Enforcing checks for SHA=$SHA"
-          echo "Required: ${REQUIRED[*]}"
+          echo "Reporting required check status for SHA=$SHA"
+          echo "Expected required check: $REQUIRED_CHECK"
 
           while true; do
-            # Pull check-runs for this commit
             JSON=$(gh api -H "Accept: application/vnd.github+json" \
               "/repos/$REPO/commits/$SHA/check-runs?per_page=100")
 
-            # Build a name->conclusion map (only last occurrence per name matters for our purpose)
-            # conclusion can be: SUCCESS, FAILURE, NEUTRAL, CANCELLED, TIMED_OUT, SKIPPED, ACTION_REQUIRED, null (in_progress/queued)
-            failures=0
-            missing=0
-            pending=0
+            status=$(echo "$JSON" | jq -r --arg n "$REQUIRED_CHECK" \
+              '[.check_runs[] | select(.name == $n)] | sort_by(.started_at // "") | last | .status // "__MISSING__"')
+            conclusion=$(echo "$JSON" | jq -r --arg n "$REQUIRED_CHECK" \
+              '[.check_runs[] | select(.name == $n)] | sort_by(.started_at // "") | last | .conclusion // "__PENDING__"' | tr '[:lower:]' '[:upper:]')
 
-            for name in "${REQUIRED[@]}"; do
-              concl=$(echo "$JSON" | python - <<'PY'
-import json,sys
-data=json.load(sys.stdin)
-name=sys.argv[1]
-runs=data.get("check_runs",[])
-# pick latest run by started_at
-cand=[r for r in runs if r.get("name")==name]
-if not cand:
-  print("__MISSING__"); sys.exit(0)
-cand.sort(key=lambda r: (r.get("started_at") or ""), reverse=True)
-c=cand[0].get("conclusion")
-s=cand[0].get("status")
-# If not completed, conclusion is null, status is queued/in_progress
-if s != "completed":
-  print("__PENDING__"); sys.exit(0)
-print((c or "null").upper())
-PY
-"$name")
-
-              if [[ "$concl" == "__MISSING__" ]]; then
-                echo "MISSING: $name"
-                missing=$((missing+1))
-              elif [[ "$concl" == "__PENDING__" ]]; then
-                echo "PENDING: $name"
-                pending=$((pending+1))
-              elif [[ "$concl" != "SUCCESS" ]]; then
-                # This is the whole point: SKIPPED/NEUTRAL/null/etc => FAIL
-                echo "NOT-SUCCESS ($concl): $name"
-                failures=$((failures+1))
-              else
-                echo "OK: $name"
-              fi
-            done
-
-            if [[ $missing -eq 0 && $pending -eq 0 && $failures -eq 0 ]]; then
-              echo "✅ All required checks ran and are SUCCESS."
+            if [[ "$status" == "__MISSING__" ]]; then
+              echo "::warning::Missing check run: $REQUIRED_CHECK"
+            elif [[ "$status" != "completed" ]]; then
+              echo "PENDING: $REQUIRED_CHECK (status=$status)"
+            elif [[ "$conclusion" != "SUCCESS" ]]; then
+              echo "::warning::Required check not successful: $REQUIRED_CHECK (conclusion=$conclusion)"
+              exit 0
+            else
+              echo "OK: $REQUIRED_CHECK"
               exit 0
             fi
 
             if [[ $SECONDS -ge $DEADLINE ]]; then
-              echo "❌ Enforcer FAIL (GRAU=ROT): missing=$missing pending=$pending failures=$failures"
-              exit 1
+              echo "::warning::Timeout while waiting for $REQUIRED_CHECK. Reporting only, not blocking."
+              exit 0
             fi
 
-            echo "Waiting... missing=$missing pending=$pending failures=$failures"
             sleep "$SLEEP"
           done

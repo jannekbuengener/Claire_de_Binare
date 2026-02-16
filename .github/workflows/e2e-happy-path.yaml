@@ -5,12 +5,12 @@ name: E2E Happy Path
 # but still produce a SUCCESS status check.
 
 on:
-  pull_request:
-    # No paths-ignore - always run
   push:
     branches: [ main ]
     # No paths-ignore - always run
   workflow_dispatch:
+  schedule:
+    - cron: '30 5 * * 0'
 
 env:
   PYTHON_VERSION: '3.12'

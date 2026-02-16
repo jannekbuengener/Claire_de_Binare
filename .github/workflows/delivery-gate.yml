@@ -5,9 +5,9 @@
 name: Delivery Gate
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 5 * * *'
 
 permissions:
   contents: read

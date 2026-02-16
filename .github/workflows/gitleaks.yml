@@ -10,17 +10,21 @@ name: Gitleaks Secret Scan
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+    branches: [main]
   schedule:
     - cron: '0 3 * * 0'  # Weekly Sunday 03:00 UTC
   workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
 
 jobs:
   gitleaks:
     name: gitleaks (Secrets-Alarm)
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout

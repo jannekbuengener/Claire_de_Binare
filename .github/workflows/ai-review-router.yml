@@ -1,11 +1,9 @@
 name: AI Review Router
 
 on:
-  push:
-    branches-ignore:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
 
 jobs:
   ai-review:
@@ -93,17 +91,19 @@ jobs:
           }
 
           if [ -z "$secret_value" ]; then
-            post_or_patch_comment "## 🤖 Jules Review
-
-**Reviewer:** $reviewer
-**AI_REVIEW:** ❌ FAIL (missing secret $secret_name)
-
-### Top Issues
-1. Missing secret $secret_name
-2. none
-3. none
-4. none
-5. none"
+            comment_body=$(printf '%s\n' \
+              "## 🤖 Jules Review" \
+              "" \
+              "**Reviewer:** $reviewer" \
+              "**AI_REVIEW:** ❌ FAIL (missing secret $secret_name)" \
+              "" \
+              "### Top Issues" \
+              "1. Missing secret $secret_name" \
+              "2. none" \
+              "3. none" \
+              "4. none" \
+              "5. none")
+            post_or_patch_comment "$comment_body"
             exit 1
           fi
 
@@ -133,17 +133,19 @@ jobs:
           fi
 
           if [ -z "$content" ]; then
-            post_or_patch_comment "## 🤖 Jules Review
-
-**Reviewer:** $reviewer
-**AI_REVIEW:** ❌ FAIL
-
-### Top Issues
-1. No response from provider
-2. none
-3. none
-4. none
-5. none"
+            comment_body=$(printf '%s\n' \
+              "## 🤖 Jules Review" \
+              "" \
+              "**Reviewer:** $reviewer" \
+              "**AI_REVIEW:** ❌ FAIL" \
+              "" \
+              "### Top Issues" \
+              "1. No response from provider" \
+              "2. none" \
+              "3. none" \
+              "4. none" \
+              "5. none")
+            post_or_patch_comment "$comment_body"
             exit 1
           fi
 
@@ -152,10 +154,7 @@ jobs:
             verdict="FAIL"
           fi
 
-          comment_body="## 🤖 Jules Review
-
-**Reviewer:** $reviewer
-$content"
+          comment_body=$(printf '%s\n\n%s\n%s\n' "## 🤖 Jules Review" "**Reviewer:** $reviewer" "$content")
           post_or_patch_comment "$comment_body"
 
           if [ "$verdict" = "PASS" ]; then

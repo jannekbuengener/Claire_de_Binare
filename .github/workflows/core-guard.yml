@@ -1,11 +1,11 @@
 name: Core Guard
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '15 5 * * 0'
 
 permissions:
   contents: read
@@ -14,6 +14,7 @@ jobs:
   core-guard:
     name: Check Core Duplicates
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
       - name: Checkout

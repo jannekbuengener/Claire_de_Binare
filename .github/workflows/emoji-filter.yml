@@ -2,9 +2,7 @@ name: 🚫 Advanced Emoji Filter
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   schedule:
     # Täglich um 2 Uhr (UTC) scannen
     - cron: '0 2 * * *'

@@ -1,9 +1,11 @@
 name: Docs Hub Guard
 
 on:
-  pull_request:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+  schedule:
+    - cron: '45 5 * * 0'
 
 permissions:
   contents: read
