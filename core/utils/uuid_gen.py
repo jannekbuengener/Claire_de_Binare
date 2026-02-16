@@ -201,7 +201,8 @@ def compute_policy_hash(thresholds: dict) -> str:
     Returns:
         64-char hex SHA256 hash.
     """
-    canonical = json.dumps(thresholds, sort_keys=True, separators=(",", ":"))
+    sanitized = _sanitize_float(thresholds)
+    canonical = json.dumps(sanitized, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
