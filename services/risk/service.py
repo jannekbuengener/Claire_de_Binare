@@ -358,6 +358,10 @@ def _phase9_enrich_evidence(
     # Ensure thresholds are set BEFORE computing hashes
     # (so input_hash/decision_pk reflect the same immutable context)
     # Use deepcopy because DECISION_THRESHOLDS contains lists (allowed_regimes, blocked_regimes)
+    # NOTE: In the normal decide_trade -> process_signal flow, evidence["thresholds"]
+    # is always set before this function is called. This defensive check exists so
+    # that _phase9_enrich_evidence remains robust if it is ever invoked from other
+    # contexts where thresholds may not have been pre-populated.
     if "thresholds" not in evidence or evidence["thresholds"] is None:
         evidence["thresholds"] = copy.deepcopy(DECISION_THRESHOLDS)
 
@@ -371,9 +375,7 @@ def _phase9_enrich_evidence(
     # Enrich evidence with Phase 9 fields
     evidence["policy_id"] = POLICY_ID
     evidence["policy_hash"] = policy_hash
-    evidence[
-        "input_hash"
-    ] = input_hash  # alias, keep input_snapshot_hash for backwards compat
+    evidence["input_hash"] = input_hash  # canonical in evidence; _emit_risk_event also sets input_snapshot_hash as a persisted alias for backwards compatibility, so both keys will be present on the event
 
     # output_hash uses the SAME decision_pk that will be written to event
     evidence["output_hash"] = compute_output_hash(
@@ -387,6 +389,9 @@ def _phase9_enrich_evidence(
     )
 
     # Minimal immutable decision_context for replay
+    # NOTE: Inputs may contain None values, which accurately reflects the inputs
+    # used for the decision. These None values are deterministically serializable
+    # and match the fields included in input_hash computation via DECISION_HASH_FIELDS.
     evidence["decision_context"] = {
         "thresholds": evidence["thresholds"],
         "inputs": {

@@ -149,12 +149,17 @@ class Order:
             "order_id": self.order_id,
             "decision_id": self.decision_id,
             "trace_id": self.trace_id,
-            # Phase 9: Trace Contract v1 - Policy governance
-            "policy_id": self.policy_id,
-            "policy_hash": self.policy_hash,
-            "input_hash": self.input_hash,
-            "output_hash": self.output_hash,
         }
+        # Phase 9: Trace Contract v1 - Policy governance (conditional serialization)
+        if self.policy_id is not None:
+            payload["policy_id"] = self.policy_id
+        if self.policy_hash is not None:
+            payload["policy_hash"] = self.policy_hash
+        if self.input_hash is not None:
+            payload["input_hash"] = self.input_hash
+        if self.output_hash is not None:
+            payload["output_hash"] = self.output_hash
+        return payload
 
 
 @dataclass
