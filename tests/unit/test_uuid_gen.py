@@ -1,5 +1,6 @@
-import pytest
 """Unit tests for core.utils.uuid_gen module."""
+
+import pytest
 
 from core.utils.uuid_gen import (
     generate_uuid,
