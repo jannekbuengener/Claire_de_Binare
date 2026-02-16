@@ -297,6 +297,15 @@ def process_order(order_data: dict):
                 "strategy_id": order.strategy_id,
                 "trace_id": order.trace_id,
             }
+            # Phase 9: Trace Contract v1 - Policy governance (conditional)
+            if getattr(order, "policy_id", None) is not None:
+                order_payload["policy_id"] = order.policy_id
+            if getattr(order, "policy_hash", None) is not None:
+                order_payload["policy_hash"] = order.policy_hash
+            if getattr(order, "input_hash", None) is not None:
+                order_payload["input_hash"] = order.input_hash
+            if getattr(order, "output_hash", None) is not None:
+                order_payload["output_hash"] = order.output_hash
             if not db.persist_correlation_event(
                 signal_id=order.signal_id,
                 event_type="ORDER",
@@ -324,6 +333,15 @@ def process_order(order_data: dict):
                     "strategy_id": order.strategy_id,
                     "trace_id": order.trace_id,
                 }
+                # Phase 9: Trace Contract v1 - Policy governance (conditional)
+                if getattr(order, "policy_id", None) is not None:
+                    fill_payload["policy_id"] = order.policy_id
+                if getattr(order, "policy_hash", None) is not None:
+                    fill_payload["policy_hash"] = order.policy_hash
+                if getattr(order, "input_hash", None) is not None:
+                    fill_payload["input_hash"] = order.input_hash
+                if getattr(order, "output_hash", None) is not None:
+                    fill_payload["output_hash"] = order.output_hash
                 if not db.persist_correlation_event(
                     signal_id=order.signal_id,
                     event_type="FILL",
