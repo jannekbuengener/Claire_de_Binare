@@ -11,3 +11,8 @@
 *   [Risk Service (services/risk/)](services/risk/)
 *   [Signal Service (services/signal/)](services/signal/)
 *   [Allocation Service (services/allocation/)](services/allocation/)
+
+## Redis Transport Notes
+
+- **market_data**: Uses Redis **Pub/Sub** (not Redis Streams). `XLEN market_data` returns 0 — this is expected.
+- **signals, orders, allocation_decisions**: Use Redis **Streams** for durable event log.
