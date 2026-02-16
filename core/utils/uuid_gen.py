@@ -183,3 +183,62 @@ def compute_event_pk(
         f"{signal_id}|{canonical_event_type}|{canonical_order_id}|{canonical_fill_id}"
     )
     return str(uuid.uuid5(CORRELATION_EVENT_NAMESPACE, input_str))
+
+
+# =============================================================================
+# Phase 9: Trace Contract v1 - Policy Governance
+# =============================================================================
+
+POLICY_ID = "risk_policy_v1"
+
+
+def compute_policy_hash(thresholds: dict) -> str:
+    """Compute SHA256 hash of policy/threshold bundle.
+
+    Args:
+        thresholds: The DECISION_THRESHOLDS dict used for risk decision.
+
+    Returns:
+        64-char hex SHA256 hash.
+    """
+    canonical = json.dumps(thresholds, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def compute_output_hash(
+    decision: str,
+    reason_code: str | None,
+    decision_pk: str,
+    decision_id: str,
+    contract_version: str,
+    input_hash: str,
+    policy_hash: str,
+) -> str:
+    """Compute SHA256 hash of deterministic decision output object.
+
+    Fingerprints the complete decision output so changes in any
+    deterministic field will produce a different hash.
+
+    Args:
+        decision: "ALLOW" or "BLOCK"
+        reason_code: RC_XXX or None
+        decision_pk: Deterministic decision primary key
+        decision_id: UUIDv5 decision identifier
+        contract_version: e.g., "decision_contract_v1"
+        input_hash: SHA256 of input snapshot
+        policy_hash: SHA256 of thresholds used
+
+    Returns:
+        64-char hex SHA256 hash.
+    """
+    output = {
+        "decision": decision,
+        "reason_code": reason_code,
+        "decision_pk": decision_pk,
+        "decision_id": decision_id,
+        "contract_version": contract_version,
+        "input_hash": input_hash,
+        "policy_hash": policy_hash,
+    }
+    canonical = json.dumps(output, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

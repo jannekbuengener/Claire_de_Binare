@@ -125,6 +125,11 @@ class Order:
     order_id: Optional[str] = None
     decision_id: Optional[str] = None
     trace_id: Optional[str] = None
+    # Phase 9: Trace Contract v1 - Policy governance
+    policy_id: Optional[str] = None
+    policy_hash: Optional[str] = None
+    input_hash: Optional[str] = None
+    output_hash: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -144,6 +149,11 @@ class Order:
             "order_id": self.order_id,
             "decision_id": self.decision_id,
             "trace_id": self.trace_id,
+            # Phase 9: Trace Contract v1 - Policy governance
+            "policy_id": self.policy_id,
+            "policy_hash": self.policy_hash,
+            "input_hash": self.input_hash,
+            "output_hash": self.output_hash,
         }
 
 

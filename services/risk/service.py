@@ -3,6 +3,9 @@ Risk Manager - Main Service
 Multi-Layer Risk Management
 """
 
+from __future__ import annotations
+
+import copy
 import json
 import logging
 import logging.config
@@ -27,6 +30,9 @@ from core.utils.uuid_gen import (
     compute_input_snapshot_hash,
     compute_correlation_id,
     compute_event_pk,
+    compute_policy_hash,  # Phase 9
+    compute_output_hash,  # Phase 9
+    POLICY_ID,  # Phase 9
 )
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
@@ -57,6 +63,9 @@ except ImportError:
 
 # Phase 8C: Evidence debt safety valve (default: fail-closed)
 ALLOW_EVIDENCE_DEBT = os.getenv("ALLOW_EVIDENCE_DEBT", "0") == "1"
+
+# Phase 9: Trace Contract v1 toggle (default: DISABLED for safety)
+TRACE_CONTRACT_V1_ENABLED = os.getenv("TRACE_CONTRACT_V1_ENABLED", "0") == "1"
 
 # Logging konfigurieren via JSON-Config
 logging_config_path = Path(__file__).parent.parent.parent / "logging_config.json"
@@ -314,6 +323,91 @@ def decide_trade(
     return DECISION_ALLOW, None, evidence
 
 
+def _phase9_enrich_evidence(
+    evidence: dict,
+    decision: str,
+    reason_code: str | None,
+    symbol: str,
+    ts_ms: int,
+) -> tuple[dict, str | None, str | None]:
+    """
+    Phase 9: Enrich evidence with policy governance fields for Trace Contract v1.
+
+    MUST be called ONCE before both:
+    - emitting DECISION event
+    - creating Order object
+
+    Args:
+        evidence: The evidence dict from decide_trade() (mutated in place when toggle ON)
+        decision: "ALLOW" or "BLOCK"
+        reason_code: RC_XXX or None
+        symbol: Trading symbol
+        ts_ms: Exact timestamp used for DECISION event (caller passes this)
+
+    Returns:
+        (enriched_evidence, input_hash, decision_pk)
+        - When toggle OFF: returns (evidence, None, None) - ZERO IMPACT
+        - When toggle ON: returns enriched evidence with computed hashes
+    """
+    # ZERO-IMPACT when toggle OFF: no mutations, no validations, no computations
+    if not TRACE_CONTRACT_V1_ENABLED:
+        return evidence, None, None
+
+    # Toggle ON: proceed with enrichment
+
+    # Ensure thresholds are set BEFORE computing hashes
+    # (so input_hash/decision_pk reflect the same immutable context)
+    # Use deepcopy because DECISION_THRESHOLDS contains lists (allowed_regimes, blocked_regimes)
+    if "thresholds" not in evidence or evidence["thresholds"] is None:
+        evidence["thresholds"] = copy.deepcopy(DECISION_THRESHOLDS)
+
+    # Compute hashes ONCE (deterministic, AFTER thresholds are set)
+    input_hash = compute_input_snapshot_hash(evidence)
+    decision_pk = generate_decision_pk(symbol, ts_ms, evidence)
+
+    # Compute policy_hash from evidence["thresholds"] (same as used in input_hash)
+    policy_hash = compute_policy_hash(evidence["thresholds"])
+
+    # Enrich evidence with Phase 9 fields
+    evidence["policy_id"] = POLICY_ID
+    evidence["policy_hash"] = policy_hash
+    evidence[
+        "input_hash"
+    ] = input_hash  # alias, keep input_snapshot_hash for backwards compat
+
+    # output_hash uses the SAME decision_pk that will be written to event
+    evidence["output_hash"] = compute_output_hash(
+        decision=decision,
+        reason_code=reason_code,
+        decision_pk=decision_pk,
+        decision_id=evidence.get("decision_id"),
+        contract_version=evidence.get("contract_version", DECISION_CONTRACT_VERSION),
+        input_hash=input_hash,
+        policy_hash=policy_hash,
+    )
+
+    # Minimal immutable decision_context for replay
+    evidence["decision_context"] = {
+        "thresholds": evidence["thresholds"],
+        "inputs": {
+            "regime_id": evidence.get("regime_id"),
+            "return_1m": evidence.get("return_1m"),
+            "return_5m": evidence.get("return_5m"),
+            "price_change_5m": evidence.get("price_change_5m"),
+            "pct_change_15m": evidence.get("pct_change_15m"),
+            "volume_15m": evidence.get("volume_15m"),
+            "daily_drawdown_pct": evidence.get("daily_drawdown_pct"),
+            "total_exposure_pct": evidence.get("total_exposure_pct"),
+            "slippage_pct": evidence.get("slippage_pct"),
+            "staleness_s": evidence.get("staleness_s"),
+            "data_silence_s": evidence.get("data_silence_s"),
+        },
+        "contract_version": DECISION_CONTRACT_VERSION,
+    }
+
+    return evidence, input_hash, decision_pk
+
+
 class RiskManager:
     """Multi-Layer Risk-Management"""
 
@@ -479,13 +573,30 @@ class RiskManager:
             return None
 
     def _emit_risk_event(
-        self, decision: str, reason_code: str | None, evidence: dict
+        self,
+        decision: str,
+        reason_code: str | None,
+        evidence: dict,
+        decision_pk: str | None = None,
+        input_hash: str | None = None,
     ) -> bool:
-        """Emit risk event with deterministic decision_pk for idempotent persistence."""
+        """Emit risk event with deterministic decision_pk for idempotent persistence.
+
+        Args:
+            decision: "ALLOW" or "BLOCK"
+            reason_code: RC_XXX or None
+            evidence: The evidence dict from decide_trade
+            decision_pk: Pre-computed decision_pk (Phase 9), or None to compute here
+            input_hash: Pre-computed input_hash (Phase 9), or None to compute here
+        """
         symbol = evidence.get("symbol", "")
         ts_ms = evidence.get("timestamp_ms", 0)
-        input_hash = compute_input_snapshot_hash(evidence)
-        decision_pk = generate_decision_pk(symbol, ts_ms, evidence)
+
+        # Use pre-computed values if provided (Phase 9), else compute (backwards compat)
+        if input_hash is None:
+            input_hash = compute_input_snapshot_hash(evidence)
+        if decision_pk is None:
+            decision_pk = generate_decision_pk(symbol, ts_ms, evidence)
 
         event = {
             **evidence,
@@ -1036,7 +1147,27 @@ class RiskManager:
             market_health=market_health,
             now_ms=now_ms,
         )
-        self._emit_risk_event(decision, reason_code, evidence)
+
+        # Phase 9: Enrich evidence ONCE (before DECISION emit AND Order creation)
+        # Pass exact ts_ms used for DECISION event timestamp
+        evidence, input_hash, decision_pk = _phase9_enrich_evidence(
+            evidence=evidence,
+            decision=decision,
+            reason_code=reason_code,
+            symbol=signal.symbol,
+            ts_ms=now_ms,
+        )
+
+        # Emit DECISION event
+        # When toggle OFF: input_hash/decision_pk are None, _emit_risk_event computes them
+        # When toggle ON: pass pre-computed values to avoid recomputation divergence
+        self._emit_risk_event(
+            decision=decision,
+            reason_code=reason_code,
+            evidence=evidence,
+            decision_pk=decision_pk,
+            input_hash=input_hash,
+        )
 
         # Phase 8C: Persist DECISION event to correlation_ledger
         signal_id = evidence.get("signal_id")
@@ -1245,6 +1376,11 @@ class RiskManager:
             order_id=generate_uuid(),
             decision_id=evidence.get("decision_id"),
             trace_id=evidence.get("trace_id"),
+            # Phase 9: Trace Contract v1 - Policy governance (None when toggle OFF)
+            policy_id=evidence.get("policy_id"),
+            policy_hash=evidence.get("policy_hash"),
+            input_hash=evidence.get("input_hash"),
+            output_hash=evidence.get("output_hash"),
         )
 
         # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit

@@ -50,6 +50,11 @@ class Order:
     decision_id: Optional[str] = None
     order_id: Optional[str] = None
     trace_id: Optional[str] = None
+    # Phase 9: Trace Contract v1 - Policy governance
+    policy_id: Optional[str] = None
+    policy_hash: Optional[str] = None
+    input_hash: Optional[str] = None
+    output_hash: Optional[str] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -79,6 +84,11 @@ class Order:
             decision_id=payload.get("decision_id"),
             order_id=payload.get("order_id"),  # canonical internal order_id
             trace_id=payload.get("trace_id"),
+            # Phase 9: Trace Contract v1 - Policy governance
+            policy_id=payload.get("policy_id"),
+            policy_hash=payload.get("policy_hash"),
+            input_hash=payload.get("input_hash"),
+            output_hash=payload.get("output_hash"),
         )
 
     def to_dict(self) -> dict:
@@ -118,6 +128,15 @@ class Order:
             payload["order_id"] = self.order_id
         if self.trace_id is not None:
             payload["trace_id"] = self.trace_id
+        # Phase 9: Trace Contract v1 - Policy governance
+        if self.policy_id is not None:
+            payload["policy_id"] = self.policy_id
+        if self.policy_hash is not None:
+            payload["policy_hash"] = self.policy_hash
+        if self.input_hash is not None:
+            payload["input_hash"] = self.input_hash
+        if self.output_hash is not None:
+            payload["output_hash"] = self.output_hash
         return payload
 
 
