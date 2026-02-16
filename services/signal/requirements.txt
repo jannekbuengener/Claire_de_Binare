@@ -4,7 +4,7 @@
 redis==5.0.1
 flask==3.1.2
 werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
-psycopg2-binary==2.9.9  # Phase 8C: correlation_ledger persistence
+psycopg2-binary==2.9.11  # Phase 8C: correlation_ledger persistence
 
 # Utilities
 python-dotenv==1.0.0
