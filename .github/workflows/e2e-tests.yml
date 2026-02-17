@@ -148,7 +148,7 @@ jobs:
           EOF
           )
 
-          if gh issue create --title "$title" --body "$body" --label "type:infra,prio:must,scope:ci,pipeline:generated"; then
+          if gh issue create --title "$title" --body "$body" --label "type:infra,prio:must,scope:ci,ci:generated"; then
             echo "Issue created with labels."
           else
             gh issue create --title "$title" --body "$body"
