@@ -66,3 +66,50 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
 **Decision:** Reviews remain optional. CI + conversation resolution = sufficient governance for solo-maintainer.
 
 **Approver:** jannekbuengener (repo owner)
+
+---
+
+## GitHub Actions: MODE 1 (Strict Approval) für action_required Runs (Bots/Apps)
+
+**Date/Time (Europe/Berlin):** `2026-02-19T19:47:43+01:00`  
+**Date/Time (UTC):** `2026-02-19T18:47:33Z`
+
+### Entscheidung
+- Chosen mode: MODE 1 (Strict Approval)
+- Kurzbegründung: Sicherheits-/Governance-Default, Approval-Gates bleiben aktiv.
+- No workflow/code changes.
+
+### Guardrail Settings (Facts)
+- `actions.enabled=true`
+- `allowed_actions=all`
+- `sha_pinning_required=true`
+- `default_workflow_permissions=read` (least privilege)
+
+### Evidence Notes (Before/After)
+Before (triage anchors):
+- Run `22192989773` (`ci`, PR `#867`, `copilot/sub-pr-865`): `conclusion=action_required`, `jobs total_count=0`  
+  Link: `https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989773`
+- Run `22192989851` (`E2E Happy Path`): `conclusion=action_required`, `jobs total_count=0`  
+  Link: `https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989851`
+
+Unblock action (maintainer):
+- `rerun from maintainer context (UI/CLI)`
+
+After:
+- Run `22192989773` attempt `2`: `conclusion=success`, jobs present (`ci (Unit/Integration + Lint gesammelt)`)
+- Run `22192989851` attempt `2`: `conclusion=success`, jobs present (`E2E Happy Path`)
+
+### Wichtiges operatives Finding
+- GitHub fork-approval API endpoint (`/actions/runs/{id}/approve`) returns `403` here because this is not a fork pull request; predictable unblock path is rerun from maintainer context (UI/CLI), which schedules jobs immediately.
+
+### Verweise / Runbook
+- `docs/ci/ACTION_REQUIRED_RUNBOOK.md`
+
+### Safety / No-Change Statement
+- Docs-only log entry.
+- No workflow logic changed.
+- No Docker/trading/infrastructure changes.
+- No secrets logged.
+
+### Rollback
+- Revert commit / revert PR.
