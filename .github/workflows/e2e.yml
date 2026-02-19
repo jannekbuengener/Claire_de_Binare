@@ -129,7 +129,9 @@ jobs:
           echo "$ALERT_EMAIL_TO_VAL" > "$SECRETS_PATH/ALERT_EMAIL_TO"
           echo "$MEXC_KEY_VAL" > "$SECRETS_PATH/MEXC_API_KEY.txt"
           echo "$MEXC_SECRET_VAL" > "$SECRETS_PATH/MEXC_API_SECRET.txt"
-          chmod 600 "$SECRETS_PATH"/*
+          # Compose mounts these files into /run/secrets/*; keep read access for non-root service users.
+          chmod 755 "$SECRETS_PATH"
+          chmod 644 "$SECRETS_PATH"/*
 
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
