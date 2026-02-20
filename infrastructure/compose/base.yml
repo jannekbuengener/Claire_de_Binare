@@ -89,9 +89,8 @@ services:
       GF_SMTP_FROM_ADDRESS__FILE: /run/secrets/smtp_from
       GF_SMTP_FROM_NAME: "CDB Alerts"
       GF_SMTP_STARTTLS_POLICY: MandatoryStartTLS
-      # Postgres Datasource Auth
+      # Postgres Datasource Auth (read from secret at startup via entrypoint)
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      POSTGRES_PASSWORD__FILE: /run/secrets/postgres_password
     secrets:
       - postgres_password
       - grafana_password
@@ -99,13 +98,18 @@ services:
       - smtp_password
       - smtp_from
       - alert_email_to
+    # Export POSTGRES_PASSWORD from secret file before starting Grafana
+    # so $__env{POSTGRES_PASSWORD} in datasource provisioning resolves correctly
+    entrypoint: ["/bin/sh", "/usr/local/bin/entrypoint-postgres-password.sh"]
     volumes:
       - grafana_data:/var/lib/grafana
+      - ../../infrastructure/monitoring/grafana/entrypoint-postgres-password.sh:/usr/local/bin/entrypoint-postgres-password.sh:ro
       - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ../../infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ../../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus
+      - cdb_postgres
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
       interval: 30s
