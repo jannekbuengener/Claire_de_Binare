@@ -22,7 +22,14 @@ from typing import Optional
 
 import psycopg2
 import redis
-from flask import Flask, jsonify, Response
+try:
+    from flask import Flask, jsonify, Response
+    _FLASK_AVAILABLE = True
+except ModuleNotFoundError as e:
+    if e.name == "flask":
+        _FLASK_AVAILABLE = False
+    else:
+        raise
 
 from core.utils.uuid_gen import (
     generate_uuid,
@@ -85,8 +92,11 @@ else:
 
 logger = logging.getLogger("risk_manager")
 
-# Flask App
-app = Flask(__name__)
+# Flask App (optional – nur für HTTP-Endpoints)
+if _FLASK_AVAILABLE:
+    app = Flask(__name__)
+else:
+    app = None
 
 # Globale Stats
 stats = {
@@ -1855,76 +1865,75 @@ class RiskManager:
 
 # ===== FLASK ENDPOINTS =====
 
+if _FLASK_AVAILABLE and app is not None:
 
-@app.route("/health")
-def health():
-    return jsonify(
-        {
-            "status": "ok" if stats["status"] == "running" else "error",
-            "service": "risk_manager",
-            "version": "0.1.0",
-        }
-    )
+    @app.route("/health")
+    def health():
+        return jsonify(
+            {
+                "status": "ok" if stats["status"] == "running" else "error",
+                "service": "risk_manager",
+                "version": "0.1.0",
+            }
+        )
 
+    @app.route("/status")
+    def status():
+        return jsonify(
+            {
+                **stats,
+                "risk_state": {
+                    "total_exposure": risk_state.total_exposure,
+                    "daily_pnl": risk_state.daily_pnl,
+                    "open_positions": risk_state.open_positions,
+                    "signals_approved": risk_state.signals_approved,
+                    "signals_blocked": risk_state.signals_blocked,
+                    "circuit_breaker": risk_state.circuit_breaker_active,
+                    "positions": risk_state.positions,
+                    "pending_orders": risk_state.pending_orders,
+                    "last_prices": risk_state.last_prices,
+                },
+            }
+        )
 
-@app.route("/status")
-def status():
-    return jsonify(
-        {
-            **stats,
-            "risk_state": {
-                "total_exposure": risk_state.total_exposure,
-                "daily_pnl": risk_state.daily_pnl,
-                "open_positions": risk_state.open_positions,
-                "signals_approved": risk_state.signals_approved,
-                "signals_blocked": risk_state.signals_blocked,
-                "circuit_breaker": risk_state.circuit_breaker_active,
-                "positions": risk_state.positions,
-                "pending_orders": risk_state.pending_orders,
-                "last_prices": risk_state.last_prices,
-            },
-        }
-    )
-
-
-@app.route("/metrics")
-def metrics():
-    body = (
-        "# HELP signals_received_total Signals empfangen (Redis PubSub)\n"
-        "# TYPE signals_received_total counter\n"
-        f"signals_received_total {stats['signals_received']}\n\n"
-        "# HELP orders_approved_total Orders freigegeben\n"
-        "# TYPE orders_approved_total counter\n"
-        f"orders_approved_total {stats['orders_approved']}\n\n"
-        "# HELP orders_blocked_total Orders blockiert (Risk Checks)\n"
-        "# TYPE orders_blocked_total counter\n"
-        f"orders_blocked_total {stats['orders_blocked']}\n\n"
-        "# HELP orders_skipped_total Orders übersprungen (qty=0, parse errors)\n"
-        "# TYPE orders_skipped_total counter\n"
-        f"orders_skipped_total {stats['orders_skipped']}\n\n"
-        "# HELP circuit_breaker_active Circuit Breaker Status\n"
-        "# TYPE circuit_breaker_active gauge\n"
-        f"circuit_breaker_active {1 if risk_state.circuit_breaker_active else 0}\n\n"
-        "# HELP order_results_received_total Anzahl verarbeiteter Order-Result Events\n"
-        "# TYPE order_results_received_total counter\n"
-        f"order_results_received_total {stats['order_results_received']}\n\n"
-        "# HELP orders_rejected_execution_total Abgelehnte Orders durch Execution-Service\n"
-        "# TYPE orders_rejected_execution_total counter\n"
-        f"orders_rejected_execution_total {stats['orders_rejected_execution']}\n\n"
-        "# HELP risk_pending_orders_total Anzahl offener Auftragsbestätigungen\n"
-        "# TYPE risk_pending_orders_total gauge\n"
-        f"risk_pending_orders_total {risk_state.pending_orders}\n\n"
-        "# HELP risk_total_exposure_value Gesamtposition (Notional)\n"
-        "# TYPE risk_total_exposure_value gauge\n"
-        f"risk_total_exposure_value {risk_state.total_exposure}\n\n"
-        "# HELP risk_reduce_only_approved_total Reduce-only SELL orders approved while over exposure limit\n"
-        "# TYPE risk_reduce_only_approved_total counter\n"
-        f"risk_reduce_only_approved_total {stats.get('reduce_only_approved', 0)}\n\n"
-        "# HELP risk_proactive_unwind_triggered_total Proactive auto-unwind triggers (SELL orders generated when over limit)\n"
-        "# TYPE risk_proactive_unwind_triggered_total counter\n"
-        f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
-    )
-    return Response(body, mimetype="text/plain")
+    @app.route("/metrics")
+    def metrics():
+        body = (
+            "# HELP signals_received_total Signals empfangen (Redis PubSub)\n"
+            "# TYPE signals_received_total counter\n"
+            f"signals_received_total {stats['signals_received']}\n\n"
+            "# HELP orders_approved_total Orders freigegeben\n"
+            "# TYPE orders_approved_total counter\n"
+            f"orders_approved_total {stats['orders_approved']}\n\n"
+            "# HELP orders_blocked_total Orders blockiert (Risk Checks)\n"
+            "# TYPE orders_blocked_total counter\n"
+            f"orders_blocked_total {stats['orders_blocked']}\n\n"
+            "# HELP orders_skipped_total Orders übersprungen (qty=0, parse errors)\n"
+            "# TYPE orders_skipped_total counter\n"
+            f"orders_skipped_total {stats['orders_skipped']}\n\n"
+            "# HELP circuit_breaker_active Circuit Breaker Status\n"
+            "# TYPE circuit_breaker_active gauge\n"
+            f"circuit_breaker_active {1 if risk_state.circuit_breaker_active else 0}\n\n"
+            "# HELP order_results_received_total Anzahl verarbeiteter Order-Result Events\n"
+            "# TYPE order_results_received_total counter\n"
+            f"order_results_received_total {stats['order_results_received']}\n\n"
+            "# HELP orders_rejected_execution_total Abgelehnte Orders durch Execution-Service\n"
+            "# TYPE orders_rejected_execution_total counter\n"
+            f"orders_rejected_execution_total {stats['orders_rejected_execution']}\n\n"
+            "# HELP risk_pending_orders_total Anzahl offener Auftragsbestätigungen\n"
+            "# TYPE risk_pending_orders_total gauge\n"
+            f"risk_pending_orders_total {risk_state.pending_orders}\n\n"
+            "# HELP risk_total_exposure_value Gesamtposition (Notional)\n"
+            "# TYPE risk_total_exposure_value gauge\n"
+            f"risk_total_exposure_value {risk_state.total_exposure}\n\n"
+            "# HELP risk_reduce_only_approved_total Reduce-only SELL orders approved while over exposure limit\n"
+            "# TYPE risk_reduce_only_approved_total counter\n"
+            f"risk_reduce_only_approved_total {stats.get('reduce_only_approved', 0)}\n\n"
+            "# HELP risk_proactive_unwind_triggered_total Proactive auto-unwind triggers (SELL orders generated when over limit)\n"
+            "# TYPE risk_proactive_unwind_triggered_total counter\n"
+            f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
+        )
+        return Response(body, mimetype="text/plain")
 
 
 # ===== SIGNAL HANDLER =====
@@ -1959,7 +1968,13 @@ if __name__ == "__main__":
     # Bootstrap risk state from DB positions (source-of-truth reconciliation)
     manager.bootstrap_state_from_db()
 
-    # Flask in Thread
+    # Flask in Thread (nur wenn Flask verfügbar)
+    if not _FLASK_AVAILABLE or app is None:
+        raise RuntimeError(
+            "Flask ist nicht installiert. HTTP-Endpoints (health/status/metrics) "
+            "benötigen Flask als optionale Abhängigkeit: pip install flask"
+        )
+
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
     flask_thread.daemon = True
     flask_thread.start()
