@@ -46,8 +46,17 @@ jobs:
             trivy-${{ runner.os }}-${{ github.workflow }}-
             trivy-${{ runner.os }}-
 
+      - name: Debug Docker version
+        run: docker version
+
+      - name: Debug Docker info
+        run: docker info
+
+      - name: Debug Trivy action version
+        run: echo "Using aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac"
+
       - name: Run Trivy (JSON)
-        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe # 7b7aa264d83dc58691451798b4d117d53d21edfe
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -103,7 +112,7 @@ jobs:
           path: trivy-results.json
 
       - name: Run Trivy (SARIF)
-        uses: aquasecurity/trivy-action@7b7aa264d83dc58691451798b4d117d53d21edfe # 7b7aa264d83dc58691451798b4d117d53d21edfe
+        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
