@@ -4,8 +4,10 @@ Unit-Tests für die decision_id Safety-Gate im Execution Service (refs #467).
 Wenn TRACE_CONTRACT_V1_ENABLED=1, werden Orders ohne decision_id rejected.
 Bei Toggle OFF (default) dürfen Legacy-/Bypass-Orders weiterhin durch.
 
-Technik: Flask/Redis werden per MagicMock gestubbt, damit
-services.execution.service importierbar ist ohne echte Dependencies.
+Technik: Flask/Redis werden nur gestubbt wenn sie nicht installiert sind.
+Stubs + das importierte Service-Modul werden im Fixture-Teardown aus
+sys.modules entfernt, damit nachfolgende Tests (z.B. test_service.py)
+nicht mit Stub-Artefakten kollidieren.
 """
 
 import importlib
@@ -15,29 +17,19 @@ from unittest.mock import MagicMock
 
 import pytest
 
-
-def _stub_flask_and_redis():
-    """Stub flask + redis in sys.modules, damit der Service importierbar ist."""
-    # Flask stub
-    flask_mod = types.ModuleType("flask")
-    flask_mod.Flask = MagicMock(return_value=MagicMock())
-    flask_mod.jsonify = MagicMock()
-    flask_mod.Response = MagicMock()
-    sys.modules["flask"] = flask_mod
-
-    # Redis stub
-    redis_mod = types.ModuleType("redis")
-    redis_mod.Redis = MagicMock()
-    redis_mod.ConnectionPool = MagicMock()
-    sys.modules["redis"] = redis_mod
+# Module keys that we may need to clean up after stubbing
+_SERVICE_MOD = "services.execution.service"
+_STUB_KEYS = ("flask", "redis")
 
 
-def _import_execution_service():
-    """Import (oder re-import) des Execution-Service-Moduls."""
-    mod_name = "services.execution.service"
-    if mod_name in sys.modules:
-        return importlib.reload(sys.modules[mod_name])
-    return importlib.import_module(mod_name)
+def _needs_stub():
+    """True wenn flask oder redis nicht installiert sind."""
+    for mod in _STUB_KEYS:
+        try:
+            importlib.import_module(mod)
+        except ModuleNotFoundError:
+            return True
+    return False
 
 
 @pytest.mark.unit
@@ -46,9 +38,28 @@ class TestDecisionIdGate:
 
     @pytest.fixture(autouse=True)
     def _setup_service(self, monkeypatch):
-        """Importiert den Service mit gestubtem Flask/Redis und setzt Globals."""
-        _stub_flask_and_redis()
-        self.svc = _import_execution_service()
+        """Importiert den Service (mit Stub falls nötig) und setzt Globals."""
+        self._stubbed = _needs_stub()
+
+        if self._stubbed:
+            # Flask stub
+            flask_mod = types.ModuleType("flask")
+            flask_mod.Flask = MagicMock(return_value=MagicMock())
+            flask_mod.jsonify = MagicMock()
+            flask_mod.Response = MagicMock()
+            monkeypatch.setitem(sys.modules, "flask", flask_mod)
+
+            # Redis stub
+            redis_mod = types.ModuleType("redis")
+            redis_mod.Redis = MagicMock()
+            redis_mod.ConnectionPool = MagicMock()
+            monkeypatch.setitem(sys.modules, "redis", redis_mod)
+
+        # Import (oder re-import) des Service-Moduls
+        if _SERVICE_MOD in sys.modules:
+            self.svc = importlib.reload(sys.modules[_SERVICE_MOD])
+        else:
+            self.svc = importlib.import_module(_SERVICE_MOD)
 
         # Mock _publish_result damit kein echtes Redis nötig ist
         monkeypatch.setattr(self.svc, "_publish_result", MagicMock())
@@ -74,6 +85,13 @@ class TestDecisionIdGate:
 
         # Sicherstellen dass bot_shutdown_active = False
         monkeypatch.setattr(self.svc, "bot_shutdown_active", False)
+
+        yield
+
+        # Teardown: Service-Modul aus Cache entfernen wenn gestubbt,
+        # damit nachfolgende Tests (test_service.py) frisch mit echtem Flask importieren.
+        if self._stubbed:
+            sys.modules.pop(_SERVICE_MOD, None)
 
     def _order_payload(self, decision_id=None):
         payload = {
