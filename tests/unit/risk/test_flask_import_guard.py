@@ -5,58 +5,80 @@ Stellt sicher, dass services.risk.service importierbar bleibt,
 auch wenn Flask NICHT installiert ist. Der Flask-spezifische
 Web-Pfad (app, Endpoints) soll in dem Fall sauber deaktiviert sein.
 
-Technik: sys.meta_path-Blocker (MetaPathFinder) simuliert
+Technik: sys.meta_path-Blocker (MetaPathFinder via find_spec) simuliert
 fehlende Flask-Installation, auch wenn Flask tatsaechlich installiert ist.
 """
 
 import importlib
+import importlib.abc
+import importlib.machinery
 import sys
 
 import pytest
 
 
-class _FlaskBlocker:
+class _FlaskBlocker(importlib.abc.MetaPathFinder):
     """MetaPathFinder der alle flask-Imports mit ModuleNotFoundError blockiert.
+
+    Verwendet find_spec (PEP 451), damit der Blocker auch in Python 3.12+
+    zuverlaessig VOR dem Standard-PathFinder greift.
 
     Setzt e.name = 'flask', damit der gehaertete Guard in service.py
     korrekt zwischen 'Flask fehlt' und 'Flask-Subdependency fehlt' unterscheidet.
     """
 
-    def find_module(self, fullname, path=None):
+    def find_spec(self, fullname, path, target=None):
         if fullname == "flask" or fullname.startswith("flask."):
-            return self
+            raise ModuleNotFoundError(
+                f"Simulated: No module named '{fullname}'",
+                name=fullname,
+            )
         return None
 
-    def load_module(self, fullname):
-        err = ModuleNotFoundError(f"Simulated: No module named '{fullname}'")
-        err.name = fullname
-        raise err
+
+class _WerkzeugBlocker(importlib.abc.MetaPathFinder):
+    """Blockiert nur 'werkzeug' (nicht 'flask' direkt).
+
+    Flask importiert werkzeug intern -> ModuleNotFoundError mit name='werkzeug'.
+    Damit testen wir, dass der e.name-Guard Subdependency-Fehler propagiert.
+    """
+
+    def find_spec(self, fullname, path, target=None):
+        if fullname == "werkzeug" or fullname.startswith("werkzeug."):
+            raise ModuleNotFoundError(
+                f"Simulated: No module named '{fullname}'",
+                name=fullname,
+            )
+        return None
 
 
-def _save_flask_modules():
-    """Sichert alle flask-Module aus sys.modules."""
-    return {k: v for k, v in sys.modules.items() if k == "flask" or k.startswith("flask.")}
+def _save_modules(*prefixes):
+    """Sichert Module mit gegebenen Prefixen aus sys.modules."""
+    return {
+        k: v for k, v in sys.modules.items()
+        if any(k == p or k.startswith(p + ".") for p in prefixes)
+    }
 
 
-def _purge_modules(purge_flask=False):
-    """Entfernt services.risk.service aus sys.modules.
-    Optional auch flask-Module (nur fuer Blocker-Tests)."""
+def _purge_modules(*prefixes):
+    """Entfernt Module mit gegebenen Prefixen aus sys.modules."""
     to_delete = [
-        key for key in sys.modules
-        if key == "services.risk.service" or key.startswith("services.risk.service.")
+        k for k in sys.modules
+        if any(k == p or k.startswith(p + ".") for p in prefixes)
     ]
-    if purge_flask:
-        to_delete += [
-            key for key in sys.modules
-            if key == "flask" or key.startswith("flask.")
-        ]
     for key in to_delete:
         sys.modules.pop(key, None)
 
 
-def _restore_flask_modules(saved):
-    """Stellt gesicherte flask-Module in sys.modules wieder her."""
+def _restore_modules(saved):
+    """Stellt gesicherte Module in sys.modules wieder her."""
     sys.modules.update(saved)
+
+
+# Prefixe die fuer einen sauberen Re-Import geraeumt werden muessen
+_RISK_MODULE = "services.risk.service"
+_FLASK_PREFIXES = ("flask", "werkzeug", "markupsafe", "jinja2")
+_ALL_PREFIXES = (_RISK_MODULE,) + _FLASK_PREFIXES
 
 
 @pytest.mark.unit
@@ -71,12 +93,12 @@ class TestFlaskImportGuard:
         - Flask installiert: MetaPathFinder blockiert den Import
         - Flask nicht installiert: Import schlaegt natuerlich fehl, Guard faengt ab
         """
-        saved_flask = _save_flask_modules()
+        saved = _save_modules(*_ALL_PREFIXES)
         blocker = _FlaskBlocker()
-        _purge_modules(purge_flask=True)
+        _purge_modules(*_ALL_PREFIXES)
         sys.meta_path.insert(0, blocker)
         try:
-            mod = importlib.import_module("services.risk.service")
+            mod = importlib.import_module(_RISK_MODULE)
 
             # Modul muss importierbar sein
             assert mod is not None
@@ -92,18 +114,18 @@ class TestFlaskImportGuard:
             assert hasattr(mod, "RiskManager")
         finally:
             sys.meta_path.remove(blocker)
-            _purge_modules(purge_flask=True)
-            _restore_flask_modules(saved_flask)
+            _purge_modules(*_ALL_PREFIXES)
+            _restore_modules(saved)
 
     def test_flask_web_entry_raises_without_flask(self):
         """Test B: Der __main__-Guard soll RuntimeError werfen, wenn Flask fehlt.
         Wir testen das ueber die _FLASK_AVAILABLE / app-Kombination."""
-        saved_flask = _save_flask_modules()
+        saved = _save_modules(*_ALL_PREFIXES)
         blocker = _FlaskBlocker()
-        _purge_modules(purge_flask=True)
+        _purge_modules(*_ALL_PREFIXES)
         sys.meta_path.insert(0, blocker)
         try:
-            mod = importlib.import_module("services.risk.service")
+            mod = importlib.import_module(_RISK_MODULE)
 
             assert mod._FLASK_AVAILABLE is False
             assert mod.app is None
@@ -116,18 +138,18 @@ class TestFlaskImportGuard:
                     )
         finally:
             sys.meta_path.remove(blocker)
-            _purge_modules(purge_flask=True)
-            _restore_flask_modules(saved_flask)
+            _purge_modules(*_ALL_PREFIXES)
+            _restore_modules(saved)
 
     def test_decide_trade_works_without_flask(self):
         """Test C: decide_trade() funktioniert korrekt ohne Flask.
         Beweist, dass der Trading-Pfad unabhaengig vom Flask-Import ist."""
-        saved_flask = _save_flask_modules()
+        saved = _save_modules(*_ALL_PREFIXES)
         blocker = _FlaskBlocker()
-        _purge_modules(purge_flask=True)
+        _purge_modules(*_ALL_PREFIXES)
         sys.meta_path.insert(0, blocker)
         try:
-            mod = importlib.import_module("services.risk.service")
+            mod = importlib.import_module(_RISK_MODULE)
 
             # decide_trade mit minimalen Inputs ausfuehren
             decision, reason_code, evidence = mod.decide_trade(
@@ -148,15 +170,15 @@ class TestFlaskImportGuard:
             assert "contract_version" in evidence
         finally:
             sys.meta_path.remove(blocker)
-            _purge_modules(purge_flask=True)
-            _restore_flask_modules(saved_flask)
+            _purge_modules(*_ALL_PREFIXES)
+            _restore_modules(saved)
 
     def test_flask_available_matches_actual_state(self):
         """Test D: _FLASK_AVAILABLE und app muessen konsistent mit der
         tatsaechlichen Flask-Verfuegbarkeit sein. Laeuft immer."""
-        _purge_modules(purge_flask=False)
+        _purge_modules(_RISK_MODULE)
         try:
-            mod = importlib.import_module("services.risk.service")
+            mod = importlib.import_module(_RISK_MODULE)
 
             # Pruefen ob Flask wirklich importierbar ist
             try:
@@ -175,7 +197,7 @@ class TestFlaskImportGuard:
             assert callable(mod.decide_trade)
             assert hasattr(mod, "RiskManager")
         finally:
-            _purge_modules(purge_flask=False)
+            _purge_modules(_RISK_MODULE)
 
     def test_non_flask_dependency_error_propagates(self):
         """Test E: Wenn Flask installiert ist, aber eine Flask-Subdependency fehlt,
@@ -183,44 +205,24 @@ class TestFlaskImportGuard:
 
         Simuliert z.B. 'from flask import ...' -> ImportError wegen fehlender
         Werkzeug-Version o.ae."""
-        saved_flask = _save_flask_modules()
-
-        class _SubdepBlocker:
-            """Blockiert nur 'werkzeug', nicht 'flask' direkt.
-            Flask importiert werkzeug intern -> ModuleNotFoundError mit name='werkzeug'."""
-            def find_module(self, fullname, path=None):
-                if fullname == "werkzeug" or fullname.startswith("werkzeug."):
-                    return self
-                return None
-
-            def load_module(self, fullname):
-                err = ModuleNotFoundError(f"Simulated: No module named '{fullname}'")
-                err.name = fullname
-                raise err
-
-        blocker = _SubdepBlocker()
-        _purge_modules(purge_flask=True)
+        saved = _save_modules(*_ALL_PREFIXES)
+        blocker = _WerkzeugBlocker()
+        _purge_modules(*_ALL_PREFIXES)
         sys.meta_path.insert(0, blocker)
         try:
-            # Wenn Flask installiert ist und werkzeug fehlt, muss der Fehler
-            # durchschlagen (nicht als _FLASK_AVAILABLE=False verschluckt werden).
-            # Wenn Flask nicht installiert ist, greift der e.name=='flask' Guard
-            # und der Test ist trotzdem aussagekraeftig.
-            try:
-                import flask as _probe
-                _flask_would_import = True
-            except ModuleNotFoundError:
-                _flask_would_import = False
+            # Pruefen ob Flask ueberhaupt installiert ist (ohne werkzeug-Blocker
+            # stoerung — wir schauen in den gesicherten Modulen nach)
+            flask_installed = "flask" in saved
 
-            if _flask_would_import:
+            if flask_installed:
                 # Flask installiert + werkzeug geblockt -> muss crashen, nicht verschlucken
                 with pytest.raises(ModuleNotFoundError, match="werkzeug"):
-                    importlib.import_module("services.risk.service")
+                    importlib.import_module(_RISK_MODULE)
             else:
                 # Flask nicht installiert -> Guard greift korrekt (e.name == 'flask')
-                mod = importlib.import_module("services.risk.service")
+                mod = importlib.import_module(_RISK_MODULE)
                 assert mod._FLASK_AVAILABLE is False
         finally:
             sys.meta_path.remove(blocker)
-            _purge_modules(purge_flask=True)
-            _restore_flask_modules(saved_flask)
+            _purge_modules(*_ALL_PREFIXES)
+            _restore_modules(saved)
