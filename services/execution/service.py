@@ -19,6 +19,7 @@ from threading import Thread, Lock
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.uuid_gen import generate_uuid_hex
+from core.utils.trace_toggle import trace_contract_v1_enabled
 from core.auth import validate_all_auth
 
 try:
@@ -235,6 +236,33 @@ def process_order(order_data: dict):
         order = Order.from_event(order_data)
 
         increment_stat("orders_received")  # Thread-safe
+
+        # Safety gate: reject orders without Risk Service approval (refs #467)
+        # Only enforced when Trace Contract v1 is active (toggle ON).
+        if trace_contract_v1_enabled() and not order.decision_id:
+            result = ExecutionResult(
+                order_id=order.order_id or "MISSING_ORDER_ID",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message="Order rejected: missing decision_id (not approved by Risk Service)",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            logger.warning(
+                "REJECTED (no decision_id): %s %s qty=%.4f",
+                order.symbol,
+                order.side,
+                order.quantity,
+            )
+            increment_stat("orders_rejected")
+            _publish_result(result)
+            return result
 
         if (
             bot_shutdown_active

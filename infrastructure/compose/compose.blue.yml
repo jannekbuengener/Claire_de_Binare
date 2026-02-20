@@ -218,6 +218,7 @@ services:
       LOG_LEVEL: "INFO"
       MOCK_TRADING: "true"
       USE_REAL_BALANCE: "false"
+      TRACE_CONTRACT_V1_ENABLED: "1"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
