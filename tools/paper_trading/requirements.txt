@@ -2,7 +2,7 @@
 # Pin versions for deterministic builds
 
 # Web framework (health endpoint)
-Flask==3.1.2
+Flask==3.1.3
 Werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
 
 # Database
