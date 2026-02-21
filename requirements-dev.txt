@@ -14,7 +14,7 @@ jsonschema==4.25.1  # Contract validation (Issue #356)
 mypy==1.8.0
 
 # Code Quality
-black==25.12.0
+black==26.1.0
 ruff==0.1.8
 
 # Security Scanning
