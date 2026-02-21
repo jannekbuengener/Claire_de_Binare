@@ -2,7 +2,7 @@
 # Claire de Binare Trading Bot
 
 # Testing Framework (Issue #21 scaffolding)
-pytest==7.4.4
+pytest==9.0.2
 pytest-cov==4.1.0
 pytest-asyncio==0.21.1
 pytest-mock==3.12.0
