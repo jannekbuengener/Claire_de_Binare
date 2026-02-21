@@ -310,79 +310,87 @@ def process_order(order_data: dict):
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # order_id ist jetzt final (von executor zurückgegeben)
+        # Correlation write failures must NOT prevent order_results publish.
         if db:
-            timestamp_ms = int(time.time() * 1000)
-            schema_status = ExecutionResult._schema_status(result.status)
+            try:
+                timestamp_ms = int(time.time() * 1000)
+                schema_status = ExecutionResult._schema_status(result.status)
 
-            # ORDER event (always persisted)
-            order_payload = {
-                "signal_id": order.signal_id,
-                "decision_id": order.decision_id,
-                "order_id": result.order_id,
-                "symbol": order.symbol,
-                "side": order.side,
-                "quantity": order.quantity,
-                "strategy_id": order.strategy_id,
-                "trace_id": order.trace_id,
-            }
-            # Phase 9: Trace Contract v1 - Policy governance (conditional)
-            if getattr(order, "policy_id", None) is not None:
-                order_payload["policy_id"] = order.policy_id
-            if getattr(order, "policy_hash", None) is not None:
-                order_payload["policy_hash"] = order.policy_hash
-            if getattr(order, "input_hash", None) is not None:
-                order_payload["input_hash"] = order.input_hash
-            if getattr(order, "output_hash", None) is not None:
-                order_payload["output_hash"] = order.output_hash
-            if not db.persist_correlation_event(
-                signal_id=order.signal_id,
-                event_type="ORDER",
-                symbol=order.symbol,
-                timestamp_ms=timestamp_ms,
-                decision_id=order.decision_id,
-                order_id=result.order_id,
-                payload=order_payload,
-            ):
-                logger.warning(
-                    "⚠️ correlation_ledger ORDER write failed (evidence debt)"
-                )
-
-            # Phase 8E: FILL event (only for fully filled orders, same timestamp_ms)
-            if schema_status == "FILLED" and result.fill_id:
-                fill_payload = {
+                # ORDER event (always persisted)
+                order_payload = {
                     "signal_id": order.signal_id,
                     "decision_id": order.decision_id,
                     "order_id": result.order_id,
-                    "fill_id": result.fill_id,
                     "symbol": order.symbol,
                     "side": order.side,
-                    "filled_quantity": result.filled_quantity,
-                    "price": result.price,
+                    "quantity": order.quantity,
                     "strategy_id": order.strategy_id,
                     "trace_id": order.trace_id,
                 }
                 # Phase 9: Trace Contract v1 - Policy governance (conditional)
                 if getattr(order, "policy_id", None) is not None:
-                    fill_payload["policy_id"] = order.policy_id
+                    order_payload["policy_id"] = order.policy_id
                 if getattr(order, "policy_hash", None) is not None:
-                    fill_payload["policy_hash"] = order.policy_hash
+                    order_payload["policy_hash"] = order.policy_hash
                 if getattr(order, "input_hash", None) is not None:
-                    fill_payload["input_hash"] = order.input_hash
+                    order_payload["input_hash"] = order.input_hash
                 if getattr(order, "output_hash", None) is not None:
-                    fill_payload["output_hash"] = order.output_hash
+                    order_payload["output_hash"] = order.output_hash
                 if not db.persist_correlation_event(
                     signal_id=order.signal_id,
-                    event_type="FILL",
+                    event_type="ORDER",
                     symbol=order.symbol,
                     timestamp_ms=timestamp_ms,
                     decision_id=order.decision_id,
                     order_id=result.order_id,
-                    fill_id=result.fill_id,
-                    payload=fill_payload,
+                    payload=order_payload,
                 ):
                     logger.warning(
-                        "⚠️ correlation_ledger FILL write failed (evidence debt)"
+                        "⚠️ correlation_ledger ORDER write failed (evidence debt)"
                     )
+
+                # Phase 8E: FILL event (only for fully filled orders, same timestamp_ms)
+                if schema_status == "FILLED" and result.fill_id:
+                    fill_payload = {
+                        "signal_id": order.signal_id,
+                        "decision_id": order.decision_id,
+                        "order_id": result.order_id,
+                        "fill_id": result.fill_id,
+                        "symbol": order.symbol,
+                        "side": order.side,
+                        "filled_quantity": result.filled_quantity,
+                        "price": result.price,
+                        "strategy_id": order.strategy_id,
+                        "trace_id": order.trace_id,
+                    }
+                    # Phase 9: Trace Contract v1 - Policy governance (conditional)
+                    if getattr(order, "policy_id", None) is not None:
+                        fill_payload["policy_id"] = order.policy_id
+                    if getattr(order, "policy_hash", None) is not None:
+                        fill_payload["policy_hash"] = order.policy_hash
+                    if getattr(order, "input_hash", None) is not None:
+                        fill_payload["input_hash"] = order.input_hash
+                    if getattr(order, "output_hash", None) is not None:
+                        fill_payload["output_hash"] = order.output_hash
+                    if not db.persist_correlation_event(
+                        signal_id=order.signal_id,
+                        event_type="FILL",
+                        symbol=order.symbol,
+                        timestamp_ms=timestamp_ms,
+                        decision_id=order.decision_id,
+                        order_id=result.order_id,
+                        fill_id=result.fill_id,
+                        payload=fill_payload,
+                    ):
+                        logger.warning(
+                            "⚠️ correlation_ledger FILL write failed (evidence debt)"
+                        )
+            except ValueError as corr_err:
+                logger.warning(
+                    "correlation_ledger write skipped for order %s: %s",
+                    result.order_id,
+                    corr_err,
+                )
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)

@@ -526,10 +526,12 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
     - Latency < 1000ms
     """
     start_time = time.time()
+    t_start = time.monotonic()
 
     # Subscribe to order_results
     pubsub = redis_client.pubsub()
     pubsub.subscribe("order_results")
+    t_subscribed = time.monotonic()
     for _ in range(3):
         pubsub.get_message(timeout=0.1)
 
@@ -542,33 +544,70 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
         "type": "order",  # Fixed: execution service expects "order" not "MARKET"
         "source": "e2e_test_happy_path",
     }
+    t_publish = time.monotonic()
     redis_client.publish("orders", json.dumps(order_payload))
 
     # Wait for result
     result_message = None
-    for _ in range(20):
+    t_first_recv = None
+    attempts_used = 0
+    for i in range(20):
         message = pubsub.get_message(timeout=0.5)
         if message and message["type"] == "message":
+            t_first_recv = time.monotonic()
+            attempts_used = i + 1
             result_message = message
             break
 
     pubsub.unsubscribe("order_results")
     pubsub.close()
+    t_end = time.monotonic()
 
     end_time = time.time()
     latency_ms = (end_time - start_time) * 1000
 
-    # Assertions
-    assert result_message is not None, "TC-P0-001 FAILED: No order_result received"
+    # Instrumentation (log only)
+    publish_to_receive_ms = (
+        (t_first_recv - t_publish) * 1000 if t_first_recv is not None else -1.0
+    )
+    _env_type = ""
+    _recv_oid = ""
+    _recv_st = ""
+    if result_message is not None:
+        _env_type = result_message.get("type", "")
+        try:
+            _rp = json.loads(result_message["data"])
+            _recv_oid = _rp.get("order_id", "")
+            _recv_st = _rp.get("status", "")
+        except Exception:
+            pass
 
-    payload = json.loads(result_message["data"])
-    assert payload["status"] in [
-        "FILLED",
-        "filled",
-    ], f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
-    assert latency_ms < 1000, f"TC-P0-001 FAILED: Latency {latency_ms:.0f}ms > 1000ms"
+    try:
+        # Assertions
+        assert result_message is not None, "TC-P0-001 FAILED: No order_result received"
 
-    print(f"✅ TC-P0-001 PASSED: Happy path completed in {latency_ms:.0f}ms")
+        payload = json.loads(result_message["data"])
+        assert payload["status"] in [
+            "FILLED",
+            "filled",
+        ], f"TC-P0-001 FAILED: Expected FILLED, got {payload['status']}"
+        assert latency_ms < 1000, f"TC-P0-001 FAILED: Latency {latency_ms:.0f}ms > 1000ms"
+
+        print(f"✅ TC-P0-001 PASSED: Happy path completed in {latency_ms:.0f}ms")
+    finally:
+        print(
+            f"TC-P0-001 latency_ms={latency_ms:.1f}"
+            f" publish_to_receive_ms={publish_to_receive_ms:.1f}"
+            f" breakdown: start={t_start:.4f}"
+            f" subscribed={t_subscribed:.4f}"
+            f" publish={t_publish:.4f}"
+            f" first_recv={t_first_recv or 0:.4f}"
+            f" end={t_end:.4f}"
+            f" attempts={attempts_used}"
+            f" envelope_type={_env_type}"
+            f" order_id={_recv_oid}"
+            f" status={_recv_st}"
+        )
 
 
 @pytest.mark.e2e
