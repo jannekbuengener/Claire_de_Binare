@@ -1,15 +1,17 @@
 name: Claude Code Review
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '30 4 * * *'
+  pull_request:
+    types: [opened, synchronize]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
 
 jobs:
   claude-review:
-    # Skip if Claude Code OAuth token is not configured
-    if: vars.CLAUDE_CODE_OAUTH_TOKEN != ''
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -23,8 +25,15 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Noop PASS when token missing
+        if: ${{ vars.CLAUDE_CODE_OAUTH_TOKEN == '' }}
+        run: |
+          echo "Claude Code Review: noop PASS (CLAUDE_CODE_OAUTH_TOKEN not set)."
+          exit 0
+
       - name: Run Claude Code Review
         id: claude-review
+        if: ${{ vars.CLAUDE_CODE_OAUTH_TOKEN != '' }}
         uses: anthropics/claude-code-action@7145c3e0510bcdbdd29f67cc4a8c1958f1acfa2f # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
