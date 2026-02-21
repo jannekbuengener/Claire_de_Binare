@@ -128,12 +128,6 @@ test-full-system: docker-up docker-health test-e2e test-local
 # Docker-Hilfsfunktionen
 # ============================================================================
 
-ifeq ($(OS),Windows_NT)
-docker-up:
-	@echo "🐳 Starte Docker Compose Stack..."
-	@pwsh -NoProfile -Command "if (Test-Path 'infrastructure/compose/base.yml') { Write-Host '✓ Using Compose Fragments (base + dev)'; docker compose -f 'infrastructure/compose/base.yml' -f 'infrastructure/compose/dev.yml' up -d } else { Write-Host '⚠️  Fallback to legacy docker-compose.yml'; docker compose up -d }"
-	@pwsh -NoProfile -Command "Start-Sleep -Seconds 10"
-else
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack..."
 	@if [ -f infrastructure/compose/base.yml ]; then \
@@ -145,7 +139,6 @@ docker-up:
 	fi
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
-endif
 
 docker-up-prod:
 	@echo "🐳 Starte Docker Compose Stack (PRODUCTION)..."
@@ -249,19 +242,5 @@ cleanup-live:
 # ============================================================================
 
 mcp-config-validate:
-	@echo "🔎 Validiere MCP-Konfiguration..."
-	python tools/validate_mcp_config.py $(MCP_CONFIG_PATHS)
-
-# ============================================================================
-# Security Scanning
-# ============================================================================
-
-security-scan:
-	@echo "🛡️  Führe Security-Scan aus..."
-	@if command -v gitleaks > /dev/null; then \
-		gitleaks detect --source . -v; \
-	else \
-		echo "⚠️  gitleaks nicht installiert, überspringe secret scanning"; \
-	fi
-	@ruff check .
-	@bandit -r core/ services/
+	@echo "🔎 Validiere mcp-config.toml..."
+	python tools/validate_mcp_config.py
