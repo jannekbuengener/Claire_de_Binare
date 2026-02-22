@@ -7,7 +7,7 @@ This PR introduces three Postgres roles with explicit, minimal grants:
 | Role | Login | Capabilities | Used by |
 |------|-------|-------------|---------|
 | `cdb_reader` | No (NOLOGIN) | SELECT on all listed tables | Audit / dashboards / Grafana |
-| `cdb_writer` | No (NOLOGIN) | SELECT + INSERT on 9 tables, UPDATE on 2 | Runtime services (via `claire_user`) |
+| `cdb_writer` | No (NOLOGIN) | SELECT + INSERT on 8 tables, UPDATE on 1 | Runtime services (via `claire_user`) |
 | `cdb_admin` | No (NOLOGIN) | ALL (DDL, migrations) | Deploy / migration scripts |
 
 `claire_user` retains LOGIN and keeps ALL PRIVILEGES by default.
@@ -31,7 +31,6 @@ against Issue #741 which scopes both topics.
 | `risk_events` | SELECT | SELECT, INSERT | ALL | Append-only risk decisions |
 | `correlation_ledger` | SELECT | SELECT, INSERT | ALL | Append-only correlation audit trail |
 | `blocked_decisions` | SELECT | SELECT, INSERT | ALL | Append-only blocked decision log |
-| `validation_runs` | SELECT | SELECT, INSERT, **UPDATE** | ALL | real_validation_fetcher updates run status |
 | `core_secrets_metadata` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `audit_trail` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `governance_events` | SELECT | — | ALL | Governance mirror (no runtime writes) |
@@ -40,6 +39,8 @@ against Issue #741 which scopes both topics.
 | `schema_version` | SELECT | SELECT | ALL | Migration tracking (admin writes only) |
 
 **DELETE**: Not granted to any role except `cdb_admin`. No production code uses DELETE.
+
+**Note**: `validation_runs` is managed locally via SQLite (`real_validation_fetcher.py`), not Postgres. It is not part of this Postgres hardening.
 
 ## Scripts
 

@@ -56,7 +56,6 @@ DECLARE
     reader_tables TEXT[] := ARRAY[
         'signals', 'orders', 'trades', 'positions', 'portfolio_snapshots',
         'risk_events', 'correlation_ledger', 'blocked_decisions',
-        'validation_runs',
         'core_secrets_metadata', 'audit_trail', 'governance_events',
         'deployment_approvals_mirror', 'security_policy_refs',
         'schema_version'
@@ -87,7 +86,7 @@ END $$;
 --   risk_events      — risk service
 --   correlation_ledger — execution, signal, risk services
 --   blocked_decisions — risk service
---   validation_runs  — real_validation_fetcher (also UPDATE)
+-- NOTE: validation_runs is SQLite-only (real_validation_fetcher.py), not a Postgres table.
 
 DO $$
 DECLARE
@@ -96,19 +95,17 @@ DECLARE
     select_tables TEXT[] := ARRAY[
         'signals', 'orders', 'trades', 'positions', 'portfolio_snapshots',
         'risk_events', 'correlation_ledger', 'blocked_decisions',
-        'validation_runs', 'schema_version'
+        'schema_version'
     ];
     -- Tables writer can INSERT:
     insert_tables TEXT[] := ARRAY[
         'signals', 'orders', 'trades', 'positions', 'portfolio_snapshots',
-        'risk_events', 'correlation_ledger', 'blocked_decisions',
-        'validation_runs'
+        'risk_events', 'correlation_ledger', 'blocked_decisions'
     ];
     -- Tables writer can UPDATE (fachlich begründet):
     --   positions: db_writer.py updates size/price/pnl on trade execution
-    --   validation_runs: real_validation_fetcher.py updates run status
     update_tables TEXT[] := ARRAY[
-        'positions', 'validation_runs'
+        'positions'
     ];
     seq_name TEXT;
 BEGIN
@@ -182,7 +179,7 @@ BEGIN
     RAISE NOTICE '---------------------------------------------';
     RAISE NOTICE 'roles_and_grants.sql applied successfully';
     RAISE NOTICE 'cdb_reader: SELECT on explicit table list';
-    RAISE NOTICE 'cdb_writer: INSERT on 9 tables, UPDATE on 2 (positions, validation_runs)';
+    RAISE NOTICE 'cdb_writer: INSERT on 8 tables, UPDATE on 1 (positions)';
     RAISE NOTICE 'cdb_admin:  ALL (for migrations only)';
     RAISE NOTICE 'claire_user: unchanged — run enforce_least_privilege.sql to migrate';
     RAISE NOTICE '---------------------------------------------';
