@@ -22,14 +22,11 @@ from typing import Optional
 
 import psycopg2
 import redis
+import importlib.util
 try:
-    from flask import Flask, jsonify, Response
-    _FLASK_AVAILABLE = True
-except ModuleNotFoundError as e:
-    if e.name == "flask":
-        _FLASK_AVAILABLE = False
-    else:
-        raise
+    _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
+except (ModuleNotFoundError, ValueError):
+    _FLASK_AVAILABLE = False
 
 from core.utils.uuid_gen import (
     generate_uuid,
@@ -92,12 +89,6 @@ else:
     )
 
 logger = logging.getLogger("risk_manager")
-
-# Flask App (optional – nur für HTTP-Endpoints)
-if _FLASK_AVAILABLE:
-    app = Flask(__name__)
-else:
-    app = None
 
 # Globale Stats
 stats = {
@@ -1872,7 +1863,10 @@ class RiskManager:
 
 # ===== FLASK ENDPOINTS =====
 
-if _FLASK_AVAILABLE and app is not None:
+if _FLASK_AVAILABLE:
+    from flask import Flask, jsonify, Response
+
+    app = Flask(__name__)
 
     @app.route("/health")
     def health():
@@ -1941,6 +1935,8 @@ if _FLASK_AVAILABLE and app is not None:
             f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
         )
         return Response(body, mimetype="text/plain")
+else:
+    app = None
 
 
 # ===== SIGNAL HANDLER =====
