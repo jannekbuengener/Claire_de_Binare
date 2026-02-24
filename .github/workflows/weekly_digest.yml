@@ -1,0 +1,276 @@
+name: Weekly Project Digest
+on:
+  schedule:
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+jobs:
+  weekly-digest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      PROJECT_OWNER: jannekbuengener
+      PROJECT_NUMBER: "8"
+      VIEW_NOW_URL: https://github.com/users/jannekbuengener/projects/8/views/10
+      VIEW_EINGANG_URL: https://github.com/users/jannekbuengener/projects/8/views/18
+      VIEW_PR_REVIEW_URL: https://github.com/users/jannekbuengener/projects/8/views/17
+    steps:
+      - name: Create weekly digest issue (idempotent)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="${GITHUB_REPOSITORY}"
+          today_utc="$(date -u +%F)"
+          digest_title="Weekly Digest – ${today_utc}"
+
+          graphql_call() {
+            local payload="$1"
+            printf '%s' "$payload" | gh api graphql --input -
+          }
+
+          graphql_require_no_errors() {
+            local json="$1"
+            local context="$2"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
+              echo "GraphQL errors while ${context}:" >&2
+              jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              exit 1
+            fi
+          }
+
+          has_label() {
+            local labels_json="$1"
+            local needle="$2"
+            jq -e --arg needle "$needle" 'any(.[]; . == $needle)' >/dev/null 2>&1 <<<"$labels_json"
+          }
+
+          render_top_list() {
+            local heading="$1"
+            local items_json="$2"
+            {
+              echo "### ${heading}"
+              if [[ "$(jq -r 'length' <<<"$items_json")" == "0" ]]; then
+                echo "- _Keine Einträge_"
+              else
+                jq -r '.[] | "- [#\(.number) \(.title)](\(.url))"' <<<"$items_json"
+              fi
+              echo
+            }
+          }
+
+          existing_issue_json="$(
+            gh api --paginate --slurp "repos/${repo}/issues?state=all&per_page=100" \
+              | jq -c --arg t "$digest_title" '
+                  map(.[])
+                  | map(select((has("pull_request") | not) and (.title == $t)))
+                  | .[0] // empty
+                '
+          )"
+
+          if [[ -n "${existing_issue_json:-}" ]]; then
+            existing_url="$(jq -r '.html_url // empty' <<<"$existing_issue_json")"
+            echo "Weekly digest already exists for ${today_utc}: ${existing_url}"
+            exit 0
+          fi
+
+          items_query='query($owner:String!,$number:Int!,$after:String){
+            user(login:$owner){
+              projectV2(number:$number){
+                items(first:100, after:$after){
+                  pageInfo { hasNextPage endCursor }
+                  nodes{
+                    fieldValueByName(name:"Status"){
+                      __typename
+                      ... on ProjectV2ItemFieldSingleSelectValue { name }
+                    }
+                    content{
+                      __typename
+                      ... on Issue {
+                        id
+                        number
+                        title
+                        url
+                        state
+                        updatedAt
+                        repository { nameWithOwner }
+                        labels(first:100){ nodes{ name } }
+                      }
+                      ... on PullRequest {
+                        id
+                        number
+                        title
+                        url
+                        state
+                        updatedAt
+                        repository { nameWithOwner }
+                        labels(first:100){ nodes{ name } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          project_items_json='[]'
+          cursor=""
+          page_count=0
+          max_pages=50
+
+          while :; do
+            page_count=$((page_count + 1))
+            if (( page_count > max_pages )); then
+              echo "Exceeded max project item pages (${max_pages})." >&2
+              exit 1
+            fi
+
+            items_payload="$(jq -nc \
+              --arg q "$items_query" \
+              --arg owner "$PROJECT_OWNER" \
+              --arg number "$PROJECT_NUMBER" \
+              --arg after "$cursor" \
+              '{query:$q,variables:{owner:$owner,number:($number|tonumber),after:(if $after=="" then null else $after end)}}'
+            )"
+            items_json="$(graphql_call "$items_payload")"
+            graphql_require_no_errors "$items_json" "loading project items (page ${page_count})"
+
+            page_entries_json="$(jq -c --arg repo "$repo" '
+              [
+                .data.user.projectV2.items.nodes[]
+                | select(.content != null)
+                | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
+                | select((.content.repository.nameWithOwner // "") == $repo)
+                | {
+                    type: .content.__typename,
+                    number: .content.number,
+                    title: (.content.title // ""),
+                    url: .content.url,
+                    state: (.content.state | tostring),
+                    updatedAt: (.content.updatedAt // ""),
+                    status: (.fieldValueByName.name // ""),
+                    labels: ([.content.labels.nodes[]?.name | select(type == "string" and length > 0)] | unique)
+                  }
+              ]
+            ' <<<"$items_json")"
+
+            project_items_json="$(jq -cn \
+              --argjson cur "$project_items_json" \
+              --argjson add "$page_entries_json" \
+              '$cur + $add'
+            )"
+
+            has_next="$(jq -r '.data.user.projectV2.items.pageInfo.hasNextPage // false' <<<"$items_json")"
+            if [[ "$has_next" != "true" ]]; then
+              break
+            fi
+
+            cursor="$(jq -r '.data.user.projectV2.items.pageInfo.endCursor // empty' <<<"$items_json")"
+            if [[ -z "$cursor" ]]; then
+              break
+            fi
+          done
+
+          total_project_repo_items="$(jq -r 'length' <<<"$project_items_json")"
+
+          now_items_json="$(jq -c '
+            [
+              .[]
+              | select((.state | ascii_upcase) == "OPEN")
+              | select(.status == "In Progress" or .status == "Review" or .status == "Blocked")
+            ]
+          ' <<<"$project_items_json")"
+          pr_review_items_json="$(jq -c '
+            [
+              .[]
+              | select(.type == "PullRequest")
+              | select((.state | ascii_upcase) == "OPEN")
+              | select(.status == "Review")
+            ]
+          ' <<<"$project_items_json")"
+          eingang_items_json="$(jq -c '
+            [
+              .[]
+              | select((.state | ascii_upcase) == "OPEN")
+              | select((.labels // []) | any(.[]; . == "triage:offen"))
+            ]
+          ' <<<"$project_items_json")"
+
+          now_count="$(jq -r 'length' <<<"$now_items_json")"
+          blocked_count="$(jq -r '[.[] | select(.status == "Blocked")] | length' <<<"$now_items_json")"
+          eingang_count="$(jq -r 'length' <<<"$eingang_items_json")"
+          pr_review_count="$(jq -r 'length' <<<"$pr_review_items_json")"
+
+          top_review_json="$(jq -c '
+            [ .[] | select((.state | ascii_upcase) == "OPEN") | select(.status == "Review") ]
+            | sort_by(.updatedAt) | reverse | .[:5]
+          ' <<<"$project_items_json")"
+          top_in_progress_json="$(jq -c '
+            [ .[] | select((.state | ascii_upcase) == "OPEN") | select(.status == "In Progress") ]
+            | sort_by(.updatedAt) | reverse | .[:5]
+          ' <<<"$project_items_json")"
+          top_triage_json="$(jq -c '
+            [ .[] | select((.state | ascii_upcase) == "OPEN") | select((.labels // []) | any(.[]; . == "triage:offen")) ]
+            | sort_by(.updatedAt) | reverse | .[:5]
+          ' <<<"$project_items_json")"
+
+          if (( blocked_count > 0 || eingang_count > 0 )); then
+            risks_section="$(
+              {
+                echo "## Risiken"
+                if (( blocked_count > 0 )); then
+                  echo "- \`${blocked_count}\` Item(s) sind im Status \`Blocked\` (siehe View \`IST-ZUSTAND\`)."
+                fi
+                if (( eingang_count > 0 )); then
+                  echo "- \`${eingang_count}\` offene Item(s) liegen im \`EINGANG\` ohne Milestone (\`triage:offen\`)."
+                fi
+              }
+            )"
+          else
+            risks_section=$'## Risiken\n- Keine akuten Signale aus `Blocked` oder `EINGANG`.'
+          fi
+
+          now_in_progress_count="$(jq -r '[.[] | select(.status == "In Progress")] | length' <<<"$now_items_json")"
+          now_review_count="$(jq -r '[.[] | select(.status == "Review")] | length' <<<"$now_items_json")"
+
+          body="$(
+            {
+              echo "# Weekly Digest – ${today_utc}"
+              echo
+              echo "Kurzbericht zum CDB Control Board (Project #8) für offene Repo-Items."
+              echo
+              echo "## Views"
+              echo "- IST-ZUSTAND (Now): ${VIEW_NOW_URL}"
+              echo "- EINGANG: ${VIEW_EINGANG_URL}"
+              echo "- PR REVIEW: ${VIEW_PR_REVIEW_URL}"
+              echo
+              echo "## Counts"
+              echo "- IST-ZUSTAND (Now, open / In Progress+Review+Blocked): ${now_count}"
+              echo "  - In Progress: ${now_in_progress_count}"
+              echo "  - Review: ${now_review_count}"
+              echo "  - Blocked: ${blocked_count}"
+              echo "- EINGANG (open + triage:offen): ${eingang_count}"
+              echo "- PR REVIEW (open PRs + Status Review): ${pr_review_count}"
+              echo "- Project Repo-Items (gesamt im Board, Repo-only): ${total_project_repo_items}"
+              echo
+              render_top_list "Top 5 Review (updated desc)" "$top_review_json"
+              render_top_list "Top 5 In Progress (updated desc)" "$top_in_progress_json"
+              render_top_list "Top 5 EINGANG / triage:offen (updated desc)" "$top_triage_json"
+              echo "$risks_section"
+            }
+          )"
+
+          create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body}')"
+          create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
+          issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
+          issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+
+          if [[ -z "$issue_url" || -z "$issue_number" ]]; then
+            echo "Digest issue creation returned no issue URL/number." >&2
+            exit 1
+          fi
+
+          echo "Weekly digest created: #${issue_number} ${issue_url}"
+          echo "Summary: now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
