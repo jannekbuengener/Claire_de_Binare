@@ -21,6 +21,8 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 
 - Project URL: `https://github.com/users/jannekbuengener/projects/8`
 - Owner / Number: `jannekbuengener / 8`
+- Triage View (`EINGANG`): `https://github.com/users/jannekbuengener/projects/8/views/18`
+  - Filter: `is:open label:"triage:offen"`
 - Milestones:
   - `System ist beweisbar`
   - `System ist stabil`
@@ -43,6 +45,8 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
   - `status:merged`
   - `status:descoped`
   - `status:rejected`
+- Triage-Label:
+  - `triage:offen` (offenes Item ohne Milestone)
 
 ## Automationen (Workflow-Dateien)
 
@@ -56,6 +60,17 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
+- `.github/workflows/triage_guard.yml`
+  - Hält `triage:offen` für offene Issues/PRs synchron:
+    - kein Milestone -> Label setzen
+    - Milestone gesetzt -> Label entfernen
+    - `demilestoned` -> Label wieder setzen
+
+## Triage-Prozess (Jannek)
+
+- Öffne die View `EINGANG` und arbeite nur Items mit `triage:offen` ab (offen, ohne Milestone).
+- Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
+- Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
 
 ## Troubleshooting (Klassiker)
 
