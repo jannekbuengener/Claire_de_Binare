@@ -104,7 +104,10 @@ class TestVerifyChainNegative:
 
         result = verify_chain(str(f))
         assert result["ok"] is False
-        assert any("chain_hash mismatch" in e for e in result["errors"])
+        # Only the tampered line should fail — no error cascade
+        chain_errors = [e for e in result["errors"] if "chain_hash mismatch" in e]
+        assert len(chain_errors) == 1
+        assert "line 3" in chain_errors[0]
 
     def test_mutated_payload_fails(self, tmp_path):
         """Changing a payload field invalidates event_hash."""
