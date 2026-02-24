@@ -1,0 +1,174 @@
+name: Triage Guard (Missing Milestone)
+on:
+  issues:
+    types: [opened, reopened, milestoned, demilestoned, transferred, edited]
+  pull_request:
+    types: [opened, reopened, milestoned, demilestoned, edited]
+
+jobs:
+  triage-guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      TRIAGE_LABEL_NAME: triage:offen
+    steps:
+      - name: Sync triage label from milestone presence
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          event_name="${GITHUB_EVENT_NAME}"
+          event_path="${GITHUB_EVENT_PATH}"
+          repo_full="${GITHUB_REPOSITORY}"
+          owner="${repo_full%%/*}"
+          repo_name="${repo_full#*/}"
+
+          graphql_call() {
+            local payload="$1"
+            printf '%s' "$payload" | gh api graphql --input -
+          }
+
+          graphql_require_no_errors() {
+            local json="$1"
+            local context="$2"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
+              echo "GraphQL errors while ${context}:" >&2
+              jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              exit 1
+            fi
+          }
+
+          case "$event_name" in
+            issues)
+              content_node_id="$(jq -r '.issue.node_id // empty' "$event_path")"
+              payload_url="$(jq -r '.issue.html_url // empty' "$event_path")"
+              ;;
+            pull_request)
+              content_node_id="$(jq -r '.pull_request.node_id // empty' "$event_path")"
+              payload_url="$(jq -r '.pull_request.html_url // empty' "$event_path")"
+              ;;
+            *)
+              echo "Unsupported event: $event_name"
+              exit 0
+              ;;
+          esac
+
+          if [[ -z "$content_node_id" ]]; then
+            echo "No content node id in event payload; skipping."
+            exit 0
+          fi
+
+          query='query($owner:String!,$repo:String!,$contentId:ID!,$labelName:String!){
+            repository(owner:$owner,name:$repo){
+              label(name:$labelName){ id name }
+            }
+            node(id:$contentId){
+              __typename
+              ... on Issue {
+                id
+                url
+                state
+                milestone { title }
+                labels(first:100){ nodes{ id name } }
+              }
+              ... on PullRequest {
+                id
+                url
+                state
+                milestone { title }
+                labels(first:100){ nodes{ id name } }
+              }
+            }
+          }'
+
+          payload="$(jq -nc \
+            --arg q "$query" \
+            --arg owner "$owner" \
+            --arg repo "$repo_name" \
+            --arg contentId "$content_node_id" \
+            --arg labelName "$TRIAGE_LABEL_NAME" \
+            '{query:$q,variables:{owner:$owner,repo:$repo,contentId:$contentId,labelName:$labelName}}'
+          )"
+
+          item_json="$(graphql_call "$payload")"
+          graphql_require_no_errors "$item_json" "loading item + triage label"
+
+          label_id="$(jq -r '.data.repository.label.id // empty' <<<"$item_json")"
+          if [[ -z "$label_id" ]]; then
+            echo "Label '$TRIAGE_LABEL_NAME' not found in repository; failing." >&2
+            exit 1
+          fi
+
+          node_type="$(jq -r '.data.node.__typename // empty' <<<"$item_json")"
+          if [[ "$node_type" != "Issue" && "$node_type" != "PullRequest" ]]; then
+            echo "Node is not Issue/PullRequest (type='$node_type'); skipping."
+            exit 0
+          fi
+
+          labelable_id="$(jq -r '.data.node.id // empty' <<<"$item_json")"
+          item_url="$(jq -r '.data.node.url // empty' <<<"$item_json")"
+          item_state="$(jq -r '.data.node.state // empty' <<<"$item_json")"
+          milestone_title="$(jq -r '.data.node.milestone.title // empty' <<<"$item_json")"
+          has_triage_label=false
+          if jq -e --arg n "$TRIAGE_LABEL_NAME" '.data.node.labels.nodes[]? | select(.name == $n)' >/dev/null 2>&1 <<<"$item_json"; then
+            has_triage_label=true
+          fi
+
+          if [[ -z "$item_url" ]]; then
+            item_url="$payload_url"
+          fi
+
+          if [[ "$item_state" != "OPEN" ]]; then
+            echo "Item is not OPEN ($item_state); no triage-label action for $item_url."
+            exit 0
+          fi
+
+          if [[ -z "$milestone_title" ]]; then
+            should_have_triage=true
+          else
+            should_have_triage=false
+          fi
+
+          if [[ "$should_have_triage" == true && "$has_triage_label" == true ]]; then
+            echo "No-op: triage label already present for $item_url."
+            exit 0
+          fi
+
+          if [[ "$should_have_triage" == false && "$has_triage_label" == false ]]; then
+            echo "No-op: triage label already absent for $item_url (milestone present)."
+            exit 0
+          fi
+
+          if [[ "$should_have_triage" == true ]]; then
+            mutation='mutation($labelableId:ID!,$labelIds:[ID!]!){
+              addLabelsToLabelable(input:{labelableId:$labelableId,labelIds:$labelIds}){
+                clientMutationId
+              }
+            }'
+            mutation_payload="$(jq -nc \
+              --arg q "$mutation" \
+              --arg labelableId "$labelable_id" \
+              --arg labelId "$label_id" \
+              '{query:$q,variables:{labelableId:$labelableId,labelIds:[$labelId]}}'
+            )"
+            mutation_json="$(graphql_call "$mutation_payload")"
+            graphql_require_no_errors "$mutation_json" "adding triage label"
+            echo "Added '$TRIAGE_LABEL_NAME' to $item_url"
+          else
+            mutation='mutation($labelableId:ID!,$labelIds:[ID!]!){
+              removeLabelsFromLabelable(input:{labelableId:$labelableId,labelIds:$labelIds}){
+                clientMutationId
+              }
+            }'
+            mutation_payload="$(jq -nc \
+              --arg q "$mutation" \
+              --arg labelableId "$labelable_id" \
+              --arg labelId "$label_id" \
+              '{query:$q,variables:{labelableId:$labelableId,labelIds:[$labelId]}}'
+            )"
+            mutation_json="$(graphql_call "$mutation_payload")"
+            graphql_require_no_errors "$mutation_json" "removing triage label"
+            echo "Removed '$TRIAGE_LABEL_NAME' from $item_url"
+          fi
