@@ -30,6 +30,7 @@ jobs:
           today_utc="$(date -u +%F)"
           week_key="$(date -u +%G-W%V)"
           digest_title="Weekly Digest – ${today_utc}"
+          digest_title_prefix="Weekly Digest – "
           digest_marker="<!-- cdb-weekly-digest:${week_key} -->"
 
           graphql_call() {
@@ -238,12 +239,14 @@ jobs:
             items_json="$(graphql_call "$items_payload")"
             graphql_require_no_errors "$items_json" "loading project items (page ${page_count})"
 
-            page_entries_json="$(jq -c --arg repo "$repo" '
+            page_entries_json="$(jq -c --arg repo "$repo" --arg digest_prefix "$digest_title_prefix" '
               [
                 .data.user.projectV2.items.nodes[]
                 | select(.content != null)
                 | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
                 | select((.content.repository.nameWithOwner // "") == $repo)
+                # Exclude prior weekly digest issues from metrics to avoid self-inflation.
+                | select(((.content.title // "") | startswith($digest_prefix)) | not)
                 | {
                     type: .content.__typename,
                     number: .content.number,
