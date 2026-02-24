@@ -122,7 +122,7 @@ def verify_chain(input_path: str) -> dict:
                     f"stored={stored_chain_hash}, computed={computed_chain_hash}"
                 )
 
-            prev_chain_hash = stored_chain_hash
+            prev_chain_hash = computed_chain_hash
             total += 1
 
             if first_event_hash is None:
