@@ -1,0 +1,115 @@
+name: Weekly Digest Failure Alert
+on:
+  workflow_run:
+    workflows: ["Weekly Project Digest"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      conclusion:
+        description: "Manual conclusion override (success => no-op)"
+        required: false
+        default: "success"
+      run_url:
+        description: "Optional run URL override for manual tests"
+        required: false
+        default: ""
+
+concurrency:
+  group: weekly-digest-fail-alert
+  cancel-in-progress: true
+
+jobs:
+  weekly-digest-failure-alert:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      MANUAL_CONCLUSION: ${{ github.event.inputs.conclusion }}
+      MANUAL_RUN_URL: ${{ github.event.inputs.run_url }}
+    steps:
+      - name: Create or update weekly digest failure issue
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="${GITHUB_REPOSITORY}"
+          event_name="${GITHUB_EVENT_NAME}"
+          event_path="${GITHUB_EVENT_PATH}"
+          now_utc="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          if [[ "$event_name" == "workflow_run" ]]; then
+            workflow_name="$(jq -r '.workflow_run.name // "Weekly Project Digest"' "$event_path")"
+            conclusion="$(jq -r '.workflow_run.conclusion // empty' "$event_path")"
+            run_url="$(jq -r '.workflow_run.html_url // empty' "$event_path")"
+            event_timestamp="$(jq -r '.workflow_run.updated_at // .workflow_run.created_at // empty' "$event_path")"
+          else
+            workflow_name="Weekly Project Digest (manual)"
+            conclusion="${MANUAL_CONCLUSION:-success}"
+            run_url="${MANUAL_RUN_URL:-}"
+            event_timestamp="$now_utc"
+          fi
+
+          if [[ -z "$conclusion" || "$conclusion" == "success" ]]; then
+            echo "No alert needed (conclusion='${conclusion:-<empty>}')."
+            exit 0
+          fi
+
+          if ! week_key="$(date -u -d "$event_timestamp" +%G-W%V 2>/dev/null)"; then
+            week_key="$(date -u +%G-W%V)"
+          fi
+
+          if [[ -z "$run_url" ]]; then
+            run_url="https://github.com/${repo}/actions/workflows/weekly_digest.yml"
+          fi
+
+          marker="<!-- weekly-digest-fail:${week_key} -->"
+          issue_title="Weekly Digest Failure — ${week_key}"
+
+          body="$(
+            {
+              echo "# Weekly Digest Failure"
+              echo
+              echo "${marker}"
+              echo
+              echo "- Workflow: ${workflow_name}"
+              echo "- Conclusion: \`${conclusion}\`"
+              echo "- Run: ${run_url}"
+              echo "- Timestamp (UTC): ${event_timestamp:-$now_utc}"
+              echo
+              echo "Hinweis: Prüfe zuerst Permissions/Secret/Budget (\`ADD_TO_PROJECT_PAT\`, Project-v2-Zugriff, Actions Billing)."
+            }
+          )"
+
+          existing_issue_json="$(
+            gh api --paginate --slurp "repos/${repo}/issues?state=all&per_page=100" \
+              | jq -c --arg marker "$marker" '
+                  map(.[])
+                  | map(select((has("pull_request") | not) and ((.body // "") | contains($marker))))
+                  | sort_by(.created_at // "")
+                  | reverse
+                  | .[0] // empty
+                '
+          )"
+
+          if [[ -n "${existing_issue_json:-}" ]]; then
+            issue_number="$(jq -r '.number // empty' <<<"$existing_issue_json")"
+            update_payload="$(jq -nc --arg title "$issue_title" --arg body "$body" '{title:$title,body:$body,state:"open"}')"
+            update_resp="$(printf '%s' "$update_payload" | gh api --method PATCH "repos/${repo}/issues/${issue_number}" --input -)"
+            issue_url="$(jq -r '.html_url // empty' <<<"$update_resp")"
+            action_result="updated"
+          else
+            create_payload="$(jq -nc --arg title "$issue_title" --arg body "$body" '{title:$title,body:$body,labels:["report:weekly-fail"]}')"
+            create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
+            issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+            issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
+            action_result="created"
+          fi
+
+          if [[ -z "$issue_number" || -z "$issue_url" ]]; then
+            echo "Alert issue ${action_result} failed (missing issue number/url)." >&2
+            exit 1
+          fi
+
+          gh api --method POST "repos/${repo}/issues/${issue_number}/labels" -f labels[]=report:weekly-fail > /dev/null
+          echo "Weekly digest failure alert ${action_result}: #${issue_number} ${issue_url}"

@@ -24,7 +24,9 @@ jobs:
 
           repo="${GITHUB_REPOSITORY}"
           today_utc="$(date -u +%F)"
+          week_key="$(date -u +%G-W%V)"
           digest_title="Weekly Digest – ${today_utc}"
+          digest_marker="<!-- cdb-weekly-digest:${week_key} -->"
 
           graphql_call() {
             local payload="$1"
@@ -63,18 +65,18 @@ jobs:
 
           existing_issue_json="$(
             gh api --paginate --slurp "repos/${repo}/issues?state=all&per_page=100" \
-              | jq -c --arg t "$digest_title" '
+              | jq -c --arg t "$digest_title" --arg marker "$digest_marker" '
                   map(.[])
-                  | map(select((has("pull_request") | not) and (.title == $t)))
+                  | map(select(
+                      (has("pull_request") | not)
+                      and (
+                        (.title == $t)
+                        or ((.body // "") | contains($marker))
+                      )
+                    ))
                   | .[0] // empty
                 '
           )"
-
-          if [[ -n "${existing_issue_json:-}" ]]; then
-            existing_url="$(jq -r '.html_url // empty' <<<"$existing_issue_json")"
-            echo "Weekly digest already exists for ${today_utc}: ${existing_url}"
-            exit 0
-          fi
 
           items_query='query($owner:String!,$number:Int!,$after:String){
             user(login:$owner){
@@ -92,6 +94,7 @@ jobs:
                         id
                         number
                         title
+                        body
                         url
                         state
                         updatedAt
@@ -143,6 +146,12 @@ jobs:
                 | select(.content != null)
                 | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
                 | select((.content.repository.nameWithOwner // "") == $repo)
+                | select(
+                    (
+                      (([.content.labels.nodes[]?.name] | any(. == "report:weekly")))
+                      or (((.content.body // "") | contains("<!-- cdb-weekly-digest:")))
+                    ) | not
+                  )
                 | {
                     type: .content.__typename,
                     number: .content.number,
@@ -239,6 +248,8 @@ jobs:
             {
               echo "# Weekly Digest – ${today_utc}"
               echo
+              echo "${digest_marker}"
+              echo
               echo "Kurzbericht zum CDB Control Board (Project #8) für offene Repo-Items."
               echo
               echo "## Views"
@@ -262,15 +273,27 @@ jobs:
             }
           )"
 
-          create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body}')"
-          create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
-          issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
-          issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+          if [[ -n "${existing_issue_json:-}" ]]; then
+            issue_number="$(jq -r '.number // empty' <<<"$existing_issue_json")"
+            issue_title_existing="$(jq -r '.title // empty' <<<"$existing_issue_json")"
+            update_title="${issue_title_existing:-$digest_title}"
+            update_payload="$(jq -nc --arg title "$update_title" --arg body "$body" '{title:$title, body:$body}')"
+            update_resp="$(printf '%s' "$update_payload" | gh api --method PATCH "repos/${repo}/issues/${issue_number}" --input -)"
+            issue_url="$(jq -r '.html_url // empty' <<<"$update_resp")"
+            gh api --method POST "repos/${repo}/issues/${issue_number}/labels" -f labels[]=report:weekly > /dev/null
+            action_result="updated"
+          else
+            create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body,labels:["report:weekly"]}')"
+            create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
+            issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
+            issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+            action_result="created"
+          fi
 
           if [[ -z "$issue_url" || -z "$issue_number" ]]; then
-            echo "Digest issue creation returned no issue URL/number." >&2
+            echo "Digest issue ${action_result} returned no issue URL/number." >&2
             exit 1
           fi
 
-          echo "Weekly digest created: #${issue_number} ${issue_url}"
+          echo "Weekly digest ${action_result}: #${issue_number} ${issue_url}"
           echo "Summary: now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
