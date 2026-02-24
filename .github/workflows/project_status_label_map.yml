@@ -1,0 +1,285 @@
+name: Sync CDB Control Board Status (Label Map)
+on:
+  issues:
+    types: [labeled, unlabeled, closed, reopened]
+  pull_request:
+    types: [labeled, unlabeled, closed, reopened]
+
+jobs:
+  sync-project-status-label-map:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      PROJECT_OWNER: jannekbuengener
+      PROJECT_NUMBER: "8"
+    steps:
+      - name: Set Project Status from labels and lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          event_name="${GITHUB_EVENT_NAME}"
+          event_path="${GITHUB_EVENT_PATH}"
+          repo="${GITHUB_REPOSITORY}"
+          action="$(jq -r '.action // empty' "$event_path")"
+
+          graphql_call() {
+            local payload="$1"
+            printf '%s' "$payload" | gh api graphql --input -
+          }
+
+          graphql_require_no_errors() {
+            local json="$1"
+            local context="$2"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
+              echo "GraphQL errors while ${context}:" >&2
+              jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              exit 1
+            fi
+          }
+
+          has_label() {
+            local name="$1"
+            jq -e --arg name "$name" '.[] | select(. == $name)' >/dev/null 2>&1 <<<"$labels_json"
+          }
+
+          case "$event_name" in
+            issues)
+              content_node_id="$(jq -r '.issue.node_id // empty' "$event_path")"
+              labels_json="$(jq -c '[.issue.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
+              default_status="Backlog"
+              ;;
+            pull_request)
+              content_node_id="$(jq -r '.pull_request.node_id // empty' "$event_path")"
+              labels_json="$(jq -c '[.pull_request.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
+              default_status="Review"
+              ;;
+            *)
+              echo "Unsupported event: $event_name"
+              exit 0
+              ;;
+          esac
+
+          if [[ -z "$content_node_id" ]]; then
+            echo "No content node id in event payload; skipping."
+            exit 0
+          fi
+
+          if [[ "$action" == "closed" ]]; then
+            target_status="Done"
+          elif has_label "status:in-progress"; then
+            target_status="In Progress"
+          elif has_label "status:review"; then
+            target_status="Review"
+          elif has_label "status:approved"; then
+            target_status="Ready"
+          elif has_label "status:idea"; then
+            target_status="Backlog"
+          elif has_label "status:merged" || has_label "status:descoped" || has_label "status:rejected"; then
+            target_status="Done"
+          else
+            target_status="$default_status"
+          fi
+
+          echo "Event '$event_name' action '$action' -> target status '$target_status'"
+
+          project_query='query($owner:String!,$number:Int!){
+            user(login:$owner){
+              projectV2(number:$number){
+                id
+                fields(first:100){
+                  nodes{
+                    __typename
+                    ... on ProjectV2Field { id name }
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options { id name }
+                    }
+                    ... on ProjectV2IterationField { id name }
+                  }
+                }
+              }
+            }
+          }'
+
+          project_payload="$(jq -nc \
+            --arg q "$project_query" \
+            --arg owner "$PROJECT_OWNER" \
+            --arg number "$PROJECT_NUMBER" \
+            '{query:$q,variables:{owner:$owner,number:($number|tonumber)}}'
+          )"
+          project_json="$(graphql_call "$project_payload")"
+          graphql_require_no_errors "$project_json" "loading project fields"
+
+          project_id="$(jq -r '.data.user.projectV2.id // empty' <<<"$project_json")"
+          status_field_id="$(jq -r '
+            .data.user.projectV2.fields.nodes[]
+            | select(.name=="Status" and .__typename=="ProjectV2SingleSelectField")
+            | .id
+          ' <<<"$project_json" | head -n1)"
+          status_options_json="$(jq -c '
+            [
+              .data.user.projectV2.fields.nodes[]
+              | select(.name=="Status" and .__typename=="ProjectV2SingleSelectField")
+              | .options[]?
+            ]
+          ' <<<"$project_json")"
+
+          option_id_for_status() {
+            local status_name="$1"
+            jq -r --arg status_name "$status_name" '
+              map(select(.name == $status_name))[0].id // empty
+            ' <<<"$status_options_json"
+          }
+
+          backlog_option_id="$(option_id_for_status "Backlog")"
+          ready_option_id="$(option_id_for_status "Ready")"
+          in_progress_option_id="$(option_id_for_status "In Progress")"
+          review_option_id="$(option_id_for_status "Review")"
+          blocked_option_id="$(option_id_for_status "Blocked")"
+          done_option_id="$(option_id_for_status "Done")"
+
+          if [[ -z "$project_id" || -z "$status_field_id" ]]; then
+            echo "Project or Status field not found; failing." >&2
+            exit 1
+          fi
+
+          case "$target_status" in
+            Backlog) target_option_id="$backlog_option_id" ;;
+            Ready) target_option_id="$ready_option_id" ;;
+            In\ Progress) target_option_id="$in_progress_option_id" ;;
+            Review) target_option_id="$review_option_id" ;;
+            Done) target_option_id="$done_option_id" ;;
+            *) echo "Unsupported target status: $target_status" >&2; exit 1 ;;
+          esac
+
+          if [[ -z "$target_option_id" ]]; then
+            echo "Target option id for status '$target_status' not found; failing." >&2
+            exit 1
+          fi
+
+          items_query='query($owner:String!,$number:Int!,$after:String){
+            user(login:$owner){
+              projectV2(number:$number){
+                items(first:100, after:$after){
+                  pageInfo { hasNextPage endCursor }
+                  nodes{
+                    id
+                    content{
+                      __typename
+                      ... on Issue {
+                        id
+                        repository { nameWithOwner }
+                      }
+                      ... on PullRequest {
+                        id
+                        repository { nameWithOwner }
+                      }
+                    }
+                    fieldValueByName(name:"Status"){
+                      __typename
+                      ... on ProjectV2ItemFieldSingleSelectValue {
+                        name
+                        optionId
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          cursor=""
+          project_item_id=""
+          current_status=""
+          page_count=0
+          max_pages=25
+
+          while :; do
+            page_count=$((page_count + 1))
+            if (( page_count > max_pages )); then
+              echo "Exceeded max project item pages ($max_pages); aborting." >&2
+              exit 1
+            fi
+
+            items_payload="$(jq -nc \
+              --arg q "$items_query" \
+              --arg owner "$PROJECT_OWNER" \
+              --arg number "$PROJECT_NUMBER" \
+              --arg after "$cursor" \
+              '{query:$q,variables:{owner:$owner,number:($number|tonumber),after:(if $after=="" then null else $after end)}}'
+            )"
+            items_json="$(graphql_call "$items_payload")"
+            graphql_require_no_errors "$items_json" "loading project items (page $page_count)"
+
+            match_json="$(jq -c --arg cid "$content_node_id" --arg repo "$repo" '
+              .data.user.projectV2.items.nodes[]
+              | select(.content != null)
+              | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
+              | select(.content.id == $cid)
+              | select((.content.repository.nameWithOwner // "") == $repo)
+              | {
+                  itemId: .id,
+                  currentStatus: (.fieldValueByName.name // "")
+                }
+            ' <<<"$items_json" | head -n1)"
+
+            if [[ -n "$match_json" ]]; then
+              project_item_id="$(jq -r '.itemId // empty' <<<"$match_json")"
+              current_status="$(jq -r '.currentStatus // empty' <<<"$match_json")"
+              break
+            fi
+
+            has_next="$(jq -r '.data.user.projectV2.items.pageInfo.hasNextPage // false' <<<"$items_json")"
+            if [[ "$has_next" != "true" ]]; then
+              break
+            fi
+
+            cursor="$(jq -r '.data.user.projectV2.items.pageInfo.endCursor // empty' <<<"$items_json")"
+            if [[ -z "$cursor" ]]; then
+              break
+            fi
+          done
+
+          if [[ -z "$project_item_id" ]]; then
+            echo "Project item for content node not found yet; skipping (idempotent)."
+            exit 0
+          fi
+
+          if [[ "$current_status" == "$target_status" ]]; then
+            echo "Status already '$target_status'; no update needed."
+            exit 0
+          fi
+
+          mutation='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){
+            updateProjectV2ItemFieldValue(input:{
+              projectId:$projectId,
+              itemId:$itemId,
+              fieldId:$fieldId,
+              value:{singleSelectOptionId:$optionId}
+            }){
+              projectV2Item { id }
+            }
+          }'
+
+          mutation_payload="$(jq -nc \
+            --arg q "$mutation" \
+            --arg projectId "$project_id" \
+            --arg itemId "$project_item_id" \
+            --arg fieldId "$status_field_id" \
+            --arg optionId "$target_option_id" \
+            '{query:$q,variables:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,optionId:$optionId}}'
+          )"
+          mutation_json="$(graphql_call "$mutation_payload")"
+          graphql_require_no_errors "$mutation_json" "updating project item status"
+
+          updated_item_id="$(jq -r '.data.updateProjectV2ItemFieldValue.projectV2Item.id // empty' <<<"$mutation_json")"
+          if [[ -z "$updated_item_id" ]]; then
+            echo "Mutation succeeded without project item id; failing safe." >&2
+            exit 1
+          fi
+
+          echo "Updated project status from '${current_status:-<empty>}' to '$target_status'."
