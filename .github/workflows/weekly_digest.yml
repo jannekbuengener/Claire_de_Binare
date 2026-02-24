@@ -1,14 +1,18 @@
 name: Weekly Project Digest
 on:
   schedule:
+    # Monday 08:00 UTC (~09:00 CET / 10:00 CEST Europe/Berlin; DST shifts)
     - cron: "0 8 * * 1"
   workflow_dispatch:
+
+concurrency:
+  group: weekly-digest
+  cancel-in-progress: true
 
 jobs:
   weekly-digest:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: {}
     env:
       GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
       PROJECT_OWNER: jannekbuengener
@@ -24,7 +28,9 @@ jobs:
 
           repo="${GITHUB_REPOSITORY}"
           today_utc="$(date -u +%F)"
+          week_key="$(date -u +%G-W%V)"
           digest_title="Weekly Digest – ${today_utc}"
+          digest_marker="<!-- cdb-weekly-digest:${week_key} -->"
 
           graphql_call() {
             local payload="$1"
@@ -37,6 +43,12 @@ jobs:
             if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
               echo "GraphQL errors while ${context}:" >&2
               jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              if jq -e '[.errors[]?.message | ascii_downcase] | any(.[]; contains("rate limit"))' >/dev/null 2>&1 <<<"$json"; then
+                echo "Hint: GitHub GraphQL rate limit reached. Retry later or use workflow_dispatch once quota resets." >&2
+              fi
+              if jq -e '[.errors[]?.message | ascii_downcase] | any(.[]; contains("resource not accessible") or contains("forbidden"))' >/dev/null 2>&1 <<<"$json"; then
+                echo "Hint: Check ADD_TO_PROJECT_PAT scopes (repo + project) and repository/project access." >&2
+              fi
               exit 1
             fi
           }
@@ -61,20 +73,109 @@ jobs:
             }
           }
 
+          count_open_with_status() {
+            local target_status="$1"
+            jq -r --arg s "$target_status" '
+              [
+                .[]
+                | select((.state | ascii_upcase) == "OPEN")
+                | select(.status == $s)
+              ] | length
+            ' <<<"$project_items_json"
+          }
+
+          count_open_with_label() {
+            local target_label="$1"
+            jq -r --arg l "$target_label" '
+              [
+                .[]
+                | select((.state | ascii_upcase) == "OPEN")
+                | select((.labels // []) | any(.[]; . == $l))
+              ] | length
+            ' <<<"$project_items_json"
+          }
+
           existing_issue_json="$(
             gh api --paginate --slurp "repos/${repo}/issues?state=all&per_page=100" \
-              | jq -c --arg t "$digest_title" '
+              | jq -c --arg t "$digest_title" --arg marker "$digest_marker" '
                   map(.[])
-                  | map(select((has("pull_request") | not) and (.title == $t)))
+                  | map(select(
+                      (has("pull_request") | not)
+                      and (
+                        (.title == $t)
+                        or ((.body // "") | contains($marker))
+                      )
+                    ))
+                  | sort_by(.created_at // "")
+                  | reverse
                   | .[0] // empty
                 '
           )"
 
-          if [[ -n "${existing_issue_json:-}" ]]; then
-            existing_url="$(jq -r '.html_url // empty' <<<"$existing_issue_json")"
-            echo "Weekly digest already exists for ${today_utc}: ${existing_url}"
-            exit 0
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "GH_TOKEN is empty. Configure secrets.ADD_TO_PROJECT_PAT (Classic PAT with repo + project)." >&2
+            exit 1
           fi
+
+          if ! auth_login="$(gh api user --jq '.login' 2>/dev/null)"; then
+            echo "Auth preflight failed. Ensure ADD_TO_PROJECT_PAT is valid and accessible in this workflow context." >&2
+            exit 1
+          fi
+
+          preflight_query='query($owner:String!,$number:Int!){
+            user(login:$owner){
+              projectV2(number:$number){
+                id
+                title
+                fields(first:100){
+                  nodes{
+                    __typename
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options { id name }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          preflight_payload="$(jq -nc \
+            --arg q "$preflight_query" \
+            --arg owner "$PROJECT_OWNER" \
+            --arg number "$PROJECT_NUMBER" \
+            '{query:$q,variables:{owner:$owner,number:($number|tonumber)}}'
+          )"
+          preflight_json="$(graphql_call "$preflight_payload")"
+          graphql_require_no_errors "$preflight_json" "project preflight (owner=${PROJECT_OWNER}, number=${PROJECT_NUMBER})"
+
+          project_id="$(jq -r '.data.user.projectV2.id // empty' <<<"$preflight_json")"
+          if [[ -z "$project_id" ]]; then
+            echo "Project preflight failed: Project #${PROJECT_NUMBER} for ${PROJECT_OWNER} not found or inaccessible." >&2
+            echo "Check project number/owner and ADD_TO_PROJECT_PAT scopes (repo + project)." >&2
+            exit 1
+          fi
+
+          status_field_options_json="$(jq -c '
+            [
+              .data.user.projectV2.fields.nodes[]
+              | select(.name == "Status" and .__typename == "ProjectV2SingleSelectField")
+              | .options[]?.name
+            ] | unique
+          ' <<<"$preflight_json")"
+          if [[ "$(jq -r 'length' <<<"$status_field_options_json")" == "0" ]]; then
+            echo "Project preflight failed: Status single-select field not found in Project #${PROJECT_NUMBER}." >&2
+            exit 1
+          fi
+          for required_status in "In Progress" "Review" "Blocked"; do
+            if ! jq -e --arg s "$required_status" 'any(.[]; . == $s)' >/dev/null 2>&1 <<<"$status_field_options_json"; then
+              echo "Project preflight failed: Status option '$required_status' missing in Project #${PROJECT_NUMBER}." >&2
+              exit 1
+            fi
+          done
+
+          echo "Preflight OK: auth=${auth_login}, project=${PROJECT_OWNER}#${PROJECT_NUMBER}, week=${week_key}"
 
           items_query='query($owner:String!,$number:Int!,$after:String){
             user(login:$owner){
@@ -174,6 +275,10 @@ jobs:
           done
 
           total_project_repo_items="$(jq -r 'length' <<<"$project_items_json")"
+          open_items_json="$(jq -c '[ .[] | select((.state | ascii_upcase) == "OPEN") ]' <<<"$project_items_json")"
+          open_issue_count="$(jq -r '[.[] | select(.type == "Issue")] | length' <<<"$open_items_json")"
+          open_pr_count="$(jq -r '[.[] | select(.type == "PullRequest")] | length' <<<"$open_items_json")"
+          open_total_count="$(jq -r 'length' <<<"$open_items_json")"
 
           now_items_json="$(jq -c '
             [
@@ -202,6 +307,18 @@ jobs:
           blocked_count="$(jq -r '[.[] | select(.status == "Blocked")] | length' <<<"$now_items_json")"
           eingang_count="$(jq -r 'length' <<<"$eingang_items_json")"
           pr_review_count="$(jq -r 'length' <<<"$pr_review_items_json")"
+          status_backlog_count="$(count_open_with_status "Backlog")"
+          status_ready_count="$(count_open_with_status "Ready")"
+          status_in_progress_count="$(count_open_with_status "In Progress")"
+          status_review_count="$(count_open_with_status "Review")"
+          status_blocked_count="$(count_open_with_status "Blocked")"
+          status_done_count="$(count_open_with_status "Done")"
+          stage_proof_count="$(count_open_with_label "stage:proof")"
+          stage_stability_count="$(count_open_with_label "stage:stability")"
+          stage_trade_count="$(count_open_with_label "stage:trade-capable")"
+          stage_validated_count="$(count_open_with_label "stage:strategy-validated")"
+          stage_monetization_count="$(count_open_with_label "stage:monetization")"
+          stage_scale_count="$(count_open_with_label "stage:scale")"
 
           top_review_json="$(jq -c '
             [ .[] | select((.state | ascii_upcase) == "OPEN") | select(.status == "Review") ]
@@ -239,6 +356,8 @@ jobs:
             {
               echo "# Weekly Digest – ${today_utc}"
               echo
+              echo "${digest_marker}"
+              echo
               echo "Kurzbericht zum CDB Control Board (Project #8) für offene Repo-Items."
               echo
               echo "## Views"
@@ -262,15 +381,28 @@ jobs:
             }
           )"
 
-          create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body}')"
-          create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
-          issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
-          issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+          if [[ -n "${existing_issue_json:-}" ]]; then
+            issue_number="$(jq -r '.number // empty' <<<"$existing_issue_json")"
+            issue_title_existing="$(jq -r '.title // empty' <<<"$existing_issue_json")"
+            update_title="${issue_title_existing:-$digest_title}"
+            update_payload="$(jq -nc --arg title "$update_title" --arg body "$body" '{title:$title, body:$body}')"
+            update_resp="$(printf '%s' "$update_payload" | gh api --method PATCH "repos/${repo}/issues/${issue_number}" --input -)"
+            issue_url="$(jq -r '.html_url // empty' <<<"$update_resp")"
+            action_result="updated"
+          else
+            create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body}')"
+            create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
+            issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
+            issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
+            action_result="created"
+          fi
 
           if [[ -z "$issue_url" || -z "$issue_number" ]]; then
-            echo "Digest issue creation returned no issue URL/number." >&2
+            echo "Digest issue ${action_result} response returned no issue URL/number." >&2
             exit 1
           fi
 
-          echo "Weekly digest created: #${issue_number} ${issue_url}"
-          echo "Summary: now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
+          echo "Weekly digest ${action_result}: #${issue_number} ${issue_url}"
+          echo "Summary: open_items(issues=${open_issue_count}, prs=${open_pr_count}, total=${open_total_count}); now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
+          echo "Status summary (open): backlog=${status_backlog_count}, ready=${status_ready_count}, in_progress=${status_in_progress_count}, review=${status_review_count}, blocked=${status_blocked_count}, done=${status_done_count}"
+          echo "Stage summary (open): proof=${stage_proof_count}, stability=${stage_stability_count}, trade_capable=${stage_trade_count}, strategy_validated=${stage_validated_count}, monetization=${stage_monetization_count}, scale=${stage_scale_count}"

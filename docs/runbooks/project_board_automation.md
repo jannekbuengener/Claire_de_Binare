@@ -65,12 +65,26 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - kein Milestone -> Label setzen
     - Milestone gesetzt -> Label entfernen
     - `demilestoned` -> Label wieder setzen
+- `.github/workflows/weekly_digest.yml`
+  - Erstellt (oder aktualisiert idempotent) ein wöchentliches Digest-Issue mit Counts/Links für `Now`, `EINGANG` und `PR REVIEW`.
 
 ## Triage-Prozess (Jannek)
 
 - Öffne die View `EINGANG` und arbeite nur Items mit `triage:offen` ab (offen, ohne Milestone).
 - Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
 - Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
+
+## Weekly Digest (operativ, kurz)
+
+- Zweck: Wöchentlicher Lagebericht als GitHub Issue im Repo (`Weekly Digest – <YYYY-MM-DD>`), gespeist aus Project #8.
+- Output-Ziel: Ein Digest-Issue pro ISO-Woche (idempotent per Wochen-Marker; Re-Runs aktualisieren statt Doppelpost).
+- Trigger:
+  - `schedule` (Montag `08:00 UTC`, entspricht ca. `09:00 CET` / `10:00 CEST`)
+  - `workflow_dispatch` (manueller Test / Rebuild)
+- Typische Fehlerbilder + Fix:
+  - `403` / Project-v2-Zugriff fehlt: `ADD_TO_PROJECT_PAT` prüfen (`repo` + `project`), Token-Kontext (`GH_TOKEN`) sicherstellen.
+  - Actions laufen nicht / Billing blockiert: GitHub `Billing & plans` prüfen, dann Run neu starten (`gh run rerun <RUN_ID>`).
+  - Project falsch/nicht erreichbar: Owner/Number (`jannekbuengener / 8`) und Views/Status-Feld im Board prüfen.
 
 ## Troubleshooting (Klassiker)
 
