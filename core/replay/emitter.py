@@ -66,6 +66,7 @@ def _build_envelope(
     policy_hash: Optional[str] = None,
     input_hash: Optional[str] = None,
     output_hash: Optional[str] = None,
+    policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> dict:
     """Build envelope dict with optional fields omitted when None."""
     envelope: dict[str, Any] = {
@@ -83,6 +84,8 @@ def _build_envelope(
         envelope["input_hash"] = input_hash
     if output_hash is not None:
         envelope["output_hash"] = output_hash
+    if policy_snapshot is not None:
+        envelope["policy_snapshot"] = policy_snapshot
     return envelope
 
 
@@ -113,6 +116,7 @@ def emit_decision_envelope(
     policy_hash: Optional[str] = None,
     input_hash: Optional[str] = None,
     output_hash: Optional[str] = None,
+    policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit a DECISION envelope. No-op when toggle OFF."""
     if not envelope_emit_enabled():
@@ -137,6 +141,7 @@ def emit_decision_envelope(
         policy_hash=policy_hash,
         input_hash=input_hash,
         output_hash=output_hash,
+        policy_snapshot=policy_snapshot,
     )
     emit_envelope(envelope)
 
@@ -155,6 +160,7 @@ def emit_order_envelope(
     policy_hash: Optional[str] = None,
     input_hash: Optional[str] = None,
     output_hash: Optional[str] = None,
+    policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit an ORDER envelope. No-op when toggle OFF."""
     if not envelope_emit_enabled():
@@ -180,6 +186,7 @@ def emit_order_envelope(
         policy_hash=policy_hash,
         input_hash=input_hash,
         output_hash=output_hash,
+        policy_snapshot=policy_snapshot,
     )
     emit_envelope(envelope)
 
@@ -198,6 +205,7 @@ def emit_fill_envelope(
     policy_hash: Optional[str] = None,
     input_hash: Optional[str] = None,
     output_hash: Optional[str] = None,
+    policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit a FILL envelope. No-op when toggle OFF."""
     if not envelope_emit_enabled():
@@ -222,5 +230,6 @@ def emit_fill_envelope(
         policy_hash=policy_hash,
         input_hash=input_hash,
         output_hash=output_hash,
+        policy_snapshot=policy_snapshot,
     )
     emit_envelope(envelope)

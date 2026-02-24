@@ -15,6 +15,7 @@ All envelopes share:
 
 Optional fields (set to None when not applicable):
   - policy_id, policy_hash, input_hash, output_hash
+  - policy_snapshot (dict): nested policy metadata (#748, Slice 1)
 
 relations:
   role: envelope_definition
@@ -45,6 +46,7 @@ class DecisionEnvelopeV1:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    policy_snapshot: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -63,6 +65,8 @@ class DecisionEnvelopeV1:
             result["input_hash"] = self.input_hash
         if self.output_hash is not None:
             result["output_hash"] = self.output_hash
+        if self.policy_snapshot is not None:
+            result["policy_snapshot"] = self.policy_snapshot
         return result
 
 
@@ -79,6 +83,7 @@ class OrderEnvelopeV1:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    policy_snapshot: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -97,6 +102,8 @@ class OrderEnvelopeV1:
             result["input_hash"] = self.input_hash
         if self.output_hash is not None:
             result["output_hash"] = self.output_hash
+        if self.policy_snapshot is not None:
+            result["policy_snapshot"] = self.policy_snapshot
         return result
 
 
@@ -113,6 +120,7 @@ class FillEnvelopeV1:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    policy_snapshot: Optional[Dict[str, Any]] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -131,4 +139,6 @@ class FillEnvelopeV1:
             result["input_hash"] = self.input_hash
         if self.output_hash is not None:
             result["output_hash"] = self.output_hash
+        if self.policy_snapshot is not None:
+            result["policy_snapshot"] = self.policy_snapshot
         return result
