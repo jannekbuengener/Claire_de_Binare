@@ -1,0 +1,528 @@
+name: Reconcile CDB Control Board (Daily)
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  reconcile-project-board:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      PROJECT_OWNER: jannekbuengener
+      PROJECT_NUMBER: "8"
+    steps:
+      - name: Reconcile project membership, stage labels and status
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="${GITHUB_REPOSITORY}"
+
+          stage_labels_json='[
+            "stage:proof",
+            "stage:stability",
+            "stage:trade-capable",
+            "stage:strategy-validated",
+            "stage:monetization",
+            "stage:scale"
+          ]'
+
+          graphql_call() {
+            local payload="$1"
+            printf '%s' "$payload" | gh api graphql --input -
+          }
+
+          graphql_require_no_errors() {
+            local json="$1"
+            local context="$2"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
+              echo "GraphQL errors while ${context}:" >&2
+              jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              exit 1
+            fi
+          }
+
+          normalize_labels() {
+            local labels_json="$1"
+            jq -c '[ .[] | select(type == "string" and length > 0) ] | unique' <<<"$labels_json"
+          }
+
+          has_label_in_json() {
+            local labels_json="$1"
+            local needle="$2"
+            jq -e --arg needle "$needle" 'any(.[]; . == $needle)' >/dev/null 2>&1 <<<"$labels_json"
+          }
+
+          desired_stage_from_milestone() {
+            local milestone_title="$1"
+            case "$milestone_title" in
+              "System ist beweisbar") echo "stage:proof" ;;
+              "System ist stabil") echo "stage:stability" ;;
+              "System kann handeln") echo "stage:trade-capable" ;;
+              "Strategie ist validiert") echo "stage:strategy-validated" ;;
+              "System verdient Geld") echo "stage:monetization" ;;
+              "Skaliert") echo "stage:scale" ;;
+              *) echo "" ;;
+            esac
+          }
+
+          desired_status_from_item() {
+            local item_type="$1"
+            local item_state="$2"
+            local labels_json="$3"
+            local state_up
+            state_up="$(tr '[:lower:]' '[:upper:]' <<<"${item_state:-}")"
+
+            if [[ "$state_up" == "CLOSED" || "$state_up" == "MERGED" ]]; then
+              echo "Done"
+              return
+            fi
+
+            if has_label_in_json "$labels_json" "status:in-progress"; then
+              echo "In Progress"
+            elif has_label_in_json "$labels_json" "status:review"; then
+              echo "Review"
+            elif has_label_in_json "$labels_json" "status:approved"; then
+              echo "Ready"
+            elif has_label_in_json "$labels_json" "status:idea"; then
+              echo "Backlog"
+            elif has_label_in_json "$labels_json" "status:merged" \
+              || has_label_in_json "$labels_json" "status:descoped" \
+              || has_label_in_json "$labels_json" "status:rejected"; then
+              echo "Done"
+            elif [[ "$item_type" == "PullRequest" ]]; then
+              echo "Review"
+            else
+              echo "Backlog"
+            fi
+          }
+
+          sync_stage_labels() {
+            local number="$1"
+            local item_url="$2"
+            local labels_json="$3"
+            local desired_stage="$4"
+
+            local non_stage_labels_json final_labels_json current_canon final_canon payload
+            non_stage_labels_json="$(jq -cn \
+              --argjson labels "$labels_json" \
+              --argjson stage "$stage_labels_json" \
+              '[ $labels[] | . as $l | select((any($stage[]; . == $l)) | not) ]'
+            )"
+            final_labels_json="$(jq -cn \
+              --argjson non_stage "$non_stage_labels_json" \
+              --arg desired "$desired_stage" \
+              '($non_stage + (if $desired == "" then [] else [$desired] end)) | unique'
+            )"
+
+            current_canon="$(normalize_labels "$labels_json")"
+            final_canon="$(normalize_labels "$final_labels_json")"
+
+            if [[ "$current_canon" == "$final_canon" ]]; then
+              echo "noop"
+              return
+            fi
+
+            payload="$(jq -cn --argjson labels "$final_labels_json" '{labels: $labels}')"
+            printf '%s' "$payload" | gh api --method PUT "repos/$repo/issues/$number/labels" --input - > /dev/null
+            echo "changed"
+          }
+
+          project_query='query($owner:String!,$number:Int!){
+            user(login:$owner){
+              projectV2(number:$number){
+                id
+                fields(first:100){
+                  nodes{
+                    __typename
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options { id name }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          project_payload="$(jq -nc \
+            --arg q "$project_query" \
+            --arg owner "$PROJECT_OWNER" \
+            --arg number "$PROJECT_NUMBER" \
+            '{query:$q,variables:{owner:$owner,number:($number|tonumber)}}'
+          )"
+          project_json="$(graphql_call "$project_payload")"
+          graphql_require_no_errors "$project_json" "loading project metadata"
+
+          project_id="$(jq -r '.data.user.projectV2.id // empty' <<<"$project_json")"
+          status_field_id="$(jq -r '
+            .data.user.projectV2.fields.nodes[]
+            | select(.name=="Status" and .__typename=="ProjectV2SingleSelectField")
+            | .id
+          ' <<<"$project_json" | head -n1)"
+          status_options_json="$(jq -c '
+            [
+              .data.user.projectV2.fields.nodes[]
+              | select(.name=="Status" and .__typename=="ProjectV2SingleSelectField")
+              | .options[]?
+            ]
+          ' <<<"$project_json")"
+
+          if [[ -z "$project_id" || -z "$status_field_id" ]]; then
+            echo "Project or Status field not found." >&2
+            exit 1
+          fi
+
+          option_id_for_status() {
+            local status_name="$1"
+            jq -r --arg status_name "$status_name" 'map(select(.name == $status_name))[0].id // empty' <<<"$status_options_json"
+          }
+
+          backlog_option_id="$(option_id_for_status "Backlog")"
+          ready_option_id="$(option_id_for_status "Ready")"
+          in_progress_option_id="$(option_id_for_status "In Progress")"
+          review_option_id="$(option_id_for_status "Review")"
+          done_option_id="$(option_id_for_status "Done")"
+
+          for required in "$backlog_option_id" "$ready_option_id" "$in_progress_option_id" "$review_option_id" "$done_option_id"; do
+            if [[ -z "$required" ]]; then
+              echo "One or more required Status options are missing in project." >&2
+              exit 1
+            fi
+          done
+
+          status_option_id_by_name() {
+            local status_name="$1"
+            case "$status_name" in
+              "Backlog") echo "$backlog_option_id" ;;
+              "Ready") echo "$ready_option_id" ;;
+              "In Progress") echo "$in_progress_option_id" ;;
+              "Review") echo "$review_option_id" ;;
+              "Done") echo "$done_option_id" ;;
+              *) echo "" ;;
+            esac
+          }
+
+          load_project_index() {
+            local items_query items_payload items_json page_nodes_json
+            local cursor="" page_count=0 max_pages=50
+            local index_json='[]'
+
+            items_query='query($owner:String!,$number:Int!,$after:String){
+              user(login:$owner){
+                projectV2(number:$number){
+                  items(first:100, after:$after){
+                    pageInfo { hasNextPage endCursor }
+                    nodes{
+                      id
+                      fieldValueByName(name:"Status"){
+                        __typename
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          name
+                          optionId
+                        }
+                      }
+                      content{
+                        __typename
+                        ... on Issue {
+                          id
+                          number
+                          url
+                          state
+                          repository { nameWithOwner }
+                          milestone { title }
+                          labels(first:100){ nodes{ name } }
+                        }
+                        ... on PullRequest {
+                          id
+                          number
+                          url
+                          state
+                          repository { nameWithOwner }
+                          milestone { title }
+                          labels(first:100){ nodes{ name } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }'
+
+            while :; do
+              page_count=$((page_count + 1))
+              if (( page_count > max_pages )); then
+                echo "Exceeded max project item pages ($max_pages)." >&2
+                exit 1
+              fi
+
+              items_payload="$(jq -nc \
+                --arg q "$items_query" \
+                --arg owner "$PROJECT_OWNER" \
+                --arg number "$PROJECT_NUMBER" \
+                --arg after "$cursor" \
+                '{query:$q,variables:{owner:$owner,number:($number|tonumber),after:(if $after=="" then null else $after end)}}'
+              )"
+              items_json="$(graphql_call "$items_payload")"
+              graphql_require_no_errors "$items_json" "loading project items (page $page_count)"
+
+              page_nodes_json="$(jq -c --arg repo "$repo" '
+                [
+                  .data.user.projectV2.items.nodes[]
+                  | select(.content != null)
+                  | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
+                  | select((.content.repository.nameWithOwner // "") == $repo)
+                  | {
+                      itemId: .id,
+                      currentStatus: (.fieldValueByName.name // ""),
+                      content: {
+                        type: .content.__typename,
+                        contentId: .content.id,
+                        number: .content.number,
+                        url: .content.url,
+                        state: (.content.state | tostring),
+                        repo: (.content.repository.nameWithOwner // ""),
+                        milestoneTitle: (.content.milestone.title // ""),
+                        labels: ([.content.labels.nodes[]?.name | select(type == "string" and length > 0)] | unique)
+                      }
+                    }
+                ]
+              ' <<<"$items_json")"
+
+              index_json="$(jq -cn --argjson cur "$index_json" --argjson add "$page_nodes_json" '$cur + $add')"
+
+              if [[ "$(jq -r '.data.user.projectV2.items.pageInfo.hasNextPage // false' <<<"$items_json")" != "true" ]]; then
+                break
+              fi
+              cursor="$(jq -r '.data.user.projectV2.items.pageInfo.endCursor // empty' <<<"$items_json")"
+              if [[ -z "$cursor" ]]; then
+                break
+              fi
+            done
+
+            printf '%s' "$index_json"
+          }
+
+          get_project_entry_by_content_id() {
+            local content_id="$1"
+            jq -c --arg cid "$content_id" '
+              map(select(.content.contentId == $cid))[0] // empty
+            ' <<<"$project_index_json"
+          }
+
+          add_project_item_by_content_id() {
+            local content_id="$1"
+            local add_mutation add_payload add_json
+            add_mutation='mutation($projectId:ID!,$contentId:ID!){
+              addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){
+                item { id }
+              }
+            }'
+            add_payload="$(jq -nc \
+              --arg q "$add_mutation" \
+              --arg projectId "$project_id" \
+              --arg contentId "$content_id" \
+              '{query:$q,variables:{projectId:$projectId,contentId:$contentId}}'
+            )"
+            add_json="$(graphql_call "$add_payload")"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$add_json"; then
+              if jq -e '[.errors[]?.message | ascii_downcase] | any(.[]; contains("already exists"))' >/dev/null 2>&1 <<<"$add_json"; then
+                echo "__ALREADY_EXISTS__"
+                return
+              fi
+              graphql_require_no_errors "$add_json" "adding item to project"
+            fi
+            jq -r '.data.addProjectV2ItemById.item.id // empty' <<<"$add_json"
+          }
+
+          set_project_status_if_needed() {
+            local item_id="$1"
+            local current_status="$2"
+            local desired_status="$3"
+
+            if [[ -z "$desired_status" ]]; then
+              echo "noop"
+              return
+            fi
+            if [[ "$current_status" == "$desired_status" ]]; then
+              echo "noop"
+              return
+            fi
+
+            local option_id mutation mutation_payload mutation_json updated_id
+            option_id="$(status_option_id_by_name "$desired_status")"
+            if [[ -z "$option_id" ]]; then
+              echo "Unsupported project status '$desired_status'." >&2
+              exit 1
+            fi
+
+            mutation='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){
+              updateProjectV2ItemFieldValue(input:{
+                projectId:$projectId,
+                itemId:$itemId,
+                fieldId:$fieldId,
+                value:{singleSelectOptionId:$optionId}
+              }){
+                projectV2Item { id }
+              }
+            }'
+            mutation_payload="$(jq -nc \
+              --arg q "$mutation" \
+              --arg projectId "$project_id" \
+              --arg itemId "$item_id" \
+              --arg fieldId "$status_field_id" \
+              --arg optionId "$option_id" \
+              '{query:$q,variables:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,optionId:$optionId}}'
+            )"
+            mutation_json="$(graphql_call "$mutation_payload")"
+            graphql_require_no_errors "$mutation_json" "updating project status"
+            updated_id="$(jq -r '.data.updateProjectV2ItemFieldValue.projectV2Item.id // empty' <<<"$mutation_json")"
+            if [[ -z "$updated_id" ]]; then
+              echo "Missing project item id after status update mutation." >&2
+              exit 1
+            fi
+            echo "changed"
+          }
+
+          project_index_json="$(load_project_index)"
+
+          open_issues_json="$(
+            gh api --paginate --slurp "repos/$repo/issues?state=open&per_page=100" \
+              | jq -c '
+                  map(.[]) 
+                  | map(select(has("pull_request") | not))
+                  | map({
+                      type: "Issue",
+                      contentId: .node_id,
+                      number: .number,
+                      url: .html_url,
+                      state: (.state | tostring),
+                      milestoneTitle: (.milestone.title // ""),
+                      labels: ([.labels[]?.name | select(type == "string" and length > 0)] | unique)
+                    })
+                '
+          )"
+
+          open_prs_json="$(
+            gh api --paginate --slurp "repos/$repo/pulls?state=open&per_page=100" \
+              | jq -c '
+                  map(.[])
+                  | map({
+                      type: "PullRequest",
+                      contentId: .node_id,
+                      number: .number,
+                      url: .html_url,
+                      state: (.state | tostring),
+                      milestoneTitle: (.milestone.title // ""),
+                      labels: ([.labels[]?.name | select(type == "string" and length > 0)] | unique)
+                    })
+                '
+          )"
+
+          open_items_json="$(jq -cn --argjson issues "$open_issues_json" --argjson prs "$open_prs_json" '$issues + $prs')"
+
+          open_issue_count="$(jq -r 'length' <<<"$open_issues_json")"
+          open_pr_count="$(jq -r 'length' <<<"$open_prs_json")"
+          open_total_count="$(jq -r 'length' <<<"$open_items_json")"
+
+          added_to_project_count=0
+          already_in_project_count=0
+          stage_label_changed_count=0
+          stage_label_noop_count=0
+          status_changed_open_count=0
+          status_noop_open_count=0
+          status_changed_closed_count=0
+          status_noop_closed_count=0
+          closed_project_items_scanned=0
+
+          while IFS= read -r item_json; do
+            [[ -z "$item_json" ]] && continue
+
+            item_type="$(jq -r '.type' <<<"$item_json")"
+            item_number="$(jq -r '.number' <<<"$item_json")"
+            item_url="$(jq -r '.url' <<<"$item_json")"
+            content_id="$(jq -r '.contentId' <<<"$item_json")"
+            item_state="$(jq -r '.state' <<<"$item_json")"
+            milestone_title="$(jq -r '.milestoneTitle // ""' <<<"$item_json")"
+            labels_json="$(jq -c '.labels // []' <<<"$item_json")"
+
+            desired_stage="$(desired_stage_from_milestone "$milestone_title")"
+            stage_sync_result="$(sync_stage_labels "$item_number" "$item_url" "$labels_json" "$desired_stage")"
+            if [[ "$stage_sync_result" == "changed" ]]; then
+              stage_label_changed_count=$((stage_label_changed_count + 1))
+            else
+              stage_label_noop_count=$((stage_label_noop_count + 1))
+            fi
+
+            project_entry_json="$(get_project_entry_by_content_id "$content_id")"
+            if [[ -z "$project_entry_json" ]]; then
+              project_item_id="$(add_project_item_by_content_id "$content_id")"
+              if [[ "$project_item_id" == "__ALREADY_EXISTS__" ]]; then
+                project_index_json="$(load_project_index)"
+                project_entry_json="$(get_project_entry_by_content_id "$content_id")"
+                project_item_id="$(jq -r '.itemId // empty' <<<"$project_entry_json")"
+                current_status="$(jq -r '.currentStatus // empty' <<<"$project_entry_json")"
+                if [[ -z "$project_item_id" ]]; then
+                  echo "Project add reported already-exists but item lookup failed for $item_url." >&2
+                  exit 1
+                fi
+                already_in_project_count=$((already_in_project_count + 1))
+              elif [[ -z "$project_item_id" ]]; then
+                echo "Failed to add $item_url to project." >&2
+                exit 1
+              else
+                added_to_project_count=$((added_to_project_count + 1))
+                current_status=""
+              fi
+            else
+              project_item_id="$(jq -r '.itemId // empty' <<<"$project_entry_json")"
+              current_status="$(jq -r '.currentStatus // empty' <<<"$project_entry_json")"
+              already_in_project_count=$((already_in_project_count + 1))
+            fi
+
+            desired_status="$(desired_status_from_item "$item_type" "$item_state" "$labels_json")"
+            status_result="$(set_project_status_if_needed "$project_item_id" "$current_status" "$desired_status")"
+            if [[ "$status_result" == "changed" ]]; then
+              status_changed_open_count=$((status_changed_open_count + 1))
+            else
+              status_noop_open_count=$((status_noop_open_count + 1))
+            fi
+          done < <(jq -c '.[]' <<<"$open_items_json")
+
+          project_index_json="$(load_project_index)"
+
+          while IFS= read -r entry_json; do
+            [[ -z "$entry_json" ]] && continue
+            item_state="$(jq -r '.content.state // ""' <<<"$entry_json")"
+            state_up="$(tr '[:lower:]' '[:upper:]' <<<"$item_state")"
+            if [[ "$state_up" == "OPEN" ]]; then
+              continue
+            fi
+
+            closed_project_items_scanned=$((closed_project_items_scanned + 1))
+            item_type="$(jq -r '.content.type' <<<"$entry_json")"
+            labels_json="$(jq -c '.content.labels // []' <<<"$entry_json")"
+            project_item_id="$(jq -r '.itemId // empty' <<<"$entry_json")"
+            current_status="$(jq -r '.currentStatus // empty' <<<"$entry_json")"
+
+            desired_status="$(desired_status_from_item "$item_type" "$item_state" "$labels_json")"
+            status_result="$(set_project_status_if_needed "$project_item_id" "$current_status" "$desired_status")"
+            if [[ "$status_result" == "changed" ]]; then
+              status_changed_closed_count=$((status_changed_closed_count + 1))
+            else
+              status_noop_closed_count=$((status_noop_closed_count + 1))
+            fi
+          done < <(jq -c '.[]' <<<"$project_index_json")
+
+          project_repo_item_count="$(jq -r 'length' <<<"$project_index_json")"
+
+          echo "Reconcile summary (Project #${PROJECT_NUMBER})"
+          echo "open_items: total=${open_total_count} issues=${open_issue_count} prs=${open_pr_count}"
+          echo "project_membership: added=${added_to_project_count} already_present=${already_in_project_count} project_repo_items_now=${project_repo_item_count}"
+          echo "stage_labels: changed=${stage_label_changed_count} noop=${stage_label_noop_count}"
+          echo "project_status_open: changed=${status_changed_open_count} noop=${status_noop_open_count}"
+          echo "project_status_closed: scanned=${closed_project_items_scanned} changed=${status_changed_closed_count} noop=${status_noop_closed_count}"
