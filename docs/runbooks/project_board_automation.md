@@ -129,7 +129,38 @@ Fix (lokal):
 4. Scopes prüfen (`repo`, `project` erforderlich für Project-v2-Write).
 
 Hinweis:
-- In GitHub Actions nutzen die Workflows explizit `GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}` (Classic PAT mit `repo` + `project`).
+- In GitHub Actions wird `CDB_AUTH_TOKEN` deterministisch gewählt:
+  - `APP` wenn `CDB_GH_APP_ID` + `CDB_GH_APP_PRIVATE_KEY` gesetzt sind (optional mit `CDB_GH_APP_INSTALLATION_ID`)
+  - sonst `PAT` über `ADD_TO_PROJECT_PAT`
+
+## Token Migration (#941)
+
+Zweck:
+- Vorbereitung auf Least-Privilege-Auth ohne Breaking Change; Legacy-PAT bleibt als Fallback aktiv.
+
+Secrets (Reihenfolge der Nutzung):
+- Legacy (bestehend): `ADD_TO_PROJECT_PAT`
+- App (empfohlen): `CDB_GH_APP_ID`, `CDB_GH_APP_PRIVATE_KEY`, optional `CDB_GH_APP_INSTALLATION_ID`
+
+Auth-Modi:
+- Option A (empfohlen): GitHub App Token (runtime mint), genutzt wenn App-Secrets vollständig vorhanden sind.
+- Option B (Fallback): Fine-grained/Classic PAT in `ADD_TO_PROJECT_PAT` (nur bis Migration abgeschlossen ist).
+
+Minimal benötigte Rechte:
+- Projects v2 lesen/schreiben (Item add/update, Status-Updates)
+- Issues/PRs lesen/schreiben (Labels, Create/Update/Close von Digest- und Alert-Issues)
+- Keine zusätzlichen repo-weiten Admin-Rechte
+
+Umstellung (safe rollout):
+1. App im Owner-Kontext installieren und App-Secrets im Repo setzen.
+2. `workflow_dispatch` für `Weekly Project Digest` und `Weekly Digest Failure Alert` testen.
+3. Prüfen, dass Logs `Auth mode selected: APP` zeigen.
+4. Nach stabiler Laufzeit PAT rotieren/entfernen (`ADD_TO_PROJECT_PAT` als Break-glass nur temporär behalten).
+
+Rollback (Break-glass):
+1. App-Secrets entfernen oder leeren.
+2. `ADD_TO_PROJECT_PAT` aktiv lassen.
+3. Workflows fallen deterministisch auf `PAT` zurück.
 
 ## Quick Sanity Checks (gh CLI)
 
