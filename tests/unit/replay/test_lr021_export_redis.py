@@ -299,8 +299,8 @@ class TestExportEnvelopesRaw:
         assert summary["skipped_by_filter"] == 1
 
         output.seek(0)
-        lines = [json.loads(l) for l in output if l.strip()]
-        types = [l["event_type"] for l in lines]
+        lines = [json.loads(ln) for ln in output if ln.strip()]
+        types = [ln["event_type"] for ln in lines]
         assert types == ["DECISION", "FILL"]
 
     def test_parse_errors_counted(self):
@@ -358,7 +358,7 @@ class TestExportEnvelopesWithHashes:
         assert "final_chain_hash" in summary
 
         output.seek(0)
-        lines = [json.loads(l) for l in output if l.strip()]
+        lines = [json.loads(ln) for ln in output if ln.strip()]
 
         # Verify chain hash computation matches lr021_replay logic
         eh1 = compute_event_hash(env1)
@@ -440,7 +440,7 @@ class TestReplayRoundtrip:
 
         # Step 3: Verify output has valid hashes
         replay_buf.seek(0)
-        lines = [json.loads(l) for l in replay_buf if l.strip()]
+        lines = [json.loads(ln) for ln in replay_buf if ln.strip()]
         for line in lines:
             assert "event_hash" in line
             assert "chain_hash" in line
