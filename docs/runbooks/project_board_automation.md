@@ -72,6 +72,10 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
 - Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
 
+Report-Ausnahme:
+- Issues mit `report:weekly` oder `report:weekly-fail` sind `triage:offen`-exempt.
+- `triage_guard` überspringt diese Report-Issues deterministisch ohne Label-Mutation.
+
 ## Troubleshooting (Klassiker)
 
 ### 1) Actions Minutes / Billing blockiert

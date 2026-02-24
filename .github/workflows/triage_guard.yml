@@ -198,9 +198,18 @@ jobs:
           if jq -e --arg n "$TRIAGE_LABEL_NAME" '.data.node.labels.nodes[]? | select(.name == $n)' >/dev/null 2>&1 <<<"$item_json"; then
             has_triage_label=true
           fi
+          has_report_label=false
+          if jq -e '.data.node.labels.nodes[]? | select(.name == "report:weekly" or .name == "report:weekly-fail")' >/dev/null 2>&1 <<<"$item_json"; then
+            has_report_label=true
+          fi
 
           if [[ -z "$item_url" ]]; then
             item_url="$payload_url"
+          fi
+
+          if [[ "$has_report_label" == true ]]; then
+            echo "Report issue detected; triage label sync skipped for $item_url."
+            exit 0
           fi
 
           if [[ "$item_state" != "OPEN" ]]; then
