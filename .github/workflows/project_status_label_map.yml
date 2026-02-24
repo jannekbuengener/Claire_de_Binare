@@ -2,8 +2,6 @@ name: Sync CDB Control Board Status (Label Map)
 on:
   issues:
     types: [labeled, unlabeled, closed, reopened]
-  pull_request:
-    types: [labeled, unlabeled, closed, reopened]
 
 jobs:
   sync-project-status-label-map:

@@ -2,8 +2,6 @@ name: Sync Stage Labels From Milestone
 on:
   issues:
     types: [milestoned, demilestoned, reopened]
-  pull_request:
-    types: [milestoned, demilestoned, reopened]
 
 jobs:
   sync-stage-labels:

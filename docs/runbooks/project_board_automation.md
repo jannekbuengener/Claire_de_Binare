@@ -162,6 +162,10 @@ Rollback (Break-glass):
 2. `ADD_TO_PROJECT_PAT` aktiv lassen.
 3. Workflows fallen deterministisch auf `PAT` zurück.
 
+Trigger-Safety:
+- Secret-abhängige Board-Automationen laufen nur auf trusted Events (z. B. `issues`, `schedule`, `workflow_dispatch`) und nicht auf `pull_request`.
+- PR-bezogene Board-Änderungen sind dadurch eventual consistent und werden über den täglichen Reconcile-Job nachgezogen.
+
 ## Quick Sanity Checks (gh CLI)
 
 ### Auth / Scopes

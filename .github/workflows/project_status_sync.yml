@@ -2,8 +2,6 @@ name: Sync CDB Control Board Status
 on:
   issues:
     types: [opened, reopened, transferred]
-  pull_request:
-    types: [opened, reopened]
 
 jobs:
   sync-project-status:

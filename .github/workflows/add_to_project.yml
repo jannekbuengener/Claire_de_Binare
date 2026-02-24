@@ -2,8 +2,6 @@ name: Add issues and PRs to CDB Control Board
 on:
   issues:
     types: [opened, reopened, transferred, labeled]
-  pull_request:
-    types: [opened, reopened, labeled]
 
 jobs:
   add-to-project:

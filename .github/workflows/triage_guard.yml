@@ -2,8 +2,6 @@ name: Triage Guard (Missing Milestone)
 on:
   issues:
     types: [opened, reopened, milestoned, demilestoned, transferred, edited]
-  pull_request:
-    types: [opened, reopened, milestoned, demilestoned, edited]
 
 jobs:
   triage-guard:
