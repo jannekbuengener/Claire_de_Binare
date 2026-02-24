@@ -1,0 +1,99 @@
+name: Sync Stage Labels From Milestone
+on:
+  issues:
+    types: [milestoned, demilestoned, reopened]
+  pull_request:
+    types: [milestoned, demilestoned, reopened]
+
+jobs:
+  sync-stage-labels:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+    steps:
+      - name: Sync mutually-exclusive stage labels
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          event_name="${GITHUB_EVENT_NAME}"
+          event_path="${GITHUB_EVENT_PATH}"
+          repo="${GITHUB_REPOSITORY}"
+          action="$(jq -r '.action // empty' "$event_path")"
+
+          stage_labels_json='[
+            "stage:proof",
+            "stage:stability",
+            "stage:trade-capable",
+            "stage:strategy-validated",
+            "stage:monetization",
+            "stage:scale"
+          ]'
+
+          case "$event_name" in
+            issues)
+              number="$(jq -r '.issue.number // empty' "$event_path")"
+              item_url="$(jq -r '.issue.html_url // empty' "$event_path")"
+              milestone_title="$(jq -r '.issue.milestone.title // empty' "$event_path")"
+              labels_json="$(jq -c '[.issue.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
+              ;;
+            pull_request)
+              number="$(jq -r '.pull_request.number // empty' "$event_path")"
+              item_url="$(jq -r '.pull_request.html_url // empty' "$event_path")"
+              milestone_title="$(jq -r '.pull_request.milestone.title // empty' "$event_path")"
+              labels_json="$(jq -c '[.pull_request.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
+              ;;
+            *)
+              echo "Unsupported event: $event_name"
+              exit 0
+              ;;
+          esac
+
+          if [[ -z "$number" ]]; then
+            echo "No item number in event payload; skipping."
+            exit 0
+          fi
+
+          desired_stage=""
+          if [[ "$action" != "demilestoned" ]]; then
+            case "$milestone_title" in
+              "System ist beweisbar") desired_stage="stage:proof" ;;
+              "System ist stabil") desired_stage="stage:stability" ;;
+              "System kann handeln") desired_stage="stage:trade-capable" ;;
+              "Strategie ist validiert") desired_stage="stage:strategy-validated" ;;
+              "System verdient Geld") desired_stage="stage:monetization" ;;
+              "Skaliert") desired_stage="stage:scale" ;;
+              *) desired_stage="" ;;
+            esac
+          fi
+
+          non_stage_labels_json="$(jq -cn \
+            --argjson labels "$labels_json" \
+            --argjson stage "$stage_labels_json" \
+            '[ $labels[] | . as $l | select((any($stage[]; . == $l)) | not) ]'
+          )"
+
+          final_labels_json="$(jq -cn \
+            --argjson non_stage "$non_stage_labels_json" \
+            --arg desired "$desired_stage" \
+            '($non_stage + (if $desired == "" then [] else [$desired] end)) | unique'
+          )"
+
+          current_canon="$(jq -c 'sort | unique' <<<"$labels_json")"
+          final_canon="$(jq -c 'sort | unique' <<<"$final_labels_json")"
+
+          if [[ "$current_canon" == "$final_canon" ]]; then
+            echo "No label changes needed for $item_url (action=$action, milestone='${milestone_title:-<none>}')."
+            exit 0
+          fi
+
+          payload="$(jq -cn --argjson labels "$final_labels_json" '{labels: $labels}')"
+          printf '%s' "$payload" | gh api --method PUT "repos/$repo/issues/$number/labels" --input - > /dev/null
+
+          if [[ -n "$desired_stage" ]]; then
+            echo "Synced labels for $item_url -> $desired_stage"
+          else
+            echo "Synced labels for $item_url -> no stage label"
+          fi
