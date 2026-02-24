@@ -1,0 +1,15 @@
+name: Add issues and PRs to CDB Control Board
+on:
+  issues:
+    types: [opened, reopened, transferred, labeled]
+  pull_request:
+    types: [opened, reopened, labeled]
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1
+        with:
+          project-url: https://github.com/users/jannekbuengener/projects/8
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
