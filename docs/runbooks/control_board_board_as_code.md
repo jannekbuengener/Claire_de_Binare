@@ -20,6 +20,17 @@ Repository Variable:
 
 Hinweis:
 - Bei `false` gibt es keine automatische Verhaltensaenderung bei `issues`/`pull_request` Events.
+- Workflows loggen explizit `automation disabled` und beenden ohne Project-API Aufrufe.
+
+## Token-Scopes
+
+Fuer Project v2 Zugriff werden benoetigt:
+
+- `read:project` (lesen)
+- `project` (schreiben)
+- `repo` fuer Issue/Milestone Updates
+
+In Actions wird der Token aus GitHub App (bevorzugt) oder `ADD_TO_PROJECT_PAT` aufgeloest.
 
 ## Board-Upsert ausfuehren
 
@@ -37,8 +48,9 @@ python scripts/project/upsert_control_board.py --apply --owner jannekbuengener -
 
 Workflow:
 
-- `Control Board Upsert` laeuft manuell per `workflow_dispatch`.
-- Schedule-Run ist per Toggle geschuetzt.
+- `Control Board Upsert` kann per `workflow_dispatch` gestartet werden.
+- Mutationen laufen nur bei `CDB_CONTROL_BOARD_AUTOMATION_ENABLED=true`.
+- Schedule-Run ist ebenfalls per Toggle geschuetzt.
 
 ## Enforced Felder (Upsert)
 
@@ -68,6 +80,13 @@ Aktionen:
   - `trade-capable` -> `System kann handeln`
   - `strategy-validated` -> `Strategie ist validiert`
 
+Konfliktregeln (deterministisch):
+
+- Mehrere Stage-Labels gleichzeitig: Stage wird nicht geaendert (Warn-Log, kein Overwrite).
+- Priority-Konflikt Titel vs Label: Label gewinnt.
+- Mehrere unterschiedliche Priority-Labels: Priority wird nicht geaendert (Warn-Log).
+- Milestone wird nur gesetzt, wenn leer oder bereits ein automation-managed Mapping-Milestone.
+
 ## Smoke-Test (Toggle ON)
 
 1. `CDB_CONTROL_BOARD_AUTOMATION_ENABLED=true` setzen.
@@ -78,6 +97,25 @@ Aktionen:
    - `Priority=P1`
    - `Status=Backlog` (wenn leer)
    - Milestone `System ist beweisbar`
+
+## Smoke-Test Protokoll (minimal)
+
+A) Toggle OFF:
+
+1. `CDB_CONTROL_BOARD_AUTOMATION_ENABLED=false`.
+2. Issue Event (`opened` oder `labeled`) ausloesen.
+3. Erwartung: Workflow-Log enthaelt `automation disabled`, keine Project-Write-Aktion.
+
+B) Toggle ON:
+
+1. `CDB_CONTROL_BOARD_AUTOMATION_ENABLED=true`.
+2. Issue erstellen (`P1 ...`) + `label:stage:proof`.
+3. Erwartung: Item im Project, Stage/Priority gesetzt, Status nur wenn leer gesetzt, Milestone nur leer/managed ueberschrieben.
+
+Wenn E2E lokal nicht moeglich:
+
+- `Control Board Upsert` per `workflow_dispatch` ausfuehren.
+- Mit Token/Scopes (`read:project`, `project`) gegen Project v2 verifizieren.
 
 ## Guardrails
 

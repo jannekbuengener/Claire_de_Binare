@@ -11,21 +11,37 @@ on:
   schedule:
     - cron: "30 2 * * 1"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || 'global' }}
+  cancel-in-progress: true
+
 jobs:
   upsert-control-board:
-    # Feature toggle (default OFF) gates scheduled mutation.
-    # Manual workflow_dispatch stays available for dry-run/apply.
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
       PROJECT_OWNER: jannekbuengener
       PROJECT_NUMBER: "8"
+      CDB_CONTROL_BOARD_AUTOMATION_ENABLED: ${{ vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Evaluate feature toggle
+        id: feature-toggle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${CDB_CONTROL_BOARD_AUTOMATION_ENABLED:-}" != "true" ]]; then
+            echo "automation disabled"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve CDB auth token (APP preferred, PAT fallback)
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        uses: actions/checkout@v4
+
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        name: Resolve CDB auth token (APP preferred, PAT fallback)
         id: resolve-auth
         shell: bash
         env:
@@ -108,7 +124,8 @@ jobs:
             exit 1
           fi
 
-      - name: Upsert project fields/views
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        name: Upsert project fields/views
         shell: bash
         env:
           GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}

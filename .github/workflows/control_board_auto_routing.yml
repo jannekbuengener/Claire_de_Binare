@@ -6,12 +6,14 @@ on:
   pull_request:
     types: [opened, closed]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || 'global' }}
+  cancel-in-progress: true
+
 jobs:
   route-control-board:
-    # Feature toggle (default OFF): set repository variable
-    # CDB_CONTROL_BOARD_AUTOMATION_ENABLED=true to activate.
     # Avoid exposing write-capable project token to untrusted fork PRs.
-    if: ${{ vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,10 +22,25 @@ jobs:
     env:
       PROJECT_OWNER: jannekbuengener
       PROJECT_NUMBER: "8"
+      CDB_CONTROL_BOARD_AUTOMATION_ENABLED: ${{ vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Evaluate feature toggle
+        id: feature-toggle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${CDB_CONTROL_BOARD_AUTOMATION_ENABLED:-}" != "true" ]]; then
+            echo "automation disabled"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve CDB auth token (APP preferred, PAT fallback)
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        uses: actions/checkout@v4
+
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        name: Resolve CDB auth token (APP preferred, PAT fallback)
         id: resolve-auth
         shell: bash
         env:
@@ -106,7 +123,8 @@ jobs:
             exit 1
           fi
 
-      - name: Route item to CDB Control Board
+      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
+        name: Route item to CDB Control Board
         shell: bash
         env:
           GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}

@@ -32,6 +32,7 @@ STAGE_TO_MILESTONE: dict[str, str] = {
     "trade-capable": "System kann handeln",
     "strategy-validated": "Strategie ist validiert",
 }
+AUTOMATION_MANAGED_MILESTONES: frozenset[str] = frozenset(STAGE_TO_MILESTONE.values())
 
 PRIORITY_LABEL_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"^(?:label:)?(?:prio|priority):p([0-3])$", re.IGNORECASE),
@@ -188,23 +189,49 @@ query($owner:String!,$number:Int!){
             raise GhCommandError(f"Invalid event JSON: {exc}") from exc
 
     def parse_priority(self, title: str, labels: tuple[str, ...]) -> str | None:
+        label_priorities: set[str] = set()
         for label in labels:
             for pattern in PRIORITY_LABEL_PATTERNS:
                 match = pattern.match(label.strip())
                 if match:
-                    return f"P{match.group(1)}"
-        title_match = PRIORITY_TITLE_PREFIX.match(title or "")
-        if not title_match:
-            return None
-        value = title_match.group(1) or title_match.group(2)
-        return value.upper() if value else None
+                    label_priorities.add(f"P{match.group(1)}")
+                    break
 
-    def parse_stage(self, labels: tuple[str, ...]) -> str | None:
+        title_priority = None
+        title_match = PRIORITY_TITLE_PREFIX.match(title or "")
+        if title_match:
+            value = title_match.group(1) or title_match.group(2)
+            title_priority = value.upper() if value else None
+
+        label_priority_list = sorted(label_priorities)
+        if len(label_priority_list) > 1:
+            self.log(
+                "WARN: multiple priority labels found; skipping Priority update to avoid ambiguity."
+            )
+            return None
+        if len(label_priority_list) == 1:
+            label_priority = label_priority_list[0]
+            if title_priority and title_priority != label_priority:
+                self.log(
+                    "WARN: title priority and label priority differ; using label priority."
+                )
+            return label_priority
+        return title_priority
+
+    def parse_stage(self, labels: tuple[str, ...]) -> tuple[str | None, bool]:
         lowered = {label.strip().casefold() for label in labels}
+        matches: list[str] = []
         for stage_label, stage_option in STAGE_LABEL_TO_OPTION:
-            if stage_label.casefold() in lowered:
-                return stage_option
-        return None
+            if stage_label.casefold() in lowered and stage_option not in matches:
+                matches.append(stage_option)
+        if not matches:
+            return None, False
+        if len(matches) > 1:
+            self.log(
+                "WARN: multiple stage labels found; skipping Stage update to avoid ambiguity."
+            )
+            return None, True
+        return matches[0], False
 
     def load_milestones(self) -> None:
         data = self.gh_json(
@@ -540,6 +567,11 @@ mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!){
             return
         if current_title == desired_title:
             return
+        if current_title and current_title not in AUTOMATION_MANAGED_MILESTONES:
+            self.log(
+                "SKIP: current milestone is not managed by automation; milestone update skipped."
+            )
+            return
         milestone_number = self.milestone_number_by_title.get(desired_title)
         if milestone_number is None:
             self.log(f"SKIP: milestone '{desired_title}' not found in repo.")
@@ -557,9 +589,11 @@ mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!){
         self.log(f"APPLY: set milestone '{desired_title}' on issue #{issue_number}")
 
     def route_issue(self, target: RouteTarget, item: dict[str, Any]) -> None:
-        stage_option = self.parse_stage(target.labels)
+        stage_option, stage_conflict = self.parse_stage(target.labels)
         priority_option = self.parse_priority(target.title, target.labels)
-        desired_milestone = STAGE_TO_MILESTONE.get(stage_option or "", "")
+        desired_milestone = ""
+        if not stage_conflict:
+            desired_milestone = STAGE_TO_MILESTONE.get(stage_option or "", "")
 
         item_id = str(item.get("id", ""))
         status_current_option = str(((item.get("status") or {}).get("optionId")) or "")
@@ -571,7 +605,9 @@ mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!){
         if not status_current_option:
             self.set_single_select(item_id, "Status", "Backlog", status_current_option)
 
-        if stage_option:
+        if stage_conflict:
+            self.log("WARN: Stage conflict detected; keeping existing Stage value.")
+        elif stage_option:
             self.set_single_select(item_id, "Stage", stage_option, stage_current_option)
         else:
             self.clear_field_if_set(item_id, "Stage", stage_current_option)
@@ -603,8 +639,10 @@ mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!){
         if not status_current_option:
             self.set_single_select(item_id, "Status", "Backlog", status_current_option)
 
-        stage_option = self.parse_stage(target.labels)
-        if stage_option:
+        stage_option, stage_conflict = self.parse_stage(target.labels)
+        if stage_conflict:
+            self.log("WARN: Stage conflict detected; keeping existing Stage value.")
+        elif stage_option:
             self.set_single_select(item_id, "Stage", stage_option, stage_current_option)
         else:
             self.clear_field_if_set(item_id, "Stage", stage_current_option)

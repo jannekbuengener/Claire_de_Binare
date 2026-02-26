@@ -66,7 +66,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - Milestone gesetzt -> Label entfernen
     - `demilestoned` -> Label wieder setzen
 - `docs/runbooks/control_board_board_as_code.md`
-  - Technische Kurz-Doku fuer Upsert/Routing (Dry-Run, Apply, Toggle, Smoke-Test).
+  - Technische Kurz-Doku fuer Upsert/Routing (Dry-Run, Apply, Toggle default OFF, Smoke-Test).
 
 ## Triage-Prozess (Jannek)
 
