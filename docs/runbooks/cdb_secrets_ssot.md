@@ -16,7 +16,7 @@
 {
   "repo": "jannekbuengener/Claire_de_Binare",
   "secrets": {
-    "ADD_TO_PROJECT_PAT": "GH_CLI_PROJECTS .txt",
+    "ADD_TO_PROJECT_PAT": "GH_CLI_PROJECTS.txt",
     "CDB_GH_APP_ID": "CDB_GH_APP_ID.txt",
     "CDB_GH_APP_PRIVATE_KEY": "CDB_GH_APP_PRIVATE_KEY.pem",
     "CDB_GH_APP_INSTALLATION_ID": "CDB_GH_APP_INSTALLATION_ID.txt"
