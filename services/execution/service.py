@@ -12,7 +12,16 @@ import logging.config
 import time
 from datetime import datetime
 from pathlib import Path
-from flask import Flask, jsonify, Response
+import importlib.util
+try:
+    _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
+except ModuleNotFoundError as e:
+    if e.name == "flask" or (e.name and e.name.startswith("flask.")):
+        _FLASK_AVAILABLE = False
+    else:
+        raise
+except ValueError:
+    _FLASK_AVAILABLE = False
 import redis
 from threading import Thread, Lock
 
@@ -57,9 +66,6 @@ else:
     )
 
 logger = logging.getLogger(config.SERVICE_NAME)
-
-# Flask app
-app = Flask(__name__)
 
 # Global state
 executor = None
@@ -392,6 +398,41 @@ def process_order(order_data: dict):
                     corr_err,
                 )
 
+        # LR-021 Slice 2: FILL envelope emission (toggle-gated, default OFF)
+        try:
+            _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
+            _lr021_emit = (
+                (_cdb_val == "1")
+                if _cdb_val is not None
+                else os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
+            )
+        except Exception:
+            _lr021_emit = False
+        if (
+            _lr021_emit
+            and ExecutionResult._schema_status(result.status) == "FILLED"
+            and getattr(result, "fill_id", None)
+        ):
+            try:
+                from core.replay.emitter import emit_fill_envelope
+
+                emit_fill_envelope(
+                    event_id=str(result.fill_id),
+                    ts_ms=timestamp_ms,
+                    order_id=str(result.order_id),
+                    fill_id=str(result.fill_id),
+                    symbol=str(result.symbol),
+                    side=str(result.side),
+                    filled_quantity=float(result.filled_quantity),
+                    price=float(result.price) if result.price is not None else None,
+                    policy_id=getattr(order, "policy_id", None),
+                    policy_hash=getattr(order, "policy_hash", None),
+                    input_hash=getattr(order, "input_hash", None),
+                    output_hash=getattr(order, "output_hash", None),
+                )
+            except Exception:
+                pass  # Guardrail: never break execution path
+
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
         if schema_status == "FILLED":
@@ -492,88 +533,93 @@ def listen_bot_shutdown():
             time.sleep(1)
 
 
-# Health Check Endpoint
-@app.route("/health", methods=["GET"])
-def health():
-    """Health check endpoint"""
-    return (
-        jsonify(
-            {
-                "service": config.SERVICE_NAME,
-                "status": "ok",
-                "version": config.SERVICE_VERSION,
-            }
-        ),
-        200,
-    )
+# ===== FLASK ENDPOINTS =====
 
+if _FLASK_AVAILABLE:
+    from flask import Flask, jsonify, Response
 
-@app.route("/status", methods=["GET"])
-def status():
-    """Status endpoint with statistics"""
-    try:
-        redis_connected = redis_client.ping() if redis_client else False
-    except Exception:
-        redis_connected = False
+    app = Flask(__name__)
 
-    return (
-        jsonify(
-            {
-                "service": config.SERVICE_NAME,
-                "version": config.SERVICE_VERSION,
-                "mode": "mock" if config.MOCK_TRADING else "live",
-                "stats": stats,
-                "redis": {"connected": redis_connected},
-                "database": db.get_stats() if db else {"error": "not initialized"},
-            }
-        ),
-        200,
-    )
+    @app.route("/health", methods=["GET"])
+    def health():
+        """Health check endpoint"""
+        return (
+            jsonify(
+                {
+                    "service": config.SERVICE_NAME,
+                    "status": "ok",
+                    "version": config.SERVICE_VERSION,
+                }
+            ),
+            200,
+        )
 
+    @app.route("/status", methods=["GET"])
+    def status():
+        """Status endpoint with statistics"""
+        try:
+            redis_connected = redis_client.ping() if redis_client else False
+        except Exception:
+            redis_connected = False
 
-@app.route("/metrics", methods=["GET"])
-def metrics():
-    """Metrics endpoint for Prometheus"""
-    # Thread-safe stats read (Fix for Issue #306)
-    current_stats = get_stats_copy()
+        return (
+            jsonify(
+                {
+                    "service": config.SERVICE_NAME,
+                    "version": config.SERVICE_VERSION,
+                    "mode": "mock" if config.MOCK_TRADING else "live",
+                    "stats": stats,
+                    "redis": {"connected": redis_connected},
+                    "database": db.get_stats() if db else {"error": "not initialized"},
+                }
+            ),
+            200,
+        )
 
-    uptime_seconds = max(
-        0.0,
-        (
-            utcnow() - datetime.fromisoformat(current_stats["start_time"])
-        ).total_seconds(),
-    )
+    @app.route("/metrics", methods=["GET"])
+    def metrics():
+        """Metrics endpoint for Prometheus"""
+        # Thread-safe stats read (Fix for Issue #306)
+        current_stats = get_stats_copy()
 
-    body = (
-        "# HELP execution_orders_received_total Anzahl eingegangener Orders\n"
-        "# TYPE execution_orders_received_total counter\n"
-        f"execution_orders_received_total {current_stats['orders_received']}\n"
-        "# HELP execution_orders_filled_total Anzahl erfolgreich ausgefuehrter Orders\n"
-        "# TYPE execution_orders_filled_total counter\n"
-        f"execution_orders_filled_total {current_stats['orders_filled']}\n"
-        "# HELP execution_orders_rejected_total Anzahl abgelehnter Orders\n"
-        "# TYPE execution_orders_rejected_total counter\n"
-        f"execution_orders_rejected_total {current_stats['orders_rejected']}\n"
-        "# HELP execution_uptime_seconds Service Laufzeit in Sekunden\n"
-        "# TYPE execution_uptime_seconds gauge\n"
-        f"execution_uptime_seconds {uptime_seconds}\n"
-    )
+        uptime_seconds = max(
+            0.0,
+            (
+                utcnow() - datetime.fromisoformat(current_stats["start_time"])
+            ).total_seconds(),
+        )
 
-    return Response(body, mimetype="text/plain")
+        body = (
+            "# HELP execution_orders_received_total Anzahl eingegangener Orders\n"
+            "# TYPE execution_orders_received_total counter\n"
+            f"execution_orders_received_total {current_stats['orders_received']}\n"
+            "# HELP execution_orders_filled_total Anzahl erfolgreich ausgefuehrter Orders\n"
+            "# TYPE execution_orders_filled_total counter\n"
+            f"execution_orders_filled_total {current_stats['orders_filled']}\n"
+            "# HELP execution_orders_rejected_total Anzahl abgelehnter Orders\n"
+            "# TYPE execution_orders_rejected_total counter\n"
+            f"execution_orders_rejected_total {current_stats['orders_rejected']}\n"
+            "# HELP execution_uptime_seconds Service Laufzeit in Sekunden\n"
+            "# TYPE execution_uptime_seconds gauge\n"
+            f"execution_uptime_seconds {uptime_seconds}\n"
+        )
 
+        return Response(body, mimetype="text/plain")
 
-@app.route("/orders", methods=["GET"])
-def orders():
-    """Get recent orders from database"""
-    if not db:
-        return jsonify({"error": "Database not initialized"}), 503
+    @app.route("/orders", methods=["GET"])
+    def orders():
+        """Get recent orders from database"""
+        if not db:
+            return jsonify({"error": "Database not initialized"}), 503
 
-    try:
-        recent_orders = db.get_recent_orders(limit=20)
-        return jsonify({"count": len(recent_orders), "orders": recent_orders}), 200
-    except Exception as e:
-        logger.error(f"Error retrieving orders: {e}")
-        return jsonify({"error": str(e)}), 500
+        try:
+            recent_orders = db.get_recent_orders(limit=20)
+            return jsonify({"count": len(recent_orders), "orders": recent_orders}), 200
+        except Exception as e:
+            logger.error(f"Error retrieving orders: {e}")
+            return jsonify({"error": str(e)}), 500
+else:
+    app = None
 
 
 def signal_handler(signum, frame):
@@ -657,6 +703,11 @@ def main():
     logger.info("Bot-shutdown listener started")
 
     # Start Flask app
+    if not _FLASK_AVAILABLE or app is None:
+        raise RuntimeError(
+            "Flask ist nicht installiert. HTTP-Endpoints (health/status/metrics) "
+            "benötigen Flask als optionale Abhängigkeit: pip install flask"
+        )
     try:
         app.run(
             host="0.0.0.0", port=config.SERVICE_PORT, debug=False, use_reloader=False

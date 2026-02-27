@@ -13,7 +13,16 @@ from threading import Thread
 from typing import Optional
 
 import redis
-from flask import Flask, jsonify, Response
+import importlib.util
+try:
+    _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
+except ModuleNotFoundError as e:
+    if e.name == "flask" or (e.name and e.name.startswith("flask.")):
+        _FLASK_AVAILABLE = False
+    else:
+        raise
+except ValueError:
+    _FLASK_AVAILABLE = False
 
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
@@ -38,7 +47,6 @@ else:
     )
 
 logger = logging.getLogger("candle_service")
-app = Flask(__name__)
 
 stats = {
     "started_at": None,
@@ -345,28 +353,36 @@ class CandleService:
                 logger.error(f"Error processing trade: {e}")
 
 
-@app.route("/health")
-def health():
-    return jsonify(
-        {
-            "status": "ok" if stats["status"] == "running" else "error",
-            "service": "candle_service",
-            "version": config.source_version,
-        }
-    )
+# ===== FLASK ENDPOINTS =====
 
+if _FLASK_AVAILABLE:
+    from flask import Flask, jsonify, Response
 
-@app.route("/metrics")
-def metrics():
-    body = (
-        "# HELP candle_trades_processed_total Anzahl verarbeiteter Trades\n"
-        "# TYPE candle_trades_processed_total counter\n"
-        f"candle_trades_processed_total {stats['trades_processed']}\n\n"
-        "# HELP candle_candles_emitted_total Anzahl emittierter Candles\n"
-        "# TYPE candle_candles_emitted_total counter\n"
-        f"candle_candles_emitted_total {stats['candles_emitted']}\n"
-    )
-    return Response(body, mimetype="text/plain")
+    app = Flask(__name__)
+
+    @app.route("/health")
+    def health():
+        return jsonify(
+            {
+                "status": "ok" if stats["status"] == "running" else "error",
+                "service": "candle_service",
+                "version": config.source_version,
+            }
+        )
+
+    @app.route("/metrics")
+    def metrics():
+        body = (
+            "# HELP candle_trades_processed_total Anzahl verarbeiteter Trades\n"
+            "# TYPE candle_trades_processed_total counter\n"
+            f"candle_trades_processed_total {stats['trades_processed']}\n\n"
+            "# HELP candle_candles_emitted_total Anzahl emittierter Candles\n"
+            "# TYPE candle_candles_emitted_total counter\n"
+            f"candle_candles_emitted_total {stats['candles_emitted']}\n"
+        )
+        return Response(body, mimetype="text/plain")
+else:
+    app = None
 
 
 if __name__ == "__main__":
@@ -374,6 +390,11 @@ if __name__ == "__main__":
     service.connect_redis()
 
     # Start Flask in background thread
+    if not _FLASK_AVAILABLE or app is None:
+        raise RuntimeError(
+            "Flask ist nicht installiert. HTTP-Endpoints (health/metrics) "
+            "benötigen Flask als optionale Abhängigkeit: pip install flask"
+        )
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
     flask_thread.daemon = True
     flask_thread.start()

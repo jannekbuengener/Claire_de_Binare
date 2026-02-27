@@ -1,0 +1,24 @@
+number,title,state,updatedAt,evidence_score,pr_count,doc_count,run_count,file_count,placeholder_flag,has_hard_evidence,needs_evidence
+749,🛡️ [META] Governance Core Gap — Strategy & Nexus Overview,OPEN,2026-02-24T03:49:19Z,2,0,6,0,0,false,true,false
+328,🔍 META: Governance Audit Q1 2026 - Repo-Hygiene & Compliance,OPEN,2026-02-24T03:45:52Z,5,1,2,2,0,false,true,false
+776,LR-001 – Enforce CI Required Checks (no bypass),OPEN,2026-02-24T02:40:44Z,4,2,1,0,0,false,true,false
+658,[P0][GOV][ENFORCEMENT] Re-apply Branch Protection from saved files using Playwright (MCP),OPEN,2026-02-24T03:45:54Z,5,1,1,2,0,false,true,false
+627,CI Guardrails: prevent secret/format drift,OPEN,2026-02-24T02:32:34Z,2,1,0,0,0,false,true,false
+631,[CI][E2E] STUB MODE on protected context (secrets missing),OPEN,2026-02-24T02:32:36Z,1,0,0,2,0,false,true,false
+659,[P0][CI] Required Checks: “Green or Stop” (CI gates stabilized),OPEN,2026-02-24T02:32:39Z,3,1,0,5,0,false,true,false
+756,[CI][GOV] Claude workflow unstable blocks PRs (exit code 1) — remove from required checks or harden,OPEN,2026-02-24T03:49:23Z,3,2,0,8,0,false,true,false
+777,LR-002 – Contract Tests for all Redis/Event Schemas,OPEN,2026-02-24T03:49:25Z,4,1,1,0,0,false,true,false
+778,LR-003 – Kill-Switch + Limit Controls Drill Test,OPEN,2026-02-24T03:49:27Z,4,1,1,0,0,false,true,false
+748,P1 — Policy Snapshot Binding: Ledger Events must reference policy hash/version (anti-drift),OPEN,2026-02-24T03:28:37Z,4,1,1,0,0,false,true,false
+742,"P0 — SurrealDB Append-Only Enforcement (No MERGE, No UPDATE, No DELETE)",OPEN,2026-02-24T02:40:57Z,3,1,0,0,1,false,true,false
+743,P1 — Ledger Import Integrity Guard (Anti-Replay / Anti-Spoof),OPEN,2026-02-24T03:49:15Z,4,1,1,0,0,false,true,false
+744,P1 — Access Control Matrix & Threat Model (DB Layer),OPEN,2026-02-24T03:49:17Z,3,1,0,3,0,false,true,false
+741,P0 — Postgres Least-Privilege + RLS Hardening (Writer/Reader Split),OPEN,2026-02-24T02:40:45Z,2,1,0,0,0,false,true,false
+750,[DB-HARDENING][Task G] Core Secrets Domain: Integrity Guards for core_secrets,OPEN,2026-02-24T02:40:48Z,2,1,0,0,0,false,true,false
+751,[DB-HARDENING][Task G] Governance Domain: Integrity Guards for audit_trail and governance_events,OPEN,2026-02-24T02:40:49Z,2,1,0,0,0,false,true,false
+752,[DB-HARDENING][Task G] Deployment Domain: Integrity Guards for deployment_approvals,OPEN,2026-02-24T02:40:51Z,2,1,0,0,0,false,true,false
+753,[DB-HARDENING][Task G] Access Domain: Integrity Guards for system_config and security_policies,OPEN,2026-02-24T02:40:53Z,2,1,0,0,0,false,true,false
+754,[SECRETS][ROTATION] Anchor: Secrets Rotator bleibt Source-of-Truth + optional Metadata Mirror (no secret values),OPEN,2026-02-24T03:49:21Z,5,2,3,0,1,false,true,false
+710,chore(secrets): move .rotation_state.json to $SECRETS_PATH,OPEN,2026-02-24T02:56:08Z,5,1,1,0,2,false,true,false
+766,Security: Fix OpenSSL CVEs in Docker base image,OPEN,2026-02-24T03:45:57Z,5,1,1,2,0,false,true,false
+661,[P0][TEST] Operator Drill: implement real alert trigger + kill-switch verification + timeline evidence,OPEN,2026-02-24T03:54:51Z,3,0,2,0,2,false,true,false

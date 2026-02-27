@@ -1,0 +1,76 @@
+{
+  "report_md": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\governance_core_status_report_work\\reports\\GOVERNANCE_CORE_STATUS_REPORT_v4.md",
+  "report_csv": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\governance_core_status_report_work\\reports\\GOVERNANCE_CORE_STATUS_REPORT_v4.csv",
+  "summary": {
+    "total": 23,
+    "with_pr": 20,
+    "with_doc": 12,
+    "with_run": 7,
+    "with_file": 4,
+    "with_hard_evidence": 23,
+    "needs_evidence": 0,
+    "with_placeholder": 0
+  },
+  "weakest": [
+    {
+      "number": 631,
+      "title": "[CI][E2E] STUB MODE on protected context (secrets missing)",
+      "score": 1,
+      "placeholder": false,
+      "has_hard_evidence": true,
+      "needs_evidence": false,
+      "pr": 0,
+      "doc": 0,
+      "run": 2,
+      "file": 0
+    },
+    {
+      "number": 627,
+      "title": "CI Guardrails: prevent secret/format drift",
+      "score": 2,
+      "placeholder": false,
+      "has_hard_evidence": true,
+      "needs_evidence": false,
+      "pr": 1,
+      "doc": 0,
+      "run": 0,
+      "file": 0
+    },
+    {
+      "number": 741,
+      "title": "P0 \u2014 Postgres Least-Privilege + RLS Hardening (Writer/Reader Split)",
+      "score": 2,
+      "placeholder": false,
+      "has_hard_evidence": true,
+      "needs_evidence": false,
+      "pr": 1,
+      "doc": 0,
+      "run": 0,
+      "file": 0
+    },
+    {
+      "number": 750,
+      "title": "[DB-HARDENING][Task G] Core Secrets Domain: Integrity Guards for core_secrets",
+      "score": 2,
+      "placeholder": false,
+      "has_hard_evidence": true,
+      "needs_evidence": false,
+      "pr": 1,
+      "doc": 0,
+      "run": 0,
+      "file": 0
+    },
+    {
+      "number": 751,
+      "title": "[DB-HARDENING][Task G] Governance Domain: Integrity Guards for audit_trail and governance_events",
+      "score": 2,
+      "placeholder": false,
+      "has_hard_evidence": true,
+      "needs_evidence": false,
+      "pr": 1,
+      "doc": 0,
+      "run": 0,
+      "file": 0
+    }
+  ]
+}
