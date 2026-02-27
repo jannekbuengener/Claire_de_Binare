@@ -4,6 +4,7 @@
 - PR #947 ist gemerged; Merge-Commit: `8905b749455af6875b71a5f4ccebd1a68a67de5e`.
 - Die Workflows `control_board_auto_routing.yml` und `control_board_upsert.yml` sind aktiv.
 - Die Repo-Variable `CDB_CONTROL_BOARD_AUTOMATION_ENABLED` ist nicht gesetzt; Toggle ist damit effektiv OFF.
+- Tracking: #948 (Rollout Gate: Control Board Automation Smoke-Test (toggle-gated))
 
 ## Enthaltene Komponenten (High Level)
 - Board-as-Code Upsert fuer Project-Felder und Views.
@@ -24,20 +25,19 @@
 - Toggle bleibt OFF (`CDB_CONTROL_BOARD_AUTOMATION_ENABLED` nicht gesetzt oder `!= 'true'`).
 - Test-Issue mit Stage-Label und `P`-Praefix oder `prio`-Label anlegen.
 - Workflow-Run pruefen: `automation disabled` vor jedem Project-Write.
-- Evidence: `<link zu workflow run OFF-test>`
+- Evidence: siehe #948 (Abschnitt "OFF-Test (zero-write)") — dort werden Workflow-Run-Links gepflegt.
 
 ### 2) ON-Test (kontrolliert)
 - Toggle temporaer auf `true` setzen.
 - Routing/Upsert per `workflow_dispatch` triggern.
 - Neues Issue `P1 Smoke Test` mit genau einem Stage-Label anlegen.
 - Im Project pruefen: Item vorhanden; Stage/Priority gesetzt; Status nur wenn leer; Milestone nur wenn leer oder automation-managed; Konflikte fuehren zu Warnung und keiner Mutation.
-- Evidence: `<link zu workflow run ON-test>`
-- Evidence: `<link zu project item>`
+- Evidence: siehe #948 (Abschnitt "ON-Test (kontrolliert)") — dort werden Workflow-Run + Project-Item Links gepflegt.
 
 ### 3) Rollback
 - Toggle wieder OFF setzen (unset oder `!= 'true'`).
 - Folge-Events pruefen: erneut zero-write skip.
-- Evidence: `<link zu workflow run rollback-check>`
+- Evidence: siehe #948 (Abschnitt "Rollback") — dort werden Workflow-Run-Links gepflegt.
 
 ## Risiken und Guardrails
 - Default OFF minimiert Side Effects.
