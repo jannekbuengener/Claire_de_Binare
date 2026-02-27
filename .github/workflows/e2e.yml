@@ -153,6 +153,12 @@ jobs:
           if [[ "${{ steps.preflight.outputs.e2e_mode }}" == "REAL" ]]; then
             ws_source="mexc_pb"
           fi
+          # Issue #748: derive policy version from tag or short SHA
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            policy_version="${{ github.ref_name }}"
+          else
+            policy_version="dev-$(echo '${{ github.sha }}' | cut -c1-7)"
+          fi
           cat > .env << EOF
           # E2E Test Environment
           WS_SOURCE=${ws_source}
@@ -160,6 +166,8 @@ jobs:
           REDIS_PORT=6379
           REDIS_PASSWORD=
           LOG_LEVEL=INFO
+          CDB_GIT_COMMIT=${{ github.sha }}
+          CDB_POLICY_VERSION=${policy_version}
           EOF
 
       - name: Start Docker Compose stack

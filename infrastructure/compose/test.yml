@@ -62,6 +62,9 @@ services:
       TRADING_MODE: paper
       DRY_RUN: "1"
       LOG_LEVEL: DEBUG
+      # Issue #748: Policy snapshot env (test fallback)
+      CDB_GIT_COMMIT: ${CDB_GIT_COMMIT:-test}
+      CDB_POLICY_VERSION: ${CDB_POLICY_VERSION:-test}
 
       # Python settings
       PYTHONUNBUFFERED: "1"
@@ -111,6 +114,9 @@ services:
       TRADING_MODE: paper
       DRY_RUN: "1"
       LOG_LEVEL: DEBUG
+      # Issue #748: Policy snapshot env (test fallback)
+      CDB_GIT_COMMIT: ${CDB_GIT_COMMIT:-test}
+      CDB_POLICY_VERSION: ${CDB_POLICY_VERSION:-test}
 
       # Python settings
       PYTHONUNBUFFERED: "1"
