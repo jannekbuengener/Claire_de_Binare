@@ -1,0 +1,266 @@
+name: Triage Guard (Missing Milestone)
+on:
+  issues:
+    types: [opened, reopened, milestoned, demilestoned, transferred, edited]
+
+jobs:
+  triage-guard:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TRIAGE_LABEL_NAME: triage:offen
+    steps:
+      - name: Resolve CDB auth token (APP preferred, PAT fallback)
+        id: resolve-auth
+        shell: bash
+        env:
+          LEGACY_PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          CDB_GH_APP_ID: ${{ secrets.CDB_GH_APP_ID }}
+          CDB_GH_APP_INSTALLATION_ID: ${{ secrets.CDB_GH_APP_INSTALLATION_ID }}
+          CDB_GH_APP_PRIVATE_KEY: ${{ secrets.CDB_GH_APP_PRIVATE_KEY }}
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          b64url() {
+            openssl base64 -A | tr '+/' '-_' | tr -d '='
+          }
+
+          has_app_id="false"
+          has_app_key="false"
+          [[ -n "${CDB_GH_APP_ID:-}" ]] && has_app_id="true"
+          [[ -n "${CDB_GH_APP_PRIVATE_KEY:-}" ]] && has_app_key="true"
+
+          if [[ "$has_app_id" != "$has_app_key" ]]; then
+            echo "Incomplete GitHub App auth config. Set both CDB_GH_APP_ID and CDB_GH_APP_PRIVATE_KEY, or unset both to use ADD_TO_PROJECT_PAT." >&2
+            exit 1
+          fi
+
+          if [[ "$has_app_id" == "true" ]]; then
+            now="$(date +%s)"
+            iat="$((now - 60))"
+            exp="$((now + 540))"
+
+            header='{"alg":"RS256","typ":"JWT"}'
+            payload="$(jq -nc --arg iss "$CDB_GH_APP_ID" --argjson iat "$iat" --argjson exp "$exp" '{iss:$iss,iat:$iat,exp:$exp}')"
+            signing_input="$(printf '%s' "$header" | b64url).$(printf '%s' "$payload" | b64url)"
+
+            key_file="$(mktemp)"
+            trap 'rm -f "$key_file"' EXIT
+            printf '%s' "$CDB_GH_APP_PRIVATE_KEY" > "$key_file"
+
+            signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign "$key_file" -binary | b64url)"
+            app_jwt="${signing_input}.${signature}"
+
+            installation_id="${CDB_GH_APP_INSTALLATION_ID:-}"
+            if [[ -z "$installation_id" ]]; then
+              install_json="$(curl -fsSL \
+                -H "Authorization: Bearer ${app_jwt}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPO_FULL}/installation")"
+              installation_id="$(jq -r '.id // empty' <<<"$install_json")"
+            fi
+
+            if [[ -z "$installation_id" ]]; then
+              echo "GitHub App mode selected but installation id could not be resolved. Set CDB_GH_APP_INSTALLATION_ID." >&2
+              exit 1
+            fi
+
+            token_json="$(curl -fsSL -X POST \
+              -H "Authorization: Bearer ${app_jwt}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/app/installations/${installation_id}/access_tokens")"
+            app_token="$(jq -r '.token // empty' <<<"$token_json")"
+
+            if [[ -z "$app_token" ]]; then
+              echo "GitHub App mode selected but access token minting failed." >&2
+              exit 1
+            fi
+
+            echo "::add-mask::${app_token}"
+            echo "cdb_auth_token=${app_token}" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=APP" >> "$GITHUB_OUTPUT"
+            echo "Auth mode selected: APP"
+          elif [[ -n "${LEGACY_PAT:-}" ]]; then
+            echo "::add-mask::${LEGACY_PAT}"
+            echo "cdb_auth_token=${LEGACY_PAT}" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=PAT" >> "$GITHUB_OUTPUT"
+            echo "Auth mode selected: PAT"
+          else
+            echo "No auth token configured. Set CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID) or ADD_TO_PROJECT_PAT." >&2
+            exit 1
+          fi
+
+      - name: Sync triage label from milestone presence
+        shell: bash
+        env:
+          CDB_AUTH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
+          GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
+        run: |
+          set -euo pipefail
+
+          event_name="${GITHUB_EVENT_NAME}"
+          event_path="${GITHUB_EVENT_PATH}"
+          repo_full="${GITHUB_REPOSITORY}"
+          owner="${repo_full%%/*}"
+          repo_name="${repo_full#*/}"
+
+          graphql_call() {
+            local payload="$1"
+            printf '%s' "$payload" | gh api graphql --input -
+          }
+
+          graphql_require_no_errors() {
+            local json="$1"
+            local context="$2"
+            if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
+              echo "GraphQL errors while ${context}:" >&2
+              jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              exit 1
+            fi
+          }
+
+          case "$event_name" in
+            issues)
+              content_node_id="$(jq -r '.issue.node_id // empty' "$event_path")"
+              payload_url="$(jq -r '.issue.html_url // empty' "$event_path")"
+              ;;
+            pull_request)
+              content_node_id="$(jq -r '.pull_request.node_id // empty' "$event_path")"
+              payload_url="$(jq -r '.pull_request.html_url // empty' "$event_path")"
+              ;;
+            *)
+              echo "Unsupported event: $event_name"
+              exit 0
+              ;;
+          esac
+
+          if [[ -z "$content_node_id" ]]; then
+            echo "No content node id in event payload; skipping."
+            exit 0
+          fi
+
+          query='query($owner:String!,$repo:String!,$contentId:ID!,$labelName:String!){
+            repository(owner:$owner,name:$repo){
+              label(name:$labelName){ id name }
+            }
+            node(id:$contentId){
+              __typename
+              ... on Issue {
+                id
+                url
+                state
+                milestone { title }
+                labels(first:100){ nodes{ id name } }
+              }
+              ... on PullRequest {
+                id
+                url
+                state
+                milestone { title }
+                labels(first:100){ nodes{ id name } }
+              }
+            }
+          }'
+
+          payload="$(jq -nc \
+            --arg q "$query" \
+            --arg owner "$owner" \
+            --arg repo "$repo_name" \
+            --arg contentId "$content_node_id" \
+            --arg labelName "$TRIAGE_LABEL_NAME" \
+            '{query:$q,variables:{owner:$owner,repo:$repo,contentId:$contentId,labelName:$labelName}}'
+          )"
+
+          item_json="$(graphql_call "$payload")"
+          graphql_require_no_errors "$item_json" "loading item + triage label"
+
+          label_id="$(jq -r '.data.repository.label.id // empty' <<<"$item_json")"
+          if [[ -z "$label_id" ]]; then
+            echo "Label '$TRIAGE_LABEL_NAME' not found in repository; failing." >&2
+            exit 1
+          fi
+
+          node_type="$(jq -r '.data.node.__typename // empty' <<<"$item_json")"
+          if [[ "$node_type" != "Issue" && "$node_type" != "PullRequest" ]]; then
+            echo "Node is not Issue/PullRequest (type='$node_type'); skipping."
+            exit 0
+          fi
+
+          labelable_id="$(jq -r '.data.node.id // empty' <<<"$item_json")"
+          item_url="$(jq -r '.data.node.url // empty' <<<"$item_json")"
+          item_state="$(jq -r '.data.node.state // empty' <<<"$item_json")"
+          milestone_title="$(jq -r '.data.node.milestone.title // empty' <<<"$item_json")"
+          has_triage_label=false
+          if jq -e --arg n "$TRIAGE_LABEL_NAME" '.data.node.labels.nodes[]? | select(.name == $n)' >/dev/null 2>&1 <<<"$item_json"; then
+            has_triage_label=true
+          fi
+          has_report_label=false
+          if jq -e '.data.node.labels.nodes[]? | select(.name == "report:weekly" or .name == "report:weekly-fail")' >/dev/null 2>&1 <<<"$item_json"; then
+            has_report_label=true
+          fi
+
+          if [[ -z "$item_url" ]]; then
+            item_url="$payload_url"
+          fi
+
+          if [[ "$has_report_label" == true ]]; then
+            echo "Report issue detected; triage label sync skipped for $item_url."
+            exit 0
+          fi
+
+          if [[ "$item_state" != "OPEN" ]]; then
+            echo "Item is not OPEN ($item_state); no triage-label action for $item_url."
+            exit 0
+          fi
+
+          if [[ -z "$milestone_title" ]]; then
+            should_have_triage=true
+          else
+            should_have_triage=false
+          fi
+
+          if [[ "$should_have_triage" == true && "$has_triage_label" == true ]]; then
+            echo "No-op: triage label already present for $item_url."
+            exit 0
+          fi
+
+          if [[ "$should_have_triage" == false && "$has_triage_label" == false ]]; then
+            echo "No-op: triage label already absent for $item_url (milestone present)."
+            exit 0
+          fi
+
+          if [[ "$should_have_triage" == true ]]; then
+            mutation='mutation($labelableId:ID!,$labelIds:[ID!]!){
+              addLabelsToLabelable(input:{labelableId:$labelableId,labelIds:$labelIds}){
+                clientMutationId
+              }
+            }'
+            mutation_payload="$(jq -nc \
+              --arg q "$mutation" \
+              --arg labelableId "$labelable_id" \
+              --arg labelId "$label_id" \
+              '{query:$q,variables:{labelableId:$labelableId,labelIds:[$labelId]}}'
+            )"
+            mutation_json="$(graphql_call "$mutation_payload")"
+            graphql_require_no_errors "$mutation_json" "adding triage label"
+            echo "Added '$TRIAGE_LABEL_NAME' to $item_url"
+          else
+            mutation='mutation($labelableId:ID!,$labelIds:[ID!]!){
+              removeLabelsFromLabelable(input:{labelableId:$labelableId,labelIds:$labelIds}){
+                clientMutationId
+              }
+            }'
+            mutation_payload="$(jq -nc \
+              --arg q "$mutation" \
+              --arg labelableId "$labelable_id" \
+              --arg labelId "$label_id" \
+              '{query:$q,variables:{labelableId:$labelableId,labelIds:[$labelId]}}'
+            )"
+            mutation_json="$(graphql_call "$mutation_payload")"
+            graphql_require_no_errors "$mutation_json" "removing triage label"
+            echo "Removed '$TRIAGE_LABEL_NAME' from $item_url"
+          fi

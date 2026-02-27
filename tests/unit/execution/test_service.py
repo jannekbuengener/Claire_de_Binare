@@ -15,6 +15,7 @@ from services.execution import config, service
 
 
 @pytest.mark.unit
+@pytest.mark.skipif(service.app is None, reason="Flask not installed")
 def test_health_endpoint_reports_ok() -> None:
     client = service.app.test_client()
     response = client.get("/health")
