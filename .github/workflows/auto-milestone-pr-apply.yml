@@ -18,6 +18,20 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
+      - name: Download PR intent artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: pr_event
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: pr_event_artifact
+
+      - name: Inspect PR intent artifact
+        shell: bash
+        run: |
+          ls -la pr_event_artifact
+          cat pr_event_artifact/pr_event.json
+
       - name: Apply milestone to PR
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
@@ -25,6 +39,8 @@ jobs:
             const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
             const { owner, repo } = context.repo;
             const workflowRun = context.payload.workflow_run;
+            const fs = require("fs");
+            const artifactPath = "pr_event_artifact/pr_event.json";
 
             function logPermissionWarning(error, action) {
               const status = error?.status ?? error?.response?.status;
@@ -63,59 +79,16 @@ jobs:
               );
             }
 
-            async function downloadIntentArtifact() {
-              const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
-                owner,
-                repo,
-                run_id: workflowRun.id,
-                per_page: 100,
-              });
-
-              const artifact = artifacts.artifacts.find(candidate => candidate.name === "pr_event");
-              if (!artifact) {
-                core.warning(`No pr_event artifact found for workflow_run ${workflowRun.id}.`);
-                return null;
-              }
-
-              const response = await github.rest.actions.downloadArtifact({
-                owner,
-                repo,
-                artifact_id: artifact.id,
-                archive_format: "zip",
-              });
-
-              const zipBuffer = Buffer.from(response.data);
-              const signature = zipBuffer.readUInt32LE(0);
-              const localHeaderSignature = 0x04034b50;
-              if (signature !== localHeaderSignature) {
-                core.warning(`Unexpected artifact format for workflow_run ${workflowRun.id}.`);
-                return null;
-              }
-
-              const fileNameLength = zipBuffer.readUInt16LE(26);
-              const extraLength = zipBuffer.readUInt16LE(28);
-              const compressedSize = zipBuffer.readUInt32LE(18);
-              const compressionMethod = zipBuffer.readUInt16LE(8);
-              const dataStart = 30 + fileNameLength + extraLength;
-              const dataEnd = dataStart + compressedSize;
-              const compressed = zipBuffer.subarray(dataStart, dataEnd);
-
-              let jsonText;
-              if (compressionMethod === 0) {
-                jsonText = compressed.toString("utf8");
-              } else if (compressionMethod === 8) {
-                jsonText = require("zlib").inflateRawSync(compressed).toString("utf8");
-              } else {
-                core.warning(`Unsupported pr_event artifact compression method ${compressionMethod}.`);
-                return null;
-              }
-
-              return JSON.parse(jsonText);
-            }
-
             let prEvent;
             try {
-              prEvent = await downloadIntentArtifact();
+              if (!fs.existsSync(artifactPath)) {
+                core.warning(`No pr_event.json found at ${artifactPath} for workflow_run ${workflowRun.id}.`);
+                return;
+              }
+
+              const artifactJson = fs.readFileSync(artifactPath, "utf8");
+              core.info(`pr_event.json read successfully from ${artifactPath}`);
+              prEvent = JSON.parse(artifactJson);
             } catch (error) {
               logPermissionWarning(error, `Artifact read for workflow_run ${workflowRun.id}`);
               return;
