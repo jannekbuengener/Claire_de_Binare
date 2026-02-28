@@ -12,6 +12,7 @@ permissions:
 
 env:
   DEFAULT_MILESTONE_TITLE: INBOX
+  FALLBACK_TOKEN: ${{ secrets.CDB_PR_AUTOMATION_TOKEN }}
 
 jobs:
   apply-pr-milestone:
@@ -37,10 +38,12 @@ jobs:
         with:
           script: |
             const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
+            const fallbackToken = process.env.FALLBACK_TOKEN || "";
             const { owner, repo } = context.repo;
             const workflowRun = context.payload.workflow_run;
             const fs = require("fs");
             const artifactPath = "pr_event_artifact/pr_event.json";
+            const { getOctokit } = require("@actions/github");
 
             function logPermissionWarning(error, action) {
               const status = error?.status ?? error?.response?.status;
@@ -50,6 +53,12 @@ jobs:
               core.warning(
                 `${action} skipped: ${message}${status ? ` (status ${status})` : ""}${accepted ? ` [accepted permissions: ${accepted}]` : ""}`
               );
+            }
+
+            function isDownscopedIntegrationError(error) {
+              const status = error?.status ?? error?.response?.status;
+              const message = (error?.response?.data?.message || error?.message || "").toLowerCase();
+              return status === 403 && message.includes("resource not accessible by integration");
             }
 
             function milestoneLabelTitles(labels) {
@@ -121,7 +130,7 @@ jobs:
               return;
             }
 
-            core.info("PR path active: same-repo guard passed.");
+            core.info("same-repo guard passed.");
             core.info(
               `Auto Milestone PR Apply event: action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
             );
@@ -131,16 +140,44 @@ jobs:
               return;
             }
 
+            let apiClient = github;
             let liveItem;
-            try {
-              ({ data: liveItem } = await github.rest.issues.get({
+            core.info("Using GITHUB_TOKEN");
+
+            async function readIssue(client) {
+              const { data } = await client.rest.issues.get({
                 owner,
                 repo,
                 issue_number: issueNumber,
-              }));
+              });
+
+              return data;
+            }
+
+            try {
+              liveItem = await readIssue(apiClient);
             } catch (error) {
-              logPermissionWarning(error, `Read for #${issueNumber}`);
-              return;
+              if (!isDownscopedIntegrationError(error)) {
+                logPermissionWarning(error, `Read for #${issueNumber}`);
+                return;
+              }
+
+              if (!fallbackToken) {
+                core.warning(
+                  "PR apply blocked (GITHUB_TOKEN downscoped) and no CDB_PR_AUTOMATION_TOKEN configured. Skipping."
+                );
+                return;
+              }
+
+              core.info("Retrying PR apply with CDB_PR_AUTOMATION_TOKEN");
+              apiClient = getOctokit(fallbackToken);
+
+              try {
+                liveItem = await readIssue(apiClient);
+              } catch (fallbackError) {
+                logPermissionWarning(fallbackError, `Fallback read for #${issueNumber}`);
+                return;
+              }
             }
 
             if (liveItem.state !== "open") {
@@ -214,7 +251,7 @@ jobs:
             core.info(`Milestone write attempt: target="${target.title}" issueNumber=${issueNumber}`);
 
             try {
-              await github.rest.issues.update({
+              await apiClient.rest.issues.update({
                 owner,
                 repo,
                 issue_number: issueNumber,

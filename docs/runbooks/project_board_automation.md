@@ -72,6 +72,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - `.github/workflows/auto-milestone-pr-apply.yml`
   - Reagiert via `workflow_run` auf `Auto Milestone PR Intent`, laeuft im Default-Branch-Kontext und setzt PR-Milestones ueber die Issues API.
   - Metadata-only: kein Checkout, same-repo guard fuer Fork-PRs, fail-soft bei API-/Berechtigungsfehlern.
+  - Wenn GitHub den `GITHUB_TOKEN` im Apply-Pfad serverseitig auf `issues=read` herunterstuft, nutzt der Workflow optional das Repo-Secret `CDB_PR_AUTOMATION_TOKEN` als Fallback.
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
 - `.github/workflows/triage_guard.yml`
@@ -221,6 +222,8 @@ Trigger-Safety:
   - Der Applier laeuft im trusted Default-Branch-Kontext, macht keinen Checkout und setzt den Milestone ueber die Issues API.
 - Externe Fork-PRs werden absichtlich per same-repo guard geskippt.
 - Hintergrund: PR-Event-Token koennen serverseitig read-only sein; `workflow_run` kann dagegen die benoetigten Write-Tokens fuer Metadata-Mutationen erhalten.
+- Wenn `GITHUB_TOKEN` im Apply-Workflow trotzdem mit `403` und `accepted permissions: issues=read` downscoped wird, benoetigt der Workflow das Repo-Secret `CDB_PR_AUTOMATION_TOKEN` (fine-grained PAT mit minimal `Issues`/`Pull requests` Read+Write), um PR-Milestones zu setzen.
+- Security bleibt unveraendert: metadata-only, kein Checkout, same-repo guard.
 
 ## Manual backfill (monthly)
 
