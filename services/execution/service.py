@@ -429,6 +429,7 @@ def process_order(order_data: dict):
                     policy_hash=getattr(order, "policy_hash", None),
                     input_hash=getattr(order, "input_hash", None),
                     output_hash=getattr(order, "output_hash", None),
+                    policy_snapshot=getattr(order, "policy_snapshot", None),
                 )
             except Exception:
                 pass  # Guardrail: never break execution path
