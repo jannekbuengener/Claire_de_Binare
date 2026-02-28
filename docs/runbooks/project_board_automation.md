@@ -223,6 +223,9 @@ Trigger-Safety:
 - Externe Fork-PRs werden absichtlich per same-repo guard geskippt.
 - Hintergrund: PR-Event-Token koennen serverseitig read-only sein; `workflow_run` kann dagegen die benoetigten Write-Tokens fuer Metadata-Mutationen erhalten.
 - Wenn `GITHUB_TOKEN` im Apply-Workflow trotzdem mit `403` und `accepted permissions: issues=read` downscoped wird, benoetigt der Workflow das Repo-Secret `CDB_PR_AUTOMATION_TOKEN` (fine-grained PAT mit minimal `Issues`/`Pull requests` Read+Write), um PR-Milestones zu setzen.
+- `CDB_PR_AUTOMATION_TOKEN` ist als fine-grained, repo-scoped PAT mit minimalen Rechten zu pflegen; mindestens `Issues: Read and write`, nicht mehr als fuer den Fallback noetig.
+- Empfehlung: immer ein Ablaufdatum setzen (z. B. 30 oder 90 Tage) und eine feste Rotationsroutine betreiben.
+- Secret-Wert niemals in Logs, Chats oder PR-Kommentaren posten; ausschliesslich als GitHub Actions Secret pflegen und dort rotieren.
 - Security bleibt unveraendert: metadata-only, kein Checkout, same-repo guard.
 
 ## Manual backfill (monthly)
