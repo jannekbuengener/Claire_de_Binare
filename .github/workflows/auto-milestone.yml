@@ -28,6 +28,7 @@ jobs:
           script: |
             const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
             const { owner, repo } = context.repo;
+            const action = context.payload.action || "";
 
             function logPermissionWarning(error, action) {
               const status = error?.status ?? error?.response?.status;
@@ -85,6 +86,14 @@ jobs:
               return;
             }
 
+            if (context.eventName === "issues" && action === "labeled") {
+              const eventLabelName = (context.payload.label?.name || "").trim();
+              if (!/^milestone:\s*.+/i.test(eventLabelName)) {
+                core.info("Non-milestone label event; skipping.");
+                return;
+              }
+            }
+
             let item;
             try {
               ({ data: item } = await github.rest.issues.get({
@@ -116,6 +125,7 @@ jobs:
             }
 
             const desiredTitle = labelMilestones[0] || defaultMilestoneTitle;
+            const hasMilestoneLabel = labelMilestones.length === 1;
             const milestonesByTitle = await listOpenMilestones();
             const target = milestonesByTitle.get(desiredTitle.trim().toLowerCase());
 
@@ -138,9 +148,27 @@ jobs:
               return;
             }
 
-            if (liveItem.milestone) {
+            const currentMilestone = liveItem.milestone || null;
+            const currentTitle = currentMilestone ? currentMilestone.title.trim() : null;
+            const currentTitleLower = currentTitle ? currentTitle.toLowerCase() : null;
+            const targetTitleLower = target.title.trim().toLowerCase();
+            const inboxTitleLower = defaultMilestoneTitle.trim().toLowerCase();
+
+            if (currentTitleLower === targetTitleLower) {
+              core.info(`#${issueNumber} already has milestone "${target.title}".`);
+              return;
+            }
+
+            if (hasMilestoneLabel) {
+              if (currentMilestone && currentTitleLower !== inboxTitleLower) {
+                core.warning(
+                  `#${issueNumber} already has non-INBOX milestone "${currentMilestone.title}". Skipping overwrite from label milestone:${desiredTitle}.`
+                );
+                return;
+              }
+            } else if (currentMilestone) {
               core.info(
-                `#${issueNumber} received milestone "${liveItem.milestone.title}" before update. Skipping overwrite.`
+                `#${issueNumber} received milestone "${currentMilestone.title}" before default assignment. Skipping overwrite.`
               );
               return;
             }

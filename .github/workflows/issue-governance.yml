@@ -76,6 +76,24 @@ jobs:
               return;
             }
 
+            const { data: refreshedIssue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issue.number,
+            });
+            const refreshedMilestone = refreshedIssue.milestone || null;
+            const refreshedNumber = refreshedMilestone ? refreshedMilestone.number : null;
+
+            if (refreshedNumber === target.number) {
+              core.info(`Milestone already set to ${target.title}.`);
+              return;
+            }
+
+            if (refreshedMilestone && refreshedNumber !== inboxNumber) {
+              core.info(`Issue #${issue.number} already has explicit milestone ${refreshedMilestone.title}. Skipping override.`);
+              return;
+            }
+
             await github.rest.issues.update({
               owner, repo,
               issue_number: issue.number,
