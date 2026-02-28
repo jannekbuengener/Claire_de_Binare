@@ -18,7 +18,6 @@ concurrency:
 
 permissions:
   issues: write
-  metadata: read
 
 env:
   DEFAULT_MILESTONE_TITLE: INBOX
