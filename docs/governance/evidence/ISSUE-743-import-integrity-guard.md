@@ -20,8 +20,8 @@ Current status:
 
 ## Implementation
 
-- PR: <this PR>
-- CI/Test run: <link placeholder>
+- PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/1005
+- CI/Test run: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22531042412
 - Doc/ADR: `docs/surrealdb/ledger-importer.md`
 
 ### What Changed
