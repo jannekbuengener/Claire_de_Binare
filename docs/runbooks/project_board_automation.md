@@ -66,7 +66,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert und aktuell noch kein Milestone gesetzt ist
     - unbekannter Titel oder fehlendes/geschlossenes `INBOX` -> nur Warnung, keine Mutation
     - vorhandene Nicht-`INBOX`-Milestones werden nie überschrieben
-    - Fork-PRs werden wegen read-only Token nur geloggt und uebersprungen
+    - PR-Milestones laufen ueber `pull_request_target` metadata-only; same-repo PRs duerfen schreiben, externe Fork-PRs werden nur geloggt und uebersprungen
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
 - `.github/workflows/triage_guard.yml`
@@ -92,7 +92,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - `issue-governance.yml` stuft `INBOX` auf den passenden Phase-Milestone hoch, sobald der Titel eine gemappte Phase enthaelt.
 - Nicht-`INBOX`-Milestones bleiben stabil: Weder `auto-milestone.yml` noch `issue-governance.yml` ueberschreiben sie.
 - Existiert `<TITLE>` nicht als offener Milestone oder ist `INBOX` nicht offen/vorhanden, bleibt das Item unveraendert und der Workflow loggt nur eine Warnung.
-- Fork-PRs im `pull_request`-Trigger bleiben unveraendert; der Workflow loggt den read-only-Fall und beendet sich fail-soft.
+- PR-Milestones laufen ueber `pull_request_target`, aber nur fuer same-repo PRs; externe Fork-PRs werden fail-soft geloggt und uebersprungen.
 - `INBOX` ist ein Intake-Milestone; im Triage-Schritt wird er spaeter durch einen der 6 strategischen Milestones ersetzt.
 
 Report-Ausnahme:
@@ -209,8 +209,9 @@ Trigger-Safety:
 
 ## Operational known limits
 
-- Fork PRs run with read-only tokens and are intentionally skipped (log-only).
-- `pull_request` runs may receive a read-only token depending on repo/org settings; in that case the automation warns and skips instead of writing milestones.
+- PR-Milestones werden ueber `pull_request_target` gesetzt, aber nur fuer same-repo PRs und ohne Checkout oder PR-Code-Ausfuehrung.
+- Externe Fork-PRs werden absichtlich geskippt; der Workflow loggt den Guard-Fall nur als Warnung.
+- Hintergrund: `pull_request`-Runs koennen serverseitig auf read-only heruntergestuft werden; deshalb nutzt der Milestone-Write-Pfad fuer PRs den Base-Repo-Kontext nur fuer Metadata-Mutationen.
 
 ## Manual backfill (monthly)
 
