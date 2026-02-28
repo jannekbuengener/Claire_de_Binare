@@ -216,6 +216,7 @@ Trigger-Safety:
 ## Manual backfill (monthly)
 
 - Run the `Auto Milestone` workflow via `workflow_dispatch` on `main` to assign milestones for open items without a milestone.
+- Smoke note: same-repo PR milestone writes are validated with throwaway docs-only PRs and deleted afterward.
 
 ### Auth / Scopes
 
