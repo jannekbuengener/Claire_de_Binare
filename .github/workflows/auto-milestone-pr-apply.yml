@@ -1,0 +1,255 @@
+name: Auto Milestone PR Apply
+
+on:
+  workflow_run:
+    workflows: ["Auto Milestone PR Intent"]
+    types: [completed]
+
+permissions:
+  actions: read
+  issues: write
+  contents: read
+
+env:
+  DEFAULT_MILESTONE_TITLE: INBOX
+
+jobs:
+  apply-pr-milestone:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply milestone to PR
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
+            const { owner, repo } = context.repo;
+            const workflowRun = context.payload.workflow_run;
+
+            function logPermissionWarning(error, action) {
+              const status = error?.status ?? error?.response?.status;
+              const accepted = error?.response?.headers?.["x-accepted-github-permissions"];
+              const message = error?.response?.data?.message || error?.message || "unknown error";
+
+              core.warning(
+                `${action} skipped: ${message}${status ? ` (status ${status})` : ""}${accepted ? ` [accepted permissions: ${accepted}]` : ""}`
+              );
+            }
+
+            function milestoneLabelTitles(labels) {
+              const titles = (labels || [])
+                .map(label => typeof label === "string" ? label : label.name)
+                .filter(Boolean)
+                .map(name => name.trim())
+                .filter(name => /^milestone:\s*.+/i.test(name))
+                .map(name => name.replace(/^milestone:\s*/i, "").trim())
+                .filter(Boolean);
+
+              return [...new Set(titles)].sort((left, right) =>
+                left.localeCompare(right, "en", { sensitivity: "base" })
+              );
+            }
+
+            async function listOpenMilestones() {
+              const milestones = await github.paginate(github.rest.issues.listMilestones, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+
+              return new Map(
+                milestones.map(milestone => [milestone.title.trim().toLowerCase(), milestone])
+              );
+            }
+
+            async function downloadIntentArtifact() {
+              const { data: artifacts } = await github.rest.actions.listWorkflowRunArtifacts({
+                owner,
+                repo,
+                run_id: workflowRun.id,
+                per_page: 100,
+              });
+
+              const artifact = artifacts.artifacts.find(candidate => candidate.name === "pr_event");
+              if (!artifact) {
+                core.warning(`No pr_event artifact found for workflow_run ${workflowRun.id}.`);
+                return null;
+              }
+
+              const response = await github.rest.actions.downloadArtifact({
+                owner,
+                repo,
+                artifact_id: artifact.id,
+                archive_format: "zip",
+              });
+
+              const zipBuffer = Buffer.from(response.data);
+              const signature = zipBuffer.readUInt32LE(0);
+              const localHeaderSignature = 0x04034b50;
+              if (signature !== localHeaderSignature) {
+                core.warning(`Unexpected artifact format for workflow_run ${workflowRun.id}.`);
+                return null;
+              }
+
+              const fileNameLength = zipBuffer.readUInt16LE(26);
+              const extraLength = zipBuffer.readUInt16LE(28);
+              const compressedSize = zipBuffer.readUInt32LE(18);
+              const compressionMethod = zipBuffer.readUInt16LE(8);
+              const dataStart = 30 + fileNameLength + extraLength;
+              const dataEnd = dataStart + compressedSize;
+              const compressed = zipBuffer.subarray(dataStart, dataEnd);
+
+              let jsonText;
+              if (compressionMethod === 0) {
+                jsonText = compressed.toString("utf8");
+              } else if (compressionMethod === 8) {
+                jsonText = require("zlib").inflateRawSync(compressed).toString("utf8");
+              } else {
+                core.warning(`Unsupported pr_event artifact compression method ${compressionMethod}.`);
+                return null;
+              }
+
+              return JSON.parse(jsonText);
+            }
+
+            let prEvent;
+            try {
+              prEvent = await downloadIntentArtifact();
+            } catch (error) {
+              logPermissionWarning(error, `Artifact read for workflow_run ${workflowRun.id}`);
+              return;
+            }
+
+            if (!prEvent) {
+              return;
+            }
+
+            const issueNumber = Number(prEvent.pr_number);
+            const action = String(prEvent.action || "");
+            const eventLabelName = String(prEvent.label || "").trim();
+            const headRepoFullName = String(prEvent.head_repo || "");
+            const baseRepoFullName = String(prEvent.base_repo || "");
+
+            core.info(
+              `workflow_run path active: runId=${workflowRun.id} conclusion=${workflowRun.conclusion || "<none>"} pr=${issueNumber}`
+            );
+            core.info(
+              `PR path active: issueNumber=${issueNumber} headRepo=${headRepoFullName || "<none>"} baseRepo=${baseRepoFullName || "<none>"}`
+            );
+
+            if (!issueNumber) {
+              core.warning("Could not determine the PR number from pr_event artifact.");
+              return;
+            }
+
+            if (!headRepoFullName || !baseRepoFullName || headRepoFullName !== baseRepoFullName) {
+              core.info("Fork PR; skip");
+              return;
+            }
+
+            core.info("PR path active: same-repo guard passed.");
+            core.info(
+              `Auto Milestone PR Apply event: action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
+            );
+
+            if (action === "labeled" && !/^milestone:\s*.+/i.test(eventLabelName)) {
+              core.info("Non-milestone label event; skipping.");
+              return;
+            }
+
+            let liveItem;
+            try {
+              ({ data: liveItem } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }));
+            } catch (error) {
+              logPermissionWarning(error, `Read for #${issueNumber}`);
+              return;
+            }
+
+            if (liveItem.state !== "open") {
+              core.info(`#${issueNumber} is not open. Skipping.`);
+              return;
+            }
+
+            const labelMilestones = milestoneLabelTitles(liveItem.labels);
+            if (action === "labeled") {
+              if (labelMilestones.length === 0) {
+                core.info("No milestone label present after labeled event; skipping.");
+                return;
+              }
+
+              if (labelMilestones.length > 1) {
+                core.warning(
+                  `#${issueNumber} has multiple milestone:<...> labels (${labelMilestones.join(", ")}); ambiguous. Skipping.`
+                );
+                return;
+              }
+            }
+
+            const milestonesByTitle = await listOpenMilestones();
+            const currentMilestone = liveItem.milestone || null;
+            const currentTitle = currentMilestone ? currentMilestone.title.trim() : null;
+            const currentTitleLower = currentTitle ? currentTitle.toLowerCase() : null;
+            const inboxTitleLower = defaultMilestoneTitle.trim().toLowerCase();
+
+            let targetTitle;
+            if (action === "labeled") {
+              targetTitle = labelMilestones[0];
+            } else if (["opened", "reopened", "synchronize"].includes(action)) {
+              if (currentMilestone) {
+                core.info(
+                  `#${issueNumber} already has milestone "${currentMilestone.title}". Skipping default assignment.`
+                );
+                return;
+              }
+
+              targetTitle = defaultMilestoneTitle;
+            } else {
+              core.info(`Unsupported PR action "${action || "<none>"}"; skipping.`);
+              return;
+            }
+
+            const target = milestonesByTitle.get(targetTitle.trim().toLowerCase());
+            if (!target) {
+              core.warning(
+                `Could not resolve target milestone "${targetTitle}" for #${issueNumber}: open milestone does not exist. Leaving item unchanged.`
+              );
+              return;
+            }
+
+            const targetTitleLower = target.title.trim().toLowerCase();
+            if (currentTitleLower === targetTitleLower) {
+              core.info(`#${issueNumber} already has milestone "${target.title}".`);
+              return;
+            }
+
+            if (action === "labeled") {
+              if (currentTitleLower === inboxTitleLower) {
+                core.info(`Overriding INBOX -> ${target.title} due to milestone label.`);
+              } else if (currentMilestone) {
+                core.warning(
+                  `#${issueNumber} already has non-INBOX milestone "${currentMilestone.title}". Skipping overwrite from label milestone:${targetTitle}.`
+                );
+                return;
+              }
+            }
+
+            core.info(`Milestone write attempt: target="${target.title}" issueNumber=${issueNumber}`);
+
+            try {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                milestone: target.number,
+              });
+            } catch (error) {
+              logPermissionWarning(error, `Milestone update for #${issueNumber}`);
+              return;
+            }
+
+            core.info(`Milestone set to "${target.title}" for #${issueNumber}.`);

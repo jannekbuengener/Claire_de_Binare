@@ -43,6 +43,8 @@ jobs:
             const changedFiles = files.map((file) => file.filename);
             const isDocsFile = (path) => path.startsWith('docs/') || path.toLowerCase().endsWith('.md');
             const isWorkflowFile = (path) => path.startsWith('.github/workflows/');
+            const isWorkflowScopeCompanionDoc = (path) =>
+              path === 'docs/runbooks/project_board_automation.md';
             const isInfraFile = (path) => path.startsWith('infrastructure/');
             const hasLabel = (name) => labelSet.has(name);
             const hasPrefix = (name) =>
@@ -92,77 +94,6 @@ jobs:
               );
             }
 
-            function hasSameRepoGuard(content) {
-              return (
-                /headRepoFullName/.test(content) &&
-                /baseRepoFullName/.test(content) &&
-                /headRepoFullName\s*===\s*baseRepoFullName/.test(content) &&
-                /context\.eventName\s*===\s*"pull_request_target"/.test(content)
-              );
-            }
-
-            function evaluateAutoMilestonePrTargetException(filePath, content) {
-              const localFailures = [];
-              const allowedUses = listWorkflowUses(content);
-              const permissions = parseTopLevelPermissions(content);
-              const allowedPermissions = new Map([
-                ['issues', 'write'],
-                ['metadata', 'read'],
-              ]);
-
-              if (filePath !== '.github/workflows/auto-milestone.yml') {
-                localFailures.push(`Workflow ${filePath} contains pull_request_target`);
-                return { allowed: false, failures: localFailures };
-              }
-
-              if (hasCheckoutBehavior(content)) {
-                localFailures.push(
-                  'Allowed pull_request_target exception requires metadata-only behavior with no checkout step'
-                );
-              }
-
-              if (!explicitPermissionsPattern.test(content)) {
-                localFailures.push(
-                  'Allowed pull_request_target exception requires an explicit top-level permissions block'
-                );
-              } else if (permissions.size === 0) {
-                localFailures.push(
-                  'Allowed pull_request_target exception requires explicit top-level permissions entries'
-                );
-              } else {
-                for (const [name, value] of permissions.entries()) {
-                  if (!allowedPermissions.has(name) || allowedPermissions.get(name) !== value) {
-                    localFailures.push(
-                      `Allowed pull_request_target exception only permits issues: write and metadata: read, but found ${name}: ${value}`
-                    );
-                  }
-                }
-
-                if (permissions.get('issues') !== 'write') {
-                  localFailures.push(
-                    'Allowed pull_request_target exception requires issues: write'
-                  );
-                }
-              }
-
-              const disallowedUses = allowedUses.filter(
-                (use) => !/^actions\/github-script@/i.test(use)
-              );
-              if (disallowedUses.length > 0) {
-                localFailures.push(
-                  `Allowed pull_request_target exception only permits actions/github-script, but found: ${disallowedUses.join(', ')}`
-                );
-              }
-
-              if (!hasSameRepoGuard(content)) {
-                localFailures.push(
-                  'Allowed pull_request_target exception requires an explicit same-repo guard in the PR path'
-                );
-              }
-
-              return { allowed: localFailures.length === 0, failures: localFailures };
-            }
-
             let category = 'core/service';
             let categorySource = 'default';
 
@@ -196,10 +127,12 @@ jobs:
                 passes.push('docs-only scope validated');
               }
             } else if (category === 'workflows-only') {
-              const invalidWorkflowFiles = changedFiles.filter((path) => !isWorkflowFile(path));
+              const invalidWorkflowFiles = changedFiles.filter(
+                (path) => !isWorkflowFile(path) && !isWorkflowScopeCompanionDoc(path)
+              );
               if (invalidWorkflowFiles.length > 0) {
                 failures.push(
-                  `workflows-only allows only .github/workflows/**, but found: ${invalidWorkflowFiles.join(', ')}`
+                  `workflows-only allows only .github/workflows/** plus docs/runbooks/project_board_automation.md, but found: ${invalidWorkflowFiles.join(', ')}`
                 );
               } else {
                 passes.push('workflows-only scope validated');
@@ -250,14 +183,16 @@ jobs:
               }
 
               if (/^\s*pull_request_target\s*:/m.test(content)) {
-                const exception = evaluateAutoMilestonePrTargetException(file.filename, content);
+                failures.push(`Workflow ${file.filename} contains pull_request_target`);
+              }
 
-                if (!exception.allowed) {
-                  failures.push(...exception.failures);
-                } else {
-                  passes.push(
-                    'Allowed pull_request_target exception validated for .github/workflows/auto-milestone.yml'
+              if (/^\s*workflow_run\s*:/m.test(content)) {
+                if (hasCheckoutBehavior(content)) {
+                  failures.push(
+                    `Workflow ${file.filename} is triggered by workflow_run and must remain metadata-only (no checkout behavior)`
                   );
+                } else {
+                  passes.push(`workflow_run metadata-only validated for ${file.filename}`);
                 }
               }
 
