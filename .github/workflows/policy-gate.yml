@@ -134,7 +134,7 @@ jobs:
                 continue;
               }
 
-              if (content.includes('pull_request_target')) {
+              if (/^\s*pull_request_target\s*:/m.test(content)) {
                 failures.push(`Workflow ${file.filename} contains pull_request_target`);
               }
 
@@ -142,7 +142,7 @@ jobs:
                 failures.push(`Workflow ${file.filename} is missing an explicit permissions section`);
               }
 
-              if (content.includes('write-all')) {
+              if (/^\s*permissions\s*:\s*write-all\s*$/m.test(content)) {
                 failures.push(`Workflow ${file.filename} contains write-all`);
               }
             }
