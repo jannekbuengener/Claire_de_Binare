@@ -24,7 +24,7 @@ permissions:
 jobs:
   ci:
     name: ci (Unit/Integration + Lint gesammelt)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cdb]
 
     steps:
       - name: Checkout
