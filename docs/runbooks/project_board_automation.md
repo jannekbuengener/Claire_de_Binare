@@ -59,11 +59,13 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - `.github/workflows/project_status_label_map.yml`
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
 - `.github/workflows/auto-milestone.yml`
-  - Setzt bei neuen/reopened/labeled Issues und PRs einen Milestone, falls noch keiner gesetzt ist:
-    - genau ein `milestone:<TITLE>` -> setzt den offenen Milestone `<TITLE>`
+  - Setzt bei neuen/reopened/labeled Issues und PRs deterministisch nach Precedence:
+    - `labeled`-Events reagieren nur auf Labels mit Prefix `milestone:`
+    - genau ein `milestone:<TITLE>` -> setzt den offenen Milestone `<TITLE>` und darf `INBOX` überschreiben
     - mehrere `milestone:<...>` Labels -> Warnung und keine Mutation
-    - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert
+    - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert und aktuell noch kein Milestone gesetzt ist
     - unbekannter Titel oder fehlendes/geschlossenes `INBOX` -> nur Warnung, keine Mutation
+    - vorhandene Nicht-`INBOX`-Milestones werden nie überschrieben
     - Fork-PRs werden wegen read-only Token nur geloggt und uebersprungen
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
@@ -83,10 +85,12 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 
 ## Milestone-Autofill
 
-- Genau ein `milestone:<TITLE>` mappt 1:1 auf einen vorhandenen offenen Milestone mit exakt diesem Titel.
+- `labeled`-Events fuer Auto-Milestone reagieren nur auf Labels mit Prefix `milestone:`; andere Labels triggern keine Milestone-Mutation.
+- Genau ein `milestone:<TITLE>` mappt 1:1 auf einen vorhandenen offenen Milestone mit exakt diesem Titel und darf `INBOX` uebersteuern.
 - Mehrere `milestone:<...>`-Labels gelten als mehrdeutig; der Workflow loggt eine Warnung und setzt keinen Milestone.
 - Ohne `milestone:`-Label setzt die Automation den Default-Milestone `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert.
-- `issue-governance.yml` stuft `INBOX` auf den passenden Phase-Milestone hoch, sobald der Titel eine gemappte Phase enthaelt; andere bereits gesetzte Milestones bleiben stabil und werden nicht ueberschrieben.
+- `issue-governance.yml` stuft `INBOX` auf den passenden Phase-Milestone hoch, sobald der Titel eine gemappte Phase enthaelt.
+- Nicht-`INBOX`-Milestones bleiben stabil: Weder `auto-milestone.yml` noch `issue-governance.yml` ueberschreiben sie.
 - Existiert `<TITLE>` nicht als offener Milestone oder ist `INBOX` nicht offen/vorhanden, bleibt das Item unveraendert und der Workflow loggt nur eine Warnung.
 - Fork-PRs im `pull_request`-Trigger bleiben unveraendert; der Workflow loggt den read-only-Fall und beendet sich fail-soft.
 - `INBOX` ist ein Intake-Milestone; im Triage-Schritt wird er spaeter durch einen der 6 strategischen Milestones ersetzt.
@@ -195,8 +199,9 @@ Trigger-Safety:
 
 - Ensure an open milestone `INBOX` exists (otherwise workflow warns and does nothing)
 - New issue without milestone gets `INBOX`
-- New issue with exactly one `milestone:<TITLE>` gets the matching open milestone
+- New issue with exactly one `milestone:<TITLE>` gets the matching open milestone and may replace `INBOX`
 - New issue with multiple `milestone:<...>` labels only warns and stays unchanged
+- Non-`milestone:` labeled events do not trigger Auto-Milestone writes
 - Phase-based governance upgrades `INBOX` to the mapped phase milestone, but does not overwrite other milestones
 - PR from the same repo gets a milestone via the Issues API
 - `workflow_dispatch` backfill only touches open items without a milestone
