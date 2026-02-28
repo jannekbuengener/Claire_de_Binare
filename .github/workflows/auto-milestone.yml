@@ -110,8 +110,9 @@ jobs:
             const labelMilestones = milestoneLabelTitles(item.labels);
             if (labelMilestones.length > 1) {
               core.warning(
-                `#${issueNumber} has multiple milestone labels (${labelMilestones.join(", ")}). Using "${labelMilestones[0]}".`
+                `#${issueNumber} has multiple milestone:<...> labels (${labelMilestones.join(", ")}); ambiguous. Skipping.`
               );
+              return;
             }
 
             const desiredTitle = labelMilestones[0] || defaultMilestoneTitle;
@@ -222,8 +223,10 @@ jobs:
               const labelMilestones = milestoneLabelTitles(item.labels);
               if (labelMilestones.length > 1) {
                 core.warning(
-                  `#${item.number} has multiple milestone labels (${labelMilestones.join(", ")}). Using "${labelMilestones[0]}".`
+                  `#${item.number} has multiple milestone:<...> labels (${labelMilestones.join(", ")}); ambiguous. Skipping.`
                 );
+                warned += 1;
+                continue;
               }
 
               const desiredTitle = labelMilestones[0] || defaultMilestoneTitle;
