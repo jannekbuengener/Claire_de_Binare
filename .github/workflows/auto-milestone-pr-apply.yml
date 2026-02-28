@@ -27,12 +27,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: pr_event_artifact
 
-      - name: Inspect PR intent artifact
-        shell: bash
-        run: |
-          ls -la pr_event_artifact
-          cat pr_event_artifact/pr_event.json
-
       - name: Apply milestone to PR
         uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
