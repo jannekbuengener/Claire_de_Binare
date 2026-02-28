@@ -3,7 +3,7 @@ name: mcp-runtime
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 3,11,19 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
