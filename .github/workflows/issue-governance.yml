@@ -56,20 +56,23 @@ jobs:
             }
 
             const issue = context.payload.issue;
+            const inboxMilestone = milestones.find(ms => (ms.title || "").trim().toLowerCase() === "inbox");
             const { data: liveIssue } = await github.rest.issues.get({
               owner,
               repo,
               issue_number: issue.number,
             });
-            const current = liveIssue.milestone ? liveIssue.milestone.number : null;
+            const currentMilestone = liveIssue.milestone || null;
+            const current = currentMilestone ? currentMilestone.number : null;
+            const inboxNumber = inboxMilestone ? inboxMilestone.number : null;
 
             if (current === target.number) {
               core.info(`Milestone already set to ${target.title}.`);
               return;
             }
 
-            if (liveIssue.milestone) {
-              core.info(`Issue #${issue.number} already has milestone ${liveIssue.milestone.title}. Skipping override.`);
+            if (currentMilestone && current !== inboxNumber) {
+              core.info(`Issue #${issue.number} already has explicit milestone ${currentMilestone.title}. Skipping override.`);
               return;
             }
 
