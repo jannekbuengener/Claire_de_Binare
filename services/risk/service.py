@@ -46,6 +46,7 @@ from core.utils.uuid_gen import (
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.trace_toggle import trace_contract_v1_enabled, allow_evidence_debt
+from core.replay.policy_snapshot import build_policy_snapshot, policy_snapshot_binding_enabled
 from core.auth import validate_all_auth
 from core.domain.models import Signal
 
@@ -1167,6 +1168,17 @@ class RiskManager:
             ts_ms=deterministic_ts_ms,
         )
 
+        # Issue #748 Slice 2: Build policy_snapshot (toggle-gated, default OFF)
+        policy_snapshot = None
+        if policy_snapshot_binding_enabled():
+            try:
+                policy_snapshot = build_policy_snapshot(
+                    thresholds=evidence.get("thresholds") or DECISION_THRESHOLDS,
+                    effective_at_ms=deterministic_ts_ms,
+                )
+            except Exception:
+                pass  # Guardrail: never break trading path
+
         # LR-021 Slice 2: DECISION envelope emission (toggle-gated, default OFF)
         try:
             _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
@@ -1192,6 +1204,7 @@ class RiskManager:
                     policy_hash=evidence.get("policy_hash"),
                     input_hash=evidence.get("input_hash"),
                     output_hash=evidence.get("output_hash"),
+                    policy_snapshot=policy_snapshot,
                 )
             except Exception:
                 pass  # Guardrail: never break trading path
@@ -1423,6 +1436,8 @@ class RiskManager:
             policy_hash=evidence.get("policy_hash"),
             input_hash=evidence.get("input_hash"),
             output_hash=evidence.get("output_hash"),
+            # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
+            policy_snapshot=policy_snapshot,
         )
 
         # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit
@@ -1520,6 +1535,7 @@ class RiskManager:
                     policy_hash=getattr(order, "policy_hash", None),
                     input_hash=getattr(order, "input_hash", None),
                     output_hash=getattr(order, "output_hash", None),
+                    policy_snapshot=getattr(order, "policy_snapshot", None),
                 )
             except Exception:
                 pass  # Guardrail: never break trading path

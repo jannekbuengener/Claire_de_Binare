@@ -80,6 +80,8 @@ services:
     environment:
       ENV: "production"
       LOG_LEVEL: "WARNING"
+      CDB_GIT_COMMIT: ${CDB_GIT_COMMIT:-unknown}
+      CDB_POLICY_VERSION: ${CDB_POLICY_VERSION:-unknown}
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -98,6 +100,8 @@ services:
     environment:
       ENV: "production"
       LOG_LEVEL: "WARNING"
+      CDB_GIT_COMMIT: ${CDB_GIT_COMMIT:-unknown}
+      CDB_POLICY_VERSION: ${CDB_POLICY_VERSION:-unknown}
     security_opt:
       - no-new-privileges:true
     cap_drop:

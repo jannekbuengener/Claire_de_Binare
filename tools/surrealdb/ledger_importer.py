@@ -1,6 +1,8 @@
-"""SurrealDB ledger importer (idempotent, append-only mirror).
+"""SurrealDB ledger importer (strict append-only).
 
 Reads decision-event YAML files and maps them into SurrealDB records.
+Uses CREATE (not UPSERT/MERGE) so re-importing the same event_id fails
+deterministically — the first write is immutable.
 """
 
 from __future__ import annotations
@@ -8,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import re
 import base64
 from dataclasses import dataclass
@@ -17,6 +20,8 @@ from typing import Any, Iterable
 
 import requests
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 SUPPORTED_ACTIONS = {
@@ -163,18 +168,50 @@ def normalize_events(
     return normalized
 
 
+class DuplicateEventError(Exception):
+    """Raised when a CREATE fails because the record already exists."""
+
+    def __init__(self, event_ids: list[str]) -> None:
+        self.event_ids = event_ids
+        super().__init__(
+            f"append-only violation: {len(event_ids)} duplicate event(s): "
+            + ", ".join(event_ids[:10])
+        )
+
+
 def build_surrealql(records: list[dict[str, Any]]) -> str:
     statements: list[str] = []
     for record in records:
         payload = json.dumps(record, separators=(",", ":"), ensure_ascii=False)
-        statements.append(f"UPSERT {record['surreal_id']} MERGE {payload}")
+        statements.append(f"CREATE {record['surreal_id']} CONTENT {payload}")
     return ";\n".join(statements) + ";"
+
+
+_DUPLICATE_NEEDLE = "already exists"
+
+
+def _parse_duplicate_ids(results: list[dict[str, Any]]) -> list[str]:
+    """Extract record ids from SurrealDB statement results that failed with duplicate errors."""
+    ids: list[str] = []
+    for entry in results:
+        status = entry.get("status", "")
+        detail = str(entry.get("result", "") or entry.get("detail", ""))
+        if status == "ERR" and _DUPLICATE_NEEDLE in detail:
+            # SurrealDB error: "Database record `<table>:<id>` already exists"
+            # Match any table name, not just ledger_event.
+            match = re.search(r"`(\w+:\S+?)`", detail)
+            if match:
+                ids.append(match.group(1))
+            else:
+                ids.append("<unknown>")
+    return ids
 
 
 def post_surrealql(config: ImportConfig, query: str) -> None:
     headers = {
         "NS": config.namespace,
         "DB": config.database,
+        "Accept": "application/json",
     }
     if config.auth_header:
         headers["Authorization"] = config.auth_header
@@ -186,6 +223,19 @@ def post_surrealql(config: ImportConfig, query: str) -> None:
     response = requests.post(config.url, headers=headers, data=query, timeout=10)
     response.raise_for_status()
 
+    # SurrealDB /sql returns a JSON array, one entry per statement.
+    try:
+        results = response.json()
+    except (ValueError, TypeError):
+        return  # non-JSON response (e.g. older SurrealDB) — HTTP 200 is success enough
+
+    if not isinstance(results, list):
+        return
+
+    dup_ids = _parse_duplicate_ids(results)
+    if dup_ids:
+        raise DuplicateEventError(dup_ids)
+
 
 def _iter_yaml_files(path: Path) -> list[Path]:
     if path.is_file():
@@ -194,6 +244,7 @@ def _iter_yaml_files(path: Path) -> list[Path]:
 
 
 def main() -> int:
+    logging.basicConfig(format="%(levelname)s: %(message)s")
     parser = argparse.ArgumentParser(description="Import ledger YAML into SurrealDB.")
     parser.add_argument("path", type=Path, help="Ledger file or directory")
     parser.add_argument("--dry-run", action="store_true", help="Print SQL instead of executing")
@@ -226,7 +277,11 @@ def main() -> int:
         auth_pass=args.auth_pass,
         auth_header=args.auth_header,
     )
-    post_surrealql(config, sql)
+    try:
+        post_surrealql(config, sql)
+    except DuplicateEventError as exc:
+        logger.error("APPEND-ONLY VIOLATION: %s", exc)
+        return 1
     return 0
 
 
