@@ -61,6 +61,9 @@ Expected output:
 {"default_workflow_permissions":"write","can_approve_pull_request_reviews":true}
 ```
 
+Smoke validation note: same-repo PR milestone writes should now use the
+repository token without a 403 permissions downgrade.
+
 ## Required GitHub Settings
 
 ### Branch Protection (main)
