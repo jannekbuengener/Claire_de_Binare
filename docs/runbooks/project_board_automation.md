@@ -59,14 +59,19 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - `.github/workflows/project_status_label_map.yml`
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
 - `.github/workflows/auto-milestone.yml`
-  - Setzt bei neuen/reopened/labeled Issues und PRs deterministisch nach Precedence:
+  - Setzt bei neuen/reopened/labeled Issues deterministisch nach Precedence:
     - `labeled`-Events reagieren nur auf Labels mit Prefix `milestone:`
     - genau ein `milestone:<TITLE>` -> setzt den offenen Milestone `<TITLE>` und darf `INBOX` überschreiben
     - mehrere `milestone:<...>` Labels -> Warnung und keine Mutation
     - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert und aktuell noch kein Milestone gesetzt ist
     - unbekannter Titel oder fehlendes/geschlossenes `INBOX` -> nur Warnung, keine Mutation
     - vorhandene Nicht-`INBOX`-Milestones werden nie überschrieben
-    - PR-Milestones laufen ueber `pull_request_target` metadata-only; same-repo PRs duerfen schreiben, externe Fork-PRs werden nur geloggt und uebersprungen
+- `.github/workflows/auto-milestone-pr-intent.yml`
+  - Lauscht unprivilegiert auf `pull_request` (`opened`, `reopened`, `synchronize`, `labeled`) und schreibt nur PR-Metadaten als Artifact `pr_event`.
+  - Kein Checkout, keine PR-Code-Ausfuehrung, nur `contents: read`.
+- `.github/workflows/auto-milestone-pr-apply.yml`
+  - Reagiert via `workflow_run` auf `Auto Milestone PR Intent`, laeuft im Default-Branch-Kontext und setzt PR-Milestones ueber die Issues API.
+  - Metadata-only: kein Checkout, same-repo guard fuer Fork-PRs, fail-soft bei API-/Berechtigungsfehlern.
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
 - `.github/workflows/triage_guard.yml`
@@ -92,7 +97,9 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - `issue-governance.yml` stuft `INBOX` auf den passenden Phase-Milestone hoch, sobald der Titel eine gemappte Phase enthaelt.
 - Nicht-`INBOX`-Milestones bleiben stabil: Weder `auto-milestone.yml` noch `issue-governance.yml` ueberschreiben sie.
 - Existiert `<TITLE>` nicht als offener Milestone oder ist `INBOX` nicht offen/vorhanden, bleibt das Item unveraendert und der Workflow loggt nur eine Warnung.
-- PR-Milestones laufen ueber `pull_request_target`, aber nur fuer same-repo PRs; externe Fork-PRs werden fail-soft geloggt und uebersprungen.
+- PR-Milestones laufen ueber zwei Schritte:
+  - `Auto Milestone PR Intent` sammelt auf `pull_request` nur Metadaten.
+  - `Auto Milestone PR Apply` schreibt den Milestone spaeter auf `workflow_run` im trusted Default-Branch-Kontext.
 - `INBOX` ist ein Intake-Milestone; im Triage-Schritt wird er spaeter durch einen der 6 strategischen Milestones ersetzt.
 
 Report-Ausnahme:
@@ -203,15 +210,17 @@ Trigger-Safety:
 - New issue with multiple `milestone:<...>` labels only warns and stays unchanged
 - Non-`milestone:` labeled events do not trigger Auto-Milestone writes
 - Phase-based governance upgrades `INBOX` to the mapped phase milestone, but does not overwrite other milestones
-- PR from the same repo gets a milestone via the Issues API
+- PR from the same repo gets a milestone via `Auto Milestone PR Apply` on `workflow_run`
 - `workflow_dispatch` backfill only touches open items without a milestone
 - Missing or closed `INBOX` only warns and does not fail the workflow
 
 ## Operational known limits
 
-- PR-Milestones werden ueber `pull_request_target` gesetzt, aber nur fuer same-repo PRs und ohne Checkout oder PR-Code-Ausfuehrung.
-- Externe Fork-PRs werden absichtlich geskippt; der Workflow loggt den Guard-Fall nur als Warnung.
-- Hintergrund: `pull_request`-Runs koennen serverseitig auf read-only heruntergestuft werden; deshalb nutzt der Milestone-Write-Pfad fuer PRs den Base-Repo-Kontext nur fuer Metadata-Mutationen.
+- PR-Milestones werden ueber `pull_request` + `workflow_run` entkoppelt:
+  - Der Listener sammelt nur Metadaten als Artifact.
+  - Der Applier laeuft im trusted Default-Branch-Kontext, macht keinen Checkout und setzt den Milestone ueber die Issues API.
+- Externe Fork-PRs werden absichtlich per same-repo guard geskippt.
+- Hintergrund: PR-Event-Token koennen serverseitig read-only sein; `workflow_run` kann dagegen die benoetigten Write-Tokens fuer Metadata-Mutationen erhalten.
 
 ## Manual backfill (monthly)
 
