@@ -47,6 +47,121 @@ jobs:
             const hasLabel = (name) => labelSet.has(name);
             const hasPrefix = (name) =>
               titleLower.startsWith(`[${name}]`) || titleLower.startsWith(`${name}:`);
+            const explicitPermissionsPattern = /^(?!\s*#)\s*permissions\s*:/m;
+
+            function parseTopLevelPermissions(content) {
+              const permissions = new Map();
+              const lines = content.split(/\r?\n/);
+              let inBlock = false;
+
+              for (const line of lines) {
+                if (!inBlock) {
+                  if (/^permissions:\s*$/.test(line)) {
+                    inBlock = true;
+                  }
+                  continue;
+                }
+
+                if (/^\S/.test(line)) {
+                  break;
+                }
+
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) {
+                  continue;
+                }
+
+                const match = line.match(/^\s+([A-Za-z-]+)\s*:\s*([A-Za-z-]+)\s*$/);
+                if (match) {
+                  permissions.set(match[1], match[2]);
+                }
+              }
+
+              return permissions;
+            }
+
+            function listWorkflowUses(content) {
+              return [...content.matchAll(/^(?!\s*#)\s*uses:\s*([^\s#]+)\s*$/gm)].map((match) => match[1]);
+            }
+
+            function hasCheckoutBehavior(content) {
+              return (
+                /^(?!\s*#)\s*uses:\s*actions\/checkout@/mi.test(content) ||
+                /^(?!\s*#)\s*name:\s*.*checkout.*$/mi.test(content) ||
+                /\bgit\s+checkout\b/i.test(content)
+              );
+            }
+
+            function hasSameRepoGuard(content) {
+              return (
+                /headRepoFullName/.test(content) &&
+                /baseRepoFullName/.test(content) &&
+                /headRepoFullName\s*===\s*baseRepoFullName/.test(content) &&
+                /context\.eventName\s*===\s*"pull_request_target"/.test(content)
+              );
+            }
+
+            function evaluateAutoMilestonePrTargetException(filePath, content) {
+              const localFailures = [];
+              const allowedUses = listWorkflowUses(content);
+              const permissions = parseTopLevelPermissions(content);
+              const allowedPermissions = new Map([
+                ['issues', 'write'],
+                ['metadata', 'read'],
+              ]);
+
+              if (filePath !== '.github/workflows/auto-milestone.yml') {
+                localFailures.push(`Workflow ${filePath} contains pull_request_target`);
+                return { allowed: false, failures: localFailures };
+              }
+
+              if (hasCheckoutBehavior(content)) {
+                localFailures.push(
+                  'Allowed pull_request_target exception requires metadata-only behavior with no checkout step'
+                );
+              }
+
+              if (!explicitPermissionsPattern.test(content)) {
+                localFailures.push(
+                  'Allowed pull_request_target exception requires an explicit top-level permissions block'
+                );
+              } else if (permissions.size === 0) {
+                localFailures.push(
+                  'Allowed pull_request_target exception requires explicit top-level permissions entries'
+                );
+              } else {
+                for (const [name, value] of permissions.entries()) {
+                  if (!allowedPermissions.has(name) || allowedPermissions.get(name) !== value) {
+                    localFailures.push(
+                      `Allowed pull_request_target exception only permits issues: write and metadata: read, but found ${name}: ${value}`
+                    );
+                  }
+                }
+
+                if (permissions.get('issues') !== 'write') {
+                  localFailures.push(
+                    'Allowed pull_request_target exception requires issues: write'
+                  );
+                }
+              }
+
+              const disallowedUses = allowedUses.filter(
+                (use) => !/^actions\/github-script@/i.test(use)
+              );
+              if (disallowedUses.length > 0) {
+                localFailures.push(
+                  `Allowed pull_request_target exception only permits actions/github-script, but found: ${disallowedUses.join(', ')}`
+                );
+              }
+
+              if (!hasSameRepoGuard(content)) {
+                localFailures.push(
+                  'Allowed pull_request_target exception requires an explicit same-repo guard in the PR path'
+                );
+              }
+
+              return { allowed: localFailures.length === 0, failures: localFailures };
+            }
 
             let category = 'core/service';
             let categorySource = 'default';
@@ -135,10 +250,18 @@ jobs:
               }
 
               if (/^\s*pull_request_target\s*:/m.test(content)) {
-                failures.push(`Workflow ${file.filename} contains pull_request_target`);
+                const exception = evaluateAutoMilestonePrTargetException(file.filename, content);
+
+                if (!exception.allowed) {
+                  failures.push(...exception.failures);
+                } else {
+                  passes.push(
+                    'Allowed pull_request_target exception validated for .github/workflows/auto-milestone.yml'
+                  );
+                }
               }
 
-              if (!/^\s*permissions\s*:/m.test(content)) {
+              if (!explicitPermissionsPattern.test(content)) {
                 failures.push(`Workflow ${file.filename} is missing an explicit permissions section`);
               }
 
