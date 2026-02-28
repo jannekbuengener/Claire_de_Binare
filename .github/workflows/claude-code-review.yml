@@ -12,7 +12,7 @@ on:
 
 jobs:
   claude-review:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cdb]
     permissions:
       contents: read
       pull-requests: read

@@ -16,7 +16,7 @@ permissions:
 jobs:
   lr021-replay-smoke:
     name: LR-021 Replay Smoke (fixture → hashes)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cdb]
 
     steps:
       - name: Checkout
