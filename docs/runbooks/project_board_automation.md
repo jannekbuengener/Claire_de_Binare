@@ -22,7 +22,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - Project URL: `https://github.com/users/jannekbuengener/projects/8`
 - Owner / Number: `jannekbuengener / 8`
 - Triage View (`EINGANG`): `https://github.com/users/jannekbuengener/projects/8/views/18`
-  - Filter: `is:open label:"triage:offen"`
+  - Intake: neue Items landen standardmaessig in `INBOX`; `triage:offen` bleibt Fallback fuer Items ohne aufloesbaren Milestone
 - Milestones:
   - `System ist beweisbar`
   - `System ist stabil`
@@ -58,6 +58,12 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - PRs -> `Review`
 - `.github/workflows/project_status_label_map.yml`
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
+- `.github/workflows/auto-milestone.yml`
+  - Setzt bei neuen/reopened/labeled Issues und PRs einen Milestone, falls noch keiner gesetzt ist:
+    - `milestone:<TITLE>` -> setzt exakt den offenen Milestone `<TITLE>`
+    - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert
+    - unbekannter Titel oder fehlendes/geschlossenes `INBOX` -> nur Warnung, keine Mutation
+    - Fork-PRs werden wegen read-only Token nur geloggt und uebersprungen
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
 - `.github/workflows/triage_guard.yml`
@@ -70,9 +76,17 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 
 ## Triage-Prozess (Jannek)
 
-- Öffne die View `EINGANG` und arbeite nur Items mit `triage:offen` ab (offen, ohne Milestone).
-- Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
+- Öffne die View `EINGANG` und arbeite neue Items mit Default-Milestone `INBOX` zuerst ab; `triage:offen` bleibt nur der Fallback fuer nicht aufgeloeste Faelle.
+- Ersetze `INBOX` im Triage-Schritt durch einen der 6 strategischen Milestones.
 - Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
+
+## Milestone-Autofill
+
+- `milestone:<TITLE>` mappt 1:1 auf einen vorhandenen offenen Milestone mit exakt diesem Titel.
+- Ohne `milestone:`-Label setzt die Automation den Default-Milestone `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert.
+- Existiert `<TITLE>` nicht als offener Milestone oder ist `INBOX` nicht offen/vorhanden, bleibt das Item unveraendert und der Workflow loggt nur eine Warnung.
+- Fork-PRs im `pull_request`-Trigger bleiben unveraendert; der Workflow loggt den read-only-Fall und beendet sich fail-soft.
+- `INBOX` ist ein Intake-Milestone; im Triage-Schritt wird er spaeter durch einen der 6 strategischen Milestones ersetzt.
 
 Report-Ausnahme:
 - Issues mit `report:weekly` oder `report:weekly-fail` sind `triage:offen`-exempt.
