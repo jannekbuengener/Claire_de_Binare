@@ -188,6 +188,15 @@ Trigger-Safety:
 
 ## Quick Sanity Checks (gh CLI)
 
+## Manual validation
+
+- Ensure an open milestone `INBOX` exists (otherwise workflow warns and does nothing)
+- New issue without milestone gets `INBOX`
+- New issue with `milestone:<TITLE>` gets the matching open milestone
+- PR from the same repo gets a milestone via the Issues API
+- `workflow_dispatch` backfill only touches open items without a milestone
+- Missing or closed `INBOX` only warns and does not fail the workflow
+
 ### Auth / Scopes
 
 ```bash
