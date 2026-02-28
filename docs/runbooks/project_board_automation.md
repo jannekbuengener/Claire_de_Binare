@@ -207,6 +207,15 @@ Trigger-Safety:
 - `workflow_dispatch` backfill only touches open items without a milestone
 - Missing or closed `INBOX` only warns and does not fail the workflow
 
+## Operational known limits
+
+- Fork PRs run with read-only tokens and are intentionally skipped (log-only).
+- `pull_request` runs may receive a read-only token depending on repo/org settings; in that case the automation warns and skips instead of writing milestones.
+
+## Manual backfill (monthly)
+
+- Run the `Auto Milestone` workflow via `workflow_dispatch` on `main` to assign milestones for open items without a milestone.
+
 ### Auth / Scopes
 
 ```bash
