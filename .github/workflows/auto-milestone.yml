@@ -8,7 +8,12 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: auto-milestone-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: >-
+    auto-milestone-${{ github.event.issue.number || github.event.pull_request.number }}-${{
+      github.event.action == 'labeled' && startsWith(github.event.label.name || '', 'milestone:') && 'milestone' ||
+      github.event.action == 'labeled' && 'other' ||
+      'base'
+    }}
   cancel-in-progress: true
 
 permissions:
@@ -86,8 +91,12 @@ jobs:
               return;
             }
 
+            const eventLabelName = (context.payload.label?.name || "").trim();
+            core.info(
+              `Auto Milestone event: action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
+            );
+
             if (context.eventName === "issues" && action === "labeled") {
-              const eventLabelName = (context.payload.label?.name || "").trim();
               if (!/^milestone:\s*.+/i.test(eventLabelName)) {
                 core.info("Non-milestone label event; skipping.");
                 return;
