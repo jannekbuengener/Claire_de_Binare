@@ -56,10 +56,20 @@ jobs:
             }
 
             const issue = context.payload.issue;
-            const current = issue.milestone ? issue.milestone.number : null;
+            const { data: liveIssue } = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issue.number,
+            });
+            const current = liveIssue.milestone ? liveIssue.milestone.number : null;
 
             if (current === target.number) {
               core.info(`Milestone already set to ${target.title}.`);
+              return;
+            }
+
+            if (liveIssue.milestone) {
+              core.info(`Issue #${issue.number} already has milestone ${liveIssue.milestone.title}. Skipping override.`);
               return;
             }
 
