@@ -1,0 +1,32 @@
+name: Auto Milestone PR Intent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  capture-intent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write PR event metadata
+        shell: bash
+        run: |
+          cat <<'EOF' > pr_event.json
+          {
+            "pr_number": ${{ github.event.pull_request.number }},
+            "action": "${{ github.event.action }}",
+            "label": "${{ github.event.label.name || '' }}",
+            "head_repo": "${{ github.event.pull_request.head.repo.full_name }}",
+            "base_repo": "${{ github.event.pull_request.base.repo.full_name }}"
+          }
+          EOF
+
+      - name: Upload PR event artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr_event
+          path: pr_event.json
+          if-no-files-found: error
