@@ -3,6 +3,7 @@
 ## Zweck
 
 Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und GitHub Project v2 (`CDB Control Board`).
+Smoke marker: PR milestone write 4.
 
 ## Zielbild (10 Zeilen)
 
