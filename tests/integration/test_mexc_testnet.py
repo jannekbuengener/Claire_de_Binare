@@ -18,7 +18,7 @@ completely different UUIDs. This requires disciplined event design:
 import os
 import sys
 import pytest
-import requests_mock
+requests_mock = pytest.importorskip("requests_mock", reason="test requires requests-mock")
 import logging
 from urllib.parse import urlparse, parse_qsl
 from typing import Any, Dict

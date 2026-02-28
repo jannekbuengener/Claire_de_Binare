@@ -1,0 +1,71 @@
+name: lr021-replay-smoke
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lr021-replay-smoke:
+    name: LR-021 Replay Smoke (fixture → hashes)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+
+      - name: Run LR-021 replay
+        run: |
+          mkdir -p artifacts
+          python scripts/replay/lr021_replay.py \
+            --input  tests/fixtures/replay/lr021_sample_envelopes.jsonl \
+            --output artifacts/lr021_output.jsonl
+
+      - name: Verify hashes against golden file
+        run: |
+          python -c "
+          import json, sys
+
+          with open('artifacts/lr021_output.jsonl') as f:
+              actual = [json.loads(l) for l in f if l.strip()]
+          with open('tests/fixtures/replay/lr021_expected_hashes.jsonl') as f:
+              expected = [json.loads(l) for l in f if l.strip()]
+
+          if len(actual) != len(expected):
+              print(f'FAIL: line count mismatch: got {len(actual)}, expected {len(expected)}')
+              sys.exit(1)
+
+          ok = True
+          for i, (a, e) in enumerate(zip(actual, expected), start=1):
+              for field in ('event_hash', 'chain_hash'):
+                  av, ev = a.get(field), e.get(field)
+                  if ev is not None and av != ev:
+                      print(f'FAIL line {i}: {field} mismatch')
+                      print(f'  got:      {av}')
+                      print(f'  expected: {ev}')
+                      ok = False
+
+          if ok:
+              print(f'OK: {len(actual)} envelopes, all hashes match')
+          else:
+              sys.exit(1)
+          "

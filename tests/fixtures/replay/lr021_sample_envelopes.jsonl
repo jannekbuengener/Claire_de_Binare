@@ -1,0 +1,5 @@
+{"schema_version":"envelope.v1","event_type":"DECISION","event_id":"dec-001","ts_ms":1700000000000,"payload":{"decision":"ALLOW","symbol":"BTCUSDT","reason_code":null,"regime_id":1},"policy_id":"risk_policy_v1","policy_hash":"a1b2c3d4"}
+{"schema_version":"envelope.v1","event_type":"DECISION","event_id":"dec-002","ts_ms":1700000001000,"payload":{"decision":"BLOCK","symbol":"ETHUSDT","reason_code":"RC_001","regime_id":2},"policy_id":"risk_policy_v1","policy_hash":"a1b2c3d4"}
+{"schema_version":"envelope.v1","event_type":"ORDER","event_id":"ord-001","ts_ms":1700000002000,"payload":{"symbol":"BTCUSDT","side":"BUY","quantity":0.01,"price":42000.5,"signal_id":"sig-001","decision_id":"dec-001"}}
+{"schema_version":"envelope.v1","event_type":"ORDER","event_id":"ord-002","ts_ms":1700000003000,"payload":{"symbol":"BTCUSDT","side":"SELL","quantity":0.005,"price":42100.0,"signal_id":"sig-002","decision_id":"dec-001"}}
+{"schema_version":"envelope.v1","event_type":"FILL","event_id":"fill-001","ts_ms":1700000004000,"payload":{"order_id":"ord-001","fill_id":"f-001","symbol":"BTCUSDT","side":"BUY","filled_quantity":0.01,"price":42000.5,"status":"FILLED"}}

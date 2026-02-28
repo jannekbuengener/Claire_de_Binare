@@ -11,7 +11,16 @@ import signal
 import logging
 import logging.config
 import redis
-from flask import Flask, jsonify, Response
+import importlib.util
+try:
+    _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
+except ModuleNotFoundError as e:
+    if e.name == "flask" or (e.name and e.name.startswith("flask.")):
+        _FLASK_AVAILABLE = False
+    else:
+        raise
+except ValueError:
+    _FLASK_AVAILABLE = False
 from typing import Optional
 from pathlib import Path
 
@@ -56,9 +65,6 @@ else:
     )
 
 logger = logging.getLogger("signal_engine")
-
-# Flask App für Health-Check
-app = Flask(__name__)
 
 # Globale Statistiken
 stats = {
@@ -380,82 +386,86 @@ class SignalEngine:
 
 # ===== FLASK ENDPOINTS =====
 
+if _FLASK_AVAILABLE:
+    from flask import Flask, jsonify, Response
 
-@app.route("/health")
-def health():
-    """Health-Check Endpoint"""
-    return jsonify(
-        {
-            "status": "ok" if stats["status"] == "running" else "error",
-            "service": "signal_engine",
-            "version": "0.1.0",
-        }
-    )
+    app = Flask(__name__)
 
-
-@app.route("/status")
-def status():
-    """Status & Statistiken"""
-    return jsonify(stats)
-
-
-@app.route("/metrics")
-def metrics():
-    """Prometheus Metriken (text/plain)"""
-    # Sprint 1 #622: Extended metrics with latency histogram and error counter
-
-    # Calculate histogram buckets for latency
-    buckets = [1, 5, 10, 25, 50, 100, 250, 500, 1000]
-    latency_buckets = {b: 0 for b in buckets}
-    latency_buckets["+Inf"] = 0
-
-    for sample in stats["latency_samples"]:
-        for bucket in buckets:
-            if sample <= bucket:
-                latency_buckets[bucket] += 1
-        latency_buckets["+Inf"] += 1
-
-    # Build histogram output
-    histogram_lines = []
-    cumulative = 0
-    for bucket in buckets + ["+Inf"]:
-        if bucket == "+Inf":
-            cumulative = latency_buckets["+Inf"]
-        else:
-            cumulative += latency_buckets[bucket]
-        histogram_lines.append(
-            f'signal_processing_latency_ms_bucket{{le="{bucket}"}} {cumulative}'
+    @app.route("/health")
+    def health():
+        """Health-Check Endpoint"""
+        return jsonify(
+            {
+                "status": "ok" if stats["status"] == "running" else "error",
+                "service": "signal_engine",
+                "version": "0.1.0",
+            }
         )
 
-    histogram_lines.append(
-        f"signal_processing_latency_ms_sum {stats['latency_sum_ms']}"
-    )
-    histogram_lines.append(
-        f"signal_processing_latency_ms_count {stats['latency_count']}"
-    )
+    @app.route("/status")
+    def status():
+        """Status & Statistiken"""
+        return jsonify(stats)
 
-    # Build error counter with labels
-    error_lines = []
-    for error_type, count in stats["errors_by_type"].items():
-        error_lines.append(f'signal_errors_total{{error_type="{error_type}"}} {count}')
+    @app.route("/metrics")
+    def metrics():
+        """Prometheus Metriken (text/plain)"""
+        # Sprint 1 #622: Extended metrics with latency histogram and error counter
 
-    body = (
-        "# HELP signals_generated_total Anzahl generierter Signale\n"
-        "# TYPE signals_generated_total counter\n"
-        f"signals_generated_total {stats['signals_generated']}\n\n"
-        "# HELP signal_engine_status Service Status (1=running, 0=stopped)\n"
-        "# TYPE signal_engine_status gauge\n"
-        f"signal_engine_status {1 if stats['status'] == 'running' else 0}\n\n"
-        "# HELP signal_processing_latency_ms Signal processing latency in milliseconds\n"
-        "# TYPE signal_processing_latency_ms histogram\n"
-        + "\n".join(histogram_lines)
-        + "\n\n"
-        "# HELP signal_errors_total Total signal processing errors\n"
-        "# TYPE signal_errors_total counter\n"
-        + ("\n".join(error_lines) if error_lines else "signal_errors_total 0")
-        + "\n"
-    )
-    return Response(body, mimetype="text/plain")
+        # Calculate histogram buckets for latency
+        buckets = [1, 5, 10, 25, 50, 100, 250, 500, 1000]
+        latency_buckets = {b: 0 for b in buckets}
+        latency_buckets["+Inf"] = 0
+
+        for sample in stats["latency_samples"]:
+            for bucket in buckets:
+                if sample <= bucket:
+                    latency_buckets[bucket] += 1
+            latency_buckets["+Inf"] += 1
+
+        # Build histogram output
+        histogram_lines = []
+        cumulative = 0
+        for bucket in buckets + ["+Inf"]:
+            if bucket == "+Inf":
+                cumulative = latency_buckets["+Inf"]
+            else:
+                cumulative += latency_buckets[bucket]
+            histogram_lines.append(
+                f'signal_processing_latency_ms_bucket{{le="{bucket}"}} {cumulative}'
+            )
+
+        histogram_lines.append(
+            f"signal_processing_latency_ms_sum {stats['latency_sum_ms']}"
+        )
+        histogram_lines.append(
+            f"signal_processing_latency_ms_count {stats['latency_count']}"
+        )
+
+        # Build error counter with labels
+        error_lines = []
+        for error_type, count in stats["errors_by_type"].items():
+            error_lines.append(f'signal_errors_total{{error_type="{error_type}"}} {count}')
+
+        body = (
+            "# HELP signals_generated_total Anzahl generierter Signale\n"
+            "# TYPE signals_generated_total counter\n"
+            f"signals_generated_total {stats['signals_generated']}\n\n"
+            "# HELP signal_engine_status Service Status (1=running, 0=stopped)\n"
+            "# TYPE signal_engine_status gauge\n"
+            f"signal_engine_status {1 if stats['status'] == 'running' else 0}\n\n"
+            "# HELP signal_processing_latency_ms Signal processing latency in milliseconds\n"
+            "# TYPE signal_processing_latency_ms histogram\n"
+            + "\n".join(histogram_lines)
+            + "\n\n"
+            "# HELP signal_errors_total Total signal processing errors\n"
+            "# TYPE signal_errors_total counter\n"
+            + ("\n".join(error_lines) if error_lines else "signal_errors_total 0")
+            + "\n"
+        )
+        return Response(body, mimetype="text/plain")
+else:
+    app = None
 
 
 # ===== SIGNAL HANDLER =====
@@ -480,6 +490,11 @@ if __name__ == "__main__":
     engine.connect_redis()
 
     # Flask in separatem Thread starten
+    if not _FLASK_AVAILABLE or app is None:
+        raise RuntimeError(
+            "Flask ist nicht installiert. HTTP-Endpoints (health/status/metrics) "
+            "benötigen Flask als optionale Abhängigkeit: pip install flask"
+        )
     from threading import Thread
 
     flask_thread = Thread(target=lambda: app.run(host="0.0.0.0", port=config.port))
