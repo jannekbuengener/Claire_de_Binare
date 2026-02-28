@@ -3,12 +3,32 @@ Data Models for Execution Service
 Claire de Binare Trading Bot
 """
 
-from typing import Literal, Optional
+import json
+from typing import Any, Literal, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
 from core.utils.clock import utcnow
+
+
+def _parse_json_field(raw: Any) -> Optional[dict]:
+    """Parse JSON string from Redis back to dict.
+
+    sanitize_payload() converts dicts to JSON strings for Redis compatibility.
+    This reverses that serialization.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
+        except (json.JSONDecodeError, TypeError):
+            return None
+    return None
 
 
 class OrderSide(str, Enum):
@@ -55,6 +75,8 @@ class Order:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    # Issue #748 Slice 2: Policy snapshot propagated from Risk Service
+    policy_snapshot: Optional[dict] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -89,6 +111,8 @@ class Order:
             policy_hash=payload.get("policy_hash"),
             input_hash=payload.get("input_hash"),
             output_hash=payload.get("output_hash"),
+            # Issue #748 Slice 2: policy_snapshot (JSON string from Redis → dict)
+            policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
         )
 
     def to_dict(self) -> dict:
@@ -137,6 +161,9 @@ class Order:
             payload["input_hash"] = self.input_hash
         if self.output_hash is not None:
             payload["output_hash"] = self.output_hash
+        # Issue #748 Slice 2: only emit when not None
+        if self.policy_snapshot is not None:
+            payload["policy_snapshot"] = self.policy_snapshot
         return payload
 
 

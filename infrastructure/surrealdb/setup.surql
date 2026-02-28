@@ -47,3 +47,15 @@ DEFINE FIELD access_matrix.permissions TYPE array;
 DEFINE FIELD access_matrix.created_at TYPE datetime;
 DEFINE TABLE access_matrix PERMISSIONS FOR CREATE, FOR SELECT;
 DEFINE INDEX idx_access_matrix_principal ON access_matrix(principal);
+
+-- ============================================================
+-- ledger_event: append-only decision-event mirror (Issue #742)
+-- Record-ID = event_id → CREATE fails on duplicate (append-only).
+-- No UPDATE, no DELETE permitted.
+-- ============================================================
+DEFINE TABLE ledger_event;
+DEFINE TABLE ledger_event PERMISSIONS
+  FOR select FULL,
+  FOR create FULL,
+  FOR update NONE,
+  FOR delete NONE;
