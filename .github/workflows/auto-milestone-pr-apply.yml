@@ -43,7 +43,6 @@ jobs:
             const workflowRun = context.payload.workflow_run;
             const fs = require("fs");
             const artifactPath = "pr_event_artifact/pr_event.json";
-            const { getOctokit } = require("@actions/github");
 
             function logPermissionWarning(error, action) {
               const status = error?.status ?? error?.response?.status;
@@ -170,7 +169,7 @@ jobs:
               }
 
               core.info("Retrying PR apply with CDB_PR_AUTOMATION_TOKEN");
-              apiClient = getOctokit(fallbackToken);
+              apiClient = github.getOctokit(fallbackToken);
 
               try {
                 liveItem = await readIssue(apiClient);
