@@ -29,6 +29,16 @@ jobs:
             const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
             const { owner, repo } = context.repo;
 
+            function logPermissionWarning(error, action) {
+              const status = error?.status ?? error?.response?.status;
+              const accepted = error?.response?.headers?.["x-accepted-github-permissions"];
+              const message = error?.response?.data?.message || error?.message || "unknown error";
+
+              core.warning(
+                `${action} skipped: ${message}${status ? ` (status ${status})` : ""}${accepted ? ` [accepted permissions: ${accepted}]` : ""}`
+              );
+            }
+
             function milestoneLabelTitles(labels) {
               const titles = (labels || [])
                 .map(label => typeof label === "string" ? label : label.name)
@@ -75,11 +85,17 @@ jobs:
               return;
             }
 
-            const { data: item } = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: issueNumber,
-            });
+            let item;
+            try {
+              ({ data: item } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }));
+            } catch (error) {
+              logPermissionWarning(error, `Read for #${issueNumber}`);
+              return;
+            }
 
             if (item.state !== "open") {
               core.info(`#${issueNumber} is not open. Skipping.`);
@@ -109,11 +125,17 @@ jobs:
               return;
             }
 
-            const { data: liveItem } = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: issueNumber,
-            });
+            let liveItem;
+            try {
+              ({ data: liveItem } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }));
+            } catch (error) {
+              logPermissionWarning(error, `Pre-update read for #${issueNumber}`);
+              return;
+            }
 
             if (liveItem.milestone) {
               core.info(
@@ -122,12 +144,17 @@ jobs:
               return;
             }
 
-            await github.rest.issues.update({
-              owner,
-              repo,
-              issue_number: issueNumber,
-              milestone: target.number,
-            });
+            try {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                milestone: target.number,
+              });
+            } catch (error) {
+              logPermissionWarning(error, `Milestone update for #${issueNumber}`);
+              return;
+            }
 
             core.info(`Milestone set to "${target.title}" for #${issueNumber}.`);
 
