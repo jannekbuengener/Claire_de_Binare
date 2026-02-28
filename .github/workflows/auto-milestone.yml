@@ -111,11 +111,6 @@ jobs:
               return;
             }
 
-            if (item.milestone) {
-              core.info(`#${issueNumber} already has milestone "${item.milestone.title}". Skipping.`);
-              return;
-            }
-
             const labelMilestones = milestoneLabelTitles(item.labels);
             if (labelMilestones.length > 1) {
               core.warning(
@@ -160,6 +155,10 @@ jobs:
             }
 
             if (hasMilestoneLabel) {
+              if (currentTitleLower === inboxTitleLower) {
+                core.info(`Overriding INBOX -> ${target.title} due to milestone label.`);
+              }
+
               if (currentMilestone && currentTitleLower !== inboxTitleLower) {
                 core.warning(
                   `#${issueNumber} already has non-INBOX milestone "${currentMilestone.title}". Skipping overwrite from label milestone:${desiredTitle}.`
