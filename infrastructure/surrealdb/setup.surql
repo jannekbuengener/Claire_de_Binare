@@ -7,6 +7,8 @@ DEFINE TABLE governance_events SCHEMAFULL;
 DEFINE FIELD governance_events.event_type TYPE string;
 DEFINE FIELD governance_events.evidence_ref TYPE string;
 DEFINE FIELD governance_events.integrity_hash TYPE string;
+DEFINE FIELD governance_events.integrity_algo TYPE string;
+DEFINE FIELD governance_events.integrity_version TYPE int;
 DEFINE FIELD governance_events.created_at TYPE datetime;
 DEFINE TABLE governance_events PERMISSIONS FOR CREATE,"
   "FOR SELECT";
@@ -18,6 +20,8 @@ DEFINE FIELD audit_trail.action_type TYPE string;
 DEFINE FIELD audit_trail.actor_id TYPE string;
 DEFINE FIELD audit_trail.payload TYPE record;
 DEFINE FIELD audit_trail.integrity_hash TYPE string;
+DEFINE FIELD audit_trail.integrity_algo TYPE string;
+DEFINE FIELD audit_trail.integrity_version TYPE int;
 DEFINE FIELD audit_trail.created_at TYPE datetime;
 DEFINE TABLE audit_trail PERMISSIONS FOR CREATE, FOR SELECT;
 DEFINE INDEX idx_audit_trail_created_at ON audit_trail(created_at);
