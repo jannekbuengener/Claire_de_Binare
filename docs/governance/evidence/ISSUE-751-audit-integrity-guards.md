@@ -21,8 +21,8 @@ Current status:
 
 ## Implementation
 
-- PR: <PR_LINK_PLACEHOLDER>
-- CI/Test run: <CI_RUN_LINK_PLACEHOLDER>
+- PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/1006
+- CI/Test run: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22534193956
 - Doc/ADR: `docs/governance/audit-integrity-report.md`
 
 ### What Changed
