@@ -18,6 +18,8 @@ on:
 env:
   TRIVY_VERSION: "0.58.0"
   TRIVY_SUMMARY_MAX: "5"
+  # CVE-2025-12818: non-OpenSSL, verbleibt bis Upstream-Fix verfügbar
+  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

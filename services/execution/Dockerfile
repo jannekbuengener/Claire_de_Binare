@@ -1,6 +1,6 @@
 # Execution Service - Gehärtetes Image
 # Claire de Binare Trading Bot
-FROM python:3.11-slim AS build
+FROM python:3.11-slim-bookworm@sha256:65a93d69fa75478d554f4ad27c85c1e69fa184956261b4301ebaf6dbb0a3543d AS build
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -18,9 +18,10 @@ RUN apt-get update \
 COPY services/execution/requirements.txt ./
 RUN python -m venv /venv \
     && /venv/bin/pip install --upgrade pip==25.3 \
+    && /venv/bin/pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2 \
     && /venv/bin/pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm@sha256:65a93d69fa75478d554f4ad27c85c1e69fa184956261b4301ebaf6dbb0a3543d
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
