@@ -158,7 +158,9 @@ def test_post_surrealql_raises_on_duplicate():
         namespace="test", database="test", url="http://localhost:8000/sql"
     )
 
-    with patch("tools.surrealdb.ledger_importer.requests.post", return_value=mock_response):
+    with patch(
+        "tools.surrealdb.ledger_importer.requests.post", return_value=mock_response
+    ):
         with pytest.raises(DuplicateEventError) as exc_info:
             post_surrealql(config, "CREATE ledger_event:evt-1 CONTENT {};")
         assert "evt-2" in str(exc_info.value)
@@ -166,7 +168,9 @@ def test_post_surrealql_raises_on_duplicate():
 
 
 @pytest.mark.unit
-def test_main_duplicate_event_id_preflight_aborts_without_write(tmp_path, monkeypatch, caplog):
+def test_main_duplicate_event_id_preflight_aborts_without_write(
+    tmp_path, monkeypatch, caplog
+):
     ledger_path = _write_ledger_file(
         tmp_path,
         """
@@ -190,12 +194,16 @@ action:
         return mock_response
 
     with caplog.at_level(logging.ERROR):
-        with patch("tools.surrealdb.ledger_importer.requests.post", side_effect=fake_post) as mock_post:
+        with patch(
+            "tools.surrealdb.ledger_importer.requests.post", side_effect=fake_post
+        ) as mock_post:
             exit_code = _run_main(monkeypatch, ledger_path)
 
     assert exit_code == 1
     assert mock_post.call_count == 1
-    assert queries[0].startswith("SELECT VALUE event_id FROM ledger_event WHERE event_id IN")
+    assert queries[0].startswith(
+        "SELECT VALUE event_id FROM ledger_event WHERE event_id IN"
+    )
     assert LEDGER_IMPORT_DUPLICATE_EVENT_ID in caplog.text
     assert '"import_correlation_id":"' in caplog.text
     assert '"reason":"event_id already exists in ledger_event"' in caplog.text
@@ -224,7 +232,10 @@ action:
     assert exit_code == 1
     mock_post.assert_not_called()
     assert LEDGER_IMPORT_HASH_MISMATCH in caplog.text
-    assert '"reason":"declared hash at event_hash does not match canonical payload hash"' in caplog.text
+    assert (
+        '"reason":"declared hash at event_hash does not match canonical payload hash"'
+        in caplog.text
+    )
 
 
 @pytest.mark.unit
@@ -250,7 +261,10 @@ action:
     assert exit_code == 1
     mock_post.assert_not_called()
     assert LEDGER_IMPORT_SIGNATURE_UNSUPPORTED in caplog.text
-    assert '"reason":"signature at signature is present but no verifier is configured"' in caplog.text
+    assert (
+        '"reason":"signature at signature is present but no verifier is configured"'
+        in caplog.text
+    )
 
 
 @pytest.mark.unit

@@ -185,7 +185,9 @@ def _compute_event_integrity_hash(event: dict[str, Any]) -> str:
 
 def _validate_event_integrity(event: dict[str, Any], event_id: str) -> tuple[str, bool]:
     payload_hash = _compute_event_integrity_hash(event)
-    hash_present, declared_hash, hash_field = _extract_field(event, _HASH_FIELD_CANDIDATES)
+    hash_present, declared_hash, hash_field = _extract_field(
+        event, _HASH_FIELD_CANDIDATES
+    )
     if hash_present and _normalize_declared_hash(declared_hash) != payload_hash:
         raise ImportIntegrityError(
             LEDGER_IMPORT_HASH_MISMATCH,
@@ -241,14 +243,18 @@ def _log_import_rejection(
     event_ids: list[str] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> None:
-    normalized_ids = sorted({_strip_record_prefix(str(event_id)) for event_id in (event_ids or [])})
+    normalized_ids = sorted(
+        {_strip_record_prefix(str(event_id)) for event_id in (event_ids or [])}
+    )
     payload: dict[str, Any] = {
         "event": "ledger_import_rejected",
         "code": code,
         "import_correlation_id": import_correlation_id,
         "reason": reason,
         "event_ids_count": len(normalized_ids),
-        "event_ids_sample": [_short_event_id(event_id) for event_id in normalized_ids[:10]],
+        "event_ids_sample": [
+            _short_event_id(event_id) for event_id in normalized_ids[:10]
+        ],
     }
     if metadata:
         payload["metadata"] = metadata
@@ -300,7 +306,11 @@ def normalize_events(
         agent_latest[agent_id] = event_id
 
         evidence = event.get("evidence") or []
-        evidence_list = [str(item) for item in evidence] if isinstance(evidence, list) else [str(evidence)]
+        evidence_list = (
+            [str(item) for item in evidence]
+            if isinstance(evidence, list)
+            else [str(evidence)]
+        )
 
         normalized.append(
             {
@@ -406,23 +416,33 @@ def _build_headers(config: ImportConfig) -> dict[str, str]:
 def _execute_surrealql(
     config: ImportConfig, query: str, *, require_json: bool = False
 ) -> list[dict[str, Any]] | None:
-    response = requests.post(config.url, headers=_build_headers(config), data=query, timeout=10)
+    response = requests.post(
+        config.url, headers=_build_headers(config), data=query, timeout=10
+    )
     response.raise_for_status()
     try:
         return response.json()
     except (ValueError, TypeError) as exc:
         if require_json:
-            raise RuntimeError("SurrealDB returned non-JSON response for preflight query") from exc
+            raise RuntimeError(
+                "SurrealDB returned non-JSON response for preflight query"
+            ) from exc
         return None
 
 
 def lookup_existing_event_ids(config: ImportConfig, event_ids: list[str]) -> list[str]:
-    unique_event_ids = sorted({str(event_id) for event_id in event_ids if str(event_id).strip()})
+    unique_event_ids = sorted(
+        {str(event_id) for event_id in event_ids if str(event_id).strip()}
+    )
     if not unique_event_ids:
         return []
 
-    quoted_event_ids = json.dumps(unique_event_ids, ensure_ascii=False, separators=(",", ":"))
-    query = f"SELECT VALUE event_id FROM ledger_event WHERE event_id IN {quoted_event_ids};"
+    quoted_event_ids = json.dumps(
+        unique_event_ids, ensure_ascii=False, separators=(",", ":")
+    )
+    query = (
+        f"SELECT VALUE event_id FROM ledger_event WHERE event_id IN {quoted_event_ids};"
+    )
     results = _execute_surrealql(config, query, require_json=True)
     if not isinstance(results, list) or not results:
         raise RuntimeError("Unexpected response for ledger import preflight lookup")
@@ -494,13 +514,19 @@ def main() -> int:
     logging.basicConfig(format="%(levelname)s: %(message)s")
     parser = argparse.ArgumentParser(description="Import ledger YAML into SurrealDB.")
     parser.add_argument("path", type=Path, help="Ledger file or directory")
-    parser.add_argument("--dry-run", action="store_true", help="Print SQL instead of executing")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print SQL instead of executing"
+    )
     parser.add_argument("--namespace", default="cdb", help="SurrealDB namespace")
     parser.add_argument("--database", default="cdb", help="SurrealDB database")
-    parser.add_argument("--url", default="http://localhost:8000/sql", help="SurrealDB SQL endpoint")
+    parser.add_argument(
+        "--url", default="http://localhost:8000/sql", help="SurrealDB SQL endpoint"
+    )
     parser.add_argument("--auth-user", default=None, help="SurrealDB auth user")
     parser.add_argument("--auth-pass", default=None, help="SurrealDB auth pass")
-    parser.add_argument("--auth-header", default=None, help="Authorization header value")
+    parser.add_argument(
+        "--auth-header", default=None, help="Authorization header value"
+    )
     args = parser.parse_args()
 
     yaml_files = _iter_yaml_files(args.path)
