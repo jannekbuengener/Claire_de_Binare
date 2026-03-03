@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 STAGE_LABEL_TO_OPTION: tuple[tuple[str, str], ...] = (
     ("label:stage:proof", "proof"),
     ("label:stage:stability", "stability"),
