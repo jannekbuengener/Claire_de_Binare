@@ -1,0 +1,57 @@
+name: Control Board Routing Label Dispatch
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+
+jobs:
+  dispatch-control-board-routing:
+    if: >-
+      ${{
+        vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED == 'true' &&
+        (
+          startsWith(github.event.label.name || '', 'stage:') ||
+          startsWith(github.event.label.name || '', 'label:stage:') ||
+          startsWith(github.event.label.name || '', 'prio:') ||
+          startsWith(github.event.label.name || '', 'priority:') ||
+          github.event.label.name == 'p0' ||
+          github.event.label.name == 'p1' ||
+          github.event.label.name == 'p2' ||
+          github.event.label.name == 'p3' ||
+          github.event.label.name == 'P0' ||
+          github.event.label.name == 'P1' ||
+          github.event.label.name == 'P2' ||
+          github.event.label.name == 'P3'
+        )
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch routing-relevant label event
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue?.number;
+            const labelName = String(context.payload.label?.name || "").trim();
+
+            if (!issueNumber) {
+              core.warning("Could not determine the issue number for this event.");
+              return;
+            }
+
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: "control_board_route_issue_label",
+              client_payload: {
+                issue_number: issueNumber,
+                action: context.payload.action || "",
+                label: labelName,
+              },
+            });
+
+            core.info(
+              `Dispatched control_board_route_issue_label for issue #${issueNumber} (${labelName || "<none>"}).`
+            );
