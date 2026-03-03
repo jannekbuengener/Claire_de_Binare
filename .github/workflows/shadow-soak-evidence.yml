@@ -2,13 +2,24 @@ name: Shadow + Soak Evidence
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Execution mode"
+        required: true
+        default: full
+        type: choice
+        options:
+          - full
+          - lean
   schedule:
     - cron: "0 2 * * *"
+    - cron: "30 2 * * 0"
 
 env:
   SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
   STACK_NAME: shadow-soak-${{ github.run_id }}
-  SOAK_MINUTES: 20
+  FULL_SOAK_MINUTES: 20
+  LEAN_SOAK_MINUTES: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +33,50 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Resolve soak mode
+        id: soak-mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode="full"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
+            if [[ "${{ github.event.schedule || '' }}" == "0 2 * * *" ]]; then
+              mode="lean"
+            else
+              mode="full"
+            fi
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            mode="${{ github.event.inputs.mode || 'full' }}"
+          fi
+
+          case "$mode" in
+            lean)
+              soak_minutes="${LEAN_SOAK_MINUTES}"
+              build_stack="false"
+              ;;
+            full)
+              soak_minutes="${FULL_SOAK_MINUTES}"
+              build_stack="true"
+              ;;
+            *)
+              echo "::error::Unsupported soak mode: ${mode}"
+              exit 1
+              ;;
+          esac
+
+          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+          echo "soak_minutes=${soak_minutes}" >> "$GITHUB_OUTPUT"
+          echo "build_stack=${build_stack}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Shadow+Soak Mode"
+            echo ""
+            echo "- mode: ${mode}"
+            echo "- soak_minutes: ${soak_minutes}"
+            echo "- build_stack: ${build_stack}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -197,7 +252,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" up -d --build
+          build_args=()
+          if [[ "${{ steps.soak-mode.outputs.build_stack }}" == "true" ]]; then
+            build_args+=(--build)
+          fi
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" up -d "${build_args[@]}"
 
       - name: Wait for services healthy
         shell: bash
@@ -242,8 +301,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          soak_seconds=$((SOAK_MINUTES * 60))
-          echo "Soaking for ${SOAK_MINUTES} minutes..."
+          soak_minutes="${{ steps.soak-mode.outputs.soak_minutes }}"
+          soak_seconds=$((soak_minutes * 60))
+          echo "Soaking for ${soak_minutes} minutes..."
           sleep "$soak_seconds"
 
       - name: Verify endpoints
@@ -358,7 +418,8 @@ jobs:
             "commit": "${GITHUB_SHA}",
             "status": "${JOB_STATUS}",
             "gate_status": "${gate_status}",
-            "soak_minutes": ${SOAK_MINUTES},
+            "mode": "${{ steps.soak-mode.outputs.mode }}",
+            "soak_minutes": ${{ steps.soak-mode.outputs.soak_minutes }},
             "ended_at": "${end_time}"
           }
           EOF
@@ -382,7 +443,8 @@ jobs:
           - Ref: ${GITHUB_REF}
           - Commit: ${GITHUB_SHA}
           - Status: ${JOB_STATUS}
-          - Soak minutes: ${SOAK_MINUTES}
+          - Mode: ${{ steps.soak-mode.outputs.mode }}
+          - Soak minutes: ${{ steps.soak-mode.outputs.soak_minutes }}
           - Ended: ${end_time}
 
           Artifacts:
