@@ -30,7 +30,7 @@ services:
       - cdb_network
 
   cdb_postgres:
-    image: postgres:15-alpine
+    image: postgres:15.17-alpine
     container_name: cdb_postgres
     restart: unless-stopped
     environment:

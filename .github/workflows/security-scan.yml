@@ -22,8 +22,8 @@ permissions:
 env:
   TRIVY_VERSION: "0.58.0"
   TRIVY_SUMMARY_MAX: "5"
-  # CVE-2025-12818: non-OpenSSL, verbleibt bis Upstream-Fix verfügbar
-  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
+  # Debian 13/trixie currently has no fixed package published for CVE-2026-0861.
+  TRIVY_ALLOWLIST_CVES: "CVE-2026-0861"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -40,7 +40,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
-          - postgres:15.11-alpine
+          - postgres:15.17-alpine
           - prom/prometheus:v3.1.0
           - grafana/grafana:11.4.0
       fail-fast: false
@@ -213,7 +213,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
-          - postgres:15.11-alpine
+          - postgres:15.17-alpine
       fail-fast: false
 
     env:
@@ -343,4 +343,5 @@ jobs:
 #
 # 4. For manual scans:
 #    docker scout cves redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065 --only-severities critical,high
-#    docker scout cves postgres:15.11-alpine --only-severities critical,high
+#    docker scout cves postgres:15.17-alpine --only-severities critical,high
+
