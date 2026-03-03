@@ -4,11 +4,9 @@ from typing import Protocol
 
 
 class _RedisPublisher(Protocol):
-    def publish(self, channel: str, message: str) -> None:
-        ...
+    def publish(self, channel: str, message: str) -> None: ...
 
-    def xadd(self, stream: str, values: dict[str, str], maxlen: int) -> None:
-        ...
+    def xadd(self, stream: str, values: dict[str, str], maxlen: int) -> None: ...
 
 
 class EnvelopePublisher:
@@ -33,6 +31,4 @@ class EnvelopePublisher:
         if self._mode == "pubsub":
             self._redis.publish(self._channel, payload)
         else:
-            self._redis.xadd(
-                self._stream, {"envelope": payload}, maxlen=self._maxlen
-            )
+            self._redis.xadd(self._stream, {"envelope": payload}, maxlen=self._maxlen)

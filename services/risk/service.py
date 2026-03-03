@@ -48,8 +48,10 @@ from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.redis_client import create_redis_client
 from core.utils.trace_toggle import trace_contract_v1_enabled, allow_evidence_debt
+
 if TYPE_CHECKING:
     from core.replay.publisher import EnvelopePublisher
+
 from core.replay.policy_snapshot import (
     build_policy_snapshot,
     policy_snapshot_binding_enabled,
