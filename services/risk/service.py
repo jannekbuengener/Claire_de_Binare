@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Thread
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import psycopg2
 import redis
@@ -46,7 +46,10 @@ from core.utils.uuid_gen import (
 )
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
+from core.utils.redis_client import create_redis_client
 from core.utils.trace_toggle import trace_contract_v1_enabled, allow_evidence_debt
+if TYPE_CHECKING:
+    from core.replay.publisher import EnvelopePublisher
 from core.replay.policy_snapshot import (
     build_policy_snapshot,
     policy_snapshot_binding_enabled,
@@ -120,6 +123,13 @@ current_regime = "UNKNOWN"
 risk_off_active = False
 shutdown_strategy_ids = set()
 shutdown_bot_ids = set()
+
+
+def _envelope_toggle_enabled() -> bool:
+    primary = os.getenv("CDB_ENVELOPE_EMISSION")
+    if primary is not None:
+        return primary == "1"
+    return os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
 
 
 @dataclass
@@ -443,6 +453,8 @@ class RiskManager:
         self.allocation_state: dict[str, AllocationState] = {}
         self._circuit_shutdown_emitted = False
         self._pg_conn: Optional[psycopg2.extensions.connection] = None
+        self._envelope_redis_client: Optional[redis.Redis] = None
+        self._envelope_publisher: EnvelopePublisher | None = None
 
         # Validiere Config
         try:
@@ -480,6 +492,54 @@ class RiskManager:
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
+        else:
+            self._setup_envelope_emitter()
+
+    def _setup_envelope_emitter(self) -> None:
+        if not _envelope_toggle_enabled():
+            self._envelope_redis_client = None
+            self._envelope_publisher = None
+            return
+
+        try:
+            from core.replay.emitter import configure_envelope_emission
+            from core.replay.publisher import EnvelopePublisher
+
+            envelope_client = create_redis_client(
+                host=self.config.redis_host,
+                port=self.config.redis_port,
+                password=self.config.redis_password,
+                db=self.config.redis_db,
+                decode_responses=True,
+            )
+            mode = os.getenv("CDB_ENVELOPE_REDIS_MODE", "stream").lower()
+            if mode != "pubsub":
+                mode = "stream"
+            stream = os.getenv("CDB_ENVELOPE_REDIS_STREAM", "cdb:envelopes:v1")
+            channel = os.getenv("CDB_ENVELOPE_REDIS_CHANNEL", "cdb.envelopes.v1")
+            publisher = EnvelopePublisher(
+                redis_client=envelope_client,
+                mode=mode,
+                stream=stream,
+                channel=channel,
+            )
+            self._envelope_redis_client = envelope_client
+            self._envelope_publisher = publisher
+            configure_envelope_emission(True, publisher)
+            logger.info(
+                "Envelope emission enabled (mode=%s stream=%s channel=%s)",
+                mode,
+                stream,
+                channel,
+            )
+        except Exception:
+            logger.exception("Envelope emission setup failed, disabling emission")
+            try:
+                configure_envelope_emission(False, None)
+            except NameError:
+                pass
+            self._envelope_redis_client = None
+            self._envelope_publisher = None
 
     def _get_postgres_conn(self) -> Optional[psycopg2.extensions.connection]:
         try:
@@ -1181,38 +1241,31 @@ class RiskManager:
             except Exception:
                 pass  # Guardrail: never break trading path
 
-        # LR-021 Slice 2: DECISION envelope emission (toggle-gated, default OFF)
-        try:
-            _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
-            _lr021_emit = (
-                (_cdb_val == "1")
-                if _cdb_val is not None
-                else os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
-            )
-        except Exception:
-            _lr021_emit = False
-        if _lr021_emit and evidence.get("decision_id"):
-            try:
-                from core.replay.emitter import emit_decision_envelope
+        if evidence.get("decision_id"):
+            if _envelope_toggle_enabled():
+                try:
+                    from core.replay.emitter import emit_decision_envelope
 
-                emit_decision_envelope(
-                    event_id=str(evidence["decision_id"]),
-                    ts_ms=deterministic_ts_ms,
-                    decision=decision,
-                    reason_code=reason_code,
-                    symbol=signal.symbol,
-                    evidence=evidence,
-                    signal_id=evidence.get("signal_id"),
-                    trace_id=evidence.get("trace_id"),
-                    decision_context=evidence.get("decision_context"),
-                    policy_id=evidence.get("policy_id"),
-                    policy_hash=evidence.get("policy_hash"),
-                    input_hash=evidence.get("input_hash"),
-                    output_hash=evidence.get("output_hash"),
-                    policy_snapshot=policy_snapshot,
-                )
-            except Exception:
-                pass  # Guardrail: never break trading path
+                    emit_decision_envelope(
+                        event_id=str(evidence["decision_id"]),
+                        ts_ms=deterministic_ts_ms,
+                        decision=decision,
+                        reason_code=reason_code,
+                        symbol=signal.symbol,
+                        evidence=evidence,
+                        signal_id=evidence.get("signal_id"),
+                        trace_id=evidence.get("trace_id"),
+                        decision_context=evidence.get("decision_context"),
+                        policy_id=evidence.get("policy_id"),
+                        policy_hash=evidence.get("policy_hash"),
+                        input_hash=evidence.get("input_hash"),
+                        output_hash=evidence.get("output_hash"),
+                        policy_snapshot=policy_snapshot,
+                    )
+                except RuntimeError:
+                    raise
+                except Exception:
+                    logger.exception("Decision envelope emission failed")
 
         # Trace-Writes: nur wenn Toggle ON (Toggle OFF = zero side effects)
         signal_id = evidence.get("signal_id")
@@ -1513,46 +1566,39 @@ class RiskManager:
             f"(total pending: {risk_state.pending_exposure_usdt:.2f})"
         )
 
-        # LR-021 Slice 2: ORDER envelope emission (toggle-gated, default OFF)
-        try:
-            _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
-            _lr021_emit = (
-                (_cdb_val == "1")
-                if _cdb_val is not None
-                else os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
-            )
-        except Exception:
-            _lr021_emit = False
-        if _lr021_emit and getattr(order, "order_id", None):
-            try:
-                from core.replay.emitter import emit_order_envelope
+        if getattr(order, "order_id", None):
+            if order.price is None:
+                logger.debug("order.price is None — skip order envelope")
+            elif _envelope_toggle_enabled():
+                try:
+                    from core.replay.emitter import emit_order_envelope
 
-                if order.price is None:
-                    raise ValueError("order.price is None — skip order envelope")
-                emit_order_envelope(
-                    event_id=str(order.order_id),
-                    ts_ms=(
-                        int(order.timestamp * 1000)
-                        if getattr(order, "timestamp", None)
-                        else deterministic_ts_ms
-                    ),
-                    symbol=order.symbol,
-                    side=str(order.side),
-                    quantity=float(order.quantity),
-                    price=float(order.price),
-                    signal_id=order.signal_id or None,
-                    decision_id=order.decision_id or None,
-                    order_id=order.order_id or None,
-                    trace_id=order.trace_id or None,
-                    decision_context=evidence.get("decision_context"),
-                    policy_id=getattr(order, "policy_id", None),
-                    policy_hash=getattr(order, "policy_hash", None),
-                    input_hash=getattr(order, "input_hash", None),
-                    output_hash=getattr(order, "output_hash", None),
-                    policy_snapshot=getattr(order, "policy_snapshot", None),
-                )
-            except Exception:
-                pass  # Guardrail: never break trading path
+                    emit_order_envelope(
+                        event_id=str(order.order_id),
+                        ts_ms=(
+                            int(order.timestamp * 1000)
+                            if getattr(order, "timestamp", None)
+                            else deterministic_ts_ms
+                        ),
+                        symbol=order.symbol,
+                        side=str(order.side),
+                        quantity=float(order.quantity),
+                        price=float(order.price),
+                        signal_id=order.signal_id or None,
+                        decision_id=order.decision_id or None,
+                        order_id=order.order_id or None,
+                        trace_id=order.trace_id or None,
+                        decision_context=evidence.get("decision_context"),
+                        policy_id=getattr(order, "policy_id", None),
+                        policy_hash=getattr(order, "policy_hash", None),
+                        input_hash=getattr(order, "input_hash", None),
+                        output_hash=getattr(order, "output_hash", None),
+                        policy_snapshot=getattr(order, "policy_snapshot", None),
+                    )
+                except RuntimeError:
+                    raise
+                except Exception:
+                    logger.exception("Order envelope emission failed")
 
         return order
 
