@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - redis:7.4.1-alpine
+          - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
           - postgres:15.11-alpine
           - prom/prometheus:v3.1.0
           - grafana/grafana:11.4.0
@@ -212,7 +212,7 @@ jobs:
     strategy:
       matrix:
         image:
-          - redis:7.4.1-alpine
+          - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
           - postgres:15.11-alpine
       fail-fast: false
 
@@ -342,5 +342,5 @@ jobs:
 #    - Re-scan after base image updates
 #
 # 4. For manual scans:
-#    docker scout cves redis:7.4.1-alpine --only-severities critical,high
+#    docker scout cves redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065 --only-severities critical,high
 #    docker scout cves postgres:15.11-alpine --only-severities critical,high
