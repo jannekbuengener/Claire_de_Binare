@@ -10,7 +10,6 @@ import sys
 import time
 from pathlib import Path
 
-
 THIS_DIR = Path(__file__).resolve().parent
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
@@ -19,7 +18,6 @@ from route_control_board import (
     ControlBoardRouter,
     GhCommandError,
 )
-
 
 TRANSIENT_ERROR_MARKERS: tuple[str, ...] = (
     "<!doctype html>",
