@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# ruff: noqa: E402
 """Ensure Control Board project membership for issue and PR events."""
 
 from __future__ import annotations
@@ -14,7 +15,10 @@ THIS_DIR = Path(__file__).resolve().parent
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
-from route_control_board import ControlBoardRouter, GhCommandError  # noqa: E402 - path injection above is intentional
+from route_control_board import (
+    ControlBoardRouter,
+    GhCommandError,
+)
 
 
 TRANSIENT_ERROR_MARKERS: tuple[str, ...] = (
