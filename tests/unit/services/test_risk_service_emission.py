@@ -7,6 +7,13 @@ import pytest
 
 from services.risk.service import RiskManager
 
+# Reference to the actual module globals dict that RiskManager resolves from.
+# Other tests (test_flask_import_guard) may purge the module from sys.modules,
+# so monkeypatch.setattr("services.risk.service.X", ...) would patch a NEW
+# module object while RiskManager still uses the OLD one.  Patching via
+# _SVC_GLOBALS is immune to that because it targets the real dict directly.
+_SVC_GLOBALS = RiskManager._setup_envelope_emitter.__globals__
+
 
 @pytest.fixture(autouse=True)
 def clear_toggle_env(monkeypatch):
@@ -30,7 +37,7 @@ def test_setup_envelope_emitter_off_does_not_create_client(monkeypatch):
         called = True
         return MagicMock()
 
-    monkeypatch.setattr("services.risk.service.create_redis_client", fake_create)
+    monkeypatch.setitem(_SVC_GLOBALS, "create_redis_client", fake_create)
     monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
 
     manager._setup_envelope_emitter()
@@ -48,9 +55,7 @@ def test_setup_envelope_emitter_on_pubsub(monkeypatch):
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_MODE", "PuBSub")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_STREAM", "stream.envelopes")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_CHANNEL", "channel.envelopes")
-    monkeypatch.setattr(
-        "services.risk.service.create_redis_client", lambda **kwargs: client
-    )
+    monkeypatch.setitem(_SVC_GLOBALS, "create_redis_client", lambda **kwargs: client)
 
     manager._setup_envelope_emitter()
 
@@ -77,9 +82,7 @@ def test_setup_envelope_emitter_invalid_mode_defaults_to_stream(monkeypatch):
     client = MagicMock()
     monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_MODE", "INVALID")
-    monkeypatch.setattr(
-        "services.risk.service.create_redis_client", lambda **kwargs: client
-    )
+    monkeypatch.setitem(_SVC_GLOBALS, "create_redis_client", lambda **kwargs: client)
 
     manager._setup_envelope_emitter()
 
