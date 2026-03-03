@@ -326,6 +326,21 @@ query($owner:String!,$repo:String!,$number:Int!){
             targets.append(self.issue_target_from_api(number))
             return targets
 
+        if self.event_name == "repository_dispatch":
+            client_payload = payload.get("client_payload") or {}
+            number = client_payload.get("issue_number")
+            if isinstance(number, str):
+                try:
+                    number = int(number)
+                except ValueError as exc:
+                    raise GhCommandError(
+                        "Repository dispatch event without numeric issue_number."
+                    ) from exc
+            if not isinstance(number, int):
+                raise GhCommandError("Repository dispatch event without issue_number.")
+            targets.append(self.issue_target_from_api(number))
+            return targets
+
         if self.event_name != "pull_request":
             self.log(f"No routing for event '{self.event_name}'.")
             return targets
