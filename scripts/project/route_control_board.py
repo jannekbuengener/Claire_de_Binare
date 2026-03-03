@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 STAGE_LABEL_TO_OPTION: tuple[tuple[str, str], ...] = (
     ("label:stage:proof", "proof"),
     ("label:stage:stability", "stability"),
@@ -123,7 +122,9 @@ class ControlBoardRouter:
             raise GhCommandError(messages)
         return response.get("data", {})
 
-    def rest_json(self, endpoint: str, method: str = "GET", **fields: Any) -> dict[str, Any]:
+    def rest_json(
+        self, endpoint: str, method: str = "GET", **fields: Any
+    ) -> dict[str, Any]:
         args = ["api", endpoint]
         if method.upper() != "GET":
             args = ["api", "--method", method.upper(), endpoint]
@@ -178,13 +179,17 @@ query($owner:String!,$number:Int!){
                     option_name = str(option.get("name", ""))
                     option_id = str(option.get("id", ""))
                     if option_name and option_id:
-                        self.option_id_by_field_and_name[(name, option_name)] = option_id
+                        self.option_id_by_field_and_name[(name, option_name)] = (
+                            option_id
+                        )
 
     def load_event_payload(self) -> dict[str, Any]:
         try:
             return json.loads(self.event_path.read_text(encoding="utf-8"))
         except FileNotFoundError as exc:
-            raise GhCommandError(f"Event payload file not found: {self.event_path}") from exc
+            raise GhCommandError(
+                f"Event payload file not found: {self.event_path}"
+            ) from exc
         except json.JSONDecodeError as exc:
             raise GhCommandError(f"Invalid event JSON: {exc}") from exc
 
@@ -305,9 +310,12 @@ query($owner:String!,$repo:String!,$number:Int!){
             },
         )
         nodes = (
-            ((((data.get("repository") or {}).get("pullRequest")) or {}).get(
-                "closingIssuesReferences"
-            ) or {})
+            (
+                (((data.get("repository") or {}).get("pullRequest")) or {}).get(
+                    "closingIssuesReferences"
+                )
+                or {}
+            )
         ).get("nodes") or []
         result: list[int] = []
         for node in nodes:
@@ -323,6 +331,21 @@ query($owner:String!,$repo:String!,$number:Int!){
             number = issue.get("number")
             if not isinstance(number, int):
                 raise GhCommandError("Issue event without issue number.")
+            targets.append(self.issue_target_from_api(number))
+            return targets
+
+        if self.event_name == "repository_dispatch":
+            client_payload = payload.get("client_payload") or {}
+            number = client_payload.get("issue_number")
+            if isinstance(number, str):
+                try:
+                    number = int(number)
+                except ValueError as exc:
+                    raise GhCommandError(
+                        "Repository dispatch event without numeric issue_number."
+                    ) from exc
+            if not isinstance(number, int):
+                raise GhCommandError("Repository dispatch event without issue_number.")
             targets.append(self.issue_target_from_api(number))
             return targets
 
@@ -394,7 +417,9 @@ query($owner:String!,$number:Int!,$after:String){
         while True:
             page_count += 1
             if page_count > 30:
-                raise GhCommandError("Exceeded max project item pages while searching item.")
+                raise GhCommandError(
+                    "Exceeded max project item pages while searching item."
+                )
             data = self.graphql(
                 query,
                 {
@@ -403,14 +428,15 @@ query($owner:String!,$number:Int!,$after:String){
                     "after": cursor,
                 },
             )
-            items = (
-                (((data.get("user") or {}).get("projectV2") or {}).get("items") or {})
-            )
+            items = ((data.get("user") or {}).get("projectV2") or {}).get("items") or {}
             for node in items.get("nodes") or []:
                 content = node.get("content") or {}
                 if str(content.get("id", "")) != content_id:
                     continue
-                if str(((content.get("repository") or {}).get("nameWithOwner")) or "") != self.repo_full:
+                if (
+                    str(((content.get("repository") or {}).get("nameWithOwner")) or "")
+                    != self.repo_full
+                ):
                     continue
                 return node
 
