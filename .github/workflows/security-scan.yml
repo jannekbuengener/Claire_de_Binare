@@ -42,7 +42,7 @@ jobs:
           - redis:7.4.1-alpine
           - postgres:15.11-alpine
           - prom/prometheus:v3.1.0
-          - grafana/grafana:11.4.0
+          - grafana/grafana:11.4.8
       fail-fast: false
 
     steps:
