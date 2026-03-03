@@ -40,7 +40,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.1-alpine
-          - postgres:15.11-alpine
+          - postgres:15.17-alpine
           - prom/prometheus:v3.1.0
           - grafana/grafana:11.4.0
       fail-fast: false
@@ -213,7 +213,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.1-alpine
-          - postgres:15.11-alpine
+          - postgres:15.17-alpine
       fail-fast: false
 
     env:
@@ -343,4 +343,4 @@ jobs:
 #
 # 4. For manual scans:
 #    docker scout cves redis:7.4.1-alpine --only-severities critical,high
-#    docker scout cves postgres:15.11-alpine --only-severities critical,high
+#    docker scout cves postgres:15.17-alpine --only-severities critical,high
