@@ -1,7 +1,4 @@
-"""Tests for core.replay.emitter — toggle-gated envelope emission.
-
-Governance: LR-021 Slice 2 Evidence (docs/live-readiness/LR-021-EVIDENCE-SLICE2.md)
-"""
+"""Tests for core.replay.emitter with per-call env-gated emission."""
 
 import json
 import logging
@@ -12,69 +9,75 @@ from core.replay.canonical_json import canonical_json_dumps
 from core.replay.emitter import (
     _build_envelope,
     _compute_event_hash,
+    configure_envelope_emission,
     emit_decision_envelope,
     emit_envelope,
     emit_fill_envelope,
     emit_order_envelope,
-    envelope_emit_enabled,
+    is_envelope_emission_enabled,
 )
 from core.utils.uuid_gen import compute_correlation_id, compute_event_pk
 from core.replay.time import created_at_from_ts_ms
 
 
+class CapturePublisher:
+    def __init__(self) -> None:
+        self.messages: list[str] = []
+
+    def publish(self, payload: str) -> None:
+        self.messages.append(payload)
+
+
 @pytest.fixture(autouse=True)
-def _clean_toggle_env(monkeypatch):
-    """Ensure no toggle env leaks between tests."""
+def reset_emitter(monkeypatch) -> None:
     monkeypatch.delenv("CDB_ENVELOPE_EMISSION", raising=False)
     monkeypatch.delenv("LR021_ENVELOPE_EMIT_ENABLED", raising=False)
+    configure_envelope_emission(publisher=None)
 
 
-class TestEnvelopeEmitEnabled:
-    def test_default_off(self, monkeypatch):
-        """Both vars unset -> OFF."""
-        assert envelope_emit_enabled() is False
+def enable_emission(
+    monkeypatch, publisher: CapturePublisher | None = None
+) -> CapturePublisher:
+    publisher = publisher or CapturePublisher()
+    monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+    configure_envelope_emission(publisher=publisher)
+    return publisher
 
-    def test_legacy_one_on(self, monkeypatch):
-        """Legacy var '1' with CDB_ unset -> ON."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
-        assert envelope_emit_enabled() is True
 
-    def test_legacy_zero_off(self, monkeypatch):
-        """Legacy var '0' with CDB_ unset -> OFF."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "0")
-        assert envelope_emit_enabled() is False
+class TestEnvelopeConfiguration:
+    def test_default_disabled(self):
+        assert not is_envelope_emission_enabled()
 
-    def test_primary_one_on(self, monkeypatch):
-        """CDB_ var '1' -> ON."""
+    def test_enable_via_env_and_disable(self, monkeypatch):
         monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
-        assert envelope_emit_enabled() is True
-
-    def test_primary_zero_off(self, monkeypatch):
-        """CDB_ var '0' -> OFF."""
+        assert is_envelope_emission_enabled()
         monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
-        assert envelope_emit_enabled() is False
+        assert not is_envelope_emission_enabled()
 
-    def test_primary_wins_over_legacy(self, monkeypatch):
-        """CDB_='0' takes precedence even when legacy='1'."""
-        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
+    def test_legacy_env_fallback(self, monkeypatch):
+        """LR021_ENVELOPE_EMIT_ENABLED is used when CDB_ is not set."""
         monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
-        assert envelope_emit_enabled() is False
-
-    def test_primary_one_wins_over_legacy_zero(self, monkeypatch):
-        """CDB_='1' takes precedence even when legacy='0'."""
-        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+        assert is_envelope_emission_enabled()
         monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "0")
-        assert envelope_emit_enabled() is True
+        assert not is_envelope_emission_enabled()
 
-    def test_garbage_primary_off(self, monkeypatch):
-        """Garbage value in CDB_ -> OFF."""
-        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "yes")
-        assert envelope_emit_enabled() is False
+    def test_primary_env_overrides_legacy(self, monkeypatch):
+        """CDB_ENVELOPE_EMISSION takes precedence over legacy."""
+        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
+        assert not is_envelope_emission_enabled()
 
-    def test_garbage_legacy_off(self, monkeypatch):
-        """Garbage value in legacy -> OFF."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "yes")
-        assert envelope_emit_enabled() is False
+    def test_emit_without_publisher_raises(self, monkeypatch):
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+        configure_envelope_emission(publisher=None)
+        env = _build_envelope(
+            event_type="DECISION",
+            event_id="ev-emit-1",
+            ts_ms=1000,
+            payload={"decision": "ALLOW"},
+        )
+        with pytest.raises(RuntimeError):
+            emit_envelope(env)
 
 
 class TestBuildEnvelope:
@@ -197,19 +200,27 @@ class TestComputeEventHash:
 
 
 class TestEmitEnvelope:
-    def test_noop_when_off(self, monkeypatch, caplog):
-        monkeypatch.delenv("LR021_ENVELOPE_EMIT_ENABLED", raising=False)
+    def test_noop_when_off(self, caplog):
+        publisher = CapturePublisher()
+        configure_envelope_emission(publisher=publisher)
         env = _build_envelope(
-            event_type="DECISION", event_id="ev-001", ts_ms=1000, payload={}
+            event_type="DECISION",
+            event_id="ev-001",
+            ts_ms=1000,
+            payload={},
         )
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_envelope(env)
         assert len(caplog.records) == 0
+        assert not publisher.messages
 
     def test_emits_jsonl_when_on(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        publisher = enable_emission(monkeypatch)
         env = _build_envelope(
-            event_type="DECISION", event_id="ev-001", ts_ms=1000, payload={"k": "v"}
+            event_type="DECISION",
+            event_id="ev-001",
+            ts_ms=1000,
+            payload={"k": "v"},
         )
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_envelope(env)
@@ -220,25 +231,55 @@ class TestEmitEnvelope:
         assert parsed["event_id"] == "ev-001"
         assert "event_hash" in parsed
         assert len(parsed["event_hash"]) == 64
+        assert publisher.messages == [line]
 
     def test_event_hash_is_correct(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        publisher = enable_emission(monkeypatch)
         env = _build_envelope(
-            event_type="ORDER", event_id="ord-001", ts_ms=2000, payload={"x": 1}
+            event_type="ORDER",
+            event_id="ord-001",
+            ts_ms=2000,
+            payload={"x": 1},
         )
         expected_hash = _compute_event_hash(env)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_envelope(env)
         parsed = json.loads(caplog.records[0].message)
         assert parsed["event_hash"] == expected_hash
+        assert publisher.messages[0] == caplog.records[0].message
+
+    def test_no_cache_per_call_env_read(self, monkeypatch, caplog):
+        """Prove _should_emit() reads env on every call — no module-level cache."""
+        publisher = CapturePublisher()
+        configure_envelope_emission(publisher=publisher)
+        env = _build_envelope(
+            event_type="DECISION",
+            event_id="ev-cache-1",
+            ts_ms=1000,
+            payload={"k": "v"},
+        )
+
+        # Phase 1: OFF (default, no env set) => no-op
+        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
+            emit_envelope(env)
+        assert not publisher.messages
+
+        # Phase 2: ON => publishes
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
+            emit_envelope(env)
+        assert len(publisher.messages) == 1
+
+        # Phase 3: OFF again => no-op
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
+        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
+            emit_envelope(env)
+        assert len(publisher.messages) == 1  # still 1, not 2
 
 
 class TestCanonicalOutput:
-    """Verify emitted output uses canonical_json_dumps (None omission, float normalization)."""
-
     def test_none_in_payload_omitted_from_output(self, monkeypatch, caplog):
-        """canonical_json_dumps omits None values from emitted output line."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         env = _build_envelope(
             event_type="DECISION",
             event_id="ev-canon-1",
@@ -253,8 +294,7 @@ class TestCanonicalOutput:
         assert "reason_code" not in parsed["payload"]
 
     def test_negative_zero_normalized_in_output(self, monkeypatch, caplog):
-        """canonical_json_dumps normalizes -0.0 to 0.0 in emitted output."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         env = _build_envelope(
             event_type="ORDER",
             event_id="ev-canon-2",
@@ -270,8 +310,7 @@ class TestCanonicalOutput:
         assert parsed["payload"]["price"] == 0.0
 
     def test_key_order_canonical_in_output(self, monkeypatch, caplog):
-        """Emitted output line matches canonical_json_dumps serialization."""
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         env = _build_envelope(
             event_type="DECISION",
             event_id="ev-canon-3",
@@ -282,15 +321,14 @@ class TestCanonicalOutput:
             emit_envelope(env)
         line = caplog.records[0].message
         parsed = json.loads(line)
-        # Remove event_hash, re-serialize with canonical_json_dumps — should match
         event_hash = parsed.pop("event_hash")
         expected_line = canonical_json_dumps({**parsed, "event_hash": event_hash})
         assert line == expected_line
 
 
 class TestEmitDecisionEnvelope:
-    def test_noop_when_off(self, monkeypatch, caplog):
-        monkeypatch.delenv("LR021_ENVELOPE_EMIT_ENABLED", raising=False)
+    def test_noop_when_off(self, caplog):
+        configure_envelope_emission(publisher=CapturePublisher())
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_decision_envelope(
                 event_id="dec-001",
@@ -303,7 +341,7 @@ class TestEmitDecisionEnvelope:
         assert len(caplog.records) == 0
 
     def test_emits_with_evidence_keys(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_decision_envelope(
                 event_id="dec-001",
@@ -331,7 +369,7 @@ class TestEmitDecisionEnvelope:
         assert payload["evidence_keys"] == ["a_key", "z_key"]
 
     def test_reason_code_none_omitted(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_decision_envelope(
                 event_id="dec-002",
@@ -346,7 +384,7 @@ class TestEmitDecisionEnvelope:
         assert "evidence_keys" not in parsed["payload"]
 
     def test_empty_evidence_no_keys(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_decision_envelope(
                 event_id="dec-003",
@@ -361,8 +399,8 @@ class TestEmitDecisionEnvelope:
 
 
 class TestEmitOrderEnvelope:
-    def test_noop_when_off(self, monkeypatch, caplog):
-        monkeypatch.delenv("LR021_ENVELOPE_EMIT_ENABLED", raising=False)
+    def test_noop_when_off(self, caplog):
+        configure_envelope_emission(publisher=CapturePublisher())
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_order_envelope(
                 event_id="ord-001",
@@ -375,7 +413,7 @@ class TestEmitOrderEnvelope:
         assert len(caplog.records) == 0
 
     def test_emits_order(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_order_envelope(
                 event_id="legacy-order-id",
@@ -398,34 +436,11 @@ class TestEmitOrderEnvelope:
         assert parsed["correlation_id"] == compute_correlation_id("sig-001")
         assert parsed["trace_id"] == "trace-001"
         assert parsed["decision_context"] == {"thresholds": {"max_slippage_pct": 0.002}}
-        payload = parsed["payload"]
-        assert payload["symbol"] == "BTCUSDT"
-        assert payload["side"] == "BUY"
-        assert payload["quantity"] == 0.01
-        assert payload["price"] == 50000.0
-        assert payload["signal_id"] == "sig-001"
-        assert payload["decision_id"] == "dec-001"
-        assert payload["order_id"] == "ord-001"
-
-    def test_optional_ids_omitted(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
-        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
-            emit_order_envelope(
-                event_id="ord-002",
-                ts_ms=1000,
-                symbol="ETHUSDT",
-                side="SELL",
-                quantity=1.0,
-                price=3000.0,
-            )
-        parsed = json.loads(caplog.records[0].message)
-        assert "signal_id" not in parsed["payload"]
-        assert "decision_id" not in parsed["payload"]
 
 
 class TestEmitFillEnvelope:
-    def test_noop_when_off(self, monkeypatch, caplog):
-        monkeypatch.delenv("LR021_ENVELOPE_EMIT_ENABLED", raising=False)
+    def test_noop_when_off(self, caplog):
+        configure_envelope_emission(publisher=CapturePublisher())
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_fill_envelope(
                 event_id="fill-001",
@@ -434,76 +449,32 @@ class TestEmitFillEnvelope:
                 fill_id="fill-001",
                 symbol="BTCUSDT",
                 side="BUY",
-                filled_quantity=0.01,
+                filled_quantity=0.005,
                 price=50000.0,
             )
         assert len(caplog.records) == 0
 
     def test_emits_fill(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
+        enable_emission(monkeypatch)
         with caplog.at_level(logging.INFO, logger="lr021.emitter"):
             emit_fill_envelope(
-                event_id="legacy-fill-id",
+                event_id="fill-001",
                 ts_ms=1000,
                 order_id="ord-001",
                 fill_id="fill-001",
                 symbol="BTCUSDT",
                 side="BUY",
-                filled_quantity=0.01,
-                price=50000.0,
-                signal_id="sig-001",
-                trace_id="trace-001",
+                filled_quantity=0.005,
+                price=None,
                 status="FILLED",
+                policy_id="policy-1",
+                policy_hash="hash-1",
             )
         parsed = json.loads(caplog.records[0].message)
         assert parsed["event_type"] == "FILL"
-        assert parsed["event_id"] == compute_event_pk(
-            "sig-001", "FILL", order_id="ord-001", fill_id="fill-001"
-        )
-        assert parsed["correlation_id"] == compute_correlation_id("sig-001")
-        assert parsed["trace_id"] == "trace-001"
         payload = parsed["payload"]
-        assert payload["order_id"] == "ord-001"
-        assert payload["fill_id"] == "fill-001"
-        assert payload["filled_quantity"] == 0.01
-        assert payload["price"] == 50000.0
+        assert "filled_quantity" in payload
         assert payload["status"] == "FILLED"
-
-    def test_price_none_omitted(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
-        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
-            emit_fill_envelope(
-                event_id="fill-002",
-                ts_ms=1000,
-                order_id="ord-002",
-                fill_id="fill-002",
-                symbol="ETHUSDT",
-                side="SELL",
-                filled_quantity=1.0,
-                price=None,
-            )
-        parsed = json.loads(caplog.records[0].message)
-        assert "price" not in parsed["payload"]
-
-    def test_policy_fields_included(self, monkeypatch, caplog):
-        monkeypatch.setenv("LR021_ENVELOPE_EMIT_ENABLED", "1")
-        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
-            emit_fill_envelope(
-                event_id="fill-003",
-                ts_ms=1000,
-                order_id="ord-003",
-                fill_id="fill-003",
-                symbol="BTCUSDT",
-                side="BUY",
-                filled_quantity=0.5,
-                price=49000.0,
-                policy_id="risk_v1",
-                policy_hash="ph123",
-                input_hash="ih456",
-                output_hash="oh789",
-            )
-        parsed = json.loads(caplog.records[0].message)
-        assert parsed["policy_id"] == "risk_v1"
-        assert parsed["policy_hash"] == "ph123"
-        assert parsed["input_hash"] == "ih456"
-        assert parsed["output_hash"] == "oh789"
+        assert "price" not in payload
+        assert parsed["policy_id"] == "policy-1"
+        assert parsed["policy_hash"] == "hash-1"

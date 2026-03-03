@@ -2,11 +2,18 @@
 Toggle-gated envelope emitter for LR-021 Slice 2.
 
 Emits DecisionEnvelopeV1 / OrderEnvelopeV1 / FillEnvelopeV1 as structured
-JSONL to a configured output (default: stdout logger). Toggle default OFF.
+JSONL to a configured publisher. Toggle default OFF.
 
-Toggle: CDB_ENVELOPE_EMISSION=0|1 (primary) | LR021_ENVELOPE_EMIT_ENABLED=0|1 (legacy alias).
-Read per call, no cache. CDB_ takes precedence when set.
-When OFF: all emit functions are no-ops (zero side effects, zero I/O).
+Toggle is read from ``os.environ`` on **every call** — no module-level cache.
+  - Primary: ``CDB_ENVELOPE_EMISSION=0|1`` (takes precedence when set)
+  - Legacy:  ``LR021_ENVELOPE_EMIT_ENABLED=0|1`` (fallback, default ``"0"``)
+  - Any read error ⇒ treated as OFF.
+
+When OFF: all emit functions are strict no-ops (zero side effects, zero I/O,
+no exceptions).
+
+``configure_envelope_emission()`` injects the publisher only; the ``enabled``
+parameter is kept for backward compatibility but ignored.
 
 Governance: LR-021 Slice 2 Evidence (docs/live-readiness/LR-021-EVIDENCE-SLICE2.md)
 
@@ -29,27 +36,47 @@ import os
 from typing import Any, Dict, Optional
 
 from core.replay.canonical_json import canonical_json_dumps, sha256_hex
+from core.replay.publisher import EnvelopePublisher
 from core.utils.uuid_gen import compute_correlation_id, compute_event_pk
 from core.replay.time import created_at_from_ts_ms
 
 logger = logging.getLogger("lr021.emitter")
 
+_envelope_publisher: EnvelopePublisher | None = None
 
-def envelope_emit_enabled() -> bool:
-    """True only when envelope emission toggle is '1'.
 
-    Precedence: CDB_ENVELOPE_EMISSION (primary) > LR021_ENVELOPE_EMIT_ENABLED (legacy alias).
-    If CDB_ENVELOPE_EMISSION is set (any value including '0'), it wins.
-    Otherwise falls back to LR021_ENVELOPE_EMIT_ENABLED.
-    Default: '0' (OFF).
+def configure_envelope_emission(
+    enabled: bool = False, publisher: EnvelopePublisher | None = None
+) -> None:
+    """Inject publisher for emission.
 
-    Reads os.getenv on every call (no module-level cache) so tests
-    can toggle via monkeypatch.setenv.
+    The *enabled* parameter is retained for backward compatibility but
+    ignored — the toggle is read from ``os.environ`` on every call.
     """
-    primary = os.getenv("CDB_ENVELOPE_EMISSION")
-    if primary is not None:
-        return primary == "1"
-    return os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
+    global _envelope_publisher
+    _envelope_publisher = publisher
+
+
+def is_envelope_emission_enabled() -> bool:
+    """Return the current emission toggle state (reads env per call)."""
+    return _should_emit()
+
+
+def _publish_line(line: str) -> None:
+    if _envelope_publisher is None:
+        raise RuntimeError("Envelope emission enabled but no publisher configured")
+    _envelope_publisher.publish(line)
+
+
+def _should_emit() -> bool:
+    """Read env on every call — no module-level cache."""
+    try:
+        primary = os.environ.get("CDB_ENVELOPE_EMISSION")
+        if primary is not None:
+            return primary == "1"
+        return os.environ.get("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
+    except Exception:
+        return False
 
 
 def _compute_event_hash(envelope_dict: dict) -> str:
@@ -150,15 +177,16 @@ def emit_envelope(envelope: dict) -> None:
     """Emit a single envelope as compact JSON to the lr021.emitter logger.
 
     No-op when toggle OFF. When ON, computes event_hash and logs one
-    JSONL line at INFO level.
+    JSONL line at INFO level, then publishes via the configured publisher.
     """
-    if not envelope_emit_enabled():
+    if not _should_emit():
         return
 
     event_hash = _compute_event_hash(envelope)
     output = {**envelope, "event_hash": event_hash}
     line = canonical_json_dumps(output)
     logger.info(line)
+    _publish_line(line)
 
 
 def emit_decision_envelope(
@@ -179,7 +207,7 @@ def emit_decision_envelope(
     policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit a DECISION envelope. No-op when toggle OFF."""
-    if not envelope_emit_enabled():
+    if not _should_emit():
         return
 
     payload: dict[str, Any] = {
@@ -230,7 +258,7 @@ def emit_order_envelope(
     policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit an ORDER envelope. No-op when toggle OFF."""
-    if not envelope_emit_enabled():
+    if not _should_emit():
         return
 
     payload: dict[str, Any] = {
@@ -285,7 +313,7 @@ def emit_fill_envelope(
     policy_snapshot: Optional[Dict[str, Any]] = None,
 ) -> None:
     """Emit a FILL envelope. No-op when toggle OFF."""
-    if not envelope_emit_enabled():
+    if not _should_emit():
         return
 
     payload: dict[str, Any] = {
