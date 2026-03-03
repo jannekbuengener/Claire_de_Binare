@@ -73,7 +73,7 @@ services:
       - cdb_network
 
   cdb_grafana:
-    image: grafana/grafana:11.4.0
+    image: grafana/grafana:11.4.8
     container_name: cdb_grafana
     restart: unless-stopped
     environment:
