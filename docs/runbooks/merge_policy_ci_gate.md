@@ -8,11 +8,44 @@ This runbook documents the GitHub settings that enforce the
 See [no_human_review_policy.md](../governance/no_human_review_policy.md)
 for the policy rationale.
 
-## Current State (as of 2026-02-28)
+## Current State (as of 2026-03-03)
 
 - Repo Actions workflow permissions: `Read and write`
-- Active required check on `main`: `ci (Unit/Integration + Lint gesammelt)`
-- Target required checks after merging `policy-gate`: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`
+- Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
+- Canonical merge-relevant check names on PRs: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`
+- Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
+- Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
+
+## Canonical PR Gate Contract
+
+The exact check-run names below are part of the merge contract on `main`:
+
+| Contract scope | Canonical source | Merge-relevant | Contract name |
+|-------|-------|-------|-------|
+| Aggregate PR CI gate | `.github/workflows/ci.yml` | Yes | `ci (Unit/Integration + Lint gesammelt)` |
+| Policy classification gate | `.github/workflows/policy-gate.yml` | Yes | `policy-gate` |
+| Main/dispatch CI pipeline | `.github/workflows/ci.yaml` | No | None |
+
+Implication: Sentinel, branch protection, and PR diagnostics must anchor on the PR-emitted check-run names above. A larger push-only workflow does not become canonical just because it contains more jobs.
+
+## Delta: `ci.yaml` vs. Canonical PR Gate
+
+`ci.yaml` currently contains checks that are not part of the merge contract because the workflow is `push`/`workflow_dispatch` only:
+
+- `Core Duplicates Guard`
+- `Type Checking (mypy)` (currently advisory via `continue-on-error`)
+- `Contract Tests`
+- `Contract Drift Guard`
+- `LR-004: Completion State Validation`
+- `Correlation Event Coverage Guard`
+- `Secret Scanning (Gitleaks)`
+- `Container Scan (Trivy)`
+- `Security Audit (Bandit)` (currently advisory via `continue-on-error`)
+- `Dependency Audit (pip-audit)` (currently advisory via `continue-on-error`)
+- `Documentation Checks`
+- `Build Summary`
+
+`Linting (Ruff)`, `Format Check (Black)`, and `Tests` also exist in `ci.yaml`, but the canonical PR contract intentionally remains the single aggregate check-run emitted by `.github/workflows/ci.yml`.
 
 ## Policy Gate Categories
 
