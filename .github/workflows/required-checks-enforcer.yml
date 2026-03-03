@@ -2,7 +2,12 @@
 name: required-checks-enforcer (Sentinel)
 
 on:
-  # Manual-only by design to avoid recurring Actions noise while keeping on-demand audit capability.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "30 4 * * 0"
   workflow_dispatch:
 
 permissions:
@@ -11,7 +16,7 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: required-checks-enforcer-${{ github.event.pull_request.number || github.ref }}
+  group: required-checks-enforcer-${{ github.event.pull_request.number || github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -19,47 +24,169 @@ jobs:
     name: required-checks-enforcer (Sentinel)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      SENTINEL_MODE: ${{ vars.SENTINEL_MODE || 'report' }}
     steps:
-      - name: Report required check status (non-blocking)
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Audit required check status
+        shell: bash
         run: |
           set -u
 
-          REQUIRED_CHECK="ci (Unit/Integration + Lint gesammelt)"
-          DEADLINE=$((SECONDS + 780)) # 13 min
-          SLEEP=10
+          mode="$(printf '%s' "${SENTINEL_MODE:-report}" | tr '[:upper:]' '[:lower:]')"
+          if [[ -z "$mode" ]]; then
+            mode="report"
+          fi
+          if [[ "$mode" != "report" && "$mode" != "enforce" ]]; then
+            echo "::warning::Unknown SENTINEL_MODE='${SENTINEL_MODE:-}'; falling back to report."
+            mode="report"
+          fi
 
-          echo "Reporting required check status for SHA=$SHA"
-          echo "Expected required check: $REQUIRED_CHECK"
+          event_name="${GITHUB_EVENT_NAME}"
+          deadline=$((SECONDS + 780)) # 13 min
+          sleep_seconds=10
+          summary_file="${GITHUB_STEP_SUMMARY:-}"
 
-          while true; do
-            JSON=$(gh api -H "Accept: application/vnd.github+json" \
-              "/repos/$REPO/commits/$SHA/check-runs?per_page=100")
+          required_checks=("ci (Unit/Integration + Lint gesammelt)")
+          if [[ "$event_name" == "pull_request" ]]; then
+            required_checks=("policy-gate" "ci (Unit/Integration + Lint gesammelt)")
+          fi
 
-            status=$(echo "$JSON" | jq -r --arg n "$REQUIRED_CHECK" \
-              '[.check_runs[] | select(.name == $n)] | sort_by(.started_at // "") | last | .status // "__MISSING__"')
-            conclusion=$(echo "$JSON" | jq -r --arg n "$REQUIRED_CHECK" \
-              '[.check_runs[] | select(.name == $n)] | sort_by(.started_at // "") | last | .conclusion // "__PENDING__"' | tr '[:lower:]' '[:upper:]')
+          echo "Sentinel mode: $mode"
+          echo "Event: $event_name"
+          echo "SHA: $SHA"
+          echo "Required checks: ${required_checks[*]}"
 
-            if [[ "$status" == "__MISSING__" ]]; then
-              echo "::warning::Missing check run: $REQUIRED_CHECK"
-            elif [[ "$status" != "completed" ]]; then
-              echo "PENDING: $REQUIRED_CHECK (status=$status)"
-            elif [[ "$conclusion" != "SUCCESS" ]]; then
-              echo "::warning::Required check not successful: $REQUIRED_CHECK (conclusion=$conclusion)"
-              exit 0
-            else
-              echo "OK: $REQUIRED_CHECK"
-              exit 0
+          if [[ -n "$summary_file" ]]; then
+            {
+              echo "## Sentinel Summary"
+              echo
+              echo "- Mode: \`$mode\`"
+              echo "- Event: \`$event_name\`"
+              echo "- SHA: \`$SHA\`"
+              echo
+              echo "| Check | Final state | Detail |"
+              echo "| --- | --- | --- |"
+            } >> "$summary_file"
+          fi
+
+          ok_count=0
+          pending_count=0
+          missing_count=0
+          failed_count=0
+          timeout_count=0
+          enforce_failure=0
+
+          for required_check in "${required_checks[@]}"; do
+            final_state=""
+            final_detail=""
+
+            while true; do
+              if ! json="$(gh api -H "Accept: application/vnd.github+json" \
+                "/repos/$REPO/commits/$SHA/check-runs?per_page=100" 2>&1)"; then
+                echo "::warning::gh api failed while checking '$required_check': $json"
+                if [[ $SECONDS -ge $deadline ]]; then
+                  final_state="TIMEOUT"
+                  final_detail="gh api call failed until deadline"
+                  break
+                fi
+                sleep "$sleep_seconds"
+                continue
+              fi
+
+              check_json="$(
+                jq -c --arg n "$required_check" \
+                  '[.check_runs[] | select(.name == $n)] | sort_by(.started_at // "") | last // {}' \
+                  <<<"$json"
+              )"
+              status="$(jq -r '.status // "__MISSING__"' <<<"$check_json")"
+              conclusion="$(jq -r '.conclusion // ""' <<<"$check_json" | tr '[:lower:]' '[:upper:]')"
+              details_url="$(jq -r '.details_url // .html_url // empty' <<<"$check_json")"
+
+              if [[ "$status" == "__MISSING__" ]]; then
+                echo "MISSING: $required_check (no check run observed yet)"
+                if [[ $SECONDS -ge $deadline ]]; then
+                  final_state="MISSING"
+                  final_detail="no check run observed before deadline"
+                  break
+                fi
+                sleep "$sleep_seconds"
+                continue
+              fi
+
+              if [[ "$status" != "completed" ]]; then
+                echo "PENDING: $required_check (status=$status)"
+                if [[ $SECONDS -ge $deadline ]]; then
+                  final_state="TIMEOUT"
+                  final_detail="status=$status before deadline"
+                  break
+                fi
+                sleep "$sleep_seconds"
+                continue
+              fi
+
+              if [[ "$conclusion" != "SUCCESS" ]]; then
+                final_state="FAILED"
+                final_detail="conclusion=${conclusion:-UNKNOWN}"
+              else
+                final_state="OK"
+                final_detail="conclusion=SUCCESS"
+              fi
+
+              if [[ -n "$details_url" ]]; then
+                final_detail="$final_detail; url=$details_url"
+              fi
+              break
+            done
+
+            case "$final_state" in
+              OK)
+                ok_count=$((ok_count + 1))
+                echo "OK: $required_check ($final_detail)"
+                ;;
+              MISSING)
+                missing_count=$((missing_count + 1))
+                echo "::warning::$required_check -> MISSING ($final_detail)"
+                ;;
+              FAILED)
+                failed_count=$((failed_count + 1))
+                echo "::warning::$required_check -> FAILED ($final_detail)"
+                ;;
+              TIMEOUT)
+                timeout_count=$((timeout_count + 1))
+                echo "::warning::$required_check -> TIMEOUT ($final_detail)"
+                ;;
+              *)
+                pending_count=$((pending_count + 1))
+                final_state="PENDING"
+                final_detail="${final_detail:-unexpected state}"
+                echo "::warning::$required_check -> PENDING ($final_detail)"
+                ;;
+            esac
+
+            if [[ -n "$summary_file" ]]; then
+              safe_detail="${final_detail//|/\\|}"
+              echo "| \`$required_check\` | \`$final_state\` | $safe_detail |" >> "$summary_file"
             fi
 
-            if [[ $SECONDS -ge $DEADLINE ]]; then
-              echo "::warning::Timeout while waiting for $REQUIRED_CHECK. Reporting only, not blocking."
-              exit 0
+            if [[ "$mode" == "enforce" && "$final_state" =~ ^(MISSING|FAILED|TIMEOUT)$ ]]; then
+              enforce_failure=1
             fi
-
-            sleep "$SLEEP"
           done
+
+          if [[ -n "$summary_file" ]]; then
+            {
+              echo
+              echo "- Totals: OK=$ok_count, PENDING=$pending_count, MISSING=$missing_count, FAILED=$failed_count, TIMEOUT=$timeout_count"
+              echo "- Mode behavior: \`report\` never blocks; \`enforce\` exits non-zero on MISSING / FAILED / TIMEOUT."
+            } >> "$summary_file"
+          fi
+
+          if [[ "$mode" == "enforce" && "$enforce_failure" -ne 0 ]]; then
+            echo "::error::Sentinel enforce-mode detected missing, failed, or timed-out required checks."
+            exit 1
+          fi
+
+          echo "Sentinel completed in $mode mode."
