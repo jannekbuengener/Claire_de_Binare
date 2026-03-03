@@ -1,0 +1,40 @@
+name: Auto Milestone Label Dispatch
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+
+jobs:
+  dispatch-milestone-label:
+    if: startsWith(github.event.label.name || '', 'milestone:')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch milestone label event
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue?.number;
+            const labelName = String(context.payload.label?.name || "").trim();
+
+            if (!issueNumber) {
+              core.warning("Could not determine the issue number for this event.");
+              return;
+            }
+
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              event_type: "auto_milestone_issue_label",
+              client_payload: {
+                issue_number: issueNumber,
+                action: context.payload.action || "",
+                label: labelName,
+              },
+            });
+
+            core.info(
+              `Dispatched auto_milestone_issue_label for issue #${issueNumber} (${labelName || "<none>"}).`
+            );

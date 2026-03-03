@@ -2,20 +2,26 @@ name: Auto Milestone
 
 on:
   issues:
-    types: [opened, reopened, labeled]
+    types: [opened, reopened]
+  repository_dispatch:
+    types: [auto_milestone_issue_label]
   workflow_dispatch:
 
 concurrency:
   group: >-
-    auto-milestone-${{ github.event.issue.number }}-${{
-      github.event.action == 'labeled' && startsWith(github.event.label.name || '', 'milestone:') && 'milestone' ||
-      github.event.action == 'labeled' && 'other' ||
+    auto-milestone-${{
+      github.event.issue.number ||
+      github.event.client_payload.issue_number ||
+      'global'
+    }}-${{
+      github.event_name == 'repository_dispatch' && 'milestone' ||
       'base'
     }}
   cancel-in-progress: true
 
 permissions:
   issues: write
+  contents: read
 
 env:
   DEFAULT_MILESTONE_TITLE: INBOX
@@ -31,7 +37,12 @@ jobs:
           script: |
             const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
             const { owner, repo } = context.repo;
-            const action = context.payload.action || "";
+            const action = String(
+              context.payload.client_payload?.action ||
+              context.payload.action ||
+              ""
+            );
+            const isMilestoneLabelDispatch = context.eventName === "repository_dispatch";
 
             function logPermissionWarning(error, action) {
               const status = error?.status ?? error?.response?.status;
@@ -78,22 +89,31 @@ jobs:
               return `default milestone ${defaultMilestoneTitle}`;
             }
 
-            const issueNumber = context.payload.issue?.number ?? context.payload.pull_request?.number;
+            const issueNumber = context.payload.issue?.number ??
+              Number(context.payload.client_payload?.issue_number || 0) ||
+              context.payload.pull_request?.number;
             if (!issueNumber) {
               core.warning("Could not determine the issue number for this event.");
               return;
             }
 
-            const eventLabelName = (context.payload.label?.name || "").trim();
+            const eventLabelName = String(
+              context.payload.client_payload?.label ||
+              context.payload.label?.name ||
+              ""
+            ).trim();
             core.info(
-              `Auto Milestone event: action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
+              `Auto Milestone event: event=${context.eventName} action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
             );
 
-            if (context.eventName === "issues" && action === "labeled") {
-              if (!/^milestone:\s*.+/i.test(eventLabelName)) {
-                core.info("Non-milestone label event; skipping.");
-                return;
-              }
+            if (isMilestoneLabelDispatch && !/^milestone:\s*.+/i.test(eventLabelName)) {
+              core.info("Repository dispatch without milestone label; skipping.");
+              return;
+            }
+
+            if (!isMilestoneLabelDispatch && !["opened", "reopened"].includes(action)) {
+              core.info(`Unsupported issue action "${action || "<none>"}"; skipping.`);
+              return;
             }
 
             let item;
@@ -121,17 +141,12 @@ jobs:
               return;
             }
 
-            const desiredTitle = labelMilestones[0] || defaultMilestoneTitle;
-            const hasMilestoneLabel = labelMilestones.length === 1;
-            const milestonesByTitle = await listOpenMilestones();
-            const target = milestonesByTitle.get(desiredTitle.trim().toLowerCase());
-
-            if (!target) {
-              core.warning(
-                `Could not resolve ${describeSource(labelMilestones)} for #${issueNumber}: open milestone "${desiredTitle}" does not exist. Leaving item unchanged.`
-              );
+            if (isMilestoneLabelDispatch && labelMilestones.length === 0) {
+              core.info("No milestone label present after dispatch; skipping.");
               return;
             }
+
+            const milestonesByTitle = await listOpenMilestones();
 
             let liveItem;
             try {
@@ -148,15 +163,32 @@ jobs:
             const currentMilestone = liveItem.milestone || null;
             const currentTitle = currentMilestone ? currentMilestone.title.trim() : null;
             const currentTitleLower = currentTitle ? currentTitle.toLowerCase() : null;
-            const targetTitleLower = target.title.trim().toLowerCase();
             const inboxTitleLower = defaultMilestoneTitle.trim().toLowerCase();
+            const hasMilestoneLabel = labelMilestones.length === 1;
+
+            let desiredTitle;
+            if (isMilestoneLabelDispatch) {
+              desiredTitle = labelMilestones[0];
+            } else {
+              desiredTitle = defaultMilestoneTitle;
+            }
+
+            const target = milestonesByTitle.get(desiredTitle.trim().toLowerCase());
+            if (!target) {
+              core.warning(
+                `Could not resolve ${describeSource(labelMilestones)} for #${issueNumber}: open milestone "${desiredTitle}" does not exist. Leaving item unchanged.`
+              );
+              return;
+            }
+
+            const targetTitleLower = target.title.trim().toLowerCase();
 
             if (currentTitleLower === targetTitleLower) {
               core.info(`#${issueNumber} already has milestone "${target.title}".`);
               return;
             }
 
-            if (hasMilestoneLabel) {
+            if (isMilestoneLabelDispatch && hasMilestoneLabel) {
               if (currentTitleLower === inboxTitleLower) {
                 core.info(`Overriding INBOX -> ${target.title} due to milestone label.`);
               }
@@ -167,7 +199,7 @@ jobs:
                 );
                 return;
               }
-            } else if (currentMilestone) {
+            } else if (!isMilestoneLabelDispatch && currentMilestone) {
               core.info(
                 `#${issueNumber} received milestone "${currentMilestone.title}" before default assignment. Skipping overwrite.`
               );
