@@ -180,3 +180,6 @@ tools/secrets/.env.*
 # Phase 1 runtime artifacts (local only)
 P1_RUNTIME_DOD_REPORT.md
 runtime_evidence_bundle_P1.json
+
+# Local-only ops helper artifact (do not version)
+scripts/cdb_ops.ps1
