@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
     env:
       PROJECT_OWNER: jannekbuengener
       PROJECT_NUMBER: "8"
@@ -382,3 +383,49 @@ jobs:
 
           echo "Weekly digest ${action_result}: #${issue_number} ${issue_url}"
           echo "Summary: now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
+
+      - name: Close stale weekly digest issues (keep latest 2 open)
+        shell: bash
+        env:
+          CDB_AUTH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
+          GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
+        run: |
+          set -euo pipefail
+
+          repo="${GITHUB_REPOSITORY}"
+          keep_open=2
+          close_comment="Auto-closed: weekly digest is timeboxed; see newer digest issues for current status."
+
+          digest_issues_json="$(
+            gh api --paginate --slurp "repos/${repo}/issues?state=open&labels=report:weekly&per_page=100" \
+              | jq -c '
+                  map(.[])
+                  | map(select(has("pull_request") | not))
+                  | map(select(([.labels[]?.name] | index("report:weekly-fail")) | not))
+                  | sort_by(.created_at) | reverse
+                '
+          )"
+
+          total_open="$(jq -r 'length' <<<"$digest_issues_json")"
+          if (( total_open <= keep_open )); then
+            echo "No stale weekly digests to close (open=${total_open}, keep=${keep_open})."
+            exit 0
+          fi
+
+          stale_json="$(jq -c --argjson keep "${keep_open}" '.[ $keep: ]' <<<"$digest_issues_json")"
+          stale_count="$(jq -r 'length' <<<"$stale_json")"
+
+          if (( stale_count == 0 )); then
+            echo "No stale weekly digests to close after slicing."
+            exit 0
+          fi
+
+          jq -r '.[].number' <<<"$stale_json" | while read -r issue_number; do
+            if [[ -z "${issue_number}" ]]; then
+              continue
+            fi
+
+            gh api --method PATCH "repos/${repo}/issues/${issue_number}" -f state=closed > /dev/null
+            gh api --method POST "repos/${repo}/issues/${issue_number}/comments" -f body="$close_comment" > /dev/null
+            echo "Closed stale weekly digest issue #${issue_number}."
+          done

@@ -107,6 +107,8 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 Report-Ausnahme:
 - Issues mit `report:weekly` oder `report:weekly-fail` sind `triage:offen`-exempt.
 - `triage_guard` überspringt diese Report-Issues deterministisch ohne Label-Mutation.
+- Weekly Digest Lifecycle ist timeboxed: `weekly_digest.yml` hält nur die neuesten 2 offenen `report:weekly`-Issues, ältere werden automatisch geschlossen.
+- Failure-Alerts mit `report:weekly-fail` bleiben offen, bis der Alarmzustand manuell behoben ist.
 
 ## Troubleshooting (Klassiker)
 
