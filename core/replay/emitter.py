@@ -54,6 +54,7 @@ def configure_envelope_emission(
     ignored — the toggle is read from ``os.environ`` on every call.
     """
     global _envelope_publisher
+    _ = enabled
     _envelope_publisher = publisher
 
 

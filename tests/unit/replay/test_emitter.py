@@ -67,6 +67,15 @@ class TestEnvelopeConfiguration:
         monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
         assert not is_envelope_emission_enabled()
 
+    def test_configure_enabled_arg_is_ignored(self, monkeypatch):
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "0")
+        configure_envelope_emission(enabled=True, publisher=CapturePublisher())
+        assert not is_envelope_emission_enabled()
+
+        monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
+        configure_envelope_emission(enabled=False, publisher=CapturePublisher())
+        assert is_envelope_emission_enabled()
+
     def test_emit_without_publisher_raises(self, monkeypatch):
         monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
         configure_envelope_emission(publisher=None)
@@ -213,6 +222,18 @@ class TestEmitEnvelope:
             emit_envelope(env)
         assert len(caplog.records) == 0
         assert not publisher.messages
+
+    def test_noop_when_off_without_publisher(self, caplog):
+        configure_envelope_emission(publisher=None)
+        env = _build_envelope(
+            event_type="DECISION",
+            event_id="ev-off-nopub-1",
+            ts_ms=1000,
+            payload={},
+        )
+        with caplog.at_level(logging.INFO, logger="lr021.emitter"):
+            emit_envelope(env)
+        assert len(caplog.records) == 0
 
     def test_emits_jsonl_when_on(self, monkeypatch, caplog):
         publisher = enable_emission(monkeypatch)
