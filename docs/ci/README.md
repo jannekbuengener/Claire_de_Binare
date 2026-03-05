@@ -30,3 +30,15 @@ Operational contract:
   reviewable without scanning all workflow files.
 - If a future audit finds a mismatch, the minimal fix is the exact string update in
   the downstream workflow only. No trigger refactor is required for this issue.
+
+## Quick Verify: Workflow Name Drift
+
+If you change any workflow `name:`, verify `workflow_run` bindings in the same PR.
+
+```bash
+rg -n "^name:" .github/workflows
+rg -n "workflow_run" .github/workflows
+rg -n "workflows:\\s*\\[" .github/workflows
+```
+
+Then confirm the documented map in this file still matches the repository state.

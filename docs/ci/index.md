@@ -42,5 +42,7 @@ Die aktuelle Dependency-Map und die Rename-Regel stehen in
   - [docs/runbooks/project_board_automation.md](../runbooks/project_board_automation.md)
 - `workflow_run`-Rename-Drift:
   - [docs/ci/README.md](README.md)
+- MCP/Worktree Usability Drift:
+  - [docs/runbooks/mcp_worktree_hygiene.md](../runbooks/mcp_worktree_hygiene.md)
 - Gruen mit Ausnahmepfad statt echtem E2E-Pass:
   - [docs/ci/README.md](README.md)
