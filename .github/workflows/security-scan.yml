@@ -22,8 +22,8 @@ permissions:
 env:
   TRIVY_VERSION: "0.58.0"
   TRIVY_SUMMARY_MAX: "5"
-  # Debian 13/trixie currently has no fixed package published for CVE-2026-0861.
-  TRIVY_ALLOWLIST_CVES: "CVE-2026-0861"
+  # CVE-2026-0861 allowlist is computed dynamically and auto-removed once Debian
+  # bookworm/trixie expose a fixed version in OSV data.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -117,6 +117,36 @@ jobs:
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Compute Trivy allowlist (Debian tracker)
+        run: |
+          set -euo pipefail
+          cve="CVE-2026-0861"
+          osv_url="https://api.osv.dev/v1/vulns/DEBIAN-${cve}"
+          allowlist="$cve"
+          decision="OSV lookup failed; fail-safe allowlist retained."
+
+          if osv_json="$(curl -fsSL "$osv_url")"; then
+            if fixed_bookworm="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:12") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")" \
+              && fixed_trixie="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:13") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"; then
+              if [[ -n "$fixed_bookworm" || -n "$fixed_trixie" ]]; then
+                allowlist=""
+                decision="fixed version detected for Debian:12/13 (bookworm/trixie)."
+              else
+                decision="bookworm/trixie still vulnerable or no fixed version published."
+              fi
+            else
+              decision="OSV JSON parse failed; fail-safe allowlist retained."
+            fi
+          fi
+
+          echo "TRIVY_ALLOWLIST_CVES=$allowlist" >> "$GITHUB_ENV"
+          {
+            echo "### Trivy Allowlist (dynamic)"
+            echo "- Dynamic allowlist: ${allowlist:-none} (CVE-2026-0861 removed automatically once Debian bookworm/trixie is fixed)"
+            echo "- Source: ${osv_url}"
+            echo "- Decision: ${decision}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build Service Image
         id: build_custom_image
@@ -303,6 +333,36 @@ jobs:
 
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Compute Trivy allowlist (Debian tracker)
+        run: |
+          set -euo pipefail
+          cve="CVE-2026-0861"
+          osv_url="https://api.osv.dev/v1/vulns/DEBIAN-${cve}"
+          allowlist="$cve"
+          decision="OSV lookup failed; fail-safe allowlist retained."
+
+          if osv_json="$(curl -fsSL "$osv_url")"; then
+            if fixed_bookworm="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:12") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")" \
+              && fixed_trixie="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:13") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"; then
+              if [[ -n "$fixed_bookworm" || -n "$fixed_trixie" ]]; then
+                allowlist=""
+                decision="fixed version detected for Debian:12/13 (bookworm/trixie)."
+              else
+                decision="bookworm/trixie still vulnerable or no fixed version published."
+              fi
+            else
+              decision="OSV JSON parse failed; fail-safe allowlist retained."
+            fi
+          fi
+
+          echo "TRIVY_ALLOWLIST_CVES=$allowlist" >> "$GITHUB_ENV"
+          {
+            echo "### Trivy Allowlist (dynamic)"
+            echo "- Dynamic allowlist: ${allowlist:-none} (CVE-2026-0861 removed automatically once Debian bookworm/trixie is fixed)"
+            echo "- Source: ${osv_url}"
+            echo "- Decision: ${decision}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Summary
         run: |
