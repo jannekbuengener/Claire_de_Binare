@@ -58,6 +58,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - PRs -> `Review`
 - `.github/workflows/project_status_label_map.yml`
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
+  - Reagiert nur auf `closed`/`reopened` sowie auf `labeled`/`unlabeled` mit Label-Prefix `status:`.
 - `.github/workflows/auto-milestone.yml`
   - Setzt bei neuen/reopened/labeled Issues deterministisch nach Precedence:
     - `labeled`-Events reagieren nur auf Labels mit Prefix `milestone:`
