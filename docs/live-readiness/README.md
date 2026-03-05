@@ -8,3 +8,4 @@ Ziel:
 - Kein Echtgeld ohne Human Gate
 
 Siehe ROADMAP.yaml für die operative Abfolge.
+Latest audit status: [LR-AUDIT-STATUS-2026-03-05.md](./LR-AUDIT-STATUS-2026-03-05.md)
