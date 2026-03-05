@@ -8,12 +8,13 @@ This runbook documents the GitHub settings that enforce the
 See [no_human_review_policy.md](../governance/no_human_review_policy.md)
 for the policy rationale.
 
-## Current State (as of 2026-03-03)
+## Current State (as of 2026-03-05)
 
 - Repo Actions workflow permissions: `Read and write`
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
 - Canonical merge-relevant check names on PRs: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`
 - Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
+- Sentinel source of truth: `.github/workflows/required-checks-enforcer.yml` checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` on PR and `ci (Unit/Integration + Lint gesammelt)` on `push`/`schedule`/`workflow_dispatch`
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
 
 ## Canonical PR Gate Contract
@@ -27,6 +28,26 @@ The exact check-run names below are part of the merge contract on `main`:
 | Main/dispatch CI pipeline | `.github/workflows/ci.yaml` | No | None |
 
 Implication: Sentinel, branch protection, and PR diagnostics must anchor on the PR-emitted check-run names above. A larger push-only workflow does not become canonical just because it contains more jobs.
+
+## Contract Change Policy (API Stability)
+
+The canonical check-run names above are a merge contract API and must be treated as
+stable identifiers.
+
+Any rename/split of canonical checks must ship in one migration change set that also updates:
+
+1. Sentinel mapping in `.github/workflows/required-checks-enforcer.yml` (#1065)
+2. Branch protection required contexts on `main`
+3. `workflow_run` dependency map and downstream mappings in `docs/ci/README.md` (#1068 / #1071)
+
+Contract change PRs must include verification evidence that branch protection and
+Sentinel still point to the canonical names after the change.
+
+## Ownership and Review Routing
+
+- Route CI contract changes with labels `governance` and `scope:ci`.
+- Reference this contract issue in change PRs: #1073.
+- Default code owner remains `.github/CODEOWNERS` (`* @jannekbuengener`); governance/ops reviewers should be requested for CI-contract-impacting changes.
 
 ## Delta: `ci.yaml` vs. Canonical PR Gate
 
@@ -175,6 +196,14 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
 ```
 
 3. Remove the test from the quarantine table in `no_human_review_policy.md`
+
+## References
+
+- #1065 Sentinel Phase A contract behavior
+- #1067 Canonical PR gate decision (`ci.yml` as merge contract)
+- #1068 workflow_run dependency robustness
+- #1071 workflow_run governance follow-up
+- #1073 CI Contract — Canonical Check-Run Names
 
 ## Rollback: Re-enable Human Reviews
 
