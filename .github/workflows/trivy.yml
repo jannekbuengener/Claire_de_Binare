@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 env:
-  # CVE-2025-12818: non-OpenSSL, verbleibt bis Upstream-Fix verfügbar
-  TRIVY_ALLOWLIST_CVES: "CVE-2025-12818"
+  # CVE-2025-12818 allowlist is computed dynamically and drops once Debian
+  # bookworm/trixie expose a fixed version.
   TRIVY_SUMMARY_MAX: "5"
 
 concurrency:
@@ -55,6 +55,43 @@ jobs:
 
       - name: Debug Trivy action version
         run: echo "Using aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac"
+
+      - name: Compute Trivy allowlist (Debian tracker)
+        run: |
+          set -euo pipefail
+          cve="CVE-2025-12818"
+          osv_url="https://api.osv.dev/v1/vulns/DEBIAN-${cve}"
+          tracker_url="https://security-tracker.debian.org/tracker/${cve}"
+          allowlist="$cve"
+          source="OSV"
+          decision="lookup failed; fail-safe allowlist retained."
+
+          if osv_json="$(curl -fsSL "$osv_url" 2>/dev/null)"; then
+            fixed_bookworm="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:12") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"
+            fixed_trixie="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:13") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"
+            if [[ -n "$fixed_bookworm" || -n "$fixed_trixie" ]]; then
+              allowlist=""
+              decision="fixed version detected for Debian:12/13 (bookworm/trixie)."
+            else
+              decision="bookworm/trixie still vulnerable or no fixed version published."
+            fi
+          elif tracker_html="$(curl -fsSL "$tracker_url" 2>/dev/null)"; then
+            source="Debian tracker"
+            if grep -qiE 'bookworm[^<\n]*fixed|trixie[^<\n]*fixed' <<<"$tracker_html"; then
+              allowlist=""
+              decision="tracker indicates fixed state for bookworm/trixie."
+            else
+              decision="tracker does not show fixed state for bookworm/trixie."
+            fi
+          fi
+
+          echo "TRIVY_ALLOWLIST_CVES=$allowlist" >> "$GITHUB_ENV"
+          {
+            echo "### Trivy Allowlist (dynamic)"
+            echo "- Dynamic allowlist: ${allowlist:-none}"
+            echo "- Source: Debian tracker/OSV (${source})"
+            echo "- Decision: ${decision}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy (JSON)
         uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # v0.68.1 default trivy
