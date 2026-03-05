@@ -8,6 +8,9 @@ This runbook documents the GitHub settings that enforce the
 See [no_human_review_policy.md](../governance/no_human_review_policy.md)
 for the policy rationale.
 
+Merge-method guidance for proof/slice PRs is documented in
+[merge_strategy_squash_vs_merge.md](./merge_strategy_squash_vs_merge.md).
+
 ## Current State (as of 2026-03-05)
 
 - Repo Actions workflow permissions: `Read and write`
