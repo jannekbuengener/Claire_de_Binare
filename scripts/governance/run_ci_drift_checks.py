@@ -16,7 +16,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 DEFAULT_REPO = "jannekbuengener/Claire_de_Binare"
 DEFAULT_BRANCH = "main"
 DEFAULT_BP_SCRIPT = Path("scripts/governance/check_branch_protection_drift.py")
@@ -33,8 +32,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run branch protection + required contexts drift checks (read-only)."
     )
-    parser.add_argument("--repo", default=DEFAULT_REPO, help="owner/repo for branch protection read")
-    parser.add_argument("--branch", default=DEFAULT_BRANCH, help="branch for branch protection read")
+    parser.add_argument(
+        "--repo", default=DEFAULT_REPO, help="owner/repo for branch protection read"
+    )
+    parser.add_argument(
+        "--branch", default=DEFAULT_BRANCH, help="branch for branch protection read"
+    )
 
     parser.add_argument(
         "--branch-protection-script",
