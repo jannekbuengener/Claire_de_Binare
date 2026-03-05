@@ -12,7 +12,7 @@ Scope statement: `Docs/reports only — no workflows/settings/trading/docker cha
 | [#869](https://github.com/jannekbuengener/Claire_de_Binare/pull/869) | OPEN | `ci/action-required-runbook` | Added docs runbook `docs/ci/ACTION_REQUIRED_RUNBOOK.md` for deterministic unblock of `action_required` + `jobs=[]` bot/app runs. | https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989773 ; https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989851 | n/a (open) |
 | [#871](https://github.com/jannekbuengener/Claire_de_Binare/pull/871) | OPEN | `docs/log-actions-approval-mode1` | Added MODE 1 governance log entry with before/after evidence and explicit operational finding for 403 on `/actions/runs/{id}/approve` in non-fork context. | https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989773 ; https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22192989851 | n/a (open) |
 | [#872](https://github.com/jannekbuengener/Claire_de_Binare/pull/872) | OPEN | `reports/ci-triage-restore-green` | Added read-only triage snapshot report `reports/CI_TRIAGE_RESTORE_GREEN.md` as RedStack evidence baseline for restore-green context. | https://github.com/jannekbuengener/Claire_de_Binare/blob/b12ea984607693ed81faf5b88b11e6f10e6b541a/reports/CI_TRIAGE_RESTORE_GREEN.md | n/a (open) |
-| [#873](https://github.com/jannekbuengener/Claire_de_Binare/pull/873) | OPEN | `ci/sentinel-denoise` | Sentinel de-noise by removing recurring auto-runs and keeping manual dispatch path (`required-checks-enforcer` on-demand). | https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22195859100 | n/a (open) |
+| [#873](https://github.com/jannekbuengener/Claire_de_Binare/pull/873) | OPEN | `ci/sentinel-denoise` | Sentinel de-noise by removing recurring auto-runs and keeping manual dispatch path (`required-checks-audit` on-demand). | https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22195859100 | n/a (open) |
 
 ## Executive Summary
 
@@ -60,7 +60,7 @@ MODE 1 (Strict Approval) is intentionally kept; no auto-run loosening was introd
 
 - PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/873
 - Branch: `ci/sentinel-denoise`
-- Change: `required-checks-enforcer` de-noised by decommissioning recurring auto-runs while preserving manual dispatch availability.
+- Change: `required-checks-audit` de-noised by decommissioning recurring auto-runs while preserving manual dispatch availability.
 - Evidence (manual green): https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22195859100
 - Representative historical failing runs: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22075752655 ; https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22075680307
 - Merge commit: n/a (OPEN at snapshot time)

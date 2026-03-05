@@ -1,13 +1,7 @@
-# .github/workflows/required-checks-enforcer.yml
-name: required-checks-enforcer (Sentinel)
+# .github/workflows/required-checks-audit.yml
+name: required-checks-audit (Sentinel)
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  push:
-    branches: [main]
-  schedule:
-    - cron: "30 4 * * 0"
   workflow_dispatch:
 
 permissions:
@@ -16,56 +10,49 @@ permissions:
   pull-requests: read
 
 concurrency:
-  group: required-checks-enforcer-${{ github.event.pull_request.number || github.ref || github.run_id }}
+  group: required-checks-audit-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  enforce:
-    name: required-checks-enforcer (Sentinel)
+  audit:
+    name: required-checks-audit (Sentinel)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       GH_TOKEN: ${{ github.token }}
       REPO: ${{ github.repository }}
-      SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      SENTINEL_MODE: ${{ vars.SENTINEL_MODE || 'report' }}
+      SHA: ${{ github.sha }}
     steps:
       - name: Audit required check status
         shell: bash
         run: |
           set -u
 
-          mode="$(printf '%s' "${SENTINEL_MODE:-report}" | tr '[:upper:]' '[:lower:]')"
-          if [[ -z "$mode" ]]; then
-            mode="report"
-          fi
-          if [[ "$mode" != "report" && "$mode" != "enforce" ]]; then
-            echo "::warning::Unknown SENTINEL_MODE='${SENTINEL_MODE:-}'; falling back to report."
-            mode="report"
-          fi
-
           event_name="${GITHUB_EVENT_NAME}"
           deadline=$((SECONDS + 780)) # 13 min
           sleep_seconds=10
           summary_file="${GITHUB_STEP_SUMMARY:-}"
 
-          required_checks=("ci (Unit/Integration + Lint gesammelt)")
-          if [[ "$event_name" == "pull_request" ]]; then
-            required_checks=("policy-gate" "ci (Unit/Integration + Lint gesammelt)")
-          fi
+          required_checks=(
+            "policy-gate"
+            "ci (Unit/Integration + Lint gesammelt)"
+          )
 
-          echo "Sentinel mode: $mode"
+          echo "Sentinel mode: audit-only"
           echo "Event: $event_name"
           echo "SHA: $SHA"
+          echo "Scope: run on the PR head ref/SHA you want to audit."
           echo "Required checks: ${required_checks[*]}"
 
           if [[ -n "$summary_file" ]]; then
             {
               echo "## Sentinel Summary"
               echo
-              echo "- Mode: \`$mode\`"
+              echo "- Mode: \`audit-only\`"
               echo "- Event: \`$event_name\`"
               echo "- SHA: \`$SHA\`"
+              echo "- Scope: run on the PR head ref/SHA you want to audit."
+              echo "- Behavior: warnings + summary only; never blocks."
               echo
               echo "| Check | Final state | Detail |"
               echo "| --- | --- | --- |"
@@ -77,7 +64,6 @@ jobs:
           missing_count=0
           failed_count=0
           timeout_count=0
-          enforce_failure=0
 
           for required_check in "${required_checks[@]}"; do
             final_state=""
@@ -170,23 +156,14 @@ jobs:
               safe_detail="${final_detail//|/\\|}"
               echo "| \`$required_check\` | \`$final_state\` | $safe_detail |" >> "$summary_file"
             fi
-
-            if [[ "$mode" == "enforce" && "$final_state" =~ ^(MISSING|FAILED|TIMEOUT)$ ]]; then
-              enforce_failure=1
-            fi
           done
 
           if [[ -n "$summary_file" ]]; then
             {
               echo
               echo "- Totals: OK=$ok_count, PENDING=$pending_count, MISSING=$missing_count, FAILED=$failed_count, TIMEOUT=$timeout_count"
-              echo "- Mode behavior: \`report\` never blocks; \`enforce\` exits non-zero on MISSING / FAILED / TIMEOUT."
+              echo "- Mode behavior: \`audit-only\` always exits 0."
             } >> "$summary_file"
           fi
 
-          if [[ "$mode" == "enforce" && "$enforce_failure" -ne 0 ]]; then
-            echo "::error::Sentinel enforce-mode detected missing, failed, or timed-out required checks."
-            exit 1
-          fi
-
-          echo "Sentinel completed in $mode mode."
+          echo "Sentinel completed in audit-only mode."

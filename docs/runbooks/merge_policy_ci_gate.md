@@ -14,7 +14,7 @@ for the policy rationale.
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
 - Canonical merge-relevant check names on PRs: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`
 - Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
-- Sentinel source of truth: `.github/workflows/required-checks-enforcer.yml` checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` on PR and `ci (Unit/Integration + Lint gesammelt)` on `push`/`schedule`/`workflow_dispatch`
+- Sentinel source of truth: `.github/workflows/required-checks-audit.yml` is an on-demand `workflow_dispatch` audit that checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` for the ref/SHA you run it on (use the relevant PR head ref for merge-contract audits)
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
 
 ## Canonical PR Gate Contract
@@ -36,7 +36,7 @@ stable identifiers.
 
 Any rename/split of canonical checks must ship in one migration change set that also updates:
 
-1. Sentinel mapping in `.github/workflows/required-checks-enforcer.yml` (#1065)
+1. Sentinel mapping in `.github/workflows/required-checks-audit.yml` (#1065)
 2. Branch protection required contexts on `main`
 3. `workflow_run` dependency map and downstream mappings in `docs/ci/README.md` (#1068 / #1071)
 

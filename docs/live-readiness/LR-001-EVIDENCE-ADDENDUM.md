@@ -174,7 +174,7 @@ The following controls still operate but are not merge-blocking:
 | Docs hub guard | `docs-hub-guard.yml` | push to main + weekly schedule | post-merge detection |
 | E2E Happy Path | `e2e-happy-path.yaml` | push to main + weekly schedule | post-merge detection |
 | Governance audit | `governance-audit.yml` | weekly schedule | reporting only |
-| Required checks enforcer | `required-checks-enforcer.yml` | manual | on-demand audit |
+| Required checks audit sentinel | `required-checks-audit.yml` | manual | on-demand audit |
 
 These controls detect issues after merge to main or on schedule. They do not prevent merging of PRs that would fail these checks.
 
