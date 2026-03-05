@@ -44,5 +44,7 @@ Die aktuelle Dependency-Map und die Rename-Regel stehen in
   - [docs/ci/README.md](README.md)
 - MCP/Worktree Usability Drift:
   - [docs/runbooks/mcp_worktree_hygiene.md](../runbooks/mcp_worktree_hygiene.md)
+- CI/Governance Drift (read-only):
+  - [docs/runbooks/ci_hygiene_drift_checks.md](../runbooks/ci_hygiene_drift_checks.md)
 - Gruen mit Ausnahmepfad statt echtem E2E-Pass:
   - [docs/ci/README.md](README.md)
