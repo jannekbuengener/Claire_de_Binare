@@ -24,6 +24,8 @@ jobs:
         )
       }}
     runs-on: ubuntu-latest
+    # Minimal GITHUB_TOKEN permissions for workflow mechanics only.
+    # Project/issue mutations are executed with CDB_AUTH_TOKEN (GitHub App or PAT fallback).
     permissions:
       contents: read
       issues: write
@@ -116,6 +118,18 @@ jobs:
             echo "No auth token configured. Set CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID) or ADD_TO_PROJECT_PAT." >&2
             exit 1
           fi
+
+      - name: Auth scope diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Control Board Auth Diagnostics (Routing)"
+            echo "- Auth mode: \`${{ steps.resolve-auth.outputs.auth_mode }}\`"
+            echo "- GITHUB_TOKEN workflow permissions: \`contents: read\`, \`issues: write\`, \`pull-requests: read\`"
+            echo "- Required CDB_AUTH_TOKEN permissions: Projects (read/write), Issues (read/write), Pull requests (read)"
+            echo "- Note: workflow \`permissions:\` and App/PAT scopes are separate controls."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Route item to CDB Control Board
         shell: bash

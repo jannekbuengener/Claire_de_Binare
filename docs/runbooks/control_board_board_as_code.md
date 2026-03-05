@@ -22,15 +22,84 @@ Hinweis:
 - Bei `false` gibt es keine automatische Verhaltensaenderung bei `issues`/`pull_request` Events.
 - Workflows loggen explizit `automation disabled` und beenden ohne Project-API Aufrufe.
 
-## Token-Scopes
+## Token-Scopes (Least Privilege)
 
-Fuer Project v2 Zugriff werden benoetigt:
+In Actions wird der Laufzeit-Token aus GitHub App (bevorzugt) oder `ADD_TO_PROJECT_PAT` (Fallback) aufgeloest.
 
-- `read:project` (lesen)
-- `project` (schreiben)
-- `repo` fuer Issue/Milestone Updates
+### A) GitHub App (preferred)
 
-In Actions wird der Token aus GitHub App (bevorzugt) oder `ADD_TO_PROJECT_PAT` aufgeloest.
+Empfohlene Installation-Permissions (repo-scoped):
+
+- `Metadata`: `Read-only`
+- `Projects`: `Read and write`
+- `Issues`: `Read and write` (nur fuer Routing)
+- `Pull requests`: `Read-only` (nur fuer Routing)
+
+Zuordnung pro Automation:
+
+- `control_board_upsert.yml`: `Projects` + `Metadata`
+- `control_board_auto_routing.yml`: `Projects` + `Issues` + `Pull requests` + `Metadata`
+
+### B) PAT Fallback (`ADD_TO_PROJECT_PAT`)
+
+Bevorzugt: Fine-grained PAT, nur fuer dieses Repo (`jannekbuengener/Claire_de_Binare`):
+
+- `Metadata`: `Read-only`
+- `Projects`: `Read and write`
+- `Issues`: `Read and write`
+- `Pull requests`: `Read-only`
+
+Classic PAT nur als Legacy-Fallback:
+
+- `project` (Project v2 GraphQL read/write)
+- `repo` ist hier nur deshalb erforderlich, weil Routing folgende `/repos/...` Endpoints nutzt:
+  - `GET /repos/{owner}/{repo}/milestones`
+  - `GET /repos/{owner}/{repo}/issues/{number}`
+  - `PATCH /repos/{owner}/{repo}/issues/{number}`
+  - `GET /repos/{owner}/{repo}/pulls/{number}`
+
+Empfehlung: Kein breit eingesetztes Classic-PAT mit pauschalem `repo` mehr verwenden, sondern auf Fine-grained PAT mit obigen Minimalrechten wechseln.
+
+### Workflow permissions vs token scopes
+
+- `permissions:` in den Workflow-Dateien steuert nur den automatisch bereitgestellten `GITHUB_TOKEN`.
+- Die Control-Board-Mutationen laufen mit `CDB_AUTH_TOKEN` (App/PAT) und dessen Scopes.
+- Beide Ebenen muessen getrennt least-privilege sein.
+
+## Scope Verification (minimal)
+
+Read-Test (Project v2 Query):
+
+```bash
+gh api graphql \
+  -f query='query($owner:String!,$number:Int!){user(login:$owner){projectV2(number:$number){id title}}}' \
+  -f owner='jannekbuengener' \
+  -F number=8
+```
+
+Write-Test (nur in kontrollierter Umgebung / Test-Item ausfuehren):
+
+```bash
+gh api graphql \
+  -f query='mutation($projectId:ID!,$itemId:ID!,$fieldId:ID!,$optionId:String!){updateProjectV2ItemFieldValue(input:{projectId:$projectId,itemId:$itemId,fieldId:$fieldId,value:{singleSelectOptionId:$optionId}}){projectV2Item{id}}}' \
+  -f projectId='PVT_xxx' \
+  -f itemId='PVTI_xxx' \
+  -f fieldId='PVTSSF_xxx' \
+  -f optionId='OPTION_xxx'
+```
+
+Troubleshooting:
+
+- `403 Resource not accessible by integration`: Token zu klein berechtigt oder im falschen Kontext.
+- Sicherstellen, dass der Workflow tatsaechlich `CDB_AUTH_TOKEN` (App/PAT) nutzt und nicht nur `GITHUB_TOKEN`.
+- GitHub App Installation-Permissions und Repo-Zuordnung pruefen.
+
+## Manual Follow-up (required)
+
+1. GitHub App Installation-Permissions in GitHub UI auf die oben genannten Minimalrechte setzen.
+2. `ADD_TO_PROJECT_PAT` (falls noch genutzt) auf Fine-grained PAT mit Minimalrechten umstellen/rotieren.
+3. Secret-Name `ADD_TO_PROJECT_PAT` unveraendert lassen (kein Breaking Change fuer Workflows).
+4. Danach `control_board_upsert.yml` per `workflow_dispatch` im Dry-Run testen.
 
 ## Board-Upsert ausfuehren
 
@@ -115,7 +184,7 @@ B) Toggle ON:
 Wenn E2E lokal nicht moeglich:
 
 - `Control Board Upsert` per `workflow_dispatch` ausfuehren.
-- Mit Token/Scopes (`read:project`, `project`) gegen Project v2 verifizieren.
+- Mit Token/Scopes gemaess Abschnitt `Token-Scopes (Least Privilege)` gegen Project v2 verifizieren.
 
 ## Guardrails
 
