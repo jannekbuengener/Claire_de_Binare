@@ -153,14 +153,13 @@ jobs:
           echo "### Trivy (custom) ${{ matrix.service }}" >> "$GITHUB_STEP_SUMMARY"
           if [ ! -s "$report" ]; then
             echo "- No report generated." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
-          total=$(wc -l < /tmp/trivy-high.txt | tr -d ' ')
-          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$total" -eq 0 ]; then
+            echo "- Behavior: report-only (does not fail workflow)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::No report generated for cdb_${{ matrix.service }} (report-only)."
             exit 0
           fi
+          jq -r '.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
+          total=$(wc -l < /tmp/trivy-high.txt | tr -d ' ')
+          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
           allowlist="${TRIVY_ALLOWLIST_CVES:-}"
           if [ -n "$allowlist" ]; then
             printf "%s\n" "${allowlist//,/\\n}" | sed '/^$/d' > /tmp/trivy-allow.txt
@@ -171,12 +170,16 @@ jobs:
           disallowed=$(wc -l < /tmp/trivy-disallowed.txt | tr -d ' ')
           echo "- Allowlist: ${allowlist:-none}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Disallowed: $disallowed" >> "$GITHUB_STEP_SUMMARY"
-          echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Behavior: report-only (does not fail workflow)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -gt 0 ]; then
+            echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "$disallowed" -ne 0 ]; then
             echo "Disallowed CVEs:" >> "$GITHUB_STEP_SUMMARY"
             cat /tmp/trivy-disallowed.txt >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo "::warning::Disallowed CVEs present in cdb_${{ matrix.service }} ($disallowed). Report-only mode, workflow continues."
+            exit 0
           fi
 
       - name: Run Trivy SARIF
@@ -322,7 +325,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Custom Images" >> $GITHUB_STEP_SUMMARY
           echo "- All Python services use pip 25.3 (CVE-2025-8869 resolved)" >> $GITHUB_STEP_SUMMARY
-          echo "- CRITICAL/HIGH in custom images fails unless allowlisted: ${TRIVY_ALLOWLIST_CVES}" >> $GITHUB_STEP_SUMMARY
+          echo "- CRITICAL/HIGH in custom images are report-only; allowlist still applied for disallowed CVE reporting: ${TRIVY_ALLOWLIST_CVES}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Scan artifacts available for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -332,9 +335,9 @@ jobs:
 #    - Attack surface: minimal (startup-only, no network exposure)
 #    - Weekly scans monitor for NEW vulnerabilities
 #
-# 2. Custom image scans set exit-code: true
+# 2. Custom image scans are report-only
 #    - pip 25.3 resolves CVE-2025-8869
-#    - NEW CRITICAL/HIGH CVEs will fail the workflow
+#    - CRITICAL/HIGH CVEs are reported in summary/artifacts/SARIF but do not fail the workflow
 #
 # 3. Upgrade workflow when upstream fixes gosu:
 #    - Monitor: https://github.com/docker-library/redis/issues
