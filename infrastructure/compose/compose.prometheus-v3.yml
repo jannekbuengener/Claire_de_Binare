@@ -16,10 +16,10 @@ services:
     volumes:
       - ../../infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ../../infrastructure/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prom_v3_data:/prometheus-v3
+      - prom_v3_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus-v3'
+      - '--storage.tsdb.path=/prometheus'
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
       interval: 30s
