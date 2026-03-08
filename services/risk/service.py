@@ -56,6 +56,13 @@ from core.replay.policy_snapshot import (
     build_policy_snapshot,
     policy_snapshot_binding_enabled,
 )
+from core.contracts.decision_contract_v1 import (
+    DecisionContractError,
+    build_decision_contract_v1_bundle,
+    verify_decision_contract_v1_bundle,
+    write_decision_contract_audit_record,
+)
+from core.safety.kill_switch import get_kill_switch_details
 from core.auth import validate_all_auth
 from core.domain.models import Signal
 
@@ -143,6 +150,8 @@ class AllocationState:
 DECISION_CONTRACT_VERSION = "decision_contract_v1"
 DECISION_ALLOW = "ALLOW"
 DECISION_BLOCK = "BLOCK"
+KILL_SWITCH_BLOCK_REASON_CODE = "KILL_SWITCH_ACTIVE"
+KILL_SWITCH_UNEVALUABLE_REASON_CODE = "KILL_SWITCH_UNEVALUABLE"
 
 DECISION_THRESHOLDS = {
     "return_1m_min": -2.0,
@@ -465,6 +474,256 @@ class RiskManager:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+    # --- LR-762: Kill-switch gate + Decision Contract enforcement ---
+
+    def _kill_switch_gate(self) -> tuple[bool, str, dict]:
+        """Evaluate kill-switch state for fail-closed execution gating."""
+        try:
+            active, reason, message, activated_at = get_kill_switch_details(
+                create_if_missing=False
+            )
+        except Exception as exc:
+            logger.exception("Kill-switch evaluation failed (fail-closed)")
+            return (
+                True,
+                KILL_SWITCH_UNEVALUABLE_REASON_CODE,
+                {
+                    "reason": None,
+                    "message": f"kill-switch evaluation error: {exc}",
+                    "activated_at": None,
+                },
+            )
+        if not active:
+            return False, "", {}
+        return (
+            True,
+            KILL_SWITCH_BLOCK_REASON_CODE,
+            {
+                "reason": reason,
+                "message": message,
+                "activated_at": activated_at,
+            },
+        )
+
+    @staticmethod
+    def _to_ms_timestamp(value: object) -> int:
+        if value is None or isinstance(value, bool):
+            return 0
+        if isinstance(value, (int, float)):
+            if value <= 0:
+                return 0
+            as_int = int(value)
+            return as_int * 1000 if as_int < 10_000_000_000 else as_int
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return 0
+            try:
+                parsed = float(raw)
+            except ValueError:
+                return 0
+            if parsed <= 0:
+                return 0
+            as_int = int(parsed)
+            return as_int * 1000 if as_int < 10_000_000_000 else as_int
+        return 0
+
+    def _resolve_contract_run_mode(
+        self,
+        *,
+        strategy_id: str | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> str:
+        candidates: list[str | None] = [run_mode_override]
+        if isinstance(payload, dict):
+            candidates.append(payload.get("run_mode"))
+        candidates.extend([os.getenv("RUN_MODE"), os.getenv("TRADING_MODE")])
+        for candidate in candidates:
+            if not candidate:
+                continue
+            mode = str(candidate).strip().lower()
+            if mode == "staged":
+                mode = "shadow"
+            if mode in {"shadow", "paper", "replay", "live"}:
+                return mode
+        strategy_mode = (strategy_id or "").strip().lower()
+        if strategy_mode in {"shadow", "paper", "replay", "live"}:
+            return strategy_mode
+        return "paper"
+
+    def _build_decision_contract_input(
+        self,
+        order: Order,
+        *,
+        source: str,
+        account_state_snapshot: dict | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> dict:
+        if account_state_snapshot is None:
+            account_state_snapshot = {}
+
+        balance_usdt = float(self.config.test_balance)
+        if "balance_usdt" in account_state_snapshot:
+            parsed_balance = _parse_number(account_state_snapshot.get("balance_usdt"))
+            if parsed_balance is not None:
+                balance_usdt = parsed_balance
+        if balance_usdt <= 0:
+            raise DecisionContractError(
+                "balance_usdt must be > 0 for contract evaluation"
+            )
+
+        daily_drawdown_pct = _parse_number(
+            account_state_snapshot.get("daily_drawdown_pct")
+        )
+        if daily_drawdown_pct is None:
+            daily_drawdown_pct = (
+                max(0.0, -float(risk_state.daily_pnl) / balance_usdt * 100.0)
+                if balance_usdt > 0
+                else 0.0
+            )
+
+        total_exposure_usdt = float(risk_state.total_exposure) + float(
+            risk_state.pending_exposure_usdt
+        )
+        price_ref = float(order.price or risk_state.last_prices.get(order.symbol, 0.0))
+        if price_ref <= 0:
+            raise DecisionContractError(
+                f"price_ref unavailable for order {order.symbol} ({source})"
+            )
+
+        timestamp_input_ms = self._to_ms_timestamp(order.timestamp)
+        if timestamp_input_ms <= 0:
+            timestamp_input_ms = self._to_ms_timestamp(
+                account_state_snapshot.get("ts_ms")
+                or account_state_snapshot.get("timestamp_ms")
+            )
+
+        max_notional_usdt = balance_usdt * float(self.config.max_position_pct)
+        max_total_exposure_usdt = balance_usdt * float(
+            self.config.max_total_exposure_pct
+        )
+        max_daily_drawdown_pct = float(self.config.max_daily_drawdown_pct) * 100.0
+
+        open_positions = {
+            symbol: str(qty)
+            for symbol, qty in sorted(
+                risk_state.positions.items(), key=lambda item: item[0]
+            )
+        }
+
+        return {
+            "run_mode": self._resolve_contract_run_mode(
+                strategy_id=order.strategy_id,
+                payload=payload,
+                run_mode_override=run_mode_override,
+            ),
+            "order": {
+                "symbol": order.symbol,
+                "side": order.side,
+                "quantity": str(order.quantity),
+                "price_ref": str(price_ref),
+                "timestamp_input_ms": int(timestamp_input_ms),
+                "reduce_only": bool(
+                    order.side == "SELL"
+                    and risk_state.positions.get(order.symbol, 0.0) > 0.0
+                ),
+            },
+            "account_state": {
+                "balance_usdt": str(balance_usdt),
+                "total_exposure_usdt": str(total_exposure_usdt),
+                "daily_drawdown_pct": str(daily_drawdown_pct),
+            },
+            "open_positions": open_positions,
+            "risk_policy": {
+                "max_notional_usdt": str(max_notional_usdt),
+                "max_total_exposure_usdt": str(max_total_exposure_usdt),
+                "max_daily_drawdown_pct": str(max_daily_drawdown_pct),
+            },
+            "system_config": {
+                "paper_auto_unwind": bool(self.config.paper_auto_unwind),
+                "use_real_balance": bool(self.config.use_real_balance),
+                "service": "risk_manager",
+            },
+            "context": {
+                "source": source,
+                "signal_id": order.signal_id or "",
+                "strategy_id": order.strategy_id or "",
+                "bot_id": order.bot_id or "",
+            },
+        }
+
+    def _ensure_decision_contract_for_order(
+        self,
+        order: Order,
+        *,
+        source: str,
+        account_state_snapshot: dict | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> dict:
+        bundle = order.decision_contract_v1
+        if bundle is None:
+            contract_input = self._build_decision_contract_input(
+                order,
+                source=source,
+                account_state_snapshot=account_state_snapshot,
+                payload=payload,
+                run_mode_override=run_mode_override,
+            )
+            bundle = build_decision_contract_v1_bundle(contract_input)
+        ok, reason = verify_decision_contract_v1_bundle(bundle, require_allow=True)
+        if not ok:
+            raise DecisionContractError(reason)
+
+        # --- HARDENING FIX 1: Strict order-identity binding ---
+        # The bundle must match the active order's identity fields.
+        # Without this check, a stale/injected bundle could pass verification.
+        bundle_order = bundle.get("input", {}).get("order", {})
+        if bundle_order.get("symbol") != order.symbol:
+            raise DecisionContractError(
+                f"Contract bundle symbol mismatch: "
+                f"bundle={bundle_order.get('symbol')!r} vs order={order.symbol!r}"
+            )
+        if bundle_order.get("side") != order.side:
+            raise DecisionContractError(
+                f"Contract bundle side mismatch: "
+                f"bundle={bundle_order.get('side')!r} vs order={order.side!r}"
+            )
+        bundle_qty_str = str(bundle_order.get("quantity", ""))
+        order_qty_str = str(order.quantity)
+        # Compare as floats to handle Decimal string formatting differences
+        try:
+            bundle_qty_f = float(bundle_qty_str)
+            order_qty_f = float(order_qty_str)
+        except (ValueError, TypeError) as exc:
+            raise DecisionContractError(
+                f"Contract bundle quantity not comparable: "
+                f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
+            ) from exc
+        if abs(bundle_qty_f - order_qty_f) > 1e-12:
+            raise DecisionContractError(
+                f"Contract bundle quantity mismatch: "
+                f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
+            )
+
+        audit_path = write_decision_contract_audit_record(bundle)
+        evidence = bundle["output"]["evidence"]
+        order.decision_contract_v1 = bundle
+        if not order.decision_id:
+            order.decision_id = f"dcv1-{evidence['decision_hash'][:16]}"
+
+        # --- HARDENING FIX 2: Always overwrite hash provenance ---
+        # Unconditionally set order hashes from contract evidence.
+        # The previous code only set when None, allowing Phase9 trace hashes
+        # to drift from contract evidence hashes.
+        order.input_hash = evidence["input_hash"]
+        order.output_hash = evidence["decision_hash"]
+
+        logger.debug("Decision Contract audit written: %s", audit_path)
+        return bundle
 
     def connect_redis(self):
         """Redis-Verbindung"""
@@ -1200,6 +1459,33 @@ class RiskManager:
         """Prüft Signal gegen alle Risk-Layers"""
         payload = raw_payload or {}
 
+        # LR-762: Kill-switch gate (fail-closed, HARDENING FIX 3)
+        kill_switch_active, kill_switch_code, kill_switch_context = (
+            self._kill_switch_gate()
+        )
+        if kill_switch_active:
+            block_message = (
+                f"Kill-switch active: reason={kill_switch_context.get('reason') or 'unknown'}; "
+                f"activated_at={kill_switch_context.get('activated_at') or 'unknown'}"
+                if kill_switch_code == KILL_SWITCH_BLOCK_REASON_CODE
+                else kill_switch_context.get("message", "kill-switch evaluation error")
+            )
+            self.send_alert(
+                "CRITICAL",
+                kill_switch_code,
+                block_message,
+                {
+                    "signal_id": signal.signal_id,
+                    "strategy_id": signal.strategy_id,
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                },
+            )
+            logger.warning("Signal blockiert durch Kill-Switch: %s", block_message)
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         # Market State V1: Lookup from Redis (BLUE-owned, fail-closed)
         # Key: market_state:{symbol} - set by Candles Service with TTL
         market_state = payload.get("market_state")
@@ -1552,6 +1838,25 @@ class RiskManager:
 
                 return None
 
+        # LR-762: Deterministic Decision Contract gate (fail-closed).
+        try:
+            self._ensure_decision_contract_for_order(
+                order,
+                source="risk.process_signal",
+                account_state_snapshot=(
+                    account_state if isinstance(account_state, dict) else None
+                ),
+                payload=payload,
+            )
+        except DecisionContractError as exc:
+            logger.error(
+                "⛔ Decision Contract v1 failed in process_signal (fail-closed): %s",
+                exc,
+            )
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         logger.info(
             f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
@@ -1653,6 +1958,19 @@ class RiskManager:
 
     def send_order(self, order: Order):
         """Publiziert Order"""
+        # LR-762: Second contract gate before publish (fail-closed).
+        try:
+            self._ensure_decision_contract_for_order(
+                order,
+                source="risk.send_order",
+            )
+        except DecisionContractError as exc:
+            logger.error("⛔ Order blocked by Decision Contract gate: %s", exc)
+            stats["orders_blocked"] += 1
+            if risk_state.pending_orders > 0:
+                risk_state.pending_orders -= 1
+            return
+
         try:
             payload = sanitize_payload(order.to_dict())
             message = json.dumps(payload, ensure_ascii=False)
