@@ -132,6 +132,8 @@ class Order:
     output_hash: Optional[str] = None
     # Issue #748 Slice 2: Policy snapshot for envelope propagation
     policy_snapshot: Optional[dict] = None
+    # LR-762: Deterministic Decision Contract bundle (input+output+hashes)
+    decision_contract_v1: Optional[dict] = None
 
     def to_dict(self) -> dict:
         result = {
@@ -160,6 +162,8 @@ class Order:
         # Issue #748: only emit when toggle ON (not None)
         if self.policy_snapshot is not None:
             result["policy_snapshot"] = self.policy_snapshot
+        if self.decision_contract_v1 is not None:
+            result["decision_contract_v1"] = self.decision_contract_v1
         return result
 
 

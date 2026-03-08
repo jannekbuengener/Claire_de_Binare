@@ -183,3 +183,6 @@ runtime_evidence_bundle_P1.json
 
 # Local-only ops helper artifact (do not version)
 scripts/cdb_ops.ps1
+
+# Decision Contract audit records (generated at runtime + by tests)
+reports/decision_contract/

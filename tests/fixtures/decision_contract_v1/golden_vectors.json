@@ -1,0 +1,361 @@
+[
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 1,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"total_exposure_usdt\":\"100.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-allow-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[{\"quantity\":\"0.01000000\",\"symbol\":\"BTCUSDT\"}],\"order\":{\"price_ref\":\"50000.00000000\",\"quantity\":\"0.01000000\",\"reduce_only\":false,\"side\":\"BUY\",\"symbol\":\"BTCUSDT\",\"timestamp_input_ms\":1700000000000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"run_mode\":\"paper\",\"system_config\":{\"paper_auto_unwind\":true,\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"contract_version\":\"v1\",\"decision\":1,\"input_hash\":\"7c9135ba7eb8157cf731e1295184b0ebb62cfd4d7bb3eb06e9dc8a06cd6985cc\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"100.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"order_notional_usdt\":\"500.00000000\",\"projected_exposure_usdt\":\"600.00000000\"},\"reason_codes\":[]}",
+        "decision_hash": "5434a15b1f765168ee98b1988a4a048fc4aae80cc47ef0bc78a55655715564d2",
+        "input_hash": "7c9135ba7eb8157cf731e1295184b0ebb62cfd4d7bb3eb06e9dc8a06cd6985cc"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "100.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "order_notional_usdt": "500.00000000",
+        "projected_exposure_usdt": "600.00000000"
+      },
+      "reason_codes": []
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "total_exposure_usdt": "100.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-allow-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {
+        "BTCUSDT": "0.01000000"
+      },
+      "order": {
+        "price_ref": "50000.00000000",
+        "quantity": "0.01000000",
+        "reduce_only": false,
+        "side": "BUY",
+        "symbol": "BTCUSDT",
+        "timestamp_input_ms": 1700000000000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "run_mode": "paper",
+      "system_config": {
+        "paper_auto_unwind": true,
+        "service": "tests"
+      }
+    },
+    "name": "allow_buy_paper"
+  },
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "10000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 0,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"total_exposure_usdt\":\"100.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-notional-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[{\"quantity\":\"0.01000000\",\"symbol\":\"BTCUSDT\"}],\"order\":{\"price_ref\":\"50000.00000000\",\"quantity\":\"0.10000000\",\"reduce_only\":false,\"side\":\"BUY\",\"symbol\":\"BTCUSDT\",\"timestamp_input_ms\":1700000001000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"10000.00000000\"},\"run_mode\":\"paper\",\"system_config\":{\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"10000.00000000\"},\"contract_version\":\"v1\",\"decision\":0,\"input_hash\":\"176f579878207315bcae90390ecc90b0a3dfc73ef9732b76c1bca6a100668798\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"100.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"order_notional_usdt\":\"5000.00000000\",\"projected_exposure_usdt\":\"5100.00000000\"},\"reason_codes\":[\"RC_LIMIT_NOTIONAL\"]}",
+        "decision_hash": "e006869a3763a0df7c7b4138586ab0f406ffbec2605886a08772eb32ca1445b7",
+        "input_hash": "176f579878207315bcae90390ecc90b0a3dfc73ef9732b76c1bca6a100668798"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "100.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "order_notional_usdt": "5000.00000000",
+        "projected_exposure_usdt": "5100.00000000"
+      },
+      "reason_codes": [
+        "RC_LIMIT_NOTIONAL"
+      ]
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "total_exposure_usdt": "100.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-notional-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {
+        "BTCUSDT": "0.01000000"
+      },
+      "order": {
+        "price_ref": "50000.00000000",
+        "quantity": "0.10000000",
+        "reduce_only": false,
+        "side": "BUY",
+        "symbol": "BTCUSDT",
+        "timestamp_input_ms": 1700000001000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "10000.00000000"
+      },
+      "run_mode": "paper",
+      "system_config": {
+        "service": "tests"
+      }
+    },
+    "name": "deny_max_notional"
+  },
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "10000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 0,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"total_exposure_usdt\":\"4500.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-exposure-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[{\"quantity\":\"1.00000000\",\"symbol\":\"ETHUSDT\"}],\"order\":{\"price_ref\":\"3000.00000000\",\"quantity\":\"1.00000000\",\"reduce_only\":false,\"side\":\"BUY\",\"symbol\":\"ETHUSDT\",\"timestamp_input_ms\":1700000002000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"10000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"run_mode\":\"paper\",\"system_config\":{\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"10000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"contract_version\":\"v1\",\"decision\":0,\"input_hash\":\"7a8d5969b85771d49332f84cd5cee6c50e5e90771728fff0153a7f5196e75694\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"4500.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"order_notional_usdt\":\"3000.00000000\",\"projected_exposure_usdt\":\"7500.00000000\"},\"reason_codes\":[\"RC_LIMIT_EXPOSURE\"]}",
+        "decision_hash": "c947ff4a24d86350c802c6b22877067e9591af22c329268aa8ecdecc97ca26ea",
+        "input_hash": "7a8d5969b85771d49332f84cd5cee6c50e5e90771728fff0153a7f5196e75694"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "4500.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "order_notional_usdt": "3000.00000000",
+        "projected_exposure_usdt": "7500.00000000"
+      },
+      "reason_codes": [
+        "RC_LIMIT_EXPOSURE"
+      ]
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "total_exposure_usdt": "4500.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-exposure-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {
+        "ETHUSDT": "1.00000000"
+      },
+      "order": {
+        "price_ref": "3000.00000000",
+        "quantity": "1.00000000",
+        "reduce_only": false,
+        "side": "BUY",
+        "symbol": "ETHUSDT",
+        "timestamp_input_ms": 1700000002000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "10000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "run_mode": "paper",
+      "system_config": {
+        "service": "tests"
+      }
+    },
+    "name": "deny_max_exposure"
+  },
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 0,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"6.000000\",\"total_exposure_usdt\":\"100.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-drawdown-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[],\"order\":{\"price_ref\":\"1.00000000\",\"quantity\":\"10.00000000\",\"reduce_only\":false,\"side\":\"BUY\",\"symbol\":\"XRPUSDT\",\"timestamp_input_ms\":1700000003000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"run_mode\":\"paper\",\"system_config\":{\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"contract_version\":\"v1\",\"decision\":0,\"input_hash\":\"604e46047a3e769943b2742d698f6157dcf0ecd2866f3044c47a1f61324a72a6\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"100.00000000\",\"daily_drawdown_pct\":\"6.000000\",\"order_notional_usdt\":\"10.00000000\",\"projected_exposure_usdt\":\"110.00000000\"},\"reason_codes\":[\"RC_LIMIT_DRAWDOWN\"]}",
+        "decision_hash": "2d3464468d78a5a2c20442c7a4f0dc5a4ce64a06b33fb85f40892c9ffce002df",
+        "input_hash": "604e46047a3e769943b2742d698f6157dcf0ecd2866f3044c47a1f61324a72a6"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "100.00000000",
+        "daily_drawdown_pct": "6.000000",
+        "order_notional_usdt": "10.00000000",
+        "projected_exposure_usdt": "110.00000000"
+      },
+      "reason_codes": [
+        "RC_LIMIT_DRAWDOWN"
+      ]
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "6.000000",
+        "total_exposure_usdt": "100.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-drawdown-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {},
+      "order": {
+        "price_ref": "1.00000000",
+        "quantity": "10.00000000",
+        "reduce_only": false,
+        "side": "BUY",
+        "symbol": "XRPUSDT",
+        "timestamp_input_ms": 1700000003000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "run_mode": "paper",
+      "system_config": {
+        "service": "tests"
+      }
+    },
+    "name": "deny_max_drawdown"
+  },
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "1000.00000000",
+        "max_total_exposure_usdt": "2000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 1,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"total_exposure_usdt\":\"8000.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-reduce-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[{\"quantity\":\"0.20000000\",\"symbol\":\"BTCUSDT\"}],\"order\":{\"price_ref\":\"50000.00000000\",\"quantity\":\"0.20000000\",\"reduce_only\":true,\"side\":\"SELL\",\"symbol\":\"BTCUSDT\",\"timestamp_input_ms\":1700000004000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"1000.00000000\",\"max_total_exposure_usdt\":\"2000.00000000\"},\"run_mode\":\"paper\",\"system_config\":{\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"1000.00000000\",\"max_total_exposure_usdt\":\"2000.00000000\"},\"contract_version\":\"v1\",\"decision\":1,\"input_hash\":\"3444848c05d4098e127d1fae12c3cc8104b793f4d926af9545776c5eca132a26\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"8000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"order_notional_usdt\":\"10000.00000000\",\"projected_exposure_usdt\":\"0.00000000\"},\"reason_codes\":[]}",
+        "decision_hash": "0f90cd8fb5b43b206ac57024bd68c8139a5089d22a53e3631ee5d586c0c79f01",
+        "input_hash": "3444848c05d4098e127d1fae12c3cc8104b793f4d926af9545776c5eca132a26"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "8000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "order_notional_usdt": "10000.00000000",
+        "projected_exposure_usdt": "0.00000000"
+      },
+      "reason_codes": []
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "total_exposure_usdt": "8000.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-reduce-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {
+        "BTCUSDT": "0.20000000"
+      },
+      "order": {
+        "price_ref": "50000.00000000",
+        "quantity": "0.20000000",
+        "reduce_only": true,
+        "side": "SELL",
+        "symbol": "BTCUSDT",
+        "timestamp_input_ms": 1700000004000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "1000.00000000",
+        "max_total_exposure_usdt": "2000.00000000"
+      },
+      "run_mode": "paper",
+      "system_config": {
+        "service": "tests"
+      }
+    },
+    "name": "allow_reduce_only_sell"
+  },
+  {
+    "expected_output": {
+      "applied_limits": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "contract_version": "v1",
+      "decision": 0,
+      "evidence": {
+        "canonical_input": "{\"account_state\":{\"balance_usdt\":\"10000.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"total_exposure_usdt\":\"100.00000000\"},\"context\":{\"bot_id\":\"\",\"signal_id\":\"sig-runmode-1\",\"source\":\"fixtures\",\"strategy_id\":\"paper\"},\"contract_name\":\"decision_contract_v1\",\"contract_version\":\"v1\",\"open_positions\":[],\"order\":{\"price_ref\":\"50000.00000000\",\"quantity\":\"0.01000000\",\"reduce_only\":false,\"side\":\"BUY\",\"symbol\":\"BTCUSDT\",\"timestamp_input_ms\":1700000005000},\"risk_policy\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"run_mode\":\"unknown_mode\",\"system_config\":{\"service\":\"tests\"}}",
+        "canonical_output": "{\"applied_limits\":{\"max_daily_drawdown_pct\":\"5.000000\",\"max_notional_usdt\":\"2000.00000000\",\"max_total_exposure_usdt\":\"5000.00000000\"},\"contract_version\":\"v1\",\"decision\":0,\"input_hash\":\"29b30359425f6f7bc1c849a8dd2c8b6c58b9e79c083fce42dad3012058f17aef\",\"metrics\":{\"balance_usdt\":\"10000.00000000\",\"current_exposure_usdt\":\"100.00000000\",\"daily_drawdown_pct\":\"1.000000\",\"order_notional_usdt\":\"500.00000000\",\"projected_exposure_usdt\":\"600.00000000\"},\"reason_codes\":[\"RC_INVALID_RUN_MODE\"]}",
+        "decision_hash": "a511e6ccf188b8a3bd12f0cfd6aedfb56768800d948978c883feb66e283cb76e",
+        "input_hash": "29b30359425f6f7bc1c849a8dd2c8b6c58b9e79c083fce42dad3012058f17aef"
+      },
+      "metrics": {
+        "balance_usdt": "10000.00000000",
+        "current_exposure_usdt": "100.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "order_notional_usdt": "500.00000000",
+        "projected_exposure_usdt": "600.00000000"
+      },
+      "reason_codes": [
+        "RC_INVALID_RUN_MODE"
+      ]
+    },
+    "input": {
+      "account_state": {
+        "balance_usdt": "10000.00000000",
+        "daily_drawdown_pct": "1.000000",
+        "total_exposure_usdt": "100.00000000"
+      },
+      "context": {
+        "bot_id": "",
+        "signal_id": "sig-runmode-1",
+        "source": "fixtures",
+        "strategy_id": "paper"
+      },
+      "open_positions": {},
+      "order": {
+        "price_ref": "50000.00000000",
+        "quantity": "0.01000000",
+        "reduce_only": false,
+        "side": "BUY",
+        "symbol": "BTCUSDT",
+        "timestamp_input_ms": 1700000005000
+      },
+      "risk_policy": {
+        "max_daily_drawdown_pct": "5.000000",
+        "max_notional_usdt": "2000.00000000",
+        "max_total_exposure_usdt": "5000.00000000"
+      },
+      "run_mode": "unknown_mode",
+      "system_config": {
+        "service": "tests"
+      }
+    },
+    "name": "deny_invalid_run_mode"
+  }
+]
