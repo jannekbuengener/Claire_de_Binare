@@ -122,9 +122,7 @@ def test_contract_rejects_side_mismatch():
     manager = _make_manager()
     order = _make_order(side="BUY")
 
-    bundle = build_decision_contract_v1_bundle(
-        _make_valid_contract_input(side="SELL")
-    )
+    bundle = build_decision_contract_v1_bundle(_make_valid_contract_input(side="SELL"))
     order.decision_contract_v1 = bundle
 
     with pytest.raises(DecisionContractError, match="side mismatch"):
@@ -179,20 +177,18 @@ def test_contract_overwrites_existing_hashes():
     order.input_hash = "stale-phase9-input-hash"
     order.output_hash = "stale-phase9-output-hash"
 
-    bundle = build_decision_contract_v1_bundle(
-        _make_valid_contract_input()
-    )
+    bundle = build_decision_contract_v1_bundle(_make_valid_contract_input())
     order.decision_contract_v1 = bundle
 
     manager._ensure_decision_contract_for_order(order, source="test")
 
     evidence = bundle["output"]["evidence"]
-    assert order.input_hash == evidence["input_hash"], (
-        "input_hash must be overwritten with contract evidence hash"
-    )
-    assert order.output_hash == evidence["decision_hash"], (
-        "output_hash must be overwritten with contract evidence hash"
-    )
+    assert (
+        order.input_hash == evidence["input_hash"]
+    ), "input_hash must be overwritten with contract evidence hash"
+    assert (
+        order.output_hash == evidence["decision_hash"]
+    ), "output_hash must be overwritten with contract evidence hash"
     assert order.input_hash != "stale-phase9-input-hash"
     assert order.output_hash != "stale-phase9-output-hash"
 
@@ -205,9 +201,7 @@ def test_contract_sets_hashes_when_none():
     assert order.input_hash is None
     assert order.output_hash is None
 
-    bundle = build_decision_contract_v1_bundle(
-        _make_valid_contract_input()
-    )
+    bundle = build_decision_contract_v1_bundle(_make_valid_contract_input())
     order.decision_contract_v1 = bundle
 
     manager._ensure_decision_contract_for_order(order, source="test")
@@ -235,6 +229,7 @@ def test_kill_switch_active_blocks_signal(mock_redis, mock_postgres):
         manager = RiskManager()
 
     from core.domain.models import Signal
+
     signal = Signal(
         signal_id="sig-kill-test",
         strategy_id="test-strat",
@@ -246,8 +241,13 @@ def test_kill_switch_active_blocks_signal(mock_redis, mock_postgres):
     )
 
     with patch.object(
-        manager, "_kill_switch_gate",
-        return_value=(True, "KILL_SWITCH_ACTIVE", {"reason": "test", "message": "test", "activated_at": "now"}),
+        manager,
+        "_kill_switch_gate",
+        return_value=(
+            True,
+            "KILL_SWITCH_ACTIVE",
+            {"reason": "test", "message": "test", "activated_at": "now"},
+        ),
     ):
         result = manager.process_signal(signal)
 
@@ -267,6 +267,7 @@ def test_kill_switch_eval_error_blocks_signal(mock_redis, mock_postgres):
         manager = RiskManager()
 
     from core.domain.models import Signal
+
     signal = Signal(
         signal_id="sig-kill-err",
         strategy_id="test-strat",
@@ -278,12 +279,19 @@ def test_kill_switch_eval_error_blocks_signal(mock_redis, mock_postgres):
     )
 
     with patch.object(
-        manager, "_kill_switch_gate",
-        return_value=(True, "KILL_SWITCH_UNEVALUABLE", {"reason": None, "message": "eval error", "activated_at": None}),
+        manager,
+        "_kill_switch_gate",
+        return_value=(
+            True,
+            "KILL_SWITCH_UNEVALUABLE",
+            {"reason": None, "message": "eval error", "activated_at": None},
+        ),
     ):
         result = manager.process_signal(signal)
 
-    assert result is None, "Kill-switch evaluation error must block signal (fail-closed)"
+    assert (
+        result is None
+    ), "Kill-switch evaluation error must block signal (fail-closed)"
 
 
 @pytest.mark.unit
@@ -299,6 +307,7 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
         manager = RiskManager()
 
     from core.domain.models import Signal
+
     signal = Signal(
         signal_id="sig-pass",
         strategy_id="test-strat",
@@ -310,7 +319,8 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
     )
 
     with patch.object(
-        manager, "_kill_switch_gate",
+        manager,
+        "_kill_switch_gate",
         return_value=(False, "", {}),
     ):
         # Signal will likely be blocked by decide_trade (missing market_state etc.)

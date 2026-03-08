@@ -266,9 +266,7 @@ class KillSwitch:
             False
         """
         if not operator or not justification:
-            logger.error(
-                "Kill-switch deactivation requires operator and justification"
-            )
+            logger.error("Kill-switch deactivation requires operator and justification")
             return False
 
         message = f"Deactivated by {operator}: {justification}"
