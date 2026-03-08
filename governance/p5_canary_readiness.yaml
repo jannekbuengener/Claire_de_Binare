@@ -1,0 +1,90 @@
+version: 1
+control_id: LR-050
+description: >
+  P5 canary readiness baseline. This policy is a governance gate only and does
+  not auto-enable live trading.
+operating_model: single_maintainer
+
+checklist_document: docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md
+
+required_controls:
+  - id: LR-001
+    evidence_path: docs/evidence/LR-001.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-003
+    evidence_path: docs/live-readiness/LR-003-EVIDENCE.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-010
+    evidence_path: docs/evidence/LR-010.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-020
+    evidence_path: docs/evidence/LR-020.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-030
+    evidence_path: docs/evidence/LR-030.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-031
+    evidence_path: docs/evidence/LR-031.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-040
+    evidence_path: docs/evidence/LR-040.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-041
+    evidence_path: docs/evidence/LR-041.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-042
+    evidence_path: docs/evidence/LR-042.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+
+required_artifacts:
+  - reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md
+  - knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md
+  - tools/test_pack/runbooks/kill_switch_checklist.md
+  - governance/branch_protection.yml
+  - scripts/drills/lr003_drill_runner.py
+  - scripts/drills/lr041_redis_postgres_failure_runner.py
+  - scripts/drills/lr042_network_latency_packet_loss_runner.py
+  - infrastructure/scripts/soak_gate_eval.py
+  - scripts/governance/check_window_timer_guardrail.py
+
+abort_conditions:
+  - kill_switch_active_or_unevaluable
+  - runtime_mode_ambiguous_or_unresolved
+  - out_of_scope_execution_observed
+  - lr031_or_lr040_hard_fail
+  - dependency_instability_beyond_recovery_window
+
+compensating_controls:
+  - prestart_evidence_lock
+  - runtime_mode_shadow_precheck
+  - kill_switch_precheck
+  - decision_record_before_start
+  - no_code_or_config_change_after_prestart_lock
+  - optional_cooldown_before_go
+  - post_run_verdict_evidence_completeness
+
+signoff_roles:
+  - operator_primary
+  - risk_owner_or_operator_primary
+
+p5_scope:
+  max_symbols: 1
+  max_active_orders: 1
+  max_order_count_total: 3
+  max_total_notional_usdt: "50"
+  max_window_minutes: 15
+  require_dual_signoff: false
+  require_kill_switch_precheck: true
+  require_prestart_evidence_lock: true
+  require_runtime_mode_shadow_precheck: true
+  require_decision_record_before_start: true
+  require_no_code_or_config_change_after_prestart_lock: true
