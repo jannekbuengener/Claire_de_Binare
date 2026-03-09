@@ -311,6 +311,128 @@ jobs:
           echo "Soaking for ${soak_minutes} minutes..."
           sleep "$soak_seconds"
 
+      - name: Run deterministic shadow block probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          probe_order_id="ci-shadow-probe-${GITHUB_RUN_ID}"
+          if ! docker exec -e PROBE_ORDER_ID="$probe_order_id" cdb_execution python - <<'PY' > evidence/shadow_block_probe.json
+          import json
+          import os
+          import time
+
+          import redis
+
+          order_id = os.environ["PROBE_ORDER_ID"]
+          client = redis.Redis(
+              host=os.getenv("REDIS_HOST", "cdb_redis"),
+              port=int(os.getenv("REDIS_PORT", "6379")),
+              password=os.getenv("REDIS_PASSWORD") or None,
+              decode_responses=True,
+          )
+          pubsub = client.pubsub(ignore_subscribe_messages=True)
+          pubsub.subscribe("order_results")
+          time.sleep(0.5)
+
+          payload = {
+              "type": "order",
+              "symbol": "BTCUSDT",
+              "side": "BUY",
+              "quantity": 0.001,
+              "strategy_id": "shadow-probe",
+              "bot_id": "shadow-probe",
+              "client_id": order_id,
+              "timestamp": int(time.time()),
+              "signal_id": f"sig-{order_id}",
+              "decision_id": f"dec-{order_id}",
+              "order_id": order_id,
+              "trace_id": f"trace-{order_id}",
+              "run_mode": "shadow",
+              "decision_contract_v1": {
+                  "input": {
+                      "run_mode": "shadow",
+                      "order": {
+                          "symbol": "BTCUSDT",
+                          "side": "BUY",
+                          "quantity": 0.001,
+                      },
+                  },
+                  "output": {},
+              },
+          }
+
+          publish_subscribers = client.publish(
+              "orders", json.dumps(payload, ensure_ascii=False)
+          )
+          deadline = time.time() + 20
+          pubsub_result = None
+
+          while time.time() < deadline:
+              message = pubsub.get_message(timeout=1.0)
+              if not message or message.get("type") != "message":
+                  continue
+              try:
+                  data = json.loads(message["data"])
+              except json.JSONDecodeError:
+                  continue
+              if data.get("order_id") == order_id:
+                  pubsub_result = data
+                  break
+
+          pubsub.close()
+
+          stream_entry_id = None
+          stream_result = None
+          try:
+              for entry_id, values in client.xrevrange("stream.order_results", count=50):
+                  if values.get("order_id") == order_id:
+                      stream_entry_id = entry_id
+                      stream_result = values
+                      break
+          except Exception as exc:
+              stream_result = {"stream_lookup_error": str(exc)}
+
+          order_result = pubsub_result or stream_result
+          order_result_source = (
+              "pubsub" if pubsub_result else "stream" if stream_entry_id else None
+          )
+
+          print(
+              json.dumps(
+                  {
+                      "schema_version": "1.0",
+                      "probe_order_id": order_id,
+                      "publish_subscribers": publish_subscribers,
+                      "probe_payload": payload,
+                      "order_result_found": order_result_source is not None,
+                      "order_result_source": order_result_source,
+                      "order_result": order_result,
+                      "stream_order_result_found": stream_entry_id is not None,
+                      "stream_order_result_id": stream_entry_id,
+                      "stream_order_result": stream_result,
+                      "error": None if order_result_source is not None else "shadow_probe_result_missing",
+                  },
+                  ensure_ascii=False,
+              )
+          )
+          PY
+          then
+            cat > evidence/shadow_block_probe.json <<EOF
+          {
+            "schema_version": "1.0",
+            "probe_order_id": "${probe_order_id}",
+            "order_result_found": false,
+            "order_result_source": null,
+            "stream_order_result_found": false,
+            "stream_order_result_id": null,
+            "stream_order_result": null,
+            "error": "shadow_probe_exec_failed"
+          }
+          EOF
+          fi
+          cat evidence/shadow_block_probe.json
+
       - name: Verify endpoints
         shell: bash
         run: |
@@ -480,17 +602,40 @@ jobs:
           EOF
 
       - name: Generate evidence index
+        if: always()
         shell: bash
         run: |
           python infrastructure/scripts/generate_evidence_index.py evidence/
           echo "--- evidence_index.json ---"
           cat evidence/evidence_index.json
 
+      - name: Evaluate shadow soak gate
+        if: always()
+        shell: bash
+        run: |
+          python infrastructure/scripts/soak_gate_eval.py evidence/
+          echo "--- soak_gate_eval.json ---"
+          cat evidence/soak_gate_eval.json
+
+      - name: Build canonical evidence package
+        if: always()
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python infrastructure/scripts/build_shadow_evidence_package.py evidence/
+          package_id=$(python -c "import json, pathlib; print(json.loads(pathlib.Path('evidence/package_manifest.json').read_text(encoding='utf-8'))['package_id'])")
+          echo "package_id=${package_id}" >> "$GITHUB_OUTPUT"
+          echo "--- package_manifest.json ---"
+          cat evidence/package_manifest.json
+          echo "--- package_validation.json ---"
+          cat evidence/package_validation.json
+
       - name: Upload evidence artifact
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: shadow-soak-evidence
+          name: shadow-soak-evidence-${{ github.run_id }}
           path: evidence/
           retention-days: 7
           if-no-files-found: warn
