@@ -322,7 +322,7 @@ jobs:
           redis_pw=$(docker exec cdb_execution cat /run/secrets/redis_password 2>/dev/null || echo "")
 
           probe_rc=0
-          docker exec \
+          docker exec -i \
             -e PROBE_ORDER_ID="$probe_order_id" \
             -e REDIS_PASSWORD="$redis_pw" \
             cdb_execution python -u - <<'PY' > evidence/shadow_block_probe.json || probe_rc=$?
