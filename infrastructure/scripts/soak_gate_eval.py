@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""Evaluate shadow-soak evidence with hard LR-030/LR-031 gate criteria."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+
+def _load_json_required(path: Path, source_name: str) -> dict:
+    if not path.is_file():
+        print(f"ERROR: required source missing: {source_name}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"ERROR: cannot load {source_name}: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _to_int(value: object) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _to_float(value: object) -> float | None:
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
+    evidence_index_path = evidence_dir / "evidence_index.json"
+    shadow_probe_path = evidence_dir / "shadow_block_probe.json"
+
+    evidence_index = _load_json_required(evidence_index_path, "evidence_index.json")
+    shadow_probe = _load_json_required(shadow_probe_path, "shadow_block_probe.json")
+
+    shadow_blocked_total = _to_int(evidence_index.get("shadow_blocked_total"))
+    orders_filled = _to_int(evidence_index.get("orders_filled"))
+
+    order_result = shadow_probe.get("order_result") or {}
+    order_result_found = bool(shadow_probe.get("order_result_found"))
+    order_result_status = order_result.get("status")
+    filled_quantity = _to_float(order_result.get("filled_quantity"))
+
+    checks = {
+        "shadow_blocked_total_gte_1": shadow_blocked_total is not None
+        and shadow_blocked_total >= 1,
+        "execution_orders_filled_total_eq_0": orders_filled == 0,
+        "auditable_reject_present": order_result_found
+        and order_result_status == "REJECTED",
+        "reject_filled_quantity_eq_0": filled_quantity == 0.0,
+        "shadow_probe_artifact_present": shadow_probe_path.is_file(),
+    }
+
+    failures = [name for name, passed in checks.items() if not passed]
+    verdict = "PASS" if not failures else "FAIL"
+
+    return {
+        "schema_version": "1.0",
+        "verdict": verdict,
+        "checks": checks,
+        "failures": failures,
+        "metrics": {
+            "shadow_blocked_total": shadow_blocked_total,
+            "orders_filled": orders_filled,
+        },
+        "probe": {
+            "probe_order_id": shadow_probe.get("probe_order_id"),
+            "publish_subscribers": shadow_probe.get("publish_subscribers"),
+            "order_result_found": order_result_found,
+            "order_result_source": shadow_probe.get("order_result_source"),
+            "stream_order_result_found": shadow_probe.get("stream_order_result_found"),
+            "order_result_status": order_result_status,
+            "filled_quantity": filled_quantity,
+            "error": shadow_probe.get("error"),
+        },
+        "artifacts": {
+            "evidence_index": evidence_index_path.name,
+            "shadow_block_probe": shadow_probe_path.name,
+        },
+    }
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} <evidence-directory>", file=sys.stderr)
+        sys.exit(2)
+
+    evidence_dir = Path(sys.argv[1])
+    if not evidence_dir.is_dir():
+        print(f"ERROR: not a directory: {evidence_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    result = evaluate_shadow_soak_evidence(evidence_dir)
+    output_path = evidence_dir / "soak_gate_eval.json"
+    output_path.write_text(
+        json.dumps(result, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Shadow soak gate evaluation written to {output_path}")
+    sys.exit(0 if result["verdict"] == "PASS" else 1)
+
+
+if __name__ == "__main__":
+    main()
