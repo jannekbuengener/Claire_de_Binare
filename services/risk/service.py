@@ -2061,6 +2061,14 @@ class RiskManager:
 
         Solution: Proactively unwind when blocked.
         """
+        # LR-030: No unwind orders in shadow mode
+        if self._resolve_contract_run_mode() == "shadow":
+            logger.info(
+                "Proactive unwind suppressed: shadow mode (positions=%d)",
+                len(risk_state.positions),
+            )
+            return
+
         if not self.config.paper_auto_unwind:
             return
 
@@ -2116,6 +2124,15 @@ class RiskManager:
         This is the original auto-unwind logic that triggers after successful BUY fills.
         Complements the proactive unwind above.
         """
+        # LR-030: No unwind orders in shadow mode
+        if self._resolve_contract_run_mode() == "shadow":
+            logger.info(
+                "Reactive unwind suppressed: shadow mode (symbol=%s, qty=%s)",
+                result.symbol,
+                result.filled_quantity,
+            )
+            return
+
         if not self.config.paper_auto_unwind:
             return
         if result.status != "FILLED":

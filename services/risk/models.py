@@ -164,6 +164,12 @@ class Order:
             result["policy_snapshot"] = self.policy_snapshot
         if self.decision_contract_v1 is not None:
             result["decision_contract_v1"] = self.decision_contract_v1
+            # LR-030: Propagate run_mode as top-level field for Execution Service shadow gate
+            _bundle_run_mode = self.decision_contract_v1.get("input", {}).get(
+                "run_mode"
+            )
+            if _bundle_run_mode:
+                result["run_mode"] = _bundle_run_mode
         return result
 
 

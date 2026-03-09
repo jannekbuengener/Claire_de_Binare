@@ -82,6 +82,7 @@ stats = {
     "orders_received": 0,
     "orders_filled": 0,
     "orders_rejected": 0,
+    "shadow_blocked": 0,  # LR-030: distinct evidence trail for shadow-mode blocks
     "invalid_payloads": 0,
     "start_time": utcnow().isoformat(),
     "last_result": None,
@@ -328,6 +329,72 @@ def process_order(order_data: object):
                 order.symbol,
                 order.side,
                 order.quantity,
+            )
+            increment_stat("orders_rejected")
+            _publish_result(result)
+            return result
+
+        # LR-030: Shadow-mode execution gate (always active, not toggle-gated).
+        # Orders with run_mode="shadow" MUST NOT reach any executor.
+        # run_mode=None passes (backward compat for legacy orders).
+        if order.run_mode == "shadow":
+            result = ExecutionResult(
+                order_id=order.order_id or "SHADOW_BLOCKED",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message="Order blocked: shadow mode (zero execution)",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            logger.warning(
+                "SHADOW-BLOCKED: %s %s qty=%.4f (run_mode=shadow, zero execution)",
+                order.symbol,
+                order.side,
+                order.quantity,
+            )
+            increment_stat("orders_rejected")
+            increment_stat("shadow_blocked")
+            _publish_result(result)
+            return result
+
+        # LR-030: Kill-switch gate in Execution Service (defense-in-depth).
+        # Consistent with process_order() fail-closed convention: the outer
+        # try/except already returns None on unexpected errors.
+        try:
+            from core.safety.kill_switch import get_kill_switch_details
+
+            ks_active, ks_reason, _ks_msg, _ks_at = get_kill_switch_details(
+                create_if_missing=False
+            )
+        except Exception:
+            ks_active, ks_reason = True, "evaluation_error"  # fail-closed
+
+        if ks_active:
+            result = ExecutionResult(
+                order_id=order.order_id or "KILL_SWITCH_BLOCKED",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message=f"Order blocked: kill-switch active ({ks_reason})",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            logger.warning(
+                "KILL-SWITCH-BLOCKED in execution: %s %s reason=%s",
+                order.symbol,
+                order.side,
+                ks_reason,
             )
             increment_stat("orders_rejected")
             _publish_result(result)
@@ -669,6 +736,9 @@ if _FLASK_AVAILABLE:
             "# HELP execution_invalid_payloads_total Anzahl invalid/malformed Payloads\n"
             "# TYPE execution_invalid_payloads_total counter\n"
             f"execution_invalid_payloads_total {current_stats['invalid_payloads']}\n"
+            "# HELP execution_shadow_blocked_total Orders blocked by shadow mode gate (LR-030)\n"
+            "# TYPE execution_shadow_blocked_total counter\n"
+            f"execution_shadow_blocked_total {current_stats['shadow_blocked']}\n"
             "# HELP execution_uptime_seconds Service Laufzeit in Sekunden\n"
             "# TYPE execution_uptime_seconds gauge\n"
             f"execution_uptime_seconds {uptime_seconds}\n"
