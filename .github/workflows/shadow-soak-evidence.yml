@@ -232,10 +232,15 @@ jobs:
               user: "0"
             cdb_risk:
               user: "0"
+              environment:
+                TRADING_MODE: shadow
+                TRACE_CONTRACT_V1_ENABLED: "1"
             cdb_execution:
               user: "0"
               environment:
                 MOCK_TRADING: "true"
+                TRADING_MODE: shadow
+                TRACE_CONTRACT_V1_ENABLED: "1"
                 USE_REAL_BALANCE: "false"
             cdb_db_writer:
               user: "0"
@@ -374,6 +379,24 @@ jobs:
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" ps > evidence/compose_ps.txt || true
           docker inspect cdb_redis cdb_postgres cdb_prometheus cdb_grafana cdb_postgres_exporter cdb_redis_exporter cdb_ws cdb_signal cdb_candles cdb_allocation cdb_regime cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_reports > evidence/container_inspect.json || true
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" logs --tail=200 > evidence/logs_tail.txt || true
+          # LR-031: Post-soak endpoint snapshots (metrics + status, evaluated run state).
+          # Failure to fetch is itself evidence — marker files include endpoint
+          # name and curl exit code so missing data is obvious in the artifact.
+          mkdir -p evidence/endpoints
+          snapshot_endpoint() {
+            local name="$1" url="$2" ext="$3"
+            local out="evidence/endpoints/${name}.${ext}"
+            local rc=0
+            curl --connect-timeout 5 --max-time 15 -fsS "$url" -o "$out" || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "EVIDENCE-FETCH-FAILED: ${name} (${url}) curl_exit=${rc}" > "$out"
+              echo "::warning::Post-soak snapshot failed: ${name} (${url}) curl_exit=${rc}"
+            fi
+          }
+          snapshot_endpoint execution_metrics http://127.0.0.1:8003/metrics txt
+          snapshot_endpoint risk_metrics     http://127.0.0.1:8002/metrics txt
+          snapshot_endpoint execution_status http://127.0.0.1:8003/status  json
+          snapshot_endpoint risk_status      http://127.0.0.1:8002/status  json
           grep -i "error" evidence/logs_tail.txt > evidence/logs_grep.txt || true
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
