@@ -180,7 +180,7 @@ def generate_index(evidence_dir: Path) -> dict:
         trading_mode = exec_status.get("mode")
 
     # --- Optional enrichment: risk_status.json ---
-    risk_status = load_json_optional(evidence_dir / "endpoints" / "risk_status.json")
+    load_json_optional(evidence_dir / "endpoints" / "risk_status.json")
 
     # --- Optional enrichment: prometheus_targets.json ---
     prom_targets = load_json_optional(evidence_dir / "endpoints" / "prometheus_targets.json")
