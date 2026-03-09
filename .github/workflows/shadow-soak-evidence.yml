@@ -18,7 +18,7 @@ on:
 env:
   SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
   STACK_NAME: shadow-soak-${{ github.run_id }}
-  FULL_SOAK_MINUTES: 20
+  FULL_SOAK_MINUTES: 30
   LEAN_SOAK_MINUTES: 5
 
 concurrency:
