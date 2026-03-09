@@ -9,7 +9,6 @@ import sys
 from hashlib import sha256
 from pathlib import Path
 
-
 REQUIRED_PACKAGE_FILES = (
     "run_summary.json",
     "shadow_block_probe.json",
@@ -68,13 +67,17 @@ def _package_file_record(root: Path, relative_path: str) -> dict:
 
 
 def build_shadow_evidence_package(evidence_dir: Path) -> dict:
-    missing = [path for path in REQUIRED_PACKAGE_FILES if not (evidence_dir / path).is_file()]
+    missing = [
+        path for path in REQUIRED_PACKAGE_FILES if not (evidence_dir / path).is_file()
+    ]
     if missing:
         raise ValueError(
             "required package files missing: " + ", ".join(sorted(missing))
         )
 
-    run_summary = _load_json_required(evidence_dir / "run_summary.json", "run_summary.json")
+    run_summary = _load_json_required(
+        evidence_dir / "run_summary.json", "run_summary.json"
+    )
     evidence_index = _load_json_required(
         evidence_dir / "evidence_index.json", "evidence_index.json"
     )

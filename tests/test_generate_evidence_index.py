@@ -7,7 +7,9 @@ from pathlib import Path
 import pytest
 
 # Make infrastructure/scripts importable
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "infrastructure" / "scripts"))
+sys.path.insert(
+    0, str(Path(__file__).resolve().parent.parent / "infrastructure" / "scripts")
+)
 
 from generate_evidence_index import (
     detect_fetch_failure,
@@ -134,9 +136,13 @@ def _create_evidence_dir(tmp_path: Path, **overrides) -> Path:
 # Unit tests: parse_prometheus_metric
 # ---------------------------------------------------------------------------
 
+
 class TestParsePrometheusMetric:
     def test_existing_metric(self):
-        assert parse_prometheus_metric(EXEC_METRICS, "execution_orders_filled_total") == 0.0
+        assert (
+            parse_prometheus_metric(EXEC_METRICS, "execution_orders_filled_total")
+            == 0.0
+        )
 
     def test_counter_with_value(self):
         assert parse_prometheus_metric(RISK_METRICS, "signals_received_total") == 137.0
@@ -158,6 +164,7 @@ class TestParsePrometheusMetric:
 # Unit tests: detect_fetch_failure
 # ---------------------------------------------------------------------------
 
+
 class TestDetectFetchFailure:
     def test_no_failure(self):
         assert detect_fetch_failure("some normal content") is None
@@ -171,6 +178,7 @@ class TestDetectFetchFailure:
 # ---------------------------------------------------------------------------
 # Integration tests: generate_index
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateIndexHappyPath:
     def test_minimal_required_sources(self, tmp_path):
@@ -285,9 +293,7 @@ class TestGenerateIndexEdgeCases:
         """No signals received → has_live_data=False, risk_blocked_all=False."""
         risk_zero = RISK_METRICS.replace(
             "signals_received_total 137", "signals_received_total 0"
-        ).replace(
-            "orders_blocked_total 137", "orders_blocked_total 0"
-        )
+        ).replace("orders_blocked_total 137", "orders_blocked_total 0")
         edir = _create_evidence_dir(tmp_path, risk_metrics=risk_zero)
         index = generate_index(edir)
 
@@ -341,5 +347,8 @@ class TestGenerateIndexEdgeCases:
         )
         index = generate_index(edir)
         assert index["trading_mode"] is None
-        assert index["source_integrity"]["endpoints/execution_status.json"] == "fetch_failed"
+        assert (
+            index["source_integrity"]["endpoints/execution_status.json"]
+            == "fetch_failed"
+        )
         assert any("execution_status" in f for f in index["fetch_failures"])

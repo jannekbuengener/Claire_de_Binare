@@ -17,7 +17,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 FETCH_FAILURE_MARKER = "EVIDENCE-FETCH-FAILED"
 
 REQUIRED_SOURCES = [
@@ -102,7 +101,9 @@ def load_text_required(path: Path, source_name: str) -> str:
         print(f"ERROR: cannot read {source_name}: {exc}", file=sys.stderr)
         sys.exit(1)
     if FETCH_FAILURE_MARKER in content:
-        print(f"ERROR: required source has fetch failure: {source_name}", file=sys.stderr)
+        print(
+            f"ERROR: required source has fetch failure: {source_name}", file=sys.stderr
+        )
         sys.exit(1)
     return content
 
@@ -152,15 +153,29 @@ def generate_index(evidence_dir: Path) -> dict:
     )
 
     # --- Parse metrics ---
-    orders_filled = parse_prometheus_metric(exec_metrics_text, "execution_orders_filled_total")
-    orders_received = parse_prometheus_metric(exec_metrics_text, "execution_orders_received_total")
-    orders_rejected = parse_prometheus_metric(exec_metrics_text, "execution_orders_rejected_total")
-    shadow_blocked_total = parse_prometheus_metric(exec_metrics_text, "execution_shadow_blocked_total")
+    orders_filled = parse_prometheus_metric(
+        exec_metrics_text, "execution_orders_filled_total"
+    )
+    orders_received = parse_prometheus_metric(
+        exec_metrics_text, "execution_orders_received_total"
+    )
+    orders_rejected = parse_prometheus_metric(
+        exec_metrics_text, "execution_orders_rejected_total"
+    )
+    shadow_blocked_total = parse_prometheus_metric(
+        exec_metrics_text, "execution_shadow_blocked_total"
+    )
 
-    signals_received = parse_prometheus_metric(risk_metrics_text, "signals_received_total")
+    signals_received = parse_prometheus_metric(
+        risk_metrics_text, "signals_received_total"
+    )
     orders_blocked = parse_prometheus_metric(risk_metrics_text, "orders_blocked_total")
-    orders_approved = parse_prometheus_metric(risk_metrics_text, "orders_approved_total")
-    total_exposure = parse_prometheus_metric(risk_metrics_text, "risk_total_exposure_value")
+    orders_approved = parse_prometheus_metric(
+        risk_metrics_text, "orders_approved_total"
+    )
+    total_exposure = parse_prometheus_metric(
+        risk_metrics_text, "risk_total_exposure_value"
+    )
 
     # --- Derived safety assertions (from metrics only) ---
     has_live_data = signals_received is not None and signals_received > 0
@@ -174,7 +189,9 @@ def generate_index(evidence_dir: Path) -> dict:
     )
 
     # --- Optional enrichment: execution_status.json ---
-    exec_status = load_json_optional(evidence_dir / "endpoints" / "execution_status.json")
+    exec_status = load_json_optional(
+        evidence_dir / "endpoints" / "execution_status.json"
+    )
     trading_mode = None
     if exec_status is not None:
         trading_mode = exec_status.get("mode")
@@ -183,7 +200,9 @@ def generate_index(evidence_dir: Path) -> dict:
     load_json_optional(evidence_dir / "endpoints" / "risk_status.json")
 
     # --- Optional enrichment: prometheus_targets.json ---
-    prom_targets = load_json_optional(evidence_dir / "endpoints" / "prometheus_targets.json")
+    prom_targets = load_json_optional(
+        evidence_dir / "endpoints" / "prometheus_targets.json"
+    )
     prometheus_targets_up = None
     if prom_targets is not None:
         try:
