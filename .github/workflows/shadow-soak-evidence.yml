@@ -317,20 +317,34 @@ jobs:
           set -euo pipefail
           mkdir -p evidence
           probe_order_id="ci-shadow-probe-${GITHUB_RUN_ID}"
-          if ! docker exec -e PROBE_ORDER_ID="$probe_order_id" cdb_execution python - <<'PY' > evidence/shadow_block_probe.json
+
+          # Read REDIS_PASSWORD from container secret (docker exec bypasses entrypoint)
+          redis_pw=$(docker exec cdb_execution cat /run/secrets/redis_password 2>/dev/null || echo "")
+
+          probe_rc=0
+          docker exec \
+            -e PROBE_ORDER_ID="$probe_order_id" \
+            -e REDIS_PASSWORD="$redis_pw" \
+            cdb_execution python -u - <<'PY' > evidence/shadow_block_probe.json || probe_rc=$?
           import json
           import os
+          import sys
           import time
 
           import redis
 
           order_id = os.environ["PROBE_ORDER_ID"]
+          print(f"[probe] order_id={order_id}", file=sys.stderr)
+
           client = redis.Redis(
               host=os.getenv("REDIS_HOST", "cdb_redis"),
               port=int(os.getenv("REDIS_PORT", "6379")),
               password=os.getenv("REDIS_PASSWORD") or None,
               decode_responses=True,
           )
+          client.ping()
+          print("[probe] redis connected", file=sys.stderr)
+
           pubsub = client.pubsub(ignore_subscribe_messages=True)
           pubsub.subscribe("order_results")
           time.sleep(0.5)
@@ -365,6 +379,7 @@ jobs:
           publish_subscribers = client.publish(
               "orders", json.dumps(payload, ensure_ascii=False)
           )
+          print(f"[probe] published to 'orders', subscribers={publish_subscribers}", file=sys.stderr)
           deadline = time.time() + 20
           pubsub_result = None
 
@@ -397,6 +412,7 @@ jobs:
           order_result_source = (
               "pubsub" if pubsub_result else "stream" if stream_entry_id else None
           )
+          print(f"[probe] result_source={order_result_source}", file=sys.stderr)
 
           print(
               json.dumps(
@@ -417,7 +433,11 @@ jobs:
               )
           )
           PY
-          then
+
+          echo "[probe] docker exec exit code: $probe_rc"
+
+          if [ "$probe_rc" -ne 0 ] || [ ! -s evidence/shadow_block_probe.json ]; then
+            echo "::warning::Shadow probe docker exec failed (rc=$probe_rc), writing fallback stub"
             cat > evidence/shadow_block_probe.json <<EOF
           {
             "schema_version": "1.0",
@@ -431,6 +451,8 @@ jobs:
           }
           EOF
           fi
+
+          echo "--- shadow_block_probe.json ---"
           cat evidence/shadow_block_probe.json
 
       - name: Verify endpoints
