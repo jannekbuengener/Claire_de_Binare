@@ -479,6 +479,13 @@ jobs:
           - run_summary.json
           EOF
 
+      - name: Generate evidence index
+        shell: bash
+        run: |
+          python infrastructure/scripts/generate_evidence_index.py evidence/
+          echo "--- evidence_index.json ---"
+          cat evidence/evidence_index.json
+
       - name: Upload evidence artifact
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
