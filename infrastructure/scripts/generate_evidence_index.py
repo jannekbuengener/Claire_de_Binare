@@ -197,7 +197,12 @@ def generate_index(evidence_dir: Path) -> dict:
         trading_mode = exec_status.get("mode")
 
     # --- Optional enrichment: risk_status.json ---
-    load_json_optional(evidence_dir / "endpoints" / "risk_status.json")
+    risk_status = load_json_optional(evidence_dir / "endpoints" / "risk_status.json")
+    kill_switch_active = None
+    if risk_status is not None:
+        risk_state = risk_status.get("risk_state")
+        if isinstance(risk_state, dict):
+            kill_switch_active = risk_state.get("circuit_breaker")
 
     # --- Optional enrichment: prometheus_targets.json ---
     prom_targets = load_json_optional(
@@ -248,6 +253,7 @@ def generate_index(evidence_dir: Path) -> dict:
         "risk_blocked_all": risk_blocked_all,
         # optional enrichment
         "trading_mode": trading_mode,
+        "kill_switch_active": kill_switch_active,
         "prometheus_targets_up": prometheus_targets_up,
         # diagnostics
         "fetch_failures": fetch_failures,

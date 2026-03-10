@@ -311,6 +311,30 @@ jobs:
           echo "Soaking for ${soak_minutes} minutes..."
           sleep "$soak_seconds"
 
+      - name: Capture runtime-mode proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/endpoints
+          # Execution service: mode must be "mock" for shadow soak
+          exec_status_rc=0
+          curl --connect-timeout 5 --max-time 15 -fsS http://127.0.0.1:8003/status \
+            -o evidence/endpoints/execution_status.json || exec_status_rc=$?
+          if [ "$exec_status_rc" -ne 0 ]; then
+            echo "EVIDENCE-FETCH-FAILED: execution_status (http://127.0.0.1:8003/status) curl_exit=${exec_status_rc}" \
+              > evidence/endpoints/execution_status.json
+            echo "::warning::execution_status fetch failed (rc=$exec_status_rc)"
+          fi
+          # Risk service: status including circuit_breaker
+          risk_status_rc=0
+          curl --connect-timeout 5 --max-time 15 -fsS http://127.0.0.1:8002/status \
+            -o evidence/endpoints/risk_status.json || risk_status_rc=$?
+          if [ "$risk_status_rc" -ne 0 ]; then
+            echo "EVIDENCE-FETCH-FAILED: risk_status (http://127.0.0.1:8002/status) curl_exit=${risk_status_rc}" \
+              > evidence/endpoints/risk_status.json
+            echo "::warning::risk_status fetch failed (rc=$risk_status_rc)"
+          fi
+
       - name: Run deterministic shadow block probe
         shell: bash
         run: |
@@ -539,8 +563,8 @@ jobs:
           }
           snapshot_endpoint execution_metrics http://127.0.0.1:8003/metrics txt
           snapshot_endpoint risk_metrics     http://127.0.0.1:8002/metrics txt
-          snapshot_endpoint execution_status http://127.0.0.1:8003/status  json
-          snapshot_endpoint risk_status      http://127.0.0.1:8002/status  json
+          # execution_status + risk_status: captured earlier in "Capture runtime-mode proof"
+          # step (pre-probe steady-state). Not re-fetched here to avoid competing sources.
           grep -i "error" evidence/logs_tail.txt > evidence/logs_grep.txt || true
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -573,6 +597,17 @@ jobs:
             fi
             optional_rows="${optional_rows}| ${svc} | ${status} |"$'\n'
           done
+          # Validate runtime-mode from pre-probe execution_status capture
+          if [ -f evidence/endpoints/execution_status.json ]; then
+            exec_mode=$(python3 -c "import json,pathlib; d=json.loads(pathlib.Path('evidence/endpoints/execution_status.json').read_text()); print(d.get('mode','UNKNOWN'))" 2>/dev/null || echo "PARSE_ERROR")
+            if [ "$exec_mode" != "mock" ]; then
+              echo "::error::execution_status.mode is '$exec_mode', expected 'mock'"
+              gate_pass=0
+            fi
+          else
+            echo "::error::execution_status.json missing before run_summary generation"
+            gate_pass=0
+          fi
           gate_status="FAIL"
           if [ "$gate_pass" -eq 1 ]; then
             gate_status="PASS"

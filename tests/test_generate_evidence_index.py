@@ -83,7 +83,7 @@ RISK_STATUS = {
     "signals_received": 137,
     "orders_approved": 0,
     "orders_blocked": 137,
-    "risk_state": {"total_exposure": 0.0},
+    "risk_state": {"total_exposure": 0.0, "circuit_breaker": False},
     "status": "running",
 }
 
@@ -207,6 +207,7 @@ class TestGenerateIndexHappyPath:
 
         # Optional fields should be None without enrichment sources
         assert index["trading_mode"] is None
+        assert index["kill_switch_active"] is None
         assert index["prometheus_targets_up"] is None
 
         # No fetch failures
@@ -229,6 +230,7 @@ class TestGenerateIndexHappyPath:
         index = generate_index(edir)
 
         assert index["trading_mode"] == "mock"
+        assert index["kill_switch_active"] is False
         assert index["source_integrity"]["endpoints/execution_status.json"] == "ok"
         assert index["source_integrity"]["endpoints/risk_status.json"] == "ok"
 
@@ -352,3 +354,27 @@ class TestGenerateIndexEdgeCases:
             == "fetch_failed"
         )
         assert any("execution_status" in f for f in index["fetch_failures"])
+
+    def test_kill_switch_active_from_risk_status(self, tmp_path):
+        """risk_status with circuit_breaker=True → kill_switch_active is True."""
+        risk_active = {
+            **RISK_STATUS,
+            "risk_state": {**RISK_STATUS["risk_state"], "circuit_breaker": True},
+        }
+        edir = _create_evidence_dir(
+            tmp_path, include_risk_status=True, risk_status=risk_active
+        )
+        index = generate_index(edir)
+        assert index["kill_switch_active"] is True
+
+    def test_kill_switch_none_when_key_absent(self, tmp_path):
+        """risk_status without circuit_breaker key → kill_switch_active is None."""
+        risk_no_cb = {
+            **RISK_STATUS,
+            "risk_state": {"total_exposure": 0.0},
+        }
+        edir = _create_evidence_dir(
+            tmp_path, include_risk_status=True, risk_status=risk_no_cb
+        )
+        index = generate_index(edir)
+        assert index["kill_switch_active"] is None

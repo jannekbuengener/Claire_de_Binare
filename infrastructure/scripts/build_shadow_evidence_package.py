@@ -16,12 +16,12 @@ REQUIRED_PACKAGE_FILES = (
     "evidence_index.json",
     "endpoints/execution_metrics.txt",
     "endpoints/risk_metrics.txt",
+    "endpoints/execution_status.json",
+    "endpoints/risk_status.json",
 )
 
 OPTIONAL_PACKAGE_FILES = (
     "run_summary.md",
-    "endpoints/execution_status.json",
-    "endpoints/risk_status.json",
     "compose_ps.txt",
     "container_inspect.json",
     "logs_tail.txt",
@@ -111,7 +111,7 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
         copied_paths.append(relative_path)
 
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "package_id": package_id,
         "package_type": "shadow-soak-evidence",
         "package_status": "PASS",
@@ -142,6 +142,10 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
         "evidence_summary": {
             "shadow_blocked_total": evidence_index.get("shadow_blocked_total"),
             "orders_filled": evidence_index.get("orders_filled"),
+            "orders_approved": evidence_index.get("orders_approved"),
+            "has_live_data": evidence_index.get("has_live_data"),
+            "risk_blocked_all": evidence_index.get("risk_blocked_all"),
+            "trading_mode": evidence_index.get("trading_mode"),
             "order_result_found": shadow_probe.get("order_result_found"),
             "order_result_source": shadow_probe.get("order_result_source"),
         },

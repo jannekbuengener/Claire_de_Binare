@@ -44,6 +44,15 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
     evidence_index = _load_json_required(evidence_index_path, "evidence_index.json")
     shadow_probe = _load_json_required(shadow_probe_path, "shadow_block_probe.json")
 
+    exec_status = _load_json_required(
+        evidence_dir / "endpoints" / "execution_status.json",
+        "endpoints/execution_status.json",
+    )
+    risk_status = _load_json_required(
+        evidence_dir / "endpoints" / "risk_status.json",
+        "endpoints/risk_status.json",
+    )
+
     shadow_blocked_total = _to_int(evidence_index.get("shadow_blocked_total"))
     orders_filled = _to_int(evidence_index.get("orders_filled"))
 
@@ -51,6 +60,12 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
     order_result_found = bool(shadow_probe.get("order_result_found"))
     order_result_status = order_result.get("status")
     filled_quantity = _to_float(order_result.get("filled_quantity"))
+
+    has_live_data = evidence_index.get("has_live_data")
+    orders_approved = _to_int(evidence_index.get("orders_approved"))
+    risk_blocked_all = evidence_index.get("risk_blocked_all")
+    trading_mode = exec_status.get("mode")
+    kill_switch_active = risk_status.get("risk_state", {}).get("circuit_breaker")
 
     checks = {
         "shadow_blocked_total_gte_1": shadow_blocked_total is not None
@@ -60,19 +75,31 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
         and order_result_status == "REJECTED",
         "reject_filled_quantity_eq_0": filled_quantity == 0.0,
         "shadow_probe_artifact_present": shadow_probe_path.is_file(),
+        "has_live_data_true": has_live_data is True,
+        "orders_approved_eq_0": orders_approved is not None and orders_approved == 0,
+        "risk_blocked_all_true": risk_blocked_all is True,
+        "runtime_mode_verified": trading_mode == "mock",
+        "kill_switch_precheck_inactive": kill_switch_active is False,
     }
 
     failures = [name for name, passed in checks.items() if not passed]
     verdict = "PASS" if not failures else "FAIL"
 
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "verdict": verdict,
         "checks": checks,
         "failures": failures,
         "metrics": {
             "shadow_blocked_total": shadow_blocked_total,
             "orders_filled": orders_filled,
+            "orders_approved": orders_approved,
+            "has_live_data": has_live_data,
+            "risk_blocked_all": risk_blocked_all,
+        },
+        "runtime": {
+            "trading_mode": trading_mode,
+            "kill_switch_active": kill_switch_active,
         },
         "probe": {
             "probe_order_id": shadow_probe.get("probe_order_id"),
@@ -87,6 +114,8 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
         "artifacts": {
             "evidence_index": evidence_index_path.name,
             "shadow_block_probe": shadow_probe_path.name,
+            "execution_status": "endpoints/execution_status.json",
+            "risk_status": "endpoints/risk_status.json",
         },
     }
 
