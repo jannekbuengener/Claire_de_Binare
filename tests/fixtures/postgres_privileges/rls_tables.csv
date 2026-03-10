@@ -1,0 +1,16 @@
+table_schema,table_name,row_security_enabled,force_row_security_enabled
+public,audit_trail,f,f
+public,blocked_decisions,f,f
+public,core_secrets_metadata,f,f
+public,correlation_ledger,f,f
+public,deployment_approvals_mirror,f,f
+public,governance_events,f,f
+public,orders,f,f
+public,portfolio_snapshots,f,f
+public,positions,f,f
+public,risk_events,f,f
+public,schema_version,f,f
+public,security_policy_refs,f,f
+public,signals,f,f
+public,system_config,f,f
+public,trades,f,f

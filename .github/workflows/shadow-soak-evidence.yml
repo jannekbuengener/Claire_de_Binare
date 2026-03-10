@@ -2,13 +2,24 @@ name: Shadow + Soak Evidence
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Execution mode"
+        required: true
+        default: full
+        type: choice
+        options:
+          - full
+          - lean
   schedule:
     - cron: "0 2 * * *"
+    - cron: "30 2 * * 0"
 
 env:
   SECRETS_PATH: ${{ github.workspace }}/.ci-secrets
   STACK_NAME: shadow-soak-${{ github.run_id }}
-  SOAK_MINUTES: 20
+  FULL_SOAK_MINUTES: 30
+  LEAN_SOAK_MINUTES: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,6 +33,50 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: Resolve soak mode
+        id: soak-mode
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode="full"
+
+          if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
+            if [[ "${{ github.event.schedule || '' }}" == "0 2 * * *" ]]; then
+              mode="lean"
+            else
+              mode="full"
+            fi
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            mode="${{ github.event.inputs.mode || 'full' }}"
+          fi
+
+          case "$mode" in
+            lean)
+              soak_minutes="${LEAN_SOAK_MINUTES}"
+              build_stack="false"
+              ;;
+            full)
+              soak_minutes="${FULL_SOAK_MINUTES}"
+              build_stack="true"
+              ;;
+            *)
+              echo "::error::Unsupported soak mode: ${mode}"
+              exit 1
+              ;;
+          esac
+
+          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+          echo "soak_minutes=${soak_minutes}" >> "$GITHUB_OUTPUT"
+          echo "build_stack=${build_stack}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Shadow+Soak Mode"
+            echo ""
+            echo "- mode: ${mode}"
+            echo "- soak_minutes: ${soak_minutes}"
+            echo "- build_stack: ${build_stack}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -177,10 +232,15 @@ jobs:
               user: "0"
             cdb_risk:
               user: "0"
+              environment:
+                TRADING_MODE: shadow
+                TRACE_CONTRACT_V1_ENABLED: "1"
             cdb_execution:
               user: "0"
               environment:
                 MOCK_TRADING: "true"
+                TRADING_MODE: shadow
+                TRACE_CONTRACT_V1_ENABLED: "1"
                 USE_REAL_BALANCE: "false"
             cdb_db_writer:
               user: "0"
@@ -197,7 +257,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" up -d --build
+          build_args=()
+          if [[ "${{ steps.soak-mode.outputs.build_stack }}" == "true" ]]; then
+            build_args+=(--build)
+          fi
+          docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" up -d "${build_args[@]}"
 
       - name: Wait for services healthy
         shell: bash
@@ -242,9 +306,178 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          soak_seconds=$((SOAK_MINUTES * 60))
-          echo "Soaking for ${SOAK_MINUTES} minutes..."
+          soak_minutes="${{ steps.soak-mode.outputs.soak_minutes }}"
+          soak_seconds=$((soak_minutes * 60))
+          echo "Soaking for ${soak_minutes} minutes..."
           sleep "$soak_seconds"
+
+      - name: Capture runtime-mode proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/endpoints
+          # Execution service: mode must be "mock" for shadow soak
+          exec_status_rc=0
+          curl --connect-timeout 5 --max-time 15 -fsS http://127.0.0.1:8003/status \
+            -o evidence/endpoints/execution_status.json || exec_status_rc=$?
+          if [ "$exec_status_rc" -ne 0 ]; then
+            echo "EVIDENCE-FETCH-FAILED: execution_status (http://127.0.0.1:8003/status) curl_exit=${exec_status_rc}" \
+              > evidence/endpoints/execution_status.json
+            echo "::warning::execution_status fetch failed (rc=$exec_status_rc)"
+          fi
+          # Risk service: status including circuit_breaker
+          risk_status_rc=0
+          curl --connect-timeout 5 --max-time 15 -fsS http://127.0.0.1:8002/status \
+            -o evidence/endpoints/risk_status.json || risk_status_rc=$?
+          if [ "$risk_status_rc" -ne 0 ]; then
+            echo "EVIDENCE-FETCH-FAILED: risk_status (http://127.0.0.1:8002/status) curl_exit=${risk_status_rc}" \
+              > evidence/endpoints/risk_status.json
+            echo "::warning::risk_status fetch failed (rc=$risk_status_rc)"
+          fi
+
+      - name: Run deterministic shadow block probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          probe_order_id="ci-shadow-probe-${GITHUB_RUN_ID}"
+
+          # Read REDIS_PASSWORD from container secret (docker exec bypasses entrypoint)
+          redis_pw=$(docker exec cdb_execution cat /run/secrets/redis_password 2>/dev/null || echo "")
+
+          probe_rc=0
+          docker exec -i \
+            -e PROBE_ORDER_ID="$probe_order_id" \
+            -e REDIS_PASSWORD="$redis_pw" \
+            cdb_execution python -u - <<'PY' > evidence/shadow_block_probe.json || probe_rc=$?
+          import json
+          import os
+          import sys
+          import time
+
+          import redis
+
+          order_id = os.environ["PROBE_ORDER_ID"]
+          print(f"[probe] order_id={order_id}", file=sys.stderr)
+
+          client = redis.Redis(
+              host=os.getenv("REDIS_HOST", "cdb_redis"),
+              port=int(os.getenv("REDIS_PORT", "6379")),
+              password=os.getenv("REDIS_PASSWORD") or None,
+              decode_responses=True,
+          )
+          client.ping()
+          print("[probe] redis connected", file=sys.stderr)
+
+          pubsub = client.pubsub(ignore_subscribe_messages=True)
+          pubsub.subscribe("order_results")
+          time.sleep(0.5)
+
+          payload = {
+              "type": "order",
+              "symbol": "BTCUSDT",
+              "side": "BUY",
+              "quantity": 0.001,
+              "strategy_id": "shadow-probe",
+              "bot_id": "shadow-probe",
+              "client_id": order_id,
+              "timestamp": int(time.time()),
+              "signal_id": f"sig-{order_id}",
+              "decision_id": f"dec-{order_id}",
+              "order_id": order_id,
+              "trace_id": f"trace-{order_id}",
+              "run_mode": "shadow",
+              "decision_contract_v1": {
+                  "input": {
+                      "run_mode": "shadow",
+                      "order": {
+                          "symbol": "BTCUSDT",
+                          "side": "BUY",
+                          "quantity": 0.001,
+                      },
+                  },
+                  "output": {},
+              },
+          }
+
+          publish_subscribers = client.publish(
+              "orders", json.dumps(payload, ensure_ascii=False)
+          )
+          print(f"[probe] published to 'orders', subscribers={publish_subscribers}", file=sys.stderr)
+          deadline = time.time() + 20
+          pubsub_result = None
+
+          while time.time() < deadline:
+              message = pubsub.get_message(timeout=1.0)
+              if not message or message.get("type") != "message":
+                  continue
+              try:
+                  data = json.loads(message["data"])
+              except json.JSONDecodeError:
+                  continue
+              if data.get("order_id") == order_id:
+                  pubsub_result = data
+                  break
+
+          pubsub.close()
+
+          stream_entry_id = None
+          stream_result = None
+          try:
+              for entry_id, values in client.xrevrange("stream.order_results", count=50):
+                  if values.get("order_id") == order_id:
+                      stream_entry_id = entry_id
+                      stream_result = values
+                      break
+          except Exception as exc:
+              stream_result = {"stream_lookup_error": str(exc)}
+
+          order_result = pubsub_result or stream_result
+          order_result_source = (
+              "pubsub" if pubsub_result else "stream" if stream_entry_id else None
+          )
+          print(f"[probe] result_source={order_result_source}", file=sys.stderr)
+
+          print(
+              json.dumps(
+                  {
+                      "schema_version": "1.0",
+                      "probe_order_id": order_id,
+                      "publish_subscribers": publish_subscribers,
+                      "probe_payload": payload,
+                      "order_result_found": order_result_source is not None,
+                      "order_result_source": order_result_source,
+                      "order_result": order_result,
+                      "stream_order_result_found": stream_entry_id is not None,
+                      "stream_order_result_id": stream_entry_id,
+                      "stream_order_result": stream_result,
+                      "error": None if order_result_source is not None else "shadow_probe_result_missing",
+                  },
+                  ensure_ascii=False,
+              )
+          )
+          PY
+
+          echo "[probe] docker exec exit code: $probe_rc"
+
+          if [ "$probe_rc" -ne 0 ] || [ ! -s evidence/shadow_block_probe.json ]; then
+            echo "::warning::Shadow probe docker exec failed (rc=$probe_rc), writing fallback stub"
+            cat > evidence/shadow_block_probe.json <<EOF
+          {
+            "schema_version": "1.0",
+            "probe_order_id": "${probe_order_id}",
+            "order_result_found": false,
+            "order_result_source": null,
+            "stream_order_result_found": false,
+            "stream_order_result_id": null,
+            "stream_order_result": null,
+            "error": "shadow_probe_exec_failed"
+          }
+          EOF
+          fi
+
+          echo "--- shadow_block_probe.json ---"
+          cat evidence/shadow_block_probe.json
 
       - name: Verify endpoints
         shell: bash
@@ -314,6 +547,24 @@ jobs:
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" ps > evidence/compose_ps.txt || true
           docker inspect cdb_redis cdb_postgres cdb_prometheus cdb_grafana cdb_postgres_exporter cdb_redis_exporter cdb_ws cdb_signal cdb_candles cdb_allocation cdb_regime cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_reports > evidence/container_inspect.json || true
           docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f "$OVERRIDE_FILE" logs --tail=200 > evidence/logs_tail.txt || true
+          # LR-031: Post-soak endpoint snapshots (metrics + status, evaluated run state).
+          # Failure to fetch is itself evidence — marker files include endpoint
+          # name and curl exit code so missing data is obvious in the artifact.
+          mkdir -p evidence/endpoints
+          snapshot_endpoint() {
+            local name="$1" url="$2" ext="$3"
+            local out="evidence/endpoints/${name}.${ext}"
+            local rc=0
+            curl --connect-timeout 5 --max-time 15 -fsS "$url" -o "$out" || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              echo "EVIDENCE-FETCH-FAILED: ${name} (${url}) curl_exit=${rc}" > "$out"
+              echo "::warning::Post-soak snapshot failed: ${name} (${url}) curl_exit=${rc}"
+            fi
+          }
+          snapshot_endpoint execution_metrics http://127.0.0.1:8003/metrics txt
+          snapshot_endpoint risk_metrics     http://127.0.0.1:8002/metrics txt
+          # execution_status + risk_status: captured earlier in "Capture runtime-mode proof"
+          # step (pre-probe steady-state). Not re-fetched here to avoid competing sources.
           grep -i "error" evidence/logs_tail.txt > evidence/logs_grep.txt || true
           run_url="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           end_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -346,6 +597,17 @@ jobs:
             fi
             optional_rows="${optional_rows}| ${svc} | ${status} |"$'\n'
           done
+          # Validate runtime-mode from pre-probe execution_status capture
+          if [ -f evidence/endpoints/execution_status.json ]; then
+            exec_mode=$(python3 -c "import json,pathlib; d=json.loads(pathlib.Path('evidence/endpoints/execution_status.json').read_text()); print(d.get('mode','UNKNOWN'))" 2>/dev/null || echo "PARSE_ERROR")
+            if [ "$exec_mode" != "mock" ]; then
+              echo "::error::execution_status.mode is '$exec_mode', expected 'mock'"
+              gate_pass=0
+            fi
+          else
+            echo "::error::execution_status.json missing before run_summary generation"
+            gate_pass=0
+          fi
           gate_status="FAIL"
           if [ "$gate_pass" -eq 1 ]; then
             gate_status="PASS"
@@ -358,7 +620,8 @@ jobs:
             "commit": "${GITHUB_SHA}",
             "status": "${JOB_STATUS}",
             "gate_status": "${gate_status}",
-            "soak_minutes": ${SOAK_MINUTES},
+            "mode": "${{ steps.soak-mode.outputs.mode }}",
+            "soak_minutes": ${{ steps.soak-mode.outputs.soak_minutes }},
             "ended_at": "${end_time}"
           }
           EOF
@@ -382,7 +645,8 @@ jobs:
           - Ref: ${GITHUB_REF}
           - Commit: ${GITHUB_SHA}
           - Status: ${JOB_STATUS}
-          - Soak minutes: ${SOAK_MINUTES}
+          - Mode: ${{ steps.soak-mode.outputs.mode }}
+          - Soak minutes: ${{ steps.soak-mode.outputs.soak_minutes }}
           - Ended: ${end_time}
 
           Artifacts:
@@ -394,11 +658,41 @@ jobs:
           - run_summary.json
           EOF
 
+      - name: Generate evidence index
+        if: always()
+        shell: bash
+        run: |
+          python infrastructure/scripts/generate_evidence_index.py evidence/
+          echo "--- evidence_index.json ---"
+          cat evidence/evidence_index.json
+
+      - name: Evaluate shadow soak gate
+        if: always()
+        shell: bash
+        run: |
+          python infrastructure/scripts/soak_gate_eval.py evidence/
+          echo "--- soak_gate_eval.json ---"
+          cat evidence/soak_gate_eval.json
+
+      - name: Build canonical evidence package
+        if: always()
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python infrastructure/scripts/build_shadow_evidence_package.py evidence/
+          package_id=$(python -c "import json, pathlib; print(json.loads(pathlib.Path('evidence/package_manifest.json').read_text(encoding='utf-8'))['package_id'])")
+          echo "package_id=${package_id}" >> "$GITHUB_OUTPUT"
+          echo "--- package_manifest.json ---"
+          cat evidence/package_manifest.json
+          echo "--- package_validation.json ---"
+          cat evidence/package_validation.json
+
       - name: Upload evidence artifact
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: shadow-soak-evidence
+          name: shadow-soak-evidence-${{ github.run_id }}
           path: evidence/
           retention-days: 7
           if-no-files-found: warn

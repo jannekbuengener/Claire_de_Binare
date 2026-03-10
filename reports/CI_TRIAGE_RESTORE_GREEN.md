@@ -73,7 +73,7 @@ Last 20 conclusions:
 Current outlier matching the same PR symptom:
 - `22192989851` (`pull_request`, branch `copilot/sub-pr-865`) -> `action_required`, no jobs.
 
-### 2.4 Historical sentinel: `required-checks-enforcer (Sentinel)` (`.github/workflows/required-checks-enforcer.yml`)
+### 2.4 Historical sentinel: `required-checks-audit (Sentinel)` (`.github/workflows/required-checks-audit.yml`)
 
 Last 20 conclusions:
 - `failure: 20` (historical window, mostly 2026-02-16)
@@ -89,7 +89,7 @@ Representative failed run:
 | `ci` required workflow | `22192989773` | `conclusion=action_required`, `jobs=[]` | Permission/approval gate | PRs opened by `Copilot` branch can enter manual-approval state before jobs are scheduled; required context is not emitted until approval/run. |
 | `E2E Happy Path` | `22192989851` | `conclusion=action_required`, `jobs=[]` | Permission/approval gate | Same approval gating condition as above on the same PR branch; not a test/runtime flake. |
 | `CI/CD Pipeline / Container Scan (Trivy)` | `22191851100` | Trivy reports `CVE-2026-26007` for `cryptography 44.0.1`, then `Process completed with exit code 1` | Deterministic dependency/vuln gate | `.github/workflows/ci.yaml` sets Trivy `exit-code: "1"` (`trivy-scan`), so known HIGH findings produce repeatable hard failures on `main`. |
-| `required-checks-enforcer (Sentinel)` (historical) | `22075752655` | "run likely failed because of a workflow file issue" | Deterministic historical workflow issue | Older revisions in that period were unstable and fail-closed against broader check sets; current file is now report-only and aligned to the single required context. |
+| `required-checks-audit (Sentinel)` (historical) | `22075752655` | "run likely failed because of a workflow file issue" | Deterministic historical workflow issue | Older revisions in that period were unstable and fail-closed against broader check sets; current file is now report-only and aligned to the single required context. |
 
 Historical but now resolved (kept for completeness):
 - `Sync Repository Labels` had deterministic failures:
@@ -103,7 +103,7 @@ Historical but now resolved (kept for completeness):
 |---|---|---|---|
 | `CI/CD Pipeline` Trivy red-on-main | Convert the `trivy-scan` inside `ci.yaml` to reporting-only in this pipeline (while keeping security signal visible in summary), and keep dedicated `trivy.yml` as the security evidence workflow. | `.github/workflows/ci.yaml` | Removes repeated hard-fail from a known dependency CVE backlog without touching service/runtime deps or Docker. |
 | `action_required` on Copilot PRs | Treat as governance/permissions issue: require maintainer approval of queued runs before expecting required contexts. Optional runbook documentation to make this operationally deterministic. | Optional docs-only: `docs/**` (new runbook) | Root cause is workflow approval policy, not flaky test execution. |
-| Sentinel historical instability | Keep sentinel non-blocking/reporting semantics; optionally harden output messaging for `action_required`/missing context diagnostics. | Optional: `.github/workflows/required-checks-enforcer.yml` | Prevents false-red governance noise while preserving observability. |
+| Sentinel historical instability | Keep sentinel non-blocking/reporting semantics; optionally harden output messaging for `action_required`/missing context diagnostics. | Optional: `.github/workflows/required-checks-audit.yml` | Prevents false-red governance noise while preserving observability. |
 
 ## 5) Draft PR-sized fix plan (no execution yet)
 

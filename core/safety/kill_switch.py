@@ -266,9 +266,7 @@ class KillSwitch:
             False
         """
         if not operator or not justification:
-            logger.error(
-                "Kill-switch deactivation requires operator and justification"
-            )
+            logger.error("Kill-switch deactivation requires operator and justification")
             return False
 
         message = f"Deactivated by {operator}: {justification}"
@@ -289,8 +287,36 @@ class KillSwitch:
         return True
 
 
+KILL_SWITCH_STATE_FILE_ENV = "CDB_KILL_SWITCH_STATE_FILE"
+
 # Global singleton for easy access
 _global_kill_switch: Optional[KillSwitch] = None
+
+
+def resolve_kill_switch_state_file(state_file: Optional[str] = None) -> Path:
+    """Resolve kill-switch state file path with optional env override."""
+    if state_file:
+        return Path(state_file)
+    env_state_file = os.getenv(KILL_SWITCH_STATE_FILE_ENV, "").strip()
+    if env_state_file:
+        return Path(env_state_file)
+    return Path.cwd() / ".cdb_kill_switch.state"
+
+
+def get_kill_switch_details(
+    state_file: Optional[str] = None, *, create_if_missing: bool = True
+) -> Tuple[bool, Optional[str], str, Optional[str]]:
+    """Read kill-switch state details without exposing internal state format.
+
+    Returns:
+        (is_active, reason, message, activated_at)
+    """
+    resolved_state_file = resolve_kill_switch_state_file(state_file)
+    if not create_if_missing and not resolved_state_file.exists():
+        return False, None, "State file missing", None
+    kill_switch = KillSwitch(str(resolved_state_file))
+    state, reason, message, activated_at = kill_switch.get_state()
+    return state == KillSwitchState.ACTIVE, reason, message, activated_at
 
 
 def get_kill_switch_state(state_file: Optional[str] = None) -> bool:

@@ -4,6 +4,14 @@
 
 -- Truncate tables in reverse dependency order to avoid FK violations
 TRUNCATE TABLE security_policy_refs RESTART IDENTITY CASCADE;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables WHERE table_name = 'system_config'
+    ) THEN
+        EXECUTE 'TRUNCATE TABLE system_config RESTART IDENTITY CASCADE';
+    END IF;
+END $$;
 TRUNCATE TABLE deployment_approvals_mirror RESTART IDENTITY CASCADE;
 TRUNCATE TABLE governance_events RESTART IDENTITY CASCADE;
 TRUNCATE TABLE audit_trail RESTART IDENTITY CASCADE;

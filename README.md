@@ -193,6 +193,21 @@ docker compose -f infrastructure/compose/dev.yml ps
 # http://localhost:3000 (admin / see GRAFANA_PASSWORD in secrets)
 ```
 
+## Navigation (MCP)
+
+Für schnelle Orientierung im Working Repo: [`mcp_navpack_working_repo/`][navpack]
+
+- Einstieg/Lesereihenfolge: [`ENTRYPOINTS.yaml`](mcp_navpack_working_repo/ENTRYPOINTS.yaml)
+- Such-/Read-Presets: [`QUERIES.snippets.yaml`](mcp_navpack_working_repo/QUERIES.snippets.yaml)
+- Repo-Map: [`REPO.map.json`](mcp_navpack_working_repo/REPO.map.json)
+- Cheat-Sheet: [`CHEATSHEET.md`](mcp_navpack_working_repo/CHEATSHEET.md)
+
+Docs Hub ist ein separates Repo (nicht hier enthalten): [`DOCS_HUB.pointer.md`][docs_hub_pointer]
+
+[navpack]: mcp_navpack_working_repo/
+[docs_hub_pointer]: mcp_navpack_working_repo/DOCS_HUB.pointer.md
+
+
 ### Troubleshooting
 
 If you encounter issues:

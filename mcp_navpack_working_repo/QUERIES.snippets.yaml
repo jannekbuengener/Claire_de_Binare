@@ -1,0 +1,73 @@
+schema_version: "1.0"
+list_dir:
+  - path: ".github/workflows"
+  - path: "docs"
+  - path: "infrastructure/compose"
+  - path: "infrastructure/scripts"
+  - path: "services"
+  - path: "core/config"
+  - path: "tests"
+  - path: "tests/smoke"
+  - path: "tools"
+  - path: "cdb_agent_sdk"
+read_file:
+  - path: "README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "docs/index.md"
+    start_line: 1
+    max_lines: 160
+  - path: "DEVELOPER_ONBOARDING.md"
+    start_line: 1
+    max_lines: 160
+  - path: "Makefile"
+    start_line: 1
+    max_lines: 200
+  - path: ".github/workflows/ci.yml"
+    start_line: 1
+    max_lines: 200
+  - path: "infrastructure/compose/README.md"
+    start_line: 1
+    max_lines: 200
+  - path: ".mcp.json"
+    start_line: 1
+    max_lines: 160
+  - path: "tools/validate_mcp_config.py"
+    start_line: 1
+    max_lines: 220
+  - path: "tests/smoke/test_mcp_runtime.py"
+    start_line: 1
+    max_lines: 220
+  - path: "core/config/trading_mode.py"
+    start_line: 1
+    max_lines: 240
+search_queries:
+  - "TRADING_MODE"
+  - "LIVE_TRADING_CONFIRMED"
+  - "mcp"
+  - "mcpServers"
+  - "validate_mcp_config"
+  - "test_mcp_runtime"
+  - "docker compose"
+  - "stack_up"
+  - "stack_verify"
+  - "policy-gate"
+  - "required checks"
+  - "surrealdb"
+  - "replay"
+  - "secrets"
+  - "compose"
+  - "runbook"
+  - "live-readiness"
+safe_shell:
+  - "Get-ChildItem .github/workflows"
+  - "Get-ChildItem docs"
+  - "Get-ChildItem infrastructure/compose"
+  - "Get-ChildItem services"
+  - "Get-ChildItem tests/smoke"
+  - "Get-ChildItem tools"
+  - 'rg -n "TRADING_MODE|LIVE_TRADING_CONFIRMED" core docs'
+  - 'rg -n "mcpServers|MCP_CONFIG_PATHS|validate_mcp" .'
+  - 'rg -n "docker compose|stack_up|stack_verify" infrastructure tools scripts'
+  - "python tools/validate_mcp_config.py tests/fixtures/mcp_smoke_config.json"
+  - "pytest -q tests/smoke/test_mcp_runtime.py::test_mcp_time_server_runtime"

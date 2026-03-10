@@ -3,12 +3,32 @@ Data Models for Execution Service
 Claire de Binare Trading Bot
 """
 
-from typing import Literal, Optional
+import json
+from typing import Any, Literal, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
 from core.utils.clock import utcnow
+
+
+def _parse_json_field(raw: Any) -> Optional[dict]:
+    """Parse JSON string from Redis back to dict.
+
+    sanitize_payload() converts dicts to JSON strings for Redis compatibility.
+    This reverses that serialization.
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
+        except (json.JSONDecodeError, TypeError):
+            return None
+    return None
 
 
 class OrderSide(str, Enum):
@@ -55,6 +75,10 @@ class Order:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    # Issue #748 Slice 2: Policy snapshot propagated from Risk Service
+    policy_snapshot: Optional[dict] = None
+    # LR-030: Shadow mode enforcement
+    run_mode: Optional[str] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -65,6 +89,20 @@ class Order:
         side = payload["side"].upper()
         if side not in ("BUY", "SELL"):
             raise ValueError(f"Unbekannte Order-Seite: {payload['side']}")
+
+        # LR-030: run_mode — top-level first, fallback to nested bundle.
+        # decision_contract_v1 may arrive as dict or JSON string from Redis.
+        _run_mode = payload.get("run_mode")
+        if not _run_mode:
+            _dc_raw = payload.get("decision_contract_v1")
+            if isinstance(_dc_raw, dict):
+                _dc = _dc_raw
+            elif isinstance(_dc_raw, str):
+                _dc = _parse_json_field(_dc_raw)
+            else:
+                _dc = None
+            if isinstance(_dc, dict):
+                _run_mode = _dc.get("input", {}).get("run_mode")
 
         return cls(
             symbol=payload["symbol"],
@@ -89,6 +127,9 @@ class Order:
             policy_hash=payload.get("policy_hash"),
             input_hash=payload.get("input_hash"),
             output_hash=payload.get("output_hash"),
+            # Issue #748 Slice 2: policy_snapshot (JSON string from Redis → dict)
+            policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
+            run_mode=_run_mode,
         )
 
     def to_dict(self) -> dict:
@@ -137,6 +178,9 @@ class Order:
             payload["input_hash"] = self.input_hash
         if self.output_hash is not None:
             payload["output_hash"] = self.output_hash
+        # Issue #748 Slice 2: only emit when not None
+        if self.policy_snapshot is not None:
+            payload["policy_snapshot"] = self.policy_snapshot
         return payload
 
 

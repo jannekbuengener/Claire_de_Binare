@@ -2,19 +2,101 @@ name: Sync Stage Labels From Milestone
 on:
   issues:
     types: [milestoned, demilestoned, reopened]
-  pull_request:
-    types: [milestoned, demilestoned, reopened]
 
 jobs:
   sync-stage-labels:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
     steps:
+      - name: Resolve CDB auth token (APP preferred, PAT fallback)
+        id: resolve-auth
+        shell: bash
+        env:
+          LEGACY_PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          CDB_GH_APP_ID: ${{ secrets.CDB_GH_APP_ID }}
+          CDB_GH_APP_INSTALLATION_ID: ${{ secrets.CDB_GH_APP_INSTALLATION_ID }}
+          CDB_GH_APP_PRIVATE_KEY: ${{ secrets.CDB_GH_APP_PRIVATE_KEY }}
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          b64url() {
+            openssl base64 -A | tr '+/' '-_' | tr -d '='
+          }
+
+          has_app_id="false"
+          has_app_key="false"
+          [[ -n "${CDB_GH_APP_ID:-}" ]] && has_app_id="true"
+          [[ -n "${CDB_GH_APP_PRIVATE_KEY:-}" ]] && has_app_key="true"
+
+          if [[ "$has_app_id" != "$has_app_key" ]]; then
+            echo "Incomplete GitHub App auth config. Set both CDB_GH_APP_ID and CDB_GH_APP_PRIVATE_KEY, or unset both to use ADD_TO_PROJECT_PAT." >&2
+            exit 1
+          fi
+
+          if [[ "$has_app_id" == "true" ]]; then
+            now="$(date +%s)"
+            iat="$((now - 60))"
+            exp="$((now + 540))"
+
+            header='{"alg":"RS256","typ":"JWT"}'
+            payload="$(jq -nc --arg iss "$CDB_GH_APP_ID" --argjson iat "$iat" --argjson exp "$exp" '{iss:$iss,iat:$iat,exp:$exp}')"
+            signing_input="$(printf '%s' "$header" | b64url).$(printf '%s' "$payload" | b64url)"
+
+            key_file="$(mktemp)"
+            trap 'rm -f "$key_file"' EXIT
+            printf '%s' "$CDB_GH_APP_PRIVATE_KEY" > "$key_file"
+
+            signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign "$key_file" -binary | b64url)"
+            app_jwt="${signing_input}.${signature}"
+
+            installation_id="${CDB_GH_APP_INSTALLATION_ID:-}"
+            if [[ -z "$installation_id" ]]; then
+              install_json="$(curl -fsSL \
+                -H "Authorization: Bearer ${app_jwt}" \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "https://api.github.com/repos/${REPO_FULL}/installation")"
+              installation_id="$(jq -r '.id // empty' <<<"$install_json")"
+            fi
+
+            if [[ -z "$installation_id" ]]; then
+              echo "GitHub App mode selected but installation id could not be resolved. Set CDB_GH_APP_INSTALLATION_ID." >&2
+              exit 1
+            fi
+
+            token_json="$(curl -fsSL -X POST \
+              -H "Authorization: Bearer ${app_jwt}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/app/installations/${installation_id}/access_tokens")"
+            app_token="$(jq -r '.token // empty' <<<"$token_json")"
+
+            if [[ -z "$app_token" ]]; then
+              echo "GitHub App mode selected but access token minting failed." >&2
+              exit 1
+            fi
+
+            echo "::add-mask::${app_token}"
+            echo "cdb_auth_token=${app_token}" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=APP" >> "$GITHUB_OUTPUT"
+            echo "Auth mode selected: APP"
+          elif [[ -n "${LEGACY_PAT:-}" ]]; then
+            echo "::add-mask::${LEGACY_PAT}"
+            echo "cdb_auth_token=${LEGACY_PAT}" >> "$GITHUB_OUTPUT"
+            echo "auth_mode=PAT" >> "$GITHUB_OUTPUT"
+            echo "Auth mode selected: PAT"
+          else
+            echo "No auth token configured. Set CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID) or ADD_TO_PROJECT_PAT." >&2
+            exit 1
+          fi
+
       - name: Sync mutually-exclusive stage labels
         shell: bash
+        env:
+          CDB_AUTH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
+          GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
         run: |
           set -euo pipefail
 

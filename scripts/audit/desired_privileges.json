@@ -1,0 +1,182 @@
+{
+  "schema": "governance.postgres_least_privilege_desired.v1",
+  "baseline_name": "issue-741-phase-1",
+  "monitored_grantees": [
+    "cdb_reader",
+    "cdb_writer",
+    "claire_user"
+  ],
+  "required_roles": [
+    {
+      "rolname": "cdb_admin",
+      "rolcanlogin": false,
+      "rolinherit": true,
+      "rolsuper": false
+    },
+    {
+      "rolname": "cdb_reader",
+      "rolcanlogin": false,
+      "rolinherit": true,
+      "rolsuper": false
+    },
+    {
+      "rolname": "cdb_writer",
+      "rolcanlogin": false,
+      "rolinherit": true,
+      "rolsuper": false
+    },
+    {
+      "rolname": "claire_user",
+      "rolcanlogin": true,
+      "rolinherit": true,
+      "rolsuper": false
+    }
+  ],
+  "required_role_memberships": [
+    {
+      "role_name": "cdb_writer",
+      "member_name": "claire_user"
+    }
+  ],
+  "expected_table_privileges": {
+    "cdb_reader": {
+      "SELECT": [
+        "signals",
+        "orders",
+        "trades",
+        "positions",
+        "portfolio_snapshots",
+        "risk_events",
+        "correlation_ledger",
+        "blocked_decisions",
+        "core_secrets_metadata",
+        "audit_trail",
+        "governance_events",
+        "deployment_approvals_mirror",
+        "system_config",
+        "security_policy_refs",
+        "schema_version"
+      ]
+    },
+    "cdb_writer": {
+      "SELECT": [
+        "signals",
+        "orders",
+        "trades",
+        "positions",
+        "portfolio_snapshots",
+        "risk_events",
+        "correlation_ledger",
+        "blocked_decisions",
+        "schema_version"
+      ],
+      "INSERT": [
+        "signals",
+        "orders",
+        "trades",
+        "positions",
+        "portfolio_snapshots",
+        "risk_events",
+        "correlation_ledger",
+        "blocked_decisions"
+      ],
+      "UPDATE": [
+        "positions"
+      ]
+    },
+    "claire_user": {}
+  },
+  "expected_rls_tables": [
+    {
+      "table_schema": "public",
+      "table_name": "audit_trail",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "blocked_decisions",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "core_secrets_metadata",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "correlation_ledger",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "deployment_approvals_mirror",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "governance_events",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "orders",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "portfolio_snapshots",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "positions",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "risk_events",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "schema_version",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "security_policy_refs",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "signals",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "system_config",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    },
+    {
+      "table_schema": "public",
+      "table_name": "trades",
+      "row_security_enabled": false,
+      "force_row_security_enabled": false
+    }
+  ],
+  "expected_policies": []
+}

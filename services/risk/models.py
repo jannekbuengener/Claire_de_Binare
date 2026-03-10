@@ -130,9 +130,13 @@ class Order:
     policy_hash: Optional[str] = None
     input_hash: Optional[str] = None
     output_hash: Optional[str] = None
+    # Issue #748 Slice 2: Policy snapshot for envelope propagation
+    policy_snapshot: Optional[dict] = None
+    # LR-762: Deterministic Decision Contract bundle (input+output+hashes)
+    decision_contract_v1: Optional[dict] = None
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             "type": self.type,
             "symbol": self.symbol,
             "side": self.side,
@@ -155,6 +159,18 @@ class Order:
             "input_hash": self.input_hash,
             "output_hash": self.output_hash,
         }
+        # Issue #748: only emit when toggle ON (not None)
+        if self.policy_snapshot is not None:
+            result["policy_snapshot"] = self.policy_snapshot
+        if self.decision_contract_v1 is not None:
+            result["decision_contract_v1"] = self.decision_contract_v1
+            # LR-030: Propagate run_mode as top-level field for Execution Service shadow gate
+            _bundle_run_mode = self.decision_contract_v1.get("input", {}).get(
+                "run_mode"
+            )
+            if _bundle_run_mode:
+                result["run_mode"] = _bundle_run_mode
+        return result
 
 
 @dataclass

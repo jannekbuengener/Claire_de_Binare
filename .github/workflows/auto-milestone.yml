@@ -1,0 +1,329 @@
+name: Auto Milestone
+
+on:
+  issues:
+    types: [opened, reopened]
+  repository_dispatch:
+    types: [auto_milestone_issue_label]
+  workflow_dispatch:
+
+concurrency:
+  group: >-
+    auto-milestone-${{
+      github.event.issue.number ||
+      github.event.client_payload.issue_number ||
+      'global'
+    }}-${{
+      github.event_name == 'repository_dispatch' && 'milestone' ||
+      'base'
+    }}
+  cancel-in-progress: true
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  DEFAULT_MILESTONE_TITLE: INBOX
+
+jobs:
+  assign-single:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign milestone to current item
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
+            const { owner, repo } = context.repo;
+            const action = String(
+              context.payload.client_payload?.action ||
+              context.payload.action ||
+              ""
+            );
+            const isMilestoneLabelDispatch = context.eventName === "repository_dispatch";
+
+            function logPermissionWarning(error, action) {
+              const status = error?.status ?? error?.response?.status;
+              const accepted = error?.response?.headers?.["x-accepted-github-permissions"];
+              const message = error?.response?.data?.message || error?.message || "unknown error";
+
+              core.warning(
+                `${action} skipped: ${message}${status ? ` (status ${status})` : ""}${accepted ? ` [accepted permissions: ${accepted}]` : ""}`
+              );
+            }
+
+            function milestoneLabelTitles(labels) {
+              const titles = (labels || [])
+                .map(label => typeof label === "string" ? label : label.name)
+                .filter(Boolean)
+                .map(name => name.trim())
+                .filter(name => /^milestone:\s*.+/i.test(name))
+                .map(name => name.replace(/^milestone:\s*/i, "").trim())
+                .filter(Boolean);
+
+              return [...new Set(titles)].sort((left, right) =>
+                left.localeCompare(right, "en", { sensitivity: "base" })
+              );
+            }
+
+            async function listOpenMilestones() {
+              const milestones = await github.paginate(github.rest.issues.listMilestones, {
+                owner,
+                repo,
+                state: "open",
+                per_page: 100,
+              });
+
+              return new Map(
+                milestones.map(milestone => [milestone.title.trim().toLowerCase(), milestone])
+              );
+            }
+
+            function describeSource(labelMilestones) {
+              if (labelMilestones.length > 0) {
+                return `label milestone:${labelMilestones[0]}`;
+              }
+
+              return `default milestone ${defaultMilestoneTitle}`;
+            }
+
+            const issueNumber = context.payload.issue?.number ??
+              Number(context.payload.client_payload?.issue_number || 0) ||
+              context.payload.pull_request?.number;
+            if (!issueNumber) {
+              core.warning("Could not determine the issue number for this event.");
+              return;
+            }
+
+            const eventLabelName = String(
+              context.payload.client_payload?.label ||
+              context.payload.label?.name ||
+              ""
+            ).trim();
+            core.info(
+              `Auto Milestone event: event=${context.eventName} action=${action || "<none>"} label=${eventLabelName || "<none>"} issueNumber=${issueNumber}`
+            );
+
+            if (isMilestoneLabelDispatch && !/^milestone:\s*.+/i.test(eventLabelName)) {
+              core.info("Repository dispatch without milestone label; skipping.");
+              return;
+            }
+
+            if (!isMilestoneLabelDispatch && !["opened", "reopened"].includes(action)) {
+              core.info(`Unsupported issue action "${action || "<none>"}"; skipping.`);
+              return;
+            }
+
+            let item;
+            try {
+              ({ data: item } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }));
+            } catch (error) {
+              logPermissionWarning(error, `Read for #${issueNumber}`);
+              return;
+            }
+
+            if (item.state !== "open") {
+              core.info(`#${issueNumber} is not open. Skipping.`);
+              return;
+            }
+
+            const labelMilestones = milestoneLabelTitles(item.labels);
+            if (labelMilestones.length > 1) {
+              core.warning(
+                `#${issueNumber} has multiple milestone:<...> labels (${labelMilestones.join(", ")}); ambiguous. Skipping.`
+              );
+              return;
+            }
+
+            if (isMilestoneLabelDispatch && labelMilestones.length === 0) {
+              core.info("No milestone label present after dispatch; skipping.");
+              return;
+            }
+
+            const milestonesByTitle = await listOpenMilestones();
+
+            let liveItem;
+            try {
+              ({ data: liveItem } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: issueNumber,
+              }));
+            } catch (error) {
+              logPermissionWarning(error, `Pre-update read for #${issueNumber}`);
+              return;
+            }
+
+            const currentMilestone = liveItem.milestone || null;
+            const currentTitle = currentMilestone ? currentMilestone.title.trim() : null;
+            const currentTitleLower = currentTitle ? currentTitle.toLowerCase() : null;
+            const inboxTitleLower = defaultMilestoneTitle.trim().toLowerCase();
+            const hasMilestoneLabel = labelMilestones.length === 1;
+
+            let desiredTitle;
+            if (isMilestoneLabelDispatch) {
+              desiredTitle = labelMilestones[0];
+            } else {
+              desiredTitle = defaultMilestoneTitle;
+            }
+
+            const target = milestonesByTitle.get(desiredTitle.trim().toLowerCase());
+            if (!target) {
+              core.warning(
+                `Could not resolve ${describeSource(labelMilestones)} for #${issueNumber}: open milestone "${desiredTitle}" does not exist. Leaving item unchanged.`
+              );
+              return;
+            }
+
+            const targetTitleLower = target.title.trim().toLowerCase();
+
+            if (currentTitleLower === targetTitleLower) {
+              core.info(`#${issueNumber} already has milestone "${target.title}".`);
+              return;
+            }
+
+            if (isMilestoneLabelDispatch && hasMilestoneLabel) {
+              if (currentTitleLower === inboxTitleLower) {
+                core.info(`Overriding INBOX -> ${target.title} due to milestone label.`);
+              }
+
+              if (currentMilestone && currentTitleLower !== inboxTitleLower) {
+                core.warning(
+                  `#${issueNumber} already has non-INBOX milestone "${currentMilestone.title}". Skipping overwrite from label milestone:${desiredTitle}.`
+                );
+                return;
+              }
+            } else if (!isMilestoneLabelDispatch && currentMilestone) {
+              core.info(
+                `#${issueNumber} received milestone "${currentMilestone.title}" before default assignment. Skipping overwrite.`
+              );
+              return;
+            }
+
+            try {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                milestone: target.number,
+              });
+            } catch (error) {
+              logPermissionWarning(error, `Milestone update for #${issueNumber}`);
+              return;
+            }
+
+            core.info(`Milestone set to "${target.title}" for #${issueNumber}.`);
+
+  backfill:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backfill open items without milestones
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const defaultMilestoneTitle = process.env.DEFAULT_MILESTONE_TITLE;
+            const { owner, repo } = context.repo;
+
+            function milestoneLabelTitles(labels) {
+              const titles = (labels || [])
+                .map(label => typeof label === "string" ? label : label.name)
+                .filter(Boolean)
+                .map(name => name.trim())
+                .filter(name => /^milestone:\s*.+/i.test(name))
+                .map(name => name.replace(/^milestone:\s*/i, "").trim())
+                .filter(Boolean);
+
+              return [...new Set(titles)].sort((left, right) =>
+                left.localeCompare(right, "en", { sensitivity: "base" })
+              );
+            }
+
+            const milestones = await github.paginate(github.rest.issues.listMilestones, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            const milestonesByTitle = new Map(
+              milestones.map(milestone => [milestone.title.trim().toLowerCase(), milestone])
+            );
+
+            function describeSource(labelMilestones) {
+              if (labelMilestones.length > 0) {
+                return `label milestone:${labelMilestones[0]}`;
+              }
+
+              return `default milestone ${defaultMilestoneTitle}`;
+            }
+
+            const openItems = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              per_page: 100,
+            });
+
+            let assigned = 0;
+            let warned = 0;
+            let skipped = 0;
+
+            for (const item of openItems) {
+              if (item.milestone) {
+                skipped += 1;
+                continue;
+              }
+
+              const labelMilestones = milestoneLabelTitles(item.labels);
+              if (labelMilestones.length > 1) {
+                core.warning(
+                  `#${item.number} has multiple milestone:<...> labels (${labelMilestones.join(", ")}); ambiguous. Skipping.`
+                );
+                warned += 1;
+                continue;
+              }
+
+              const desiredTitle = labelMilestones[0] || defaultMilestoneTitle;
+              const target = milestonesByTitle.get(desiredTitle.trim().toLowerCase());
+
+              if (!target) {
+                core.warning(
+                  `Could not resolve ${describeSource(labelMilestones)} for #${item.number}: open milestone "${desiredTitle}" does not exist. Leaving item unchanged.`
+                );
+                warned += 1;
+                continue;
+              }
+
+              const { data: liveItem } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number: item.number,
+              });
+
+              if (liveItem.milestone) {
+                core.info(
+                  `#${item.number} received milestone "${liveItem.milestone.title}" before update. Skipping overwrite.`
+                );
+                skipped += 1;
+                continue;
+              }
+
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: item.number,
+                milestone: target.number,
+              });
+
+              core.info(`Milestone set to "${target.title}" for #${item.number}.`);
+              assigned += 1;
+            }
+
+            core.info(`Backfill complete. Assigned: ${assigned}, warned: ${warned}, skipped: ${skipped}.`);

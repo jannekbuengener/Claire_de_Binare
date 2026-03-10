@@ -72,7 +72,7 @@ State: **NO DRIFT**
 - `noop`
 - `opencode`
 - `performance-check`
-- `required-checks-enforcer (Sentinel)`
+- `required-checks-audit (Sentinel)`
 - `review`
 - `shadow-soak-evidence`
 - `smart-insights`

@@ -15,3 +15,30 @@ Evidence plan:
 
 Current status:
 - Spec only (no implementation evidence yet). Date: 2026-02-24
+
+---
+
+## Implementation
+
+- PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/1005
+- CI/Test run: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/22531042412
+- Doc/ADR: `docs/surrealdb/ledger-importer.md`
+
+### What Changed
+
+- Added importer preflight checks for duplicate `event_id`, canonical hash mismatch, and signature-present fail-closed handling.
+- Added stable machine-readable error codes and structured audit logs with `import_correlation_id`.
+- Wrapped generated SurrealQL in a transaction so the import path remains all-or-nothing.
+
+### Error Codes
+
+- `LEDGER_IMPORT_DUPLICATE_EVENT_ID`
+- `LEDGER_IMPORT_HASH_MISMATCH`
+- `LEDGER_IMPORT_SIGNATURE_INVALID`
+- `LEDGER_IMPORT_SIGNATURE_UNSUPPORTED`
+
+### Failure Behavior
+
+- Any integrity conflict aborts the entire import before write.
+- Duplicate conflicts detected during the final `CREATE` request are still rejected and audit-logged.
+- Audit logs include reason plus sampled event identifiers without leaking secret material.

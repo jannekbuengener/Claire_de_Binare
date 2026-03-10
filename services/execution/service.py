@@ -9,10 +9,12 @@ import signal
 import sys
 import logging
 import logging.config
+import math
 import time
 from datetime import datetime
 from pathlib import Path
 import importlib.util
+
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
 except ModuleNotFoundError as e:
@@ -80,6 +82,8 @@ stats = {
     "orders_received": 0,
     "orders_filled": 0,
     "orders_rejected": 0,
+    "shadow_blocked": 0,  # LR-030: distinct evidence trail for shadow-mode blocks
+    "invalid_payloads": 0,
     "start_time": utcnow().isoformat(),
     "last_result": None,
 }
@@ -108,6 +112,70 @@ def get_stats_copy() -> dict:
     """Thread-safe stats read"""
     with _stats_lock:
         return stats.copy()
+
+
+def _mark_invalid_payload(reason: str, *, exc: Exception | None = None) -> None:
+    """Track malformed input payloads without side effects."""
+    increment_stat("invalid_payloads")
+    if exc is not None:
+        logger.warning("Invalid order payload skipped: %s (%s)", reason, exc)
+        return
+    logger.warning("Invalid order payload skipped: %s", reason)
+
+
+def _validate_optional_json_object_field(payload: dict, field_name: str) -> None:
+    """Validate optional JSON-string/object fields used by order contract."""
+    if field_name not in payload:
+        return
+
+    raw_value = payload.get(field_name)
+    if raw_value is None:
+        return
+
+    if isinstance(raw_value, dict):
+        return
+
+    if isinstance(raw_value, str):
+        parsed = json.loads(raw_value)
+        if not isinstance(parsed, dict):
+            raise ValueError(f"Field '{field_name}' must encode a JSON object")
+        return
+
+    raise ValueError(f"Field '{field_name}' must be dict or JSON object string")
+
+
+def _parse_order_payload(order_data: object) -> Order | None:
+    """Return validated Order or None for invalid payload input."""
+    if not isinstance(order_data, dict):
+        _mark_invalid_payload(f"payload_type={type(order_data).__name__}")
+        return None
+
+    try:
+        sanitized_payload = sanitize_payload(order_data)
+    except (TypeError, ValueError) as exc:
+        _mark_invalid_payload("sanitize_failed", exc=exc)
+        return None
+
+    event_type = sanitized_payload.get("type")
+    if event_type not in (None, "order"):
+        _mark_invalid_payload(f"unexpected_type={event_type}")
+        return None
+
+    try:
+        _validate_optional_json_object_field(sanitized_payload, "policy_snapshot")
+        order = Order.from_event(sanitized_payload)
+    except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+        _mark_invalid_payload("order_parse_failed", exc=exc)
+        return None
+
+    if not math.isfinite(order.quantity):
+        _mark_invalid_payload("quantity_not_finite")
+        return None
+    if order.quantity <= 0:
+        _mark_invalid_payload("quantity_non_positive")
+        return None
+
+    return order
 
 
 def _init_with_retry(
@@ -230,17 +298,13 @@ def _publish_result(result: ExecutionResult) -> None:
             db.save_trade(result)
 
 
-def process_order(order_data: dict):
-    """Process incoming order"""
+def process_order(order_data: object):
+    """Process incoming order."""
+    order = _parse_order_payload(order_data)
+    if order is None:
+        return None
+
     try:
-        if order_data.get("type") not in (None, "order"):
-            logger.warning(
-                "Ignoriere Event mit unerwartetem Typ: %s", order_data.get("type")
-            )
-            return None
-
-        order = Order.from_event(order_data)
-
         increment_stat("orders_received")  # Thread-safe
 
         # Safety gate: reject orders without Risk Service approval (refs #467)
@@ -265,6 +329,72 @@ def process_order(order_data: dict):
                 order.symbol,
                 order.side,
                 order.quantity,
+            )
+            increment_stat("orders_rejected")
+            _publish_result(result)
+            return result
+
+        # LR-030: Shadow-mode execution gate (always active, not toggle-gated).
+        # Orders with run_mode="shadow" MUST NOT reach any executor.
+        # run_mode=None passes (backward compat for legacy orders).
+        if order.run_mode == "shadow":
+            result = ExecutionResult(
+                order_id=order.order_id or "SHADOW_BLOCKED",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message="Order blocked: shadow mode (zero execution)",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            logger.warning(
+                "SHADOW-BLOCKED: %s %s qty=%.4f (run_mode=shadow, zero execution)",
+                order.symbol,
+                order.side,
+                order.quantity,
+            )
+            increment_stat("orders_rejected")
+            increment_stat("shadow_blocked")
+            _publish_result(result)
+            return result
+
+        # LR-030: Kill-switch gate in Execution Service (defense-in-depth).
+        # Consistent with process_order() fail-closed convention: the outer
+        # try/except already returns None on unexpected errors.
+        try:
+            from core.safety.kill_switch import get_kill_switch_details
+
+            ks_active, ks_reason, _ks_msg, _ks_at = get_kill_switch_details(
+                create_if_missing=False
+            )
+        except Exception:
+            ks_active, ks_reason = True, "evaluation_error"  # fail-closed
+
+        if ks_active:
+            result = ExecutionResult(
+                order_id=order.order_id or "KILL_SWITCH_BLOCKED",
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=0.0,
+                status=OrderStatus.REJECTED.value,
+                price=None,
+                client_id=order.client_id,
+                error_message=f"Order blocked: kill-switch active ({ks_reason})",
+                timestamp=utcnow().isoformat(),
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+            )
+            logger.warning(
+                "KILL-SWITCH-BLOCKED in execution: %s %s reason=%s",
+                order.symbol,
+                order.side,
+                ks_reason,
             )
             increment_stat("orders_rejected")
             _publish_result(result)
@@ -425,10 +555,14 @@ def process_order(order_data: dict):
                     side=str(result.side),
                     filled_quantity=float(result.filled_quantity),
                     price=float(result.price) if result.price is not None else None,
+                    signal_id=getattr(order, "signal_id", None),
+                    trace_id=getattr(order, "trace_id", None),
+                    status=ExecutionResult._schema_status(result.status),
                     policy_id=getattr(order, "policy_id", None),
                     policy_hash=getattr(order, "policy_hash", None),
                     input_hash=getattr(order, "input_hash", None),
                     output_hash=getattr(order, "output_hash", None),
+                    policy_snapshot=getattr(order, "policy_snapshot", None),
                 )
             except Exception:
                 pass  # Guardrail: never break execution path
@@ -447,12 +581,8 @@ def process_order(order_data: dict):
         _publish_result(result)
 
         return result
-    except (KeyError, ValueError) as err:
-        logger.error("Fehlerhafte Orderdaten: %s", err)
-        increment_stat("orders_rejected")  # Thread-safe
-        return None
-    except Exception as e:
-        logger.error(f"Error processing order: {e}")
+    except Exception as exc:
+        logger.error("Error processing order: %s", exc)
         increment_stat("orders_rejected")  # Thread-safe
         return None
 
@@ -467,17 +597,21 @@ def message_loop():
         try:
             message = pubsub.get_message(timeout=1.0)
 
-            if message and message["type"] == "message":
+            if message and message.get("type") == "message":
                 try:
-                    order_data = json.loads(message["data"])
+                    raw_data = message.get("data")
+                    if raw_data is None:
+                        _mark_invalid_payload("missing_message_data")
+                        continue
+                    order_data = json.loads(raw_data)
                     process_order(order_data)
-                except json.JSONDecodeError as e:
-                    logger.error(f"Invalid JSON in message: {e}")
-                except Exception as e:
-                    logger.error(f"Error handling message: {e}")
+                except json.JSONDecodeError as exc:
+                    _mark_invalid_payload("json_decode_failed", exc=exc)
+                except Exception as exc:
+                    logger.error("Error handling message: %s", exc)
 
-        except Exception as e:
-            logger.error(f"Error in message loop: {e}")
+        except Exception as exc:
+            logger.error("Error in message loop: %s", exc)
             time.sleep(1)
 
     logger.info("Message loop stopped")
@@ -599,6 +733,12 @@ if _FLASK_AVAILABLE:
             "# HELP execution_orders_rejected_total Anzahl abgelehnter Orders\n"
             "# TYPE execution_orders_rejected_total counter\n"
             f"execution_orders_rejected_total {current_stats['orders_rejected']}\n"
+            "# HELP execution_invalid_payloads_total Anzahl invalid/malformed Payloads\n"
+            "# TYPE execution_invalid_payloads_total counter\n"
+            f"execution_invalid_payloads_total {current_stats['invalid_payloads']}\n"
+            "# HELP execution_shadow_blocked_total Orders blocked by shadow mode gate (LR-030)\n"
+            "# TYPE execution_shadow_blocked_total counter\n"
+            f"execution_shadow_blocked_total {current_stats['shadow_blocked']}\n"
             "# HELP execution_uptime_seconds Service Laufzeit in Sekunden\n"
             "# TYPE execution_uptime_seconds gauge\n"
             f"execution_uptime_seconds {uptime_seconds}\n"
@@ -618,6 +758,7 @@ if _FLASK_AVAILABLE:
         except Exception as e:
             logger.error(f"Error retrieving orders: {e}")
             return jsonify({"error": str(e)}), 500
+
 else:
     app = None
 

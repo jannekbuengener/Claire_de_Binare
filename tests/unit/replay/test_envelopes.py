@@ -9,7 +9,7 @@ from core.replay.envelopes import (
     FillEnvelopeV1,
     OrderEnvelopeV1,
 )
-
+from core.replay.time import created_at_from_ts_ms
 
 SAMPLE_SNAPSHOT = {
     "policy_id": "risk_v2",
@@ -17,6 +17,12 @@ SAMPLE_SNAPSHOT = {
     "git_commit": "abc1234",
     "checksum": "deadbeef",
     "effective_at": "2026-01-15T00:00:00Z",
+}
+
+SAMPLE_DECISION_CONTEXT = {
+    "contract_version": "decision_contract_v1",
+    "inputs": {"symbol": "BTCUSDT", "slippage_pct": 0.001},
+    "thresholds": {"blocked_regimes": [3, 4], "max_slippage_pct": 0.002},
 }
 
 
@@ -34,9 +40,13 @@ class TestDecisionEnvelopeV1:
         assert "policy_hash" not in d
         assert "input_hash" not in d
         assert "output_hash" not in d
+        assert "correlation_id" not in d
+        assert "trace_id" not in d
+        assert "decision_context" not in d
         assert "policy_snapshot" not in d
         assert d["event_type"] == "DECISION"
         assert d["schema_version"] == "envelope.v1"
+        assert d["created_at"] == created_at_from_ts_ms(1700000000000)
 
     def test_to_dict_includes_present_optionals(self):
         env = DecisionEnvelopeV1(
@@ -65,6 +75,48 @@ class TestDecisionEnvelopeV1:
         )
         d = env.to_dict()
         assert d["policy_snapshot"] == SAMPLE_SNAPSHOT
+
+    def test_trace_and_decision_context_included_when_set(self):
+        env = DecisionEnvelopeV1(
+            schema_version="envelope.v1",
+            event_type="DECISION",
+            event_id="ev-001",
+            ts_ms=1700000000000,
+            payload={"decision": "ALLOW"},
+            correlation_id="corr-123",
+            trace_id="trace-123",
+            decision_context=SAMPLE_DECISION_CONTEXT,
+        )
+        d = env.to_dict()
+        assert d["correlation_id"] == "corr-123"
+        assert d["trace_id"] == "trace-123"
+        assert d["decision_context"] == SAMPLE_DECISION_CONTEXT
+
+    def test_created_at_is_canonical_milliseconds(self):
+        ts_ms = 1700000000123
+        env = DecisionEnvelopeV1(
+            schema_version="envelope.v1",
+            event_type="DECISION",
+            event_id="ev-002",
+            ts_ms=ts_ms,
+            payload={"decision": "ALLOW"},
+        )
+        d = env.to_dict()
+        assert d["created_at"] == created_at_from_ts_ms(ts_ms)
+        assert d["created_at"].endswith("Z")
+        assert "." in d["created_at"]
+
+    def test_created_at_preserves_explicit_value(self):
+        env = DecisionEnvelopeV1(
+            schema_version="envelope.v1",
+            event_type="DECISION",
+            event_id="ev-003",
+            ts_ms=1700000000000,
+            payload={"decision": "ALLOW"},
+            created_at="",
+        )
+        d = env.to_dict()
+        assert d["created_at"] == ""
 
     def test_roundtrip_determinism(self):
         kwargs = dict(
@@ -104,8 +156,12 @@ class TestOrderEnvelopeV1:
         )
         d = env.to_dict()
         assert "policy_id" not in d
+        assert "correlation_id" not in d
+        assert "trace_id" not in d
+        assert "decision_context" not in d
         assert "policy_snapshot" not in d
         assert d["event_type"] == "ORDER"
+        assert d["created_at"] == created_at_from_ts_ms(1700000000000)
 
     def test_to_dict_includes_present_optionals(self):
         env = OrderEnvelopeV1(
@@ -133,6 +189,22 @@ class TestOrderEnvelopeV1:
         d = env.to_dict()
         assert d["policy_snapshot"] == SAMPLE_SNAPSHOT
 
+    def test_order_context_fields_included_when_set(self):
+        env = OrderEnvelopeV1(
+            schema_version="envelope.v1",
+            event_type="ORDER",
+            event_id="ord-001",
+            ts_ms=1700000000000,
+            payload={"symbol": "BTCUSDT"},
+            correlation_id="corr-456",
+            trace_id="trace-456",
+            decision_context=SAMPLE_DECISION_CONTEXT,
+        )
+        d = env.to_dict()
+        assert d["correlation_id"] == "corr-456"
+        assert d["trace_id"] == "trace-456"
+        assert d["decision_context"] == SAMPLE_DECISION_CONTEXT
+
 
 class TestFillEnvelopeV1:
     def test_to_dict_omits_none(self):
@@ -145,8 +217,12 @@ class TestFillEnvelopeV1:
         )
         d = env.to_dict()
         assert "policy_id" not in d
+        assert "correlation_id" not in d
+        assert "trace_id" not in d
+        assert "decision_context" not in d
         assert "policy_snapshot" not in d
         assert d["event_type"] == "FILL"
+        assert d["created_at"] == created_at_from_ts_ms(1700000000000)
 
     def test_to_dict_includes_present_optionals(self):
         env = FillEnvelopeV1(
@@ -177,3 +253,19 @@ class TestFillEnvelopeV1:
         )
         d = env.to_dict()
         assert d["policy_snapshot"] == SAMPLE_SNAPSHOT
+
+    def test_fill_context_fields_included_when_set(self):
+        env = FillEnvelopeV1(
+            schema_version="envelope.v1",
+            event_type="FILL",
+            event_id="fill-001",
+            ts_ms=1700000000000,
+            payload={"order_id": "ord-001"},
+            correlation_id="corr-789",
+            trace_id="trace-789",
+            decision_context=SAMPLE_DECISION_CONTEXT,
+        )
+        d = env.to_dict()
+        assert d["correlation_id"] == "corr-789"
+        assert d["trace_id"] == "trace-789"
+        assert d["decision_context"] == SAMPLE_DECISION_CONTEXT

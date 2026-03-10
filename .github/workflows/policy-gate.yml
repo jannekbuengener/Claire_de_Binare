@@ -1,0 +1,236 @@
+name: Policy Gate
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+      - edited
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  policy-gate:
+    name: policy-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Evaluate PR scope and workflow safety
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const labels = (pr.labels || []).map((label) => label.name);
+            const labelSet = new Set(labels.map((label) => label.toLowerCase()));
+            const title = (pr.title || '').trim();
+            const titleLower = title.toLowerCase();
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number: pr.number,
+              per_page: 100,
+            });
+
+            const changedFiles = files.map((file) => file.filename);
+            const isDocsFile = (path) => path.startsWith('docs/') || path.toLowerCase().endsWith('.md');
+            const isWorkflowFile = (path) => path.startsWith('.github/workflows/');
+            const isWorkflowScopeCompanionDoc = (path) =>
+              path === 'docs/runbooks/project_board_automation.md';
+            const isInfraFile = (path) => path.startsWith('infrastructure/');
+            const hasLabel = (name) => labelSet.has(name);
+            const hasPrefix = (name) =>
+              titleLower.startsWith(`[${name}]`) || titleLower.startsWith(`${name}:`);
+            const explicitPermissionsPattern = /^(?!\s*#)\s*permissions\s*:/m;
+
+            function parseTopLevelPermissions(content) {
+              const permissions = new Map();
+              const lines = content.split(/\r?\n/);
+              let inBlock = false;
+
+              for (const line of lines) {
+                if (!inBlock) {
+                  if (/^permissions:\s*$/.test(line)) {
+                    inBlock = true;
+                  }
+                  continue;
+                }
+
+                if (/^\S/.test(line)) {
+                  break;
+                }
+
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) {
+                  continue;
+                }
+
+                const match = line.match(/^\s+([A-Za-z-]+)\s*:\s*([A-Za-z-]+)\s*$/);
+                if (match) {
+                  permissions.set(match[1], match[2]);
+                }
+              }
+
+              return permissions;
+            }
+
+            function listWorkflowUses(content) {
+              return [...content.matchAll(/^(?!\s*#)\s*uses:\s*([^\s#]+)\s*$/gm)].map((match) => match[1]);
+            }
+
+            function hasCheckoutBehavior(content) {
+              return (
+                /^(?!\s*#)\s*uses:\s*actions\/checkout@/mi.test(content) ||
+                /^(?!\s*#)\s*name:\s*.*checkout.*$/mi.test(content) ||
+                /\bgit\s+checkout\b/i.test(content)
+              );
+            }
+
+            let category = 'core/service';
+            let categorySource = 'default';
+
+            if (hasLabel('docs-only') || hasPrefix('docs-only')) {
+              category = 'docs-only';
+              categorySource = hasLabel('docs-only') ? 'label:docs-only' : 'title-prefix';
+            } else if (hasLabel('workflows-only') || hasPrefix('workflows-only')) {
+              category = 'workflows-only';
+              categorySource = hasLabel('workflows-only') ? 'label:workflows-only' : 'title-prefix';
+            } else if (hasLabel('infra-only') || hasPrefix('infra-only')) {
+              category = 'infra-only';
+              categorySource = hasLabel('infra-only') ? 'label:infra-only' : 'title-prefix';
+            } else if (changedFiles.length > 0 && changedFiles.every(isDocsFile)) {
+              category = 'docs-only';
+              categorySource = 'file-inference';
+            } else if (changedFiles.length > 0 && changedFiles.every(isWorkflowFile)) {
+              category = 'workflows-only';
+              categorySource = 'file-inference';
+            }
+
+            const failures = [];
+            const passes = [];
+
+            if (category === 'docs-only') {
+              const invalidDocsFiles = changedFiles.filter((path) => !isDocsFile(path));
+              if (invalidDocsFiles.length > 0) {
+                failures.push(
+                  `docs-only allows only docs/** and *.md, but found: ${invalidDocsFiles.join(', ')}`
+                );
+              } else {
+                passes.push('docs-only scope validated');
+              }
+            } else if (category === 'workflows-only') {
+              const invalidWorkflowFiles = changedFiles.filter(
+                (path) => !isWorkflowFile(path) && !isWorkflowScopeCompanionDoc(path)
+              );
+              if (invalidWorkflowFiles.length > 0) {
+                failures.push(
+                  `workflows-only allows only .github/workflows/** plus docs/runbooks/project_board_automation.md, but found: ${invalidWorkflowFiles.join(', ')}`
+                );
+              } else {
+                passes.push('workflows-only scope validated');
+              }
+            } else if (category === 'infra-only') {
+              const invalidInfraFiles = changedFiles.filter(
+                (path) => !isInfraFile(path) && !isWorkflowFile(path)
+              );
+              if (invalidInfraFiles.length > 0) {
+                failures.push(
+                  `infra-only allows only infrastructure/** and .github/workflows/**, but found: ${invalidInfraFiles.join(', ')}`
+                );
+              } else {
+                passes.push('infra-only scope validated');
+              }
+            } else if (!hasLabel('manual-approval') && !hasLabel('allow-core-change')) {
+              failures.push(
+                'core/service changes require the label manual-approval or allow-core-change'
+              );
+            } else {
+              passes.push('core/service override label present');
+            }
+
+            const workflowFiles = files.filter(
+              (file) => isWorkflowFile(file.filename) && file.status !== 'removed'
+            );
+
+            for (const file of workflowFiles) {
+              let content;
+
+              try {
+                const response = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: file.filename,
+                  ref: pr.head.sha,
+                });
+
+                if (!('content' in response.data)) {
+                  failures.push(`Unable to inspect workflow file: ${file.filename}`);
+                  continue;
+                }
+
+                content = Buffer.from(response.data.content, 'base64').toString('utf8');
+              } catch (error) {
+                failures.push(`Unable to inspect workflow file ${file.filename}: ${error.message}`);
+                continue;
+              }
+
+              if (/^\s*pull_request_target\s*:/m.test(content)) {
+                failures.push(`Workflow ${file.filename} contains pull_request_target`);
+              }
+
+              if (/^\s*workflow_run\s*:/m.test(content)) {
+                if (hasCheckoutBehavior(content)) {
+                  failures.push(
+                    `Workflow ${file.filename} is triggered by workflow_run and must remain metadata-only (no checkout behavior)`
+                  );
+                } else {
+                  passes.push(`workflow_run metadata-only validated for ${file.filename}`);
+                }
+              }
+
+              if (!explicitPermissionsPattern.test(content)) {
+                failures.push(`Workflow ${file.filename} is missing an explicit permissions section`);
+              }
+
+              if (/^\s*permissions\s*:\s*write-all\s*$/m.test(content)) {
+                failures.push(`Workflow ${file.filename} contains write-all`);
+              }
+            }
+
+            const result = failures.length === 0 ? 'PASS' : 'FAIL';
+
+            await core.summary
+              .addHeading('Policy Gate')
+              .addTable([
+                [
+                  { data: 'Field', header: true },
+                  { data: 'Value', header: true },
+                ],
+                ['PR', `#${pr.number}`],
+                ['Category', category],
+                ['Category source', categorySource],
+                ['Labels', labels.length ? labels.join(', ') : '(none)'],
+                ['Result', result],
+              ])
+              .addHeading('Changed Files', 2)
+              .addCodeBlock(changedFiles.join('\n') || '(none)', 'text')
+              .addHeading('PASS Rules', 2)
+              .addList(passes.length ? passes : ['None'])
+              .addHeading('FAIL Rules', 2)
+              .addList(failures.length ? failures : ['None'])
+              .write();
+
+            core.info(`policy-gate category=${category} source=${categorySource} result=${result}`);
+            core.info(`policy-gate changed files: ${changedFiles.join(', ') || '(none)'}`);
+
+            if (failures.length > 0) {
+              core.setFailed(failures.join(' | '));
+            }

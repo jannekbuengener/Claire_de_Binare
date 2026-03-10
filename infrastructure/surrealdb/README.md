@@ -8,7 +8,8 @@ Die folgenden Collections (Tables) sind als append-only Mirror definiert:
 - `governance_events`: Shadow/Manual Events (event_type, evidence, integrity hash, created_at)  
 - `audit_trail`: Service-agnostische Audit-Einträge mit payload JSON  
 - `deployment_approvals_mirror`: Mirror der Delivery/YAML-Approvals (pr_id, commit, path)  
-- `security_policy_refs`: Policy-Versionen und Dokumentationslinks  
+- `system_config`: Nicht-sensitive Config-Referenzen/Fingerprints (`value_ref`, `value_hash`, `integrity_*`)  
+- `security_policy_refs`: Tatsächlicher Storage für `security_policies` im Repo (Policy-Versionen, Doku-Links, `integrity_*`)  
 - `access_matrix`: Optionaler Matrix-Eintrag für Rechte (Prüfung/Reporting)
 
 Alle Tabellen nutzen `PERMISSIONS FOR CREATE, FOR SELECT` und haben keine UPDATE/DELETE-Berechtigungen, wodurch Append-only gewährleistet ist.

@@ -1,0 +1,910 @@
+{
+  "notes": [
+    "Canonical long-form governance and agent documentation lives in the sibling Docs Hub repo Claire_de_Binare_Docs; this working repo is primarily code, runtime, and local operational support docs.",
+    "Folders matching mcp_navpack* were excluded from scanning to avoid self-reference.",
+    "Large or binary artifacts were encountered in root zip bundles and .worktrees evidence archives; they were not indexed as navigation entrypoints.",
+    "The repo root also contains many historical governance and evidence work directories; prefer the roots below before ad hoc reports or archive material."
+  ],
+  "roots": [
+    {
+      "avoid": [
+        {
+          "path": "cdb_agent_sdk/.venv",
+          "why": "Local virtual environment."
+        }
+      ],
+      "id": "cdb_agent_sdk",
+      "key_entrypoints": [
+        {
+          "path": "cdb_agent_sdk/README.md",
+          "why": "SDK subproject overview."
+        },
+        {
+          "path": "cdb_agent_sdk/pyproject.toml",
+          "why": "SDK toolchain and packaging entrypoint."
+        }
+      ],
+      "path": "cdb_agent_sdk",
+      "top_level": [
+        {
+          "name": ".env.example",
+          "purpose_guess": "SDK environment template.",
+          "type": "file"
+        },
+        {
+          "name": "README.md",
+          "purpose_guess": "SDK overview.",
+          "type": "file"
+        },
+        {
+          "name": "pyproject.toml",
+          "purpose_guess": "SDK packaging and tooling config.",
+          "type": "file"
+        },
+        {
+          "name": "src",
+          "purpose_guess": "SDK implementation code.",
+          "type": "dir"
+        },
+        {
+          "name": "tests",
+          "purpose_guess": "SDK test suite.",
+          "type": "dir"
+        },
+        {
+          "name": "uv.lock",
+          "purpose_guess": "Locked SDK dependency graph.",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "core/__pycache__",
+          "why": "Python bytecode cache."
+        }
+      ],
+      "id": "core",
+      "key_entrypoints": [
+        {
+          "path": "core/README.md",
+          "why": "Core module boundaries."
+        },
+        {
+          "path": "core/config/trading_mode.py",
+          "why": "Safety-critical trading mode gate."
+        }
+      ],
+      "path": "core",
+      "top_level": [
+        {
+          "name": "README.md",
+          "purpose_guess": "Core package overview.",
+          "type": "file"
+        },
+        {
+          "name": "auth.py",
+          "purpose_guess": "Shared auth helper.",
+          "type": "file"
+        },
+        {
+          "name": "clients",
+          "purpose_guess": "External client adapters.",
+          "type": "dir"
+        },
+        {
+          "name": "config",
+          "purpose_guess": "Runtime config and safety gates.",
+          "type": "dir"
+        },
+        {
+          "name": "domain",
+          "purpose_guess": "Domain models and message types.",
+          "type": "dir"
+        },
+        {
+          "name": "indicators",
+          "purpose_guess": "Signal and indicator logic.",
+          "type": "dir"
+        },
+        {
+          "name": "replay",
+          "purpose_guess": "Replay helpers and deterministic tooling.",
+          "type": "dir"
+        },
+        {
+          "name": "safety",
+          "purpose_guess": "Risk and fail-close helpers.",
+          "type": "dir"
+        },
+        {
+          "name": "secrets.py",
+          "purpose_guess": "Shared secrets access helpers.",
+          "type": "file"
+        },
+        {
+          "name": "utils",
+          "purpose_guess": "Shared utility functions.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [],
+      "id": "docs",
+      "key_entrypoints": [
+        {
+          "path": "docs/ci/README.md",
+          "why": "Local CI docs landing."
+        },
+        {
+          "path": "docs/db/index.md",
+          "why": "Local DB navigation page."
+        },
+        {
+          "path": "docs/env/index.md",
+          "why": "Environment and secrets index."
+        },
+        {
+          "path": "docs/governance/README.md",
+          "why": "Local governance support docs."
+        },
+        {
+          "path": "docs/index.md",
+          "why": "Shortest working-repo docs landing page."
+        },
+        {
+          "path": "docs/live-readiness/README.md",
+          "why": "Local live-readiness pointer."
+        }
+      ],
+      "path": "docs",
+      "top_level": [
+        {
+          "name": "ci",
+          "purpose_guess": "Workflow and CI reference docs.",
+          "type": "dir"
+        },
+        {
+          "name": "contracts",
+          "purpose_guess": "Local contract and schema notes.",
+          "type": "dir"
+        },
+        {
+          "name": "db",
+          "purpose_guess": "Database navigation docs.",
+          "type": "dir"
+        },
+        {
+          "name": "env",
+          "purpose_guess": "Environment variable and secret docs.",
+          "type": "dir"
+        },
+        {
+          "name": "governance",
+          "purpose_guess": "Local governance support docs.",
+          "type": "dir"
+        },
+        {
+          "name": "index.md",
+          "purpose_guess": "Working-repo docs landing page.",
+          "type": "file"
+        },
+        {
+          "name": "live-readiness",
+          "purpose_guess": "Operational readiness status docs.",
+          "type": "dir"
+        },
+        {
+          "name": "operations",
+          "purpose_guess": "Operational runbooks and procedures.",
+          "type": "dir"
+        },
+        {
+          "name": "runbooks",
+          "purpose_guess": "Local tactical runbooks.",
+          "type": "dir"
+        },
+        {
+          "name": "skills",
+          "purpose_guess": "Skill-related docs.",
+          "type": "dir"
+        },
+        {
+          "name": "status",
+          "purpose_guess": "Status rollups and health views.",
+          "type": "dir"
+        },
+        {
+          "name": "surrealdb",
+          "purpose_guess": "SurrealDB mirror docs.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "infrastructure/.cdb_local",
+          "why": "Local environment-specific assets."
+        }
+      ],
+      "id": "infrastructure",
+      "key_entrypoints": [
+        {
+          "path": "infrastructure/actions-runner/README.md",
+          "why": "Self-hosted Actions runner setup."
+        },
+        {
+          "path": "infrastructure/compose/README.md",
+          "why": "Compose fragment topology and usage."
+        },
+        {
+          "path": "infrastructure/compose/base.yml",
+          "why": "Base compose fragment."
+        },
+        {
+          "path": "infrastructure/compose/dev.yml",
+          "why": "Development compose overlay."
+        },
+        {
+          "path": "infrastructure/scripts/stack_up.ps1",
+          "why": "Local stack bootstrap script."
+        },
+        {
+          "path": "infrastructure/scripts/stack_verify.ps1",
+          "why": "Local stack verification helper."
+        },
+        {
+          "path": "infrastructure/surrealdb/README.md",
+          "why": "SurrealDB mirror overview."
+        }
+      ],
+      "path": "infrastructure",
+      "top_level": [
+        {
+          "name": "actions-runner",
+          "purpose_guess": "Runner setup and configuration.",
+          "type": "dir"
+        },
+        {
+          "name": "compose",
+          "purpose_guess": "Compose fragments and overlays.",
+          "type": "dir"
+        },
+        {
+          "name": "config",
+          "purpose_guess": "Runtime and feature configs.",
+          "type": "dir"
+        },
+        {
+          "name": "database",
+          "purpose_guess": "Schema, roles, and migration assets.",
+          "type": "dir"
+        },
+        {
+          "name": "docs",
+          "purpose_guess": "Infra-local support docs.",
+          "type": "dir"
+        },
+        {
+          "name": "healthchecks",
+          "purpose_guess": "Container health-check helpers.",
+          "type": "dir"
+        },
+        {
+          "name": "monitoring",
+          "purpose_guess": "Prometheus, Grafana, and alerts config.",
+          "type": "dir"
+        },
+        {
+          "name": "scripts",
+          "purpose_guess": "Stack, backup, and test automation scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "surrealdb",
+          "purpose_guess": "SurrealDB mirror assets.",
+          "type": "dir"
+        },
+        {
+          "name": "tls",
+          "purpose_guess": "TLS setup and cert-related assets.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": ".worktrees",
+          "why": "Alternate worktrees and branch-local artifacts."
+        },
+        {
+          "path": "_analysis_2026-02-16",
+          "why": "Historical analysis output."
+        },
+        {
+          "path": "_cip_addendum_2026-02-19",
+          "why": "Historical addendum output."
+        },
+        {
+          "path": "_zip_addendum_2026-02-19",
+          "why": "Archived zip addendum output."
+        },
+        {
+          "path": "artifacts",
+          "why": "Generated evidence and build artifacts."
+        },
+        {
+          "path": "logs",
+          "why": "Generated log bundles and runtime artifacts."
+        },
+        {
+          "path": "mcp_navpack",
+          "why": "Previously generated navigation pack."
+        },
+        {
+          "path": "tmp",
+          "why": "Temporary working files."
+        }
+      ],
+      "id": "repo",
+      "key_entrypoints": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "why": "Primary CI contract."
+        },
+        {
+          "path": ".mcp.json",
+          "why": "Default MCP gateway config."
+        },
+        {
+          "path": "AGENTS.md",
+          "why": "Pointer to canonical agent docs in the Docs Hub."
+        },
+        {
+          "path": "DEVELOPER_ONBOARDING.md",
+          "why": "Local setup and bring-up guide."
+        },
+        {
+          "path": "DOCS_MOVED_TO_DOCS_HUB.md",
+          "why": "Explicit docs-separation pointer."
+        },
+        {
+          "path": "Makefile",
+          "why": "Main command surface."
+        },
+        {
+          "path": "README.md",
+          "why": "Project overview and current operating posture."
+        },
+        {
+          "path": "claire-de-binare.mcp.json",
+          "why": "Repo-local Redis MCP config."
+        },
+        {
+          "path": "core/config/trading_mode.py",
+          "why": "Safety-critical trading mode gate."
+        },
+        {
+          "path": "docs/index.md",
+          "why": "Working-repo docs landing page."
+        },
+        {
+          "path": "infrastructure/compose/README.md",
+          "why": "Compose fragment topology."
+        },
+        {
+          "path": "services/README.md",
+          "why": "Service topology and boundaries."
+        },
+        {
+          "path": "tests/README.md",
+          "why": "Test taxonomy."
+        },
+        {
+          "path": "tools/validate_mcp_config.py",
+          "why": "Concrete MCP config validator."
+        }
+      ],
+      "path": ".",
+      "top_level": [
+        {
+          "name": ".github",
+          "purpose_guess": "GitHub workflows and automation config.",
+          "type": "dir"
+        },
+        {
+          "name": ".mcp.json",
+          "purpose_guess": "Default MCP server config.",
+          "type": "file"
+        },
+        {
+          "name": "AGENTS.md",
+          "purpose_guess": "Pointer to canonical agent docs in the Docs Hub.",
+          "type": "file"
+        },
+        {
+          "name": "DEVELOPER_ONBOARDING.md",
+          "purpose_guess": "Local setup guide.",
+          "type": "file"
+        },
+        {
+          "name": "DOCS_MOVED_TO_DOCS_HUB.md",
+          "purpose_guess": "Pointer clarifying the docs split.",
+          "type": "file"
+        },
+        {
+          "name": "Makefile",
+          "purpose_guess": "Test and stack command surface.",
+          "type": "file"
+        },
+        {
+          "name": "README.md",
+          "purpose_guess": "Project overview and status framing.",
+          "type": "file"
+        },
+        {
+          "name": "cdb_agent_sdk",
+          "purpose_guess": "SDK-style subproject.",
+          "type": "dir"
+        },
+        {
+          "name": "core",
+          "purpose_guess": "Shared runtime logic and safety code.",
+          "type": "dir"
+        },
+        {
+          "name": "docs",
+          "purpose_guess": "Working-repo navigation and operational docs.",
+          "type": "dir"
+        },
+        {
+          "name": "infrastructure",
+          "purpose_guess": "Compose, database, monitoring, and infra scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "pyproject.toml",
+          "purpose_guess": "Python formatting and lint configuration.",
+          "type": "file"
+        },
+        {
+          "name": "scripts",
+          "purpose_guess": "Operational and governance automation scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "services",
+          "purpose_guess": "Microservice implementations.",
+          "type": "dir"
+        },
+        {
+          "name": "tests",
+          "purpose_guess": "Repo test suite.",
+          "type": "dir"
+        },
+        {
+          "name": "tools",
+          "purpose_guess": "Local diagnostics and maintenance tooling.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "scripts/__pycache__",
+          "why": "Python bytecode cache."
+        }
+      ],
+      "id": "scripts",
+      "key_entrypoints": [
+        {
+          "path": "scripts/activate_live_data.ps1",
+          "why": "Live-data activation script."
+        },
+        {
+          "path": "scripts/lr003_contract_drift_guard.py",
+          "why": "Contract drift guard."
+        },
+        {
+          "path": "scripts/lr004_completion_guard.py",
+          "why": "Live-readiness completion guard."
+        },
+        {
+          "path": "scripts/manage_secrets.ps1",
+          "why": "Secrets management helper."
+        },
+        {
+          "path": "scripts/setup_testnet.ps1",
+          "why": "Testnet setup helper."
+        }
+      ],
+      "path": "scripts",
+      "top_level": [
+        {
+          "name": "activate_live_data.ps1",
+          "purpose_guess": "Switches runtime toward live data mode.",
+          "type": "file"
+        },
+        {
+          "name": "audit",
+          "purpose_guess": "Audit-related scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "bulk-issue-labeling.ps1",
+          "purpose_guess": "GitHub issue labeling helper.",
+          "type": "file"
+        },
+        {
+          "name": "governance",
+          "purpose_guess": "Governance-oriented script set.",
+          "type": "dir"
+        },
+        {
+          "name": "lr003_contract_drift_guard.py",
+          "purpose_guess": "Contract drift guard script.",
+          "type": "file"
+        },
+        {
+          "name": "lr004_completion_guard.py",
+          "purpose_guess": "Live-readiness completion guard script.",
+          "type": "file"
+        },
+        {
+          "name": "manage_secrets.ps1",
+          "purpose_guess": "Secret management helper.",
+          "type": "file"
+        },
+        {
+          "name": "milestone-assignment.ps1",
+          "purpose_guess": "Project milestone helper.",
+          "type": "file"
+        },
+        {
+          "name": "project",
+          "purpose_guess": "Project automation scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "replay",
+          "purpose_guess": "Replay-related scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "setup_testnet.ps1",
+          "purpose_guess": "Testnet provisioning helper.",
+          "type": "file"
+        },
+        {
+          "name": "verlosung",
+          "purpose_guess": "Specialized utility scripts.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "services/desktop.ini",
+          "why": "OS metadata file."
+        }
+      ],
+      "id": "services",
+      "key_entrypoints": [
+        {
+          "path": "services/README.md",
+          "why": "Service topology overview."
+        },
+        {
+          "path": "services/allocation/service.py",
+          "why": "Allocation service entrypoint."
+        },
+        {
+          "path": "services/candles/service.py",
+          "why": "Candles service entrypoint."
+        },
+        {
+          "path": "services/execution/service.py",
+          "why": "Execution service entrypoint."
+        },
+        {
+          "path": "services/market/service.py",
+          "why": "Market service entrypoint."
+        },
+        {
+          "path": "services/regime/service.py",
+          "why": "Regime service entrypoint."
+        },
+        {
+          "path": "services/risk/service.py",
+          "why": "Risk service entrypoint."
+        },
+        {
+          "path": "services/signal/service.py",
+          "why": "Signal service entrypoint."
+        },
+        {
+          "path": "services/ws/service.py",
+          "why": "WebSocket service entrypoint."
+        }
+      ],
+      "path": "services",
+      "top_level": [
+        {
+          "name": "README.md",
+          "purpose_guess": "Service topology overview.",
+          "type": "file"
+        },
+        {
+          "name": "allocation",
+          "purpose_guess": "Allocation service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "candles",
+          "purpose_guess": "Candles service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "db_writer",
+          "purpose_guess": "Database writer service.",
+          "type": "dir"
+        },
+        {
+          "name": "execution",
+          "purpose_guess": "Execution service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "market",
+          "purpose_guess": "Market-data service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "regime",
+          "purpose_guess": "Regime-classification service.",
+          "type": "dir"
+        },
+        {
+          "name": "reports",
+          "purpose_guess": "Service-related reports and outputs.",
+          "type": "dir"
+        },
+        {
+          "name": "risk",
+          "purpose_guess": "Risk service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "signal",
+          "purpose_guess": "Signal service implementation.",
+          "type": "dir"
+        },
+        {
+          "name": "validation",
+          "purpose_guess": "Validation helpers or service assets.",
+          "type": "dir"
+        },
+        {
+          "name": "ws",
+          "purpose_guess": "WebSocket service implementation.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "tests/__pycache__",
+          "why": "Python bytecode cache."
+        }
+      ],
+      "id": "tests",
+      "key_entrypoints": [
+        {
+          "path": "tests/README.md",
+          "why": "Test layout overview."
+        },
+        {
+          "path": "tests/conftest.py",
+          "why": "Shared pytest setup."
+        },
+        {
+          "path": "tests/fixtures/README.md",
+          "why": "Fixture and seed-data overview."
+        },
+        {
+          "path": "tests/smoke/test_mcp_runtime.py",
+          "why": "Concrete MCP smoke contract."
+        }
+      ],
+      "path": "tests",
+      "top_level": [
+        {
+          "name": "README.md",
+          "purpose_guess": "Testing overview.",
+          "type": "file"
+        },
+        {
+          "name": "conftest.py",
+          "purpose_guess": "Shared pytest fixtures.",
+          "type": "file"
+        },
+        {
+          "name": "contract",
+          "purpose_guess": "Contract tests.",
+          "type": "dir"
+        },
+        {
+          "name": "e2e",
+          "purpose_guess": "End-to-end tests.",
+          "type": "dir"
+        },
+        {
+          "name": "fixtures",
+          "purpose_guess": "Fixture and seed data.",
+          "type": "dir"
+        },
+        {
+          "name": "integration",
+          "purpose_guess": "Integration tests.",
+          "type": "dir"
+        },
+        {
+          "name": "load",
+          "purpose_guess": "Load tests.",
+          "type": "dir"
+        },
+        {
+          "name": "performance",
+          "purpose_guess": "Performance tests.",
+          "type": "dir"
+        },
+        {
+          "name": "replay",
+          "purpose_guess": "Replay tests.",
+          "type": "dir"
+        },
+        {
+          "name": "resilience",
+          "purpose_guess": "Resilience and failure-mode tests.",
+          "type": "dir"
+        },
+        {
+          "name": "smoke",
+          "purpose_guess": "Smoke tests.",
+          "type": "dir"
+        },
+        {
+          "name": "unit",
+          "purpose_guess": "Unit tests.",
+          "type": "dir"
+        }
+      ]
+    },
+    {
+      "avoid": [
+        {
+          "path": "tools/__pycache__",
+          "why": "Python bytecode cache."
+        }
+      ],
+      "id": "tools",
+      "key_entrypoints": [
+        {
+          "path": "tools/README.md",
+          "why": "Local tooling overview."
+        },
+        {
+          "path": "tools/cdb-stack-doctor.ps1",
+          "why": "Stack diagnostics helper."
+        },
+        {
+          "path": "tools/secrets/README.md",
+          "why": "Secrets workflow notes."
+        },
+        {
+          "path": "tools/test_pack/README.md",
+          "why": "Deterministic drill-pack overview."
+        },
+        {
+          "path": "tools/validate_mcp_config.py",
+          "why": "MCP config validator."
+        },
+        {
+          "path": "tools/verify_stack.ps1",
+          "why": "Stack health verification helper."
+        }
+      ],
+      "path": "tools",
+      "top_level": [
+        {
+          "name": "README.md",
+          "purpose_guess": "Local tooling overview.",
+          "type": "file"
+        },
+        {
+          "name": "cdb-secrets-sync.ps1",
+          "purpose_guess": "Secrets sync helper.",
+          "type": "file"
+        },
+        {
+          "name": "cdb-service-logs.ps1",
+          "purpose_guess": "Service log tail helper.",
+          "type": "file"
+        },
+        {
+          "name": "cdb-stack-doctor.ps1",
+          "purpose_guess": "Stack diagnostics helper.",
+          "type": "file"
+        },
+        {
+          "name": "cleanup",
+          "purpose_guess": "Cleanup helpers.",
+          "type": "dir"
+        },
+        {
+          "name": "experiments",
+          "purpose_guess": "Experimental tooling.",
+          "type": "dir"
+        },
+        {
+          "name": "hooks",
+          "purpose_guess": "Repo hook scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "install_hooks.ps1",
+          "purpose_guess": "Hook installation helper.",
+          "type": "file"
+        },
+        {
+          "name": "mcp",
+          "purpose_guess": "MCP-related helpers.",
+          "type": "dir"
+        },
+        {
+          "name": "misc",
+          "purpose_guess": "Miscellaneous utilities.",
+          "type": "dir"
+        },
+        {
+          "name": "paper_trading",
+          "purpose_guess": "Paper-trading helpers.",
+          "type": "dir"
+        },
+        {
+          "name": "replay",
+          "purpose_guess": "Replay tooling.",
+          "type": "dir"
+        },
+        {
+          "name": "research",
+          "purpose_guess": "Research scripts.",
+          "type": "dir"
+        },
+        {
+          "name": "secrets",
+          "purpose_guess": "Secrets rotation and evidence tools.",
+          "type": "dir"
+        },
+        {
+          "name": "surrealdb",
+          "purpose_guess": "SurrealDB tooling.",
+          "type": "dir"
+        },
+        {
+          "name": "test_pack",
+          "purpose_guess": "Deterministic test and drill pack.",
+          "type": "dir"
+        }
+      ]
+    }
+  ],
+  "schema_version": "1.0"
+}
