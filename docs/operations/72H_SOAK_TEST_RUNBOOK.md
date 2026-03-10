@@ -100,14 +100,22 @@ docker compose -f compose.blue.yml down
 
 **Artifacts to preserve** (in `artifacts/soak_test_YYYYMMDD_HHMMSS/`):
 - `hourly_checks.log` — full timeline of hourly checks
-- `resources_snapshot_*.txt` — 6h resource snapshots
-- `db_growth_*.txt` — 12h database growth
+- `resources_snapshot_YYYYMMDD_HH*.txt` — 6h resource snapshots (date-prefixed, no overwrites)
+- `db_growth_YYYYMMDD_HH*.txt` — 12h database growth (date-prefixed, no overwrites)
+- `lr040_soak_gate_eval.json` — machine-readable verdict (generated post-run)
 - `restart_alerts.log` — empty if test passed
 - `soak_test_FAILED.txt` — absent if test passed
 
+**Evaluate (LR-040 gate):**
+
+```bash
+python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_YYYYMMDD_HHMMSS/
+cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
+```
+
 **Go / No-Go decision:**
-- PASS: no `soak_test_FAILED.txt`, no restart entries, 72h elapsed
-- FAIL: any abort trigger hit — document root cause before re-attempting
+- PASS: `lr040_soak_gate_eval.json` verdict is `PASS`
+- FAIL: any check failed — see `failures` array for root cause before re-attempting
 
 ## Troubleshooting: Common Issues
 

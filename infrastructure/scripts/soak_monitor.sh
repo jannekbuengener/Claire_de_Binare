@@ -122,7 +122,7 @@ fi
 if [ "$((HOUR % 6))" -eq 0 ]; then
   echo -e "\n${YELLOW}[CHECK 3/5]${NC} Resource Snapshot (6h interval)..."
 
-  SNAPSHOT_FILE="$ARTIFACT_PATH/resources_snapshot_${HOUR}h.txt"
+  SNAPSHOT_FILE="$ARTIFACT_PATH/resources_snapshot_$(date -u +%Y%m%d_%H)h.txt"
 
   echo "Timestamp: $TIMESTAMP" > "$SNAPSHOT_FILE"
   echo "=========================================" >> "$SNAPSHOT_FILE"
@@ -140,7 +140,7 @@ fi
 if [ "$((HOUR % 12))" -eq 0 ]; then
   echo -e "\n${YELLOW}[CHECK 4/5]${NC} Database Growth Check (12h interval)..."
 
-  DB_FILE="$ARTIFACT_PATH/db_growth_${HOUR}h.txt"
+  DB_FILE="$ARTIFACT_PATH/db_growth_$(date -u +%Y%m%d_%H)h.txt"
 
   # Check if postgres is running
   if docker ps --filter "name=cdb_postgres" --filter "status=running" | grep -q "cdb_postgres"; then
