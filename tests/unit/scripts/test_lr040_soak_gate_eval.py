@@ -1,0 +1,171 @@
+"""Tests for lr040_soak_gate_eval.py — 72h soak stability gate (Issue #786)."""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[3] / "infrastructure" / "scripts")
+)
+
+from lr040_soak_gate_eval import evaluate_lr040_soak
+
+
+def _build_hourly_log(hours: int = 73) -> str:
+    """Generate hourly_checks.log spanning ``hours`` hours."""
+    lines = []
+    for h in range(hours):
+        day_offset = h // 24
+        hour_of_day = h % 24
+        lines.append(
+            f"2026-03-08 {hour_of_day:02d}:00:00 UTC - "
+            f"Hour {hour_of_day}: No restarts"
+        )
+    # Fix: generate distinct days so timestamps actually span 72+ hours
+    result = []
+    from datetime import datetime, timedelta, timezone
+
+    base = datetime(2026, 3, 8, 0, 0, 0, tzinfo=timezone.utc)
+    for h in range(hours):
+        ts = base + timedelta(hours=h)
+        result.append(
+            f"{ts.strftime('%Y-%m-%d %H:%M:%S')} UTC - " f"Hour {ts.hour}: No restarts"
+        )
+    return "\n".join(result) + "\n"
+
+
+def _build_resource_snapshot(cpu_pct: float = 15.0, mem_pct: float = 25.0) -> str:
+    """Generate a resource snapshot file matching docker stats format."""
+    return (
+        "Timestamp: 2026-03-08 00:00:00 UTC\n"
+        "=========================================\n"
+        f"NAME           CPU %     MEM USAGE / LIMIT     MEM %     NET I/O     BLOCK I/O\n"
+        f"cdb_redis      {cpu_pct}%    24.5MiB / 256MiB      {mem_pct}%     1kB / 0B    0B / 0B\n"
+        f"cdb_postgres   {cpu_pct + 5}%   120MiB / 512MiB      {mem_pct + 2}%   2kB / 1kB   4kB / 8kB\n"
+    )
+
+
+def _write_passing_artifacts(tmp_path: Path, **overrides) -> Path:
+    """Create a soak artifact directory that passes all LR-040 checks."""
+    artifact_dir = tmp_path / "soak_artifacts"
+    artifact_dir.mkdir()
+
+    hours = overrides.get("hours", 73)
+    (artifact_dir / "hourly_checks.log").write_text(
+        _build_hourly_log(hours), encoding="utf-8"
+    )
+
+    # Two resource snapshots (first and last) with stable memory
+    first_mem = overrides.get("first_mem_pct", 25.0)
+    last_mem = overrides.get("last_mem_pct", 28.0)
+    first_cpu = overrides.get("first_cpu_pct", 15.0)
+    last_cpu = overrides.get("last_cpu_pct", 20.0)
+
+    (artifact_dir / "resources_snapshot_00h.txt").write_text(
+        _build_resource_snapshot(cpu_pct=first_cpu, mem_pct=first_mem),
+        encoding="utf-8",
+    )
+    (artifact_dir / "resources_snapshot_72h.txt").write_text(
+        _build_resource_snapshot(cpu_pct=last_cpu, mem_pct=last_mem),
+        encoding="utf-8",
+    )
+
+    return artifact_dir
+
+
+class TestLR040SoakGatePass:
+    def test_full_pass(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(_write_passing_artifacts(tmp_path))
+        assert result["verdict"] == "PASS"
+        assert result["failures"] == []
+        assert result["control"] == "LR-040"
+        assert result["schema_version"] == "1.0"
+
+    def test_metrics_populated(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(_write_passing_artifacts(tmp_path))
+        assert result["metrics"]["duration_hours"] >= 72.0
+        assert result["metrics"]["resource_snapshot_count"] == 2
+        assert result["metrics"]["max_memory_growth_pct"] is not None
+        assert result["metrics"]["overall_cpu_avg_pct"] is not None
+
+
+class TestLR040SoakGateFailClosed:
+    def test_fails_on_short_duration(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(_write_passing_artifacts(tmp_path, hours=50))
+        assert result["verdict"] == "FAIL"
+        assert "duration_gte_72h" in result["failures"]
+
+    def test_fails_on_missing_hourly_log(self, tmp_path: Path) -> None:
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "hourly_checks.log").unlink()
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "hourly_log_present" in result["failures"]
+        assert "duration_gte_72h" in result["failures"]
+
+    def test_fails_on_failed_marker(self, tmp_path: Path) -> None:
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_FAILED.txt").write_text(
+            "2026-03-09 12:00:00 UTC - ABORT: Service restart detected",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "no_failed_marker" in result["failures"]
+
+    def test_fails_on_restart_alerts(self, tmp_path: Path) -> None:
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "restart_alerts.log").write_text(
+            "2026-03-09 - RESTART DETECTED: cdb_redis (Up 5 seconds)",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "no_restart_alerts" in result["failures"]
+
+    def test_fails_on_high_memory_growth(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(
+            _write_passing_artifacts(tmp_path, first_mem_pct=20.0, last_mem_pct=35.0)
+        )
+        assert result["verdict"] == "FAIL"
+        assert "memory_growth_below_10pct" in result["failures"]
+
+    def test_fails_on_high_cpu(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(
+            _write_passing_artifacts(tmp_path, first_cpu_pct=72.0, last_cpu_pct=75.0)
+        )
+        assert result["verdict"] == "FAIL"
+        assert "cpu_avg_below_70pct" in result["failures"]
+
+    def test_fails_on_missing_snapshots(self, tmp_path: Path) -> None:
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        for f in artifact_dir.glob("resources_snapshot_*.txt"):
+            f.unlink()
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "resource_snapshots_present" in result["failures"]
+
+    def test_empty_restart_alerts_file_passes(self, tmp_path: Path) -> None:
+        """Empty restart_alerts.log = no restarts = OK."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "restart_alerts.log").write_text("", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert "no_restart_alerts" not in result["failures"]
+
+
+class TestLR040SoakGateEdgeCases:
+    def test_exactly_72h_passes(self, tmp_path: Path) -> None:
+        result = evaluate_lr040_soak(_write_passing_artifacts(tmp_path, hours=73))
+        # 73 entries = 72h span (entry 0 to entry 72)
+        assert result["verdict"] == "PASS"
+
+    def test_single_snapshot_fails_closed(self, tmp_path: Path) -> None:
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "resources_snapshot_72h.txt").unlink()
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "resource_snapshots_present" in result["failures"]

@@ -52,7 +52,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 | LR-020 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no dedicated evidence |
 | LR-030 | IMPLEMENTED | `docs/evidence/LR-030.md` | Fail-closed gate with PR1 hardening |
 | LR-031 | **PARTIAL** | `docs/evidence/LR-031.md` | Gate plumbing implemented, broader metrics comparison still open |
-| LR-040 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no 72h soak evidence |
+| LR-040 | IMPLEMENTED | `docs/evidence/LR-040.md` | Gate evaluator + monitoring tooling, no 72h run evidence yet |
 | LR-041 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no chaos drill evidence |
 | LR-042 | IMPLEMENTED | `docs/evidence/LR-042.md` | Control-specific evidence |
 
@@ -60,7 +60,8 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 
 - No committed successful P5 canary run artifact set
 - `LR-010`, `LR-020` remain OPEN with no control-specific evidence
-- `LR-040`, `LR-041` remain OPEN with no control-specific evidence
+- `LR-041` remains OPEN with no control-specific evidence
+- `LR-040` is IMPLEMENTED but no 72h soak run evidence exists yet (PASS requires actual run)
 - `LR-031` is PARTIAL: gate plumbing done, broader comparison evidence still open
 - Controls pointing to `LR-AUDIT-STATUS-2026-03-05.md` are tracking references, not executable proof
 
