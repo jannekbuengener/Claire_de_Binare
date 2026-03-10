@@ -1,4 +1,4 @@
-version: 1
+version: 2
 control_id: LR-050
 description: >
   P5 canary readiness baseline. This policy is a governance gate only and does
@@ -9,38 +9,65 @@ checklist_document: docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md
 
 required_controls:
   - id: LR-001
-    evidence_path: docs/evidence/LR-001.md
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-001-EVIDENCE.md
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-003
+    status: IMPLEMENTED
     evidence_path: docs/live-readiness/LR-003-EVIDENCE.md
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-010
-    evidence_path: docs/evidence/LR-010.md
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No control-specific evidence exists.
+      Requires dedicated evidence before status can move to IMPLEMENTED.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-020
-    evidence_path: docs/evidence/LR-020.md
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No control-specific evidence exists.
+      Requires dedicated evidence before status can move to IMPLEMENTED.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-030
+    status: IMPLEMENTED
     evidence_path: docs/evidence/LR-030.md
+    verification_script: infrastructure/scripts/soak_gate_eval.py
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-031
+    status: PARTIAL
     evidence_path: docs/evidence/LR-031.md
+    evidence_note: >
+      Machine-readable gate and evidence plumbing implemented.
+      Broader metrics comparison evidence still open.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-040
-    evidence_path: docs/evidence/LR-040.md
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No 72h soak evidence exists.
+      Requires dedicated soak run and evidence artifact before status
+      can move to IMPLEMENTED.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-041
-    evidence_path: docs/evidence/LR-041.md
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No Redis/Postgres chaos drill evidence exists.
+      Requires dedicated drill execution and evidence before status
+      can move to IMPLEMENTED.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-042
+    status: IMPLEMENTED
     evidence_path: docs/evidence/LR-042.md
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
@@ -49,11 +76,13 @@ required_artifacts:
   - reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md
   - knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md
   - tools/test_pack/runbooks/kill_switch_checklist.md
-  - governance/branch_protection.yml
-  - scripts/drills/lr003_drill_runner.py
-  - scripts/drills/lr041_redis_postgres_failure_runner.py
+  - scripts/governance/check_branch_protection_drift.py
+  - scripts/lr003_contract_drift_guard.py
+  - tests/resilience/test_fault_injection.py
   - scripts/drills/lr042_network_latency_packet_loss_runner.py
   - infrastructure/scripts/soak_gate_eval.py
+  - infrastructure/scripts/build_shadow_evidence_package.py
+  - infrastructure/scripts/generate_evidence_index.py
   - scripts/governance/check_window_timer_guardrail.py
 
 abort_conditions:
