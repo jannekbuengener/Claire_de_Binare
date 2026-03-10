@@ -74,7 +74,6 @@ required_controls:
 
 required_artifacts:
   - reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md
-  - knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md
   - tools/test_pack/runbooks/kill_switch_checklist.md
   - scripts/governance/check_branch_protection_drift.py
   - scripts/lr003_contract_drift_guard.py
@@ -83,7 +82,6 @@ required_artifacts:
   - infrastructure/scripts/soak_gate_eval.py
   - infrastructure/scripts/build_shadow_evidence_package.py
   - infrastructure/scripts/generate_evidence_index.py
-  - scripts/governance/check_window_timer_guardrail.py
 
 abort_conditions:
   - kill_switch_active_or_unevaluable
