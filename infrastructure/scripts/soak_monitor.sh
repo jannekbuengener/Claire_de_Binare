@@ -33,6 +33,11 @@ fi
 
 ARTIFACT_PATH=$(ls -d ${ARTIFACT_DIR} | head -1)
 
+if [ -z "$ARTIFACT_PATH" ] || [ ! -d "$ARTIFACT_PATH" ]; then
+  echo "ERROR: artifact directory not available — aborting soak monitor" >&2
+  exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
