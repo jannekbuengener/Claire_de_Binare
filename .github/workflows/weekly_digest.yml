@@ -1,110 +1,28 @@
 name: Weekly Project Digest
 on:
   schedule:
+    # Monday 08:00 UTC (~09:00 CET / 10:00 CEST Europe/Berlin; DST shifts)
     - cron: "0 8 * * 1"
   workflow_dispatch:
+
+concurrency:
+  group: weekly-digest
+  cancel-in-progress: true
 
 jobs:
   weekly-digest:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
+    permissions: {}
     env:
+      GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
       PROJECT_OWNER: jannekbuengener
       PROJECT_NUMBER: "8"
       VIEW_NOW_URL: https://github.com/users/jannekbuengener/projects/8/views/10
       VIEW_EINGANG_URL: https://github.com/users/jannekbuengener/projects/8/views/18
       VIEW_PR_REVIEW_URL: https://github.com/users/jannekbuengener/projects/8/views/17
     steps:
-      - name: Resolve CDB auth token (APP preferred, PAT fallback)
-        id: resolve-auth
-        shell: bash
-        env:
-          LEGACY_PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
-          CDB_GH_APP_ID: ${{ secrets.CDB_GH_APP_ID }}
-          CDB_GH_APP_INSTALLATION_ID: ${{ secrets.CDB_GH_APP_INSTALLATION_ID }}
-          CDB_GH_APP_PRIVATE_KEY: ${{ secrets.CDB_GH_APP_PRIVATE_KEY }}
-          REPO_FULL: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-
-          b64url() {
-            openssl base64 -A | tr '+/' '-_' | tr -d '='
-          }
-
-          has_app_id="false"
-          has_app_key="false"
-          [[ -n "${CDB_GH_APP_ID:-}" ]] && has_app_id="true"
-          [[ -n "${CDB_GH_APP_PRIVATE_KEY:-}" ]] && has_app_key="true"
-
-          if [[ "$has_app_id" != "$has_app_key" ]]; then
-            echo "Incomplete GitHub App auth config. Set both CDB_GH_APP_ID and CDB_GH_APP_PRIVATE_KEY, or unset both to use ADD_TO_PROJECT_PAT." >&2
-            exit 1
-          fi
-
-          if [[ "$has_app_id" == "true" ]]; then
-            now="$(date +%s)"
-            iat="$((now - 60))"
-            exp="$((now + 540))"
-
-            header='{"alg":"RS256","typ":"JWT"}'
-            payload="$(jq -nc --arg iss "$CDB_GH_APP_ID" --argjson iat "$iat" --argjson exp "$exp" '{iss:$iss,iat:$iat,exp:$exp}')"
-            signing_input="$(printf '%s' "$header" | b64url).$(printf '%s' "$payload" | b64url)"
-
-            key_file="$(mktemp)"
-            trap 'rm -f "$key_file"' EXIT
-            printf '%s' "$CDB_GH_APP_PRIVATE_KEY" > "$key_file"
-
-            signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign "$key_file" -binary | b64url)"
-            app_jwt="${signing_input}.${signature}"
-
-            installation_id="${CDB_GH_APP_INSTALLATION_ID:-}"
-            if [[ -z "$installation_id" ]]; then
-              install_json="$(curl -fsSL \
-                -H "Authorization: Bearer ${app_jwt}" \
-                -H "Accept: application/vnd.github+json" \
-                -H "X-GitHub-Api-Version: 2022-11-28" \
-                "https://api.github.com/repos/${REPO_FULL}/installation")"
-              installation_id="$(jq -r '.id // empty' <<<"$install_json")"
-            fi
-
-            if [[ -z "$installation_id" ]]; then
-              echo "GitHub App mode selected but installation id could not be resolved. Set CDB_GH_APP_INSTALLATION_ID." >&2
-              exit 1
-            fi
-
-            token_json="$(curl -fsSL -X POST \
-              -H "Authorization: Bearer ${app_jwt}" \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "https://api.github.com/app/installations/${installation_id}/access_tokens")"
-            app_token="$(jq -r '.token // empty' <<<"$token_json")"
-
-            if [[ -z "$app_token" ]]; then
-              echo "GitHub App mode selected but access token minting failed." >&2
-              exit 1
-            fi
-
-            echo "::add-mask::${app_token}"
-            echo "cdb_auth_token=${app_token}" >> "$GITHUB_OUTPUT"
-            echo "auth_mode=APP" >> "$GITHUB_OUTPUT"
-            echo "Auth mode selected: APP"
-          elif [[ -n "${LEGACY_PAT:-}" ]]; then
-            echo "::add-mask::${LEGACY_PAT}"
-            echo "cdb_auth_token=${LEGACY_PAT}" >> "$GITHUB_OUTPUT"
-            echo "auth_mode=PAT" >> "$GITHUB_OUTPUT"
-            echo "Auth mode selected: PAT"
-          else
-            echo "No auth token configured. Set CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID) or ADD_TO_PROJECT_PAT." >&2
-            exit 1
-          fi
-
       - name: Create weekly digest issue (idempotent)
         shell: bash
-        env:
-          CDB_AUTH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
-          GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
         run: |
           set -euo pipefail
 
@@ -112,6 +30,7 @@ jobs:
           today_utc="$(date -u +%F)"
           week_key="$(date -u +%G-W%V)"
           digest_title="Weekly Digest – ${today_utc}"
+          digest_title_prefix="Weekly Digest – "
           digest_marker="<!-- cdb-weekly-digest:${week_key} -->"
 
           graphql_call() {
@@ -125,6 +44,12 @@ jobs:
             if jq -e '.errors and (.errors | length > 0)' >/dev/null 2>&1 <<<"$json"; then
               echo "GraphQL errors while ${context}:" >&2
               jq -r '.errors[]?.message // empty' <<<"$json" >&2 || true
+              if jq -e '[.errors[]?.message | ascii_downcase] | any(.[]; contains("rate limit"))' >/dev/null 2>&1 <<<"$json"; then
+                echo "Hint: GitHub GraphQL rate limit reached. Retry later or use workflow_dispatch once quota resets." >&2
+              fi
+              if jq -e '[.errors[]?.message | ascii_downcase] | any(.[]; contains("resource not accessible") or contains("forbidden"))' >/dev/null 2>&1 <<<"$json"; then
+                echo "Hint: Check ADD_TO_PROJECT_PAT scopes (repo + project) and repository/project access." >&2
+              fi
               exit 1
             fi
           }
@@ -149,6 +74,28 @@ jobs:
             }
           }
 
+          count_open_with_status() {
+            local target_status="$1"
+            jq -r --arg s "$target_status" '
+              [
+                .[]
+                | select((.state | ascii_upcase) == "OPEN")
+                | select(.status == $s)
+              ] | length
+            ' <<<"$project_items_json"
+          }
+
+          count_open_with_label() {
+            local target_label="$1"
+            jq -r --arg l "$target_label" '
+              [
+                .[]
+                | select((.state | ascii_upcase) == "OPEN")
+                | select((.labels // []) | any(.[]; . == $l))
+              ] | length
+            ' <<<"$project_items_json"
+          }
+
           existing_issue_json="$(
             gh api --paginate --slurp "repos/${repo}/issues?state=all&per_page=100" \
               | jq -c --arg t "$digest_title" --arg marker "$digest_marker" '
@@ -160,9 +107,76 @@ jobs:
                         or ((.body // "") | contains($marker))
                       )
                     ))
+                  | sort_by(.created_at // "")
+                  | reverse
                   | .[0] // empty
                 '
           )"
+
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "GH_TOKEN is empty. Configure secrets.ADD_TO_PROJECT_PAT (Classic PAT with repo + project)." >&2
+            exit 1
+          fi
+
+          if ! auth_login="$(gh api user --jq '.login' 2>/dev/null)"; then
+            echo "Auth preflight failed. Ensure ADD_TO_PROJECT_PAT is valid and accessible in this workflow context." >&2
+            exit 1
+          fi
+
+          preflight_query='query($owner:String!,$number:Int!){
+            user(login:$owner){
+              projectV2(number:$number){
+                id
+                title
+                fields(first:100){
+                  nodes{
+                    __typename
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                      options { id name }
+                    }
+                  }
+                }
+              }
+            }
+          }'
+
+          preflight_payload="$(jq -nc \
+            --arg q "$preflight_query" \
+            --arg owner "$PROJECT_OWNER" \
+            --arg number "$PROJECT_NUMBER" \
+            '{query:$q,variables:{owner:$owner,number:($number|tonumber)}}'
+          )"
+          preflight_json="$(graphql_call "$preflight_payload")"
+          graphql_require_no_errors "$preflight_json" "project preflight (owner=${PROJECT_OWNER}, number=${PROJECT_NUMBER})"
+
+          project_id="$(jq -r '.data.user.projectV2.id // empty' <<<"$preflight_json")"
+          if [[ -z "$project_id" ]]; then
+            echo "Project preflight failed: Project #${PROJECT_NUMBER} for ${PROJECT_OWNER} not found or inaccessible." >&2
+            echo "Check project number/owner and ADD_TO_PROJECT_PAT scopes (repo + project)." >&2
+            exit 1
+          fi
+
+          status_field_options_json="$(jq -c '
+            [
+              .data.user.projectV2.fields.nodes[]
+              | select(.name == "Status" and .__typename == "ProjectV2SingleSelectField")
+              | .options[]?.name
+            ] | unique
+          ' <<<"$preflight_json")"
+          if [[ "$(jq -r 'length' <<<"$status_field_options_json")" == "0" ]]; then
+            echo "Project preflight failed: Status single-select field not found in Project #${PROJECT_NUMBER}." >&2
+            exit 1
+          fi
+          for required_status in "In Progress" "Review" "Blocked"; do
+            if ! jq -e --arg s "$required_status" 'any(.[]; . == $s)' >/dev/null 2>&1 <<<"$status_field_options_json"; then
+              echo "Project preflight failed: Status option '$required_status' missing in Project #${PROJECT_NUMBER}." >&2
+              exit 1
+            fi
+          done
+
+          echo "Preflight OK: auth=${auth_login}, project=${PROJECT_OWNER}#${PROJECT_NUMBER}, week=${week_key}"
 
           items_query='query($owner:String!,$number:Int!,$after:String){
             user(login:$owner){
@@ -180,7 +194,6 @@ jobs:
                         id
                         number
                         title
-                        body
                         url
                         state
                         updatedAt
@@ -226,18 +239,14 @@ jobs:
             items_json="$(graphql_call "$items_payload")"
             graphql_require_no_errors "$items_json" "loading project items (page ${page_count})"
 
-            page_entries_json="$(jq -c --arg repo "$repo" '
+            page_entries_json="$(jq -c --arg repo "$repo" --arg digest_prefix "$digest_title_prefix" '
               [
                 .data.user.projectV2.items.nodes[]
                 | select(.content != null)
                 | select((.content.__typename == "Issue") or (.content.__typename == "PullRequest"))
                 | select((.content.repository.nameWithOwner // "") == $repo)
-                | select(
-                    (
-                      (([.content.labels.nodes[]?.name] | any(. == "report:weekly")))
-                      or (((.content.body // "") | contains("<!-- cdb-weekly-digest:")))
-                    ) | not
-                  )
+                # Exclude prior weekly digest issues from metrics to avoid self-inflation.
+                | select(((.content.title // "") | startswith($digest_prefix)) | not)
                 | {
                     type: .content.__typename,
                     number: .content.number,
@@ -269,6 +278,10 @@ jobs:
           done
 
           total_project_repo_items="$(jq -r 'length' <<<"$project_items_json")"
+          open_items_json="$(jq -c '[ .[] | select((.state | ascii_upcase) == "OPEN") ]' <<<"$project_items_json")"
+          open_issue_count="$(jq -r '[.[] | select(.type == "Issue")] | length' <<<"$open_items_json")"
+          open_pr_count="$(jq -r '[.[] | select(.type == "PullRequest")] | length' <<<"$open_items_json")"
+          open_total_count="$(jq -r 'length' <<<"$open_items_json")"
 
           now_items_json="$(jq -c '
             [
@@ -297,6 +310,18 @@ jobs:
           blocked_count="$(jq -r '[.[] | select(.status == "Blocked")] | length' <<<"$now_items_json")"
           eingang_count="$(jq -r 'length' <<<"$eingang_items_json")"
           pr_review_count="$(jq -r 'length' <<<"$pr_review_items_json")"
+          status_backlog_count="$(count_open_with_status "Backlog")"
+          status_ready_count="$(count_open_with_status "Ready")"
+          status_in_progress_count="$(count_open_with_status "In Progress")"
+          status_review_count="$(count_open_with_status "Review")"
+          status_blocked_count="$(count_open_with_status "Blocked")"
+          status_done_count="$(count_open_with_status "Done")"
+          stage_proof_count="$(count_open_with_label "stage:proof")"
+          stage_stability_count="$(count_open_with_label "stage:stability")"
+          stage_trade_count="$(count_open_with_label "stage:trade-capable")"
+          stage_validated_count="$(count_open_with_label "stage:strategy-validated")"
+          stage_monetization_count="$(count_open_with_label "stage:monetization")"
+          stage_scale_count="$(count_open_with_label "stage:scale")"
 
           top_review_json="$(jq -c '
             [ .[] | select((.state | ascii_upcase) == "OPEN") | select(.status == "Review") ]
@@ -366,10 +391,9 @@ jobs:
             update_payload="$(jq -nc --arg title "$update_title" --arg body "$body" '{title:$title, body:$body}')"
             update_resp="$(printf '%s' "$update_payload" | gh api --method PATCH "repos/${repo}/issues/${issue_number}" --input -)"
             issue_url="$(jq -r '.html_url // empty' <<<"$update_resp")"
-            gh api --method POST "repos/${repo}/issues/${issue_number}/labels" -f labels[]=report:weekly > /dev/null
             action_result="updated"
           else
-            create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body,labels:["report:weekly"]}')"
+            create_payload="$(jq -nc --arg title "$digest_title" --arg body "$body" '{title:$title, body:$body}')"
             create_resp="$(printf '%s' "$create_payload" | gh api --method POST "repos/${repo}/issues" --input -)"
             issue_url="$(jq -r '.html_url // empty' <<<"$create_resp")"
             issue_number="$(jq -r '.number // empty' <<<"$create_resp")"
@@ -377,55 +401,11 @@ jobs:
           fi
 
           if [[ -z "$issue_url" || -z "$issue_number" ]]; then
-            echo "Digest issue ${action_result} returned no issue URL/number." >&2
+            echo "Digest issue ${action_result} response returned no issue URL/number." >&2
             exit 1
           fi
 
           echo "Weekly digest ${action_result}: #${issue_number} ${issue_url}"
-          echo "Summary: now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
-
-      - name: Close stale weekly digest issues (keep latest 2 open)
-        shell: bash
-        env:
-          CDB_AUTH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
-          GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}
-        run: |
-          set -euo pipefail
-
-          repo="${GITHUB_REPOSITORY}"
-          keep_open=2
-          close_comment="Auto-closed: weekly digest is timeboxed; see newer digest issues for current status."
-
-          digest_issues_json="$(
-            gh api --paginate --slurp "repos/${repo}/issues?state=open&labels=report:weekly&per_page=100" \
-              | jq -c '
-                  map(.[])
-                  | map(select(has("pull_request") | not))
-                  | map(select(([.labels[]?.name] | index("report:weekly-fail")) | not))
-                  | sort_by(.created_at) | reverse
-                '
-          )"
-
-          total_open="$(jq -r 'length' <<<"$digest_issues_json")"
-          if (( total_open <= keep_open )); then
-            echo "No stale weekly digests to close (open=${total_open}, keep=${keep_open})."
-            exit 0
-          fi
-
-          stale_json="$(jq -c --argjson keep "${keep_open}" '.[ $keep: ]' <<<"$digest_issues_json")"
-          stale_count="$(jq -r 'length' <<<"$stale_json")"
-
-          if (( stale_count == 0 )); then
-            echo "No stale weekly digests to close after slicing."
-            exit 0
-          fi
-
-          jq -r '.[].number' <<<"$stale_json" | while read -r issue_number; do
-            if [[ -z "${issue_number}" ]]; then
-              continue
-            fi
-
-            gh api --method PATCH "repos/${repo}/issues/${issue_number}" -f state=closed > /dev/null
-            gh api --method POST "repos/${repo}/issues/${issue_number}/comments" -f body="$close_comment" > /dev/null
-            echo "Closed stale weekly digest issue #${issue_number}."
-          done
+          echo "Summary: open_items(issues=${open_issue_count}, prs=${open_pr_count}, total=${open_total_count}); now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
+          echo "Status summary (open): backlog=${status_backlog_count}, ready=${status_ready_count}, in_progress=${status_in_progress_count}, review=${status_review_count}, blocked=${status_blocked_count}, done=${status_done_count}"
+          echo "Stage summary (open): proof=${stage_proof_count}, stability=${stage_stability_count}, trade_capable=${stage_trade_count}, strategy_validated=${stage_validated_count}, monetization=${stage_monetization_count}, scale=${stage_scale_count}"

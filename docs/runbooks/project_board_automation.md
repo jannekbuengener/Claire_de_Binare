@@ -22,7 +22,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 - Project URL: `https://github.com/users/jannekbuengener/projects/8`
 - Owner / Number: `jannekbuengener / 8`
 - Triage View (`EINGANG`): `https://github.com/users/jannekbuengener/projects/8/views/18`
-  - Intake: neue Items landen standardmaessig in `INBOX`; `triage:offen` bleibt Fallback fuer Items ohne aufloesbaren Milestone
+  - Filter: `is:open label:"triage:offen"`
 - Milestones:
   - `System ist beweisbar`
   - `System ist stabil`
@@ -58,22 +58,6 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - PRs -> `Review`
 - `.github/workflows/project_status_label_map.yml`
   - Setzt Project-Status anhand von `status:*` Labels (inkl. `closed -> Done`), idempotent.
-  - Reagiert nur auf `closed`/`reopened` sowie auf `labeled`/`unlabeled` mit Label-Prefix `status:`.
-- `.github/workflows/auto-milestone.yml`
-  - Setzt bei neuen/reopened/labeled Issues deterministisch nach Precedence:
-    - `labeled`-Events reagieren nur auf Labels mit Prefix `milestone:`
-    - genau ein `milestone:<TITLE>` -> setzt den offenen Milestone `<TITLE>` und darf `INBOX` überschreiben
-    - mehrere `milestone:<...>` Labels -> Warnung und keine Mutation
-    - sonst Default `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert und aktuell noch kein Milestone gesetzt ist
-    - unbekannter Titel oder fehlendes/geschlossenes `INBOX` -> nur Warnung, keine Mutation
-    - vorhandene Nicht-`INBOX`-Milestones werden nie überschrieben
-- `.github/workflows/auto-milestone-pr-intent.yml`
-  - Lauscht unprivilegiert auf `pull_request` (`opened`, `reopened`, `synchronize`, `labeled`) und schreibt nur PR-Metadaten als Artifact `pr_event`.
-  - Kein Checkout, keine PR-Code-Ausfuehrung, nur `contents: read`.
-- `.github/workflows/auto-milestone-pr-apply.yml`
-  - Reagiert via `workflow_run` auf `Auto Milestone PR Intent`, laeuft im Default-Branch-Kontext und setzt PR-Milestones ueber die Issues API.
-  - Metadata-only: kein Checkout, same-repo guard fuer Fork-PRs, fail-soft bei API-/Berechtigungsfehlern.
-  - Wenn GitHub den `GITHUB_TOKEN` im Apply-Pfad serverseitig auf `issues=read` herunterstuft, nutzt der Workflow optional das Repo-Secret `CDB_PR_AUTOMATION_TOKEN` als Fallback.
 - `.github/workflows/milestone_stage_label_sync.yml`
   - Synchronisiert `stage:*` Labels aus Milestones (`milestoned`, `demilestoned`, `reopened`), mutually exclusive.
 - `.github/workflows/triage_guard.yml`
@@ -81,34 +65,26 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
     - kein Milestone -> Label setzen
     - Milestone gesetzt -> Label entfernen
     - `demilestoned` -> Label wieder setzen
-- `docs/runbooks/control_board_board_as_code.md`
-  - Technische Kurz-Doku fuer Upsert/Routing (Dry-Run, Apply, Toggle default OFF, Smoke-Test).
+- `.github/workflows/weekly_digest.yml`
+  - Erstellt (oder aktualisiert idempotent) ein wöchentliches Digest-Issue mit Counts/Links für `Now`, `EINGANG` und `PR REVIEW`.
 
 ## Triage-Prozess (Jannek)
 
-- Öffne die View `EINGANG` und arbeite neue Items mit Default-Milestone `INBOX` zuerst ab; `triage:offen` bleibt nur der Fallback fuer nicht aufgeloeste Faelle.
-- Ersetze `INBOX` im Triage-Schritt durch einen der 6 strategischen Milestones.
+- Öffne die View `EINGANG` und arbeite nur Items mit `triage:offen` ab (offen, ohne Milestone).
+- Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
 - Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
 
-## Milestone-Autofill
+## Weekly Digest (operativ, kurz)
 
-- `labeled`-Events fuer Auto-Milestone reagieren nur auf Labels mit Prefix `milestone:`; andere Labels triggern keine Milestone-Mutation.
-- Genau ein `milestone:<TITLE>` mappt 1:1 auf einen vorhandenen offenen Milestone mit exakt diesem Titel und darf `INBOX` uebersteuern.
-- Mehrere `milestone:<...>`-Labels gelten als mehrdeutig; der Workflow loggt eine Warnung und setzt keinen Milestone.
-- Ohne `milestone:`-Label setzt die Automation den Default-Milestone `INBOX`, aber nur wenn ein offener Milestone `INBOX` existiert.
-- `issue-governance.yml` stuft `INBOX` auf den passenden Phase-Milestone hoch, sobald der Titel eine gemappte Phase enthaelt.
-- Nicht-`INBOX`-Milestones bleiben stabil: Weder `auto-milestone.yml` noch `issue-governance.yml` ueberschreiben sie.
-- Existiert `<TITLE>` nicht als offener Milestone oder ist `INBOX` nicht offen/vorhanden, bleibt das Item unveraendert und der Workflow loggt nur eine Warnung.
-- PR-Milestones laufen ueber zwei Schritte:
-  - `Auto Milestone PR Intent` sammelt auf `pull_request` nur Metadaten.
-  - `Auto Milestone PR Apply` schreibt den Milestone spaeter auf `workflow_run` im trusted Default-Branch-Kontext.
-- `INBOX` ist ein Intake-Milestone; im Triage-Schritt wird er spaeter durch einen der 6 strategischen Milestones ersetzt.
-
-Report-Ausnahme:
-- Issues mit `report:weekly` oder `report:weekly-fail` sind `triage:offen`-exempt.
-- `triage_guard` überspringt diese Report-Issues deterministisch ohne Label-Mutation.
-- Weekly Digest Lifecycle ist timeboxed: `weekly_digest.yml` hält nur die neuesten 2 offenen `report:weekly`-Issues, ältere werden automatisch geschlossen.
-- Failure-Alerts mit `report:weekly-fail` bleiben offen, bis der Alarmzustand manuell behoben ist.
+- Zweck: Wöchentlicher Lagebericht als GitHub Issue im Repo (`Weekly Digest – <YYYY-MM-DD>`), gespeist aus Project #8.
+- Output-Ziel: Ein Digest-Issue pro ISO-Woche (idempotent per Wochen-Marker; Re-Runs aktualisieren statt Doppelpost).
+- Trigger:
+  - `schedule` (Montag `08:00 UTC`, entspricht ca. `09:00 CET` / `10:00 CEST`)
+  - `workflow_dispatch` (manueller Test / Rebuild)
+- Typische Fehlerbilder + Fix:
+  - `403` / Project-v2-Zugriff fehlt: `ADD_TO_PROJECT_PAT` prüfen (`repo` + `project`), Token-Kontext (`GH_TOKEN`) sicherstellen.
+  - Actions laufen nicht / Billing blockiert: GitHub `Billing & plans` prüfen, dann Run neu starten (`gh run rerun <RUN_ID>`).
+  - Project falsch/nicht erreichbar: Owner/Number (`jannekbuengener / 8`) und Views/Status-Feld im Board prüfen.
 
 ## Troubleshooting (Klassiker)
 
@@ -167,73 +143,9 @@ Fix (lokal):
 4. Scopes prüfen (`repo`, `project` erforderlich für Project-v2-Write).
 
 Hinweis:
-- In GitHub Actions wird `CDB_AUTH_TOKEN` deterministisch gewählt:
-  - `APP` wenn `CDB_GH_APP_ID` + `CDB_GH_APP_PRIVATE_KEY` gesetzt sind (optional mit `CDB_GH_APP_INSTALLATION_ID`)
-  - sonst `PAT` über `ADD_TO_PROJECT_PAT`
-
-## Token Migration (#941)
-
-Zweck:
-- Vorbereitung auf Least-Privilege-Auth ohne Breaking Change; Legacy-PAT bleibt als Fallback aktiv.
-
-Secrets (Reihenfolge der Nutzung):
-- Legacy (bestehend): `ADD_TO_PROJECT_PAT`
-- App (empfohlen): `CDB_GH_APP_ID`, `CDB_GH_APP_PRIVATE_KEY`, optional `CDB_GH_APP_INSTALLATION_ID`
-
-Auth-Modi:
-- Option A (empfohlen): GitHub App Token (runtime mint), genutzt wenn App-Secrets vollständig vorhanden sind.
-- Option B (Fallback): Fine-grained/Classic PAT in `ADD_TO_PROJECT_PAT` (nur bis Migration abgeschlossen ist).
-
-Minimal benötigte Rechte:
-- Projects v2 lesen/schreiben (Item add/update, Status-Updates)
-- Issues/PRs lesen/schreiben (Labels, Create/Update/Close von Digest- und Alert-Issues)
-- Keine zusätzlichen repo-weiten Admin-Rechte
-
-Umstellung (safe rollout):
-1. App im Owner-Kontext installieren und App-Secrets im Repo setzen.
-2. `workflow_dispatch` für `Weekly Project Digest` und `Weekly Digest Failure Alert` testen.
-3. Prüfen, dass Logs `Auth mode selected: APP` zeigen.
-4. Nach stabiler Laufzeit PAT rotieren/entfernen (`ADD_TO_PROJECT_PAT` als Break-glass nur temporär behalten).
-
-Rollback (Break-glass):
-1. App-Secrets entfernen oder leeren.
-2. `ADD_TO_PROJECT_PAT` aktiv lassen.
-3. Workflows fallen deterministisch auf `PAT` zurück.
-
-Trigger-Safety:
-- Secret-abhängige Board-Automationen laufen nur auf trusted Events (z. B. `issues`, `schedule`, `workflow_dispatch`) und nicht auf `pull_request`.
-- PR-bezogene Board-Änderungen sind dadurch eventual consistent und werden über den täglichen Reconcile-Job nachgezogen.
+- In GitHub Actions nutzen die Workflows explizit `GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}` (Classic PAT mit `repo` + `project`).
 
 ## Quick Sanity Checks (gh CLI)
-
-## Manual validation
-
-- Ensure an open milestone `INBOX` exists (otherwise workflow warns and does nothing)
-- New issue without milestone gets `INBOX`
-- New issue with exactly one `milestone:<TITLE>` gets the matching open milestone and may replace `INBOX`
-- New issue with multiple `milestone:<...>` labels only warns and stays unchanged
-- Non-`milestone:` labeled events do not trigger Auto-Milestone writes
-- Phase-based governance upgrades `INBOX` to the mapped phase milestone, but does not overwrite other milestones
-- PR from the same repo gets a milestone via `Auto Milestone PR Apply` on `workflow_run`
-- `workflow_dispatch` backfill only touches open items without a milestone
-- Missing or closed `INBOX` only warns and does not fail the workflow
-
-## Operational known limits
-
-- PR-Milestones werden ueber `pull_request` + `workflow_run` entkoppelt:
-  - Der Listener sammelt nur Metadaten als Artifact.
-  - Der Applier laeuft im trusted Default-Branch-Kontext, macht keinen Checkout und setzt den Milestone ueber die Issues API.
-- Externe Fork-PRs werden absichtlich per same-repo guard geskippt.
-- Hintergrund: PR-Event-Token koennen serverseitig read-only sein; `workflow_run` kann dagegen die benoetigten Write-Tokens fuer Metadata-Mutationen erhalten.
-- Wenn `GITHUB_TOKEN` im Apply-Workflow trotzdem mit `403` und `accepted permissions: issues=read` downscoped wird, benoetigt der Workflow das Repo-Secret `CDB_PR_AUTOMATION_TOKEN` (fine-grained PAT mit minimal `Issues`/`Pull requests` Read+Write), um PR-Milestones zu setzen.
-- `CDB_PR_AUTOMATION_TOKEN` ist als fine-grained, repo-scoped PAT mit minimalen Rechten zu pflegen; mindestens `Issues: Read and write`, nicht mehr als fuer den Fallback noetig.
-- Empfehlung: immer ein Ablaufdatum setzen (z. B. 30 oder 90 Tage) und eine feste Rotationsroutine betreiben.
-- Secret-Wert niemals in Logs, Chats oder PR-Kommentaren posten; ausschliesslich als GitHub Actions Secret pflegen und dort rotieren.
-- Security bleibt unveraendert: metadata-only, kein Checkout, same-repo guard.
-
-## Manual backfill (monthly)
-
-- Run the `Auto Milestone` workflow via `workflow_dispatch` on `main` to assign milestones for open items without a milestone.
 
 ### Auth / Scopes
 
