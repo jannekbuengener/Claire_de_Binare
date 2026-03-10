@@ -1,5 +1,5 @@
 # Paper Trading Runner - Containerized Service
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -12,6 +12,9 @@ RUN useradd -m -u 1000 paperuser
 
 # Set working directory
 WORKDIR /app
+
+# Fix CVE-2026-23949 (jaraco.context), CVE-2026-24049 (wheel)
+RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
 
 # Copy requirements first (for layer caching)
 COPY tools/paper_trading/requirements.txt /app/tools/paper_trading/

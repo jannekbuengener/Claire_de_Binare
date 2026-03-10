@@ -18,11 +18,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Thread
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import psycopg2
 import redis
 import importlib.util
+
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
 except ModuleNotFoundError as e:
@@ -45,8 +46,23 @@ from core.utils.uuid_gen import (
 )
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
+from core.utils.redis_client import create_redis_client
 from core.utils.trace_toggle import trace_contract_v1_enabled, allow_evidence_debt
-from core.replay.policy_snapshot import build_policy_snapshot, policy_snapshot_binding_enabled
+
+if TYPE_CHECKING:
+    from core.replay.publisher import EnvelopePublisher
+
+from core.replay.policy_snapshot import (
+    build_policy_snapshot,
+    policy_snapshot_binding_enabled,
+)
+from core.contracts.decision_contract_v1 import (
+    DecisionContractError,
+    build_decision_contract_v1_bundle,
+    verify_decision_contract_v1_bundle,
+    write_decision_contract_audit_record,
+)
+from core.safety.kill_switch import get_kill_switch_details
 from core.auth import validate_all_auth
 from core.domain.models import Signal
 
@@ -118,6 +134,13 @@ shutdown_strategy_ids = set()
 shutdown_bot_ids = set()
 
 
+def _envelope_toggle_enabled() -> bool:
+    primary = os.getenv("CDB_ENVELOPE_EMISSION")
+    if primary is not None:
+        return primary == "1"
+    return os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
+
+
 @dataclass
 class AllocationState:
     allocation_pct: float = 0.0
@@ -127,6 +150,8 @@ class AllocationState:
 DECISION_CONTRACT_VERSION = "decision_contract_v1"
 DECISION_ALLOW = "ALLOW"
 DECISION_BLOCK = "BLOCK"
+KILL_SWITCH_BLOCK_REASON_CODE = "KILL_SWITCH_ACTIVE"
+KILL_SWITCH_UNEVALUABLE_REASON_CODE = "KILL_SWITCH_UNEVALUABLE"
 
 DECISION_THRESHOLDS = {
     "return_1m_min": -2.0,
@@ -379,9 +404,9 @@ def _phase9_enrich_evidence(
     # Enrich evidence with Phase 9 fields
     evidence["policy_id"] = POLICY_ID
     evidence["policy_hash"] = policy_hash
-    evidence[
-        "input_hash"
-    ] = input_hash  # alias, keep input_snapshot_hash for backwards compat
+    evidence["input_hash"] = (
+        input_hash  # alias, keep input_snapshot_hash for backwards compat
+    )
 
     # output_hash uses the SAME decision_pk that will be written to event
     evidence["output_hash"] = compute_output_hash(
@@ -439,6 +464,8 @@ class RiskManager:
         self.allocation_state: dict[str, AllocationState] = {}
         self._circuit_shutdown_emitted = False
         self._pg_conn: Optional[psycopg2.extensions.connection] = None
+        self._envelope_redis_client: Optional[redis.Redis] = None
+        self._envelope_publisher: EnvelopePublisher | None = None
 
         # Validiere Config
         try:
@@ -447,6 +474,256 @@ class RiskManager:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+    # --- LR-762: Kill-switch gate + Decision Contract enforcement ---
+
+    def _kill_switch_gate(self) -> tuple[bool, str, dict]:
+        """Evaluate kill-switch state for fail-closed execution gating."""
+        try:
+            active, reason, message, activated_at = get_kill_switch_details(
+                create_if_missing=False
+            )
+        except Exception as exc:
+            logger.exception("Kill-switch evaluation failed (fail-closed)")
+            return (
+                True,
+                KILL_SWITCH_UNEVALUABLE_REASON_CODE,
+                {
+                    "reason": None,
+                    "message": f"kill-switch evaluation error: {exc}",
+                    "activated_at": None,
+                },
+            )
+        if not active:
+            return False, "", {}
+        return (
+            True,
+            KILL_SWITCH_BLOCK_REASON_CODE,
+            {
+                "reason": reason,
+                "message": message,
+                "activated_at": activated_at,
+            },
+        )
+
+    @staticmethod
+    def _to_ms_timestamp(value: object) -> int:
+        if value is None or isinstance(value, bool):
+            return 0
+        if isinstance(value, (int, float)):
+            if value <= 0:
+                return 0
+            as_int = int(value)
+            return as_int * 1000 if as_int < 10_000_000_000 else as_int
+        if isinstance(value, str):
+            raw = value.strip()
+            if not raw:
+                return 0
+            try:
+                parsed = float(raw)
+            except ValueError:
+                return 0
+            if parsed <= 0:
+                return 0
+            as_int = int(parsed)
+            return as_int * 1000 if as_int < 10_000_000_000 else as_int
+        return 0
+
+    def _resolve_contract_run_mode(
+        self,
+        *,
+        strategy_id: str | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> str:
+        candidates: list[str | None] = [run_mode_override]
+        if isinstance(payload, dict):
+            candidates.append(payload.get("run_mode"))
+        candidates.extend([os.getenv("RUN_MODE"), os.getenv("TRADING_MODE")])
+        for candidate in candidates:
+            if not candidate:
+                continue
+            mode = str(candidate).strip().lower()
+            if mode == "staged":
+                mode = "shadow"
+            if mode in {"shadow", "paper", "replay", "live"}:
+                return mode
+        strategy_mode = (strategy_id or "").strip().lower()
+        if strategy_mode in {"shadow", "paper", "replay", "live"}:
+            return strategy_mode
+        return "paper"
+
+    def _build_decision_contract_input(
+        self,
+        order: Order,
+        *,
+        source: str,
+        account_state_snapshot: dict | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> dict:
+        if account_state_snapshot is None:
+            account_state_snapshot = {}
+
+        balance_usdt = float(self.config.test_balance)
+        if "balance_usdt" in account_state_snapshot:
+            parsed_balance = _parse_number(account_state_snapshot.get("balance_usdt"))
+            if parsed_balance is not None:
+                balance_usdt = parsed_balance
+        if balance_usdt <= 0:
+            raise DecisionContractError(
+                "balance_usdt must be > 0 for contract evaluation"
+            )
+
+        daily_drawdown_pct = _parse_number(
+            account_state_snapshot.get("daily_drawdown_pct")
+        )
+        if daily_drawdown_pct is None:
+            daily_drawdown_pct = (
+                max(0.0, -float(risk_state.daily_pnl) / balance_usdt * 100.0)
+                if balance_usdt > 0
+                else 0.0
+            )
+
+        total_exposure_usdt = float(risk_state.total_exposure) + float(
+            risk_state.pending_exposure_usdt
+        )
+        price_ref = float(order.price or risk_state.last_prices.get(order.symbol, 0.0))
+        if price_ref <= 0:
+            raise DecisionContractError(
+                f"price_ref unavailable for order {order.symbol} ({source})"
+            )
+
+        timestamp_input_ms = self._to_ms_timestamp(order.timestamp)
+        if timestamp_input_ms <= 0:
+            timestamp_input_ms = self._to_ms_timestamp(
+                account_state_snapshot.get("ts_ms")
+                or account_state_snapshot.get("timestamp_ms")
+            )
+
+        max_notional_usdt = balance_usdt * float(self.config.max_position_pct)
+        max_total_exposure_usdt = balance_usdt * float(
+            self.config.max_total_exposure_pct
+        )
+        max_daily_drawdown_pct = float(self.config.max_daily_drawdown_pct) * 100.0
+
+        open_positions = {
+            symbol: str(qty)
+            for symbol, qty in sorted(
+                risk_state.positions.items(), key=lambda item: item[0]
+            )
+        }
+
+        return {
+            "run_mode": self._resolve_contract_run_mode(
+                strategy_id=order.strategy_id,
+                payload=payload,
+                run_mode_override=run_mode_override,
+            ),
+            "order": {
+                "symbol": order.symbol,
+                "side": order.side,
+                "quantity": str(order.quantity),
+                "price_ref": str(price_ref),
+                "timestamp_input_ms": int(timestamp_input_ms),
+                "reduce_only": bool(
+                    order.side == "SELL"
+                    and risk_state.positions.get(order.symbol, 0.0) > 0.0
+                ),
+            },
+            "account_state": {
+                "balance_usdt": str(balance_usdt),
+                "total_exposure_usdt": str(total_exposure_usdt),
+                "daily_drawdown_pct": str(daily_drawdown_pct),
+            },
+            "open_positions": open_positions,
+            "risk_policy": {
+                "max_notional_usdt": str(max_notional_usdt),
+                "max_total_exposure_usdt": str(max_total_exposure_usdt),
+                "max_daily_drawdown_pct": str(max_daily_drawdown_pct),
+            },
+            "system_config": {
+                "paper_auto_unwind": bool(self.config.paper_auto_unwind),
+                "use_real_balance": bool(self.config.use_real_balance),
+                "service": "risk_manager",
+            },
+            "context": {
+                "source": source,
+                "signal_id": order.signal_id or "",
+                "strategy_id": order.strategy_id or "",
+                "bot_id": order.bot_id or "",
+            },
+        }
+
+    def _ensure_decision_contract_for_order(
+        self,
+        order: Order,
+        *,
+        source: str,
+        account_state_snapshot: dict | None = None,
+        payload: dict | None = None,
+        run_mode_override: str | None = None,
+    ) -> dict:
+        bundle = order.decision_contract_v1
+        if bundle is None:
+            contract_input = self._build_decision_contract_input(
+                order,
+                source=source,
+                account_state_snapshot=account_state_snapshot,
+                payload=payload,
+                run_mode_override=run_mode_override,
+            )
+            bundle = build_decision_contract_v1_bundle(contract_input)
+        ok, reason = verify_decision_contract_v1_bundle(bundle, require_allow=True)
+        if not ok:
+            raise DecisionContractError(reason)
+
+        # --- HARDENING FIX 1: Strict order-identity binding ---
+        # The bundle must match the active order's identity fields.
+        # Without this check, a stale/injected bundle could pass verification.
+        bundle_order = bundle.get("input", {}).get("order", {})
+        if bundle_order.get("symbol") != order.symbol:
+            raise DecisionContractError(
+                f"Contract bundle symbol mismatch: "
+                f"bundle={bundle_order.get('symbol')!r} vs order={order.symbol!r}"
+            )
+        if bundle_order.get("side") != order.side:
+            raise DecisionContractError(
+                f"Contract bundle side mismatch: "
+                f"bundle={bundle_order.get('side')!r} vs order={order.side!r}"
+            )
+        bundle_qty_str = str(bundle_order.get("quantity", ""))
+        order_qty_str = str(order.quantity)
+        # Compare as floats to handle Decimal string formatting differences
+        try:
+            bundle_qty_f = float(bundle_qty_str)
+            order_qty_f = float(order_qty_str)
+        except (ValueError, TypeError) as exc:
+            raise DecisionContractError(
+                f"Contract bundle quantity not comparable: "
+                f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
+            ) from exc
+        if abs(bundle_qty_f - order_qty_f) > 1e-12:
+            raise DecisionContractError(
+                f"Contract bundle quantity mismatch: "
+                f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
+            )
+
+        audit_path = write_decision_contract_audit_record(bundle)
+        evidence = bundle["output"]["evidence"]
+        order.decision_contract_v1 = bundle
+        if not order.decision_id:
+            order.decision_id = f"dcv1-{evidence['decision_hash'][:16]}"
+
+        # --- HARDENING FIX 2: Always overwrite hash provenance ---
+        # Unconditionally set order hashes from contract evidence.
+        # The previous code only set when None, allowing Phase9 trace hashes
+        # to drift from contract evidence hashes.
+        order.input_hash = evidence["input_hash"]
+        order.output_hash = evidence["decision_hash"]
+
+        logger.debug("Decision Contract audit written: %s", audit_path)
+        return bundle
 
     def connect_redis(self):
         """Redis-Verbindung"""
@@ -476,6 +753,54 @@ class RiskManager:
         except redis.ConnectionError as e:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
+        else:
+            self._setup_envelope_emitter()
+
+    def _setup_envelope_emitter(self) -> None:
+        if not _envelope_toggle_enabled():
+            self._envelope_redis_client = None
+            self._envelope_publisher = None
+            return
+
+        try:
+            from core.replay.emitter import configure_envelope_emission
+            from core.replay.publisher import EnvelopePublisher
+
+            envelope_client = create_redis_client(
+                host=self.config.redis_host,
+                port=self.config.redis_port,
+                password=self.config.redis_password,
+                db=self.config.redis_db,
+                decode_responses=True,
+            )
+            mode = os.getenv("CDB_ENVELOPE_REDIS_MODE", "stream").lower()
+            if mode != "pubsub":
+                mode = "stream"
+            stream = os.getenv("CDB_ENVELOPE_REDIS_STREAM", "cdb:envelopes:v1")
+            channel = os.getenv("CDB_ENVELOPE_REDIS_CHANNEL", "cdb.envelopes.v1")
+            publisher = EnvelopePublisher(
+                redis_client=envelope_client,
+                mode=mode,
+                stream=stream,
+                channel=channel,
+            )
+            self._envelope_redis_client = envelope_client
+            self._envelope_publisher = publisher
+            configure_envelope_emission(True, publisher)
+            logger.info(
+                "Envelope emission enabled (mode=%s stream=%s channel=%s)",
+                mode,
+                stream,
+                channel,
+            )
+        except Exception:
+            logger.exception("Envelope emission setup failed, disabling emission")
+            try:
+                configure_envelope_emission(False, None)
+            except NameError:
+                pass
+            self._envelope_redis_client = None
+            self._envelope_publisher = None
 
     def _get_postgres_conn(self) -> Optional[psycopg2.extensions.connection]:
         try:
@@ -768,14 +1093,12 @@ class RiskManager:
             cursor = conn.cursor()
 
             # Query open positions
-            cursor.execute(
-                """
+            cursor.execute("""
                 SELECT symbol, side, size, entry_price, current_price
                 FROM positions
                 WHERE closed_at IS NULL AND size > 0
                 ORDER BY symbol
-                """
-            )
+                """)
             positions = cursor.fetchall()
 
             if not positions:
@@ -783,8 +1106,7 @@ class RiskManager:
                 # If positions empty, but orders show net open position, FAIL
                 logger.info("Positions table empty - checking for state mismatch...")
 
-                cursor.execute(
-                    """
+                cursor.execute("""
                     SELECT
                         COALESCE(SUM(CASE WHEN side = 'buy' THEN filled_size ELSE 0 END), 0) as buy_total,
                         COALESCE(SUM(CASE WHEN side = 'sell' THEN filled_size ELSE 0 END), 0) as sell_total
@@ -792,8 +1114,7 @@ class RiskManager:
                     WHERE status = 'filled'
                       AND filled_size > 0
                       AND created_at >= '2026-01-17 14:15:00'
-                    """
-                )
+                    """)
                 buy_total, sell_total = cursor.fetchone()
                 net_position = float(buy_total) - float(sell_total)
 
@@ -1138,6 +1459,33 @@ class RiskManager:
         """Prüft Signal gegen alle Risk-Layers"""
         payload = raw_payload or {}
 
+        # LR-762: Kill-switch gate (fail-closed, HARDENING FIX 3)
+        kill_switch_active, kill_switch_code, kill_switch_context = (
+            self._kill_switch_gate()
+        )
+        if kill_switch_active:
+            block_message = (
+                f"Kill-switch active: reason={kill_switch_context.get('reason') or 'unknown'}; "
+                f"activated_at={kill_switch_context.get('activated_at') or 'unknown'}"
+                if kill_switch_code == KILL_SWITCH_BLOCK_REASON_CODE
+                else kill_switch_context.get("message", "kill-switch evaluation error")
+            )
+            self.send_alert(
+                "CRITICAL",
+                kill_switch_code,
+                block_message,
+                {
+                    "signal_id": signal.signal_id,
+                    "strategy_id": signal.strategy_id,
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                },
+            )
+            logger.warning("Signal blockiert durch Kill-Switch: %s", block_message)
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         # Market State V1: Lookup from Redis (BLUE-owned, fail-closed)
         # Key: market_state:{symbol} - set by Candles Service with TTL
         market_state = payload.get("market_state")
@@ -1159,7 +1507,9 @@ class RiskManager:
         # Phase 9: Enrich evidence ONCE (before DECISION emit AND Order creation)
         # ts_ms: deterministisch (signal_ts_ms), NICHT wall-clock (now_ms).
         # Fallback auf now_ms nur wenn Signal kein ts_ms liefert (Compat).
-        deterministic_ts_ms = evidence.get("timestamps_ms", {}).get("signal_ts_ms") or now_ms
+        deterministic_ts_ms = (
+            evidence.get("timestamps_ms", {}).get("signal_ts_ms") or now_ms
+        )
         evidence, input_hash, decision_pk = _phase9_enrich_evidence(
             evidence=evidence,
             decision=decision,
@@ -1179,35 +1529,31 @@ class RiskManager:
             except Exception:
                 pass  # Guardrail: never break trading path
 
-        # LR-021 Slice 2: DECISION envelope emission (toggle-gated, default OFF)
-        try:
-            _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
-            _lr021_emit = (
-                (_cdb_val == "1")
-                if _cdb_val is not None
-                else os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
-            )
-        except Exception:
-            _lr021_emit = False
-        if _lr021_emit and evidence.get("decision_id"):
-            try:
-                from core.replay.emitter import emit_decision_envelope
+        if evidence.get("decision_id"):
+            if _envelope_toggle_enabled():
+                try:
+                    from core.replay.emitter import emit_decision_envelope
 
-                emit_decision_envelope(
-                    event_id=str(evidence["decision_id"]),
-                    ts_ms=deterministic_ts_ms,
-                    decision=decision,
-                    reason_code=reason_code,
-                    symbol=signal.symbol,
-                    evidence=evidence,
-                    policy_id=evidence.get("policy_id"),
-                    policy_hash=evidence.get("policy_hash"),
-                    input_hash=evidence.get("input_hash"),
-                    output_hash=evidence.get("output_hash"),
-                    policy_snapshot=policy_snapshot,
-                )
-            except Exception:
-                pass  # Guardrail: never break trading path
+                    emit_decision_envelope(
+                        event_id=str(evidence["decision_id"]),
+                        ts_ms=deterministic_ts_ms,
+                        decision=decision,
+                        reason_code=reason_code,
+                        symbol=signal.symbol,
+                        evidence=evidence,
+                        signal_id=evidence.get("signal_id"),
+                        trace_id=evidence.get("trace_id"),
+                        decision_context=evidence.get("decision_context"),
+                        policy_id=evidence.get("policy_id"),
+                        policy_hash=evidence.get("policy_hash"),
+                        input_hash=evidence.get("input_hash"),
+                        output_hash=evidence.get("output_hash"),
+                        policy_snapshot=policy_snapshot,
+                    )
+                except RuntimeError:
+                    raise
+                except Exception:
+                    logger.exception("Decision envelope emission failed")
 
         # Trace-Writes: nur wenn Toggle ON (Toggle OFF = zero side effects)
         signal_id = evidence.get("signal_id")
@@ -1278,7 +1624,9 @@ class RiskManager:
                         timestamp_ms=now_ms,
                         evidence=evidence,
                     ):
-                        logger.warning(f"⚠️ blocked_decisions write failed (evidence debt)")
+                        logger.warning(
+                            f"⚠️ blocked_decisions write failed (evidence debt)"
+                        )
 
                 # Redis blocked_order Artefakt (audit/replay)
                 blocked_order = {
@@ -1490,6 +1838,25 @@ class RiskManager:
 
                 return None
 
+        # LR-762: Deterministic Decision Contract gate (fail-closed).
+        try:
+            self._ensure_decision_contract_for_order(
+                order,
+                source="risk.process_signal",
+                account_state_snapshot=(
+                    account_state if isinstance(account_state, dict) else None
+                ),
+                payload=payload,
+            )
+        except DecisionContractError as exc:
+            logger.error(
+                "⛔ Decision Contract v1 failed in process_signal (fail-closed): %s",
+                exc,
+            )
+            stats["orders_blocked"] += 1
+            risk_state.signals_blocked += 1
+            return None
+
         logger.info(
             f"✅ Order freigegeben: {order.symbol} {order.side} qty={order.quantity:.4f}"
         )
@@ -1506,39 +1873,39 @@ class RiskManager:
             f"(total pending: {risk_state.pending_exposure_usdt:.2f})"
         )
 
-        # LR-021 Slice 2: ORDER envelope emission (toggle-gated, default OFF)
-        try:
-            _cdb_val = os.getenv("CDB_ENVELOPE_EMISSION")
-            _lr021_emit = (
-                (_cdb_val == "1")
-                if _cdb_val is not None
-                else os.getenv("LR021_ENVELOPE_EMIT_ENABLED", "0") == "1"
-            )
-        except Exception:
-            _lr021_emit = False
-        if _lr021_emit and getattr(order, "order_id", None):
-            try:
-                from core.replay.emitter import emit_order_envelope
+        if getattr(order, "order_id", None):
+            if order.price is None:
+                logger.debug("order.price is None — skip order envelope")
+            elif _envelope_toggle_enabled():
+                try:
+                    from core.replay.emitter import emit_order_envelope
 
-                if order.price is None:
-                    raise ValueError("order.price is None — skip order envelope")
-                emit_order_envelope(
-                    event_id=str(order.order_id),
-                    ts_ms=int(order.timestamp * 1000) if getattr(order, "timestamp", None) else deterministic_ts_ms,
-                    symbol=order.symbol,
-                    side=str(order.side),
-                    quantity=float(order.quantity),
-                    price=float(order.price),
-                    signal_id=order.signal_id or None,
-                    decision_id=order.decision_id or None,
-                    policy_id=getattr(order, "policy_id", None),
-                    policy_hash=getattr(order, "policy_hash", None),
-                    input_hash=getattr(order, "input_hash", None),
-                    output_hash=getattr(order, "output_hash", None),
-                    policy_snapshot=getattr(order, "policy_snapshot", None),
-                )
-            except Exception:
-                pass  # Guardrail: never break trading path
+                    emit_order_envelope(
+                        event_id=str(order.order_id),
+                        ts_ms=(
+                            int(order.timestamp * 1000)
+                            if getattr(order, "timestamp", None)
+                            else deterministic_ts_ms
+                        ),
+                        symbol=order.symbol,
+                        side=str(order.side),
+                        quantity=float(order.quantity),
+                        price=float(order.price),
+                        signal_id=order.signal_id or None,
+                        decision_id=order.decision_id or None,
+                        order_id=order.order_id or None,
+                        trace_id=order.trace_id or None,
+                        decision_context=evidence.get("decision_context"),
+                        policy_id=getattr(order, "policy_id", None),
+                        policy_hash=getattr(order, "policy_hash", None),
+                        input_hash=getattr(order, "input_hash", None),
+                        output_hash=getattr(order, "output_hash", None),
+                        policy_snapshot=getattr(order, "policy_snapshot", None),
+                    )
+                except RuntimeError:
+                    raise
+                except Exception:
+                    logger.exception("Order envelope emission failed")
 
         return order
 
@@ -1591,6 +1958,19 @@ class RiskManager:
 
     def send_order(self, order: Order):
         """Publiziert Order"""
+        # LR-762: Second contract gate before publish (fail-closed).
+        try:
+            self._ensure_decision_contract_for_order(
+                order,
+                source="risk.send_order",
+            )
+        except DecisionContractError as exc:
+            logger.error("⛔ Order blocked by Decision Contract gate: %s", exc)
+            stats["orders_blocked"] += 1
+            if risk_state.pending_orders > 0:
+                risk_state.pending_orders -= 1
+            return
+
         try:
             payload = sanitize_payload(order.to_dict())
             message = json.dumps(payload, ensure_ascii=False)
@@ -1681,6 +2061,14 @@ class RiskManager:
 
         Solution: Proactively unwind when blocked.
         """
+        # LR-030: No unwind orders in shadow mode
+        if self._resolve_contract_run_mode() == "shadow":
+            logger.info(
+                "Proactive unwind suppressed: shadow mode (positions=%d)",
+                len(risk_state.positions),
+            )
+            return
+
         if not self.config.paper_auto_unwind:
             return
 
@@ -1736,6 +2124,15 @@ class RiskManager:
         This is the original auto-unwind logic that triggers after successful BUY fills.
         Complements the proactive unwind above.
         """
+        # LR-030: No unwind orders in shadow mode
+        if self._resolve_contract_run_mode() == "shadow":
+            logger.info(
+                "Reactive unwind suppressed: shadow mode (symbol=%s, qty=%s)",
+                result.symbol,
+                result.filled_quantity,
+            )
+            return
+
         if not self.config.paper_auto_unwind:
             return
         if result.status != "FILLED":
@@ -2018,6 +2415,7 @@ if _FLASK_AVAILABLE:
             f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
         )
         return Response(body, mimetype="text/plain")
+
 else:
     app = None
 

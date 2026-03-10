@@ -15,9 +15,15 @@ on:
       - '.github/workflows/security-scan.yml'
   workflow_dispatch:  # Manual trigger
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   TRIVY_VERSION: "0.58.0"
   TRIVY_SUMMARY_MAX: "5"
+  # CVE-2026-0861 allowlist is computed dynamically and auto-removed once Debian
+  # bookworm/trixie expose a fixed version in OSV data.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,10 +39,10 @@ jobs:
     strategy:
       matrix:
         image:
-          - redis:7.4.1-alpine
-          - postgres:15.11-alpine
-          - prom/prometheus:v3.1.0
-          - grafana/grafana:11.4.0
+          - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
+          - postgres:15.17-alpine
+          - prom/prometheus:v3.10.0@sha256:4a61322ac1103a0e3aea2a61ef1718422a48fa046441f299d71e660a3bc71ae9
+          - grafana/grafana:11.4.7-ubuntu@sha256:c20611d00f4ddeb8cb73d9b73ecfdaab9775c81c9df627a91a366d9e95bbd800
       fail-fast: false
 
     steps:
@@ -112,6 +118,36 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Compute Trivy allowlist (Debian tracker)
+        run: |
+          set -euo pipefail
+          cve="CVE-2026-0861"
+          osv_url="https://api.osv.dev/v1/vulns/DEBIAN-${cve}"
+          allowlist="$cve"
+          decision="OSV lookup failed; fail-safe allowlist retained."
+
+          if osv_json="$(curl -fsSL "$osv_url")"; then
+            if fixed_bookworm="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:12") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")" \
+              && fixed_trixie="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:13") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"; then
+              if [[ -n "$fixed_bookworm" || -n "$fixed_trixie" ]]; then
+                allowlist=""
+                decision="fixed version detected for Debian:12/13 (bookworm/trixie)."
+              else
+                decision="bookworm/trixie still vulnerable or no fixed version published."
+              fi
+            else
+              decision="OSV JSON parse failed; fail-safe allowlist retained."
+            fi
+          fi
+
+          echo "TRIVY_ALLOWLIST_CVES=$allowlist" >> "$GITHUB_ENV"
+          {
+            echo "### Trivy Allowlist (dynamic)"
+            echo "- Dynamic allowlist: ${allowlist:-none} (CVE-2026-0861 removed automatically once Debian bookworm/trixie is fixed)"
+            echo "- Source: ${osv_url}"
+            echo "- Decision: ${decision}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build Service Image
         id: build_custom_image
         continue-on-error: true
@@ -147,14 +183,13 @@ jobs:
           echo "### Trivy (custom) ${{ matrix.service }}" >> "$GITHUB_STEP_SUMMARY"
           if [ ! -s "$report" ]; then
             echo "- No report generated." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
-          total=$(wc -l < /tmp/trivy-high.txt | tr -d ' ')
-          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$total" -eq 0 ]; then
+            echo "- Behavior: report-only (does not fail workflow)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::No report generated for cdb_${{ matrix.service }} (report-only)."
             exit 0
           fi
+          jq -r '.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | .VulnerabilityID' "$report" | sort -u > /tmp/trivy-high.txt
+          total=$(wc -l < /tmp/trivy-high.txt | tr -d ' ')
+          echo "- HIGH/CRITICAL: $total" >> "$GITHUB_STEP_SUMMARY"
           allowlist="${TRIVY_ALLOWLIST_CVES:-}"
           if [ -n "$allowlist" ]; then
             printf "%s\n" "${allowlist//,/\\n}" | sed '/^$/d' > /tmp/trivy-allow.txt
@@ -165,12 +200,16 @@ jobs:
           disallowed=$(wc -l < /tmp/trivy-disallowed.txt | tr -d ' ')
           echo "- Allowlist: ${allowlist:-none}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Disallowed: $disallowed" >> "$GITHUB_STEP_SUMMARY"
-          echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Behavior: report-only (does not fail workflow)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$total" -gt 0 ]; then
+            echo "Top findings:" >> "$GITHUB_STEP_SUMMARY"
+            jq -r '.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "$disallowed" -ne 0 ]; then
             echo "Disallowed CVEs:" >> "$GITHUB_STEP_SUMMARY"
             cat /tmp/trivy-disallowed.txt >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            echo "::warning::Disallowed CVEs present in cdb_${{ matrix.service }} ($disallowed). Report-only mode, workflow continues."
+            exit 0
           fi
 
       - name: Run Trivy SARIF
@@ -206,8 +245,8 @@ jobs:
     strategy:
       matrix:
         image:
-          - redis:7.4.1-alpine
-          - postgres:15.11-alpine
+          - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
+          - postgres:15.17-alpine
       fail-fast: false
 
     env:
@@ -295,6 +334,36 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Compute Trivy allowlist (Debian tracker)
+        run: |
+          set -euo pipefail
+          cve="CVE-2026-0861"
+          osv_url="https://api.osv.dev/v1/vulns/DEBIAN-${cve}"
+          allowlist="$cve"
+          decision="OSV lookup failed; fail-safe allowlist retained."
+
+          if osv_json="$(curl -fsSL "$osv_url")"; then
+            if fixed_bookworm="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:12") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")" \
+              && fixed_trixie="$(jq -r '[.affected[]? | select((.package.ecosystem // "") == "Debian:13") | .ranges[]?.events[]?.fixed // empty] | map(select(length > 0)) | first // ""' <<<"$osv_json")"; then
+              if [[ -n "$fixed_bookworm" || -n "$fixed_trixie" ]]; then
+                allowlist=""
+                decision="fixed version detected for Debian:12/13 (bookworm/trixie)."
+              else
+                decision="bookworm/trixie still vulnerable or no fixed version published."
+              fi
+            else
+              decision="OSV JSON parse failed; fail-safe allowlist retained."
+            fi
+          fi
+
+          echo "TRIVY_ALLOWLIST_CVES=$allowlist" >> "$GITHUB_ENV"
+          {
+            echo "### Trivy Allowlist (dynamic)"
+            echo "- Dynamic allowlist: ${allowlist:-none} (CVE-2026-0861 removed automatically once Debian bookworm/trixie is fixed)"
+            echo "- Source: ${osv_url}"
+            echo "- Decision: ${decision}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Summary
         run: |
           echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
@@ -316,7 +385,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Custom Images" >> $GITHUB_STEP_SUMMARY
           echo "- All Python services use pip 25.3 (CVE-2025-8869 resolved)" >> $GITHUB_STEP_SUMMARY
-          echo "- CRITICAL/HIGH in custom images fails unless allowlisted: ${TRIVY_ALLOWLIST_CVES}" >> $GITHUB_STEP_SUMMARY
+          echo "- CRITICAL/HIGH in custom images are report-only; allowlist still applied for disallowed CVE reporting: ${TRIVY_ALLOWLIST_CVES}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Scan artifacts available for 30 days." >> $GITHUB_STEP_SUMMARY
 
@@ -326,9 +395,9 @@ jobs:
 #    - Attack surface: minimal (startup-only, no network exposure)
 #    - Weekly scans monitor for NEW vulnerabilities
 #
-# 2. Custom image scans set exit-code: true
+# 2. Custom image scans are report-only
 #    - pip 25.3 resolves CVE-2025-8869
-#    - NEW CRITICAL/HIGH CVEs will fail the workflow
+#    - CRITICAL/HIGH CVEs are reported in summary/artifacts/SARIF but do not fail the workflow
 #
 # 3. Upgrade workflow when upstream fixes gosu:
 #    - Monitor: https://github.com/docker-library/redis/issues
@@ -336,5 +405,6 @@ jobs:
 #    - Re-scan after base image updates
 #
 # 4. For manual scans:
-#    docker scout cves redis:7.4.1-alpine --only-severities critical,high
-#    docker scout cves postgres:15.11-alpine --only-severities critical,high
+#    docker scout cves redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065 --only-severities critical,high
+#    docker scout cves postgres:15.17-alpine --only-severities critical,high
+

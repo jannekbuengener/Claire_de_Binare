@@ -17,6 +17,9 @@ docs/contracts/*.json text eol=lf
 *.cmd text eol=crlf
 *.bat text eol=crlf
 
+# Keep this legacy CRLF blob unfiltered to prevent phantom modified state in fresh Windows worktrees.
+tools/enforce-root-baseline.ps1 -text
+
 # Binary files
 *.png binary
 *.jpg binary

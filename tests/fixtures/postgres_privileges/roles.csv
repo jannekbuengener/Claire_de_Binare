@@ -1,0 +1,5 @@
+rolname,rolcanlogin,rolinherit,rolsuper
+cdb_admin,f,t,f
+cdb_reader,f,t,f
+cdb_writer,f,t,f
+claire_user,t,t,f

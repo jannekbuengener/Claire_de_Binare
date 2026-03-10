@@ -1,0 +1,17 @@
+# GitHub Actions Self-Hosted Runner – standalone compose stack
+# Usage: docker compose -f infrastructure/actions-runner/docker-compose.runner.yml up -d --build
+
+services:
+  gh_runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cdb_gh_runner
+    env_file: .env.runner
+    volumes:
+      - runner-work:/actions-runner/_work
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  runner-work:

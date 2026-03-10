@@ -1,0 +1,9 @@
+{
+  "docs_hub": {
+    "clone_hint": "Clone the docs hub repo as 'Claire_de_Binare_Docs' beside this repo, or open the local path above if it exists.",
+    "local_path_hint": "D:\\\\Dev\\\\Workspaces\\\\Repos\\\\Claire_de_Binare_Docs",
+    "relationship": "Canonical documentation hub. This working repo contains code/runtime; docs hub lives separately.",
+    "repo_name": "Claire_de_Binare_Docs"
+  },
+  "schema_version": "1.0"
+}

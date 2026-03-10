@@ -58,6 +58,13 @@ All fields are free-form strings. The dict is opaque to the replay framework —
 - 63/63 replay tests green (7 existing envelope + 4 new snapshot + 22 emitter + 30 replay)
 - Golden file hashes unchanged (`test_replay_matches_golden_hashes`, `test_golden_canonical_bytes_stability`)
 
+## Merge Outcome / Audit Note
+
+- PR: #960
+- Merge method: merge commit (Auto-Merge), squash not permitted by repository ruleset
+- Merge commit: 482170a
+- Reason: head branch required up-to-date with main; required conversation resolution; CI green; auto-merge executed
+
 ---
 
 ## Slice 2: Runtime Wiring for `policy_snapshot` Binding

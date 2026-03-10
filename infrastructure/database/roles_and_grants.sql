@@ -57,7 +57,7 @@ DECLARE
         'signals', 'orders', 'trades', 'positions', 'portfolio_snapshots',
         'risk_events', 'correlation_ledger', 'blocked_decisions',
         'core_secrets_metadata', 'audit_trail', 'governance_events',
-        'deployment_approvals_mirror', 'security_policy_refs',
+        'deployment_approvals_mirror', 'system_config', 'security_policy_refs',
         'schema_version'
     ];
 BEGIN
@@ -162,6 +162,7 @@ END $$;
 --             risk_events, correlation_ledger, blocked_decisions,
 --             core_secrets_metadata, audit_trail, governance_events,
 --             deployment_approvals_mirror, security_policy_refs, schema_version.
+--             system_config remains read-only for runtime roles.
 
 -- ----------------------------------------------------------------------------
 -- 5. cdb_admin: full privileges for DDL/migrations (not used at runtime)

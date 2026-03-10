@@ -1,0 +1,117 @@
+version: 2
+control_id: LR-050
+description: >
+  P5 canary readiness baseline. This policy is a governance gate only and does
+  not auto-enable live trading.
+operating_model: single_maintainer
+
+checklist_document: docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md
+
+required_controls:
+  - id: LR-001
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-001-EVIDENCE.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-003
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-003-EVIDENCE.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-010
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No control-specific evidence exists.
+      Requires dedicated evidence before status can move to IMPLEMENTED.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-020
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No control-specific evidence exists.
+      Requires dedicated evidence before status can move to IMPLEMENTED.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-030
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-030.md
+    verification_script: infrastructure/scripts/soak_gate_eval.py
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-031
+    status: PARTIAL
+    evidence_path: docs/evidence/LR-031.md
+    evidence_note: >
+      Machine-readable gate and evidence plumbing implemented.
+      Broader metrics comparison evidence still open.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-040
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No 72h soak evidence exists.
+      Requires dedicated soak run and evidence artifact before status
+      can move to IMPLEMENTED.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-041
+    status: OPEN
+    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    evidence_note: >
+      Tracking reference only. No Redis/Postgres chaos drill evidence exists.
+      Requires dedicated drill execution and evidence before status
+      can move to IMPLEMENTED.
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+  - id: LR-042
+    status: IMPLEMENTED
+    evidence_path: docs/evidence/LR-042.md
+    allowed_statuses: [IMPLEMENTED, PASS]
+    hard_gate: true
+
+required_artifacts:
+  - reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md
+  - tools/test_pack/runbooks/kill_switch_checklist.md
+  - scripts/governance/check_branch_protection_drift.py
+  - scripts/lr003_contract_drift_guard.py
+  - tests/resilience/test_fault_injection.py
+  - scripts/drills/lr042_network_latency_packet_loss_runner.py
+  - infrastructure/scripts/soak_gate_eval.py
+  - infrastructure/scripts/build_shadow_evidence_package.py
+  - infrastructure/scripts/generate_evidence_index.py
+
+abort_conditions:
+  - kill_switch_active_or_unevaluable
+  - runtime_mode_ambiguous_or_unresolved
+  - out_of_scope_execution_observed
+  - lr031_or_lr040_hard_fail
+  - dependency_instability_beyond_recovery_window
+
+compensating_controls:
+  - prestart_evidence_lock
+  - runtime_mode_shadow_precheck
+  - kill_switch_precheck
+  - decision_record_before_start
+  - no_code_or_config_change_after_prestart_lock
+  - optional_cooldown_before_go
+  - post_run_verdict_evidence_completeness
+
+signoff_roles:
+  - operator_primary
+  - risk_owner_or_operator_primary
+
+p5_scope:
+  max_symbols: 1
+  max_active_orders: 1
+  max_order_count_total: 3
+  max_total_notional_usdt: "50"
+  max_window_minutes: 15
+  require_dual_signoff: false
+  require_kill_switch_precheck: true
+  require_prestart_evidence_lock: true
+  require_runtime_mode_shadow_precheck: true
+  require_decision_record_before_start: true
+  require_no_code_or_config_change_after_prestart_lock: true

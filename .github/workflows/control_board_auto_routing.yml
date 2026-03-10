@@ -2,19 +2,30 @@ name: Control Board Auto Routing
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened]
   pull_request:
     types: [opened, closed]
+  repository_dispatch:
+    types: [control_board_route_issue_label]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || 'global' }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.client_payload.issue_number || 'global' }}
   cancel-in-progress: true
 
 jobs:
   route-control-board:
     # Avoid exposing write-capable project token to untrusted fork PRs.
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: >-
+      ${{
+        vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED == 'true' &&
+        (
+          github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        )
+      }}
     runs-on: ubuntu-latest
+    # Minimal GITHUB_TOKEN permissions for workflow mechanics only.
+    # Project/issue mutations are executed with CDB_AUTH_TOKEN (GitHub App or PAT fallback).
     permissions:
       contents: read
       issues: write
@@ -22,25 +33,10 @@ jobs:
     env:
       PROJECT_OWNER: jannekbuengener
       PROJECT_NUMBER: "8"
-      CDB_CONTROL_BOARD_AUTOMATION_ENABLED: ${{ vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED }}
     steps:
-      - name: Evaluate feature toggle
-        id: feature-toggle
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ "${CDB_CONTROL_BOARD_AUTOMATION_ENABLED:-}" != "true" ]]; then
-            echo "automation disabled"
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "enabled=true" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4 (pinned)
 
-      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4 (pinned)
-
-      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
-        name: Resolve CDB auth token (APP preferred, PAT fallback)
+      - name: Resolve CDB auth token (APP preferred, PAT fallback)
         id: resolve-auth
         shell: bash
         env:
@@ -123,8 +119,19 @@ jobs:
             exit 1
           fi
 
-      - if: ${{ steps.feature-toggle.outputs.enabled == 'true' }}
-        name: Route item to CDB Control Board
+      - name: Auth scope diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "### Control Board Auth Diagnostics (Routing)"
+            echo "- Auth mode: \`${{ steps.resolve-auth.outputs.auth_mode }}\`"
+            echo "- GITHUB_TOKEN workflow permissions: \`contents: read\`, \`issues: write\`, \`pull-requests: read\`"
+            echo "- Required CDB_AUTH_TOKEN permissions: Projects (read/write), Issues (read/write), Pull requests (read)"
+            echo "- Note: workflow \`permissions:\` and App/PAT scopes are separate controls."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Route item to CDB Control Board
         shell: bash
         env:
           GH_TOKEN: ${{ steps.resolve-auth.outputs.cdb_auth_token }}

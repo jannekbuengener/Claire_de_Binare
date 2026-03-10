@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.11-slim-trixie@sha256:c8271b1f627d0068857dce5b53e14a9558603b527e46f1f901722f935b786a39
 
 WORKDIR /app
 
@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
 
 # Python deps
 RUN pip install --upgrade pip==25.3
+RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
 COPY services/signal/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

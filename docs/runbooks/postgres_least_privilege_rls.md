@@ -35,6 +35,7 @@ against Issue #741 which scopes both topics.
 | `audit_trail` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `governance_events` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `deployment_approvals_mirror` | SELECT | — | ALL | Governance mirror (no runtime writes) |
+| `system_config` | SELECT | — | ALL | Access-domain config fingerprints only (no runtime writes) |
 | `security_policy_refs` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `schema_version` | SELECT | SELECT | ALL | Migration tracking (admin writes only) |
 
@@ -52,6 +53,68 @@ All scripts are in `infrastructure/database/`:
 | `enforce_least_privilege.sql` | Revoke ALL from `claire_user`, assign `cdb_writer` | superuser |
 | `rollback_least_privilege.sql` | Restore `claire_user` ALL PRIVILEGES | superuser |
 | `verify_privileges.sql` | Show effective grants, memberships, ownership | superuser |
+
+## Secret Policy
+
+- Canonical Secret Store: `C:\Users\janne\Documents\.secrets\.cdb`
+- Rotation / changes: rotator-only via `infrastructure/scripts/manage_secrets.ps1`; do not hand-edit secret files and do not create alternate secret copies inside the repo.
+- Connection env: export or load `POSTGRES_DSN`, `DATABASE_URL`, and related connection material via the rotator workflow before running these commands. Do not paste credentials directly into shells, docs, or committed config.
+
+## Rotator Proof of Use
+
+Use the rotator entrypoint from an operator shell that is configured for the
+canonical secret store `C:\Users\janne\Documents\.secrets\.cdb`. The current
+script does not expose a separate `status` or `dry-run` verb; use the
+non-mutating `list` and `validate` actions as proof-of-use commands.
+
+```powershell
+pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action list
+pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action validate
+pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action rotate -SecretName <secret-name>
+```
+
+- `list`: confirms that the rotator can see the managed secret files without
+  printing secret values.
+- `validate`: confirms that the required secret set is present and non-empty.
+- `rotate`: use only when an approved rotation is required; provide the secret
+  value through the rotator workflow, not by hand-editing files.
+- Proof-of-use evidence should capture only timestamp, operator, command name,
+  and outcome summary. Do not capture or paste secret values.
+
+## Live Evidence Workflow
+
+Use exactly these three commands to capture live evidence, run the offline
+diff, and prepare attachable artifacts without committing secrets. The
+evidence bundle must live outside the repo and be linked from the Issue after
+upload:
+
+```bash
+export EVIDENCE_DIR="/tmp/cdb_pg_evidence_<ENV>_<YYYYMMDD_HHMM>"
+mkdir -p "$EVIDENCE_DIR"
+
+# Load POSTGRES_DSN / DATABASE_URL via the rotator first. Do not hand-edit
+# secret files or inline credentials here.
+psql "$POSTGRES_DSN" \
+  -v roles_out="$EVIDENCE_DIR/roles.csv" \
+  -v role_memberships_out="$EVIDENCE_DIR/role_memberships.csv" \
+  -v table_privileges_out="$EVIDENCE_DIR/table_privileges.csv" \
+  -v column_privileges_out="$EVIDENCE_DIR/column_privileges.csv" \
+  -v rls_tables_out="$EVIDENCE_DIR/rls_tables.csv" \
+  -v policies_out="$EVIDENCE_DIR/policies.csv" \
+  -v default_privileges_out="$EVIDENCE_DIR/default_privileges.csv" \
+  -f scripts/audit/postgres_privilege_dump.sql
+
+python scripts/audit/postgres_least_privilege_report.py \
+  --input-dir "$EVIDENCE_DIR" \
+  --out-dir "$EVIDENCE_DIR/report"
+
+zip -r "${EVIDENCE_DIR}.zip" "$EVIDENCE_DIR"
+```
+
+Upload `${EVIDENCE_DIR}.zip` via GitHub UI attachment as the default path. If
+the UI upload is not available, use an external artifact store and paste the
+resulting link or issue-comment permalink into the Issue. Do not commit the
+live dump files, the ZIP bundle, or any DSN/secret material.
 
 ## Apply Steps
 

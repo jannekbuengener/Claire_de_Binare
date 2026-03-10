@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_type",
+    "event_id",
+    "ts_ms",
+    "created_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": "envelope.v1"},
+    "event_type": {"type": "string", "enum": ["DECISION", "ORDER", "FILL"]},
+    "event_id": {"type": "string"},
+    "ts_ms": {"type": "integer", "minimum": 0},
+    "created_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "payload": {"type": "object"},
+    "correlation_id": {"type": "string"},
+    "trace_id": {"type": "string"},
+    "policy_id": {"type": "string"},
+    "policy_hash": {"type": "string"},
+    "input_hash": {"type": "string"},
+    "output_hash": {"type": "string"},
+    "decision_context": {"type": "object"},
+    "policy_snapshot": {"type": "object"}
+  },
+  "additionalProperties": false
+}

@@ -77,6 +77,8 @@ class Order:
     output_hash: Optional[str] = None
     # Issue #748 Slice 2: Policy snapshot propagated from Risk Service
     policy_snapshot: Optional[dict] = None
+    # LR-030: Shadow mode enforcement
+    run_mode: Optional[str] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -87,6 +89,20 @@ class Order:
         side = payload["side"].upper()
         if side not in ("BUY", "SELL"):
             raise ValueError(f"Unbekannte Order-Seite: {payload['side']}")
+
+        # LR-030: run_mode — top-level first, fallback to nested bundle.
+        # decision_contract_v1 may arrive as dict or JSON string from Redis.
+        _run_mode = payload.get("run_mode")
+        if not _run_mode:
+            _dc_raw = payload.get("decision_contract_v1")
+            if isinstance(_dc_raw, dict):
+                _dc = _dc_raw
+            elif isinstance(_dc_raw, str):
+                _dc = _parse_json_field(_dc_raw)
+            else:
+                _dc = None
+            if isinstance(_dc, dict):
+                _run_mode = _dc.get("input", {}).get("run_mode")
 
         return cls(
             symbol=payload["symbol"],
@@ -113,6 +129,7 @@ class Order:
             output_hash=payload.get("output_hash"),
             # Issue #748 Slice 2: policy_snapshot (JSON string from Redis → dict)
             policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
+            run_mode=_run_mode,
         )
 
     def to_dict(self) -> dict:

@@ -5,6 +5,14 @@ on:
 
 jobs:
   sync-project-status-label-map:
+    if: >-
+      github.event.action == 'closed' ||
+      github.event.action == 'reopened' ||
+      (
+        (github.event.action == 'labeled' || github.event.action == 'unlabeled') &&
+        github.event.label.name != '' &&
+        startsWith(github.event.label.name, 'status:')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -107,6 +115,19 @@ jobs:
           event_path="${GITHUB_EVENT_PATH}"
           repo="${GITHUB_REPOSITORY}"
           action="$(jq -r '.action // empty' "$event_path")"
+          label_name="$(jq -r '.label.name // empty' "$event_path")"
+
+          if [[ "$action" == "labeled" || "$action" == "unlabeled" ]]; then
+            if [[ "$label_name" != status:* ]]; then
+              echo "Ignoring non-status label event '$label_name' (action='$action')."
+              exit 0
+            fi
+          elif [[ "$action" == "closed" || "$action" == "reopened" ]]; then
+            :
+          else
+            echo "Ignoring unsupported issue action '$action'."
+            exit 0
+          fi
 
           graphql_call() {
             local payload="$1"
@@ -128,22 +149,14 @@ jobs:
             jq -e --arg name "$name" '.[] | select(. == $name)' >/dev/null 2>&1 <<<"$labels_json"
           }
 
-          case "$event_name" in
-            issues)
-              content_node_id="$(jq -r '.issue.node_id // empty' "$event_path")"
-              labels_json="$(jq -c '[.issue.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
-              default_status="Backlog"
-              ;;
-            pull_request)
-              content_node_id="$(jq -r '.pull_request.node_id // empty' "$event_path")"
-              labels_json="$(jq -c '[.pull_request.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
-              default_status="Review"
-              ;;
-            *)
-              echo "Unsupported event: $event_name"
-              exit 0
-              ;;
-          esac
+          if [[ "$event_name" != "issues" ]]; then
+            echo "Unsupported event: $event_name"
+            exit 0
+          fi
+
+          content_node_id="$(jq -r '.issue.node_id // empty' "$event_path")"
+          labels_json="$(jq -c '[.issue.labels[]?.name] | map(select(type == "string" and length > 0))' "$event_path")"
+          default_status="Backlog"
 
           if [[ -z "$content_node_id" ]]; then
             echo "No content node id in event payload; skipping."

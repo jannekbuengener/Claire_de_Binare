@@ -1,12 +1,13 @@
 # Dockerfile - DB Writer Service
 # Claire de Binare Trading Bot
 
-FROM python:3.11-slim
+FROM python:3.11-slim-trixie@sha256:c8271b1f627d0068857dce5b53e14a9558603b527e46f1f901722f935b786a39
 
 WORKDIR /app
 
 # Upgrade pip to fix CVE-2025-8869 (CVSS 5.9)
 RUN pip install --upgrade pip==25.3
+RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
 
 # Install dependencies
 RUN pip install --no-cache-dir redis psycopg2-binary prometheus-client
