@@ -338,8 +338,8 @@ def _collect_snapshot() -> dict[str, Any]:
             "execution_orders_rejected_total": _metric_or_zero(
                 execution_metrics, "execution_orders_rejected_total"
             ),
-            "execution_orders_shadow_blocked_total": _metric_or_zero(
-                execution_metrics, "execution_orders_shadow_blocked_total"
+            "execution_shadow_blocked_total": _metric_or_zero(
+                execution_metrics, "execution_shadow_blocked_total"
             ),
             "signals_received_total": _metric_or_zero(
                 risk_metrics, "signals_received_total"
