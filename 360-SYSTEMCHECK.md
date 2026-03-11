@@ -1,3 +1,6 @@
-# 360-SYSTEMCHECK.md
+# 360-SYSTEMCHECK
 
-**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/legacy/360-SYSTEMCHECK.md`
+Historical entrypoint only.
+
+No local canonical replacement was restored for this document during #1140.
+Use `docs/meta/WORKING_REPO_CANON.md` to find the active local canon.

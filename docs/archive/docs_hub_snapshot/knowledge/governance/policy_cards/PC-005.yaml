@@ -1,0 +1,18 @@
+id: PC-005
+title: Tresor is human-only; agents must never access secrets/custody
+scope: security
+rule:
+  type: MUST_NOT
+  statement: Agenten dürfen niemals Tresor/Custody/Secrets berühren oder versuchen,
+    Zugriff zu erlangen.
+  conditions: []
+severity: CRITICAL
+trust_impact:
+  compliance_delta: -25
+  quality_delta: 0
+  safety_delta: 0
+  escalation_required: true
+sources:
+- governance/CDB_CONSTITUTION.md
+- governance/CDB_AGENT_POLICY.md
+- governance/ISSUE_AND_BRANCH_LIFECYCLE.md

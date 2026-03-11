@@ -1,6 +1,11 @@
-
 blank_issues_enabled: false
 contact_links:
+  - name: Issue template guide
+    url: https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/templates/README_TEMPLATE_PACK.md
+    about: Which template to use and which fields are expected.
+  - name: Governance and canon
+    url: https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/meta/WORKING_REPO_CANON.md
+    about: Local canon, archive policy, and repository navigation rules.
   - name: Security issue
     url: https://github.com/${{ github.repository }}/security/policy
     about: Please report security vulnerabilities responsibly.

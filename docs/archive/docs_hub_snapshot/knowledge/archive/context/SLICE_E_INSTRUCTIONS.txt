@@ -1,0 +1,98 @@
+AUFTRAG: Slice E – “Docs Repo Untracked Triage” (Claire_de_Binare_Docs)
+
+Kontext:
+- Verlosung Slices A–D sind abgeschlossen und gemerged.
+- Docs Repo main ist aktuell/sync. In Docs Repo gibt es noch untracked Files (nicht Teil von Slice D).
+- Ziel: Untracked sauber triagieren und das Docs Repo wieder “docs-only” und aufgeräumt verlassen.
+
+Repo:
+- D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs
+
+Harte Constraints (nicht verhandelbar):
+1) Docs-Repo ist docs-only: KEINE neuen ausführbaren Artefakte als tracked Files (kein .py/.ps1/.exe/.dll/.json/.csv/.crt/.key/.dh etc.).
+2) Keine Edits an Governance/Policy-Dateien (knowledge/governance/*, agents/*) außer wenn explizit beauftragt. Default: Finger weg.
+3) Secrets: bei jedem Verdacht STOP. Nichts committen, erst reporten.
+4) Repo am Ende clean verlassen (keine uncommitted/untracked). Wenn etwas absichtlich untracked bleiben soll: über .gitignore regeln.
+5) Append-only Ledger nur wenn Lifecycle/Governance/Trust betroffen ist. Für reines Housekeeping reicht in der Regel ein “ops cleanup” Commit ohne Ledger, außer du triffst eine Entscheidung mit Risiko (z.B. Löschungen von potenziell wertvollen Artefakten).
+
+Zielbild:
+- Untracked sind entweder:
+  A) in zulässige Docs-Struktur überführt (als .md/.yaml),
+  B) sauber ignoriert (.gitignore) weil generated/local,
+  C) extern quarantänisiert (falls problematisch),
+  D) gelöscht (klarer Müll / Duplikate / generated).
+- Ergebnis ist ein PR gegen main im Docs Repo.
+
+Arbeitsmodus:
+- Autonom arbeiten, aber mit STOP-Gates:
+  STOP wenn:
+  - Secret/Key/Token/TLS-Material gefunden wird (auch nur Verdacht),
+  - unklar ist ob eine Datei “lost knowledge” ist,
+  - Gefahr besteht, dass du eine kanonische Datei überschreibst.
+  In STOP-Fällen: Liste + Empfehlung + warte auf GO.
+
+Phase 0 – Safety & Snapshot (muss als erstes passieren):
+1) Status & untracked Liste:
+   - git status -sb
+   - git ls-files --others --exclude-standard
+2) Snapshot als TRACKED Session Log (zulässig):
+   - Erstelle: knowledge/logs/sessions/2026-01-02__docs_untracked_snapshot.md
+   - Inhalt:
+     - Datum/Uhrzeit
+     - Branch/HEAD
+     - komplette Liste untracked (Pfad pro Zeile)
+     - erste Grobklassifizierung nach Dateityp (counts)
+3) Quick Secret Scan auf untracked (nur Muster, kein Overkill):
+   - Patterns: "BEGIN .*PRIVATE KEY", "glsa_", "token", "apikey", "password", "secret", ".key", ".crt", ".pfx"
+   - Wenn Treffer: STOP mit Fundstellen (nur Dateinamen + kurze Zeile, keine sensiblen Inhalte komplett zitieren).
+
+Phase 1 – Klassifizierung in 5 Buckets (Output bevor du schreibst):
+Erstelle eine Tabelle in der Snapshot-Datei (oder separat als plan):
+Spalten: File | Typ | Bucket | Aktion | Zielpfad | Begründung | Risiko
+
+Buckets:
+1) GENERATED/LOCAL (soll nicht ins Repo) → .gitignore + löschen/liegenlassen (aber am Ende keine untracked!)
+2) DUPLIKAT/ALT (klar redundant) → löschen oder nach knowledge/archive/ (als .md) falls textuell wertvoll
+3) LOST-KNOWLEDGE (potenziell wertvoll) → extrahieren/konvertieren zu .md unter knowledge/logs/ oder knowledge/archive/
+4) DOCS-OK (bereits .md/.yaml und sinnvoll) → einsortieren in knowledge/* (logs/archive/roadmap/reviews)
+5) UNSICHER → STOP (mit Vorschlag)
+
+Wichtig: .txt ist NICHT automatisch ok. Wenn Inhalt wertvoll: in .md überführen und .txt löschen.
+
+Phase 2 – Umsetzung in Batches (max 30 Files pro Batch):
+- Batch-Regel: pro Commit max ~10–20 Files, damit Review easy bleibt.
+- Commit-Splits (empfohlen):
+  1) docs(slice-e): add untracked snapshot + triage plan
+  2) chore(slice-e): ignore generated/local artifacts (.gitignore)
+  3) docs(slice-e): migrate docs artifacts into knowledge/...
+  4) docs(slice-e): archive “lost knowledge” (converted to .md)
+  5) chore(slice-e): delete confirmed junk (mit Liste im Commit Body)
+
+Technik-Regeln:
+- Keine großen “git add .”
+- Immer vorher: git diff --name-only --cached
+- Immer nachher: git status -sb
+- Wenn du konvertierst: preserve original filename in heading + source path + date.
+
+Branch/PR:
+1) Erstelle Issue im Docs Repo: “Slice E: Untracked triage cleanup (Docs Hub)” (wenn keins existiert).
+2) Branch von origin/main: chore/slice-e-untracked-triage
+3) Push + PR erstellen. PR Body:
+   - Ziel
+   - Was migriert / ignoriert / gelöscht wurde (counts)
+   - Risiko-Checks (secret scan: ok)
+   - DoD: repo clean
+
+DoD (hart):
+- git status -sb zeigt clean (keine untracked).
+- Alle überführten Inhalte liegen als .md/.yaml in knowledge/*
+- Generated/local ist per .gitignore geregelt.
+- PR offen und reviewbar.
+
+Liefer am Ende:
+- PR-Link
+- Kurzreport (Counts je Bucket)
+- Liste der .gitignore Änderungen
+- Hinweis, falls du bei irgendwas stoppen musstest.
+
+GO.

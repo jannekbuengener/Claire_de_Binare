@@ -1,0 +1,29 @@
+# Policy Card
+id: PC-DELIVERY-001
+title: Delivery Gate required for code/infra mutations
+status: canonical
+scope:
+  repos:
+  - Claire_de_Binare
+  paths:
+  - /core
+  - /services
+  - /infrastructure
+  - /tests
+  agents: all
+triggers:
+- attempt_to_modify_working_repo_code_or_infra
+rules:
+- level: MUST
+  text: Agent MUST verify DELIVERY_APPROVED.yaml delivery.approved:true before any
+    mutation in Working Repo.
+- level: MUST
+  text: 'If gate is false/missing: agent MUST stay in Analysis Mode and provide a
+    proposal only.'
+violation:
+  definition: Any mutation without delivery gate approval
+  severity: critical
+score_impact:
+  compliance: -15
+  quality: -6
+  safety: -8

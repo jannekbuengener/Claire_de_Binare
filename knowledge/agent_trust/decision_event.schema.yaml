@@ -1,0 +1,65 @@
+# decision_event.schema.yaml
+version: 1.0
+title: "CDB Decision Event"
+description: "Append-only audit event for agent decisions/actions impacting governance, lifecycle, or deliverables."
+
+required:
+  - event_id
+  - timestamp
+  - agent
+  - action
+  - scope
+  - uncertainty
+  - policy_refs
+  - evidence
+
+fields:
+  event_id:
+    type: string
+    description: "UUID or unique id"
+  timestamp:
+    type: string
+    description: "ISO-8601"
+  agent:
+    type: object
+    required: [id, vendor]
+    fields:
+      id: {type: string, description: "agent identifier, e.g. claude, codex, gemini, copilot, opencode:<name>"}
+      vendor: {type: string, description: "provider or toolchain"}
+      role: {type: string, description: "optional role label"}
+  action:
+    type: object
+    required: [type, summary]
+    fields:
+      type: {type: string, description: "e.g. issue.close, issue.reopen, doc.create, policy.propose"}
+      summary: {type: string}
+      reversible: {type: boolean}
+  scope:
+    type: object
+    fields:
+      repo: {type: string}
+      paths: {type: array, items: string}
+      issue: {type: string}
+      pr: {type: string}
+      branch: {type: string}
+  uncertainty:
+    type: object
+    required: [flag]
+    fields:
+      flag: {type: boolean}
+      reason: {type: string}
+      options: {type: array, items: string}
+  policy_refs:
+    type: array
+    items: string
+    description: "e.g. PC-ISSUE-001, CDB_AGENT_POLICY, CDB_CONSTITUTION"
+  evidence:
+    type: array
+    items: string
+    description: "file paths, links, commands, checks"
+  outcome:
+    type: object
+    description: "filled later, ex-post (reopen/revert/rework, etc.)"
+    fields:
+      result: {type: string}
+      notes: {type: string}

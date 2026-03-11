@@ -136,7 +136,7 @@ class GitHubIssueCreator:
 
         # Load template
         if template_path is None:
-            # Use default template from Docs Hub
+            # Use default template from the docs workspace
             template_path = self._find_default_template(thread_dir)
 
         issue_body = self._render_template(template_path, manifest, thread_dir)
@@ -146,15 +146,17 @@ class GitHubIssueCreator:
         issue_labels = labels or self._infer_labels(manifest)
 
         if self.dry_run:
-            docs_hub = thread_dir.parents[2]
+            workspace_root = self._resolve_workspace_root(thread_dir)
             draft_file = self._write_issue_draft(
-                docs_hub,
+                workspace_root,
                 manifest.get("thread_id", "UNKNOWN"),
                 issue_title,
                 issue_body,
                 issue_labels,
             )
-            manifest["github_issue_draft"] = str(draft_file.relative_to(docs_hub))
+            manifest["github_issue_draft"] = str(
+                draft_file.relative_to(workspace_root)
+            )
             with open(manifest_file, "w", encoding="utf-8") as f:
                 json.dump(manifest, f, indent=2)
             return None
@@ -181,30 +183,35 @@ class GitHubIssueCreator:
             raise RuntimeError(f"Failed to create GitHub issue: {e}")
 
     def _find_default_template(self, thread_dir: Path) -> Path:
-        """Find default issue template in Docs Hub."""
-        # Navigate from thread dir to Docs Hub
-        docs_hub = thread_dir.parents[2]  # discussions/threads/THREAD_X -> docs_hub
-        template_path = docs_hub / "docs" / "templates" / "github_issue.md"
+        """Find default issue template in the docs workspace."""
+        workspace_root = self._resolve_workspace_root(thread_dir)
+        candidates = [
+            workspace_root / "docs" / "templates" / "github_issue.md",
+            workspace_root / "knowledge" / "templates" / "github_issue.md",
+        ]
 
-        if not template_path.exists():
-            template_path.parent.mkdir(parents=True, exist_ok=True)
-            template_path.write_text(
-                "# {proposal_name}\n\n{agent_summaries}\n\nQuality: {quality_verdict}\nDisagreements: {disagreement_count}\nEcho Score: {echo_chamber_score}\nThread: {thread_path}\n",
-                encoding="utf-8",
-            )
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
 
+        template_path = candidates[0]
+        template_path.parent.mkdir(parents=True, exist_ok=True)
+        template_path.write_text(
+            "# {proposal_name}\n\n{agent_summaries}\n\nQuality: {quality_verdict}\nDisagreements: {disagreement_count}\nEcho Score: {echo_chamber_score}\nThread: {thread_path}\n",
+            encoding="utf-8",
+        )
         return template_path
 
     def _write_issue_draft(
         self,
-        docs_hub: Path,
+        workspace_root: Path,
         thread_id: str,
         issue_title: str,
         issue_body: str,
         issue_labels: List[str],
     ) -> Path:
         """Persist a local issue draft when running in dry-run mode."""
-        issues_dir = docs_hub / "discussions" / "issues"
+        issues_dir = self._resolve_discussions_root(workspace_root) / "issues"
         issues_dir.mkdir(parents=True, exist_ok=True)
 
         draft_file = issues_dir / f"{thread_id}_issue.md"
@@ -247,6 +254,7 @@ class GitHubIssueCreator:
             Path(proposal_path).name if proposal_path else "Unknown Proposal"
         )
         pipeline = " → ".join(manifest.get("pipeline", []))
+        workspace_root = self._resolve_workspace_root(thread_dir)
 
         # Quality metrics
         quality = manifest.get("quality_metrics", {})
@@ -267,7 +275,7 @@ class GitHubIssueCreator:
             "{disagreement_count}": str(disagreements),
             "{echo_chamber_score}": echo_str,
             "{agent_summaries}": agent_summaries,
-            "{thread_path}": str(thread_dir.relative_to(thread_dir.parents[2])),
+            "{thread_path}": str(thread_dir.relative_to(workspace_root)),
             "{repo_name}": self.repo_name if self.repo_name else "unknown",
         }
 
@@ -356,3 +364,20 @@ class GitHubIssueCreator:
             labels.append(f"preset:{preset}")
 
         return labels
+
+    def _resolve_workspace_root(self, thread_dir: Path) -> Path:
+        resolved = thread_dir.resolve()
+        parts = list(resolved.parts)
+        if "knowledge" in parts:
+            return resolved.parents[3]
+        return resolved.parents[2]
+
+    def _resolve_discussions_root(self, workspace_root: Path) -> Path:
+        candidates = [
+            workspace_root / "knowledge" / "discussions",
+            workspace_root / "discussions",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return candidates[0]

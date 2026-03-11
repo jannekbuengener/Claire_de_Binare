@@ -1,0 +1,71 @@
+TL;DR: GO:B:TEMPLATES. Und davor muss er die Basis sauber machen: origin/main in den Branch reinholen (rebase oder merge), sonst baust du Slice B auf einem “schiefen Fundament” und bekommst später unnötige Konflikte.
+
+Warum ich das so hart entscheide:
+
+„Controlled execution“ heißt: wir minimieren Merge-Schmerz.
+
+Wenn dein lokales main ahead 2 ist und gleichzeitig behind remote, dann ist dein Branch von einem Zustand abgezweigt, der nicht die echte Realität ist.
+
+Das rächt sich spätestens beim PR: Konflikte, CI-Drift, Reviews werden zäh.
+
+Was du Copilot jetzt 1:1 schicken sollst:
+
+GO:B:TEMPLATES, aber erst Basis korrigieren:
+
+git fetch origin
+
+Bring feat/verlosung-github-pack auf origin/main als Basis: rebase bevorzugt (git rebase origin/main).
+Wenn Rebase wegen der 2 lokalen main-Commits nicht sauber geht: merge origin/main in den Branch und dokumentiere das im PR.
+
+Erst danach Templates konsolidieren.
+
+Kein git add -A, nur gezieltes git add <file>.
+
+Nach Templates: STOP und Status + Diff Summary liefern.
+
+Wenn du ihm die exakten Kommandos geben willst (damit er nicht kreativ wird), dann diese:
+
+Remote holen
+
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+git fetch origin
+
+
+Sicherstellen, dass er im Branch ist
+
+git switch feat/verlosung-github-pack
+
+
+Rebase versuchen
+
+git rebase origin/main
+
+
+Falls Konflikte: lösen, git add <conflicted files>, git rebase --continue.
+Falls es komplett knallt: abbrechen und Merge-Variante nutzen:
+
+git rebase --abort
+git merge origin/main
+
+
+Dann Templates Step
+
+Quellfiles: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\verlosung\bug.yml, task.yml, config.yml
+
+Ziel: .github/ISSUE_TEMPLATE/
+
+Wenn dort schon bug.yml etc existieren: merge, nicht doppeln. Wenn neue Templates sinnvoll sind: klare Namen vergeben (z.B. bug_report.yml, task.yml).
+
+Commit nur Templates (ein Commit)
+Commit-Message:
+chore(templates): consolidate issue templates from verlosung
+
+Output + STOP
+
+git status -sb
+
+git diff --stat origin/main...HEAD
+
+Liste der Dateien in .github/ISSUE_TEMPLATE/
+
+Wichtig: Ich will nach dem Templates-Commit einmal kurz “sichtprüfen”, bevor ihr Workflows anfasst. Workflows sind der Teil, der dir am schnellsten CI in Brand setzt.

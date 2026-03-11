@@ -1,83 +1,64 @@
 <#
 .SYNOPSIS
-Enforce Working Repo root baseline - prevent governance files from polluting execution-only workspace.
+Enforce the consolidated Working Repo baseline.
 
 .DESCRIPTION
-Validates that the Working Repo root contains ONLY execution/infrastructure files.
-Detects governance violations (agent files, documentation, knowledge files) and provides cleanup options.
-Supports dry-run mode for validation and live cleanup mode for enforcement.
+Validates that the Working Repo exposes the required local documentation canon
+and that key entrypoints no longer use the external Docs Hub as the default path.
 
 .EXAMPLE
 .\tools\enforce-root-baseline.ps1
+
 .EXAMPLE
 .\tools\enforce-root-baseline.ps1 -DryRun
-.EXAMPLE
-.\tools\enforce-root-baseline.ps1 -AutoCleanup -Force
 #>
 [CmdletBinding()]
 param(
     [string]$WorkingRepoPath = 'D:\Dev\Workspaces\Repos\Claire_de_Binare',
-    [string]$DocsHubPath = 'D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs',
-    [switch]$DryRun,
-    [switch]$AutoCleanup,
-    [switch]$Force
+    [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Define allowed files in Working Repo root (execution/infrastructure only)
-$allowedFiles = @(
-    # Build & Infrastructure
-    'Makefile', 'docker-compose*.yml', '.dockerignore', 'requirements*.txt', 'pytest.ini'
-    
-    # Git & CI/CD
-    '.gitignore', '.gitlab-ci.yml', '.github', '.gitleaksignore', '.gitmodules', '.secretsignore'
-    
-    # Configuration (operational, not governance)
-    '.mcp.json', 'mcp-config*.toml'
-    
-    # Project essentials
-    'README.md'  # Brief project description, not governance
-    
-    # PowerShell scripts
-    'run-pipeline.ps1'
+$requiredDirectories = @(
+    'agents',
+    'docs',
+    'governance',
+    'knowledge',
+    'mcp_navpack_working_repo',
+    'services',
+    'infrastructure',
+    'tests',
+    'tools',
+    'scripts'
 )
 
-# Define allowed directories (execution/infrastructure only)
-$allowedDirectories = @(
-    # Core execution
-    'services', 'core', 'infrastructure', 'tests', 'tools', 'scripts'
-    
-    # Git/IDE
-    '.git', '.vscode', '.github'
-    
-    # Cache/temp
-    '.ruff_cache', '__pycache__', 'node_modules', '.venv'
-    
-    # Agent workspaces (if needed for execution)
-    '.claude', '.gemini'
+$requiredFiles = @(
+    'README.md',
+    'AGENTS.md',
+    'docs/index.md',
+    'docs/meta/WORKING_REPO_CANON.md',
+    'mcp_navpack_working_repo/ENTRYPOINTS.yaml',
+    'mcp_navpack_working_repo/CHEATSHEET.md'
 )
 
-# Define governance violation patterns
-$governanceViolations = @(
-    # Agent definition files
-    'AGENTS.md', 'CLAUDE.md', 'CODEX.md', 'COPILOT.md', 'GEMINI.md'
-    
-    # Documentation files (belong in Docs Hub)
-    '*_SETUP.md', '*_GUIDE.md', 'QUICKSTART*.md', '*HANDOFF*.md'
-    
-    # Session/governance files
-    'DISCUSSION_*.md', 'FINAL_*.md', 'ISSUE_RESOLUTION*.md'
-    
-    # Knowledge files
-    '*_AUDIT*.md', '*_REPORT*.md', '*_REVIEW*.md'
-    
-    # Deprecated formats
-    '*.txt' # (except requirements.txt which is allowed)
+$legacyPathPatterns = @(
+    '\.\./Claire_de_Binare_Docs',
+    'D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_Docs',
+    'canonical agent registry lives in the separate Docs Hub repo',
+    'Working Repo relies on the Docs Hub canonical registry'
 )
 
-Write-Host "🔍 Enforcing Working Repo Root Baseline..." -ForegroundColor Cyan
+$legacyScanFiles = @(
+    'README.md',
+    'AGENTS.md',
+    'mcp_navpack_working_repo/ENTRYPOINTS.yaml',
+    'mcp_navpack_working_repo/CHEATSHEET.md',
+    'mcp_navpack_working_repo/DOCS_HUB.pointer.md'
+)
+
+Write-Host "Checking consolidated Working Repo baseline..." -ForegroundColor Cyan
 Write-Host "Working Repo: $WorkingRepoPath" -ForegroundColor Gray
 
 if (-not (Test-Path $WorkingRepoPath)) {
@@ -86,103 +67,65 @@ if (-not (Test-Path $WorkingRepoPath)) {
 
 Push-Location $WorkingRepoPath
 try {
-    # Get all items in root
-    $rootItems = Get-ChildItem -Force | Where-Object { -not $_.Name.StartsWith('.git/') }
-    
-    $violations = @()
-    $validItems = @()
-    
-    foreach ($item in $rootItems) {
-        $itemName = $item.Name
-        $isAllowed = $false
-        
-        if ($item.PSIsContainer) {
-            # Check directories
-            $isAllowed = $allowedDirectories -contains $itemName -or 
-                        ($allowedDirectories | Where-Object { $itemName -like $_ })
-        } else {
-            # Check files
-            $isAllowed = $allowedFiles -contains $itemName -or 
-                        ($allowedFiles | Where-Object { $itemName -like $_ })
-            
-            # Check for governance violations
-            $isViolation = $governanceViolations | Where-Object { $itemName -like $_ }
-            if ($isViolation -and $itemName -ne 'requirements.txt' -and $itemName -ne 'requirements-dev.txt') {
-                $isAllowed = $false
-                $violations += [PSCustomObject]@{
-                    Name = $itemName
-                    Type = if ($item.PSIsContainer) { 'Directory' } else { 'File' }
-                    Reason = 'Governance violation - belongs in Docs Hub'
-                    SuggestedLocation = Get-SuggestedLocation $itemName
-                }
-            }
+    $violations = [System.Collections.Generic.List[object]]::new()
+
+    foreach ($relativePath in $requiredDirectories) {
+        if (-not (Test-Path $relativePath -PathType Container)) {
+            $violations.Add([PSCustomObject]@{
+                Type = 'Missing directory'
+                Path = $relativePath
+                Detail = 'Required local canon directory is missing.'
+            })
         }
-        
-        if ($isAllowed) {
-            $validItems += $itemName
-        } elseif ($itemName -notin ($violations | ForEach-Object { $_.Name })) {
-            $violations += [PSCustomObject]@{
-                Name = $itemName
-                Type = if ($item.PSIsContainer) { 'Directory' } else { 'File' }
-                Reason = 'Not in allowed execution/infrastructure files'
-                SuggestedLocation = 'Review if needed or remove'
+    }
+
+    foreach ($relativePath in $requiredFiles) {
+        if (-not (Test-Path $relativePath -PathType Leaf)) {
+            $violations.Add([PSCustomObject]@{
+                Type = 'Missing file'
+                Path = $relativePath
+                Detail = 'Required local canon entrypoint is missing.'
+            })
+        }
+    }
+
+    foreach ($relativePath in $legacyScanFiles) {
+        if (-not (Test-Path $relativePath -PathType Leaf)) {
+            continue
+        }
+
+        $content = Get-Content -Path $relativePath -Raw -Encoding UTF8
+        foreach ($pattern in $legacyPathPatterns) {
+            if ($content -match $pattern) {
+                $violations.Add([PSCustomObject]@{
+                    Type = 'Legacy split reference'
+                    Path = $relativePath
+                    Detail = "Matched pattern: $pattern"
+                })
             }
         }
     }
-    
-    # Report results
+
     if ($violations.Count -eq 0) {
-        Write-Host "✅ Root baseline verified: CLEAN" -ForegroundColor Green
-        Write-Host "   All $($validItems.Count) items are execution/infrastructure compliant" -ForegroundColor Green
+        Write-Host "PASS: consolidated baseline verified" -ForegroundColor Green
         exit 0
-    } else {
-        Write-Host "❌ Root baseline violated: $($violations.Count) governance violations found" -ForegroundColor Red
-        Write-Host ""
-        
-        foreach ($violation in $violations) {
-            Write-Host "  🚫 $($violation.Name) ($($violation.Type))" -ForegroundColor Red
-            Write-Host "     Reason: $($violation.Reason)" -ForegroundColor Yellow
-            Write-Host "     Suggested: $($violation.SuggestedLocation)" -ForegroundColor Gray
-            Write-Host ""
-        }
-        
-        if ($DryRun) {
-            Write-Host "🔍 DRY-RUN mode - no changes made" -ForegroundColor Cyan
-            exit 1
-        }
-        
-        if ($AutoCleanup -and $Force) {
-            Write-Host "🧹 Auto-cleanup enabled - removing violations..." -ForegroundColor Yellow
-            # Implementation for auto-cleanup would go here
-            Write-Host "⚠️  Auto-cleanup not yet implemented - manual action required" -ForegroundColor Yellow
-            exit 1
-        } else {
-            Write-Host "💡 To fix: Move governance files to Docs Hub or remove them" -ForegroundColor Cyan
-            Write-Host "   Run with -DryRun to see violations without changes" -ForegroundColor Gray
-            exit 1
-        }
     }
+
+    Write-Host "FAIL: consolidated baseline violations found" -ForegroundColor Red
+    Write-Host ""
+    foreach ($violation in $violations) {
+        Write-Host " - [$($violation.Type)] $($violation.Path)" -ForegroundColor Red
+        Write-Host "   $($violation.Detail)" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    Write-Host "Fix by restoring local canon paths and removing external Docs-Hub defaults from key entrypoints." -ForegroundColor Cyan
+
+    if ($DryRun) {
+        Write-Host "Dry run only; no changes were made." -ForegroundColor Gray
+    }
+
+    exit 1
 }
 finally {
     Pop-Location
-}
-
-function Get-SuggestedLocation {
-    param($fileName)
-    
-    switch -Wildcard ($fileName) {
-        '*AGENTS.md' { return 'Workspace: /agents/AGENTS.md' }
-        '*CLAUDE.md' { return 'Workspace: /agents/roles/CLAUDE.md' }
-        '*CODEX.md' { return 'Workspace: /agents/roles/CODEX.md' }
-        '*COPILOT.md' { return 'Workspace: /agents/roles/COPILOT.md' }
-        '*GEMINI.md' { return 'Workspace: /agents/roles/GEMINI.md' }
-        '*SETUP*.md' { return 'Docs Hub: /agents/setup/' }
-        '*GUIDE*.md' { return 'Docs Hub: /knowledge/operating_rules/' }
-        'DISCUSSION_*.md' { return 'Docs Hub: /knowledge/systems/' }
-        '*HANDOFF*.md' { return 'Docs Hub: /_legacy_quarantine/sessions/' }
-        '*AUDIT*.md' { return 'Docs Hub: /knowledge/reviews/' }
-        '*REPORT*.md' { return 'Docs Hub: /knowledge/reviews/' }
-        '*.txt' { return 'Docs Hub: /_legacy_quarantine/prompts/' }
-        default { return 'Docs Hub: /knowledge/ (review category)' }
-    }
 }

@@ -1,0 +1,80 @@
+[
+  {
+    "description": "Missing required field 'schema_version'",
+    "payload": {
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "trade_qty": "1.5",
+      "side": "buy"
+    },
+    "expected_error": "schema_version is required"
+  },
+  {
+    "description": "Legacy 'qty' field instead of 'trade_qty'",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "qty": "1.5",
+      "side": "buy"
+    },
+    "expected_error": "trade_qty is required, 'qty' is deprecated"
+  },
+  {
+    "description": "Invalid source (not in enum)",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "kraken",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "trade_qty": "1.5",
+      "side": "buy"
+    },
+    "expected_error": "source must be one of: mexc, binance, bybit, stub"
+  },
+  {
+    "description": "Invalid side (uppercase instead of lowercase)",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "trade_qty": "1.5",
+      "side": "BUY"
+    },
+    "expected_error": "side must be lowercase: buy, sell, unknown"
+  },
+  {
+    "description": "Price as number instead of string",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": 50000.50,
+      "trade_qty": "1.5",
+      "side": "buy"
+    },
+    "expected_error": "price must be string to preserve precision"
+  },
+  {
+    "description": "Additional property not allowed",
+    "payload": {
+      "schema_version": "v1.0",
+      "source": "mexc",
+      "symbol": "BTCUSDT",
+      "ts_ms": 1735574400000,
+      "price": "50000.50",
+      "trade_qty": "1.5",
+      "side": "buy",
+      "volume": "1000.0"
+    },
+    "expected_error": "additionalProperties not allowed, 'volume' field is deprecated"
+  }
+]

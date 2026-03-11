@@ -1,0 +1,35 @@
+# Decision Event
+event_id: DE-2025-12-31-012
+timestamp: "2025-12-31T16:46:30+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: doc.update
+  summary: "Added batch 04 session logs and updated AGENTS.md + CURRENT_STATUS.md."
+  reversible: true
+scope:
+  repo: Claire_de_Binare_Docs
+  paths:
+    - "agents/AGENTS.md"
+    - "knowledge/CURRENT_STATUS.md"
+    - "knowledge/logs/sessions/2025-12-31-codex-ideas.md"
+    - "knowledge/logs/sessions/2025-12-31-codex-results.md"
+    - "knowledge/logs/sessions/2025-12-31-codex-batch-04-ideas.md"
+    - "knowledge/logs/sessions/2025-12-31-codex-batch-04-results.md"
+uncertainty:
+  flag: false
+  reason: "Explicit user approval"
+  options: []
+policy_refs:
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+evidence:
+  - "agents/AGENTS.md"
+  - "knowledge/CURRENT_STATUS.md"
+  - "knowledge/logs/sessions/2025-12-31-codex-batch-04-ideas.md"
+  - "knowledge/logs/sessions/2025-12-31-codex-batch-04-results.md"
+outcome:
+  result: recorded
+  notes: "Session logs indexed and status updated"

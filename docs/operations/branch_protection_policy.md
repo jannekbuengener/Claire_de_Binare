@@ -1,33 +1,19 @@
 # Branch Protection Policy Enforcement
 
-**Status:** Blueprint / Interface Definition
+**Status:** Historical blueprint / superseded
 **Issue:** #658
 
-## 1. Source of Truth
-The canonical configuration for branch protection is stored in:
-`temp_branch_protection.json` (to be moved to `governance/` in the Docs Hub).
+Do not use this file as the operational source of truth for the current `main`
+merge contract. The review-count and required-context values in the original
+blueprint are not the current repo state.
 
-## 2. Enforcement Flow
+Use these live-state repo artifacts instead:
 
-### Drift Detection (Monitor)
-- A scheduled CI check or manual audit script compares the GitHub API response for `branches/main/protection` against the local JSON policy.
-- If any discrepancy is found (e.g., `allow_force_pushes: true`), the check MUST fail.
+- `reports/BRANCH_PROTECTION_BASELINE_main.json`
+- `reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json`
+- `reports/REQUIRED_CHECK_CONTEXTS_BASELINE_main.json`
+- `docs/runbooks/merge_policy_ci_gate.md`
+- `docs/governance/no_human_review_policy.md`
 
-### Remediation (Re-Apply)
-- A dedicated maintenance script (using `gh api`) applies the policy from the JSON file to the repository.
-- This operation must be **idempotent**.
-
-## 3. Required State (Security Baseline)
-
-| Parameter | Required Value |
-|-----------|----------------|
-| `allow_force_pushes` | `false` |
-| `allow_deletions` | `false` |
-| `required_approving_review_count` | `>= 1` |
-| `required_status_checks.strict` | `true` |
-| `required_status_checks.contexts` | `ci`, `e2e-tests`, `lint`, `security-scan` |
-
-## 4. Verification Artifacts
-Every re-apply or audit event must produce a summary:
-- `audit_report.json`
-- Exit code 0 (Match) or 1 (Drift/Failure)
+This file is retained only as audit/history for the earlier design direction in
+issue `#658`.

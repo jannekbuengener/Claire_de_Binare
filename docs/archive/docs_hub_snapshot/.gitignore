@@ -1,0 +1,321 @@
+# Claire de Binare Docs - .gitignore
+# Dieses Repository erlaubt NUR Markdown und YAML Dateien
+# Alle anderen Dateitypen sind verboten
+
+# ============================================
+# AUSFÜHRBARE DATEIEN UND CODE (VERBOTEN)
+# ============================================
+
+# Skripte
+*.sh
+*.bash
+*.zsh
+*.fish
+*.ps1
+*.bat
+*.cmd
+
+# Programming Languages
+*.js
+*.jsx
+*.ts
+*.tsx
+*.py
+*.pyc
+*.pyo
+*.pyd
+*.java
+*.class
+*.go
+*.rb
+*.php
+*.c
+*.cpp
+*.h
+*.hpp
+*.cs
+*.rs
+*.swift
+*.kt
+*.scala
+*.clj
+*.ex
+*.exs
+*.erl
+*.hs
+*.ml
+*.lua
+*.pl
+*.r
+*.R
+
+# Compiled/Binary Files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.wasm
+
+# ============================================
+# INFRASTRUKTUR UND CONFIG (VERBOTEN)
+# ============================================
+
+# Terraform
+*.tf
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Kubernetes
+*.k8s.yaml
+*-deployment.yaml
+*-service.yaml
+*-ingress.yaml
+
+# Docker (außer Dokumentation)
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# CI/CD mit Ausführungslogik (GitHub Actions workflows sind erlaubt nur für Policy-Enforcement)
+# Aber Block execution scripts
+**/.github/workflows/**/scripts/
+**/.github/actions/
+
+# Cloud Provider Configs
+*.aws
+*.gcp
+*.azure
+
+# ============================================
+# PACKAGE MANAGEMENT (VERBOTEN)
+# ============================================
+
+# Node.js
+node_modules/
+package.json
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm
+.yarn/
+
+# Python
+__pycache__/
+*.egg-info/
+dist/
+build/
+pip-cache/
+poetry.lock
+Pipfile.lock
+requirements.txt
+setup.py
+
+# Ruby
+Gemfile
+Gemfile.lock
+vendor/bundle/
+
+# Go
+go.mod
+go.sum
+vendor/
+
+# Java/Maven/Gradle
+pom.xml
+build.gradle
+settings.gradle
+.gradle/
+target/
+
+# Rust
+Cargo.toml
+Cargo.lock
+target/
+
+# .NET
+*.csproj
+*.sln
+packages/
+bin/
+obj/
+
+# ============================================
+# BUILD ARTIFACTS (VERBOTEN)
+# ============================================
+
+# General build outputs
+dist/
+build/
+out/
+*.min.js
+*.min.css
+*.bundle.js
+*.chunk.js
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ============================================
+# DATABASES UND DATA FILES (VERBOTEN)
+# ============================================
+
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.mdb
+*.accdb
+
+# Data files
+*.csv
+*.xlsx
+*.xls
+*.parquet
+
+# ============================================
+# BINARIES UND MEDIA (BESCHRÄNKT)
+# ============================================
+
+# Executables
+*.bin
+*.app
+
+# Large media (allow small images for docs if needed)
+*.mov
+*.mp4
+*.avi
+*.mkv
+*.mp3
+*.wav
+*.flac
+
+# ============================================
+# DEVELOPMENT TOOLS
+# ============================================
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+
+# Allow curated Markdown logs in knowledge/logs
+!knowledge/logs/
+!knowledge/logs/**/
+!knowledge/logs/**/*.md
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ============================================
+# SECRETS UND CREDENTIALS (KRITISCH)
+# ============================================
+
+# Environment variables
+.env
+.env.*
+*.env
+
+# Credentials
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# ============================================
+# ERLAUBTE AUSNAHMEN
+# ============================================
+
+# Diese Dateien sind ERLAUBT trotz .gitignore patterns:
+# Dokumentation und Governance
+!*.md
+!*.yaml
+!*.yml
+
+# Repository Meta-Dateien
+!.gitignore
+!CODEOWNERS
+!LICENSE
+
+# GitHub Actions nur für Policy-Enforcement
+!.github/workflows/*.yaml
+!.github/workflows/*.yml
+
+# ============================================
+# SPEZIELLE REGELN
+# ============================================
+
+# Deny JSON config and package files (examples in markdown are OK)
+package.json
+package-lock.json
+tsconfig.json
+jsconfig.json
+composer.json
+*.config.json
+*.settings.json
+# Allow specific GitHub config files if needed
+!.github/**/*.json
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Test coverage (no tests should exist)
+coverage/
+.nyc_output/
+*.lcov
+
+# ============================================
+# BACKUP UND VERSIONS-DATEIEN
+# ============================================
+
+*.bak
+*.backup
+*~
+*.orig
+
+# ============================================
+# LOCAL MACHINE STATE (NEVER COMMIT)
+# ============================================
+
+# Machine-local workspace state
+.local/**
+!.local/README.md
+
+# Auto Claude data directory
+.auto-claude/
+
+# Slice E Cleanup
+.worktrees/
+.claude_settings.json
+configs/
+
+
+.cdb_docs_inventory.txt
+.cdb_knowledge_inventory.txt

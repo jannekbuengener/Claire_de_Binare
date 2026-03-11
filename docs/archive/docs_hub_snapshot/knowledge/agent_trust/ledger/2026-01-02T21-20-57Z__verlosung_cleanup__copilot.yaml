@@ -1,0 +1,24 @@
+event_id: EVENT-2026-01-02T21-20-57Z-VERLOSUNG-CLEANUP
+timestamp: "2026-01-02T21:20:57Z"
+agent:
+  id: copilot
+  vendor: github
+  role: assistant
+action:
+  type: repo.cleanup
+  summary: "Removed code artifacts from Docs Repo verlosung/ after migration to Working Repo"
+  reversible: true
+scope:
+  repo: Claire_de_Binare_Docs
+  paths:
+    - verlosung/*
+uncertainty:
+  flag: false
+  reason: "Migration confirmed via PR #434 and #435 merges"
+policy_refs:
+  - CDB_REPO_STRUCTURE
+  - CDB_AGENT_POLICY
+evidence:
+  - "PR #434 (Slice B)"
+  - "PR #435 (Slice C)"
+  - "verlosung/README.md pointer"

@@ -2,6 +2,8 @@
 
 This importer ingests **ledger decision events** into SurrealDB as an
 append-only mirror. It is **idempotent** and will not block primary writes.
+It also derives a small append-only evidence slice from `ledger_event.evidence`
+without changing the ledger file format or introducing a separate graph system.
 
 ## Scope (P0)
 
@@ -14,11 +16,17 @@ Supported action types:
 
 Other action types are imported with `event_kind=other`.
 
+Evidence scope in this cut:
+- `ledger_event.evidence` only
+- no backfill of historical docs, readiness snapshots, or governance files
+- no new source of truth outside the ledger YAML
+
 ## Idempotence
 
 - Uses `event_id` from the ledger file as the SurrealDB record id.
 - If `event_id` is missing, a deterministic SHA-256 of the event payload is used.
 - Re-import of the same event produces the same `ledger_event:<id>` record.
+- Derived evidence records use deterministic ids based on `event_id + evidence_index`.
 
 ## Integrity Guard
 
@@ -58,6 +66,23 @@ Audit logs emit structured JSON with:
 - Each event includes `agent.id`.
 - Importer links to the **previous event** for the same agent (`prev_event_id`).
 
+## Derived Evidence Nodes + Edges
+
+For each redacted string in `ledger_event.evidence`, the importer creates in the
+same transaction:
+
+- one `evidence_node:<id>` record
+- one `evidence_edge:<id>` record with `edge_type=ledger_event_has_evidence`
+
+The importer classifies each evidence string deterministically as:
+- `git_ref` for `git:<sha>:<path>`
+- `repo_path` for repo-relative paths like `docs/live-readiness/LR-001-SPEC.md`
+- `url` for `http(s)://...`
+- `text` for opaque evidence strings that do not match a stronger pattern
+
+`ledger_event` remains the canonical mirror of the YAML event. `evidence_node`
+and `evidence_edge` are derived views for audit/navigation only.
+
 ## Redaction Rules (No Sensitive Strings)
 
 The importer redacts evidence strings that look like credentials:
@@ -70,6 +95,7 @@ Redacted values are replaced with `[REDACTED]`.
 
 - Importer: `tools/surrealdb/ledger_importer.py`
 - Mapping: `infrastructure/config/surrealdb/ledger-mapping.yaml`
+- Schema: `infrastructure/surrealdb/setup.surql`
 
 ## Usage
 

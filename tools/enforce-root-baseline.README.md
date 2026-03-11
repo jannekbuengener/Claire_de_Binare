@@ -1,86 +1,40 @@
 # enforce-root-baseline.ps1
 
-**Purpose:** Enforce Working Repo root baseline - prevent governance files from polluting execution-only workspace.
+Purpose: validate the consolidated Working Repo baseline after retiring the split Docs-Hub default.
 
-## Overview
+## What It Checks
 
-This script validates that the Working Repo root contains ONLY execution/infrastructure files, preventing governance violations that compromise the "Execution Only" principle.
+- Required local canon directories exist:
+  - `agents/`
+  - `docs/`
+  - `governance/`
+  - `knowledge/`
+  - `mcp_navpack_working_repo/`
+- Required local entrypoints exist:
+  - `README.md`
+  - `AGENTS.md`
+  - `docs/index.md`
+  - `docs/meta/WORKING_REPO_CANON.md`
+- Key navigation files do not still point to a retired external docs source as the default path.
 
 ## Usage
 
-### Validation (Dry Run)
-```powershell
-.\tools\enforce-root-baseline.ps1 -DryRun
-```
-
-### Live Enforcement Check  
 ```powershell
 .\tools\enforce-root-baseline.ps1
-```
-
-### Auto-Cleanup (Future)
-```powershell
-.\tools\enforce-root-baseline.ps1 -AutoCleanup -Force
-```
-
-## Allowed in Working Repo Root
-
-### ✅ Infrastructure Files
-- `Makefile`, `docker-compose*.yml`, `.dockerignore`
-- `requirements*.txt`, `pytest.ini`
-- `.gitignore`, `.gitlab-ci.yml`, `.gitleaksignore`
-- `.mcp.json`, `mcp-config*.toml`
-
-### ✅ Directories  
-- `services/`, `core/`, `infrastructure/`, `tests/`, `tools/`, `scripts/`
-- `.git/`, `.vscode/`, `.github/`
-- `.ruff_cache/`, `__pycache__/`
-
-### ❌ Governance Violations
-- Agent files: `AGENTS.md`, `CLAUDE.md`, `CODEX.md`, etc.
-- Documentation: `*_SETUP.md`, `*_GUIDE.md`, `QUICKSTART*.md`
-- Knowledge files: `*_AUDIT*.md`, `*_REPORT*.md`
-- Session files: `DISCUSSION_*.md`, `*HANDOFF*.md`
-
-## Integration
-
-### In CI/CD Pipeline
-```yaml
-validate-baseline:
-  script:
-    - pwsh tools/enforce-root-baseline.ps1
-```
-
-### In Makefile
-```makefile
-baseline-check:
-	@pwsh tools/enforce-root-baseline.ps1 -DryRun
-
-baseline-enforce:
-	@pwsh tools/enforce-root-baseline.ps1
+.\tools\enforce-root-baseline.ps1 -DryRun
 ```
 
 ## Exit Codes
 
-- `0` → Root baseline CLEAN (all files are execution/infrastructure compliant)
-- `1` → Governance violations detected (requires manual action)
+- `0` = baseline valid
+- `1` = missing local canon paths or stale split-repo references detected
 
-## Governance Rationale
+## Rationale
 
-**Canon Rule:** Working Repo = Execution Only  
-**Docs Hub:** Canon, Knowledge, Governance  
+This repo is no longer `execution only`.
+The baseline now protects the opposite invariant:
 
-This script enforces the strict separation and prevents "drift" back to mixed governance/execution.
+- active canon lives in this working repo
+- local `docs/archive/docs_hub_snapshot/` is the only retained legacy archive
 
-## Migration Suggestions
-
-When violations are found, the script suggests canonical locations:
-- Agent files → Workspace `/agents/roles/`
-- Setup guides → Docs Hub `/agents/setup/`  
-- Knowledge → Docs Hub `/knowledge/`
-- Sessions → Docs Hub `/_legacy_quarantine/sessions/`
-
----
-
-**Replaces:** `sync-agents.ps1` (obsolete - violated governance rules)  
-**Implements:** Root baseline enforcement for governance compliance
+See `docs/meta/WORKING_REPO_CANON.md` for the canonical path matrix.

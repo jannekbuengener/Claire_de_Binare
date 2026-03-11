@@ -1,0 +1,147 @@
+10er Block 1 (Quick Wins + Phase-0 Shipability Base)
+
+Ziel: “Jetzt sofort spürbarer Fortschritt” (Branch Protection + Determinism + Alertmanager) und direkt danach CI/E2E/Contracts sauber.
+
+#353 [P1] Enforce PR-only on main (Branch Protection)
+
+#354 [P0] Deterministic E2E Test Path (local + CI)
+
+#352 [P0] Enable Alertmanager (alert routing + test alert)
+
+#355 [P0] CI/CD back to green (Actions + Guards)
+
+#356 [P0] Canonical Message Contracts (market_data, signals)
+
+#349 [P2] Standardize Redis payload sanitization (no None in XADD)
+
+#341 fix(monitoring): cdb_ws Metrics Export broken (Prometheus scrape fails)
+
+#347 [P1] Logging Policy dev vs prod (cost/noise control)
+
+#348 [P2] Align network naming (docs vs compose reality)
+
+#346 EPIC: Phase 0 – Shipability Base (als Steuerboard updaten)
+
+Warum das zusammenpasst: Das ist ein kompletter “Gate-and-Proof”-Loop: Regeln (PR-only), deterministische Tests, Alerting aktiv, CI grün, Contracts stabil, Redis sauber, Metrics/Logging/Netzwerk konsistent, Epic als Dashboard.
+
+10er Block 2 (Automation & Governance Workflows)
+
+Ziel: Issue-Lifecycle + Review-Brücke + “Decision hygiene” damit dein System nicht wieder verwildert.
+
+#338 [AUTOMATION] Devil’s Advocate Mode
+
+#337 [AUTOMATION] Issue Lifecycle State Machine (Labels & Transitions)
+
+#336 [AUTOMATION] Pipeline-to-Review Bridge (Auto-Assign & SLA)
+
+#335 [PIPELINE] Discussion Pipeline Output Clarity (Idee ≠ Entscheidung)
+
+#330 🔍 META: Governance Audit Q1 2026
+
+#321 audit: Establish weekly Governance Review process
+
+#147 [AUTOMATION] Smart PR Auto-Labeling
+
+#170 [SMART-AUTOMATION] Issue Management & Progress Tracking
+
+#171 [PRODUCTIVITY] Smart Development Dashboard & Workflow Automation
+
+#159 [STABILIZATION-P3] Governance Enforcement – Fix All Violations
+
+(Die Blöcke 2 und 3 greifen ineinander, aber hier bleibt der Fokus: Workflows + Regeln.)
+
+10er Block 3 (Repo-Hygiene + Stabilization Kern)
+
+Ziel: “Repo wieder wartbar”, weniger Chaos, schnelleres Arbeiten, weniger Seiteneffekte.
+
+#162 [STABILIZATION-MASTER] Fundamental System Stabilization Program
+
+#158 [STABILIZATION-P2] Code Reality Audit – What actually exists?
+
+#166 [GOVERNANCE] Agent Files in wrong repository (critical)
+
+#167 [GOVERNANCE] Systematic canonical policy violations
+
+#168 [GOVERNANCE] Missing Agent Roles directory structure
+
+#330 [CLEANUP] Triage 82 unmerged branches
+
+#164 [DEVOPS] Environment setup breakdown (Onboarding impossible)
+
+#156 [DEVOPS] Dual CI/CD inconsistency (GitHub Actions vs GitLab CI)
+
+#155 [QUALITY] Massive TODO/Unimplemented code audit
+
+#151 [ANALYSIS] Cross-Repo Consistency Gap Analysis & Sync
+
+10er Block 4 (Testing & Trading Core Guards)
+
+Ziel: Risk/Guard-Cases, Testharness, “Trading engine kann nicht aus Versehen Mist bauen”.
+
+#230 E2E Guard-Cases: drawdown guard + circuit breaker
+
+#229 Test harness cursor scope bug in _count_rows
+
+#224 P1: order_results not published (DRY_RUN + DB schema mismatch + missing stream)
+
+#172 Phase 2: Real 72-Hour Trading Validation System
+
+#160 [STABILIZATION-P4] Operational Readiness – Production Confidence
+
+#165 [STABILIZATION-P2] Production Safety Crisis – Mock deps block real trading
+
+#171 Phase 1: Real MEXC Executor – Replace MockExecutor
+
+#173 Phase 3: Production Safety Systems (real money)
+
+#169 [OPERATIONAL] Production Deployment Readiness – Infra gaps
+
+#328 audit: Release 1.0 Process & Incident Response (M9)
+
+10er Block 5 (Security & Compliance Track)
+
+Ziel: Tresor/Keys, PenTest, Compliance, Security-by-default für M8/M9.
+
+#327 audit: Implement Tresor-Zone (keys/limits/separation)
+
+#326 audit: Penetration Testing & Compliance (M8)
+
+#145 Security: Penetration Test – Infrastructure
+
+#99 Security: Penetration Test – Web Application
+
+#328 audit: Release 1.0 Process & Incident Response (M9)
+
+#169 [OPERATIONAL] Production Deployment Readiness – Infra gaps
+
+#160 Operational Readiness – Production Confidence
+
+#173 Production Safety Systems for Real Money Trading
+
+#325 Event-Driven Backbone – migrate to JetStream/Kafka
+
+#323 Kubernetes-Readiness & GitOps (FluxCD)
+
+10er Block 6 (ML / Strategy Research als eigener Zug)
+
+Ziel: Forschung ohne den Shipping-Track zu stören.
+
+#203 ML Deep Research Topics – Systematische Aufarbeitung
+
+#200 ML Deep Research Topics für Trading AI
+
+#198 ML Foundation Master Roadmap
+
+#199 ML Development Workspace & Jupyter
+
+#197 Upgrade Python Dependencies for ML Foundation
+
+#193 ML Foundation Phase 1
+
+#194 ML Foundation Phase 2
+
+#195 ML Foundation Phase 3
+
+#196 ML Foundation Phase 4
+
+#333 [DECISION] advanced control theory needed for M8/M9?

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "How to use our issue templates"
+    url: "https://github.com/jannekbuengener/Claire_de_Binare_Docs/blob/main/README_TEMPLATE_PACK.md"
+    about: "Kurzguide: welches Template wann, inkl. Konventionen."
+  - name: "Governance / Policies"
+    url: "https://github.com/jannekbuengener/Claire_de_Binare_Docs/tree/main/knowledge"
+    about: "Canonical governance docs and policy stack."

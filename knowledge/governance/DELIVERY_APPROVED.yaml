@@ -1,0 +1,26 @@
+# DELIVERY_APPROVED.yaml
+# Canonical Delivery Gate Flag
+# Project: Claire de Binare (CDB)
+
+meta:
+  role: delivery_gate
+  domain: governance
+  status: canonical
+  owner: user
+  change_frequency: ad_hoc
+
+description: >
+  This file is the explicit, human-controlled delivery approval flag.
+  It enables Delivery Mode for agents and CI.
+  Absence or false value means Analysis Mode only.
+
+delivery:
+  approved: true
+  approved_by: "Jannek"
+  approved_at: "2026-01-05T11:09:57Z"  # derived from commit 2d2e282a
+
+rules:
+  - No agent may set approved=true
+  - Only the user may modify this file
+  - CI and agents must treat approved=false or missing file as hard STOP
+  - File must be explicitly committed to activate delivery

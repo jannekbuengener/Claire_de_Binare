@@ -1,0 +1,1352 @@
+{
+  "docs": [
+    {
+      "domain": "ci",
+      "path": "DOCS_HUB_INDEX.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "docs hub index",
+        "governance",
+        "agent",
+        "status",
+        "audit"
+      ],
+      "title": "DOCS_HUB_INDEX"
+    },
+    {
+      "domain": "contracts",
+      "path": "README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "playbook",
+        "contract",
+        "status",
+        "ci"
+      ],
+      "title": "CDB Phase 2 Pack — Playbooks + #255 Regression Shield"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENTS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "agents",
+        "governance",
+        "schema",
+        "agent",
+        "evidence"
+      ],
+      "title": "AGENTS — Shared Charter (Canonical)"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENT_QUICKSTART.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": true,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "agent quickstart",
+        "governance",
+        "agent",
+        "mcp",
+        "status"
+      ],
+      "title": "🤖 Agent Quick Start Guide"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": true,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "agent setup guide",
+        "governance",
+        "agent",
+        "mcp",
+        "audit"
+      ],
+      "title": "Agent-Setup: Claude, Codex, Gemini, Copilot"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AUTOLOAD_MANIFEST.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "autoload manifest",
+        "governance",
+        "agent",
+        "roadmap",
+        "status"
+      ],
+      "title": "AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "agent",
+        "ci",
+        "policy"
+      ],
+      "title": "Defines roles and responsibilities for agents."
+    },
+    {
+      "domain": "agents",
+      "path": "agents/roles/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "agent",
+        "ci",
+        "policy"
+      ],
+      "title": "Defines roles and responsibilities for agents."
+    },
+    {
+      "domain": "contracts",
+      "path": "cdb_docs_index.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": true,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "cdb docs index",
+        "governance",
+        "contract",
+        "agent",
+        "mcp"
+      ],
+      "title": "Suche in allen Markdown-Dateien"
+    },
+    {
+      "domain": "env",
+      "path": "index.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "index",
+        "governance",
+        "agent",
+        "status",
+        "ci"
+      ],
+      "title": "Wissens-Index des Claire de Binare Systems"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/ACTIVE_ROADMAP.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "active roadmap",
+        "agent",
+        "roadmap",
+        "status",
+        "evidence"
+      ],
+      "title": "ACTIVE_ROADMAP (Pointer)"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "cdb knowledge hub",
+        "governance",
+        "agent",
+        "replay",
+        "roadmap"
+      ],
+      "title": "CDB_KNOWLEDGE_HUB"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/CURRENT_STATUS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "current status",
+        "contract",
+        "status",
+        "evidence",
+        "ci"
+      ],
+      "title": "Claire de Binare - Current Status"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "deep.research.index",
+        "agent",
+        "ci",
+        "db",
+        "architecture"
+      ],
+      "title": "Deep Research Index"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/GOVERNANCE_QUICKREF.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "governance quickref",
+        "governance",
+        "agent",
+        "status",
+        "ci"
+      ],
+      "title": "GOVERNANCE_QUICKREF - Governance-Regeln Kurzreferenz"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/INDEX.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "index",
+        "governance",
+        "runbook",
+        "playbook",
+        "contract"
+      ],
+      "title": "Knowledge Directory - Canonical Documentation Index"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "status",
+        "ci",
+        "db"
+      ],
+      "title": "Wissensbasis des Claire de Binare Systems"
+    },
+    {
+      "domain": "agents",
+      "path": "knowledge/agent_trust/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "agent",
+        "audit",
+        "db"
+      ],
+      "title": "Agent Trust – Audit & Scoring"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/agent_trust/decision_event.schema.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "decision event.schema",
+        "governance",
+        "schema",
+        "agent",
+        "evidence"
+      ],
+      "title": "decision_event.schema.yaml"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/agent_trust/incidents/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "agent",
+        "ci",
+        "incident"
+      ],
+      "title": "Incidents"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/agent_trust/ledger/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "agent",
+        "ci",
+        "trust"
+      ],
+      "title": "Ledger (append-only)"
+    },
+    {
+      "domain": "other",
+      "path": "knowledge/agent_trust/snapshots/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "agent",
+        "trust"
+      ],
+      "title": "Snapshots"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/MIGRATION.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "migration",
+        "contract",
+        "schema"
+      ],
+      "title": "Contract Migration Guide - v1.0"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "contract",
+        "schema",
+        "status",
+        "ci"
+      ],
+      "title": "Canonical Message Contracts"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/REPLAY_CONTRACT.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "replay contract",
+        "contract",
+        "schema",
+        "replay",
+        "status"
+      ],
+      "title": "Replay Contract — stream.fills Schema"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/market_data.schema.json",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "market data.schema",
+        "contract",
+        "schema",
+        "ci",
+        "trading"
+      ],
+      "title": "market_data.schema"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/signal.schema.json",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "signal.schema",
+        "contract",
+        "schema",
+        "trading"
+      ],
+      "title": "signal.schema"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_AGENT_POLICY.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "cdb agent policy",
+        "governance",
+        "agent",
+        "status",
+        "audit"
+      ],
+      "title": "CDB_AGENT_POLICY"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_CONSTITUTION.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "cdb constitution",
+        "governance",
+        "schema",
+        "agent",
+        "replay"
+      ],
+      "title": "CDB_CONSTITUTION"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_GOVERNANCE.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "cdb governance",
+        "governance",
+        "schema",
+        "agent",
+        "status"
+      ],
+      "title": "CDB_GOVERNANCE"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "governance",
+        "agent",
+        "status",
+        "evidence",
+        "audit"
+      ],
+      "title": "CDB_TRUST_SCORE_POLICY"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": true,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "governance",
+        "agent",
+        "mcp",
+        "status",
+        "audit"
+      ],
+      "title": "MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "agent",
+        "ci",
+        "db"
+      ],
+      "title": "Canonical governance policies and rules."
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "system invariants",
+        "governance",
+        "contract",
+        "schema",
+        "agent"
+      ],
+      "title": "System Invariants"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "trust score config",
+        "governance",
+        "status",
+        "evidence",
+        "ci"
+      ],
+      "title": "TRUST_SCORE_CONFIG.yaml"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "policy card schema",
+        "governance",
+        "schema",
+        "agent",
+        "status"
+      ],
+      "title": "POLICY_CARD_SCHEMA.yaml"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/policy_cards/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "schema",
+        "agent",
+        "status"
+      ],
+      "title": "Policy Cards"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operating_rules/EMERGENCY_STOP_SOP.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "emergency stop sop",
+        "status",
+        "ci",
+        "db",
+        "ops"
+      ],
+      "title": "Emergency Stop - Standard Operating Procedure (SOP)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/operating_rules/HITL_RUNBOOK.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "hitl runbook",
+        "runbook",
+        "status",
+        "ci",
+        "db"
+      ],
+      "title": "Human-in-the-Loop (HITL) Operations Runbook"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "live trading runbook",
+        "runbook",
+        "status",
+        "ci",
+        "db"
+      ],
+      "title": "Live Trading Runbook"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operating_rules/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "governance",
+        "agent",
+        "ci",
+        "incident"
+      ],
+      "title": "Defines rules for operational procedures."
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": true,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "mcp central config",
+        "agent",
+        "mcp",
+        "db",
+        "ops"
+      ],
+      "title": "MCP Zentral-Konfiguration (Team)"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/WORKSPACE_LAYOUT.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "workspace layout",
+        "governance",
+        "agent",
+        "status",
+        "ci"
+      ],
+      "title": "Workspace Layout — Canonical Structure (verbindlich)"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/QUICK_START.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "quick start",
+        "schema",
+        "status",
+        "db",
+        "recovery"
+      ],
+      "title": "🚀 QUICK START - Nach Docker Neuinstallation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": true,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "schema",
+        "mcp",
+        "status",
+        "db"
+      ],
+      "title": "Disaster Recovery - Docker Reinstallation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "restore guide",
+        "status",
+        "db",
+        "recovery",
+        "docker"
+      ],
+      "title": "Docker Reinstall - Restore Guide"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "00 index",
+        "runbook",
+        "playbook",
+        "schema",
+        "agent"
+      ],
+      "title": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "runbook",
+        "playbook",
+        "schema",
+        "status",
+        "ci"
+      ],
+      "title": "01 — Stack Golden Path (Canonical Runbook)"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "runbook",
+        "playbook",
+        "ci",
+        "db",
+        "docker"
+      ],
+      "title": "02 — Security Baseline & Scans (Runbook)"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "playbook",
+        "contract",
+        "schema",
+        "status",
+        "db"
+      ],
+      "title": "03 — DB Migrations & Init (Postgres) — Canonical Playbook"
+    },
+    {
+      "domain": "other",
+      "path": "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "playbook",
+        "schema",
+        "replay",
+        "db",
+        "docker"
+      ],
+      "title": "04 — Redis Wire-Level Debug (Pub/Sub, Streams, Mythen)"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "playbook",
+        "contract",
+        "status",
+        "ci",
+        "db"
+      ],
+      "title": "05 — E2E Regression Shield (#255) — Canonical Spec"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "playbook",
+        "agent",
+        "replay",
+        "db",
+        "secrets"
+      ],
+      "title": "Autopilot / Agent Operations (2025-12-25)"
+    },
+    {
+      "domain": "evidence",
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "runbook",
+        "playbook"
+      ],
+      "title": "Verification Snapshot — Issues #230 & #226 (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/00_INDEX.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "00 index",
+        "runbook",
+        "schema",
+        "replay",
+        "ci"
+      ],
+      "title": "Runbooks Snapshot (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/06_DETERMINISTIC_REPLAY.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "06 deterministic replay",
+        "runbook",
+        "replay"
+      ],
+      "title": "Deterministic Replay (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "governance",
+        "runbook",
+        "status",
+        "evidence",
+        "audit"
+      ],
+      "title": "CDB Control Board Runbook"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "grafana admin incident",
+        "runbook",
+        "audit",
+        "ci",
+        "db"
+      ],
+      "title": "Runbook: Grafana Admin Password Incident"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/systems/README.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "readme",
+        "agent",
+        "status",
+        "ci",
+        "docker"
+      ],
+      "title": "System Documentation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/systems/TRADING_MODES.md",
+      "signals": {
+        "has_checklist": true,
+        "mentions_contract": false,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": true
+      },
+      "tags": [
+        "trading modes",
+        "ci",
+        "trading",
+        "secrets"
+      ],
+      "title": "Trading Modes"
+    },
+    {
+      "domain": "env",
+      "path": "meta/github/LABELS.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": false,
+        "mentions_replay": false,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "labels",
+        "schema",
+        "status",
+        "ci",
+        "trading"
+      ],
+      "title": "🏷️ Label-Strategie — Claire de Binaire"
+    },
+    {
+      "domain": "contracts",
+      "path": "meta/migrations/DOCS_MIGRATION_MAP.md",
+      "signals": {
+        "has_checklist": false,
+        "mentions_contract": true,
+        "mentions_mcp": false,
+        "mentions_policy": true,
+        "mentions_replay": true,
+        "mentions_toggle": false
+      },
+      "tags": [
+        "docs migration map",
+        "runbook",
+        "playbook",
+        "contract",
+        "agent"
+      ],
+      "title": "DOCS_MIGRATION_MAP.md"
+    }
+  ],
+  "domains": [
+    {
+      "domain": "governance",
+      "paths": [
+        "knowledge/governance/CDB_AGENT_POLICY.md",
+        "knowledge/governance/CDB_CONSTITUTION.md",
+        "knowledge/governance/CDB_GOVERNANCE.md",
+        "knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+        "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+        "knowledge/governance/README.md",
+        "knowledge/governance/SYSTEM_INVARIANTS.md",
+        "knowledge/governance/TRUST_SCORE_CONFIG.yaml",
+        "knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml",
+        "knowledge/governance/policy_cards/README.md"
+      ]
+    },
+    {
+      "domain": "runbooks",
+      "paths": [
+        "knowledge/operating_rules/HITL_RUNBOOK.md",
+        "knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+        "knowledge/runbooks/00_INDEX.md",
+        "knowledge/runbooks/06_DETERMINISTIC_REPLAY.md",
+        "knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md",
+        "knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md"
+      ]
+    },
+    {
+      "domain": "contracts",
+      "paths": [
+        "README.md",
+        "cdb_docs_index.yaml",
+        "knowledge/CURRENT_STATUS.md",
+        "knowledge/INDEX.md",
+        "knowledge/agent_trust/decision_event.schema.yaml",
+        "knowledge/contracts/MIGRATION.md",
+        "knowledge/contracts/README.md",
+        "knowledge/contracts/REPLAY_CONTRACT.md",
+        "knowledge/contracts/market_data.schema.json",
+        "knowledge/contracts/signal.schema.json",
+        "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+        "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+        "meta/migrations/DOCS_MIGRATION_MAP.md"
+      ]
+    },
+    {
+      "domain": "env",
+      "paths": [
+        "index.yaml",
+        "knowledge/CDB_KNOWLEDGE_HUB.md",
+        "knowledge/GOVERNANCE_QUICKREF.md",
+        "knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+        "meta/github/LABELS.md"
+      ]
+    },
+    {
+      "domain": "ci",
+      "paths": [
+        "DOCS_HUB_INDEX.md",
+        "knowledge/ACTIVE_ROADMAP.md",
+        "knowledge/DEEP.RESEARCH.INDEX.md",
+        "knowledge/README.md",
+        "knowledge/agent_trust/ledger/README.md",
+        "knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+        "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md"
+      ]
+    },
+    {
+      "domain": "db",
+      "paths": []
+    },
+    {
+      "domain": "ops",
+      "paths": [
+        "knowledge/agent_trust/incidents/README.md",
+        "knowledge/operating_rules/EMERGENCY_STOP_SOP.md",
+        "knowledge/operating_rules/README.md",
+        "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+        "knowledge/operations/WORKSPACE_LAYOUT.md",
+        "knowledge/operations/disaster_recovery/QUICK_START.md",
+        "knowledge/operations/disaster_recovery/README.md",
+        "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+        "knowledge/playbooks/00_INDEX.md",
+        "knowledge/systems/README.md",
+        "knowledge/systems/TRADING_MODES.md"
+      ]
+    },
+    {
+      "domain": "architecture",
+      "paths": []
+    },
+    {
+      "domain": "agents",
+      "paths": [
+        "agents/AGENTS.md",
+        "agents/AGENT_QUICKSTART.md",
+        "agents/AGENT_SETUP_GUIDE.md",
+        "agents/AUTOLOAD_MANIFEST.yaml",
+        "agents/README.md",
+        "agents/roles/README.md",
+        "knowledge/agent_trust/README.md"
+      ]
+    },
+    {
+      "domain": "status",
+      "paths": []
+    },
+    {
+      "domain": "evidence",
+      "paths": [
+        "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md"
+      ]
+    },
+    {
+      "domain": "other",
+      "paths": [
+        "knowledge/agent_trust/snapshots/README.md",
+        "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md"
+      ]
+    }
+  ],
+  "schema_version": "1.0"
+}

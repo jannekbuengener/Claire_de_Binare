@@ -1,0 +1,20 @@
+id: PC-003
+title: Uncertainty marker is mandatory when decision is assumption-based
+scope: github_ops
+rule:
+  type: MUST
+  statement: Wenn eine Entscheidung auf Annahmen, fehlendem Kontext oder heuristischen
+    Schlussfolgerungen basiert, MUSS uncertainty!=none gesetzt und assumptions[] gefüllt
+    werden.
+  conditions:
+  - assumption_based=true
+severity: MEDIUM
+trust_impact:
+  compliance_delta: -5
+  quality_delta: 0
+  safety_delta: 0
+  escalation_required: false
+sources:
+- governance/CDB_CONSTITUTION.md
+- governance/CDB_AGENT_POLICY.md
+- governance/ISSUE_AND_BRANCH_LIFECYCLE.md

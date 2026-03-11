@@ -1,0 +1,36 @@
+# Decision Event
+event_id: DE-2025-12-31-007
+timestamp: "2025-12-31T14:53:45+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.create
+  summary: "Created and pushed branch 224-p1-order-results-publish for issue #224"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#224"
+  branch: "224-p1-order-results-publish"
+  paths:
+    - services/execution/service.py
+    - services/execution/models.py
+    - services/execution/live_executor.py
+    - services/execution/database.py
+    - infrastructure/database/schema.sql
+uncertainty:
+  flag: false
+  reason: "Existing issue with missing branch"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "commit 2e12105"
+  - "branch push: origin/224-p1-order-results-publish"
+  - "issue comment: https://github.com/jannekbuengener/Claire_de_Binare/issues/224#issuecomment-3702250521"
+outcome:
+  result: recorded
+  notes: "Order_results publishing fixes staged for review"

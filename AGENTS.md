@@ -1,10 +1,10 @@
-# AGENTS (Pointer)
+# AGENTS
 
-Diese Datei ist ein Read-Only-Pointer. Die kanonische AGENTS-Registry und alle Agenten-Charter liegen im Docs-Hub.
+Diese Datei ist der Root-Pointer fuer die lokale Agenten-Registry im Working Repo.
 
 Kanonischer Pfad:
-D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents\AGENTS.md
+`agents/AGENTS.md`
 
-Scope dieser Änderung: nur Migration (move + pointer), keine inhaltlichen Änderungen an der kanonischen Datei.
-
-Bitte Änderungen am Canon nur im Docs-Hub vornehmen.
+Hinweis:
+- Das Working Repo ist der produktive Standardpfad fuer Agenten-, Governance- und Navigationsdoku.
+- Das lokale Archiv unter `docs/archive/docs_hub_snapshot/` ist nur noch historischer Rueckgriff und nicht mehr Canon.

@@ -1,0 +1,53 @@
+GO:SLICE_D – freigegeben. Ziel: Docs-Repo final “docs-only” machen: Code-Reste raus, Manifest/Pointer/Audit-Trail bleiben.
+
+Scope (hart):
+- Docs Repo: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs
+- Betroffen: verlosung/ (nur dort)
+- Ergebnis: keine .py/.ps1/.json/.yml/.crt/.key/.dh/.csv/.txt mehr im Docs-Repo, außer zulässige MD/YAML-Stubs/Pointer.
+- Working Repo wird NICHT angefasst.
+
+Gates (damit’s nicht eskaliert):
+1) Preflight: show inventory + ensure no secrets
+   - `git status -sb`
+   - `Get-ChildItem .\verlosung -Recurse | Select FullName, Length`
+   - `Select-String -Path .\verlosung\* -Pattern "BEGIN (RSA|EC) PRIVATE KEY|glsa_|token|password|secret" -ErrorAction SilentlyContinue`
+2) Delete nur, wenn Datei im Working Repo vorhanden ist (Proof)
+   - Für jede zu löschende Code-Datei: `Test-Path` im Working Repo auf Zielpfad laut Slice C Plan (oder `git grep`/`git ls-tree`).
+   - Wenn nicht auffindbar: STOP + Liste.
+
+Aktionen (Reihenfolge):
+A) Branch im Docs Repo
+   - `git checkout -b chore/verlosung-docs-cleanup-final`
+
+B) Pointer/Manifest sichern
+   - Behalte: verlosung/VERLOSUNG_SECRET_MANIFEST.md (oder wo es aktuell liegt)
+   - Behalte/erzeuge: verlosung/README.md (kurz: “migrated to Working Repo main, PR #435, secrets quarantined path, date”)
+   - Optional: knowledge/archive/verlosung/HANDOFF_NOTE.md aktualisieren (nur wenn vorhanden und nötig)
+
+C) Code-Reste löschen (nur verlosung/, keine Moves)
+   - Delete: *.py, *.ps1, *.json, *.yml, *.yaml (wenn es “Ops pack”-Kopien sind), *.txt, *.csv, *.crt, *.key, *.dh
+   - Wichtig: Nicht “rm -r verlosung”, wir behalten den Ordner als Pointer.
+
+D) Decision Event schreiben (Docs Repo Ledger, append-only)
+   - File: knowledge/agent_trust/ledger/<timestamp>__verlosung_cleanup__copilot.yaml
+   - Inhalt: reason (docs-only compliance), refs (PR #434, PR #435), scope (deleted copies), confirmation (working repo canonical), uncertainty false (wenn proof ok).
+
+E) Commit-Splits (klein & reviewbar)
+   1) docs(verlosung): add pointers/README + keep manifest
+   2) chore(verlosung): remove non-doc artifacts from docs repo
+   3) ledger: verlosung cleanup decision event
+
+F) Push + PR
+   - `git push -u origin chore/verlosung-docs-cleanup-final`
+   - PR erstellen mit Checkliste: “docs-only compliance”, “no loss (proof done)”, “no secrets”, “append-only ledger”.
+
+Definition of Done:
+- Docs Repo enthält in verlosung nur MD/YAML Pointer/Manifest.
+- Ledger Event vorhanden.
+- PR erstellt und ready.
+
+Go execute. Output am Ende:
+- `git status -sb`
+- `git diff --stat origin/main..HEAD`
+- PR-Link
+- Liste der gelöschten Dateitypen + Count.

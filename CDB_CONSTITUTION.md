@@ -1,3 +1,6 @@
-# CDB_CONSTITUTION.md
+# CDB_CONSTITUTION
 
-**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/governance/CDB_CONSTITUTION.md`
+Canonical file:
+`knowledge/governance/CDB_CONSTITUTION.md`
+
+This root file exists only as a local discoverability pointer.

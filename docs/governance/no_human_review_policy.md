@@ -8,8 +8,8 @@
 ## Context
 
 This is a solo-maintainer repo with AI-assisted development (Claude, Copilot).
-Human review gates create a bottleneck with zero security benefit:
-GitHub blocks self-approval, and there is no second human reviewer.
+GitHub self-approval remains unavailable, and there is no second standing human
+reviewer for routine PR flow.
 
 The repo already operates this way de facto since 2026-02-15
 (see [BRANCH_PROTECTION_LOG.md](BRANCH_PROTECTION_LOG.md) — PR #839, PR #846).
@@ -17,14 +17,16 @@ This document makes the practice explicit and auditable.
 
 ## Decision
 
-**No human reviews required. Merge gate = required CI checks green.**
+**Merge gate = required checks + live branch protection settings on `main`.**
 
 A PR may merge when:
-1. All required status checks pass (currently: `ci (Unit/Integration + Lint gesammelt)`)
+1. All required status checks pass (currently: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`)
 2. All conversation threads are resolved (`required_conversation_resolution: true`)
-3. A self-review comment is present (see template below)
+3. Live branch protection remains satisfied (`required_approving_review_count=0`, `require_code_owner_reviews=true`, `dismiss_stale_reviews=true`, `required_linear_history=true`)
+4. A self-review comment is present (see template below)
 
-No approval from any GitHub user or bot is required.
+AI/Jules review comments are advisory only. They do not grant approval or merge
+rights, and Six-Eyes is not technically enforced by current branch protection.
 
 ## Scope and Exceptions
 
@@ -36,8 +38,8 @@ This policy applies to **all PRs** with two explicit exception categories:
 | Live trading enablement | Changes to `soak_mode`, `paper_mode`, or live exchange credentials | Explicit operator sign-off in PR comment |
 
 Exception PRs follow the same CI gate but **must** include a `## Risk Assessment`
-section with rollback steps. No additional human approval is required —
-the documentation itself is the control.
+section with rollback steps. No extra repo-specific AI or human signoff step is
+introduced here; live branch protection remains the operative control.
 
 ## Definition of Done for PRs
 
@@ -67,10 +69,10 @@ PR authors post this as a comment before merge:
 
 | Risk | Mitigation |
 |------|-----------|
-| Bad code merges without review | Required CI checks (unit, integration, lint, contract tests, gitleaks) |
+| Bad code merges without review | Required checks on `main`: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate` |
 | Schema/infra breakage | Runbooks required for infra PRs; enforcement scripts are opt-in operator steps |
 | Silent behavioral regression | Decision contract tests (`tests/contract/`), deterministic gate in conftest.py |
-| Accidental secret exposure | `gitleaks` workflow as required check |
+| Accidental secret exposure | Auxiliary scans (for example `gitleaks`) plus PR hygiene; not a required merge context on `main` |
 | Force-push / branch deletion | `enforce_admins: true`, `allow_force_pushes: false`, `allow_deletions: false` |
 | Flakey/pre-existing test failures | See "Quarantined Tests" below |
 
@@ -95,9 +97,12 @@ to the required CI check suite.
 
 | Setting | Value | Purpose |
 |---------|-------|---------|
-| `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)` | CI is the gatekeeper |
+| `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)`, `policy-gate` | Merge-relevant required contexts on `main` |
 | `required_status_checks.strict` | `true` | Branch must be up-to-date |
-| `required_approving_review_count` | `0` | No human approval needed |
+| `required_approving_review_count` | `0` | No fixed approving-review count |
+| `require_code_owner_reviews` | `true` | Review subsystem remains configured in branch protection |
+| `dismiss_stale_reviews` | `true` | Prior review state is invalidated after new pushes |
+| `required_linear_history` | `true` | Merge commits are disallowed on `main` |
 | `enforce_admins` | `true` | Admins also bound by checks |
 | `required_conversation_resolution` | `true` | All threads must be resolved |
 | `allow_force_pushes` | `false` | No force-push to main |

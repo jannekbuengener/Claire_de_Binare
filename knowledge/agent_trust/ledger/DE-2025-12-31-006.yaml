@@ -1,0 +1,30 @@
+# Decision Event
+event_id: DE-2025-12-31-006
+timestamp: "2025-12-31T14:39:23+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.delete
+  summary: "Deleted local branch 412-rehome-unit-test-commits after confirming commits already in main"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#412"
+  branch: "412-rehome-unit-test-commits"
+uncertainty:
+  flag: false
+  reason: "Branch had no changes; commits already in origin/main"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "git merge-base --is-ancestor 9b0422d origin/main"
+  - "git worktree remove .worktrees/issue-412"
+  - "git branch -D 412-rehome-unit-test-commits"
+outcome:
+  result: recorded
+  notes: "Cleanup complete"

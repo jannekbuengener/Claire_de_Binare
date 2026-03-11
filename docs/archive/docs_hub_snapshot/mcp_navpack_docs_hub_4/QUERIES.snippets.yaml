@@ -1,0 +1,74 @@
+schema_version: "1.0"
+list_dir:
+  - path: "agents"
+  - path: "knowledge"
+  - path: "knowledge/governance"
+  - path: "knowledge/contracts"
+  - path: "knowledge/runbooks"
+  - path: "knowledge/playbooks"
+  - path: "knowledge/agent_trust"
+  - path: "knowledge/operations/disaster_recovery"
+  - path: "meta"
+read_file:
+  - path: "README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "DOCS_HUB_INDEX.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/CDB_KNOWLEDGE_HUB.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/governance/README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/governance/SYSTEM_INVARIANTS.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/contracts/README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/runbooks/00_INDEX.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/playbooks/00_INDEX.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/operating_rules/README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/operations/disaster_recovery/README.md"
+    start_line: 1
+    max_lines: 160
+  - path: "agents/AGENTS.md"
+    start_line: 1
+    max_lines: 160
+  - path: "knowledge/operations/MCP_CENTRAL_CONFIG.md"
+    start_line: 1
+    max_lines: 160
+search_queries:
+  - "governance"
+  - "system invariants"
+  - "policy card"
+  - "runbook"
+  - "playbook"
+  - "contract"
+  - "schema"
+  - "agent trust"
+  - "decision event"
+  - "mcp"
+  - "replay"
+  - "verification"
+  - "roadmap"
+  - "disaster recovery"
+  - "trading modes"
+safe_shell:
+  - "Get-ChildItem agents"
+  - "Get-ChildItem knowledge/governance"
+  - "Get-ChildItem knowledge/contracts"
+  - "Get-ChildItem knowledge/runbooks"
+  - "Get-ChildItem knowledge/playbooks"
+  - "rg -n \"SYSTEM_INVARIANTS|CONSTITUTION|GOVERNANCE\" knowledge/governance"
+  - "rg -n \"runbook|playbook|incident|recovery\" knowledge"
+  - "rg -n \"contract|schema|decision_event\" knowledge/contracts knowledge/agent_trust"
+  - "rg -n \"mcp\" agents knowledge"

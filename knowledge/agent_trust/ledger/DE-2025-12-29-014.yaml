@@ -1,0 +1,29 @@
+# Decision Event
+event_id: DE-2025-12-29-014
+timestamp: "2025-12-29T01:15:00+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.split
+  summary: "Issue #128 split into 3 focused issues (#332, #333, #334)"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "128"
+  new_issues: ["332", "333", "334"]
+uncertainty:
+  flag: false
+  reason: "Explicit owner instruction to split monolithic research issue"
+policy_refs:
+  - PC-ISSUE-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "#332: Decision - Is advanced control theory needed for M8/M9?"
+  - "#333: Spec - MVP Decision Engine for v1.0"
+  - "#334: Research - BSDE/HJB Framework (Deferred M10+)"
+  - "Original thread preserved: THREAD_1765959387"
+outcome:
+  result: closed
+  notes: "Monolith → 3 fokussierte Issues, Multi-Agent fähig"

@@ -1,0 +1,30 @@
+
+# Policy Card Schema (v1)
+version: 1
+required_fields:
+  - id
+  - title
+  - scope
+  - rule
+  - severity
+  - trust_impact
+
+fields:
+  id: {type: string, pattern: '^PC-[0-9]{3}$'}
+  title: {type: string}
+  scope: {type: string, allowed: [github_ops, governance, knowledge, working_repo, security]}
+  rule:
+    type: object
+    required_fields: [type, statement]
+    fields:
+      type: {type: string, allowed: [MUST, MUST_NOT, ONLY_IF]}
+      statement: {type: string}
+      conditions: {type: array, items: string}
+  severity: {type: string, allowed: [LOW, MEDIUM, HIGH, CRITICAL]}
+  trust_impact:
+    type: object
+    fields:
+      compliance_delta: {type: integer}
+      quality_delta: {type: integer}
+      safety_delta: {type: integer}
+      escalation_required: {type: boolean}

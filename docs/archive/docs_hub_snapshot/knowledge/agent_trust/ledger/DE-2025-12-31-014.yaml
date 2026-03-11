@@ -1,0 +1,37 @@
+event_id: DE-2025-12-31-014
+timestamp: "2025-12-31T20:52:21+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: code.commit
+  summary: "Committed test gate and deterministic import fixes for #427"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  paths:
+    - core/auth.py
+    - core/indicators/volatility.py
+    - core/safety/kill_switch.py
+    - core/secrets.py
+    - pytest.ini
+    - scripts/check_core_duplicates.py
+    - services/execution/mexc_client.py
+    - services/risk/service.py
+    - services/signal/service.py
+    - tests/integration/test_mexc_testnet.py
+    - tests/unit/scripts/test_check_core_duplicates.py
+    - tools/replay/replay.py
+  issue: "#427"
+uncertainty:
+  flag: false
+policy_refs:
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+  - PC-DELIVERY-001
+  - PC-001
+evidence:
+  - "git show a2e3171"
+  - "governance/DELIVERY_APPROVED.yaml"
+  - "C:/Users/janne/AppData/Local/Temp/cdb_pytest_full_output.txt"

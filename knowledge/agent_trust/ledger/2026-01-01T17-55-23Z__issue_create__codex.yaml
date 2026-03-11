@@ -1,0 +1,22 @@
+event_id: fb213f2c-3be2-4715-ab38-474cc440cb92
+timestamp: '2026-01-01T17:55:23Z'
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: issue.create
+  summary: Created working-repo issue #431 for agent PowerShell toolchain
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: '#431'
+uncertainty:
+  flag: false
+  reason: ""
+  options: []
+policy_refs:
+- CDB_TRUST_SCORE_POLICY
+- ISSUE_AND_BRANCH_LIFECYCLE
+evidence:
+- https://github.com/jannekbuengener/Claire_de_Binare/issues/431

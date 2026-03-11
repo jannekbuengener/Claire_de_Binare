@@ -1,0 +1,57 @@
+PR TITLE:
+chore: consolidate GitHub ops pack from verlosung (Slice B)
+
+PR BODY:
+Ziel
+- Slice B: GitHub Ops Pack aus `verlosung/` konsolidieren, ohne Double-Runs zu erzeugen.
+
+Was geändert wurde
+Issue Templates (.github/ISSUE_TEMPLATE/)
+- `task.yml` neu hinzugefügt (aus verlosung)
+- `config.yml` neu hinzugefügt (aus verlosung)
+- `issue-governance.yml` neu hinzugefügt (aus verlosung)
+- `bug_report.yml` war bereits vorhanden und bleibt kanonisch (kein Overwrite)
+- temporäre `*.new`-Duplikate bereinigt
+
+Workflows (.github/workflows/)
+- `docker-publish.yml` neu: dedizierter Publish-Workflow (aus `verlosung/docker-build-push.yml`, konsolidiert gegenüber GHCR-Variante)
+  - Trigger: `push` auf `main` + `pull_request`
+  - Push-Guard: Push nur, wenn `github.event_name != 'pull_request'`
+  - Permissions: `packages: write` (erforderlich für GHCR Push)
+- `issue-governance.yml` neu übernommen (aus verlosung)
+
+Bewusst NICHT übernommen (Duplikat, Repo-Version hat Vorrang)
+- `ci.yml` (verlosung) -> im Repo existiert `ci.yaml`
+- `security.yml` (verlosung) -> im Repo existiert `security-scan.yml`
+- `copilot-setup-steps.yml` (verlosung) -> existiert bereits
+
+Dependabot
+- Keine Änderung, da `.github/dependabot.yml` bereits existierte (Konfliktvermeidung)
+
+Checks / Safety
+- Secrets-Scan in `.github`: OK (keine offensichtlichen Secret-Pattern)
+- Double-Runs: vermieden (bestehende Workflows behalten Vorrang)
+- Scope: ausschließlich `.github/*` (kein Code/Infra außerhalb)
+
+Risiko / Impact
+- Low risk: bestehende CI/Security bleiben unverändert aktiv.
+- Neuer Hebel: `docker-publish.yml` (bitte Trigger/Permissions im Review kurz gegenchecken).
+
+PR Link
+- https://github.com/jannekbuengener/Claire_de_Binare/pull/new/feat/verlosung-github-pack
+
+Merge-Checklist (2 Minuten)
+1) Workflow-Namen/Trigger prüfen
+   - `docker-publish.yml`: läuft bei PRs nur als "build/test", kein Push ✅
+   - `docker-publish.yml`: Push nur auf `main` ✅
+2) Permissions prüfen
+   - `packages: write` nur in `docker-publish.yml` ✅ (benötigt für GHCR Push)
+3) Keine Duplikate
+   - Keine zweite CI/Security-Pipeline aktiviert ✅
+4) Repo Health
+   - PR green / keine unerwarteten Runs ✅
+
+Post-Merge Next Steps (empfohlen)
+- Nach Merge einmal beobachten: CI + Docker-Publish Run auf `main` (ein einzelner Run, kein Double-Run).
+- Wenn Docker Publish unerwartet triggert: sofort `docker-publish.yml` Trigger enger machen (z.B. nur tags oder nur paths).
+- Dann Slice C planen (Tests/Tools): separat, mit Sanitizing-Guard (keine Secrets, keine Aktivierung von "heavy tests" ohne Gate).

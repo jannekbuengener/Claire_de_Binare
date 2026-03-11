@@ -1,0 +1,32 @@
+# Decision Event
+event_id: DE-2025-12-31-004
+timestamp: "2025-12-31T14:10:34+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.create
+  summary: "Created and pushed branch 410-consolidate-tools-readme for issue #410"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#410"
+  branch: "410-consolidate-tools-readme"
+  paths:
+    - tools/README.md
+uncertainty:
+  flag: false
+  reason: "Existing issue + user approval to proceed"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "commit 2c4a046"
+  - "branch push: origin/410-consolidate-tools-readme"
+  - "issue comment: https://github.com/jannekbuengener/Claire_de_Binare/issues/410#issuecomment-3702179358"
+outcome:
+  result: recorded
+  notes: "Branch created for tooling README consolidation"

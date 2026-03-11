@@ -1,0 +1,839 @@
+{
+  "edges": [
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "AGENTS.md",
+      "to": "agents/AGENTS.md"
+    },
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "CDB_KNOWLEDGE_HUB.md",
+      "to": "knowledge/CDB_KNOWLEDGE_HUB.md"
+    },
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "CURRENT_STATUS.md",
+      "to": "knowledge/CURRENT_STATUS.md"
+    },
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "CDB_AGENT_POLICY.md",
+      "to": "knowledge/governance/CDB_AGENT_POLICY.md"
+    },
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "CDB_CONSTITUTION.md",
+      "to": "knowledge/governance/CDB_CONSTITUTION.md"
+    },
+    {
+      "from": "agents/AUTOLOAD_MANIFEST.yaml",
+      "label": "ref_link",
+      "text": "CDB_GOVERNANCE.md",
+      "to": "knowledge/governance/CDB_GOVERNANCE.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "DOCS_HUB_INDEX.md",
+      "to": "DOCS_HUB_INDEX.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "agents/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "agents/roles/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "index.yaml",
+      "to": "index.yaml"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "INDEX.md",
+      "to": "knowledge/INDEX.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/incidents/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/ledger/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/snapshots/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/contracts/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "CDB_AGENT_POLICY.md",
+      "to": "knowledge/governance/CDB_AGENT_POLICY.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/governance/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/governance/policy_cards/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/operating_rules/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/operations/disaster_recovery/README.md"
+    },
+    {
+      "from": "cdb_docs_index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/systems/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "agents/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "agents/roles/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "INDEX.md",
+      "to": "knowledge/INDEX.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/incidents/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/ledger/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/agent_trust/snapshots/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/contracts/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/governance/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/governance/policy_cards/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/operating_rules/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/operations/disaster_recovery/README.md"
+    },
+    {
+      "from": "index.yaml",
+      "label": "ref_link",
+      "text": "README.md",
+      "to": "knowledge/systems/README.md"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "label": "md_link",
+      "text": "`MIGRATION.md`",
+      "to": "knowledge/contracts/MIGRATION.md"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "label": "md_link",
+      "text": "v1.0 Migration Guide",
+      "to": "knowledge/contracts/MIGRATION.md"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "label": "md_link",
+      "text": "`market_data.schema.json`",
+      "to": "knowledge/contracts/market_data.schema.json"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "label": "md_link",
+      "text": "`signal.schema.json`",
+      "to": "knowledge/contracts/signal.schema.json"
+    },
+    {
+      "from": "knowledge/governance/README.md",
+      "label": "md_link",
+      "text": "CDB Agent Policy (CDB_AGENT_POLICY.md)",
+      "to": "knowledge/governance/CDB_AGENT_POLICY.md"
+    },
+    {
+      "from": "knowledge/governance/README.md",
+      "label": "md_link",
+      "text": "CDB Constitution (CDB_CONSTITUTION.md)",
+      "to": "knowledge/governance/CDB_CONSTITUTION.md"
+    },
+    {
+      "from": "knowledge/governance/README.md",
+      "label": "md_link",
+      "text": "CDB Governance (CDB_GOVERNANCE.md)",
+      "to": "knowledge/governance/CDB_GOVERNANCE.md"
+    },
+    {
+      "from": "knowledge/governance/README.md",
+      "label": "md_link",
+      "text": "CDB Trust Score Policy (CDB_TRUST_SCORE_POLICY.md)",
+      "to": "knowledge/governance/CDB_TRUST_SCORE_POLICY.md"
+    },
+    {
+      "from": "knowledge/operations/disaster_recovery/README.md",
+      "label": "md_link",
+      "text": "WORKSPACE_LAYOUT.md",
+      "to": "knowledge/operations/WORKSPACE_LAYOUT.md"
+    },
+    {
+      "from": "knowledge/operations/disaster_recovery/README.md",
+      "label": "md_link",
+      "text": "QUICK_START.md",
+      "to": "knowledge/operations/disaster_recovery/QUICK_START.md"
+    },
+    {
+      "from": "knowledge/operations/disaster_recovery/README.md",
+      "label": "md_link",
+      "text": "RESTORE_GUIDE.md",
+      "to": "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "label": "md_link",
+      "text": "01_STACK_GOLDEN_PATH.md",
+      "to": "knowledge/playbooks/01_STACK_GOLDEN_PATH.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "label": "md_link",
+      "text": "02_SECURITY_BASELINE_AND_SCANS.md",
+      "to": "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "label": "md_link",
+      "text": "03_DB_MIGRATIONS_AND_INIT.md",
+      "to": "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "label": "md_link",
+      "text": "04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "to": "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "label": "md_link",
+      "text": "05_E2E_REGRESSION_SHIELD.md",
+      "to": "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md"
+    }
+  ],
+  "nodes": [
+    {
+      "domain": "ci",
+      "path": "DOCS_HUB_INDEX.md",
+      "title": "DOCS_HUB_INDEX"
+    },
+    {
+      "domain": "contracts",
+      "path": "README.md",
+      "title": "CDB Phase 2 Pack — Playbooks + #255 Regression Shield"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENTS.md",
+      "title": "AGENTS — Shared Charter (Canonical)"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENT_QUICKSTART.md",
+      "title": "🤖 Agent Quick Start Guide"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "title": "Agent-Setup: Claude, Codex, Gemini, Copilot"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/AUTOLOAD_MANIFEST.yaml",
+      "title": "AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "domain": "agents",
+      "path": "agents/README.md",
+      "title": "Defines roles and responsibilities for agents."
+    },
+    {
+      "domain": "agents",
+      "path": "agents/roles/README.md",
+      "title": "Defines roles and responsibilities for agents."
+    },
+    {
+      "domain": "contracts",
+      "path": "cdb_docs_index.yaml",
+      "title": "Suche in allen Markdown-Dateien"
+    },
+    {
+      "domain": "env",
+      "path": "index.yaml",
+      "title": "Wissens-Index des Claire de Binare Systems"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/ACTIVE_ROADMAP.md",
+      "title": "ACTIVE_ROADMAP (Pointer)"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "title": "CDB_KNOWLEDGE_HUB"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/CURRENT_STATUS.md",
+      "title": "Claire de Binare - Current Status"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "title": "Deep Research Index"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/GOVERNANCE_QUICKREF.md",
+      "title": "GOVERNANCE_QUICKREF - Governance-Regeln Kurzreferenz"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/INDEX.md",
+      "title": "Knowledge Directory - Canonical Documentation Index"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/README.md",
+      "title": "Wissensbasis des Claire de Binare Systems"
+    },
+    {
+      "domain": "agents",
+      "path": "knowledge/agent_trust/README.md",
+      "title": "Agent Trust – Audit & Scoring"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/agent_trust/decision_event.schema.yaml",
+      "title": "decision_event.schema.yaml"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/agent_trust/incidents/README.md",
+      "title": "Incidents"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/agent_trust/ledger/README.md",
+      "title": "Ledger (append-only)"
+    },
+    {
+      "domain": "other",
+      "path": "knowledge/agent_trust/snapshots/README.md",
+      "title": "Snapshots"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/MIGRATION.md",
+      "title": "Contract Migration Guide - v1.0"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/README.md",
+      "title": "Canonical Message Contracts"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/REPLAY_CONTRACT.md",
+      "title": "Replay Contract — stream.fills Schema"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/market_data.schema.json",
+      "title": "market_data.schema"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/contracts/signal.schema.json",
+      "title": "signal.schema"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_AGENT_POLICY.md",
+      "title": "CDB_AGENT_POLICY"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_CONSTITUTION.md",
+      "title": "CDB_CONSTITUTION"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_GOVERNANCE.md",
+      "title": "CDB_GOVERNANCE"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+      "title": "CDB_TRUST_SCORE_POLICY"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "title": "MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/README.md",
+      "title": "Canonical governance policies and rules."
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "title": "System Invariants"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml",
+      "title": "TRUST_SCORE_CONFIG.yaml"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml",
+      "title": "POLICY_CARD_SCHEMA.yaml"
+    },
+    {
+      "domain": "governance",
+      "path": "knowledge/governance/policy_cards/README.md",
+      "title": "Policy Cards"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operating_rules/EMERGENCY_STOP_SOP.md",
+      "title": "Emergency Stop - Standard Operating Procedure (SOP)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/operating_rules/HITL_RUNBOOK.md",
+      "title": "Human-in-the-Loop (HITL) Operations Runbook"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+      "title": "Live Trading Runbook"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operating_rules/README.md",
+      "title": "Defines rules for operational procedures."
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+      "title": "MCP Zentral-Konfiguration (Team)"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/WORKSPACE_LAYOUT.md",
+      "title": "Workspace Layout — Canonical Structure (verbindlich)"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/QUICK_START.md",
+      "title": "🚀 QUICK START - Nach Docker Neuinstallation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "title": "Disaster Recovery - Docker Reinstallation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+      "title": "Docker Reinstall - Restore Guide"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "title": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+      "title": "01 — Stack Golden Path (Canonical Runbook)"
+    },
+    {
+      "domain": "ci",
+      "path": "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md",
+      "title": "02 — Security Baseline & Scans (Runbook)"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+      "title": "03 — DB Migrations & Init (Postgres) — Canonical Playbook"
+    },
+    {
+      "domain": "other",
+      "path": "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "title": "04 — Redis Wire-Level Debug (Pub/Sub, Streams, Mythen)"
+    },
+    {
+      "domain": "contracts",
+      "path": "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+      "title": "05 — E2E Regression Shield (#255) — Canonical Spec"
+    },
+    {
+      "domain": "env",
+      "path": "knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+      "title": "Autopilot / Agent Operations (2025-12-25)"
+    },
+    {
+      "domain": "evidence",
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md",
+      "title": "Verification Snapshot — Issues #230 & #226 (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/00_INDEX.md",
+      "title": "Runbooks Snapshot (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/06_DETERMINISTIC_REPLAY.md",
+      "title": "Deterministic Replay (2025-12-25)"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md",
+      "title": "CDB Control Board Runbook"
+    },
+    {
+      "domain": "runbooks",
+      "path": "knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md",
+      "title": "Runbook: Grafana Admin Password Incident"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/systems/README.md",
+      "title": "System Documentation"
+    },
+    {
+      "domain": "ops",
+      "path": "knowledge/systems/TRADING_MODES.md",
+      "title": "Trading Modes"
+    },
+    {
+      "domain": "env",
+      "path": "meta/github/LABELS.md",
+      "title": "🏷️ Label-Strategie — Claire de Binaire"
+    },
+    {
+      "domain": "contracts",
+      "path": "meta/migrations/DOCS_MIGRATION_MAP.md",
+      "title": "DOCS_MIGRATION_MAP.md"
+    }
+  ],
+  "schema_version": "1.0",
+  "unresolved": [
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/002%20Markov-Switching-Modelle.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/003%20Handelsfrequenz%20&%20Signalqualität.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/004%20RL-Safety%20Framework%20für%20autonome%20Krypto-Trading-Systeme.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/006%20Autonomous,%20Risk-Adaptive%20Policy%20Control%20Architecture%20for%20Computational%20Decision-making%20Bots%20(CDB"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/010%20Sichere%20Architektur%20für%20den%20Gordon-Agenten.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/A1.%20Martingal-Deviation%20Modelle.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/A2.%20Stochastische%20Marktregime.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/A4.%20Auto-Feature-Ranking.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/B1.%20Lokale%20Volatilitätsmodelle.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/B2.%20Vola-Regime-Wechsel%20&%20Drawdown-Forecasting.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/C1.%20Adaptive%20Risk%20Intelligence.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/C2%20–%20Deterministische%20Policy%20via%20HJB-Gleichungen.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/C3%20Hybride%20Policy-Architekturen_.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/C4.%20Action-Masking%20Systems%20(RL-Vorbereitung"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/Die%20Tresor-Regel%20Sicherheitsarchitektur.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/E1-4%20Policy%20Engine%20und%20begleitende%20Module.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/F1%20Feature%20Store%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/F2%20Market%20State%20Replay%20Layer%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/F3%20Risiko-KPIs%20als%20Systemweite%20Metriken.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/G1%20Monte%20Carlo%20Simulation%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/G2%20Volatilitäts-Stress-Szenarien%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/G3%20Shadow%20Mode%20RL%20Testing%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/H1%20Hard%20Constraints%20nach%20Risk%20Profile%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "reason": "missing_file",
+      "target": "./deep-issues-lab/H2%20Performance%20Review%20via%20Policy%20Logs%20Spezifikation.md"
+    },
+    {
+      "from": "knowledge/INDEX.md",
+      "reason": "missing_file",
+      "target": "/knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md"
+    },
+    {
+      "from": "knowledge/README.md",
+      "reason": "missing_file",
+      "target": "knowledge/CDB_KNOWLEDGE_HUB.md"
+    },
+    {
+      "from": "knowledge/README.md",
+      "reason": "missing_file",
+      "target": "knowledge/SHARED.WORKING.MEMORY.md"
+    },
+    {
+      "from": "knowledge/README.md",
+      "reason": "missing_file",
+      "target": "knowledge/reviews/"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "reason": "missing_file",
+      "target": "./examples/market_data_invalid.json"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "reason": "missing_file",
+      "target": "./examples/market_data_valid.json"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "reason": "missing_file",
+      "target": "./examples/signal_invalid.json"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "reason": "missing_file",
+      "target": "./examples/signal_valid.json"
+    },
+    {
+      "from": "knowledge/contracts/README.md",
+      "reason": "external",
+      "target": "https://github.com/jannekbuengener/Claire_de_Binare/issues/356"
+    },
+    {
+      "from": "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+      "reason": "external",
+      "target": "https://claude.com/claude-code"
+    },
+    {
+      "from": "knowledge/operations/disaster_recovery/README.md",
+      "reason": "missing_file",
+      "target": "../../../docs/SETUP_GUIDE.md"
+    },
+    {
+      "from": "knowledge/operations/disaster_recovery/README.md",
+      "reason": "missing_file",
+      "target": "../../../docs/STACK_LIFECYCLE.md"
+    },
+    {
+      "from": "knowledge/playbooks/00_INDEX.md",
+      "reason": "missing_file",
+      "target": "99_PLAYBOOK_TEMPLATE.md"
+    },
+    {
+      "from": "knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md",
+      "reason": "external",
+      "target": "https://claude.com/claude-code"
+    }
+  ]
+}

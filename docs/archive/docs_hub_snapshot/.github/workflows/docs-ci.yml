@@ -1,0 +1,240 @@
+name: Documentation CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # ============================================
+  # Markdown Linting
+  # ============================================
+  markdown-lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run markdownlint
+        uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: .
+          config_file: .markdownlint.json
+          ignore_files: .markdownlintignore
+
+  # ============================================
+  # Link Checker
+  # ============================================
+  link-check:
+    name: Check Broken Links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --verbose --no-progress '**/*.md'
+          fail: true
+
+  # ============================================
+  # Spell Check
+  # ============================================
+  spell-check:
+    name: Spell Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Spelling
+        uses: streetsidesoftware/cspell-action@v5
+        with:
+          files: |
+            **/*.md
+            **/*.yaml
+          config: .cspell.json
+
+  # ============================================
+  # YAML Validation
+  # ============================================
+  yaml-lint:
+    name: YAML Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate YAML files
+        uses: ibiqlik/action-yamllint@v3
+        with:
+          file_or_dir: .
+          config_file: .yamllint.yml
+
+  # ============================================
+  # Generate Documentation Index
+  # ============================================
+  generate-index:
+    name: Generate Documentation Index
+    runs-on: ubuntu-latest
+    needs: [markdown-lint, yaml-lint]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate index
+        run: |
+          python << 'PYTHON_SCRIPT'
+import os
+import yaml
+from pathlib import Path
+
+def generate_docs_index():
+    docs_root = Path('.')
+    index = {
+        'governance': [],
+        'knowledge': [],
+        'agents': [],
+        'architecture': []
+    }
+    
+    for category in index.keys():
+        category_path = docs_root / category
+        if category_path.exists():
+            for md_file in category_path.rglob('*.md'):
+                relative_path = md_file.relative_to(docs_root)
+                index[category].append(str(relative_path))
+    
+    with open('DOCS_INDEX.yaml', 'w') as f:
+        yaml.dump(index, f, default_flow_style=False)
+    
+    print("✅ Documentation index generated")
+
+if __name__ == '__main__':
+    generate_docs_index()
+PYTHON_SCRIPT
+
+      - name: Upload index artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-index
+          path: DOCS_INDEX.yaml
+
+  # ============================================
+  # Documentation Sync Check
+  # ============================================
+  sync-check:
+    name: Check Docs Sync with Main Repo
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for outdated references
+        run: |
+          echo "🔍 Checking for outdated Docker stack references..."
+          
+          # List all files mentioning docker-compose or Dockerfile
+          grep -r "docker-compose" knowledge/ agents/ || echo "No docker-compose references found"
+          grep -r "Dockerfile" knowledge/ agents/ || echo "No Dockerfile references found"
+          
+          echo "✅ Sync check complete"
+
+  # ============================================
+  # Build Documentation Site (Optional)
+  # ============================================
+  build-site:
+    name: Build Documentation Site
+    runs-on: ubuntu-latest
+    needs: [markdown-lint, link-check, yaml-lint]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install MkDocs
+        run: |
+          pip install mkdocs mkdocs-material pymdown-extensions
+
+      - name: Build documentation
+        run: |
+          # Create mkdocs.yml if it doesn't exist
+          if [ ! -f mkdocs.yml ]; then
+            cat > mkdocs.yml << 'EOF'
+site_name: Claire de Binare Documentation
+site_description: Documentation for the CDB crypto trading system
+theme:
+  name: material
+  palette:
+    primary: deep purple
+    accent: amber
+nav:
+  - Home: README.md
+  - Knowledge Base: knowledge/
+  - Governance: governance/
+  - Agents: agents/
+  - Architecture: knowledge/deep-issues-lab/
+EOF
+          fi
+          
+          mkdocs build --strict
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-site
+          path: site/
+
+  # ============================================
+  # Security: Secret Scanning
+  # ============================================
+  secret-scan:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ============================================
+  # Documentation Coverage Report
+  # ============================================
+  coverage-report:
+    name: Documentation Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate coverage report
+        run: |
+          echo "# 📊 Documentation Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          total_md=$(find . -name "*.md" | wc -l)
+          total_yaml=$(find . -name "*.yaml" -o -name "*.yml" | wc -l)
+          
+          echo "- Total Markdown files: $total_md" >> $GITHUB_STEP_SUMMARY
+          echo "- Total YAML files: $total_yaml" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 📁 Directory Structure" >> $GITHUB_STEP_SUMMARY
+          tree -d -L 2 >> $GITHUB_STEP_SUMMARY || ls -R >> $GITHUB_STEP_SUMMARY

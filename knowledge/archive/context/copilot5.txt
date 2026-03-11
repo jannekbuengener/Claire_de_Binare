@@ -1,0 +1,47 @@
+GO:RETRY – freigegeben. Aber bitte “sicherstellen”, nicht “blind force-pushen”.
+
+Ziel: GitHub muss die Commits auf `feat/verlosung-tests-tooling` wirklich sehen, sonst sagt GraphQL “No commits between…”.
+
+Schrittfolge (genau so):
+
+1) Working Repo verifizieren
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+git rev-parse --show-toplevel
+git branch --show-current
+git status -sb
+
+2) Lokal prüfen: sind Commits auf dem Branch?
+git log --oneline --decorate -15
+git show --stat HEAD
+
+3) Remote prüfen: existiert der Branch auf origin und zeigt auf denselben Head?
+git fetch origin
+git ls-remote --heads origin feat/verlosung-tests-tooling
+git rev-parse HEAD
+# Optional: remote head commit direkt anzeigen, falls du ihn siehst:
+git log --oneline --decorate origin/feat/verlosung-tests-tooling -5
+
+4) “Push sicherstellen” (kein Force)
+git push -u origin feat/verlosung-tests-tooling
+
+5) Compare prüfen (entscheidend, bevor gh pr create)
+git log --oneline origin/main..HEAD
+# Wenn das leer ist -> erklärt den Fehler: Branch basiert effektiv auf main ohne neue Commits (oder du bist auf falschem Branch).
+# Wenn da Commits stehen -> PR muss möglich sein.
+
+6) PR erstellen (mit base explizit)
+gh pr create --base main --head feat/verlosung-tests-tooling --title "chore: move verlosung tests/tools into working repo (Slice C)" --body-file .\VERLOSUNG_SLICE_C_PLAN.md
+
+Wenn gh pr create weiterhin “No commits between…” sagt, dann ist zu 99%:
+- Du bist im falschen Repo, oder
+- Du bist nicht auf dem richtigen Branch, oder
+- Die Commits wurden nicht gepusht (remote branch zeigt auf main), oder
+- Base ist nicht main (anderer Default-Branch/Target).
+
+STOP-Regel:
+- KEIN `--force` ohne vorherigen Nachweis, dass origin/feat/verlosung-tests-tooling nicht auf deinem HEAD steht.
+- Wenn origin-Head != local-HEAD: erst normal push, dann nochmal prüfen.
+
+Output am Ende:
+- `git log --oneline origin/main..HEAD` (muss Commits zeigen)
+- PR-Link oder klare Fehlermeldung + Diagnose.

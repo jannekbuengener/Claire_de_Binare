@@ -1,0 +1,29 @@
+event_id: example-uuid-0001
+timestamp: '2025-12-28T22:00:00Z'
+agent:
+  id: copilot
+  vendor: github
+  role: devops-manager
+action:
+  type: issue.close
+  summary: Closed issue without merge evidence (example)
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: '#128'
+uncertainty:
+  flag: true
+  reason: Unsure whether stakeholder review completed
+  options:
+  - keep open + request review
+  - close with evidence
+policy_refs:
+- PC-ISSUE-001
+- PC-UNCERTAINTY-001
+- CDB_TRUST_SCORE_POLICY
+evidence:
+- gh issue view 128 --json ...
+- knowledge/logs/sessions/2025-12-28-issue-cleanup.md
+outcome:
+  result: reopened
+  notes: Owner requested reopen due to missing review

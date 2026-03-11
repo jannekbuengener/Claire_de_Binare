@@ -101,6 +101,23 @@ risk, execution, db_writer, paper_runner).
 | Targets DOWN in Prometheus | `docker ps --filter name=cdb_` + check compose health |
 | Disk usage critical (>90%) | `docker system prune -f`; review log volume mounts |
 | DB query fails | Verify cdb_postgres is running; check DB user/name in compose |
+| Monitor logs "No restarts" after FAILED | Host rebooted: containers auto-restarted, monitor detects restart only once. Check `cat artifacts/soak_test_*/soak_test_FAILED.txt`. Run is invalid; deactivate monitor or let it continue for timeline data (lines will show `ALREADY_FAILED`). |
+| Soak run failed by Windows Update reboot | See `docs/operations/72H_SOAK_TEST_RUNBOOK.md` section "Pre-Flight: Windows Host" for prevention. Verify via `Get-WinEvent -LogName System` for Event ID 1074 (User32). |
+
+## Post-Failure Monitoring Behavior
+
+After `soak_test_FAILED.txt` is written, the monitor continues running
+to collect timeline and resource data. Its hourly log entries change:
+
+- **First failure detection:** `RESTART DETECTED - FAILED`
+- **Subsequent runs (no new restarts):** `ALREADY_FAILED - no new restarts (original failure: ...)`
+- **Subsequent runs (new restarts):** `RESTART DETECTED (run already failed)`
+
+The normal `No restarts` line is never written once a failure marker
+exists. This ensures `hourly_checks.log` is unambiguous about run state.
+
+The monitor does **not** self-terminate after failure. To stop it,
+deactivate the cron job or scheduled task manually.
 
 ## Disable / Rollback
 

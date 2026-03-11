@@ -1,0 +1,294 @@
+# Wissens-Index des Claire de Binare Systems
+# Version: 1.0.0
+# Letzte Änderung: 2025-12-16
+
+# Dieser Index bietet strukturierten Zugriff auf alle Wissenseinträge
+
+metadata:
+  version: "1.0.0"
+  last_updated: "2025-12-16"
+  maintainer: "knowledge-curator"
+  total_entries: 1
+
+# Architektur-Entscheidungen (ADR)
+decisions:
+  architecture:
+    - id: "ADR-001"
+      title: "Documentation-Only Repository"
+      file: "knowledge/decisions/ADR-001-documentation-only-repository.md"
+      status: "accepted"
+      date: "2025-12-16"
+      category: "architecture"
+      tags: ["repository", "governance", "structure", "documentation"]
+      summary: "Defines this repository as documentation and governance only, with no executable code"
+  
+  # Beispiel für governance:
+  # - id: "GDR-001"
+  #   title: "Agent Governance Model"
+  #   status: "accepted"
+  #   date: "2025-12-16"
+  #   category: "governance"
+  #   tags: ["agents", "governance"]
+  #   summary: "Establishes governance model for agent system"
+  governance: []
+
+# Best Practices
+# Beispiel:
+# - id: "BP-001"
+#   title: "Documentation Writing Guidelines"
+#   category: "documentation"
+#   tags: ["documentation", "quality"]
+#   summary: "Guidelines for writing clear and effective documentation"
+best_practices: []
+
+# Lessons Learned
+# Beispiel:
+# - id: "LL-001"
+#   title: "Initial Setup Challenges"
+#   date: "2025-12-16"
+#   category: "setup"
+#   tags: ["setup", "infrastructure"]
+#   summary: "Lessons from setting up the governance repository"
+lessons_learned: []
+
+# Kategorien-Definitionen
+categories:
+  architecture:
+    description: "Strukturelle und fundamentale System-Entscheidungen"
+    color: "blue"
+    
+  governance:
+    description: "Regeln, Prozesse und Governance-Entscheidungen"
+    color: "green"
+    
+  documentation:
+    description: "Dokumentations-bezogene Entscheidungen und Praktiken"
+    color: "yellow"
+    
+  agents:
+    description: "Agenten-System und -Rollen"
+    color: "purple"
+    
+  structure:
+    description: "Repository- und Organisationsstruktur"
+    color: "orange"
+
+# Status-Definitionen
+status_definitions:
+  proposed:
+    description: "Entscheidung ist vorgeschlagen, noch nicht final"
+    
+  accepted:
+    description: "Entscheidung ist akzeptiert und aktiv"
+    
+  deprecated:
+    description: "Entscheidung ist nicht mehr gültig, aber historisch relevant"
+    
+  superseded:
+    description: "Entscheidung wurde durch eine neuere ersetzt"
+
+# Tag-Cloud (für Navigation)
+tags:
+  - name: "architecture"
+    count: 1
+    
+  - name: "governance"
+    count: 1
+    
+  - name: "repository"
+    count: 1
+    
+  - name: "documentation"
+    count: 1
+    
+  - name: "structure"
+    count: 1
+
+# Beziehungen zwischen Entscheidungen
+# Beispiel:
+# - from: "ADR-001"
+#   to: "ADR-002"
+#   type: "depends_on"
+#   description: "ADR-002 builds on structure defined in ADR-001"
+# - from: "ADR-003"
+#   to: "ADR-001"
+#   type: "supersedes"
+#   description: "ADR-003 replaces approach from ADR-001"
+relationships: []
+
+# Zeitlicher Index (chronologisch)
+timeline:
+  - date: "2025-12-16"
+    entries:
+      - "ADR-001"
+
+# Such-Hinweise
+search_hints:
+  - "Verwende `grep` für Volltextsuche in Entscheidungen"
+  - "Filter nach Status mit `status: accepted`"
+  - "Filter nach Kategorie mit `category: architecture`"
+  - "Zeitliche Suche via `timeline` Sektion"
+# Dokumentations-Index
+
+## Übersicht
+
+Dieser Index bietet Zugang zu allen Dokumentations-Ressourcen im Claire de Binare (CDB) System.
+
+## Haupt-Dokumentation
+
+### Governance
+Zentrale Governance-Dokumente, die die Regeln und Strukturen des Systems definieren.
+
+- [System-Verfassung](../knowledge/governance/CONSTITUTION.md) - Grundlegende Prinzipien und Strukturen
+- [Repository-Richtlinien](../knowledge/governance/REPOSITORY_POLICY.md) - Strikte Regeln für dieses Repository
+- [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md) - Wie man zu diesem Repository beiträgt
+
+### Agenten-System
+Dokumentation des Agenten-basierten Governance-Systems.
+
+- [Agenten-Übersicht](../agents/README.md) - Einführung in das Agenten-System
+- [Charter-Template](../agents/charter-template.yaml) - Vorlage für Agenten-Charters
+- [Rollen-Definitionen](../agents/roles.yaml) - Alle definierten Agenten-Rollen
+
+### Wissensbasis
+Langzeit-Wissen und Entscheidungen.
+
+- [Wissens-Übersicht](../knowledge/README.md) - Einführung in die Wissensbasis
+- [Wissens-Index](../knowledge/index.yaml) - Strukturierter Index aller Einträge
+- [Entscheidungen](../knowledge/decisions/) - Architektur- und Governance-Entscheidungen
+
+## Schnellstart
+
+### Für neue Beitragende
+1. Lies die [System-Verfassung](../knowledge/governance/CONSTITUTION.md)
+2. Verstehe die [Repository-Richtlinien](../knowledge/governance/REPOSITORY_POLICY.md)
+3. Folge den [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md)
+4. Verwende [Templates](./templates/) für neue Dokumente
+
+### Für Agenten-Entwicklung
+1. Lies die [Agenten-Übersicht](../agents/README.md)
+2. Studiere das [Charter-Template](../agents/charter-template.yaml)
+3. Prüfe existierende [Rollen](../agents/roles.yaml)
+4. Erstelle neue Charter nach dem Template
+
+### Für Wissens-Kuratierung
+1. Lies die [Wissens-Übersicht](../knowledge/README.md)
+2. Verstehe das ADR-Format
+3. Update den [Wissens-Index](../knowledge/index.yaml)
+4. Folge Dokumentations-Standards
+
+## Dokumentations-Struktur
+
+```
+/
+├── README.md                           # Repository-Hauptseite
+├── knowledge/governance/                         # Governance-Dokumente
+│   ├── CONSTITUTION.md                # System-Verfassung
+│   ├── REPOSITORY_POLICY.md           # Repository-Richtlinien
+│   └── CONTRIBUTION_RULES.md          # Beitragsregeln
+├── agents/                             # Agenten-System
+│   ├── README.md                      # Agenten-Übersicht
+│   ├── charter-template.yaml          # Charter-Vorlage
+│   ├── roles.yaml                     # Rollen-Definitionen
+│   └── [agent-name].yaml              # Individuelle Charters
+├── knowledge/                          # Wissensbasis
+│   ├── README.md                      # Wissens-Übersicht
+│   ├── index.yaml                     # Wissens-Index
+│   └── decisions/                     # Entscheidungen
+│       └── ADR-NNN-titel.md          # Einzelne ADRs
+└── knowledge/                          # Dokumentation (konsolidiert)
+    ├── INDEX.md                       # Wissens-Index
+    └── templates/                     # Vorlagen
+        ├── adr-template.md            # ADR-Vorlage
+        └── governance-doc-template.md # Governance-Vorlage
+```
+
+## Vorlagen
+
+Verwende diese Templates für konsistente Dokumentation:
+
+- [ADR-Template](./templates/adr-template.md) - Für Entscheidungsaufzeichnungen
+- [Governance-Template](./templates/governance-doc-template.md) - Für Governance-Dokumente
+
+## Dokumentations-Standards
+
+### Markdown-Konventionen
+- Verwende ATX-Style Headers (`#`, `##`, etc.)
+- Ein Leerzeile zwischen Sections
+- Code-Blöcke mit Sprach-Annotation
+- Relative Links für interne Referenzen
+
+### YAML-Konventionen
+- 2 Leerzeichen für Einrückung
+- Kommentare für Klarheit
+- Konsistente Namensgebung (kebab-case für IDs)
+- Version und Datum in Metadaten
+
+### Dateinamen
+- Kebab-case: `mein-dokument.md`
+- ADRs: `ADR-NNN-titel.md` (z.B. `ADR-001-repository-structure.md`)
+- Charters: `agent-name.yaml`
+- Beschreibend aber kurz
+
+## Navigation
+
+### Nach Thema
+- **Governance**: Start bei [Verfassung](../knowledge/governance/CONSTITUTION.md)
+- **Agenten**: Start bei [Agenten-Übersicht](../agents/README.md)
+- **Wissen**: Start bei [Wissens-Übersicht](../knowledge/README.md)
+- **Beitragen**: Start bei [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md)
+
+### Nach Rolle
+- **Governance-Verantwortliche**: [Governance](../knowledge/governance/), [Verfassung](../knowledge/governance/CONSTITUTION.md)
+- **Agenten-Maintainer**: [Agenten](../agents/), [Rollen](../agents/roles.yaml)
+- **Wissens-Kuratoren**: [Wissen](../knowledge/), [Index](../knowledge/index.yaml)
+- **Beitragende**: [Contribution Rules](../knowledge/governance/CONTRIBUTION_RULES.md), [Templates](./templates/)
+
+## Such-Tipps
+
+### Mit grep
+```bash
+# Suche in allen Markdown-Dateien
+grep -r "Suchbegriff" . --include="*.md"
+
+# Suche in YAML-Dateien
+grep -r "key:" . --include="*.yaml"
+```
+
+### Nach Kategorie
+```bash
+# Alle Governance-Dokumente
+find knowledge/governance/ -name "*.md"
+
+# Alle Agent-Charters
+find agents/ -name "*.yaml"
+```
+
+## Wartung
+
+### Dokumentations-Maintainer
+Verantwortlich für:
+- Index-Aktualität
+- Konsistenz der Struktur
+- Qualität der Dokumentation
+- Navigation und Verlinkung
+
+### Review-Prozess
+Neue Dokumentation wird geprüft auf:
+- Strukturelle Konsistenz
+- Vollständigkeit
+- Klarheit
+- Korrekte Verlinkung
+
+## Updates
+
+Dieser Index sollte aktualisiert werden bei:
+- Neuen Haupt-Dokumenten
+- Struktur-Änderungen
+- Neuen Templates
+- Wichtigen Richtlinien-Updates
+
+---
+**Version**: 1.0.0  
+**Letzte Änderung**: 2025-12-16  
+**Maintainer**: documentation-architect

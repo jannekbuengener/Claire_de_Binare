@@ -1,0 +1,66 @@
+# TRUST_SCORE_CONFIG.yaml
+# Canonical configuration for CDB Trust Score Policy.
+# Status: Canonical
+version: 1.0
+effective_from: "2025-12-28"
+
+model:
+  axes: [compliance, quality, safety]
+  weights:
+    compliance: 0.50
+    quality: 0.30
+    safety: 0.20
+
+tiers:
+  T3_high:
+    min_composite: 85
+    min_compliance: 90
+    enforcement:
+      decision_event_required: true
+      justification_required: false
+      review_flag_required: false
+  T2_normal:
+    min_composite: 60
+    min_compliance: 70
+    enforcement:
+      decision_event_required: true
+      justification_required: true
+      review_flag_required: "when_uncertainty_or_policy_edge"
+  T1_restricted:
+    min_composite: 40
+    min_compliance: 55
+    enforcement:
+      decision_event_required: true
+      justification_required: true
+      review_flag_required: true
+      escalation_required: "for_high_severity_actions"
+  T0_freeze:
+    min_compliance: 0
+    enforcement:
+      decision_event_required: true
+      justification_required: true
+      review_flag_required: true
+      mode: "proposal_only_for_risky_actions"
+
+scoring:
+  # Default deltas per severity class (applied to Compliance primarily; Quality/Safety when relevant)
+  severity_deltas:
+    info:    {compliance: 0,  quality: 0,  safety: 0}
+    low:     {compliance: -1, quality: -1, safety: 0}
+    medium:  {compliance: -3, quality: -2, safety: -1}
+    high:    {compliance: -7, quality: -4, safety: -3}
+    critical:{compliance: -15,quality: -8, safety: -6}
+
+  bonuses:
+    uncertainty_declared_and_corrected: {compliance: +1, quality: +2, safety: +1}
+    evidence_high_quality: {compliance: 0, quality: +2, safety: 0}
+    reversible_change_with_rollback_notes: {compliance: 0, quality: +1, safety: +2}
+
+enforcement:
+  # Actions that must be escalated when tier <= T1 or when uncertainty=true
+  high_impact_actions:
+    - issue.close
+    - policy.change
+    - delivery.gate
+    - guardrail.disable
+    - tresor.access

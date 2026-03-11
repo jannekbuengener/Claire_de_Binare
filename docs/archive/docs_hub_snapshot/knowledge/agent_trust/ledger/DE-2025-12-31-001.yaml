@@ -1,0 +1,31 @@
+# Decision Event
+event_id: DE-2025-12-31-001
+timestamp: "2025-12-31T10:42:00+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: doc.update
+  summary: "Added AGENTS.md links to Codex notes; created Codex ideas/results session notes"
+  reversible: true
+scope:
+  repo: Claire_de_Binare_Docs
+  paths:
+    - agents/AGENTS.md
+    - knowledge/logs/sessions/2025-12-31-codex-ideas.md
+    - knowledge/logs/sessions/2025-12-31-codex-results.md
+uncertainty:
+  flag: false
+  reason: "Explicit user approval"
+  options: []
+policy_refs:
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+evidence:
+  - agents/AGENTS.md
+  - knowledge/logs/sessions/2025-12-31-codex-ideas.md
+  - knowledge/logs/sessions/2025-12-31-codex-results.md
+outcome:
+  result: recorded
+  notes: "Traceability for canonical registry update and session notes"

@@ -1,0 +1,30 @@
+# Decision Event
+event_id: DE-2025-12-31-009
+timestamp: "2025-12-31T14:56:05+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.delete
+  summary: "Deleted local branch 229-test-harness-cursor-bug after triage"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#229"
+  branch: "229-test-harness-cursor-bug"
+uncertainty:
+  flag: false
+  reason: "No applicable code changes found"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "issue comment: https://github.com/jannekbuengener/Claire_de_Binare/issues/229#issuecomment-3702253044"
+  - "git worktree remove .worktrees/issue-229"
+  - "git branch -D 229-test-harness-cursor-bug"
+outcome:
+  result: recorded
+  notes: "Issue flagged as stale pending user input"

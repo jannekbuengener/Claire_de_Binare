@@ -13,6 +13,51 @@ Gate criteria:
 - Disk free > 10%
 - Signal queue length < 1000 (no stalls)
 
+## Pre-Flight: Windows Host
+
+On Windows hosts, automatic OS restarts can invalidate a 72h soak run.
+Windows Update Active Hours cover at most 18h and are not sufficient.
+
+**Confirmed behavior (Incident 2026-03-11):** Windows Update triggered
+two automatic reboots overnight via `MoUsoCoreWorker.exe` and
+`TrustedInstaller.exe`. Docker containers auto-restarted via
+`restart: unless-stopped`, but the soak monitor correctly detected the
+restart and marked the run as FAILED after only 2h.
+
+Before starting a 72h run on a Windows host:
+
+1. **Check for pending reboots.** If any key exists, reboot first, then
+   start the soak run.
+   ```powershell
+   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -EA SilentlyContinue
+   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -EA SilentlyContinue
+   ```
+
+2. **Prevent automatic reboots during the run.** Choose one option:
+
+   - **Option A — Pause updates for 4 days** (Settings UI or PowerShell):
+     ```powershell
+     $pause = (Get-Date).AddDays(4).ToString("yyyy-MM-ddTHH:mm:ssZ")
+     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" `
+       -Name "PauseUpdatesExpiryTime" -Value $pause
+     ```
+   - **Option B — Group Policy registry key** (prevents reboot while a
+     user is logged in):
+     ```powershell
+     New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Force
+     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" `
+       -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type DWord
+     ```
+   - **Option C — Keep the session unlocked** so Active Hours apply
+     (weakest protection, max 18h).
+
+3. **After the soak run completes or is aborted**, remove any temporary
+   reboot blocks to allow normal patching.
+
+> This section applies only to Windows development hosts. Linux hosts
+> with `unattended-upgrades` have a similar risk; use
+> `apt-config dump | grep Unattended-Upgrade::Automatic-Reboot` to check.
+
 ## Start Procedure
 
 ```bash

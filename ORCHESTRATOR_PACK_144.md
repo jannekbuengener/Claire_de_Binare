@@ -1,3 +1,6 @@
-# ORCHESTRATOR_PACK_144.md
+# ORCHESTRATOR_PACK_144
 
-**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/legacy/ORCHESTRATOR_PACK_144.md`
+Archive copy:
+`docs/archive/ORCHESTRATOR_PACK_144.md`
+
+This root file exists only as a local discoverability pointer.

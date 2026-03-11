@@ -1,9 +1,9 @@
-# Docs Hub Pointer
+# Docs Hub Archive Pointer
 
-Repo name: Claire_de_Binare_Docs
+Repo name: docs_hub_snapshot
 
-Relationship: Canonical documentation hub. This working repo contains code/runtime; docs hub lives separately.
+Relationship: Optional legacy archive. Active canon now lives in this working repo.
 
-Local path hint: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs
+Local path hint: `docs/archive/docs_hub_snapshot/`
 
-Clone hint: Clone the docs hub repo as Claire_de_Binare_Docs beside this repo, or open the local path above if it exists.
+Use this archive only for historical comparison or recovery of orphaned docs.

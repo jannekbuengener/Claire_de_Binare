@@ -51,11 +51,12 @@ class DiscussionOrchestrator:
         Initialize orchestrator with configuration.
 
         Args:
-            config_loader: ConfigLoader instance with Docs Hub access
+            config_loader: ConfigLoader instance with docs workspace access
         """
         self.config_loader = config_loader
         self.config = config_loader.load_config()
-        self.docs_hub_path = config_loader.docs_hub_path
+        self.workspace_path = config_loader.workspace_path
+        self.discussions_path = config_loader.discussions_path
 
     def run_pipeline(self, proposal_path: Path, preset: str = "quick") -> Path:
         """
@@ -157,7 +158,9 @@ class DiscussionOrchestrator:
 
         # Check if gate should be triggered
         gate_handler = GateHandler(
-            self.config_loader.get_gate_config(), self.docs_hub_path
+            self.config_loader.get_gate_config(),
+            self.workspace_path,
+            self.discussions_path,
         )
 
         should_trigger, reasons = gate_handler.should_trigger_gate(
@@ -178,7 +181,7 @@ class DiscussionOrchestrator:
                 manifest["thread_id"], reasons, thread_dir, quality_metrics
             )
 
-            manifest["gate_file"] = str(gate_file.relative_to(self.docs_hub_path))
+            manifest["gate_file"] = str(gate_file.relative_to(self.workspace_path))
             manifest["gate_reasons"] = reasons
             manifest["gate_auto_proceed"] = auto_proceed
             self._save_manifest(thread_dir, manifest)
@@ -208,7 +211,7 @@ class DiscussionOrchestrator:
 
     def _create_thread_directory(self, proposal_name: str) -> Path:
         """
-        Create thread output directory in Docs Hub.
+        Create thread output directory in the docs workspace.
 
         Args:
             proposal_name: Name of proposal file
@@ -218,7 +221,7 @@ class DiscussionOrchestrator:
         """
         timestamp = int(time.time())
         thread_name = f"THREAD_{timestamp}"
-        thread_dir = self.docs_hub_path / "discussions" / "threads" / thread_name
+        thread_dir = self.discussions_path / "threads" / thread_name
 
         thread_dir.mkdir(parents=True, exist_ok=True)
 

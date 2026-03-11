@@ -1,0 +1,18 @@
+
+version: 1
+as_of: "YYYY-MM-DDTHH:MM:SSZ"
+agents:
+  CLAUDE:
+    provider: anthropic
+    scores:
+      compliance: 75
+      quality: 70
+      safety: 80
+      trust: 74.25
+    tier: T2
+    last_events: []
+  GEMINI:
+    provider: google
+    scores: {compliance: 75, quality: 70, safety: 80, trust: 74.25}
+    tier: T2
+    last_events: []

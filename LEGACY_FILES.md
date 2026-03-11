@@ -1,3 +1,6 @@
-# LEGACY_FILES.md
+# LEGACY_FILES
 
-**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/legacy/LEGACY_FILES.md`
+Canonical file:
+`docs/archive/LEGACY_FILES.md`
+
+This root file exists only as a local discoverability pointer.

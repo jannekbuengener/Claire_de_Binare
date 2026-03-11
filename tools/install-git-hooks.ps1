@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-Install Git hooks for Working Repo governance enforcement.
+Install Git hooks for Working Repo baseline enforcement.
 
 .DESCRIPTION
-Sets up pre-commit hook to enforce root baseline compliance.
-Prevents commits that violate the "Execution Only" principle.
+Sets up pre-commit hook to enforce the consolidated repo baseline.
+Prevents commits that keep the old split-repo defaults alive in key entrypoints.
 
 .EXAMPLE
 .\tools\install-git-hooks.ps1
@@ -22,7 +22,7 @@ $ErrorActionPreference = 'Stop'
 $gitHooksDir = ".git/hooks"
 $preCommitHook = "$gitHooksDir/pre-commit"
 
-Write-Host "🔧 Installing Git hooks for governance enforcement..." -ForegroundColor Cyan
+Write-Host "🔧 Installing Git hooks for consolidated baseline enforcement..." -ForegroundColor Cyan
 
 # Check if .git directory exists
 if (-not (Test-Path ".git")) {
@@ -47,10 +47,10 @@ if (Test-Path $preCommitHook -and -not $Force) {
 # Create pre-commit hook content
 $hookContent = @'
 #!/bin/sh
-# Pre-commit hook: Working Repo root baseline enforcement
-# Prevents commits that violate the "Execution Only" principle
+# Pre-commit hook: consolidated Working Repo baseline enforcement
+# Prevents commits that reintroduce split-repo defaults in key entrypoints
 
-echo "🔍 Checking Working Repo root baseline compliance..."
+echo "Checking consolidated Working Repo baseline..."
 
 # Run the PowerShell baseline enforcement script
 if command -v pwsh >/dev/null 2>&1; then
@@ -67,29 +67,26 @@ baseline_result=$?
 
 if [ $baseline_result -ne 0 ]; then
     echo ""
-    echo "🚫 COMMIT BLOCKED: Root baseline violation detected!"
+    echo "🚫 COMMIT BLOCKED: Consolidated baseline violation detected!"
     echo ""
     echo "📋 Common violations:"
-    echo "   • Agent files: AGENTS.md, CLAUDE.md, CODEX.md, etc."
-    echo "   • Documentation: *_SETUP.md, *_GUIDE.md, QUICKSTART*.md"
-    echo "   • Knowledge files: *_AUDIT.md, *_REPORT.md, *_REVIEW.md"
-    echo "   • Session files: DISCUSSION_*.md, FINAL_*.md"
-    echo "   • Governance dirs: docs/, knowledge/, governance/, agents/"
-    echo "   • Deprecated: *.txt files (except requirements.txt)"
+    echo "   • Missing local canon dirs such as agents/, docs/, or knowledge/"
+    echo "   • Missing key entrypoints such as docs/meta/WORKING_REPO_CANON.md"
+    echo "   • Stale references to the retired external docs repo in navigation or guards"
     echo ""
-    echo "🎯 Working Repo Rule: EXECUTION ONLY"
-    echo "   ✅ Allowed: services/, tools/, scripts/, infrastructure/"
-    echo "   ✅ Allowed: Makefile, docker-compose.yml, .gitlab-ci.yml"
-    echo "   ❌ Forbidden: Governance, knowledge, documentation files"
+    echo "🎯 Working Repo Rule: LOCAL CANON"
+    echo "   ✅ Active docs live in this repo"
+    echo "   ✅ Root pointers must resolve internally"
+    echo "   ❌ External Docs-Hub paths are legacy-only"
     echo ""
     echo "📚 Migration Guide:"
-    echo "   • Agent files → Workspace: /agents/roles/"
-    echo "   • Documentation → Docs Hub: Claire_de_Binare_Docs/agents/setup/"
-    echo "   • Knowledge → Docs Hub: Claire_de_Binare_Docs/knowledge/"
-    echo "   • Session logs → Docs Hub: Claire_de_Binare_Docs/_legacy_quarantine/sessions/"
+    echo "   • Canon matrix → docs/meta/WORKING_REPO_CANON.md"
+    echo "   • Agent registry → agents/AGENTS.md"
+    echo "   • Governance canon → knowledge/governance/"
+    echo "   • Archive-only legacy docs → docs/archive/docs_hub_snapshot/"
     echo ""
     echo "🔧 To fix:"
-    echo "   1. Move governance files to canonical locations"
+    echo "   1. Restore local canon files and directories"
     echo "   2. Run: pwsh tools/enforce-root-baseline.ps1 -DryRun"
     echo "   3. Verify: pwsh tools/enforce-root-baseline.ps1"
     echo "   4. Retry commit after cleanup"
@@ -99,7 +96,7 @@ if [ $baseline_result -ne 0 ]; then
     exit 1
 fi
 
-echo "✅ Root baseline compliance verified - commit allowed"
+echo "✅ Consolidated baseline verified - commit allowed"
 exit 0
 '@
 
@@ -117,7 +114,7 @@ if ($IsLinux -or $IsMacOS) {
 
 Write-Host "✅ Pre-commit hook installed successfully!" -ForegroundColor Green
 Write-Host "   Location: $preCommitHook" -ForegroundColor Gray
-Write-Host "   Purpose: Enforces 'Execution Only' principle" -ForegroundColor Gray
+Write-Host "   Purpose: Enforces the local-canon baseline" -ForegroundColor Gray
 Write-Host ""
 Write-Host "🧪 Test the hook:" -ForegroundColor Cyan
 Write-Host "   pwsh tools/enforce-root-baseline.ps1" -ForegroundColor Gray

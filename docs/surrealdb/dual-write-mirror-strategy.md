@@ -6,7 +6,7 @@ single source of truth for trading state. The mirror must **never** block tradin
 ## Write Pattern (Postgres-first)
 
 1. **Primary write** to canonical source:
-   - Governance docs/policies: Git (Docs Hub)
+   - Governance docs/policies: Git (Working Repo canon)
    - Decision events/evidence: Git ledger
 2. **Mirror write** to SurrealDB (async by default):
    - Append-only ingestion, no updates-in-place unless idempotent

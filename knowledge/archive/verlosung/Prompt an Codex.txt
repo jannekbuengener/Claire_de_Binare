@@ -1,0 +1,120 @@
+PROMPT für Codex (copy-paste)
+
+Du arbeitest im Repo: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs
+Scope: Ordner-Review & Cleanup nur für: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\verlosung
+
+Ziel: verlosung/ ist ein Sammelordner. Du sollst ihn prüfen, Erkenntnisse extrahieren und Inhalte nach bestem Wissen in die kanonischen Ordner einsortieren. Wenn etwas obsolet/redundant ist, soll es nicht einfach gelöscht werden, sondern in eine Quarantäne verschoben werden. Alles muss nachvollziehbar dokumentiert werden.
+
+Harte Regeln (Pflicht):
+
+Keine Secrets in Git. Wenn du Token/Passwörter/API-Keys findest:
+
+STOP für Auto-Sortierung dieser Datei
+
+Markiere Fundstelle + Dateiname + Zeile/Pattern
+
+Vorschlag: Sanitizing/Rotation-Plan (nur als Plan, nicht ausführen ohne Freigabe)
+
+Keine Governance-/Policy-Edits. Dateien unter knowledge/governance/ werden nicht verändert.
+
+Keine destruktiven Deletes. Nicht löschen. Stattdessen verschieben nach knowledge/archive/quarantine/verlosung/ (neu anlegen, falls fehlt).
+
+Repo muss clean verlassen werden. Vor Ende: git status clean oder klar dokumentiert, was geändert wurde.
+
+Write-Änderungen nur innerhalb Docs-Repo. Keine externen Pfade anfassen.
+
+Arbeitsplan (ausführen, ohne Rückfragen):
+A) Inventory (Ist-Zustand)
+
+Liste alle Dateien in verlosung/ inkl. Größe, Datum, Extension.
+
+Erkenne Gruppen: markdown/docs, YAML/workflows, python/tests, json, sonstiges.
+
+Erzeuge eine Tabelle „Inventory“.
+
+B) Klassifikation (pro Datei)
+Für jede Datei ein kurzes Label-Set:
+
+KEEP (aktuell/noch nützlich)
+
+MOVE (gehört woanders hin)
+
+EXTRACT (nur wenige wertvolle Infos, Rest redundant)
+
+ARCHIVE (historisch, aufbewahren, aber nicht aktiv)
+
+QUARANTINE (unklar/verdächtig/secret/dupe)
+
+C) Duplikate & Redundanz
+
+Suche nach offensichtlichen Duplikaten (ähnliche Namen, gleiche Inhalte, near-duplicates).
+
+Wenn Dupe: eine „kanonische“ Version bestimmen, Rest → Quarantäne mit Verweis.
+
+D) Extraction (Wissen retten)
+Wenn EXTRACT:
+
+Extrahiere die 1–10 wichtigsten Aussagen/Regeln/Commands.
+
+Schreibe sie in eine passende Ziel-Datei unter knowledge/ (oder knowledge/logs/sessions/ wenn es eher Session-Notizen sind).
+
+In der Originaldatei verbleibt nur ein kurzer Pointer (oder die Datei wird nach Quarantäne/Archive verschoben).
+
+E) Sorting / Moves (Autonom, aber nachvollziehbar)
+Lege Zielpfade fest (Default-Mapping):
+
+Workflows/CI YAML → .github/workflows/ nur wenn es wirklich Repo-Workflows sind, sonst knowledge/archive/
+
+Templates/Issue/Policy Cards → knowledge/governance/policy_cards/ oder knowledge/governance/
+
+Session-Notizen/Ideen → knowledge/logs/sessions/
+
+Tests/Scripts/PoCs → tools/ oder knowledge/archive/ (je nach Aktivität)
+
+Roadmaps/Planung → knowledge/roadmap/
+
+Unklar/Alt/Experiment → knowledge/archive/quarantine/verlosung/
+
+Wichtig: Keine stillen Moves. Für jeden Move dokumentierst du Quelle → Ziel + Begründung.
+
+F) Output & Dokumentation (Pflicht)
+Erzeuge am Ende:
+
+knowledge/logs/sessions/<YYYY-MM-DD>__verlosung_review.md mit:
+
+Inventory Tabelle
+
+Entscheidungen pro Datei (Label + Begründung)
+
+Liste aller Moves (git mv)
+
+Liste aller Extracts (wohin geschrieben)
+
+Quarantäne-Liste + warum
+
+„Open Questions“ (max 10 Punkte)
+
+G) Git / PR Plan
+
+Wenn Repo dirty war: nur deine Änderungen anfassen.
+
+Führe Moves als git mv aus.
+
+Erstelle 2–3 kleine Commits statt einem riesigen:
+
+chore(verlosung): inventory + classification report
+
+chore(verlosung): move files to canonical locations
+
+chore(verlosung): extract key insights + quarantine
+
+Am Ende: git status -sb muss sauber sein.
+
+Stop-Kriterien (sofort melden, nicht weitermachen):
+
+Secret-Verdacht (Token/Key/Passwort)
+
+Unklarheit, ob eine Datei aktiv genutzt wird und ein Move riskant wäre
+→ dann nur „Vorschlag“ dokumentieren, nicht verschieben
+
+Start jetzt mit A) Inventory und arbeite dich bis G) durch. Gib mir zuerst den Inventory + grobe Klassifikation (Top 20 Dateien), dann machst du die Moves/Extracts.

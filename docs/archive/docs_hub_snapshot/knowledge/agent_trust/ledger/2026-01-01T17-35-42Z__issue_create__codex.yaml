@@ -1,0 +1,26 @@
+event_id: 3bd40a09-92c2-4f02-950e-7f16b94afccb
+timestamp: '2026-01-01T17:35:42Z'
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: issue.create
+  summary: Created issue #23 for AGENTS path updates and compaction rule; linked prior decision event
+  reversible: true
+scope:
+  repo: Claire_de_Binare_Docs
+  issue: '#23'
+uncertainty:
+  flag: true
+  reason: Existing issue #12 overlaps governance path consolidation; user requested a new issue
+  options:
+  - add comment to #12 and link ledger event there
+  - create new issue #23 (chosen)
+policy_refs:
+- CDB_TRUST_SCORE_POLICY
+- ISSUE_AND_BRANCH_LIFECYCLE
+- PC-UNCERTAINTY-001
+evidence:
+- https://github.com/jannekbuengener/Claire_de_Binare_Docs/issues/23
+- knowledge/agent_trust/ledger/2026-01-01T17-09-45Z__agents_update__codex.yaml

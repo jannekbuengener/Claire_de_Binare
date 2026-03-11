@@ -1,0 +1,35 @@
+
+version: 1
+required:
+  - event_id
+  - timestamp
+  - agent_id
+  - provider
+  - action_type
+  - scope
+  - policy_refs
+  - reversibility
+  - uncertainty
+  - decision
+  - impact
+
+fields:
+  event_id: {type: string}
+  timestamp: {type: string, format: iso8601}
+  agent_id: {type: string}
+  provider: {type: string}
+  action_type: {type: string}
+  scope: {type: string, allowed: [governance, knowledge, working_repo, github_ops]}
+  policy_refs: {type: array, items: string}
+  evidence: {type: array, items: string}
+  reversibility: {type: string, allowed: [reversible, partially_reversible, irreversible]}
+  uncertainty: {type: string, allowed: [none, low, medium, high]}
+  assumptions: {type: array, items: string}
+  decision: {type: string}
+  impact: {type: string}
+  outcome:
+    type: object
+    fields:
+      verified: {type: boolean}
+      reviewer: {type: string}
+      notes: {type: string}

@@ -1,0 +1,698 @@
+{
+  "canonical_indices": [
+    {
+      "path": "DOCS_HUB_INDEX.md",
+      "why": "DOCS_HUB_INDEX"
+    },
+    {
+      "path": "README.md",
+      "why": "CDB Phase 2 Pack — Playbooks + #255 Regression Shield"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "why": "AGENTS — Shared Charter (Canonical)"
+    },
+    {
+      "path": "agents/README.md",
+      "why": "Defines roles and responsibilities for agents."
+    },
+    {
+      "path": "agents/agent_orga/README.md",
+      "why": "Agent Orga — Cockpit"
+    },
+    {
+      "path": "agents/roles/README.md",
+      "why": "Defines roles and responsibilities for agents."
+    },
+    {
+      "path": "agents/tasklists/README.md",
+      "why": "Contains task lists and handoffs for agents."
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "why": "cdb_docs_index"
+    },
+    {
+      "path": "index.yaml",
+      "why": "index"
+    },
+    {
+      "path": "knowledge/INDEX.md",
+      "why": "Knowledge Directory - Canonical Documentation Index"
+    },
+    {
+      "path": "knowledge/README.md",
+      "why": "Wissensbasis des Claire de Binare Systems"
+    },
+    {
+      "path": "knowledge/agent_trust/README.md",
+      "why": "Agent Trust – Audit & Scoring"
+    },
+    {
+      "path": "knowledge/agent_trust/incidents/README.md",
+      "why": "Incidents"
+    },
+    {
+      "path": "knowledge/agent_trust/ledger/README.md",
+      "why": "Ledger (append-only)"
+    },
+    {
+      "path": "knowledge/agent_trust/snapshots/README.md",
+      "why": "Snapshots"
+    },
+    {
+      "path": "knowledge/contracts/README.md",
+      "why": "Canonical Message Contracts"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "why": "Canonical governance policies and rules."
+    },
+    {
+      "path": "knowledge/governance/_legacy/README.md",
+      "why": "README (Legacy Stub)"
+    },
+    {
+      "path": "knowledge/governance/policy_cards/README.md",
+      "why": "Policy Cards"
+    },
+    {
+      "path": "knowledge/operating_rules/README.md",
+      "why": "Defines rules for operational procedures."
+    }
+  ],
+  "contracts_and_schemas": [
+    {
+      "kind": "yaml",
+      "path": ".github/ISSUE_TEMPLATE/config.yml"
+    },
+    {
+      "kind": "yaml",
+      "path": "agents/AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "agents/agent_orga/AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "cdb_docs_index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/agent_trust/decision_event.schema.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/agent_trust/decision_event_schema.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/agent_trust/snapshots/agent_scores.template.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/agent_trust/snapshots/agents_snapshot_TEMPLATE.yaml"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/CONTRACTS.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/HEALTH_CONTRACT.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/MIGRATION.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/README.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/REPLAY_CONTRACT.md"
+    },
+    {
+      "kind": "jsonschema",
+      "path": "knowledge/contracts/market_data.schema.json"
+    },
+    {
+      "kind": "jsonschema",
+      "path": "knowledge/contracts/signal.schema.json"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/signal_valid.json"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/discussions/config/criteria.json"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/discussions/issues/issue-draft-security-runtime-secret-injection-contract.md"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/discussions/output/templates/issue_template.yml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/NEXUS.MEMORY.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-001.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-002.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-003.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-004.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-005.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-DELIVERY-001.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-ISSUE-001.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/PC-TRESOR-001.yaml"
+    }
+  ],
+  "entrypoints": [
+    {
+      "path": "DOCS_HUB_INDEX.md",
+      "why": "Top-level navigation index"
+    },
+    {
+      "path": "README.md",
+      "why": "Root overview and docs-hub intent"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "why": "Canonical agent registry"
+    },
+    {
+      "path": "agents/AGENT_QUICKSTART.md",
+      "why": "Fast agent bootstrap"
+    },
+    {
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "why": "Agent setup details"
+    },
+    {
+      "path": "agents/README.md",
+      "why": "Agent catalog entrypoint"
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "why": "Alternate structured docs index"
+    },
+    {
+      "path": "index.yaml",
+      "why": "Structured root index"
+    },
+    {
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "why": "Knowledge-hub landing page"
+    },
+    {
+      "path": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "why": "Deep research area entrypoint"
+    },
+    {
+      "path": "knowledge/agent_trust/README.md",
+      "why": "Agent trust and decision-event area"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "why": "Canonical governance index"
+    },
+    {
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "why": "Core invariants and contracts"
+    },
+    {
+      "path": "knowledge/operating_rules/README.md",
+      "why": "Operational rules and live/paper guidance"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "why": "Disaster recovery entrypoint"
+    }
+  ],
+  "gaps": [],
+  "mcp_references": [
+    {
+      "path": "agents/AGENT_QUICKSTART.md",
+      "snippet": "1. **Nicht-existente Modelle**: `mcp-config.toml` referenzierte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5"
+    },
+    {
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "snippet": "### MCP-Konfigurationsdateien"
+    },
+    {
+      "path": "agents/CLAUDE.md",
+      "snippet": "## 6.1 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)"
+    },
+    {
+      "path": "agents/GEMINI.md",
+      "snippet": "## 3a. Nutzung externer Evidenzquellen (MCP-Server)"
+    },
+    {
+      "path": "agents/agent_orga/AGENT_QUICKSTART.md",
+      "snippet": "1. **Nicht-existente Modelle**: `mcp-config.toml` referenzierte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5"
+    },
+    {
+      "path": "agents/agent_orga/AGENT_SETUP_GUIDE.md",
+      "snippet": "### MCP-Konfigurationsdateien"
+    },
+    {
+      "path": "agents/roles/CLAUDE.md",
+      "snippet": "## 6.1 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)"
+    },
+    {
+      "path": "agents/roles/GEMINI.md",
+      "snippet": "## 3a. Nutzung externer Evidenzquellen (MCP-Server)"
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "snippet": "36 │ ├───002-SETUP-PERSISTENT-MEMORY-BACKEND-GRAPHITI-MCP-OLLAM"
+    },
+    {
+      "path": "issues.md",
+      "snippet": "* #447 Codex MCP Alignment: remove MCP_DOCKER, use central MCP config"
+    },
+    {
+      "path": "knowledge/context_build/agent_repo_cartographer_extraction.md",
+      "snippet": "| Utilities | 3 | link_check.py, provenance_hash.py, validate_mcp_config.py |"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/010 Sichere Architektur für den Gordon-Agenten.md",
+      "snippet": "- **Beschreibung:** Der Agent ist tief in das Docker-Ökosystem integriert und nutzt ein internes Protokoll (z.B. MCP Too"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/cdb_kubernetes.md",
+      "snippet": "One more consideration: **OAuth tokens or other runtime secrets.** The documentation mentioned no external cloud depende"
+    },
+    {
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "snippet": "# MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "path": "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+      "snippet": "# MCP Zentral-Konfiguration (Team)"
+    }
+  ],
+  "policies": [
+    {
+      "path": "knowledge/deep-issues-lab/006 Autonomous, Risk-Adaptive Policy Control Architecture for Computational Decision-making Bots (CDB).md",
+      "topic": "Architektur der Autonomen Policy Engine (APE)"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/B4. Stochastische Kontrolle – Risikooptimierte Policy.docx.md",
+      "topic": "B4. Stochastische Kontrolle – Risikooptimierte Policy"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/C2 – Deterministische Policy via HJB-Gleichungen.md",
+      "topic": "Deterministische Policy über Hamilton-Jacobi-Bellman (HJB)-Gleichungen"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/C3 Hybride Policy-Architekturen_.md",
+      "topic": "Hybride Policy-Architekturen"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/E1-4 Policy Engine und begleitende Module.md",
+      "topic": "Policy Engine und Begleitmodule"
+    },
+    {
+      "path": "knowledge/deep-issues-lab/H2 Performance Review via Policy Logs Spezifikation.md",
+      "topic": "Performance Review via Policy Logs"
+    },
+    {
+      "path": "knowledge/governance/CDB_AGENT_POLICY.md",
+      "topic": "CDB_AGENT_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CDB_COMPLETION_GOVERNANCE.md",
+      "topic": "Deterministic Completion Governance (LR-004)"
+    },
+    {
+      "path": "knowledge/governance/CDB_CONSTITUTION.md",
+      "topic": "CDB_CONSTITUTION"
+    },
+    {
+      "path": "knowledge/governance/CDB_GOVERNANCE.md",
+      "topic": "CDB_GOVERNANCE"
+    },
+    {
+      "path": "knowledge/governance/CDB_INFRA_POLICY.md",
+      "topic": "CDB_INFRA_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CDB_POLICY_STACK_MINI.md",
+      "topic": "CDB_POLICY_STACK_MINI"
+    },
+    {
+      "path": "knowledge/governance/CDB_PSM_POLICY.md",
+      "topic": "CDB_PSM_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CDB_REPO_GUIDELINES.md",
+      "topic": "CDB_REPO_GUIDELINES"
+    },
+    {
+      "path": "knowledge/governance/CDB_REPO_STRUCTURE.md",
+      "topic": "CDB_REPO_STRUCTURE"
+    },
+    {
+      "path": "knowledge/governance/CDB_RL_SAFETY_POLICY.md",
+      "topic": "✅ FINALER TEXT – `knowledge/governance/CDB_RL_SAFETY_POLICY.md`"
+    },
+    {
+      "path": "knowledge/governance/CDB_TRESOR_POLICY.md",
+      "topic": "CDB_TRESOR_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+      "topic": "CDB_TRUST_SCORE_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CONSTITUTION.md",
+      "topic": "Verfassung des Claire de Binare Systems"
+    },
+    {
+      "path": "knowledge/governance/CONTRIBUTION_RULES.md",
+      "topic": "Beitragsregeln für Claire de Binare Docs"
+    },
+    {
+      "path": "knowledge/governance/ISSUE_AND_BRANCH_LIFECYCLE.md",
+      "topic": "ISSUE_AND_BRANCH_LIFECYCLE.md"
+    },
+    {
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "topic": "MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "path": "knowledge/governance/NEXUS.MEMORY.yaml",
+      "topic": "NEXUS.MEMORY"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "topic": "Canonical governance policies and rules."
+    },
+    {
+      "path": "knowledge/governance/REPOSITORY_POLICY.md",
+      "topic": "Repository-Richtlinien"
+    },
+    {
+      "path": "knowledge/governance/SECRETS_POLICY.md",
+      "topic": "Secrets Management Policy"
+    },
+    {
+      "path": "knowledge/governance/SECRET_ROTATION_POLICY.md",
+      "topic": "Secret Rotation Policy (CDB)"
+    },
+    {
+      "path": "knowledge/governance/SERVICE_CATALOG.md",
+      "topic": "SERVICE_CATALOG.md - Vollständige Service-Inventarisierung"
+    },
+    {
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "topic": "System Invariants"
+    },
+    {
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml",
+      "topic": "TRUST_SCORE_CONFIG"
+    }
+  ],
+  "runbooks": [
+    {
+      "path": "knowledge/LIVE_TRADING_RUNBOOK.md",
+      "topic": "Live Trading Runbook"
+    },
+    {
+      "path": "knowledge/OPERATIONS_RUNBOOK.md",
+      "topic": "OPERATIONS_RUNBOOK - Ops Start/Stop/Debug"
+    },
+    {
+      "path": "knowledge/content/ONBOARDING_QUICK_START.md",
+      "topic": "CDB Onboarding - Quick Start"
+    },
+    {
+      "path": "knowledge/discussions/issues/issue-draft-security-secret-rotation-incident-runbook.md",
+      "topic": "Secret Rotation & Incident Runbook"
+    },
+    {
+      "path": "knowledge/operating_rules/EMERGENCY_STOP_SOP.md",
+      "topic": "Emergency Stop - Standard Operating Procedure (SOP)"
+    },
+    {
+      "path": "knowledge/operating_rules/HITL_RUNBOOK.md",
+      "topic": "Human-in-the-Loop (HITL) Operations Runbook"
+    },
+    {
+      "path": "knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+      "topic": "Live Trading Runbook"
+    },
+    {
+      "path": "knowledge/operating_rules/runbook_papertrading.md",
+      "topic": "Paper Trading Runbook"
+    },
+    {
+      "path": "knowledge/operating_rules/security/INCIDENT_RESPONSE_PLAYBOOK.md",
+      "topic": "Incident Response Playbook"
+    },
+    {
+      "path": "knowledge/operations/ALERTING_RUNBOOK.md",
+      "topic": "Alerting Runbook - Quick Alert Testing"
+    },
+    {
+      "path": "knowledge/operations/DOCKER_STACK_RUNBOOK.md",
+      "topic": "Docker Stack Runbook"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/QUICK_START.md",
+      "topic": "🚀 QUICK START - Nach Docker Neuinstallation"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+      "topic": "Docker Reinstall - Restore Guide"
+    },
+    {
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "topic": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "path": "knowledge/playbooks/01_CANONICAL_GOLDEN_STATE.md",
+      "topic": "Canonical Golden State (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+      "topic": "01 — Stack Golden Path (Canonical Runbook)"
+    },
+    {
+      "path": "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md",
+      "topic": "02 — Security Baseline & Scans (Runbook)"
+    },
+    {
+      "path": "knowledge/playbooks/02_STACK_GOLDEN_PATH_WINDOWS.md",
+      "topic": "Stack Golden Path — Windows 11 / PowerShell (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+      "topic": "03 — DB Migrations & Init (Postgres) — Canonical Playbook"
+    },
+    {
+      "path": "knowledge/playbooks/03_DB_SCHEMA_INIT_AND_MIGRATIONS.md",
+      "topic": "DB Schema Init & Migrations (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/04_E2E_SHIELD_AND_CI.md",
+      "topic": "E2E Shield & CI Operations (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "topic": "04 — Redis Wire-Level Debug (Pub/Sub, Streams, Mythen)"
+    },
+    {
+      "path": "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+      "topic": "05 — E2E Regression Shield (#255) — Canonical Spec"
+    },
+    {
+      "path": "knowledge/playbooks/05_REDIS_WIRE_LEVEL_DEBUG.md",
+      "topic": "Redis Wire-Level Debug (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/06_DETERMINISTIC_REPLAY.md",
+      "topic": "Deterministic Replay Runbook (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/07_RISK_GUARDS_DRAWDOWN_BREAKER.md",
+      "topic": "Risk Guards — Drawdown + Circuit Breaker (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/08_ISSUE_TRIAGE_BACKLOG_HYGIENE.md",
+      "topic": "Issue Triage & Backlog Hygiene (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/09_BRANCHING_RELEASE_ROLLBACK.md",
+      "topic": "Branching, Release, Rollback (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+      "topic": "Autopilot / Agent Operations (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md",
+      "topic": "Verification Snapshot — Issues #230 & #226 (2025-12-25)"
+    }
+  ],
+  "schema_version": "1.0",
+  "status_and_evidence": [
+    {
+      "kind": "report",
+      "path": "agents/COPILOT_AUDIT_ROLE.md"
+    },
+    {
+      "kind": "report",
+      "path": "agents/agent_code-reviewer.md"
+    },
+    {
+      "kind": "report",
+      "path": "agents/agent_repository-auditor.md"
+    },
+    {
+      "kind": "report",
+      "path": "agents/roles/COPILOT_AUDIT_ROLE.md"
+    },
+    {
+      "kind": "status",
+      "path": "knowledge/CURRENT_STATUS.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/audits/DIMENSIONALITY_AUDIT_REPORT_W1.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/audits/DIMENSIONALITY_AUDIT_W1W2.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/audits/HIGH_VOLTAGE_ANALYSIS_REPORT.md"
+    },
+    {
+      "kind": "evidence",
+      "path": "knowledge/compliance/HARDENING_VERIFICATION.md"
+    },
+    {
+      "kind": "evidence",
+      "path": "knowledge/context_build/CODEX_CONTEXT_CORE_VERIFICATION.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/context_build/CONTEXT_CORE_BUILD_FINAL_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/context_build/GEMINI_CONTEXT_CORE_AUDIT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/context_build/agent_compose_auditor_extraction.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/deep-issues-lab/H2 Performance Review via Policy Logs Spezifikation.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/logs/sessions/grafana_dashboard_audit_2026-01-08.md"
+    },
+    {
+      "kind": "evidence",
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/AGENT_POLICY_KONSISTENZBERICHT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/BRANCH_CONSOLIDATION_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/BUERO_FILES_REVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CDB_POLICY_REPORT_001_CLAUDE.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CDB_POLICY_REPORT_TEMPLATE_CLAUDE.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CDB_POLICY_REPORT_TEMPLATE_GEMINI.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CLAUDE_PROJECT_OVERVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CODEX_CLAUDE_ISSUE_RESOLUTION.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/CONSISTENCY_AUDIT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/DOCKER_HARDENING_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/DOCS_HUB_CONSOLIDATION_REVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/GEMINI_AUDIT_REPORT_20251218.md"
+    },
+    {
+      "kind": "report",
+      "path": "knowledge/reviews/GOVERNANCE_ALIGNMENT_AUDIT_20251216.md"
+    }
+  ]
+}

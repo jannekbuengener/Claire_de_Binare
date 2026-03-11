@@ -1,0 +1,28 @@
+# Decision Event
+event_id: DE-2025-12-31-008
+timestamp: "2025-12-31T14:55:54+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.create
+  summary: "Created local branch 229-test-harness-cursor-bug for issue #229 triage"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#229"
+  branch: "229-test-harness-cursor-bug"
+uncertainty:
+  flag: false
+  reason: "Branch created to search for reported bug"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "git worktree add -b 229-test-harness-cursor-bug"
+outcome:
+  result: recorded
+  notes: "No changes required; issue appears stale"

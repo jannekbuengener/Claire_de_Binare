@@ -1,0 +1,106 @@
+{
+  "excluded_files": [
+    {
+      "path": ".worktrees/ledger-432/knowledge/roadmap/Branch Aufräumen Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/roadmap/Governance-Audit Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger-656/knowledge/roadmap/Branch Aufräumen Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger-656/knowledge/roadmap/Governance-Audit Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger-660/knowledge/roadmap/Branch Aufräumen Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger-660/knowledge/roadmap/Governance-Audit Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger/knowledge/roadmap/Branch Aufräumen Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": ".worktrees/ledger/knowledge/roadmap/Governance-Audit Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": "knowledge/roadmap/Branch Aufräumen Roadmap.pdf",
+      "reason": "binary"
+    },
+    {
+      "path": "knowledge/roadmap/Governance-Audit Roadmap.pdf",
+      "reason": "binary"
+    }
+  ],
+  "files": [
+    {
+      "path": "mcp_navpack_docs_hub/DOCS.taxonomy.json",
+      "purpose": "Machine-readable domain classification for Docs Hub content.",
+      "schema_version": "1.0",
+      "type": "taxonomy"
+    },
+    {
+      "path": "mcp_navpack_docs_hub/ENTRYPOINTS.yaml",
+      "purpose": "Fast reading order and minimal context bundle.",
+      "schema_version": "1.0",
+      "type": "entrypoints"
+    },
+    {
+      "path": "mcp_navpack_docs_hub/INDEX.high_signal.json",
+      "purpose": "Compact where-is-what index for fast navigation.",
+      "schema_version": "1.0",
+      "type": "high_signal_index"
+    },
+    {
+      "path": "mcp_navpack_docs_hub/LINKS.graph.json",
+      "purpose": "Internal docs link graph for traversal.",
+      "schema_version": "1.0",
+      "type": "link_graph"
+    },
+    {
+      "path": "mcp_navpack_docs_hub/NAVPACK.manifest.json",
+      "purpose": "Single entrypoint and audit manifest for the docs-hub navpack.",
+      "schema_version": "1.0",
+      "type": "manifest"
+    },
+    {
+      "path": "mcp_navpack_docs_hub/QUERIES.snippets.yaml",
+      "purpose": "Ready-to-run listing, read, search, and safe shell snippets.",
+      "schema_version": "1.0",
+      "type": "query_snippets"
+    }
+  ],
+  "generated_from": {
+    "ignored_dirs": [
+      ".git",
+      "node_modules",
+      ".venv",
+      "__pycache__",
+      "dist",
+      "build",
+      ".ruff_cache",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".idea",
+      ".vscode"
+    ],
+    "max_file_bytes": 1048576,
+    "scan_depth": 10
+  },
+  "notes": [
+    "The chosen output folder was excluded from scanning to avoid self-references.",
+    "Doc-level classification indexes markdown files plus YAML/JSON files that look like schema/config/runbook artifacts."
+  ],
+  "pack_id": "mcp_navpack_docs_hub",
+  "repo_root": ".",
+  "schema_version": "1.0"
+}

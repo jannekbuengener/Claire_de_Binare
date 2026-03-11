@@ -1,0 +1,32 @@
+# Decision Event
+event_id: DE-2025-12-31-005
+timestamp: "2025-12-31T14:39:11+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.create
+  summary: "Created local branch 412-rehome-unit-test-commits for issue #412 (cherry-pick attempt)"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#412"
+  branch: "412-rehome-unit-test-commits"
+  paths:
+    - tests/unit/signal/test_service.py
+    - tests/unit/risk/test_service.py
+uncertainty:
+  flag: false
+  reason: "Existing issue, scope defined"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "git worktree add -b 412-rehome-unit-test-commits"
+  - "cherry-pick 504642a/9b0422d yielded empty (already in main)"
+outcome:
+  result: recorded
+  notes: "No branch push; commits already in main"

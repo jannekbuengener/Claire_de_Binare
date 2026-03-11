@@ -1,0 +1,26 @@
+# Decision Event
+event_id: DE-2025-12-29-012
+timestamp: "2025-12-29T00:48:00+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.close
+  summary: "Issue #115 (M8 Security Risk Assessment) closed with merge evidence"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "115"
+uncertainty:
+  flag: false
+  reason: "Merge evidence confirmed - commit fb993be on Docs Hub main"
+policy_refs:
+  - PC-ISSUE-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "Commit fb993be on Claire_de_Binare_Docs main"
+  - "Deliverable: knowledge/reviews/M8_SECURITY_RISK_ASSESSMENT.md"
+outcome:
+  result: closed
+  notes: "DoD erfüllt, Deliverable auf Docs Hub main gemerged"

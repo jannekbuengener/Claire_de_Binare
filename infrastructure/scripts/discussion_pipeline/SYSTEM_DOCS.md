@@ -29,7 +29,7 @@ This document provides system-level documentation for the existing discussion pi
     *   Raw inputs and LLM outputs are temporarily stored in designated folders (e.g., `discussions/threads/`) before final integration.
 
 4.  **Integration Points:**
-    *   **Git Repository:** Final structured Markdown files are committed to the relevant Git repositories (e.g., `Claire_de_Binare_Docs`).
+    *   **Git Repository:** Final structured Markdown files are committed to the active working-repo canon (or the legacy archive only when explicitly needed).
     *   **Knowledge Base:** Eventually, insights are intended to feed into a structured knowledge base or graph database.
 
 ## Operational Flow

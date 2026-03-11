@@ -1,5 +1,5 @@
 param(
-    [string]$InventoryRelativePath = '..\Claire_de_Binare_Docs\knowledge\stack\CDB_DOCKER_STACK_INVENTORY.md'
+    [string]$InventoryRelativePath = 'knowledge\CDB_DOCKER_STACK_INVENTORY.md'
 )
 
 $RepoRoot = Resolve-Path "$PSScriptRoot\.."

@@ -2,8 +2,9 @@
 
 ## Overview
 
-This runbook documents the GitHub settings that enforce the
-"No Human Review" policy. CI is the sole merge gate.
+This runbook documents the GitHub settings that enforce the current merge gate
+on `main`. The merge contract is the required PR check contexts plus the live
+branch protection safety settings.
 
 See [no_human_review_policy.md](../governance/no_human_review_policy.md)
 for the policy rationale.
@@ -11,7 +12,7 @@ for the policy rationale.
 Merge-method guidance for proof/slice PRs is documented in
 [merge_strategy_squash_vs_merge.md](./merge_strategy_squash_vs_merge.md).
 
-## Current State (as of 2026-03-05)
+## Current State (as of 2026-03-10)
 
 - Repo Actions workflow permissions: `Read and write`
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
@@ -19,6 +20,15 @@ Merge-method guidance for proof/slice PRs is documented in
 - Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
 - Sentinel source of truth: `.github/workflows/required-checks-audit.yml` is an on-demand `workflow_dispatch` audit that checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` for the ref/SHA you run it on (use the relevant PR head ref for merge-contract audits)
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
+- Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=true`, `dismiss_stale_reviews=true`
+- Live branch protection safety settings also include `required_linear_history=true`, `required_conversation_resolution=true`, `enforce_admins=true`
+
+## Review Signal vs Merge Rights
+
+- Required merge checks on `main` are only `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`.
+- AI reviewer workflows can emit comments or reviews, but they are not branch-protection-required contexts on `main`.
+- AI/Jules review output is advisory signal only and does not approve or merge PRs.
+- Six-Eyes is not technically enforced by the current PR template or branch protection configuration in this repo.
 
 ## Canonical PR Gate Contract
 
@@ -122,19 +132,13 @@ Expected output:
 
 ### Branch Protection (main)
 
-Apply via GitHub UI (Settings > Branches > main) or CLI:
+Apply via GitHub UI (Settings > Branches > main) or CLI. The saved live-state
+payload in `reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json` is the canonical
+repo snapshot for manual re-apply:
 
 ```bash
-# Set required status checks (strict: branch must be up to date)
-gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection \
-  --method PUT \
-  --field required_status_checks='{"strict":true,"contexts":["ci (Unit/Integration + Lint gesammelt)","policy-gate"]}' \
-  --field enforce_admins=true \
-  --field required_pull_request_reviews=null \
-  --field restrictions=null \
-  --field required_conversation_resolution=true \
-  --field allow_force_pushes=false \
-  --field allow_deletions=false
+gh api --method PUT repos/jannekbuengener/Claire_de_Binare/branches/main/protection \
+  --input reports/BRANCH_PROTECTION_APPLY_PAYLOAD_main.json
 ```
 
 ### Verify Settings
@@ -151,21 +155,22 @@ Expected output (key fields):
 | `required_status_checks.strict` | `true` |
 | `required_status_checks.contexts` | `["ci (Unit/Integration + Lint gesammelt)", "policy-gate"]` |
 | `required_approving_review_count` | `0` |
+| `require_code_owner_reviews` | `true` |
+| `dismiss_stale_reviews` | `true` |
+| `required_linear_history.enabled` | `true` |
 | `enforce_admins.enabled` | `true` |
 | `required_conversation_resolution.enabled` | `true` |
 | `allow_force_pushes.enabled` | `false` |
 | `allow_deletions.enabled` | `false` |
 
-### Disable Human Reviews (if re-enabled accidentally)
+### Review Settings Drift Recovery
 
 ```bash
-# Remove required_pull_request_reviews entirely:
-gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_pull_request_reviews \
-  --method DELETE
-
-# Or set to 0 approvals:
 gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_pull_request_reviews \
   --method PATCH \
+  --field dismiss_stale_reviews=true \
+  --field require_code_owner_reviews=true \
+  --field require_last_push_approval=false \
   --field required_approving_review_count=0
 ```
 

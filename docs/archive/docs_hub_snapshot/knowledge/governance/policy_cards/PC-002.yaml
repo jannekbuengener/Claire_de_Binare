@@ -1,0 +1,20 @@
+id: PC-002
+title: Issue close requires merge to main and DoD satisfied
+scope: github_ops
+rule:
+  type: ONLY_IF
+  statement: Ein GitHub-Issue darf nur geschlossen werden, wenn (a) DoD erfüllt und
+    (b) entsprechende PR nach main gemerged wurde.
+  conditions:
+  - merged_to_main=true
+  - dod_satisfied=true
+severity: HIGH
+trust_impact:
+  compliance_delta: -12
+  quality_delta: 0
+  safety_delta: 0
+  escalation_required: true
+sources:
+- governance/CDB_CONSTITUTION.md
+- governance/CDB_AGENT_POLICY.md
+- governance/ISSUE_AND_BRANCH_LIFECYCLE.md

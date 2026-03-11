@@ -1,0 +1,35 @@
+name: Deep Issue Template
+description: Strukturierter Research/Tech-Issue aus der Deep Issues Pipeline
+labels: [deep-issue, research]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Titel
+  - type: dropdown
+    id: type
+    attributes:
+      label: Typ
+      options: [Research, RFC, Feature, Bug]
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options: [risk-modeling, mbrl, infra, docs]
+  - type: dropdown
+    id: prio
+    attributes:
+      label: Priorität
+      options: [P1, P2, P3]
+  - type: textarea
+    id: akz
+    attributes:
+      label: Akzeptanzkriterien
+  - type: textarea
+    id: stop
+    attributes:
+      label: Stop-Regeln
+  - type: textarea
+    id: source
+    attributes:
+      label: Quellen

@@ -1,0 +1,105 @@
+# Multi-LLM Discussion Pipeline Configuration
+
+# Pipeline Presets
+# Define standard agent sequences for different scenario types
+pipelines:
+  quick:
+    description: "Single-pass synthesis for simple topics"
+    agents:
+      - claude
+    triggers:
+      complexity: low
+      tags:
+        - documentation
+        - refactoring
+        - simple_bug_fix
+
+  standard:
+    description: "Research + synthesis for medium complexity"
+    agents:
+      - gemini
+      - claude
+    triggers:
+      complexity: medium
+
+  technical:
+    description: "Implementation-focused analysis"
+    agents:
+      - copilot
+      - claude
+    triggers:
+      tags:
+        - architecture_decision
+        - implementation
+        - performance_optimization
+
+  deep:
+    description: "Full multi-agent analysis"
+    agents:
+      - gemini
+      - copilot
+      - claude
+    triggers:
+      complexity: high
+      tags:
+        - mathematical_modeling
+        - research_synthesis
+        - strategic_decision
+
+  iterative:
+    description: "Double-pass research with synthesis"
+    agents:
+      - gemini
+      - claude
+      - gemini
+      - claude
+    triggers:
+      tags:
+        - research_synthesis
+        - uncertain_requirements
+
+# Gate Triggers
+# Conditions that pause pipeline for human review
+gates:
+  confidence_threshold: 0.5  # Pause if any confidence score < 0.5
+  disagreement_threshold: 2  # Pause if disagreement count > 2
+  strategic_keywords:
+    - "breaking change"
+    - "migration required"
+    - "deprecation"
+    - "high risk"
+  explicit_flags:
+    - "HUMAN_REVIEW_REQUIRED"
+    - "🚨"
+
+# Agent Configuration
+agents:
+  gemini:
+    model: "gemini-pro"
+    temperature: 0.7
+    max_tokens: 4000
+    role: "Research synthesis and fact extraction"
+
+  copilot:
+    model: "gpt-4"  # Fallback until Copilot API available
+    temperature: 0.5  # Lower for code analysis
+    max_tokens: 4000
+    role: "Technical architecture and implementation"
+
+  claude:
+    model: "claude-sonnet-4-5-20250929"
+    temperature: 0.7
+    max_tokens: 4000
+    role: "Meta-synthesis and strategic evaluation"
+
+# Quality Metrics
+quality:
+  min_disagreement_count: 1  # Expect at least 1 disagreement in multi-agent discussions
+  echo_chamber_threshold: 0.7  # Flag if similarity score > 0.7
+  min_confidence: 0.6  # Minimum acceptable confidence for proceeding
+
+# Output Templates
+output:
+  discussion_digest_template: "templates/digest.md"
+  gate_template: "templates/gate_review.md"
+  issue_template: "templates/github_issue.md"

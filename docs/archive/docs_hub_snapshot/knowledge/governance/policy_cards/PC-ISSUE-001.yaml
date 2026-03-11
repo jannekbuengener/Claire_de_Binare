@@ -1,0 +1,25 @@
+# Policy Card
+id: PC-ISSUE-001
+title: Issue close requires merge to main
+status: canonical
+scope:
+  repos:
+  - Claire_de_Binare
+  - Claire_de_Binare_Docs
+  agents: all
+triggers:
+- issue_close_action
+rules:
+- level: MUST
+  text: Agent MUST NOT close an issue unless DoD is fulfilled AND related work is
+    merged to main (per lifecycle policy).
+- level: MUST
+  text: 'If uncertain: agent MUST keep issue open and add a comment with Evidence
+    + recommended next step.'
+violation:
+  definition: Issue closed without merge evidence
+  severity: high
+score_impact:
+  compliance: -7
+  quality: -3
+  safety: -1

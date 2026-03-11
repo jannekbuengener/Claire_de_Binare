@@ -1,6 +1,6 @@
 {
   "notes": [
-    "Canonical long-form governance and agent documentation lives in the sibling Docs Hub repo Claire_de_Binare_Docs; this working repo is primarily code, runtime, and local operational support docs.",
+    "Canonical governance, agent, knowledge, and navigation documentation now lives in this working repo; the legacy Docs Hub content survives only as docs/archive/docs_hub_snapshot/.",
     "Folders matching mcp_navpack* were excluded from scanning to avoid self-reference.",
     "Large or binary artifacts were encountered in root zip bundles and .worktrees evidence archives; they were not indexed as navigation entrypoints.",
     "The repo root also contains many historical governance and evidence work directories; prefer the roots below before ad hoc reports or archive material."
@@ -362,7 +362,7 @@
         },
         {
           "path": "AGENTS.md",
-          "why": "Pointer to canonical agent docs in the Docs Hub."
+          "why": "Root pointer to the canonical local agent registry."
         },
         {
           "path": "DEVELOPER_ONBOARDING.md",
@@ -423,7 +423,7 @@
         },
         {
           "name": "AGENTS.md",
-          "purpose_guess": "Pointer to canonical agent docs in the Docs Hub.",
+          "purpose_guess": "Root pointer to the canonical local agent registry.",
           "type": "file"
         },
         {

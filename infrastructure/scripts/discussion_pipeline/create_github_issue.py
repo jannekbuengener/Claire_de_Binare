@@ -88,7 +88,7 @@ Environment:
         "--docs-hub",
         type=str,
         default=None,
-        help="Path to Docs Hub workspace (auto-detected if not specified)",
+        help="Path to docs workspace (auto-detected if not specified)",
     )
 
     args = parser.parse_args()
@@ -97,13 +97,13 @@ Environment:
     load_dotenv()
 
     try:
-        # Initialize config loader to find Docs Hub
-        console.print("[dim]Locating Docs Hub...[/dim]")
+        # Initialize config loader to find docs workspace
+        console.print("[dim]Locating docs workspace...[/dim]")
         config_loader = ConfigLoader(docs_hub_path=args.docs_hub)
-        docs_hub_path = config_loader.docs_hub_path
+        discussions_path = config_loader.discussions_path
 
         # Find thread directory
-        thread_dir = docs_hub_path / "discussions" / "threads" / args.thread_id
+        thread_dir = discussions_path / "threads" / args.thread_id
 
         if not thread_dir.exists():
             console.print(f"[bold red]Error:[/bold red] Thread not found: {thread_dir}")

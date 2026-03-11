@@ -23,7 +23,7 @@ Contract nicht explizit geaendert wird.
 | Main / Dispatch Pipeline | [ci.yaml](../../.github/workflows/ci.yaml) | `push`, `workflow_dispatch` | [merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md) |
 | Board / Milestone Automation | [add_to_project.yml](../../.github/workflows/add_to_project.yml), [project_status_sync.yml](../../.github/workflows/project_status_sync.yml), [auto-milestone.yml](../../.github/workflows/auto-milestone.yml) | `issues`, `pull_request`, `repository_dispatch` | [project_board_automation.md](../runbooks/project_board_automation.md) |
 | Board-as-Code | [control_board_upsert.yml](../../.github/workflows/control_board_upsert.yml), [control_board_auto_routing.yml](../../.github/workflows/control_board_auto_routing.yml) | `workflow_dispatch`, `issues`, `pull_request`, `schedule` | [control_board_board_as_code.md](../runbooks/control_board_board_as_code.md) |
-| Soak / Heavy Evidence | [shadow-soak-evidence.yml](../../.github/workflows/shadow-soak-evidence.yml) | `schedule`, `workflow_dispatch` | [72H_SOAK_TEST_RUNBOOK.md](../operations/72H_SOAK_TEST_RUNBOOK.md) |
+| Soak / Heavy Evidence | [shadow-soak-evidence.yml](../../.github/workflows/shadow-soak-evidence.yml) | `schedule`, `workflow_dispatch` | [SHADOW_SOAK_RUN_INDEX.md](../evidence/SHADOW_SOAK_RUN_INDEX.md) |
 | Audit / Exception Semantics | [required-checks-audit.yml](../../.github/workflows/required-checks-audit.yml) | `workflow_dispatch` | [README.md](README.md), [ACTION_REQUIRED_RUNBOOK.md](ACTION_REQUIRED_RUNBOOK.md) |
 
 ## workflow_run Kanten

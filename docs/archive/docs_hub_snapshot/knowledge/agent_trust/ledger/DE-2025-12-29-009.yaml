@@ -1,0 +1,28 @@
+# Decision Event
+event_id: DE-2025-12-29-009
+timestamp: "2025-12-29T00:32:22+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.status_update
+  summary: "Issue #112 (CI/CD Pipeline Guide) marked Ready/Needs Merge Evidence"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "112"
+uncertainty:
+  flag: true
+  reason: "Deliverable exists but not merged to main - cannot close per PC-ISSUE-001"
+policy_refs:
+  - PC-ISSUE-001
+  - PC-UNCERTAINTY-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "Deliverable: docs/ci-cd/ directory"
+  - "Git status: Untracked (not committed)"
+  - "https://github.com/jannekbuengener/Claire_de_Binare/issues/112#issuecomment-3695135353"
+outcome:
+  result: open
+  notes: "Issue bleibt OPEN bis Merge auf main erfolgt"

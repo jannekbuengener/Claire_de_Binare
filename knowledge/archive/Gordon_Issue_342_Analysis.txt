@@ -1,0 +1,61 @@
+TL;DR: `cdb_ws` ist online und dekodiert Protobuf (decoded steigt), aber **0 Redis-Publishes**, weil der **Decoder die falschen Protobuf-Feldnamen liest** (Wrapper/Deals-Felder). Zusätzlich: Redis ist **password-protected**, und deine Redis-Checks waren **Stream-Commands**, während der Code aktuell **Pub/Sub** nutzt (Mismatch möglich).
+
+Hier ist der **Prompt für Claude Code** (copy/paste):
+
+---
+
+Gordon, du sollst Issue #342 fixen. Problem ist jetzt eingegrenzt und reproduzierbar.
+
+Kontext / Evidence:
+
+* `cdb_ws` läuft im Mode `mexc_pb` (WS_SOURCE=mexc_pb), verbindet sich und subscribe ACK kommt:
+
+  * Logs: `[ws] connected`, `[ws] subscribe -> spot@public.aggre.deals.v3.api.pb@100ms@BTCUSDT`, ctrl ACK code=0
+* `/metrics` zeigt:
+
+  * `decoded_messages_total` steigt (z.B. 297)
+  * `decode_errors_total=0`
+  * `ws_connected=1`
+  * `last_message_ts_ms` aktualisiert
+* Aber: `redis_publish_total=0` und `redis_publish_errors_total=0`
+* `cdb_signal` loggt nur „Subscribed zu Topic: market_data“, empfängt aber keine Market-Data.
+
+Wichtige Stolpersteine (Windows/Docker):
+
+* Redis ist AUTH enabled. `docker exec cdb_redis redis-cli XLEN ...` ohne Passwort liefert **NOAUTH**. Für Redis-Inspection nutze z.B. `redis-cli -a <pass> ...` (Passwort kommt aus Secrets; es ist NICHT automatisch in `docker exec cdb_ws env` sichtbar, weil es per entrypoint-export nur dem Python-Prozess vererbt wird).
+* PowerShell: `curl` ist Alias, nutze `curl.exe` oder `Invoke-WebRequest`. `grep` gibt’s auf Windows nicht, nutze `Select-String`.
+* Stack immer über `infrastructure/scripts/stack_up.ps1` starten (setzt `SECRETS_PATH`), sonst Secret-Mount bricht.
+
+Root Cause (sehr wahrscheinlich, bitte bestätigen):
+
+1. Protobuf Decode liest falsche Felder:
+
+   * Wrapper hat `publicAggreDeals` (camelCase), NICHT `publicdeals` / `publicDeals`
+   * `PublicAggreDealsV3Api` hat Feld `deals` (plural), NICHT `dealsList`
+     → Ergebnis: decode zählt Messages, aber `deals=[]`, daher wird `on_trade` nie getriggert → 0 Redis Publishes.
+
+2. Zusätzlich prüfen: Konsumptions-Art:
+
+   * `cdb_ws` nutzt aktuell `redis.publish("market_data", ...)` (Pub/Sub).
+   * Wenn `cdb_signal` tatsächlich Redis Streams via `XREAD` nutzt, kommt Pub/Sub nie an.
+     → Bitte checken, wie `cdb_signal` konsumiert, und dann entweder Pub/Sub beibehalten (und Subscriber entsprechend) oder auf Stream `XADD market_data * payload=<json>` umstellen.
+
+Aufgabe:
+
+* Nutze MCP Orchestrator + 4 Agents (governance_auditor, change_impact_analyst, dataflow_observer, determinism_inspector).
+* Liefere MINIMAL-PATCH:
+
+  1. `services/ws/mexc_v3_client.py`: decode_message korrekt auf `publicAggreDeals` + `.deals` + `eventType` verdrahten (Wrapper und Direct-Fallback).
+  2. Optional, aber hilfreich: Debug/Metric `trades_emitted_total` oder Log “deals_len” 1x pro N, damit man sofort sieht, dass Deals extrahiert werden.
+  3. Bestätige Redis-Publish-Mechanismus passend zu `cdb_signal` (Pub/Sub vs Stream) und passe NUR wenn nötig.
+
+Acceptance Criteria:
+
+* In laufendem Stack (via stack_up.ps1):
+
+  * `decoded_messages_total` steigt
+  * `redis_publish_total > 0` innerhalb 60s
+  * `cdb_signal` zeigt eingehende Market-Data
+  * Keine Secrets im Repo, keine unsicheren Compose-Hacks, Scope klein.
+
+---

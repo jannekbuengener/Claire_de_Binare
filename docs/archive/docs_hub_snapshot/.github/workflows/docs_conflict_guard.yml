@@ -1,0 +1,76 @@
+name: Docs Conflict Guard
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conflict-marker-guard:
+    name: Check Docs For Merge Conflict Markers
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan docs files for merge conflict markers
+        shell: pwsh
+        run: |
+          $extensions = @('.md', '.yaml', '.yml', '.json')
+          $scanRoots = @('agents', 'knowledge', 'meta')
+          $repoRoot = (Get-Location).Path
+          $files = @()
+
+          foreach ($root in $scanRoots) {
+            if (Test-Path $root) {
+              $files += Get-ChildItem -Path $root -Recurse -File |
+                Where-Object { $extensions -contains $_.Extension.ToLowerInvariant() }
+            }
+          }
+
+          $files += Get-ChildItem -Path . -File |
+            Where-Object { $extensions -contains $_.Extension.ToLowerInvariant() }
+
+          $files = $files |
+            Where-Object {
+              $_.FullName -notmatch '[\\/](mcp_navpack_docs_hub[^\\/]*|\.git)([\\/]|$)'
+            } |
+            Sort-Object FullName -Unique
+
+          $patterns = @(
+            '^\s*<<<<<<<.*$',
+            '^\s*=======$',
+            '^\s*>>>>>>>.*$'
+          )
+          $matches = @()
+
+          foreach ($file in $files) {
+            $matches += Select-String -Path $file.FullName -Pattern $patterns |
+              ForEach-Object {
+                $relativePath = ($_.Path.Substring($repoRoot.Length) -replace '^[\\/]+', '') -replace '\\', '/'
+                [pscustomobject]@{
+                  Path = $relativePath
+                  LineNumber = $_.LineNumber
+                  Line = $_.Line.Trim()
+                }
+              }
+          }
+
+          if ($matches.Count -gt 0) {
+            Write-Host 'Merge conflict markers found:'
+            $matches |
+              Sort-Object Path, LineNumber |
+              ForEach-Object {
+                Write-Host ('{0}:{1}: {2}' -f $_.Path, $_.LineNumber, $_.Line)
+              }
+
+            Write-Error 'Merge conflict markers detected in tracked docs files.'
+            exit 1
+          }
+
+          Write-Host 'OK: no merge conflict markers found.'

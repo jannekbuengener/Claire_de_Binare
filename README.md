@@ -202,10 +202,10 @@ Für schnelle Orientierung im Working Repo: [`mcp_navpack_working_repo/`][navpac
 - Repo-Map: [`REPO.map.json`](mcp_navpack_working_repo/REPO.map.json)
 - Cheat-Sheet: [`CHEATSHEET.md`](mcp_navpack_working_repo/CHEATSHEET.md)
 
-Docs Hub ist ein separates Repo (nicht hier enthalten): [`DOCS_HUB.pointer.md`][docs_hub_pointer]
+Die lokale Canon-Matrix fuer aktive Doku liegt im Working Repo: [`docs/meta/WORKING_REPO_CANON.md`][working_repo_canon]
 
 [navpack]: mcp_navpack_working_repo/
-[docs_hub_pointer]: mcp_navpack_working_repo/DOCS_HUB.pointer.md
+[working_repo_canon]: docs/meta/WORKING_REPO_CANON.md
 
 
 ### Troubleshooting
@@ -224,4 +224,5 @@ See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for detailed troubles
 - **Setup Guide**: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) - Comprehensive onboarding
 - **Service Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Service implementation audit
 - **Governance**: [Governance Audit](governance-audit-2026-01-15.md) - Governance compliance
-- **Policies**: `governance/` - Project governance and policies# Trigger E2E for PR 806
+- **Agent Registry**: [agents/AGENTS.md](agents/AGENTS.md) - Local agent entrypoint
+- **Policies**: `knowledge/governance/` - Canonical governance and policy documents

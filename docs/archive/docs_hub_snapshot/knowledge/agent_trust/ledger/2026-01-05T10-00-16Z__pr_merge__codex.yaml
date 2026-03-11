@@ -1,0 +1,25 @@
+event_id: de-2026-01-05-pr-merge-484
+timestamp: "2026-01-05T10:00:16Z"
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: pr.merge
+  summary: "PR #484 gemerged (Validation Scaffold) und Issue-Branch geloescht."
+  reversible: false
+scope:
+  repo: Claire_de_Binare
+  pr: "#484"
+  branch: "feature/172-real-72h-validation"
+uncertainty:
+  flag: false
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_TRUST_SCORE_POLICY
+  - CDB_AGENT_POLICY
+evidence:
+  - "https://github.com/jannekbuengener/Claire_de_Binare/pull/484"
+  - "https://github.com/jannekbuengener/Claire_de_Binare/commit/0f5ded660951476369a6f4a46b38719babaa6f31"
+  - "gh pr merge 484 --squash --delete-branch"
+  - "https://github.com/jannekbuengener/Claire_de_Binare/issues/172#issuecomment-3709740497"

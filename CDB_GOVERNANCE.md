@@ -1,3 +1,6 @@
-# CDB_GOVERNANCE.md
+# CDB_GOVERNANCE
 
-**Moved:** Canon liegt im Docs Hub: `../Claire_de_Binare_Docs/meta/governance/CDB_GOVERNANCE.md`
+Canonical file:
+`knowledge/governance/CDB_GOVERNANCE.md`
+
+This root file exists only as a local discoverability pointer.

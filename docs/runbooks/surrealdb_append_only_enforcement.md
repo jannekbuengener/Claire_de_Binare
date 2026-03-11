@@ -16,7 +16,13 @@ This means:
 
 ### 1. Importer level (code)
 
-`build_surrealql()` emits only `CREATE ledger_event:<event_id> CONTENT {...}`.
+`build_surrealql()` emits only `CREATE ... CONTENT` statements.
+For ledger imports this includes:
+
+- `ledger_event:<event_id>` as the canonical event mirror
+- derived `evidence_node:<id>` records for `ledger_event.evidence`
+- derived `evidence_edge:<id>` records with `edge_type=ledger_event_has_evidence`
+
 No `UPSERT`, `MERGE`, `UPDATE`, or `DELETE` statements are generated.
 
 On duplicate, `post_surrealql()` parses the SurrealDB JSON response,
@@ -33,10 +39,23 @@ DEFINE TABLE ledger_event PERMISSIONS
   FOR create FULL,
   FOR update NONE,
   FOR delete NONE;
+
+DEFINE TABLE evidence_node PERMISSIONS
+  FOR select FULL,
+  FOR create FULL,
+  FOR update NONE,
+  FOR delete NONE;
+
+DEFINE TABLE evidence_edge PERMISSIONS
+  FOR select FULL,
+  FOR create FULL,
+  FOR update NONE,
+  FOR delete NONE;
 ```
 
 Even if a caller bypasses the importer, SurrealDB itself blocks
-`UPDATE` and `DELETE` on `ledger_event` records.
+`UPDATE` and `DELETE` on `ledger_event`, `evidence_node`, and `evidence_edge`
+records.
 
 ### 3. Role separation (operational)
 
@@ -66,7 +85,7 @@ Dry-run mode (`--dry-run`) prints the generated SQL without executing:
 
 ```bash
 python tools/surrealdb/ledger_importer.py ./path/to/ledger.yaml --dry-run
-# Output: CREATE ledger_event:<id> CONTENT {...}; ...
+# Output: CREATE ledger_event:<id> ..., CREATE evidence_node:<id> ..., CREATE evidence_edge:<id> ...
 ```
 
 ## Test coverage

@@ -1,0 +1,23 @@
+# Policy Card
+id: PC-UNCERTAINTY-001
+title: Uncertainty must be declared
+status: canonical
+scope:
+  agents: all
+triggers:
+- decision_based_on_assumptions
+- policy_edge_case
+- ambiguous_definition_of_done
+rules:
+- level: MUST
+  text: Agent MUST set uncertainty:true in the Decision Event and add the reason +
+    options.
+- level: SHOULD
+  text: Agent SHOULD escalate to Owner when risk or irreversibility is non-trivial.
+violation:
+  definition: Agent acted under uncertainty without declaring it
+  severity: medium
+score_impact:
+  compliance: -3
+  quality: -2
+  safety: -1

@@ -1,0 +1,24 @@
+event_id: de-2026-01-14T20-15-56Z-branch-create-427
+timestamp: "2026-01-14T20:15:56Z"
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: branch.create
+  summary: "Created branch bugfix/paper-smoke-exit-loop for issue #427"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#427"
+  branch: "bugfix/paper-smoke-exit-loop"
+uncertainty:
+  flag: false
+  reason: ""
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+evidence:
+  - "git switch -c bugfix/paper-smoke-exit-loop"

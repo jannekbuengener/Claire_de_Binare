@@ -1,0 +1,28 @@
+# Decision Event
+event_id: DE-2025-12-29-010
+timestamp: "2025-12-29T00:32:22+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.status_update
+  summary: "Issue #115 (M8 Security Risk Assessment) marked Ready/Needs Merge Evidence"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "115"
+uncertainty:
+  flag: true
+  reason: "Deliverable exists locally but not merged to main - cannot close per PC-ISSUE-001"
+policy_refs:
+  - PC-ISSUE-001
+  - PC-UNCERTAINTY-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "Deliverable: knowledge/reviews/M8_SECURITY_RISK_ASSESSMENT.md"
+  - "Git status: Local file exists, not on origin/main"
+  - "https://github.com/jannekbuengener/Claire_de_Binare/issues/115"
+outcome:
+  result: open
+  notes: "Issue bleibt OPEN bis Merge auf main erfolgt"

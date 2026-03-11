@@ -21,17 +21,21 @@ class GateHandler:
     - Explicit HUMAN_REVIEW_REQUIRED flag
     """
 
-    def __init__(self, gate_config: Dict[str, Any], docs_hub_path: Path):
+    def __init__(
+        self, gate_config: Dict[str, Any], workspace_path: Path, discussions_path: Path
+    ):
         """
         Initialize gate handler.
 
         Args:
             gate_config: Gate configuration from pipeline_rules.yaml
-            docs_hub_path: Path to Docs Hub workspace
+            workspace_path: Path to docs workspace root
+            discussions_path: Path to discussions root
         """
         self.config = gate_config
-        self.docs_hub_path = docs_hub_path
-        self.gates_dir = docs_hub_path / "discussions" / "gates"
+        self.workspace_path = workspace_path
+        self.discussions_path = discussions_path
+        self.gates_dir = discussions_path / "gates"
         self.gates_dir.mkdir(parents=True, exist_ok=True)
 
     def should_trigger_gate(
@@ -143,7 +147,7 @@ class GateHandler:
 
 **Thread ID:** {thread_id}
 **Triggered:** {timestamp}
-**Thread Location:** `{thread_dir.relative_to(self.docs_hub_path)}`
+**Thread Location:** `{thread_dir.relative_to(self.workspace_path)}`
 
 ---
 

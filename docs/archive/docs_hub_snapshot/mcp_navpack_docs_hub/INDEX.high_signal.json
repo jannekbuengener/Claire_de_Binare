@@ -1,0 +1,787 @@
+{
+  "canonical_indices": [
+    {
+      "path": ".local/README.md",
+      "why": ".local/ - Machine-Local Workspace State"
+    },
+    {
+      "path": ".worktrees/ledger-432/.local/README.md",
+      "why": ".local/ - Machine-Local Workspace State"
+    },
+    {
+      "path": ".worktrees/ledger-432/README.md",
+      "why": "CDB Phase 2 Pack — Playbooks + #255 Regression Shield"
+    },
+    {
+      "path": ".worktrees/ledger-432/_legacy_quarantine/README.md",
+      "why": "Legacy Quarantine"
+    },
+    {
+      "path": ".worktrees/ledger-432/_legacy_quarantine/sessions/README.md",
+      "why": "Legacy Sessions"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/README.md",
+      "why": "Defines roles and responsibilities for agents."
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/agent_orga/README.md",
+      "why": "Agent Orga — Cockpit"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/roles/README.md",
+      "why": "Defines roles and responsibilities for agents."
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/tasklists/README.md",
+      "why": "Contains task lists and handoffs for agents."
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/INDEX.md",
+      "why": "Knowledge Directory - Canonical Documentation Index"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/README.md",
+      "why": "Wissensbasis des Claire de Binare Systems"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/README.md",
+      "why": "Agent Trust – Audit & Scoring"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/incidents/README.md",
+      "why": "Incidents"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/README.md",
+      "why": "Ledger (append-only)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/snapshots/README.md",
+      "why": "Snapshots"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/archive/verlosung/README.md",
+      "why": "Claire de Binare — GitHub Ops Pack"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/contracts/README.md",
+      "why": "Canonical Message Contracts"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/README.md",
+      "why": "Canonical governance policies and rules."
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/_legacy/README.md",
+      "why": "README (Legacy Stub)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/README.md",
+      "why": "Policy Cards"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/README.md",
+      "why": "Defines rules for operational procedures."
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operations/disaster_recovery/README.md",
+      "why": "Disaster Recovery - Docker Reinstallation"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/00_INDEX.md",
+      "why": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/reviews/README.md",
+      "why": "Contains reports from technical and governance reviews."
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/runbooks/00_INDEX.md",
+      "why": "Runbooks Snapshot (2025-12-25)"
+    }
+  ],
+  "contracts_and_schemas": [
+    {
+      "kind": "yaml",
+      "path": ".github/ISSUE_TEMPLATE/config.yml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/.github/ISSUE_TEMPLATE/config.yml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/agents/AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/agents/agent_orga/AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/cdb_docs_index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/decision_event.schema.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/decision_event_schema.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2025-12-28_example.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-01T17-09-45Z__agents_update__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-01T17-35-42Z__issue_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-01T17-55-23Z__issue_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-01T22-39-16Z__issue_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-02T21-20-57Z__verlosung_cleanup__copilot.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-05T10-00-16Z__pr_merge__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-05T10-47-11Z__pr_merge__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-05T11-03-12Z__issue_close__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-05T11-37-46Z__branch_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-05T11-38-04Z__pr_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-07T04-38-10Z__branch_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-07T04-38-30Z__pr_close__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-13T16-42-45Z__pr_merge_521__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-14T20-15-36Z__work_start__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-14T20-15-56Z__branch_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-03Z__branch_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-04Z__pr_create__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-05Z__pr_merge_attempt__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-43-08Z__pr_merge_attempt__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-46-53Z__pr_merge_attempt__codex.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/DE-2025-12-29-001.yaml"
+    }
+  ],
+  "entrypoints": [
+    {
+      "path": "DOCS_HUB_INDEX.md",
+      "why": "Top-level navigation index"
+    },
+    {
+      "path": "README.md",
+      "why": "Root overview and docs-hub intent"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "why": "Canonical agent registry"
+    },
+    {
+      "path": "agents/AGENT_QUICKSTART.md",
+      "why": "Fast agent bootstrap"
+    },
+    {
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "why": "Agent setup details"
+    },
+    {
+      "path": "agents/README.md",
+      "why": "Agent catalog entrypoint"
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "why": "Alternate structured docs index"
+    },
+    {
+      "path": "index.yaml",
+      "why": "Structured root index"
+    },
+    {
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "why": "Knowledge-hub landing page"
+    },
+    {
+      "path": "knowledge/DEEP.RESEARCH.INDEX.md",
+      "why": "Deep research area entrypoint"
+    },
+    {
+      "path": "knowledge/agent_trust/README.md",
+      "why": "Agent trust and decision-event area"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "why": "Canonical governance index"
+    },
+    {
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "why": "Core invariants and contracts"
+    },
+    {
+      "path": "knowledge/operating_rules/README.md",
+      "why": "Operational rules and live/paper guidance"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "why": "Disaster recovery entrypoint"
+    }
+  ],
+  "gaps": [
+    {
+      "details": "knowledge/playbooks/00_INDEX.md not_found",
+      "item": "playbook_index"
+    },
+    {
+      "details": "knowledge/runbooks/00_INDEX.md not_found",
+      "item": "runbook_index"
+    }
+  ],
+  "mcp_references": [
+    {
+      "path": ".worktrees/ledger-432/_legacy_quarantine/sessions/CLAUDE_REHYDRATION_20251217.md",
+      "snippet": "1) PR #125 Agent Config Fix (Copilot, draft) — MCP config for Codex/Claude, CI/CD support + docs"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/AGENT_QUICKSTART.md",
+      "snippet": "1. **Nicht-existente Modelle**: `mcp-config.toml` referenzierte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/AGENT_SETUP_GUIDE.md",
+      "snippet": "### MCP-Konfigurationsdateien"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/CLAUDE.md",
+      "snippet": "## 6.1 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/GEMINI.md",
+      "snippet": "## 3a. Nutzung externer Evidenzquellen (MCP-Server)"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/agent_orga/AGENT_QUICKSTART.md",
+      "snippet": "1. **Nicht-existente Modelle**: `mcp-config.toml` referenzierte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/agent_orga/AGENT_SETUP_GUIDE.md",
+      "snippet": "### MCP-Konfigurationsdateien"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/roles/CLAUDE.md",
+      "snippet": "## 6.1 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)"
+    },
+    {
+      "path": ".worktrees/ledger-432/agents/roles/GEMINI.md",
+      "snippet": "## 3a. Nutzung externer Evidenzquellen (MCP-Server)"
+    },
+    {
+      "path": ".worktrees/ledger-432/cdb_docs_index.yaml",
+      "snippet": "36 │ ├───002-SETUP-PERSISTENT-MEMORY-BACKEND-GRAPHITI-MCP-OLLAM"
+    },
+    {
+      "path": ".worktrees/ledger-432/issues.md",
+      "snippet": "* #447 Codex MCP Alignment: remove MCP_DOCKER, use central MCP config"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-01T22-39-16Z__issue_create__codex.yaml",
+      "snippet": "summary: Created issue #432 for Codex MCP alignment (remove MCP_DOCKER, use central MCP config)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-03Z__branch_create__codex.yaml",
+      "snippet": "event_id: codex-2026-01-27T13:23:03Z-branch-create-feature-432-mcp-stack-green"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-04Z__pr_create__codex.yaml",
+      "snippet": "summary: \"Opened PR #686 for MCP stack fix (#432).\""
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-23-05Z__pr_merge_attempt__codex.yaml",
+      "snippet": "branch: \"feature/432-mcp-stack-green\""
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-43-08Z__pr_merge_attempt__codex.yaml",
+      "snippet": "branch: \"feature/432-mcp-stack-green\""
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/agent_trust/ledger/2026-01-27T13-46-53Z__pr_merge_attempt__codex.yaml",
+      "snippet": "branch: \"feature/432-mcp-stack-green\""
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/archive/sessions/2025-12-29-claude-code-filesystem-access.md",
+      "snippet": "Desktop Commander (MCP Toolkit via Docker Desktop) hatte keinen Zugriff auf das Repository:"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/context_build/agent_repo_cartographer_extraction.md",
+      "snippet": "| Utilities | 3 | link_check.py, provenance_hash.py, validate_mcp_config.py |"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/010 Sichere Architektur für den Gordon-Agenten.md",
+      "snippet": "- **Beschreibung:** Der Agent ist tief in das Docker-Ökosystem integriert und nutzt ein internes Protokoll (z.B. MCP Too"
+    }
+  ],
+  "policies": [
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/006 Autonomous, Risk-Adaptive Policy Control Architecture for Computational Decision-making Bots (CDB).md",
+      "topic": "Architektur der Autonomen Policy Engine (APE)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/B4. Stochastische Kontrolle – Risikooptimierte Policy.docx.md",
+      "topic": "B4. Stochastische Kontrolle – Risikooptimierte Policy"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/C2 – Deterministische Policy via HJB-Gleichungen.md",
+      "topic": "Deterministische Policy über Hamilton-Jacobi-Bellman (HJB)-Gleichungen"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/C3 Hybride Policy-Architekturen_.md",
+      "topic": "Hybride Policy-Architekturen"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/E1-4 Policy Engine und begleitende Module.md",
+      "topic": "Policy Engine und Begleitmodule"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/H2 Performance Review via Policy Logs Spezifikation.md",
+      "topic": "Performance Review via Policy Logs"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_AGENT_POLICY.md",
+      "topic": "CDB_AGENT_POLICY"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_INFRA_POLICY.md",
+      "topic": "CDB_INFRA_POLICY"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_POLICY_STACK_MINI.md",
+      "topic": "CDB_POLICY_STACK_MINI"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_PSM_POLICY.md",
+      "topic": "CDB_PSM_POLICY"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_RL_SAFETY_POLICY.md",
+      "topic": "✅ FINALER TEXT – `knowledge/governance/CDB_RL_SAFETY_POLICY.md`"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_TRESOR_POLICY.md",
+      "topic": "CDB_TRESOR_POLICY"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+      "topic": "CDB_TRUST_SCORE_POLICY"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/REPOSITORY_POLICY.md",
+      "topic": "Repository-Richtlinien"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/SECRETS_POLICY.md",
+      "topic": "Secrets Management Policy"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/_legacy/REPOSITORY_POLICY.md",
+      "topic": "REPOSITORY_POLICY (Legacy Stub)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-001.yaml",
+      "topic": "PC-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-002.yaml",
+      "topic": "PC-002"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-003.yaml",
+      "topic": "PC-003"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-004.yaml",
+      "topic": "PC-004"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-005.yaml",
+      "topic": "PC-005"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-DELIVERY-001.yaml",
+      "topic": "PC-DELIVERY-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-ISSUE-001.yaml",
+      "topic": "PC-ISSUE-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-TRESOR-001.yaml",
+      "topic": "PC-TRESOR-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-UNCERTAINTY-001.yaml",
+      "topic": "PC-UNCERTAINTY-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/PC-WRITEGATE-001.yaml",
+      "topic": "PC-WRITEGATE-001"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml",
+      "topic": "POLICY_CARD_SCHEMA"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/README.md",
+      "topic": "Policy Cards"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/governance/policy_cards/schema.yaml",
+      "topic": "schema"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/CLAUDE_DELEGATION_POLICY.md",
+      "topic": "CLAUDE_DELEGATION_POLICY"
+    }
+  ],
+  "runbooks": [
+    {
+      "path": ".worktrees/ledger-432/knowledge/LIVE_TRADING_RUNBOOK.md",
+      "topic": "Live Trading Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/OPERATIONS_RUNBOOK.md",
+      "topic": "OPERATIONS_RUNBOOK - Ops Start/Stop/Debug"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/content/ONBOARDING_QUICK_START.md",
+      "topic": "CDB Onboarding - Quick Start"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/discussions/issues/issue-draft-security-secret-rotation-incident-runbook.md",
+      "topic": "Secret Rotation & Incident Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/EMERGENCY_STOP_SOP.md",
+      "topic": "Emergency Stop - Standard Operating Procedure (SOP)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/HITL_RUNBOOK.md",
+      "topic": "Human-in-the-Loop (HITL) Operations Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+      "topic": "Live Trading Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/runbook_papertrading.md",
+      "topic": "Paper Trading Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operating_rules/security/INCIDENT_RESPONSE_PLAYBOOK.md",
+      "topic": "Incident Response Playbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operations/ALERTING_RUNBOOK.md",
+      "topic": "Alerting Runbook - Quick Alert Testing"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operations/DOCKER_STACK_RUNBOOK.md",
+      "topic": "Docker Stack Runbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operations/disaster_recovery/QUICK_START.md",
+      "topic": "🚀 QUICK START - Nach Docker Neuinstallation"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+      "topic": "Docker Reinstall - Restore Guide"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/00_INDEX.md",
+      "topic": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/01_CANONICAL_GOLDEN_STATE.md",
+      "topic": "Canonical Golden State (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+      "topic": "01 — Stack Golden Path (Canonical Runbook)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md",
+      "topic": "02 — Security Baseline & Scans (Runbook)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/02_STACK_GOLDEN_PATH_WINDOWS.md",
+      "topic": "Stack Golden Path — Windows 11 / PowerShell (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+      "topic": "03 — DB Migrations & Init (Postgres) — Canonical Playbook"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/03_DB_SCHEMA_INIT_AND_MIGRATIONS.md",
+      "topic": "DB Schema Init & Migrations (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/04_E2E_SHIELD_AND_CI.md",
+      "topic": "E2E Shield & CI Operations (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "topic": "04 — Redis Wire-Level Debug (Pub/Sub, Streams, Mythen)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+      "topic": "05 — E2E Regression Shield (#255) — Canonical Spec"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/05_REDIS_WIRE_LEVEL_DEBUG.md",
+      "topic": "Redis Wire-Level Debug (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/06_DETERMINISTIC_REPLAY.md",
+      "topic": "Deterministic Replay Runbook (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/07_RISK_GUARDS_DRAWDOWN_BREAKER.md",
+      "topic": "Risk Guards — Drawdown + Circuit Breaker (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/08_ISSUE_TRIAGE_BACKLOG_HYGIENE.md",
+      "topic": "Issue Triage & Backlog Hygiene (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/09_BRANCHING_RELEASE_ROLLBACK.md",
+      "topic": "Branching, Release, Rollback (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+      "topic": "Autopilot / Agent Operations (2025-12-25)"
+    },
+    {
+      "path": ".worktrees/ledger-432/knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md",
+      "topic": "Verification Snapshot — Issues #230 & #226 (2025-12-25)"
+    }
+  ],
+  "schema_version": "1.0",
+  "status_and_evidence": [
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/agents/COPILOT_AUDIT_ROLE.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/agents/agent_code-reviewer.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/agents/agent_repository-auditor.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/agents/roles/COPILOT_AUDIT_ROLE.md"
+    },
+    {
+      "kind": "status",
+      "path": ".worktrees/ledger-432/knowledge/CURRENT_STATUS.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/archive/audits/TODO_AUDIT_REPORT_2025-12-31.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/archive/orchestrator_outputs/change_impact_report.md"
+    },
+    {
+      "kind": "dashboard",
+      "path": ".worktrees/ledger-432/knowledge/archive/verlosung/DASHBOARD.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/audits/DIMENSIONALITY_AUDIT_REPORT_W1.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/audits/DIMENSIONALITY_AUDIT_W1W2.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/audits/HIGH_VOLTAGE_ANALYSIS_REPORT.md"
+    },
+    {
+      "kind": "evidence",
+      "path": ".worktrees/ledger-432/knowledge/compliance/HARDENING_VERIFICATION.md"
+    },
+    {
+      "kind": "evidence",
+      "path": ".worktrees/ledger-432/knowledge/context_build/CODEX_CONTEXT_CORE_VERIFICATION.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/context_build/CONTEXT_CORE_BUILD_FINAL_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/context_build/GEMINI_CONTEXT_CORE_AUDIT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/context_build/agent_compose_auditor_extraction.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/deep-issues-lab/H2 Performance Review via Policy Logs Spezifikation.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/logs/sessions/grafana_dashboard_audit_2026-01-08.md"
+    },
+    {
+      "kind": "evidence",
+      "path": ".worktrees/ledger-432/knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/AGENT_POLICY_KONSISTENZBERICHT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/BRANCH_CONSOLIDATION_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/BUERO_FILES_REVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CDB_POLICY_REPORT_001_CLAUDE.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CDB_POLICY_REPORT_TEMPLATE_CLAUDE.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CDB_POLICY_REPORT_TEMPLATE_GEMINI.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CLAUDE_PROJECT_OVERVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CODEX_CLAUDE_ISSUE_RESOLUTION.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/CONSISTENCY_AUDIT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/DOCKER_HARDENING_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/DOCS_HUB_CONSOLIDATION_REVIEW.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/GEMINI_AUDIT_REPORT_20251218.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/GOVERNANCE_ALIGNMENT_AUDIT_20251216.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/GOVERNANCE_BASELINE_REPORT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/GOVERNANCE_MIGRATION_REPORT_20251218.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/KANBAN_METRICS_VALIDATION.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/LOGS_CONCEPT_ANALYSIS.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/M8_SECURITY_RISK_ASSESSMENT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/OWASP_TOP10_AUDIT.md"
+    },
+    {
+      "kind": "report",
+      "path": ".worktrees/ledger-432/knowledge/reviews/PENTEST_INFRA_REPORT.md"
+    }
+  ]
+}

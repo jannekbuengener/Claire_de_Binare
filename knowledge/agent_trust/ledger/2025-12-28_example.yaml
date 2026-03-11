@@ -1,0 +1,21 @@
+
+- event_id: "ex-20251228-issue-close-without-merge"
+  timestamp: "2025-12-28T20:15:00Z"
+  agent_id: "COPILOT"
+  provider: "github"
+  action_type: "issue_close"
+  scope: "github_ops"
+  policy_refs: ["PC-002", "PC-003"]
+  evidence:
+    - "gh issue #120"
+    - "template exists but merge conflict"
+  reversibility: "reversible"
+  uncertainty: "high"
+  assumptions:
+    - "Deliverables exist implies DoD satisfied"
+  decision: "Issue #120 closed"
+  impact: "Issue status changed to CLOSED"
+  outcome:
+    verified: false
+    reviewer: ""
+    notes: "Policy PC-002 violated (no merge)."

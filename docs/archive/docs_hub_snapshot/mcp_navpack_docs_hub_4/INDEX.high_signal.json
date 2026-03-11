@@ -1,0 +1,334 @@
+{
+  "canonical_indices": [
+    {
+      "path": "DOCS_HUB_INDEX.md",
+      "why": "DOCS_HUB_INDEX"
+    },
+    {
+      "path": "README.md",
+      "why": "CDB Phase 2 Pack — Playbooks + #255 Regression Shield"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "why": "AGENTS — Shared Charter (Canonical)"
+    },
+    {
+      "path": "agents/README.md",
+      "why": "Defines roles and responsibilities for agents."
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "why": "Suche in allen Markdown-Dateien"
+    },
+    {
+      "path": "index.yaml",
+      "why": "Wissens-Index des Claire de Binare Systems"
+    },
+    {
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "why": "CDB_KNOWLEDGE_HUB"
+    },
+    {
+      "path": "knowledge/INDEX.md",
+      "why": "Knowledge Directory - Canonical Documentation Index"
+    },
+    {
+      "path": "knowledge/README.md",
+      "why": "Wissensbasis des Claire de Binare Systems"
+    },
+    {
+      "path": "knowledge/contracts/README.md",
+      "why": "Canonical Message Contracts"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "why": "Canonical governance policies and rules."
+    },
+    {
+      "path": "knowledge/operating_rules/README.md",
+      "why": "Defines rules for operational procedures."
+    },
+    {
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "why": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "path": "knowledge/runbooks/00_INDEX.md",
+      "why": "Runbooks Snapshot (2025-12-25)"
+    },
+    {
+      "path": "knowledge/systems/README.md",
+      "why": "System Documentation"
+    }
+  ],
+  "contracts_and_schemas": [
+    {
+      "kind": "yaml",
+      "path": "agents/AUTOLOAD_MANIFEST.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "cdb_docs_index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "index.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/agent_trust/decision_event.schema.yaml"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/MIGRATION.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/README.md"
+    },
+    {
+      "kind": "other",
+      "path": "knowledge/contracts/REPLAY_CONTRACT.md"
+    },
+    {
+      "kind": "jsonschema",
+      "path": "knowledge/contracts/market_data.schema.json"
+    },
+    {
+      "kind": "jsonschema",
+      "path": "knowledge/contracts/signal.schema.json"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml"
+    },
+    {
+      "kind": "yaml",
+      "path": "knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml"
+    }
+  ],
+  "entrypoints": [
+    {
+      "path": "DOCS_HUB_INDEX.md",
+      "why": "Global docs landing page"
+    },
+    {
+      "path": "README.md",
+      "why": "Root overview and Docs Hub scope"
+    },
+    {
+      "path": "agents/AGENTS.md",
+      "why": "Canonical agent registry"
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "why": "Expanded structured index"
+    },
+    {
+      "path": "index.yaml",
+      "why": "Structured top-level index"
+    },
+    {
+      "path": "knowledge/CDB_KNOWLEDGE_HUB.md",
+      "why": "Knowledge-hub landing page"
+    },
+    {
+      "path": "knowledge/agent_trust/README.md",
+      "why": "Agent trust area"
+    },
+    {
+      "path": "knowledge/contracts/README.md",
+      "why": "Contracts overview"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "why": "Governance start page"
+    },
+    {
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "why": "Safety-critical invariants"
+    },
+    {
+      "path": "knowledge/operating_rules/README.md",
+      "why": "Operational rules"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "why": "Disaster recovery entrypoint"
+    },
+    {
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "why": "Playbook index"
+    },
+    {
+      "path": "knowledge/runbooks/00_INDEX.md",
+      "why": "Runbook index"
+    },
+    {
+      "path": "knowledge/systems/README.md",
+      "why": "Systems overview"
+    }
+  ],
+  "gaps": [],
+  "mcp_references": [
+    {
+      "path": "agents/AGENT_QUICKSTART.md",
+      "snippet": "1. **Nicht-existente Modelle**: `mcp-config.toml` referenzierte Platzhalter-Modelle (`gpt-5.1-codex-max`, `copilot/gpt-5"
+    },
+    {
+      "path": "agents/AGENT_SETUP_GUIDE.md",
+      "snippet": "### MCP-Konfigurationsdateien"
+    },
+    {
+      "path": "cdb_docs_index.yaml",
+      "snippet": "36 │ ├───002-SETUP-PERSISTENT-MEMORY-BACKEND-GRAPHITI-MCP-OLLAM"
+    },
+    {
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "snippet": "# MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "path": "knowledge/operations/MCP_CENTRAL_CONFIG.md",
+      "snippet": "# MCP Zentral-Konfiguration (Team)"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "snippet": "- MCP Server Memory State"
+    }
+  ],
+  "policies": [
+    {
+      "path": "knowledge/GOVERNANCE_QUICKREF.md",
+      "topic": "GOVERNANCE_QUICKREF - Governance-Regeln Kurzreferenz"
+    },
+    {
+      "path": "knowledge/governance/CDB_AGENT_POLICY.md",
+      "topic": "CDB_AGENT_POLICY"
+    },
+    {
+      "path": "knowledge/governance/CDB_CONSTITUTION.md",
+      "topic": "CDB_CONSTITUTION"
+    },
+    {
+      "path": "knowledge/governance/CDB_GOVERNANCE.md",
+      "topic": "CDB_GOVERNANCE"
+    },
+    {
+      "path": "knowledge/governance/CDB_TRUST_SCORE_POLICY.md",
+      "topic": "CDB_TRUST_SCORE_POLICY"
+    },
+    {
+      "path": "knowledge/governance/MCP_NOTEBOOKLM_USAGE_GEMINI.md",
+      "topic": "MCP / NotebookLM – Nutzungsregel für Gemini (CDB)"
+    },
+    {
+      "path": "knowledge/governance/README.md",
+      "topic": "Canonical governance policies and rules."
+    },
+    {
+      "path": "knowledge/governance/SYSTEM_INVARIANTS.md",
+      "topic": "System Invariants"
+    },
+    {
+      "path": "knowledge/governance/TRUST_SCORE_CONFIG.yaml",
+      "topic": "TRUST_SCORE_CONFIG.yaml"
+    },
+    {
+      "path": "knowledge/governance/policy_cards/POLICY_CARD_SCHEMA.yaml",
+      "topic": "POLICY_CARD_SCHEMA.yaml"
+    },
+    {
+      "path": "knowledge/governance/policy_cards/README.md",
+      "topic": "Policy Cards"
+    }
+  ],
+  "runbooks": [
+    {
+      "path": "knowledge/agent_trust/incidents/README.md",
+      "topic": "Incidents"
+    },
+    {
+      "path": "knowledge/operating_rules/HITL_RUNBOOK.md",
+      "topic": "Human-in-the-Loop (HITL) Operations Runbook"
+    },
+    {
+      "path": "knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md",
+      "topic": "Live Trading Runbook"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/QUICK_START.md",
+      "topic": "🚀 QUICK START - Nach Docker Neuinstallation"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/README.md",
+      "topic": "Disaster Recovery - Docker Reinstallation"
+    },
+    {
+      "path": "knowledge/operations/disaster_recovery/RESTORE_GUIDE.md",
+      "topic": "Docker Reinstall - Restore Guide"
+    },
+    {
+      "path": "knowledge/playbooks/00_INDEX.md",
+      "topic": "Claire de Binare — Playbooks Index"
+    },
+    {
+      "path": "knowledge/playbooks/01_STACK_GOLDEN_PATH.md",
+      "topic": "01 — Stack Golden Path (Canonical Runbook)"
+    },
+    {
+      "path": "knowledge/playbooks/02_SECURITY_BASELINE_AND_SCANS.md",
+      "topic": "02 — Security Baseline & Scans (Runbook)"
+    },
+    {
+      "path": "knowledge/playbooks/03_DB_MIGRATIONS_AND_INIT.md",
+      "topic": "03 — DB Migrations & Init (Postgres) — Canonical Playbook"
+    },
+    {
+      "path": "knowledge/playbooks/04_REDIS_WIRE_LEVEL_DEBUG.md",
+      "topic": "04 — Redis Wire-Level Debug (Pub/Sub, Streams, Mythen)"
+    },
+    {
+      "path": "knowledge/playbooks/05_E2E_REGRESSION_SHIELD.md",
+      "topic": "05 — E2E Regression Shield (#255) — Canonical Spec"
+    },
+    {
+      "path": "knowledge/playbooks/10_AUTOPILOT_AGENT_OPERATIONS.md",
+      "topic": "Autopilot / Agent Operations (2025-12-25)"
+    },
+    {
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md",
+      "topic": "Verification Snapshot — Issues #230 & #226 (2025-12-25)"
+    },
+    {
+      "path": "knowledge/runbooks/00_INDEX.md",
+      "topic": "Runbooks Snapshot (2025-12-25)"
+    },
+    {
+      "path": "knowledge/runbooks/06_DETERMINISTIC_REPLAY.md",
+      "topic": "Deterministic Replay (2025-12-25)"
+    },
+    {
+      "path": "knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md",
+      "topic": "CDB Control Board Runbook"
+    },
+    {
+      "path": "knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md",
+      "topic": "Runbook: Grafana Admin Password Incident"
+    }
+  ],
+  "schema_version": "1.0",
+  "status_and_evidence": [
+    {
+      "kind": "status",
+      "path": "knowledge/ACTIVE_ROADMAP.md"
+    },
+    {
+      "kind": "status",
+      "path": "knowledge/CURRENT_STATUS.md"
+    },
+    {
+      "kind": "evidence",
+      "path": "knowledge/playbooks/11_VERIFICATION_REPORT_230_226.md"
+    }
+  ]
+}

@@ -9,11 +9,16 @@ Nicht exhaustiv; diese Seite zeigt die Canon-Pointer.
 |-------|-------|-------|-------|
 | `TRADING_MODE` | `paper` | Trading-Mode-Auswahl, Execution-Logging | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) |
 | `LIVE_TRADING_CONFIRMED` | unset | Human gate fuer `TRADING_MODE=live` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) |
+| `MOCK_TRADING` | `true` | Execution-Service waehlt Non-Live statt Live-Executor | [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/service.py`](../../services/execution/service.py) |
+| `MOCK_EXECUTION_MODE` | `simple` | Opt-in fuer expliziten Mock-Pfad: `simple`=`MockExecutor`, `simulator`=`SimulatorExecutor` | [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/service.py`](../../services/execution/service.py), [`services/execution/simulator_executor.py`](../../services/execution/simulator_executor.py) |
+| `SIMULATOR_ORDER_BOOK_DEPTH` / `SIMULATOR_VOLATILITY` | `1000000` / `0.02` | Tuning fuer den market-like, nicht-live Simulator-Pfad | [`services/execution/config.py`](../../services/execution/config.py), [`services/execution/simulator_executor.py`](../../services/execution/simulator_executor.py) |
 | `CDB_CONTROL_BOARD_AUTOMATION_ENABLED` | `false` | Control-Board-Routing und Upsert | [docs/runbooks/control_board_board_as_code.md](../runbooks/control_board_board_as_code.md) |
 | `POSTGRES_SSLMODE` | `prefer` | Postgres-DSN / SSL-Verbindung | [`core/utils/postgres_client.py`](../../core/utils/postgres_client.py), [`infrastructure/tls/TLS_SETUP.md`](../../infrastructure/tls/TLS_SETUP.md) |
 | `SECRETS_PATH` | lokal: `~/Documents/.secrets/.cdb`, CI: `${{ github.workspace }}/.ci-secrets` | Compose, Bootstrap, E2E/Soak | [`infrastructure/scripts/stack_up.ps1`](../../infrastructure/scripts/stack_up.ps1), [`infrastructure/scripts/bootstrap_local.sh`](../../infrastructure/scripts/bootstrap_local.sh), [tests/fixtures/README.md](../../tests/fixtures/README.md) |
 | `CDB_EXTERNAL_TESTS` | off | Opt-in fuer externe Integrations-Tests | [`tests/integration/test_mexc_testnet.py`](../../tests/integration/test_mexc_testnet.py) |
 | `surrealdb_enabled` / `governance_source` | `false` / `git` | SurrealDB-Mirror und Governance-Read-Quelle | [`infrastructure/config/surrealdb/feature-flags.yaml`](../../infrastructure/config/surrealdb/feature-flags.yaml), [docs/surrealdb/rollback-cutover-plan.md](../surrealdb/rollback-cutover-plan.md) |
+
+Safety-Hinweis: `MOCK_EXECUTION_MODE=simulator` wird nur beachtet, wenn `MOCK_TRADING=true` ist. Der Pfad bleibt explizit non-live und schaltet keinen echten Exchange-Zugriff frei.
 
 ## GitHub-Automation Secrets
 

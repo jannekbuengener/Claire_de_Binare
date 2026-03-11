@@ -9,6 +9,8 @@ Postgres ist der Canon fuer Runtime-Daten; SurrealDB ist eine optionale Mirror-S
   - [`infrastructure/database/schema.sql`](../../infrastructure/database/schema.sql)
 - Migrations:
   - [`infrastructure/database/migrations/`](../../infrastructure/database/migrations/)
+- Access Control / Threat Model:
+  - [docs/governance/evidence/ISSUE-744-access-control-matrix-threat-model.md](../governance/evidence/ISSUE-744-access-control-matrix-threat-model.md)
 - Least-Privilege / Rollen / Verifikation:
   - [docs/runbooks/postgres_least_privilege_rls.md](../runbooks/postgres_least_privilege_rls.md)
   - [`infrastructure/database/roles_and_grants.sql`](../../infrastructure/database/roles_and_grants.sql)

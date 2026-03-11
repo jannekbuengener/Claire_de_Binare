@@ -1,0 +1,22 @@
+event_id: codex-2026-01-07T04:38:30Z-pr-close-425
+timestamp: "2026-01-07T04:38:30Z"
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: pr.close
+  summary: "Closed PR #425 as superseded by PR #510 after branch rename"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  pr: "#425"
+uncertainty:
+  flag: false
+policy_refs:
+- CDB_AGENT_POLICY
+- CDB_TRUST_SCORE_POLICY
+evidence:
+- https://github.com/jannekbuengener/Claire_de_Binare/pull/425
+- https://github.com/jannekbuengener/Claire_de_Binare/pull/510
+- gh pr close 425 -c "Superseded by https://github.com/jannekbuengener/Claire_de_Binare/pull/510"

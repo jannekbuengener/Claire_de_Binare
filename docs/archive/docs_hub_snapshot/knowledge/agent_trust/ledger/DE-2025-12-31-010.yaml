@@ -1,0 +1,30 @@
+# Decision Event
+event_id: DE-2025-12-31-010
+timestamp: "2025-12-31T16:46:30+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: ci.update
+  summary: "Pinned GitHub Actions to full commit SHAs across workflows (issue #355)."
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "355"
+  branch: "355-p0roter_faden007-cicd-back-to-green-actions-+-guards"
+  paths:
+    - ".github/workflows/"
+uncertainty:
+  flag: false
+  reason: "Explicit user instruction to proceed with CI fixes"
+  options: []
+policy_refs:
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+evidence:
+  - "Commit b8c0f4c"
+  - "https://github.com/jannekbuengener/Claire_de_Binare/issues/355#issuecomment-3702377905"
+outcome:
+  result: recorded
+  notes: "Pinned actions to satisfy workflow pinning policy"

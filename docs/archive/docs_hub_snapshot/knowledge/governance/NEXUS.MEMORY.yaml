@@ -1,0 +1,82 @@
+relations:
+  role: system_memory
+  domain: knowledge
+  upstream:
+    - knowledge/governance/CDB_CONSTITUTION.md
+    - knowledge/governance/CDB_GOVERNANCE.md
+    - knowledge/governance/CDB_AGENT_POLICY.md
+  downstream: []
+  status: active
+  tags:
+    - nexus
+    - memory
+    - canonical
+    - long_term
+    - governed
+
+meta:
+  version: 1.1
+  status: canonical
+  write_policy: restricted
+  change_frequency: very_low
+
+identity:
+  name: NEXUS.MEMORY
+  purpose: Canonical long-term system memory
+  authority: user_and_session_lead_only
+
+scope:
+  includes:
+    - confirmed_system_facts
+    - stable_architecture_invariants
+    - long_lived_decisions
+    - cross_session_learnings
+  excludes:
+    - session_notes
+    - working_hypotheses
+    - temporary_context
+    - operational_status
+    - task_lists
+    - reviews
+    - raw_logs
+
+access_control:
+  read:
+    - all_agents
+    - all_models
+    - user
+  write:
+    - user
+    - session_lead
+  restrictions:
+    - no_autonomous_writes
+    - no_agent_initiated_persistence
+    - no_implicit_transfers
+
+transfer_policy:
+  allowed_from:
+    - CDB_KNOWLEDGE_HUB.md
+  disallowed_from:
+    - SHARED.WORKING.MEMORY.md
+    - logs/
+    - sessions/
+  mode: manual_only
+  approval_required: true
+
+memory_rules:
+  invariants:
+    - entries_must_be_stable
+    - entries_must_be_confirmed
+    - entries_must_be_cross_session_relevant
+    - entries_must_have_clear_scope
+  formatting:
+    required_fields:
+      - id
+      - title
+      - description
+      - rationale
+      - source
+      - date
+      - status
+
+entries: []

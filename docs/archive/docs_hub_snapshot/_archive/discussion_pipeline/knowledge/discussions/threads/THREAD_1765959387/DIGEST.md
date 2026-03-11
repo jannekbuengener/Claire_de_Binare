@@ -1,0 +1,164 @@
+# Discussion Digest: BSDE vs. Stochastic Control
+
+**Thread ID:** THREAD_1765959387
+**Pipeline:** Quick (Claude only)
+**Status:** Completed (Gated for Human Review)
+**Created:** 2025-12-17T14:23:07Z
+
+---
+
+## Proposal Summary
+
+**Topic:** Mathematical framework selection for dynamic risk modeling system
+
+**Question:** BSDE (Backward Stochastic Differential Equations) vs. Classical Stochastic Control (HJB-based approach)
+
+**Context:**
+- Both theoretically equivalent via Pontryagin's Maximum Principle
+- Major differences in: numerical treatment, scalability, implementation
+- Strategic decision with long-term consequences for Q1/Q2 2025
+
+---
+
+## Agent Analysis
+
+### Claude (Sonnet 4.5) - Confidence: 77%
+
+**Recommendation:** **Hybrid approach** - HJB baseline + BSDE research track
+
+**Key Arguments:**
+
+1. **Dimensionality Drives Choice:**
+   - d ≤ 10: HJB dominates (mature tooling, interpretable)
+   - d > 20: BSDE becomes competitive
+   - d > 50: BSDE is only tractable option
+
+2. **Production-Readiness Gap:**
+   - BSDE: Research prototypes, immature ecosystem, 2-3x dev time
+   - HJB: Battle-tested libraries (scipy, FEniCS), decades of PDE experience
+
+3. **Risk Management:**
+   - Pure BSDE: Too risky for 2025 timeline (40% chance solver doesn't converge)
+   - Pure HJB: May struggle if dimensionality exceeds d=10
+   - Hybrid: De-risks decision, provides fallback
+
+4. **Team Expertise:**
+   - HJB: Needs 0-1 PDE expert
+   - BSDE: Needs 1-2 ML engineers + 1 stochastic calculus expert
+   - Cost: BSDE requires 2x headcount + 6-12 months ramp-up
+
+**Concrete Next Steps:**
+
+**Week 1-2:** Dimensionality audit
+- Map risk model components to state variables
+- Identify natural decompositions (can 50d → 5×10d?)
+- Establish minimum required d
+
+**Week 3-4:** Prototype shootout
+- Implement toy problem (3D Black-Scholes) in both frameworks
+- Compare accuracy, speed, code complexity, debuggability
+- Document what broke vs. what worked
+
+**Week 5-6:** Architecture decision
+- Review prototype results
+- Go/No-Go on BSDE investment
+- Finalize routing logic (when to use which solver)
+
+**Q2 2025:** Production implementation
+- Build HJB baseline (4 weeks)
+- Validate on historical data (2 weeks)
+- Deploy to shadow mode (2 weeks)
+- Optional: Add BSDE layer in parallel
+
+---
+
+## Quality Metrics
+
+**Disagreement Count:** 0 (single agent)
+**Echo Chamber Score:** 0.0 (N/A for single agent)
+**Confidence:** 77% (Good, but not excellent)
+
+**Verdict:** GOOD
+
+**Why not EXCELLENT?**
+- Unknowns: Actual dimensionality of production system (±20%)
+- Unknowns: Team capacity for BSDE complexity (±15%)
+- Could reach 90%+ after dimensionality audit + prototype shootout
+
+---
+
+## Gate Status: **TRIGGERED**
+
+**Reasons:**
+1. ✅ Explicit flag: `HUMAN_REVIEW_REQUIRED` in output
+2. ✅ Strategic keywords: "High organizational impact" detected
+
+**Human Decision Required:**
+- Strategic technical direction (affects Q1/Q2 2025 deliverables)
+- Team hiring implications (0-1 vs. 2-3 new hires)
+- Budget allocation (HJB baseline vs. BSDE research track)
+
+**Gate File:** `discussions/gates/GATE_THREAD_1765959387.md`
+
+---
+
+## Critical Insights
+
+**The theoretical equivalence is misleading for production systems.**
+
+- Mathematical elegance ≠ production readiness
+- BSDE literature is impressive but ecosystem is immature
+- HJB is "boring" but battle-tested
+- Decision should be driven by: team expertise, maintainability, incremental risk
+
+**Don't solve the general d=100 problem if your actual system is d=8.**
+
+- Many high-dimensional problems have natural decompositions
+- Dimensionality audit (Week 1-2) is critical first step
+- May discover problem is actually tractable with HJB after all
+
+**Hybrid approach provides optionality without paralysis.**
+
+- Q1: Working HJB baseline (de-risks timeline)
+- Q2: Optional BSDE layer (if dimensionality forces it)
+- Team learns both approaches in parallel
+- Can pivot based on empirical results
+
+---
+
+## Literature Gaps Identified
+
+**Missing from current research:**
+1. Empirical BSDE vs. HJB comparison on real financial datasets (not synthetic)
+2. Production deployment case studies for Deep BSDE (Han et al. is academic)
+3. Error bounds for BSDE in non-asymptotic regimes
+4. Debugging tools for neural PDE solvers
+
+**Opportunity:** Publish your benchmark results from prototype shootout
+
+---
+
+## Recommended Action
+
+**✅ PROCEED** to dimensionality audit (Week 1-2) and prototype shootout (Week 3-4)
+
+**Then reconvene for architecture decision (Week 5-6) with empirical data**
+
+**Do NOT:**
+- ❌ Commit to pure BSDE without prototyping (too risky)
+- ❌ Wait indefinitely for "more research" (decision paralysis)
+- ❌ Ignore team expertise constraints (hiring takes time)
+
+---
+
+**Next Steps:**
+
+1. **Human review:** Evaluate recommendation + risk assessment
+2. **Decision:** PROCEED / REVISE / REJECT
+3. **If approved:** Create GitHub issue with action items
+4. **If rejected:** Document rationale for future reference
+
+---
+
+*Generated by Discussion Pipeline v0.1.0*
+*Claude Code Session - 2025-12-17*

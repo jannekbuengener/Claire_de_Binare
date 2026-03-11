@@ -1,0 +1,66 @@
+Proof: Slice A im Docs-Repo ist noch intakt (Reset war nur für versehentliche Slice-B-Commits)
+PowerShell:
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs
+git status -sb
+git log --oneline --decorate -10
+git show --name-only HEAD
+
+Zielbild: Branch feat/verlosung-docs-cleanup zeigt weiterhin Slice A (Secrets raus, Manifest, Ledger). Keine Workflow-Files im Docs-Repo neu.
+
+Proof: Slice B liegt wirklich im Working Repo und ist gepusht
+PowerShell:
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+git status -sb
+git branch --show-current
+git log --oneline --decorate -10
+git diff --stat origin/main...HEAD
+
+Zielbild: Du bist auf feat/verlosung-github-pack, und im Diff tauchen nur .github/ISSUE_TEMPLATE/* und .github/workflows/* (plus ggf. dependabot) auf.
+
+Secret-Sanity-Check (kurz, aber effektiv)
+PowerShell:
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+git grep -nI -- ".key|BEGIN RSA|PRIVATE KEY|glsa_|password\s*[:=]" .github || echo "OK: no obvious secrets patterns in .github"
+
+Wenn hier Treffer kommen: nicht diskutieren, direkt fixen, bevor PR rausgeht.
+
+PR erstellen (jetzt)
+Nutze den PR-Link aus deinem Output. In die PR-Beschreibung:
+
+Ziel: Slice B: Konsolidierung Templates + Workflows, verhindert Double-Runs
+
+Inhalt:
+
+Issue Templates: task.yml, config.yml, issue-governance.yml neu; bug_report.yml bleibt kanonisch; .new Duplikate bereinigt
+
+Workflows: bestehende behalten, verlosung-Versionen ignoriert (weil bereits vorhanden)
+
+Neu übernommen: docker-publish.yml (dedizierter Publish-Workflow), issue-governance.yml (Workflow)
+
+Dependabot: bewusst nicht angefasst, weil bereits vorhanden
+
+Risiko/Impact:
+
+Kein Double-Run (keine parallele Aktivierung von Duplikaten)
+
+Keine Secrets committed
+
+CI sollte unverändert laufen; Docker-Publish ist der neue Hebel (Reviewer checken Trigger/Permissions)
+
+Ein Punkt vor Merge
+docker-publish.yml prüfen:
+
+Trigger: nur auf richtigen Branches/Tags, nicht bei jedem Push
+
+Permissions: minimal (packages: write nur wenn GHCR push wirklich nötig)
+
+Wenn das passt: PR mergen, fertig.
+
+Wenn du Copilot jetzt sauber „session-close“ machen lassen willst, gib ihm das:
+FINALIZE:
+
+Verifiziere Repo-Kontext: bestätige per git rev-parse --show-toplevel, dass Slice B in Claire_de_Binare ist und Slice A in Claire_de_Binare_Docs.
+
+Gib mir eine finale Änderungsübersicht (Dateiliste + Zweck je Datei) für den PR-Text.
+
+Stop danach. Keine weiteren Änderungen, keine weiteren Commits.

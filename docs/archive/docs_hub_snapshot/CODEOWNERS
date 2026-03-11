@@ -1,0 +1,108 @@
+# CODEOWNERS für Claire de Binare Docs
+# Definiert Governance-Approval-Anforderungen für verschiedene Bereiche
+
+# ============================================
+# STANDARD: Alle Markdown und YAML Files
+# ============================================
+# Mindestens ein Review erforderlich
+*.md
+*.yaml
+*.yml
+
+# ============================================
+# KRITISCHE GOVERNANCE-DOKUMENTE
+# ============================================
+# Diese Dokumente erfordern explizite Governance-Approval
+
+# System-Verfassung und Repository-Policy
+/knowledge/governance/CONSTITUTION.md                @governance-board
+/knowledge/governance/REPOSITORY_POLICY.md          @governance-board
+/knowledge/governance/CONTRIBUTION_RULES.md         @governance-board
+
+# Alle neuen Governance-Dokumente
+/knowledge/governance/*.md                          @governance-board
+/knowledge/governance/**/*.md                       @governance-board
+/knowledge/governance/*.yaml                        @governance-board
+/knowledge/governance/**/*.yaml                     @governance-board
+
+# ============================================
+# AGENTEN-GOVERNANCE
+# ============================================
+# Agenten-Charter und Rollen erfordern Agenten-Board Review
+
+# Agenten-Rollen Definition
+/agents/roles.yaml                        @agents-board @governance-board
+
+# Charter-Template (kritisch für Struktur)
+/agents/charter-template.yaml             @agents-board
+
+# Individuelle Agenten-Charters
+/agents/*.yaml                            @agents-board
+/agents/**/*.yaml                         @agents-board
+
+# Agenten-Dokumentation
+/agents/README.md                         @agents-board
+
+# ============================================
+# WISSENSBASIS
+# ============================================
+# Wissens-Kuratoren sind verantwortlich
+
+# Wissens-Index (kritisch für Struktur)
+/knowledge/index.yaml                     @knowledge-curators
+
+# ADRs und Entscheidungen
+/knowledge/decisions/*.md                 @knowledge-curators
+
+# Wissens-Dokumentation
+/knowledge/README.md                      @knowledge-curators
+
+# ============================================
+# DOKUMENTATIONS-STRUKTUR
+# ============================================
+# Dokumentations-Maintainer sind verantwortlich
+
+# Haupt-Dokumentations-Index
+/knowledge/INDEX.md                       @docs-maintainers
+
+# Templates (kritisch für Konsistenz)
+/knowledge/templates/*.md                 @docs-maintainers
+
+# ============================================
+# REPOSITORY-ROOT
+# ============================================
+# Repository-Meta-Dateien
+
+# README (Gesicht des Repos)
+/README.md                                @governance-board
+
+# .gitignore (kritisch für Policy-Enforcement)
+/.gitignore                               @governance-board
+
+# Diese Datei selbst
+/CODEOWNERS                               @governance-board
+
+# LICENSE (falls vorhanden)
+/LICENSE                                  @governance-board
+
+# ============================================
+# GITHUB WORKFLOWS
+# ============================================
+# Falls Workflows für Policy-Enforcement existieren
+
+/.github/workflows/*.yaml                 @governance-board
+/.github/workflows/*.yml                  @governance-board
+
+# ============================================
+# TEAMS / OWNER DEFINITIONS
+# ============================================
+# Diese Zeilen sind Dokumentation der erwarteten Teams/User
+# GitHub wird diese automatisch anwenden wenn die Teams existieren
+#
+# @governance-board     - Governance-Verantwortliche
+# @agents-board         - Agenten-System-Verantwortliche  
+# @knowledge-curators   - Wissens-Kuratoren
+# @docs-maintainers     - Dokumentations-Maintainer
+#
+# Alternativ können hier auch individuelle GitHub-User definiert werden
+# Beispiel: /knowledge/governance/*.md @username1 @username2

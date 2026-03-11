@@ -6,7 +6,7 @@
 - Jump to `docs/index.md` if you want the shortest local navigation page instead of the long root overview.
 - Use `DEVELOPER_ONBOARDING.md` plus `infrastructure/compose/README.md` for local setup and stack bring-up.
 - Check `.github/workflows/ci.yml` and `Makefile` together to understand what CI enforces and what you can run locally.
-- Read `AGENTS.md` before assuming docs ownership; the canonical AGENTS registry lives in the separate Docs Hub repo.
+- Read `AGENTS.md` before assuming docs ownership; it resolves to the local canonical registry at `agents/AGENTS.md`.
 
 ## Common locations
 
@@ -41,7 +41,7 @@
 
 ## Gotchas
 
-- `AGENTS.md` here is a pointer only; canonical agent charters live in the sibling `Claire_de_Binare_Docs` repo.
+- `AGENTS.md` here is a root pointer only; the canonical registry now lives in `agents/AGENTS.md` inside this repo.
 - The root `README.md` mixes status framing with repo structure; for navigation, `docs/index.md` is usually faster.
 - The main CI workflow excludes `test_mcp_time_server_runtime` from the bulk test step, so MCP runtime debugging needs the explicit smoke test.
 - Compose fragments in `infrastructure/compose/` are the preferred stack path; root-level legacy compose is only a fallback.

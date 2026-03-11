@@ -3,7 +3,7 @@
 Drift Guard: Validates risk_events schema contract.
 
 Ensures INSERT column list in services/risk/service.py matches
-canonical spec in Docs repo governance/risk_events.schema.yaml.
+canonical spec in the local governance schema.
 
 Exit Codes:
   0 - PASS (no drift detected)
@@ -40,11 +40,11 @@ def main():
     code_columns_raw = match.group(1)
     code_columns = [col.strip() for col in code_columns_raw.split(',')]
 
-    # 2. Find spec file (try both Docs repo and local copy)
-    docs_repo = root_dir.parent / "Claire_de_Binare_Docs"
+    # 2. Find spec file (prefer local canon, allow local archive snapshot as fallback)
+    docs_archive = root_dir / "docs" / "archive" / "docs_hub_snapshot"
     spec_paths = [
-        docs_repo / "knowledge" / "governance" / "risk_events.schema.yaml",
-        root_dir / "docs" / "governance" / "risk_events.schema.yaml",  # local copy
+        root_dir / "docs" / "governance" / "risk_events.schema.yaml",
+        docs_archive / "knowledge" / "governance" / "risk_events.schema.yaml",
     ]
 
     spec_file = None
@@ -54,7 +54,9 @@ def main():
             break
 
     if not spec_file:
-        violations.append("MISSING: risk_events.schema.yaml not found in Docs or local repo")
+        violations.append(
+            "MISSING: risk_events.schema.yaml not found in local canon or local archive snapshot"
+        )
         print_violations(violations)
         sys.exit(1)
 

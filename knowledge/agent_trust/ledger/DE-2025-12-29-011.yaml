@@ -1,0 +1,26 @@
+# Decision Event
+event_id: DE-2025-12-29-011
+timestamp: "2025-12-29T00:45:00+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.close
+  summary: "Issue #106 (PostgreSQL RBAC & Hardening) closed with merge evidence"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "106"
+uncertainty:
+  flag: false
+  reason: "Merge evidence confirmed - commit f017e62 on main"
+policy_refs:
+  - PC-ISSUE-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "Commit f017e62 on main"
+  - "Deliverable: docs/security/POSTGRES_HARDENING.md"
+outcome:
+  result: closed
+  notes: "DoD erfüllt, Deliverable auf main gemerged"

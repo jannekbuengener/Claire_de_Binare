@@ -1,0 +1,32 @@
+{
+  "thread_id": "THREAD_1765982173",
+  "proposal_path": "C:\\Users\\janne\\Documents\\GitHub\\Workspaces\\Claire_de_Binare_Docs\\discussions\\proposals\\name.md",
+  "pipeline": [
+    "gemini",
+    "copilot",
+    "claude"
+  ],
+  "preset": "deep",
+  "status": "failed",
+  "current_step": 1,
+  "agents_completed": [
+    "gemini"
+  ],
+  "outputs": [
+    {
+      "agent": "gemini",
+      "content_preview": "---\nconfidence_scores:\n  availability: 0.7\n---\n\n# Agent Skipped\n\nReason: Missing GOOGLE_API_KEY. Proceeded in availability-only mode.\n",
+      "confidence_scores": {
+        "availability": 0.7
+      },
+      "timestamp": "2025-12-17T14:36:13.258325Z",
+      "metadata": {
+        "skipped": true,
+        "reason": "missing GOOGLE_API_KEY"
+      }
+    }
+  ],
+  "started_at": "2025-12-17T14:36:13.252339Z",
+  "completed_at": null,
+  "error": "Copilot (GPT-4) API call failed: Error code: 401 - {'error': {'message': 'Incorrect API key provided: # Requir***************************************eep). You can find your API key at https://platform.openai.com/account/api-keys.', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"
+}

@@ -1,0 +1,10 @@
+event_type: issue_status
+repo: jannekbuengener/Claire_de_Binare_Docs
+issue: 45
+status: READY_FOR_IMPLEMENTATION
+evidence:
+  comment: https://github.com/jannekbuengener/Claire_de_Binare_Docs/issues/45#issuecomment-3795326262
+source_local_path: D:\Dev\Workspaces\Prompts\PAINPOINTS
+soak_gate: MERGE_AFTER_SOAK
+agent: codex
+timestamp_utc: 2026-01-24T18-38-30Z

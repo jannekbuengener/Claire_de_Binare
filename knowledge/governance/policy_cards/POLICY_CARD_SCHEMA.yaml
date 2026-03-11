@@ -1,0 +1,24 @@
+# POLICY_CARD_SCHEMA.yaml
+# Machine-readable governance rules for agents (Policy Cards).
+# This is a documentation schema (not code execution).
+version: 1.0
+
+required_fields:
+  - id
+  - title
+  - status
+  - scope
+  - triggers
+  - rules
+  - violation
+  - score_impact
+
+field_descriptions:
+  id: "Stable identifier, e.g. PC-ISSUE-001"
+  title: "Short name"
+  status: "canonical|draft|deprecated"
+  scope: "Where it applies (repo, path, agent-set)"
+  triggers: "When this policy card is relevant"
+  rules: "MUST/SHOULD requirements"
+  violation: "What counts as violation + severity"
+  score_impact: "Axis deltas for compliance/quality/safety"

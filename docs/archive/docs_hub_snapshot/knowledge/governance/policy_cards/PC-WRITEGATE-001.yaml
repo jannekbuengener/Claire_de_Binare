@@ -1,0 +1,25 @@
+# Policy Card
+id: PC-WRITEGATE-001
+title: Write-gates for Docs Hub and governance paths
+status: canonical
+scope:
+  repo: Claire_de_Binare_Docs
+  paths:
+  - knowledge/governance/**
+  agents: all
+triggers:
+- attempt_to_write_governance_canonical_files
+rules:
+- level: MUST
+  text: Agents MUST NOT modify canonical governance documents without explicit Owner
+    approval and a documented proposal+review.
+- level: MUST
+  text: Agents MAY write to knowledge/logs/** and knowledge/** (non-governance) per
+    Agent Policy.
+violation:
+  definition: Direct change to canonical governance without explicit approval path
+  severity: high
+score_impact:
+  compliance: -10
+  quality: -4
+  safety: -3

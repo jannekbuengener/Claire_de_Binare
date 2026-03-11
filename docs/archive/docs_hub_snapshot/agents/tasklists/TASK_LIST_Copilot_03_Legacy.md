@@ -1,0 +1,72 @@
+---
+role: tasklist
+agent: COPILOT
+status: deprecated
+source: 3TASK-LISTcopilot.txt
+replaced_by: Issue #124 - Logs-Konzept Analyse
+---
+
+# Copilot Tasklist 02 - Logs-Konzept (LEGACY)
+
+**⚠️ DEPRECATED:** This tasklist has been replaced by **Issue #124** - Logs-Konzept Analyse
+
+## Original Content
+
+📋 Copilot Tasklist 02
+Logs-Konzept Vergleich logs/ vs knowledge/logs/
+
+Ziel:
+Konzeptionelle Klarheit vorbereiten – keine Entscheidung, nur Entscheidungsgrundlage.
+
+Scope:
+Docs Hub (read-only Analyse)
+
+Copilot Aufgaben:
+
+Aktuelle Nutzung von:
+
+logs/
+
+knowledge/logs/
+erfassen (Dateitypen, Inhalte, Zweck)
+
+Vergleichstabelle erstellen:
+
+Aspekt	logs/	knowledge/logs/
+Zweck		
+Canon-Status		
+Zielgruppe		
+Typische Inhalte		
+
+Ableiten:
+
+wofür Runtime / Reports
+
+wofür Wissensartefakte
+
+2–3 mögliche Zielmodelle skizzieren
+
+Modell A: klare Trennung
+
+Modell B: Konsolidierung
+
+Modell C: Status quo mit Regeln
+
+Pro Modell:
+
+Vorteile
+
+Risiken
+
+Auswirkungen auf Agenten
+
+Output:
+
+1 Markdown-Dokument
+
+Keine Empfehlung als Entscheidung
+
+Klar strukturiert
+
+Stop-Regel:
+Policy-Interpretation nötig → STOP

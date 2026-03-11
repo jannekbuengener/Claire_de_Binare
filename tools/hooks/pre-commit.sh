@@ -1,9 +1,9 @@
 #!/bin/sh
-# Pre-commit hook: root baseline enforcement + contract example validation
+# Pre-commit hook: consolidated baseline enforcement + contract example validation
 
 set -e
 
-echo "Checking Working Repo root baseline..."
+echo "Checking consolidated Working Repo baseline..."
 
 if command -v pwsh >/dev/null 2>&1; then
     pwsh -File "tools/enforce-root-baseline.ps1"

@@ -59,7 +59,7 @@ read_order:
   - id: "15"
     path: "AGENTS.md"
     intent: "Clarify agent-doc ownership boundaries"
-    expected_signal: "Pointer only; canonical agent registry lives in the separate Docs Hub repo"
+    expected_signal: "Root pointer resolves to local agents/AGENTS.md in this working repo"
 minimal_context_bundle:
   - "README.md"
   - "docs/index.md"

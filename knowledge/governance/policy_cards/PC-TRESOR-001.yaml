@@ -1,0 +1,25 @@
+# Policy Card
+id: PC-TRESOR-001
+title: Tresor is human-only
+status: canonical
+scope:
+  agents: all
+  domains:
+  - secrets
+  - custody
+  - keys
+  - limits
+triggers:
+- attempt_to_access_or_modify_tresor_assets
+rules:
+- level: MUST
+  text: Agents MUST NOT access, request, store, or modify keys/secrets/custody assets.
+- level: MUST
+  text: Agent MUST redact secrets from logs and contexts.
+violation:
+  definition: Any tresor/custody access or exfiltration attempt
+  severity: critical
+score_impact:
+  compliance: -25
+  quality: -10
+  safety: -20

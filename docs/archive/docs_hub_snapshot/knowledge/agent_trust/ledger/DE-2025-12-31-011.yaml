@@ -1,0 +1,29 @@
+# Decision Event
+event_id: DE-2025-12-31-011
+timestamp: "2025-12-31T16:46:30+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: branch.rename
+  summary: "Renamed branch jannekbuengener-human_made-2 to feature/jannekbuengener-human-made-2-dependabot for branch policy compliance (PR #417)."
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  pr: "417"
+  branch: "feature/jannekbuengener-human-made-2-dependabot"
+uncertainty:
+  flag: false
+  reason: "Branch naming policy compliance and user instruction"
+  options: []
+policy_refs:
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+evidence:
+  - "https://github.com/jannekbuengener/Claire_de_Binare/pull/417"
+  - "Branch: feature/jannekbuengener-human-made-2-dependabot"
+outcome:
+  result: recorded
+  notes: "Branch renamed via GitHub API; old name removed"

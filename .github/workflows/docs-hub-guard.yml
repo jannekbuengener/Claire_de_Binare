@@ -10,9 +10,6 @@ on:
 permissions:
   contents: read
 
-env:
-  DOCS_HUB_CANONICAL_PATH: D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\agents
-
 jobs:
   guard:
     runs-on: ubuntu-latest
@@ -38,6 +35,7 @@ jobs:
           set -euo pipefail
           echo "Best-effort secret scan (patterns)."
           include_paths=(
+            agents
             knowledge
             governance
             docs
@@ -45,9 +43,9 @@ jobs:
           git fetch origin main >/dev/null 2>&1 || true
           mapfile -t changed_files < <(git diff --name-only origin/main)
           scan_files=()
-          for char in "${include_paths[@]}"; do
+          for root in "${include_paths[@]}"; do
             for file in "${changed_files[@]}"; do
-              if [[ "$file" == "$char"* ]]; then
+              if [[ "$file" == "$root"* ]]; then
                 scan_files+=("$file")
               fi
             done
@@ -65,20 +63,32 @@ jobs:
             exit 1
           fi
 
-      - name: Enforce canonical top-level folders
+      - name: Enforce consolidated top-level folders
         shell: bash
         run: |
           set -euo pipefail
-          echo "Checking canonical top-level folders..."
-          for d in governance knowledge docs; do
+          echo "Checking consolidated top-level folders..."
+          for d in agents governance knowledge docs; do
             if [ ! -d "$d" ]; then
               echo "Missing required top-level folder: $d"
               exit 1
             fi
           done
-          if [ ! -d "agents" ]; then
-            echo "Optional folder 'agents' is absent; this Working Repo relies on the Docs Hub canonical registry."
-            if [ -n "${DOCS_HUB_CANONICAL_PATH:-}" ]; then
-              echo "Canonical agents path: ${DOCS_HUB_CANONICAL_PATH}"
-            fi
+
+      - name: Block legacy split defaults in key entrypoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            README.md
+            AGENTS.md
+            mcp_navpack_working_repo/ENTRYPOINTS.yaml
+            mcp_navpack_working_repo/CHEATSHEET.md
+            mcp_navpack_working_repo/DOCS_HUB.pointer.md
+          )
+          hits="$(grep -nE '\.\./Claire_de_Binare_Docs|D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_Docs|canonical agent registry lives in the separate Docs Hub repo|Working Repo relies on the Docs Hub canonical registry' "${files[@]}" || true)"
+          if [ -n "$hits" ]; then
+            echo "Found stale split-repo defaults in key entrypoints:"
+            echo "$hits"
+            exit 1
           fi

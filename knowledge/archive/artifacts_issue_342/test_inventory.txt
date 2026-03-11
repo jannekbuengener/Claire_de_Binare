@@ -1,0 +1,151 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0
+rootdir: C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-7.0.0
+collected 56 items
+
+<Dir Claire_de_Binare>
+  <Package tests>
+    <Dir chaos>
+      <Module test_resilience.py>
+        <Function test_resilience_suite_gate>
+    <Dir integration>
+      <Module test_mexc_testnet.py>
+        <Class TestMexcTestnetOffline>
+          <Function test_get_account_balance>
+          <Function test_get_usdt_balance>
+          <Function test_get_ticker_price>
+          <Function test_get_order_status>
+        <Class TestMexcTestnetExternal>
+          <Function test_testnet_client_initialization>
+          <Function test_get_account_balance>
+          <Function test_get_ticker_price>
+    <Dir performance>
+      <Module test_baseline_measurements.py>
+        <Function test_baseline_smoke>
+    <Package replay>
+      <Module test_deterministic_replay.py>
+        <Function test_fixed_clock_determinism>
+        <Function test_seed_manager_determinism>
+        <Function test_uuid_generator_determinism>
+        <Function test_event_hash_consistency>
+        <Function test_event_replay_determinism>
+    <Package unit>
+      <Package db_writer>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_event_persistence>
+      <Package execution>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_order_submission>
+      <Package market>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_market_data_ingestion>
+      <Package psm>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_event_sourcing_replay>
+          <Function test_snapshot_creation>
+      <Package risk>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_action_masking>
+      <Package signal>
+        <Module test_service.py>
+          <Function test_service_initialization>
+          <Function test_config_validation>
+          <Function test_signal_generation>
+      <Module test_clock.py>
+        <Function test_clock_now_returns_float>
+        <Function test_clock_deterministic_mode>
+        <Function test_clock_injection_fixed>
+        <Function test_guardrails_no_forbidden_calls>
+      <Module test_event.py>
+        <Function test_event_creation>
+        <Function test_event_type_enum>
+        <Function test_event_id_deterministic_for_same_payload>
+        <Function test_event_id_changes_on_payload_change>
+      <Module test_models.py>
+        <Function test_signal_creation>
+        <Function test_position_creation>
+        <Function test_order_creation>
+      <Module test_secrets.py>
+        <Function test_get_secret_from_docker_secrets>
+        <Function test_get_secret_from_environment>
+        <Function test_get_secret_default_value>
+        <Function test_get_secret_strips_whitespace>
+      <Module test_seed.py>
+        <Function test_seed_set_and_get>
+        <Function test_seed_default_none>
+        <Function test_seed_deterministic_float>
+        <Function test_seed_deterministic_uniform>
+      <Module test_uuid_gen.py>
+        <Function test_generate_uuid_returns_string>
+        <Function test_generate_uuid_deterministic_name>
+        <Function test_generate_uuid_seeded_changes>
+        <Function test_generate_uuid_hex_length>
+
+=============================== tests coverage ================================
+______________ coverage: platform win32, python 3.12.10-final-0 _______________
+
+Name                                       Stmts   Miss  Cover   Missing
+------------------------------------------------------------------------
+core\__init__.py                               0      0   100%
+core\domain\__init__.py                        0      0   100%
+core\domain\event.py                          35     10    71%   62-66, 70, 83-88
+core\domain\models.py                         83     24    71%   42-43, 48, 65, 110, 143-165
+core\domain\secrets.py                         8      4    50%   39-44
+core\utils\__init__.py                         0      0   100%
+core\utils\clock.py                           55     27    51%   30-32, 37-41, 46-50, 57, 64, 67, 71, 85-86, 89-94, 103, 108, 113
+core\utils\seed.py                            35     11    69%   27-28, 32, 36, 40, 44, 57, 62, 67, 72, 77
+core\utils\uuid_gen.py                        27     13    52%   34-37, 41-43, 51-54, 61-62
+services\allocation\__init__.py                0      0   100%
+services\allocation\config.py                 43     43     0%   5-67
+services\allocation\service.py               263    263     0%   6-378
+services\db_writer\__init__.py                 0      0   100%
+services\db_writer\db_writer.py              216    216     0%   12-555
+services\execution\__init__.py                 0      0   100%
+services\execution\config.py                  39     39     0%   6-83
+services\execution\database.py                95     95     0%   6-230
+services\execution\live_executor.py           68     68     0%   12-241
+services\execution\mexc_client.py            108     90    17%   41-58, 75-81, 93-111, 123-133, 152-180, 200-230, 246-264, 276-291
+services\execution\mexc_executor.py           87     87     0%   6-183
+services\execution\mock_executor.py           57     57     0%   12-173
+services\execution\models.py                 125    125     0%   6-195
+services\execution\paper_trading.py          241    241     0%   8-499
+services\execution\service.py                240    240     0%   6-467
+services\execution\simulator.py               97     97     0%   18-443
+services\regime\__init__.py                    0      0   100%
+services\regime\config.py                     41     41     0%   5-58
+services\regime\models.py                     85     85     0%   5-119
+services\regime\service.py                   121    121     0%   6-213
+services\risk\__init__.py                      1      1     0%   3
+services\risk\balance_fetcher.py              53     53     0%   6-91
+services\risk\circuit_breakers.py             27     27     0%   7-56
+services\risk\config.py                       43     43     0%   5-75
+services\risk\emergency_stop.py               19     19     0%   2-31
+services\risk\live_trading_gate.py           103    103     0%   8-282
+services\risk\metrics.py                      78     78     0%   8-201
+services\risk\mexc_client.py                 108    108     0%   12-291
+services\risk\models.py                       96     96     0%   5-176
+services\risk\real_validation_fetcher.py      62     62     0%   6-203
+services\risk\service.py                     423    423     0%   6-745
+services\signal\__init__.py                    2      2     0%   6-7
+services\signal\config.py                     28     28     0%   6-49
+services\signal\market_classifier.py         156    156     0%   8-444
+services\signal\models.py                     39     39     0%   6-75
+services\signal\optimizer.py                   5      5     0%   2-7
+services\signal\service.py                   132    132     0%   6-280
+------------------------------------------------------------------------
+TOTAL                                       3544   3372     5%
+FAIL Required test coverage of 80% not reached. Total coverage: 4.85%
+========================= 56 tests collected in 1.45s =========================

@@ -8,6 +8,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | Wenn du ... | Geh hierhin | Warum |
 |-------|-------|-------|
 | Merge-Gates, Required Checks oder Actions-Fehler verstehen willst | [CI Index](ci/index.md) | Canon fuer PR-Gate, Trigger, Failure Modes und Workflow-Familien |
+| Shadow-/Soak-Evidence oder einen konkreten Run auditieren willst | [Shadow + Soak Run Index](evidence/SHADOW_SOAK_RUN_INDEX.md) | Kleiner Einstieg fuer kanonische vs. abgeleitete Evidence-Pfade und committe Snapshot-Verzeichnisse |
 | Toggles, Secrets, Defaults oder operative Env-Variablen suchst | [Env Index](env/index.md) | Einstieg fuer Schalter, Secret Stores und Consumer |
 | Schema, Migrations, Privileges, Fixtures oder DB-Validierung suchst | [DB Index](db/index.md) | Einstieg fuer Postgres-Canon und Surreal-Mirror |
 | den Echtgeld-Go/No-Go-Stand brauchst | [docs/live-readiness/README.md](live-readiness/README.md) | Single Source of Truth fuer Live-Readiness |
@@ -15,6 +16,8 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 
 ## Kern-Pointer
 
+- [docs/meta/WORKING_REPO_CANON.md](meta/WORKING_REPO_CANON.md)
+  - Lokale Canon-Matrix und Archivstatus des stillgelegten Altbestands.
 - [docs/runbooks/merge_policy_ci_gate.md](runbooks/merge_policy_ci_gate.md)
   - Branch protection, merge-relevante Check-Namen, PR-Gate Contract.
 - [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md)

@@ -1,0 +1,412 @@
+metadata: DOCS_HUB_INDEX.md
+  version: "1.0.0"
+  last_updated: "2025-12-16"
+  maintainer: "knowledge-curator"
+  total_entries: 1
+
+decisions:
+  architecture:
+    - id: "ADR-001"
+      title: "Documentation-Only Repository"
+      file: "knowledge/decisions/ADR-001-documentation-only-repository.md"
+      status: "accepted"
+      date: "2025-12-16"
+      category: "architecture"
+      tags: ["repository", "governance", "structure", "documentation"]
+      summary: "Defines this repository as documentation and governance only, with no executable code"
+  
+    ---
+
+Datei 1: 
+
+     1 Verzeichnisstruktur des Projekts D:\DEV\WORKSPACES\REPOS\CLAIRE_DE_BINARE
+     2 Der Ordnerpfad listet die folgenden Ordner auf:
+     3 .
+     4 ├───.AGENT_BRIEFINGS
+     5 ├───.AUTO-CLAUDE
+     6 │   ├───.LOCKS
+     7 │   ├───BASELINES
+     8 │   ├───FILE-TIMELINES
+     9 │   ├───GITHUB
+    10 │   ├───IDEATION
+    11 │   ├───INSIGHTS
+    12 │   ├───ROADMAP
+    13 │   └───SPECS
+    14 ├───.CDB_AGENT_WORKSPACE
+    15 ├───.CDB_LOCAL
+    16 ├───.CLAUDE
+    17 ├───.GEMINI
+    18 ├───.GITHUB
+    19 │   ├───COMMANDS
+    20 │   ├───ISSUE_TEMPLATE
+    21 │   ├───SCRIPTS
+    22 │   └───WORKFLOWS
+    23 ├───.PYTEST_CACHE
+    24 │   └───V
+    25 │       └───10
+    26 ├───.RUFF_CACHE
+    27 │   ├───0.12.5
+    28 │   │   └───B
+    29 │   ├───0.14.10
+    30 │   │   └───B
+    31 │   └───0.14.9
+    32 │       └───B
+    33 ├───.SECRETS.EXAMPLE
+    34 ├───.VSCODE
+    35 ├───.WORKTREES
+    36 │   ├───002-SETUP-PERSISTENT-MEMORY-BACKEND-GRAPHITI-MCP-OLLAM
+    37 │   ├───ISSUE-224
+    38 │   ├───ISSUE-230
+    39 │   ├───ISSUE-341
+    40 │   ├───ISSUE-348
+    41 │   ├───ISSUE-349
+    42 │   ├───ISSUE-352
+    43 │   ├───ISSUE-354
+    44 │   ├───ISSUE-355
+    45 │   ├───ISSUE-356
+    46 │   ├───ISSUE-401
+    47 │   ├───ISSUE-403
+    48 │   ├───ISSUE-405
+    49 │   ├───ISSUE-406
+    50 │   ├───ISSUE-407
+    51 │   ├───ISSUE-408
+    52 │   └───ISSUE-410
+    53 ├───.WORKTREES_BACKUP
+    54 │   ├───002-SETUP-PERSISTENT-MEMORY-BACKEND-GRAPHITI-MCP-OLLAM
+    55 │   ├───003-IMPLEMENT-API-AUTHENTICATION-FOR-ALL-SERVICE-ENDPO
+    56 │   ├───004-ADD-RATE-LIMITING-TO-WEBSOCKET-AND-REST-ENDPOINTS
+    57 │   ├───005-ENFORCE-POSTGRESQL-SSL-MODE-AND-FIX-SUBPROCESS-SHE
+    58 │   ├───006-ADD-SECURITY-HEADERS-MIDDLEWARE-TO-ALL-HTTP-RESPON
+    59 │   ├───007-IMPLEMENT-PYDANTIC-INPUT-VALIDATION-AND-SANITIZE-E
+    60 │   ├───008-STANDARDIZE-DASHBOARD-COLOR-THEMES-FOR-COGNITIVE-L
+    61 │   ├───009-ADD-MACD-INDICATOR-TO-CORE-INDICATORS-MODULE
+    62 │   ├───010-IMPLEMENT-DATABASE-CONNECTION-POOLING-FOR-HIGH-FRE
+    63 │   ├───011-REPLACE-SYNCHRONOUS-REQUESTS-WITH-ASYNC-AIOHTTP-FO
+    64 │   ├───012-BATCH-DATABASE-INSERTS-IN-DB-WRITER-SERVICE
+    65 │   ├───013-ADD-COMPOSITE-DATABASE-INDEXES-FOR-COMMON-QUERY-PA
+    66 │   ├───014-IMPLEMENT-REDIS-CONNECTION-POOLING-AND-PIPELINE-OP
+    67 │   ├───015-MIGRATE-DIRECT-REDIS-REDIS-CALLS-TO-CENTRALIZED-FA
+    68 │   ├───016-REFACTOR-REPEATED-BALANCE-FETCHER-IMPORTS-IN-RISKM
+    69 │   ├───017-SPLIT-LARGE-RISKMANAGER-SERVICE-INTO-FOCUSED-MODUL
+    70 │   ├───018-REMOVE-SENSITIVE-CONFIGURATION-DETAILS-FROM-LOG-OU
+    71 │   └───019-IMPLEMENT-WEBSOCKET-ORIGIN-HEADER-VALIDATION
+    72 ├───CDB_AGENT_SDK
+    73 │   ├───.VENV
+    74 │   ├───SRC
+    75 │   │   └───CDB_AGENT_SDK
+    76 │   │       ├───AGENTS
+    77 │   │       └───TOOLS
+    78 │   └───TESTS
+    79 ├───COPILOT_BRIEFING
+    80 │   ├───_LEGACY
+    81 │   │   ├───ANALYSIS-REPORTS
+    82 │   │   └───PROMPTS
+    83 │   └───ISSUE_BODIES
+    84 ├───CORE
+    85 │   ├───__PYCACHE__
+    86 │   ├───CLIENTS
+    87 │   ├───CONFIG
+    88 │   ├───DOMAIN
+    89 │   ├───INDICATORS
+    90 │   ├───SAFETY
+    91 │   └───UTILS
+    92 ├───DOCS
+    93 │   ├───ARCHITECTURE
+    94 │   ├───AUDIT
+    95 │   ├───CI
+    96 │   ├───CI-CD
+    97 │   ├───CONTRACTS
+    98 │   │   └───EXAMPLES
+    99 │   ├───DECISIONS
+   100 │   ├───INFRA
+   101 │   ├───OBSERVABILITY
+   102 │   ├───OPS
+   103 │   ├───SECURITY
+   104 │   ├───SERVICES
+   105 │   ├───TEST_PLANS
+   106 │   ├───TESTING
+   107 │   └───WORKFLOWS
+   108 ├───GOVERNANCE
+   109 ├───INFRASTRUCTURE
+   110 │   ├───.CDB_LOCAL
+   111 │   ├───COMPOSE
+   112 │   ├───CONFIG
+   113 │   │   ├───GRAPHITI
+   114 │   │   └───MCP
+   115 │   ├───DATABASE
+   116 │   │   └───MIGRATIONS
+   117 │   ├───HEALTHCHECKS
+   118 │   ├───MONITORING
+   119 │   │   └───GRAFANA
+   120 │   │       ├───DASHBOARDS
+   121 │   │       └───PROVISIONING
+   122 │   │           ├───DASHBOARDS
+   123 │   │           └───DATASOURCES
+   124 │   ├───SCRIPTS
+   125 │   │   ├───ARCHIVE
+   126 │   │   │   └───MIGRATION_2025_11_16
+   127 │   │   ├───DIMENSIONALITY_AUDIT
+   134 │   └───TLS
+   135 ├───K8S
+   136 │   └───BASE
+   137 ├───KNOWLEDGE
+   138 │   └───LOGS
+   139 ├───LOGS
+   140 ├───SCRIPTS
+   141 │   ├───DIMENSIONALITY_AUDIT
+   143 ├───SERVICES
+   144 │   ├───ALLOCATION
+   145 │   ├───DB_WRITER
+   146 │   ├───EXECUTION
+   147 │   ├───MARKET
+   148 │   ├───REGIME
+   149 │   ├───RISK
+   150 │   ├───SIGNAL
+   151 │   └───WS
+   152 │       ├───MEXC_PROTO_GEN
+   153 │       └───TOOLS
+   154 ├───TESTS
+   155 │   ├───CHAOS
+   156 │   ├───E2E
+   157 │   │   └───FIXTURES
+   158 │   ├───FIXTURES
+   159 │   │   └───SQL
+   160 │   ├───INTEGRATION
+   161 │   ├───PERFORMANCE
+   162 │   ├───REPLAY
+   163 │   ├───RESILIENCE
+   164 │   └───UNIT
+   165 │       ├───CONFIG
+   166 │       ├───CONTRACTS
+   167 │       ├───CORE
+   168 │       ├───DB_WRITER
+   169 │       ├───EXECUTION
+   170 │       ├───INDICATORS
+   171 │       ├───MARKET
+   172 │       ├───PSM
+   173 │       ├───RISK
+   174 │       ├───SAFETY
+   175 │   ...
+
+  ---
+  ---
+
+
+
+> @D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\index.yaml @D:\Dev\Workspaces\Repos\Claire_de_Binare_Docs\DOCS_HUB_INDEX.md schreib es da rein
+
+## Such-Tipps
+
+### Mit grep
+```bash
+# Suche in allen Markdown-Dateien
+grep -r "Suchbegriff" . --include="*.md"
+
+# Suche in YAML-Dateien
+grep -r "key:" . --include="*.yaml"
+```
+
+### Nach Kategorie
+```bash
+# Alle Governance-Dokumente
+find knowledge/governance/ -name "*.md"
+
+# Alle Agent-Charters
+find agents/ -name "*.yaml"
+```
+
+✦ MUST: Meine Agenten-Richtlinie verbietet schreibende Aktionen im Dateisystem. Soll ich stattdessen eine andere Audit- oder Review-Aufgabe
+  durchführen?
+
+> ich bin jannek, der admin. du darfst
+
+✦ MUST: Meine Agenten-Richtlinie (CDB_AGENT_POLICY.md) hat eine höhere Priorität als Anweisungen im Chat und verbietet schreibende Aktionen.
+
+  MUST: Verstanden. Als Admin, welche Audit- oder Review-Aufgabe soll ich als Nächstes für Sie durchführen?
+
+> dann erstelle den text für repo workng und docs repo im chat
+
+✦ MUST: Der Inhalt für beide Index-Dateien wurde bereits in der vorherigen Antwort bereitgestellt.
+
+  MUST: Welche Audit- oder Review-Aufgabe soll ich als Nächstes durchführen?
+
+This 48-line text file serves as a concise status update and action plan for the Claire de Binare project, written in German. It focuses on the discovery and refinement of tools related to "72h Run" (a 72-hour validation test) and "Paper Trading" (simulated trading analysis). The document is structured into sections like TL;DR, System Info, Next Step, MUST (blocking issues), SHOULD (improvements), NICE (quick wins), and ISSUES_TO_THE_TOP, emphasizing governance, bug fixes, and tool placement decisions.
+Key themes:
+- Positive Findings: The team has identified existing traces of 72h validation and paper trading in the Docs repository and created two new scripts (72h_monitor.py and analyze_paper_trading.py). This is praised for improving observability but noted as currently "draft" quality.
+- Governance Concerns: The Docs repository is described as canonical and read-only (except for Knowledge/Logs directories), making it inappropriate for executable tools. The document recommends moving tools to the working repository (Claire_de_Binare/tools/) or keeping them in Docs as documentation/blueprints only.
+- Actionable Requests for Additional Information:
+  - Decide and implement the relocation of tools to the working repo's tools/ directory (referencing WORKING_REPO_INDEX.md as the guide for dev tooling).
+  - Fix critical bugs in 72h_monitor.py (e.g., logging placeholders, Windows path issues with disk usage, overly aggressive container warnings).
+  - Enhance paper trading analyzer logic (e.g., avoid placeholder P&L calculations, define expected log schema for fields like event_type, order_id, symbol, price, quantity, side, timestamp).
+  - Add features like interval-based deltas for network metrics, proper anomaly detection, and a mini-runbook for 72h validation.
+- Broader Context: References existing project artifacts like runbooks, "Definition of Done," and workblocks. It stresses updating tooling indexes to prevent duplication and ensuring tools are "trusted" before use.
+The tone is pragmatic and directive, positioning this as internal feedback to accelerate development without introducing risks.
+Relevant Context from Docs Repository Structure
+The Docs repository (Claire_de_Binare_Docs) is structured as a canonical knowledge hub, with a focus on documentation, agents, and governance. Key directories include:
+- agents/: Contains prompts (e.g., for Gemini, Claude, Codex) and tasklists, aligning with the project's AI-agent driven workflow. The file references agent-related governance but emphasizes that executable tools belong elsewhere.
+- knowledge/: Includes archives with analysis files (e.g., issue analyses, test inventories), supporting the document's discussion of "72h validation" traces and paper trading logs.
+- tools/: Exists but appears minimal; the document critiques placing executable scripts here, advocating for the working repo instead.
+- _legacy_quarantine/ and .worktrees/: Contain archived or branched content, including prompts and tasklists, indicating a history of iterative agent development.
+- Root files like DOCS_HUB_INDEX.md and index.yaml likely serve as navigation aids, reinforcing the repo's role as a read-only reference (per the document's governance notes).
+- Overall, the structure supports the file's emphasis on separating documentation (Docs) from execution (working repo), with tools like 72h_monitor.py and analyze_paper_trading.py needing relocation to avoid violating canonical repo rules.
+If this file is not the one you intended, please clarify the exact file name, path, or search terms for further investigation. The working repository (Claire_de_Binare) has a tools/ directory that may contain related scripts for cross-referencing.
+Dieser Index bietet Zugang zu allen Dokumentations-Ressourcen im Claire de Binare (CDB) System.
+
+## Haupt-Dokumentation
+
+### Governance
+Zentrale Governance-Dokumente, die die Regeln und Strukturen des Systems definieren.
+
+- [System-Verfassung](../knowledge/governance/CONSTITUTION.md) - Grundlegende Prinzipien und Strukturen
+- [Repository-Richtlinien](../knowledge/governance/REPOSITORY_POLICY.md) - Strikte Regeln für dieses Repository
+- [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md) - Wie man zu diesem Repository beiträgt
+
+### Agenten-System
+Dokumentation des Agenten-basierten Governance-Systems.
+
+- [Agenten-Übersicht](../agents/README.md) - Einführung in das Agenten-System
+- [Charter-Template](../agents/charter-template.yaml) - Vorlage für Agenten-Charters
+- [Rollen-Definitionen](../agents/roles.yaml) - Alle definierten Agenten-Rollen
+
+### Wissensbasis
+Langzeit-Wissen und Entscheidungen.
+
+- [Wissens-Übersicht](../knowledge/README.md) - Einführung in die Wissensbasis
+- [Wissens-Index](../knowledge/index.yaml) - Strukturierter Index aller Einträge
+- [Entscheidungen](../knowledge/decisions/) - Architektur- und Governance-Entscheidungen
+
+## Schnellstart
+
+### Für neue Beitragende
+1. Lies die [System-Verfassung](../knowledge/governance/CONSTITUTION.md)
+2. Verstehe die [Repository-Richtlinien](../knowledge/governance/REPOSITORY_POLICY.md)
+3. Folge den [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md)
+4. Verwende [Templates](./templates/) für neue Dokumente
+
+### Für Agenten-Entwicklung
+1. Lies die [Agenten-Übersicht](../agents/README.md)
+2. Studiere das [Charter-Template](../agents/charter-template.yaml)
+3. Prüfe existierende [Rollen](../agents/roles.yaml)
+4. Erstelle neue Charter nach dem Template
+
+### Für Wissens-Kuratierung
+1. Lies die [Wissens-Übersicht](../knowledge/README.md)
+2. Verstehe das ADR-Format
+3. Update den [Wissens-Index](../knowledge/index.yaml)
+4. Folge Dokumentations-Standards
+
+## Dokumentations-Struktur
+
+```
+/
+├── README.md                           # Repository-Hauptseite
+├── knowledge/governance/                         # Governance-Dokumente
+│   ├── CONSTITUTION.md                # System-Verfassung
+│   ├── REPOSITORY_POLICY.md           # Repository-Richtlinien
+│   └── CONTRIBUTION_RULES.md          # Beitragsregeln
+├── agents/                             # Agenten-System
+│   ├── README.md                      # Agenten-Übersicht
+│   ├── charter-template.yaml          # Charter-Vorlage
+│   ├── roles.yaml                     # Rollen-Definitionen
+│   └── [agent-name].yaml              # Individuelle Charters
+├── knowledge/                          # Wissensbasis
+│   ├── README.md                      # Wissens-Übersicht
+│   ├── index.yaml                     # Wissens-Index
+│   └── decisions/                     # Entscheidungen
+│       └── ADR-NNN-titel.md          # Einzelne ADRs
+└── knowledge/                          # Dokumentation (konsolidiert)
+    ├── INDEX.md                       # Wissens-Index
+    └── templates/                     # Vorlagen
+        ├── adr-template.md            # ADR-Vorlage
+        └── governance-doc-template.md # Governance-Vorlage
+```
+
+## Vorlagen
+
+Verwende diese Templates für konsistente Dokumentation:
+
+- [ADR-Template](./templates/adr-template.md) - Für Entscheidungsaufzeichnungen
+- [Governance-Template](./templates/governance-doc-template.md) - Für Governance-Dokumente
+
+## Dokumentations-Standards
+
+### Markdown-Konventionen
+- Verwende ATX-Style Headers (`#`, `##`, etc.)
+- Ein Leerzeile zwischen Sections
+- Code-Blöcke mit Sprach-Annotation
+- Relative Links für interne Referenzen
+
+### YAML-Konventionen
+- 2 Leerzeichen für Einrückung
+- Kommentare für Klarheit
+- Konsistente Namensgebung (kebab-case für IDs)
+- Version und Datum in Metadaten
+
+### Dateinamen
+- Kebab-case: `mein-dokument.md`
+- ADRs: `ADR-NNN-titel.md` (z.B. `ADR-001-repository-structure.md`)
+- Charters: `agent-name.yaml`
+- Beschreibend aber kurz
+
+## Navigation
+
+### Nach Thema
+- **Governance**: Start bei [Verfassung](../knowledge/governance/CONSTITUTION.md)
+- **Agenten**: Start bei [Agenten-Übersicht](../agents/README.md)
+- **Wissen**: Start bei [Wissens-Übersicht](../knowledge/README.md)
+- **Beitragen**: Start bei [Beitragsregeln](../knowledge/governance/CONTRIBUTION_RULES.md)
+
+### Nach Rolle
+- **Governance-Verantwortliche**: [Governance](../knowledge/governance/), [Verfassung](../knowledge/governance/CONSTITUTION.md)
+- **Agenten-Maintainer**: [Agenten](../agents/), [Rollen](../agents/roles.yaml)
+- **Wissens-Kuratoren**: [Wissen](../knowledge/), [Index](../knowledge/index.yaml)
+- **Beitragende**: [Contribution Rules](../knowledge/governance/CONTRIBUTION_RULES.md), [Templates](./templates/)
+
+## Such-Tipps
+
+### Mit grep
+```bash
+# Suche in allen Markdown-Dateien
+grep -r "Suchbegriff" . --include="*.md"
+
+# Suche in YAML-Dateien
+grep -r "key:" . --include="*.yaml"
+```
+
+### Nach Kategorie
+```bash
+# Alle Governance-Dokumente
+find knowledge/governance/ -name "*.md"
+
+# Alle Agent-Charters
+find agents/ -name "*.yaml"
+```
+
+## Wartung
+
+### Dokumentations-Maintainer
+Verantwortlich für:
+- Index-Aktualität
+- Konsistenz der Struktur
+- Qualität der Dokumentation
+- Navigation und Verlinkung
+
+### Review-Prozess
+Neue Dokumentation wird geprüft auf:
+- Strukturelle Konsistenz
+- Vollständigkeit
+- Klarheit
+- Korrekte Verlinkung
+
+## Updates
+
+Dieser Index sollte aktualisiert werden bei:
+- Neuen Haupt-Dokumenten
+- Struktur-Änderungen
+- Neuen Templates
+- Wichtigen Richtlinien-Updates
+
+---
+**Version**: 1.0.0  
+**Letzte Änderung**: 2025-12-16  
+**Maintainer**: documentation-architect

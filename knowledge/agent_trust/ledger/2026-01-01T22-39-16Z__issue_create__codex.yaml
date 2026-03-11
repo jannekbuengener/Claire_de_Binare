@@ -1,0 +1,24 @@
+event_id: d80622ef-a151-49a0-9b83-f469afec1679
+timestamp: '2026-01-01T22:39:16Z'
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: issue.create
+  summary: Created issue #432 for Codex MCP alignment (remove MCP_DOCKER, use central MCP config)
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: '#432'
+uncertainty:
+  flag: false
+  reason: ""
+  options: []
+policy_refs:
+- CDB_TRUST_SCORE_POLICY
+- ISSUE_AND_BRANCH_LIFECYCLE
+evidence:
+- https://github.com/jannekbuengener/Claire_de_Binare/issues/432
+- C:\\Users\\janne\\.codex\\config.toml
+- D:\\Dev\\Config\\MCP\\claire-de-binare.mcp.json

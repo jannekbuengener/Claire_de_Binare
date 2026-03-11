@@ -1,0 +1,29 @@
+# Decision Event
+event_id: DE-2025-12-31-003
+timestamp: "2025-12-31T11:11:43+01:00"
+agent:
+  id: codex
+  vendor: openai
+  role: execution_agent
+action:
+  type: delivery.gate
+  summary: "Delivery gate set to approved by explicit user instruction"
+  reversible: true
+scope:
+  repo: Claire_de_Binare_Docs
+  paths:
+    - knowledge/governance/DELIVERY_APPROVED.yaml
+uncertainty:
+  flag: false
+  reason: "Explicit owner approval in chat"
+  options: []
+policy_refs:
+  - PC-DELIVERY-001
+  - CDB_AGENT_POLICY
+  - CDB_CONSTITUTION
+evidence:
+  - "User instruction: 'beides ja. direkt vom user.'"
+  - knowledge/governance/DELIVERY_APPROVED.yaml
+outcome:
+  result: recorded
+  notes: "Delivery mode enabled for implementation work"

@@ -1,0 +1,30 @@
+event_id: de-2026-01-14T20-15-36Z-work-start-427
+timestamp: "2026-01-14T20:15:36Z"
+agent:
+  id: codex
+  vendor: openai
+  role: execution
+action:
+  type: work.start
+  summary: "Start work on issue #427: paper smoke exit loop (A/B/C), branch planned bugfix/paper-smoke-exit-loop"
+  reversible: true
+scope:
+  repo: Claire_de_Binare
+  issue: "#427"
+  branch: "bugfix/paper-smoke-exit-loop"
+  paths:
+    - services/risk/service.py
+    - services/risk/config.py
+    - services/execution/service.py
+    - tests/unit/risk/test_service.py
+uncertainty:
+  flag: false
+  reason: ""
+  options: []
+policy_refs:
+  - CDB_AGENT_POLICY
+  - CDB_TRUST_SCORE_POLICY
+  - ISSUE_AND_BRANCH_LIFECYCLE
+  - PC-DELIVERY-001
+evidence:
+  - "User approval in chat (issue #427, branch bugfix/paper-smoke-exit-loop, scope A/B/C)"

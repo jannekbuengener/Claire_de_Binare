@@ -1,0 +1,26 @@
+# Decision Event
+event_id: DE-2025-12-29-013
+timestamp: "2025-12-29T00:55:00+01:00"
+agent:
+  id: claude
+  vendor: anthropic
+  role: session_lead
+action:
+  type: issue.close
+  summary: "Issue #118 (Prompt-Migration .txt → .md) closed with merge evidence"
+  reversible: true
+scope:
+  repo: jannekbuengener/Claire_de_Binare
+  issue: "118"
+uncertainty:
+  flag: false
+  reason: "Merge evidence confirmed - commit b153235 on Docs Hub main"
+policy_refs:
+  - PC-ISSUE-001
+  - CDB_AGENT_POLICY
+evidence:
+  - "Commit b153235 on Claire_de_Binare_Docs main"
+  - "Deliverables: agents/prompts/*.md + DEPRECATED .txt files"
+outcome:
+  result: closed
+  notes: "DoD erfüllt - alle .txt migriert, DEPRECATED notices gesetzt"
