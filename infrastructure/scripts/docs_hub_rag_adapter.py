@@ -104,7 +104,9 @@ def iter_docs_hub_files(
     seen: set[Path] = set()
 
     root_index_files = (
-        LOCAL_ROOT_INDEX_FILES if is_valid_local_docs_workspace(docs_hub_path) else ROOT_INDEX_FILES
+        LOCAL_ROOT_INDEX_FILES
+        if is_valid_local_docs_workspace(docs_hub_path)
+        else ROOT_INDEX_FILES
     )
 
     for filename in root_index_files:

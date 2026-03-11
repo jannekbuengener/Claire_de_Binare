@@ -154,9 +154,7 @@ class GitHubIssueCreator:
                 issue_body,
                 issue_labels,
             )
-            manifest["github_issue_draft"] = str(
-                draft_file.relative_to(workspace_root)
-            )
+            manifest["github_issue_draft"] = str(draft_file.relative_to(workspace_root))
             with open(manifest_file, "w", encoding="utf-8") as f:
                 json.dump(manifest, f, indent=2)
             return None

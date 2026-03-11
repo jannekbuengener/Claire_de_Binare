@@ -71,9 +71,17 @@ class ConfigLoader:
 
     def _resolve_config_file(self, workspace_path: Path) -> Path:
         candidates = [
-            workspace_path / "knowledge" / "discussions" / "config" / "pipeline_rules.yaml",
+            workspace_path
+            / "knowledge"
+            / "discussions"
+            / "config"
+            / "pipeline_rules.yaml",
             workspace_path / "config" / "pipeline_rules.yaml",
-            workspace_path / "_archive" / "discussion_pipeline" / "config" / "pipeline_rules.yaml",
+            workspace_path
+            / "_archive"
+            / "discussion_pipeline"
+            / "config"
+            / "pipeline_rules.yaml",
         ]
         for candidate in candidates:
             if candidate.exists():
@@ -103,9 +111,10 @@ class ConfigLoader:
     def _validate_workspace(self, path: Path) -> bool:
         if not path.exists():
             return False
-        return self._resolve_config_file(path).exists() and self._resolve_discussions_path(
-            path
-        ).exists()
+        return (
+            self._resolve_config_file(path).exists()
+            and self._resolve_discussions_path(path).exists()
+        )
 
     def load_config(self) -> Dict[str, Any]:
         with open(self.config_file, "r", encoding="utf-8") as handle:

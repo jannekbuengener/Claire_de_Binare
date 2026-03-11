@@ -29,7 +29,7 @@ def main():
     code_text = code_file.read_text(encoding="utf-8")
 
     # Extract INSERT columns from code
-    insert_pattern = r'INSERT INTO risk_events\s*\(\s*([^)]+)\s*\)'
+    insert_pattern = r"INSERT INTO risk_events\s*\(\s*([^)]+)\s*\)"
     match = re.search(insert_pattern, code_text, re.IGNORECASE | re.DOTALL)
 
     if not match:
@@ -38,7 +38,7 @@ def main():
         sys.exit(1)
 
     code_columns_raw = match.group(1)
-    code_columns = [col.strip() for col in code_columns_raw.split(',')]
+    code_columns = [col.strip() for col in code_columns_raw.split(",")]
 
     # 2. Find spec file (prefer local canon, allow local archive snapshot as fallback)
     docs_archive = root_dir / "docs" / "archive" / "docs_hub_snapshot"
@@ -64,7 +64,7 @@ def main():
     spec_text = spec_file.read_text(encoding="utf-8")
 
     # Extract insert_columns from spec
-    insert_section_pattern = r'insert_columns:\s*\n((?:  (?:#.*|-.+)\n?)+)'
+    insert_section_pattern = r"insert_columns:\s*\n((?:  (?:#.*|-.+)\n?)+)"
     spec_match = re.search(insert_section_pattern, spec_text)
 
     if not spec_match:
@@ -73,9 +73,9 @@ def main():
         sys.exit(1)
 
     spec_columns = [
-        line.strip().lstrip('- ').strip()
-        for line in spec_match.group(1).strip().split('\n')
-        if line.strip() and not line.strip().startswith('#')
+        line.strip().lstrip("- ").strip()
+        for line in spec_match.group(1).strip().split("\n")
+        if line.strip() and not line.strip().startswith("#")
     ]
 
     # 4. Compare column sets (order-agnostic)
@@ -86,10 +86,14 @@ def main():
     missing_in_code = spec_set - code_set
 
     if missing_in_spec:
-        violations.append(f"DRIFT: Code inserts columns NOT in spec: {sorted(missing_in_spec)}")
+        violations.append(
+            f"DRIFT: Code inserts columns NOT in spec: {sorted(missing_in_spec)}"
+        )
 
     if missing_in_code:
-        violations.append(f"DRIFT: Spec declares columns NOT in code: {sorted(missing_in_code)}")
+        violations.append(
+            f"DRIFT: Spec declares columns NOT in code: {sorted(missing_in_code)}"
+        )
 
     # 5. Warn on order mismatch (not FAIL, just warn)
     if code_columns != spec_columns:
