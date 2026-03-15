@@ -2,17 +2,30 @@
 
 **Version:** 1.0
 **Erstellt:** 2025-12-28
-**Status:** Kanonisch
+**Status:** Legacy-Kompatibilitaet (kanonischer Pfad ist BLUE+RED via `make docker-up`)
 **Pruefintervall:** Bei jedem Session-Start
 
 ---
 
 ## 1. Stack Management
 
-### Stack starten (Development)
+### Stack starten (Canonical: BLUE+RED)
 
 ```powershell
-# Standard Dev Stack
+# Kanonischer Operator-Pfad
+make docker-up
+
+# Health pruefen
+make docker-health
+
+# Stoppen
+make docker-down
+```
+
+### Stack starten (Legacy, CI/test only)
+
+```powershell
+# Legacy Dev Stack (erfordert CDB_LEGACY_COMPOSE_OK=1 fuer stack_up.ps1)
 .\infrastructure\scripts\stack_up.ps1 -Profile dev
 
 # Mit Logging (Loki + Promtail)
@@ -28,11 +41,14 @@
 ### Stack stoppen
 
 ```powershell
-# Alle Container stoppen
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down
+# Kanonisch
+make docker-down
 
-# Mit Volume-Cleanup (ACHTUNG: loescht Daten!)
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
+# Legacy (CI/test only):
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down
+
+# Mit Volume-Cleanup (ACHTUNG: loescht Daten!) - Legacy:
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
 ```
 
 ### Stack verifizieren
@@ -118,7 +134,7 @@ docker exec cdb_postgres pg_isready -U postgres
 # Einzelner Service
 docker logs cdb_signal --tail 100 -f
 
-# Alle Services
+# Alle Services (legacy compose path)
 docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml logs -f
 
 # Nur Fehler
@@ -138,17 +154,21 @@ Zugriff ueber Grafana: http://127.0.0.1:3000
 ### Service Restart
 
 ```powershell
-# Einzelnen Service neu starten
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart cdb_signal
+# Kanonisch: Full-Stack restart
+make docker-down
+make docker-up
+
+# Legacy (CI/test only): Einzelnen Service neu starten
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart cdb_signal
 ```
 
 ### Service Rebuild
 
 ```powershell
-# Mit Rebuild
+# Legacy (CI/test only, erfordert CDB_LEGACY_COMPOSE_OK=1 fuer stack_up.ps1):
 .\infrastructure\scripts\stack_up.ps1 -Profile dev -Rebuild
 
-# Oder manuell
+# Oder manuell (legacy):
 docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d --build cdb_signal
 ```
 
@@ -216,8 +236,8 @@ SELECT status, COUNT(*) FROM orders GROUP BY status;
 # Via Makefile
 make paper-trading-start
 
-# Oder direkt
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d cdb_paper_runner
+# Legacy (CI/test only):
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d cdb_paper_runner
 ```
 
 ### Paper Runner Logs
@@ -264,19 +284,26 @@ URL: http://127.0.0.1:3000
 ### Kill Switch aktivieren
 
 ```powershell
-# Emergency Stop - stoppt alle Services
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml stop
+# Emergency Stop - kanonisch
+make docker-down
+
+# Legacy (CI/test only):
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml stop
 ```
 
 ### Vollstaendiger Reset
 
 ```powershell
-# Alles stoppen und aufraeuumen
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
+# Kanonisch: stoppen und aufraeuumen
+make docker-down
 docker system prune -f
 
 # Neu starten
-.\infrastructure\scripts\stack_up.ps1 -Profile dev
+make docker-up
+
+# Legacy (CI/test only):
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
+# .\infrastructure\scripts\stack_up.ps1 -Profile dev  # erfordert CDB_LEGACY_COMPOSE_OK=1
 ```
 
 ---

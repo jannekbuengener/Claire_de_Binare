@@ -64,9 +64,8 @@ Before starting a 72h run on a Windows host:
 # 1. Pull latest main
 git pull origin main
 
-# 2. Start stack
-cd infrastructure/compose
-docker compose -f compose.blue.yml up -d
+# 2. Start BLUE core stack
+docker compose -f infrastructure/compose/compose.blue.yml up -d
 
 # 3. Verify all services healthy
 docker ps --filter name=cdb_ --format '{{.Names}}: {{.Status}}'
@@ -83,8 +82,12 @@ chmod +x infrastructure/scripts/soak_monitor.sh
 ./infrastructure/scripts/soak_monitor.sh
 
 # 7. Install cron (adjust path)
-(crontab -l 2>/dev/null; echo "0 * * * * cd $(pwd)/../.. && ./infrastructure/scripts/soak_monitor.sh >> artifacts/soak_cron.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 * * * * cd $(pwd) && ./infrastructure/scripts/soak_monitor.sh >> artifacts/soak_cron.log 2>&1") | crontab -
 ```
+
+> **Note:** The CI workflow `shadow-soak-evidence.yml` runs automated
+> shadow-soak evidence collection and is not the same as this manual
+> runtime soak procedure.
 
 ## During the Run
 
@@ -137,8 +140,7 @@ docker ps --filter name=cdb_ > artifacts/final_container_status.txt
 docker stats --no-stream > artifacts/final_resources.txt
 
 # 3. Stop stack (optional — may keep running for investigation)
-cd infrastructure/compose
-docker compose -f compose.blue.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 ```
 
 ## Post-run
