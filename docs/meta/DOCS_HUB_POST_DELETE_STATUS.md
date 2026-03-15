@@ -40,6 +40,21 @@ These mentions are not productive dependencies.
 - no active resolver requires the deleted docs-hub repo
 - the working repo functions as the sole productive docs source
 
+## Snapshot Retention Policy (#1146)
+
+The local archive at `docs/archive/docs_hub_snapshot/` is classified into three
+retention buckets:
+
+1. **Provenance / narrow compatibility core** — audit-relevant material and
+   specific `knowledge/` subtrees still referenced by archive-aware tooling.
+   Intentionally kept.
+2. **Later review target** — low-signal or redundant areas such as historical
+   navpacks (`mcp_navpack_docs_hub*`), deprecated pipeline archives, quarantined
+   legacy content, and duplicate agent/knowledge mirrors. Retained but not
+   active input for any current workflow.
+3. **Not changed in #1146** — no archive content is deleted, moved, or
+   reorganized as part of this retention clarification.
+
 ## Optional Maintainer Follow-Up
 
 If the remote docs-hub repository still exists, it should be treated as

@@ -42,7 +42,9 @@ jobs:
 
             const changedFiles = files.map((file) => file.filename);
             const isDocsFile = (path) => path.startsWith('docs/') || path.toLowerCase().endsWith('.md');
-            const isWorkflowFile = (path) => path.startsWith('.github/workflows/');
+            const isWorkflowFile = (path) =>
+              path.startsWith('.github/workflows/') &&
+              (path.endsWith('.yml') || path.endsWith('.yaml'));
             const isWorkflowScopeCompanionDoc = (path) =>
               path === 'docs/runbooks/project_board_automation.md';
             const isInfraFile = (path) => path.startsWith('infrastructure/');

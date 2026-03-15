@@ -1,8 +1,8 @@
 {
   "docs_hub": {
-    "clone_hint": "Use only as a local legacy archive snapshot when historical comparison is required.",
+    "clone_hint": "Read-only local archive snapshot. Use for historical comparison or audit provenance only.",
     "local_path_hint": "docs/archive/docs_hub_snapshot",
-    "relationship": "Optional legacy archive. Active canon lives in this working repo.",
+    "relationship": "Read-only legacy archive. Active canon lives in this working repo.",
     "repo_name": "docs_hub_snapshot"
   },
   "schema_version": "1.0"

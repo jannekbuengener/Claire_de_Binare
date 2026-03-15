@@ -2,8 +2,8 @@
 
 Repo name: docs_hub_snapshot
 
-Relationship: Optional legacy archive. Active canon now lives in this working repo.
+Relationship: Read-only legacy archive. Active canon lives in this working repo.
 
 Local path hint: `docs/archive/docs_hub_snapshot/`
 
-Use this archive only for historical comparison or recovery of orphaned docs.
+Use this local archive only for historical comparison or audit provenance. It is not an active docs target.

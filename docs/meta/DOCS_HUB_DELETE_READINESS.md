@@ -98,6 +98,37 @@ Verified locally:
 
 All checks passed with the working repo as the active docs source.
 
+## Snapshot Retention Buckets (#1146)
+
+The local snapshot at `docs/archive/docs_hub_snapshot/` is retained with these
+explicit classifications:
+
+### Retained as provenance / narrow compatibility core
+- `knowledge/` subtrees referenced by archive-aware tooling
+  (`docs_hub_rag_adapter.py`), especially `knowledge/agent_trust/`,
+  `knowledge/operations/disaster_recovery/`, `knowledge/playbooks/`,
+  `knowledge/runbooks/`, `knowledge/reviews/`, `knowledge/audits/`
+- `verlosung/VERLOSUNG_SECRET_MANIFEST.md` (secret-manifest provenance)
+- root index files (`DOCS_HUB_INDEX.md`, `index.yaml`) as historical
+  navigation aids
+- `cdb_docs_index.yaml` is classified as obsolete but retained because
+  `infrastructure/scripts/docs_hub_rag_adapter.py` still enumerates it as an
+  archive root index candidate (behavior-bearing compatibility constraint)
+
+### Retained but later review target
+- `mcp_navpack_docs_hub*` — multi-generation historical navpacks with no active
+  working-repo references; largest redundancy cluster in the snapshot
+- `_archive/discussion_pipeline/` — bulk from a deprecated pipeline path
+- `_legacy_quarantine/` — quarantined provenance, no active references
+- `agents/roles/` — partially mirrors content already merged into active
+  `agents/` paths
+- `knowledge/archive/docs_legacy/` — contains obvious duplicates
+- `issues.md` — time-bound issue dump, not durable canon
+
+### Not deleted or reorganized in this issue
+No archive content is deleted, moved, or reorganized as part of #1146. The
+buckets above inform a future explicit prune decision if one is made.
+
 ## Delete Readiness Decision
 
 `Claire_de_Binare_Docs` is now redundant.
