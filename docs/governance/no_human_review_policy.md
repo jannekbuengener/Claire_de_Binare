@@ -34,7 +34,7 @@ This policy applies to **all PRs** with two explicit exception categories:
 
 | Exception | Trigger | Required action |
 |-----------|---------|-----------------|
-| System invariant changes | Edits to `SYSTEM_INVARIANTS.md` or enforcement mechanisms | Documented justification + link to DocsHub change |
+| System invariant changes | Edits to `SYSTEM_INVARIANTS.md` or enforcement mechanisms | Documented justification + link to governance change in this repo |
 | Live trading enablement | Changes to `soak_mode`, `paper_mode`, or live exchange credentials | Explicit operator sign-off in PR comment |
 
 Exception PRs follow the same CI gate but **must** include a `## Risk Assessment`

@@ -123,14 +123,14 @@ Shadow Mode may proceed under unchanged invariants.
 - **Impact:** Unblocks governance/docs PRs without weakening code testing
 - **Evidence:** E2E check now runs for ALL PRs, deterministic docs-only detection via file paths
 
-### PR #814: Governance Documentation Bridge
-- **Purpose:** Link Working Repo → DocsHub canonical SYSTEM_INVARIANTS.md
+### PR #814: Governance Documentation Bridge (historical)
+- **Purpose:** Originally linked Working Repo to the then-active external DocsHub for SYSTEM_INVARIANTS.md
 - **Merge SHA:** `b10e7bc`
 - **Merged At:** 2026-02-09T18:09:37Z
 - **Merged By:** jannekbuengener
-- **Outcome:** Governance pointer live, pinned to DocsHub commit `95b3a3c`
-- **Evidence:** `docs/governance/README.md` created with cross-repo reference pattern
-- **Impact:** Makes system invariants (INV-001 through INV-020) discoverable in Working Repo
+- **Outcome:** Governance pointer created; the external DocsHub was later retired (#1140) and canon moved to this working repo
+- **Evidence:** `docs/governance/README.md` created with cross-repo reference pattern (now superseded by local canon)
+- **Impact:** System invariants (INV-001 through INV-020) are now maintained locally in this working repo
 
 **Significance for LR-007:**
 - ✅ CI/CD improvements maintain deterministic behavior (INV-002)
