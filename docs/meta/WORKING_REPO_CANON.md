@@ -45,5 +45,5 @@ Das alte Docs-Hub-Material ist nur noch:
 
 Local archive path:
 - Path: `docs/archive/docs_hub_snapshot/`
-- Use: historical comparison, recovery of orphaned docs, audit provenance
+- Use: historical comparison, audit provenance
 - Do not treat it as the default edit target
