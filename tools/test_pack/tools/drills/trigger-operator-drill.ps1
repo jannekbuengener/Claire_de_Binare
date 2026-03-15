@@ -106,7 +106,7 @@ $sources | ConvertTo-Json -Depth 6 | Out-File (Join-Path $EvidenceDir "sources_m
 
 Stamp $timeline "DRILL_START"
 
-# --- Step 1: Alert Trigger (local console) ---
+# --- Step 1: Alert Trigger (email + local console) ---
 
 $alertPayload = [ordered]@{
   type       = "OPERATOR_DRILL_ALERT"
@@ -118,6 +118,45 @@ $alertPayload = [ordered]@{
   instruction = "python -c `"from core.safety.kill_switch import activate_kill_switch, KillSwitchReason; activate_kill_switch(KillSwitchReason.MANUAL, 'Operator drill', 'drill-operator')`""
 }
 
+# Attempt real email alert via EmailAlerter (graceful degradation if SMTP not configured)
+$emailAlertPy = @"
+import json, sys, os
+sys.path.insert(0, os.environ.get('CDB_REPO_ROOT', '.'))
+try:
+    from services.market.email_alerter import EmailAlerter
+    alerter = EmailAlerter()
+    if not alerter.enabled:
+        print(json.dumps({'channel': 'email', 'sent': False, 'reason': 'SMTP not configured'}))
+        sys.exit(0)
+    sent = alerter.send_alert(
+        subject='OPERATOR DRILL: Kill-Switch Activation Required',
+        message='An operator drill is in progress. Activate the kill-switch NOW and return to the drill terminal.',
+        severity='CRITICAL',
+    )
+    print(json.dumps({'channel': 'email', 'sent': sent}))
+except Exception as e:
+    print(json.dumps({'channel': 'email', 'sent': False, 'error': str(e)}))
+"@
+
+$env:CDB_REPO_ROOT = $RepoRoot
+$emailResult = $null
+try {
+  $emailOutput = python -c $emailAlertPy 2>&1
+  $emailResult = $emailOutput | ConvertFrom-Json -ErrorAction SilentlyContinue
+  if ($emailResult.sent) {
+    Stamp $timeline "EMAIL_ALERT_SENT" "Real email alert delivered"
+    Write-Host "Email alert: SENT"
+  } else {
+    $reason = if ($emailResult.reason) { $emailResult.reason } elseif ($emailResult.error) { $emailResult.error } else { "unknown" }
+    Stamp $timeline "EMAIL_ALERT_SKIPPED" "Email not sent: $reason"
+    Write-Host "Email alert: skipped ($reason) — falling back to console alert"
+  }
+} catch {
+  Stamp $timeline "EMAIL_ALERT_ERROR" $_.Exception.Message
+  Write-Host "Email alert: error — falling back to console alert"
+}
+
+# Always emit local console alert (primary operator notification)
 Write-Warning "================================================================"
 Write-Warning "  OPERATOR DRILL ALERT - Kill-Switch Drill"
 Write-Warning "================================================================"
@@ -130,7 +169,7 @@ Write-Warning "  Then return to this terminal."
 Write-Warning "================================================================"
 
 $alertPayload | ConvertTo-Json -Depth 6 | Out-File (Join-Path $EvidenceDir "alert_trigger.json") -Encoding utf8
-Stamp $timeline "ALERT_TRIGGERED" "Local console alert emitted; payload written to alert_trigger.json"
+Stamp $timeline "ALERT_TRIGGERED" "Console alert emitted; payload written to alert_trigger.json"
 
 # --- Step 2: Wait for operator action ---
 
@@ -239,14 +278,58 @@ if (-not $SkipStackLogs) {
 Stamp $timeline "DRILL_END"
 $timeline | ConvertTo-Json -Depth 6 | Out-File (Join-Path $EvidenceDir "timeline.json") -Encoding utf8
 
+# --- Write drill_verdict.json ---
+
+$killSwitchPassed = ($timeline | Where-Object { $_.event -eq "VERIFY_KILL_SWITCH_ACTIVE" }).Count -gt 0
+$lr003Passed = $SkipLr003 -or ($timeline | Where-Object { $_.event -eq "LR003_DRILL_PASS" }).Count -gt 0
+$alertTriggered = ($timeline | Where-Object { $_.event -eq "ALERT_TRIGGERED" }).Count -gt 0
+$emailSent = ($timeline | Where-Object { $_.event -eq "EMAIL_ALERT_SENT" }).Count -gt 0
+
+# Email alert is best-effort only (graceful degradation).
+# It is NOT a required PASS criterion — SMTP may not be configured in all environments.
+# Hard PASS criteria: console alert triggered + kill-switch active + LR-003 gates passed.
+$overallPass = $killSwitchPassed -and $lr003Passed -and $alertTriggered
+
+$verdict = [ordered]@{
+  verdict             = if ($overallPass) { "PASS" } else { "FAIL" }
+  ts_utc              = (Get-Date -Format "o")
+  checks              = [ordered]@{
+    alert_triggered     = $alertTriggered
+    kill_switch_active  = $killSwitchPassed
+    lr003_gate_pass     = $lr003Passed
+  }
+  best_effort         = [ordered]@{
+    email_alert_sent    = $emailSent
+  }
+  fail_reasons        = @()
+}
+if (-not $alertTriggered) { $verdict.fail_reasons += "Console alert was not triggered" }
+if (-not $killSwitchPassed) { $verdict.fail_reasons += "Kill-switch was not active after operator wait" }
+if (-not $lr003Passed) { $verdict.fail_reasons += "LR-003 fail-closed gate drill did not pass" }
+
+$verdict | ConvertTo-Json -Depth 6 | Out-File (Join-Path $EvidenceDir "drill_verdict.json") -Encoding utf8
+
 # --- Summary output ---
 
+$verdictLabel = if ($overallPass) { "PASS" } else { "FAIL" }
 Write-Host ""
-Write-Host "=== Operator Drill Complete ==="
+Write-Host "=== Operator Drill Complete — $verdictLabel ==="
 Write-Host "Evidence directory: $EvidenceDir"
 Write-Host "Timeline events:   $($timeline.Count)"
 Write-Host ""
+Write-Host "Verdict: $verdictLabel"
+if (-not $overallPass) {
+  Write-Host "  Fail reasons:"
+  foreach ($r in $verdict.fail_reasons) { Write-Host "    - $r" }
+}
+if ($emailSent) {
+  Write-Host "  Email alert: sent (best-effort)"
+} else {
+  Write-Host "  Email alert: not sent (best-effort, not required for PASS)"
+}
+Write-Host ""
 Write-Host "Evidence artifacts:"
+Write-Host "  drill_verdict.json"
 Write-Host "  timeline.json"
 Write-Host "  alert_trigger.json"
 Write-Host "  reports/kill_switch_verification.json"
