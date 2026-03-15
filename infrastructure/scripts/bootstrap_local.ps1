@@ -20,7 +20,7 @@ Write-Host "`n1. Initializing secrets..." -ForegroundColor Yellow
 & "$PSScriptRoot\init-secrets.ps1"
 
 # 2. Setup Environment File
-$repoRoot = Split-Path -Parent $PSScriptRoot
+$repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 Push-Location $repoRoot
 
 if (-not (Test-Path ".env")) {
@@ -38,7 +38,9 @@ Write-Host "`n3. Validating environment..." -ForegroundColor Yellow
 # 4. Start Docker Stack (canonical BLUE+RED runtime)
 Write-Host "`n4. Starting Docker Compose stack (BLUE+RED)..." -ForegroundColor Yellow
 $composeRoot = Join-Path $repoRoot "infrastructure\compose"
-docker compose -f "$composeRoot\compose.blue.yml" -f "$composeRoot\compose.red.yml" up -d
+docker network create cdb_network 2>$null
+docker compose -f "$composeRoot\compose.blue.yml" up -d
+docker compose -f "$composeRoot\compose.red.yml" up -d
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Docker Compose start failed. Check: docker compose logs"
     Pop-Location

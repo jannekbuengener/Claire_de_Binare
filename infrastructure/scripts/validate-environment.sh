@@ -283,8 +283,9 @@ if [[ $ERRORS -eq 0 ]] && [[ $WARNINGS -eq 0 ]]; then
     echo -e "${GREEN}✅ All checks passed!${NC}"
     echo ""
     echo "Your environment is ready. Start the stack with:"
-    echo "  make docker-up"
-    echo "  # or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d"
+    echo "  docker network create cdb_network 2>/dev/null || true"
+    echo "  docker compose -f infrastructure/compose/compose.blue.yml up -d"
+    echo "  docker compose -f infrastructure/compose/compose.red.yml up -d"
     echo ""
     exit 0
 elif [[ $ERRORS -eq 0 ]]; then
@@ -294,8 +295,9 @@ elif [[ $ERRORS -eq 0 ]]; then
     echo "Review warnings above and fix if needed."
     echo ""
     echo "Start the stack with:"
-    echo "  make docker-up"
-    echo "  # or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d"
+    echo "  docker network create cdb_network 2>/dev/null || true"
+    echo "  docker compose -f infrastructure/compose/compose.blue.yml up -d"
+    echo "  docker compose -f infrastructure/compose/compose.red.yml up -d"
     echo ""
     exit 0
 else
