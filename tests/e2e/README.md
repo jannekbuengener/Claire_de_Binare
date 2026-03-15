@@ -82,37 +82,42 @@ Deterministisches market_data Fixture für reproducible Tests.
 
 ## Running Tests
 
-### Local (PowerShell)
+### Local (offizieller Einstieg)
 
 ```powershell
-# 1. Start Stack (mit Logging für Debugging)
-.\infrastructure\scripts\stack_up.ps1 -Logging
-# stack_up exports required secrets (e.g., REDIS_PASSWORD) into the session
+# Kanonischer lokaler E2E-Lauf (Stack-Start + Tests + Teardown)
+.\infrastructure\scripts\run_e2e.ps1
+
+# Nur Tests, Stack bereits manuell gestartet
+.\infrastructure\scripts\run_e2e.ps1 -SkipStackStart -SkipTeardown
+```
+
+### Local (manueller Debug-/Fallback-Pfad)
+
+```powershell
+# 1. Stack starten (CI/Test-Compose-Pfad)
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml up -d
 
 # 2. Run E2E Smoke Test
-.\.venv\Scripts\python.exe -m pytest tests\e2e -m e2e -v --tb=short
+.\.venv\Scripts\python.exe -m pytest tests/e2e/test_smoke_pipeline.py -v --tb=short
 
 # 3. Repeat 3x für Determinismus-Check
 for ($i=1; $i -le 3; $i++) {
     Write-Host "Run $i/3..."
-    .\.venv\Scripts\python.exe -m pytest tests\e2e -m e2e -v
+    .\.venv\Scripts\python.exe -m pytest tests/e2e/test_smoke_pipeline.py -v
 }
-```
-
-### Local (via Runner-Script)
-
-```powershell
-# Automatisierter Run (Stack-Start + Tests + Teardown)
-.\infrastructure\scripts\run_e2e.ps1
 ```
 
 ### CI (GitHub Actions)
 
-Automatisch bei:
-- Pull Requests (paths: `tests/e2e/**`, `services/**`, `infrastructure/**`)
-- Manuell via `workflow_dispatch`
+**Offizieller Workflow:** `.github/workflows/e2e.yml`
 
-**Workflow:** `.github/workflows/e2e-tests.yml`
+Automatisch bei:
+- Push auf `main` (paths: `tests/e2e/**`, `services/**`, `infrastructure/compose/**`)
+- Manuell via `workflow_dispatch`
+- Wöchentlich (Sonntag 06:30 UTC)
+
+> `e2e-tests.yml` und `e2e-happy-path.yaml` sind historische Nebenpfade, nicht der offizielle E2E-Source-of-Truth.
 
 ---
 
