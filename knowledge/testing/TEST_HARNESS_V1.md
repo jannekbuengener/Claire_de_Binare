@@ -41,16 +41,28 @@
 ```
 
 ### 3. E2E Suite (Requires Docker Stack)
+
+**Offizieller lokaler Einstieg:** `infrastructure/scripts/run_e2e.ps1`
+**Offizielles Smoke-/E2E-Ziel:** `tests/e2e/test_smoke_pipeline.py`
+**Offizieller CI-Workflow:** `.github/workflows/e2e.yml`
+
+> **Runtime-Canon vs CI/Test-Compose:**
+> - `BLUE+RED` (`compose.blue.yml` + `compose.red.yml`) = Runtime-/Operator-Pfad
+> - `base.yml + dev.yml` (+ `logging.yml`) = CI/Test-/Legacy-Kompatibilitätspfad
+
 ```powershell
-# Prerequisites: Docker stack running
-# Check: docker ps --filter "name=cdb_"
+# Kanonischer lokaler E2E-Lauf (Stack-Start + Tests + Teardown)
+.\infrastructure\scripts\run_e2e.ps1
 
-# P0 Happy Path
-.venv/Scripts/python.exe -m pytest -m e2e tests/e2e/test_paper_trading_p0.py -v
+# Nur Tests, Stack bereits manuell gestartet
+.\infrastructure\scripts\run_e2e.ps1 -SkipStackStart -SkipTeardown
 
-# Full E2E (longer)
-.venv/Scripts/python.exe -m pytest tests/e2e/ -v
+# Manueller Debug-/Fallback-Start (CI/Test-Compose-Pfad)
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml up -d
+.venv/Scripts/python.exe -m pytest tests/e2e/test_smoke_pipeline.py -v
 ```
+
+> `test_paper_trading_p0.py` ist ein historischer/breiterer E2E-Pfad, aber nicht der kanonische Einstieg.
 
 ### 4. Integration Tests (Partial Docker)
 ```powershell
@@ -114,7 +126,7 @@
 
 ### For E2E Validation:
 - [ ] Docker stack healthy: `docker ps --filter "name=cdb_"`
-- [ ] E2E P0 suite PASSES: `pytest -m e2e tests/e2e/test_paper_trading_p0.py`
+- [ ] E2E Smoke PASSES: `pytest tests/e2e/test_smoke_pipeline.py -v`
 - [ ] Key metrics visible:
   - `signals_generated_total > 0`
   - `risk_pending_orders_total >= 0`
@@ -137,9 +149,9 @@
 ```
 
 ### Problem: E2E tests fail with connection errors
-**Solution:** Ensure Docker stack is running
+**Solution:** Ensure Docker stack is running (CI/Test-Compose-Pfad)
 ```powershell
-docker-compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml up -d
 ```
 
 ### Problem: Tests hang or timeout
