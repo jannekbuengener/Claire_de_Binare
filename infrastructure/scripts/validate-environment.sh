@@ -157,11 +157,16 @@ else
     warn ".env.example template is missing"
 fi
 
-# Check docker compose file
-if [[ -f "infrastructure/compose/dev.yml" ]]; then
-    pass "Docker Compose configuration exists (dev.yml)"
+# Check canonical compose files (BLUE+RED runtime)
+if [[ -f "infrastructure/compose/compose.blue.yml" ]]; then
+    pass "Canonical compose exists (compose.blue.yml)"
 else
-    fail "infrastructure/compose/dev.yml is missing"
+    fail "infrastructure/compose/compose.blue.yml is missing"
+fi
+if [[ -f "infrastructure/compose/compose.red.yml" ]]; then
+    pass "Canonical compose exists (compose.red.yml)"
+else
+    fail "infrastructure/compose/compose.red.yml is missing"
 fi
 
 echo ""
@@ -278,7 +283,8 @@ if [[ $ERRORS -eq 0 ]] && [[ $WARNINGS -eq 0 ]]; then
     echo -e "${GREEN}✅ All checks passed!${NC}"
     echo ""
     echo "Your environment is ready. Start the stack with:"
-    echo "  docker compose -f infrastructure/compose/dev.yml up -d"
+    echo "  make docker-up"
+    echo "  # or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d"
     echo ""
     exit 0
 elif [[ $ERRORS -eq 0 ]]; then
@@ -288,7 +294,8 @@ elif [[ $ERRORS -eq 0 ]]; then
     echo "Review warnings above and fix if needed."
     echo ""
     echo "Start the stack with:"
-    echo "  docker compose -f infrastructure/compose/dev.yml up -d"
+    echo "  make docker-up"
+    echo "  # or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d"
     echo ""
     exit 0
 else

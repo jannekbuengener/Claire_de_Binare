@@ -18,14 +18,16 @@ This tool rotates **machine-readable secrets** (DB passwords, Redis, app keys) w
 # Apply rotation and auto-export (auto secrets only)
 .\tools\secrets\Rotate-Secrets.ps1 apply -ExportAfter
 
-# Restart stack (auto-loads .env.runtime)
-.\infrastructure\scripts\stack_up.ps1
+# Restart stack (canonical BLUE+RED runtime)
+make docker-up
+# or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### 2. Normal Stack Start
 ```powershell
-# stack_up.ps1 auto-loads .env.runtime if present
-.\infrastructure\scripts\stack_up.ps1
+# Canonical BLUE+RED runtime
+make docker-up
+# or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### 3. Audit Current Secrets
@@ -104,10 +106,10 @@ Generates `.env.runtime` file with all auto secrets for injection into Docker st
 
 ## Integration
 
-### With stack_up.ps1 (B-lite)
-`stack_up.ps1` automatically loads `.env.runtime` if present:
-- No manual ENV setup required
-- Disable via: `$env:CDB_IGNORE_RUNTIME_ENV=1`
+### With BLUE+RED Runtime
+The canonical runtime (`make docker-up` / `compose.blue.yml` + `compose.red.yml`) loads secrets from `SECRETS_PATH`.
+Legacy `stack_up.ps1` (requires `CDB_LEGACY_COMPOSE_OK=1`) also loads `.env.runtime` if present.
+- Disable `.env.runtime` auto-load via: `$env:CDB_IGNORE_RUNTIME_ENV=1`
 
 ### With Existing Tools
 - `set_secrets.ps1` - Manual initial secret setup (still valid)
@@ -143,7 +145,7 @@ Check `secrets.manifest.json` for:
 Run commands in order:
 1. `apply` (generates secrets)
 2. `export` (creates .env.runtime)
-3. `stack_up.ps1` (loads and starts)
+3. `make docker-up` (starts canonical BLUE+RED runtime)
 
 ## Documentation (Docs Hub)
 

@@ -446,11 +446,11 @@ function Invoke-Apply($manifest) {
     Write-Info ""
     if ($ExportAfter) {
         Write-Info "Next step:"
-        Write-Info "  1. Run 'infrastructure/scripts/stack_up.ps1' to restart stack"
+        Write-Info "  1. Restart stack: make docker-up (or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d)"
     } else {
         Write-Info "Next steps:"
         Write-Info "  1. Run 'Rotate-Secrets.ps1 export' to generate .env.runtime"
-        Write-Info "  2. Run 'infrastructure/scripts/stack_up.ps1' to restart stack"
+        Write-Info "  2. Restart stack: make docker-up (or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d)"
     }
 }
 
@@ -500,7 +500,7 @@ function Invoke-Export($manifest) {
     }
 
     Write-Section "Export Complete"
-    Write-Info "Next step: Run 'infrastructure/scripts/stack_up.ps1' to load secrets"
+    Write-Info "Next step: Restart stack: make docker-up (or: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml up -d)"
 }
 
 # =============================================================================

@@ -35,9 +35,15 @@ if (-not (Test-Path ".env")) {
 Write-Host "`n3. Validating environment..." -ForegroundColor Yellow
 & "$PSScriptRoot\check_env.ps1"  # Or stack_doctor if preferred
 
-# 4. Start Docker Stack
-Write-Host "`n4. Starting Docker Compose stack..." -ForegroundColor Yellow
-& "$PSScriptRoot\stack_up.ps1"
+# 4. Start Docker Stack (canonical BLUE+RED runtime)
+Write-Host "`n4. Starting Docker Compose stack (BLUE+RED)..." -ForegroundColor Yellow
+$composeRoot = Join-Path $repoRoot "infrastructure\compose"
+docker compose -f "$composeRoot\compose.blue.yml" -f "$composeRoot\compose.red.yml" up -d
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Docker Compose start failed. Check: docker compose logs"
+    Pop-Location
+    exit 1
+}
 
 # 5. Health Check Loop
 Write-Host "`n5. Waiting for services to be healthy..." -ForegroundColor Yellow
