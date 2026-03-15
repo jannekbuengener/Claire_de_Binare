@@ -2,7 +2,8 @@
   "timestamp_berlin": "2026-02-19T20:46:22+01:00",
   "timestamp_utc": "2026-02-19T19:46:22Z",
   "contexts": [
-    "ci (Unit/Integration + Lint gesammelt)"
+    "ci (Unit/Integration + Lint gesammelt)",
+    "policy-gate"
   ],
   "source": "branch_protection_main"
 }

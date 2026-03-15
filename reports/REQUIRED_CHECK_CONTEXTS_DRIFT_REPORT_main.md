@@ -1,13 +1,13 @@
 # Required Check Contexts Drift Report (main)
 
-Timestamp (Europe/Berlin): `2026-02-19T20:47:51+01:00`  
-Timestamp (UTC): `2026-02-19T19:47:51Z`  
+Timestamp (Europe/Berlin): `2026-03-15T22:16:47+01:00`  
+Timestamp (UTC): `2026-03-15T21:16:47Z`  
 State: **NO DRIFT**
 
 ## Hashes (SHA256)
 
-- Baseline SHA256: `fc0113f49cbfbd3a13c820c8a924a9761c777998ffc1f75e14a46520a94a6df0`
-- Current-derived SHA256: `7f7cd6f25a8daaeaf4aa5295dc41306ec366152565ce221a534dff8a61340a1d`
+- Baseline SHA256: `2b4034e1465a850f3e2a21cb3899cb76d23858adead3f2b8ab77db9647295dae`
+- Current-derived SHA256: `defd4111d7b2093b9fd0b06cf236bc556e8221b0d6e4fcc4c8683066d95179dc`
 
 ## Inputs
 
@@ -17,6 +17,7 @@ State: **NO DRIFT**
 ## Required Contexts (Baseline)
 
 - `ci (Unit/Integration + Lint gesammelt)`
+- `policy-gate`
 
 ## Missing Required Contexts
 
@@ -27,6 +28,7 @@ State: **NO DRIFT**
 - `Build Summary`
 - `Check Core Duplicates`
 - `Check Delivery Gate`
+- `Check Docs For Merge Conflict Markers`
 - `Container Scan (Trivy)`
 - `Contract Drift Guard`
 - `Contract Tests`
@@ -39,7 +41,9 @@ State: **NO DRIFT**
 - `Format Check (Black)`
 - `Full Repository Scan`
 - `LR-004: Completion State Validation`
+- `LR-021 Replay Smoke (fixture → hashes)`
 - `Linting (Ruff)`
+- `MCP Runtime Smoke`
 - `Python compatibility matrix (informational)`
 - `Scan Base Images (Redis, Postgres)`
 - `Scan Custom Python Services`
@@ -52,16 +56,24 @@ State: **NO DRIFT**
 - `Trivy - Custom Services`
 - `Type Checking (mypy)`
 - `Validate Message Contracts`
+- `add-to-project`
 - `ai/review`
+- `apply-pr-milestone`
+- `assign-single`
 - `auto-label`
+- `backfill`
 - `build`
 - `bulk-label`
+- `capture-intent`
 - `claude`
 - `claude-review`
 - `copilot-setup-steps`
+- `dispatch-control-board-routing`
+- `dispatch-milestone-label`
 - `e2e-paper-trading`
 - `enforce-pr-template`
 - `gitleaks (Secrets-Alarm)`
+- `governance-audit`
 - `guard`
 - `housekeeping`
 - `invoke`
@@ -72,15 +84,24 @@ State: **NO DRIFT**
 - `noop`
 - `opencode`
 - `performance-check`
+- `reconcile-project-board`
 - `required-checks-audit (Sentinel)`
 - `review`
+- `route-control-board`
 - `shadow-soak-evidence`
 - `smart-insights`
 - `stale`
+- `sync-project-status`
+- `sync-project-status-label-map`
+- `sync-stage-labels`
 - `triage`
+- `triage-guard`
 - `trivy (kritische CVEs/Supply-Chain)`
+- `upsert-control-board`
 - `validate-branch-name`
 - `validate-feature-workflow`
+- `weekly-digest`
+- `weekly-digest-failure-alert`
 - `❓ Bot Help`
 - `💬 PR Comment`
 - `📢 Notifications`
@@ -94,6 +115,7 @@ State: **NO DRIFT**
 | context | status | workflow_file | job_id | job_name | workflow_name |
 |---|---|---|---|---|---|
 | `ci (Unit/Integration + Lint gesammelt)` | present | `.github/workflows/ci.yml` | `ci` | `ci (Unit/Integration + Lint gesammelt)` | `ci` |
+| `policy-gate` | present | `.github/workflows/policy-gate.yml` | `policy-gate` | `policy-gate` | `Policy Gate` |
 
 ## Parse Errors
 

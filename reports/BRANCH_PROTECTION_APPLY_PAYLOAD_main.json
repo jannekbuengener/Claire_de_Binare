@@ -6,10 +6,10 @@
   "enforce_admins": true,
   "lock_branch": false,
   "required_conversation_resolution": true,
-  "required_linear_history": false,
+  "required_linear_history": true,
   "required_pull_request_reviews": {
-    "dismiss_stale_reviews": false,
-    "require_code_owner_reviews": false,
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": true,
     "require_last_push_approval": false,
     "required_approving_review_count": 0
   },
@@ -18,6 +18,10 @@
       {
         "app_id": 15368,
         "context": "ci (Unit/Integration + Lint gesammelt)"
+      },
+      {
+        "app_id": 15368,
+        "context": "policy-gate"
       }
     ],
     "strict": true
