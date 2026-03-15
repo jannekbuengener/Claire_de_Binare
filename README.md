@@ -36,10 +36,10 @@ Er ist **kein Maß für Betriebsreife** und **kein Release-Gate**.
 
 ---
 
-### 🧠 Kurzfassung (für Leser mit wenig Zeit)
+### Kurzfassung (fuer Leser mit wenig Zeit)
 
-- **Live Readiness:** ✅ erreicht  
-- **Systemstatus:** stabil & einsetzbar  
+- **Live Readiness:** NO-GO (Post-Migration, BLUE+RED canonical runtime)
+- **Systemstatus:** Runtime migriert auf BLUE+RED; base.yml + dev.yml sind CI/Legacy-only
 - **Offene Issues:** betreffen Ausbau, nicht Betrieb
 
 ---
@@ -150,7 +150,7 @@ Issues geschlossen: 202 / 300 (67.3%)
 │  Branches: 99 remote                        │
 │  Services: 9 healthy                        │
 │  Security: 4 Vulnerabilities behoben        │
-│  CI/CD: Grün mit Concurrency                │
+│  CI/CD: ci + policy-gate (required)          │
 └─────────────────────────────────────────────┘
 ```
 
@@ -183,11 +183,16 @@ cp .env.example .env
 # 4. Validate environment (Linux/Mac)
 ./infrastructure/scripts/validate-environment.sh
 
-# 5. Start the stack
-docker compose -f infrastructure/compose/dev.yml up -d
+# 5. Start the stack (canonical BLUE+RED runtime)
+docker network create cdb_network 2>/dev/null || true
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Legacy (CI/test only):
+# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
 
 # 6. Verify health
-docker compose -f infrastructure/compose/dev.yml ps
+make docker-health
 
 # 7. Access Grafana
 # http://localhost:3000 (admin / see GRAFANA_PASSWORD in secrets)

@@ -9,21 +9,21 @@
 
 ## 🎯 Essential Reading (30 min)
 
-### 1. System Context (5 min)
+### 1. README + Current Entry Chain (5 min)
+📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../CURRENT_STATUS.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
+**What:** Project overview, current runtime model, canonical compose layers, getting started
+
+### 2. System Context (5 min)
 📍 **Location:** `knowledge/SYSTEM.CONTEXT.md`
 **What:** Architecture, components, data flow
 
-### 2. Current Status (3 min)
+### 3. Current Status (3 min)
 📍 **Location:** `knowledge/CURRENT_STATUS.md`
 **What:** Latest sprint, resolved issues, active work
 
-### 3. Roadmap (10 min)
+### 4. Roadmap (10 min)
 📍 **Location:** `knowledge/roadmap/EXPANDED_ECOSYSTEM_ROADMAP.md`
 **What:** Milestones, timelines, epic structure
-
-### 4. Agent Guidelines (5 min)
-📍 **Location:** `agents/AGENTS.md`
-**What:** Multi-agent coordination, roles, delegation rules
 
 ### 5. CLAUDE.md (Session Lead Rules) (7 min)
 📍 **Location:** `CLAUDE.md`
@@ -54,8 +54,10 @@ pip install -r requirements-dev.txt
 # 4. Setup secrets (see SECRETS.md)
 # Copy .cdb_local.secrets/ to C:/Users/<you>/Documents/.secrets/.cdb/
 
-# 5. Start Docker stack
-docker-compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+# 5. Start Docker stack (canonical BLUE+RED runtime)
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # 6. Verify stack
 docker ps --filter "name=cdb_"
@@ -111,7 +113,7 @@ docker ps --filter "name=cdb_"
 
 ### "I need to understand how secrets work"
 1. Architecture: `knowledge/SYSTEM.CONTEXT.md` (secrets section)
-2. Config: `infrastructure/compose/base.yml` (secrets: section)
+2. Config: canonical BLUE+RED compose files (`infrastructure/compose/compose.blue.yml`)
 3. Local setup: `.cdb_local.secrets/` directory structure
 
 ---

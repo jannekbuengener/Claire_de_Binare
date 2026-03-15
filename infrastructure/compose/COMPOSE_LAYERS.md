@@ -4,22 +4,29 @@
 
 The Claire de Binare stack uses a **multi-layer compose architecture** to separate concerns and enable flexible configuration for different environments and use cases.
 
-## Canonical Files (Use These)
+## Canonical Runtime (Use These)
 
-### Base Layer
-- **`infrastructure/compose/base.yml`** - Canonical base configuration
+The normal operator/runtime path is **BLUE+RED**:
+- **`infrastructure/compose/compose.blue.yml`** - Core trading stack
+- **`infrastructure/compose/compose.red.yml`** - Optional signals + monitoring
+
+See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
+
+### Legacy Base Layer (CI-Only)
+- **`infrastructure/compose/base.yml`** - Legacy base configuration
   - Core infrastructure services (Redis, Postgres, Prometheus, Grafana)
   - Production-ready defaults (no port bindings, secret-based auth)
   - Healthchecks for infrastructure services
   - Network: `cdb_network` (bridge)
+  - **Active CI consumers:** `shadow-soak-evidence.yml`, `e2e.yml`, `e2e-tests.yml`
 
-### Profile Overlays
+### Legacy Profile Overlays (CI-Only)
 - **`infrastructure/compose/dev.yml`** - Development profile
   - Port bindings for local access (127.0.0.1 only)
   - Application services:
-    - ✅ Active: cdb_signal, cdb_risk, cdb_execution, cdb_db_writer
-    - ⏸️ Disabled (missing config): cdb_allocation, cdb_regime
-    - ⏸️ Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
+    - Active: cdb_signal, cdb_risk, cdb_execution, cdb_db_writer
+    - Disabled (missing config): cdb_allocation, cdb_regime
+    - Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
   - Debug volumes (logs mounted for easy access)
   - Port mappings: Fixed to match Dockerfile EXPOSE directives (PORT:PORT instead of PORT:8000)
 

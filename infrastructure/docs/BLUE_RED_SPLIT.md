@@ -181,9 +181,9 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 **Impact:** Trading stops completely.
 
 **Recovery:**
-1. Check service health: `docker compose -f compose.blue.yml ps`
+1. Check service health: `docker compose -f infrastructure/compose/compose.blue.yml ps`
 2. Check allocation: `curl http://localhost:8002/status | jq .allocation_state`
-3. Review logs: `docker compose -f compose.blue.yml logs risk allocation regime`
+3. Review logs: `docker compose -f infrastructure/compose/compose.blue.yml logs cdb_risk cdb_allocation cdb_regime`
 4. Run smoke test: `.\infrastructure\scripts\smoke_test.ps1`
 
 ### RED Stack Failure
@@ -193,22 +193,20 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 **Recovery:**
 1. BLUE continues operating (verify with smoke test using manual injection)
 2. Fix RED issue independently
-3. Restart RED: `docker compose -f compose.red.yml restart`
+3. Restart RED: `docker compose -f infrastructure/compose/compose.red.yml restart`
 
 ---
 
 ## Migration from Legacy Compose
 
-**Legacy:** `docker compose -f base.yml -f dev.yml up -d`
+**Legacy (CI-only):** `base.yml + dev.yml` remain for CI/test workflows
+(e.g., `shadow-soak-evidence.yml`, `e2e.yml`). They are not the normal
+operator runtime path.
 
-**New:**
-```powershell
-# Replace with BLUE+RED
-docker compose -f base.yml -f dev.yml down
-.\infrastructure\scripts\setup_blue_red.ps1
-```
+**Canonical runtime:** BLUE+RED via `setup_blue_red.ps1` or manual
+`docker compose -f infrastructure/compose/compose.blue.yml up -d`.
 
-**Differences:**
+**Differences from the old single-stack layout:**
 - Network must be created manually once
 - Two separate compose projects (independent lifecycles)
 - Explicit dependency management (no hidden coupling)

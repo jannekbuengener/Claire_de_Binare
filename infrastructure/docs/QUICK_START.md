@@ -72,8 +72,7 @@ cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 
 **Step 1: Start BLUE (Core)**
 ```powershell
-cd infrastructure\compose
-docker compose -f compose.blue.yml up -d
+docker compose -f infrastructure\compose\compose.blue.yml up -d
 ```
 
 **Step 2: Verify Core Flow**
@@ -83,7 +82,7 @@ docker compose -f compose.blue.yml up -d
 
 **Step 3: Start RED (Optional)**
 ```powershell
-docker compose -f compose.red.yml up -d
+docker compose -f infrastructure\compose\compose.red.yml up -d
 ```
 
 ---
@@ -135,9 +134,8 @@ docker compose -f infrastructure\compose\compose.blue.yml logs --tail 500 | Sele
 
 **BLUE + RED:**
 ```powershell
-cd infrastructure\compose
-docker compose -f compose.blue.yml down
-docker compose -f compose.red.yml down
+docker compose -f infrastructure\compose\compose.blue.yml down
+docker compose -f infrastructure\compose\compose.red.yml down
 ```
 
 **BLUE Only:**
@@ -424,18 +422,11 @@ docker logs cdb_risk --tail 50 -f
 
 ---
 
-### Migrate Back to Legacy Compose
+### Legacy Compose (CI-Only)
 
-```powershell
-# Stop BLUE/RED
-docker compose -f infrastructure\compose\compose.blue.yml down
-docker compose -f infrastructure\compose\compose.red.yml down
-
-# Start legacy
-docker compose -f infrastructure\compose\base.yml -f infrastructure\compose\dev.yml up -d
-```
-
-**Note:** Legacy compose may have node_exporter removed.
+Legacy compose (`base.yml + dev.yml`) remains only for CI/test workflows
+(e.g., `shadow-soak-evidence.yml`, `e2e.yml`). It is not the normal
+operator runtime path. See `COMPOSE_LAYERS.md` for details.
 
 ---
 

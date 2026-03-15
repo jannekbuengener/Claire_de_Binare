@@ -7,8 +7,9 @@
 
 ---
 
-## System Status: ✅ OPERATIONAL
+## System Status: NO-GO (Post-Migration)
 
+**Runtime:** BLUE+RED canonical (compose.blue.yml + compose.red.yml)
 **Trading Pipeline:** STABLE END-TO-END
 ```
 MEXC WebSocket → cdb_ws (protobuf decode) → Redis (pub/sub) → cdb_signal
@@ -380,7 +381,8 @@ Pipeline: cdb_ws (OK) → cdb_signal (0 signals) → cdb_risk (0 orders) → cdb
 ## Infrastructure
 
 ### Docker Compose
-**Config:** `infrastructure/compose/dev.yml`
+**Canonical Runtime:** `infrastructure/compose/compose.blue.yml` + `compose.red.yml`
+**Legacy (CI/test only):** `infrastructure/compose/base.yml` + `dev.yml`
 
 **Active Feature Flags:**
 - `WS_SOURCE=mexc_pb` (MEXC WebSocket Protobuf mode)

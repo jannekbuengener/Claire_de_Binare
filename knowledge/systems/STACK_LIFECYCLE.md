@@ -1,10 +1,13 @@
-# Stack Lifecycle - Canonical Path
+# Stack Lifecycle
 
-**Single source of truth for Claire de Binare Docker stack operations.**
+**Reference for Claire de Binare Docker stack operations.**
 
 ## Philosophy
 
-**ONE path for each operation. No alternatives. No ambiguity.**
+**Canonical runtime:** BLUE+RED (`compose.blue.yml` + `compose.red.yml`).
+Start via `setup_blue_red.ps1` or manual `docker compose -f compose.blue.yml up -d` + `compose.red.yml`.
+The legacy `base.yml + dev.yml` path remains available for CI/test and explicit compatibility flows only.
+Note: `make docker-up` currently still starts the legacy stack (migration pending).
 
 ---
 
@@ -14,7 +17,8 @@ Before any stack operation:
 
 ```powershell
 # Verify you're in project root
-Test-Path infrastructure/compose/base.yml  # Must return True
+Test-Path infrastructure/compose/compose.blue.yml  # Must return True (canonical)
+# Legacy check: Test-Path infrastructure/compose/base.yml
 
 # Verify .env exists
 Test-Path .env  # Must return True (copy from .env.example if missing)
@@ -27,20 +31,43 @@ docker info  # Must succeed (no errors)
 
 ## Canonical Compose Configuration
 
-### File Hierarchy (Fixed)
+### File Hierarchy
 
 ```
 infrastructure/compose/
-├── base.yml                 # Core infrastructure (ALWAYS required)
-├── dev.yml                  # Development overlay (DEFAULT)
-├── prod.yml                 # Production overlay (use in production)
+├── compose.blue.yml         # BLUE stack (CANONICAL runtime)
+├── compose.red.yml          # RED stack (CANONICAL runtime)
+├── base.yml                 # Core infrastructure (LEGACY - CI/test only)
+├── dev.yml                  # Development overlay (LEGACY - CI/test only)
+├── prod.yml                 # Production overlay (LEGACY)
 ├── test.yml                 # Test overlay (E2E tests only)
 └── logging.yml              # Logging overlay (optional)
 ```
 
-### Deterministic Composition
+### Canonical Runtime (BLUE+RED)
 
-**Development (DEFAULT):**
+```powershell
+# One-time network setup
+docker network create cdb_network
+
+# Start canonical runtime
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Or via script:
+.\infrastructure\scripts\setup_blue_red.ps1
+
+# Stop
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+
+# Health check
+make docker-health
+```
+
+### Legacy Composition (CI/test only)
+
+**Development (legacy):**
 ```powershell
 docker compose \
   -f infrastructure/compose/base.yml \
@@ -48,7 +75,7 @@ docker compose \
   up -d
 ```
 
-**Production:**
+**Production (legacy):**
 ```powershell
 docker compose \
   -f infrastructure/compose/base.yml \
@@ -72,11 +99,13 @@ docker compose \
 
 **Command (Dev):**
 ```powershell
-make docker-up
+# Canonical BLUE+RED
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 **What it does:**
-1. Reads `infrastructure/compose/base.yml` + `dev.yml`
+1. Reads BLUE+RED compose files
 2. Creates network (`cdb_network`)
 3. Creates volumes (redis_data, postgres_data, etc.)
 4. Starts infrastructure services (Redis, Postgres, Prometheus, Grafana)
@@ -189,8 +218,10 @@ docker logs cdb_<service_name> --tail 50
 # 2. Check health endpoint (if service has one)
 curl http://localhost:<port>/health
 
-# 3. If persistent unhealthy, restart service
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart <service_name>
+# 3. If persistent unhealthy, restart specific stack
+docker compose -f infrastructure/compose/compose.blue.yml restart <service_name>
+# or for RED services:
+docker compose -f infrastructure/compose/compose.red.yml restart <service_name>
 ```
 
 ---
@@ -430,8 +461,10 @@ docker logs cdb_<unhealthy_service> --tail 100
 # - Connection refused → Check dependent service healthy
 # - Port conflict → Check no other process using port
 
-# 4. Restart unhealthy service
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart <service>
+# 4. Restart unhealthy service (canonical)
+docker compose -f infrastructure/compose/compose.blue.yml restart <service>
+# For RED services:
+# docker compose -f infrastructure/compose/compose.red.yml restart <service>
 
 # 5. If still unhealthy after 3 restart attempts, RESET
 make docker-down
@@ -461,7 +494,7 @@ cat backup_YYYYMMDD_HHMMSS.sql | docker exec -i cdb_postgres psql -U cdb_user -d
 
 # Restore Redis
 docker cp redis_backup_YYYYMMDD_HHMMSS.rdb cdb_redis:/data/dump.rdb
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart cdb_redis
+docker compose -f infrastructure/compose/compose.blue.yml restart cdb_redis
 ```
 
 ---
@@ -470,7 +503,7 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.
 
 | Symptom | Likely Cause | Fix |
 |---------|--------------|-----|
-| `make docker-up` fails immediately | Compose file syntax error | Run `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml config` to validate |
+| Compose startup fails immediately | Compose file syntax error | Run `docker compose -f infrastructure/compose/compose.blue.yml config` to validate |
 | Container exits immediately | Missing ENV variable | Check `.env` file complete |
 | Health check stuck "starting" | Dependent service not healthy | Check `docker-health`, fix dependencies first |
 | Port conflict error | Another process using port | `netstat -ano \| Select-String <port>`, kill conflicting process |
@@ -490,5 +523,5 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.
 
 ---
 
-**Last Updated:** 2025-12-27
-**Status:** ✅ Canonical (Issue #242)
+**Last Updated:** 2026-03-15
+**Status:** Updated for BLUE+RED canonical runtime (Issue #1139)

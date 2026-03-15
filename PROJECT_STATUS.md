@@ -1,7 +1,7 @@
 # Claire de Binare - Project Status
 
 **Last Updated**: 2026-01-15
-**Status Type**: Service Implementation Audit
+**Status Type**: Service Implementation Audit (historical snapshot from 2026-01-15)
 **Related Issue**: #148
 **Auditor**: Claude Code (autonomous)
 
@@ -50,7 +50,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Service docstring present
-**Deployment**: ✅ dev.yml, test.yml, prod.yml
+**Deployment**: BLUE+RED canonical runtime (compose.blue.yml + compose.red.yml); base.yml/dev.yml retained for CI/test only
 
 ---
 
@@ -76,7 +76,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 
 ---
 
@@ -102,7 +102,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Service README
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 
 ---
 
@@ -128,7 +128,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 **Evidence**: Live operation validated in Issue #593
 
 ---
@@ -155,7 +155,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 **Evidence**: Live operation validated in Issue #593 (2296 fills processed, event-driven emission working)
 
 ---
@@ -183,7 +183,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Comprehensive tests (unit + contract)
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 **Evidence**:
 - Exposure gate math validated in Issue #592 (80 BUY, 76 SELL ratio perfect)
 - Reduce-only logic tested and working
@@ -214,7 +214,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 **Security**: ✅ aiohttp CVE-2025-69223 resolved (validated Issue #581)
 
 ---
@@ -245,7 +245,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 - PostgreSQL constraint validation
 
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 **Evidence**: Contract test suite validates schema compliance (Issue #595)
 
 ---
@@ -272,7 +272,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ Tests present
 **Documentation**: ✅ Documented
-**Deployment**: ✅ All compose files
+**Deployment**: BLUE+RED canonical runtime
 
 ---
 
@@ -296,7 +296,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 
 **Test Coverage**: ✅ E2E smoke tests present (test_smoke_pipeline.py)
 **Documentation**: ✅ Documented
-**Deployment**: ✅ dev.yml with environment variables
+**Deployment**: BLUE+RED canonical runtime; base.yml/dev.yml retained for CI/test only
 **Evidence**:
 - PAPER_AUTO_UNWIND wired in compose (Issue #588)
 - E2E validation completed (Issues #589-#591)
@@ -362,7 +362,7 @@ Each service is considered **"COMPLETE"** when ALL of the following criteria are
 - [ ] API/interface documented
 
 ### Deployment ✅
-- [ ] Service defined in docker-compose (dev.yml minimum)
+- [ ] Service defined in canonical compose (BLUE+RED runtime)
 - [ ] Environment variables configured
 - [ ] Secrets management integrated
 - [ ] Resource limits defined (memory.yml)
@@ -480,8 +480,8 @@ Deploy services in this order to ensure dependencies are ready:
 
 #### Phase 1: Infrastructure (5 minutes)
 ```bash
-# Start infrastructure first
-docker compose -f infrastructure/compose/base.yml up -d
+# Start the canonical BLUE+RED runtime
+make docker-up
 # Wait for health checks:
 # - cdb_redis (port 6379)
 # - cdb_postgres (port 5432)
@@ -543,10 +543,13 @@ docker compose up -d cdb_market
 
 For development/testing, use:
 ```bash
-# Start all services at once (docker-compose handles dependencies)
-docker compose -f infrastructure/compose/dev.yml up -d
+# Start all services at once via the canonical BLUE+RED runtime
+make docker-up
 # Wait for all health checks to pass (~5 minutes)
 ```
+
+> **Note:** `base.yml + dev.yml` remain only for CI/test and explicit legacy/debug
+> flows; they are not the normal operator/runtime path.
 
 ---
 

@@ -1,6 +1,6 @@
 # Soak/Shadow Mode Resource Limits
 # Reduces I/O and memory pressure for long-running stability tests
-# Use: docker compose -f base.yml -f dev.yml -f soak.yml up
+# Overlay for CI shadow-soak workflows; not part of the normal BLUE+RED runtime start path
 
 services:
 

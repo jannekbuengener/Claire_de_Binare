@@ -1,7 +1,7 @@
 # CDB Documentation - Consolidated Links
 
 **Team:** B (Dev-Stream)
-**Purpose:** Single source of truth for all documentation locations
+**Purpose:** Consolidated documentation reference
 **Date:** 2025-12-29
 **Status:** Deliverable - Onboarding Pointer Pack
 
@@ -38,9 +38,9 @@ Claire_de_Binare/
 ## 🎯 Quick Navigation
 
 ### New Developer? Start Here:
-1. 📄 [ONBOARDING_QUICK_START.md](ONBOARDING_QUICK_START.md) (30 min)
-2. 📄 [knowledge/SYSTEM.CONTEXT.md](../knowledge/SYSTEM.CONTEXT.md) (architecture)
-3. 📄 [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
+1. `README.md` -> [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) -> [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md) -> [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md) (current entry chain)
+2. [knowledge/SYSTEM.CONTEXT.md](../SYSTEM.CONTEXT.md) (architecture)
+3. [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
 
 ### Working on Code? Check:
 1. 📄 [CONTRACTS.md](CONTRACTS.md) (message schemas)
@@ -87,8 +87,9 @@ Claire_de_Binare/
 ### Infrastructure
 | Document | Purpose | Location |
 |----------|---------|----------|
-| Docker Compose (base) | Core services | `/infrastructure/compose/base.yml` |
-| Docker Compose (dev) | Dev overrides | `/infrastructure/compose/dev.yml` |
+| Compose Layers | Canonical runtime topology | `/infrastructure/compose/COMPOSE_LAYERS.md` |
+| BLUE+RED Runtime | Canonical compose (operator/runtime) | `/infrastructure/compose/compose.blue.yml` + `compose.red.yml` |
+| Legacy Compose | CI/test and explicit debug only | `/infrastructure/compose/base.yml` + `dev.yml` |
 | Monitoring Config | Prometheus/Grafana | `/infrastructure/monitoring/` |
 
 ---
