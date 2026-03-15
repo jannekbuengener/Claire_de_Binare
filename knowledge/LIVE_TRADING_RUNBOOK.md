@@ -98,7 +98,8 @@ cdb_execution:
 ### Step 3: Deployment
 ```bash
 # Canonical (BLUE+RED)
-make docker-up
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Legacy (CI/test only):
 # cd infrastructure/compose
@@ -140,9 +141,11 @@ docker stop cdb_execution
 # 2. Cancel all open MEXC orders (manual via MEXC UI or API)
 
 # 3. Restore Paper Mode (canonical: BLUE+RED)
-make docker-down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
 # Revert MOCK_TRADING/USE_REAL_BALANCE in compose.blue.yml / compose.red.yml
-make docker-up
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Legacy (CI/test only):
 # git checkout infrastructure/compose/dev.yml

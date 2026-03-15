@@ -10,7 +10,7 @@
 ## 🎯 Essential Reading (30 min)
 
 ### 1. README + Current Entry Chain (5 min)
-📍 **Start:** `README.md` then `CURRENT_STATUS.md`, `COMPOSE_LAYERS.md`, `QUICK_START.md`
+📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../CURRENT_STATUS.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
 **What:** Project overview, current runtime model, canonical compose layers, getting started
 
 ### 2. System Context (5 min)
@@ -55,7 +55,9 @@ pip install -r requirements-dev.txt
 # Copy .cdb_local.secrets/ to C:/Users/<you>/Documents/.secrets/.cdb/
 
 # 5. Start Docker stack (canonical BLUE+RED runtime)
-make docker-up
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # 6. Verify stack
 docker ps --filter "name=cdb_"

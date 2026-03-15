@@ -183,7 +183,7 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 **Recovery:**
 1. Check service health: `docker compose -f infrastructure/compose/compose.blue.yml ps`
 2. Check allocation: `curl http://localhost:8002/status | jq .allocation_state`
-3. Review logs: `docker compose -f infrastructure/compose/compose.blue.yml logs risk allocation regime`
+3. Review logs: `docker compose -f infrastructure/compose/compose.blue.yml logs cdb_risk cdb_allocation cdb_regime`
 4. Run smoke test: `.\infrastructure\scripts\smoke_test.ps1`
 
 ### RED Stack Failure

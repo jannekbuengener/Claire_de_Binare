@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Erstellt:** 2025-12-28
-**Status:** Legacy-Kompatibilitaet (kanonischer Pfad ist BLUE+RED via `make docker-up`)
+**Status:** Legacy-Kompatibilitaet (kanonischer Pfad ist BLUE+RED via `compose.blue.yml` + `compose.red.yml`)
 **Pruefintervall:** Bei jedem Session-Start
 
 ---
@@ -13,19 +13,25 @@
 
 ```powershell
 # Kanonischer Operator-Pfad
-make docker-up
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Oder via Script:
+.\infrastructure\scripts\setup_blue_red.ps1
 
 # Health pruefen
 make docker-health
 
 # Stoppen
-make docker-down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
 ```
 
 ### Stack starten (Legacy, CI/test only)
 
 ```powershell
-# Legacy Dev Stack (erfordert CDB_LEGACY_COMPOSE_OK=1 fuer stack_up.ps1)
+# Legacy Dev Stack
 .\infrastructure\scripts\stack_up.ps1 -Profile dev
 
 # Mit Logging (Loki + Promtail)
@@ -42,13 +48,11 @@ make docker-down
 
 ```powershell
 # Kanonisch
-make docker-down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
 
 # Legacy (CI/test only):
 # docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down
-
-# Mit Volume-Cleanup (ACHTUNG: loescht Daten!) - Legacy:
-# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
 ```
 
 ### Stack verifizieren
@@ -155,8 +159,8 @@ Zugriff ueber Grafana: http://127.0.0.1:3000
 
 ```powershell
 # Kanonisch: Full-Stack restart
-make docker-down
-make docker-up
+docker compose -f infrastructure/compose/compose.blue.yml restart
+docker compose -f infrastructure/compose/compose.red.yml restart
 
 # Legacy (CI/test only): Einzelnen Service neu starten
 # docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart cdb_signal
@@ -165,7 +169,7 @@ make docker-up
 ### Service Rebuild
 
 ```powershell
-# Legacy (CI/test only, erfordert CDB_LEGACY_COMPOSE_OK=1 fuer stack_up.ps1):
+# Legacy (CI/test only):
 .\infrastructure\scripts\stack_up.ps1 -Profile dev -Rebuild
 
 # Oder manuell (legacy):
@@ -285,7 +289,8 @@ URL: http://127.0.0.1:3000
 
 ```powershell
 # Emergency Stop - kanonisch
-make docker-down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
 
 # Legacy (CI/test only):
 # docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml stop
@@ -295,15 +300,17 @@ make docker-down
 
 ```powershell
 # Kanonisch: stoppen und aufraeuumen
-make docker-down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
 docker system prune -f
 
 # Neu starten
-make docker-up
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Legacy (CI/test only):
 # docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
-# .\infrastructure\scripts\stack_up.ps1 -Profile dev  # erfordert CDB_LEGACY_COMPOSE_OK=1
+# .\infrastructure\scripts\stack_up.ps1 -Profile dev
 ```
 
 ---

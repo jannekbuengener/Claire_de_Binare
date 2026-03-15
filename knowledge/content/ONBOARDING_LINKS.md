@@ -38,8 +38,8 @@ Claire_de_Binare/
 ## 🎯 Quick Navigation
 
 ### New Developer? Start Here:
-1. `README.md` -> `CURRENT_STATUS.md` -> `COMPOSE_LAYERS.md` -> `QUICK_START.md` (current entry chain)
-2. [knowledge/SYSTEM.CONTEXT.md](../knowledge/SYSTEM.CONTEXT.md) (architecture)
+1. `README.md` -> [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) -> [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md) -> [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md) (current entry chain)
+2. [knowledge/SYSTEM.CONTEXT.md](../SYSTEM.CONTEXT.md) (architecture)
 3. [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
 
 ### Working on Code? Check:
@@ -87,7 +87,7 @@ Claire_de_Binare/
 ### Infrastructure
 | Document | Purpose | Location |
 |----------|---------|----------|
-| Compose Layers | Canonical runtime topology | `/docs/COMPOSE_LAYERS.md` |
+| Compose Layers | Canonical runtime topology | `/infrastructure/compose/COMPOSE_LAYERS.md` |
 | BLUE+RED Runtime | Canonical compose (operator/runtime) | `/infrastructure/compose/compose.blue.yml` + `compose.red.yml` |
 | Legacy Compose | CI/test and explicit debug only | `/infrastructure/compose/base.yml` + `dev.yml` |
 | Monitoring Config | Prometheus/Grafana | `/infrastructure/monitoring/` |

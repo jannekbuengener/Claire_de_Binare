@@ -184,9 +184,11 @@ cp .env.example .env
 ./infrastructure/scripts/validate-environment.sh
 
 # 5. Start the stack (canonical BLUE+RED runtime)
-make docker-up
+docker network create cdb_network 2>/dev/null || true
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
-# Legacy/CI-only alternative (requires CDB_LEGACY_COMPOSE_OK=1):
+# Legacy (CI/test only):
 # docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
 
 # 6. Verify health
