@@ -2412,8 +2412,18 @@ if _FLASK_AVAILABLE:
             f"risk_reduce_only_approved_total {stats.get('reduce_only_approved', 0)}\n\n"
             "# HELP risk_proactive_unwind_triggered_total Proactive auto-unwind triggers (SELL orders generated when over limit)\n"
             "# TYPE risk_proactive_unwind_triggered_total counter\n"
-            f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n"
+            f"risk_proactive_unwind_triggered_total {stats.get('proactive_unwind_triggered', 0)}\n\n"
+            "# HELP risk_alerts_generated_total Alerts published to alerts topic\n"
+            "# TYPE risk_alerts_generated_total counter\n"
+            f"risk_alerts_generated_total {stats['alerts_generated']}\n\n"
+            "# HELP risk_kill_switch_active Kill-switch state (1=active/trading halted, 0=inactive/unknown)\n"
+            "# TYPE risk_kill_switch_active gauge\n"
         )
+        try:
+            ks_active = 1 if get_kill_switch_details(create_if_missing=False)[0] else 0
+        except Exception:
+            ks_active = 0  # conservative: report inactive on read failure
+        body += f"risk_kill_switch_active {ks_active}\n"
         return Response(body, mimetype="text/plain")
 
 else:
