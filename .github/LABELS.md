@@ -61,6 +61,19 @@ Zusätzlich:
 | `status:in-review` | PR offen |
 | `status:wontfix` | Wird nicht bearbeitet |
 
+> **Hinweis:** Dies ist die kanonische `status:*`-Menge. Alte Labels wie
+> `status:idea`, `status:approved`, `status:review`, `status:merged`,
+> `status:descoped`, `status:rejected` sind **nicht** kanonisch und werden
+> weder in Workflows noch im Board-Mapping verwendet. Project-v2-Statuswerte
+> (`Backlog`, `Ready`, `In Progress`, `Review`, `Done`) sind Board-Feldwerte,
+> keine Labels.
+
+### Triage
+
+| Label | Beschreibung |
+|-------|-------------|
+| `triage:offen` | Offenes Item ohne Milestone — Triage erforderlich |
+
 ### Tech Tags (Optional)
 
 | Label | Verwendung |

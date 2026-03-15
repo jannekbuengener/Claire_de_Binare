@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           SPEC_PATH="${{ vars.LABEL_SPEC_PATH }}"
-          if [ -z "$SPEC_PATH" ]; then SPEC_PATH=".github/labels.json"; fi
+          if [ -z "$SPEC_PATH" ]; then SPEC_PATH=".github/workflows/labels.json"; fi
           if [ ! -f "$SPEC_PATH" ]; then
             echo "Label spec not found at: $SPEC_PATH"
             echo "Set vars.LABEL_SPEC_PATH or commit .github/labels.json"

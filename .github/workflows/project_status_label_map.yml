@@ -163,17 +163,19 @@ jobs:
             exit 0
           fi
 
+          # Canonical status label mapping (#169).
+          # Only the repo-canonical status:* labels are used here.
+          # Project-v2 field values (Backlog/Ready/In Progress/Review/Blocked/Done)
+          # are board-level state, not a second label family.
           if [[ "$action" == "closed" ]]; then
             target_status="Done"
-          elif has_label "status:in-progress"; then
-            target_status="In Progress"
-          elif has_label "status:review"; then
+          elif has_label "status:blocked"; then
+            target_status="Blocked"
+          elif has_label "status:in-review"; then
             target_status="Review"
-          elif has_label "status:approved"; then
+          elif has_label "status:ready"; then
             target_status="Ready"
-          elif has_label "status:idea"; then
-            target_status="Backlog"
-          elif has_label "status:merged" || has_label "status:descoped" || has_label "status:rejected"; then
+          elif has_label "status:wontfix"; then
             target_status="Done"
           else
             target_status="$default_status"

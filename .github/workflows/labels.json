@@ -24,6 +24,8 @@
     { "name": "status:in-review", "color": "ffa500", "description": "Im Review (PR offen)" },
     { "name": "status:wontfix", "color": "666666", "description": "Wird nicht bearbeitet" },
 
+    { "name": "triage:offen", "color": "e4e669", "description": "Offenes Item ohne Milestone — Triage erforderlich" },
+
     { "name": "python", "color": "3572a5", "description": "Python-Code, Typisierung, Dependencies" },
     { "name": "docker", "color": "21ceff", "description": "Docker, Compose, Images" },
     { "name": "redis", "color": "dc382d", "description": "Redis Pub/Sub, Streams" },

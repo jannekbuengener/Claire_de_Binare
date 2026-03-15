@@ -154,6 +154,9 @@ jobs:
             esac
           }
 
+          # Canonical status label mapping (#169).
+          # Only the repo-canonical status:* labels are used here.
+          # Project-v2 field values are board-level state, not a second label family.
           desired_status_from_item() {
             local item_type="$1"
             local item_state="$2"
@@ -166,17 +169,13 @@ jobs:
               return
             fi
 
-            if has_label_in_json "$labels_json" "status:in-progress"; then
-              echo "In Progress"
-            elif has_label_in_json "$labels_json" "status:review"; then
+            if has_label_in_json "$labels_json" "status:blocked"; then
+              echo "Blocked"
+            elif has_label_in_json "$labels_json" "status:in-review"; then
               echo "Review"
-            elif has_label_in_json "$labels_json" "status:approved"; then
+            elif has_label_in_json "$labels_json" "status:ready"; then
               echo "Ready"
-            elif has_label_in_json "$labels_json" "status:idea"; then
-              echo "Backlog"
-            elif has_label_in_json "$labels_json" "status:merged" \
-              || has_label_in_json "$labels_json" "status:descoped" \
-              || has_label_in_json "$labels_json" "status:rejected"; then
+            elif has_label_in_json "$labels_json" "status:wontfix"; then
               echo "Done"
             elif [[ "$item_type" == "PullRequest" ]]; then
               echo "Review"

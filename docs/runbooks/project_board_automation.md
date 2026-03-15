@@ -10,7 +10,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 2. Jedes offene Issue/PR hat genau 1 Milestone.
 3. `stage:*` Labels spiegeln den Milestone 1:1 (mutually exclusive).
 4. Pro Item gibt es also maximal ein `stage:*` Label.
-5. `status:*` Labels steuern den gewünschten Kanban-Status im Board.
+5. `status:*` Labels (kanonisch: `ready`, `blocked`, `in-review`, `wontfix`) steuern den gewünschten Kanban-Status im Board.
 6. Project v2 #8 ist das visuelle Cockpit für Priorisierung und Fluss.
 7. Neue Issues/PRs werden automatisch in das Project importiert.
 8. Neue Issues/PRs erhalten automatisch einen Default-Status (Issue=`Backlog`, PR=`Review`).
@@ -37,16 +37,18 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
   - `stage:strategy-validated`
   - `stage:monetization`
   - `stage:scale`
-- `status:*` Labels (Kanban-Status):
-  - `status:idea`
-  - `status:approved`
-  - `status:in-progress`
-  - `status:review`
-  - `status:merged`
-  - `status:descoped`
-  - `status:rejected`
+- `status:*` Labels (kanonische Menge, siehe `.github/LABELS.md`):
+  - `status:ready` — Bereit zur Bearbeitung
+  - `status:blocked` — Blockiert (Dependency/Admin)
+  - `status:in-review` — PR offen
+  - `status:wontfix` — Wird nicht bearbeitet
 - Triage-Label:
-  - `triage:offen` (offenes Item ohne Milestone)
+  - `triage:offen` — Offenes Item ohne Milestone, Triage erforderlich
+- **Nicht mehr kanonisch:** `status:idea`, `status:approved`, `status:in-progress`,
+  `status:review`, `status:merged`, `status:descoped`, `status:rejected`.
+  Diese alten Labels werden weder im Board-Mapping noch in Workflows verwendet.
+- **Abgrenzung:** Project-v2-Statuswerte (`Backlog`, `Ready`, `In Progress`,
+  `Review`, `Blocked`, `Done`) sind Board-Feldwerte, keine Labels.
 
 ## Automationen (Workflow-Dateien)
 
@@ -72,7 +74,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 
 - Öffne die View `EINGANG` und arbeite nur Items mit `triage:offen` ab (offen, ohne Milestone).
 - Weise jedem Item zuerst einen der 6 Milestones zu; dadurch entfernt `triage_guard` das Label automatisch.
-- Setze danach optional `status:*` Labels (z. B. `status:approved` / `status:in-progress`), damit das Board den Kanban-Status korrekt zieht.
+- Setze danach optional `status:*` Labels (z. B. `status:ready` / `status:in-review`), damit das Board den Kanban-Status korrekt zieht.
 
 ## Weekly Digest (operativ, kurz)
 
