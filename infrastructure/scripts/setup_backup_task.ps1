@@ -27,8 +27,11 @@ Write-Host ""
 Write-Host "[INFO] Administrator-Rechte erkannt" -ForegroundColor Green
 
 # Task Configuration
+# NOTE: Points to consolidated backup_all.ps1 (Postgres + Redis).
+#       If a previous task "Claire_Hourly_Backup" exists pointing to
+#       backup_postgres.ps1, re-running this script will replace it.
 $taskName = "Claire_Hourly_Backup"
-$scriptPath = Join-Path $PSScriptRoot "backup_postgres.ps1"
+$scriptPath = Join-Path $PSScriptRoot "backup_all.ps1"
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptPath`""
 
 # Trigger: Every hour, starting at midnight
@@ -53,7 +56,7 @@ try {
     }
 
     # Register new task
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Stundliche PostgreSQL Backups fur Claire de Binare Paper Trading (14 Tage)"
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Stundliche Postgres+Redis Backups fur Claire de Binare (14 Tage Retention)"
 
     Write-Host ""
     Write-Host "[OK] Task erfolgreich erstellt!" -ForegroundColor Green

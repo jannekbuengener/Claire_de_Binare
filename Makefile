@@ -7,7 +7,7 @@
 #     - pytest.ini
 #     - infrastructure/scripts/systemcheck.py
 #     - infrastructure/scripts/daily_check.py
-#     - infrastructure/scripts/backup_postgres.ps1
+#     - infrastructure/scripts/backup_all.ps1
 #   downstream: []
 #   invariants:
 #     - docker must be installed and in PATH.
@@ -18,7 +18,7 @@
 
 MCP_CONFIG_PATHS ?=
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -52,7 +52,10 @@ help:
 	@echo "  make paper-trading-logs      - Zeige Paper Trading Logs (live)"
 	@echo "  make paper-trading-stop      - Stoppe Paper Trading Runner"
 	@echo "  make daily-check             - Täglicher Gesundheitscheck"
-	@echo "  make backup                  - PostgreSQL Backup (manuell)"
+	@echo "  make backup                  - Konsolidiertes Backup (Postgres + Redis)"
+	@echo "  make backup-postgres-only    - Legacy PostgreSQL-only Backup"
+	@echo "  make restore                 - Restore aus F:\\Claire_Backups"
+	@echo "  make backup-health           - Backup-Aktualitaet pruefen"
 	@echo ""
 	@echo "Repo-Hygiene & Rollback:"
 	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
@@ -189,8 +192,20 @@ daily-check:
 	python infrastructure/scripts/daily_check.py
 
 backup:
-	@echo "💾 Führe PostgreSQL Backup aus..."
+	@echo "💾 Führe konsolidiertes Backup aus (Postgres + Redis)..."
+	powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/backup_all.ps1
+
+backup-postgres-only:
+	@echo "💾 Führe PostgreSQL-only Backup aus (Legacy)..."
 	powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/backup_postgres.ps1
+
+restore:
+	@echo "🔄 Restore aus F:\\Claire_Backups (interaktiv)..."
+	powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.ps1
+
+backup-health:
+	@echo "🏥 Prüfe Backup-Aktualität..."
+	powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/backup_health_check.ps1
 
 paper-trading-start: systemcheck
 	@echo "🚀 Starte Paper Trading Runner..."
