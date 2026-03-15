@@ -93,7 +93,6 @@ Verified locally:
 - `pwsh -File tools/enforce-root-baseline.ps1 -DryRun`
 - `python scripts/governance/check_risk_events_schema_contract.py`
 - `pytest -q tests/unit/scripts/test_docs_hub_rag_adapter.py`
-- `python -c "from infrastructure.scripts.discussion_pipeline.utils.config_loader import ConfigLoader; ..."`
 - `python infrastructure/scripts/docs_hub_rag_adapter.py preview --limit 1`
 
 All checks passed with the working repo as the active docs source.

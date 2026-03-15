@@ -90,15 +90,9 @@ Line 294: print(f"Next: Fill in TODOs in {__file__}")
 
 ---
 
-### 4. Infrastructure (1 TODO) - SEVERITY: LOW
+### 4. Infrastructure (0 TODOs) - SEVERITY: NONE
 
-#### scripts/discussion_pipeline/agents/base.py (1 TODO)
-```python
-Line 125: TODO: Extract to prompts.py in Phase 2
-```
-**Impact:** Code organization/refactoring
-**Risk Level:** LOW - Discussion pipeline is operational
-**Recommendation:** Defer to future cleanup sprint
+_Discussion pipeline was decommissioned and removed (#1157)._
 
 ---
 
@@ -242,10 +236,9 @@ services/market/service.py (3)
 services/market/email_alerter.py (5)
 tests/unit/execution/test_service.py (4)
 scripts/dimensionality_audit/measure_dimensionality.py (15)
-scripts/discussion_pipeline/agents/base.py (1)
 ```
 
-**Total:** 5 files, 28 TODOs
+**Total:** 4 files, 27 TODOs
 
 ---
 

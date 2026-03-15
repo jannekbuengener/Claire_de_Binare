@@ -33,7 +33,6 @@ The following work is already done:
 - agent startup or canonical read order
 - governance or knowledge lookup
 - issue-template or GitHub-community files
-- discussion pipeline config resolution
 - docs RAG adapter default resolution
 - navigation from the working repo
 
@@ -73,7 +72,6 @@ Recommended spot checks:
 
 - `pwsh -File tools/enforce-root-baseline.ps1 -DryRun`
 - `python scripts/governance/check_risk_events_schema_contract.py`
-- discussion pipeline resolves local canon paths
 
 ## Optional Backup Step
 

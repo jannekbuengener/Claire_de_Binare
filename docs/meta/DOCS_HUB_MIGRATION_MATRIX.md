@@ -43,7 +43,7 @@ paths; historical or broken material is kept only as local archive/quarantine.
 |---|---|---|---|---|
 | `knowledge/governance/` core policy stack | productive | `knowledge/governance/` | merge | Constitution, governance, policy stack, trust config, and invariants are required locally. |
 | `knowledge/agent_trust/` | productive | `knowledge/agent_trust/` | copy/merge | Schemas, rules, and ledgers remain part of the operating model. |
-| `knowledge/discussions/` | productive | `knowledge/discussions/` | copy/merge | Discussion pipeline config and issue drafts are still operationally relevant. |
+| `knowledge/discussions/` | retired | `knowledge/discussions/` | removed (#1157) | Discussion pipeline was decommissioned (see `knowledge/logs/decisions/DEPRECATE_DISCUSSION_PIPELINE.md`). |
 | `knowledge/runbooks/`, `knowledge/playbooks/`, `knowledge/operations/` | productive | `knowledge/` | copy/merge | Runbooks and operational notes belong in the consolidated repo. |
 | `knowledge/roadmap/`, `knowledge/decisions/`, `knowledge/contracts/`, `knowledge/testing/`, `knowledge/security/` | productive | `knowledge/` | copy/merge | These are genuine planning and system-knowledge assets. |
 | `knowledge/reviews/`, `knowledge/logs/`, `knowledge/archive/`, `knowledge/migrations/` | historical | `knowledge/` or `docs/archive/` | retain as local archive/history | Valuable for traceability, but not active canon. |
