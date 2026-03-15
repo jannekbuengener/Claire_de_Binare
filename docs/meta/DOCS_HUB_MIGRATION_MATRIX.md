@@ -76,6 +76,17 @@ paths; historical or broken material is kept only as local archive/quarantine.
 | `verlosung/` | historical | `docs/archive/docs_hub_snapshot/verlosung/` | archive | Experimental or one-off migration artifacts. |
 | `.git/`, `.worktrees/`, `.local/`, `.cdb_local/` | non-product code state | none | exclude | Repository internals or machine-local state, not migration content. |
 
+## Snapshot Retention Buckets (#1146)
+
+After consolidation, the local snapshot at `docs/archive/docs_hub_snapshot/` is
+classified as follows:
+
+| Bucket | Contents | Status |
+|---|---|---|
+| Provenance / narrow compatibility core | `knowledge/` audit/recovery subtrees, secret-manifest provenance, root index files, `cdb_docs_index.yaml` (behavior-bearing compat) | Intentionally retained |
+| Later review target | `mcp_navpack_docs_hub*`, `_archive/discussion_pipeline/`, `_legacy_quarantine/`, duplicate agent mirrors, `issues.md` | Retained, not active input |
+| Not changed in #1146 | All archive content | No deletion or reorganization |
+
 ## Consolidation Result
 
 - Productive canon now lives in the working repo under `agents/`, `knowledge/`,

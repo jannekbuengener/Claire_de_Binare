@@ -1,32 +1,33 @@
-# CDB Phase 2 Pack — Playbooks + #255 Regression Shield
-Stand: 2025-12-25
+# Docs Hub Snapshot (Local Archive)
 
-## Was ist drin?
-### Playbooks (kannonisch)
-- `knowledge/playbooks/*` (Golden Path, Security, DB Init/Migrations, Redis Debug, E2E Spec)
+Status: read-only archive
+Related issue: #1140
 
-### #255 MVP Test
-- `tests/e2e/test_paper_trading_regression_shield.py`
-  - Publish `orders`
-  - Subscribe `order_results`
-  - Assert payload contract
-  - Optional: stream persistence (`CDB_E2E_REQUIRE_STREAM=1`)
+## What this is
 
-### Local runner
-- `scripts/run_e2e_regression_shield.ps1`
+This directory contains a local snapshot of the former standalone `Claire_de_Binare_Docs` repository.
+The split-repo model was retired in #1140. All active documentation now lives in the working repo.
 
-## Einbau ins Repo
-1) ZIP ins Repo-Root entpacken (Ordner `knowledge/`, `tests/`, `scripts/` entstehen/werden ergänzt)
-2) `git status` prüfen
-3) Commit + PR erstellen
+This snapshot is preserved as:
+- **provenance** — audit trail for historical content and decisions
+- **narrow compatibility core** — specific files under `knowledge/` that are still referenced by archive-aware tooling (e.g., `docs_hub_rag_adapter.py`)
 
-## Lokaler Run (Beispiel)
-```powershell
-docker compose up -d
-.\scriptsun_e2e_regression_shield.ps1 -TimeoutSeconds 10
-```
+## Usage
 
-## CI Hinweis
-Für CI muss Redis + Execution erreichbar sein. Üblich:
-- docker compose up -d
-- pytest -m e2e ...
+- This is **not** the default edit target. Active canon lives at the working-repo paths listed in `docs/meta/WORKING_REPO_CANON.md`.
+- Read-only. Do not modify archive content for active work.
+- Historical lookup and audit provenance only.
+
+## Contents
+
+- `DOCS_HUB_INDEX.md` — historical navigation index (archived)
+- `agents/`, `knowledge/`, `meta/`, `scripts/`, `tools/` — snapshotted docs-hub content
+- `_archive/`, `_legacy_quarantine/` — material that was already deprecated in the old docs hub
+- `mcp_navpack_docs_hub*/` — historical navigation packs from the old repo
+- `verlosung/` — experimental migration artifacts
+
+## Retention note
+
+Content in this snapshot is retained pending explicit review decisions.
+No archive content is deleted or reorganized as part of the initial retention policy (#1146).
+See `docs/meta/DOCS_HUB_DELETE_READINESS.md` for the full retention assessment.

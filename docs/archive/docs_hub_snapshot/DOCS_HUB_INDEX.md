@@ -1,154 +1,83 @@
 ---
 role: navigation
-status: canonical
-domain: docs_hub
+status: archived
+domain: docs_hub_snapshot
 type: index
 relations:
-  purpose: central_navigation
-  scope: docs_hub_repository
+  purpose: historical_navigation
+  scope: archived_docs_hub_content
 ---
 
-# DOCS_HUB_INDEX
-**Canonical Index — Claire de Binare Docs Hub**
+# DOCS_HUB_INDEX (Archived)
+**Historical Index — Claire de Binare Docs Hub Snapshot**
 
-Status: Canonical  
-Rolle: Single Source of Truth (Docs Hub)
+Status: Archived (read-only)
+Context: This file was the canonical index of the former standalone Docs Hub repository. The split-repo model was retired in #1140. All active documentation now lives in the working repo (`Claire_de_Binare`). This file is preserved as a historical navigation aid for the local archive snapshot only.
 
----
-
-## 1. Zweck
-
-Dieses Dokument ist der **kanonische Index** des *Claire de Binare* Dokumentations-Hubs.
-
-### Contributor Guardrails
-
-This repo blocks Git merge-conflict markers in docs files via CI (`Docs Conflict Guard`).
-Local quick check (PowerShell):
-`pwsh -Command "Select-String -Path agents\**\*.md,knowledge\**\*.md,meta\**\*.md -Pattern '^\s*<<<<<<<.*$','^\s*=======$','^\s*>>>>>>>.*$' -AllMatches"`
-
-If the command prints nothing, you’re good.
-
-Es dient als:
-- primärer Einstiegspunkt für Agenten
-- Navigationshilfe für Menschen
-- Referenz für Struktur, Zuständigkeiten und Grenzen
-
-Der Docs Hub ist **autoritativer** als:
-- Chat-Kontext
-- Session-Logs
-- Working-Repos
+Current canonical layout: see `docs/meta/WORKING_REPO_CANON.md`.
 
 ---
 
-## 2. Grundprinzipien (verbindlich)
+## 1. Zweck (historisch)
 
-- Docs Hub = **Canon**
-- Working Repo = **Execution**
-- Kein Agent erzeugt neue Canon-Dateien ohne explizite Freigabe
-- Fehlende Dateien werden **nicht** automatisch angelegt
-- Struktur schlägt Vollständigkeit
+Dieses Dokument war der kanonische Index des ehemaligen Dokumentations-Hubs.
+Es dient jetzt nur noch als historischer Navigationsanker fuer das lokale Archiv unter `docs/archive/docs_hub_snapshot/`.
+
+### Contributor Guardrails (historisch)
+
+The old docs repo blocked Git merge-conflict markers via CI (`Docs Conflict Guard`).
+This guard applied to the standalone docs repo, not to the consolidated working repo.
 
 ---
 
-## 3. Verzeichnisstruktur (kanonisch)
+## 2. Grundprinzipien (historisch — nicht mehr aktiv)
+
+Die folgenden Prinzipien galten im Split-Repo-Modell und sind nach #1140 nicht mehr massgeblich:
+
+- Docs Hub war Canon (jetzt: Working Repo ist Canon)
+- Working Repo war nur Execution (jetzt: Working Repo ist Canon + Execution)
+- Kein Agent erzeugt neue Canon-Dateien ohne explizite Freigabe (unveraendert als allgemeines Prinzip)
+
+---
+
+## 3. Verzeichnisstruktur (historisch)
+
+Die folgende Struktur beschreibt den Zustand des ehemaligen Docs Hub zum Zeitpunkt des Snapshots. Aktive Versionen dieser Inhalte leben jetzt unter den entsprechenden Working-Repo-Pfaden.
 
 ### `/agents/`
-**Zweck:** Definition, Steuerung und Grenzen aller KI-Agenten
-
-- `agents/AGENTS.md` → Gemeinsame Agenten-Grundordnung (Canonical)
-- `agents/CLAUDE.md` → Session Lead / Orchestrator
-- `agents/GEMINI.md` → Audit & Review
-- `agents/roles/CODEX.md` → Deterministische Ausführung
-- `agents/COPILOT.md` → Assistenz / Komfort
-
-#### Unterordner
-- `agents/roles/` → Rollendefinitionen
-- `agents/policies/` → Agentenrelevante Policies
-- `agents/charters/` → Charter-Dokumente
-- `agents/prompts/` → Prompt-Artefakte
-- `agents/tasklists/` → Agenten-Tasklisten
-
----
+- `agents/AGENTS.md` — jetzt lokal unter `agents/AGENTS.md`
+- `agents/CLAUDE.md`, `agents/GEMINI.md`, `agents/roles/CODEX.md`, `agents/COPILOT.md`
+- Unterordner: `roles/`, `policies/`, `charters/`, `prompts/`, `tasklists/`
 
 ### `/knowledge/governance/`
-**Zweck:** Höchste Regel- und Autoritätsebene
-
-Wichtige Dateien:
-- `CDB_CONSTITUTION.md` → oberste Instanz
-- `CDB_GOVERNANCE.md` → operative Governance
-- `CDB_AGENT_POLICY.md` → Agenten-Mandate & Grenzen
-- `CDB_REPO_STRUCTURE.md` → Zielstruktur Repos
-- `NEXUS.MEMORY.yaml` → kanonisches Langzeitgedächtnis
-
-Governance schlägt **alles** außer Verfassung.
-
----
+- `CDB_CONSTITUTION.md`, `CDB_GOVERNANCE.md`, `CDB_AGENT_POLICY.md` etc.
+- Jetzt lokal unter `knowledge/governance/`
 
 ### `/knowledge/`
-**Zweck:** Wissen, Entscheidungen, Arbeitsgedächtnis, Logs
-
-Kern-Dateien:
-- `CDB_KNOWLEDGE_HUB.md`  
-  → Entscheidungs- und Übergabe-Hub (Canonical, non-governance)
-
-- `SYSTEM.CONTEXT.md`  
-  → Laufzeit- & Umweltkontext (Read-Only)
-
-- `SHARED.WORKING.MEMORY.md`  
-  → Temporärer Denkraum (Non-Canonical)
-
-Weitere Unterordner:
-- `knowledge/operating_rules/` → Betriebsregeln
-- `knowledge/reviews/` → Audit- & Review-Berichte
-- `knowledge/tasklists/` → Aufgabenlisten
-- `knowledge/logs/` → Logs & Reports
-- `.dev_freeze_status` → Entwicklungs-Freeze-Status
-
----
+- `CDB_KNOWLEDGE_HUB.md`, `SYSTEM.CONTEXT.md`, `SHARED.WORKING.MEMORY.md`
+- Jetzt lokal unter `knowledge/`
 
 ### `/logs/`
-**Zweck:** Roh-Logs, Berichte, technische Artefakte  
-Kein Canon. Keine Entscheidungen.
-
----
+Roh-Logs und technische Artefakte. Kein Canon.
 
 ### `/_legacy_quarantine/`
-**Zweck:** Ablage für:
-- veraltete
-- unklare
-- zu prüfende Dateien
-
-Nichts hier ist aktiv oder kanonisch.
+Veraltete und zu pruefende Dateien. Nichts hier ist aktiv oder kanonisch.
 
 ---
 
-## 4. Deprecated / Migration
+## 4. Deprecated / Migration (historisch)
 
-Diese Dateien gelten als **deprecated** und dürfen nicht mehr verwendet werden:
-- `copilot.md`
-- `codex.md`
-- `claude.md`
-
-Ersatz:
-- Agenten-Dateien unter `/agents/`
-- Prompts unter `/agents/prompts/`
-- Tasklisten unter `/agents/tasklists/` oder `/knowledge/tasklists/`
+Die folgenden Dateien waren bereits im alten Docs Hub deprecated:
+- `copilot.md`, `codex.md`, `claude.md`
 
 ---
 
-## 5. Lese-Pflicht für Agenten (Autoload)
+## 5. Lese-Pflicht (historisch — nicht mehr aktiv)
 
-Jeder Agent **MUSS** bei Start laden:
-1. `DOCS_HUB_INDEX.md`
-2. `agents/AGENTS.md`
-3. `knowledge/CDB_KNOWLEDGE_HUB.md`
-4. relevante Governance-Dateien
-
-Wenn ein Dokument fehlt: **STOP & melden**.
+Die Autoload-Pflicht galt fuer den ehemaligen Docs Hub. Im konsolidierten Working Repo gelten die Entrypoints aus `docs/meta/WORKING_REPO_CANON.md`.
 
 ---
 
 ## Abschluss
 
-Dieser Index definiert **wie das System gelesen wird**.  
-Wer ihn ignoriert, arbeitet **außerhalb des Systems**.
+Dieser Index ist ein historisches Artefakt. Die aktuelle Systemnavigation wird durch `docs/meta/WORKING_REPO_CANON.md` und die Working-Repo-Entrypoints definiert.
