@@ -197,10 +197,21 @@ if ($manifest.Components.Redis) {
                 } else {
                     # Restart Redis
                     docker start cdb_redis 2>&1 | Out-Null
-                    Start-Sleep -Seconds 3
+                    Start-Sleep -Seconds 5
 
-                    # Verify Redis is up
-                    $redisPing = docker exec cdb_redis redis-cli PING 2>&1
+                    # Resolve Redis password from Docker secret
+                    $redisPassword = ""
+                    try {
+                        $redisPassword = (docker exec cdb_redis sh -c 'cat /run/secrets/redis_password 2>/dev/null' 2>&1).Trim()
+                        if ($LASTEXITCODE -ne 0) { $redisPassword = "" }
+                    } catch { $redisPassword = "" }
+
+                    # Verify Redis is up (with auth if available)
+                    if ($redisPassword -ne "") {
+                        $redisPing = docker exec cdb_redis redis-cli -a $redisPassword --no-auth-warning PING 2>&1
+                    } else {
+                        $redisPing = docker exec cdb_redis redis-cli PING 2>&1
+                    }
                     if ($redisPing -match "PONG") {
                         $restoreResults.Redis = $true
                         Write-Pass "Redis restored and responding"

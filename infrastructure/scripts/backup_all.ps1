@@ -73,6 +73,18 @@ try {
     exit 1
 }
 
+# Resolve Redis password from Docker secret (same source as compose stack)
+$redisPassword = ""
+try {
+    $redisPassword = (docker exec cdb_redis sh -c 'cat /run/secrets/redis_password 2>/dev/null' 2>&1).Trim()
+    if ($LASTEXITCODE -ne 0 -or $redisPassword -eq "") {
+        $redisPassword = ""
+        Write-Host "      Redis password not found in container secrets - will try without auth" -ForegroundColor Gray
+    }
+} catch {
+    $redisPassword = ""
+}
+
 # Create working directory
 New-Item -ItemType Directory -Force -Path $WORK_DIR | Out-Null
 
@@ -127,8 +139,12 @@ if ($redisRunning -notmatch "cdb_redis") {
 } else {
     $redisFile = Join-Path $WORK_DIR "redis_dump.rdb"
     try {
-        # Trigger synchronous save
-        docker exec cdb_redis redis-cli SAVE 2>&1 | Out-Null
+        # Trigger synchronous save (with auth if available)
+        if ($redisPassword -ne "") {
+            docker exec cdb_redis redis-cli -a $redisPassword --no-auth-warning SAVE 2>&1 | Out-Null
+        } else {
+            docker exec cdb_redis redis-cli SAVE 2>&1 | Out-Null
+        }
 
         if ($LASTEXITCODE -ne 0) {
             Write-Fail "redis-cli SAVE failed"
