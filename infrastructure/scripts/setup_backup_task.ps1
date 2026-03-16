@@ -32,31 +32,31 @@ Write-Host "[INFO] Administrator-Rechte erkannt" -ForegroundColor Green
 #       backup_postgres.ps1, re-running this script will replace it.
 $taskName = "Claire_Hourly_Backup"
 $scriptPath = Join-Path $PSScriptRoot "backup_all.ps1"
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptPath`""
-
-# Trigger: Every hour, daily repeat window (MaxValue causes XML schema rejection)
-$trigger = New-ScheduledTaskTrigger -Daily -At "00:00" -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 1)
-
-# Settings
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable:$false
-
-# Principal (User to run as)
-$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+$taskArg = "-ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptPath`""
 
 Write-Host ""
 Write-Host "[INFO] Erstelle Scheduled Task: $taskName" -ForegroundColor Cyan
 
 try {
-    # Check if task already exists
+    # Remove existing task if present
     $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-
     if ($existingTask) {
         Write-Host "[WARN] Task '$taskName' existiert bereits. Losche alte Version..." -ForegroundColor Yellow
         Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
     }
 
-    # Register new task
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Description "Stundliche Postgres+Redis Backups fur Claire de Binare (14 Tage Retention)"
+    # Register via schtasks.exe: avoids PowerShell trigger serialization bugs
+    # /sc HOURLY /mo 1 = every 1 hour, indefinite, no MaxValue XML issue
+    $schtasksResult = schtasks /create `
+        /tn $taskName `
+        /tr "powershell.exe $taskArg" `
+        /sc HOURLY /mo 1 /st 00:00 `
+        /ru SYSTEM /rl HIGHEST `
+        /f 2>&1
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "schtasks /create failed: $schtasksResult"
+    }
 
     Write-Host ""
     Write-Host "[OK] Task erfolgreich erstellt!" -ForegroundColor Green
