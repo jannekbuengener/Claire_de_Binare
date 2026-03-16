@@ -23,6 +23,7 @@ def _write_evidence(
     *,
     gate_status: str = "PASS",
     verdict: str = "PASS",
+    comparison_verdict: str = "PASS",
     omit: tuple[str, ...] = (),
 ) -> Path:
     evidence_dir = tmp_path / "evidence"
@@ -47,6 +48,7 @@ def _write_evidence(
             "order_result": {"status": "REJECTED", "filled_quantity": 0.0},
         },
         "soak_gate_eval.json": {"verdict": verdict},
+        "shadow_metrics_comparison.json": {"verdict": comparison_verdict},
         "evidence_index.json": {
             "shadow_blocked_total": 1,
             "orders_filled": 0,
@@ -111,6 +113,18 @@ def test_build_shadow_evidence_package_requires_pass_statuses(tmp_path: Path) ->
 
     evidence_dir = _write_evidence(tmp_path / "other", verdict="FAIL")
     with pytest.raises(ValueError, match="soak_gate_eval verdict must be PASS"):
+        build_shadow_evidence_package(evidence_dir)
+
+
+def test_build_blocks_on_comparison_verdict_fail(tmp_path: Path) -> None:
+    evidence_dir = _write_evidence(tmp_path, comparison_verdict="FAIL")
+    with pytest.raises(ValueError, match="shadow_metrics_comparison verdict must be PASS"):
+        build_shadow_evidence_package(evidence_dir)
+
+
+def test_build_blocks_on_comparison_verdict_uncalibrated(tmp_path: Path) -> None:
+    evidence_dir = _write_evidence(tmp_path, comparison_verdict="UNCALIBRATED")
+    with pytest.raises(ValueError, match="shadow_metrics_comparison verdict must be PASS"):
         build_shadow_evidence_package(evidence_dir)
 
 

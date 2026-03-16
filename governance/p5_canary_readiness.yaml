@@ -45,7 +45,9 @@ required_controls:
     evidence_path: docs/evidence/LR-031.md
     evidence_note: >
       Machine-readable gate and evidence plumbing implemented.
-      Broader metrics comparison evidence still open.
+      Comparison layer skeleton committed (shadow_metrics_compare.py +
+      lr031_baseline_thresholds.json). Thresholds UNCALIBRATED.
+      Status remains PARTIAL until first calibrated PASS comparison.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-040

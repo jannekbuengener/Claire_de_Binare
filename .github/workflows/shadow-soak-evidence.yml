@@ -674,6 +674,27 @@ jobs:
           echo "--- soak_gate_eval.json ---"
           cat evidence/soak_gate_eval.json
 
+      - name: Compare shadow metrics against baseline
+        if: always()
+        id: shadow-compare
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          python infrastructure/scripts/shadow_metrics_compare.py evidence/ \
+            --thresholds docs/evidence/lr031_baseline_thresholds.json
+          rc=$?
+          set -e
+          if [ -f evidence/shadow_metrics_comparison.json ]; then
+            VERDICT=$(python -c "import json; print(json.load(open('evidence/shadow_metrics_comparison.json'))['verdict'])")
+          else
+            VERDICT="MISSING"
+          fi
+          echo "comparison_verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
+          echo "LR-031 Comparison Verdict: ${VERDICT}"
+          echo "--- shadow_metrics_comparison.json ---"
+          cat evidence/shadow_metrics_comparison.json 2>/dev/null || echo "(not produced)"
+
       - name: Build canonical evidence package
         if: always()
         id: package

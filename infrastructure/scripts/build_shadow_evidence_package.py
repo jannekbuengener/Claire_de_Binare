@@ -14,6 +14,7 @@ REQUIRED_PACKAGE_FILES = (
     "shadow_block_probe.json",
     "soak_gate_eval.json",
     "evidence_index.json",
+    "shadow_metrics_comparison.json",
     "endpoints/execution_metrics.txt",
     "endpoints/risk_metrics.txt",
     "endpoints/execution_status.json",
@@ -22,6 +23,7 @@ REQUIRED_PACKAGE_FILES = (
 
 OPTIONAL_PACKAGE_FILES = (
     "run_summary.md",
+    "shadow_metrics_comparison.md",
     "compose_ps.txt",
     "container_inspect.json",
     "logs_tail.txt",
@@ -92,6 +94,15 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
         raise ValueError("run_summary gate_status must be PASS for canonical package")
     if soak_gate_eval.get("verdict") != "PASS":
         raise ValueError("soak_gate_eval verdict must be PASS for canonical package")
+    shadow_comparison = _load_json_required(
+        evidence_dir / "shadow_metrics_comparison.json", "shadow_metrics_comparison.json"
+    )
+    if shadow_comparison.get("verdict") != "PASS":
+        raise ValueError(
+            f"shadow_metrics_comparison verdict must be PASS for canonical package "
+            f"(got: {shadow_comparison.get('verdict')!r}). "
+            "Calibrate docs/evidence/lr031_baseline_thresholds.json first."
+        )
 
     run_id = _sanitize_fragment(run_summary.get("run_id"))
     commit = _sanitize_fragment(str(run_summary.get("commit") or "")[:12])
@@ -129,6 +140,7 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
         "verdicts": {
             "service_gate_status": run_summary.get("gate_status"),
             "shadow_gate_verdict": soak_gate_eval.get("verdict"),
+            "lr031_comparison_verdict": shadow_comparison.get("verdict"),
         },
         "required_files": [
             _package_file_record(package_root, relative_path)
