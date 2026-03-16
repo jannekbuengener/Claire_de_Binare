@@ -1,0 +1,22 @@
+spec_version: "1.0"
+task_id: "LR-020"
+task_title: "E2E Paper Trading (Full Pipeline)"
+status: "IMPLEMENTED"
+evidence_file: "docs/live-readiness/LR-020-EVIDENCE.md"
+
+tier_1_done: true
+tier_1_note: >
+  Mocked integration test (Signal→Risk→Execution) implemented and passing in CI.
+  tests/integration/test_lr020_e2e_pipeline.py — 3 tests, no live stack required.
+
+tier_2_done: true
+tier_2_note: >
+  Live-stack paper-trading run executed 2026-03-16T15:03:17+00:00.
+  Signal injected via 'signals' channel, Risk ALLOWED, Execution produced
+  terminal REJECTED result (missing decision_contract_v1 bundle — contract
+  enforcement active). stream.fills +1. All 4 checks PASS.
+  Evidence: evidence-run/lr020_tier2_evidence.json
+
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null
