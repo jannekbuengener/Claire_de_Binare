@@ -41,13 +41,12 @@ required_controls:
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-031
-    status: PARTIAL
+    status: IMPLEMENTED
     evidence_path: docs/evidence/LR-031.md
     evidence_note: >
-      Machine-readable gate and evidence plumbing implemented.
-      Comparison layer skeleton committed (shadow_metrics_compare.py +
-      lr031_baseline_thresholds.json). Thresholds UNCALIBRATED.
-      Status remains PARTIAL until first calibrated PASS comparison.
+      Comparison layer implemented and calibrated. Baseline thresholds
+      set from lean dry run 23142835184 (2026-03-16). Comparison verdict
+      PASS achieved; canonical evidence package built successfully.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-040
