@@ -27,14 +27,15 @@ required_controls:
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-020
-    status: IMPLEMENTED
+    status: OPEN
     evidence_path: docs/live-readiness/LR-020-EVIDENCE.md
     evidence_note: >
       Tier-1 mocked integration test passing in CI (3 tests).
-      Tier-2 live-stack run completed 2026-03-16: Signal injected via 'signals'
-      channel, Risk ALLOWED, Execution produced terminal REJECTED result,
-      stream.fills +1. All 4 checks PASS.
-      Evidence: evidence-run/lr020_tier2_evidence.json
+      Tier-2 pipeline connectivity proven 2026-03-16 (Signal→Risk→Execution
+      routing confirmed, order_result received). order_result.status=REJECTED;
+      root cause: TRACE_CONTRACT_V1_ENABLED asymmetry (Risk=0, Execution=1) —
+      paper-trading FILL not yet achieved. Status remains OPEN until a
+      FILLED result is obtained with aligned container config.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-030

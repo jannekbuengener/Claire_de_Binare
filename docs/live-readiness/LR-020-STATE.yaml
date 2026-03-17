@@ -1,7 +1,7 @@
 spec_version: "1.0"
 task_id: "LR-020"
 task_title: "E2E Paper Trading (Full Pipeline)"
-status: "IMPLEMENTED"
+status: "PARTIAL"
 evidence_file: "docs/live-readiness/LR-020-EVIDENCE.md"
 
 tier_1_done: true
@@ -9,14 +9,18 @@ tier_1_note: >
   Mocked integration test (Signal→Risk→Execution) implemented and passing in CI.
   tests/integration/test_lr020_e2e_pipeline.py — 3 tests, no live stack required.
 
-tier_2_done: true
+tier_2_done: false
 tier_2_note: >
-  Live-stack paper-trading run executed 2026-03-16T15:03:17+00:00.
-  Signal injected via 'signals' channel, Risk ALLOWED, Execution produced
-  terminal REJECTED result (missing decision_contract_v1 bundle — contract
-  enforcement active). stream.fills +1. All 4 checks PASS.
+  Pipeline connectivity proven 2026-03-16T15:03:17+00:00: Signal → Risk (ALLOW) →
+  Execution → order_results. order_result.status=REJECTED; reason: missing
+  decision_contract_v1 bundle (fail-closed). NOT a completed paper-trading proof.
+  Blocked by TRACE_CONTRACT_V1_ENABLED asymmetry (Risk=0, Execution=1).
   Evidence: evidence-run/lr020_tier2_evidence.json
 
-blocked_reason_code: null
-blocked_reason_text: null
-blocked_since: null
+blocked_reason_code: TRACE_CONTRACT_V1_RISK_DISABLED
+blocked_reason_text: >
+  Risk container has TRACE_CONTRACT_V1_ENABLED=0; Execution has =1.
+  Risk does not build decision_contract_v1 bundle; Execution rejects all
+  orders without bundle (fail-closed). A FILLED paper-trade result requires
+  both containers aligned to TRACE_CONTRACT_V1_ENABLED=1.
+blocked_since: "2026-03-16"

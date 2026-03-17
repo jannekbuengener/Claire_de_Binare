@@ -2,8 +2,8 @@
 
 - Issue: `#782`
 - Implementation issue: `#1187`
-- Status: `IMPLEMENTED`
-- Last updated: `2026-03-16`
+- Status: `PARTIAL`
+- Last updated: `2026-03-17`
 
 ## 1. Scope
 
@@ -42,7 +42,7 @@ no live stack, no `E2E_RUN=1` guard. Runs in CI as part of
 | TC-LR020-02 | Excessive daily drawdown (99%) → risk blocks | `DECISION_BLOCK`, reason_code set, execution never reached |
 | TC-LR020-03 | Adverse regime (regime_id=2) → risk blocks | `DECISION_BLOCK`, reason_code set |
 
-## 3. Tier 2 — Live-Stack Paper Trading Run (DONE)
+## 3. Tier 2 — Live-Stack Pipeline Connectivity Run (PARTIAL — BLOCKED)
 
 ### Run summary
 
@@ -73,10 +73,15 @@ no live stack, no `E2E_RUN=1` guard. Runs in CI as part of
         stream.fills (PASS: +1 entry)
 ```
 
-Rejection reason: `TRACE_CONTRACT_V1_ENABLED=0` in Risk (bundle not built),
-`TRACE_CONTRACT_V1_ENABLED=1` in Execution (bundle enforced). This is a valid
-terminal result — the integrated pipeline completed the full Signal→Risk→Execution
-flow. Execution's contract enforcement is working correctly.
+**Pipeline connectivity proven:** Signal → Risk (DECISION_ALLOW) → orders channel →
+Execution → order_results channel. All routing hops confirmed.
+
+**Blocker:** `TRACE_CONTRACT_V1_ENABLED=0` in Risk container, `=1` in Execution
+container. Risk does not build the `decision_contract_v1` bundle; Execution rejects
+the order fail-closed. A real paper-trading FILL requires this asymmetry to be
+resolved (Risk must also have `TRACE_CONTRACT_V1_ENABLED=1`). The REJECTED result
+proves contract enforcement works, but does **not** prove paper trading operates
+correctly end-to-end.
 
 ### Tier 2 checks (all PASS)
 
@@ -93,8 +98,10 @@ flow. Execution's contract enforcement is working correctly.
 |----------|--------|------|
 | E2E test runs without errors | DONE | Tier 1 CI + Tier 2 live run |
 | All stream events produced and consumed | DONE | stream.fills +1 in Tier 2 live run |
-| Orders correctly generated | DONE | Tier 1 (mock FILLED) + Tier 2 (live REJECTED) |
-| PnL calculation correct | N/A | No fill in paper mode (REJECTED by contract enforcement) |
+| Orders correctly generated | PARTIAL | Tier 1: mock FILLED; Tier 2: REJECTED (TRACE_CONTRACT_V1 asymmetry) |
+| PnL calculation correct | OPEN | No fill in live stack yet (blocked by REJECTED) |
 | Test automated in CI | PARTIAL | Tier 1 in CI; Tier 2 manual live-stack run documented |
 
-**LR-020 status: `IMPLEMENTED`** — Tier 1 + Tier 2 complete.
+**LR-020 status: `PARTIAL`** — Tier 1 done. Tier 2 pipeline connectivity proven; paper-trading
+FILL blocked by `TRACE_CONTRACT_V1_ENABLED` asymmetry between Risk and Execution containers.
+Remaining step: set `TRACE_CONTRACT_V1_ENABLED=1` in Risk, re-run probe, obtain `status: FILLED`.
