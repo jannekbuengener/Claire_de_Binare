@@ -19,7 +19,7 @@ black==26.1.0
 ruff==0.15.2
 
 # Security Scanning
-bandit==1.9.3
+bandit==1.9.4
 pip-audit==2.6.1
 
 # Core Dependencies for Tests
