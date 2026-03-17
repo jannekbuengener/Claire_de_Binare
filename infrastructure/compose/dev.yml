@@ -228,6 +228,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      TRACE_CONTRACT_V1_ENABLED: "1"
       PAPER_AUTO_UNWIND: "true"  # Auto-close paper positions to prevent exposure accumulation
       # Issue #748: Policy snapshot env (fallback "unknown" when unset)
       CDB_GIT_COMMIT: ${CDB_GIT_COMMIT:-unknown}
@@ -260,6 +261,7 @@ services:
       LOG_LEVEL: "DEBUG"
       MOCK_TRADING: "true"          # Explizit Paper Trading erzwingen
       USE_REAL_BALANCE: "false"     # Sicherheitsgurt für Early-Live
+      TRACE_CONTRACT_V1_ENABLED: "1"
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}

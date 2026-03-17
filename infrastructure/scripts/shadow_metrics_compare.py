@@ -248,7 +248,7 @@ def main() -> None:
 
     if not evidence_dir.is_dir():
         _error_report(
-            Path("."),
+            evidence_dir if evidence_dir.is_dir() else Path("."),
             f"evidence_dir not found: {evidence_dir}",
         )
         print(f"ERROR: evidence_dir not a directory: {evidence_dir}", file=sys.stderr)
