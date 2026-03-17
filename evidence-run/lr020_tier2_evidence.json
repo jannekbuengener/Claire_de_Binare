@@ -1,20 +1,20 @@
 {
   "schema_version": "1.1",
-  "captured_at": "2026-03-16T15:03:17.523487+00:00",
+  "captured_at": "2026-03-17T06:19:25.740128+00:00",
   "injection_channel": "signals",
   "redis_host": "localhost",
   "timeout_seconds": 30.0,
   "signal_payload": {
     "type": "signal",
-    "signal_id": "LR020-T2-SIG-F71C0CC1D584",
+    "signal_id": "LR020-T2-SIG-5AD5A3DF21F0",
     "strategy_id": "lr020-t2",
     "bot_id": "lr020-probe",
     "symbol": "BTCUSDT",
     "side": "BUY",
     "pct_change_15m": 0.05,
     "volume_15m": 0.2,
-    "ts_ms": 1773673399550,
-    "price": 73447.38,
+    "ts_ms": 1773728367775,
+    "price": 74106.13,
     "account_state": {
       "daily_drawdown_pct": 0.01,
       "total_exposure_pct": 0.05,
@@ -24,20 +24,20 @@
   "order_payload": null,
   "order_result": {
     "type": "order_result",
-    "order_id": "68929c1f-a776-54ce-a6a3-2fb3f288f08d",
-    "status": "REJECTED",
+    "order_id": "MOCK_41250577",
+    "status": "FILLED",
     "symbol": "BTCUSDT",
     "side": "BUY",
-    "quantity": 0.004084556862341448,
-    "filled_quantity": 0.0,
-    "timestamp": 1773673401,
+    "quantity": 0.004048248100393314,
+    "filled_quantity": 0.004048248100393314,
+    "timestamp": 1773728370,
     "strategy_id": "lr020-t2",
     "bot_id": "lr020-probe",
-    "client_id": "BTCUSDT-0.0",
-    "error_message": "Order rejected: missing decision_contract_v1 bundle (fail-closed)"
+    "price": 49987.16,
+    "client_id": "BTCUSDT-0.0"
   },
-  "stream_fills_before": 10014,
-  "stream_fills_after": 10015,
+  "stream_fills_before": 10017,
+  "stream_fills_after": 10018,
   "stream_fills_delta": 1,
   "pass": true,
   "checks": [
@@ -49,17 +49,17 @@
     {
       "name": "order_result_status_valid",
       "pass": true,
-      "detail": "status='REJECTED' reason='Order rejected: missing decision_contract_v1 bundle (fail-closed)'"
+      "detail": "status='FILLED'"
     },
     {
       "name": "stream_fills_increased",
       "pass": true,
-      "detail": "stream.fills before=10014 after=10015 delta=1"
+      "detail": "stream.fills before=10017 after=10018 delta=1"
     },
     {
       "name": "integrated_pipeline_path_confirmed",
       "pass": true,
-      "detail": "integrated path confirmed — Risk ALLOWED signal, Execution enforced bundle contract ('Order rejected: missing decision_contract_v1 bundle (fail-closed)'); TRACE_CONTRACT_V1_ENABLED=0 in Risk (not a bypass)"
+      "detail": "integrated path confirmed — signal published to 'signals' channel with Risk subscribers; any order_result originates from Risk evaluation"
     }
   ]
 }

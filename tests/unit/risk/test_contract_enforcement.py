@@ -147,6 +147,62 @@ def test_contract_rejects_quantity_mismatch():
 
 
 @pytest.mark.unit
+def test_contract_accepts_8dp_serialisation_rounding():
+    """Bundle stores quantity at 8 dp; order carries full float precision.
+
+    Real scenario: calculate_position_size returns 0.004057952430246841,
+    bundle serialises to '0.00405795'. After 8dp normalisation both round
+    to Decimal('0.00405795') → should PASS, not raise.
+    """
+    manager = _make_manager()
+    # order.quantity is the full-precision Python float
+    order = _make_order(quantity=0.004057952430246841)
+
+    # Bundle is built with the 8dp-truncated string (as stored in the bundle)
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.00405795")
+    )
+    order.decision_contract_v1 = bundle
+
+    # Must NOT raise
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
+
+
+@pytest.mark.unit
+def test_contract_rejects_genuine_quantity_mismatch_at_8dp():
+    """A quantity that differs after 8dp normalisation must still be rejected.
+
+    0.00405795 (bundle) vs 0.00405800 (order) → different at 8dp → FAIL.
+    """
+    manager = _make_manager()
+    order = _make_order(quantity=0.004058)  # rounds to 0.00405800 at 8dp
+
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.00405795")
+    )
+    order.decision_contract_v1 = bundle
+
+    with pytest.raises(DecisionContractError, match="quantity mismatch"):
+        manager._ensure_decision_contract_for_order(order, source="test")
+
+
+@pytest.mark.unit
+def test_contract_accepts_exact_quantity_match():
+    """Regression: exact string-equal quantities still pass."""
+    manager = _make_manager()
+    order = _make_order(quantity=0.001)
+
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.001")
+    )
+    order.decision_contract_v1 = bundle
+
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
+
+
+@pytest.mark.unit
 def test_contract_accepts_matching_identity():
     """Contract gate must accept a bundle matching the order identity."""
     manager = _make_manager()

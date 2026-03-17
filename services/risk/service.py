@@ -6,6 +6,7 @@ Multi-Layer Risk Management
 from __future__ import annotations
 
 import copy
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import json
 import logging
 import logging.config
@@ -148,6 +149,8 @@ class AllocationState:
 
 
 DECISION_CONTRACT_VERSION = "decision_contract_v1"
+# Canonical quantity precision: bundles serialise to 8 decimal places.
+_CANONICAL_QTY_DP = Decimal("0.00000001")
 DECISION_ALLOW = "ALLOW"
 DECISION_BLOCK = "BLOCK"
 KILL_SWITCH_BLOCK_REASON_CODE = "KILL_SWITCH_ACTIVE"
@@ -694,16 +697,22 @@ class RiskManager:
             )
         bundle_qty_str = str(bundle_order.get("quantity", ""))
         order_qty_str = str(order.quantity)
-        # Compare as floats to handle Decimal string formatting differences
+        # Normalise both to 8 dp (bundle canonical precision) before comparing.
+        # This absorbs serialisation rounding without opening the gate to genuine
+        # quantity mismatches, which differ by more than 0.5 ULP at 8 dp.
         try:
-            bundle_qty_f = float(bundle_qty_str)
-            order_qty_f = float(order_qty_str)
-        except (ValueError, TypeError) as exc:
+            bundle_qty_d = Decimal(bundle_qty_str).quantize(
+                _CANONICAL_QTY_DP, rounding=ROUND_HALF_UP
+            )
+            order_qty_d = Decimal(order_qty_str).quantize(
+                _CANONICAL_QTY_DP, rounding=ROUND_HALF_UP
+            )
+        except (ValueError, TypeError, InvalidOperation) as exc:
             raise DecisionContractError(
                 f"Contract bundle quantity not comparable: "
                 f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
             ) from exc
-        if abs(bundle_qty_f - order_qty_f) > 1e-12:
+        if bundle_qty_d != order_qty_d:
             raise DecisionContractError(
                 f"Contract bundle quantity mismatch: "
                 f"bundle={bundle_qty_str!r} vs order={order_qty_str!r}"
