@@ -12,7 +12,7 @@
 | P1 | Risk Engine Tests | | NO | | |
 | P1 | State Machine Tests | | NO | | |
 | P1 | Negative Payload | | NO | | |
-| P2 | E2E Paper Trading | | NO | | |
+| P2 | E2E Paper Trading | PASS | NO | [LR-020-EVIDENCE](./LR-020-EVIDENCE.md), [LR-020-STATE](./LR-020-STATE.yaml) | jannekbuengener |
 | P2 | Replay Framework | | NO | | |
 | P3 | Shadow Mode | | NO | | |
 | P3 | Metrics Comparison | | NO | | |

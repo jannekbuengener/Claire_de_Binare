@@ -1,0 +1,26 @@
+spec_version: "1.0"
+task_id: "LR-020"
+task_title: "E2E Paper Trading (Full Pipeline)"
+status: "DONE"
+completion_timestamp: "2026-03-17T06:19:25Z"
+completion_author: "jannekbuengener"
+evidence_file: "docs/live-readiness/LR-020-EVIDENCE.md"
+evidence_commit: "8c75697"
+
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null
+
+tier_1_done: true
+tier_1_note: >
+  Mocked integration test (Signal→Risk→Execution) implemented and passing in CI.
+  tests/integration/test_lr020_e2e_pipeline.py — 3 tests, no live stack required.
+
+tier_2_done: true
+tier_2_note: >
+  Live-stack paper-trading run completed 2026-03-17T06:19:25+00:00:
+  Signal → Risk (DECISION_ALLOW) → Execution → order_result.status=FILLED.
+  stream.fills delta=+1 (10017→10018). All 4 checks PASS.
+  Blocker resolved: TRACE_CONTRACT_V1_ENABLED=1 in both Risk and Execution
+  (dev.yml fix + image rebuild + Decimal-based quantity normalisation fix).
+  Evidence: evidence-run/lr020_tier2_evidence.json

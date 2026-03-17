@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.1",
+  "captured_at": "2026-03-17T06:19:25.740128+00:00",
+  "injection_channel": "signals",
+  "redis_host": "localhost",
+  "timeout_seconds": 30.0,
+  "signal_payload": {
+    "type": "signal",
+    "signal_id": "LR020-T2-SIG-5AD5A3DF21F0",
+    "strategy_id": "lr020-t2",
+    "bot_id": "lr020-probe",
+    "symbol": "BTCUSDT",
+    "side": "BUY",
+    "pct_change_15m": 0.05,
+    "volume_15m": 0.2,
+    "ts_ms": 1773728367775,
+    "price": 74106.13,
+    "account_state": {
+      "daily_drawdown_pct": 0.01,
+      "total_exposure_pct": 0.05,
+      "ts_ms": 1771235468000
+    }
+  },
+  "order_payload": null,
+  "order_result": {
+    "type": "order_result",
+    "order_id": "MOCK_41250577",
+    "status": "FILLED",
+    "symbol": "BTCUSDT",
+    "side": "BUY",
+    "quantity": 0.004048248100393314,
+    "filled_quantity": 0.004048248100393314,
+    "timestamp": 1773728370,
+    "strategy_id": "lr020-t2",
+    "bot_id": "lr020-probe",
+    "price": 49987.16,
+    "client_id": "BTCUSDT-0.0"
+  },
+  "stream_fills_before": 10017,
+  "stream_fills_after": 10018,
+  "stream_fills_delta": 1,
+  "pass": true,
+  "checks": [
+    {
+      "name": "order_result_received",
+      "pass": true,
+      "detail": "order_result received within timeout"
+    },
+    {
+      "name": "order_result_status_valid",
+      "pass": true,
+      "detail": "status='FILLED'"
+    },
+    {
+      "name": "stream_fills_increased",
+      "pass": true,
+      "detail": "stream.fills before=10017 after=10018 delta=1"
+    },
+    {
+      "name": "integrated_pipeline_path_confirmed",
+      "pass": true,
+      "detail": "integrated path confirmed — signal published to 'signals' channel with Risk subscribers; any order_result originates from Risk evaluation"
+    }
+  ]
+}

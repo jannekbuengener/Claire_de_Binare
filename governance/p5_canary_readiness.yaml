@@ -27,11 +27,14 @@ required_controls:
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-020
-    status: OPEN
-    evidence_path: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+    status: IMPLEMENTED
+    evidence_path: docs/live-readiness/LR-020-EVIDENCE.md
     evidence_note: >
-      Tracking reference only. No control-specific evidence exists.
-      Requires dedicated evidence before status can move to IMPLEMENTED.
+      Tier-1 mocked integration test passing in CI (3 tests).
+      Tier-2 live-stack paper-trading run completed 2026-03-17:
+      Signal→Risk (DECISION_ALLOW)→Execution→order_result.status=FILLED.
+      stream.fills delta=+1. All 4 checks PASS.
+      Evidence: evidence-run/lr020_tier2_evidence.json
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-030

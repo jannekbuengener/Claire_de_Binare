@@ -147,6 +147,62 @@ def test_contract_rejects_quantity_mismatch():
 
 
 @pytest.mark.unit
+def test_contract_accepts_8dp_serialisation_rounding():
+    """Bundle stores quantity at 8 dp; order carries full float precision.
+
+    Real scenario: calculate_position_size returns 0.004057952430246841,
+    bundle serialises to '0.00405795'. After 8dp normalisation both round
+    to Decimal('0.00405795') → should PASS, not raise.
+    """
+    manager = _make_manager()
+    # order.quantity is the full-precision Python float
+    order = _make_order(quantity=0.004057952430246841)
+
+    # Bundle is built with the 8dp-truncated string (as stored in the bundle)
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.00405795")
+    )
+    order.decision_contract_v1 = bundle
+
+    # Must NOT raise
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
+
+
+@pytest.mark.unit
+def test_contract_rejects_genuine_quantity_mismatch_at_8dp():
+    """A quantity that differs after 8dp normalisation must still be rejected.
+
+    0.00405795 (bundle) vs 0.00405800 (order) → different at 8dp → FAIL.
+    """
+    manager = _make_manager()
+    order = _make_order(quantity=0.004058)  # rounds to 0.00405800 at 8dp
+
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.00405795")
+    )
+    order.decision_contract_v1 = bundle
+
+    with pytest.raises(DecisionContractError, match="quantity mismatch"):
+        manager._ensure_decision_contract_for_order(order, source="test")
+
+
+@pytest.mark.unit
+def test_contract_accepts_exact_quantity_match():
+    """Regression: exact string-equal quantities still pass."""
+    manager = _make_manager()
+    order = _make_order(quantity=0.001)
+
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.001")
+    )
+    order.decision_contract_v1 = bundle
+
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
+
+
+@pytest.mark.unit
 def test_contract_accepts_matching_identity():
     """Contract gate must accept a bundle matching the order identity."""
     manager = _make_manager()
@@ -330,3 +386,36 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
     # We don't check if order was created (depends on market_state etc.)
     # We just verify kill-switch did not raise or return early
     # The fact that we reach this point means kill-switch was not blocking
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Issue #1192: Quantity rounding mode alignment (ROUND_HALF_EVEN)
+# ─────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_contract_quantity_halfeven_midpoint_accepted():
+    """ROUND_HALF_EVEN vs ROUND_HALF_UP tie-case (Issue #1192 regression).
+
+    0.000000025 sits exactly halfway between 0.00000002 and 0.00000003 at 8 dp.
+    The contract serialises via _q_str(ROUND_HALF_EVEN) → '0.00000002'
+    (banker's rounding: last retained digit 2 is even → round down).
+
+    The enforcement must use the same mode so both sides agree: 0.00000002 == 0.00000002.
+    Under the old ROUND_HALF_UP enforcement the order side would resolve to 0.00000003
+    → false DecisionContractError("quantity mismatch").
+    This test is RED under the old ROUND_HALF_UP logic and GREEN after the fix.
+    """
+    manager = _make_manager()
+    # str(2.5e-8) == '2.5e-08' → Decimal('2.5E-8') == 0.000000025 exactly
+    order = _make_order(quantity=2.5e-8)
+
+    # Contract normalises "0.000000025" via ROUND_HALF_EVEN → "0.00000002"
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.000000025")
+    )
+    order.decision_contract_v1 = bundle
+
+    # Must NOT raise – both sides resolve to 0.00000002 with ROUND_HALF_EVEN.
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
