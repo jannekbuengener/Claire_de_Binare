@@ -283,7 +283,7 @@ def test_main_signals_mode_records_passing_prechecks_in_artifact(tmp_path):
         "order_id": "MOCK_TEST001",
         "status": "FILLED",
         "strategy_id": "lr020-t2",
-        "bot_id": "lr020-probe",
+        "bot_id": "lr020-probe-TESTPROBE",
         "symbol": "BTCUSDT",
         "side": "BUY",
         "quantity": 0.001,
@@ -296,6 +296,8 @@ def test_main_signals_mode_records_passing_prechecks_in_artifact(tmp_path):
     mock_redis = MagicMock()
     mock_redis.xlen.side_effect = [100, 101]   # before / after stream.fills
     mock_redis.get.return_value = None          # account_state + market_price = None
+
+    mock_collect = MagicMock(return_value=mock_order_result)
 
     with (
         patch(
@@ -317,7 +319,7 @@ def test_main_signals_mode_records_passing_prechecks_in_artifact(tmp_path):
         ),
         patch(
             "scripts.lr020_tier2_evidence_capture._collect_result",
-            return_value=mock_order_result,
+            mock_collect,
         ),
         patch("scripts.lr020_tier2_evidence_capture.time.sleep"),
         pytest.raises(SystemExit) as exc_info,
@@ -325,6 +327,11 @@ def test_main_signals_mode_records_passing_prechecks_in_artifact(tmp_path):
         main()
 
     assert exc_info.value.code == 0
+
+    # Verify run-unique bot_id was used as correlation key
+    call_args = mock_collect.call_args[0]
+    assert call_args[1] == "bot_id"
+    assert call_args[2].startswith("lr020-probe-")
 
     artifact = json.loads(output_file.read_text(encoding="utf-8"))
     assert "prechecks" in artifact

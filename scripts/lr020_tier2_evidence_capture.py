@@ -154,6 +154,7 @@ def _build_order(order_id: str) -> dict:
 def _build_signal(
     signal_id: str,
     strategy_id: str,
+    bot_id: str = "lr020-probe",
     account_state: dict | None = None,
     price: float | None = None,
 ) -> dict:
@@ -178,7 +179,7 @@ def _build_signal(
         "type": "signal",
         "signal_id": signal_id,
         "strategy_id": strategy_id,
-        "bot_id": "lr020-probe",
+        "bot_id": bot_id,
         "symbol": "BTCUSDT",
         "side": "BUY",
         "pct_change_15m": 0.05,
@@ -638,13 +639,15 @@ def main() -> None:
             )
         else:
             print(f"market price from Redis: close_now={market_price}")
+        probe_bot_id = f"lr020-probe-{probe_id}"
         signal_payload = _build_signal(
-            signal_id, strategy_id, account_state=account_state, price=market_price
+            signal_id, strategy_id, bot_id=probe_bot_id,
+            account_state=account_state, price=market_price
         )
         order_payload = None
         inject_channel = SIGNALS_CHANNEL
-        filter_key = "strategy_id"
-        filter_value = strategy_id
+        filter_key = "bot_id"
+        filter_value = probe_bot_id
     else:
         order_id = f"LR020-T2-{probe_id}"
         order_payload = _build_order(order_id)
