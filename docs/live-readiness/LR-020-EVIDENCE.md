@@ -85,6 +85,10 @@ no live stack, no `E2E_RUN=1` guard. Runs in CI as part of
    `Decimal.quantize(_CANONICAL_QTY_DP, ROUND_HALF_UP)` canonical equality check.
    Resolves `DecisionContractError: quantity mismatch` caused by serialisation rounding
    (bundle stores 8dp string, order carries full Python float).
+   *(Subsequently corrected to `ROUND_HALF_EVEN` in Issue #1192, aligning the enforcement
+   path with the canonical rounding mode used by `_q_str` in the Decision Contract.
+   This Tier-2 run predates that alignment; the note above documents the historical
+   implementation state at run time, not the current repository state.)*
 
 ### Tier 2 checks (all PASS)
 

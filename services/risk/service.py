@@ -6,7 +6,7 @@ Multi-Layer Risk Management
 from __future__ import annotations
 
 import copy
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_EVEN
 import json
 import logging
 import logging.config
@@ -702,10 +702,10 @@ class RiskManager:
         # quantity mismatches, which differ by more than 0.5 ULP at 8 dp.
         try:
             bundle_qty_d = Decimal(bundle_qty_str).quantize(
-                _CANONICAL_QTY_DP, rounding=ROUND_HALF_UP
+                _CANONICAL_QTY_DP, rounding=ROUND_HALF_EVEN
             )
             order_qty_d = Decimal(order_qty_str).quantize(
-                _CANONICAL_QTY_DP, rounding=ROUND_HALF_UP
+                _CANONICAL_QTY_DP, rounding=ROUND_HALF_EVEN
             )
         except (ValueError, TypeError, InvalidOperation) as exc:
             raise DecisionContractError(

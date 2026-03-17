@@ -386,3 +386,36 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
     # We don't check if order was created (depends on market_state etc.)
     # We just verify kill-switch did not raise or return early
     # The fact that we reach this point means kill-switch was not blocking
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Issue #1192: Quantity rounding mode alignment (ROUND_HALF_EVEN)
+# ─────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_contract_quantity_halfeven_midpoint_accepted():
+    """ROUND_HALF_EVEN vs ROUND_HALF_UP tie-case (Issue #1192 regression).
+
+    0.000000025 sits exactly halfway between 0.00000002 and 0.00000003 at 8 dp.
+    The contract serialises via _q_str(ROUND_HALF_EVEN) → '0.00000002'
+    (banker's rounding: last retained digit 2 is even → round down).
+
+    The enforcement must use the same mode so both sides agree: 0.00000002 == 0.00000002.
+    Under the old ROUND_HALF_UP enforcement the order side would resolve to 0.00000003
+    → false DecisionContractError("quantity mismatch").
+    This test is RED under the old ROUND_HALF_UP logic and GREEN after the fix.
+    """
+    manager = _make_manager()
+    # str(2.5e-8) == '2.5e-08' → Decimal('2.5E-8') == 0.000000025 exactly
+    order = _make_order(quantity=2.5e-8)
+
+    # Contract normalises "0.000000025" via ROUND_HALF_EVEN → "0.00000002"
+    bundle = build_decision_contract_v1_bundle(
+        _make_valid_contract_input(quantity="0.000000025")
+    )
+    order.decision_contract_v1 = bundle
+
+    # Must NOT raise – both sides resolve to 0.00000002 with ROUND_HALF_EVEN.
+    result = manager._ensure_decision_contract_for_order(order, source="test")
+    assert result is not None
