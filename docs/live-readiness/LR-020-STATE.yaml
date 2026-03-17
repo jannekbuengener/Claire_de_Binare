@@ -1,8 +1,15 @@
 spec_version: "1.0"
 task_id: "LR-020"
 task_title: "E2E Paper Trading (Full Pipeline)"
-status: "IMPLEMENTED"
+status: "DONE"
+completion_timestamp: "2026-03-17T06:19:25Z"
+completion_author: "jannekbuengener"
 evidence_file: "docs/live-readiness/LR-020-EVIDENCE.md"
+evidence_commit: "8c75697"
+
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null
 
 tier_1_done: true
 tier_1_note: >

@@ -32,4 +32,7 @@ tasks:
   - task_id: "LR-007"
     task_title: "Shadow Mode Validation Gate"
 
+  - task_id: "LR-020"
+    task_title: "E2E Paper Trading (Full Pipeline)"
+
   # Future tasks appended here (maintain task_id ascending order)

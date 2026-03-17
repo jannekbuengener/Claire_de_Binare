@@ -2,7 +2,7 @@
 
 Issue: #782 / #1187
 Tier: 1 (mocked, CI-backed — no live stack required)
-Tier-2 (live-stack paper-trading run) remains open.
+Tier-2 (live-stack paper-trading run): DONE — see docs/live-readiness/LR-020-EVIDENCE.md
 
 Coverage:
   TC-LR020-01  ALLOW path   — valid signal passes risk gate, execution fills order
