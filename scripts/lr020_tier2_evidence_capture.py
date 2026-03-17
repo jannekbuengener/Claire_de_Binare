@@ -39,13 +39,16 @@ import json
 import os
 import sys
 import time
+import urllib.error
+import urllib.request
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 import redis
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
+_ACCEPTED_EXECUTION_MODE = "mock"  # canonical non-live mode per services/execution/service.py
 STREAM_KEY = "stream.fills"
 ORDERS_CHANNEL = "orders"
 SIGNALS_CHANNEL = "signals"
@@ -217,6 +220,113 @@ def _read_market_price(client: redis.Redis, symbol: str = "BTCUSDT") -> float | 
         return float(price) if price is not None else None
     except (json.JSONDecodeError, ValueError, redis.RedisError):
         return None
+
+
+# ---------------------------------------------------------------------------
+# Pre-run precondition checks (signals mode only)
+# ---------------------------------------------------------------------------
+
+
+def _http_get_json(url: str, timeout: float) -> dict:
+    """Fetch JSON from url. Raises urllib.error.URLError or ValueError on failure."""
+    req = urllib.request.Request(url, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _check_kill_switch(host: str, port: int, timeout: float) -> dict:
+    """Check that the Risk Service kill-switch (circuit_breaker) is inactive.
+
+    Source: GET http://{host}:{port}/status → risk_state.circuit_breaker (bool).
+    pass = circuit_breaker is False (i.e. kill-switch NOT active).
+    """
+    source = f"http://{host}:{port}/status"
+    try:
+        data = _http_get_json(source, timeout)
+        observed = data["risk_state"]["circuit_breaker"]
+        ok = observed is False
+        detail = (
+            f"circuit_breaker={observed!r} — kill-switch inactive"
+            if ok
+            else f"circuit_breaker={observed!r} — kill-switch ACTIVE; aborting"
+        )
+        return {
+            "performed": True,
+            "pass": ok,
+            "source": source,
+            "observed_value": observed,
+            "detail": detail,
+        }
+    except (urllib.error.URLError, OSError) as exc:
+        return {
+            "performed": False,
+            "pass": False,
+            "source": source,
+            "observed_value": None,
+            "detail": f"endpoint unreachable: {exc}",
+        }
+    except (KeyError, TypeError, json.JSONDecodeError, ValueError) as exc:
+        return {
+            "performed": False,
+            "pass": False,
+            "source": source,
+            "observed_value": None,
+            "detail": f"malformed response: {exc}",
+        }
+
+
+def _check_runtime_mode(host: str, port: int, timeout: float) -> dict:
+    """Check that the Execution Service runtime mode is the accepted non-live value.
+
+    Source: GET http://{host}:{port}/status → mode (str).
+    Accepted value: _ACCEPTED_EXECUTION_MODE ("mock").
+    """
+    source = f"http://{host}:{port}/status"
+    try:
+        data = _http_get_json(source, timeout)
+        observed = data["mode"]
+        ok = observed == _ACCEPTED_EXECUTION_MODE
+        detail = (
+            f"mode={observed!r} — paper trading confirmed"
+            if ok
+            else f"mode={observed!r} — expected {_ACCEPTED_EXECUTION_MODE!r}; aborting"
+        )
+        return {
+            "performed": True,
+            "pass": ok,
+            "source": source,
+            "observed_value": observed,
+            "detail": detail,
+        }
+    except (urllib.error.URLError, OSError) as exc:
+        return {
+            "performed": False,
+            "pass": False,
+            "source": source,
+            "observed_value": None,
+            "detail": f"endpoint unreachable: {exc}",
+        }
+    except (KeyError, TypeError, json.JSONDecodeError, ValueError) as exc:
+        return {
+            "performed": False,
+            "pass": False,
+            "source": source,
+            "observed_value": None,
+            "detail": f"malformed response: {exc}",
+        }
+
+
+def _run_prechecks(args: argparse.Namespace) -> dict:
+    """Run all pre-injection precondition checks. Returns structured results dict."""
+    timeout = min(args.timeout, 10.0)
+    return {
+        "kill_switch_precheck": _check_kill_switch(
+            args.risk_host, args.risk_port, timeout
+        ),
+        "runtime_mode_precheck": _check_runtime_mode(
+            args.execution_host, args.execution_port, timeout
+        ),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -421,6 +531,28 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--risk-host",
+        default="localhost",
+        help="Risk Service host for precondition checks (default: localhost)",
+    )
+    parser.add_argument(
+        "--risk-port",
+        type=int,
+        default=8002,
+        help="Risk Service port for precondition checks (default: 8002)",
+    )
+    parser.add_argument(
+        "--execution-host",
+        default="localhost",
+        help="Execution Service host for precondition checks (default: localhost)",
+    )
+    parser.add_argument(
+        "--execution-port",
+        type=int,
+        default=8003,
+        help="Execution Service port for precondition checks (default: 8003)",
+    )
+    parser.add_argument(
         "--output",
         default="evidence-run/lr020_tier2_evidence.json",
         help="Output path for evidence JSON (default: evidence-run/lr020_tier2_evidence.json)",
@@ -445,6 +577,33 @@ def main() -> None:
     # --- Connect ---
     client = _connect(args.redis_host, args.redis_port, password, args.timeout + 5.0)
     print(f"Connected to Redis at {args.redis_host}:{args.redis_port}")
+
+    # --- Pre-run precondition checks (signals mode only, fail-closed) ---
+    prechecks: dict | None = None
+    if inject_via == "signals":
+        print("Running pre-injection precondition checks...")
+        prechecks = _run_prechecks(args)
+        ks = prechecks["kill_switch_precheck"]
+        rm = prechecks["runtime_mode_precheck"]
+        for label, result in (("kill_switch", ks), ("runtime_mode", rm)):
+            mark = "PASS" if result["pass"] else "FAIL"
+            print(f"  {mark} {label}: {result['detail']}")
+        if not ks["pass"] or not rm["pass"]:
+            print("ABORT: precondition check(s) failed — probe not injected")
+            _write_artefact(
+                output_path,
+                {
+                    "schema_version": SCHEMA_VERSION,
+                    "captured_at": captured_at,
+                    "injection_channel": inject_via,
+                    "redis_host": args.redis_host,
+                    "timeout_seconds": args.timeout,
+                    "prechecks": prechecks,
+                    "pass": False,
+                    "abort_reason": "precondition_check_failed",
+                },
+            )
+            sys.exit(1)
 
     # --- Pre-probe ---
     xlen_before = _xlen(client, STREAM_KEY)
@@ -541,6 +700,7 @@ def main() -> None:
         "injection_channel": inject_channel,
         "redis_host": args.redis_host,
         "timeout_seconds": args.timeout,
+        "prechecks": prechecks,
         "signal_payload": signal_payload,
         "order_payload": order_payload,
         "order_result": order_result,

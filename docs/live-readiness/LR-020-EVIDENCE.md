@@ -158,13 +158,19 @@ artifact**:
 
 ### Operator guidance for future Tier-2 re-runs
 
-Before executing `scripts/lr020_tier2_evidence_capture.py --inject-via signals`:
+Pre-run precondition checks are now **automated in the capture script (schema 1.2)**
+introduced in the follow-up to #1188:
 
-1. Verify kill-switch is inactive:
-   `curl http://localhost:<risk_port>/status` → check `risk_state.circuit_breaker == false`
-2. Verify execution runtime mode:
-   `curl http://localhost:<execution_port>/status` → check `mode == "mock"`
-3. Record both states before injecting the probe.
+- Kill-switch state is queried from `http://localhost:8002/status` →
+  `risk_state.circuit_breaker` before probe injection.
+- Execution runtime mode is queried from `http://localhost:8003/status` →
+  `mode` before probe injection.
+- Either check failing, timing out, or returning a malformed response aborts
+  the script with exit code 1 (fail-closed) before any signal is published.
+- Both check results are recorded in the evidence artifact under `prechecks`.
 
-These checks are not yet automated in the capture script. Automating them is the
-recommended follow-up after #1188.
+**Historical note:** The original Tier-2 run (schema 1.1, captured 2026-03-17,
+commit `8c75697`) was executed before these automated checks existed. Kill-switch
+state and runtime mode were not explicitly verified pre-run in that artifact; they
+are only inferable ex post from the FILLED result. Schema 1.1 runs remain honestly
+documented as lacking explicit pre-run verification. Schema 1.2 hardens future runs.
