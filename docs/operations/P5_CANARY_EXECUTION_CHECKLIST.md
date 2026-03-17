@@ -49,7 +49,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 | LR-001 | IMPLEMENTED | `docs/live-readiness/LR-001-EVIDENCE.md` | Control-specific evidence |
 | LR-003 | IMPLEMENTED | `docs/live-readiness/LR-003-EVIDENCE.md` | Control-specific evidence |
 | LR-010 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no dedicated evidence |
-| LR-020 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no dedicated evidence |
+| LR-020 | IMPLEMENTED | `docs/live-readiness/LR-020-EVIDENCE.md` | Tier-1 CI tests + Tier-2 live-stack run (FILLED). Precondition gating partially explicit — see evidence doc §5 |
 | LR-030 | IMPLEMENTED | `docs/evidence/LR-030.md` | Fail-closed gate with PR1 hardening |
 | LR-031 | **PARTIAL** | `docs/evidence/LR-031.md` | Gate plumbing implemented, broader metrics comparison still open |
 | LR-040 | IMPLEMENTED | `docs/evidence/LR-040.md` | Gate evaluator + monitoring tooling, no 72h run evidence yet |
@@ -59,7 +59,8 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 ## 5. Current No-Go Reasons
 
 - No committed successful P5 canary run artifact set
-- `LR-010`, `LR-020` remain OPEN with no control-specific evidence
+- `LR-010` remains OPEN with no control-specific evidence
+- `LR-020` now has control-specific evidence (Tier-1 CI + Tier-2 live-stack run); however, the Tier-2 run's required operational preconditions (kill-switch state, runtime mode) were not explicitly verified pre-run — only inferable ex post from run outcome (see `docs/live-readiness/LR-020-EVIDENCE.md` §5)
 - `LR-041` remains OPEN with no control-specific evidence
 - `LR-040` is IMPLEMENTED but no 72h soak run evidence exists yet (PASS requires actual run)
 - `LR-031` is PARTIAL: gate plumbing done, broader comparison evidence still open
