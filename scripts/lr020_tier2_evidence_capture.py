@@ -345,7 +345,7 @@ def _collect_result(
 
     Matches on filter_key/filter_value to handle both injection modes:
       orders mode:  filter_key="order_id"   / filter_value=order_id
-      signals mode: filter_key="strategy_id"/ filter_value=unique strategy_id
+      signals mode: filter_key="bot_id"     / filter_value=probe_bot_id (run-unique)
     """
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
