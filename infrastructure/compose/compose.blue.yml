@@ -79,6 +79,9 @@ services:
       # Rollback: set MARKET_V3_CLIENT_ENABLED to "false" + redeploy cdb_market.
       MARKET_V3_CLIENT_ENABLED: "true"
       MARKET_V3_SYMBOL: "BTCUSDT"
+      # Live-write promotion (Issue #1206, 2026-03-18): V3 writes to live key.
+      # Rollback: set MARKET_V3_LIVE_WRITE to "false" + redeploy cdb_market.
+      MARKET_V3_LIVE_WRITE: "true"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
     ports:
       - "127.0.0.1:8009:8009"

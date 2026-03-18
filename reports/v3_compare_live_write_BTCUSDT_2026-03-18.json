@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.1",
+  "generated_at": "2026-03-18T15:21:27.054192+00:00",
+  "symbol": "BTCUSDT",
+  "live_key_prefix": "market_price",
+  "shadow_key_prefix": "market_price_v3",
+  "stale_threshold_ms": 30000,
+  "overall": "FAIL",
+  "overall_reason": "1 criterion failed: ['max_missing_shadow_pct']",
+  "gate": {
+    "gate_status": "FAIL",
+    "gate_reason": "1 criterion failed: ['max_missing_shadow_pct']",
+    "thresholds": {
+      "min_comparable_samples": 20,
+      "max_missing_shadow_pct": 0.05,
+      "max_stale_shadow_pct": 0.05,
+      "max_price_delta_rel_p95_pct": 0.05,
+      "max_price_delta_rel_max_pct": 0.1,
+      "max_ts_delta_ms_p95": 10000
+    },
+    "checks": [
+      {
+        "criterion": "max_missing_shadow_pct",
+        "threshold": 0.05,
+        "measured": 1.0,
+        "result": "FAIL"
+      },
+      {
+        "criterion": "min_comparable_samples",
+        "threshold": 20,
+        "measured": 0,
+        "result": "INCONCLUSIVE",
+        "note": "below minimum \u2014 stats not reliable"
+      },
+      {
+        "criterion": "max_stale_shadow_pct",
+        "threshold": null,
+        "measured": null,
+        "result": "SKIP",
+        "note": "insufficient comparable samples"
+      },
+      {
+        "criterion": "max_price_delta_rel_p95_pct",
+        "threshold": null,
+        "measured": null,
+        "result": "SKIP",
+        "note": "insufficient comparable samples"
+      },
+      {
+        "criterion": "max_price_delta_rel_max_pct",
+        "threshold": null,
+        "measured": null,
+        "result": "SKIP",
+        "note": "insufficient comparable samples"
+      },
+      {
+        "criterion": "max_ts_delta_ms_p95",
+        "threshold": null,
+        "measured": null,
+        "result": "SKIP",
+        "note": "insufficient comparable samples"
+      }
+    ]
+  },
+  "summary": {
+    "total_samples": 20,
+    "comparable_samples": 0,
+    "missing_live_count": 0,
+    "missing_shadow_count": 20,
+    "stale_live_count": 0,
+    "stale_shadow_count": 0,
+    "price_delta_abs": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p95": null
+    },
+    "price_delta_rel_pct": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p95": null
+    },
+    "ts_delta_ms": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p95": null
+    },
+    "live_age_ms": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p95": null
+    },
+    "shadow_age_ms": {
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p95": null
+    }
+  },
+  "samples": [
+    {
+      "ts_sample_ms": 1773847230001,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847233004,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847236007,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847239009,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847242011,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847245014,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847248017,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847251019,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847254022,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847257025,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847260028,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847263030,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847266033,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847269035,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847272038,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847275041,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847278044,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847281046,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847284049,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    },
+    {
+      "ts_sample_ms": 1773847287052,
+      "live_missing": false,
+      "shadow_missing": true,
+      "comparable": false
+    }
+  ]
+}
