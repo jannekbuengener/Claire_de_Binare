@@ -214,12 +214,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       TRACE_CONTRACT_V1_ENABLED: "1"
       PAPER_AUTO_UNWIND: "true"
+      CDB_KILL_SWITCH_STATE_FILE: "/app/kill_switch/.cdb_kill_switch.state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -m services.risk.service"]
     ports:
       - "127.0.0.1:8002:8002"
     volumes:
       - ../../logs:/app/logs
       - validation_data:/app/data
+      - kill_switch_state:/app/kill_switch
     depends_on:
       cdb_postgres:
         condition: service_healthy
@@ -252,11 +254,13 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      CDB_KILL_SWITCH_STATE_FILE: "/app/kill_switch/.cdb_kill_switch.state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8003:8003"
     volumes:
       - ../../logs:/app/logs
+      - kill_switch_state:/app/kill_switch
     depends_on:
       cdb_postgres:
         condition: service_healthy
@@ -346,6 +350,7 @@ volumes:
   redis_data:
   postgres_data:
   validation_data:
+  kill_switch_state:
 
 # ==================== NETWORK ====================
 # Shared with RED stack - create once: docker network create cdb_network
