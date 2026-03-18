@@ -59,6 +59,35 @@ services:
     networks:
       - cdb_network
 
+  cdb_market:
+    build:
+      context: ../..
+      dockerfile: services/market/Dockerfile
+    container_name: cdb_market
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "INFO"
+      REDIS_HOST: cdb_redis
+      MARKET_PORT: "8009"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
+    ports:
+      - "127.0.0.1:8009:8009"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
   # ==================== CONTROL LAYER ====================
   # Evidence: Risk depends on allocation + regime (services/risk/service.py:588-639)
 
