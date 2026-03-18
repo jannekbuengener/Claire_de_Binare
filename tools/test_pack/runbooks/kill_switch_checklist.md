@@ -26,15 +26,32 @@ Add `-SkipLr003` to skip the repo-local fail-closed gate drill.
    - Artifact: `alert_trigger.json` (written automatically).
 
 2. **Activate kill-switch** (operator action):
+
+   **Canonical path — HTTP (requires running Risk Service on port 5000):**
    ```bash
-   python -c "from core.safety.kill_switch import activate_kill_switch, KillSwitchReason; activate_kill_switch(KillSwitchReason.MANUAL, 'Operator drill', 'drill-operator')"
+   curl -s -X POST http://localhost:5000/kill-switch/activate \
+     -H "Content-Type: application/json" \
+     -d '{"reason":"manual","message":"Operator drill","operator":"<your-name>"}'
+   ```
+   Expected response: `{"active": true, "activated": true, "reason": "manual", "activated_at": "...", "message": "..."}`
+
+   **Fallback — direct Python (no running service required):**
+   ```bash
+   python -c "from core.safety.kill_switch import KillSwitch, KillSwitchReason, resolve_kill_switch_state_file; KillSwitch(str(resolve_kill_switch_state_file())).activate(KillSwitchReason.MANUAL, 'Operator drill', operator='drill-operator')"
    ```
    - The script waits `-WaitSeconds` for you to complete this step.
 
 3. **Verification** (automated by script):
-   - Script calls `get_kill_switch_details()` and writes result to
-     `reports/kill_switch_verification.json`.
+   - Script tries `GET /kill-switch` (HTTP primary); falls back to
+     `get_kill_switch_details()` (Python) if the service is not reachable.
+   - Result written to `reports/kill_switch_verification.json`
+     including `verification_source` (HTTP or Python fallback).
    - Expected: `kill_switch_active: true`.
+   - Manual check:
+     ```bash
+     curl -s http://localhost:5000/kill-switch
+     ```
+     Expected: `{"active": true, ...}`
 
 4. **LR-003 fail-closed gate evidence** (automated, unless `-SkipLr003`):
    - Runs `scripts/drills/lr003_kill_switch_limit_controls_runner.py`.
@@ -79,8 +96,17 @@ After a successful drill, the evidence directory contains:
 
 ### Deactivate kill-switch after drill
 
+**Canonical path — HTTP:**
 ```bash
-python -c "from core.safety.kill_switch import KillSwitch; ks = KillSwitch(); ks.deactivate('drill-operator', 'Drill complete, resuming normal operation')"
+curl -s -X POST http://localhost:5000/kill-switch/deactivate \
+  -H "Content-Type: application/json" \
+  -d '{"operator":"drill-operator","justification":"Drill complete, resuming normal operation"}'
+```
+Expected response: `{"deactivated": true, "active": false}`
+
+**Fallback — direct Python:**
+```bash
+python -c "from core.safety.kill_switch import KillSwitch, resolve_kill_switch_state_file; KillSwitch(str(resolve_kill_switch_state_file())).deactivate('drill-operator', 'Drill complete, resuming normal operation')"
 ```
 
 ## Known Blockers

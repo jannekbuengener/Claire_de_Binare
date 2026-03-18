@@ -63,7 +63,12 @@ from core.contracts.decision_contract_v1 import (
     verify_decision_contract_v1_bundle,
     write_decision_contract_audit_record,
 )
-from core.safety.kill_switch import get_kill_switch_details
+from core.safety.kill_switch import (
+    get_kill_switch_details,
+    resolve_kill_switch_state_file,
+    KillSwitch,
+    KillSwitchReason,
+)
 from core.auth import validate_all_auth
 from core.domain.models import Signal
 
@@ -2434,6 +2439,75 @@ if _FLASK_AVAILABLE:
             ks_active = 0  # conservative: report inactive on read failure
         body += f"risk_kill_switch_active {ks_active}\n"
         return Response(body, mimetype="text/plain")
+
+    @app.route("/kill-switch", methods=["GET"])
+    def kill_switch_status():
+        state_file = str(resolve_kill_switch_state_file())
+        try:
+            active, reason, message, activated_at = get_kill_switch_details(
+                state_file=state_file, create_if_missing=False
+            )
+        except Exception as exc:
+            return jsonify({"error": f"state read failed: {exc}"}), 500
+        return jsonify(
+            {
+                "active": active,
+                "reason": reason,
+                "message": message,
+                "activated_at": activated_at,
+            }
+        )
+
+    @app.route("/kill-switch/activate", methods=["POST"])
+    def kill_switch_activate():
+        from flask import request as flask_request
+
+        body = flask_request.get_json(silent=True) or {}
+        reason_str = body.get("reason", "manual")
+        message = body.get("message", "")
+        operator = body.get("operator", "")
+        if not operator:
+            return jsonify({"error": "operator required"}), 400
+        try:
+            ks_reason = KillSwitchReason(reason_str)
+        except ValueError:
+            ks_reason = KillSwitchReason.MANUAL
+        state_file = str(resolve_kill_switch_state_file())
+        ks = KillSwitch(state_file)
+        ok = ks.activate(ks_reason, message, operator=operator)
+        if not ok:
+            return jsonify({"error": "activation failed"}), 500
+        _, reason_val, msg, activated_at = get_kill_switch_details(
+            state_file=state_file, create_if_missing=False
+        )
+        return jsonify(
+            {
+                "active": True,
+                "activated": True,
+                "reason": reason_val,
+                "activated_at": activated_at,
+                "message": msg,
+            }
+        )
+
+    @app.route("/kill-switch/deactivate", methods=["POST"])
+    def kill_switch_deactivate():
+        from flask import request as flask_request
+
+        body = flask_request.get_json(silent=True) or {}
+        operator = body.get("operator", "")
+        justification = body.get("justification", "")
+        if not operator or not justification:
+            return jsonify({"error": "operator and justification required"}), 400
+        state_file = str(resolve_kill_switch_state_file())
+        ks = KillSwitch(state_file)
+        ok = ks.deactivate(operator, justification)
+        if not ok:
+            return jsonify({"error": "deactivation failed (check operator/justification)"}), 400
+        active_after, _, _, _ = get_kill_switch_details(
+            state_file=state_file, create_if_missing=False
+        )
+        return jsonify({"deactivated": True, "active": active_after})
 
 else:
     app = None
