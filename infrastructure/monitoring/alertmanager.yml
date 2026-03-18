@@ -1,15 +1,17 @@
 # Claire de Binare - AlertManager Configuration
 # Issue #96: Monitoring & Alerting
+#
+# SMTP credentials injected at runtime via sed substitution (logging.yml entrypoint).
+# Placeholders: __SMTP_USER__, __SMTP_PASSWORD__, __SMTP_FROM__, __ALERT_EMAIL_TO__
+# Source secrets: compose.red.yml (smtp_user, smtp_password, smtp_from, alert_email_to)
 
 global:
-  # Global timeout settings
   resolve_timeout: 5m
-
-  # SMTP configuration (placeholder - configure for production)
-  # smtp_smarthost: 'smtp.example.com:587'
-  # smtp_from: 'alertmanager@claire-trading.local'
-  # smtp_auth_username: 'alertmanager'
-  # smtp_auth_password: '<secret>'
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: '__SMTP_FROM__'
+  smtp_auth_username: '__SMTP_USER__'
+  smtp_auth_password: '__SMTP_PASSWORD__'
+  smtp_require_tls: true
 
 # Route tree
 route:
@@ -77,30 +79,24 @@ inhibit_rules:
 # Receivers
 receivers:
   - name: 'default-receiver'
-    # Webhook to signal service
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts'
+    email_configs:
+      - to: '__ALERT_EMAIL_TO__'
         send_resolved: true
 
   - name: 'critical-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/critical'
+    email_configs:
+      - to: '__ALERT_EMAIL_TO__'
         send_resolved: true
-    # Add email/Slack/PagerDuty for production
-    # email_configs:
-    #   - to: 'oncall@claire-trading.local'
 
   - name: 'high-priority-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/high'
+    email_configs:
+      - to: '__ALERT_EMAIL_TO__'
         send_resolved: true
 
   - name: 'trading-halt-receiver'
-    webhook_configs:
-      - url: 'http://cdb_signal:8005/alerts/trading-halt'
+    email_configs:
+      - to: '__ALERT_EMAIL_TO__'
         send_resolved: true
-    # This receiver triggers kill-switch webhook
-    # In production: add PagerDuty/OpsGenie integration
 
 # Templates (optional)
 templates:

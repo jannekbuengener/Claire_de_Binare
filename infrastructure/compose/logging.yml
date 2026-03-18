@@ -7,9 +7,22 @@ services:
     image: prom/alertmanager:v0.27.0
     container_name: cdb_alertmanager
     restart: unless-stopped
-    command:
-      - '--config.file=/etc/alertmanager/alertmanager.yml'
-      - '--storage.path=/alertmanager'
+    secrets:
+      - smtp_user
+      - smtp_password
+      - smtp_from
+      - alert_email_to
+    entrypoint:
+      - "/bin/sh"
+      - "-c"
+      - >
+        sed
+        -e "s|__SMTP_USER__|$$(cat /run/secrets/smtp_user)|g"
+        -e "s|__SMTP_PASSWORD__|$$(cat /run/secrets/smtp_password)|g"
+        -e "s|__SMTP_FROM__|$$(cat /run/secrets/smtp_from)|g"
+        -e "s|__ALERT_EMAIL_TO__|$$(cat /run/secrets/alert_email_to)|g"
+        /etc/alertmanager/alertmanager.yml > /tmp/am.yml
+        && exec /bin/alertmanager --config.file=/tmp/am.yml --storage.path=/alertmanager
     volumes:
       - ../../infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
