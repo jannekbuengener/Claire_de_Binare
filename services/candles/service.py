@@ -101,9 +101,10 @@ class CandleService:
             candle.get("volume"),
         )
 
-        # Market State V1: Compute and persist returns after each candle
+        # Market State V1: Compute and persist returns after each candle.
+        # Skipped when CANDLE_WRITE_MARKET_STATE=false (kill-switch for cutover).
         symbol = candle.get("symbol")
-        if symbol:
+        if symbol and self.config.write_market_state:
             self._update_market_state(symbol)
 
     def _lookup_regime_id(self, symbol: str) -> int | None:

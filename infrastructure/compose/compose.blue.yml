@@ -72,6 +72,9 @@ services:
       LOG_LEVEL: "INFO"
       REDIS_HOST: cdb_redis
       MARKET_PORT: "8009"
+      # cdb_market owns market_state:{symbol} after cutover (Issue #1201).
+      # Evidence: reports/dual_write_evidence_2026-03-18_v2.json (PASS 2026-03-18)
+      MARKET_STATE_KEY_PREFIX: "market_state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
     ports:
       - "127.0.0.1:8009:8009"
@@ -107,6 +110,8 @@ services:
       CANDLE_INTERVAL_SECONDS: "60"
       CANDLE_INPUT_CHANNEL: "market_data"
       CANDLE_OUTPUT_STREAM: "stream.candles_1m"
+      # Kill-switch: cdb_candles market_state write disabled after cutover (Issue #1201).
+      CANDLE_WRITE_MARKET_STATE: "false"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8007:8007"
