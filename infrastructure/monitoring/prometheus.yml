@@ -87,7 +87,8 @@ scrape_configs:
           symbol: 'BTCUSDT'
     metrics_path: '/metrics'
 
-  # Market Data Service — ETH shadow instance (activated 2026-03-18, shadow-only)
+  # Market Data Service — ETH live-write instance (promoted 2026-03-18, Issue #1209)
+  # SINGLE SOURCE: sole writer of market_price:ETHUSDT — no cdb_ws fallback.
   - job_name: 'cdb_market_eth'
     static_configs:
       - targets: ['cdb_market_eth:8011']

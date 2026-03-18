@@ -299,3 +299,39 @@ groups:
           summary: "ABORT: Message queue stalled ({{ $value }} messages)"
           description: "Signal queue has {{ $value }} messages backed up for 10+ minutes. System deadlocked."
           runbook_url: "docs/operations/72H_SOAK_TEST_RUNBOOK.md#message-queue-backlog"
+
+  # =============================================================================
+  # ETHUSDT SINGLE-SOURCE ALERTS — Issue #1209
+  # cdb_market_eth is the SOLE writer of market_price:ETHUSDT.
+  # No cdb_ws fallback. WS disconnect or feed freeze = ETH price supply gone.
+  # ServiceDown fires only when the container is down; these rules cover the
+  # silent-failure case: container healthy, WS disconnected or feed frozen.
+  # =============================================================================
+  - name: ethusdt_single_source
+    rules:
+      - alert: ETHMarketV3Disconnected
+        expr: market_v3_ws_connected{job="cdb_market_eth"} == 0
+        for: 60s
+        labels:
+          severity: critical
+        annotations:
+          summary: "ETHUSDT V3 WebSocket disconnected — NO fallback"
+          description: >
+            cdb_market_eth WS has been disconnected for >60s.
+            market_price:ETHUSDT will go absent after TTL (30s).
+            No cdb_ws fallback for ETHUSDT. Manual intervention required.
+            Runbook: docs/operations/MARKET_V3_LIVE_WRITE_RUNBOOK.md#ethusdt-rollback
+
+      - alert: ETHMarketV3FeedFrozen
+        expr: rate(market_v3_decoded_total{job="cdb_market_eth"}[2m]) == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ETHUSDT V3 feed frozen — no decoded messages for 2m"
+          description: >
+            market_v3_decoded_total for cdb_market_eth has not increased for 2 minutes.
+            WS may be connected but receiving no data.
+            market_price:ETHUSDT will go absent after TTL (30s).
+            No cdb_ws fallback for ETHUSDT. Manual intervention required.
+            Runbook: docs/operations/MARKET_V3_LIVE_WRITE_RUNBOOK.md#ethusdt-rollback

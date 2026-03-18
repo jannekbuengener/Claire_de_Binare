@@ -103,7 +103,13 @@ services:
 
   # ── Second-symbol V3 instance — ETHUSDT Shadow-Mode (activated 2026-03-18) ──
   # Shadow-only: MARKET_V3_LIVE_WRITE=false → writes market_price_v3:ETHUSDT only.
-  # Live-write promotion requires a passing shadow_compare + live_write_smoke gate.
+  # Gate exception (documented): shadow_compare NOT applicable — cdb_ws subscribes
+  #   BTCUSDT only; market_price:ETHUSDT has no legacy writer → 0 comparable samples.
+  # Promotion gate: live_write_smoke PASS is the sole gate for ETHUSDT.
+  # SINGLE-SOURCE WARNING: after live-write promotion, V3 is the ONLY writer of
+  #   market_price:ETHUSDT. No cdb_ws fallback exists for this symbol.
+  # Rollback risk: MARKET_V3_LIVE_WRITE=false → ETH price supply stops immediately.
+  #   There is no automatic fallback. Manual intervention required.
   # Rollback: comment out this stanza + `docker compose ... down cdb_market_eth`.
   # BTCUSDT instance (cdb_market, port 8009) is completely unaffected.
 
@@ -122,10 +128,14 @@ services:
       MARKET_PORT: "8011"
       MARKET_STATE_KEY_PREFIX: "market_state"
       # Shadow-mode: V3 writes market_price_v3:ETHUSDT only. Live key untouched.
-      # Promotion to live-write requires passing shadow_compare gate for ETHUSDT.
+      # Gate exception: shadow_compare NOT applicable (see block comment above).
+      # Sole promotion gate: live_write_smoke PASS. See runbook §ETHUSDT.
       MARKET_V3_CLIENT_ENABLED: "true"
       MARKET_V3_SYMBOL: "ETHUSDT"
-      MARKET_V3_LIVE_WRITE: "false"
+      # Live-write active: V3 writes market_price:ETHUSDT; shadow key intentionally absent.
+      # Gate: live_write_smoke PASS — reports/v3_smoke_ETHUSDT_live_write_2026-03-18.json
+      # Rollback: MARKET_V3_LIVE_WRITE=false → ETH price supply stops (NO cdb_ws fallback).
+      MARKET_V3_LIVE_WRITE: "true"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
     ports:
       - "127.0.0.1:8011:8011"

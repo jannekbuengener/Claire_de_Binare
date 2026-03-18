@@ -126,6 +126,23 @@ docker compose -f infrastructure/compose/compose.blue.yml up -d --no-deps cdb_ma
 Verifikation: `live_write_smoke` → FAIL erwartet (Live-Key kommt nur noch von cdb_ws).
 Stattdessen `shadow_compare` Gate ausführen.
 
+### ETHUSDT-spezifisch: Rollback ≠ Fallback
+
+**Gilt nach ETH Live-Write-Promotion.**
+
+Für BTCUSDT übernimmt `cdb_ws` bei Rollback auf `MARKET_V3_LIVE_WRITE=false` sofort den Live-Key.
+Für **ETHUSDT existiert kein solcher Fallback.** `cdb_ws` abonniert ausschließlich BTCUSDT.
+
+→ `MARKET_V3_LIVE_WRITE=false` bei `cdb_market_eth` bedeutet:
+- V3 schreibt wieder nur auf `market_price_v3:ETHUSDT` (Shadow-Key).
+- `market_price:ETHUSDT` (Live-Key) wird von **niemandem** mehr geschrieben.
+- TTL 30s läuft ab → **ETH-Preisversorgung fällt weg.**
+- Folgeeffekte: Alle Downstream-Consumer (Risk, Signal) die ETHUSDT lesen erhalten stale/absent data.
+
+**Manueller Eingriff nötig** bevor die Lücke geschlossen ist. Es gibt keinen automatischen Recovery-Pfad.
+
+---
+
 ### Stufe 2 — V3-Client vollständig deaktivieren
 
 ```yaml
@@ -245,3 +262,6 @@ Jeder Container handhabt genau ein `MARKET_V3_SYMBOL`. Laufende BTCUSDT-Instanz 
 | 2026-03-18 | `cdb_market_eth` aktiviert — shadow-only (ETHUSDT, Port 8011) | `compose.blue.yml`, `prometheus.yml` |
 | 2026-03-18 | `shadow_compare` ETHUSDT → INCONCLUSIVE (strukturell: kein Live-Key-Schreiber für ETHUSDT) | `reports/v3_shadow_ETHUSDT_2026-03-18.json` |
 | 2026-03-18 | Prometheus mit `cdb_network` verbunden — beide Market-Targets `up` | `docker network connect cdb_network cdb_prometheus` |
+| 2026-03-18 | Gate-Ausnahme dokumentiert: `shadow_compare` für ETHUSDT nicht anwendbar — Single-Source-Warnung + Rollback-Risk in Runbook + compose.blue.yml | — |
+| 2026-03-18 | Live-Write-Promotion ETHUSDT (`MARKET_V3_LIVE_WRITE=true`, `cdb_market_eth`) | `compose.blue.yml` |
+| 2026-03-18 | `live_write_smoke` Gate PASS (50 Samples, ETHUSDT, 0 missing, 0 stale) | `reports/v3_smoke_ETHUSDT_live_write_2026-03-18.json` |
