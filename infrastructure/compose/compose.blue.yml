@@ -75,12 +75,15 @@ services:
       # cdb_market owns market_state:{symbol} after cutover (Issue #1201).
       # Evidence: reports/dual_write_evidence_2026-03-18_v2.json (PASS 2026-03-18)
       MARKET_STATE_KEY_PREFIX: "market_state"
-      # Optional direct MEXC V3 path (Issue #1206) — observe mode, default OFF.
-      # Rollback: set MARKET_V3_CLIENT_ENABLED to "false" + redeploy cdb_market.
+      # Direct MEXC V3 WebSocket path (Issue #1206) — ACTIVE in live-write mode.
+      # Modes: false=off (no side-effects), true=active (shadow or live-write).
+      # Rollback to shadow: MARKET_V3_LIVE_WRITE=false + redeploy cdb_market.
+      # Full disable:       MARKET_V3_CLIENT_ENABLED=false + redeploy cdb_market.
       MARKET_V3_CLIENT_ENABLED: "true"
       MARKET_V3_SYMBOL: "BTCUSDT"
-      # Live-write promotion (Issue #1206, 2026-03-18): V3 writes to live key.
-      # Rollback: set MARKET_V3_LIVE_WRITE to "false" + redeploy cdb_market.
+      # Live-write active: V3 writes market_price:{symbol}; shadow key intentionally absent.
+      # Gate: live_write_smoke PASS — reports/v3_smoke_BTCUSDT_live_write_2026-03-18.json
+      # Rollback: MARKET_V3_LIVE_WRITE=false → reverts to shadow-only write immediately.
       MARKET_V3_LIVE_WRITE: "true"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
     ports:
@@ -92,6 +95,47 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
+  # ── Second-symbol V3 instance — ETHUSDT Shadow-Mode (activated 2026-03-18) ──
+  # Shadow-only: MARKET_V3_LIVE_WRITE=false → writes market_price_v3:ETHUSDT only.
+  # Live-write promotion requires a passing shadow_compare + live_write_smoke gate.
+  # Rollback: comment out this stanza + `docker compose ... down cdb_market_eth`.
+  # BTCUSDT instance (cdb_market, port 8009) is completely unaffected.
+
+  cdb_market_eth:
+    build:
+      context: ../..
+      dockerfile: services/market/Dockerfile
+    container_name: cdb_market_eth
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "INFO"
+      REDIS_HOST: cdb_redis
+      MARKET_PORT: "8011"
+      MARKET_STATE_KEY_PREFIX: "market_state"
+      # Shadow-mode: V3 writes market_price_v3:ETHUSDT only. Live key untouched.
+      # Promotion to live-write requires passing shadow_compare gate for ETHUSDT.
+      MARKET_V3_CLIENT_ENABLED: "true"
+      MARKET_V3_SYMBOL: "ETHUSDT"
+      MARKET_V3_LIVE_WRITE: "false"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
+    ports:
+      - "127.0.0.1:8011:8011"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8011/health"]
       interval: 30s
       timeout: 5s
       retries: 3

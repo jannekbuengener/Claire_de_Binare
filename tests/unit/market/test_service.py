@@ -1,4 +1,4 @@
-"""Unit tests for Market Data Service (Issue #1148 PR1, #1206 seam refactor)."""
+"""Unit tests for Market Data Service (Issue #1148 PR1, #1206 seam refactor, #1206 multi-symbol prep)."""
 
 import json
 import sys
@@ -563,3 +563,78 @@ def test_metrics_endpoint_v3_gauges_zero_when_no_client():
 
     assert response.status_code == 200
     assert b"market_v3_decoded_total" in response.data
+
+
+# ─── _parse_v3_symbols (multi-symbol prep, Issue #1206) ───────────────────────
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_single():
+    """Single symbol string → one-element list, uppercased."""
+    assert svc._parse_v3_symbols("BTCUSDT") == ["BTCUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_single_lowercase():
+    """Input is normalised to uppercase."""
+    assert svc._parse_v3_symbols("btcusdt") == ["BTCUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_two_symbols():
+    """Comma-separated list → two-element list."""
+    assert svc._parse_v3_symbols("BTCUSDT,ETHUSDT") == ["BTCUSDT", "ETHUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_whitespace_trimmed():
+    """Leading/trailing whitespace around each symbol is stripped."""
+    assert svc._parse_v3_symbols("  BTCUSDT , ETHUSDT  ") == ["BTCUSDT", "ETHUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_mixed_case_and_spaces():
+    """Handles mixed case + whitespace in one pass."""
+    assert svc._parse_v3_symbols("  btcusdt , EthUsdt ") == ["BTCUSDT", "ETHUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_three_symbols():
+    """Three-symbol list parsed correctly."""
+    result = svc._parse_v3_symbols("BTCUSDT,ETHUSDT,SOLUSDT")
+    assert result == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_empty_string_raises():
+    """Empty string → ValueError (no valid symbols)."""
+    with pytest.raises(ValueError, match="No valid symbols"):
+        svc._parse_v3_symbols("")
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_only_commas_raises():
+    """All-comma string → ValueError after filtering empty entries."""
+    with pytest.raises(ValueError, match="No valid symbols"):
+        svc._parse_v3_symbols(",,,")
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_only_whitespace_raises():
+    """Whitespace-only string → ValueError."""
+    with pytest.raises(ValueError, match="No valid symbols"):
+        svc._parse_v3_symbols("   ")
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_trailing_comma_ignored():
+    """Trailing comma produces no spurious empty entry."""
+    assert svc._parse_v3_symbols("BTCUSDT,") == ["BTCUSDT"]
+
+
+@pytest.mark.unit
+def test_parse_v3_symbols_current_default_passes():
+    """The production default (BTCUSDT) parses without error."""
+    result = svc._parse_v3_symbols("BTCUSDT")
+    assert len(result) == 1
+    assert result[0] == "BTCUSDT"

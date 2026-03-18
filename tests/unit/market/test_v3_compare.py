@@ -6,13 +6,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from services.market.tools.v3_compare import (
+    MODE_LIVE_WRITE_SMOKE,
+    MODE_SHADOW_COMPARE,
     SCHEMA_VERSION,
     STALE_THRESHOLD_MS,
     GateThresholds,
+    LiveWriteSmokeThresholds,
     build_report,
     collect_samples,
     compare_snapshot,
     evaluate_gate,
+    evaluate_gate_smoke,
     summarize,
 )
 
@@ -79,6 +83,34 @@ def _make_summary(
         },
         "live_age_ms": {"min": 0, "max": 1000, "mean": 500, "p95": 900},
         "shadow_age_ms": {"min": 0, "max": 1000, "mean": 500, "p95": 900},
+    }
+
+
+def _make_smoke_summary(
+    total: int = 20,
+    missing_live: int = 0,
+    missing_shadow: int = 20,
+    stale_live_total: int = 0,
+) -> dict:
+    """Build a synthetic summary for live_write_smoke gate tests.
+
+    In smoke mode: shadow key is always absent, live key is the only data source.
+    """
+    live_present = total - missing_live
+    return {
+        "total_samples": total,
+        "comparable_samples": 0,
+        "live_present_count": live_present,
+        "missing_live_count": missing_live,
+        "missing_shadow_count": missing_shadow,
+        "stale_live_count": 0,  # always 0 (no comparable samples)
+        "stale_live_total_count": stale_live_total,
+        "stale_shadow_count": 0,
+        "price_delta_abs": {"min": None, "max": None, "mean": None, "p95": None},
+        "price_delta_rel_pct": {"min": None, "max": None, "mean": None, "p95": None},
+        "ts_delta_ms": {"min": None, "max": None, "mean": None, "p95": None},
+        "live_age_ms": {"min": None, "max": None, "mean": None, "p95": None},
+        "shadow_age_ms": {"min": None, "max": None, "mean": None, "p95": None},
     }
 
 
@@ -167,6 +199,40 @@ def test_compare_snapshot_both_missing():
     assert snap["live_missing"] is True
     assert snap["shadow_missing"] is True
     assert snap["comparable"] is False
+
+
+# ─── compare_snapshot: live freshness even when shadow absent ─────────────────
+
+
+@pytest.mark.unit
+def test_compare_snapshot_live_age_computed_when_shadow_missing():
+    """live_age_ms and live_stale are available even when shadow key is absent.
+
+    This is required by live_write_smoke mode: the gate must assess live key
+    freshness independently of shadow key presence.
+    """
+    fresh_ts = _NOW_MS - 5_000
+    snap = compare_snapshot(_live(ts_ms=fresh_ts), None, _NOW_MS)
+    assert snap["comparable"] is False
+    assert snap["shadow_missing"] is True
+    assert snap["live_age_ms"] == 5_000
+    assert snap["live_stale"] is False
+
+
+@pytest.mark.unit
+def test_compare_snapshot_live_stale_set_when_shadow_missing():
+    old_ts = _NOW_MS - STALE_THRESHOLD_MS - 1
+    snap = compare_snapshot(_live(ts_ms=old_ts), None, _NOW_MS)
+    assert snap["comparable"] is False
+    assert snap["live_stale"] is True
+
+
+@pytest.mark.unit
+def test_compare_snapshot_no_live_age_when_live_missing():
+    """When live key absent, live_age_ms and live_stale are not set."""
+    snap = compare_snapshot(None, _shadow(), _NOW_MS)
+    assert "live_age_ms" not in snap
+    assert "live_stale" not in snap
 
 
 # ─── compare_snapshot: stale detection ────────────────────────────────────────
@@ -286,6 +352,35 @@ def test_summarize_p95_is_highest_when_single_sample():
     s = summarize(samples)
     # single value: p95 == that value
     assert s["price_delta_abs"]["p95"] == pytest.approx(10.0)
+
+
+@pytest.mark.unit
+def test_summarize_live_present_count():
+    """live_present_count tracks samples where live key exists, regardless of shadow."""
+    samples = [
+        compare_snapshot(_live(), None, _NOW_MS),  # live present, shadow absent
+        compare_snapshot(_live(), _shadow(), _NOW_MS),  # both present
+        compare_snapshot(None, _shadow(), _NOW_MS),  # live absent
+    ]
+    s = summarize(samples)
+    assert s["live_present_count"] == 2
+
+
+@pytest.mark.unit
+def test_summarize_stale_live_total_count_includes_non_comparable():
+    """stale_live_total_count counts stale live keys even when shadow is absent."""
+    old_ts = _NOW_MS - STALE_THRESHOLD_MS - 1
+    fresh_ts = _NOW_MS - 1_000
+    samples = [
+        compare_snapshot(_live(ts_ms=old_ts), None, _NOW_MS),  # stale live, no shadow
+        compare_snapshot(_live(ts_ms=fresh_ts), None, _NOW_MS),  # fresh live, no shadow
+        compare_snapshot(
+            _live(ts_ms=old_ts), _shadow(), _NOW_MS
+        ),  # stale live + shadow
+    ]
+    s = summarize(samples)
+    assert s["stale_live_total_count"] == 2  # both stale-live samples counted
+    assert s["stale_live_count"] == 1  # only the comparable one
 
 
 # ─── evaluate_gate: PASS ──────────────────────────────────────────────────────
@@ -470,6 +565,120 @@ def test_evaluate_gate_reports_all_failing_criteria_at_once():
     assert len(failed) >= 3
 
 
+# ─── evaluate_gate_smoke: live_write_smoke mode ───────────────────────────────
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_pass_live_key_present_and_fresh():
+    """All live samples present and fresh → PASS."""
+    summary = _make_smoke_summary(
+        total=20, missing_live=0, missing_shadow=20, stale_live_total=0
+    )
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    assert gate["gate_status"] == "PASS"
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_shadow_missing_not_a_fail():
+    """All shadow keys absent → NOT a FAIL in live_write_smoke mode."""
+    summary = _make_smoke_summary(
+        total=20, missing_live=0, missing_shadow=20, stale_live_total=0
+    )
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    # Must not be FAIL because of missing shadow
+    assert gate["gate_status"] != "FAIL"
+    # shadow absence must be annotated INFO, not FAIL
+    shadow_checks = [c for c in gate["checks"] if "shadow" in c["criterion"]]
+    assert all(c["result"] == "INFO" for c in shadow_checks)
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_shadow_missing_is_info():
+    """missing_shadow_expected criterion has result INFO."""
+    summary = _make_smoke_summary(total=20, missing_shadow=20)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    info_checks = [c for c in gate["checks"] if c["result"] == "INFO"]
+    criteria = {c["criterion"] for c in info_checks}
+    assert "missing_shadow_expected" in criteria
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_fail_live_key_missing():
+    """Too many live keys absent → FAIL."""
+    # 3/20 = 15 % > 5 % default
+    summary = _make_smoke_summary(total=20, missing_live=3, missing_shadow=20)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    assert gate["gate_status"] == "FAIL"
+    failed = [c["criterion"] for c in gate["checks"] if c["result"] == "FAIL"]
+    assert "max_missing_live_pct" in failed
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_fail_live_key_stale():
+    """Too many live keys stale → FAIL."""
+    # 4/20 = 20 % > 5 % default
+    summary = _make_smoke_summary(
+        total=20, missing_live=0, missing_shadow=20, stale_live_total=4
+    )
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    assert gate["gate_status"] == "FAIL"
+    failed = [c["criterion"] for c in gate["checks"] if c["result"] == "FAIL"]
+    assert "max_stale_live_pct" in failed
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_inconclusive_too_few_live_samples():
+    """Not enough live samples → INCONCLUSIVE (not FAIL).
+
+    Scenario: only 5 total samples collected, all live present (C1 passes),
+    but min_live_samples=20 not yet reached → INCONCLUSIVE.
+    """
+    summary = _make_smoke_summary(total=5, missing_live=0, missing_shadow=5)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    assert gate["gate_status"] == "INCONCLUSIVE"
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_inconclusive_skips_stale_check():
+    """Stale check is SKIP when not enough live samples."""
+    summary = _make_smoke_summary(total=5, missing_live=4, missing_shadow=5)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    skip_checks = {c["criterion"] for c in gate["checks"] if c["result"] == "SKIP"}
+    assert "max_stale_live_pct" in skip_checks
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_info_does_not_affect_pass():
+    """INFO results are excluded from gate status determination — PASS unaffected."""
+    summary = _make_smoke_summary(total=20, missing_shadow=20)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    # Even though shadow is always missing (INFO), gate should PASS
+    assert gate["gate_status"] == "PASS"
+    # reason must mention criteria satisfied, not shadow
+    assert "criteria satisfied" in gate["gate_reason"]
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_thresholds_in_result():
+    """Thresholds must be reproduced in the gate result."""
+    t = LiveWriteSmokeThresholds(min_live_samples=10, max_missing_live_pct=0.10)
+    summary = _make_smoke_summary(total=10)
+    gate = evaluate_gate_smoke(summary, t)
+    assert gate["thresholds"]["min_live_samples"] == 10
+    assert gate["thresholds"]["max_missing_live_pct"] == 0.10
+
+
+@pytest.mark.unit
+def test_evaluate_gate_smoke_checks_contain_threshold_and_measured():
+    """All non-INFO check records must have threshold and measured."""
+    summary = _make_smoke_summary(total=20)
+    gate = evaluate_gate_smoke(summary, LiveWriteSmokeThresholds())
+    for chk in gate["checks"]:
+        assert "threshold" in chk
+        assert "measured" in chk
+        assert "result" in chk
+
+
 # ─── build_report (updated for gate schema v1.1) ──────────────────────────────
 
 
@@ -486,6 +695,21 @@ def test_build_report_schema_version():
     )
     assert report["schema_version"] == SCHEMA_VERSION
     assert report["symbol"] == "BTCUSDT"
+
+
+@pytest.mark.unit
+def test_build_report_default_mode_is_shadow_compare():
+    """build_report without mode kwarg defaults to shadow_compare."""
+    samples = [compare_snapshot(_live(), _shadow(), _NOW_MS)]
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        GateThresholds(min_comparable_samples=1),
+    )
+    assert report["mode"] == MODE_SHADOW_COMPARE
 
 
 @pytest.mark.unit
@@ -599,6 +823,150 @@ def test_build_report_is_json_serializable():
     json.dumps(report)
 
 
+# ─── build_report: live_write_smoke mode ──────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_field_set():
+    """Report produced with mode=live_write_smoke includes mode in output."""
+    samples = [compare_snapshot(_live(), None, _NOW_MS)] * 20
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=20),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    assert report["mode"] == MODE_LIVE_WRITE_SMOKE
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_pass_with_fresh_live_key():
+    """smoke mode: all live present + fresh → PASS (shadow always absent = expected)."""
+    fresh_ts = _NOW_MS - 1_000
+    samples = [compare_snapshot(_live(ts_ms=fresh_ts), None, _NOW_MS)] * 20
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=20),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    assert report["overall"] == "PASS"
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_shadow_missing_not_a_fail():
+    """smoke mode: shadow always absent does NOT produce FAIL."""
+    fresh_ts = _NOW_MS - 1_000
+    samples = [compare_snapshot(_live(ts_ms=fresh_ts), None, _NOW_MS)] * 20
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=20),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    # All shadow missing → would be FAIL in shadow_compare, must NOT be here
+    assert report["overall"] != "FAIL"
+    # And not because of missing_shadow_pct
+    failed = [c["criterion"] for c in report["gate"]["checks"] if c["result"] == "FAIL"]
+    assert "max_missing_shadow_pct" not in failed
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_fail_live_key_missing():
+    """smoke mode: too many live keys absent → FAIL."""
+    # 4/20 = 20 % > 5 % default
+    stale_count = 0
+    missing_live_count = 4
+    live_samples = [
+        compare_snapshot(_live(), None, _NOW_MS) for _ in range(20 - missing_live_count)
+    ]
+    dead_samples = [
+        compare_snapshot(None, None, _NOW_MS) for _ in range(missing_live_count)
+    ]
+    samples = live_samples + dead_samples
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    assert report["overall"] == "FAIL"
+    failed = [c["criterion"] for c in report["gate"]["checks"] if c["result"] == "FAIL"]
+    assert "max_missing_live_pct" in failed
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_fail_stale_live_key():
+    """smoke mode: too many stale live keys → FAIL."""
+    old_ts = _NOW_MS - STALE_THRESHOLD_MS - 1
+    fresh_ts = _NOW_MS - 1_000
+    # 4 stale out of 20 → 20 % > 5 %
+    samples = [compare_snapshot(_live(ts_ms=old_ts), None, _NOW_MS)] * 4 + [
+        compare_snapshot(_live(ts_ms=fresh_ts), None, _NOW_MS)
+    ] * 16
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=20),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    assert report["overall"] == "FAIL"
+    failed = [c["criterion"] for c in report["gate"]["checks"] if c["result"] == "FAIL"]
+    assert "max_stale_live_pct" in failed
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_uses_smoke_thresholds_not_shadow():
+    """smoke mode with LiveWriteSmokeThresholds — no shadow criteria in checks."""
+    samples = [compare_snapshot(_live(), None, _NOW_MS)] * 20
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=20),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    criteria = {c["criterion"] for c in report["gate"]["checks"]}
+    # Shadow compare criteria must NOT appear
+    assert "max_missing_shadow_pct" not in criteria
+    assert "max_price_delta_rel_p95_pct" not in criteria
+    # Smoke criteria must appear
+    assert "max_missing_live_pct" in criteria
+    assert "max_stale_live_pct" in criteria
+
+
+@pytest.mark.unit
+def test_build_report_smoke_mode_is_json_serializable():
+    samples = [compare_snapshot(_live(), None, _NOW_MS)] * 5
+    summary = summarize(samples)
+    report = build_report(
+        "BTCUSDT",
+        samples,
+        summary,
+        "2026-03-18T00:00:00+00:00",
+        LiveWriteSmokeThresholds(min_live_samples=5),
+        mode=MODE_LIVE_WRITE_SMOKE,
+    )
+    json.dumps(report)  # must not raise
+
+
 # ─── collect_samples ──────────────────────────────────────────────────────────
 
 
@@ -632,6 +1000,23 @@ def test_collect_samples_handles_missing_live_key():
 
     assert all(s["live_missing"] for s in samples)
     assert all(not s["comparable"] for s in samples)
+
+
+@pytest.mark.unit
+def test_collect_samples_handles_missing_shadow_key():
+    """In live_write_smoke mode the shadow key is absent — collect_samples must handle gracefully."""
+    mock_redis = MagicMock()
+    mock_redis.get.side_effect = lambda key: (
+        json.dumps(_live()).encode() if key.startswith("market_price:") else None
+    )
+    with patch("services.market.tools.v3_compare.time.sleep"):
+        samples = collect_samples(mock_redis, "BTCUSDT", 3, 1.0)
+
+    assert len(samples) == 3
+    assert all(s["shadow_missing"] for s in samples)
+    assert all(not s["comparable"] for s in samples)
+    # live_age_ms must be populated (live key was present)
+    assert all("live_age_ms" in s for s in samples)
 
 
 @pytest.mark.unit

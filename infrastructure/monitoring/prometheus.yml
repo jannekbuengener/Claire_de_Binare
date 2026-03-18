@@ -77,6 +77,26 @@ scrape_configs:
           service: 'market_data'
     metrics_path: '/metrics'
 
+  # Market Data Service — V3 client metrics (market_v3_decoded_total, ws_connected, …)
+  - job_name: 'cdb_market'
+    static_configs:
+      - targets: ['cdb_market:8009']
+        labels:
+          instance: 'cdb_market'
+          service: 'market_data'
+          symbol: 'BTCUSDT'
+    metrics_path: '/metrics'
+
+  # Market Data Service — ETH shadow instance (activated 2026-03-18, shadow-only)
+  - job_name: 'cdb_market_eth'
+    static_configs:
+      - targets: ['cdb_market_eth:8011']
+        labels:
+          instance: 'cdb_market_eth'
+          service: 'market_data'
+          symbol: 'ETHUSDT'
+    metrics_path: '/metrics'
+
   # PostgreSQL Exporter
   - job_name: 'cdb_postgres'
     static_configs:

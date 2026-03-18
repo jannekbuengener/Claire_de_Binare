@@ -8,6 +8,7 @@ target-version = "py312"
 line-length = 88
 exclude = [
   "services/ws/mexc_proto_gen/**",
+  "services/market/mexc_proto_gen/**",
 ]
 
 [tool.ruff.lint]
@@ -19,3 +20,5 @@ ignore = ["E501", "F401", "F541"]
 "tests/**" = ["F811", "F841", "E402"]
 "services/ws/mexc_v3_client.py" = ["E402"]
 "services/ws/mexc_v3_spike.py" = ["E402"]
+"services/market/mexc_v3_client.py" = ["E402"]
+"services/market/mexc_v3_spike.py" = ["E402"]

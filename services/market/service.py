@@ -9,14 +9,30 @@ Endpoints:
   GET /status                 — operational stats + cached symbols
   GET /market/price/<symbol>  — last-known price entry for a symbol
 
-Market State V1 (Issue #1201 Delta 1 — shadow mode):
-  This service computes and writes ``market_state_shadow:{symbol}`` (shadow key)
-  in parallel with ``cdb_candles`` writing to the live ``market_state:{symbol}``.
-  The shadow key is used for Evidence Gate comparison only — no consumer reads it.
+Market State V1 (Issue #1201 Delta 1 — cutover complete):
+  This service writes ``market_state:{symbol}`` (live key) into Redis.
+  Cutover from the shadow key completed 2026-03-18; Evidence Gate PASS on record.
+  MARKET_STATE_KEY_PREFIX=market_state is set in compose.blue.yml.
 
-  Shadow mode is the default (MARKET_STATE_KEY_PREFIX=market_state_shadow).
-  Cutover to the live key requires a passing Evidence Gate run and an explicit
-  MARKET_STATE_KEY_PREFIX=market_state env-var change in compose.blue.yml.
+V3 WebSocket path (Issue #1206 — live-write active as of 2026-03-18):
+  MARKET_V3_CLIENT_ENABLED=true activates a direct MEXC V3 WebSocket client
+  alongside the existing ``cdb_ws`` PubSub path.
+
+  Two modes, controlled by MARKET_V3_LIVE_WRITE:
+    false (shadow mode):
+      V3 writes to ``market_price_v3:{symbol}`` only.
+      Verified via ``shadow_compare`` gate (v3_compare.py --mode shadow_compare).
+      Shadow key exists; live key written by cdb_ws path only.
+
+    true  (live-write mode — current BLUE state):
+      V3 writes to ``market_price:{symbol}`` via _process_event().
+      cdb_ws PubSub path continues in parallel (last-write-wins, both sources).
+      Shadow key ``market_price_v3:{symbol}`` is intentionally absent.
+      Verified via ``live_write_smoke`` gate (v3_compare.py --mode live_write_smoke).
+      Evidence: reports/v3_smoke_BTCUSDT_live_write_2026-03-18.json (PASS 2026-03-18)
+
+  Rollback: MARKET_V3_LIVE_WRITE=false + redeploy cdb_market → shadow-only immediately.
+  Full disable: MARKET_V3_CLIENT_ENABLED=false + redeploy → zero V3 side-effects.
 """
 
 import json
@@ -410,6 +426,32 @@ MARKET_V3_SYMBOL: str = os.getenv("MARKET_V3_SYMBOL", "BTCUSDT")
 MARKET_V3_PRICE_KEY_PREFIX: str = "market_price_v3"
 
 
+def _parse_v3_symbols(raw: str) -> list[str]:
+    """Parse a comma-separated symbol string for V3 client bootstrap.
+
+    Strips whitespace, uppercases, and filters empty entries.
+    Returns a non-empty list of symbol strings.
+    Raises ValueError when no valid symbols remain after filtering.
+
+    In the current single-symbol-per-instance model (Option A), each
+    cdb_market container sets exactly one MARKET_V3_SYMBOL in compose.blue.yml.
+    This function validates that value and prepares the interface for a future
+    bootstrap loop should multi-symbol support be added.
+
+    Examples:
+        _parse_v3_symbols("BTCUSDT")            → ["BTCUSDT"]
+        _parse_v3_symbols("BTCUSDT,ETHUSDT")    → ["BTCUSDT", "ETHUSDT"]
+        _parse_v3_symbols("  btcusdt , eth  ")  → ["BTCUSDT", "ETH"]
+        _parse_v3_symbols("")                   → ValueError
+        _parse_v3_symbols(",,,")                → ValueError
+    """
+    symbols = [s.strip().upper() for s in raw.split(",")]
+    symbols = [s for s in symbols if s]
+    if not symbols:
+        raise ValueError(f"No valid symbols in {raw!r}")
+    return symbols
+
+
 def _v3_shadow_event(data: dict) -> None:
     """Process one V3 client trade event in shadow/compare mode.
 
@@ -500,6 +542,9 @@ def _start_v3_client_if_enabled() -> None:
             f"(websockets/protobuf missing?): {exc}"
         ) from exc
 
+    # Single-symbol bootstrap (Option A: one cdb_market instance per symbol).
+    # For multi-symbol support iterate _parse_v3_symbols(MARKET_V3_SYMBOL) here
+    # and start one MexcV3Client + daemon thread per entry.
     client = MexcV3Client(symbol=MARKET_V3_SYMBOL, on_trade=callback)
     _v3_client = client
 
