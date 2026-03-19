@@ -1,0 +1,16 @@
+{
+  "gate": "live_write_smoke",
+  "symbol": "ETHUSDT",
+  "live_write_flag": "MARKET_V3_LIVE_WRITE=true",
+  "container": "cdb_market_eth",
+  "port": 8011,
+  "live_key": "market_price:ETHUSDT",
+  "promotion_ts": "2026-03-18T19:04+02:00",
+  "result": "PASS",
+  "samples_total": 50,
+  "samples_present": 50,
+  "missing_live_count": 0,
+  "stale_count": 0,
+  "source": "issue_1208_documented",
+  "note": "Gate-Ergebnis aus Issue #1208 (50/50, 0 missing, 0 stale). Lokaler Smoke-Lauf am Promotions-Zeitpunkt."
+}
