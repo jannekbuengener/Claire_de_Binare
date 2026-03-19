@@ -1,6 +1,7 @@
 # Claire de Binare - Dev Overrides
 # Port-Bindings, Debug-Volumes, Relaxed Security
 # Network Isolation: All ports bound to localhost (127.0.0.1) only
+# 431B role: secondary local/compatibility overlay, not the canonical Docker CI lab baseline.
 #
 # SECRETS ARCHITECTURE:
 # - All secrets read from /run/secrets/ files

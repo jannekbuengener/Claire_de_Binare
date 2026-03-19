@@ -1,3 +1,5 @@
+# Canonical PR gate.
+# This workflow is not the Docker CI lab baseline; 431B baseline is base.yml + test.yml.
 name: ci
 
 on:

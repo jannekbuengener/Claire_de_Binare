@@ -12,15 +12,30 @@ The normal operator/runtime path is **BLUE+RED**:
 
 See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
 
-### Legacy Base Layer (CI-Only)
-- **`infrastructure/compose/base.yml`** - Legacy base configuration
+## Canonical Docker CI Lab Baseline
+
+For 431B, the canonical Docker CI lab baseline is:
+- **`infrastructure/compose/base.yml` + `infrastructure/compose/test.yml`**
+  - Shared infra base plus isolated `_test` services
+  - Separate `cdb_test_network` and test-only volumes
+  - Containerized pytest execution via `cdb_test_runner` and `Dockerfile.test`
+
+### Shared Base Layer
+- **`infrastructure/compose/base.yml`** - Shared base configuration
   - Core infrastructure services (Redis, Postgres, Prometheus, Grafana)
   - Production-ready defaults (no port bindings, secret-based auth)
   - Healthchecks for infrastructure services
   - Network: `cdb_network` (bridge)
-  - **Active CI consumers:** `shadow-soak-evidence.yml`, `e2e.yml`, `e2e-tests.yml`
+  - Shared by local overlays and the canonical CI lab baseline
 
-### Legacy Profile Overlays (CI-Only)
+### Canonical Test Overlay
+- **`infrastructure/compose/test.yml`** - Canonical 431B CI lab overlay
+  - `_test` service variants for isolated E2E execution
+  - `cdb_test_runner` executes pytest inside the lab
+  - Uses `Dockerfile.test` as the existing runner image
+  - Preferred over `dev.yml` when the goal is an isolated CI/test lab
+
+### Secondary Dev/Compatibility Overlay
 - **`infrastructure/compose/dev.yml`** - Development profile
   - Port bindings for local access (127.0.0.1 only)
   - Application services:
@@ -29,6 +44,7 @@ See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
     - Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
   - Debug volumes (logs mounted for easy access)
   - Port mappings: Fixed to match Dockerfile EXPOSE directives (PORT:PORT instead of PORT:8000)
+  - Still used by some older/secondary workflow paths, but not the canonical 431B baseline
 
 ### Feature Overlays
 - **`infrastructure/compose/logging.yml`** - Centralized logging
@@ -86,20 +102,30 @@ See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
 
 ## Usage
 
-### Development (Default)
+### Local Runtime (Default)
 ```powershell
-.\infrastructure\scripts\stack_up.ps1
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
-Equivalent to:
+
+### Docker CI Lab Baseline (431B)
 ```powershell
-docker-compose `
-  -f docker-compose.base.yml `
+docker compose `
+  -f infrastructure/compose/base.yml `
+  -f infrastructure/compose/test.yml `
+  up --abort-on-container-exit
+```
+
+### Secondary Dev/Compatibility Path
+```powershell
+docker compose `
   -f infrastructure/compose/base.yml `
   -f infrastructure/compose/dev.yml `
   up -d
 ```
+This path remains valid for local/dev-oriented flows and older CI consumers, but is not the canonical 431B baseline.
 
-### Development with Logging
+### Secondary Dev Path with Logging
 ```powershell
 .\infrastructure\scripts\stack_up.ps1 -Logging
 ```
@@ -107,6 +133,7 @@ Adds:
 - `infrastructure/compose/logging.yml`
 - Services: Loki + Promtail
 - Access Loki: `http://localhost:3100` (via Grafana)
+This remains a secondary local/helper path and is not the 431B baseline.
 
 ### Production
 ```powershell
@@ -148,8 +175,9 @@ Claire_de_Binare/
 ├── docker-compose.dev.yml          [LEGACY - do not use]
 └── infrastructure/
     ├── compose/
-    │   ├── base.yml                ✓ CANONICAL BASE
-    │   ├── dev.yml                 ✓ Dev profile
+    │   ├── base.yml                ✓ Shared base
+    │   ├── test.yml                ✓ Canonical 431B CI lab overlay
+    │   ├── dev.yml                 ✓ Secondary dev/compat overlay
     │   ├── logging.yml             ✓ Loki + Promtail overlay
     │   ├── network-prod.yml        ✓ Network isolation overlay
     │   ├── healthchecks-strict.yml ✓ Strict healthcheck overlay

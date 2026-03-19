@@ -1,3 +1,5 @@
+# Secondary CI smoke workflow.
+# 431B canonical Docker CI lab baseline lives at infrastructure/compose/base.yml + infrastructure/compose/test.yml.
 name: E2E Tests
 
 on:
@@ -170,7 +172,7 @@ jobs:
           CDB_POLICY_VERSION=${policy_version}
           EOF
 
-      - name: Start Docker Compose stack
+      - name: Start Docker Compose stack (secondary CI smoke path)
         id: start_stack
         shell: bash
         run: |

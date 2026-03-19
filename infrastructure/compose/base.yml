@@ -1,6 +1,7 @@
-# Claire de Binare - Base Infrastructure
+# Claire de Binare - Shared Compose Base
 # Core Services (Redis, Postgres, Prometheus, Grafana)
 # No Port-Bindings (internal only)
+# 431B baseline note: pair this file with test.yml for the canonical Docker CI lab path.
 #
 # SECRETS ARCHITECTURE (Blueprint-compliant):
 # - Secrets mounted to /run/secrets/ (not in environment variables)

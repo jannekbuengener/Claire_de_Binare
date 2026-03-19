@@ -15,6 +15,8 @@
 # ---
 # Makefile für Claire de Binare Test-Suite
 # Unterstützt sowohl CI (schnell, Mocks) als auch lokale E2E-Tests
+# 431B note: the canonical Docker CI lab baseline is infrastructure/compose/base.yml + infrastructure/compose/test.yml.
+# This Makefile remains focused on local/runtime-oriented operator flows and does not define that baseline.
 
 MCP_CONFIG_PATHS ?=
 

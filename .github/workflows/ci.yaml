@@ -1,3 +1,5 @@
+# Secondary legacy multi-job pipeline.
+# This file is not the canonical PR gate and not the 431B Docker CI lab baseline.
 name: CI/CD Pipeline
 
 on:
