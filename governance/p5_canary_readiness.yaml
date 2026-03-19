@@ -19,15 +19,14 @@ required_controls:
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-010
-    status: IMPLEMENTED
+    status: PASS
     evidence_path: docs/live-readiness/LR-010-EVIDENCE.md
     evidence_note: >
-      Control-specific evidence created 2026-03-19. Test anchors in
-      tests/unit/risk/ and tests/unit/verlosung/ cover circuit-breaker
-      thresholds, approve/reject paths, position sizing, stop-loss generation,
-      and edge cases. Tests are in CI path (pytest -q, no directory exclusion).
-      IMPLEMENTED: anchors present and in CI path.
-      PASS requires confirmed green CI run with verifiable reference.
+      PASS confirmed 2026-03-19. CI run 23295248170, commit e164abe474c6,
+      branch main, job ci (Unit/Integration + Lint gesammelt): success.
+      Test anchors in tests/unit/risk/ and tests/unit/verlosung/ cover
+      circuit-breaker thresholds, approve/reject paths, position sizing,
+      stop-loss generation, and edge cases.
     allowed_statuses: [IMPLEMENTED, PASS]
     hard_gate: true
   - id: LR-020

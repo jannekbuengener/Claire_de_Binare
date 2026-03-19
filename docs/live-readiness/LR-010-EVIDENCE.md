@@ -1,8 +1,9 @@
 # LR-010 Evidence: Risk Engine Deterministic Unit Test Coverage
 
 **Issue:** #779
-**Status:** IMPLEMENTED
+**Status:** PASS
 **Date:** 2026-03-19
+**PASS confirmed:** 2026-03-19
 
 ## Ziel
 
@@ -63,7 +64,18 @@ pytest --collect-only -q tests/unit/risk tests/unit/verlosung
 
 IMPLEMENTED ist gerechtfertigt, wenn die oben genannten control-spezifischen Testanker vorhanden sind und im CI-Pfad liegen.
 
-PASS würde zusätzlich einen bestätigten grünen CI-Run mit nachvollziehbarer Referenz erfordern, zum Beispiel Run-URL, Run-ID oder Merge-Commit-Nachweis auf main. Dieses Dokument beansprucht PASS ohne diesen Nachweis ausdrücklich nicht.
+PASS erfordert einen bestätigten grünen CI-Run mit nachvollziehbarer Referenz auf main.
+
+**PASS-Referenz (verifiziert 2026-03-19):**
+
+- Run ID: `23295248170`
+- Commit: `e164abe474c64981036ceee86222b7db95e48e32`
+- Branch: `main`
+- Job: `ci (Unit/Integration + Lint gesammelt)` — conclusion: `success`
+- Step: `Tests` (`pytest -q -k "not test_mcp_time_server_runtime"`) — conclusion: `success`
+- URL: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/23295248170
+
+Alle LR-010-Testanker liegen im `tests/unit/risk/` und `tests/unit/verlosung/` Pfad, der vom obigen CI-Run ohne Directory-Exclusion ausgeführt wurde.
 
 ## Go/No-Go Relevanz
 
