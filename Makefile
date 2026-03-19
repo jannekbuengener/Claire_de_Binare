@@ -135,19 +135,17 @@ test-full-system: docker-up docker-health test-e2e test-local
 
 ifeq ($(OS),Windows_NT)
 docker-up:
-	@echo "🐳 Starte Docker Compose Stack..."
-	@pwsh -NoProfile -Command "if (Test-Path 'infrastructure/compose/base.yml') { Write-Host '✓ Using Compose Fragments (base + dev)'; docker compose -f 'infrastructure/compose/base.yml' -f 'infrastructure/compose/dev.yml' up -d } else { Write-Host '⚠️  Fallback to legacy docker-compose.yml'; docker compose up -d }"
+	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
+	@pwsh -NoProfile -Command "docker network create cdb_network 2>&1 | Out-Null; Write-Host '✓ cdb_network bereit'"
+	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.blue.yml' up -d"
+	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.red.yml' up -d"
 	@pwsh -NoProfile -Command "Start-Sleep -Seconds 10"
 else
 docker-up:
-	@echo "🐳 Starte Docker Compose Stack..."
-	@if [ -f infrastructure/compose/base.yml ]; then \
-		echo "✓ Using Compose Fragments (base + dev)"; \
-		docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d; \
-	else \
-		echo "⚠️  Fallback to legacy docker-compose.yml"; \
-		docker compose up -d; \
-	fi
+	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
+	@docker network create cdb_network 2>/dev/null || true
+	@docker compose -f infrastructure/compose/compose.blue.yml up -d
+	@docker compose -f infrastructure/compose/compose.red.yml up -d
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
 endif
@@ -165,19 +163,16 @@ docker-up-prod:
 	sleep 10
 
 docker-down:
-	@echo "🛑 Stoppe Docker Compose Stack..."
-	@if [ -f infrastructure/compose/base.yml ]; then \
-		docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down; \
-	else \
-		docker compose down; \
-	fi
+	@echo "🛑 Stoppe Docker Compose Stack (BLUE+RED)..."
+	docker compose -f infrastructure/compose/compose.red.yml down; \
+	docker compose -f infrastructure/compose/compose.blue.yml down
 
 docker-health:
-	@echo "🏥 Prüfe Health-Status aller Container..."
-	@docker compose ps | grep -E "(cdb_redis|cdb_postgres|cdb_ws|cdb_core|cdb_risk|cdb_execution)" || true
-	@echo ""
-	@echo "Health-Check Details:"
-	@docker compose ps --format "table {{.Name}}\t{{.Status}}" | grep cdb_ || true
+	@echo "🏥 Prüfe Health-Status aller Container (BLUE+RED)..."
+	@echo "--- BLUE ---"
+	@docker compose -f infrastructure/compose/compose.blue.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null | grep cdb_ || true
+	@echo "--- RED ---"
+	@docker compose -f infrastructure/compose/compose.red.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null | grep cdb_ || true
 
 # ============================================================================
 # Paper Trading (14-Tage Test)
