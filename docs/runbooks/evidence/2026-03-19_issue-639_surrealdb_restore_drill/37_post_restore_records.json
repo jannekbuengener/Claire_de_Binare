@@ -1,0 +1,6 @@
+﻿[[{"created_at":"2026-03-19T19:02:58.613846760Z","event_type":"restore_drill_seed","evidence_ref":"issue-639","id":"governance_events:issue639_pre","integrity_algo":"manual","integrity_hash":"seed-governance-events","integrity_version":1}]]
+
+[[{"action_type":"restore_drill_seed","actor_id":"issue-639","created_at":"2026-03-19T19:03:17.514053159Z","id":"audit_trail:issue639_pre","integrity_algo":"manual","integrity_hash":"seed-audit-trail","integrity_version":1,"payload":{},"service_name":"codex"}]]
+
+[[{"created_at":"2026-03-19T19:02:41.702038687Z","id":"ledger_event:issue639_pre","note":"restore_drill_seed"}]]
+

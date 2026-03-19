@@ -1,0 +1,2 @@
+﻿[{"accesses":{},"analyzers":{},"apis":{},"buckets":{},"configs":{},"functions":{},"models":{},"modules":{},"params":{},"sequences":{},"tables":{"audit_trail":"DEFINE TABLE audit_trail TYPE NORMAL SCHEMAFULL PERMISSIONS NONE","governance_events":"DEFINE TABLE governance_events TYPE NORMAL SCHEMAFULL PERMISSIONS NONE","ledger_event":"DEFINE TABLE ledger_event TYPE ANY SCHEMALESS PERMISSIONS NONE"},"users":{}}]
+
