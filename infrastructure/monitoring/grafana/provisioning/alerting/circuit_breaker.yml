@@ -1,0 +1,57 @@
+apiVersion: 1
+# Issue #1214 - Grafana circuit-breaker alert rebuilt via provisioning.
+# Replaces stale UI-managed alert that caused DatasourceError + 1219h delayed notification.
+
+groups:
+  - orgId: 1
+    name: circuit-breaker
+    folder: CDB Alerts
+    interval: 1m
+    rules:
+      - uid: cdb-circuit-breaker-activated
+        title: CDB - Circuit Breaker Activated
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: circuit_breaker_active
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: gte
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "CRITICAL: CDB circuit breaker activated"
+          description: "circuit_breaker_active=1 on {{ $labels.instance }}. Trading has been halted."
+        labels:
+          severity: critical
+        isPaused: false

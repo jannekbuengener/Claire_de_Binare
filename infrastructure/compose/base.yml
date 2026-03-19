@@ -106,6 +106,7 @@ services:
       - ../../infrastructure/monitoring/grafana/entrypoint-postgres-password.sh:/usr/local/bin/entrypoint-postgres-password.sh:ro
       - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ../../infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
       - ../../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - cdb_prometheus

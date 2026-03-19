@@ -31,13 +31,13 @@ groups:
           description: "{{ $labels.instance }} has been down for more than 1 minute."
 
       - alert: CircuitBreakerTriggered
-        expr: cdb_circuit_breaker_triggered == 1
+        expr: circuit_breaker_active == 1
         for: 0s
         labels:
           severity: critical
         annotations:
-          summary: "Circuit Breaker triggered on {{ $labels.service }}"
-          description: "Circuit breaker type {{ $labels.breaker_type }} was triggered. Trading halted."
+          summary: "Circuit Breaker triggered on {{ $labels.instance }}"
+          description: "circuit_breaker_active=1 on {{ $labels.instance }}. Trading halted."
 
       - alert: DatabaseConnectionLost
         expr: pg_up == 0
