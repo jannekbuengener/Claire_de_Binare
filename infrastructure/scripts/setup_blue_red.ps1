@@ -26,6 +26,10 @@
     # Start BLUE + RED with smoke test
 
 .EXAMPLE
+    .\tools\cdb.ps1 runtime up
+    # Canonical PowerShell v1 front door
+
+.EXAMPLE
     .\setup_blue_red.ps1 -SkipRed
     # Start BLUE only (for manual signal injection testing)
 #>
@@ -161,4 +165,4 @@ Write-Host "`nNext Steps:" -ForegroundColor White
 Write-Host "  1. Check service status: docker compose -f infrastructure/compose/compose.blue.yml ps" -ForegroundColor Gray
 Write-Host "  2. View logs: docker compose -f infrastructure/compose/compose.blue.yml logs -f" -ForegroundColor Gray
 Write-Host "  3. Grafana: http://localhost:3000 (admin/password from secrets)" -ForegroundColor Gray
-Write-Host "  4. Re-run smoke test: python scripts/smoke_core_flow.py --verbose`n" -ForegroundColor Gray
+Write-Host "  4. Re-run smoke test: .\tools\cdb.ps1 runtime smoke -Verbose`n" -ForegroundColor Gray

@@ -1,28 +1,53 @@
 # Tools
 
-Utility scripts for local maintenance, diagnostics, and validation.
+Authoritative repo-wide PowerShell index for Claire de Binare.
 
-## Core scripts
+Scope:
+- Discovery and navigation for repo-local PowerShell entrypoints.
+- Classification only; this file does not change script behavior.
 
-- `check_ci_health.ps1` - Summarize GitHub Actions runs and flag CI degradation.
-- `validate_contract.py` - Validate payloads against contract schemas.
-- `verify_stack.ps1` - Verify Docker stack health (services, volumes, networks).
-- `install_hooks.ps1` - Install repo-local git hooks (contract validation).
-- `hooks/pre-commit.sh` - Pre-commit hook for baseline + contract validation.
-- `install-git-hooks.ps1` - Install repo-local git hooks (baseline enforcement).
-- `cdb-stack-doctor.ps1` - Diagnose Docker stack health and show logs.
-- `cdb-service-logs.ps1` - Tail logs for a specific service.
-- `cdb-secrets-sync.ps1` - Sync secrets into expected locations.
-- `enforce-root-baseline.ps1` - Verify repo root structure and baseline files.
-- `enforce-root-baseline.README.md` - Usage notes for baseline enforcement.
-- `stack_boot.ps1` - Bootstraps the local stack.
-- `set_secrets.ps1` - Create or update local secrets files.
-- `link_check.py` - Validate internal links.
-- `provenance_hash.py` - Create a provenance hash for artifacts.
+Important:
+- `Makefile` is the operative front door for common runtime flows such as `make docker-up`, `make docker-health`, and `make docker-down`.
+- `Makefile` is not itself part of the PowerShell v1 toolchain.
+- The canonical 431B Docker CI lab baseline is `infrastructure/compose/base.yml` + `infrastructure/compose/test.yml`; it sits outside the PowerShell v1 toolchain.
+- The canonical 431C security simulation source of truth is repo-native under `scripts/drills/` + `tests/chaos/`.
+- `tools/test_pack/` remains an experimental/secondary drill pack and is not the repo-wide default verification path.
 
-## Tool directories
+## Canonical v1 Front Door
 
-- `cleanup/` - Cleanup utilities.
-- `paper_trading/` - Paper trading runner and helpers.
-- `replay/` - Replay tooling for deterministic runs.
-- `research/` - Research scripts and experiments.
+- `tools/cdb.ps1` - Thin Windows/PowerShell dispatcher for the canonical v1 corridor.
+
+| Command | Underlying script |
+|---------|-------------------|
+| `.\tools\cdb.ps1 secrets init` | `infrastructure/scripts/init-secrets.ps1` |
+| `.\tools\cdb.ps1 runtime up` | `infrastructure/scripts/setup_blue_red.ps1` |
+| `.\tools\cdb.ps1 stack verify` | `tools/verify_stack.ps1` |
+| `.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100` | `tools/cdb-service-logs.ps1` |
+| `.\tools\cdb.ps1 runtime smoke` | `infrastructure/scripts/smoke_test.ps1` |
+
+Non-interactive form:
+- `pwsh -ExecutionPolicy Bypass -File .\tools\cdb.ps1 runtime up`
+
+## Canonical v1 Scripts
+
+- `infrastructure/scripts/init-secrets.ps1` - Initialize local secrets in `~/Documents/.secrets/.cdb`.
+- `infrastructure/scripts/setup_blue_red.ps1` - Canonical PowerShell runtime entrypoint for the BLUE+RED stack.
+- `tools/verify_stack.ps1` - Verify Docker stack health, expected volumes, networks, and optional endpoints.
+- `tools/cdb-service-logs.ps1` - Read focused service logs during runtime diagnosis.
+- `infrastructure/scripts/smoke_test.ps1` - Validate the current BLUE core flow path. This does not validate the full BLUE+RED stack end-to-end.
+
+## Secondary
+
+- `infrastructure/scripts/bootstrap_local.ps1` - Secondary convenience wrapper; not the canonical PowerShell v1 front door.
+- `infrastructure/scripts/bootstrap_local.sh` - Secondary non-Windows bootstrap helper; retains legacy convenience behavior and is not the PowerShell v1 front door.
+- `tools/cdb-stack-doctor.ps1` - Broader ad-hoc stack diagnostics helper outside the v1 corridor.
+- `tools/cdb-secrets-sync.ps1` - Local workspace/vault sync helper for secret files.
+- `tools/set_secrets.ps1` - Local secrets helper for workspace-managed flows.
+- `scripts/secrets/sync_cdb_secrets.ps1` - Repo-local helper for syncing GitHub Actions secrets when PAT fallback is used.
+
+## Legacy/Stale
+
+- `infrastructure/scripts/stack_up.ps1` - Older PowerShell stack launcher; keep for reference, not as the v1 discovery default.
+- `infrastructure/scripts/stack_verify.ps1` - Older verification path; use `tools/verify_stack.ps1` for v1 discovery.
+- `infrastructure/scripts/stack_doctor.ps1` - Older infra-local diagnostic entrypoint; prefer `tools/cdb-stack-doctor.ps1` when that style of helper is needed.
+- `tools/stack_boot.ps1` - Legacy bootstrap helper; not the canonical BLUE+RED runtime entrypoint.

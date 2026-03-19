@@ -18,6 +18,8 @@
 .EXAMPLE
     ./tools/cdb-service-logs.ps1 -ServiceName cdb_execution
     ./tools/cdb-service-logs.ps1 -ServiceName cdb_risk -Filter 'ERROR|WARN'
+.EXAMPLE
+    .\tools\cdb.ps1 service logs -ServiceName cdb_execution
 #>
 
 param(

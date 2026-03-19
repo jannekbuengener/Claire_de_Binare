@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 #
-# One-Click Local Bootstrap for Claire de Binare (Linux/Mac)
+# Secondary convenience bootstrap for Claire de Binare (Linux/Mac)
 #
 # This script initializes secrets, validates the environment,
 # starts the Docker stack, and runs basic health checks.
+#
+# Windows/PowerShell canonical v1 front door:
+#   .\tools\cdb.ps1
+#
+# Note:
+#   This helper is not the canonical PowerShell v1 front door and retains
+#   convenience-oriented local bootstrap behavior.
 #
 # Usage:
 #   ./infrastructure/scripts/bootstrap_local.sh
@@ -17,7 +24,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${CYAN}=== Claire de Binare - Local Bootstrap ===${NC}"
+echo -e "${CYAN}=== Claire de Binare - Local Bootstrap (Secondary Convenience Wrapper) ===${NC}"
+echo -e "${YELLOW}Windows/PowerShell canonical v1 front door: .\\tools\\cdb.ps1${NC}"
 
 # 1. Initialize Secrets
 echo -e "\n${YELLOW}1. Initializing secrets...${NC}"
@@ -59,6 +67,7 @@ else
 fi
 
 # 5. Start Docker Stack
+# Secondary convenience path: retains legacy base.yml + dev.yml behavior.
 echo -e "\n${YELLOW}5. Starting Docker Compose stack...${NC}"
 docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
 
@@ -102,4 +111,5 @@ echo -e "\n${CYAN}==========================================${NC}"
 echo -e "${GREEN}Bootstrap complete!${NC}"
 echo -e "Access Grafana at http://localhost:3000 (admin / see secrets)"
 echo -e "Run tests with: make test"
+echo -e "Canonical Windows/PowerShell v1 commands: .\\tools\\cdb.ps1 help"
 echo -e "${CYAN}==========================================${NC}"
