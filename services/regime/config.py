@@ -40,6 +40,10 @@ class RegimeConfig:
     atr_high_vol_threshold: float = _required_float("REGIME_ATR_HIGH_VOL_THRESHOLD")
     confirmation_bars: int = _required_int("REGIME_CONFIRMATION_BARS")
 
+    # Heartbeat: re-emit current regime even without a change, to keep signal fresh.
+    # Must be << CANDLE_REGIME_STALENESS_SECONDS (default 300s in cdb_candles/cdb_market).
+    heartbeat_interval_s: int = int(os.getenv("REGIME_HEARTBEAT_INTERVAL_S", "60"))
+
     source_version: str = os.getenv("REGIME_SOURCE_VERSION", "1")
     schema_version: str = "1"
 
