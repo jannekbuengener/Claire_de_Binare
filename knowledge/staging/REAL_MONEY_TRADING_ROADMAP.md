@@ -340,7 +340,7 @@ docker compose down  # NOT docker compose down -v
 docker stats
 
 # Inspect network
-docker network inspect claire_de_binare_cdb_network
+docker network inspect cdb_network
 
 # Enter container for debugging
 docker exec -it cdb_execution sh

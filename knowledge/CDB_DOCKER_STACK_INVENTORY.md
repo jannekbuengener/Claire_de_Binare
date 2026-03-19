@@ -91,8 +91,8 @@ docker compose --env-file .\.cdb_local\.secrets\.env.compose -f docker-compose.b
 - **No plaintext secrets** are stored directly in compose; values flow via `_FILE` references or Docker secrets sourced from the directory above.
 
 ## Networks
-- The stack defines the logical `cdb_network` bridge; compose sets the explicit Docker name to `claire_de_binare_cdb_network`. All active services attach to this bridge.
-- **Inspection tip:** `docker network inspect claire_de_binare_cdb_network` lists the infra/app containers described above.
+- The stack defines the logical `cdb_network` bridge; the explicit Docker network name is `cdb_network`. All active services attach to this bridge.
+- **Inspection tip:** `docker network inspect cdb_network` lists the infra/app containers described above.
 
 ## Volumes
 - **Named volumes (preserved across restarts):**
