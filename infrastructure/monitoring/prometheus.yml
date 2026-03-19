@@ -11,7 +11,7 @@ alerting:
   alertmanagers:
     - static_configs:
         - targets:
-            - "alertmanager:9093"
+            - "cdb_alertmanager:9093"
 
 scrape_configs:
   # Prometheus selbst
