@@ -131,6 +131,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ../../infrastructure/monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
       - ../../infrastructure/monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../../infrastructure/monitoring/grafana/provisioning/alerting:/etc/grafana/provisioning/alerting:ro
       - ../../infrastructure/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       cdb_prometheus:
