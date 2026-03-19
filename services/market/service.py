@@ -4,6 +4,13 @@ Subscribes to the ``market_data`` channel published by ``cdb_ws``.
 Validates each message via ``sanitize_market_data``, updates an in-memory
 price cache, and writes ``market_price:{symbol}`` into Redis (TTL 30 s).
 
+Direct MEXC feed (Issue #1206):
+  When MEXC_DIRECT_SYMBOL is set, the service additionally opens a direct
+  WebSocket connection to MEXC via ``MexcV3Client`` (services/ws/mexc_v3_client.py)
+  and feeds normalized deals through the same ``_process_message`` pipeline.
+  Both paths (PubSub + direct) can run in parallel; the direct feed is
+  opt-in and does not replace the PubSub path by default.
+
 Endpoints:
   GET /health                 — Docker HEALTHCHECK (503 when degraded)
   GET /status                 — operational stats + cached symbols
@@ -19,6 +26,7 @@ Market State V1 (Issue #1201 Delta 1 — shadow mode):
   MARKET_STATE_KEY_PREFIX=market_state env-var change in compose.blue.yml.
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -40,6 +48,12 @@ MARKET_REGIME_STREAM = os.getenv("MARKET_REGIME_STREAM", "stream.regime_signals"
 MARKET_STATE_KEY_PREFIX = os.getenv("MARKET_STATE_KEY_PREFIX", "market_state_shadow")
 MARKET_STATE_TTL_SECONDS = int(os.getenv("MARKET_STATE_TTL_SECONDS", "120"))
 MARKET_REGIME_STALENESS_SECONDS = int(os.getenv("MARKET_REGIME_STALENESS_SECONDS", "300"))
+
+# ─── MEXC direct feed config (Issue #1206) ───────────────────────────────────
+# Set MEXC_DIRECT_SYMBOL (e.g. "BTCUSDT") to enable direct WebSocket feed.
+# Empty string = disabled (default); PubSub path remains unchanged.
+MEXC_DIRECT_SYMBOL = os.getenv("MEXC_DIRECT_SYMBOL", "")
+MEXC_DIRECT_INTERVAL = os.getenv("MEXC_DIRECT_INTERVAL", "100ms")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,6 +96,7 @@ _stats: dict[str, int] = {
 _redis_client: redis.Redis | None = None
 _redis_connected: bool = False
 _subscription_active: bool = False
+_mexc_direct_active: bool = False
 
 
 def _build_redis_client() -> redis.Redis:
@@ -135,6 +150,38 @@ def _process_message(raw: str) -> None:
         except redis.RedisError as exc:
             logger.warning("Redis write failed for %s: %s", key, exc)
         _update_market_state(key, entry["ts_ms"], _redis_client)
+
+
+# ─── MEXC direct feed (Issue #1206) ──────────────────────────────────────────
+
+
+def _on_mexc_trade(event: dict) -> None:
+    """Adapter: MexcV3Client on_trade callback → _process_message pipeline.
+
+    normalize_deal() output is schema-v1.0 compatible (source, symbol, ts_ms,
+    price, trade_qty, side) and passes directly through sanitize_market_data.
+    """
+    _process_message(json.dumps(event))
+
+
+def _run_mexc_direct(symbol: str, interval: str) -> None:
+    """Run MexcV3Client in a dedicated asyncio loop (blocking, for daemon thread).
+
+    Sets _mexc_direct_active=True while the client is running so that /health
+    and /status reflect the live feed state.
+    """
+    global _mexc_direct_active
+    from services.ws.mexc_v3_client import MexcV3Client  # late import: optional dep
+
+    client = MexcV3Client(symbol=symbol, interval=interval, on_trade=_on_mexc_trade)
+    _mexc_direct_active = True
+    logger.info("MEXC direct feed active: symbol=%s interval=%s", symbol, interval)
+    try:
+        asyncio.run(client.run())
+    except Exception as exc:
+        logger.error("MEXC direct feed failed: %s", exc)
+    finally:
+        _mexc_direct_active = False
 
 
 # ─── Market State V1 ─────────────────────────────────────────────────────────
@@ -283,12 +330,13 @@ def _update_market_state(
 
 @app.route("/health", methods=["GET"])
 def health():
-    if _redis_connected and _subscription_active:
+    feed_active = _subscription_active or _mexc_direct_active
+    if _redis_connected and feed_active:
         return jsonify({"status": "healthy", "service": "market_data"}), 200
     issues = []
     if not _redis_connected:
         issues.append("redis unavailable")
-    if not _subscription_active:
+    if not feed_active:
         issues.append("no active subscription")
     return jsonify({"status": "degraded", "service": "market_data", "detail": issues}), 503
 
@@ -302,6 +350,7 @@ def status():
             "service": "market_data",
             "redis_connected": _redis_connected,
             "subscription_active": _subscription_active,
+            "mexc_direct_active": _mexc_direct_active,
             "stats": dict(_stats),
             "cached_symbols": symbols,
         }
@@ -348,6 +397,15 @@ def main() -> None:
     flask_thread = threading.Thread(target=_run_flask, daemon=True)
     flask_thread.start()
     logger.info("Flask API started on port %d", _FLASK_PORT)
+
+    if MEXC_DIRECT_SYMBOL:
+        mexc_thread = threading.Thread(
+            target=_run_mexc_direct,
+            args=(MEXC_DIRECT_SYMBOL, MEXC_DIRECT_INTERVAL),
+            daemon=True,
+        )
+        mexc_thread.start()
+        logger.info("MEXC direct feed thread started for symbol: %s", MEXC_DIRECT_SYMBOL)
 
     if _redis_client is None:
         logger.warning("No Redis connection — cannot subscribe; service in degraded mode")

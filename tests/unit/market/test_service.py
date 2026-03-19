@@ -17,6 +17,7 @@ def _reset_state():
     svc._stats["messages_invalid"] = 0
     svc._redis_connected = False
     svc._subscription_active = False
+    svc._mexc_direct_active = False
     svc._redis_client = None
     yield
 
@@ -166,3 +167,68 @@ def test_metrics_endpoint_returns_prometheus_output():
     assert response.status_code == 200
     assert "text/plain" in response.content_type
     assert b"market_messages_received_total" in response.data
+
+
+# ─── MEXC direct feed tests (Issue #1206) ────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_on_mexc_trade_valid_event_updates_cache():
+    """_on_mexc_trade adapter feeds normalize_deal output into _process_message."""
+    event = {
+        "schema_version": "v1.0",
+        "source": "mexc",
+        "symbol": "BTCUSDT",
+        "ts_ms": 1700000000000,
+        "price": "50000.00",
+        "trade_qty": "0.001",
+        "side": "buy",
+    }
+    svc._on_mexc_trade(event)
+    with svc._cache_lock:
+        entry = svc._cache.get("BTCUSDT")
+    assert entry is not None
+    assert entry["price"] == "50000.00"
+    assert svc._stats["messages_received"] == 1
+    assert svc._stats["messages_invalid"] == 0
+
+
+@pytest.mark.unit
+def test_on_mexc_trade_unknown_side_is_accepted():
+    """side='unknown' (missing tradetype in MEXC deal) passes sanitization."""
+    event = {
+        "source": "mexc",
+        "symbol": "ETHUSDT",
+        "ts_ms": 1700000000000,
+        "price": "3000.00",
+        "trade_qty": "0.5",
+        "side": "unknown",
+    }
+    svc._on_mexc_trade(event)
+    with svc._cache_lock:
+        entry = svc._cache.get("ETHUSDT")
+    assert entry is not None
+    assert entry["side"] == "unknown"
+    assert svc._stats["messages_received"] == 1
+
+
+@pytest.mark.unit
+def test_health_healthy_with_mexc_direct_active():
+    """mexc_direct_active=True counts as active feed for /health."""
+    svc._redis_connected = True
+    svc._mexc_direct_active = True
+    client = svc.app.test_client()
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.get_json()["status"] == "healthy"
+
+
+@pytest.mark.unit
+def test_status_exposes_mexc_direct_active():
+    """/status includes mexc_direct_active field."""
+    svc._redis_connected = True
+    svc._mexc_direct_active = True
+    client = svc.app.test_client()
+    response = client.get("/status")
+    assert response.status_code == 200
+    assert response.get_json()["mexc_direct_active"] is True
