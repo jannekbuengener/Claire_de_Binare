@@ -1,0 +1,167 @@
+[
+  {
+    "baseline": {
+      "captured_at_utc": "2026-03-10T10:18:11.029358+00:00",
+      "metrics": {
+        "execution_orders_filled_total": 0.0,
+        "execution_orders_rejected_total": 0.0,
+        "execution_shadow_blocked_total": 0.0,
+        "orders_approved_total": 0.0,
+        "orders_blocked_total": 0.0,
+        "signals_received_total": 0.0
+      },
+      "queue_length_stream_orders": 10003,
+      "runtime_mode": "shadow",
+      "runtime_mode_source": "runtime_mode",
+      "service_state": {
+        "cdb_db_writer": {
+          "healthy": true,
+          "restart_count": 1,
+          "running": true
+        },
+        "cdb_execution": {
+          "healthy": true,
+          "restart_count": 0,
+          "running": true
+        },
+        "cdb_postgres": {
+          "healthy": true,
+          "restart_count": 0,
+          "running": true
+        },
+        "cdb_redis": {
+          "healthy": true,
+          "restart_count": 0,
+          "running": true
+        },
+        "cdb_risk": {
+          "healthy": true,
+          "restart_count": 4,
+          "running": true
+        }
+      }
+    },
+    "event": "baseline_snapshot",
+    "step": "t0",
+    "timestamp_utc": "2026-03-10T10:18:12.021963+00:00"
+  },
+  {
+    "event": "fault_injected",
+    "method": "docker_restart",
+    "scenario": "redis_restart",
+    "step": "t1",
+    "target_container": "cdb_redis",
+    "timestamp_utc": "2026-03-10T10:18:12.021963+00:00"
+  },
+  {
+    "event": "restart_command_completed",
+    "restart_cmd_seconds": 0.985,
+    "restart_ok": true,
+    "scenario": "redis_restart",
+    "stderr": "",
+    "step": "t2",
+    "timestamp_utc": "2026-03-10T10:18:13.004353+00:00"
+  },
+  {
+    "container_recovery_class": "PASS",
+    "container_recovery_seconds": 11.172,
+    "event": "container_healthy",
+    "scenario": "redis_restart",
+    "step": "t3",
+    "timestamp_utc": "2026-03-10T10:18:24.186716+00:00"
+  },
+  {
+    "event": "services_recovered",
+    "scenario": "redis_restart",
+    "service_recovery_class": "PASS",
+    "service_recovery_seconds": 4.047,
+    "step": "t4",
+    "timestamp_utc": "2026-03-10T10:18:28.232932+00:00"
+  },
+  {
+    "collateral_restarts": {
+      "cdb_db_writer": 1,
+      "cdb_risk": 2
+    },
+    "event": "post_recovery_verification",
+    "filled_delta": 0.0,
+    "reasons": [],
+    "restart_deltas": {
+      "cdb_db_writer": 1,
+      "cdb_execution": 0,
+      "cdb_postgres": 0,
+      "cdb_redis": 0,
+      "cdb_risk": 2
+    },
+    "runtime_mode_after": "shadow",
+    "scenario": "redis_restart",
+    "status": "PASS",
+    "step": "t5",
+    "timestamp_utc": "2026-03-10T10:18:45.182815+00:00"
+  },
+  {
+    "event": "fault_injected",
+    "method": "docker_restart",
+    "scenario": "postgres_restart",
+    "step": "t1",
+    "target_container": "cdb_postgres",
+    "timestamp_utc": "2026-03-10T10:18:45.182815+00:00"
+  },
+  {
+    "event": "restart_command_completed",
+    "restart_cmd_seconds": 0.703,
+    "restart_ok": true,
+    "scenario": "postgres_restart",
+    "stderr": "",
+    "step": "t2",
+    "timestamp_utc": "2026-03-10T10:18:45.876959+00:00"
+  },
+  {
+    "container_recovery_class": "PASS",
+    "container_recovery_seconds": 11.156,
+    "event": "container_healthy",
+    "scenario": "postgres_restart",
+    "step": "t3",
+    "timestamp_utc": "2026-03-10T10:18:57.035253+00:00"
+  },
+  {
+    "event": "services_recovered",
+    "scenario": "postgres_restart",
+    "service_recovery_class": "PASS",
+    "service_recovery_seconds": 4.016,
+    "step": "t4",
+    "timestamp_utc": "2026-03-10T10:19:01.062655+00:00"
+  },
+  {
+    "collateral_restarts": {
+      "cdb_db_writer": 1,
+      "cdb_risk": 2
+    },
+    "event": "post_recovery_verification",
+    "filled_delta": 0.0,
+    "reasons": [],
+    "restart_deltas": {
+      "cdb_db_writer": 1,
+      "cdb_execution": 0,
+      "cdb_postgres": 0,
+      "cdb_redis": 0,
+      "cdb_risk": 2
+    },
+    "runtime_mode_after": "shadow",
+    "scenario": "postgres_restart",
+    "status": "PASS",
+    "step": "t5",
+    "timestamp_utc": "2026-03-10T10:19:18.047291+00:00"
+  },
+  {
+    "artifacts": [
+      "reports\\drills\\lr041\\lr041_timeline.json",
+      "reports\\drills\\lr041\\lr041_summary.json",
+      "reports\\drills\\lr041\\lr041_verdict.md"
+    ],
+    "event": "evidence_written",
+    "overall": "PASS",
+    "step": "t6",
+    "timestamp_utc": "2026-03-10T10:19:18.047291+00:00"
+  }
+]

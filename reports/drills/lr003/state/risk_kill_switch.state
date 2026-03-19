@@ -1,0 +1,5 @@
+state=active
+reason=manual
+message=LR-003 deterministic drill (operator: lr003-runner)
+activated_at=2026-03-10T18:30:25.969043
+updated_at=2026-03-10T18:30:25.969048

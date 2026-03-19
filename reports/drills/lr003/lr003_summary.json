@@ -1,0 +1,82 @@
+{
+  "drill_id": "lr003_kill_switch_limit_controls",
+  "verdict": "PASS",
+  "scenario_count": 7,
+  "passed_count": 7,
+  "failed_count": 0,
+  "scenarios": [
+    {
+      "name": "risk_kill_switch_active_blocks",
+      "passed": true,
+      "expected": "active=True, code=KILL_SWITCH_ACTIVE, reason=manual",
+      "actual": "active=True, code=KILL_SWITCH_ACTIVE, reason=manual",
+      "details": {
+        "reason": "manual",
+        "message": "LR-003 drill active gate (operator: lr003-drill)",
+        "activated_at": "2026-03-10T18:38:09.443418"
+      }
+    },
+    {
+      "name": "risk_kill_switch_eval_error_fails_closed",
+      "passed": true,
+      "expected": "active=True, code=KILL_SWITCH_UNEVALUABLE, fail-closed message",
+      "actual": "active=True, code=KILL_SWITCH_UNEVALUABLE, message=kill-switch evaluation error: state file corrupt",
+      "details": {
+        "reason": null,
+        "message": "kill-switch evaluation error: state file corrupt",
+        "activated_at": null
+      }
+    },
+    {
+      "name": "execution_kill_switch_active_blocks",
+      "passed": true,
+      "expected": "REJECTED before executor with persisted order_result",
+      "actual": "status=REJECTED, published=1, executor_calls=0",
+      "details": {
+        "order_id": "KILL_SWITCH_BLOCKED",
+        "error_message": "Order blocked: kill-switch active (manual)",
+        "saved_orders": []
+      }
+    },
+    {
+      "name": "deny_max_notional",
+      "passed": true,
+      "expected": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_NOTIONAL\"]}",
+      "actual": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_NOTIONAL\"]}",
+      "details": {
+        "input_hash": "176f579878207315bcae90390ecc90b0a3dfc73ef9732b76c1bca6a100668798",
+        "decision_hash": "e006869a3763a0df7c7b4138586ab0f406ffbec2605886a08772eb32ca1445b7"
+      }
+    },
+    {
+      "name": "deny_max_exposure",
+      "passed": true,
+      "expected": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_EXPOSURE\"]}",
+      "actual": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_EXPOSURE\"]}",
+      "details": {
+        "input_hash": "7a8d5969b85771d49332f84cd5cee6c50e5e90771728fff0153a7f5196e75694",
+        "decision_hash": "c947ff4a24d86350c802c6b22877067e9591af22c329268aa8ecdecc97ca26ea"
+      }
+    },
+    {
+      "name": "deny_max_drawdown",
+      "passed": true,
+      "expected": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_DRAWDOWN\"]}",
+      "actual": "{\"decision\": 0, \"reason_codes\": [\"RC_LIMIT_DRAWDOWN\"]}",
+      "details": {
+        "input_hash": "604e46047a3e769943b2742d698f6157dcf0ecd2866f3044c47a1f61324a72a6",
+        "decision_hash": "2d3464468d78a5a2c20442c7a4f0dc5a4ce64a06b33fb85f40892c9ffce002df"
+      }
+    },
+    {
+      "name": "allow_reduce_only_sell",
+      "passed": true,
+      "expected": "{\"decision\": 1, \"reason_codes\": []}",
+      "actual": "{\"decision\": 1, \"reason_codes\": []}",
+      "details": {
+        "input_hash": "3444848c05d4098e127d1fae12c3cc8104b793f4d926af9545776c5eca132a26",
+        "decision_hash": "0f90cd8fb5b43b206ac57024bd68c8139a5089d22a53e3631ee5d586c0c79f01"
+      }
+    }
+  ]
+}

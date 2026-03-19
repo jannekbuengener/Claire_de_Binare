@@ -1,0 +1,132 @@
+{
+  "artifacts": {
+    "summary_path": "reports\\drills\\lr041\\lr041_summary.json",
+    "timeline_path": "reports\\drills\\lr041\\lr041_timeline.json",
+    "verdict_path": "reports\\drills\\lr041\\lr041_verdict.md"
+  },
+  "baseline": {
+    "captured_at_utc": "2026-03-10T10:18:11.029358+00:00",
+    "metrics": {
+      "execution_orders_filled_total": 0.0,
+      "execution_orders_rejected_total": 0.0,
+      "execution_shadow_blocked_total": 0.0,
+      "orders_approved_total": 0.0,
+      "orders_blocked_total": 0.0,
+      "signals_received_total": 0.0
+    },
+    "queue_length_stream_orders": 10003,
+    "runtime_mode": "shadow",
+    "runtime_mode_source": "runtime_mode",
+    "service_state": {
+      "cdb_db_writer": {
+        "healthy": true,
+        "restart_count": 1,
+        "running": true
+      },
+      "cdb_execution": {
+        "healthy": true,
+        "restart_count": 0,
+        "running": true
+      },
+      "cdb_postgres": {
+        "healthy": true,
+        "restart_count": 0,
+        "running": true
+      },
+      "cdb_redis": {
+        "healthy": true,
+        "restart_count": 0,
+        "running": true
+      },
+      "cdb_risk": {
+        "healthy": true,
+        "restart_count": 4,
+        "running": true
+      }
+    }
+  },
+  "checks": {
+    "postgres_recovery_within_threshold": true,
+    "redis_recovery_within_threshold": true,
+    "shadow_runtime_preserved": true,
+    "zero_execution_preserved": true
+  },
+  "deterministic_runner": true,
+  "drill_id": "LR-041",
+  "evaluated_at_utc": "2026-03-10T10:19:18.047291+00:00",
+  "hashes": {
+    "summary_sha256": "7fda978b7816bea399ee3296e11b225bfc12061a2e03f71581139f3b92bbf481",
+    "timeline_sha256": "88a79ee592de927287e9def57f015c4d0de10eb31d0496691a6187d8aa939ccc"
+  },
+  "injection_method": "docker_restart",
+  "observations": {
+    "collateral_restarts": {
+      "postgres_restart": {
+        "cdb_db_writer": 1,
+        "cdb_risk": 2
+      },
+      "redis_restart": {
+        "cdb_db_writer": 1,
+        "cdb_risk": 2
+      }
+    }
+  },
+  "parameters": {
+    "recovery_timeout": 90,
+    "scenarios": [
+      "redis_restart",
+      "postgres_restart"
+    ],
+    "stability_seconds": 10
+  },
+  "runner_version": "1.0",
+  "scenarios": [
+    {
+      "container_recovery_seconds": 11.172,
+      "filled_delta": 0.0,
+      "name": "redis_restart",
+      "reasons": [],
+      "recovery_class": "PASS",
+      "restart_deltas": {
+        "cdb_db_writer": 1,
+        "cdb_execution": 0,
+        "cdb_postgres": 0,
+        "cdb_redis": 0,
+        "cdb_risk": 2
+      },
+      "restart_ok": true,
+      "runtime_mode_after": "shadow",
+      "service_recovery_seconds": 4.047,
+      "status": "PASS",
+      "target_container": "cdb_redis"
+    },
+    {
+      "container_recovery_seconds": 11.156,
+      "filled_delta": 0.0,
+      "name": "postgres_restart",
+      "reasons": [],
+      "recovery_class": "PASS",
+      "restart_deltas": {
+        "cdb_db_writer": 1,
+        "cdb_execution": 0,
+        "cdb_postgres": 0,
+        "cdb_redis": 0,
+        "cdb_risk": 2
+      },
+      "restart_ok": true,
+      "runtime_mode_after": "shadow",
+      "service_recovery_seconds": 4.016,
+      "status": "PASS",
+      "target_container": "cdb_postgres"
+    }
+  ],
+  "summary": {
+    "overall": "PASS",
+    "scenario_fail_count": 0,
+    "scenario_pass_count": 2
+  },
+  "thresholds": {
+    "postgres_recovery_pass_seconds": 60.0,
+    "redis_recovery_pass_seconds": 30.0
+  }
+}
