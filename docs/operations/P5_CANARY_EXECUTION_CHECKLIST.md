@@ -2,7 +2,7 @@
 
 - Control: `LR-050`
 - Status: `NO-GO`
-- Last updated: `2026-03-17`
+- Last updated: `2026-03-19`
 
 This checklist is a governance mapping document only. It does not authorize live trading.
 
@@ -48,23 +48,20 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 |---------|--------|----------|------|
 | LR-001 | IMPLEMENTED | `docs/live-readiness/LR-001-EVIDENCE.md` | Control-specific evidence |
 | LR-003 | IMPLEMENTED | `docs/live-readiness/LR-003-EVIDENCE.md` | Control-specific evidence |
-| LR-010 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no dedicated evidence |
+| LR-010 | IMPLEMENTED | `docs/live-readiness/LR-010-EVIDENCE.md` | Control-specific evidence 2026-03-19: unit tests for circuit breakers, risk engine core, edge cases |
 | LR-020 | IMPLEMENTED | `docs/live-readiness/LR-020-EVIDENCE.md` | Tier-1 CI tests + Tier-2 live-stack run (FILLED). Historical run: precondition gating not explicit pre-run (see evidence doc §5). Prechecks now automated fail-closed in capture script schema 1.2. |
 | LR-030 | IMPLEMENTED | `docs/evidence/LR-030.md` | Fail-closed gate with PR1 hardening |
 | LR-031 | IMPLEMENTED | `docs/evidence/LR-031.md` | Comparison layer implemented, thresholds calibrated, verdict PASS |
 | LR-040 | IMPLEMENTED | `docs/evidence/LR-040.md` | Gate evaluator + monitoring tooling, no 72h run evidence yet |
-| LR-041 | **OPEN** | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Tracking reference only, no chaos drill evidence |
+| LR-041 | IMPLEMENTED | `docs/evidence/LR-041.md` | Deterministic Redis/Postgres restart recovery drill, runner merged, local drill evidence passed |
 | LR-042 | IMPLEMENTED | `docs/evidence/LR-042.md` | Control-specific evidence |
 
 ## 5. Current No-Go Reasons
 
 - No committed successful P5 canary run artifact set
-- `LR-010` remains OPEN with no control-specific evidence
 - `LR-020` now has control-specific evidence (Tier-1 CI + Tier-2 live-stack run); the original Tier-2 run's operational preconditions (kill-switch state, runtime mode) were not explicitly verified pre-run — only inferable ex post from run outcome (see `docs/live-readiness/LR-020-EVIDENCE.md` §5). These prechecks are now automated and fail-closed in the capture script (schema 1.2); this does not alter the historical run artifact and does not constitute P5 approval.
-- `LR-041` remains OPEN with no control-specific evidence
 - `LR-040` is IMPLEMENTED but no 72h soak run evidence exists yet (PASS requires actual run)
 - `LR-031` is IMPLEMENTED: comparison layer calibrated and PASS verified (2026-03-16)
-- Controls pointing to `LR-AUDIT-STATUS-2026-03-05.md` are tracking references, not executable proof
 
 ## 6. Kill-Switch and Runtime-Mode References
 
