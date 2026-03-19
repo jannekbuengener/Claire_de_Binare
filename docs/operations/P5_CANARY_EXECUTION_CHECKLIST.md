@@ -73,7 +73,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 
 ## 7. Related Technical Artifacts
 
-- `reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md`
+- `reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md` (historical — incident gate 2026-02-03, not current prestart gate; see §8)
 - `knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md`
 - `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - `scripts/governance/check_branch_protection_drift.py`
@@ -84,3 +84,18 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 - `infrastructure/scripts/build_shadow_evidence_package.py`
 - `infrastructure/scripts/generate_evidence_index.py`
 - `scripts/governance/check_window_timer_guardrail.py`
+
+## 8. Prestart Pack
+
+When all NO-GO blockers are resolved, the operator MUST complete the prestart evidence lock
+before any P5 canary start attempt:
+
+- Template: `docs/operations/P5_PRESTART_PACK.md`
+- This document backs the compensating controls defined in `governance/p5_canary_readiness.yaml`:
+  - `prestart_evidence_lock`
+  - `decision_record_before_start`
+  - `no_code_or_config_change_after_prestart_lock`
+- Stack anchor: BLUE (`infrastructure/compose/compose.blue.yml`) — kill-switch at Port 8002,
+  execution at Port 8003, risk at Port 8002.
+- A completed, committed instance of the Prestart Pack is a required artifact before any P5 start.
+- P5 start remains blocked (NO-GO) until LR-040 72h PASS and a committed canary artifact set exist.
