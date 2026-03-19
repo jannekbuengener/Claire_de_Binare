@@ -1,4 +1,4 @@
-"""Gate test for LR-041 Redis/Postgres restart chaos drill."""
+"""Canonical repo-native 431C gate test for the LR-041 Redis/Postgres drill."""
 
 import json
 import os

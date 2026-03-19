@@ -80,7 +80,7 @@ required_controls:
 
 required_artifacts:
   - reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md
-  - tools/test_pack/runbooks/kill_switch_checklist.md
+  - docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md
   - scripts/governance/check_branch_protection_drift.py
   - scripts/lr003_contract_drift_guard.py
   - tests/resilience/test_fault_injection.py

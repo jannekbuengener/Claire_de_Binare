@@ -1,7 +1,12 @@
 # integrations/cdb-stack-adapter.ps1
 <#
 Purpose:
-  Run pack drills against the real CDB stack scripts if they exist.
+  Legacy bridge for experimental test_pack drills against older CDB stack scripts.
+
+Status:
+  - experimental / secondary
+  - not the canonical repo-wide 431C drill source of truth
+  - currently expects older `scripts\stack_up.ps1` / `scripts\stack_down.ps1` paths
 
 How:
   - points to the working repo root

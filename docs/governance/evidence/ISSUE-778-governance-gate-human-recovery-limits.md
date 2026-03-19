@@ -37,7 +37,7 @@ The following is implemented and testable in the repository today:
 - Limit controls stay deterministic for: `deny_max_notional`, `deny_max_exposure`, `deny_max_drawdown`, `allow_reduce_only_sell`
 
 ### Other repo-backed artifacts
-- Operator checklist anchor: `tools/test_pack/runbooks/kill_switch_checklist.md`
+- Operator checklist anchor: `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - Governance evidence (this file): `docs/governance/evidence/ISSUE-778-governance-gate-human-recovery-limits.md`
 - PR: https://github.com/jannekbuengener/Claire_de_Binare/pull/921
 

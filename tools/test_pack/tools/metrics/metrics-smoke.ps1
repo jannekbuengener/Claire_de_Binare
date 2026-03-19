@@ -1,5 +1,8 @@
 # tools/metrics/metrics-smoke.ps1
 <#
+Status:
+  Experimental helper under tools/test_pack; not the canonical repo-wide 431C drill source of truth.
+
 Purpose:
   Quick "are we blind?" check before running longer drills.
   - Prometheus targets reachable?

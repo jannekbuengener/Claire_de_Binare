@@ -6,6 +6,11 @@
 
 This guide covers security hardening requirements for production deployment with real money trading.
 
+Repo note (431C):
+- Canonical drill/simulation source of truth: repo-native `scripts/drills/` plus `tests/chaos/`
+- `tools/test_pack/` is experimental / secondary and not the repo-wide default harness
+- `infrastructure/scripts/security_audit.sh` is a legacy helper with stale repo assumptions, not the canonical drill path
+
 ---
 
 ## Security Layers

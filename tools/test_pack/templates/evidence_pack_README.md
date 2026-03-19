@@ -1,5 +1,10 @@
 # Evidence Pack (Template)
 
+Status:
+- Frozen pack-local template under `tools/test_pack/`
+- Kept as historical utility inside the frozen import snapshot
+- Not promoted to a repo-wide canonical template in this follow-up cut
+
 Path convention:
 docs/ops/evidence/YYYY-MM-DD_PHASEX_<topic>/
 

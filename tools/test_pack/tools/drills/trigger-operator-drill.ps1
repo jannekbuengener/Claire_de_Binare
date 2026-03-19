@@ -9,6 +9,11 @@ Operator Kill-Switch Drill:
   - writes timeline.json with real timestamps
   - writes machine-readable verification artifacts under reports/
 
+Status:
+  - experimental / secondary helper under tools/test_pack
+  - not the canonical repo-wide 431C drill source of truth
+  - defaults in this script reflect older compose / port assumptions
+
 BLOCKER NOTE — Alert Trigger:
   The Alertmanager config (infrastructure/monitoring/alertmanager.yml) is
   documented as "NOT used" in docs/operations/ALERTING_FIX_SUMMARY.md.

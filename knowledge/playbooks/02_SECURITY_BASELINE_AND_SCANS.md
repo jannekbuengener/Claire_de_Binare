@@ -43,3 +43,7 @@ Vorgehen:
 - Baseline-Doku aktualisiert
 - Verify Commands laufen lokal
 - CI-Scan Verhalten verstanden: was blockt, was nicht
+
+## Repo Note (431C)
+- Kanonische Drill-/Simulation-Linie: repo-native `scripts/drills/` plus `tests/chaos/`
+- `tools/test_pack/` ist experimentell/sekundaer und nicht die Baseline fuer Security-Drills

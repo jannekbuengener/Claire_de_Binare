@@ -65,7 +65,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 
 ## 6. Kill-Switch and Runtime-Mode References
 
-- Kill-switch precheck: `tools/test_pack/runbooks/kill_switch_checklist.md`
+- Kill-switch precheck: `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - Kill-switch verification in gate: `soak_gate_eval.py` check `kill_switch_precheck_inactive`
 - Runtime-mode verification in gate: `soak_gate_eval.py` check `runtime_mode_verified`
 - Circuit breaker source: risk service `/status` endpoint field `risk_state.circuit_breaker`
@@ -75,7 +75,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 
 - `reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md`
 - `knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md`
-- `tools/test_pack/runbooks/kill_switch_checklist.md`
+- `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - `scripts/governance/check_branch_protection_drift.py`
 - `scripts/lr003_contract_drift_guard.py`
 - `tests/resilience/test_fault_injection.py`

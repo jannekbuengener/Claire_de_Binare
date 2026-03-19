@@ -158,6 +158,7 @@
    - Validate runbook procedures (are they accurate?)
    - Test escalation paths (do contacts respond?)
    - Document lessons learned, update runbook
+   - Repo source of truth for deterministic drill execution: `scripts/drills/` plus `tests/chaos/`; `tools/test_pack/` stays experimental
 
 **Deliverables:**
 - ✅ Penetration test complete (findings report from external team)
