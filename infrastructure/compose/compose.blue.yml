@@ -59,6 +59,38 @@ services:
     networks:
       - cdb_network
 
+  cdb_market:
+    build:
+      context: ../..
+      dockerfile: services/market/Dockerfile
+    container_name: cdb_market
+    restart: unless-stopped
+    secrets:
+      - redis_password
+    environment:
+      ENV: "development"
+      LOG_LEVEL: "INFO"
+      REDIS_HOST: cdb_redis
+      MARKET_PORT: "8009"
+      # cdb_market owns market_state:{symbol} after cutover (Issue #1201).
+      # Evidence: reports/dual_write_evidence_2026-03-18_v2.json (PASS 2026-03-18)
+      MARKET_STATE_KEY_PREFIX: "market_state"
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -m services.market.service"]
+    ports:
+      - "127.0.0.1:8009:8009"
+    volumes:
+      - ../../logs:/app/logs
+    depends_on:
+      cdb_redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8009/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - cdb_network
+
   # ==================== CONTROL LAYER ====================
   # Evidence: Risk depends on allocation + regime (services/risk/service.py:588-639)
 
@@ -78,6 +110,8 @@ services:
       CANDLE_INTERVAL_SECONDS: "60"
       CANDLE_INPUT_CHANNEL: "market_data"
       CANDLE_OUTPUT_STREAM: "stream.candles_1m"
+      # Kill-switch: cdb_candles market_state write disabled after cutover (Issue #1201).
+      CANDLE_WRITE_MARKET_STATE: "false"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8007:8007"
@@ -185,12 +219,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       TRACE_CONTRACT_V1_ENABLED: "1"
       PAPER_AUTO_UNWIND: "true"
+      CDB_KILL_SWITCH_STATE_FILE: "/app/kill_switch/.cdb_kill_switch.state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -m services.risk.service"]
     ports:
       - "127.0.0.1:8002:8002"
     volumes:
       - ../../logs:/app/logs
       - validation_data:/app/data
+      - kill_switch_state:/app/kill_switch
     depends_on:
       cdb_postgres:
         condition: service_healthy
@@ -223,11 +259,13 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      CDB_KILL_SWITCH_STATE_FILE: "/app/kill_switch/.cdb_kill_switch.state"
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8003:8003"
     volumes:
       - ../../logs:/app/logs
+      - kill_switch_state:/app/kill_switch
     depends_on:
       cdb_postgres:
         condition: service_healthy
@@ -317,6 +355,7 @@ volumes:
   redis_data:
   postgres_data:
   validation_data:
+  kill_switch_state:
 
 # ==================== NETWORK ====================
 # Shared with RED stack - create once: docker network create cdb_network

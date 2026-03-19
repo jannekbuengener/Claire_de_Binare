@@ -3,7 +3,7 @@
 Operator Kill-Switch Drill:
   - emits a local console alert (Write-Warning) to prompt the operator
   - waits for operator to activate the kill-switch (manual step)
-  - verifies kill-switch state via get_kill_switch_details()
+  - verifies kill-switch state via HTTP GET /kill-switch (Python fallback if service unavailable)
   - optionally runs LR-003 repo-local gate drill for fail-closed evidence
   - captures docker compose logs under service_logs/
   - writes timeline.json with real timestamps
@@ -17,13 +17,21 @@ BLOCKER NOTE — Alert Trigger:
   A real external alert channel (webhook/email/PagerDuty) requires
   upstream work outside #661 scope.
 
+HTTP ENDPOINTS (#657 delivered):
+  The risk service now exposes operator HTTP endpoints:
+    GET  /kill-switch           — JSON status (active, reason, activated_at)
+    POST /kill-switch/activate  — requires operator; activates kill-switch
+    POST /kill-switch/deactivate — requires operator + justification
+  This drill uses these as the canonical operator path.
+  The Python path (resolve_kill_switch_state_file + KillSwitch) is the fallback.
+
 BLOCKER NOTE — Order Flow Stop (Runtime):
   Verifying "order flow actually stopped" at runtime (e.g. via metrics
   or live log markers) requires a running stack with active order flow.
-  This drill verifies kill-switch state (the canonical gate).
+  This drill verifies kill-switch state via HTTP (canonical) or Python (fallback).
   The LR-003 drill provides deterministic proof that the fail-closed
   gates (risk + execution) block when kill-switch is active.
-  Full runtime verification depends on #657.
+  Full E2E runtime verification remains an open gap (separate task).
 #>
 
 [CmdletBinding()]
@@ -31,12 +39,16 @@ param(
   [Parameter(Mandatory=$true)][string]$EvidenceDir,
   [string]$ComposeFile = "docker-compose.yml",
   [string]$RepoRoot = "",
+  [string]$RiskServiceUrl = "http://localhost:5000",
   [switch]$SkipLr003,
   [switch]$SkipStackLogs,
   [int]$WaitSeconds = 0
 )
 
 $ErrorActionPreference = "Stop"
+
+# Normalise URL — strip trailing slash to avoid double-slash in path construction
+$RiskServiceUrl = $RiskServiceUrl.TrimEnd('/')
 
 # --- Helpers ---
 
@@ -74,14 +86,15 @@ $timeline = New-Object System.Collections.ArrayList
 # --- Write run_config.json ---
 
 $runConfig = [ordered]@{
-  ts_utc       = (Get-Date -Format "o")
-  drill_type   = "operator_kill_switch"
-  evidence_dir = $EvidenceDir
-  repo_root    = $RepoRoot
-  compose_file = $ComposeFile
-  skip_lr003   = [bool]$SkipLr003
-  skip_stack_logs = [bool]$SkipStackLogs
-  wait_seconds = $WaitSeconds
+  ts_utc           = (Get-Date -Format "o")
+  drill_type       = "operator_kill_switch"
+  evidence_dir     = $EvidenceDir
+  repo_root        = $RepoRoot
+  compose_file     = $ComposeFile
+  risk_service_url = $RiskServiceUrl
+  skip_lr003       = [bool]$SkipLr003
+  skip_stack_logs  = [bool]$SkipStackLogs
+  wait_seconds     = $WaitSeconds
 }
 $runConfig | ConvertTo-Json -Depth 6 | Out-File (Join-Path $EvidenceDir "run_config.json") -Encoding utf8
 
@@ -114,8 +127,9 @@ $alertPayload = [ordered]@{
   message    = "Kill-Switch Drill: Activate the kill-switch NOW"
   source     = "trigger-operator-drill.ps1"
   timestamp  = (Get-Date -Format "o")
-  action_required = "Activate kill-switch via CLI, then return to this terminal"
-  instruction = "python -c `"from core.safety.kill_switch import activate_kill_switch, KillSwitchReason; activate_kill_switch(KillSwitchReason.MANUAL, 'Operator drill', 'drill-operator')`""
+  action_required = "Activate kill-switch via HTTP, then return to this terminal"
+  instruction = "curl -s -X POST $RiskServiceUrl/kill-switch/activate -H 'Content-Type: application/json' -d '{`"reason`":`"manual`",`"message`":`"Operator drill`",`"operator`":`"drill-operator`"}'"
+  instruction_fallback = "python -c `"from core.safety.kill_switch import KillSwitch, KillSwitchReason, resolve_kill_switch_state_file; KillSwitch(str(resolve_kill_switch_state_file())).activate(KillSwitchReason.MANUAL, 'Operator drill', operator='drill-operator')`""
 }
 
 # Attempt real email alert via EmailAlerter (graceful degradation if SMTP not configured)
@@ -162,8 +176,13 @@ Write-Warning "  OPERATOR DRILL ALERT - Kill-Switch Drill"
 Write-Warning "================================================================"
 Write-Warning "  ACTION REQUIRED: Activate the kill-switch NOW."
 Write-Warning ""
-Write-Warning "  Run this command from the repo root:"
-Write-Warning "    python -c `"from core.safety.kill_switch import activate_kill_switch, KillSwitchReason; activate_kill_switch(KillSwitchReason.MANUAL, 'Operator drill', 'drill-operator')`""
+Write-Warning "  Canonical path (HTTP):"
+Write-Warning "    curl -s -X POST $RiskServiceUrl/kill-switch/activate ``"
+Write-Warning "      -H 'Content-Type: application/json' ``"
+Write-Warning "      -d '{`"reason`":`"manual`",`"message`":`"Operator drill`",`"operator`":`"drill-operator`"}'"
+Write-Warning ""
+Write-Warning "  Fallback (no running service):"
+Write-Warning "    python -c `"from core.safety.kill_switch import KillSwitch, KillSwitchReason, resolve_kill_switch_state_file; KillSwitch(str(resolve_kill_switch_state_file())).activate(KillSwitchReason.MANUAL, 'Operator drill', operator='drill-operator')`""
 Write-Warning ""
 Write-Warning "  Then return to this terminal."
 Write-Warning "================================================================"
@@ -182,11 +201,34 @@ if ($WaitSeconds -gt 0) {
   Stamp $timeline "OPERATOR_WAIT_SKIPPED" "WaitSeconds=0; proceeding to verification immediately"
 }
 
-# --- Step 3: Kill-Switch Verification via get_kill_switch_details() ---
+# --- Step 3: Kill-Switch Verification — HTTP-first, Python fallback ---
 
 Stamp $timeline "VERIFY_KILL_SWITCH_START"
 
-$verifyPy = @"
+$verifyReport = Join-Path $EvidenceDir "reports\kill_switch_verification.json"
+$verifyResult = $null
+$verifyExitCode = 2  # default: error
+
+# Primary: HTTP GET /kill-switch
+try {
+  $httpResponse = Invoke-RestMethod -Method Get -Uri "$RiskServiceUrl/kill-switch" -TimeoutSec 5 -ErrorAction Stop
+  $verifyResult = [ordered]@{
+    kill_switch_active  = [bool]$httpResponse.active
+    reason              = $httpResponse.reason
+    message             = $httpResponse.message
+    activated_at        = $httpResponse.activated_at
+    verification_source = "HTTP GET $RiskServiceUrl/kill-switch"
+    verified_at         = (Get-Date -Format "o")
+  }
+  $verifyExitCode = if ($httpResponse.active) { 0 } else { 1 }
+  Stamp $timeline "VERIFY_HTTP_OK" "HTTP GET /kill-switch succeeded"
+  Write-Host "Kill-switch verification: HTTP OK"
+} catch {
+  Stamp $timeline "VERIFY_HTTP_FAILED" "HTTP unavailable: $($_.Exception.Message) — falling back to Python"
+  Write-Host "Kill-switch verification: HTTP unavailable, using Python fallback"
+
+  # Fallback: Python get_kill_switch_details()
+  $verifyPy = @"
 import json, sys, os
 sys.path.insert(0, os.environ.get('CDB_REPO_ROOT', '.'))
 try:
@@ -197,7 +239,7 @@ try:
         'reason': reason,
         'message': message,
         'activated_at': activated_at,
-        'verification_source': 'get_kill_switch_details()',
+        'verification_source': 'Python get_kill_switch_details() [fallback]',
         'verified_at': __import__('datetime').datetime.utcnow().isoformat() + 'Z',
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -206,35 +248,37 @@ except Exception as e:
     result = {
         'kill_switch_active': None,
         'error': str(e),
-        'verification_source': 'get_kill_switch_details()',
+        'verification_source': 'Python get_kill_switch_details() [fallback]',
         'verified_at': __import__('datetime').datetime.utcnow().isoformat() + 'Z',
     }
     print(json.dumps(result, indent=2, ensure_ascii=False))
     sys.exit(2)
 "@
-
-$verifyReport = Join-Path $EvidenceDir "reports\kill_switch_verification.json"
-$env:CDB_REPO_ROOT = $RepoRoot
-try {
-  $verifyOutput = python -c $verifyPy 2>&1
-  $verifyExitCode = $LASTEXITCODE
-  $verifyOutput | Out-File -FilePath $verifyReport -Encoding utf8
-
-  if ($verifyExitCode -eq 0) {
-    Stamp $timeline "VERIFY_KILL_SWITCH_ACTIVE" "Kill-switch confirmed ACTIVE"
-    Write-Host "Kill-switch verification: ACTIVE (PASS)"
-  } elseif ($verifyExitCode -eq 1) {
-    Stamp $timeline "VERIFY_KILL_SWITCH_INACTIVE" "Kill-switch is INACTIVE — operator did not activate"
-    Write-Warning "Kill-switch verification: INACTIVE (operator did not activate)"
-  } else {
-    Stamp $timeline "VERIFY_KILL_SWITCH_ERROR" "Verification failed with exit code $verifyExitCode"
-    Write-Warning "Kill-switch verification: ERROR (exit code $verifyExitCode)"
+  $env:CDB_REPO_ROOT = $RepoRoot
+  try {
+    $pyOutput = python -c $verifyPy 2>&1
+    $verifyExitCode = $LASTEXITCODE
+    $verifyResult = $pyOutput | ConvertFrom-Json -ErrorAction SilentlyContinue
+    if (-not $verifyResult) {
+      $verifyResult = [ordered]@{ raw_output = ($pyOutput -join "`n"); verified_at = (Get-Date -Format "o") }
+    }
+  } catch {
+    $verifyExitCode = 2
+    $verifyResult = [ordered]@{ error = $_.Exception.Message; verified_at = (Get-Date -Format "o") }
   }
-} catch {
-  Stamp $timeline "VERIFY_KILL_SWITCH_ERROR" $_.Exception.Message
-  @{ error = $_.Exception.Message; verified_at = (Get-Date -Format "o") } |
-    ConvertTo-Json -Depth 6 |
-    Out-File -FilePath $verifyReport -Encoding utf8
+}
+
+$verifyResult | ConvertTo-Json -Depth 6 | Out-File -FilePath $verifyReport -Encoding utf8
+
+if ($verifyExitCode -eq 0) {
+  Stamp $timeline "VERIFY_KILL_SWITCH_ACTIVE" "Kill-switch confirmed ACTIVE (source: $($verifyResult.verification_source))"
+  Write-Host "Kill-switch verification: ACTIVE (PASS)"
+} elseif ($verifyExitCode -eq 1) {
+  Stamp $timeline "VERIFY_KILL_SWITCH_INACTIVE" "Kill-switch is INACTIVE — operator did not activate"
+  Write-Warning "Kill-switch verification: INACTIVE (operator did not activate)"
+} else {
+  Stamp $timeline "VERIFY_KILL_SWITCH_ERROR" "Verification error (exit code $verifyExitCode)"
+  Write-Warning "Kill-switch verification: ERROR"
 }
 
 # --- Step 4: Optional LR-003 fail-closed gate drill ---

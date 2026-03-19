@@ -157,3 +157,12 @@ def test_status_endpoint_returns_operational_state():
     assert data["subscription_active"] is True
     assert data["stats"]["messages_received"] == 3
     assert "BTCUSDT" in data["cached_symbols"]
+
+
+@pytest.mark.unit
+def test_metrics_endpoint_returns_prometheus_output():
+    client = svc.app.test_client()
+    response = client.get("/metrics")
+    assert response.status_code == 200
+    assert "text/plain" in response.content_type
+    assert b"market_messages_received_total" in response.data
