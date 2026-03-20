@@ -26,6 +26,33 @@ This snapshot is preserved as:
 - `mcp_navpack_docs_hub*/` — historical navigation packs from the old repo
 - `verlosung/` — experimental migration artifacts
 
+## Snapshot Classification
+
+The names inside this snapshot intentionally mirror the retired docs-hub
+topology. That makes some paths look active even though the whole tree is
+frozen.
+
+| Class | Examples in this snapshot | Maintainer rule |
+| --- | --- | --- |
+| Frozen snapshot mirrors | `agents/`, `knowledge/`, `meta/`, `scripts/`, `tools/` | These are historical mirrors of formerly active areas. Do not treat them as the current source of truth, even if individual files still say "canonical" or "write here". |
+| Historical/quarantined content | `_archive/`, `_legacy_quarantine/`, `verlosung/`, `meta/legacy/`, `meta/migrations/` | Provenance only. Keep for audit/history; do not reactivate by accident. |
+| Generated historical navigation artifacts | `mcp_navpack_docs_hub*/`, `DOCS.taxonomy.json`, `LINKS.graph.json`, `NAVPACK.manifest.json`, `ENTRYPOINTS.yaml`, `QUERIES.snippets.yaml` | Generated from the retired docs-hub structure. They may mention `.worktrees/` and other dead paths. Never use them as the current navigation baseline. |
+| Compatibility/provenance root files | `DOCS_HUB_INDEX.md`, `index.yaml`, `cdb_docs_index.yaml`, `issues.md`, `README.md` | Retained for comparison, adapter compatibility, or audit trace. Not default edit targets. |
+
+## Maintainer Guardrail
+
+If a file under this snapshot claims to be canonical, authoritative, or the
+place to write, read that as historical wording from the pre-`#1140` split-repo
+state.
+
+For active canon, use the working-repo entrypoints instead:
+- `docs/meta/WORKING_REPO_CANON.md`
+- `agents/AGENTS.md`
+- `knowledge/`
+- `docs/`
+- `.github/`
+- `mcp_navpack_working_repo/`
+
 ## Retention note
 
 Content in this snapshot is retained pending explicit review decisions.
