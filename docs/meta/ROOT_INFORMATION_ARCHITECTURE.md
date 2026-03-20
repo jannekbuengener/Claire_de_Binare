@@ -47,6 +47,30 @@ material and should not grow in root by default.
 - Before moving an existing tracked root artifact, verify live references with
   repo search and preserve any discoverability path that external links may use.
 
+## Reference-Checked Exceptions (2026-03-20)
+
+- Keep in place for now because active repo references still exist:
+  - `governance-audit-2026-01-15.md` is linked from `README.md`.
+  - `P1_RUNTIME_DOD_REPORT.md` and `runtime_evidence_bundle_P1.json` are linked
+    from `docs/governance/README.md` and
+    `docs/governance/MARKET_STATE_CONTRACT_V1.md`.
+  - `evidence-run/` is referenced from `governance/p5_canary_readiness.yaml`,
+    `docs/live-readiness/LR-020-STATE.yaml`,
+    `docs/live-readiness/LR-020-EVIDENCE.md`, and
+    `scripts/lr020_tier2_evidence_capture.py`.
+- Already-correct root pointer cases:
+  - `LEGACY_FILES.md`, `ORCHESTRATOR_PACK_144.md`, and
+    `360-SYSTEMCHECK.md` are already short local discoverability pointers.
+- Low-risk move candidates once a destination is chosen and external-link
+  compatibility is handled:
+  - `CODEX_RUN_REPORT.md`, `EVIDENCE_BACKFILL_REPORT.md`,
+    `MERGE_921_REPORT.md`, `MERGE_922_REPORT.md`, `PASS35_REPORT.md`,
+    `PASS36_MAINLINK_SWAP_REPORT.md`, `PASS45_PLACEHOLDER_CLEANUP_REPORT.md`,
+    `PASS661_EVIDENCE_CLOSE_REPORT.md`, `PASS749_ADD_SNAPSHOT_LINK_REPORT.md`,
+    `PASS749_NEXUS_POLISH_REPORT.md`, and
+    `PASS749_SNAPSHOT_LINK_SWAP_REPORT.md` had no active repo-internal
+    references in the current spot check outside this policy file.
+
 ## First Triage Queue
 
 These are the highest-signal root clutter classes for follow-up, but are not
