@@ -1,0 +1,42 @@
+schema_version: "1.0"
+handoff_instance: initial_committed_no_go_handoff
+artifact_root: reports/p5_canary/2026-03-20/
+status: NO-GO
+authorization: not_authorized
+handoff_date_utc: 2026-03-20
+evidence_lock_utc: NOT_CAPTURED
+capture_state: no_runtime_capture
+commit_sha: c63b5e200b030aeb8516c5fad35b38f75b5bc69d
+commit_sha_role: source_revision_before_handoff_instantiation
+worktree_status: clean_at_source_revision
+worktree_status_note: no operative prestart capture was performed for this handoff instance
+operator: pending_operator_assignment
+operator_state: no_human_operator_recorded
+purpose: committed_handoff_materialization_only
+kill_switch_status:
+  active: NOT_CAPTURED
+  source: http://127.0.0.1:8002/kill-switch
+  captured_utc: NOT_CAPTURED
+  capture_state: pending_runtime_capture
+  response: NOT_CAPTURED
+  expected_field: active
+  required_value_before_start: false
+execution_status:
+  mode: mock
+  source: http://127.0.0.1:8003/status
+  captured_utc: NOT_CAPTURED
+  capture_state: pending_runtime_capture
+  response: NOT_CAPTURED
+  canonical_field: execution_status.mode
+  value_basis: normative_required_value_current_path
+risk_status:
+  circuit_breaker: NOT_CAPTURED
+  source: http://127.0.0.1:8002/status
+  captured_utc: NOT_CAPTURED
+  capture_state: pending_runtime_capture
+  response: NOT_CAPTURED
+  expected_field: risk_state.circuit_breaker
+  required_value_before_start: false
+notes:
+  - This file is a committed NO-GO handoff instance, not an operative prestart evidence lock from a start attempt.
+  - No runtime actions or local service queries were performed.
