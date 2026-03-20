@@ -3,18 +3,17 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 ---
 ## 🚦 Live Readiness (Operational Gate)
 
-**Status:** ✅ **LIVE-READY**  
-**Gate:** PASSED (LR-001 → LR-007 vollständig abgeschlossen)
+**Status:** ❌ **NO-GO**  
+**Canonical source:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 
-- **Completion:** ★★★★★ **100 %**
-- **Tasks:** 7 / 7 DONE · 0 BLOCKED
-- **Validator:** `python scripts/lr004_completion_guard.py --check` → **PASS**
-- **Last verified:** 2026-02-10 15:50 CET
-- **Commit:** `27d2f4b9cda518821ae855009db68793cd9656cf`
+- **Scope basis:** `ROADMAP.yaml` + `LR-001..LR-007-STATE.yaml` + aktuelle GitHub-LR-Issues
+- **Last reconciliation:** 2026-03-15
+- **Roadmap status:** `P0` DONE, `P1` bis `P5` nicht abgeschlossen
+- **Human gate:** Keine Echtgeld-Freigabe ohne vollstaendige Evidenz und explizite menschliche Freigabe
 
-**Interpretation (bindend):**  
-Das System ist **betriebsfähig**, **governance-konform**, **fail-closed**, **recovery-fähig** und kann im Shadow / Live-Betrieb laufen.  
-Es gibt **keine offenen Blocker** für den operativen Einsatz.
+**Einordnung:**  
+`CURRENT_STATUS.md` beschreibt den aktuellen Repo-/Main-/Testzustand.  
+`PROJECT_STATUS.md` ist ein historischer Implementierungs-Snapshot und kein operativer Go/No-Go-Status.
 
 ---
 
@@ -38,9 +37,10 @@ Er ist **kein Maß für Betriebsreife** und **kein Release-Gate**.
 
 ### Kurzfassung (fuer Leser mit wenig Zeit)
 
-- **Live Readiness:** NO-GO (Post-Migration, BLUE+RED canonical runtime)
+- **Live Readiness:** NO-GO (siehe `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
 - **Systemstatus:** Runtime migriert auf BLUE+RED; base.yml + dev.yml sind CI/Legacy-only
-- **Offene Issues:** betreffen Ausbau, nicht Betrieb
+- **Repo-/Teststatus:** siehe `CURRENT_STATUS.md`
+- **Historischer Implementierungsstand:** siehe `PROJECT_STATUS.md` (historischer Snapshot)
 
 ---
 
@@ -95,6 +95,8 @@ Kanonische 431C-Linie:
 - `infrastructure/scripts/security_audit.sh` = Legacy-/Stale-Helper mit alten Repo-Annahmen; nur Referenz, nicht Harness-Canon
 
 ## 📊 Projektstatus
+
+Historischer Fortschritts-Snapshot im README (Stand 2026-01-07), nicht als kanonische Live-Readiness-Aussage lesen.
 
 ### Gesamtfortschritt
 ```
