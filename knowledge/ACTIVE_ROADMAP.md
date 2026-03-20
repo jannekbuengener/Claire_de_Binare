@@ -9,9 +9,10 @@ start. It now resolves only to local working-repo sources.
 
 ## Canonical Locations
 
-- Primary status: `knowledge/CURRENT_STATUS.md`
+- Working repo / engineering status: `CURRENT_STATUS.md`
+- Operational live-readiness status: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+- Historical knowledge snapshot: `knowledge/CURRENT_STATUS.md` (context only)
 - Detailed plans: `knowledge/roadmap/`
-- Live-readiness tracking: `docs/live-readiness/`
 - Canon and archive policy: `docs/meta/WORKING_REPO_CANON.md`
 
 ## Current Focus

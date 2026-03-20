@@ -11,7 +11,9 @@ reviews, and evidence that must stay close to the working codebase.
 ## Key Entry Points
 
 - `knowledge/CDB_KNOWLEDGE_HUB.md`
-- `knowledge/CURRENT_STATUS.md`
+- `CURRENT_STATUS.md` (working repo / engineering status)
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operational live-readiness status)
+- `knowledge/CURRENT_STATUS.md` (historical knowledge snapshot)
 - `knowledge/SYSTEM.CONTEXT.md`
 - `knowledge/ACTIVE_ROADMAP.md`
 - `knowledge/governance/`

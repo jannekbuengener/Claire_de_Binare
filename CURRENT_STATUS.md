@@ -1,6 +1,10 @@
 # Current Status
 
-## Ops Status (2026-02-21)
+**Status Class**: Working Repo / Engineering Status
+**Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
+**Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+
+## Repo / Engineering Status (2026-02-21)
 
 - **main**: green, 0 open PRs (backlog cleanup: 30 → 0)
 - **Dependencies**: Dependabot OK, last merged: #897 Flask 3.1.3
