@@ -101,6 +101,11 @@ Required committed files:
 - `endpoints/kill_switch_status.json`
 - `lr040/lr040_soak_gate_eval.json`
 
+For `lr040/lr040_soak_gate_eval.json` the committed file is only valid if it was
+materialized from a real raw 72h soak directory under `artifacts/soak_test_*`
+via `infrastructure/scripts/materialize_lr040_verdict_anchor.py`.
+Shadow-prereq evidence packages are not a valid source for this file.
+
 The files `prestart_evidence_lock.yaml` and `decision_record.yaml` are the committed operator-facing records.
 The files under `endpoints/` are the raw endpoint snapshots captured for the same evidence lock.
 

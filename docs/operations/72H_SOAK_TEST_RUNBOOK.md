@@ -18,6 +18,15 @@ Terminology used here follows current governance:
 - `shadow` names shadow/probe/evidence semantics
 - `full|lean` name soak/collection profiles, not runtime-mode values
 
+Boundary for this runbook:
+- LR-040 preparation: host preflight, stack health, artifact-dir readiness
+- LR-040 operative execution: the real 72h soak run and hourly evidence capture
+- LR-040 committed repo materialization: evaluate raw artifacts, then materialize
+  `reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
+- P5 core handoff: separate prestart/decision artifacts under
+  `reports/p5_canary/<YYYY-MM-DD>/`
+- Shadow-prereq evidence: separate CI/manual path, not a valid LR-040 PASS source
+
 Gate criteria:
 - Zero container restarts across all `cdb_*` services
 - No OOM kills
@@ -175,12 +184,23 @@ python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_YYYYMM
 cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
 ```
 
+**Materialize committed verdict anchor (repo-only handoff step):**
+
+```bash
+python infrastructure/scripts/materialize_lr040_verdict_anchor.py \
+  artifacts/soak_test_YYYYMMDD_HHMMSS \
+  reports/p5_canary/<YYYY-MM-DD>/
+cat reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json
+```
+
 **Committed P5 reference path (separate, outside this runbook):**
 - `reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
 
 **Verdict interpretation (no P5 release decision):**
 - PASS: `lr040_soak_gate_eval.json` verdict is `PASS`
 - FAIL: any check failed — see `failures` array for root cause before re-attempting
+- materialization alone is not PASS; PASS must already come from the real raw
+  72h evaluator output
 - A PASS here is a necessary LR-040 evidence anchor only; it does not, by
   itself, create the committed P5 core artifact set and does not change P5 from
   `NO-GO`

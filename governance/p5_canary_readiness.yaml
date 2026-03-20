@@ -30,6 +30,16 @@ committed_p5_artifact_contract:
   optional_shadow_prereq_evidence:
     - shadow_prereq/manifest.json
     - shadow_prereq/package_manifest.json
+  lr040_committed_anchor_contract:
+    root: reports/p5_canary/<YYYY-MM-DD>/lr040/
+    normative_file: lr040_soak_gate_eval.json
+    source_artifact_root_pattern: artifacts/soak_test_YYYYMMDD_HHMMSS/
+    materialization_script: infrastructure/scripts/materialize_lr040_verdict_anchor.py
+    disallowed_sources:
+      - reports/p5_canary/<YYYY-MM-DD>/shadow_prereq/*
+      - packages/shadow-soak-*
+    pass_requires_actual_72h_run: true
+    repo_only_placeholder_is_not_pass: true
 
 required_controls:
   - id: LR-001
@@ -111,6 +121,7 @@ required_artifacts:
   - scripts/drills/lr042_network_latency_packet_loss_runner.py
   - infrastructure/scripts/soak_gate_eval.py
   - infrastructure/scripts/lr040_soak_gate_eval.py
+  - infrastructure/scripts/materialize_lr040_verdict_anchor.py
   - infrastructure/scripts/build_shadow_evidence_package.py
   - infrastructure/scripts/generate_evidence_index.py
 

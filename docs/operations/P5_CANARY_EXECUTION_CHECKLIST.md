@@ -103,6 +103,11 @@ Required committed P5 core files:
 - `endpoints/kill_switch_status.json`
 - `lr040/lr040_soak_gate_eval.json`
 
+`lr040/lr040_soak_gate_eval.json` is the committed LR-040 verdict anchor only.
+It must be materialized from raw `artifacts/soak_test_*` evidence via
+`infrastructure/scripts/materialize_lr040_verdict_anchor.py` and must not point
+to `shadow_prereq/` or `packages/shadow-soak-*`.
+
 Optional reused shadow-prereq evidence:
 
 - `shadow_prereq/manifest.json`
