@@ -33,54 +33,52 @@ Gate criteria:
 - Disk free > 10%
 - Signal queue length < 1000 (no stalls)
 
-## Pre-Flight: Windows Host
+## Supported Execution Environment
 
-On Windows hosts, automatic OS restarts can invalidate a 72h soak run.
-Windows Update Active Hours cover at most 18h and are not sufficient.
+The normative LR-040 execution path is **Linux userland only**:
 
-**Confirmed behavior (Incident 2026-03-11):** Windows Update triggered
-two automatic reboots overnight via `MoUsoCoreWorker.exe` and
-`TrustedInstaller.exe`. Docker containers auto-restarted via
-`restart: unless-stopped`, but the soak monitor correctly detected the
-restart and marked the run as FAILED after only 2h.
+- supported: native Linux shell
+- supported: WSL2 Linux shell
+- unsupported: native Windows PowerShell
+- unsupported: `cmd.exe`
+- unsupported: Git Bash / MSYS / ad-hoc GNU compatibility layers
 
-Before starting a 72h run on a Windows host:
+Reason:
 
-1. **Check for pending reboots.** If any key exists, reboot first, then
-   start the soak run.
-   ```powershell
-   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -EA SilentlyContinue
-   Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -EA SilentlyContinue
-   ```
+- `soak_monitor.sh` is a bash/GNU script
+- the runbook requires `crontab`
+- the scheduler and command semantics are Linux-native
+- maintaining a second PowerShell scheduler/tooling path would create dual-path
+  drift for a safety-critical 72h gate
 
-2. **Prevent automatic reboots during the run.** Choose one option:
+If the operator machine is Windows, the LR-040 run must still be launched from a
+WSL2 Linux shell. Do not execute LR-040 from native PowerShell.
 
-   - **Option A — Pause updates for 4 days** (Settings UI or PowerShell):
-     ```powershell
-     $pause = (Get-Date).AddDays(4).ToString("yyyy-MM-ddTHH:mm:ssZ")
-     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" `
-       -Name "PauseUpdatesExpiryTime" -Value $pause
-     ```
-   - **Option B — Group Policy registry key** (prevents reboot while a
-     user is logged in):
-     ```powershell
-     New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" -Force
-     Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" `
-       -Name "NoAutoRebootWithLoggedOnUsers" -Value 1 -Type DWord
-     ```
-   - **Option C — Keep the session unlocked** so Active Hours apply
-     (weakest protection, max 18h).
+Hard environment gate before any real 72h run:
 
-3. **After the soak run completes or is aborted**, remove any temporary
-   reboot blocks to allow normal patching.
+```bash
+bash infrastructure/scripts/check_lr040_runtime_env.sh
+```
 
-> This section applies only to Windows development hosts. Linux hosts
-> with `unattended-upgrades` have a similar risk; use
-> `apt-config dump | grep Unattended-Upgrade::Automatic-Reboot` to check.
+If this precheck fails, stop. Do not improvise a Windows-native fallback.
+
+## Host Stability
+
+The 72h soak host must stay up for the full window. Automatic host restarts
+invalidate the run.
+
+- native Linux: check unattended-upgrade reboot behavior before the run
+- WSL2: keep the Linux distro alive for the full run and prevent the underlying
+  Windows host from rebooting during the window
+
+This is an operator prerequisite only. It does not authorize a P5 start.
 
 ## Start Procedure
 
 ```bash
+# 0. Validate deterministic runtime environment
+bash infrastructure/scripts/check_lr040_runtime_env.sh
+
 # 1. Pull latest main
 git pull origin main
 
@@ -94,15 +92,14 @@ docker ps --filter name=cdb_ --format '{{.Names}}: {{.Status}}'
 curl -s http://localhost:9090/-/ready   # Prometheus
 curl -s http://localhost:3000/api/health # Grafana
 
-# 5. Create artifacts dir and install hourly monitor
+# 5. Create artifacts dir and validate monitor script
 mkdir -p artifacts
-chmod +x infrastructure/scripts/soak_monitor.sh
 
 # 6. Dry run
-./infrastructure/scripts/soak_monitor.sh
+bash infrastructure/scripts/soak_monitor.sh
 
 # 7. Install cron (adjust path)
-(crontab -l 2>/dev/null; echo "0 * * * * cd $(pwd) && ./infrastructure/scripts/soak_monitor.sh >> artifacts/soak_cron.log 2>&1") | crontab -
+(crontab -l 2>/dev/null; echo "0 * * * * cd $(pwd) && bash infrastructure/scripts/soak_monitor.sh >> artifacts/soak_cron.log 2>&1") | crontab -
 ```
 
 > **Note:** The CI workflow `shadow-soak-evidence.yml` runs automated
@@ -156,7 +153,7 @@ grep -B2 "soak_test: abort" infrastructure/monitoring/alerts.yml
 crontab -l | grep -v soak_monitor | crontab -
 
 # 2. Capture final state
-./infrastructure/scripts/soak_monitor.sh
+bash infrastructure/scripts/soak_monitor.sh
 docker ps --filter name=cdb_ > artifacts/final_container_status.txt
 docker stats --no-stream > artifacts/final_resources.txt
 

@@ -4,14 +4,34 @@
 # Issue #428: Zero Restart Policy automation
 #
 # Usage: Run hourly via cron during 72h Soak Test
-#   0 * * * * /path/to/scripts/soak_monitor.sh
+#   0 * * * * cd /path/to/repo && bash infrastructure/scripts/soak_monitor.sh
 #
 # Requirements:
+# - Linux userland (native Linux or WSL2 shell)
+# - GNU userland commands available in the same shell
 # - Docker running with CDB stack
 # - artifacts/soak_test_* directory exists
 # - Write permissions to artifacts directory
 
 set -euo pipefail
+
+if [[ "$(uname -s)" != "Linux" ]]; then
+  echo "ERROR: soak_monitor.sh must run from a Linux userland (native Linux or WSL2)." >&2
+  exit 1
+fi
+
+required_commands=(docker grep awk sed ls mkdir head df date)
+for cmd in "${required_commands[@]}"; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "ERROR: required command missing for soak_monitor.sh: $cmd" >&2
+    exit 1
+  fi
+done
+
+if ! date -u -d "+1 hour" >/dev/null 2>&1; then
+  echo "ERROR: soak_monitor.sh requires GNU date with -d support." >&2
+  exit 1
+fi
 
 # Configuration
 HOUR=$(date +%H)

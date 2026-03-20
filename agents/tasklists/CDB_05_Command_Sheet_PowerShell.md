@@ -46,3 +46,10 @@ git ls-files --others --exclude-standard
 - Kein Live-Trading aktivieren
 - Keine Secrets committen
 - Hardening = erst Report, dann Diff
+
+## 6. LR-040 Boundary
+- Der echte LR-040-72h-Soak hat **keinen** nativen PowerShell-Ausfuehrungspfad.
+- Normativer Ausfuehrungspfad: Linux-Shell (`native Linux` oder `WSL2`) gemaess `docs/operations/72H_SOAK_TEST_RUNBOOK.md`.
+- Vor einem echten LR-040-Run zuerst in der Linux-Shell ausfuehren:
+  - `bash infrastructure/scripts/check_lr040_runtime_env.sh`
+- Kein LR-040-Start aus `powershell.exe`, `cmd.exe` oder Git Bash improvisieren.
