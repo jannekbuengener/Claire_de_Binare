@@ -10,6 +10,9 @@ Optional enrichment sources (missing → null fields, no failure):
   - endpoints/execution_status.json
   - endpoints/risk_status.json
   - endpoints/prometheus_targets.json
+
+The generic run_summary key ``mode`` is treated as a legacy alias for the
+shadow-soak profile. Canonical runtime-mode remains execution_status.mode.
 """
 
 import json
@@ -139,6 +142,10 @@ def generate_index(evidence_dir: Path) -> dict:
     if run_summary is None:
         print("ERROR: run_summary.json is unreadable or fetch-failed", file=sys.stderr)
         sys.exit(1)
+    soak_profile = run_summary.get("soak_profile")
+    if soak_profile is None:
+        # Backward compatibility for older shadow-soak runs.
+        soak_profile = run_summary.get("mode")
 
     # --- Required: execution_metrics.txt ---
     exec_metrics_text = load_text_required(
@@ -228,12 +235,12 @@ def generate_index(evidence_dir: Path) -> dict:
 
     return {
         "schema_version": "1.0",
-        # run metadata (from run_summary.json)
+        # run metadata (from run_summary.json; soak_profile is not runtime-mode)
         "run_id": run_summary.get("run_id"),
         "run_url": run_summary.get("run_url"),
         "commit": run_summary.get("commit"),
         "ref": run_summary.get("ref"),
-        "mode": run_summary.get("mode"),
+        "soak_profile": soak_profile,
         "soak_minutes": run_summary.get("soak_minutes"),
         "gate_status": run_summary.get("gate_status"),
         "ended_at": run_summary.get("ended_at"),
@@ -251,7 +258,7 @@ def generate_index(evidence_dir: Path) -> dict:
         "zero_execution": zero_execution,
         "zero_exposure": zero_exposure,
         "risk_blocked_all": risk_blocked_all,
-        # optional enrichment
+        # optional enrichment from canonical runtime/status snapshots
         "trading_mode": trading_mode,
         "kill_switch_active": kill_switch_active,
         "prometheus_targets_up": prometheus_targets_up,

@@ -2,15 +2,22 @@
 
 - Control: `LR-050`
 - Status: `NO-GO`
-- Last updated: `2026-03-19`
+- Last updated: `2026-03-20`
 
 This document is a **template** and **governance anchor** for the P5 canary prestart evidence lock.
 It does **not** authorize a canary start. Start remains blocked until all NO-GO blockers are resolved.
 
 It backs the following compensating controls defined in `governance/p5_canary_readiness.yaml`:
 - `prestart_evidence_lock`
+- `canonical_runtime_mode_precheck`
 - `decision_record_before_start`
 - `no_code_or_config_change_after_prestart_lock`
+
+Normative rule from `governance/p5_canary_readiness.yaml` for the current P5 / shadow-prereq path:
+- canonical runtime-mode field = `execution_status.mode`
+- required value = `mock`
+- `shadow` = probe / intent / evidence semantics only
+- `full|lean` = soak / collection profile labels only
 
 ---
 
@@ -61,7 +68,7 @@ kill_switch_status:
   response: <full JSON response>
 
 execution_status:
-  mode: shadow           # REQUIRED: must be "shadow"
+  mode: mock             # REQUIRED: must be "mock"
   source: http://127.0.0.1:8003/status
   captured_utc: <YYYY-MM-DDTHH:MM:SSZ>
   response: <full JSON response>
@@ -75,6 +82,47 @@ risk_status:
 artifact_path: reports/p5_canary/<YYYY-MM-DD>/
 operator: <name>
 ```
+
+### P5 Core Artifact Contract
+
+Committed P5 core artifacts are rooted at:
+
+```text
+reports/p5_canary/<YYYY-MM-DD>/
+```
+
+Required committed files:
+
+- `manifest.json`
+- `prestart_evidence_lock.yaml`
+- `decision_record.yaml`
+- `endpoints/execution_status.json`
+- `endpoints/risk_status.json`
+- `endpoints/kill_switch_status.json`
+- `lr040/lr040_soak_gate_eval.json`
+
+The files `prestart_evidence_lock.yaml` and `decision_record.yaml` are the committed operator-facing records.
+The files under `endpoints/` are the raw endpoint snapshots captured for the same evidence lock.
+
+Optional reused shadow-prereq evidence:
+
+- `shadow_prereq/manifest.json`
+- `shadow_prereq/package_manifest.json`
+
+Minimum fields for `manifest.json`:
+
+- `schema_version`
+- `package_type`
+- `package_status`
+- `commit_sha`
+- `artifact_root`
+- `execution_runtime_mode`
+- `evidence_lock_path`
+- `decision_record_path`
+- `endpoint_snapshots`
+- `lr040_verdict_path`
+- `optional_shadow_prereq_package`
+- `checksums`
 
 Capture commands (run from repo root, BLUE stack must be up):
 
@@ -117,7 +165,7 @@ decision_utc: <YYYY-MM-DDTHH:MM:SSZ>
 operator: <name>
 lr040_pass_run_id: <GitHub Actions Run ID>
 lr040_pass_commit: <SHA>
-canary_artifact_path: <path to committed canary artifact set>
+canary_artifact_path: reports/p5_canary/<YYYY-MM-DD>/
 status: GO | NO-GO
 rationale: >
   <Freitext — warum GO oder NO-GO. Bei NO-GO: welcher Blocker verbleibt.>
@@ -176,7 +224,7 @@ curl -s http://127.0.0.1:8002/kill-switch
 ## 7. Related Documents
 
 - `governance/p5_canary_readiness.yaml` — policy that requires this document
-- `docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md` — governance mapping (§8 references this pack)
+- `docs/operations/P5_CANARY_EXECUTION_CHECKLIST.md` — governance mapping (§9 references this pack)
 - `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md` — detailed kill-switch precheck procedure
 - `docs/evidence/LR-040.md` — 72h soak gate (blocker)
 - `docs/operations/72H_SOAK_TEST_RUNBOOK.md` — soak test procedure

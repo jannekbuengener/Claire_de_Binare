@@ -2,15 +2,19 @@
 
 - Control: `LR-050`
 - Status: `NO-GO`
-- Last updated: `2026-03-19`
+- Last updated: `2026-03-20`
 
 This checklist is a governance mapping document only. It does not authorize live trading.
 
 ## 1. Purpose
 
-Map the P5 canary policy to real repository evidence paths and clearly separate implemented controls from still-open blockers.
+Map the P5 canary policy to real repository evidence paths and clearly separate:
 
-## 2. Shadow Evidence Anchors
+- shadow-prereq evidence
+- committed P5 core artifacts
+- implemented controls from still-open blockers
+
+## 2. Shadow Prereq Evidence Anchors
 
 - `LR-030` (shadow mode zero-execution hard gate)
   - `docs/evidence/LR-030.md`
@@ -29,6 +33,12 @@ Map the P5 canary policy to real repository evidence paths and clearly separate 
   - `tests/unit/scripts/test_soak_gate_eval.py`
   - `tests/unit/scripts/test_build_shadow_evidence_package.py`
 
+Within these anchors:
+
+- `shadow` names the probe / intent / evidence path
+- the canonical runtime-mode field remains `execution_status.mode`
+- for the current P5 / shadow-prereq path, the required runtime-mode value is `mock`
+
 ## 3. PR1 Hardened Gate Requirements
 
 As of `#1127` PR1, the soak gate evaluation (`soak_gate_eval.py` schema 1.1) enforces:
@@ -36,11 +46,12 @@ As of `#1127` PR1, the soak gate evaluation (`soak_gate_eval.py` schema 1.1) enf
 - `has_live_data_true` — signal flow must be proven during soak
 - `orders_approved_eq_0` — risk must approve zero orders
 - `risk_blocked_all_true` — risk must block all received orders
-- `runtime_mode_verified` — execution service must report `mode == "mock"`
+- `runtime_mode_verified` — execution service must report `execution_status.mode == "mock"` for the current P5 / shadow-prereq path
 - `kill_switch_precheck_inactive` — circuit breaker must be explicitly `false`
 - `execution_status.json` and `risk_status.json` are required artifacts (missing = exit 1)
 
 These checks are in addition to the original shadow-probe invariants (shadow_blocked >= 1, orders_filled == 0, auditable REJECTED probe).
+The workflow terms `full|lean` refer to soak / collection profile labels and are not runtime-mode values.
 
 ## 4. Current Control Map
 
@@ -63,17 +74,43 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 - `LR-040` is IMPLEMENTED but no 72h soak run evidence exists yet (PASS requires actual run)
 - `LR-031` is IMPLEMENTED: comparison layer calibrated and PASS verified (2026-03-16)
 
-## 6. Kill-Switch and Runtime-Mode References
+## 6. Runtime-Mode and Kill-Switch Semantics
 
+- Normative source: `governance/p5_canary_readiness.yaml`
+- Canonical runtime-mode field: `execution_status.mode`
+- Required runtime-mode value for the current P5 / shadow-prereq path: `mock`
+- `shadow` is reserved for probe / intent / evidence semantics and is not the canonical runtime-mode value
+- `full|lean` are soak / collection profile labels and are not runtime-mode values
 - Kill-switch precheck: `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - Kill-switch verification in gate: `soak_gate_eval.py` check `kill_switch_precheck_inactive`
-- Runtime-mode verification in gate: `soak_gate_eval.py` check `runtime_mode_verified`
 - Circuit breaker source: risk service `/status` endpoint field `risk_state.circuit_breaker`
-- Runtime-mode source: execution service `/status` endpoint field `mode`
 
-## 7. Related Technical Artifacts
+## 7. P5 Core Artifact Contract
 
-- `reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md` (historical — incident gate 2026-02-03, not current prestart gate; see §8)
+Committed P5 core artifacts are separate from optional shadow-prereq evidence.
+
+Normative root:
+
+- `reports/p5_canary/<YYYY-MM-DD>/`
+
+Required committed P5 core files:
+
+- `manifest.json`
+- `prestart_evidence_lock.yaml`
+- `decision_record.yaml`
+- `endpoints/execution_status.json`
+- `endpoints/risk_status.json`
+- `endpoints/kill_switch_status.json`
+- `lr040/lr040_soak_gate_eval.json`
+
+Optional reused shadow-prereq evidence:
+
+- `shadow_prereq/manifest.json`
+- `shadow_prereq/package_manifest.json`
+
+## 8. Related Technical Artifacts
+
+- `reports/shadow_mode/LIVE_TRADING_HUMAN_GATE_CHECKLIST.md` (historical — incident gate 2026-02-03, not current prestart gate; see §9)
 - `knowledge/logs/sessions/2026-02-03_gate_activation_checklist.md`
 - `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`
 - `scripts/governance/check_branch_protection_drift.py`
@@ -85,7 +122,7 @@ These checks are in addition to the original shadow-probe invariants (shadow_blo
 - `infrastructure/scripts/generate_evidence_index.py`
 - `scripts/governance/check_window_timer_guardrail.py`
 
-## 8. Prestart Pack
+## 9. Prestart Pack
 
 When all NO-GO blockers are resolved, the operator MUST complete the prestart evidence lock
 before any P5 canary start attempt:
@@ -93,6 +130,7 @@ before any P5 canary start attempt:
 - Template: `docs/operations/P5_PRESTART_PACK.md`
 - This document backs the compensating controls defined in `governance/p5_canary_readiness.yaml`:
   - `prestart_evidence_lock`
+  - `canonical_runtime_mode_precheck`
   - `decision_record_before_start`
   - `no_code_or_config_change_after_prestart_lock`
 - Stack anchor: BLUE (`infrastructure/compose/compose.blue.yml`) — kill-switch at Port 8002,

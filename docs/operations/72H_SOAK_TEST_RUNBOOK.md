@@ -7,6 +7,17 @@ Issue #428.
 Run the full CDB Compose stack for 72 consecutive hours with zero
 container restarts. This gate must pass before any live deployment.
 
+This runbook produces raw 72h soak run artifacts under
+`artifacts/soak_test_*`. It does not define or create the normative committed
+P5 core artifact contract under `reports/p5_canary/<YYYY-MM-DD>/`, and it does
+not produce a P5 start authorization by itself.
+
+Terminology used here follows current governance:
+- `execution_status.mode` is the canonical runtime-mode field
+- the current shadow-/prestart-prereq path expects runtime-mode `mock`
+- `shadow` names shadow/probe/evidence semantics
+- `full|lean` name soak/collection profiles, not runtime-mode values
+
 Gate criteria:
 - Zero container restarts across all `cdb_*` services
 - No OOM kills
@@ -87,7 +98,8 @@ chmod +x infrastructure/scripts/soak_monitor.sh
 
 > **Note:** The CI workflow `shadow-soak-evidence.yml` runs automated
 > shadow-soak evidence collection and is not the same as this manual
-> runtime soak procedure.
+> 72h runtime soak procedure. In that workflow, `full|lean` are collection
+> profiles and not runtime-mode values.
 
 ## During the Run
 
@@ -153,6 +165,9 @@ docker compose -f infrastructure/compose/compose.blue.yml down
 - `restart_alerts.log` — empty if test passed
 - `soak_test_FAILED.txt` — absent if test passed
 
+These are raw run artifacts for LR-040 evaluation. They are not the committed
+P5 core evidence root.
+
 **Evaluate (LR-040 gate):**
 
 ```bash
@@ -160,9 +175,15 @@ python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_YYYYMM
 cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
 ```
 
-**Go / No-Go decision:**
+**Committed P5 reference path (separate, outside this runbook):**
+- `reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
+
+**Verdict interpretation (no P5 release decision):**
 - PASS: `lr040_soak_gate_eval.json` verdict is `PASS`
 - FAIL: any check failed — see `failures` array for root cause before re-attempting
+- A PASS here is a necessary LR-040 evidence anchor only; it does not, by
+  itself, create the committed P5 core artifact set and does not change P5 from
+  `NO-GO`
 
 ## Troubleshooting: Common Issues
 
