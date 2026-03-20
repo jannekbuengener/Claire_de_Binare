@@ -1,8 +1,16 @@
 # Live Trading Runbook
 
+Status: Canonical operating runbook path
+Scope: Live-trading cutover and rollback procedure
+Operational verdict SSOT: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+
+This file is the canonical working-repo path for the live-trading operator runbook.
+It documents procedure and checklist shape only; the repo-wide Echtgeld Go/No-Go
+verdict remains owned by the live-readiness audit status.
+
 **CRITICAL:** Diese Checkliste MUSS vollständig abgearbeitet werden, bevor `MOCK_TRADING="false"` gesetzt wird.
 
-## Status: 🔴 NOT READY FOR LIVE
+## Checklist Snapshot: 🔴 NOT READY FOR LIVE
 
 ---
 
@@ -17,8 +25,8 @@
 
 ### 2. Risk Configuration ⚠️
 - [x] Early-Live max allocation: 0.02 (2%)
-- [x] `USE_REAL_BALANCE="false"` in dev.yml (Paper Mode)
-- [ ] **TODO:** `USE_REAL_BALANCE="true"` NUR für Live-Deployment vorbereiten
+- [x] `USE_REAL_BALANCE="false"` (Paper Mode; legacy: in dev.yml, canonical: in BLUE+RED compose)
+- [ ] **TODO:** `USE_REAL_BALANCE="true"` NUR fuer Live-Deployment vorbereiten
 - [ ] **TODO:** MEXC Account Balance > $100 USDT (Minimum für Live)
 - [ ] **TODO:** Risk-Limits korrekt konfiguriert:
   - `MAX_POSITION_PCT`: 0.10 (10% max pro Position)
@@ -76,8 +84,10 @@
 
 ### Step 1: Backup
 ```bash
-# Backup current config
-cp infrastructure/compose/dev.yml infrastructure/compose/dev.yml.backup.$(date +%Y%m%d_%H%M%S)
+# Backup current config (canonical BLUE+RED compose files)
+cp infrastructure/compose/compose.blue.yml infrastructure/compose/compose.blue.yml.backup.$(date +%Y%m%d_%H%M%S)
+cp infrastructure/compose/compose.red.yml infrastructure/compose/compose.red.yml.backup.$(date +%Y%m%d_%H%M%S)
+# Legacy (CI/test only): cp infrastructure/compose/dev.yml infrastructure/compose/dev.yml.backup.$(date +%Y%m%d_%H%M%S)
 
 # Backup Redis streams (snapshot)
 docker exec cdb_redis sh -c 'redis-cli -a $(cat /run/secrets/redis_password) SAVE'
@@ -85,18 +95,24 @@ docker exec cdb_redis sh -c 'redis-cli -a $(cat /run/secrets/redis_password) SAV
 
 ### Step 2: Config Change
 ```yaml
-# infrastructure/compose/dev.yml
+# In the canonical BLUE+RED compose files (compose.blue.yml / compose.red.yml):
+# (Legacy path: infrastructure/compose/dev.yml)
 cdb_execution:
   environment:
-    MOCK_TRADING: "false"         # ⚠️ LIVE MODE
-    USE_REAL_BALANCE: "true"      # ⚠️ REAL BALANCE
+    MOCK_TRADING: "false"         # LIVE MODE
+    USE_REAL_BALANCE: "true"      # REAL BALANCE
 ```
 
 ### Step 3: Deployment
 ```bash
-cd infrastructure/compose
-$env:SECRETS_PATH="C:\Users\janne\Documents\.secrets\.cdb"
-docker compose -f base.yml -f dev.yml up -d --build cdb_execution
+# Canonical (BLUE+RED)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Legacy (CI/test only):
+# cd infrastructure/compose
+# $env:SECRETS_PATH="C:\Users\janne\Documents\.secrets\.cdb"
+# docker compose -f base.yml -f dev.yml up -d --build cdb_execution
 ```
 
 ### Step 4: Verification (CRITICAL)
@@ -132,9 +148,16 @@ docker stop cdb_execution
 
 # 2. Cancel all open MEXC orders (manual via MEXC UI or API)
 
-# 3. Restore Paper Mode
-git checkout infrastructure/compose/dev.yml
-docker compose -f base.yml -f dev.yml up -d --build cdb_execution
+# 3. Restore Paper Mode (canonical: BLUE+RED)
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+# Revert MOCK_TRADING/USE_REAL_BALANCE in compose.blue.yml / compose.red.yml
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Legacy (CI/test only):
+# git checkout infrastructure/compose/dev.yml
+# docker compose -f base.yml -f dev.yml up -d --build cdb_execution
 
 # 4. Verify rollback
 docker logs cdb_execution --tail 50 | grep "Mode:"
@@ -143,7 +166,7 @@ docker logs cdb_execution --tail 50 | grep "Mode:"
 
 ---
 
-## Current Status: NOT READY
+## Snapshot Summary: NOT READY
 
 **Blocking Issues:**
 1. Monitoring/Alerting nicht konfiguriert

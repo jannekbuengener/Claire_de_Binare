@@ -45,6 +45,13 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 - Neue Reports, Pass-Reports oder Audit-Snapshots duerfen scope-lokale Findings
   dokumentieren, aber nicht als aktuelle repo-weite Wahrheit auftreten.
 
+## Operational Runbook Canon Rule
+
+- Aktive Operating Rules und operator-nahe Runbooks gehoeren unter `knowledge/operating_rules/`.
+- Der kanonische Pfad fuer das Live-Trading-Runbook ist `knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md`.
+- `knowledge/LIVE_TRADING_RUNBOOK.md` darf nur noch als lokaler Pointer fuer Discoverability bestehen und keine zweite vollwertige Runbook-Fassung mehr tragen.
+- `docs/live-readiness/` bleibt die kanonische Quelle fuer aktuellen Go/No-Go-Status und Evidence, nicht fuer den operativen Runbook-Body.
+
 ## Internal Redirect Map
 
 | Legacy entrypoint | Local target |
