@@ -9,6 +9,8 @@ It documents procedure and checklist shape only; the repo-wide Echtgeld Go/No-Go
 verdict remains owned by the live-readiness audit status.
 
 **CRITICAL:** Diese Checkliste MUSS vollständig abgearbeitet werden, bevor `MOCK_TRADING="false"` gesetzt wird.
+**Marker Rule:** Unchecked items in this runbook are explicit live-gates. They are not
+silent backlog TODOs; broader follow-up work belongs in GitHub issues.
 
 ## Checklist Snapshot: 🔴 NOT READY FOR LIVE
 
@@ -19,16 +21,16 @@ verdict remains owned by the live-readiness audit status.
 ### 1. Secrets & Credentials ✅
 - [x] MEXC API Key vorhanden (`/run/secrets/mexc_api_key`)
 - [x] MEXC API Secret vorhanden (`/run/secrets/mexc_api_secret`)
-- [ ] **TODO:** MEXC API Keys auf Testnet verifiziert (separate Test-Order)
-- [ ] **TODO:** MEXC API Keys auf Mainnet verifiziert (separate Test-Order)
-- [ ] **TODO:** API Key Permissions überprüft (nur Spot Trading, kein Withdrawal)
+- [ ] **Open gate:** MEXC API Keys auf Testnet verifiziert (separate Test-Order)
+- [ ] **Open gate:** MEXC API Keys auf Mainnet verifiziert (separate Test-Order)
+- [ ] **Open gate:** API Key Permissions überprüft (nur Spot Trading, kein Withdrawal)
 
 ### 2. Risk Configuration ⚠️
 - [x] Early-Live max allocation: 0.02 (2%)
 - [x] `USE_REAL_BALANCE="false"` (Paper Mode; legacy: in dev.yml, canonical: in BLUE+RED compose)
-- [ ] **TODO:** `USE_REAL_BALANCE="true"` NUR fuer Live-Deployment vorbereiten
-- [ ] **TODO:** MEXC Account Balance > $100 USDT (Minimum für Live)
-- [ ] **TODO:** Risk-Limits korrekt konfiguriert:
+- [ ] **Open gate:** `USE_REAL_BALANCE="true"` NUR für Live-Deployment vorbereiten
+- [ ] **Open gate:** MEXC Account Balance > $100 USDT (Minimum für Live)
+- [ ] **Open gate:** Risk-Limits korrekt konfiguriert:
   - `MAX_POSITION_PCT`: 0.10 (10% max pro Position)
   - `MAX_TOTAL_EXPOSURE_PCT`: 0.30 (30% max total)
   - `MAX_DAILY_DRAWDOWN_PCT`: 0.05 (5% Circuit Breaker)
@@ -37,44 +39,44 @@ verdict remains owned by the live-readiness audit status.
 - [x] Allocation kann via `ALLOCATION_RULES_JSON` auf 0 gesetzt werden
 - [x] Risk blockiert bei `allocation_pct == 0`
 - [x] Bot-Shutdown Stream funktioniert (`stream.bot_shutdown`)
-- [ ] **TODO:** Manual Kill-Switch tested (via Redis XADD)
-- [ ] **TODO:** Emergency Runbook erstellt (wie stoppe ich ALLES sofort?)
+- [ ] **Open gate:** Manual Kill-Switch tested (via Redis XADD)
+- [ ] **Open gate:** Emergency Runbook erstellt (wie stoppe ich ALLES sofort?)
 
 ### 4. Monitoring & Observability 🔴
-- [ ] **TODO:** Grafana Dashboards für Live Trading
+- [ ] **Open gate:** Grafana Dashboards für Live Trading
   - Orders per minute
   - Fill Rate
   - P&L tracking
   - Circuit Breaker status
-- [ ] **TODO:** Alerting konfiguriert:
+- [ ] **Open gate:** Alerting konfiguriert:
   - Circuit Breaker triggered
   - Unusual order volume
   - MEXC API errors
   - Balance drops > 5%
-- [ ] **TODO:** Log-Aggregation für Execution Service (structured logs)
+- [ ] **Open gate:** Log-Aggregation für Execution Service (structured logs)
 
 ### 5. Pipeline Stability ⚠️
 - [x] Candles-Service läuft stabil (48h+)
 - [x] Regime-Service erkennt korrekt HIGH_VOL_CHAOTIC
 - [x] Allocation-Service bootstrapped korrekt nach Restart
 - [x] Risk-Service Early-Live Exception funktioniert
-- [ ] **TODO:** 48h Observation Window OHNE Crashes
-- [ ] **TODO:** 100+ Orders im Paper Mode erfolgreich processed
+- [ ] **Open gate:** 48h Observation Window OHNE Crashes
+- [ ] **Open gate:** 100+ Orders im Paper Mode erfolgreich processed
 
 ### 6. Execution Service Readiness 🔴
 - [x] `MOCK_TRADING="true"` explizit gesetzt (Paper Mode)
-- [ ] **TODO:** LiveExecutor Code-Review abgeschlossen
-- [ ] **TODO:** MEXC API Rate Limits verstanden (600 req/min)
-- [ ] **TODO:** Order Retry Logic tested
-- [ ] **TODO:** Partial Fill Handling tested
-- [ ] **TODO:** Network Timeout Handling tested
+- [ ] **Open gate:** LiveExecutor Code-Review abgeschlossen
+- [ ] **Open gate:** MEXC API Rate Limits verstanden (600 req/min)
+- [ ] **Open gate:** Order Retry Logic tested
+- [ ] **Open gate:** Partial Fill Handling tested
+- [ ] **Open gate:** Network Timeout Handling tested
 
 ### 7. Compliance & Documentation 🔴
-- [ ] **TODO:** Trading Strategy dokumentiert (warum traden wir?)
-- [ ] **TODO:** Risk Management Policy dokumentiert
-- [ ] **TODO:** Incident Response Plan dokumentiert
-- [ ] **TODO:** Rollback Plan dokumentiert (wie zurück zu Paper?)
-- [ ] **TODO:** Legal/Tax Implications geklärt (je nach Jurisdiction)
+- [ ] **Open gate:** Trading Strategy dokumentiert (warum traden wir?)
+- [ ] **Open gate:** Risk Management Policy dokumentiert
+- [ ] **Open gate:** Incident Response Plan dokumentiert
+- [ ] **Open gate:** Rollback Plan dokumentiert (wie zurück zu Paper?)
+- [ ] **Open gate:** Legal/Tax Implications geklärt (je nach Jurisdiction)
 
 ---
 
@@ -177,5 +179,5 @@ docker logs cdb_execution --tail 50 | grep "Mode:"
 
 **Estimated Time to Live:** 5-7 Tage (nach vollständiger Checklist-Abarbeitung)
 
-**Owner:** TBD
+**Owner:** Assign before live switch
 **Last Updated:** 2026-01-10
