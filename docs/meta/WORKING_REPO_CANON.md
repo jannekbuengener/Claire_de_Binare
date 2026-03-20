@@ -23,6 +23,7 @@ Das alte Docs-Hub-Material ist nur noch:
 | GitHub templates / community docs | `.github/` |
 | Navigation / runbooks / archive | `docs/` |
 | Root entrypoints | `README.md`, `AGENTS.md`, `CDB_CONSTITUTION.md`, `CDB_GOVERNANCE.md` |
+| Root IA policy | `docs/meta/ROOT_INFORMATION_ARCHITECTURE.md` |
 
 ## Internal Redirect Map
 
@@ -40,6 +41,8 @@ Das alte Docs-Hub-Material ist nur noch:
 - Navigation, guards and scripts must prefer local repo paths.
 - References to the retired external docs repo are legacy-only and must not be the default path.
 - Pointer files may exist at root for discoverability, but they must resolve internally.
+- Root is reserved for canonical entrypoints, manifests/config, and durable domain directories.
+- Historical reports, runtime outputs, temporary workdirs, and local helper artifacts are not root canon by default.
 
 ## Legacy Archive
 
