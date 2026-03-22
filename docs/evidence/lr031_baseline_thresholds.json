@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0",
   "calibration_status": "CALIBRATED",
-  "provenance": "Calibrated from lean shadow-soak run 23176247609 (2026-03-17, commit a9a62be0a4bdf552acc7466eaa890f2ac36ddd58, 5 min). Safety invariants remain strict; activity metrics use conservative minimum floors to tolerate normal runtime jitter. Originally calibrated in a9a62be, inadvertently reverted by 8d1076b — restored here from run evidence.",
+  "provenance": "Calibrated from lean shadow-soak run 23176247609 (2026-03-17, commit a9a62be0a4bdf552acc7466eaa890f2ac36ddd58, 5 min). Safety invariants remain strict; activity metrics use conservative minimum floors to tolerate normal runtime jitter. Originally calibrated in a9a62be, inadvertently reverted by 8d1076b — restored here from run evidence. 2026-03-22: signals_received and orders_blocked lowered to min=1 (liveness-gate for lean/off-hours/low-activity windows; not a volume gate).",
   "thresholds": {
-    "signals_received":     { "min": 16 },
-    "orders_blocked":       { "min": 16 },
+    "signals_received":     { "min": 1 },
+    "orders_blocked":       { "min": 1 },
     "shadow_blocked_total": { "min": 1 },
     "orders_approved":      { "max": 0 },
     "orders_filled":        { "exact": 0 },

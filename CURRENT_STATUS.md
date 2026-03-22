@@ -3,21 +3,21 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-22 (Session 2)
-**Latest Commit**: c26b08d
+**Last Updated**: 2026-03-22 (Session 3)
+**Latest Commit**: df169f4
 
 ---
 
 ## Repo / Engineering Status (2026-03-22)
 
-- **main**: green, 5 open PRs
-- **Commits seit letztem Update (2026-02-21)**: ~244
+- **main**: green, 4 open PRs
+- **Commits seit letztem Update (2026-02-21)**: ~246
 - **Open PRs**:
   - #1237: LR-040 runtime env prep (verdict anchor)
-  - #1226: P5 prestart normalization
   - #1217: fix(digest): auto-close weekly digest
   - #1207: feat(market): V3 shadow mode — cdb_market write path
   - #1180: deps: ruff 0.15.6 bump
+- **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
 
 ---
 
