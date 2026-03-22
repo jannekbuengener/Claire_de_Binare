@@ -13,6 +13,9 @@ groups:
         condition: C
         data:
           - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
             datasourceUid: prometheus
             model:
               datasource:
