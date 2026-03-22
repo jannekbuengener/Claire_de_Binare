@@ -309,9 +309,6 @@ def test_database_index_effectiveness(postgres_conn):
 
 @pytest.mark.local_only
 @pytest.mark.slow
-@pytest.mark.skip(
-    reason="query_analytics.py has bugs (crashes at line 222), needs refactoring - see backoffice/scripts/query_analytics.py"
-)
 def test_analytics_query_tool_integration(postgres_conn):
     """
     Integration-Test: Analytics Query Tool gegen echte DB
@@ -321,8 +318,9 @@ def test_analytics_query_tool_integration(postgres_conn):
     - Alle Queries laufen durch
     - Keine SQL-Errors
 
-    SKIP REASON: Tool crasht derzeit beim Ausführen (Exit Code 1).
-    Das ist ein Tool-Bug, kein Test-Problem.
+    Requires: live PostgreSQL on localhost with claire_user credentials.
+    Excluded from standard pytest collection via norecursedirs=verlosung (pytest.ini).
+    Run explicitly: pytest tests/performance/verlosung/test_analytics_performance.py -m local_only
     """
     print("\n📊 Testing analytics query tool integration...")
 
@@ -331,10 +329,10 @@ def test_analytics_query_tool_integration(postgres_conn):
 
     # Test verschiedene Query-Commands
     commands = [
-        ["python", "backoffice/scripts/query_analytics.py", "--last-signals", "5"],
-        ["python", "backoffice/scripts/query_analytics.py", "--last-trades", "5"],
-        ["python", "backoffice/scripts/query_analytics.py", "--portfolio-summary"],
-        ["python", "backoffice/scripts/query_analytics.py", "--trade-statistics"],
+        ["python", "infrastructure/scripts/query_analytics.py", "--last-signals", "5"],
+        ["python", "infrastructure/scripts/query_analytics.py", "--last-trades", "5"],
+        ["python", "infrastructure/scripts/query_analytics.py", "--portfolio-summary"],
+        ["python", "infrastructure/scripts/query_analytics.py", "--trade-statistics"],
     ]
 
     # Prepare environment: copy current env and add PostgreSQL credentials

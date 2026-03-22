@@ -1,7 +1,7 @@
 {
   "uid": "cdb_system_health_owner_v1",
   "title": "CDB - System / Health",
-  "description": "Owner cockpit. Black-first, red tone. TODO (missing KPIs): E2E cycle latency, kill_switch_active, risk_on + exposure% limit, queue lag/drops, db locks/slow queries, exchange/API health, build/version/config metrics.",
+  "description": "Owner cockpit. Black-first, red tone. PLACEHOLDER(#203) (missing KPIs): E2E cycle latency, kill_switch_active, risk_on + exposure% limit, queue lag/drops, db locks/slow queries, exchange/API health, build/version/config metrics.",
   "tags": [
     "cdb",
     "owner",
@@ -108,7 +108,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "KPI missing: E2E cycle latency. See TODO list."
+        "content": "KPI missing: E2E cycle latency. PLACEHOLDER(#203) — see issue for KPI instrumentation plan."
       }
     },
     {
@@ -719,7 +719,7 @@
     {
       "id": 19,
       "type": "text",
-      "title": "RISK STATE (TODO)",
+      "title": "RISK STATE (PLACEHOLDER #203)",
       "gridPos": {
         "h": 3,
         "w": 24,
@@ -1105,7 +1105,7 @@
     {
       "id": 29,
       "type": "text",
-      "title": "QUEUE LAG (TODO)",
+      "title": "QUEUE LAG (PLACEHOLDER #203)",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -1476,7 +1476,7 @@
     {
       "id": 38,
       "type": "text",
-      "title": "DB LOCKS / SLOW QUERIES (TODO)",
+      "title": "DB LOCKS / SLOW QUERIES (PLACEHOLDER #203)",
       "gridPos": {
         "h": 4,
         "w": 6,
@@ -1618,7 +1618,7 @@
     {
       "id": 42,
       "type": "text",
-      "title": "EXTERNAL HEALTH (TODO)",
+      "title": "EXTERNAL HEALTH (PLACEHOLDER #203)",
       "gridPos": {
         "h": 4,
         "w": 12,

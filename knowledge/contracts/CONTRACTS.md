@@ -54,7 +54,7 @@ This document defines the **message schemas** for all Redis Pub/Sub topics and s
 
 # Impact: SIGNAL_MIN_VOLUME check blocks all signals
 # Workaround: SIGNAL_MIN_VOLUME="0" (disabled)
-# TODO: Fix field mapping in cdb_ws OR MarketData.from_dict()
+# TODO(#154): Fix field mapping in cdb_ws OR MarketData.from_dict()
 ```
 
 ### Required vs Optional
@@ -182,7 +182,7 @@ This document defines the **message schemas** for all Redis Pub/Sub topics and s
 ### Issue #1: `qty` → `volume` Field Mapping
 **Impact:** HIGH
 **Workaround:** `SIGNAL_MIN_VOLUME="0"` (disabled volume check)
-**TODO:**
+**TODO(#154):**
 - Option A: Rename `qty` → `volume` in cdb_ws publisher
 - Option B: Map `qty` → `volume` in MarketData.from_dict()
 - Option C: Use `qty` everywhere (rename volume checks)
@@ -197,7 +197,7 @@ This document defines the **message schemas** for all Redis Pub/Sub topics and s
 ### Issue #3: Signal `direction` vs `side` Redundancy
 **Impact:** LOW
 **Status:** Deprecated
-**TODO:** Remove `direction` field in v2.0 (breaking change)
+**TODO(#154):** Remove `direction` field in v2.0 (breaking change)
 
 ---
 

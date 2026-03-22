@@ -1,6 +1,6 @@
 # Secret Rotation Policy (CDB)
 
-**Issue:** #TBD (cdb-secrets-rotator implementation)
+**Note:** cdb-secrets-rotator implementation is pending; no tracking issue created yet.
 **Status:** Active
 **Last Updated:** 2026-01-28
 **Tool:** `tools/secrets/Rotate-Secrets.ps1`

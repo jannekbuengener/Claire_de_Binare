@@ -1,7 +1,7 @@
 {
   "uid": "cdb_money_result_owner_v1",
   "title": "CDB - Money / Result",
-  "description": "Owner cockpit. Black-first, blue/teal tone. TODO (missing KPIs): daily_pnl_percent, daily_pnl_abs, profit_factor_rolling, profit_factor_lifetime, avg_win, avg_loss, max_drawdown_pct, win_rate/hitrate, portfolio_total_value_usdt.",
+  "description": "Owner cockpit. Black-first, blue/teal tone. PLACEHOLDER(#203) (missing KPIs): daily_pnl_percent, daily_pnl_abs, profit_factor_rolling, profit_factor_lifetime, avg_win, avg_loss, max_drawdown_pct, win_rate/hitrate, portfolio_total_value_usdt.",
   "tags": [
     "cdb",
     "owner",
@@ -108,7 +108,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "PnL/ProfitFactor/Hitrate/Drawdown not instrumented. See TODO list."
+        "content": "PnL/ProfitFactor/Hitrate/Drawdown not instrumented. PLACEHOLDER(#203) — see issue for KPI instrumentation plan."
       }
     },
     {
