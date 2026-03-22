@@ -1,0 +1,1 @@
+{"database":{"filled":0,"pending":0,"rejected":0,"total":10504},"mode":"mock","redis":{"connected":true},"service":"execution_service","stats":{"invalid_payloads":0,"last_result":null,"orders_filled":0,"orders_received":0,"orders_rejected":0,"shadow_blocked":0,"start_time":"2026-03-22T17:16:46.291047"},"version":"0.1.0"}
