@@ -1,0 +1,57 @@
+apiVersion: 1
+# Issue #1228 - Repo-managed Grafana alert for order rejections.
+# Normalizes datasource binding to the canonical Prometheus UID.
+
+groups:
+  - orgId: 1
+    name: orders-rejected
+    folder: CDB Alerts
+    interval: 5m
+    rules:
+      - uid: cdb-orders-rejected
+        title: CDB - Orders Rejected
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: increase(execution_orders_rejected_total[5m])
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "CDB - Orders Rejected"
+          description: "At least one order rejection was observed in the last 5 minutes."
+        labels:
+          severity: info
+        isPaused: false
