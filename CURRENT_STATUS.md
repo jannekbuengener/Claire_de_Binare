@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-22
-**Latest Commit**: d27c408
+**Last Updated**: 2026-03-22 (Session 2)
+**Latest Commit**: c26b08d
 
 ---
 
@@ -52,6 +52,18 @@
 - Makefile: docker-* Targets auf kanonischen BLUE/RED Pfad migriert (#1219)
 - Backup: Automatisierungs-Runbook + SurrealDB-Drill (#1175, #1130)
 - Governance: TODO/Placeholder-Lifecycle formalisiert (#1239)
+
+### Observability / Grafana (2026-03-22)
+- Dashboard-Footprint: 15 → 2 Dashboards (#1251, Commit 6bb4532)
+  - entfernt: 13 ARCHIVED + 1 Platzhalter-Huelle (cdb_money_result_owner_v1)
+  - verbleibend: `cdb_system_health_owner_v1` (Prometheus, nicht bereinigt), `cdb_trading_performance_v1` (neu, minimal)
+- `cdb_trading_performance_v1.json`: Prometheus (system health, circuit breaker, kill switch, trade pipeline) + PostgreSQL (equity, daily PnL, realized PnL, equity curve)
+- Publish-Kette geschlossen (#1255, Commit c26b08d): `paper_runner` publiziert jetzt stündlich (konfigurierbar) Portfolio-Snapshots auf Redis-Channel `portfolio_snapshots` → `db_writer` → PostgreSQL → Grafana
+- CLAUDE.md im Repo-Root angelegt (Commit 1116275)
+- Restunsicherheiten Observability:
+  - `max_drawdown_pct` im Snapshot aktuell Platzhalter (0.0)
+  - `cdb_system_health_owner_v1.json`: 43 Panels, viele Platzhalter — kein eigener Cleanup-Issue
+  - `infrastructure/monitoring/grafana/DASHBOARD_IMPORT.md` veraltet
 
 ---
 
