@@ -1,0 +1,57 @@
+apiVersion: 1
+# Issue #1229 - Repo-managed Grafana alert for high execution error rate.
+# Replaces the stale UI-managed alert with canonical Prometheus datasource binding.
+
+groups:
+  - orgId: 1
+    name: high-error-rate
+    folder: CDB Alerts
+    interval: 5m
+    rules:
+      - uid: cdb_error_rate_high
+        title: CDB - High Error Rate (>5%)
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            model:
+              datasource:
+                type: prometheus
+                uid: prometheus
+              expr: (rate(execution_orders_rejected_total[5m]) / rate(execution_orders_received_total[5m])) * 100
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: A
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              hide: false
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        annotations:
+          summary: "CDB - High Error Rate (>5%)"
+          description: "Order rejection rate is above 5% for the last 5 minutes."
+        labels:
+          severity: warning
+        isPaused: false
