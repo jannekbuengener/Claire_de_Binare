@@ -24,7 +24,7 @@ relations:
 | temporary technical note | 4 | PR/implementation comments with real PR ref |
 | stale leftover (resolved) | 10 | bare TODO/TBD/`#TBD` — fixed in this pass |
 | archive candidate | ~20 | bare TODO in old roadmaps, session logs, analysis docs |
-| residual (needs issue) | 1 | skipped test without issue ref |
+| residual (needs issue) | 0 | all skipped tests resolved |
 
 ---
 
@@ -69,13 +69,13 @@ relations:
 
 ## 3. Residual / Deliberately Not Resolved
 
-### Residual violation (needs a new issue before it can be resolved)
+### Residual violation — cleared
 
-| File | Marker | Reason not resolved |
-|---|---|---|
-| `tests/performance/verlosung/test_analytics_performance.py:312` | `@pytest.mark.skip` without issue reference | `query_analytics.py` bug needs a tracking issue; #154 is closed; no existing open issue found — creating a fake issue number is forbidden |
-
-**Recommended next action:** Create a focused issue for `query_analytics.py` refactoring and add `(#<new-issue>)` to the skip reason.
+The `@pytest.mark.skip` in `tests/performance/verlosung/test_analytics_performance.py:312` was
+removed in a subsequent commit within this PR. Root cause: the bug referenced in the skip reason
+was already fixed in `3903e98` (Dec 2025); the path `backoffice/scripts/` never existed in the
+working repo. The skip was stale Verlosung-migration ballast, not a real open blocker.
+`scripts/todo_lifecycle_audit.sh` confirms 0 violations (Rule 4: OK).
 
 ### Archive-candidate TODOs (deliberately not touched)
 
