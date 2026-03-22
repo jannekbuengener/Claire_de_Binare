@@ -2,8 +2,22 @@
 
 MUST READ FIRST:
 - agents/AGENTS.md
+- docs/meta/WORKING_REPO_CANON.md
 - knowledge/governance/CDB_AGENT_POLICY.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
+- CURRENT_STATUS.md
+- docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+- PROJECT_STATUS.md (historical only)
+
+---
+
+## 0. Canon & Status Guardrails
+
+- Das Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
+- `CURRENT_STATUS.md` ist der aktuelle Repo- und Engineering-Status.
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` ist der operative Go/No-Go- und Echtgeld-Status.
+- `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden.
+- Bei Statuskonflikten gilt die SSOT-Regel aus `docs/meta/WORKING_REPO_CANON.md`.
 
 ---
 

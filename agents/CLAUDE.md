@@ -291,6 +291,7 @@ Stabil:
 
 Historischer Kontext:
 - knowledge/CURRENT_STATUS.md
+- PROJECT_STATUS.md
 
 ---
 

@@ -13,6 +13,10 @@ MUST READ FIRST:
 - knowledge/governance/CDB_GOVERNANCE.md
 - knowledge/governance/CDB_CONSTITUTION.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
+- CURRENT_STATUS.md
+- docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+
+Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Working Repo ist maßgeblicher Canon.
 
 ---
 
