@@ -13,9 +13,10 @@
 Claire_de_Binare/
 ├── CLAUDE.md                    ← Session Lead governance
 ├── README.md                    ← Project overview (add onboarding section)
+├── CURRENT_STATUS.md            ← Working repo / engineering status
 ├── knowledge/                   ← Knowledge base (canonical docs)
 │   ├── SYSTEM.CONTEXT.md       ← Architecture, data flow
-│   ├── CURRENT_STATUS.md       ← Latest status, active sprint
+│   ├── CURRENT_STATUS.md       ← Historical knowledge snapshot
 │   └── roadmap/
 │       └── EXPANDED_ECOSYSTEM_ROADMAP.md  ← Milestones, timeline
 ├── agents/
@@ -38,7 +39,7 @@ Claire_de_Binare/
 ## 🎯 Quick Navigation
 
 ### New Developer? Start Here:
-1. `README.md` -> [`CURRENT_STATUS.md`](../CURRENT_STATUS.md) -> [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md) -> [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md) (current entry chain)
+1. `README.md` -> [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) -> [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) -> [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md) -> [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md) (current entry chain)
 2. [knowledge/SYSTEM.CONTEXT.md](../SYSTEM.CONTEXT.md) (architecture)
 3. [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
 
@@ -49,8 +50,9 @@ Claire_de_Binare/
 
 ### Fixing Bugs? See:
 1. 📄 [PATCHSET_PLAN_345.md](PATCHSET_PLAN_345.md) (example workflow)
-2. 📄 [knowledge/CURRENT_STATUS.md](../knowledge/CURRENT_STATUS.md) (known issues)
-3. 📄 [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (testing strategy)
+2. 📄 [CURRENT_STATUS.md](../../CURRENT_STATUS.md) (current repo / engineering status)
+3. 📄 [knowledge/CURRENT_STATUS.md](../CURRENT_STATUS.md) (historical context and older known issues)
+4. 📄 [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (testing strategy)
 
 ---
 
@@ -81,7 +83,8 @@ Claire_de_Binare/
 | Document | Purpose | Location |
 |----------|---------|----------|
 | PATCHSET_PLAN_345.md | Example fix workflow | `/docs/PATCHSET_PLAN_345.md` |
-| CURRENT_STATUS.md | Latest sprint status | `/knowledge/CURRENT_STATUS.md` |
+| CURRENT_STATUS.md | Working repo / engineering status | `/CURRENT_STATUS.md` |
+| knowledge/CURRENT_STATUS.md | Historical knowledge snapshot | `/knowledge/CURRENT_STATUS.md` |
 | requirements-dev.txt | Dev dependencies | `/requirements-dev.txt` |
 
 ### Infrastructure

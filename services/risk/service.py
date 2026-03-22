@@ -1431,7 +1431,7 @@ class RiskManager:
 
         max_exposure = current_balance * self.config.max_total_exposure_pct
 
-        # PR #XXX: Include pending reserved exposure to prevent race condition
+        # PR #617: Include pending reserved exposure to prevent race condition
         effective_exposure = (
             risk_state.total_exposure + risk_state.pending_exposure_usdt
         )
@@ -2198,7 +2198,7 @@ class RiskManager:
         if risk_state.pending_orders > 0:
             risk_state.pending_orders -= 1
 
-        # PR #XXX: Release reserved exposure when order result arrives
+        # PR #617: Release reserved exposure when order result arrives
         if result.client_id and result.client_id in risk_state.pending_reservations:
             reserved = risk_state.pending_reservations.pop(result.client_id)
             risk_state.pending_exposure_usdt = max(

@@ -1,27 +1,27 @@
 apiVersion: 1
-# Issue #1214 - Grafana circuit-breaker alert rebuilt via provisioning.
-# Replaces stale UI-managed alert that caused DatasourceError + 1219h delayed notification.
+# Issue #1228 - Repo-managed Grafana alert for order rejections.
+# Normalizes datasource binding to the canonical Prometheus UID.
 
 groups:
   - orgId: 1
-    name: circuit-breaker
+    name: orders-rejected
     folder: CDB Alerts
-    interval: 1m
+    interval: 5m
     rules:
-      - uid: cdb-circuit-breaker-activated
-        title: CDB - Circuit Breaker Activated
+      - uid: cdb-orders-rejected
+        title: CDB - Orders Rejected
         condition: C
         data:
           - refId: A
             relativeTimeRange:
-              from: 300
+              from: 600
               to: 0
             datasourceUid: prometheus
             model:
               datasource:
                 type: prometheus
                 uid: prometheus
-              expr: circuit_breaker_active
+              expr: increase(execution_orders_rejected_total[5m])
               intervalMs: 1000
               maxDataPoints: 43200
               refId: A
@@ -31,8 +31,8 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 1
-                    type: gte
+                      - 0
+                    type: gt
                   operator:
                     type: and
                   query:
@@ -53,8 +53,8 @@ groups:
         execErrState: Error
         for: 0s
         annotations:
-          summary: "CRITICAL: CDB circuit breaker activated"
-          description: "circuit_breaker_active=1 on {{ $labels.instance }}. Trading has been halted."
+          summary: "CDB - Orders Rejected"
+          description: "At least one order rejection was observed in the last 5 minutes."
         labels:
-          severity: critical
+          severity: info
         isPaused: false

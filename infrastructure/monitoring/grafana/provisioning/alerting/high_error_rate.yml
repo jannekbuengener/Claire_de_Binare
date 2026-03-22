@@ -1,27 +1,27 @@
 apiVersion: 1
-# Issue #1214 - Grafana circuit-breaker alert rebuilt via provisioning.
-# Replaces stale UI-managed alert that caused DatasourceError + 1219h delayed notification.
+# Issue #1229 - Repo-managed Grafana alert for high execution error rate.
+# Replaces the stale UI-managed alert with canonical Prometheus datasource binding.
 
 groups:
   - orgId: 1
-    name: circuit-breaker
+    name: high-error-rate
     folder: CDB Alerts
-    interval: 1m
+    interval: 5m
     rules:
-      - uid: cdb-circuit-breaker-activated
-        title: CDB - Circuit Breaker Activated
+      - uid: cdb_error_rate_high
+        title: CDB - High Error Rate (>5%)
         condition: C
         data:
           - refId: A
             relativeTimeRange:
-              from: 300
+              from: 600
               to: 0
             datasourceUid: prometheus
             model:
               datasource:
                 type: prometheus
                 uid: prometheus
-              expr: circuit_breaker_active
+              expr: (rate(execution_orders_rejected_total[5m]) / rate(execution_orders_received_total[5m])) * 100
               intervalMs: 1000
               maxDataPoints: 43200
               refId: A
@@ -31,8 +31,8 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 1
-                    type: gte
+                      - 5
+                    type: gt
                   operator:
                     type: and
                   query:
@@ -53,8 +53,8 @@ groups:
         execErrState: Error
         for: 0s
         annotations:
-          summary: "CRITICAL: CDB circuit breaker activated"
-          description: "circuit_breaker_active=1 on {{ $labels.instance }}. Trading has been halted."
+          summary: "CDB - High Error Rate (>5%)"
+          description: "Order rejection rate is above 5% for the last 5 minutes."
         labels:
-          severity: critical
+          severity: warning
         isPaused: false

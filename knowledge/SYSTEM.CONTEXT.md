@@ -26,7 +26,9 @@ historical material is needed, use the local archive snapshot under
 
 - `agents/AGENTS.md` local agent registry and read order
 - `knowledge/CDB_KNOWLEDGE_HUB.md` knowledge hub and key operating links
-- `knowledge/CURRENT_STATUS.md` current system state and open priorities
+- `CURRENT_STATUS.md` current working repo / engineering status
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` current operational live-readiness verdict
+- `knowledge/CURRENT_STATUS.md` historical knowledge snapshot and older open-priority context
 - `knowledge/ACTIVE_ROADMAP.md` consolidated roadmap entrypoint
 - `docs/meta/WORKING_REPO_CANON.md` canon decision and archive policy
 

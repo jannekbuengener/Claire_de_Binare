@@ -186,7 +186,7 @@ curl -u admin:<old-password> http://localhost:3000/api/health
 - Only used when primary admin locked out
 - Rotation: Manual, same as primary admin
 
-**Implementation:** Issue #TBD
+**Implementation:** Not yet tracked. Raise a dedicated issue when break-glass account setup is prioritized.
 
 ---
 
