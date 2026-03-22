@@ -18,6 +18,8 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 
 **Live-Readiness: NO-GO** — no real trades without explicit human gate. See `docs/live-readiness/`.
 
+**Session-Ende (Pflicht):** Session-Log unter `knowledge/logs/sessions/YYYY-MM-DD-<topic>.md` ablegen. `CURRENT_STATUS.md` aktualisieren wenn sich Repo-/Engineering-Status geändert hat.
+
 ---
 
 ## Commands
