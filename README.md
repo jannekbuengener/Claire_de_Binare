@@ -97,6 +97,9 @@ Kanonische 431C-Linie:
 
 ## 📊 Projektstatus
 
+> **Historical snapshot — Stand: 2026-01-07.** Kein aktueller Repo-/Ops-Status.
+> Aktueller Repo-/Engineering-Status: `CURRENT_STATUS.md` — operativer Go/No-Go: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+
 ### Gesamtfortschritt
 ```
 Issues geschlossen: 202 / 300 (67.3%)
@@ -269,7 +272,7 @@ See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for detailed troubles
 ### Documentation
 
 - **Setup Guide**: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) - Comprehensive onboarding
-- **Service Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Service implementation audit
+- **Service Audit (2026-01-15)**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Historical service implementation audit
 - **Governance**: [Governance Audit](governance-audit-2026-01-15.md) - Historical governance audit snapshot
 - **Agent Registry**: [agents/AGENTS.md](agents/AGENTS.md) - Local agent entrypoint
 - **Policies**: `knowledge/governance/` - Canonical governance and policy documents

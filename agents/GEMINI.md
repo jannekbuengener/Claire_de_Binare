@@ -9,9 +9,9 @@ scope: governance_review
 
 MUST READ FIRST:
 - agents/AGENTS.md
-- governance/CDB_AGENT_POLICY.md
-- governance/CDB_GOVERNANCE.md
-- governance/CDB_CONSTITUTION.md
+- knowledge/governance/CDB_AGENT_POLICY.md
+- knowledge/governance/CDB_GOVERNANCE.md
+- knowledge/governance/CDB_CONSTITUTION.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
 
 ---
@@ -189,7 +189,7 @@ Er schützt Konsistenz, nicht Geschwindigkeit.
 ### PROJECT
 **Claire de Binare (CDB)**  
 Primary Coordination: **GitHub Issues**  
-Current State: **Critical fixes merged, CI stabilization in progress**
+Current State: see `CURRENT_STATUS.md` (Repo/Engineering) and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go verdict)
 
 ### MISSION
 Analysiere Repository, CI-Status, offene PRs, Docs und bekannte technische Schulden.  

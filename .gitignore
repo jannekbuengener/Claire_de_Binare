@@ -14,17 +14,9 @@ quick_test.*
 real_test*
 *_backup.py
 
-# Emoji filter outputs
+# Generated tool output files (local, do not version)
 emoji-report.*
 *.emoji-backup
-
-# Configuration duplicates (we only want the ones in .github/)
-emoji-config.yaml
-emoji-filter-workflow.yml
-emoji-bot.yml
-advanced-emoji-filter.py
-vscode-settings.json
-strict-config.yaml
 
 # Python
 __pycache__/
@@ -168,9 +160,6 @@ gha-creds-*.json
 .orchestrator_*.md
 *_analysis.json
 *_categorization.txt
-GEMINI_FINAL_REPORT_WORKING_REPO.md
-
-Repository—Überblick.md
 /.local/
 
 # =============================================================================
@@ -183,8 +172,6 @@ tools/secrets/.env.*
 !tools/secrets/README.md
 !tools/secrets/evidence/**
 # Note: .rotation_state.json now lives in $SECRETS_PATH (outside repo) since v1.2
-# Trigger E2E
-# LR-007 Shadow Mode active
 
 # Phase 1 runtime artifacts (local only)
 P1_RUNTIME_DOD_REPORT.md

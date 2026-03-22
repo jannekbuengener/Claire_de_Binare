@@ -239,7 +239,7 @@ Wenn Unsicherheit entsteht → stoppen und fragen.
 
 Die vollständige Delegationsanweisung liegt unter:
 
-knowledge/OPERATING_RULES/CLAUDE_DELEGATION_POLICY.md
+knowledge/operating_rules/CLAUDE_DELEGATION_POLICY.md
 
 
 Dieser Hub enthält keine operativen Delegationsdetails mehr.

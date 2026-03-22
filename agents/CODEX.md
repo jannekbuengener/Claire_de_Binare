@@ -1,8 +1,8 @@
 # CODEX — Execution Agent (Canonical)
 
 MUST READ FIRST:
-- C:\Users\janne\Documents\GitHub\Workspaces\AGENTS.md
-- governance/CDB_AGENT_POLICY.md
+- agents/AGENTS.md
+- knowledge/governance/CDB_AGENT_POLICY.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
 
 ---
@@ -106,7 +106,7 @@ Wenn Codex erkennt:
 **PROJECT:**  
 Claire de Binare (CDB)  
 Coordination Layer: GitHub Issues  
-Code Execution: GitLab / Local / CI pipelines
+Code Execution: GitHub / Local / CI pipelines
 
 **MISSION:**  
 Implement, refactor, or harden code and configuration based on:

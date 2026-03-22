@@ -177,7 +177,7 @@ docker logs cdb_execution --tail 50 | grep "Mode:"
 4. Emergency Procedures nicht dokumentiert
 5. MEXC Testnet Verification ausstehend
 
-**Estimated Time to Live:** 5-7 Tage (nach vollständiger Checklist-Abarbeitung)
+**Timeline:** see `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — authoritative Go/No-Go verdict and current blocking items.
 
 **Owner:** Assign before live switch
-**Last Updated:** 2026-01-10
+**Last Updated:** 2026-03-22 (path audit; no procedure change)

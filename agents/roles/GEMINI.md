@@ -9,9 +9,9 @@ scope: governance_review
 
 MUST READ FIRST:
 - agents/AGENTS.md
-- governance/CDB_AGENT_POLICY.md
-- governance/CDB_GOVERNANCE.md
-- governance/CDB_CONSTITUTION.md
+- knowledge/governance/CDB_AGENT_POLICY.md
+- knowledge/governance/CDB_GOVERNANCE.md
+- knowledge/governance/CDB_CONSTITUTION.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
 
 ---

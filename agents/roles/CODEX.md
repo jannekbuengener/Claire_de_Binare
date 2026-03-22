@@ -128,7 +128,7 @@ Wenn Codex erkennt:
 **PROJECT:**  
 Claire de Binare (CDB)  
 Coordination Layer: GitHub Issues  
-Code Execution: GitLab / Local / CI pipelines
+Code Execution: GitHub / Local / CI pipelines
 
 **MISSION:**  
 Implement, refactor, or harden code and configuration based on:
