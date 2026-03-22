@@ -10,7 +10,7 @@
 ## 🎯 Essential Reading (30 min)
 
 ### 1. README + Current Entry Chain (5 min)
-📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../CURRENT_STATUS.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
+📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
 **What:** Project overview, current runtime model, canonical compose layers, getting started
 
 ### 2. System Context (5 min)
@@ -18,8 +18,9 @@
 **What:** Architecture, components, data flow
 
 ### 3. Current Status (3 min)
-📍 **Location:** `knowledge/CURRENT_STATUS.md`
-**What:** Latest sprint, resolved issues, active work
+📍 **Location:** `CURRENT_STATUS.md` + `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+**What:** Current repo/test/engineering status plus the current operational Go/No-Go verdict
+**Historical context only:** `knowledge/CURRENT_STATUS.md`
 
 ### 4. Roadmap (10 min)
 📍 **Location:** `knowledge/roadmap/EXPANDED_ECOSYSTEM_ROADMAP.md`
@@ -137,7 +138,7 @@ docker ps --filter "name=cdb_"
 ## 🤝 Getting Help
 
 ### Documentation Issues
-- Check `knowledge/CURRENT_STATUS.md` for latest updates
+- Check `CURRENT_STATUS.md` and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` for the latest status
 - Review relevant runbook in `docs/services/`
 - Search GitHub issues for keywords
 
