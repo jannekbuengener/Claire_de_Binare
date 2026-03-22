@@ -1,0 +1,53 @@
+schema_version: "1.0"
+handoff_instance: lr040_soak_start_2026-03-22
+artifact_root: reports/p5_canary/2026-03-22/
+status: NO-GO
+authorization: not_authorized
+evidence_lock_utc: 2026-03-22T18:02:47Z
+capture_state: runtime_captured
+commit_sha: 6552df3c1cdafa48957bfa7527d383560165a5c2
+worktree_status: clean
+operator: pending_operator_assignment
+purpose: prestart_evidence_lock_before_lr040_soak
+
+kill_switch_status:
+  active: false
+  source: http://127.0.0.1:8002/kill-switch
+  captured_utc: 2026-03-22T18:02:47Z
+  capture_state: captured
+  response: '{"activated_at":null,"active":false,"message":"Deactivated by d4-teardown: delta4 verify done","reason":null}'
+  expected_field: active
+  required_value_before_start: false
+  gate_pass: true
+
+execution_status:
+  mode: mock
+  source: http://127.0.0.1:8003/status
+  captured_utc: 2026-03-22T18:02:47Z
+  capture_state: captured
+  response: '{"database":{"filled":0,"pending":0,"rejected":0,"total":10504},"mode":"mock","redis":{"connected":true},"service":"execution_service","stats":{"invalid_payloads":0,"last_result":null,"orders_filled":0,"orders_received":0,"orders_rejected":0,"shadow_blocked":0,"start_time":"2026-03-22T17:16:46.291047"},"version":"0.1.0"}'
+  canonical_field: execution_status.mode
+  required_value_before_start: mock
+  gate_pass: true
+
+risk_status:
+  circuit_breaker: false
+  source: http://127.0.0.1:8002/status
+  captured_utc: 2026-03-22T18:02:47Z
+  capture_state: captured
+  response: '{"alerts_generated":0,"last_order_result":null,"order_results_received":0,"orders_approved":0,"orders_blocked":84,"orders_rejected_execution":0,"orders_skipped":0,"risk_state":{"circuit_breaker":false,"daily_pnl":0.0,"last_prices":{"BTC/USDT":50036.01},"open_positions":1,"pending_orders":0,"positions":{"BTC/USDT":0.001},"signals_approved":0,"signals_blocked":84,"total_exposure":50.036010000000005},"signals_received":84,"started_at":"2026-03-22T17:16:46.488885","status":"running"}'
+  expected_field: risk_state.circuit_breaker
+  required_value_before_start: false
+  gate_pass: true
+
+gate_summary:
+  kill_switch_inactive: true
+  execution_mode_mock: true
+  circuit_breaker_inactive: true
+  all_gates_pass: true
+
+notes:
+  - Runtime capture performed 2026-03-22T18:02:47Z on branch main SHA 6552df3c1cdafa48957bfa7527d383560165a5c2
+  - Worktree clean at time of capture (git status --porcelain returned empty)
+  - P5 status remains NO-GO until LR-040 72h soak PASS verdict committed
+  - This file is the operative prestart evidence lock for the LR-040 soak start attempt
