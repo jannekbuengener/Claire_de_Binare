@@ -1,9 +1,37 @@
 # AGENTS
 
-Diese Datei ist der Root-Pointer fuer die lokale Agenten-Registry im Working Repo.
+Status: Root Pointer + Session Compass
+Scope: Working Repo
 
-Kanonischer Pfad:
-`agents/AGENTS.md`
+Diese Datei ist der Root-Pointer fuer die lokale Agenten-Registry im Working Repo
+und der schnelle Einstiegsanker fuer kanonische Dateien und aktuellen Projektstatus.
+
+Kanonische Agenten-Registry:
+[`agents/AGENTS.md`](agents/AGENTS.md)
+
+Verknuepfte Rolle:
+[`agents/roles/CODEX.md`](agents/roles/CODEX.md)
+
+Wichtige kanonische Dateien:
+- [`docs/meta/WORKING_REPO_CANON.md`](docs/meta/WORKING_REPO_CANON.md)
+- [`knowledge/governance/CDB_CONSTITUTION.md`](knowledge/governance/CDB_CONSTITUTION.md)
+- [`knowledge/governance/CDB_GOVERNANCE.md`](knowledge/governance/CDB_GOVERNANCE.md)
+- [`knowledge/governance/CDB_AGENT_POLICY.md`](knowledge/governance/CDB_AGENT_POLICY.md)
+- [`knowledge/CDB_KNOWLEDGE_HUB.md`](knowledge/CDB_KNOWLEDGE_HUB.md)
+- [`CURRENT_STATUS.md`](CURRENT_STATUS.md)
+- [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+- [`PROJECT_STATUS.md`](PROJECT_STATUS.md)
+
+Aktueller Projektstand:
+- Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
+- Engineering-Status laut [`CURRENT_STATUS.md`](CURRENT_STATUS.md), Stand 2026-03-22: `main` gruen, 5 offene PRs, P0 `DONE`, P1/P3/P4 noch `PARTIAL` oder `OPEN`, P5 weiter offen.
+- Operatives Live-Readiness-Verdikt laut [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md): `NO-GO`; reale Trades bleiben durch Human Gate blockiert.
+- [`PROJECT_STATUS.md`](PROJECT_STATUS.md) und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und nicht der aktuelle Gesamtstatus.
+
+Status-Regel:
+- Fuer aktuellen Repo- und Engineering-Stand zuerst [`CURRENT_STATUS.md`](CURRENT_STATUS.md) lesen.
+- Fuer operativen Go/No-Go- und Echtgeld-Stand zuerst [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) lesen.
+- Historische Statusdateien nur als Rueckgriff verwenden und nicht als SSOT behandeln.
 
 Hinweis:
 - Das Working Repo ist der produktive Standardpfad fuer Agenten-, Governance- und Navigationsdoku.
