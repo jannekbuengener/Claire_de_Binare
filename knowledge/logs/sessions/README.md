@@ -1,0 +1,26 @@
+# Sessions Log Index
+
+This directory stores session log notes and investigation records for Docs Hub work.
+
+- [2025-12-28-issue-cleanup.md](2025-12-28-issue-cleanup.md)
+- [2025-12-29-cdb-ws-implementation.md](2025-12-29-cdb-ws-implementation.md)
+- [2025-12-29-docker-secrets-blueprint.md](2025-12-29-docker-secrets-blueprint.md)
+- [2025-12-29-issue-governance-session.md](2025-12-29-issue-governance-session.md)
+- [2025-12-29-mexc-credentials-integration-proposal.md](2025-12-29-mexc-credentials-integration-proposal.md)
+- [2025-12-31-codex-batch-01-ideas.md](2025-12-31-codex-batch-01-ideas.md)
+- [2025-12-31-codex-batch-01-results.md](2025-12-31-codex-batch-01-results.md)
+- [2025-12-31-codex-batch-02-ideas.md](2025-12-31-codex-batch-02-ideas.md)
+- [2025-12-31-codex-batch-02-results.md](2025-12-31-codex-batch-02-results.md)
+- [2025-12-31-codex-batch-03-ideas.md](2025-12-31-codex-batch-03-ideas.md)
+- [2025-12-31-codex-batch-03-results.md](2025-12-31-codex-batch-03-results.md)
+- [2025-12-31-codex-batch-04-ideas.md](2025-12-31-codex-batch-04-ideas.md)
+- [2025-12-31-codex-batch-04-results.md](2025-12-31-codex-batch-04-results.md)
+- [2025-12-31-codex-batch-05-ideas.md](2025-12-31-codex-batch-05-ideas.md)
+- [2025-12-31-codex-batch-05-results.md](2025-12-31-codex-batch-05-results.md)
+- [2025-12-31-codex-ideas.md](2025-12-31-codex-ideas.md)
+- [2025-12-31-codex-results.md](2025-12-31-codex-results.md)
+- [2026-01-02__docs_untracked_snapshot.md](2026-01-02__docs_untracked_snapshot.md)
+- [2026-01-02__fix-secret-ca-key.md](2026-01-02__fix-secret-ca-key.md)
+- [2026-01-02__textdokument-neu.md](2026-01-02__textdokument-neu.md)
+- [2026-01-18_CLAUDE_docs-consolidation-mapping.md](2026-01-18_CLAUDE_docs-consolidation-mapping.md)
+- [grafana_dashboard_audit_2026-01-08.md](grafana_dashboard_audit_2026-01-08.md)

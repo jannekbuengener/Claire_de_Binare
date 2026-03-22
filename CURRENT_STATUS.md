@@ -3,21 +3,22 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-22 (Session 3)
-**Latest Commit**: df169f4
+**Last Updated**: 2026-03-22 (Session 5)
+**Latest Commit**: a407838
 
 ---
 
 ## Repo / Engineering Status (2026-03-22)
 
-- **main**: green, 4 open PRs
-- **Commits seit letztem Update (2026-02-21)**: ~246
-- **Open PRs**:
-  - #1237: LR-040 runtime env prep (verdict anchor)
+- **main**: green, 16 open PRs
+- **Commits seit letztem Update (2026-02-21)**: ~248
+- **Open PRs (relevant/current focus)**:
+  - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
   - #1217: fix(digest): auto-close weekly digest
   - #1207: feat(market): V3 shadow mode — cdb_market write path
   - #1180: deps: ruff 0.15.6 bump
 - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
+- **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
 
 ---
 
@@ -28,9 +29,9 @@
 | P0 Preconditions | LR-001..003 | DONE | unveraendert |
 | P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
 | P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
-| P3 Shadow Mode | LR-030, LR-031 | PARTIAL | LR-031 IMPLEMENTED nach kalibriertem PASS (#1186); LR-030 evidence gehaertet (#1129) |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — LR-040 runtime-Prep PR #1237 offen |
-| P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung PR #1226 offen; Human Gate noch nicht erteilt |
+| P3 Shadow Mode | LR-030, LR-031 | PARTIAL | LR-031 kalibriert PASS (lean Run 23407946292, PR #1257 a407838, min=1 liveness floor); LR-030 evidence gehaertet (#1129) |
+| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — LR-040 runtime-Prep PR #1237 BLOCKIERT (DIRTY/CONFLICTING) |
+| P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
 
 **Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
 
@@ -41,7 +42,7 @@
 ### Live-Readiness
 - LR-010: Evidence-Status auf PASS hochgestuft (PR #1223)
 - LR-020: IMPLEMENTED / DONE — Tier-2 paper-trade flow mit FILLED-State, Decimal-qty-Fix, TRACE_CONTRACT_V1 (PR #1190)
-- LR-031: Kalibrierung nach erstem Lean-Dry-Run, IMPLEMENTED-Status promoviert (PR #1186)
+- LR-031: Threshold neu kalibriert auf min=1 (liveness floor, PR #1257 a407838); lean Run 23407946292 vollstaendig PASS (soak_gate + comparison + canonical package)
 - LR-041: Deterministischer Redis/Postgres-Recovery-Drill hinzugefuegt (PR #1130)
 
 ### Operatives / Infra
@@ -69,10 +70,10 @@
 
 ## Known Blockers / Next Actions
 
-1. **LR-040 Verdict**: PR #1237 (Linux/WSL runtime prep) muss gemergt werden; dann deterministischer 72h-Soak-Lauf ausfuehren
-2. **P5 Prestart**: PR #1226 reviewen/mergen (artifact contract normalization)
+1. **LR-040 72h Soak**: manuell in WSL2 starten (kein CI-Workflow); PR #1237 BLOCKIERT (Konflikte, CI FAIL, missing label) — Kernwerkzeuge auf main vorhanden
+2. **Prestart-Evidence-Lock**: curl-Capture (kill_switch, execution_status, risk_status) unmittelbar VOR Soak-Start durchfuehren (P5_PRESTART_PACK.md §3)
 3. **LR-011**: State-machine-Test-Coverage noch offen (Issue #780)
-4. **Human Gate**: Fuer P5/Canary explizit erforderlich — noch nicht erteilt
+4. **Human Gate**: explizit erforderlich fuer P5/Canary — erst nach LR-040 PASS moeglich
 
 ---
 
