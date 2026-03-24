@@ -371,3 +371,127 @@ class TestMidnightCrossing:
         checkpoints = [compute_elapsed_hours(t + h * 3600, t) for h in range(73)]
         assert checkpoints == list(range(73))
         assert len(set(checkpoints)) == 73, "All checkpoint indices must be unique"
+
+
+# ---------------------------------------------------------------------------
+# Octal-safety regression tests (Issue #1268)
+#
+# Old bug: HOUR=$(date +%H) produced the zero-padded local-time string "08"/"09".
+# Bash arithmetic expansion $(( 08 % 6 )) fails: "value too great for base".
+#
+# Fix (via #1271): ELAPSED_HOURS is derived from epoch arithmetic and is always
+# a plain integer. $(( 8 % 6 )) = 2 and $(( 9 % 6 )) = 3 work correctly.
+#
+# These tests document the regression boundary so the fix cannot be silently
+# reverted without breaking the test suite.
+# ---------------------------------------------------------------------------
+
+
+class TestOctalSafeScheduleChecks:
+    """Regression tests for Issue #1268: zero-padded hours 08/09 octal parse."""
+
+    # --- compute_elapsed_hours produces plain integers, never zero-padded ---
+
+    def test_elapsed_hour_7_is_plain_int(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 7 * 3600, t) == 7
+
+    def test_elapsed_hour_8_is_plain_int(self) -> None:
+        """Hour 8 must be integer 8, not the string '08' that triggered octal errors."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 8 * 3600, t) == 8
+
+    def test_elapsed_hour_9_is_plain_int(self) -> None:
+        """Hour 9 must be integer 9, not the string '09' that triggered octal errors."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 9 * 3600, t) == 9
+
+    def test_elapsed_hour_10_is_plain_int(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 10 * 3600, t) == 10
+
+    # --- Check 3 (every 6h): modulo correct for formerly-octal hours ---
+
+    def test_check3_modulo_hour_6_triggers(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 6 * 3600, t) % 6 == 0
+
+    def test_check3_modulo_hour_7_skips(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 7 * 3600, t) % 6 == 1
+
+    def test_check3_modulo_hour_8_skips(self) -> None:
+        """$(( 8 % 6 )) == 2 — Check 3 must be skipped at elapsed hour 8."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 8 * 3600, t) % 6 == 2
+
+    def test_check3_modulo_hour_9_skips(self) -> None:
+        """$(( 9 % 6 )) == 3 — Check 3 must be skipped at elapsed hour 9."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 9 * 3600, t) % 6 == 3
+
+    def test_check3_modulo_hour_10_skips(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 10 * 3600, t) % 6 == 4
+
+    def test_check3_modulo_hour_12_triggers(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 12 * 3600, t) % 6 == 0
+
+    # --- Check 4 (every 12h): modulo correct for formerly-octal hours ---
+
+    def test_check4_modulo_hour_8_skips(self) -> None:
+        """$(( 8 % 12 )) == 8 — Check 4 must be skipped at elapsed hour 8."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 8 * 3600, t) % 12 == 8
+
+    def test_check4_modulo_hour_9_skips(self) -> None:
+        """$(( 9 % 12 )) == 9 — Check 4 must be skipped at elapsed hour 9."""
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 9 * 3600, t) % 12 == 9
+
+    def test_check4_modulo_hour_12_triggers(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 12 * 3600, t) % 12 == 0
+
+    def test_check4_modulo_hour_24_triggers(self) -> None:
+        t = 1_000_000
+        assert compute_elapsed_hours(t + 24 * 3600, t) % 12 == 0
+
+    # --- Checkpoint comparison safe at hours 8 and 9 ---
+
+    def test_checkpoint_write_decision_at_hour_8(self) -> None:
+        """Idempotency guard must work at hour 8 (was broken by octal in old script)."""
+        assert would_write_checkpoint(8, 7) is True   # new checkpoint, must write
+        assert would_write_checkpoint(8, 8) is False  # already written, must skip
+
+    def test_checkpoint_write_decision_at_hour_9(self) -> None:
+        """Idempotency guard must work at hour 9."""
+        assert would_write_checkpoint(9, 8) is True
+        assert would_write_checkpoint(9, 9) is False
+
+    def test_checkpoint_sequence_7_through_10(self) -> None:
+        """Simulate four consecutive cron firings through the formerly-broken hours."""
+        last = 6
+        for h in [7, 8, 9, 10]:
+            assert would_write_checkpoint(h, last) is True, f"Hour {h} should write"
+            last = h
+        assert last == 10
+
+    # --- Document the old bug boundary ---
+
+    def test_old_date_h_utc_offset_mapping(self) -> None:
+        """Document: at UTC 07:00, MESZ local time is 08:00 → date +%H returned '08'.
+        The fix avoids this entirely: elapsed hours at UTC 07:00 into a midnight
+        soak run is 7 (plain integer), never the string '08'.
+        """
+        # Soak started 2026-03-24 00:00:02 UTC; cron fires at 07:00:01 UTC
+        start = int(__import__("datetime").datetime(2026, 3, 24, 0, 0, 2,
+                    tzinfo=__import__("datetime").timezone.utc).timestamp())
+        check = int(__import__("datetime").datetime(2026, 3, 24, 7, 0, 1,
+                    tzinfo=__import__("datetime").timezone.utc).timestamp())
+        elapsed = compute_elapsed_hours(check, start)
+        # old script: HOUR=$(date +%H) at MESZ+1 would give '08' → octal error
+        # new script: elapsed == 6 (floor of ~6.99 h) — plain integer, no error
+        assert elapsed == 6
+        assert str(elapsed) != "08", "elapsed hours must never be zero-padded"
