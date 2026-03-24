@@ -312,15 +312,37 @@ fi
 
 echo -e "\n${YELLOW}[CHECK 2/5]${NC} Service Health Status..."
 
-# Count running CDB services
-EXPECTED_SERVICES=8
-RUNNING_SERVICES=$(docker ps --filter "name=cdb_" --filter "status=running" | grep -c "cdb_" || true)
+# ---------------------------------------------------------------------------
+# ZRP-relevant SUT services: BLUE core + data layer + RED signal services.
+# Observability, exporter, and infra sidecars are intentionally excluded —
+# their restarts do not violate the Zero Restart Policy gate.
+# Source of truth: compose.blue.yml + compose.red.yml (ws + signal only).
+# ---------------------------------------------------------------------------
+SUT_SERVICES="cdb_postgres cdb_redis cdb_market cdb_candles cdb_regime cdb_allocation cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_ws cdb_signal"
+EXPECTED_SERVICES=12
+
+# Snapshot all running container names once (avoids N docker calls in the loop).
+_RUNNING_NAMES=$(docker ps --filter "status=running" --format "{{.Names}}" 2>/dev/null || true)
+
+RUNNING_SERVICES=0
+MISSING_SVC_LIST=""
+for _svc in $SUT_SERVICES; do
+  if echo "$_RUNNING_NAMES" | grep -qx "$_svc"; then
+    RUNNING_SERVICES=$((RUNNING_SERVICES + 1))
+  else
+    MISSING_SVC_LIST="$MISSING_SVC_LIST $_svc"
+  fi
+done
+
+# Inventory count: total cdb_* containers (informational, not a gate).
+TOTAL_CDB=$(echo "$_RUNNING_NAMES" | grep -c "^cdb_" || echo 0)
 
 if [ "$RUNNING_SERVICES" -lt "$EXPECTED_SERVICES" ]; then
-  echo -e "${RED}⚠️  WARNING: Only $RUNNING_SERVICES/$EXPECTED_SERVICES services running${NC}"
+  echo -e "${RED}⚠️  WARNING: $RUNNING_SERVICES/$EXPECTED_SERVICES SUT services running (inventory: $TOTAL_CDB cdb_* containers)${NC}"
+  echo "  Missing:$MISSING_SVC_LIST"
   docker ps --filter "name=cdb_" --format "{{.Names}}: {{.Status}}"
 else
-  echo -e "${GREEN}✓ All $RUNNING_SERVICES/$EXPECTED_SERVICES services running${NC}"
+  echo -e "${GREEN}✓ All $RUNNING_SERVICES/$EXPECTED_SERVICES SUT services running (inventory: $TOTAL_CDB cdb_* containers)${NC}"
 fi
 
 # =============================================================================

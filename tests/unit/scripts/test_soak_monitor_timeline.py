@@ -12,6 +12,8 @@ Instead, these tests:
   4. Cover Issue #1269 artifact-path persistence across midnight: the monitor
      must keep writing into the same run directory instead of switching to a
      new date-derived path.
+  5. Cover Issue #1263 service health check: SUT service set vs. broad cdb_*
+     inventory count (count_sut_services helper).
 """
 
 from __future__ import annotations
@@ -495,3 +497,138 @@ class TestOctalSafeScheduleChecks:
         # new script: elapsed == 6 (floor of ~6.99 h) — plain integer, no error
         assert elapsed == 6
         assert str(elapsed) != "08", "elapsed hours must never be zero-padded"
+
+
+# ---------------------------------------------------------------------------
+# Service health check tests (Issue #1263)
+#
+# Old bug: EXPECTED_SERVICES=8 (static, stale) while RUNNING_SERVICES counted
+# ALL cdb_* containers on the host (22+ in full BLUE+RED+exporter+infra runtime),
+# producing the semantically wrong output "22/8 services running".
+#
+# Fix: curate an explicit SUT_SERVICES list (12 ZRP-relevant containers) and
+# count only those. The broad cdb_* count is reported as inventory info only.
+# ---------------------------------------------------------------------------
+
+# Canonical ZRP-relevant SUT services — must match soak_monitor.sh SUT_SERVICES.
+SUT_SERVICES = [
+    "cdb_postgres", "cdb_redis",
+    "cdb_market", "cdb_candles", "cdb_regime", "cdb_allocation",
+    "cdb_risk", "cdb_execution", "cdb_db_writer", "cdb_paper_runner",
+    "cdb_ws", "cdb_signal",
+]
+
+
+def count_sut_services(
+    running_containers: list[str],
+    sut_services: list[str],
+) -> tuple[int, list[str]]:
+    """Mirror soak_monitor.sh Check 2 logic (Issue #1263 fix).
+
+    Returns (running_count, missing_list).
+    Mirrors the bash loop: for _svc in $SUT_SERVICES; do grep -qx ...
+    """
+    running = set(running_containers)
+    missing = [s for s in sut_services if s not in running]
+    return len(sut_services) - len(missing), missing
+
+
+class TestServiceHealthCheck:
+    """Regression tests for Issue #1263: inconsistent Soll/Ist counting.
+
+    Old bug: EXPECTED_SERVICES=8 (BLUE core without postgres/redis, without RED)
+    while RUNNING_SERVICES counted ALL cdb_* containers (22+ in a full runtime).
+
+    Fix: explicit SUT_SERVICES list (12) — count only ZRP-relevant containers.
+    """
+
+    def test_expected_sut_count_is_12(self) -> None:
+        """The canonical SUT list must have exactly 12 entries."""
+        assert len(SUT_SERVICES) == 12
+
+    def test_all_sut_services_running_reports_12_of_12(self) -> None:
+        count, missing = count_sut_services(SUT_SERVICES, SUT_SERVICES)
+        assert count == 12
+        assert missing == []
+
+    def test_missing_one_service_detected(self) -> None:
+        partial = [s for s in SUT_SERVICES if s != "cdb_risk"]
+        count, missing = count_sut_services(partial, SUT_SERVICES)
+        assert count == 11
+        assert missing == ["cdb_risk"]
+
+    def test_missing_two_services_detected(self) -> None:
+        partial = [s for s in SUT_SERVICES if s not in {"cdb_ws", "cdb_signal"}]
+        count, missing = count_sut_services(partial, SUT_SERVICES)
+        assert count == 10
+        assert set(missing) == {"cdb_ws", "cdb_signal"}
+
+    def test_blue_only_missing_red_signal_services(self) -> None:
+        """Only BLUE services up, RED cdb_ws/cdb_signal missing → 10/12."""
+        blue_only = [
+            "cdb_postgres", "cdb_redis", "cdb_market", "cdb_candles",
+            "cdb_regime", "cdb_allocation", "cdb_risk", "cdb_execution",
+            "cdb_db_writer", "cdb_paper_runner",
+        ]
+        count, missing = count_sut_services(blue_only, SUT_SERVICES)
+        assert count == 10
+        assert set(missing) == {"cdb_ws", "cdb_signal"}
+
+    def test_exporter_containers_not_in_sut_set(self) -> None:
+        """Observability/exporter containers must NOT be in the ZRP gate."""
+        non_sut = {
+            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
+            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
+            "cdb_alertmanager", "cdb_node_exporter",
+        }
+        assert non_sut.isdisjoint(set(SUT_SERVICES)), (
+            "Observability containers must not be in SUT_SERVICES"
+        )
+
+    def test_monitor_container_not_in_sut_set(self) -> None:
+        """lr040_soak_monitor must not be counted as a SUT service."""
+        assert "lr040_soak_monitor" not in SUT_SERVICES
+
+    def test_extra_containers_do_not_inflate_sut_count(self) -> None:
+        """22 cdb_* containers on host must not inflate the 12-service SUT count."""
+        all_host_cdb = SUT_SERVICES + [
+            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
+            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
+            "cdb_alertmanager", "cdb_node_exporter",
+            "cdb_market_eth", "cdb_gh_runner",
+        ]
+        count, missing = count_sut_services(all_host_cdb, SUT_SERVICES)
+        assert count == 12
+        assert missing == []
+
+    def test_data_layer_in_sut_set(self) -> None:
+        """cdb_postgres and cdb_redis are ZRP-critical and must be in SUT_SERVICES."""
+        assert "cdb_postgres" in SUT_SERVICES
+        assert "cdb_redis" in SUT_SERVICES
+
+    def test_red_signal_services_in_sut_set(self) -> None:
+        """cdb_ws and cdb_signal are ZRP-relevant and must be in SUT_SERVICES."""
+        assert "cdb_ws" in SUT_SERVICES
+        assert "cdb_signal" in SUT_SERVICES
+
+    def test_old_bug_reproduction(self) -> None:
+        """Document the old bug: broad cdb_* count >> static EXPECTED_SERVICES=8."""
+        # Simulate full host: 22 cdb_* containers running
+        all_cdb_on_host = [
+            "cdb_postgres", "cdb_redis", "cdb_market", "cdb_candles",
+            "cdb_regime", "cdb_allocation", "cdb_risk", "cdb_execution",
+            "cdb_db_writer", "cdb_paper_runner", "cdb_ws", "cdb_signal",
+            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
+            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
+            "cdb_alertmanager", "cdb_node_exporter", "cdb_market_eth", "cdb_gh_runner",
+        ]
+        old_running = len(all_cdb_on_host)  # 22
+        old_expected = 8                    # hardcoded in old script
+        # Old output: "22/8 services running" — semantically wrong
+        assert old_running > old_expected, "Documents the old Soll/Ist mismatch"
+
+        # New approach: only the 12 curated SUT services
+        new_count, new_missing = count_sut_services(all_cdb_on_host, SUT_SERVICES)
+        assert new_count == 12
+        assert new_missing == []
+        # New output: "12/12 SUT services running (inventory: 22 cdb_* containers)"
