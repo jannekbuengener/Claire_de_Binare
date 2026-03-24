@@ -181,6 +181,10 @@ cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
 **Verdict interpretation (no P5 release decision):**
 - PASS: `lr040_soak_gate_eval.json` verdict is `PASS`
 - FAIL: any check failed — see `failures` array for root cause before re-attempting
+- INCONCLUSIVE: environment interruption detected (Docker-daemon or host restart,
+  identified by bulk-restart heuristic). Run is invalid but not a SUT defect.
+  Run must be restarted. See `soak_test_INCONCLUSIVE.txt` for details
+  (`containers`, `uptime_spread_s`, `monitor_container_fresh`). exit 1 (fail-closed).
 - A PASS here is a necessary LR-040 evidence anchor only; it does not, by
   itself, create the committed P5 core artifact set and does not change P5 from
   `NO-GO`
