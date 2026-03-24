@@ -3,22 +3,23 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-22 (Session 5)
-**Latest Commit**: a407838
+**Last Updated**: 2026-03-24 (Session 6)
+**Latest Commit**: a5a5f5f
 
 ---
 
-## Repo / Engineering Status (2026-03-22)
+## Repo / Engineering Status (2026-03-24)
 
-- **main**: green, 16 open PRs
-- **Commits seit letztem Update (2026-02-21)**: ~248
+- **main**: green
 - **Open PRs (relevant/current focus)**:
+  - #1273: fix: batch soak-monitor and grafana alerting repairs (branch `batch/2026-03-24-soak-alerting-fixes`) — CI ausstehend
   - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
   - #1217: fix(digest): auto-close weekly digest
   - #1207: feat(market): V3 shadow mode — cdb_market write path
   - #1180: deps: ruff 0.15.6 bump
 - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
 - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
+- **Merged (Session 5, 2026-03-24)**: #1270 fix(soak): env_interruption classification, #1271 fix(soak): monotonic checkpoint timeline
 
 ---
 
@@ -30,7 +31,7 @@
 | P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
 | P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
 | P3 Shadow Mode | LR-030, LR-031 | PARTIAL | LR-031 kalibriert PASS (lean Run 23407946292, PR #1257 a407838, min=1 liveness floor); LR-030 evidence gehaertet (#1129) |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — LR-040 runtime-Prep PR #1237 BLOCKIERT (DIRTY/CONFLICTING) |
+| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — **LR-040 72h-Soak läuft seit 2026-03-22T18:19 UTC** (Ziel: 2026-03-25T18:19 UTC); Soak-Monitor-Bugs #1263/#1264/#1268 gefixt (PR #1273) |
 | P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
 
 **Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
@@ -54,6 +55,22 @@
 - Backup: Automatisierungs-Runbook + SurrealDB-Drill (#1175, #1130)
 - Governance: TODO/Placeholder-Lifecycle formalisiert (#1239)
 
+### Soak-Monitor + Alerting (2026-03-24, Session 6)
+
+6 Issues in PR #1273 geschlossen:
+
+- **#1268** (Regression-Tests): Bash-Octal-Parsing-Bug bei `%H`-Stunden 08/09 dokumentiert; 18 neue Tests in `TestOctalSafeScheduleChecks` (`test_soak_monitor_timeline.py`)
+- **#1263** (Service-Health): SUT_SERVICES-Liste auf exakt 12 Services erweitert (BLUE core 8 + postgres/redis + ws/signal); `grep -qx` statt Broad-Filter
+- **#1264** (Disk-Evidence): Check 5 nutzt `/repo` (mounted) statt `/var/lib/docker` (nicht gemountet) + `docker system df`; schreibt Disk-Evidence-Artifact pro Checkpoint
+- **#1265** (Circuit-Breaker-Alert): `type: gte` → `type: gt`, `params: [1]` → `params: [0]` (binary metric semantisch äquivalent; `gte` war ungültiger Grafana-Operator → DatasourceError)
+- **#1266** (Orders-Rejected-Alert): `execErrState: Error` → `execErrState: KeepLastState` (noisy DatasourceError-Mails während Prometheus-Restart unterdrückt)
+- **#1267** (High-Error-Rate-Alert): `execErrState: Error` → `execErrState: KeepLastState` (gleicher Root Cause wie #1266)
+
+Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 Tests, 4 Klassen)
+`test_soak_monitor_timeline.py`: 71 Tests total (+46 in dieser Session)
+
+**Offen**: #1269 (midnight-rollover UTC→MESZ) — bewusst offen bis Live-Evidence vorliegt.
+
 ### Observability / Grafana (2026-03-22)
 - Dashboard-Footprint: 15 → 2 Dashboards (#1251, Commit 6bb4532)
   - entfernt: 13 ARCHIVED + 1 Platzhalter-Huelle (cdb_money_result_owner_v1)
@@ -70,10 +87,13 @@
 
 ## Known Blockers / Next Actions
 
-1. **LR-040 72h Soak**: manuell in WSL2 starten (kein CI-Workflow); PR #1237 BLOCKIERT (Konflikte, CI FAIL, missing label) — Kernwerkzeuge auf main vorhanden
-2. **Prestart-Evidence-Lock**: curl-Capture (kill_switch, execution_status, risk_status) unmittelbar VOR Soak-Start durchfuehren (P5_PRESTART_PACK.md §3)
-3. **LR-011**: State-machine-Test-Coverage noch offen (Issue #780)
-4. **Human Gate**: explizit erforderlich fuer P5/Canary — erst nach LR-040 PASS moeglich
+1. **LR-040 72h Soak läuft**: gestartet 2026-03-22T18:19 UTC, Ziel 2026-03-25T18:19 UTC — PR #1273 (Soak-Monitor-Fixes) muss gemerged werden, damit Korrekturen live gehen
+2. **PR #1273 mergen**: CI + policy-gate ausstehend; `allow-core-change` Label gesetzt; Bot-Threads resolven vor Merge
+3. **Grafana-Reload nach #1265/#1266/#1267**: `cdb_grafana`-Container muss neu gestartet werden, damit die neuen Alerting-YAMLs aktiv werden
+4. **#1269 (midnight-rollover)**: bewusst offen — erst schliessen wenn Live-Evidence aus dem laufenden Soak vorliegt (UTC→MESZ Rollover ~23:00 UTC = 01:00 MESZ)
+5. **Prestart-Evidence-Lock**: curl-Capture (kill_switch, execution_status, risk_status) unmittelbar VOR Soak-Start durchfuehren (P5_PRESTART_PACK.md §3)
+6. **LR-011**: State-machine-Test-Coverage noch offen (Issue #780)
+7. **Human Gate**: explizit erforderlich fuer P5/Canary — erst nach LR-040 PASS moeglich
 
 ---
 
