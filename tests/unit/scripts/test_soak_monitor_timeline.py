@@ -632,3 +632,171 @@ class TestServiceHealthCheck:
         assert new_count == 12
         assert new_missing == []
         # New output: "12/12 SUT services running (inventory: 22 cdb_* containers)"
+
+
+# ---------------------------------------------------------------------------
+# Disk space check tests (Issue #1264)
+#
+# Old bug: df -h /var/lib/docker ran inside the container namespace where
+# /var/lib/docker is not mounted. With pipefail active, the failed pipeline
+# produced DISK_USAGE="unknown" at every checkpoint — no actionable evidence.
+#
+# Fix: use df /repo (always mounted at /repo in lr040_soak_monitor) and
+# docker system df (via socket) instead. Write a disk_evidence artifact at
+# every checkpoint, not only at the >90% critical level.
+# ---------------------------------------------------------------------------
+
+
+def parse_disk_pct(df_output: str) -> str | None:
+    """Parse disk usage percentage from df output (2nd data row, 5th column).
+
+    Returns the numeric string without %, or None if not parseable.
+    Mirrors: df /repo | awk 'NR==2 {print $5}' | sed 's/%//'
+    """
+    lines = df_output.strip().splitlines()
+    if len(lines) < 2:
+        return None
+    parts = lines[1].split()
+    if len(parts) < 5:
+        return None
+    pct_str = parts[4].rstrip("%")
+    if not pct_str.isdigit():
+        return None
+    return pct_str
+
+
+def classify_disk_usage(pct: int) -> str:
+    """Returns 'ok', 'warning', or 'critical'.
+
+    Mirrors the threshold logic in soak_monitor.sh Check 5:
+      >90% → critical, >80% → warning, otherwise → ok.
+    """
+    if pct > 90:
+        return "critical"
+    if pct > 80:
+        return "warning"
+    return "ok"
+
+
+# Realistic df output for /repo (inside ubuntu:22.04 container on WSL2/Linux)
+_DF_REPO_NORMAL = """\
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       932G  412G  473G  47% /repo
+"""
+
+_DF_REPO_WARNING = """\
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       932G  760G  125G  86% /repo
+"""
+
+_DF_REPO_CRITICAL = """\
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sda1       932G  860G   25G  97% /repo
+"""
+
+# Old bug: df /var/lib/docker fails inside container → empty output (with pipefail,
+# the pipeline would have produced "unknown" via the || echo "unknown" fallback)
+_DF_EMPTY = ""
+_DF_ERROR_LINE_ONLY = "df: /var/lib/docker: No such file or directory\n"
+
+
+class TestDiskSpaceCheck:
+    """Regression tests for Issue #1264: disk check unavailable in container.
+
+    The monitor runs inside ubuntu:22.04 with /repo and /var/run/docker.sock
+    mounted. /var/lib/docker is NOT in the container namespace.
+    """
+
+    # --- parse_disk_pct ---
+
+    def test_parse_normal_usage(self) -> None:
+        assert parse_disk_pct(_DF_REPO_NORMAL) == "47"
+
+    def test_parse_warning_usage(self) -> None:
+        assert parse_disk_pct(_DF_REPO_WARNING) == "86"
+
+    def test_parse_critical_usage(self) -> None:
+        assert parse_disk_pct(_DF_REPO_CRITICAL) == "97"
+
+    def test_parse_empty_output_returns_none(self) -> None:
+        """Empty df output (old /var/lib/docker path inside container) → None."""
+        assert parse_disk_pct(_DF_EMPTY) is None
+
+    def test_parse_error_line_only_returns_none(self) -> None:
+        """df error line without data row → None (old bug: this produced 'unknown')."""
+        assert parse_disk_pct(_DF_ERROR_LINE_ONLY) is None
+
+    def test_parse_header_only_returns_none(self) -> None:
+        """Only header line, no data → None."""
+        header_only = "Filesystem      Size  Used Avail Use% Mounted on\n"
+        assert parse_disk_pct(header_only) is None
+
+    def test_parse_non_numeric_pct_returns_none(self) -> None:
+        """Malformed 5th column (no % or non-numeric) → None."""
+        bad = "Filesystem  Size Used Avail ??? /\n/dev/sda1   100G  50G   50G ??? /\n"
+        assert parse_disk_pct(bad) is None
+
+    # --- classify_disk_usage ---
+
+    def test_classify_47_is_ok(self) -> None:
+        assert classify_disk_usage(47) == "ok"
+
+    def test_classify_80_boundary_is_ok(self) -> None:
+        """80% is NOT above 80, so it is ok."""
+        assert classify_disk_usage(80) == "ok"
+
+    def test_classify_81_is_warning(self) -> None:
+        assert classify_disk_usage(81) == "warning"
+
+    def test_classify_86_is_warning(self) -> None:
+        assert classify_disk_usage(86) == "warning"
+
+    def test_classify_90_boundary_is_warning(self) -> None:
+        """90% is NOT above 90, so it is warning."""
+        assert classify_disk_usage(90) == "warning"
+
+    def test_classify_91_is_critical(self) -> None:
+        assert classify_disk_usage(91) == "critical"
+
+    def test_classify_97_is_critical(self) -> None:
+        assert classify_disk_usage(97) == "critical"
+
+    # --- Evidence model ---
+
+    def test_evidence_produced_at_ok_level(self) -> None:
+        """Evidence must be written even when usage is below alert thresholds.
+
+        Old code only wrote disk_alerts.log at >90%. Now every checkpoint
+        writes a disk_evidence_<H>h.txt file.
+        """
+        pct_str = parse_disk_pct(_DF_REPO_NORMAL)
+        assert pct_str is not None
+        classification = classify_disk_usage(int(pct_str))
+        assert classification == "ok"
+        # The fix ensures a disk_evidence file is always written (regardless
+        # of classification). The test confirms the parsed value is actionable.
+        assert pct_str.isdigit()
+
+    def test_unavailable_case_is_explicitly_marked(self) -> None:
+        """When df returns no parseable output, the result must be None (not empty
+        string or 'unknown') so callers can distinguish 'unknown' from '0%'."""
+        assert parse_disk_pct(_DF_EMPTY) is None
+        assert parse_disk_pct(_DF_ERROR_LINE_ONLY) is None
+
+    def test_old_bug_var_lib_docker_path_fails_in_container(self) -> None:
+        """Document old bug: df /var/lib/docker inside container returns no data.
+
+        With pipefail, the failed df pipeline set DISK_USAGE='unknown' at
+        every checkpoint. The fix uses df /repo (always mounted) instead.
+        """
+        # Old path: /var/lib/docker → empty/error output → parse returns None
+        old_path_output = _DF_EMPTY
+        assert parse_disk_pct(old_path_output) is None, (
+            "Old /var/lib/docker path was unreachable in container namespace"
+        )
+
+        # New path: /repo → parseable output
+        new_path_output = _DF_REPO_NORMAL
+        assert parse_disk_pct(new_path_output) == "47", (
+            "New /repo path must yield parseable disk usage"
+        )

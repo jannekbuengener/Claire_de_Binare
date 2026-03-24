@@ -397,21 +397,61 @@ fi
 
 echo -e "\n${YELLOW}[CHECK 5/5]${NC} Disk Space Check..."
 
-# Get disk usage percentage
-DISK_USAGE=$(df -h /var/lib/docker 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//' || echo "unknown")
+# ---------------------------------------------------------------------------
+# The monitor runs inside a container (ubuntu:22.04) with /repo and
+# /var/run/docker.sock mounted. /var/lib/docker is NOT present inside the
+# container — measuring it via df fails silently and produced the misleading
+# "Could not determine disk usage" message (Issue #1264).
+#
+# Two evidence sources that ARE reachable from inside the container:
+#   1. df /repo   — the partition where run artifacts are written
+#   2. docker system df — Docker image/container/volume space via socket
+#
+# A disk_evidence file is written at every checkpoint regardless of threshold
+# so the evidence chain always has a disk record, not just at Critical level.
+# ---------------------------------------------------------------------------
 
-if [ "$DISK_USAGE" != "unknown" ]; then
-  if [ "$DISK_USAGE" -gt 90 ]; then
-    echo -e "${RED}⚠️  CRITICAL: Disk usage at ${DISK_USAGE}%${NC}"
-    echo "$TIMESTAMP - CRITICAL: Disk usage ${DISK_USAGE}%" >> "$ARTIFACT_PATH/disk_alerts.log"
-  elif [ "$DISK_USAGE" -gt 80 ]; then
-    echo -e "${YELLOW}⚠️  WARNING: Disk usage at ${DISK_USAGE}%${NC}"
+DISK_EVIDENCE_FILE="$ARTIFACT_PATH/disk_evidence_$(date -u +%Y%m%d_%H)h.txt"
+
+# Source 1: artifact filesystem (/repo partition — always mounted)
+ARTIFACT_DISK_PCT=$(df /repo 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//' || true)
+ARTIFACT_DISK_FREE=$(df -h /repo 2>/dev/null | awk 'NR==2 {print $4}' || true)
+
+# Source 2: Docker space via socket (images, containers, volumes, build cache)
+DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not available]")
+
+# Persist disk evidence at every checkpoint
+{
+  echo "Timestamp: $TIMESTAMP"
+  echo "Elapsed hours: $ELAPSED_HOURS"
+  echo "========================================="
+  echo ""
+  echo "Artifact filesystem (/repo — partition where run artifacts are stored):"
+  if [ -n "$ARTIFACT_DISK_PCT" ]; then
+    echo "  Used: ${ARTIFACT_DISK_PCT}%  |  Free: ${ARTIFACT_DISK_FREE:-unknown}"
   else
-    echo -e "${GREEN}✓ Disk usage: ${DISK_USAGE}%${NC}"
+    echo "  NOT_AVAILABLE (df /repo returned no parseable output)"
+  fi
+  echo ""
+  echo "Docker space (images / containers / volumes / build cache):"
+  echo "$DOCKER_DF_OUT"
+} > "$DISK_EVIDENCE_FILE"
+
+# Console output + alert log
+if [ -n "$ARTIFACT_DISK_PCT" ]; then
+  if [ "$ARTIFACT_DISK_PCT" -gt 90 ] 2>/dev/null; then
+    echo -e "${RED}⚠️  CRITICAL: Artifact filesystem ${ARTIFACT_DISK_PCT}% full (free: ${ARTIFACT_DISK_FREE})${NC}"
+    echo "$TIMESTAMP - CRITICAL: Artifact filesystem ${ARTIFACT_DISK_PCT}% full" >> "$ARTIFACT_PATH/disk_alerts.log"
+  elif [ "$ARTIFACT_DISK_PCT" -gt 80 ] 2>/dev/null; then
+    echo -e "${YELLOW}⚠️  WARNING: Artifact filesystem ${ARTIFACT_DISK_PCT}% (free: ${ARTIFACT_DISK_FREE})${NC}"
+  else
+    echo -e "${GREEN}✓ Artifact filesystem: ${ARTIFACT_DISK_PCT}% used (free: ${ARTIFACT_DISK_FREE})${NC}"
   fi
 else
-  echo -e "${YELLOW}⚠️  Could not determine disk usage${NC}"
+  echo -e "${YELLOW}⚠️  Artifact filesystem usage unavailable — check disk_evidence file${NC}"
+  echo "$TIMESTAMP - DISK_UNAVAILABLE: df /repo returned no parseable output" >> "$ARTIFACT_PATH/disk_alerts.log"
 fi
+echo "  Evidence: $DISK_EVIDENCE_FILE"
 
 # =============================================================================
 # Summary
