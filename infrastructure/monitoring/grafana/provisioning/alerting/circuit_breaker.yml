@@ -31,8 +31,8 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 1
-                    type: gte
+                      - 0
+                    type: gt
                   operator:
                     type: and
                   query:
