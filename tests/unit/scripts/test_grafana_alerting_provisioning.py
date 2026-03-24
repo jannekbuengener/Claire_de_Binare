@@ -197,3 +197,145 @@ class TestAlertingStructure:
         docs = _load_alerting_files()
         rule = docs["circuit_breaker.yml"]["groups"][0]["rules"][0]
         assert rule["labels"]["severity"] == "critical"
+
+
+# ---------------------------------------------------------------------------
+# Datasource URL and execErrState tests (Issue #1266 / #1267)
+#
+# Root cause: execErrState: Error caused Grafana to fire DatasourceError alerts
+# (sent as high-severity mails) whenever cdb_prometheus was transiently
+# unavailable (e.g. during Docker daemon restart / environment_interruption).
+# Docker DNS removes a container's entry while it is stopped, so the window
+# between stop and start produces a genuine "no such host" lookup failure.
+#
+# Fix: execErrState: KeepLastState — during a datasource outage, alert rules
+# retain their last evaluation state instead of flipping to Error.
+#
+# The datasource URL http://cdb_prometheus:9090 is CORRECT: both cdb_grafana
+# and cdb_prometheus are on cdb_network in compose.red.yml. The issue was the
+# error-handling policy, not the URL.
+# ---------------------------------------------------------------------------
+
+
+VALID_EXEC_ERR_STATES = {"Error", "KeepLastState", "Alerting", "OK"}
+
+# Rules that must use KeepLastState (transient datasource failures must not
+# produce incident-like mails for these operational-level alerts).
+KEEP_LAST_STATE_RULES = {"orders_rejected.yml", "high_error_rate.yml"}
+
+
+class TestDatasourceUrlAndExecErrState:
+    """Regression tests for Issues #1266 / #1267: noisy DatasourceError alerts."""
+
+    # --- Datasource URL ---
+
+    def test_prometheus_datasource_url_uses_container_name(self) -> None:
+        """Datasource URL must reference cdb_prometheus (correct Docker service name).
+
+        Both cdb_grafana and cdb_prometheus are on cdb_network in compose.red.yml.
+        The URL http://cdb_prometheus:9090 is structurally correct.
+        """
+        ds_path = (
+            pathlib.Path(__file__).resolve().parents[3]
+            / "infrastructure"
+            / "monitoring"
+            / "grafana"
+            / "provisioning"
+            / "datasources"
+            / "prometheus.yml"
+        )
+        with ds_path.open(encoding="utf-8") as fh:
+            ds = yaml.safe_load(fh)
+        datasources = ds.get("datasources", [])
+        assert len(datasources) == 1, "Expected exactly one datasource"
+        url = datasources[0].get("url", "")
+        assert "cdb_prometheus" in url, (
+            f"Datasource URL must reference cdb_prometheus, got: {url}"
+        )
+        assert url == "http://cdb_prometheus:9090", (
+            f"Unexpected datasource URL: {url}"
+        )
+
+    def test_prometheus_datasource_uid_matches_alert_rules(self) -> None:
+        """Datasource UID must be 'prometheus' to match datasourceUid in alert rules."""
+        ds_path = (
+            pathlib.Path(__file__).resolve().parents[3]
+            / "infrastructure"
+            / "monitoring"
+            / "grafana"
+            / "provisioning"
+            / "datasources"
+            / "prometheus.yml"
+        )
+        with ds_path.open(encoding="utf-8") as fh:
+            ds = yaml.safe_load(fh)
+        uid = ds["datasources"][0].get("uid")
+        assert uid == "prometheus"
+
+        # Every alert rule's ref A must use the same UID
+        docs = _load_alerting_files()
+        for filename, doc in docs.items():
+            for group in doc.get("groups", []):
+                for rule in group.get("rules", []):
+                    for entry in rule.get("data", []):
+                        if entry.get("refId") == "A":
+                            assert entry.get("datasourceUid") == uid, (
+                                f"{filename}/{rule.get('title')}: "
+                                f"datasourceUid must be '{uid}'"
+                            )
+
+    # --- execErrState ---
+
+    def test_orders_rejected_uses_keep_last_state(self) -> None:
+        """Regression for Issue #1266: orders_rejected must not fire on transient outage."""
+        docs = _load_alerting_files()
+        rule = docs["orders_rejected.yml"]["groups"][0]["rules"][0]
+        assert rule["execErrState"] == "KeepLastState", (
+            "Old bug: 'Error' caused DatasourceError mails during Prometheus restart"
+        )
+
+    def test_high_error_rate_uses_keep_last_state(self) -> None:
+        """Regression for Issue #1267: high_error_rate must not fire on transient outage."""
+        docs = _load_alerting_files()
+        rule = docs["high_error_rate.yml"]["groups"][0]["rules"][0]
+        assert rule["execErrState"] == "KeepLastState", (
+            "Old bug: 'Error' caused DatasourceError mails during Prometheus restart"
+        )
+
+    def test_keep_last_state_rules_do_not_use_error(self) -> None:
+        """All rules in KEEP_LAST_STATE_RULES must have execErrState != Error."""
+        docs = _load_alerting_files()
+        for filename in KEEP_LAST_STATE_RULES:
+            assert filename in docs, f"{filename} not found in alerting directory"
+            rule = docs[filename]["groups"][0]["rules"][0]
+            assert rule["execErrState"] != "Error", (
+                f"{filename}: execErrState must not be 'Error' (causes noisy mails)"
+            )
+
+    def test_all_exec_err_states_are_valid(self) -> None:
+        """All execErrState values must be in Grafana's allowed set."""
+        docs = _load_alerting_files()
+        for filename, doc in docs.items():
+            for group in doc.get("groups", []):
+                for rule in group.get("rules", []):
+                    state = rule.get("execErrState")
+                    assert state in VALID_EXEC_ERR_STATES, (
+                        f"{filename}/{rule.get('title')}: "
+                        f"invalid execErrState '{state}'"
+                    )
+
+    def test_old_bug_error_state_caused_noisy_mails(self) -> None:
+        """Document the old behaviour: execErrState=Error → DatasourceError alert fired.
+
+        During environment_interruption restart, Docker DNS removes cdb_prometheus
+        while it is stopped. Grafana alert evaluation fires and gets 'no such host'.
+        With execErrState=Error, Grafana sets the rule to Error state and sends mail.
+        With execErrState=KeepLastState, the rule retains its previous Normal/OK state.
+        """
+        docs = _load_alerting_files()
+        # Verify the fix is in place (not Error)
+        for filename in KEEP_LAST_STATE_RULES:
+            rule = docs[filename]["groups"][0]["rules"][0]
+            assert rule["execErrState"] != "Error", (
+                f"{filename}: still has execErrState=Error (Issue #1266/#1267 regression)"
+            )
