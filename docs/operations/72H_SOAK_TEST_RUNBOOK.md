@@ -216,3 +216,42 @@ If `SoakTest_MessageQueueStalled` fires (queue > 1000 for 10 min):
 2. Check Redis: `docker exec cdb_redis redis-cli XLEN stream.orders`
 3. If consumer is alive but slow: resource contention — check CPU/memory
 4. If consumer is dead: abort, capture logs
+
+## Validation Mode (Issue #1278)
+
+Short verification runs test the same monitor mechanics without creating
+LR-040 ambiguity. Use validation mode when:
+
+- Verifying bugfixes to the soak monitor (e.g. midnight rollover, restart detection)
+- Smoke-testing the monitoring pipeline before a real 72h run
+- Running short regression checks after infrastructure changes
+
+**Start a validation run:**
+
+```bash
+SOAK_RUN_INTENT=validation ./infrastructure/scripts/soak_monitor.sh
+```
+
+**Key differences from an LR-040 run:**
+
+| Aspect | LR-040 (`lr040`) | Validation (`validation`) |
+|---|---|---|
+| Artifact prefix | `artifacts/soak_test_*` | `artifacts/soak_validation_*` |
+| Active-run pointer | `soak_active_run_path_lr040.txt` | `soak_active_run_path_validation.txt` |
+| Intent marker | `run_intent.txt` = `lr040` | `run_intent.txt` = `validation` |
+| Gate evaluator verdict | PASS / FAIL / INCONCLUSIVE | NOT_APPLICABLE (exit 1) |
+| Monitor mechanics | identical | identical |
+
+**Running the gate evaluator on a validation run:**
+
+```bash
+python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_validation_YYYYMMDD_HHMMSS/
+# → verdict: NOT_APPLICABLE, exit 1 (fail-closed)
+```
+
+The gate evaluator reads `run_intent.txt` and refuses to produce a PASS
+for validation runs. This is intentional — validation artifacts are not
+canonical LR-040 evidence.
+
+**Default behavior:** Without `SOAK_RUN_INTENT`, the monitor defaults to
+`lr040` (backwards-compatible with all existing runs).

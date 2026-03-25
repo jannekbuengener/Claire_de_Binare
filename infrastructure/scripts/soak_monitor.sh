@@ -1,14 +1,22 @@
 #!/bin/bash
 #
-# Claire de Binare - 72h Soak Test Monitoring Script
+# Claire de Binare - Soak Test Monitoring Script
 # Issue #428: Zero Restart Policy automation
+# Issue #1278: Explicit validation mode
 #
 # Usage: Run hourly via cron during 72h Soak Test
 #   0 * * * * /path/to/scripts/soak_monitor.sh
 #
+# Run intent (SOAK_RUN_INTENT env var):
+#   lr040      (default) — canonical 72h soak for LR-040 evidence
+#   validation           — short verification run for monitor mechanics
+#
+# Example:
+#   SOAK_RUN_INTENT=validation ./infrastructure/scripts/soak_monitor.sh
+#
 # Requirements:
 # - Docker running with CDB stack
-# - artifacts/soak_test_* directory exists
+# - artifacts/ directory writable
 # - Write permissions to artifacts directory
 
 set -euo pipefail
@@ -16,7 +24,35 @@ set -euo pipefail
 # Configuration
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 ARTIFACT_ROOT="artifacts"
-ACTIVE_RUN_FILE="$ARTIFACT_ROOT/soak_active_run_path.txt"
+
+# ---------------------------------------------------------------------------
+# Run intent: lr040 (default) or validation (Issue #1278)
+#
+# lr040      — canonical 72h soak run for LR-040 evidence
+# validation — short verification run to test monitor mechanics
+#
+# Each intent uses its own artifact prefix and active-run pointer file so
+# validation runs can never be confused with canonical LR-040 evidence.
+# The gate evaluator refuses to produce a PASS verdict for validation runs.
+# ---------------------------------------------------------------------------
+SOAK_RUN_INTENT="${SOAK_RUN_INTENT:-lr040}"
+case "$SOAK_RUN_INTENT" in
+  lr040|validation) ;;
+  *)
+    echo "ERROR: SOAK_RUN_INTENT must be 'lr040' or 'validation', got '$SOAK_RUN_INTENT'" >&2
+    exit 1
+    ;;
+esac
+
+if [ "$SOAK_RUN_INTENT" = "validation" ]; then
+  ARTIFACT_PREFIX="soak_validation"
+else
+  ARTIFACT_PREFIX="soak_test"
+fi
+
+# Intent-specific pointer file (Issue #1278): lr040 and validation runs
+# each have their own pointer so they never cross-contaminate.
+ACTIVE_RUN_FILE="$ARTIFACT_ROOT/soak_active_run_path_${SOAK_RUN_INTENT}.txt"
 
 # Ensure script continues even if individual commands fail
 set +e
@@ -28,7 +64,7 @@ _write_active_run_path() {
 }
 
 _find_latest_artifact_dir() {
-  ls -1d "$ARTIFACT_ROOT"/soak_test_* 2>/dev/null | sort | tail -1
+  ls -1d "$ARTIFACT_ROOT"/${ARTIFACT_PREFIX}_* 2>/dev/null | sort | tail -1
 }
 
 _resolve_artifact_path() {
@@ -38,23 +74,31 @@ _resolve_artifact_path() {
   if [ -f "$ACTIVE_RUN_FILE" ]; then
     artifact_path=$(head -n 1 "$ACTIVE_RUN_FILE")
     if [ -n "$artifact_path" ] && [ -d "$artifact_path" ]; then
-      echo "$artifact_path"
-      return 0
+      # Verify the pointer matches the current intent prefix (Issue #1278).
+      # Reject cross-intent pointers so lr040 never picks up a validation dir
+      # and vice versa.
+      _BASENAME=$(basename "$artifact_path")
+      if echo "$_BASENAME" | grep -q "^${ARTIFACT_PREFIX}_"; then
+        echo "$artifact_path"
+        return 0
+      fi
+      echo "WARNING: Active run pointer '$artifact_path' does not match intent '${SOAK_RUN_INTENT}' (prefix ${ARTIFACT_PREFIX}_*); ignoring" >&2
+    else
+      echo "WARNING: Active soak run path '$artifact_path' is missing; rebuilding pointer" >&2
     fi
-    echo "⚠️  WARNING: Active soak run path '$artifact_path' is missing; rebuilding pointer" >&2
   fi
 
   artifact_path=$(_find_latest_artifact_dir)
   if [ -n "$artifact_path" ] && [ -d "$artifact_path" ]; then
-    echo "ℹ️  Reusing latest soak artifacts directory: $artifact_path" >&2
+    echo "INFO: Reusing latest ${ARTIFACT_PREFIX} artifacts directory: $artifact_path" >&2
     echo "$artifact_path"
     return 0
   fi
 
-  echo "⚠️  WARNING: No soak test artifacts directory found" >&2
-  echo "Expected: artifacts/soak_test_YYYYMMDD_HHMMSS/" >&2
+  echo "WARNING: No ${ARTIFACT_PREFIX} artifacts directory found" >&2
+  echo "Expected: artifacts/${ARTIFACT_PREFIX}_YYYYMMDD_HHMMSS/" >&2
   echo "Creating artifacts directory" >&2
-  echo "$ARTIFACT_ROOT/soak_test_$(date -u +%Y%m%d_%H%M%S)"
+  echo "$ARTIFACT_ROOT/${ARTIFACT_PREFIX}_$(date -u +%Y%m%d_%H%M%S)"
 }
 
 ARTIFACT_PATH=$(_resolve_artifact_path)
@@ -64,6 +108,13 @@ _write_active_run_path "$ARTIFACT_PATH"
 if [ -z "$ARTIFACT_PATH" ] || [ ! -d "$ARTIFACT_PATH" ]; then
   echo "ERROR: artifact directory not available — aborting soak monitor" >&2
   exit 1
+fi
+
+# Write run intent marker (Issue #1278). Written once at directory creation;
+# subsequent invocations preserve the existing marker to prevent mid-run changes.
+RUN_INTENT_FILE="$ARTIFACT_PATH/run_intent.txt"
+if [ ! -f "$RUN_INTENT_FILE" ]; then
+  printf '%s\n' "$SOAK_RUN_INTENT" > "$RUN_INTENT_FILE"
 fi
 
 # ---------------------------------------------------------------------------
@@ -139,8 +190,14 @@ NC='\033[0m' # No Color
 SUT_SERVICES="cdb_postgres cdb_redis cdb_market cdb_candles cdb_regime cdb_allocation cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_ws cdb_signal"
 EXPECTED_SERVICES=12
 
+if [ "$SOAK_RUN_INTENT" = "validation" ]; then
+  _RUN_LABEL="VALIDATION Run"
+else
+  _RUN_LABEL="LR-040 Soak Test"
+fi
 echo "========================================="
-echo "Soak Test Monitoring - Checkpoint $ELAPSED_HOURS (elapsed hours)"
+echo "$_RUN_LABEL Monitoring - Checkpoint $ELAPSED_HOURS (elapsed hours)"
+echo "Run Intent: $SOAK_RUN_INTENT"
 echo "$TIMESTAMP"
 echo "Artifact Path: $ARTIFACT_PATH"
 echo "========================================="

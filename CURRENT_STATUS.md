@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-24 (Session 7)
-**Latest Commit**: ee29e99
+**Last Updated**: 2026-03-25 (Session 8)
+**Latest Commit**: e5bf1bf
 
 ---
 
@@ -87,12 +87,14 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 ## Known Blockers / Next Actions
 
-1. **LR-040 neuer Soak-Run**: gestartet 2026-03-24 abends UTC; Ziel 72h ab Start. Alter FAILED-Run (soak_test_20260322_181856 / soak_test_20260324_000002) bleibt als Evidence-Archive erhalten.
-2. **#1266/#1267 (Grafana execErrState)**: Offen. KeepLastState in Grafana 11.4.7-ubuntu provisioning-inkompatibel; zurückgerollt auf Error. Echter Fix: Grafana-Image-Upgrade (Option A) oder Alertmanager-Routing (Option B).
-3. **#1269 (midnight-rollover)**: Offen. Neuer Soak-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
-4. **Grafana circuit_breaker alert aktiv**: Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
-5. **LR-011**: State-machine-Test-Coverage noch offen (Issue #780)
-6. **Human Gate**: explizit erforderlich fuer P5/Canary — erst nach LR-040 PASS moeglich
+1. **#1277 (soak restart scope):** Fix in PR #1279 — Check 1 auf SUT-Services eingeschränkt; Non-SUT-Restarts (Grafana/Prometheus) lösen keinen FAIL mehr aus. Praktisch validiert.
+2. **#1278 (validation mode):** Implementiert, unit-getestet — `SOAK_RUN_INTENT=validation` nutzt separaten Artifact-Namespace (`soak_validation_*`), eigenen Pointer (`soak_active_run_path_validation.txt`) und `run_intent.txt`-Marker; Gate-Evaluator gibt `NOT_APPLICABLE` (exit 1) für Validation Runs zurück. Keine Verwechslung mit kanonischer LR-040-Evidence mehr auf Tooling-/Artefakt-Ebene. Praktische Stack-Validierung bleibt optionaler nächster Check vor dem nächsten echten 72h-Run.
+3. **LR-040 echter 72h-Run:** Nächster Schritt nach Merge von #1277 und #1278. Nicht mit Validation Runs verwechseln — erfordert `SOAK_RUN_INTENT=lr040` (default) und produziert `soak_test_*`-Artefakte.
+4. **#1266/#1267 (Grafana execErrState):** Offen. KeepLastState in Grafana 11.4.7-ubuntu provisioning-inkompatibel; zurückgerollt auf Error. Echter Fix: Grafana-Image-Upgrade (Option A) oder Alertmanager-Routing (Option B).
+5. **#1269 (midnight-rollover):** Offen. Nächster Soak-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
+6. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
+7. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
+8. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
 
 ---
 

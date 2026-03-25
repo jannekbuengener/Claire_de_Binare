@@ -93,8 +93,39 @@ def _parse_resource_snapshots(artifact_dir: Path) -> list[dict]:
     return results
 
 
+def _read_run_intent(artifact_dir: Path) -> str | None:
+    """Read run_intent.txt marker written by soak_monitor.sh (Issue #1278).
+
+    Returns None if the file is absent (legacy artifacts pre-#1278).
+    """
+    intent_file = artifact_dir / "run_intent.txt"
+    if not intent_file.is_file():
+        return None
+    return intent_file.read_text(encoding="utf-8").strip() or None
+
+
 def evaluate_lr040_soak(artifact_dir: Path) -> dict:
     """Evaluate soak artifacts against LR-040 criteria. Fail-closed."""
+
+    # --- Run intent gate (Issue #1278) ---
+    # Validation runs must never produce an LR-040 PASS verdict.
+    # Return NOT_APPLICABLE immediately so the caller cannot mistake a
+    # validation run for canonical LR-040 evidence. exit 1 (fail-closed).
+    run_intent = _read_run_intent(artifact_dir)
+    if run_intent == "validation":
+        return {
+            "schema_version": "1.1",
+            "control": "LR-040",
+            "issue": "#786",
+            "verdict": "NOT_APPLICABLE",
+            "reason": "Validation run — not canonical LR-040 evidence (Issue #1278)",
+            "run_intent": run_intent,
+            "checks": {},
+            "failures": [],
+            "metrics": {},
+            "artifacts": {"run_intent": "validation"},
+        }
+
     hourly_log = artifact_dir / "hourly_checks.log"
     failed_marker = artifact_dir / "soak_test_FAILED.txt"
     restart_alerts = artifact_dir / "restart_alerts.log"
@@ -193,6 +224,7 @@ def evaluate_lr040_soak(artifact_dir: Path) -> dict:
         "schema_version": "1.1",
         "control": "LR-040",
         "issue": "#786",
+        "run_intent": run_intent or "lr040",
         "verdict": verdict,
         "checks": checks,
         "failures": failures,
@@ -210,7 +242,9 @@ def evaluate_lr040_soak(artifact_dir: Path) -> dict:
         "artifacts": {
             "hourly_log": hourly_log.name if hourly_log.is_file() else None,
             "failed_marker": failed_marker.name if has_failed_marker else None,
-            "inconclusive_marker": inconclusive_marker.name if has_inconclusive_marker else None,
+            "inconclusive_marker": (
+                inconclusive_marker.name if has_inconclusive_marker else None
+            ),
             "restart_cause": restart_cause,
             "restart_alerts": restart_alerts.name if has_restart_alerts else None,
             "resource_snapshots": [s["file"] for s in snapshots],

@@ -240,7 +240,56 @@ class TestLR040SoakGateInconclusive:
         )
         result = evaluate_lr040_soak(artifact_dir)
         assert result["artifacts"]["restart_cause"] == "environment_interruption"
-        assert result["artifacts"]["inconclusive_marker"] == "soak_test_INCONCLUSIVE.txt"
+        assert (
+            result["artifacts"]["inconclusive_marker"] == "soak_test_INCONCLUSIVE.txt"
+        )
+
+
+class TestLR040SoakGateRunIntent:
+    """Tests for run intent separation (Issue #1278)."""
+
+    def test_validation_intent_returns_not_applicable(self, tmp_path: Path) -> None:
+        """run_intent.txt = validation -> NOT_APPLICABLE, no LR-040 checks run."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "NOT_APPLICABLE"
+        assert result["run_intent"] == "validation"
+        assert result["checks"] == {}
+        assert result["failures"] == []
+        assert result["control"] == "LR-040"
+
+    def test_missing_run_intent_is_legacy_lr040(self, tmp_path: Path) -> None:
+        """No run_intent.txt (pre-#1278 artifacts) -> normal LR-040 evaluation."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        assert not (artifact_dir / "run_intent.txt").exists()
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "PASS"
+        assert result["run_intent"] == "lr040"
+
+    def test_lr040_intent_runs_normal_evaluation(self, tmp_path: Path) -> None:
+        """run_intent.txt = lr040 -> normal LR-040 evaluation proceeds."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("lr040\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "PASS"
+        assert result["run_intent"] == "lr040"
+        assert "hourly_log_present" in result["checks"]
+
+    def test_validation_intent_exit_code_nonzero(self, tmp_path: Path) -> None:
+        """NOT_APPLICABLE verdict must not be mistaken for PASS (fail-closed)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        # main() uses: sys.exit(0 if result["verdict"] == "PASS" else 1)
+        assert result["verdict"] != "PASS"
+
+    def test_validation_intent_even_with_72h_data(self, tmp_path: Path) -> None:
+        """Validation run with full 72h data must still be NOT_APPLICABLE."""
+        artifact_dir = _write_passing_artifacts(tmp_path, hours=73)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "NOT_APPLICABLE"
 
 
 class TestLR040SoakGateEdgeCases:

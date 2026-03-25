@@ -56,10 +56,50 @@ def build_hourly_entry(timestamp_utc: str, elapsed_hours: int) -> str:
     return f"{timestamp_utc} - Hour {elapsed_hours}: No restarts"
 
 
-def build_artifact_path(dt: datetime) -> str:
-    """Format used by soak_monitor.sh when it creates a fresh run directory."""
+def build_artifact_path(dt: datetime, intent: str = "lr040") -> str:
+    """Format used by soak_monitor.sh when it creates a fresh run directory.
+
+    Since Issue #1278, the prefix depends on SOAK_RUN_INTENT:
+      lr040      -> artifacts/soak_test_YYYYMMDD_HHMMSS
+      validation -> artifacts/soak_validation_YYYYMMDD_HHMMSS
+    """
     dt = dt.astimezone(timezone.utc)
-    return f"artifacts/soak_test_{dt:%Y%m%d_%H%M%S}"
+    prefix = "soak_validation" if intent == "validation" else "soak_test"
+    return f"artifacts/{prefix}_{dt:%Y%m%d_%H%M%S}"
+
+
+def _artifact_prefix_for_intent(intent: str) -> str:
+    """Return the artifact directory prefix for a given run intent."""
+    return "soak_validation" if intent == "validation" else "soak_test"
+
+
+def resolve_active_artifact_path_with_intent(
+    now: datetime,
+    existing_dirs: list[str],
+    active_run_path: str | None,
+    intent: str = "lr040",
+) -> str:
+    """Mirror the #1278 intent-aware active-run selection in soak_monitor.sh.
+
+    Key difference from the pre-#1278 version: the pointer and fallback search
+    are scoped to the current intent's prefix so lr040 runs never pick up a
+    validation directory and vice versa.
+    """
+    prefix = f"artifacts/{_artifact_prefix_for_intent(intent)}_"
+
+    # 1. Pointer valid AND matches current intent prefix?
+    if active_run_path and active_run_path in existing_dirs:
+        if active_run_path.startswith(prefix):
+            return active_run_path
+        # Cross-intent pointer — ignore (Issue #1278)
+
+    # 2. Fallback: latest directory matching current prefix
+    matching = sorted(d for d in existing_dirs if d.startswith(prefix))
+    if matching:
+        return matching[-1]
+
+    # 3. Create new
+    return build_artifact_path(now, intent)
 
 
 def resolve_date_coupled_artifact_path(now: datetime, existing_dirs: list[str]) -> str:
@@ -223,9 +263,152 @@ class TestArtifactPathResolution:
     def test_no_existing_directory_creates_new_utc_run_path(self) -> None:
         now = datetime(2026, 3, 24, 0, 0, 2, tzinfo=timezone.utc)
 
-        resolved = resolve_active_artifact_path(now, existing_dirs=[], active_run_path=None)
+        resolved = resolve_active_artifact_path(
+            now, existing_dirs=[], active_run_path=None
+        )
 
         assert resolved == "artifacts/soak_test_20260324_000002"
+
+
+# ---------------------------------------------------------------------------
+# Intent-aware artifact path resolution (Issue #1278)
+# ---------------------------------------------------------------------------
+
+
+class TestIntentAwareArtifactPath:
+    """Tests for run-intent separation in artifact resolution (Issue #1278)."""
+
+    NOW = datetime(2026, 3, 25, 10, 0, 0, tzinfo=timezone.utc)
+
+    def test_validation_creates_soak_validation_prefix(self) -> None:
+        path = build_artifact_path(self.NOW, intent="validation")
+        assert path == "artifacts/soak_validation_20260325_100000"
+
+    def test_lr040_creates_soak_test_prefix(self) -> None:
+        path = build_artifact_path(self.NOW, intent="lr040")
+        assert path == "artifacts/soak_test_20260325_100000"
+
+    def test_default_intent_is_lr040(self) -> None:
+        path = build_artifact_path(self.NOW)
+        assert "soak_test_" in path
+
+    def test_validation_ignores_soak_test_dirs(self) -> None:
+        """validation intent must never reuse a soak_test_* directory."""
+        existing = [
+            "artifacts/soak_test_20260324_220000",
+            "artifacts/soak_test_20260325_080000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="validation"
+        )
+        assert resolved.startswith("artifacts/soak_validation_")
+        assert resolved not in existing
+
+    def test_lr040_ignores_soak_validation_dirs(self) -> None:
+        """lr040 intent must never reuse a soak_validation_* directory."""
+        existing = [
+            "artifacts/soak_validation_20260324_220000",
+            "artifacts/soak_validation_20260325_080000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="lr040"
+        )
+        assert resolved.startswith("artifacts/soak_test_")
+        assert resolved not in existing
+
+    def test_validation_pointer_to_soak_test_dir_rejected(self) -> None:
+        """Active-run pointer pointing at soak_test_* must be ignored when intent=validation."""
+        existing = [
+            "artifacts/soak_test_20260324_220000",
+            "artifacts/soak_validation_20260325_090000",
+        ]
+        cross_pointer = "artifacts/soak_test_20260324_220000"
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=cross_pointer, intent="validation"
+        )
+        assert resolved == "artifacts/soak_validation_20260325_090000"
+
+    def test_lr040_pointer_to_soak_validation_dir_rejected(self) -> None:
+        """Active-run pointer pointing at soak_validation_* must be ignored when intent=lr040."""
+        existing = [
+            "artifacts/soak_validation_20260325_090000",
+            "artifacts/soak_test_20260324_220000",
+        ]
+        cross_pointer = "artifacts/soak_validation_20260325_090000"
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=cross_pointer, intent="lr040"
+        )
+        assert resolved == "artifacts/soak_test_20260324_220000"
+
+    def test_same_intent_pointer_accepted(self) -> None:
+        """Pointer matching the intent prefix is accepted normally."""
+        existing = [
+            "artifacts/soak_validation_20260325_080000",
+            "artifacts/soak_validation_20260325_090000",
+        ]
+        pointer = "artifacts/soak_validation_20260325_080000"
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=pointer, intent="validation"
+        )
+        assert resolved == pointer
+
+    def test_mixed_dirs_validation_picks_only_validation(self) -> None:
+        """With both prefixes present, validation only sees soak_validation_*."""
+        existing = [
+            "artifacts/soak_test_20260325_080000",
+            "artifacts/soak_validation_20260325_090000",
+            "artifacts/soak_test_20260325_100000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="validation"
+        )
+        assert resolved == "artifacts/soak_validation_20260325_090000"
+
+    def test_mixed_dirs_lr040_picks_only_soak_test(self) -> None:
+        """With both prefixes present, lr040 only sees soak_test_*."""
+        existing = [
+            "artifacts/soak_validation_20260325_090000",
+            "artifacts/soak_test_20260325_080000",
+            "artifacts/soak_validation_20260325_100000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="lr040"
+        )
+        assert resolved == "artifacts/soak_test_20260325_080000"
+
+    def test_no_matching_dirs_creates_new_with_correct_prefix(self) -> None:
+        """Empty directory list → new directory with intent-correct prefix."""
+        for intent, expected_prefix in [
+            ("lr040", "soak_test_"),
+            ("validation", "soak_validation_"),
+        ]:
+            resolved = resolve_active_artifact_path_with_intent(
+                self.NOW, existing_dirs=[], active_run_path=None, intent=intent
+            )
+            assert f"artifacts/{expected_prefix}" in resolved
+
+
+class TestRunIntentMarker:
+    """Tests for run_intent.txt written by soak_monitor.sh (Issue #1278)."""
+
+    def test_intent_file_content_lr040(self, tmp_path: Path) -> None:
+        intent_file = tmp_path / "run_intent.txt"
+        intent_file.write_text("lr040\n", encoding="utf-8")
+        assert intent_file.read_text(encoding="utf-8").strip() == "lr040"
+
+    def test_intent_file_content_validation(self, tmp_path: Path) -> None:
+        intent_file = tmp_path / "run_intent.txt"
+        intent_file.write_text("validation\n", encoding="utf-8")
+        assert intent_file.read_text(encoding="utf-8").strip() == "validation"
+
+    def test_intent_file_not_overwritten_on_rerun(self, tmp_path: Path) -> None:
+        """Mirrors soak_monitor.sh: if run_intent.txt exists, don't overwrite."""
+        intent_file = tmp_path / "run_intent.txt"
+        intent_file.write_text("validation\n", encoding="utf-8")
+        # Simulate second invocation: only write if absent
+        if not intent_file.exists():
+            intent_file.write_text("lr040\n", encoding="utf-8")
+        assert intent_file.read_text(encoding="utf-8").strip() == "validation"
 
 
 # ---------------------------------------------------------------------------
@@ -276,9 +459,9 @@ class TestHourlyLogFormat:
         )
         timestamps = _parse_hourly_timestamps(log)
         for i in range(1, len(timestamps)):
-            assert timestamps[i] > timestamps[i - 1], (
-                f"Timestamp at position {i} is not after position {i-1}"
-            )
+            assert (
+                timestamps[i] > timestamps[i - 1]
+            ), f"Timestamp at position {i} is not after position {i-1}"
 
     def test_hour_indices_strictly_increasing(self, tmp_path: Path) -> None:
         log = _make_log(
@@ -290,7 +473,9 @@ class TestHourlyLogFormat:
             tmp_path,
         )
         indices = _extract_hour_indices(log)
-        assert indices == sorted(set(indices)), "Hour indices are not strictly increasing"
+        assert indices == sorted(
+            set(indices)
+        ), "Hour indices are not strictly increasing"
 
     def test_no_duplicate_hour_indices(self, tmp_path: Path) -> None:
         """A correctly guarded log must have no repeated hour labels."""
@@ -316,9 +501,9 @@ class TestHourlyLogFormat:
             tmp_path,
         )
         indices = _extract_hour_indices(log)
-        assert len(indices) != len(set(indices)), (
-            "Expected duplicates to be present in this regression log"
-        )
+        assert len(indices) != len(
+            set(indices)
+        ), "Expected duplicates to be present in this regression log"
 
 
 # ---------------------------------------------------------------------------
@@ -360,8 +545,12 @@ class TestMidnightCrossing:
         assert tokens is not None
         d, t = tokens.group(1), tokens.group(2)
         dt = datetime(
-            int(d[0:4]), int(d[4:6]), int(d[6:8]),
-            int(t[0:2]), int(t[2:4]), int(t[4:6]),
+            int(d[0:4]),
+            int(d[4:6]),
+            int(d[6:8]),
+            int(t[0:2]),
+            int(t[2:4]),
+            int(t[4:6]),
             tzinfo=timezone.utc,
         )
         expected = datetime(2026, 3, 24, 0, 0, 2, tzinfo=timezone.utc)
@@ -464,7 +653,7 @@ class TestOctalSafeScheduleChecks:
 
     def test_checkpoint_write_decision_at_hour_8(self) -> None:
         """Idempotency guard must work at hour 8 (was broken by octal in old script)."""
-        assert would_write_checkpoint(8, 7) is True   # new checkpoint, must write
+        assert would_write_checkpoint(8, 7) is True  # new checkpoint, must write
         assert would_write_checkpoint(8, 8) is False  # already written, must skip
 
     def test_checkpoint_write_decision_at_hour_9(self) -> None:
@@ -488,10 +677,16 @@ class TestOctalSafeScheduleChecks:
         soak run is 7 (plain integer), never the string '08'.
         """
         # Soak started 2026-03-24 00:00:02 UTC; cron fires at 07:00:01 UTC
-        start = int(__import__("datetime").datetime(2026, 3, 24, 0, 0, 2,
-                    tzinfo=__import__("datetime").timezone.utc).timestamp())
-        check = int(__import__("datetime").datetime(2026, 3, 24, 7, 0, 1,
-                    tzinfo=__import__("datetime").timezone.utc).timestamp())
+        start = int(
+            __import__("datetime")
+            .datetime(2026, 3, 24, 0, 0, 2, tzinfo=__import__("datetime").timezone.utc)
+            .timestamp()
+        )
+        check = int(
+            __import__("datetime")
+            .datetime(2026, 3, 24, 7, 0, 1, tzinfo=__import__("datetime").timezone.utc)
+            .timestamp()
+        )
         elapsed = compute_elapsed_hours(check, start)
         # old script: HOUR=$(date +%H) at MESZ+1 would give '08' → octal error
         # new script: elapsed == 6 (floor of ~6.99 h) — plain integer, no error
@@ -512,10 +707,18 @@ class TestOctalSafeScheduleChecks:
 
 # Canonical ZRP-relevant SUT services — must match soak_monitor.sh SUT_SERVICES.
 SUT_SERVICES = [
-    "cdb_postgres", "cdb_redis",
-    "cdb_market", "cdb_candles", "cdb_regime", "cdb_allocation",
-    "cdb_risk", "cdb_execution", "cdb_db_writer", "cdb_paper_runner",
-    "cdb_ws", "cdb_signal",
+    "cdb_postgres",
+    "cdb_redis",
+    "cdb_market",
+    "cdb_candles",
+    "cdb_regime",
+    "cdb_allocation",
+    "cdb_risk",
+    "cdb_execution",
+    "cdb_db_writer",
+    "cdb_paper_runner",
+    "cdb_ws",
+    "cdb_signal",
 ]
 
 
@@ -566,9 +769,16 @@ class TestServiceHealthCheck:
     def test_blue_only_missing_red_signal_services(self) -> None:
         """Only BLUE services up, RED cdb_ws/cdb_signal missing → 10/12."""
         blue_only = [
-            "cdb_postgres", "cdb_redis", "cdb_market", "cdb_candles",
-            "cdb_regime", "cdb_allocation", "cdb_risk", "cdb_execution",
-            "cdb_db_writer", "cdb_paper_runner",
+            "cdb_postgres",
+            "cdb_redis",
+            "cdb_market",
+            "cdb_candles",
+            "cdb_regime",
+            "cdb_allocation",
+            "cdb_risk",
+            "cdb_execution",
+            "cdb_db_writer",
+            "cdb_paper_runner",
         ]
         count, missing = count_sut_services(blue_only, SUT_SERVICES)
         assert count == 10
@@ -577,13 +787,18 @@ class TestServiceHealthCheck:
     def test_exporter_containers_not_in_sut_set(self) -> None:
         """Observability/exporter containers must NOT be in the ZRP gate."""
         non_sut = {
-            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
-            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
-            "cdb_alertmanager", "cdb_node_exporter",
+            "cdb_prometheus",
+            "cdb_grafana",
+            "cdb_postgres_exporter",
+            "cdb_redis_exporter",
+            "cdb_cadvisor",
+            "cdb_reports",
+            "cdb_alertmanager",
+            "cdb_node_exporter",
         }
-        assert non_sut.isdisjoint(set(SUT_SERVICES)), (
-            "Observability containers must not be in SUT_SERVICES"
-        )
+        assert non_sut.isdisjoint(
+            set(SUT_SERVICES)
+        ), "Observability containers must not be in SUT_SERVICES"
 
     def test_monitor_container_not_in_sut_set(self) -> None:
         """lr040_soak_monitor must not be counted as a SUT service."""
@@ -592,10 +807,16 @@ class TestServiceHealthCheck:
     def test_extra_containers_do_not_inflate_sut_count(self) -> None:
         """22 cdb_* containers on host must not inflate the 12-service SUT count."""
         all_host_cdb = SUT_SERVICES + [
-            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
-            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
-            "cdb_alertmanager", "cdb_node_exporter",
-            "cdb_market_eth", "cdb_gh_runner",
+            "cdb_prometheus",
+            "cdb_grafana",
+            "cdb_postgres_exporter",
+            "cdb_redis_exporter",
+            "cdb_cadvisor",
+            "cdb_reports",
+            "cdb_alertmanager",
+            "cdb_node_exporter",
+            "cdb_market_eth",
+            "cdb_gh_runner",
         ]
         count, missing = count_sut_services(all_host_cdb, SUT_SERVICES)
         assert count == 12
@@ -615,15 +836,31 @@ class TestServiceHealthCheck:
         """Document the old bug: broad cdb_* count >> static EXPECTED_SERVICES=8."""
         # Simulate full host: 22 cdb_* containers running
         all_cdb_on_host = [
-            "cdb_postgres", "cdb_redis", "cdb_market", "cdb_candles",
-            "cdb_regime", "cdb_allocation", "cdb_risk", "cdb_execution",
-            "cdb_db_writer", "cdb_paper_runner", "cdb_ws", "cdb_signal",
-            "cdb_prometheus", "cdb_grafana", "cdb_postgres_exporter",
-            "cdb_redis_exporter", "cdb_cadvisor", "cdb_reports",
-            "cdb_alertmanager", "cdb_node_exporter", "cdb_market_eth", "cdb_gh_runner",
+            "cdb_postgres",
+            "cdb_redis",
+            "cdb_market",
+            "cdb_candles",
+            "cdb_regime",
+            "cdb_allocation",
+            "cdb_risk",
+            "cdb_execution",
+            "cdb_db_writer",
+            "cdb_paper_runner",
+            "cdb_ws",
+            "cdb_signal",
+            "cdb_prometheus",
+            "cdb_grafana",
+            "cdb_postgres_exporter",
+            "cdb_redis_exporter",
+            "cdb_cadvisor",
+            "cdb_reports",
+            "cdb_alertmanager",
+            "cdb_node_exporter",
+            "cdb_market_eth",
+            "cdb_gh_runner",
         ]
         old_running = len(all_cdb_on_host)  # 22
-        old_expected = 8                    # hardcoded in old script
+        old_expected = 8  # hardcoded in old script
         # Old output: "22/8 services running" — semantically wrong
         assert old_running > old_expected, "Documents the old Soll/Ist mismatch"
 
@@ -902,12 +1139,12 @@ class TestDiskSpaceCheck:
         """
         # Old path: /var/lib/docker → empty/error output → parse returns None
         old_path_output = _DF_EMPTY
-        assert parse_disk_pct(old_path_output) is None, (
-            "Old /var/lib/docker path was unreachable in container namespace"
-        )
+        assert (
+            parse_disk_pct(old_path_output) is None
+        ), "Old /var/lib/docker path was unreachable in container namespace"
 
         # New path: /repo → parseable output
         new_path_output = _DF_REPO_NORMAL
-        assert parse_disk_pct(new_path_output) == "47", (
-            "New /repo path must yield parseable disk usage"
-        )
+        assert (
+            parse_disk_pct(new_path_output) == "47"
+        ), "New /repo path must yield parseable disk usage"
