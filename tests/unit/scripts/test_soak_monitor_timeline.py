@@ -635,6 +635,117 @@ class TestServiceHealthCheck:
 
 
 # ---------------------------------------------------------------------------
+# Restart detection scope tests (Issue #1277)
+#
+# Old bug: Check 1 iterated over ALL cdb_* containers. Non-SUT containers
+# (cdb_grafana, cdb_prometheus, exporters) with "minute" uptime triggered
+# soak_test_FAILED.txt even though they are not ZRP-relevant.
+#
+# Fix: Check 1 iterates only over SUT_SERVICES. Non-SUT restarts are logged
+# as INFO without triggering a FAIL verdict.
+# ---------------------------------------------------------------------------
+
+
+def classify_restart_scope(
+    container_statuses: dict[str, str],
+    sut_services: list[str],
+) -> tuple[list[str], list[str]]:
+    """Mirror soak_monitor.sh Check 1 SUT-scoped restart detection.
+
+    Returns (sut_restarts, non_sut_restarts) where each is a list of
+    container names whose status contains 'second' or 'minute' (fresh uptime).
+    """
+    sut_set = set(sut_services)
+    sut_restarts: list[str] = []
+    non_sut_restarts: list[str] = []
+    for name, status in container_statuses.items():
+        if re.search(r" second| minute", status, re.IGNORECASE):
+            if name in sut_set:
+                sut_restarts.append(name)
+            else:
+                non_sut_restarts.append(name)
+    return sut_restarts, non_sut_restarts
+
+
+class TestRestartDetectionScope:
+    """Regression tests for Issue #1277: Check 1 must only FAIL on SUT restarts.
+
+    Non-SUT containers (observability, exporters, infra) are logged as INFO
+    but must NOT trigger soak_test_FAILED.txt.
+    """
+
+    def test_non_sut_restart_no_fail(self) -> None:
+        """Grafana/Prometheus restart -> only INFO, no SUT restart detected."""
+        statuses = {
+            "cdb_grafana": "Up 27 minutes (healthy)",
+            "cdb_prometheus": "Up 15 minutes (healthy)",
+            "cdb_postgres": "Up 6 hours (healthy)",
+            "cdb_redis": "Up 6 hours (healthy)",
+            "cdb_risk": "Up 6 hours (healthy)",
+        }
+        sut, non_sut = classify_restart_scope(statuses, SUT_SERVICES)
+        assert sut == []
+        assert set(non_sut) == {"cdb_grafana", "cdb_prometheus"}
+
+    def test_sut_restart_triggers_fail(self) -> None:
+        """SUT service restart -> detected as restart."""
+        statuses = {
+            "cdb_risk": "Up 5 minutes (healthy)",
+            "cdb_postgres": "Up 6 hours (healthy)",
+            "cdb_grafana": "Up 6 hours (healthy)",
+        }
+        sut, non_sut = classify_restart_scope(statuses, SUT_SERVICES)
+        assert sut == ["cdb_risk"]
+        assert non_sut == []
+
+    def test_mixed_restart_fail_only_for_sut(self) -> None:
+        """Mixed SUT + non-SUT restarts -> FAIL because of SUT, non-SUT is INFO."""
+        statuses = {
+            "cdb_execution": "Up 3 minutes (healthy)",
+            "cdb_grafana": "Up 27 minutes (healthy)",
+            "cdb_prometheus": "Up 15 minutes (healthy)",
+            "cdb_postgres": "Up 6 hours (healthy)",
+        }
+        sut, non_sut = classify_restart_scope(statuses, SUT_SERVICES)
+        assert sut == ["cdb_execution"]
+        assert set(non_sut) == {"cdb_grafana", "cdb_prometheus"}
+
+    def test_all_stable_no_restarts(self) -> None:
+        """All containers showing hours uptime -> no restarts at all."""
+        statuses = {
+            "cdb_postgres": "Up 6 hours (healthy)",
+            "cdb_redis": "Up 6 hours (healthy)",
+            "cdb_grafana": "Up 6 hours (healthy)",
+            "cdb_prometheus": "Up 6 hours (healthy)",
+        }
+        sut, non_sut = classify_restart_scope(statuses, SUT_SERVICES)
+        assert sut == []
+        assert non_sut == []
+
+    def test_issue_1277_exact_scenario(self) -> None:
+        """Reproduce the exact #1277 scenario: Grafana+Prometheus minutes, all SUT hours."""
+        statuses = {
+            "cdb_grafana": "Up 41 minutes (healthy)",
+            "cdb_prometheus": "Up 29 minutes (healthy)",
+            "cdb_postgres": "Up 6 hours (healthy)",
+            "cdb_redis": "Up 6 hours (healthy)",
+            "cdb_market": "Up 6 hours (healthy)",
+            "cdb_candles": "Up 6 hours (healthy)",
+            "cdb_regime": "Up 6 hours (healthy)",
+            "cdb_allocation": "Up 6 hours (healthy)",
+            "cdb_risk": "Up 6 hours (healthy)",
+            "cdb_execution": "Up 6 hours (healthy)",
+            "cdb_db_writer": "Up 6 hours (healthy)",
+            "cdb_paper_runner": "Up 6 hours (healthy)",
+            "cdb_ws": "Up 6 hours (healthy)",
+            "cdb_signal": "Up 6 hours (healthy)",
+        }
+        sut, non_sut = classify_restart_scope(statuses, SUT_SERVICES)
+        assert sut == [], "No SUT restart should be detected in #1277 scenario"
+        assert set(non_sut) == {"cdb_grafana", "cdb_prometheus"}
+
+
+# ---------------------------------------------------------------------------
 # Disk space check tests (Issue #1264)
 #
 # Old bug: df -h /var/lib/docker ran inside the container namespace where

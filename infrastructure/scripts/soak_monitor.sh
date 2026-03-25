@@ -129,6 +129,16 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# ---------------------------------------------------------------------------
+# ZRP-relevant SUT services (shared between Check 1 and Check 2).
+# BLUE core + data layer + RED signal services.
+# Observability, exporter, and infra sidecars are excluded —
+# their restarts do not violate the Zero Restart Policy gate.
+# Source of truth: compose.blue.yml + compose.red.yml (ws + signal only).
+# ---------------------------------------------------------------------------
+SUT_SERVICES="cdb_postgres cdb_redis cdb_market cdb_candles cdb_regime cdb_allocation cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_ws cdb_signal"
+EXPECTED_SERVICES=12
+
 echo "========================================="
 echo "Soak Test Monitoring - Checkpoint $ELAPSED_HOURS (elapsed hours)"
 echo "$TIMESTAMP"
@@ -174,29 +184,48 @@ TOTAL_CONTAINERS=0
 UPTIME_MIN=999999
 UPTIME_MAX=0
 
-while IFS= read -r line; do
-  CONTAINER=$(echo "$line" | awk '{print $1}')
+# Snapshot all container statuses once (avoids N docker calls).
+_ALL_STATUS=$(docker ps --filter "name=cdb_" --format "{{.Names}} {{.Status}}")
+
+# Check SUT services for restarts (ZRP-relevant only).
+# Non-SUT containers (observability, exporters, infra) are checked separately
+# below and logged as INFO without triggering a FAIL verdict.
+for _svc in $SUT_SERVICES; do
+  _SVC_LINE=$(echo "$_ALL_STATUS" | grep "^${_svc} " || true)
+  [ -z "$_SVC_LINE" ] && continue
+  TOTAL_CONTAINERS=$((TOTAL_CONTAINERS + 1))
   # Use cut to get the full status string (awk '{print $2,$3,$4}' would truncate
   # multi-word statuses like "Up About a minute (health: starting)")
-  STATUS=$(echo "$line" | cut -d' ' -f2-)
-  TOTAL_CONTAINERS=$((TOTAL_CONTAINERS + 1))
+  _SVC_STATUS=$(echo "$_SVC_LINE" | cut -d' ' -f2-)
 
   # Case-insensitive match to handle "About a minute", "Less than a second", etc.
-  if echo "$STATUS" | grep -qiE " second| minute"; then
-    UPTIME_S=$(_parse_uptime_seconds "$STATUS")
+  if echo "$_SVC_STATUS" | grep -qiE " second| minute"; then
+    UPTIME_S=$(_parse_uptime_seconds "$_SVC_STATUS")
     [ "$UPTIME_S" -lt "$UPTIME_MIN" ] && UPTIME_MIN=$UPTIME_S
     [ "$UPTIME_S" -gt "$UPTIME_MAX" ] && UPTIME_MAX=$UPTIME_S
 
-    echo -e "${RED}⚠️  ALERT: Container restart detected!${NC}"
-    echo "  Container: $CONTAINER"
-    echo "  Status: $STATUS"
+    echo -e "${RED}ALERT: SUT container restart detected!${NC}"
+    echo "  Container: $_svc"
+    echo "  Status: $_SVC_STATUS"
     echo "  Detected At: $TIMESTAMP"
 
-    echo "$TIMESTAMP - RESTART DETECTED: $CONTAINER ($STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+    echo "$TIMESTAMP - RESTART DETECTED: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
     RESTART_COUNT=$((RESTART_COUNT + 1))
     RESTART_DETECTED=1
   fi
-done < <(docker ps --filter "name=cdb_" --format "{{.Names}} {{.Status}}")
+done
+
+# Log non-SUT restarts as informational (no FAIL trigger).
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  _NS_NAME=$(echo "$line" | awk '{print $1}')
+  _NS_STATUS=$(echo "$line" | cut -d' ' -f2-)
+  echo "$SUT_SERVICES" | grep -qw "$_NS_NAME" && continue
+  if echo "$_NS_STATUS" | grep -qiE " second| minute"; then
+    echo -e "${YELLOW}INFO: Non-SUT container restart (not ZRP-relevant): $_NS_NAME${NC}"
+    echo "$TIMESTAMP - INFO: Non-SUT restart (ignored for ZRP): $_NS_NAME ($_NS_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+  fi
+done <<< "$_ALL_STATUS"
 
 # Check the soak monitor container itself separately.
 # lr040_soak_monitor is intentionally NOT named cdb_* to avoid matching the
@@ -216,9 +245,9 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
   #
   # Classify as environment_interruption only when BOTH conditions hold:
   #
-  # 1. FRACTION (>=50% of CDB containers restarted):
+  # 1. FRACTION (>=50% of SUT services restarted):
   #    A single SUT defect rarely affects half the stack. 50% is deliberately
-  #    conservative — even 6/10 simultaneous SUT failures would constitute an
+  #    conservative — even 6/12 simultaneous SUT failures would constitute an
   #    environment-level problem, not an isolated service defect.
   #
   # 2. TIGHT_SPREAD (max_uptime - min_uptime <= 30 s) OR MONITOR_SELF:
@@ -244,23 +273,23 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
     # environment_interruption: remove any pre-existing FAILED marker so only
     # one verdict marker exists at a time (mutual exclusion).
     rm -f "$ARTIFACT_PATH/soak_test_FAILED.txt"
-    echo "$TIMESTAMP - ENVIRONMENT_INTERRUPTION: ${RESTART_COUNT}/${TOTAL_CONTAINERS} containers restarted, spread=${UPTIME_SPREAD}s, monitor_fresh=${MONITOR_FRESH}" \
+    echo "$TIMESTAMP - ENVIRONMENT_INTERRUPTION: ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services restarted, spread=${UPTIME_SPREAD}s, monitor_fresh=${MONITOR_FRESH}" \
       >> "$ARTIFACT_PATH/restart_alerts.log"
-    echo "$TIMESTAMP - INCONCLUSIVE: Environment interruption detected (cause=environment_interruption, containers=${RESTART_COUNT}/${TOTAL_CONTAINERS}, uptime_spread_s=${UPTIME_SPREAD}, monitor_container_fresh=${MONITOR_FRESH})" \
+    echo "$TIMESTAMP - INCONCLUSIVE: Environment interruption detected (cause=environment_interruption, sut_services=${RESTART_COUNT}/${TOTAL_CONTAINERS}, uptime_spread_s=${UPTIME_SPREAD}, monitor_container_fresh=${MONITOR_FRESH})" \
       > "$ARTIFACT_PATH/soak_test_INCONCLUSIVE.txt"
     echo -e "${YELLOW}===== INCONCLUSIVE: ENVIRONMENT INTERRUPTION =====${NC}"
     echo "Reason: Bulk restart consistent with Docker-daemon or host restart"
-    echo "containers=${RESTART_COUNT}/${TOTAL_CONTAINERS}, spread=${UPTIME_SPREAD}s, monitor_fresh=${MONITOR_FRESH}"
+    echo "sut_services=${RESTART_COUNT}/${TOTAL_CONTAINERS}, spread=${UPTIME_SPREAD}s, monitor_fresh=${MONITOR_FRESH}"
   else
     # sut_restart: remove any pre-existing INCONCLUSIVE marker so only one
     # verdict marker exists at a time (mutual exclusion).
     rm -f "$ARTIFACT_PATH/soak_test_INCONCLUSIVE.txt"
-    echo "$TIMESTAMP - SUT_RESTART: ${RESTART_COUNT}/${TOTAL_CONTAINERS} containers restarted (cause=sut_restart, spread=${UPTIME_SPREAD}s)" \
+    echo "$TIMESTAMP - SUT_RESTART: ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services restarted (cause=sut_restart, spread=${UPTIME_SPREAD}s)" \
       >> "$ARTIFACT_PATH/restart_alerts.log"
-    echo "$TIMESTAMP - ABORT: Service restart detected (cause=sut_restart, containers=${RESTART_COUNT}/${TOTAL_CONTAINERS})" \
+    echo "$TIMESTAMP - ABORT: SUT service restart detected (cause=sut_restart, sut_services=${RESTART_COUNT}/${TOTAL_CONTAINERS})" \
       > "$ARTIFACT_PATH/soak_test_FAILED.txt"
     echo -e "${RED}===== ABORT: SOAK TEST FAILED =====${NC}"
-    echo "Reason: Service restart detected (Zero Restart Policy violated)"
+    echo "Reason: SUT service restart detected (Zero Restart Policy violated)"
     echo "Time: $TIMESTAMP"
   fi
 
@@ -312,14 +341,8 @@ fi
 
 echo -e "\n${YELLOW}[CHECK 2/5]${NC} Service Health Status..."
 
-# ---------------------------------------------------------------------------
-# ZRP-relevant SUT services: BLUE core + data layer + RED signal services.
-# Observability, exporter, and infra sidecars are intentionally excluded —
-# their restarts do not violate the Zero Restart Policy gate.
-# Source of truth: compose.blue.yml + compose.red.yml (ws + signal only).
-# ---------------------------------------------------------------------------
-SUT_SERVICES="cdb_postgres cdb_redis cdb_market cdb_candles cdb_regime cdb_allocation cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_ws cdb_signal"
-EXPECTED_SERVICES=12
+# SUT_SERVICES and EXPECTED_SERVICES are defined at the top of the script
+# (shared with Check 1). See the definition near the color variables.
 
 # Snapshot all running container names once (avoids N docker calls in the loop).
 _RUNNING_NAMES=$(docker ps --filter "status=running" --format "{{.Names}}" 2>/dev/null || true)
