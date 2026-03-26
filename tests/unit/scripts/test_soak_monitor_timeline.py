@@ -1148,3 +1148,175 @@ class TestDiskSpaceCheck:
         assert (
             parse_disk_pct(new_path_output) == "47"
         ), "New /repo path must yield parseable disk usage"
+
+
+# ---------------------------------------------------------------------------
+# DB growth check regression tests (Issue #1281)
+#
+# Root cause: Check 4 in soak_monitor.sh used hardcoded `-U cdb -d cdb_db`
+# which diverged from the actual runtime contract of cdb_postgres
+# (POSTGRES_USER=claire_user, POSTGRES_DB=claire_de_binare).
+#
+# Fix: resolve PG_USER and PG_DB via `docker inspect` on the target container.
+# Fail-closed with non-sensitive artifact trail when resolution fails.
+# ---------------------------------------------------------------------------
+
+
+def _read_soak_monitor() -> str:
+    """Read infrastructure/scripts/soak_monitor.sh relative to this test file."""
+    path = (
+        Path(__file__).resolve().parents[3]
+        / "infrastructure"
+        / "scripts"
+        / "soak_monitor.sh"
+    )
+    return path.read_text(encoding="utf-8")
+
+
+def _extract_check4(content: str) -> str:
+    """Isolate the CHECK 4 section from soak_monitor.sh content."""
+    start = content.find("# CHECK 4")
+    end = content.find("# CHECK 5")
+    return content[start:end] if start != -1 and end != -1 else ""
+
+
+def resolve_pg_env(inspect_env_lines: list[str]) -> tuple[str | None, str | None]:
+    """Mirror bash: PG_USER / PG_DB aus docker-inspect-Env-Zeilen ableiten.
+
+    Gibt jede Variable unabhaengig zurueck: None wenn der Key fehlt oder leer ist,
+    sonst den getrimmten Wert. Beide koennen unabhaengig voneinander None sein.
+    Spiegelt die Aufloesungslogik in soak_monitor.sh Check 4 (Issue #1281):
+        PG_USER=$(echo "$_INSPECT_ENV" | grep '^POSTGRES_USER=' | cut -d= -f2-)
+        PG_DB=$(echo   "$_INSPECT_ENV" | grep '^POSTGRES_DB='   | cut -d= -f2-)
+    """
+    user: str | None = None
+    db: str | None = None
+    for line in inspect_env_lines:
+        if line.startswith("POSTGRES_USER="):
+            value = line[len("POSTGRES_USER="):].strip()
+            user = value or None
+        elif line.startswith("POSTGRES_DB="):
+            value = line[len("POSTGRES_DB="):].strip()
+            db = value or None
+    return user, db
+
+
+def build_env_resolution_fail_artifact(
+    inspect_exit: int, user_raw: str, db_raw: str
+) -> dict[str, str]:
+    """Build artifact dict mirroring the ENV_RESOLUTION_FAILED log block.
+
+    inspect_exit != 0 -> docker inspect itself failed, use real exit code.
+    inspect_exit == 0 -> inspect succeeded but keys were missing -> exit_status=0,
+                         failure_reason=missing_keys (separate field).
+    """
+    artifact: dict[str, str] = {
+        "event": "ENV_RESOLUTION_FAILED",
+        "container": "cdb_postgres",
+        "resolved_user": user_raw.strip() or "<empty>",
+        "resolved_db": db_raw.strip() or "<empty>",
+        "context_source": "docker_inspect_env",
+        "exit_status": str(inspect_exit),
+    }
+    if inspect_exit == 0:
+        artifact["failure_reason"] = "missing_keys"
+    return artifact
+
+
+class TestDbGrowthPgEnvResolution:
+    """Regression tests for Issue #1281: stale -U cdb -d cdb_db hardcodings in Check 4.
+
+    Guards:
+    - altes Hardcoding ist entfernt
+    - neuer Pfad nutzt docker inspect fuer PG_USER/PG_DB-Aufloesung
+    - fail-closed-Artefakt enthaelt die erwarteten nicht-sensitiven Felder
+    - kein Passwort-/Connection-String-Pfad eingefuehrt
+    - gruene Erfolgsmeldung nur bei psql Exit 0
+    """
+
+    # --- Regression guards auf soak_monitor.sh-Inhalt ---
+
+    def test_old_hardcoding_removed(self) -> None:
+        content = _read_soak_monitor()
+        assert "psql -U cdb" not in content, "Old hardcoding '-U cdb' must be removed (Issue #1281)"
+        assert "-d cdb_db" not in content, "Old hardcoding '-d cdb_db' must be removed (Issue #1281)"
+
+    def test_runtime_resolution_uses_docker_inspect(self) -> None:
+        content = _read_soak_monitor()
+        check4 = _extract_check4(content)
+        assert check4, "CHECK 4 section must exist in soak_monitor.sh"
+        assert "docker inspect" in check4, "Check 4 must use docker inspect to resolve PG_USER/PG_DB"
+        assert "POSTGRES_USER" in check4, "POSTGRES_USER must appear in Check 4"
+        assert "POSTGRES_DB" in check4, "POSTGRES_DB must appear in Check 4"
+
+    def test_no_secret_paths_in_check4(self) -> None:
+        content = _read_soak_monitor()
+        check4 = _extract_check4(content)
+        assert check4, "CHECK 4 section must exist"
+        assert "/run/secrets" not in check4, "No secret paths allowed in Check 4"
+        assert "POSTGRES_PASSWORD" not in check4, "POSTGRES_PASSWORD must not appear in Check 4"
+
+    def test_success_message_only_on_psql_exit_zero(self) -> None:
+        content = _read_soak_monitor()
+        check4 = _extract_check4(content)
+        success_pos = check4.find("Database metrics saved to")
+        psql_exit_pos = check4.find("_PSQL_EXIT")
+        assert success_pos > psql_exit_pos, "Success message must appear after _PSQL_EXIT check"
+
+    # --- Python-Helfer: Env-Auflösungslogik ---
+
+    def test_happy_path_both_vars_present(self) -> None:
+        user, db = resolve_pg_env(["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"])
+        assert user == "claire_user"
+        assert db == "claire_de_binare"
+
+    def test_fail_closed_when_user_missing(self) -> None:
+        user, db = resolve_pg_env(["POSTGRES_DB=claire_de_binare"])
+        assert user is None
+
+    def test_fail_closed_when_db_missing(self) -> None:
+        user, db = resolve_pg_env(["POSTGRES_USER=claire_user"])
+        assert db is None
+
+    def test_fail_closed_when_both_missing(self) -> None:
+        user, db = resolve_pg_env([])
+        assert user is None
+        assert db is None
+
+    def test_whitespace_only_treated_as_empty(self) -> None:
+        user, db = resolve_pg_env(["POSTGRES_USER=  ", "POSTGRES_DB=claire_de_binare"])
+        assert user is None, "Whitespace-only value must be treated as empty"
+
+    def test_unrelated_env_vars_ignored(self) -> None:
+        user, db = resolve_pg_env([
+            "POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password",
+            "POSTGRES_USER=claire_user",
+            "POSTGRES_DB=claire_de_binare",
+            "PATH=/usr/local/bin:/usr/bin:/bin",
+        ])
+        assert user == "claire_user"
+        assert db == "claire_de_binare"
+
+    # --- Artefaktspur: nicht-sensitive Felder ---
+
+    def test_inspect_fail_exit_code_captured(self) -> None:
+        artifact = build_env_resolution_fail_artifact(2, "", "")
+        assert artifact["exit_status"] == "2", "Real inspect exit code must be captured"
+        assert "failure_reason" not in artifact, "failure_reason must not appear when inspect failed"
+
+    def test_missing_keys_exit_status_and_failure_reason(self) -> None:
+        artifact = build_env_resolution_fail_artifact(0, "", "claire_de_binare")
+        assert artifact["exit_status"] == "0"
+        assert artifact["failure_reason"] == "missing_keys"
+
+    def test_fail_artifact_required_non_sensitive_fields(self) -> None:
+        artifact = build_env_resolution_fail_artifact(0, "", "claire_de_binare")
+        assert artifact["container"] == "cdb_postgres"
+        assert artifact["resolved_user"] == "<empty>"
+        assert artifact["resolved_db"] == "claire_de_binare"
+        assert artifact["context_source"] == "docker_inspect_env"
+
+    def test_old_values_not_in_resolved_path(self) -> None:
+        user, db = resolve_pg_env(["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"])
+        assert user != "cdb", "Stale hardcoding 'cdb' must not appear"
+        assert db != "cdb_db", "Stale hardcoding 'cdb_db' must not appear"

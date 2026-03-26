@@ -457,13 +457,54 @@ if [ "$((ELAPSED_HOURS % 12))" -eq 0 ]; then
     echo "Timestamp: $TIMESTAMP" > "$DB_FILE"
     echo "=========================================" >> "$DB_FILE"
 
-    docker exec cdb_postgres psql -U cdb -d cdb_db -t -c "
-      SELECT 'orders', COUNT(*) FROM orders UNION ALL
-      SELECT 'trades', COUNT(*) FROM trades UNION ALL
-      SELECT 'signals', COUNT(*) FROM signals;
-    " >> "$DB_FILE" 2>&1 || echo "Error querying database" >> "$DB_FILE"
+    # Resolve non-sensitive runtime config from target container (Issue #1281).
+    # Uses docker inspect to read POSTGRES_USER and POSTGRES_DB — no /bin/sh
+    # dependency inside the container, no password or connection-string access.
+    _INSPECT_ENV=$(docker inspect cdb_postgres --format '{{range .Config.Env}}{{println .}}{{end}}' 2>/dev/null)
+    _INSPECT_EXIT=$?
 
-    echo -e "${GREEN}✓ Database metrics saved to: $DB_FILE${NC}"
+    if [ "$_INSPECT_EXIT" -ne 0 ]; then
+      echo "[CHECK 4] ENV_RESOLUTION_FAILED" >> "$DB_FILE"
+      echo "  container=cdb_postgres" >> "$DB_FILE"
+      echo "  resolved_user=<empty>" >> "$DB_FILE"
+      echo "  resolved_db=<empty>" >> "$DB_FILE"
+      echo "  context_source=docker_inspect_env" >> "$DB_FILE"
+      echo "  exit_status=$_INSPECT_EXIT" >> "$DB_FILE"
+      echo -e "${RED}⚠️  Check 4 fail-closed: docker inspect failed (exit $_INSPECT_EXIT)${NC}"
+    else
+      PG_USER=$(echo "$_INSPECT_ENV" | grep '^POSTGRES_USER=' | cut -d= -f2-)
+      PG_DB=$(echo "$_INSPECT_ENV"   | grep '^POSTGRES_DB='   | cut -d= -f2-)
+
+      if [ -z "$PG_USER" ] || [ -z "$PG_DB" ]; then
+        echo "[CHECK 4] ENV_RESOLUTION_FAILED" >> "$DB_FILE"
+        echo "  container=cdb_postgres" >> "$DB_FILE"
+        echo "  resolved_user=${PG_USER:-<empty>}" >> "$DB_FILE"
+        echo "  resolved_db=${PG_DB:-<empty>}" >> "$DB_FILE"
+        echo "  context_source=docker_inspect_env" >> "$DB_FILE"
+        echo "  exit_status=0" >> "$DB_FILE"
+        echo "  failure_reason=missing_keys" >> "$DB_FILE"
+        echo -e "${RED}⚠️  Check 4 fail-closed: POSTGRES_USER or POSTGRES_DB not set in cdb_postgres${NC}"
+      else
+        docker exec cdb_postgres psql -U "$PG_USER" -d "$PG_DB" -t -c "
+          SELECT 'orders', COUNT(*) FROM orders UNION ALL
+          SELECT 'trades', COUNT(*) FROM trades UNION ALL
+          SELECT 'signals', COUNT(*) FROM signals;
+        " >> "$DB_FILE" 2>&1
+        _PSQL_EXIT=$?
+
+        if [ "$_PSQL_EXIT" -ne 0 ]; then
+          echo "[CHECK 4] PSQL_QUERY_FAILED" >> "$DB_FILE"
+          echo "  container=cdb_postgres" >> "$DB_FILE"
+          echo "  resolved_user=$PG_USER" >> "$DB_FILE"
+          echo "  resolved_db=$PG_DB" >> "$DB_FILE"
+          echo "  context_source=docker_inspect_env" >> "$DB_FILE"
+          echo "  exit_status=$_PSQL_EXIT" >> "$DB_FILE"
+          echo -e "${RED}⚠️  Check 4: psql query failed (exit $_PSQL_EXIT) — see $DB_FILE${NC}"
+        else
+          echo -e "${GREEN}✓ Database metrics saved to: $DB_FILE${NC}"
+        fi
+      fi
+    fi
   else
     echo -e "${RED}⚠️  PostgreSQL not running - skipping DB check${NC}"
   fi
