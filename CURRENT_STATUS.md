@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-25 (Session 8)
-**Latest Commit**: e5bf1bf
+**Last Updated**: 2026-03-26 (Session 9)
+**Latest Commit**: 08f7e7b — fix(soak-monitor): write generic pointer + robust disk check (#1282 #1283)
 
 ---
 
@@ -31,7 +31,7 @@
 | P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
 | P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
 | P3 Shadow Mode | LR-030, LR-031 | PARTIAL | LR-031 kalibriert PASS (lean Run 23407946292, PR #1257 a407838, min=1 liveness floor); LR-030 evidence gehaertet (#1129) |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — **Soak-Run 2026-03-22 FAILED** (Bulk-Restart 2026-03-24T17:22 UTC, environment_interruption); **neuer 72h-Soak gestartet 2026-03-24** (Ziel: 2026-03-27); Monitor-Bugs #1263/#1264/#1268 im neuen Run aktiv (PR #1273) |
+| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — Soak-Run 2026-03-22 FAILED (environment_interruption); Soak-Run 2026-03-24 FAILED (cdb_signal restart); **72h-Run gestartet 2026-03-25 12:12 UTC** auf main@ac6ab87 (Ziel: 2026-03-28 12:12 UTC); #1277/#1278 gemerged, Monitor-Fixes aktiv |
 | P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
 
 **Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
@@ -87,14 +87,15 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 ## Known Blockers / Next Actions
 
-1. **#1277 (soak restart scope):** Fix in PR #1279 — Check 1 auf SUT-Services eingeschränkt; Non-SUT-Restarts (Grafana/Prometheus) lösen keinen FAIL mehr aus. Praktisch validiert.
-2. **#1278 (validation mode):** Implementiert, unit-getestet — `SOAK_RUN_INTENT=validation` nutzt separaten Artifact-Namespace (`soak_validation_*`), eigenen Pointer (`soak_active_run_path_validation.txt`) und `run_intent.txt`-Marker; Gate-Evaluator gibt `NOT_APPLICABLE` (exit 1) für Validation Runs zurück. Keine Verwechslung mit kanonischer LR-040-Evidence mehr auf Tooling-/Artefakt-Ebene. Praktische Stack-Validierung bleibt optionaler nächster Check vor dem nächsten echten 72h-Run.
-3. **LR-040 echter 72h-Run:** Nächster Schritt nach Merge von #1277 und #1278. Nicht mit Validation Runs verwechseln — erfordert `SOAK_RUN_INTENT=lr040` (default) und produziert `soak_test_*`-Artefakte.
-4. **#1266/#1267 (Grafana execErrState):** Offen. KeepLastState in Grafana 11.4.7-ubuntu provisioning-inkompatibel; zurückgerollt auf Error. Echter Fix: Grafana-Image-Upgrade (Option A) oder Alertmanager-Routing (Option B).
-5. **#1269 (midnight-rollover):** Offen. Nächster Soak-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
-6. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
-7. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
-8. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
+1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
+2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
+3. **LR-040 echter 72h-Run:** Gestartet 2026-03-25 12:12:50 UTC auf `main` @ `ac6ab87`. Artefaktpfad: `artifacts/soak_test_20260325_121250`. Hour 25 PASS (Cutoff 2026-03-26 14:00 UTC), kumulativ >72h sauber, Container-Stabilität operativ PASS. Geplantes Ende: 2026-03-28 12:12:50 UTC.
+4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
+5. **#1266/#1267 (Grafana execErrState):** Offen. KeepLastState in Grafana 11.4.7-ubuntu provisioning-inkompatibel; zurückgerollt auf Error. Echter Fix: Grafana-Image-Upgrade (Option A) oder Alertmanager-Routing (Option B).
+6. **#1269 (midnight-rollover):** Offen. De facto mitigiert durch Pointer-Mechanismus (#1278). Laufender 72h-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
+7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
+8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
+9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
 
 ---
 
