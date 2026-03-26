@@ -4,7 +4,7 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-03-26 (Session 9)
-**Latest Commit**: 08f7e7b — fix(soak-monitor): write generic pointer + robust disk check (#1282 #1283)
+**Latest Commit**: 216d0eb — fix(grafana): KeepLast for execErrState (#1266 #1267)
 
 ---
 
@@ -91,7 +91,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
 3. **LR-040 echter 72h-Run:** Gestartet 2026-03-25 12:12:50 UTC auf `main` @ `ac6ab87`. Artefaktpfad: `artifacts/soak_test_20260325_121250`. Hour 25 PASS (Cutoff 2026-03-26 14:00 UTC), kumulativ >72h sauber, Container-Stabilität operativ PASS. Geplantes Ende: 2026-03-28 12:12:50 UTC.
 4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
-5. **#1266/#1267 (Grafana execErrState):** Offen. KeepLastState in Grafana 11.4.7-ubuntu provisioning-inkompatibel; zurückgerollt auf Error. Echter Fix: Grafana-Image-Upgrade (Option A) oder Alertmanager-Routing (Option B).
+5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26). Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
 6. **#1269 (midnight-rollover):** Offen. De facto mitigiert durch Pointer-Mechanismus (#1278). Laufender 72h-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
