@@ -1148,3 +1148,327 @@ class TestDiskSpaceCheck:
         assert (
             parse_disk_pct(new_path_output) == "47"
         ), "New /repo path must yield parseable disk usage"
+
+
+# ---------------------------------------------------------------------------
+# Generic pointer sync tests (Issue #1283)
+#
+# Problem: PR #1278 introduced intent-specific pointer files
+# (soak_active_run_path_lr040.txt, soak_active_run_path_validation.txt) but
+# did not keep the pre-#1278 generic pointer (soak_active_run_path.txt) in sync.
+# After the last pre-#1278 lr040 run, the generic pointer was never updated again
+# and remained pointing at a stale FAILED run (soak_test_20260324_224419).
+#
+# Fix: _write_active_run_path() in soak_monitor.sh now also writes
+# soak_active_run_path.txt when SOAK_RUN_INTENT=lr040. Validation runs
+# do not update the generic pointer.
+# ---------------------------------------------------------------------------
+
+
+def writes_to_generic_pointer(intent: str) -> bool:
+    """True when _write_active_run_path also updates soak_active_run_path.txt.
+
+    Mirrors the if-block added to _write_active_run_path() in soak_monitor.sh
+    (Issue #1283):
+        if [ "$SOAK_RUN_INTENT" = "lr040" ]; then
+            printf '%s\\n' "$artifact_path" > "$ARTIFACT_ROOT/soak_active_run_path.txt"
+        fi
+    """
+    return intent == "lr040"
+
+
+class TestGenericPointerSync:
+    """Regression tests for Issue #1283: generic pointer must track canonical lr040 run.
+
+    Before the fix, soak_active_run_path.txt was only written by pre-#1278 code.
+    After PR #1278 switched to intent-specific pointers, the generic pointer
+    was never updated and remained pointing at the last pre-#1278 lr040 run.
+    """
+
+    def test_lr040_updates_generic_pointer(self) -> None:
+        """lr040 intent must update soak_active_run_path.txt."""
+        assert writes_to_generic_pointer("lr040") is True
+
+    def test_validation_does_not_update_generic_pointer(self) -> None:
+        """validation intent must NOT overwrite the canonical lr040 pointer."""
+        assert writes_to_generic_pointer("validation") is False
+
+    def test_generic_pointer_matches_lr040_specific_after_run_start(
+        self, tmp_path: Path
+    ) -> None:
+        """After an lr040 run starts, generic and lr040-specific pointers are identical."""
+        artifact_path = "artifacts/soak_test_20260325_121250"
+        lr040_ptr = tmp_path / "soak_active_run_path_lr040.txt"
+        generic_ptr = tmp_path / "soak_active_run_path.txt"
+
+        lr040_ptr.write_text(artifact_path + "\n", encoding="utf-8")
+        if writes_to_generic_pointer("lr040"):
+            generic_ptr.write_text(artifact_path + "\n", encoding="utf-8")
+
+        assert lr040_ptr.read_text(encoding="utf-8").strip() == artifact_path
+        assert generic_ptr.read_text(encoding="utf-8").strip() == artifact_path
+
+    def test_validation_run_does_not_overwrite_existing_generic_pointer(
+        self, tmp_path: Path
+    ) -> None:
+        """A validation run started after an lr040 run must not shadow the lr040 pointer."""
+        lr040_path = "artifacts/soak_test_20260325_121250"
+        validation_path = "artifacts/soak_validation_20260325_110047"
+
+        lr040_ptr = tmp_path / "soak_active_run_path_lr040.txt"
+        validation_ptr = tmp_path / "soak_active_run_path_validation.txt"
+        generic_ptr = tmp_path / "soak_active_run_path.txt"
+
+        # lr040 run was started first — both pointers written
+        lr040_ptr.write_text(lr040_path + "\n", encoding="utf-8")
+        generic_ptr.write_text(lr040_path + "\n", encoding="utf-8")
+
+        # validation run started subsequently — only validation pointer written
+        validation_ptr.write_text(validation_path + "\n", encoding="utf-8")
+        if writes_to_generic_pointer("validation"):
+            generic_ptr.write_text(validation_path + "\n", encoding="utf-8")
+
+        # generic pointer must still point at the lr040 run, not the validation run
+        assert generic_ptr.read_text(encoding="utf-8").strip() == lr040_path
+        assert validation_ptr.read_text(encoding="utf-8").strip() == validation_path
+
+    def test_new_lr040_run_overwrites_stale_failed_generic_pointer(
+        self, tmp_path: Path
+    ) -> None:
+        """Starting a new lr040 run must overwrite a stale/FAILED generic pointer."""
+        stale_path = "artifacts/soak_test_20260324_224419"  # old FAILED run (#1283)
+        new_path = "artifacts/soak_test_20260325_121250"
+
+        generic_ptr = tmp_path / "soak_active_run_path.txt"
+        generic_ptr.write_text(stale_path + "\n", encoding="utf-8")
+
+        # New lr040 run started
+        if writes_to_generic_pointer("lr040"):
+            generic_ptr.write_text(new_path + "\n", encoding="utf-8")
+
+        assert generic_ptr.read_text(encoding="utf-8").strip() == new_path
+        assert generic_ptr.read_text(encoding="utf-8").strip() != stale_path
+
+    def test_intent_specific_and_generic_always_agree_after_lr040_start(
+        self, tmp_path: Path
+    ) -> None:
+        """After any lr040 invocation, soak_active_run_path.txt must equal
+        soak_active_run_path_lr040.txt — they must never diverge."""
+        for run_path in [
+            "artifacts/soak_test_20260322_181856",
+            "artifacts/soak_test_20260325_121250",
+        ]:
+            lr040_ptr = tmp_path / "soak_active_run_path_lr040.txt"
+            generic_ptr = tmp_path / "soak_active_run_path.txt"
+
+            lr040_ptr.write_text(run_path + "\n", encoding="utf-8")
+            if writes_to_generic_pointer("lr040"):
+                generic_ptr.write_text(run_path + "\n", encoding="utf-8")
+
+            assert generic_ptr.read_text(encoding="utf-8").strip() == (
+                lr040_ptr.read_text(encoding="utf-8").strip()
+            )
+
+
+# ---------------------------------------------------------------------------
+# Disk check POSIX-output regression tests (Issue #1282)
+#
+# Root cause: `df /repo` without -P wraps long filesystem names (e.g. Docker
+# Desktop Windows bind-mounts like "//192.168.65.2/D/Dev/Workspaces/...") onto
+# a separate line.  In that case NR==2 contains only the device name and NR==3
+# holds the actual stats.  The awk parser sees NR==2 field-5 as either empty or
+# a non-numeric token → ARTIFACT_DISK_PCT="" → false DISK_UNAVAILABLE log entry.
+#
+# Fix: use `df -P /repo` (POSIX output) which always writes exactly one line per
+# filesystem, preventing the wrap regardless of device-name length.
+#
+# New status semantics:
+#   OK           — df -P ran and parsed a valid integer percentage
+#   UNAVAILABLE  — df ran but exited non-zero or output was not parseable
+#   UNSUPPORTED  — df binary not available in this environment
+# ---------------------------------------------------------------------------
+
+
+def parse_disk_pct_posix(df_output: str) -> str | None:
+    """Parse Use% from `df -P` (POSIX) output.
+
+    POSIX output guarantees exactly one data line per filesystem — no wrapping.
+    Returns the numeric percentage string without %, or None if unparseable.
+
+    Mirrors the new bash logic in soak_monitor.sh Check 5 (Issue #1282):
+        _DF_RAW=$(df -P /repo 2>/dev/null)
+        _PARSED_PCT=$(echo "$_DF_RAW" | awk 'NR==2 {print $5}' | sed 's/%//')
+    """
+    lines = df_output.strip().splitlines()
+    if len(lines) < 2:
+        return None
+    parts = lines[1].split()
+    if len(parts) < 5:
+        return None
+    pct_str = parts[4].rstrip("%")
+    try:
+        int(pct_str)
+    except ValueError:
+        return None
+    return pct_str
+
+
+def classify_disk_status(df_output: str | None, df_available: bool) -> str:
+    """Map df output + binary availability to a status string.
+
+    Mirrors the _DISK_STATUS logic added in soak_monitor.sh (Issue #1282):
+      OK          → df ran, POSIX output parsed to a valid integer
+      UNSUPPORTED → df binary not found
+      UNAVAILABLE → df ran but returned empty, non-zero, or non-numeric output
+    """
+    if not df_available:
+        return "UNSUPPORTED"
+    if df_output is None:
+        return "UNAVAILABLE"
+    pct = parse_disk_pct_posix(df_output)
+    if pct is None:
+        return "UNAVAILABLE"
+    return "OK"
+
+
+# --- df output fixtures ---
+
+# POSIX output (`df -P /repo`): single line, no wrapping
+_DF_P_REPO_NORMAL = """\
+Filesystem     1024-blocks      Used Available Capacity Mounted on
+/dev/sda1        976762584 431981636 494963932      47% /repo
+"""
+
+_DF_P_REPO_WARNING = """\
+Filesystem     1024-blocks      Used Available Capacity Mounted on
+/dev/sda1        976762584 800000000  80000000      86% /repo
+"""
+
+_DF_P_REPO_CRITICAL = """\
+Filesystem     1024-blocks      Used Available Capacity Mounted on
+/dev/sda1        976762584 900000000  25000000      97% /repo
+"""
+
+# Non-POSIX output with a long device name: GNU df wraps the device name onto
+# its own line when the name exceeds the column width.  This is the exact
+# pattern produced by Docker Desktop Windows bind-mounts and is the root cause
+# of Issue #1282.
+_DF_NOWRAP_LONG_DEVICE = """\
+Filesystem                                                           1K-blocks      Used Available Use% Mounted on
+//192.168.65.2/D/Dev/Workspaces/Repos/Claire_de_Binare
+                                                                     976762584 431981636 494963932  47% /repo
+"""
+
+# Non-POSIX output with a short device name: fits in one row, parses OK even
+# without -P.  Included to show that non-wrapped non-POSIX is NOT the bug.
+_DF_NOWRAP_SHORT_DEVICE = """\
+Filesystem      1K-blocks      Used Available Use% Mounted on
+/dev/sda1       976762584 431981636 494963932  47% /repo
+"""
+
+
+class TestDiskCheckPosixParsing:
+    """Regression tests for Issue #1282: false DISK_UNAVAILABLE from df line-wrap.
+
+    The fix switches from `df /repo` to `df -P /repo` so the POSIX single-line
+    guarantee prevents NR==2 from ever capturing a wrapped device name.
+    """
+
+    # --- POSIX output parses correctly ---
+
+    def test_posix_normal_parses_to_47(self) -> None:
+        assert parse_disk_pct_posix(_DF_P_REPO_NORMAL) == "47"
+
+    def test_posix_warning_parses_to_86(self) -> None:
+        assert parse_disk_pct_posix(_DF_P_REPO_WARNING) == "86"
+
+    def test_posix_critical_parses_to_97(self) -> None:
+        assert parse_disk_pct_posix(_DF_P_REPO_CRITICAL) == "97"
+
+    # --- Issue #1282 regression: wrapped non-POSIX output causes false alarm ---
+
+    def test_old_bug_wrapped_device_name_returns_none(self) -> None:
+        """Without -P, a long device name wraps.  NR==2 is the device name,
+        not the stats line → field-5 is empty → parse_disk_pct returns None.
+        This is the exact failure mode that triggered false DISK_UNAVAILABLE.
+        """
+        # The wrapped line has only one token (the device path); split() gives
+        # a list of length 1 → len(parts) < 5 → None.
+        result = parse_disk_pct_posix(_DF_NOWRAP_LONG_DEVICE)
+        assert result is None, (
+            "Wrapped non-POSIX output must fail to parse (regression guard for #1282 root cause)"
+        )
+
+    def test_short_device_name_still_parseable_without_posix(self) -> None:
+        """Non-POSIX df with a short device name does NOT wrap and parses fine.
+        Confirms the bug is specific to long device names, not df per se.
+        """
+        assert parse_disk_pct_posix(_DF_NOWRAP_SHORT_DEVICE) == "47"
+
+    # --- classify_disk_status: three distinct states ---
+
+    def test_status_ok_when_posix_parsed(self) -> None:
+        assert classify_disk_status(_DF_P_REPO_NORMAL, df_available=True) == "OK"
+
+    def test_status_unsupported_when_df_not_available(self) -> None:
+        """df binary absent → UNSUPPORTED, not UNAVAILABLE."""
+        assert classify_disk_status(None, df_available=False) == "UNSUPPORTED"
+
+    def test_status_unavailable_when_df_output_is_none(self) -> None:
+        """df exited non-zero (output=None) → UNAVAILABLE."""
+        assert classify_disk_status(None, df_available=True) == "UNAVAILABLE"
+
+    def test_status_unavailable_when_output_unparseable(self) -> None:
+        """df ran but output is empty → UNAVAILABLE (not UNSUPPORTED)."""
+        assert classify_disk_status("", df_available=True) == "UNAVAILABLE"
+
+    def test_status_unavailable_for_wrapped_non_posix_output(self) -> None:
+        """Wrapped non-POSIX output → classifies as UNAVAILABLE, not UNSUPPORTED.
+        This is the pre-fix behaviour; the fix makes it OK by using df -P.
+        The test documents the status boundary between the two states.
+        """
+        assert (
+            classify_disk_status(_DF_NOWRAP_LONG_DEVICE, df_available=True)
+            == "UNAVAILABLE"
+        )
+
+    def test_fix_posix_output_classifies_as_ok(self) -> None:
+        """The fix: df -P produces POSIX output → classifies as OK, no false alarm."""
+        assert classify_disk_status(_DF_P_REPO_NORMAL, df_available=True) == "OK"
+        assert classify_disk_status(_DF_P_REPO_WARNING, df_available=True) == "OK"
+        assert classify_disk_status(_DF_P_REPO_CRITICAL, df_available=True) == "OK"
+
+    # --- Threshold checks still work after fix ---
+
+    def test_ok_threshold_below_80(self) -> None:
+        pct = parse_disk_pct_posix(_DF_P_REPO_NORMAL)
+        assert pct is not None
+        assert classify_disk_usage(int(pct)) == "ok"
+
+    def test_warning_threshold_above_80(self) -> None:
+        pct = parse_disk_pct_posix(_DF_P_REPO_WARNING)
+        assert pct is not None
+        assert classify_disk_usage(int(pct)) == "warning"
+
+    def test_critical_threshold_above_90(self) -> None:
+        pct = parse_disk_pct_posix(_DF_P_REPO_CRITICAL)
+        assert pct is not None
+        assert classify_disk_usage(int(pct)) == "critical"
+
+    # --- Exact Issue #1282 scenario end-to-end ---
+
+    def test_issue_1282_scenario_old_false_alarm(self) -> None:
+        """Reproduce exactly: Docker Desktop bind-mount → wrapped df output
+        → old code sees ARTIFACT_DISK_PCT="" → logs DISK_UNAVAILABLE.
+
+        With the fix (df -P), the same filesystem produces POSIX output and
+        the check passes without a false alarm.
+        """
+        # Old behaviour: non-POSIX df on Docker Desktop bind-mount → wrapped
+        old_status = classify_disk_status(_DF_NOWRAP_LONG_DEVICE, df_available=True)
+        assert old_status == "UNAVAILABLE", "Old path must map to UNAVAILABLE (false alarm)"
+
+        # New behaviour: POSIX df -P on the same filesystem → single line → OK
+        # (Simulated with the equivalent POSIX fixture for the same 47% filesystem)
+        new_status = classify_disk_status(_DF_P_REPO_NORMAL, df_available=True)
+        assert new_status == "OK", "New path with df -P must classify as OK"

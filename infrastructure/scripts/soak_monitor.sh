@@ -61,6 +61,12 @@ _write_active_run_path() {
   local artifact_path="$1"
   mkdir -p "$ARTIFACT_ROOT"
   printf '%s\n' "$artifact_path" > "$ACTIVE_RUN_FILE"
+  # Keep the generic pointer in sync with the canonical lr040 run (Issue #1283).
+  # Validation runs do not update the generic pointer so a short validation
+  # run can never shadow the canonical LR-040 evidence path.
+  if [ "$SOAK_RUN_INTENT" = "lr040" ]; then
+    printf '%s\n' "$artifact_path" > "$ARTIFACT_ROOT/soak_active_run_path.txt"
+  fi
 }
 
 _find_latest_artifact_dir() {
@@ -494,8 +500,43 @@ echo -e "\n${YELLOW}[CHECK 5/5]${NC} Disk Space Check..."
 DISK_EVIDENCE_FILE="$ARTIFACT_PATH/disk_evidence_$(date -u +%Y%m%d_%H)h.txt"
 
 # Source 1: artifact filesystem (/repo partition — always mounted)
-ARTIFACT_DISK_PCT=$(df /repo 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//' || true)
-ARTIFACT_DISK_FREE=$(df -h /repo 2>/dev/null | awk 'NR==2 {print $4}' || true)
+#
+# Use -P (POSIX output) to prevent GNU df from wrapping long filesystem names
+# onto a separate line.  Docker Desktop on Windows mounts /repo via a path
+# like "//192.168.65.2/D/Dev/..." which exceeds df's column width.  Without -P,
+# GNU df line-wraps so NR==2 contains only the device name and NR==3 contains
+# the actual stats — causing NR==2 field-5 to be empty and triggering a false
+# DISK_UNAVAILABLE log entry (Issue #1282).
+#
+# Three distinct status values:
+#   OK           — df ran, output parsed, threshold checks active
+#   UNSUPPORTED  — df binary not available in this environment
+#   UNAVAILABLE  — df ran but exited non-zero or output was not parseable
+#                  (genuine inability to check; real disk problems still visible)
+ARTIFACT_DISK_PCT=""
+ARTIFACT_DISK_FREE=""
+_DISK_STATUS="OK"
+
+if ! command -v df >/dev/null 2>&1; then
+  _DISK_STATUS="UNSUPPORTED"
+else
+  _DF_RAW=$(df -P /repo 2>/dev/null)
+  _DF_EXIT=$?
+  if [ "$_DF_EXIT" -ne 0 ] || [ -z "$_DF_RAW" ]; then
+    _DISK_STATUS="UNAVAILABLE"
+  else
+    _PARSED_PCT=$(echo "$_DF_RAW" | awk 'NR==2 {print $5}' | sed 's/%//')
+    # Validate the extracted value is a plain integer; reject empty / non-numeric
+    # results that would indicate an unexpected df output format.
+    if [ -z "$_PARSED_PCT" ] || ! [ "$_PARSED_PCT" -eq "$_PARSED_PCT" ] 2>/dev/null; then
+      _DISK_STATUS="UNAVAILABLE"
+    else
+      ARTIFACT_DISK_PCT="$_PARSED_PCT"
+      # -Ph: POSIX + human-readable (prevents the same wrapping for free-space field)
+      ARTIFACT_DISK_FREE=$(df -Ph /repo 2>/dev/null | awk 'NR==2 {print $4}' || true)
+    fi
+  fi
+fi
 
 # Source 2: Docker space via socket (images, containers, volumes, build cache)
 DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not available]")
@@ -507,10 +548,12 @@ DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not av
   echo "========================================="
   echo ""
   echo "Artifact filesystem (/repo — partition where run artifacts are stored):"
-  if [ -n "$ARTIFACT_DISK_PCT" ]; then
+  if [ "$_DISK_STATUS" = "OK" ]; then
     echo "  Used: ${ARTIFACT_DISK_PCT}%  |  Free: ${ARTIFACT_DISK_FREE:-unknown}"
+  elif [ "$_DISK_STATUS" = "UNSUPPORTED" ]; then
+    echo "  DISK_CHECK_UNSUPPORTED (df not available in this environment)"
   else
-    echo "  NOT_AVAILABLE (df /repo returned no parseable output)"
+    echo "  DISK_UNAVAILABLE (df -P /repo returned no parseable output)"
   fi
   echo ""
   echo "Docker space (images / containers / volumes / build cache):"
@@ -518,7 +561,7 @@ DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not av
 } > "$DISK_EVIDENCE_FILE"
 
 # Console output + alert log
-if [ -n "$ARTIFACT_DISK_PCT" ]; then
+if [ "$_DISK_STATUS" = "OK" ]; then
   if [ "$ARTIFACT_DISK_PCT" -gt 90 ] 2>/dev/null; then
     echo -e "${RED}⚠️  CRITICAL: Artifact filesystem ${ARTIFACT_DISK_PCT}% full (free: ${ARTIFACT_DISK_FREE})${NC}"
     echo "$TIMESTAMP - CRITICAL: Artifact filesystem ${ARTIFACT_DISK_PCT}% full" >> "$ARTIFACT_PATH/disk_alerts.log"
@@ -527,9 +570,12 @@ if [ -n "$ARTIFACT_DISK_PCT" ]; then
   else
     echo -e "${GREEN}✓ Artifact filesystem: ${ARTIFACT_DISK_PCT}% used (free: ${ARTIFACT_DISK_FREE})${NC}"
   fi
+elif [ "$_DISK_STATUS" = "UNSUPPORTED" ]; then
+  echo -e "${YELLOW}ℹ  Disk check unsupported in this environment (df not available) — see disk_evidence file${NC}"
+  echo "$TIMESTAMP - DISK_CHECK_UNSUPPORTED: df not available in this environment" >> "$ARTIFACT_PATH/disk_alerts.log"
 else
   echo -e "${YELLOW}⚠️  Artifact filesystem usage unavailable — check disk_evidence file${NC}"
-  echo "$TIMESTAMP - DISK_UNAVAILABLE: df /repo returned no parseable output" >> "$ARTIFACT_PATH/disk_alerts.log"
+  echo "$TIMESTAMP - DISK_UNAVAILABLE: df -P /repo returned no parseable output" >> "$ARTIFACT_PATH/disk_alerts.log"
 fi
 echo "  Evidence: $DISK_EVIDENCE_FILE"
 
