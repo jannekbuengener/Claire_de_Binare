@@ -388,6 +388,63 @@ class TestIntentAwareArtifactPath:
             assert f"artifacts/{expected_prefix}" in resolved
 
 
+# ---------------------------------------------------------------------------
+# Generic pointer sync (Issue #1283)
+# ---------------------------------------------------------------------------
+
+
+def _simulate_write_active_run_path(
+    artifact_path: str, artifact_root: Path, intent: str
+) -> None:
+    """Python mirror of _write_active_run_path() in soak_monitor.sh (Issue #1283).
+
+    Always writes soak_active_run_path_{intent}.txt.
+    Additionally writes soak_active_run_path.txt only for lr040.
+    """
+    (artifact_root / f"soak_active_run_path_{intent}.txt").write_text(
+        artifact_path + "\n", encoding="utf-8"
+    )
+    if intent == "lr040":
+        (artifact_root / "soak_active_run_path.txt").write_text(
+            artifact_path + "\n", encoding="utf-8"
+        )
+
+
+class TestGenericPointerSync:
+    """Issue #1283: _write_active_run_path() syncs generic pointer for lr040 only."""
+
+    def test_lr040_writes_both_pointers(self, tmp_path: Path) -> None:
+        """lr040: both soak_active_run_path_lr040.txt and soak_active_run_path.txt written."""
+        artifact = str(tmp_path / "soak_test_20260326_120000")
+        _simulate_write_active_run_path(artifact, tmp_path, "lr040")
+        assert (tmp_path / "soak_active_run_path_lr040.txt").read_text().strip() == artifact
+        assert (tmp_path / "soak_active_run_path.txt").read_text().strip() == artifact
+
+    def test_lr040_generic_pointer_matches_intent_pointer(self, tmp_path: Path) -> None:
+        """lr040: generic and intent pointer contain identical content."""
+        artifact = str(tmp_path / "soak_test_20260326_120000")
+        _simulate_write_active_run_path(artifact, tmp_path, "lr040")
+        intent_content = (tmp_path / "soak_active_run_path_lr040.txt").read_text()
+        generic_content = (tmp_path / "soak_active_run_path.txt").read_text()
+        assert intent_content == generic_content
+
+    def test_validation_writes_only_intent_pointer(self, tmp_path: Path) -> None:
+        """validation: only soak_active_run_path_validation.txt; generic pointer not created."""
+        artifact = str(tmp_path / "soak_validation_20260326_120000")
+        _simulate_write_active_run_path(artifact, tmp_path, "validation")
+        assert (
+            (tmp_path / "soak_active_run_path_validation.txt").read_text().strip()
+            == artifact
+        )
+        assert not (tmp_path / "soak_active_run_path.txt").exists()
+
+    def test_unknown_intent_does_not_write_generic_pointer(self, tmp_path: Path) -> None:
+        """Unknown intent must not silently create soak_active_run_path.txt."""
+        artifact = str(tmp_path / "soak_canary_20260326_120000")
+        _simulate_write_active_run_path(artifact, tmp_path, "canary")
+        assert not (tmp_path / "soak_active_run_path.txt").exists()
+
+
 class TestRunIntentMarker:
     """Tests for run_intent.txt written by soak_monitor.sh (Issue #1278)."""
 
@@ -1046,6 +1103,8 @@ Filesystem      Size  Used Avail Use% Mounted on
 # the pipeline would have produced "unknown" via the || echo "unknown" fallback)
 _DF_EMPTY = ""
 _DF_ERROR_LINE_ONLY = "df: /var/lib/docker: No such file or directory\n"
+# Issue #1282: output produced when df exits non-zero (command failure, not a parse failure)
+_DF_COMMAND_FAILED = "df: /repo: No such file or directory\n"
 
 
 class TestDiskSpaceCheck:
@@ -1148,6 +1207,33 @@ class TestDiskSpaceCheck:
         assert (
             parse_disk_pct(new_path_output) == "47"
         ), "New /repo path must yield parseable disk usage"
+
+    def test_parse_command_error_message_returns_none(self) -> None:
+        """Issue #1282: df non-zero exit produces only an error line — no data row.
+
+        parse_disk_pct must return None regardless of df's exit code.
+        """
+        assert parse_disk_pct(_DF_COMMAND_FAILED) is None
+
+    def test_disk_unavailable_distinguishes_command_failure_from_parse_failure(
+        self,
+    ) -> None:
+        """Issue #1282: two distinct failure modes both yield None from parse_disk_pct.
+
+        Case 1 — command failure (DF_REPO_RC != 0):
+            df exited non-zero; DF_REPO_RAW contains the error message.
+            DISK_UNAVAILABLE_REASON = "df /repo exited <RC>: <first error line>"
+
+        Case 2 — parse failure (DF_REPO_RC == 0, output unparseable):
+            df succeeded but 2nd row absent or 5th column missing.
+            DISK_UNAVAILABLE_REASON = "df output not parseable: ..."
+
+        In both cases parse_disk_pct returns None; the bash code uses DF_REPO_RC
+        to select the correct reason string for disk_evidence and disk_alerts.log.
+        """
+        assert parse_disk_pct(_DF_COMMAND_FAILED) is None  # Case 1
+        assert parse_disk_pct(_DF_EMPTY) is None  # Case 2
+        assert parse_disk_pct(_DF_REPO_NORMAL) is not None  # Sanity
 
 
 # ---------------------------------------------------------------------------

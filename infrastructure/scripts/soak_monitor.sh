@@ -61,6 +61,11 @@ _write_active_run_path() {
   local artifact_path="$1"
   mkdir -p "$ARTIFACT_ROOT"
   printf '%s\n' "$artifact_path" > "$ACTIVE_RUN_FILE"
+  # Sync generic pointer for lr040 runs (Issue #1283).
+  # Validation runs must never touch soak_active_run_path.txt.
+  if [ "$SOAK_RUN_INTENT" = "lr040" ]; then
+    printf '%s\n' "$artifact_path" > "$ARTIFACT_ROOT/soak_active_run_path.txt"
+  fi
 }
 
 _find_latest_artifact_dir() {
@@ -535,8 +540,24 @@ echo -e "\n${YELLOW}[CHECK 5/5]${NC} Disk Space Check..."
 DISK_EVIDENCE_FILE="$ARTIFACT_PATH/disk_evidence_$(date -u +%Y%m%d_%H)h.txt"
 
 # Source 1: artifact filesystem (/repo partition — always mounted)
-ARTIFACT_DISK_PCT=$(df /repo 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//' || true)
-ARTIFACT_DISK_FREE=$(df -h /repo 2>/dev/null | awk 'NR==2 {print $4}' || true)
+# Issue #1282: capture raw output first so we can distinguish command failure
+# (DF_REPO_RC != 0) from parse failure (exit 0 but unparseable output).
+DF_REPO_RAW=""
+DF_REPO_RC=0
+DISK_UNAVAILABLE_REASON=""
+DF_REPO_RAW=$(df -h /repo 2>&1) || DF_REPO_RC=$?
+
+if [ "$DF_REPO_RC" -ne 0 ]; then
+  ARTIFACT_DISK_PCT=""
+  ARTIFACT_DISK_FREE=""
+  DISK_UNAVAILABLE_REASON="df /repo exited ${DF_REPO_RC}: $(printf '%s' "$DF_REPO_RAW" | head -1)"
+else
+  ARTIFACT_DISK_PCT=$(printf '%s\n' "$DF_REPO_RAW" | awk 'NR==2 {print $5}' | sed 's/%//')
+  ARTIFACT_DISK_FREE=$(printf '%s\n' "$DF_REPO_RAW" | awk 'NR==2 {print $4}')
+  if [ -z "$ARTIFACT_DISK_PCT" ]; then
+    DISK_UNAVAILABLE_REASON="df output not parseable: $(printf '%s' "$DF_REPO_RAW" | head -2 | tr '\n' ' ')"
+  fi
+fi
 
 # Source 2: Docker space via socket (images, containers, volumes, build cache)
 DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not available]")
@@ -551,7 +572,8 @@ DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not av
   if [ -n "$ARTIFACT_DISK_PCT" ]; then
     echo "  Used: ${ARTIFACT_DISK_PCT}%  |  Free: ${ARTIFACT_DISK_FREE:-unknown}"
   else
-    echo "  NOT_AVAILABLE (df /repo returned no parseable output)"
+    echo "  NOT_AVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}"
+    echo "  raw_output: $(printf '%s' "$DF_REPO_RAW" | head -3 | tr '\n' ' ')"
   fi
   echo ""
   echo "Docker space (images / containers / volumes / build cache):"
@@ -570,7 +592,7 @@ if [ -n "$ARTIFACT_DISK_PCT" ]; then
   fi
 else
   echo -e "${YELLOW}⚠️  Artifact filesystem usage unavailable — check disk_evidence file${NC}"
-  echo "$TIMESTAMP - DISK_UNAVAILABLE: df /repo returned no parseable output" >> "$ARTIFACT_PATH/disk_alerts.log"
+  echo "$TIMESTAMP - DISK_UNAVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}" >> "$ARTIFACT_PATH/disk_alerts.log"
 fi
 echo "  Evidence: $DISK_EVIDENCE_FILE"
 
