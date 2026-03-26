@@ -50,7 +50,7 @@ groups:
               refId: C
               type: threshold
         noDataState: NoData
-        execErrState: Error
+        execErrState: KeepLast
         for: 0s
         annotations:
           summary: "CDB - Orders Rejected"
