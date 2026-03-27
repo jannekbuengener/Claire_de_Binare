@@ -97,98 +97,13 @@ Kanonische 431C-Linie:
 
 ## 📊 Projektstatus
 
-> **Historical snapshot — Stand: 2026-01-07.** Kein aktueller Repo-/Ops-Status.
-> Aktueller Repo-/Engineering-Status: `CURRENT_STATUS.md` — operativer Go/No-Go: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-
-### Gesamtfortschritt
-```
-Issues geschlossen: 202 / 300 (67.3%)
-███████████████░░░░░ 67.3%
-```
-
-### 🏗️ Architektur-Komponenten
-
-| Komponente | Status | Fortschritt |
-|------------|--------|-------------|
-| **Core Modules** (6) | ✅ | 95% |
-| `core/clients/` - MEXC API Client | ✅ | 100% |
-| `core/config/` - Konfiguration | ✅ | 100% |
-| `core/domain/` - Domain Models | ✅ | 100% |
-| `core/indicators/` - Technische Indikatoren | ✅ | 100% |
-| `core/safety/` - Circuit Breaker | ✅ | 100% |
-| `core/utils/` - Rate Limiter | ✅ | 100% |
-
-### 🔧 Services (9)
-
-| Service | Beschreibung | Status |
-|---------|-------------|--------|
-| `services/allocation/` | Portfolio Allocation | 🟡 30% |
-| `services/db_writer/` | DB Persistenz | ✅ 90% |
-| `services/execution/` | Order Execution | ✅ 85% |
-| `services/market/` | Market Data | ✅ 95% |
-| `services/paper_trading/` | Paper Trading Runner | ✅ 75% |
-| `services/regime/` | Market Regime Detection | ✅ 70% |
-| `services/risk/` | Risk Management | ✅ 80% |
-| `services/signal/` | Signal Generation | ✅ 85% |
-| `services/ws/` | WebSocket Handler | ✅ 90% |
-
-**Durchschnitt Services: 80%**
-
-### 🧪 Test-Infrastruktur
-
-| Kategorie | Anzahl | Status |
-|-----------|--------|--------|
-| Test-Dateien | 27 | ✅ |
-| Test-Funktionen | 254 | ✅ |
-| Unit Tests | ✅ | 75% |
-| Integration Tests | 🟡 | 50% |
-| E2E Tests | 🟢 | 50% |
-| Performance Tests | 🟡 | 30% |
-| Chaos Tests | 🔴 | 10% |
-
-### 📈 Monitoring & Observability
-
-| Element | Anzahl | Status |
-|---------|--------|--------|
-| Grafana Dashboards | 8 | ✅ 70% |
-| Prometheus Configs | 2 | ✅ |
-| Alert Rules | 1 | 🟡 40% |
-| Docker Services | 9 | ✅ |
-| Health Checks | 9 | ✅ |
-
-### 🎯 Milestone-Fortschritt
-
-| Milestone | Beschreibung | Status |
-|-----------|-------------|--------|
-| **M1** Foundation | Basis-Architektur | ✅ 100% |
-| **M2** Trading Core | Signal/Execution | ✅ 95% |
-| **M3** Risk Layer | Circuit Breaker | ✅ 90% |
-| **M4** Market Data | WebSocket/OHLCV | ✅ 85% |
-| **M5** Persistenz | DB Schema | 🟡 65% |
-| **M6** ML Prep | Indicators | ✅ 80% |
-| **M7** Testnet | Paper Trading | 🟢 70% |
-| **M8** Stabilization | E2E Tests | 🟢 60% |
-| **M9** Production | Live Trading | 🟡 30% |
-
-### 📊 Zusammenfassung
-
-```
-┌─────────────────────────────────────────────┐
-│  PROJEKT-REIFE: 72%                         │
-│  █████████████████░░░░░░                    │
-├─────────────────────────────────────────────┤
-│  Code: 3566 Python-Dateien                  │
-│  Commits: 261 (2025)                        │
-│  Issues: 202 closed / 98 open               │
-│  Tests: 79 Test-Dateien                     │
-│  Branches: 99 remote                        │
-│  Services: 9 healthy                        │
-│  Security: 4 Vulnerabilities behoben        │
-│  CI/CD: ci + policy-gate (required)          │
-└─────────────────────────────────────────────┘
-```
-
-*Stand: 2026-01-07 (GitHub Live Data)*
+> **Kein aktueller Status hier.** Diese Section ist kein Go/No-Go-Indikator und kein operativer Readiness-Stand.
+>
+> | Quelle | Inhalt |
+> |---|---|
+> | [`CURRENT_STATUS.md`](CURRENT_STATUS.md) | Aktueller Repo-/Engineering-/Teststatus |
+> | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) | Operativer Go/No-Go (Live Readiness) |
+> | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Historischer Implementierungs-Snapshot (Stand 2026-01-07, archiviert) |
 
 ---
 
