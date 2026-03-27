@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-26 (Session 9)
-**Latest Commit**: 216d0eb — fix(grafana): KeepLast for execErrState (#1266 #1267)
+**Last Updated**: 2026-03-27 (Session 10)
+**Latest Commit**: f587d48 — #1283 doc alignment + already-landed code/test fix verification (#1287)
 
 ---
 
@@ -19,7 +19,7 @@
 - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
 - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
 - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
-- **Open Issues (alerting, ungelöst)**: #1266/#1267 — KeepLastState in Grafana 11.4.7-ubuntu nicht provisioning-kompatibel; zurückgerollt auf Error; #1269 — midnight-rollover-Verhalten, offen bis Live-Evidence
+- **Open Issues (alerting, ungelöst)**: #1266/#1267 — KeepLastState in Grafana 11.4.7-ubuntu nicht provisioning-kompatibel; zurückgerollt auf Error
 
 ---
 
@@ -69,7 +69,7 @@
 Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 Tests, 4 Klassen)
 `test_soak_monitor_timeline.py`: 71 Tests total (+46 in dieser Session)
 
-**Offen**: #1269 (midnight-rollover UTC→MESZ) — bewusst offen bis Live-Evidence vorliegt.
+**Geschlossen**: #1269 (midnight-rollover UTC→MESZ) — Live-Evidence aus `soak_test_20260325_121250` bestätigt: beide UTC-Mitternachts-Grenzen (Hour 11 + Hour 35) ohne Fragmentierung oder Schedule-Misfire passiert. #1278 Pointer-Mechanismus wirksam (2026-03-27).
 
 ### Observability / Grafana (2026-03-22)
 - Dashboard-Footprint: 15 → 2 Dashboards (#1251, Commit 6bb4532)
@@ -92,7 +92,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 3. **LR-040 echter 72h-Run:** Gestartet 2026-03-25 12:12:50 UTC auf `main` @ `ac6ab87`. Artefaktpfad: `artifacts/soak_test_20260325_121250`. Hour 25 PASS (Cutoff 2026-03-26 14:00 UTC), kumulativ >72h sauber, Container-Stabilität operativ PASS. Geplantes Ende: 2026-03-28 12:12:50 UTC.
 4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
 5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26). Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
-6. **#1269 (midnight-rollover):** Offen. De facto mitigiert durch Pointer-Mechanismus (#1278). Laufender 72h-Run liefert Live-Evidence beim nächsten UTC-00:00-Übergang.
+6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hinweis: Hour-29-Lücke ist die bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC) — nicht mitternacht-bedingt; laufender Run trägt INCONCLUSIVE-Marker, formales Gate-Ergebnis aussteht bis 2026-03-28 12:12 UTC.
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
 9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
