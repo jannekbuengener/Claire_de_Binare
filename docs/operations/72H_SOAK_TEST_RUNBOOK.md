@@ -237,7 +237,7 @@ SOAK_RUN_INTENT=validation ./infrastructure/scripts/soak_monitor.sh
 | Aspect | LR-040 (`lr040`) | Validation (`validation`) |
 |---|---|---|
 | Artifact prefix | `artifacts/soak_test_*` | `artifacts/soak_validation_*` |
-| Active-run pointer | `soak_active_run_path_lr040.txt` | `soak_active_run_path_validation.txt` |
+| Active-run pointer | `soak_active_run_path_lr040.txt` (+ `soak_active_run_path.txt` synced, Issue #1283) | `soak_active_run_path_validation.txt` |
 | Intent marker | `run_intent.txt` = `lr040` | `run_intent.txt` = `validation` |
 | Gate evaluator verdict | PASS / FAIL / INCONCLUSIVE | NOT_APPLICABLE (exit 1) |
 | Monitor mechanics | identical | identical |
