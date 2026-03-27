@@ -18,11 +18,11 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 
 ---
 
-## 🧭 Post-Live Development (nicht gate-relevant)
+## 🧭 Geplante Erweiterungen (nicht gate-relevant)
 
-**Ausbaugrad:** **~72 %**  
+**Ausbaugrad:** **~72 %**
 *(Backlog, Optimierungen, Erweiterungen – kein Einfluss auf Live-Betrieb)*
-Diese Kennzahl beschreibt **Weiterentwicklung nach Erreichen der Live Readiness**, z. B.:
+Diese Kennzahl beschreibt **geplante Weiterentwicklung ausserhalb des LR-Gates**, z. B.:
 
 - Performance-Optimierungen  
 - Zusätzliche Tests (Chaos / Perf)  
@@ -95,7 +95,7 @@ Kanonische 431C-Linie:
 - `tools/test_pack/` = sekundaerer experimenteller/importierter Bestand; nicht die repo-weite Default-Linie
 - `infrastructure/scripts/security_audit.sh` = Legacy-/Stale-Helper mit alten Repo-Annahmen; nur Referenz, nicht Harness-Canon
 
-## 📊 Projektstatus
+## 📚 Statusquellen
 
 > **Kein aktueller Status hier.** Diese Section ist kein Go/No-Go-Indikator und kein operativer Readiness-Stand.
 >
