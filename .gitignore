@@ -8,6 +8,8 @@
 # Allow official test suite in tests/ directory (must come AFTER wildcard)
 !tests/**/*.py
 !tests/**/*.js
+!cdb_agent_sdk/tests/**/*.py
+!cdb_agent_sdk/tests/**/*.js
 debug_*.py
 simple_test.*
 quick_test.*
@@ -62,6 +64,7 @@ logs
 !knowledge/logs/
 !knowledge/logs/**
 *.log
+!docs/runbooks/evidence/**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -123,6 +126,7 @@ docker-compose.dev.yml
 # Coverage
 coverage/
 *.lcov
+.coverage
 
 # Dependencies  
 node_modules/
@@ -136,13 +140,6 @@ Claire_de_Binare_Docs/
 .claude/
 .gemini/
 gha-creds-*.json
-
-# Historical root scripts guard. Keep semantics stable until a dedicated
-# scripts-policy cleanup removes the need for broad ignore + negation logic.
-/scripts/
-# LR-003 Contract Drift Guard (P0) - must be versioned
-!scripts/
-!scripts/lr003_contract_drift_guard.py
 
 # Auto Claude data directory
 .auto-claude/
