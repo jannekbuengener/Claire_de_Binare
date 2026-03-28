@@ -78,6 +78,26 @@ For active canon, use the working-repo entrypoints instead:
 - `.github/`
 - `mcp_navpack_working_repo/`
 
+## Low-Visibility Review Targets
+
+The snapshot is retained as local provenance, but not every retained cluster has
+the same operational weight.
+
+The following groups are currently the strongest candidates for lower visibility
+or a later explicit prune decision:
+
+| Cluster | Files | Current role |
+| --- | --- | --- |
+| `mcp_navpack_docs_hub` … `mcp_navpack_docs_hub_5` (5 dirs) | 31 | frozen historical navpacks; no productive navigation role |
+| `_archive/discussion_pipeline/` | 43 | deprecated pipeline archive; provenance only |
+| `_legacy_quarantine/` | 10 | quarantined legacy material; no active input role |
+| `knowledge/archive/docs_legacy/` | 16 | duplicate / obsolete legacy archive material |
+
+Full classification: `docs/meta/SNAPSHOT_CLUSTER_INVENTORY.md` (#1235).
+
+Important: low-visibility candidate does **not** mean implicit deletion.
+Deletion, relocation, or pruning remains a future explicit decision.
+
 ## Retention note
 
 Content in this snapshot is retained pending explicit review decisions.
