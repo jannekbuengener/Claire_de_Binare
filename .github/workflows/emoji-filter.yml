@@ -30,6 +30,7 @@ jobs:
     outputs:
       emojis-found: ${{ steps.scan.outputs.emojis-found }}
       blocked-count: ${{ steps.scan.outputs.blocked-count }}
+      block-pr: ${{ steps.scan.outputs.block-pr }}
       report-path: ${{ steps.scan.outputs.report-path }}
     
     steps:
@@ -65,7 +66,7 @@ jobs:
           block_pr: true
         severity:
           code: "error"
-          comments: "warning"
+          comment: "warning"
         EOF
         fi
         
