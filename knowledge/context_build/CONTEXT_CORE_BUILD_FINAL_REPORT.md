@@ -1,5 +1,17 @@
 # CONTEXT CORE BUILD SPRINT - Final Report
 
+> **HISTORICAL ARTIFACT — NOT CANONICAL**
+>
+> Dieses Dokument ist ein Sprint-Abschlussbericht vom **2025-12-28** und beschreibt den damaligen Zustand.
+> Es ist **kein aktives Steuerungsdokument** und **nicht autoritativ** für die aktuelle Session-Start-Read-Order.
+>
+> Die verbindliche Session-Start-Read-Order steht in [`CLAUDE.md`](../../CLAUDE.md) (Root).
+> Kanonische Bootstrap-Dokumente: `agents/roles/CLAUDE.md`, `agents/AGENTS.md`, `knowledge/SYSTEM.CONTEXT.md`, `CURRENT_STATUS.md`.
+>
+> Dieses Artefakt wird als Historizitäts-Nachweis für den Context-Core-Build-Sprint erhalten.
+
+---
+
 **Sprint:** Context Core Build
 **Datum:** 2025-12-28
 **Orchestrator:** Claude (Orchestrator Mode)
