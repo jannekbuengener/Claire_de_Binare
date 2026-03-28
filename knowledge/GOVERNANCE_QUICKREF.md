@@ -24,8 +24,7 @@ Canonical file (CI-enforced):
 - `governance/DELIVERY_APPROVED.yaml`
 
 The active CI workflow (`delivery-gate.yml`) reads `governance/DELIVERY_APPROVED.yaml`
-at the repo root. A duplicate exists at `knowledge/governance/DELIVERY_APPROVED.yaml`
-and is not CI-active; see #1311 for cleanup.
+at the repo root. This is the single authoritative delivery gate file.
 
 ## 3. Agent Behavior
 
