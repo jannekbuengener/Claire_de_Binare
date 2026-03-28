@@ -188,6 +188,6 @@ See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for detailed troubles
 
 - **Setup Guide**: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) - Comprehensive onboarding
 - **Service Audit (2026-01-15)**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Historical service implementation audit
-- **Governance**: [Governance Audit](governance-audit-2026-01-15.md) - Historical governance audit snapshot
+- **Governance**: [Governance Audit](docs/archive/governance-audit-2026-01-15.md) - Historical governance audit snapshot
 - **Agent Registry**: [agents/AGENTS.md](agents/AGENTS.md) - Local agent entrypoint
 - **Policies**: `knowledge/governance/` - Canonical governance and policy documents

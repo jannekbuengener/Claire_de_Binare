@@ -34,7 +34,7 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 | Operational / live-readiness status | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Autoritative Quelle fuer aktuellen Go/No-Go-Status und operative Live-Readiness-Blocker |
 | Working repo / engineering status | `CURRENT_STATUS.md` | Autoritative Quelle fuer aktuellen Repo-, Main-, Test- und aktiven Arbeitsstatus |
 | Historical implementation / audit snapshots | `PROJECT_STATUS.md`, `knowledge/CURRENT_STATUS.md` | Nur punktuelle historische Snapshots; keine aktuelle operative oder repo-weite Wahrheit |
-| Evidence / milestone / governance reports | z. B. `governance-audit-2026-01-15.md`, `CODEX_RUN_REPORT.md`, `docs/governance/status/` | Nachweis-, Audit- oder Milestone-Artefakte; nicht-kanonisch fuer aktuellen Gesamtstatus |
+| Evidence / milestone / governance reports | z. B. `docs/archive/governance-audit-2026-01-15.md`, `CODEX_RUN_REPORT.md`, `docs/governance/status/` | Nachweis-, Audit- oder Milestone-Artefakte; nicht-kanonisch fuer aktuellen Gesamtstatus |
 
 ## Status Usage Rules
 
