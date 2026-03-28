@@ -334,6 +334,13 @@ class EmojiAnalyzer:
             "by_context": {k: [asdict(d) for d in v] for k, v in by_context.items()},
             "by_file": {k: [asdict(d) for d in v] for k, v in by_file.items()},
             "blocked_count": len([d for d in self.detections if not d.is_whitelisted]),
+            "error_count": len(
+                [
+                    d
+                    for d in self.detections
+                    if not d.is_whitelisted and d.severity == "error"
+                ]
+            ),
             "config": self.config,
         }
 
@@ -425,16 +432,22 @@ def main():
             with open(os.environ["GITHUB_STEP_SUMMARY"], "w") as f:
                 f.write(Path("emoji-report.md").read_text())
 
-    # Exit Code basierend auf Konfiguration
+    # Exit Code: nur echte error-Severity blockiert, und nur in strict mode
+    error_count = len(
+        [d for d in analyzer.detections if not d.is_whitelisted and d.severity == "error"]
+    )
     blocked_count = len([d for d in analyzer.detections if not d.is_whitelisted])
 
-    if blocked_count > 0:
+    if error_count > 0:
         if analyzer.config["detection"]["mode"] == "strict":
-            print(f"\n❌ FEHLER: {blocked_count} blockierte Emojis gefunden!")
+            print(f"\n❌ FEHLER: {error_count} Emojis mit Error-Severity gefunden!")
             sys.exit(1)
         else:
-            print(f"\n⚠️ WARNUNG: {blocked_count} Emojis gefunden!")
+            print(f"\n⚠️ WARNUNG: {error_count} Emojis mit Error-Severity gefunden!")
             sys.exit(0)
+    elif blocked_count > 0:
+        print(f"\n⚠️ WARNUNG: {blocked_count} Emojis gefunden (keine Error-Severity).")
+        sys.exit(0)
     else:
         print("\n✅ Keine problematischen Emojis gefunden!")
         sys.exit(0)
