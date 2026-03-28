@@ -86,13 +86,25 @@ No content has been deleted or reorganized as part of this inventory.
 |---|---|
 | Files | ~400 |
 | Class | **frozen-provenance** |
-| Description | Mirror of the docs-hub `knowledge/` tree. Includes `verlosung/VERLOSUNG_SECRET_MANIFEST.md` (secret-manifest provenance). Also contains `knowledge/archive/docs_legacy/` (see cluster #4 above). |
+| Description | Mirror of the docs-hub `knowledge/` tree. Also contains `knowledge/archive/docs_legacy/` (see cluster #4 above). |
 | Active references outside snapshot | Scanned by `docs_hub_rag_adapter.py` **only in snapshot-fallback mode** (`DOCS_HUB_PATH` pointing at snapshot, or working-repo invalid). Normal operation uses the working-repo root; snapshot is never the primary target. |
 | Runtime/tool dependency | The adapter uses `DEFAULT_INCLUDE_DIRS = ("knowledge", "agents", "meta")` — no specific subtrees are hardcoded. `cdb_docs_index.yaml` at snapshot root is referenced as a legacy index name (`ROOT_INDEX_FILES`). The named subtree list in `DOCS_HUB_DELETE_READINESS.md` describes snapshot content, not adapter code paths. |
 | Deletion readiness | Deferred — provenance preference; low operational risk but prune decision requires separate review |
 | Blocker | `cdb_docs_index.yaml` root file (compat name in `ROOT_INDEX_FILES`); the bulk `knowledge/` tree has no hard code dependency |
 
-### 7. Root index files
+### 7. `verlosung/` (snapshot root)
+
+| Field | Value |
+|---|---|
+| Files | 2 (`verlosung/README.md`, `verlosung/VERLOSUNG_SECRET_MANIFEST.md`) |
+| Class | **frozen-provenance** |
+| Description | Snapshot-root directory containing the secret-manifest provenance record from the split-repo era. |
+| Active references outside snapshot | None |
+| Runtime/tool dependency | None |
+| Deletion readiness | Deferred — provenance preference; prune requires separate review |
+| Blocker | Secret-manifest provenance record only |
+
+### 8. Root index files
 
 | Field | Value |
 |---|---|
@@ -113,7 +125,7 @@ visibility or a later explicit prune decision.
 | Cluster | Files | Active references | Operational weight |
 |---|---|---|---|
 | `mcp_navpack_docs_hub*` (5 dirs) | 31 | None | Frozen historical navpacks; no productive navigation role |
-| `_archive/discussion_pipeline/` | 43 | None | Deprecated pipeline archive; provenance only |
+| `_archive/discussion_pipeline/` | 43 | Meta-docs/deprecation notice only | Deprecated pipeline archive; provenance only |
 | `_legacy_quarantine/` | 10 | None | Quarantined legacy material; no active input role |
 | `knowledge/archive/docs_legacy/` | 16 | None | Duplicate / obsolete legacy archive material |
 | **Total** | **100** | | |
