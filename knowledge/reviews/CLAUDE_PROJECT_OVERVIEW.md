@@ -1,8 +1,12 @@
 ---
 title: Claude Project Overview
-status: draft
+status: historical
 date: 2025-12-19
 owner: codex
+note: >
+  Pre-consolidation snapshot. The Claire_de_Binare_Docs repository has been retired.
+  The Working Repo (Claire_de_Binare) is now the single canonical source.
+  Do not use this file as an active context source.
 ---
 # Claude Project Overview
 
