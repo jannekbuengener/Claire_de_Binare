@@ -109,7 +109,7 @@ cdb_paper_runner  Up X minutes (healthy)
 | `signals` | cdb_signal (signal/service.py:316) | cdb_risk (risk/service.py:758), cdb_db_writer (db_writer.py:278) |
 | `orders` | cdb_risk (risk/service.py:1991) | cdb_execution (execution/service.py:224), cdb_db_writer (db_writer.py:278) |
 | `order_results` | cdb_execution (execution/service.py:273) | cdb_risk (risk/service.py:762), cdb_db_writer (db_writer.py:278) |
-| `alerts` | cdb_risk (risk/service.py:2011); cdb_execution konfiguriert (execution/config.py:53), Publish-Callsite in service.py nicht vorhanden | kein Subscriber in Service-Code verifiziert |
+| `alerts` | cdb_risk (risk/service.py:2011) | kein Subscriber im Repo verifiziert |
 | `portfolio_snapshots` | cdb_paper_runner (tools/paper_trading/service.py:433-434) | cdb_db_writer (db_writer.py:278) |
 
 ### Redis Streams
