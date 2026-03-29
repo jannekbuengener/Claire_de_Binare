@@ -179,3 +179,7 @@ scripts/cdb_ops.ps1
 
 # Decision Contract audit records (generated at runtime + by tests)
 reports/decision_contract/
+
+# Historical governance work directories (agent-generated snapshots/caches/tmp)
+# Previously only in .git/info/exclude — ported here for portability
+governance_*_work/
