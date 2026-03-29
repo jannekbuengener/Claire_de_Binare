@@ -1,6 +1,6 @@
 # Sessions Log Index
 
-This directory stores session log notes and investigation records for Docs Hub work.
+This directory stores session log notes and investigation records.
 
 - [2025-12-28-issue-cleanup.md](2025-12-28-issue-cleanup.md)
 - [2025-12-29-cdb-ws-implementation.md](2025-12-29-cdb-ws-implementation.md)
