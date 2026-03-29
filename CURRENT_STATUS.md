@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-27 (Session 11)
-**Latest Commit**: 5a50700 — devops(gitignore): fix test/evidence tracking and remove dead ignore rules (#1234) (#1290)
+**Last Updated**: 2026-03-29 (Session 12)
+**Latest Commit**: 77711b8 — docs(inventory): reconcile SERVICE_CATALOG and ARCHITECTURE_MAP with BLUE/RED stack reality (#1302)
 
 ---
 
@@ -12,6 +12,7 @@
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
+  - #1322: docs(inventory): SERVICE_CATALOG + ARCHITECTURE_MAP BLUE/RED reconcile (#1302) — wartet auf Merge
   - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
   - #1217: fix(digest): auto-close weekly digest
   - #1207: feat(market): V3 shadow mode — cdb_market write path
