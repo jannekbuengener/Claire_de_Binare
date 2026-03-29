@@ -32,11 +32,13 @@ function Write-Info($text)    { Write-Host ('[INFO]  {0}' -f $text) -ForegroundC
 function Write-Warning($text) { Write-Host ('[WARN]  {0}' -f $text) -ForegroundColor Yellow }
 function Write-Failure($text) { Write-Host ('[FAIL]  {0}' -f $text) -ForegroundColor Red }
 
-$composeFile = 'docker-compose.yml'
+$composeBlue = 'infrastructure/compose/compose.blue.yml'
+$composeRed  = 'infrastructure/compose/compose.red.yml'
 $envFile = '.env'
 $secretsFolder = '.secrets'
 $requiredSecrets = @('redis_password','postgres_password','grafana_password')
-$expectedServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_ws','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
+$blueServices = @('cdb_redis','cdb_postgres','cdb_market','cdb_candles','cdb_regime','cdb_allocation','cdb_risk','cdb_execution','cdb_db_writer','cdb_paper_runner')
+$redServices  = @('cdb_ws','cdb_signal','cdb_prometheus','cdb_grafana')
 
 Write-Section 'Docker engine'
 try {
@@ -53,7 +55,8 @@ try {
 
 Write-Section 'Configuration files'
 $configIssues = @()
-if (-not (Test-Path $composeFile)) { $configIssues += $composeFile }
+if (-not (Test-Path $composeBlue)) { $configIssues += $composeBlue }
+if (-not (Test-Path $composeRed))  { $configIssues += $composeRed }
 if (-not (Test-Path $envFile)) { $configIssues += $envFile }
 if (-not (Test-Path $secretsFolder)) { $configIssues += $secretsFolder }
 foreach ($secret in $requiredSecrets) {
@@ -71,20 +74,26 @@ if ($configIssues.Count -gt 0) {
 }
 Write-Success 'Required configuration and secrets are present.'
 
-Write-Section 'Container health'
-try {
-    $psOutput = docker compose ps --format json 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw 'docker compose ps failed'
+function Get-ComposeServices($composeFile, $label) {
+    try {
+        $psOutput = docker compose -f $composeFile ps --format json 2>&1
+        if ($LASTEXITCODE -ne 0) { throw ('docker compose ps failed for {0}' -f $label) }
+        $svc = if ([string]::IsNullOrWhiteSpace($psOutput)) { @() } else { $psOutput | ConvertFrom-Json }
+        if ($svc -isnot [array]) { $svc = @($svc) }
+        return $svc
+    } catch {
+        Write-Warning ('Unable to read {0} stack status: {1}' -f $label, $_)
+        return @()
     }
-    $services = if ([string]::IsNullOrWhiteSpace($psOutput)) { @() } else { $psOutput | ConvertFrom-Json }
-    if ($services -isnot [array]) {
-        $services = @($services)
-    }
-} catch {
-    Write-Failure ('Unable to read docker compose status: {0}' -f $_)
-    exit 1
 }
+
+Write-Section 'BLUE stack health'
+$blueRunning = Get-ComposeServices $composeBlue 'BLUE'
+
+Write-Section 'RED stack health'
+$redRunning = Get-ComposeServices $composeRed 'RED'
+
+$services = @($blueRunning) + @($redRunning)
 
 if ($services.Count -eq 0) {
     Write-Warning 'No services are running; stack does not appear to be up.'
@@ -132,12 +141,26 @@ if ($stopped.Count -gt 0) {
 }
 
 Write-Section 'Summary'
-if (($unhealthy.Count -eq 0) -and ($stopped.Count -eq 0)) {
+
+# Classify issues by stack layer
+$blueIssues = @($unhealthy + $stopped | Where-Object { $_.Service -in $blueServices })
+$redIssues  = @($unhealthy + $stopped | Where-Object { $_.Service -in $redServices })
+
+if ($blueIssues.Count -eq 0 -and $redIssues.Count -eq 0) {
     Write-Success 'All monitored services appear healthy.'
     exit 0
 }
 
-Write-Failure 'Stack has issues; check the logs above.'
+if ($blueIssues.Count -gt 0) {
+    Write-Failure ('BLUE core has issues ({0} service(s)); check the logs above.' -f $blueIssues.Count)
+}
+if ($redIssues.Count -gt 0) {
+    Write-Warning ('RED layer has issues ({0} service(s)); check the logs above.' -f $redIssues.Count)
+}
+
 Write-Info 'Run ./tools/cdb-stack-doctor.ps1 again after addressing errors.'
 Write-Info 'If secrets changed, run ./tools/cdb-secrets-sync.ps1.'
-exit 1
+
+# BLUE failures are hard errors; RED-only issues are warnings
+if ($blueIssues.Count -gt 0) { exit 1 }
+exit 0
