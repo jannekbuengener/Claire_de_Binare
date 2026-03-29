@@ -108,7 +108,7 @@ cdb_paper_runner  Up X minutes (healthy)
 ### Redis Channels
 | Channel | Publisher | Subscriber(s) |
 |---------|-----------|---------------|
-| market_data | cdb_ws | cdb_signal |
+| market_data | cdb_ws | cdb_market, cdb_candles, cdb_signal, cdb_paper_runner |
 | signals | cdb_signal | cdb_risk, cdb_db_writer |
 | orders | cdb_risk | cdb_execution, cdb_db_writer |
 | order_results | cdb_execution | cdb_risk, cdb_db_writer |
@@ -166,3 +166,4 @@ network-prod.yml  -> Network Isolation (optional)
 | Datum | Aenderung | Durch |
 |-------|-----------|-------|
 | 2025-12-28 | Initiale Erstellung via Context Build Sprint | Claude (Orchestrator) |
+| 2026-03-29 | market_data Subscriber-Liste: cdb_market, cdb_candles, cdb_paper_runner ergaenzt (#1323) | Claude |
