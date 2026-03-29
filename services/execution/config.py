@@ -50,7 +50,6 @@ DATABASE_URL = os.getenv(
 # Topics
 TOPIC_ORDERS = "orders"  # Subscribe: Orders from Risk Manager
 TOPIC_ORDER_RESULTS = "order_results"  # Publish: Execution results
-TOPIC_ALERTS = "alerts"  # Publish: Execution alerts
 STREAM_ORDER_RESULTS = os.getenv("STREAM_ORDER_RESULTS", "stream.fills")
 STREAM_BOT_SHUTDOWN = os.getenv("STREAM_BOT_SHUTDOWN", "stream.bot_shutdown")
 

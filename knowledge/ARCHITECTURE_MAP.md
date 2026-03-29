@@ -122,7 +122,7 @@ cdb_reports           Up (healthy)
 | signals | cdb_signal | cdb_risk, cdb_db_writer |
 | orders | cdb_risk | cdb_execution, cdb_db_writer |
 | order_results | cdb_execution | cdb_risk, cdb_db_writer |
-| alerts | cdb_risk | (Monitoring) |
+| alerts | cdb_risk | — (kein verifizierter Subscriber; Fire-and-forget) |
 | portfolio_snapshots | cdb_paper_runner | cdb_db_writer |
 
 ### Event Types
