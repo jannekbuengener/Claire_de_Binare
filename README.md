@@ -7,8 +7,8 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 **Canonical source:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 
 - **Scope basis:** `ROADMAP.yaml` + `LR-001..LR-007-STATE.yaml` + aktuelle GitHub-LR-Issues
-- **Last reconciliation:** 2026-03-15
-- **Roadmap status:** `P0` DONE, `P1` bis `P5` nicht abgeschlossen
+- **Last reconciliation:** 2026-03-29
+- **Roadmap status:** `P0` + `P2` DONE; `P1` + `P4` PARTIAL; `P3` + `P5` OPEN
 - **Human gate:** Keine Echtgeld-Freigabe ohne vollstaendige Evidenz und explizite menschliche Freigabe
 
 **Einordnung:**<br>
