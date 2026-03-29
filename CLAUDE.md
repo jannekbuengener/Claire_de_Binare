@@ -127,7 +127,7 @@ cdb_ws → Redis pub/sub (market_data) → cdb_market (market_state)
                                       → cdb_candles (stream.candles_1m)
                                            → cdb_regime
                                                 → cdb_allocation
-cdb_signal → risk_requests → cdb_risk → approved_orders → cdb_execution → MEXC API
+cdb_signal → signals → cdb_risk → orders → cdb_execution → MEXC API
                                       → cdb_db_writer → Postgres
 ```
 
