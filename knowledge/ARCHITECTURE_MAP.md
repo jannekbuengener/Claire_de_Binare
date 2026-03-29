@@ -135,11 +135,7 @@ cdb_paper_runner  Up X minutes (healthy)
 
 ## 6. Known Drifts (zu beheben)
 
-| Drift | Beschreibung | Priority |
-|-------|--------------|----------|
-| prod.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| tls.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| CLAUDE.md Port | Signal als Port 8001 dokumentiert (ist 8005) | MEDIUM |
+_Keine bekannten Drifts._
 
 ---
 
@@ -166,3 +162,4 @@ network-prod.yml  -> Network Isolation (optional)
 | Datum | Aenderung | Durch |
 |-------|-----------|-------|
 | 2025-12-28 | Initiale Erstellung via Context Build Sprint | Claude (Orchestrator) |
+| 2026-03-29 | Section 6: alle drei veralteten Drift-Eintraege entfernt (prod.yml/tls.yml/CLAUDE.md — alle bereits behoben) | Claude Code |
