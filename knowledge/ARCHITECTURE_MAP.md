@@ -41,6 +41,10 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | WebSocket | cdb_ws | 8000 | Market Data Stream |
+| Candles | cdb_candles | 8007 | Tick→Candle Aggregation |
+| Regime | cdb_regime | 8008 | Marktregime-Klassifikation (ADX/ATR) |
+| Allocation | cdb_allocation | 8006 | Regime→Allokations-Mapping |
+| Market | cdb_market | 8009 | Market-State Redis-Key Owner (post-#1201) |
 | Signal | cdb_signal | 8005 | Signal Generation |
 | Risk | cdb_risk | 8002 | Risk Management, Circuit Breaker |
 | Execution | cdb_execution | 8003 | Order Execution |
@@ -62,14 +66,6 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 |---------|-----------|-------------|
 | Loki | cdb_loki | `-Logging` Flag |
 | Promtail | cdb_promtail | `-Logging` Flag |
-
-### Deaktiviert (Code vorhanden)
-
-| Service | Grund | Action Required |
-|---------|-------|-----------------|
-| cdb_allocation | Fehlende Env-Vars | ALLOCATION_* definieren |
-| cdb_regime | Fehlende Env-Vars | REGIME_* definieren |
-| cdb_market | Nicht implementiert | service.py verifizieren |
 
 ---
 
@@ -105,15 +101,29 @@ cdb_paper_runner  Up X minutes (healthy)
 
 ## 4. Key Dataflows
 
-### Redis Channels
+### Redis Pub/Sub Channels
+
 | Channel | Publisher | Subscriber(s) |
 |---------|-----------|---------------|
-| market_data | cdb_ws | cdb_signal |
-| signals | cdb_signal | cdb_risk, cdb_db_writer |
-| orders | cdb_risk | cdb_execution, cdb_db_writer |
-| order_results | cdb_execution | cdb_risk, cdb_db_writer |
-| alerts | cdb_risk | (Monitoring) |
-| portfolio_snapshots | cdb_paper_runner | cdb_db_writer |
+| `market_data` | cdb_ws (ws/service.py:143) | cdb_candles (candles/service.py:321), cdb_signal (signal/service.py:191), cdb_market (market/service.py:359) |
+| `signals` | cdb_signal (signal/service.py:316) | cdb_risk (risk/service.py:758), cdb_db_writer (db_writer.py:278) |
+| `orders` | cdb_risk (risk/service.py:1991) | cdb_execution (execution/service.py:224), cdb_db_writer (db_writer.py:278) |
+| `order_results` | cdb_execution (execution/service.py:273) | cdb_risk (risk/service.py:762), cdb_db_writer (db_writer.py:278) |
+| `alerts` | cdb_risk (risk/service.py:2011); cdb_execution konfiguriert (execution/config.py:53), Publish-Callsite in service.py nicht vorhanden | kein Subscriber in Service-Code verifiziert |
+| `portfolio_snapshots` | cdb_paper_runner (tools/paper_trading/service.py:433-434) | cdb_db_writer (db_writer.py:278) |
+
+### Redis Streams
+
+| Stream | Publisher (XADD) | Consumer (XREAD/XREVRANGE) | Status |
+|--------|-----------------|---------------------------|--------|
+| `stream.candles_1m` | cdb_candles (candles/service.py:91) | cdb_regime (regime/service.py:198 xread), cdb_market (market/service.py:214 xrevrange) | aktiv |
+| `stream.regime_signals` | cdb_regime (regime/service.py:101) | cdb_allocation (allocation/service.py:353 xread, :329 xrevrange bootstrap), cdb_risk (risk/service.py:1278 xread), cdb_market (market/service.py:154 xrevrange), cdb_candles (candles/service.py:129,215 xrevrange) | aktiv |
+| `stream.allocation_decisions` | cdb_allocation (allocation/service.py:240) | cdb_risk (risk/service.py:1331 xread, :1304 xrevrange bootstrap) | aktiv |
+| `stream.fills` | cdb_execution (execution/service.py:291) | cdb_allocation (allocation/service.py, main loop via config.fills_stream) | aktiv |
+| `stream.bot_shutdown` | cdb_risk (risk/service.py:2033) | cdb_execution (execution/service.py:656 xread), cdb_allocation (allocation/service.py, main loop via config.shutdown_stream) | aktiv |
+| `stream.signals` | cdb_signal (signal/service.py:318) | kein xread-Consumer im Repo | write-only Audit-Log |
+| `stream.orders` | cdb_risk (risk/service.py:1993) | kein xread-Consumer im Repo | write-only Audit-Log |
+| `stream.orders_blocked` | cdb_risk (risk/service.py:1659) | kein xread-Consumer im Repo | write-only Audit-Log |
 
 ### Event Types
 - `SIGNAL_GENERATED` - Handelssignal erzeugt
@@ -137,9 +147,8 @@ cdb_paper_runner  Up X minutes (healthy)
 
 | Drift | Beschreibung | Priority |
 |-------|--------------|----------|
-| prod.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| tls.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| CLAUDE.md Port | Signal als Port 8001 dokumentiert (ist 8005) | MEDIUM |
+| services/signal/README.md Port | README dokumentiert Port 8001, tatsaechlicher Port ist 8005 | LOW |
+| CLAUDE.md Dataflow-Terminologie | Nennt `risk_requests`/`approved_orders` statt realer Channel-Namen `signals`/`orders` | LOW |
 
 ---
 
@@ -166,3 +175,4 @@ network-prod.yml  -> Network Isolation (optional)
 | Datum | Aenderung | Durch |
 |-------|-----------|-------|
 | 2025-12-28 | Initiale Erstellung via Context Build Sprint | Claude (Orchestrator) |
+| 2026-03-29 | Section 2 aktive Services ergaenzt (candles/regime/allocation/market); Deaktiviert-Abschnitt entfernt; Section 4 Redis Channels vervollstaendigt, Redis Streams Tabelle hinzugefuegt; Section 6 Known Drifts auf verifizierten IST-Stand (Issue #1307) | Claude (Code) |
