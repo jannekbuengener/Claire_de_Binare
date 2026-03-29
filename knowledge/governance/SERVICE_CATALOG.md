@@ -20,30 +20,57 @@
 
 ## Applikations-Services
 
-| Service | Container | Code | Dockerfile | Compose | Status | Begründung |
-|---------|-----------|------|------------|---------|--------|------------|
-| **Signal** | cdb_signal | services/signal/ (6 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Signal Engine, Momentum-Strategie |
-| **Risk** | cdb_risk | services/risk/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Risk Management, Circuit Breaker |
-| **Execution** | cdb_execution | services/execution/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Order Execution, MEXC Integration |
-| **DB Writer** | cdb_db_writer | services/db_writer/ (db_writer.py) | ✅ | ✅ aktiv | **AKTIV** | PostgreSQL Persistenz |
-| **WebSocket** | cdb_ws | services/ws/ (service.py) | ✅ | ✅ aktiv | **AKTIV** | Market Data Stream |
-| **Paper Runner** | cdb_paper_runner | tools/paper_trading/ (service.py, 15k lines) | ✅ | ✅ aktiv | **AKTIV** | Paper Trading Orchestrator |
-| **Allocation** | cdb_allocation | services/allocation/ (3 files, 378 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (ALLOCATION_*) |
-| **Regime** | cdb_regime | services/regime/ (4 files, 213 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (REGIME_*) |
-| **Market** | cdb_market | services/market/ (2 files, 82 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert laut stack_up.ps1: "not implemented" |
+### BLUE Stack (core / always-on — compose.blue.yml)
+
+| Service | Container | Code | Port | Status | Funktion |
+|---------|-----------|------|------|--------|----------|
+| **Market** | cdb_market | services/market/ | 8009 | **AKTIV** | Market state service |
+| **Candles** | cdb_candles | services/candles/ | 8007 | **AKTIV** | Candle aggregation |
+| **Regime** | cdb_regime | services/regime/ | 8008 | **AKTIV** | Regime classification |
+| **Allocation** | cdb_allocation | services/allocation/ | 8006 | **AKTIV** | Allocation control |
+| **Risk** | cdb_risk | services/risk/ | 8002 | **AKTIV** | Risk management |
+| **Execution** | cdb_execution | services/execution/ | 8003 | **AKTIV** | Order execution |
+| **DB Writer** | cdb_db_writer | services/db_writer/ | — | **AKTIV** | PostgreSQL persistence |
+| **Paper Runner** | cdb_paper_runner | tools/paper_trading/ | 8004 | **AKTIV** | Paper trading orchestration |
+
+### RED Stack (standardmäßig mit BLUE aktiv; failure-isolated und separat restartbar — compose.red.yml)
+
+BLUE-only ist degradierter Betrieb / Maintenance-Fall, nicht der Sollzustand.
+
+| Service | Container | Code | Port | Status | Funktion |
+|---------|-----------|------|------|--------|----------|
+| **WebSocket** | cdb_ws | services/ws/ | 8000 | **AKTIV** | Market data ingest |
+| **Signal** | cdb_signal | services/signal/ | 8005 | **AKTIV** | Signal generation |
 
 ---
 
 ## Infrastruktur-Services
 
-| Service | Container | Image | Compose | Status | Begründung |
-|---------|-----------|-------|---------|--------|------------|
-| **Redis** | cdb_redis | redis:7-alpine | ✅ aktiv | **AKTIV** | Cache, Pub/Sub |
-| **PostgreSQL** | cdb_postgres | postgres:15-alpine | ✅ aktiv | **AKTIV** | Persistenz |
-| **Prometheus** | cdb_prometheus | prom/prometheus:v2.51.0 | ✅ aktiv | **AKTIV** | Metrics Collection |
-| **Grafana** | cdb_grafana | grafana/grafana:11.4.0 | ✅ aktiv | **AKTIV** | Dashboards |
-| **Loki** | cdb_loki | grafana/loki:2.9.0 | ✅ logging.yml | **AKTIV** | Log Aggregation |
-| **Promtail** | cdb_promtail | grafana/promtail:2.9.0 | ✅ logging.yml | **AKTIV** | Log Shipping |
+### BLUE Stack (compose.blue.yml)
+
+| Service | Container | Port | Status | Funktion |
+|---------|-----------|------|--------|----------|
+| **Redis** | cdb_redis | 6379 | **AKTIV** | Cache, Pub/Sub |
+| **PostgreSQL** | cdb_postgres | 5432 | **AKTIV** | Persistenz |
+
+### RED Stack (compose.red.yml)
+
+| Service | Container | Port | Status | Funktion |
+|---------|-----------|------|--------|----------|
+| **Prometheus** | cdb_prometheus | 19090 | **AKTIV** | Metrics collection |
+| **Grafana** | cdb_grafana | 3000 | **AKTIV** | Dashboards |
+| **Postgres Exporter** | cdb_postgres_exporter | 9187 | **AKTIV** | PostgreSQL metrics |
+| **Redis Exporter** | cdb_redis_exporter | 9121 | **AKTIV** | Redis metrics |
+| **cAdvisor** | cdb_cadvisor | — | **AKTIV** | Container metrics |
+| **Reports** | cdb_reports | — | **AKTIV** | Daily order summary |
+
+### Logging-Stack (logging.yml — nicht in compose.red.yml, separat opt-in)
+
+| Service | Container | Layer | Funktion |
+|---------|-----------|-------|----------|
+| **Loki** | cdb_loki | logging.yml | Log aggregation |
+| **Promtail** | cdb_promtail | logging.yml | Log shipping |
+| **Alertmanager** | cdb_alertmanager | logging.yml | Alert routing (SMTP) |
 
 ---
 
@@ -59,68 +86,31 @@
 
 ---
 
-## GAP-Analyse
-
-### Aktuell keine kritischen GAPs
-
-✅ **Signal Service** wurde am 2025-12-28 aktiviert:
-- Container: `cdb_signal` (Port 8005)
-- Vorher: War als `cdb_core` fehlbenannt
-- Fix: Umbenennung + korrekter Port
-
-### Allocation/Regime/Market - BEREIT aber deaktiviert
-
-Diese Services haben vollständigen Code, sind aber in `dev.yml` auskommentiert.
-
-**Begründung laut Code-Kommentare:**
-- allocation: "missing env vars"
-- regime: "missing env vars"
-- market: "not implemented" (widersprüchlich - service.py existiert!)
-
-**Action Required:**
-- [ ] Env-Vars für allocation/regime definieren
-- [ ] market Status klären (Code existiert!)
-
----
-
 ## Compose Layer Architektur
 
 ```
-base.yml          → Infrastruktur (Redis, Postgres, Prometheus, Grafana)
-  ↓
-dev.yml           → Applikations-Services (Core, Risk, Execution, etc.)
-  ↓
-logging.yml       → Loki + Promtail
-  ↓
-tls.yml           → TLS Certificates (optional)
-  ↓
-healthchecks-strict.yml → Strikte Health Checks
-  ↓
-network-prod.yml  → Production Network Isolation
+compose.blue.yml  → BLUE core (Redis, Postgres, market, candles, regime, allocation,
+                    risk, execution, db_writer, paper_runner)
+compose.red.yml   → RED co-run (ws, signal, prometheus, grafana, exporters, reports)
+logging.yml       → Logging-Stack opt-in (Loki, Promtail, Alertmanager)
+tls.yml           → TLS (opt-in)
+healthchecks-strict.yml → Strikte Health Checks (opt-in)
 ```
 
 ---
 
-## Stack-Start Befehl (vollständig)
+## Stack-Start Befehl (kanonisch)
 
 ```bash
-# Development mit Logging
-docker compose \
-  --env-file ".cdb_local/.secrets/.env.compose" \
-  -f infrastructure/compose/base.yml \
-  -f infrastructure/compose/dev.yml \
-  -f infrastructure/compose/logging.yml \
-  up -d
+# Einmalig
+docker network create cdb_network
 
-# Production (mit TLS + strict healthchecks)
-docker compose \
-  --env-file ".cdb_local/.secrets/.env.compose" \
-  -f infrastructure/compose/base.yml \
-  -f infrastructure/compose/dev.yml \
-  -f infrastructure/compose/logging.yml \
-  -f infrastructure/compose/tls.yml \
-  -f infrastructure/compose/healthchecks-strict.yml \
-  up -d
+# BLUE + RED (Sollbetrieb)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# Oder via Makefile
+make docker-up
 ```
 
 ---
@@ -129,8 +119,6 @@ docker compose \
 
 - [ ] Alle AKTIV-Services laufen (`docker ps`)
 - [ ] Alle Services "healthy" (keine "unhealthy" oder "starting")
-- [ ] GAP-Services bewusst nicht gestartet (dokumentiert)
-- [ ] BEREIT-Services bewusst deaktiviert (Begründung aktuell)
 - [ ] Keine unbekannten Container im Stack
 
 ---

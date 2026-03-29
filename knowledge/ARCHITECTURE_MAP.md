@@ -36,40 +36,43 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
                                     [DB Writer] --> [PostgreSQL]
 ```
 
-### Services (AKTIV)
-
-| Service | Container | Port | Funktion |
-|---------|-----------|------|----------|
-| WebSocket | cdb_ws | 8000 | Market Data Stream |
-| Signal | cdb_signal | 8005 | Signal Generation |
-| Risk | cdb_risk | 8002 | Risk Management, Circuit Breaker |
-| Execution | cdb_execution | 8003 | Order Execution |
-| DB Writer | cdb_db_writer | - | Event Persistenz |
-| Paper Runner | cdb_paper_runner | 8004 | Paper Trading Orchestrator |
-
-### Infrastruktur (AKTIV)
+### BLUE Stack — core / always-on (compose.blue.yml)
 
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | Redis | cdb_redis | 6379 | Cache, Pub/Sub |
 | PostgreSQL | cdb_postgres | 5432 | Persistenz |
+| Market | cdb_market | 8009 | Market state service |
+| Candles | cdb_candles | 8007 | Candle aggregation |
+| Regime | cdb_regime | 8008 | Regime classification |
+| Allocation | cdb_allocation | 8006 | Allocation control |
+| Risk | cdb_risk | 8002 | Risk management |
+| Execution | cdb_execution | 8003 | Order execution |
+| DB Writer | cdb_db_writer | — | PostgreSQL persistence |
+| Paper Runner | cdb_paper_runner | 8004 | Paper trading orchestration |
+
+### RED Stack — standardmäßig mit BLUE aktiv; failure-isolated (compose.red.yml)
+
+BLUE-only ist degradierter Betrieb / Maintenance-Fall, nicht der Sollzustand.
+
+| Service | Container | Port | Funktion |
+|---------|-----------|------|----------|
+| WebSocket | cdb_ws | 8000 | Market data ingest |
+| Signal | cdb_signal | 8005 | Signal generation |
 | Prometheus | cdb_prometheus | 19090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
+| Postgres Exporter | cdb_postgres_exporter | 9187 | PostgreSQL metrics |
+| Redis Exporter | cdb_redis_exporter | 9121 | Redis metrics |
+| cAdvisor | cdb_cadvisor | — | Container metrics |
+| Reports | cdb_reports | — | Daily order summary |
 
-### Optional (Logging Stack)
+### Logging-Stack — separat opt-in (logging.yml)
 
-| Service | Container | Aktivierung |
-|---------|-----------|-------------|
-| Loki | cdb_loki | `-Logging` Flag |
-| Promtail | cdb_promtail | `-Logging` Flag |
-
-### Deaktiviert (Code vorhanden)
-
-| Service | Grund | Action Required |
-|---------|-------|-----------------|
-| cdb_allocation | Fehlende Env-Vars | ALLOCATION_* definieren |
-| cdb_regime | Fehlende Env-Vars | REGIME_* definieren |
-| cdb_market | Nicht implementiert | service.py verifizieren |
+| Service | Container | Funktion |
+|---------|-----------|----------|
+| Loki | cdb_loki | Log aggregation |
+| Promtail | cdb_promtail | Log shipping |
+| Alertmanager | cdb_alertmanager | Alert routing (SMTP) |
 
 ---
 
@@ -77,28 +80,36 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 ### Verification Command
 ```powershell
-# Stack starten
-.\infrastructure\scripts\stack_up.ps1 -Profile dev
-
-# Vollstaendigkeitspruefung
-.\infrastructure\scripts\stack_verify.ps1
+# Stack starten (kanonisch)
+.\tools\cdb.ps1 runtime up
 
 # Schnellcheck
 docker ps --filter "name=cdb_" --format "table {{.Names}}\t{{.Status}}"
+
+# Vollstaendigkeitspruefung
+.\tools\cdb.ps1 stack verify
 ```
 
-### Erwarteter Output (healthy)
+### Erwarteter Output (healthy — BLUE + RED Sollbetrieb)
 ```
-cdb_redis         Up X minutes (healthy)
-cdb_postgres      Up X minutes (healthy)
-cdb_prometheus    Up X minutes (healthy)
-cdb_grafana       Up X minutes (healthy)
-cdb_ws            Up X minutes (healthy)
-cdb_signal        Up X minutes (healthy)
-cdb_risk          Up X minutes
-cdb_execution     Up X minutes
-cdb_db_writer     Up X minutes (healthy)
-cdb_paper_runner  Up X minutes (healthy)
+cdb_postgres          Up X minutes (healthy)
+cdb_redis             Up X minutes (healthy)
+cdb_market            Up X minutes (healthy)
+cdb_candles           Up X minutes (healthy)
+cdb_regime            Up X minutes (healthy)
+cdb_allocation        Up X minutes (healthy)
+cdb_risk              Up X minutes
+cdb_execution         Up X minutes
+cdb_db_writer         Up X minutes (healthy)
+cdb_paper_runner      Up X minutes (healthy)
+cdb_ws                Up X minutes (healthy)
+cdb_signal            Up X minutes (healthy)
+cdb_prometheus        Up X minutes (healthy)
+cdb_grafana           Up X minutes (healthy)
+cdb_postgres_exporter Up X minutes (healthy)
+cdb_redis_exporter    Up X minutes (healthy)
+cdb_cadvisor          Up X minutes
+cdb_reports           Up X minutes (healthy)
 ```
 
 ---
@@ -146,17 +157,11 @@ cdb_paper_runner  Up X minutes (healthy)
 ## 7. Compose Layer Referenz
 
 ```
-base.yml          -> Infrastruktur
-  |
-dev.yml           -> App-Services + Port-Bindings
-  |
-logging.yml       -> Loki + Promtail (optional)
-  |
-tls.yml           -> TLS Encryption (optional)
-  |
-healthchecks-strict.yml -> Strikte Checks (optional)
-  |
-network-prod.yml  -> Network Isolation (optional)
+compose.blue.yml          -> BLUE core (Pflicht)
+compose.red.yml           -> RED co-run (standardmäßig mit BLUE aktiv)
+logging.yml               -> Logging-Stack opt-in (Loki, Promtail, Alertmanager)
+tls.yml                   -> TLS Encryption (opt-in)
+healthchecks-strict.yml   -> Strikte Checks (opt-in)
 ```
 
 ---
