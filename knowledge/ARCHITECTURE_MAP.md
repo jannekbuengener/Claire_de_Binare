@@ -108,7 +108,7 @@ cdb_paper_runner  Up X minutes (healthy)
 ### Redis Channels
 | Channel | Publisher | Subscriber(s) |
 |---------|-----------|---------------|
-| market_data | cdb_ws | cdb_signal |
+| market_data | cdb_ws | cdb_candles, cdb_market, cdb_signal |
 | signals | cdb_signal | cdb_risk, cdb_db_writer |
 | orders | cdb_risk | cdb_execution, cdb_db_writer |
 | order_results | cdb_execution | cdb_risk, cdb_db_writer |
