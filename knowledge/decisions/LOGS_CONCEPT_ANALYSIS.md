@@ -4,18 +4,21 @@
 **Purpose:** Decision basis for conceptual separation between runtime logs and knowledge artifacts
 **Scope:** Read-only analysis (no decision made)
 **Related Issue:** #124
+**Status:** **Superseded** (2026-03-29) — Docs Hub consolidated into working repo; split-repo topology no longer exists.
+
+> **Post-Consolidation Note:** The `Claire_de_Binare_Docs` repository was retired. All content now lives in the `Claire_de_Binare` monorepo. The two-repo topology described below reflects the state at analysis time (2025-12-27). The analysis models (A/B/C) are historical — the consolidation effectively implemented Model B. Knowledge artifacts now live under `knowledge/logs/` in the working repo.
 
 ---
 
 ## Executive Summary
 
-**Current State:**
-- **Two** distinct `logs/` directories exist across repositories
+**State at time of analysis (2025-12-27):**
+- **Two** distinct `logs/` directories existed across repositories
 - **Working Repo** `logs/`: Runtime operational logs (4.3 MB, 10+ active log files)
 - **Docs Hub** `logs/`: Knowledge artifacts (archived reports, session notes)
-- **Overlap:** Both contain paper trading logs, creating ambiguity
+- **Overlap:** Both contained paper trading logs, creating ambiguity
 
-**Key Finding:** Conceptual separation exists but is **not enforced** or **documented**
+**Key Finding:** Conceptual separation existed but was **not enforced** or **documented**
 
 **Analysis Scope:**
 - Directory structure and file types surveyed
@@ -409,7 +412,8 @@ logs/
 
 ---
 
-**Status:** ✅ ANALYSIS COMPLETE (Decision-Ready)
+**Status:** ✅ ANALYSIS COMPLETE — **Superseded by repo consolidation** (Model B effectively implemented)
 **Created:** 2025-12-27
+**Superseded:** 2026-03-29
 **Analyst:** Claude (Automated Analysis)
-**Decision Required:** Yes (Stakeholder must select model)
+**Decision Required:** No (resolved by consolidation)

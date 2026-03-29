@@ -2,7 +2,9 @@
 
 ## Status
 
-**Accepted**
+**Superseded** (2026-03-29)
+
+> **Post-Consolidation Note:** The `Claire_de_Binare_Docs` repository was retired and consolidated into the `Claire_de_Binare` working repo (monorepo). The split-repo model described below is historical context only. The working repo now holds code, infrastructure, governance, and documentation. See the current repo structure in `CLAUDE.md` and `knowledge/SYSTEM.CONTEXT.md`.
 
 ## Kontext
 
@@ -141,4 +143,4 @@ Diese Entscheidung wird umgesetzt durch:
 
 ---
 
-**Diese Entscheidung ist akzeptiert und bindend für alle zukünftigen Beiträge zum Repository.**
+**Diese Entscheidung wurde durch die Repo-Konsolidierung abgelöst. Die historische Entscheidungslogik bleibt als Archivdokument erhalten.**
