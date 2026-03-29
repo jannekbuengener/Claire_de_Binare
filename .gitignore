@@ -20,6 +20,10 @@ real_test*
 emoji-report.*
 *.emoji-backup
 
+# Governance work directories — historical/generated Codex workspaces.
+# Retained locally for provenance; not canonical, not sweep targets.
+governance_*_work/
+
 # Python
 __pycache__/
 *.py[cod]
