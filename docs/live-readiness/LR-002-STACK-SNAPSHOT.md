@@ -19,10 +19,10 @@
 | **reports** | Generates reports | `services/reports/` |
 | **risk** | **Risk gating + Decision Contract 0/1** | `services/risk/service.py` |
 | **signal** | Signal generation | `services/signal/service.py` |
-| **validation** | Validation logic | `services/validation/` |
+| **validation** | 72h validation gate logic (library/CLI, not compose-wired) | `services/validation/runner.py` |
 | **ws** | WebSocket data ingestion | `services/ws/service.py` |
 
-**Total:** 12 services (11 with Dockerfiles)
+**Total:** 11 compose-wired services + 1 library/CLI component (validation)
 
 ---
 
