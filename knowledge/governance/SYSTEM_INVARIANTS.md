@@ -139,12 +139,12 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Prevents untested strategies from accessing real capital. Requires proof of operational correctness.
 
 **Enforcement:**
-- Code: Working Repo `services/risk/live_trading_gate.py::authorize_level()` validates test completion
-- Code: Working Repo `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=10, min_fill_rate=0.45)
-- Spec: Working Repo `docs/live-readiness/LR-007-SPEC.md` defines 72-hour validation requirements
+- Code: Working Repo `services/risk/live_trading_gate.py::check_authorization()` validates test completion
+- Code: Working Repo `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=1 default via `VALIDATION_MIN_ORDERS`, min_fill_rate=0.45)
+- Spec: Working Repo `docs/live-readiness/LR-007-SPEC.md` defines validation requirements
 
 **References:**
-- Working Repo: `services/risk/live_trading_gate.py::authorize_level()`
+- Working Repo: `services/risk/live_trading_gate.py::check_authorization()`
 - Working Repo: `services/validation/gate_evaluator.py::GateThresholds`
 - Working Repo: `docs/live-readiness/LR-007-SPEC.md`
 
