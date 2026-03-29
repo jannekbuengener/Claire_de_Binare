@@ -140,7 +140,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 **Enforcement:**
 - Code: Working Repo `services/risk/live_trading_gate.py::check_authorization()` validates test completion
-- Code: Working Repo `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=1 default via `VALIDATION_MIN_ORDERS`, min_fill_rate=0.45)
+- Code: Working Repo `services/validation/gate_evaluator.py::evaluate()` checks thresholds (min_orders=1 default via `VALIDATION_MIN_ORDERS`, min_fill_rate=0.45, min_qty_sum=0.0 via `VALIDATION_MIN_QTY_SUM`)
 - Spec: Working Repo `docs/live-readiness/LR-007-SPEC.md` defines validation requirements
 
 **References:**
