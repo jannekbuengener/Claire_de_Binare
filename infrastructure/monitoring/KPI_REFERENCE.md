@@ -18,7 +18,7 @@ Metrics are exposed via `/metrics` endpoints on each service and collected by Pr
 | `risk_total_exposure_value` | gauge | Total notional exposure across all positions |
 | `risk_reduce_only_approved_total` | counter | Reduce-only SELL orders approved while over exposure limit |
 | `risk_proactive_unwind_triggered_total` | counter | Auto-unwind triggers when position exceeds limits |
-| `risk_alerts_generated_total` | counter | Alerts published to Redis alerts topic |
+| `risk_alerts_generated_total` | counter | Risk alerts published to Redis Pub/Sub channel `alerts` (not Prometheus alerting) |
 | `risk_kill_switch_active` | gauge | Kill-switch state (1=active/trading halted, 0=inactive) |
 
 ## Signal Engine (`:8005/metrics`)
@@ -77,9 +77,9 @@ Metrics are exposed via `/metrics` endpoints on each service and collected by Pr
 | `cdb_cadvisor` | 8080 | Container metrics: CPU, memory, network, disk I/O per container |
 | `cdb_node_exporter` | 9100 | Host metrics: CPU, memory, disk, network, load average |
 
-## Alert Rules
+## Prometheus Alert Rules
 
-26 rules in 8 groups defined in `infrastructure/monitoring/alerts.yml`:
+26 Prometheus alerting rules in 8 groups defined in `infrastructure/monitoring/alerts.yml` (distinct from the Redis Pub/Sub `alerts` channel above):
 
 | Group | Focus | Key Thresholds |
 |-------|-------|----------------|

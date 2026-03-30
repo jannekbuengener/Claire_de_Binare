@@ -149,14 +149,10 @@ Run commands in order:
 2. `export` (creates .env.runtime)
 3. Start BLUE+RED runtime (`docker compose -f infrastructure/compose/compose.blue.yml up -d` + `compose.red.yml`)
 
-## Documentation (Docs Hub)
-
-This tool is governed by the official Docs Hub policies/runbooks:
-
-- **Secret Rotation Policy**
-  https://github.com/jannekbuengener/Claire_de_Binare_Docs/blob/main/knowledge/governance/SECRET_ROTATION_POLICY.md
+## Related Documentation
 
 - **Grafana Admin Incident Runbook (MANUAL rotation)**
-  https://github.com/jannekbuengener/Claire_de_Binare_Docs/blob/main/knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md
+  `knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md`
 
-**Tip:** Keep these links close during incidents — policy defines guardrails, runbook defines break-glass steps.
+**Note:** The former Docs Hub repository is retired. All active governance
+and runbook content lives in this working repo.

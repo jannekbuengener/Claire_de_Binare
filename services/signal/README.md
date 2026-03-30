@@ -43,7 +43,7 @@ curl http://localhost:8005/health
 - Top-Mover Analyse (`TOP_N`, `LOOKBACK_MINUTES` aus `.env`)
 - Momentum-Score (prozentuale Veränderung, Volumenfilter)
 - Konfigurierbare Mindestliquidität (`SIGNAL_MIN_VOLUME`, optional)
-- Glitch-Schutz: Idle-Timeout → Warnung auf `alerts` Topic (geplant)
+- Glitch-Schutz: Idle-Timeout (geplant, nicht implementiert — kein Publish auf `alerts` durch Signal-Service)
 
 ## 🧾 Konfiguration
 

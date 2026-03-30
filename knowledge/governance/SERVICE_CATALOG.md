@@ -20,30 +20,55 @@
 
 ## Applikations-Services
 
-| Service | Container | Code | Dockerfile | Compose | Status | Begründung |
-|---------|-----------|------|------------|---------|--------|------------|
-| **Signal** | cdb_signal | services/signal/ (6 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Signal Engine, Momentum-Strategie |
-| **Risk** | cdb_risk | services/risk/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Risk Management, Circuit Breaker |
-| **Execution** | cdb_execution | services/execution/ (11 files, service.py) | ✅ | ✅ aktiv | **AKTIV** | Order Execution, MEXC Integration |
-| **DB Writer** | cdb_db_writer | services/db_writer/ (db_writer.py) | ✅ | ✅ aktiv | **AKTIV** | PostgreSQL Persistenz |
-| **WebSocket** | cdb_ws | services/ws/ (service.py) | ✅ | ✅ aktiv | **AKTIV** | Market Data Stream |
-| **Paper Runner** | cdb_paper_runner | tools/paper_trading/ (service.py, 15k lines) | ✅ | ✅ aktiv | **AKTIV** | Paper Trading Orchestrator |
-| **Allocation** | cdb_allocation | services/allocation/ (3 files, 378 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (ALLOCATION_*) |
-| **Regime** | cdb_regime | services/regime/ (4 files, 213 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert: fehlende Env-Vars (REGIME_*) |
-| **Market** | cdb_market | services/market/ (2 files, 82 LOC) | ✅ | ❌ auskommentiert | **BEREIT** | Deaktiviert laut stack_up.ps1: "not implemented" |
+### BLUE Stack (compose.blue.yml) — Core, always-on
+
+| Service | Container | Port | Code | Status | Funktion |
+|---------|-----------|------|------|--------|----------|
+| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201) |
+| **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
+| **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
+| **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
+| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch |
+| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default) |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz |
+| **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
+
+### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
+
+| Service | Container | Port | Code | Status | Funktion |
+|---------|-----------|------|------|--------|----------|
+| **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
+| **Signal** | cdb_signal | 8005 | services/signal/ | **AKTIV** | Signal Generation, Momentum-Strategie |
+| **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
 
 ---
 
 ## Infrastruktur-Services
 
-| Service | Container | Image | Compose | Status | Begründung |
-|---------|-----------|-------|---------|--------|------------|
-| **Redis** | cdb_redis | redis:7-alpine | ✅ aktiv | **AKTIV** | Cache, Pub/Sub |
-| **PostgreSQL** | cdb_postgres | postgres:15-alpine | ✅ aktiv | **AKTIV** | Persistenz |
-| **Prometheus** | cdb_prometheus | prom/prometheus:v2.51.0 | ✅ aktiv | **AKTIV** | Metrics Collection |
-| **Grafana** | cdb_grafana | grafana/grafana:11.4.0 | ✅ aktiv | **AKTIV** | Dashboards |
-| **Loki** | cdb_loki | grafana/loki:2.9.0 | ✅ logging.yml | **AKTIV** | Log Aggregation |
-| **Promtail** | cdb_promtail | grafana/promtail:2.9.0 | ✅ logging.yml | **AKTIV** | Log Shipping |
+### BLUE Stack (compose.blue.yml)
+
+| Service | Container | Image | Port | Status | Funktion |
+|---------|-----------|-------|------|--------|----------|
+| **PostgreSQL** | cdb_postgres | postgres:15.17-alpine | 5432 | **AKTIV** | Persistenz |
+| **Redis** | cdb_redis | redis:7.4.8-alpine | 6379 | **AKTIV** | Cache, Pub/Sub, Streams |
+
+### RED Stack (compose.red.yml) — Monitoring
+
+| Service | Container | Image | Port | Status | Funktion |
+|---------|-----------|-------|------|--------|----------|
+| **Prometheus** | cdb_prometheus | prom/prometheus:v3.10.0 | 19090→9090 | **AKTIV** | Metrics Collection |
+| **Grafana** | cdb_grafana | grafana/grafana:11.4.7 | 3000 | **AKTIV** | Dashboards |
+| **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics |
+| **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
+| **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |
+
+### Logging Overlay (logging.yml) — optional, via -Logging Flag
+
+| Service | Container | Image | Status | Funktion |
+|---------|-----------|-------|--------|----------|
+| **Loki** | cdb_loki | grafana/loki:2.9.3 | **AKTIV** | Log Aggregation |
+| **Promtail** | cdb_promtail | grafana/promtail:2.9.3 | **AKTIV** | Log Shipping |
+| **Alertmanager** | cdb_alertmanager | prom/alertmanager:v0.27.0 | **AKTIV** | Alert Routing + Email |
 
 ---
 
@@ -63,64 +88,40 @@
 
 ### Aktuell keine kritischen GAPs
 
-✅ **Signal Service** wurde am 2025-12-28 aktiviert:
-- Container: `cdb_signal` (Port 8005)
-- Vorher: War als `cdb_core` fehlbenannt
-- Fix: Umbenennung + korrekter Port
+Alle Services aus compose.blue.yml und compose.red.yml sind AKTIV und vollständig konfiguriert.
 
-### Allocation/Regime/Market - BEREIT aber deaktiviert
+### Historisch (behoben)
 
-Diese Services haben vollständigen Code, sind aber in `dev.yml` auskommentiert.
-
-**Begründung laut Code-Kommentare:**
-- allocation: "missing env vars"
-- regime: "missing env vars"
-- market: "not implemented" (widersprüchlich - service.py existiert!)
-
-**Action Required:**
-- [ ] Env-Vars für allocation/regime definieren
-- [ ] market Status klären (Code existiert!)
+- **2025-12-28:** Signal Service war als `cdb_core` fehlbenannt → umbenannt zu `cdb_signal` (Port 8005)
+- **~März 2026:** allocation, regime, market waren in dev.yml auskommentiert → in compose.blue.yml aktiv mit Env-Vars und Healthchecks
+- **~März 2026:** BLUE/RED-Split eingeführt → base.yml/dev.yml-Kette durch compose.blue.yml + compose.red.yml ersetzt
 
 ---
 
-## Compose Layer Architektur
+## Compose-Architektur (kanonisch seit BLUE/RED-Split)
 
 ```
-base.yml          → Infrastruktur (Redis, Postgres, Prometheus, Grafana)
-  ↓
-dev.yml           → Applikations-Services (Core, Risk, Execution, etc.)
-  ↓
-logging.yml       → Loki + Promtail
-  ↓
-tls.yml           → TLS Certificates (optional)
-  ↓
-healthchecks-strict.yml → Strikte Health Checks
-  ↓
-network-prod.yml  → Production Network Isolation
+compose.blue.yml   → BLUE: Data Layer + Control Layer + Core Trading
+compose.red.yml    → RED: Signal Generation + Monitoring
+logging.yml        → Logging Overlay (Loki + Promtail + Alertmanager, optional)
 ```
+
+Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch im Repo, sind aber nicht mehr kanonisch für den Betrieb.
 
 ---
 
-## Stack-Start Befehl (vollständig)
+## Stack-Start Befehl (kanonisch)
 
 ```bash
-# Development mit Logging
-docker compose \
-  --env-file ".cdb_local/.secrets/.env.compose" \
-  -f infrastructure/compose/base.yml \
-  -f infrastructure/compose/dev.yml \
-  -f infrastructure/compose/logging.yml \
-  up -d
+# Netzwerk (einmalig)
+docker network create cdb_network
 
-# Production (mit TLS + strict healthchecks)
-docker compose \
-  --env-file ".cdb_local/.secrets/.env.compose" \
-  -f infrastructure/compose/base.yml \
-  -f infrastructure/compose/dev.yml \
-  -f infrastructure/compose/logging.yml \
-  -f infrastructure/compose/tls.yml \
-  -f infrastructure/compose/healthchecks-strict.yml \
-  up -d
+# BLUE + RED starten
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+
+# PowerShell Front Door
+.\tools\cdb.ps1 runtime up
 ```
 
 ---
@@ -142,3 +143,4 @@ docker compose \
 | 2025-12-28 | Initiale Erstellung nach Governance-Review | Claude |
 | 2025-12-28 | GAP identifiziert: Signal Service fehlt in Compose | Claude |
 | 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
+| 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |

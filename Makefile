@@ -90,12 +90,12 @@ test-coverage:
 
 test-e2e:
 	@echo "🚀 Führe E2E-Tests aus (benötigt laufende Container)..."
-	@echo "⚠️  Stelle sicher, dass 'docker compose up -d' läuft!"
+	@echo "⚠️  Stelle sicher, dass der Stack laeuft: make docker-up"
 	pytest -v -m e2e
 
 test-local:
 	@echo "🏠 Führe local-only Tests aus..."
-	@echo "⚠️  Stelle sicher, dass 'docker compose up -d' läuft!"
+	@echo "⚠️  Stelle sicher, dass der Stack laeuft: make docker-up"
 	pytest -v -m local_only
 
 test-local-stress:
@@ -207,7 +207,7 @@ backup-health:
 paper-trading-start: systemcheck
 	@echo "🚀 Starte Paper Trading Runner..."
 	@echo "⚠️  Stelle sicher, dass alle anderen Container laufen: make docker-up"
-	docker compose up -d cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_paper_runner
 	@echo ""
 	@echo "✅ Paper Trading Runner gestartet!"
 	@echo "   Logs anzeigen: make paper-trading-logs"
@@ -216,11 +216,11 @@ paper-trading-start: systemcheck
 
 paper-trading-logs:
 	@echo "📜 Paper Trading Logs (Ctrl+C zum Beenden)..."
-	docker compose logs -f cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml logs -f cdb_paper_runner
 
 paper-trading-stop:
 	@echo "🛑 Stoppe Paper Trading Runner..."
-	docker compose stop cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml stop cdb_paper_runner
 	@echo "✅ Paper Trading Runner gestoppt"
 
 # ============================================================================

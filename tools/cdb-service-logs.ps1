@@ -48,7 +48,13 @@ function Write-Info($text)    { Write-Host ('[INFO]  {0}' -f $text) -ForegroundC
 function Write-Warning($text) { Write-Host ('[WARN]  {0}' -f $text) -ForegroundColor Yellow }
 function Write-Failure($text) { Write-Host ('[FAIL]  {0}' -f $text) -ForegroundColor Red }
 
-$validServices = @('cdb_redis','cdb_postgres','cdb_prometheus','cdb_grafana','cdb_ws','cdb_core','cdb_risk','cdb_execution','cdb_db_writer')
+$validServices = @(
+    # BLUE
+    'cdb_redis','cdb_postgres','cdb_market','cdb_candles','cdb_regime',
+    'cdb_allocation','cdb_risk','cdb_execution','cdb_db_writer','cdb_paper_runner',
+    # RED
+    'cdb_ws','cdb_signal','cdb_prometheus','cdb_grafana'
+)
 
 if ($ServiceName -notin $validServices) {
     Write-Failure ('Invalid service: {0}' -f $ServiceName)
