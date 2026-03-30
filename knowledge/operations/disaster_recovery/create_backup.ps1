@@ -2,11 +2,16 @@
 # Erstellt vollständiges Backup aller kritischen Volumes
 
 param(
-    [string]$BackupRoot = "F:\Claire_Backups",
+    [string]$BackupRoot = $env:CDB_BACKUP_ROOT,
     [string]$RepoDir = (git -C $PSScriptRoot rev-parse --show-toplevel 2>$null),
     [string]$SecretsPath = $env:SECRETS_PATH,
     [switch]$IncludePostgres = $false
 )
+
+if (-not $BackupRoot) {
+    Write-Host "ERROR: No backup root configured. Pass -BackupRoot or set `$env:CDB_BACKUP_ROOT." -ForegroundColor Red
+    exit 1
+}
 
 if (-not $RepoDir) {
     Write-Host "ERROR: Could not detect repo root. Pass -RepoDir explicitly." -ForegroundColor Red
