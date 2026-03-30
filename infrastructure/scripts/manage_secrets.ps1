@@ -231,7 +231,7 @@ switch ($Action) {
         }
 
         Write-Host "`n⚠️  Remember to restart services:" -ForegroundColor Yellow
-        Write-Host "   docker-compose up -d --no-deps --force-recreate cdb_execution cdb_risk" -ForegroundColor White
+        Write-Host "   docker compose -f infrastructure/compose/compose.blue.yml up -d --no-deps --force-recreate cdb_execution cdb_risk" -ForegroundColor White
     }
 
     "validate" {
