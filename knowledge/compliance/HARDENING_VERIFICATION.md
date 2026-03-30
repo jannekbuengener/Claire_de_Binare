@@ -375,9 +375,10 @@ cdb_promtail    Up 8 hours
 cdb_grafana     Restarting (known issue - grafana_password directory)
 ```
 
-**Active Compose Layers**:
-- `docker-compose.base.yml` (legacy, will be removed)
-- `infrastructure/compose/base.yml` (canonical)
+**Active Compose Layers** (at time of verification):
+- `infrastructure/compose/compose.blue.yml` (canonical runtime — BLUE)
+- `infrastructure/compose/compose.red.yml` (canonical runtime — RED)
+- `infrastructure/compose/base.yml` (legacy — CI/test only)
 - `infrastructure/compose/logging.yml` (Loki + Promtail)
 
 **Network Isolation Status**: ✅ MAXIMUM
@@ -534,8 +535,10 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Active Overlays
 
-1. **`infrastructure/compose/base.yml`** - Canonical base (infrastructure)
-2. **`infrastructure/compose/dev.yml`** - Development profile (port bindings)
+1. **`infrastructure/compose/compose.blue.yml`** - Canonical BLUE runtime (Core)
+2. **`infrastructure/compose/compose.red.yml`** - Canonical RED runtime (Signal + Monitoring)
+3. **`infrastructure/compose/base.yml`** - Legacy base (CI/test only)
+4. **`infrastructure/compose/dev.yml`** - Legacy dev overlay (CI/test only)
 3. **`infrastructure/compose/logging.yml`** - Loki + Promtail
 4. **`infrastructure/compose/network-prod.yml`** - Network isolation (internal: true)
 5. **`infrastructure/compose/healthchecks-strict.yml`** - Strict dependencies
