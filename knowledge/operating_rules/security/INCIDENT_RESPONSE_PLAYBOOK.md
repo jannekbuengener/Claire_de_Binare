@@ -1,10 +1,15 @@
 ---
 title: Incident Response Playbook
 status: draft
-owner: security
+owner: maintainer (solo)
 date: 2025-12-19
+updated: 2026-03-30
 ---
 # Incident Response Playbook
+
+> **Betriebsrealität:** Solo-Maintainer-Setup. Kein On-call-Team, kein Incident Commander,
+> keine Mehrpersonen-Eskalation. Alle Schritte werden vom Maintainer selbst ausgeführt.
+> KI-Agenten unterstützen bei Analyse, aber der Maintainer entscheidet und handelt.
 
 ## Purpose
 Define a minimal, actionable incident response flow for Claire de Binare.
@@ -23,14 +28,14 @@ Define a minimal, actionable incident response flow for Claire de Binare.
 2. Identify affected services and data.
 3. Classify severity: SEV1 (prod outage), SEV2 (degraded), SEV3 (minor).
 
-## Escalation Matrix
-- SEV1: immediate paging of on-call + lead
-- SEV2: on-call + notify lead within 30 minutes
-- SEV3: ticket and notify lead in daily sync
+## Reaktionszeiten (Solo-Maintainer)
+- SEV1: sofortige Bearbeitung, Kill-Switch aktivieren, Grafana/Logs prüfen
+- SEV2: innerhalb 30 Minuten, Ursache isolieren, ggf. betroffenen Service neustarten
+- SEV3: GitHub-Issue anlegen, im nächsten Arbeitsfenster bearbeiten
 
-## Communication
-- Internal status updates every 30 minutes (SEV1) / 60 minutes (SEV2)
-- External communications only after lead approval
+## Kommunikation
+- Statusdokumentation via GitHub-Issue (öffentlich) oder Session-Log (intern)
+- Keine externen Stakeholder, die benachrichtigt werden müssen
 
 ## Recovery Procedures
 - Contain: isolate affected services or networks

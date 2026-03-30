@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
 """
-COPILOT SMART STARTUP ORCHESTRATOR
-Intelligent system startup with health validation and smart error handling
+COPILOT SMART STARTUP ORCHESTRATOR — LEGACY / NICHT KANONISCH
+
+⚠️  Dieses Skript stammt aus der Single-Compose-Ära und ist NICHT mehr der
+    kanonische Startpfad. Der aktive Runtime-Pfad ist BLUE+RED:
+
+      docker compose -f infrastructure/compose/compose.blue.yml up -d
+      docker compose -f infrastructure/compose/compose.red.yml up -d
+
+    Oder via Makefile:  make docker-up
+
+    Siehe knowledge/playbooks/01_STACK_GOLDEN_PATH.md für den aktuellen
+    Operator-Ablauf.
 """
 
 import subprocess
