@@ -10,7 +10,7 @@ generiert und auf das Redis-Topic `signals` publiziert.
 
 - Eingehende Topics: `market_data`
 - Ausgehende Topics: `signals`
-- Port/Endpoints: `8001` (`/health`, `/status`, `/metrics`)
+- Port/Endpoints: `8005` (`/health`, `/status`, `/metrics`)
 - Abhängigkeiten: Redis (`cdb_redis`), Bot WS Screener (`cdb_ws`)
 
 ```mermaid
@@ -24,11 +24,11 @@ flowchart LR
 ```powershell
 docker compose build signal_engine
 docker compose up -d signal_engine
-curl http://localhost:8001/health
+curl http://localhost:8005/health
 ```
 
-- Health-Endpoint: `http://localhost:8001/health`
-- Metrics: `http://localhost:8001/metrics` (Prometheus Format)
+- Health-Endpoint: `http://localhost:8005/health`
+- Metrics: `http://localhost:8005/metrics` (Prometheus Format)
 
 ## 📊 Monitoring & Health
 
@@ -43,7 +43,7 @@ curl http://localhost:8001/health
 - Top-Mover Analyse (`TOP_N`, `LOOKBACK_MINUTES` aus `.env`)
 - Momentum-Score (prozentuale Veränderung, Volumenfilter)
 - Konfigurierbare Mindestliquidität (`SIGNAL_MIN_VOLUME`, optional)
-- Glitch-Schutz: Idle-Timeout → Warnung auf `alerts` Topic (geplant)
+- Glitch-Schutz: Idle-Timeout (geplant, nicht implementiert — kein Publish auf `alerts` durch Signal-Service)
 
 ## 🧾 Konfiguration
 

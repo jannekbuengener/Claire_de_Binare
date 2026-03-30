@@ -29,10 +29,15 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 # === KONFIGURATION ===
-$COMPOSE_FILE = "docker-compose.yml"
-$EXPECTED_SERVICES = @(
-    "cdb_redis", "cdb_postgres", "cdb_prometheus", "cdb_grafana",
-    "cdb_ws", "cdb_core", "cdb_risk", "cdb_execution", "cdb_db_writer"
+$COMPOSE_BLUE = "infrastructure/compose/compose.blue.yml"
+$COMPOSE_RED  = "infrastructure/compose/compose.red.yml"
+$BLUE_SERVICES = @(
+    "cdb_redis", "cdb_postgres", "cdb_market", "cdb_candles",
+    "cdb_regime", "cdb_allocation", "cdb_risk", "cdb_execution",
+    "cdb_db_writer", "cdb_paper_runner"
+)
+$RED_SERVICES = @(
+    "cdb_ws", "cdb_signal", "cdb_prometheus", "cdb_grafana"
 )
 $HEALTH_CHECK_TIMEOUT_SEC = 60
 $HEALTH_CHECK_INTERVAL_SEC = 5
@@ -64,15 +69,20 @@ try {
     exit 1
 }
 
-# === SCHRITT 2: COMPOSE-FILE VORHANDEN? ===
-Write-Step "Schritt 2/5: Golden Stack File validieren"
+# === SCHRITT 2: COMPOSE-FILES VORHANDEN? ===
+Write-Step "Schritt 2/5: Compose-Dateien validieren"
 
-if (-not (Test-Path $COMPOSE_FILE)) {
-    Write-Error "$COMPOSE_FILE nicht gefunden!"
-    Write-Info "Führe das Skript im Repository-Root aus (Verzeichnis mit docker-compose.yml)"
+$composeMissing = @()
+if (-not (Test-Path $COMPOSE_BLUE)) { $composeMissing += $COMPOSE_BLUE }
+if (-not (Test-Path $COMPOSE_RED))  { $composeMissing += $COMPOSE_RED }
+if ($composeMissing.Count -gt 0) {
+    Write-Error "Compose-Dateien nicht gefunden:"
+    $composeMissing | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+    Write-Info "Führe das Skript im Repository-Root aus"
     exit 1
 }
-Write-Success "$COMPOSE_FILE gefunden"
+Write-Success "BLUE: $COMPOSE_BLUE"
+Write-Success "RED:  $COMPOSE_RED"
 
 # === SCHRITT 3: SECRETS & ENV PRÜFEN ===
 Write-Step "Schritt 3/5: Secrets & ENV-Variablen prüfen"
@@ -98,13 +108,15 @@ Write-Success "Alle Secrets & ENV-Variablen vorhanden"
 # === SCHRITT 4: IMAGES PULLEN (optional) ===
 if (-not $SkipPull) {
     Write-Step "Schritt 4/5: Docker Images aktualisieren"
-    try {
-        docker compose pull 2>&1 | Out-Null
-        if ($LASTEXITCODE -ne 0) { throw "Pull fehlgeschlagen" }
-        Write-Success "Images erfolgreich gepulled"
-    } catch {
-        Write-Warning "Image Pull fehlgeschlagen (fortfahren mit lokalen Images)"
+    foreach ($cf in @($COMPOSE_BLUE, $COMPOSE_RED)) {
+        try {
+            docker compose -f $cf pull 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Pull fehlgeschlagen fuer $cf" }
+        } catch {
+            Write-Warning "Image Pull fehlgeschlagen fuer $cf (fortfahren mit lokalen Images)"
+        }
     }
+    Write-Success "Images erfolgreich gepulled"
 } else {
     Write-Step "Schritt 4/5: Image Pull übersprungen (--SkipPull)"
 }
@@ -112,51 +124,54 @@ if (-not $SkipPull) {
 # === SCHRITT 5: STACK STARTEN ===
 Write-Step "Schritt 5/5: Stack hochfahren"
 
-Write-Info "Führe aus: docker compose up -d --remove-orphans"
-$upOutput = docker compose up -d --remove-orphans 2>&1
-if ($Verbose) {
-    Write-Host $upOutput
-}
-
+Write-Info "BLUE-Stack starten..."
+$blueOutput = docker compose -f $COMPOSE_BLUE up -d --remove-orphans 2>&1
+if ($Verbose) { Write-Host $blueOutput }
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Stack-Start fehlgeschlagen!"
-    Write-Info "Debug-Schritte:"
-    Write-Info "  docker compose ps -a"
-    Write-Info "  docker compose logs --tail=50"
+    Write-Error "BLUE-Stack-Start fehlgeschlagen!"
+    Write-Info "Debug: docker compose -f $COMPOSE_BLUE ps -a"
     exit 1
 }
+Write-Success "BLUE-Stack gestartet"
 
-Write-Success "Stack gestartet"
+Write-Info "RED-Stack starten..."
+$redOutput = docker compose -f $COMPOSE_RED up -d --remove-orphans 2>&1
+if ($Verbose) { Write-Host $redOutput }
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "RED-Stack-Start fehlgeschlagen (BLUE laeuft weiter)"
+}
+Write-Success "RED-Stack gestartet"
 
 # === HEALTH-CHECK WARTEN ===
+$allExpected = @($BLUE_SERVICES) + @($RED_SERVICES)
+$expectedCount = $allExpected.Count
 Write-Info "Warte auf Health-Checks ($HEALTH_CHECK_TIMEOUT_SEC Sekunden Timeout)..."
 
 $elapsed = 0
 $healthyServices = @()
 
+function Get-HealthyNames($composeFile) {
+    try {
+        $status = docker compose -f $composeFile ps --format json 2>&1 | ConvertFrom-Json
+        if ($status -is [array]) {
+            return @($status | Where-Object { $_.Health -eq "healthy" } | Select-Object -ExpandProperty Service)
+        } elseif ($status.Health -eq "healthy") {
+            return @($status.Service)
+        }
+    } catch {}
+    return @()
+}
+
 while ($elapsed -lt $HEALTH_CHECK_TIMEOUT_SEC) {
     Start-Sleep -Seconds $HEALTH_CHECK_INTERVAL_SEC
     $elapsed += $HEALTH_CHECK_INTERVAL_SEC
 
-    try {
-        $status = docker compose ps --format json 2>&1 | ConvertFrom-Json
-        if ($status -is [array]) {
-            $healthyServices = $status | Where-Object { $_.Health -eq "healthy" } | Select-Object -ExpandProperty Name
-        } elseif ($status.Health -eq "healthy") {
-            $healthyServices = @($status.Name)
-        } else {
-            $healthyServices = @()
-        }
-    } catch {
-        $healthyServices = @()
-    }
-
+    $healthyServices = @(Get-HealthyNames $COMPOSE_BLUE) + @(Get-HealthyNames $COMPOSE_RED)
     $healthyCount = $healthyServices.Count
-    $expectedCount = $EXPECTED_SERVICES.Count
 
     Write-Host ("`rHealth-Check: $healthyCount/$expectedCount healthy (${elapsed}s)") -NoNewline
 
-    if ($healthyCount -eq $expectedCount) {
+    if ($healthyCount -ge $expectedCount) {
         Write-Host ""
         break
     }
@@ -165,20 +180,24 @@ while ($elapsed -lt $HEALTH_CHECK_TIMEOUT_SEC) {
 Write-Host ""
 
 # === FINALER STATUS ===
-Write-Step "Stack-Status"
+Write-Step "BLUE-Stack-Status"
+docker compose -f $COMPOSE_BLUE ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>&1 | ForEach-Object { Write-Host $_ }
 
-$finalStatus = docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>&1
-Write-Host $finalStatus
+Write-Step "RED-Stack-Status"
+docker compose -f $COMPOSE_RED ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}" 2>&1 | ForEach-Object { Write-Host $_ }
 
 # === ZUSAMMENFASSUNG ===
-$allHealthy = ($healthyServices.Count -eq $EXPECTED_SERVICES.Count)
+$blueHealthy = @($healthyServices | Where-Object { $_ -in $BLUE_SERVICES })
+$redHealthy  = @($healthyServices | Where-Object { $_ -in $RED_SERVICES })
+$blueAllOk   = ($blueHealthy.Count -eq $BLUE_SERVICES.Count)
+$redAllOk    = ($redHealthy.Count -eq $RED_SERVICES.Count)
 
-if ($allHealthy) {
-    Write-Host "`n🎉 " -NoNewline -ForegroundColor Green
-    Write-Host "STACK VOLLSTÄNDIG HEALTHY ($($EXPECTED_SERVICES.Count)/$($EXPECTED_SERVICES.Count))" -ForegroundColor Green
+if ($blueAllOk -and $redAllOk) {
+    Write-Host ""
+    Write-Success "STACK VOLLSTAENDIG HEALTHY ($expectedCount/$expectedCount)"
     Write-Host ""
     Write-Success "Zugriff auf Services:"
-    Write-Host "  Signal Engine:    http://localhost:8001/health"
+    Write-Host "  Signal Engine:    http://localhost:8005/health"
     Write-Host "  Risk Manager:     http://localhost:8002/health"
     Write-Host "  Execution:        http://localhost:8003/health"
     Write-Host "  WebSocket:        http://localhost:8000/health"
@@ -186,17 +205,24 @@ if ($allHealthy) {
     Write-Host "  Prometheus:       http://localhost:19090"
     Write-Host ""
     exit 0
-} else {
-    $unhealthyServices = $EXPECTED_SERVICES | Where-Object { $_ -notin $healthyServices }
-    Write-Host "`n⚠️  " -NoNewline -ForegroundColor Yellow
-    Write-Host "STACK TEILWEISE HEALTHY ($($healthyServices.Count)/$($EXPECTED_SERVICES.Count))" -ForegroundColor Yellow
+} elseif ($blueAllOk) {
     Write-Host ""
-    Write-Warning "Unhealthy Services:"
-    $unhealthyServices | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    Write-Warning "BLUE HEALTHY, RED TEILWEISE ($($redHealthy.Count)/$($RED_SERVICES.Count))"
+    $redMissing = $RED_SERVICES | Where-Object { $_ -notin $redHealthy }
+    $redMissing | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    Write-Host ""
+    Write-Info "BLUE-Kern laeuft. RED-Issues beeintraechtigen kein Trading."
+    exit 0
+} else {
+    $blueMissing = $BLUE_SERVICES | Where-Object { $_ -notin $blueHealthy }
+    Write-Host ""
+    Write-Error "BLUE-KERN HAT ISSUES ($($blueHealthy.Count)/$($BLUE_SERVICES.Count))"
+    Write-Warning "Unhealthy BLUE Services:"
+    $blueMissing | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
     Write-Host ""
     Write-Info "Debug-Kommandos:"
-    $unhealthyServices | ForEach-Object {
-        Write-Host "  docker logs $_ --tail=30"
+    $blueMissing | ForEach-Object {
+        Write-Host "  docker compose -f $COMPOSE_BLUE logs $_ --tail=30"
     }
     Write-Host ""
     exit 1
