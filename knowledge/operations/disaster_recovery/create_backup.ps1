@@ -2,13 +2,20 @@
 # Erstellt vollständiges Backup aller kritischen Volumes
 
 param(
-    [string]$BackupRoot = "D:\Dev\Backups",
+    [string]$BackupRoot = "F:\Claire_Backups",
+    [string]$RepoDir = (git -C $PSScriptRoot rev-parse --show-toplevel 2>$null),
+    [string]$SecretsPath = $env:SECRETS_PATH,
     [switch]$IncludePostgres = $false
 )
 
+if (-not $RepoDir) {
+    Write-Host "ERROR: Could not detect repo root. Pass -RepoDir explicitly." -ForegroundColor Red
+    exit 1
+}
+
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $BACKUP_DIR = Join-Path $BackupRoot "docker_backup_$timestamp"
-$REPO_DIR = "D:\Dev\Workspaces\Repos\Claire_de_Binare"
+$REPO_DIR = $RepoDir
 
 Write-Host "=== Docker Volume Backup ===" -ForegroundColor Green
 Write-Host "Timestamp: $timestamp" -ForegroundColor Cyan
@@ -82,8 +89,12 @@ Write-Host "  ✅ Container/Volume/Network lists" -ForegroundColor Green
 Write-Host ""
 
 # Document secrets location
-"SECRETS_PATH=C:\Users\janne\Documents\.secrets\.cdb\" | Out-File "${BACKUP_DIR}\secrets_location.txt"
-"Contains: MEXC API keys, Grafana, Postgres, Redis passwords" | Out-File "${BACKUP_DIR}\secrets_location.txt" -Append
+if ($SecretsPath) {
+    "SECRETS_PATH=$SecretsPath" | Out-File "${BACKUP_DIR}\secrets_location.txt"
+    "Contains: MEXC API keys, Grafana, Postgres, Redis passwords" | Out-File "${BACKUP_DIR}\secrets_location.txt" -Append
+} else {
+    "SECRETS_PATH not configured at backup time — set `$env:SECRETS_PATH for future backups" | Out-File "${BACKUP_DIR}\secrets_location.txt"
+}
 
 # Calculate total size
 $totalSize = (Get-ChildItem $BACKUP_DIR -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB

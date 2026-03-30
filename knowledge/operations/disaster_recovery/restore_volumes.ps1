@@ -1,8 +1,29 @@
 # Automatic Docker Volume Restore Script
 # Run this after Docker Desktop reinstallation
+#
+# Usage:
+#   .\restore_volumes.ps1 -BackupDir "F:\Claire_Backups\docker_backup_20260330_120000"
+#   .\restore_volumes.ps1 -BackupDir "..." -RepoDir "C:\Projects\Claire_de_Binare"
 
-$BACKUP_DIR = "D:\Dev\Backups\docker_reinstall_20251231_075507"
-$REPO_DIR = "D:\Dev\Workspaces\Repos\Claire_de_Binare"
+param(
+    [Parameter(Mandatory=$true)]
+    [string]$BackupDir,
+
+    [string]$RepoDir = (git -C $PSScriptRoot rev-parse --show-toplevel 2>$null)
+)
+
+if (-not $RepoDir) {
+    Write-Host "ERROR: Could not detect repo root. Pass -RepoDir explicitly." -ForegroundColor Red
+    exit 1
+}
+
+if (-not (Test-Path $BackupDir)) {
+    Write-Host "ERROR: Backup directory not found: $BackupDir" -ForegroundColor Red
+    exit 1
+}
+
+$BACKUP_DIR = $BackupDir
+$REPO_DIR = $RepoDir
 
 Write-Host "=== Docker Volume Restore - Starting ===" -ForegroundColor Green
 Write-Host "Backup: $BACKUP_DIR" -ForegroundColor Cyan

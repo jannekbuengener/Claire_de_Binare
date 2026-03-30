@@ -1,4 +1,22 @@
 # Verification Script - Check if restore was successful
+#
+# Usage:
+#   .\verify_restore.ps1
+#   .\verify_restore.ps1 -RepoDir "C:\Projects\Claire_de_Binare" -SecretsPath "D:\secrets\.cdb"
+
+param(
+    [string]$RepoDir = (git -C $PSScriptRoot rev-parse --show-toplevel 2>$null),
+    [string]$SecretsPath = $env:SECRETS_PATH
+)
+
+if (-not $RepoDir) {
+    Write-Host "ERROR: Could not detect repo root. Pass -RepoDir explicitly." -ForegroundColor Red
+    exit 1
+}
+
+if (-not $SecretsPath) {
+    Write-Host "WARNING: No secrets path configured. Set `$env:SECRETS_PATH or pass -SecretsPath." -ForegroundColor Yellow
+}
 
 Write-Host "=== Docker Restore Verification ===" -ForegroundColor Green
 Write-Host ""
@@ -32,7 +50,7 @@ Write-Host ""
 
 # Check .env file
 Write-Host "3. Configuration Files:" -ForegroundColor Cyan
-$envPath = "D:\Dev\Workspaces\Repos\Claire_de_Binare\.env"
+$envPath = Join-Path $RepoDir ".env"
 if (Test-Path $envPath) {
     $size = (Get-Item $envPath).Length
     Write-Host "  ✅ .env exists ($size bytes)" -ForegroundColor Green
@@ -43,12 +61,15 @@ Write-Host ""
 
 # Check secrets
 Write-Host "4. Secrets:" -ForegroundColor Cyan
-$secretsPath = "C:\Users\janne\Documents\.secrets\.cdb"
-if (Test-Path $secretsPath) {
-    $count = (Get-ChildItem $secretsPath -File).Count
-    Write-Host "  ✅ Secrets directory exists ($count files)" -ForegroundColor Green
+if ($SecretsPath) {
+    if (Test-Path $SecretsPath) {
+        $count = (Get-ChildItem $SecretsPath -File).Count
+        Write-Host "  ✅ Secrets directory exists ($count files)" -ForegroundColor Green
+    } else {
+        Write-Host "  ❌ Secrets directory MISSING at $SecretsPath" -ForegroundColor Red
+    }
 } else {
-    Write-Host "  ❌ Secrets directory MISSING" -ForegroundColor Red
+    Write-Host "  ⚠️  Secrets path not configured — skipping check" -ForegroundColor Yellow
 }
 Write-Host ""
 
@@ -74,7 +95,7 @@ Write-Host ""
 Write-Host "=== Verification Complete ===" -ForegroundColor Green
 Write-Host ""
 Write-Host "If stack is not running yet:" -ForegroundColor Cyan
-Write-Host "  cd D:\Dev\Workspaces\Repos\Claire_de_Binare"
+Write-Host "  cd $RepoDir"
 Write-Host "  make docker-up"
 Write-Host ""
 Write-Host "Then check:" -ForegroundColor Cyan
