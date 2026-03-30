@@ -3,8 +3,8 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-27 (Session 11)
-**Latest Commit**: 5a50700 — devops(gitignore): fix test/evidence tracking and remove dead ignore rules (#1234) (#1290)
+**Last Updated**: 2026-03-29
+**Latest Commit**: c65552e — docs(lr-audit): reconcile phase status to 2026-03-29 (#1306)
 
 ---
 
@@ -24,15 +24,15 @@
 
 ---
 
-## Live-Readiness Phase Status (Stand 2026-03-22)
+## Live-Readiness Phase Status (Stand 2026-03-29)
 
 | Phase | LR-Tasks | Status | Aenderung seit 2026-02-21 |
 |---|---|---|---|
 | P0 Preconditions | LR-001..003 | DONE | unveraendert |
 | P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
 | P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
-| P3 Shadow Mode | LR-030, LR-031 | PARTIAL | LR-031 kalibriert PASS (lean Run 23407946292, PR #1257 a407838, min=1 liveness floor); LR-030 evidence gehaertet (#1129) |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — Soak-Run 2026-03-22 FAILED (environment_interruption); Soak-Run 2026-03-24 FAILED (cdb_signal restart); **72h-Run gestartet 2026-03-25 12:12 UTC** auf main@ac6ab87 (Ziel: 2026-03-28 12:12 UTC); #1277/#1278 gemerged, Monitor-Fixes aktiv |
+| P3 Shadow Mode | LR-030, LR-031 | OPEN | SSOT: keine Evidence-Dateien in `docs/live-readiness/` bei Reconciliation 2026-03-29 verifiziert; als OPEN behandelt bis bestaetigt |
+| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — Soak-Run 2026-03-22 FAILED (environment_interruption); Soak-Run 2026-03-24 FAILED (cdb_signal restart); **72h-Run 2026-03-25 12:12 UTC abgeschlossen: INCONCLUSIVE** (77.75h, `no_restart_alerts` FAIL, cause=`environment_interruption`; `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json`); Gate-Policy-Entscheidung oder neuer ununterbr. Run ausstehend |
 | P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
 
 **Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
@@ -90,10 +90,10 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
-3. **LR-040 echter 72h-Run:** Gestartet 2026-03-25 12:12:50 UTC auf `main` @ `ac6ab87`. Artefaktpfad: `artifacts/soak_test_20260325_121250`. Hour 25 PASS (Cutoff 2026-03-26 14:00 UTC), kumulativ >72h sauber, Container-Stabilität operativ PASS. Geplantes Ende: 2026-03-28 12:12:50 UTC.
+3. **LR-040 72h-Run abgeschlossen — INCONCLUSIVE:** `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json` — 77.75h, `duration_gte_72h`: true, `no_restart_alerts`: false (cause=`environment_interruption`, 12/12 Bulk-SUT-Restarts). Gate-Policy-Entscheidung (environment_interruption als Ausnahme) oder neuer ununterbr. 72h-Run erforderlich für PASS.
 4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
 5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26), geschlossen 2026-03-27. Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
-6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hinweis: Hour-29-Lücke ist die bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC) — nicht mitternacht-bedingt; laufender Run trägt INCONCLUSIVE-Marker, formales Gate-Ergebnis aussteht bis 2026-03-28 12:12 UTC.
+6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
 9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
@@ -103,4 +103,4 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 ## Postmortem / Session Logs
 
 - `knowledge/logs/sessions/` — aktuelle Session-Logs
-- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-03-15)
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-03-29, #1306)
