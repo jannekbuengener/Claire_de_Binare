@@ -92,9 +92,11 @@ $newPassword = [Convert]::ToBase64String((1..24 | ForEach-Object { Get-Random -M
 # GitHub Secret aktualisieren
 $newPassword | gh secret set REDIS_PASSWORD --repo jannekbuengener/Claire_de_Binare
 
-# Stack mit neuen Volumes neu starten
-docker compose down -v
-docker compose up -d
+# Stack mit neuen Volumes neu starten (BLUE+RED)
+docker compose -f infrastructure/compose/compose.red.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### Secret löschen

@@ -1,5 +1,3 @@
-docker compose build signal_engine
-docker compose --profile dev up -d signal_engine
 # CDB Signal Engine
 
 ## 🚀 Überblick
@@ -21,9 +19,9 @@ flowchart LR
 
 ## ⚙️ Installation & Start
 
+Signal ist Teil des **RED**-Stacks:
 ```powershell
-docker compose build signal_engine
-docker compose up -d signal_engine
+docker compose -f infrastructure/compose/compose.red.yml up -d cdb_signal
 curl http://localhost:8005/health
 ```
 
