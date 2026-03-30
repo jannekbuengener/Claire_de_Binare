@@ -85,13 +85,16 @@ docker volume create claire_de_binare_postgres_data
 # Falls leer: Fresh Init beim ersten Start
 ```
 
-### 5. Stack starten
+### 5. Stack starten (BLUE+RED)
 ```bash
 cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+# Netzwerk sicherstellen
+docker network create cdb_network 2>/dev/null
 # Fix Postgres Mount-Problem falls nötig (alter Pfad C:\Users\janne\Documents\...)
 make docker-up
-# ODER
-docker compose up -d
+# ODER explizit:
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### 6. Verifizierung
