@@ -141,7 +141,7 @@ Collected 24 tests as of HEAD (see LR-002-EVIDENCE-ADDENDUM.md for the full test
 Per `LR-007-STATUS.md` (L64-L73):
 
 > **NOTE:** Metrics collection and daily digest generation pending. Required artifacts:
-> - Container uptime logs (RED/BLACK/BLUE stacks)
+> - Container uptime logs (BLUE + RED stacks)
 > - Decision rate metrics (Prometheus queries)
 > - Circuit breaker trip counts
 > - Kill switch activation logs
