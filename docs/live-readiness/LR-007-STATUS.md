@@ -17,8 +17,8 @@ Shadow Mode may proceed under unchanged invariants.
 |-------|----------------|
 | **Start** | 2026-02-07 12:43:48 (PR #806 merged) |
 | **Elapsed** | 0 days 22 hours |
-| **Remaining** | 30 days |
-| **Target End** | 2026-03-09 12:43:48 |
+| **Remaining** | 72 hours |
+| **Target End** | 2026-02-10 12:43:48 |
 
 ---
 
@@ -41,7 +41,7 @@ Shadow Mode may proceed under unchanged invariants.
 ## Pass/Fail Criteria (per LR-007-SPEC.md)
 
 ### PASS Requirements (ALL must be met):
-- ✅ Runtime ≥ 30 calendar days (Control Layer)
+- ✅ Runtime ≥ 72 hours (Control Layer)
 - ⏳ Container restarts = 0 (for Control Layer services)
 - ⏳ Decision rate > 0 for ≥95% of measurement windows
 - ⏳ Reject rate: 0.10 ≤ rate ≤ 0.90 (risk gates functioning)
@@ -85,7 +85,7 @@ Shadow Mode may proceed under unchanged invariants.
 4. Stream gap analysis (Redis XINFO STREAM queries)
 5. Error rate summaries (service logs filtered)
 
-**Frequency:** Daily or weekly digests, cumulative at Day 30
+**Frequency:** Hourly or daily digests, cumulative at Hour 72
 
 ---
 
@@ -93,7 +93,7 @@ Shadow Mode may proceed under unchanged invariants.
 
 **Per LR-007 Spec:**
 - **Planned restart** (stack upgrade, config change) → Resets counter to Day 0
-- **Hotfix allowed:** Max 1 per 30-day period, <5min downtime, requires validation
+- **Hotfix allowed:** Max 1 per 72h period, <5min downtime, requires validation
 
 **Current Restart Count:** 0 (as of start)
 
@@ -155,7 +155,7 @@ Shadow Mode may proceed under unchanged invariants.
 1. **Set up automated evidence collection** (Docker logs, Prometheus metrics)
 2. **Create daily digest template** (`reports/shadow_mode/DAILY_DIGEST_<DATE>.md`)
 3. **Monitor for HARD FAIL triggers** (especially stream gaps, kill switch)
-4. **Weekly status review** (every 7 days, cumulative at Day 30)
+4. **Status review at conclusion** (cumulative at Hour 72)
 
 ---
 

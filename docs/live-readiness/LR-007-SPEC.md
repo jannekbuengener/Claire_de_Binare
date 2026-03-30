@@ -136,7 +136,7 @@ Reject-Rate ist **markt- und regimeabhängig**. Bewertung erfolgt **relativ zur 
 - High-Vol-Chaotic: Höhere Reject-Rate erwartet (Risk-Gates aktiver)
 - High-Vol-Trending: Niedrigere Reject-Rate erwartet (mehr tradable Setups)
 
-**Absolute 0.10-0.90 Bounds gelten regime-übergreifend** (Aggregat über 30 Tage).
+**Absolute 0.10-0.90 Bounds gelten regime-uebergreifend** (Aggregat ueber volle Validierungs-Laufzeit).
 Regime-spezifische Analyse optional, aber nicht LR-007-Requirement.
 
 **Rationale:**
@@ -226,33 +226,37 @@ High error rates indicate instability. Stream drops indicate data loss (unaccept
 ### 4.1 Mindestlaufzeit
 
 **Minimum Continuous Runtime:**
-**30 Kalendertage** (720 Stunden)
+**72 Stunden** (3 Kalendertage)
+
+> **Hinweis:** Eine fruehere Spec-Version (v1.0) forderte 30 Kalendertage.
+> Diese Anforderung wurde per Maintainer-Entscheidung (2026-03-30, Issue #1347) auf 72h reduziert.
+> Der aktive Gate-Contract in `live_trading_gate.py` und INV-006 war bereits 72h.
 
 **Definition "Continuous":**
 - Alle Control-Layer-Services (`cdb_candles`, `cdb_regime`, `cdb_allocation`, `cdb_risk`, `cdb_execution`) laufen ohne Restart
-- Redis Streams enthalten lückenlose Candle-Historie (keine Gaps >5 Minuten)
+- Redis Streams enthalten lueckenlose Candle-Historie (keine Gaps >5 Minuten)
 - WebSocket-Verbindung zu Exchange aktiv (Reconnects erlaubt, aber nicht >10% der Zeit disconnected)
 
 **Start-Timestamp:**
 Dokumentiert in `shadow_mode_start.timestamp` (ISO8601 Format, UTC)
 
-**End-Timestamp (frühestens):**
-`shadow_mode_start.timestamp + 30 days`
+**End-Timestamp (fruehestens):**
+`shadow_mode_start.timestamp + 72 hours`
 
 **Restart Policy:**
-Jeglicher **geplanter** Restart eines Control-Layer-Services **resettet** die 30-Tage-Uhr auf Tag 0.
+Jeglicher **geplanter** Restart eines Control-Layer-Services **resettet** die 72h-Uhr auf Stunde 0.
 
 **Exception (NICHT resettet):**
 - Infrastructure-Restarts (Redis, Postgres, Prometheus) → Solange Control-Layer-Services durchlaufen
 - **Hotfixes mit <5 Minuten Downtime UND Post-Restart-Validierung (via Snapshot-Verify)**
-  - **Maximum: 1× Hotfix pro 30-Tage-Periode**
+  - **Maximum: 1× Hotfix pro 72h-Periode**
   - **Dokumentationspflicht:** Hotfix-Grund, Downtime, Validation-Evidence in `LR-007-HOTFIX-LOG.md`
 
-**Bei >1 Hotfix in 30 Tagen:**
-Shadow-Mode-Uhr resettet auf Tag 0 (verhindert schleichende "kleine Fixes" alle paar Tage).
+**Bei >1 Hotfix in 72h:**
+Shadow-Mode-Uhr resettet auf Stunde 0 (verhindert schleichende "kleine Fixes").
 
 **Rationale:**
-Ein Notfall-Hotfix ist akzeptabel (Production-Reality). Mehrere Hotfixes signalisieren mangelnde Stabilität → Shadow-Mode-Neustart erforderlich.
+Ein Notfall-Hotfix ist akzeptabel (Production-Reality). Mehrere Hotfixes signalisieren mangelnde Stabilitaet → Shadow-Mode-Neustart erforderlich.
 
 ### 4.2 Harte Abbruchkriterien (HARD FAIL)
 
@@ -278,7 +282,7 @@ Ein Notfall-Hotfix ist akzeptabel (Production-Reality). Mehrere Hotfixes signali
 
 **Bei HARD FAIL:**
 - Shadow Mode Status → `ABORTED`
-- 30-Tage-Zähler → resettet auf Tag 0
+- 72h-Zaehler → resettet auf Stunde 0
 - Incident Report MUST be created (inkl. Decision Traces via LR-006A)
 - LR-007 Gate bleibt **CLOSED**
 
@@ -301,7 +305,7 @@ Ein Notfall-Hotfix ist akzeptabel (Production-Reality). Mehrere Hotfixes signali
 **Action bei Soft-Warn:**
 - Log in `shadow_mode_warnings.log`
 - Erwähnen in Daily-Digest (falls existiert)
-- NICHT 30-Tage-Zähler resetten
+- NICHT 72h-Zaehler resetten
 - Keine Incident-Erstellung
 
 ---
@@ -318,7 +322,7 @@ Ein Notfall-Hotfix ist akzeptabel (Production-Reality). Mehrere Hotfixes signali
 
 **Inhalt (Mindestanforderungen):**
 - Start-Timestamp (ISO8601 UTC)
-- End-Timestamp (ISO8601 UTC, ≥30 Tage nach Start)
+- End-Timestamp (ISO8601 UTC, ≥72h nach Start)
 - Container-Uptime-Logs (docker ps Output, zeigt keine Restarts)
 - Stream-Length-Timeline (Candles-1m Wachstum, tägliche Snapshots)
 - Restart-Count-Validation (RESTARTS=0 für alle Control-Layer-Services)
@@ -336,7 +340,7 @@ Markdown mit eingebetteten Code-Blocks (reproduzierbare Bash-Commands)
   "shadow_mode_id": "string (UUID or timestamp-based ID)",
   "start_timestamp": "ISO8601 UTC",
   "end_timestamp": "ISO8601 UTC",
-  "runtime_days": "integer (≥30)",
+  "runtime_hours": "integer (≥72)",
   "metrics": {
     "decision_rate": {
       "candles_processed_total": integer,
@@ -490,7 +494,7 @@ LR-007 definiert objektive Pass/Fail-Kriterien. Human-Approval-Layer ist orthogo
 
 ```
 LR-007 PASS ⟺
-  (1) runtime_days ≥ 30
+  (1) runtime_hours ≥ 72
   AND (2) container_restarts == 0 (Control Layer)
   AND (3) decision_rate_5m > 0 for ≥95% of windows
   AND (4) 0.10 ≤ reject_rate ≤ 0.90
@@ -507,7 +511,7 @@ LR-007 PASS ⟺
 
 ```
 LR-007 FAIL ⟺
-  (1) runtime_days < 30
+  (1) runtime_hours < 72
   OR (2) ANY container_restart (Control Layer)
   OR (3) ANY HARD FAIL criterion (§4.2)
   OR (4) error_rate_5xx ≥ 0.05
@@ -572,7 +576,7 @@ blocked_since: "ISO8601 UTC or null"
 shadow_mode:
   start_timestamp: "ISO8601 UTC"
   end_timestamp: "ISO8601 UTC or null (if still running)"
-  runtime_days: integer
+  runtime_hours: integer
   verdict: "PASS | FAIL | WARN | IN_PROGRESS"
 
 evidence_artifacts:
@@ -592,7 +596,7 @@ warn_reasons: []
 
 **State-Transition-Rules:**
 - `PENDING → IN_PROGRESS`: Shadow-Mode-Start (start_timestamp gesetzt)
-- `IN_PROGRESS → DONE`: 30 Tage elapsed + ALL PASS criteria
+- `IN_PROGRESS → DONE`: 72h elapsed + ALL PASS criteria
 - `IN_PROGRESS → ABORTED`: ANY HARD FAIL criterion
 - `DONE → BLOCKED`: Nicht erlaubt (DONE ist final)
 - `ABORTED → IN_PROGRESS`: Nach Incident-Resolution, neuer Shadow-Mode-Start
@@ -608,7 +612,7 @@ warn_reasons: []
   "task_id": "LR-007",
   "status": "IN_PROGRESS",
   "shadow_mode": {
-    "runtime_days": 18,
+    "runtime_hours": 48,
     "verdict": "IN_PROGRESS",
     "projected_completion": "2026-03-09"
   }
