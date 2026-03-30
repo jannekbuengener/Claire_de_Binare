@@ -1,23 +1,22 @@
-# Disaster Recovery - Docker Reinstallation
+# Disaster Recovery - Docker Volume Backup & Restore
 
-**Location:** `Claire_de_Binare/knowledge/operations/disaster_recovery/`  
-**Last Updated:** 2025-12-31  
-**Status:** Production-Ready
+**Location:** `knowledge/operations/disaster_recovery/`
+**Status:** Active guidance — adapt paths to your environment
 
 ---
 
-## 📚 Dokumentation
+## Dokumentation
 
 | File | Beschreibung | Verwendung |
 |------|--------------|------------|
-| **QUICK_START.md** | 🚀 3-Schritte Schnellanleitung | Nach Docker Neuinstallation |
-| **RESTORE_GUIDE.md** | 📖 Ausführliche Schritt-für-Schritt Anleitung | Detaillierte Restore-Prozedur |
-| **restore_volumes.ps1** | ⚡ Automatisches Restore-Script | PowerShell ausführen |
-| **verify_restore.ps1** | ✅ Verifications-Script | Nach Restore zur Validierung |
+| **QUICK_START.md** | 3-Schritte Schnellanleitung | Nach Docker Neuinstallation |
+| **RESTORE_GUIDE.md** | Ausführliche Schritt-für-Schritt Anleitung | Detaillierte Restore-Prozedur |
+| **restore_volumes.ps1** | Automatisches Restore-Script | PowerShell ausführen |
+| **verify_restore.ps1** | Verifications-Script | Nach Restore zur Validierung |
 
 ---
 
-## 🎯 Verwendungszweck
+## Verwendungszweck
 
 Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** für CDB (Claire de Binare).
 
@@ -29,49 +28,41 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 
 ---
 
-## 💾 Was wird gesichert
+## Was wird gesichert
 
 ### Kritische Daten:
-- ✅ **Grafana Dashboards** (8 Dashboards, ~109MB)
-  - System Performance, Signal Engine, Risk Manager
-  - Paper Trading, Execution, Database, HITL Control
-  - Dark Mode Theme
-- ✅ **Redis Datenbank** (~85KB)
-  - Session State, Cache, Pub/Sub Messages
-- ✅ **Prometheus Metriken** (~2MB)
-  - Zeitreihen-Daten, Performance Metrics
-- ✅ **Loki Logs** (~671B)
-  - Aggregierte Log-Daten
-- ✅ **Claude Memory** (~3KB)
-  - MCP Server Memory State
+- **Grafana Dashboards** (Dashboards, Settings, Users)
+- **Redis Datenbank** (Session State, Cache)
+- **Prometheus Metriken** (Zeitreihen-Daten)
+- **Loki Logs** (Aggregierte Log-Daten)
 
 ### Konfiguration:
-- ✅ `.env` File
-- ✅ `.secrets.example/` Templates
-- ✅ Container/Volume/Network Listen
+- `.env` File
+- Container/Volume/Network Listen
 
 ### PostgreSQL:
-- ⚠️ **Volume bleibt normalerweise erhalten** bei Docker Neuinstallation
+- Volume bleibt normalerweise erhalten bei Docker Neuinstallation
 - Bei Migration: Manueller Export/Import empfohlen
 - Bei Datenverlust: Fresh Init mit Schema
 
 ### Secrets (außerhalb Docker):
-- ✅ Bleiben erhalten: `C:\Users\janne\Documents\.secrets\.cdb\`
+- Bleiben erhalten unter dem konfigurierten `SECRETS_PATH`
+- Default: `~/Documents/.secrets/.cdb/`
 - Enthalten: MEXC API Keys, Grafana/Postgres/Redis Passwords
 
 ---
 
-## 🚀 Quick Start (TL;DR)
+## Quick Start (TL;DR)
 
 **Nach Docker Neuinstallation:**
 
 ```powershell
 # 1. Restore (2-3 Min)
-cd D:\Dev\Backups\docker_reinstall_YYYYMMDD_HHMMSS
+cd <BACKUP_DIR>
 .\restore_volumes.ps1
 
 # 2. Stack starten (30-60 Sek)
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+cd <REPO_ROOT>
 make docker-up
 
 # 3. Verifizieren
@@ -82,13 +73,21 @@ make docker-up
 
 ---
 
-## 📋 Backup-Prozess
+## Backup-Prozess
 
-### Manuelles Backup erstellen:
+### Kanonischer Weg (empfohlen):
+
+```powershell
+.\tools\cdb.ps1 backup
+```
+
+Sichert Postgres + Redis nach `F:\Claire_Backups` (konfigurierbar).
+
+### Manuelles Volume-Backup:
 
 ```powershell
 # 1. Backup-Verzeichnis erstellen
-$BACKUP_DIR = "D:\Dev\Backups\docker_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+$BACKUP_DIR = "<BACKUP_LOCATION>\docker_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 mkdir $BACKUP_DIR
 
 # 2. Volumes sichern
@@ -96,10 +95,9 @@ docker run --rm -v claire_de_binare_redis_data:/data -v ${BACKUP_DIR}:/backup al
 docker run --rm -v claire_de_binare_grafana_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/grafana_data.tar.gz -C /data .
 docker run --rm -v claire_de_binare_prom_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/prometheus_data.tar.gz -C /data .
 docker run --rm -v claire_de_binare_loki_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/loki_data.tar.gz -C /data .
-docker run --rm -v claude-memory:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/claude_memory.tar.gz -C /data .
 
 # 3. Config sichern
-Copy-Item D:\Dev\Workspaces\Repos\Claire_de_Binare\.env ${BACKUP_DIR}\.env_backup
+Copy-Item <REPO_ROOT>\.env ${BACKUP_DIR}\.env_backup
 
 # 4. Dokumentieren
 docker ps -a --format "{{.Names}}\t{{.Image}}\t{{.Status}}" > ${BACKUP_DIR}\container_list.txt
@@ -107,26 +105,22 @@ docker volume ls > ${BACKUP_DIR}\volume_list.txt
 docker network ls > ${BACKUP_DIR}\network_list.txt
 ```
 
-### Automatisches Backup (TODO):
-- Cronjob/Task Scheduler für tägliche Backups
-- Retention Policy (z.B. 7 Tage behalten)
-- Backup-Validierung
-
 ---
 
-## 🔧 Restore-Prozess
+## Restore-Prozess
 
 ### Automatisch (empfohlen):
 ```powershell
+cd <BACKUP_DIR>
 .\restore_volumes.ps1
 ```
 
 ### Manuell:
-Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) für alle Commands
+Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) für alle Commands.
 
 ---
 
-## ✅ Verifikation
+## Verifikation
 
 ### Nach Restore ausführen:
 ```powershell
@@ -146,7 +140,7 @@ docker volume ls
 docker ps
 
 # Grafana Dashboards
-# → http://localhost:3000
+# -> http://localhost:3000
 
 # Redis Daten
 docker exec cdb_redis redis-cli DBSIZE
@@ -154,7 +148,7 @@ docker exec cdb_redis redis-cli DBSIZE
 
 ---
 
-## 🚨 Bekannte Probleme & Lösungen
+## Bekannte Probleme & Lösungen
 
 ### Problem: PostgreSQL Mount-Fehler
 **Symptom:**
@@ -162,10 +156,8 @@ docker exec cdb_redis redis-cli DBSIZE
 error mounting "...schema.sql": not a directory
 ```
 
-**Ursache:** Alte absolute Pfade in Compose Files (C:\Users\... statt D:\Dev\...)
-
 **Lösung:**
-1. Prüfe `infrastructure/compose/base.yml`
+1. Prüfe `infrastructure/compose/compose.blue.yml`
 2. Entferne oder update absolute Pfade
 3. Volume-Namen sollten ausreichen
 
@@ -185,42 +177,35 @@ docker compose logs <container_name>
 ```powershell
 docker volume rm claire_de_binare_grafana_data
 docker volume create claire_de_binare_grafana_data
-docker run --rm -v claire_de_binare_grafana_data:/var/lib/grafana -v D:\Dev\Backups\...\grafana_data:/backup alpine cp -r /backup/. /var/lib/grafana/
+docker run --rm -v claire_de_binare_grafana_data:/var/lib/grafana -v <BACKUP_DIR>\grafana_data:/backup alpine cp -r /backup/. /var/lib/grafana/
 docker compose restart cdb_grafana
 ```
 
 ---
 
-## 📊 Backup-Historie
+## Backup-Historie
 
-| Datum | Event | Backup Location | Size | Status |
-|-------|-------|----------------|------|--------|
-| 2025-12-31 | Docker Neuinstallation | `docker_reinstall_20251231_075507` | 112MB | ✅ Erfolgreich |
+> **Hinweis:** Die DR-Guidance in diesem Verzeichnis wurde ursprünglich anlässlich
+> der Docker-Neuinstallation vom 2025-12-31 erstellt. Snapshot-spezifische Pfade
+> (z.B. `D:\Dev\Backups\docker_reinstall_20251231_075507`) sind nicht mehr als
+> aktiver Standard zu verstehen — die generischen Platzhalter oben gelten.
 
 ---
 
-## 🔗 Related Documentation
+## Related Documentation
 
-- [WORKSPACE_LAYOUT.md](../WORKSPACE_LAYOUT.md) - Workspace-Struktur
 - [Stack Lifecycle](../../systems/STACK_LIFECYCLE.md) - Docker Stack Management
-- [Setup Guide](../../archive/docs_legacy/SETUP_GUIDE.md) - Initial Setup
 
 ---
 
-## 📝 Maintenance
+## Maintenance
 
 **Empfohlene Backup-Frequenz:**
-- **Täglich:** Automatisches Volume Backup (TODO)
-- **Vor Major Updates:** Manuelles Backup
-- **Vor Docker Neuinstallation:** Manuelles Backup (wie hier dokumentiert)
+- **Täglich:** `make backup` (Postgres + Redis nach F:\Claire_Backups)
+- **Vor Major Updates:** Manuelles Volume-Backup (alle Volumes)
+- **Vor Docker Neuinstallation:** Manuelles Volume-Backup (wie oben dokumentiert)
 
 **Retention:**
 - Lokale Backups: 7 Tage
 - Kritische Backups: 30 Tage
 - Vor Major Releases: Permanent archivieren
-
----
-
-**Erstellt:** 2025-12-31  
-**Autor:** Claude (Disaster Recovery Documentation)  
-**Basierend auf:** Docker Reinstall 2025-12-31 07:55
