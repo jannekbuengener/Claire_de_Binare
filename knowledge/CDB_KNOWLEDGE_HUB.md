@@ -157,22 +157,14 @@ cdb-secrets-sync.ps1
 
 2025-12-27 – M7-M9 Roadmap Refinement Complete (Issue #107) — **HISTORICAL**
 
-> **Context:** These milestone plans assumed a multi-person team with dedicated
-> security lead and external pentest budget. They no longer reflect the current
-> solo-maintainer operating model. Retained as historical planning context.
-> Current operative status: `CURRENT_STATUS.md` and `docs/live-readiness/`.
-
-Epic #91 breakdown: M7 Testnet (4-6 weeks, 10 issues consolidated)
-
-M8 Security critical blockers: Security Lead + Pentest Booking ($10k-$30k)
-
-M9 Release: 2-3 weeks, SLA targets defined (99.9% uptime, <100ms p50 latency)
-
-Roadmaps: knowledge/roadmap/M7_TESTNET_PLAN.md, M8_SECURITY_PLAN.md, M9_RELEASE_PLAN.md
-
-Critical Path validated: M6 ✅ → M7 🔄 → M8 → M9
-
-Referenz: GitHub Issue #107
+> **Context:** Historical milestone plans from Dec 2025 assuming a multi-person
+> team with dedicated security lead and external pentest budget. These do not
+> reflect the current solo-maintainer operating model and are not operative
+> guidance. Details in `knowledge/roadmap/M7_TESTNET_PLAN.md`,
+> `M8_SECURITY_PLAN.md`, `M9_RELEASE_PLAN.md`. Current operative status:
+> `CURRENT_STATUS.md` and `docs/live-readiness/`.
+>
+> Referenz: GitHub Issue #107
 
 2025-12-19 – Agent Roles bleiben extern (external-only policy)
 
