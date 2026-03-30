@@ -101,7 +101,7 @@ Before deactivating, ensure:
 - [ ] Risk limits verified (within acceptable ranges)
 - [ ] Exchange connection stable
 - [ ] No ongoing critical errors in logs
-- [ ] Approval from authorized personnel (if required)
+- [ ] Maintainer-Entscheidung dokumentiert (Justification im Deactivate-Call)
 
 ### Deactivation Procedure
 
@@ -374,15 +374,15 @@ ks.deactivate("test_operator", "Test complete")
 
 ---
 
-## Escalation Matrix
+## Handlungsmatrix (Solo-Maintainer)
 
-| Scenario | Action | Contact |
-|----------|--------|---------|
-| Kill-switch auto-activated | Acknowledge, investigate, follow SOP | On-call engineer |
-| Cannot deactivate | Escalate to senior engineer | Tech lead |
-| Repeated auto-activations | Review trading strategy / risk limits | Risk manager |
-| State file corruption | Follow recovery procedure | DevOps / SRE |
-| Production incident | Activate manually, investigate | Incident commander |
+| Szenario | Aktion | Verantwortlich |
+|----------|--------|----------------|
+| Kill-Switch auto-aktiviert | Acknowledge, Logs prüfen, SOP folgen | Maintainer |
+| Deaktivierung schlägt fehl | State-File prüfen (siehe Troubleshooting oben), ggf. manuell zurücksetzen | Maintainer |
+| Wiederholte Auto-Aktivierungen | Strategie/Risk-Limits reviewen, Signal-Service ggf. stoppen | Maintainer |
+| State-File korrupt | Recovery-Prozedur (siehe oben) | Maintainer |
+| Produktions-Incident | Manuell aktivieren, Ursache isolieren | Maintainer |
 
 ---
 
@@ -395,8 +395,8 @@ Before deploying to production:
 - [ ] Manual deactivation tested in staging
 - [ ] Persistence tested (restart services with active kill-switch)
 - [ ] Audit trail verified (state file records all events)
-- [ ] SOP reviewed by team
-- [ ] Escalation contacts defined
+- [ ] SOP reviewed by maintainer
+- [ ] Handlungspfade für Solo-Betrieb validiert
 - [ ] Monitoring/alerting configured for kill-switch events
 
 ---
@@ -411,7 +411,6 @@ Before deploying to production:
 
 ---
 
-**Last Updated:** 2025-12-27
+**Last Updated:** 2026-03-30
 **Status:** ✅ Implemented (Issue #250)
-**Approved By:** [Pending]
-**Review Date:** [Pending]
+**Betriebsmodell:** Solo-Maintainer (kein Team-Review erforderlich)
