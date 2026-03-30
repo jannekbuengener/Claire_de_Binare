@@ -53,7 +53,7 @@
 
 - Live replay from Redis streams
 - Chain hash across emitted envelopes (single-envelope hashing only)
-- New thresholds, decision logic, or BlackStack changes
+- New thresholds, decision logic, or risk/execution service changes
 - Any changes to SIGNALS
 
 ## Verification

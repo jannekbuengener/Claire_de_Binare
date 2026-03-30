@@ -114,18 +114,17 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 
 **Expected output:**
 ```
-🐳 Starte Docker Compose Stack...
-✓ Using Compose Fragments (base + dev)
-[+] Running 9/9
+[+] Running ...
  ✔ Network cdb_network         Created
  ✔ Container cdb_redis          Healthy
  ✔ Container cdb_postgres       Healthy
- ✔ Container cdb_prometheus     Healthy
- ✔ Container cdb_grafana        Healthy
- ✔ Container cdb_core           Healthy
  ✔ Container cdb_risk           Healthy
  ✔ Container cdb_execution      Healthy
  ✔ Container cdb_db_writer      Healthy
+ ✔ Container cdb_ws             Started
+ ✔ Container cdb_signal         Started
+ ✔ Container cdb_prometheus     Healthy
+ ✔ Container cdb_grafana        Healthy
 ```
 
 **Failure handling:**

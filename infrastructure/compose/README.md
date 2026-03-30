@@ -6,15 +6,17 @@ Governance-konforme Infrastruktur-Definition (CDB_INFRA_POLICY.md).
 
 ```
 infrastructure/compose/
-├── base.yml    # Shared base for dev/prod/test overlays
-├── dev.yml     # Secondary local/compatibility overrides
-├── test.yml    # Canonical 431B Docker CI lab overlay
+├── compose.blue.yml     # BLUE runtime (Core: Postgres, Redis, Risk, Execution, …)
+├── compose.red.yml      # RED runtime (Signal, WS, Prometheus, Grafana, …)
+├── base.yml             # Legacy shared base (CI/test only)
+├── dev.yml              # Legacy dev overlay (CI/test only)
+├── test.yml             # 431B Docker CI lab overlay
 ├── Dockerfile.test      # Test-runner image for test.yml
-├── TEST_OVERLAY_README.md # Canonical CI-lab usage notes
-├── prod.yml    # Prod Overrides (Resource-Limits, Security)
-├── surrealdb.yml     # SurrealDB sidecar stack (cdb_database)
-├── surrealdb-dev.yml # SurrealDB dev ports (localhost only)
-└── README.md   # Diese Datei
+├── TEST_OVERLAY_README.md # CI-lab usage notes
+├── prod.yml             # Legacy prod overlay
+├── surrealdb.yml        # SurrealDB sidecar stack
+├── surrealdb-dev.yml    # SurrealDB dev ports (localhost only)
+└── README.md            # Diese Datei
 ```
 
 ## Kanonische Pfade
@@ -30,28 +32,13 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
 
-### Secondary / Compatibility Path
+### Legacy Compose Chain (CI/test only)
+
+`base.yml + dev.yml` ist **nicht** der kanonische Runtime-Pfad. Sie bleibt nur fuer CI-Labs und explizite Kompatibilitaetsflows:
+
 ```bash
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
-```
-
-`base.yml + dev.yml` bleibt fuer lokale Dev-/aeltere Workflow-Pfade nutzbar, ist aber nicht die kanonische 431B-CI-Lab-Baseline.
-
-## Weitere Usage
-
-### Secondary Development / Compatibility
-```bash
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
-```
-
-### Production
-```bash
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/prod.yml up -d
-```
-
-### Legacy (Fallback)
-```bash
-docker compose up -d  # Nutzt root-level docker-compose.yml
+# CI Lab Baseline
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
 
 ### SurrealDB Sidecar (Standalone)
@@ -98,12 +85,11 @@ Mit `surrealdb-dev.yml` liegt SurrealDB lokal auf `127.0.0.1:8010`, damit es nic
 
 ## Migration von Legacy
 
-Legacy `docker-compose.yml` bleibt als Fallback erhalten (Abwärtskompatibilität).
+Die root-level `docker-compose.yml` existiert nicht mehr im Working Repo.
 
-**Empfohlene Migration:**
-1. Fuer isolierte CI-/E2E-Labs: `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit`
-2. Fuer lokale Dev-Flows nur bei Bedarf: `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d`
-3. Legacy `docker-compose.yml` nur als Fallback behalten
+**Kanonische Pfade:**
+1. **Runtime:** `compose.blue.yml` + `compose.red.yml` (oder `make docker-up`)
+2. **CI-Lab:** `base.yml` + `test.yml` (isolierter Test-Overlay)
 
 ## Kubernetes-Readiness
 

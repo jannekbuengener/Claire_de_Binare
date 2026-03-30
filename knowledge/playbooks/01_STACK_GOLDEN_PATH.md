@@ -12,31 +12,37 @@ ist.
 - PowerShell 7+
 - Docker Compose v2 (`docker compose`)
 
-## Canonical Start (No Drama)
+## Canonical Start (No Drama) — BLUE+RED
+
+> **Kanonischer Runtime-Pfad seit BLUE/RED-Split:**
+> - BLUE = Core, always-on (`infrastructure/compose/compose.blue.yml`)
+> - RED = Signal + Monitoring (`infrastructure/compose/compose.red.yml`)
+
 1) **Repo Root**
 ```powershell
-cd C:\Users\<you>\Documents\GitHub\Workspaces\Claire_de_Binare
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 ```
 
-2) **Compose validieren (frühe Fehler rausziehen)**
+2) **Netzwerk (einmalig)**
 ```powershell
-docker compose config > .\_compose.rendered.yml
-```
-Erwartung: keine Fehler, Datei entsteht.
-
-3) **Build (nur wenn Custom Images)**
-```powershell
-docker compose build
+docker network create cdb_network 2>$null
 ```
 
-4) **Up**
+3) **BLUE Stack (Core — Postgres, Redis, Risk, Execution, …)**
 ```powershell
-docker compose up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
 ```
+
+4) **RED Stack (Signal, WS, Prometheus, Grafana, …)**
+```powershell
+docker compose -f infrastructure/compose/compose.red.yml up -d
+```
+
+> Oder via Makefile: `make docker-up` (startet BLUE + RED)
 
 5) **Status**
 ```powershell
-docker ps --format "table {{.Names}}\t{{.Status}}"
+docker ps --format “table {{.Names}}\t{{.Status}}”
 ```
 Erwartung: kein “Restarting” in Kernservices.
 
@@ -72,13 +78,17 @@ docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "select coun
 
 ## Canonical Stop
 ```powershell
-docker compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 ```
+> Oder: `make docker-down`
 
 ## Dev-Only Hard Reset (löscht Daten!)
 ```powershell
-docker compose down -v
-docker compose up -d
+docker compose -f infrastructure/compose/compose.red.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ## Debug Decision Tree (schnell)

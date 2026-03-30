@@ -1,5 +1,3 @@
-docker build -t cdb-risk-manager .
-docker run -p 8002:8002 --env-file ../../.env cdb-risk-manager
 # CDB Risk Manager
 
 ## 🚀 Überblick
@@ -22,9 +20,9 @@ flowchart LR
 
 ## ⚙️ Installation & Start
 
+Risk ist Teil des **BLUE**-Stacks (Core):
 ```powershell
-docker compose build risk_manager
-docker compose up -d risk_manager
+docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_risk
 curl http://localhost:8002/health
 ```
 

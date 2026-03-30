@@ -314,5 +314,5 @@ pytest ...
 
 ---
 
-**Owner:** DevOps Team
+**Owner:** Maintainer
 **Review Cycle:** As needed

@@ -273,4 +273,4 @@ docker-compose -f base.yml -f dev.yml down -v
 ---
 
 **Next Review:** Quarterly
-**Owner:** DevOps Team
+**Owner:** Maintainer
