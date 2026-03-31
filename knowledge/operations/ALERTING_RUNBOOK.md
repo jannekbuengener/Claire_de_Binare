@@ -212,8 +212,9 @@ alertmanager: UP
 ## Quick Commands Reference
 
 ```powershell
-# Start stack with Alertmanager
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging
+# Start stack with Alertmanager (BLUE + RED)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Check Alertmanager health
 docker exec cdb_alertmanager wget -qO- http://localhost:9093/-/healthy

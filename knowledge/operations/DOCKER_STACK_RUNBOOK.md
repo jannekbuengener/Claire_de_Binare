@@ -328,10 +328,11 @@ docker exec cdb_postgres psql -U claire_user -d postgres -c "CREATE DATABASE cla
 
 **Dev: Force Schema Reload** (wipes all data):
 ```powershell
-cd infrastructure/compose
-docker-compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker volume rm claire_de_binare_postgres_data
-docker-compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 **Prod: Apply Schema Manually** (preserves data):

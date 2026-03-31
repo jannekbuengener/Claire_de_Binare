@@ -28,21 +28,6 @@ docker compose -f infrastructure/compose/compose.blue.yml down
 docker compose -f infrastructure/compose/compose.red.yml down
 ```
 
-### Stack starten (Legacy, CI/test only)
-
-```powershell
-# Legacy Dev Stack
-.\infrastructure\scripts\stack_up.ps1 -Profile dev
-
-# Mit Logging (Loki + Promtail)
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging
-
-# Mit TLS
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -TLS
-
-# Vollstaendig (Dev + Logging + TLS)
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging -TLS
-```
 
 ### Stack stoppen
 

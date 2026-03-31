@@ -150,10 +150,6 @@ docker compose -f infrastructure/compose/compose.red.yml down
 docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
 
-# Legacy (CI/test only):
-# git checkout infrastructure/compose/dev.yml
-# docker compose -f base.yml -f dev.yml up -d --build cdb_execution
-
 # 4. Verify rollback
 docker logs cdb_execution --tail 50 | grep "Mode:"
 # Expected: "Mode: MOCK"
