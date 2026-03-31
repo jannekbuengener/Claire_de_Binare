@@ -1,9 +1,9 @@
 # Secret Rotation Policy (CDB)
 
-**Note:** cdb-secrets-rotator implementation is pending; no tracking issue created yet.
 **Status:** Active
-**Last Updated:** 2026-01-28
-**Tool:** `tools/secrets/Rotate-Secrets.ps1`
+**Last Updated:** 2026-03-31
+**CRUD / Ops:** `infrastructure/scripts/manage_secrets.ps1`
+**Rotation / Export:** `tools/secrets/Rotate-Secrets.ps1`
 
 ---
 
@@ -170,18 +170,21 @@ If `GRAFANA_ADMIN_PASSWORD` was also compromised:
 
 ---
 
-## Integration with Existing Tools
+## Active Secret Management Entrypoints
 
-### Existing Scripts (Unchanged)
-- `tools/set_secrets.ps1` - Manual initial setup (interactive prompts)
-- `tools/cdb-secrets-sync.ps1` - Sync .cdb_local → .secrets (legacy)
+| Entrypoint | Role |
+|---|---|
+| `infrastructure/scripts/manage_secrets.ps1` | **Primary CRUD / Ops** — setup, rotate single secret, validate, list |
+| `tools/secrets/Rotate-Secrets.ps1` | **Primary Rotation / Export** — plan/apply bulk rotation, export `.env.runtime`, incident response |
+| `scripts/manage_secrets.ps1` | Compat copy of the infrastructure version; prefer the infrastructure path |
+| `tools/set_secrets.ps1` | Secondary legacy interactive setup helper |
 
-### New Script (Rotation)
-- `tools/secrets/Rotate-Secrets.ps1` - Incident response + periodic rotation
+### Legacy / Reference-Only
+- `infrastructure/scripts/legacy/cdb-secrets-sync.ps1` — moved from `tools/` per #1404; not an active operator path
 
-### Stack Startup (B-lite Integration)
-- `infrastructure/scripts/stack_up.ps1` - Auto-loads `.env.runtime` if present
-- Disable via: `$env:CDB_IGNORE_RUNTIME_ENV='1'`
+### Stack Startup
+- Canonical: `infrastructure/scripts/setup_blue_red.ps1` or `tools/cdb.ps1 runtime up`
+- Disable `.env.runtime` auto-load via: `$env:CDB_IGNORE_RUNTIME_ENV='1'`
 
 ---
 

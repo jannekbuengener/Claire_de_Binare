@@ -110,13 +110,19 @@ Generates `.env.runtime` file with all auto secrets for injection into Docker st
 
 ### With BLUE+RED Runtime
 The canonical runtime (`compose.blue.yml` + `compose.red.yml`) loads secrets from `SECRETS_PATH`.
-Legacy `stack_up.ps1` also loads `.env.runtime` if present.
 - Disable `.env.runtime` auto-load via: `$env:CDB_IGNORE_RUNTIME_ENV=1`
 
-### With Existing Tools
-- `set_secrets.ps1` - Manual initial secret setup (still valid)
-- `cdb-secrets-sync.ps1` - Sync .cdb_local → .secrets (still valid)
-- **NEW:** `Rotate-Secrets.ps1` - Incident response / periodic rotation
+### Active Secret Management Entrypoints
+
+| Entrypoint | Role | Scope |
+|---|---|---|
+| `infrastructure/scripts/manage_secrets.ps1` | **Primary CRUD / Ops** | setup, rotate single secret, validate, list |
+| `tools/secrets/Rotate-Secrets.ps1` | **Primary Rotation / Export** | plan/apply bulk rotation, export `.env.runtime` |
+| `scripts/manage_secrets.ps1` | Compat copy | Same as infrastructure version; prefer the infrastructure path |
+| `tools/set_secrets.ps1` | Secondary | Legacy interactive setup helper |
+
+### Legacy / Reference-Only
+- `infrastructure/scripts/legacy/cdb-secrets-sync.ps1` — moved from `tools/` per #1404; not an active operator path
 
 ## Evidence / Audit Trail
 
