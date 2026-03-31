@@ -121,7 +121,7 @@ docker ps --filter "name=promtail"
    - Complete architecture guide
    - Canonical vs legacy files
    - Layer architecture explanation
-   - Usage examples with stack_up.ps1
+   - Usage examples (stack_up.ps1-Referenzen darin sind [LEGACY COMPAT])
    - Secret management guide
    - Troubleshooting section
 
@@ -482,10 +482,9 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Operational Scripts
 
-1. **`infrastructure/scripts/stack_up.ps1`**
-   - Unified stack launcher
-   - Profile and overlay support
-   - Validation and health checks
+1. **`infrastructure/scripts/stack_up.ps1`** [LEGACY COMPAT]
+   - Legacy Stack-Launcher mit Overlay-Support und `.env.runtime` Auto-Load
+   - Kanonischer Operator-Start: `docker compose -f compose.blue.yml up -d` + `compose.red.yml`
 
 2. **`infrastructure/scripts/stack_clean.ps1`**
    - Safe cleanup with data preservation
