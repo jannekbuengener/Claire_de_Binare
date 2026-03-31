@@ -47,10 +47,12 @@ graph LR
 ---
 
 ## ⚡ Runbook (Known-Good Commands)
-> **Stack reset + start**
-> `docker compose down -v`
-> `docker compose up -d --build`
-> `docker compose ps`
+> **Stack reset + start (BLUE+RED canonical runtime)**
+> `docker compose -f infrastructure/compose/compose.blue.yml down -v`
+> `docker compose -f infrastructure/compose/compose.red.yml down -v`
+> `docker compose -f infrastructure/compose/compose.blue.yml up -d`
+> `docker compose -f infrastructure/compose/compose.red.yml up -d`
+> `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml ps`
 
 > **P0 E2E (Determinismus)**
 > ```powershell

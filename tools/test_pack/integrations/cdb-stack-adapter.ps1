@@ -1,16 +1,17 @@
 # integrations/cdb-stack-adapter.ps1
 <#
 Purpose:
-  Bridge for experimental test_pack drills against the CDB BLUE+RED stack.
+  Legacy bridge for experimental test_pack drills against older CDB stack scripts.
 
 Status:
-  - experimental / secondary
+  - experimental / secondary — NOT a canonical discovery or runtime entrypoint
   - not the canonical repo-wide 431C drill source of truth
+  - LEGACY BRIDGE: references `scripts\stack_up.ps1` / `scripts\stack_down.ps1` which no longer exist
+  - DO NOT USE for normal stack operations; canonical runtime is BLUE+RED via `tools\cdb.ps1 runtime up`
 
 How:
   - points to the working repo root
-  - up:   calls tools\cdb.ps1 runtime up (canonical dispatcher)
-  - down: calls docker compose down for RED then BLUE (matches make docker-down)
+  - attempts to call scripts/stack_up.ps1 and scripts/stack_down.ps1 (legacy paths, no longer present)
   - returns the compose invocation output into the evidence pack
 
 This keeps the Test Pack generic while still "clicking" into CDB with minimal friction.
@@ -25,22 +26,11 @@ param(
 $ErrorActionPreference = "Stop"
 New-Item -ItemType Directory -Force -Path $EvidenceDir | Out-Null
 
-# --- Up: canonical dispatcher ---
-$dispatcher = Join-Path $CdbRepoRoot "tools\cdb.ps1"
-if (!(Test-Path $dispatcher)) { throw "Missing dispatcher: $dispatcher" }
+$up = Join-Path $CdbRepoRoot "scripts\stack_up.ps1"
+$down = Join-Path $CdbRepoRoot "scripts\stack_down.ps1"
 
-& pwsh -NoProfile -File $dispatcher runtime up 2>&1 |
-  Tee-Object -FilePath (Join-Path $EvidenceDir "stack_up.log") | Out-Null
+if (!(Test-Path $up)) { throw "Missing: $up" }
+if (!(Test-Path $down)) { throw "Missing: $down" }
 
-# --- Down: docker compose RED then BLUE (no runtime down in dispatcher yet) ---
-$composeDir = Join-Path $CdbRepoRoot "infrastructure\compose"
-$redCompose  = Join-Path $composeDir "compose.red.yml"
-$blueCompose = Join-Path $composeDir "compose.blue.yml"
-
-if (!(Test-Path $redCompose))  { throw "Missing: $redCompose" }
-if (!(Test-Path $blueCompose)) { throw "Missing: $blueCompose" }
-
-& docker compose -f $redCompose down 2>&1 |
-  Tee-Object -FilePath (Join-Path $EvidenceDir "stack_down.log") | Out-Null
-& docker compose -f $blueCompose down 2>&1 |
-  Tee-Object -FilePath (Join-Path $EvidenceDir "stack_down.log") -Append | Out-Null
+& pwsh -NoProfile -File $up 2>&1 | Tee-Object -FilePath (Join-Path $EvidenceDir "stack_up.log") | Out-Null
+& pwsh -NoProfile -File $down 2>&1 | Tee-Object -FilePath (Join-Path $EvidenceDir "stack_down.log") | Out-Null

@@ -112,12 +112,12 @@ Generates `.env.runtime` file with all auto secrets for injection into Docker st
 The canonical runtime (`compose.blue.yml` + `compose.red.yml`) loads secrets directly from `SECRETS_PATH`
 (`~/Documents/.secrets/.cdb`). No `.env.runtime` required for normal operation.
 
-> **[LEGACY COMPAT]** `infrastructure/scripts/stack_up.ps1` lädt `.env.runtime` automatisch, wenn vorhanden.
-> Dies ist nicht mehr der kanonische Operator-Startflow.
+> **[DEPRECATED — NICHT VERWENDEN]** `infrastructure/scripts/stack_up.ps1` ist nicht mehr der kanonische Operator-Startflow.
+> Für den kanonischen Runtime-Start: `.\tools\cdb.ps1 runtime up` (bzw. `setup_blue_red.ps1` direkt).
 
 ### With Existing Tools
-- `set_secrets.ps1` - Manual initial secret setup (writes to repo-local `.secrets/` — **legacy path**)
-- `cdb-secrets-sync.ps1` - **[LEGACY COMPAT]** Sync `.cdb_local → .secrets` (alter Pfad). Nicht mehr kanonisch.
+- `set_secrets.ps1` - **[LEGACY — alter Pfad `.secrets/`, nicht kanonisch]** Manual initial secret setup. Kanonisch: `tools\secrets\Rotate-Secrets.ps1 apply`.
+- `cdb-secrets-sync.ps1` - **[LEGACY — alter Pfad `.cdb_local → .secrets`]** Sync-Helper. Nicht mehr kanonisch.
 - **Rotate-Secrets.ps1** - Incident response / periodic rotation (canonical)
 
 ## Evidence / Audit Trail

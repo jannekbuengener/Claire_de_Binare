@@ -84,7 +84,7 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 
 Rollentrennung:
 - `base.yml + test.yml` = kanonische Docker-CI-Lab-Baseline fuer isolierte Test-/E2E-Labs
-- `base.yml + dev.yml` = sekundaerer Dev-/Kompatibilitaetspfad; einige aeltere Workflows nutzen ihn noch
+- `base.yml + dev.yml` = CI/Testing-only; kein normaler Runtime-Pfad
 - `compose.blue.yml + compose.red.yml` = lokale Operator-Runtime, nicht die CI-Lab-Baseline
 
 ## Security Simulation Source of Truth

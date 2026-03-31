@@ -10,7 +10,7 @@
 ## 🎯 Essential Reading (30 min)
 
 ### 1. README + Current Entry Chain (5 min)
-📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
+📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`knowledge/ACTIVE_ROADMAP.md`](../ACTIVE_ROADMAP.md)
 **What:** Project overview, current runtime model, canonical compose layers, getting started
 
 ### 2. System Context (5 min)

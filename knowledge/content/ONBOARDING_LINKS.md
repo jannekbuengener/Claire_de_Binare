@@ -39,7 +39,7 @@ Claire_de_Binare/
 ## 🎯 Quick Navigation
 
 ### New Developer? Start Here:
-1. `README.md` -> [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) -> [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) -> [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md) -> [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md) (current entry chain)
+1. `README.md` -> [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) -> [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) -> [`knowledge/ACTIVE_ROADMAP.md`](../ACTIVE_ROADMAP.md) (canonical entry chain)
 2. [knowledge/SYSTEM.CONTEXT.md](../SYSTEM.CONTEXT.md) (architecture)
 3. [TEST_HARNESS_V1.md](TEST_HARNESS_V1.md) (how to test)
 
