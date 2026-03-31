@@ -1,7 +1,7 @@
 # Session Log — Issue #1410: Runbook BLUE/RED Reconcile
 
 **Datum:** 2026-03-31
-**Commit:** `0266dbd`
+**Commits:** `0266dbd` (Hauptpatch), `d034ecc7` (Follow-up Resttreffer)
 **Branch:** main
 
 ## Ziel
@@ -29,6 +29,14 @@ Aktive Operator-Docs von Legacy-Stack-Topologie (`stack_up.ps1`, `base.yml + dev
 - `infrastructure/tls/TLS_SETUP.md` — stack_up.ps1 -TLS durch direkte compose + tls.yml Overlay-Kommandos ersetzt
 - `infrastructure/scripts/bootstrap_local.sh` — base.yml+dev.yml auf BLUE+RED; Health-Loop und Status-Ausgabe ebenfalls auf BLUE+RED
 - `README.md` — kommentierte base.yml+dev.yml Alternative direkt neben dem Start-Block entfernt
+
+## Follow-up Resttreffer (Commit `d034ecc7`)
+
+- `knowledge/OPERATIONS_RUNBOOK.md` Z.31–45 — gesamter "Legacy, CI/test only"-Block mit 4× `stack_up.ps1 -Profile dev` entfernt
+- `knowledge/operations/ALERTING_RUNBOOK.md` Z.216 — `stack_up.ps1 -Profile dev -Logging` in Quick Commands → BLUE+RED
+- `knowledge/operations/DOCKER_STACK_RUNBOOK.md` Z.332/334 — `docker-compose -f base.yml -f dev.yml` in DB-Section → BLUE+RED
+- `knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md` Z.153–155 — kommentierter `base.yml + dev.yml`-Rollback-Fallback entfernt
+- `knowledge/runbooks/01_CANONICAL_GOLDEN_STATE.md` Z.4–6 — `base.yml + dev.yml` → BLUE+RED
 
 ## Bewusst nicht angefasst
 

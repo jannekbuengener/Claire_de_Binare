@@ -3,24 +3,32 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-29
-**Latest Commit**: c65552e — docs(lr-audit): reconcile phase status to 2026-03-29 (#1306)
+**Last Updated**: 2026-03-31
+**Latest Main Commit**: d034ecc7 — docs(ops): fix remaining legacy stack references (#1410 follow-up)
+**Local HEAD**: d034ecc7
 
 ---
 
-## Repo / Engineering Status (2026-03-24)
+## Repo / Engineering Status (2026-03-31)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
+  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, aber durch gemergte PRs #1383/#1384/#1386 faktisch supersediert)
+  - #1285: fix(soak-monitor): use df -P to prevent false DISK_UNAVAILABLE on long mount paths (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
   - #1217: fix(digest): auto-close weekly digest
   - #1207: feat(market): V3 shadow mode — cdb_market write path
-  - #1180: deps: ruff 0.15.6 bump
-- **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
-- **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
-- **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
-- **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
-- **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
+  - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
+  - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
+  - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
+  - **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
+  - **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
+  - **Merged (Session 12, 2026-03-29)**: #1359/#1360/#1361/#1362/#1363 — Sessions-README, Signal-Alerts-Claim, Monitoring-Terminologie, INV-006 `min_qty_sum`, historische Governance-Artefakte markiert.
+  - **Merged (Session 13, 2026-03-30)**: #1370 — LR-007-Canon auf 72h-Validierungsfenster ausgerichtet (93daac4).
+  - **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
+  - **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
+  - **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
+  - **Session 18, 2026-03-31**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. Commits 0266dbd + d034ecc7. Offen: #1411 (test-pack adapter), #1413 (stack_clean).
 
 ---
 
@@ -35,6 +43,7 @@ Operatives Go/No-Go-Verdikt: **NO-GO** — Phasenstatus und Verdikt-Quelle aussc
 ### Live-Readiness
 - LR-010: Evidence-Status auf PASS hochgestuft (PR #1223)
 - LR-020: IMPLEMENTED / DONE — Tier-2 paper-trade flow mit FILLED-State, Decimal-qty-Fix, TRACE_CONTRACT_V1 (PR #1190)
+- LR-007: Spezifikation/Status auf das kanonische 72h-Validierungsfenster ausgerichtet; alte 30d-Draft-Wording entfernt (PR #1370)
 - LR-031: Threshold neu kalibriert auf min=1 (liveness floor, PR #1257 a407838); lean Run 23407946292 vollstaendig PASS (soak_gate + comparison + canonical package)
 - LR-041: Deterministischer Redis/Postgres-Recovery-Drill hinzugefuegt (PR #1130)
 
@@ -46,6 +55,9 @@ Operatives Go/No-Go-Verdikt: **NO-GO** — Phasenstatus und Verdikt-Quelle aussc
 - Makefile: docker-* Targets auf kanonischen BLUE/RED Pfad migriert (#1219)
 - Backup: Automatisierungs-Runbook + SurrealDB-Drill (#1175, #1130)
 - Governance: TODO/Placeholder-Lifecycle formalisiert (#1239)
+- Aktive Runtime-Doku verweist jetzt konsistent auf `compose.blue.yml` + `compose.red.yml`; unqualifiziertes `docker compose up -d` und base/dev-Canon aus aktiven Artefakten entfernt (#1382, #1386)
+- Incident-/Emergency-/CI-Dokumente auf Solo-Maintainer-Realitaet umgestellt; Mehrpersonen-Eskalationsketten aus aktiven SOPs entfernt (#1383)
+- Obsolete `BLACK`-Terminologie aus aktiven Live-Readiness- und Governance-Artefakten entfernt; aktive Domain-Bezeichnung jetzt `Risk Service` / `cdb_risk` (#1384, #1389)
 
 ### Soak-Monitor + Alerting (2026-03-24, Session 6)
 
@@ -88,6 +100,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
 9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
+10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
 
 ---
 
