@@ -30,9 +30,10 @@ pip install -r requirements-dev.txt
 pre-commit install
 pre-commit install --hook-type commit-msg
 
-# Setup secrets (copy template)
-cp .env.example .cdb_local/.secrets/.env.compose
-# Edit with your credentials
+# Setup secrets (Windows — canonical entry point)
+# .\tools\cdb.ps1 secrets init
+# Creates ~/Documents/.secrets/.cdb/ with generated passwords.
+# On Linux/macOS: mkdir -p ~/Documents/.secrets/.cdb && see init-secrets.ps1 for details.
 ```
 
 ### Running the Stack

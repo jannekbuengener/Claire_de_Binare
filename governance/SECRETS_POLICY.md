@@ -2,7 +2,7 @@
 
 **Issue:** #316
 **Status:** Implemented
-**Last Updated:** 2025-12-28
+**Last Updated:** 2026-03-31
 
 ---
 
@@ -21,53 +21,43 @@ C:\Users\<username>\Documents\.secrets\.cdb\
 └── MEXC_API_KEY (optional)
 ```
 
-### Docker Compose
-Secrets are loaded via environment file:
-```
-.cdb_local/.secrets/.env.compose
-```
-
-This file is **gitignored** and must be created locally.
+### Docker Services
+Services read secrets as Docker secrets mounted at `/run/secrets/<name>` at startup.
+Compose files reference the host-side secrets directory via the `SECRETS_PATH` variable
+(default: `~/Documents/.secrets/.cdb/`).
 
 ## Setup Instructions
 
-### 1. Create Secrets Directory
+### Windows (canonical)
+```powershell
+.\tools\cdb.ps1 secrets init
+```
+This creates `~/Documents/.secrets/.cdb/`, generates secure random passwords for all
+required secrets, and sets restrictive file permissions.
+
+### Linux / macOS
 ```bash
-mkdir -p ~/.secrets/.cdb
+mkdir -p ~/Documents/.secrets/.cdb
+openssl rand -base64 24 > ~/Documents/.secrets/.cdb/REDIS_PASSWORD
+openssl rand -base64 24 > ~/Documents/.secrets/.cdb/POSTGRES_PASSWORD
+openssl rand -base64 24 > ~/Documents/.secrets/.cdb/GRAFANA_PASSWORD
+chmod 700 ~/Documents/.secrets/.cdb
 ```
 
-### 2. Generate Secrets
+### Verify
 ```bash
-# Generate secure passwords
-openssl rand -base64 24 > ~/.secrets/.cdb/REDIS_PASSWORD
-openssl rand -base64 24 > ~/.secrets/.cdb/POSTGRES_PASSWORD
-openssl rand -base64 24 > ~/.secrets/.cdb/GRAFANA_PASSWORD
-```
-
-### 3. Create Docker Compose Env File
-```bash
-cat > .cdb_local/.secrets/.env.compose << EOF
-REDIS_PASSWORD=$(cat ~/.secrets/.cdb/REDIS_PASSWORD)
-POSTGRES_PASSWORD=$(cat ~/.secrets/.cdb/POSTGRES_PASSWORD)
-GRAFANA_PASSWORD=$(cat ~/.secrets/.cdb/GRAFANA_PASSWORD)
-EOF
-```
-
-### 4. Verify
-```bash
-# Ensure secrets are not tracked
-git check-ignore .cdb_local/.secrets/.env.compose
-# Should output: .cdb_local/.secrets/.env.compose
+ls ~/Documents/.secrets/.cdb/
+# Should list: REDIS_PASSWORD  POSTGRES_PASSWORD  GRAFANA_PASSWORD
 ```
 
 ## What's Allowed in Git
 
 | File | Status | Purpose |
 |------|--------|---------|
-| `.env.example` | ✅ Tracked | Template with placeholder paths |
-| `.secrets/*_password` | ❌ Never | Actual secrets |
-| `.cdb_local/.secrets/*` | ❌ Never | Runtime secrets |
 | `core/secrets.py` | ✅ Tracked | Secret loading logic (no values) |
+| `core/domain/secrets.py` | ✅ Tracked | Domain-level secret reader |
+| `~/Documents/.secrets/.cdb/*` | ❌ Never | Runtime secrets (host-side) |
+| `/run/secrets/*` | ❌ Never | Mounted Docker secrets (container-side) |
 
 ## Git History Warning
 
