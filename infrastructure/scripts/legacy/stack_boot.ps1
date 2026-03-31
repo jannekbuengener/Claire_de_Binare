@@ -1,5 +1,10 @@
 #Requires -Version 5.1
 
+# LEGACY — superseded by .\tools\cdb.ps1 runtime up (calls infrastructure/scripts/setup_blue_red.ps1).
+# This script uses the correct BLUE/RED compose topology but still checks .secrets/ in the repo root,
+# which is not the canonical secrets path (SECRETS_PATH / ~/Documents/.secrets/.cdb).
+# Retained for reference only; do not use as an active entrypoint.
+
 <#
 .SYNOPSIS
     Golden Stack Boot für Claire de Binare v2.0
