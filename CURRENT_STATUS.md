@@ -24,18 +24,9 @@
 
 ---
 
-## Live-Readiness Phase Status (Stand 2026-03-29)
+## Live-Readiness
 
-| Phase | LR-Tasks | Status | Aenderung seit 2026-02-21 |
-|---|---|---|---|
-| P0 Preconditions | LR-001..003 | DONE | unveraendert |
-| P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
-| P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
-| P3 Shadow Mode | LR-030, LR-031 | OPEN | SSOT: keine Evidence-Dateien in `docs/live-readiness/` bei Reconciliation 2026-03-29 verifiziert; als OPEN behandelt bis bestaetigt |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — Soak-Run 2026-03-22 FAILED (environment_interruption); Soak-Run 2026-03-24 FAILED (cdb_signal restart); **72h-Run 2026-03-25 12:12 UTC abgeschlossen: INCONCLUSIVE** (77.75h, `no_restart_alerts` FAIL, cause=`environment_interruption`; `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json`); Gate-Policy-Entscheidung oder neuer ununterbr. Run ausstehend |
-| P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
-
-**Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
+Operatives Go/No-Go-Verdikt: **NO-GO** — Phasenstatus und Verdikt-Quelle ausschliesslich unter [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md). Diese Datei ist nicht die operative SSOT fuer Live-Readiness.
 
 ---
 

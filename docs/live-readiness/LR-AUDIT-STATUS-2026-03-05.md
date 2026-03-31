@@ -101,7 +101,7 @@ Open LR issue map (quick reference):
 1. ~~Resolve P0 tracking drift~~ Done (2026-03-15): #776 and #778 closed, state files consistent.
 2. Complete and evidence `LR-011` and `LR-012` test suites as highest-impact deterministic test blockers.
 3. ~~Execute one full `LR-020` paper-trading E2E run~~ Done (2026-03-17): `LR-020-STATE.yaml` = DONE.
-4. Verify `LR-030`/`LR-031` status directly (no evidence files found at this reconciliation); confirm or formalize PARTIAL claim from `CURRENT_STATUS.md`.
+4. Verify `LR-030`/`LR-031` status directly; no evidence files found at this reconciliation — status treated as OPEN until confirmed.
 5. Resolve `LR-040` gate outcome: either clarify gate policy on environment interruptions or execute new uninterrupted 72h run; then schedule `LR-041`/`LR-042`.
 6. Keep canary `LR-050` in NO-GO state until all upstream readiness gates are evidenced and human approval is recorded.
 
