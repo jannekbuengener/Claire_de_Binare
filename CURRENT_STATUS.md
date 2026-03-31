@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-03-31
-**Latest Main Commit**: d034ecc7 — docs(ops): fix remaining legacy stack references (#1410 follow-up)
-**Local HEAD**: d034ecc7
+**Latest Main Commit**: f433ea7e — docs(secrets): follow-up #1411 — patch 4 remaining legacy refs
+**Local HEAD**: f433ea7e
 
 ---
 
@@ -28,7 +28,8 @@
   - **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
   - **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
   - **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
-  - **Session 18, 2026-03-31**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. Commits 0266dbd + d034ecc7. Offen: #1411 (test-pack adapter), #1413 (stack_clean).
+  - **Session 18, 2026-03-31**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. Commits 0266dbd + d034ecc7.
+  - **Session 19, 2026-03-31**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. `.cdb_local/.secrets`, Repo-`.secrets`, `.env.runtime` und `stack_up.ps1` aus aktiven Operator-Flows entfernt oder als `[LEGACY COMPAT]` markiert. 21 Dateien. Commits 009c8edf + f433ea7e. Offen: #1413 (stack_clean).
 
 ---
 
