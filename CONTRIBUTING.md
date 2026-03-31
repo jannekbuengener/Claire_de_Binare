@@ -30,20 +30,20 @@ pip install -r requirements-dev.txt
 pre-commit install
 pre-commit install --hook-type commit-msg
 
-# Setup secrets (Windows — canonical entry point)
-# .\tools\cdb.ps1 secrets init
-# Creates ~/Documents/.secrets/.cdb/ with generated passwords.
-# On Linux/macOS: mkdir -p ~/Documents/.secrets/.cdb && see init-secrets.ps1 for details.
+# Setup secrets (kanonischer Pfad: ~/Documents/.secrets/.cdb/)
+# Option A (empfohlen): .\tools\secrets\Rotate-Secrets.ps1 apply
+# Option B (manuell):   New-Item -Force "$env:USERPROFILE\Documents\.secrets\.cdb"
+#                       Dann REDIS_PASSWORD, POSTGRES_PASSWORD, GRAFANA_PASSWORD dort ablegen
+# Docs: knowledge/governance/SECRETS_POLICY.md
 ```
 
 ### Running the Stack
 
 ```powershell
-# Development mode
-.\infrastructure\scripts\stack_up.ps1
-
-# Production mode with all hardening
-.\infrastructure\scripts\stack_up.ps1 -Profile prod -TLS -StrictHealth -NetworkIsolation
+# Kanonischer BLUE+RED Start
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ## Development Workflow

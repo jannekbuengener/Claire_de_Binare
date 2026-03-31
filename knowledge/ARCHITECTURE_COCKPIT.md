@@ -71,7 +71,7 @@ graph LR
 
 ## ⚠️ Change-Safety (nur kontrolliert)
 
-- **`.cdb_local/.secrets`** → **niemals committen**, niemals in Docs/Issues.
+- **`~/Documents/.secrets/.cdb`** (`SECRETS_PATH`) → **niemals committen**, niemals in Docs/Issues.
 - **`docker-compose.yml` + Service-Namen/Netzwerk** → nur kleine, reviewte Änderungen (Default-Stack stabil halten).
 - **`infrastructure/database/schema.sql`** → Änderungen nur mit Review + E2E 2× back-to-back + klarer Schema-Strategie.
 - **`core/domain/*`** → high-impact: systemweiter Check nötig.

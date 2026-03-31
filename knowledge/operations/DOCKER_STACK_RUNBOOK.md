@@ -52,16 +52,17 @@ docker logs cdb_<service> --tail 30
 **Quick Fix**:
 ```powershell
 # Step 1: Verify secret files exist and are FILES (not directories)
-ls ../.cdb_local/.secrets/
+# Kanonischer Pfad: ~/Documents/.secrets/.cdb/
+ls "$env:USERPROFILE\Documents\.secrets\.cdb"
 
 # Expected output:
-# -rw-r--r-- redis_password (24 bytes)
-# -rw-r--r-- postgres_password (any size)
+# -rw-r--r-- REDIS_PASSWORD (24+ bytes)
+# -rw-r--r-- POSTGRES_PASSWORD (any size)
 
 # Step 2: If directories exist, they're INVALID
 # Fix: Create actual files with password content
 # Example:
-"your_password_here" | Out-File -FilePath ../.cdb_local/.secrets/postgres_password -NoNewline -Encoding ASCII
+"your_password_here" | Out-File -FilePath "$env:USERPROFILE\Documents\.secrets\.cdb\POSTGRES_PASSWORD" -NoNewline -Encoding ASCII
 
 # Step 3: Restart stack
 docker compose -f infrastructure/compose/compose.red.yml down
@@ -682,9 +683,9 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "SELECT * FROM pg_stat_activity;"
 
 # Step 4: Rotate all secrets
-# - Generate new passwords
-# - Update ../.cdb_local/.secrets/ files
-# - Restart services
+# - Neue Passwörter generieren via: .\tools\secrets\Rotate-Secrets.ps1 apply
+# - Secrets liegen in: ~/Documents/.secrets/.cdb/
+# - Stack neu starten (BLUE+RED)
 
 # Step 5: Verify compliance
 .\infrastructure\scripts\stack_doctor.ps1
@@ -1311,7 +1312,7 @@ pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
 - **Compose files**: `infrastructure/compose/*.yml`
 - **Scripts**: `infrastructure/scripts/*.ps1`
 - **Configs**: `infrastructure/monitoring/*.yml`
-- **Secrets**: `../.cdb_local/.secrets/*`
+- **Secrets**: `~/Documents/.secrets/.cdb/*` (kanonischer `SECRETS_PATH`)
 - **Backups**: `infrastructure/dr_backups/*.zip`
 
 ### Useful Commands Cheat Sheet

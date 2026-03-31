@@ -2,7 +2,7 @@
 
 **Issue:** #316
 **Status:** Implemented
-**Last Updated:** 2026-03-31
+**Last Updated:** 2026-03-31 (reconciled to BLUE+RED canon, Issue #1411)
 
 ---
 
@@ -12,75 +12,107 @@ Claire de Binare stores secrets **outside the repository** to prevent accidental
 
 ## Secret Locations
 
-### Local Development
+### Kanonischer Secrets-Pfad (Single Source of Truth)
+
 ```
-C:\Users\<username>\Documents\.secrets\.cdb\
+~/Documents/.secrets/.cdb/
 ├── REDIS_PASSWORD
 ├── POSTGRES_PASSWORD
 ├── GRAFANA_PASSWORD
 └── MEXC_API_KEY (optional)
 ```
 
-### Docker Services
-Services read secrets as Docker secrets mounted at `/run/secrets/<name>` at startup.
-Compose files reference the host-side secrets directory via the `SECRETS_PATH` variable
-(default: `~/Documents/.secrets/.cdb/`).
+Windows-Vollpfad: `C:\Users\<username>\Documents\.secrets\.cdb\`
 
-## Setup Instructions
+Docker Compose greift via `SECRETS_PATH`-Umgebungsvariable auf diesen Pfad zu:
+```
+secrets:
+  redis_password:
+    file: ${SECRETS_PATH}/REDIS_PASSWORD
+```
 
-### Windows (canonical)
+## Setup-Anleitung
+
+### 1. Secrets-Verzeichnis anlegen
+
 ```powershell
-.\tools\cdb.ps1 secrets init
-```
-This creates `~/Documents/.secrets/.cdb/`, generates secure random passwords for all
-required secrets, and sets restrictive file permissions.
-
-### Linux / macOS
-```bash
-mkdir -p ~/Documents/.secrets/.cdb
-openssl rand -base64 24 > ~/Documents/.secrets/.cdb/REDIS_PASSWORD
-openssl rand -base64 24 > ~/Documents/.secrets/.cdb/POSTGRES_PASSWORD
-openssl rand -base64 24 > ~/Documents/.secrets/.cdb/GRAFANA_PASSWORD
-chmod 700 ~/Documents/.secrets/.cdb
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\Documents\.secrets\.cdb"
 ```
 
-### Verify
-```bash
-ls ~/Documents/.secrets/.cdb/
-# Should list: REDIS_PASSWORD  POSTGRES_PASSWORD  GRAFANA_PASSWORD
+### 2. Secrets erzeugen (PowerShell)
+
+```powershell
+# Option A: Automatisch via Rotate-Secrets.ps1 (empfohlen)
+.\tools\secrets\Rotate-Secrets.ps1 apply
+
+# Option B: Manuell
+$secretsPath = "$env:USERPROFILE\Documents\.secrets\.cdb"
+[System.IO.File]::WriteAllText("$secretsPath\REDIS_PASSWORD",    [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(24)))
+[System.IO.File]::WriteAllText("$secretsPath\POSTGRES_PASSWORD", [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(24)))
+[System.IO.File]::WriteAllText("$secretsPath\GRAFANA_PASSWORD",  [Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(24)))
 ```
 
-## What's Allowed in Git
+### 3. Stack starten (kanonischer BLUE+RED Pfad)
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `core/secrets.py` | ✅ Tracked | Secret loading logic (no values) |
-| `core/domain/secrets.py` | ✅ Tracked | Domain-level secret reader |
-| `~/Documents/.secrets/.cdb/*` | ❌ Never | Runtime secrets (host-side) |
-| `/run/secrets/*` | ❌ Never | Mounted Docker secrets (container-side) |
+```powershell
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+```
+
+### 4. Secrets verifizieren
+
+```powershell
+# Dateien vorhanden?
+ls "$env:USERPROFILE\Documents\.secrets\.cdb"
+
+# Nicht im Repo-Index?
+git ls-files | Select-String "Documents|\.secrets"
+# Erwartet: kein Output
+```
+
+## Was in Git erlaubt ist
+
+| Datei | Status | Zweck |
+|-------|--------|-------|
+| `.env.example` | ✅ Tracked | Template mit Platzhaltern |
+| `tools/secrets/secrets.manifest.json` | ✅ Tracked | Secret-Definition (keine Werte) |
+| `~/Documents/.secrets/.cdb/*` | ❌ Niemals | Tatsächliche Secrets (außerhalb Repo) |
+| `tools/secrets/.env.runtime` | ❌ Gitignored | Generiertes Runtime-Export (temporär) |
+| `core/secrets.py` | ✅ Tracked | Secret-Ladelogik (keine Werte) |
+
+## Verbotene Pfade (nicht mehr kanonisch)
+
+| Pfad | Grund |
+|------|-------|
+| `.cdb_local/.secrets/` | Legacy-Pfad (vor Issue #316). Nicht verwenden. |
+| Repo-`.secrets/` | Legacy-Pfad (vor Issue #316). Nicht verwenden. |
+| `.env.runtime` als regulärer Operator-Standardfluss | Nur temporäres Export-Artefakt nach `Rotate-Secrets.ps1 export` |
 
 ## Git History Warning
 
-⚠️ Previous versions of this repository contained secrets in git history.
-These have been removed from tracking but remain in history.
+⚠️ Ältere Versionen dieses Repos enthielten Secrets im Git-Verlauf.
+Diese wurden aus dem Tracking entfernt, sind aber noch in der History.
 
-**Recommendation:** Rotate all secrets after clone.
+**Empfehlung:** Alle Secrets nach einem Clone rotieren:
+```powershell
+.\tools\secrets\Rotate-Secrets.ps1 apply
+```
 
 ## CI/CD Secrets
 
-GitHub Actions secrets are stored in:
+GitHub Actions Secrets werden gespeichert unter:
 - Repository Settings → Secrets and variables → Actions
 
-Required secrets:
-- `GEMINI_API_KEY` - For Gemini AI agent
-- `CLAUDE_API_KEY` - For Claude AI agent
+Erforderliche Secrets:
+- `GEMINI_API_KEY` — Für Gemini AI Agent
+- `CLAUDE_API_KEY` — Für Claude AI Agent
 
-## Kubernetes (Future)
+## Weiterführende Dokumentation
 
-For production deployment, use:
-- Kubernetes Secrets
-- HashiCorp Vault
-- External Secrets Operator
+- **Rotation:** `tools/secrets/README.md` + `knowledge/governance/SECRET_ROTATION_POLICY.md`
+- **Grafana-Incident (manuelles Passwort):** `knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md`
+- **Rotation-Tool:** `tools/secrets/Rotate-Secrets.ps1`
 
 ---
 

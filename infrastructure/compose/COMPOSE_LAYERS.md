@@ -163,7 +163,7 @@ Adds:
 
 ### 4. Git-Friendly
 - Configuration files are committed
-- Secrets are NOT committed (external files in `../.cdb_local/.secrets/`)
+- Secrets are NOT committed (external files in `~/Documents/.secrets/.cdb/`, via `SECRETS_PATH`)
 - Generated files (rollback-temp.yml) are gitignored
 
 ## File Hierarchy
@@ -219,17 +219,19 @@ Legacy-Dateien (`docker-compose.base.yml`, `docker-compose.yml`, `docker-compose
 
 ## Secret Management
 
-All secrets are stored in `../.cdb_local/.secrets/` (workspace-level, outside Git):
-- `redis_password` (24 bytes)
-- `postgres_password` (empty for existing DB, populated on init)
-- `grafana_password` (optional)
+Kanonischer Secrets-Pfad: `~/Documents/.secrets/.cdb/` (via `SECRETS_PATH`-Umgebungsvariable)
+- `REDIS_PASSWORD`
+- `POSTGRES_PASSWORD`
+- `GRAFANA_PASSWORD`
 
 Secret files are referenced in compose as:
 ```yaml
 secrets:
   redis_password:
-    file: ../../../.cdb_local/.secrets/redis_password  # 3 levels up from infrastructure/compose/
+    file: ${SECRETS_PATH}/REDIS_PASSWORD
 ```
+
+`SECRETS_PATH` wird beim Stack-Start gesetzt (z.B. durch `tools/stack_boot.ps1` oder manuell).
 
 **NEVER commit secrets to Git!**
 

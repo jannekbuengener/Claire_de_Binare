@@ -89,26 +89,24 @@ if ($composeMissing.Count -gt 0) {
 Write-Success "BLUE: $COMPOSE_BLUE"
 Write-Success "RED:  $COMPOSE_RED"
 
-# === SCHRITT 3: SECRETS & ENV PRÜFEN ===
-Write-Step "Schritt 3/5: Secrets & ENV-Variablen prüfen"
+# === SCHRITT 3: SECRETS PRÜFEN ===
+Write-Step "Schritt 3/5: Secrets prüfen"
 
+$secretsPath = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
 $missingFiles = @()
-if (-not (Test-Path ".secrets/redis_password")) { $missingFiles += ".secrets/redis_password" }
-if (-not (Test-Path ".secrets/postgres_password")) { $missingFiles += ".secrets/postgres_password" }
-if (-not (Test-Path ".secrets/grafana_password")) { $missingFiles += ".secrets/grafana_password" }
-if (-not (Test-Path ".env")) { $missingFiles += ".env" }
+if (-not (Test-Path (Join-Path $secretsPath "REDIS_PASSWORD")))    { $missingFiles += "$secretsPath\REDIS_PASSWORD" }
+if (-not (Test-Path (Join-Path $secretsPath "POSTGRES_PASSWORD"))) { $missingFiles += "$secretsPath\POSTGRES_PASSWORD" }
+if (-not (Test-Path (Join-Path $secretsPath "GRAFANA_PASSWORD")))  { $missingFiles += "$secretsPath\GRAFANA_PASSWORD" }
 
 if ($missingFiles.Count -gt 0) {
-    Write-Error "Folgende Dateien fehlen:"
+    Write-Error "Folgende Secret-Dateien fehlen:"
     $missingFiles | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
     Write-Info "Lösung:"
-    Write-Info "  1. Erstelle .secrets/ Verzeichnis: mkdir .secrets"
-    Write-Info "  2. Kopiere Secrets: cp .cdb_local/.secrets/* .secrets/"
-    Write-Info "  3. Erstelle .env aus .env.example: cp .env.example .env"
-    Write-Info "  4. Passe REDIS_PASSWORD und POSTGRES_PASSWORD in .env an"
+    Write-Info "  1. Verzeichnis anlegen: New-Item -ItemType Directory -Force '$secretsPath'"
+    Write-Info "  2. Secrets erzeugen:    .\tools\secrets\Rotate-Secrets.ps1 apply"
     exit 1
 }
-Write-Success "Alle Secrets & ENV-Variablen vorhanden"
+Write-Success "Alle Secrets vorhanden ($secretsPath)"
 
 # === SCHRITT 4: IMAGES PULLEN (optional) ===
 if (-not $SkipPull) {
