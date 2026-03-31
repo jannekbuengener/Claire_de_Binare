@@ -140,9 +140,6 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 # Windows (PowerShell, canonical v1 front door):
 # .\tools\cdb.ps1 runtime up
 
-# Secondary dev/compatibility path (not the 431B CI-lab baseline):
-# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
-
 # 6. Verify health
 make docker-health
 
