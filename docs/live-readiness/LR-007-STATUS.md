@@ -64,7 +64,7 @@ Shadow Mode may proceed under unchanged invariants.
 ## Current Metrics (TBD - Pending Evidence Collection)
 
 **NOTE:** Metrics collection and daily digest generation pending. Required artifacts:
-- Container uptime logs (RED/BLACK/BLUE stacks)
+- Container uptime logs (BLUE + RED stacks)
 - Decision rate metrics (Prometheus queries)
 - Circuit breaker trip counts
 - Kill switch activation logs

@@ -15,8 +15,10 @@ Erwartung: u.a. `orders`, `trades`.
 
 ## Dev: Force Schema Reload (wipes all data)
 ```powershell
-docker compose down -v
-docker compose up -d
+docker compose -f infrastructure/compose/compose.red.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 Alternative (falls Volume Name fix ist):
 ```powershell
