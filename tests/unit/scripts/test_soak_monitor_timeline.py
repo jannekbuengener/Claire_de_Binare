@@ -1470,3 +1470,18 @@ class TestAutoStopGuard:
 
     def test_guard_custom_target(self) -> None:
         assert would_skip_guard(5, 5, "lr040") is True
+
+    def test_guard_present_in_soak_monitor_sh(self) -> None:
+        """Verify the bash implementation contains the auto-stop guard."""
+        script = (
+            Path(__file__).resolve().parents[3]
+            / "infrastructure"
+            / "scripts"
+            / "soak_monitor.sh"
+        )
+        content = script.read_text(encoding="utf-8")
+        assert "SOAK_TARGET_HOURS" in content, "SOAK_TARGET_HOURS variable missing"
+        assert (
+            'SOAK_RUN_INTENT" = "lr040"' in content
+        ), "lr040 intent guard condition missing"
+        assert "Monitoring window complete" in content, "Guard exit message missing"

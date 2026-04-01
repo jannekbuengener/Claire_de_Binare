@@ -186,18 +186,30 @@ fi
 # Validation runs skip this guard (no fixed target duration).
 # Issue #1419.
 # ---------------------------------------------------------------------------
-SOAK_TARGET_HOURS="${SOAK_TARGET_HOURS:-72}"
+SOAK_TARGET_HOURS_RAW="${SOAK_TARGET_HOURS:-72}"
+case "$SOAK_TARGET_HOURS_RAW" in
+  ''|*[!0-9]*)
+    echo "ERROR: SOAK_TARGET_HOURS must be an integer, got '$SOAK_TARGET_HOURS_RAW'. Falling back to 72." >&2
+    SOAK_TARGET_HOURS=72
+    ;;
+  *)
+    SOAK_TARGET_HOURS="$SOAK_TARGET_HOURS_RAW"
+    ;;
+esac
 if [ "$SOAK_RUN_INTENT" = "lr040" ] && [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOURS" ]; then
   (
     flock -x -w 30 200 || exit 0
     _CK=-1
     [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
-    if [ "$ELAPSED_HOURS" -le "$_CK" ]; then
-      : # already written
+    if [ "$_CK" -ge "$SOAK_TARGET_HOURS" ]; then
+      : # monitoring window completion already recorded; do not mutate artifacts
+    elif [ "$ELAPSED_HOURS" -le "$_CK" ]; then
+      : # already written for this or a later hour within the window
     else
       echo "$TIMESTAMP - Hour $ELAPSED_HOURS: Monitoring window complete ($SOAK_TARGET_HOURS h reached)" \
         >> "$ARTIFACT_PATH/hourly_checks.log"
-      echo "$ELAPSED_HOURS" > "$LAST_CHECKPOINT_FILE"
+      # Cap the checkpoint at SOAK_TARGET_HOURS to act as a completion sentinel
+      echo "$SOAK_TARGET_HOURS" > "$LAST_CHECKPOINT_FILE"
     fi
   ) 200>"$ARTIFACT_PATH/checkpoint.lock"
   echo "LR-040 monitoring window complete (${ELAPSED_HOURS}h >= ${SOAK_TARGET_HOURS}h). Skipping checks."
