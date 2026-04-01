@@ -64,13 +64,15 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 | Reports | cdb_reports | — | Daily Order Summary |
 
-### Logging Overlay (logging.yml, optional)
+### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
-| Service | Container | Aktivierung |
-|---------|-----------|-------------|
-| Loki | cdb_loki | `-Logging` Flag |
-| Promtail | cdb_promtail | `-Logging` Flag |
-| Alertmanager | cdb_alertmanager | `-Logging` Flag |
+Aktivierung: `docker compose -f compose.blue.yml -f logging.yml up -d`
+
+| Service | Container | Compose-Datei |
+|---------|-----------|---------------|
+| Loki | cdb_loki | logging.yml |
+| Promtail | cdb_promtail | logging.yml |
+| Alertmanager | cdb_alertmanager | logging.yml |
 
 ---
 
@@ -156,9 +158,9 @@ Historisch behoben:
 ## 7. Compose Layer Referenz (kanonisch)
 
 ```
-compose.blue.yml   -> BLUE: Data + Control + Core Trading
-compose.red.yml    -> RED: Signal + Monitoring
-logging.yml        -> Logging Overlay (optional)
+compose.blue.yml   -> BLUE: Data + Control + Core Trading  [kanonisch]
+compose.red.yml    -> RED: Signal + Monitoring             [kanonisch]
+logging.yml        -> Logging Overlay (Loki + Promtail + Alertmanager) [separates Overlay, nicht Standard-Start]
 ```
 
 Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr kanonisch.
@@ -172,3 +174,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2025-12-28 | Initiale Erstellung via Context Build Sprint | Claude (Orchestrator) |
 | 2026-03-29 | market_data Subscriber-Liste: cdb_market, cdb_candles, cdb_paper_runner ergaenzt (#1323) | Claude |
 | 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
+| 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
