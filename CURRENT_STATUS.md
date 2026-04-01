@@ -3,13 +3,13 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-31
-**Latest Main Commit**: 24336365 — docs(discovery): remove legacy ops/secrets pointers from active discovery surfaces (#1413)
-**Local HEAD**: 24336365
+**Last Updated**: 2026-04-01
+**Latest Main Commit**: 04b91d4b — chore(sessions): nachziehen Session 18–21 — #1410 / #1411 / #1413 + Close-Commits
+**Previous**: bb0c42c0 — docs(status): reconcile LR-AUDIT-STATUS / CURRENT_STATUS SSOT separation (#1412)
 
 ---
 
-## Repo / Engineering Status (2026-03-31)
+## Repo / Engineering Status (2026-04-01)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
@@ -31,7 +31,11 @@
   - **Session 18, 2026-03-31**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. Commits 0266dbd + d034ecc7.
   - **Session 19, 2026-03-31**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. `.cdb_local/.secrets`, Repo-`.secrets`, `.env.runtime` und `stack_up.ps1` aus aktiven Operator-Flows entfernt oder als `[LEGACY COMPAT]` markiert. 21 Dateien. Commits 009c8edf + f433ea7e.
   - **Session 20, 2026-03-31**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. CHEATSHEET.md, REPO.map.json, ONBOARDING_LINKS/QUICK_START, ARCHITECTURE_COCKPIT, docs/env/index.md, tools/secrets/README.md, cdb-stack-adapter.ps1, README.md. 9 Dateien. Commit 24336365.
-  - **Session 21, 2026-03-31**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS (Section F, Punkt 4) beseitigt; veralteter P-Phasen-Inline-Status aus AGENTS.md entfernt. 3 Dateien. PR #1414 offen.
+  - **Merged (Session 18, 2026-03-31)**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. PR #1415 (04b91d4b). Issue #1410 geschlossen.
+  - **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
+  - **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
+  - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
+  - **Session 22, 2026-04-01**: Git-Divergenz aufgeloest (rebase origin/main, 2 Konflikt-Runden); PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen.
 
 ---
 
