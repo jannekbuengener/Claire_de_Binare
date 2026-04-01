@@ -23,7 +23,7 @@ set -euo pipefail
 
 # Configuration
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-ARTIFACT_ROOT="artifacts"
+ARTIFACT_ROOT="${ARTIFACT_ROOT:-artifacts}"
 
 # ---------------------------------------------------------------------------
 # Run intent: lr040 (default) or validation (Issue #1278)
@@ -177,6 +177,44 @@ LAST_CHECKPOINT_FILE="$ARTIFACT_PATH/last_checkpoint.txt"
 LAST_CHECKPOINT=-1
 if [ -f "$LAST_CHECKPOINT_FILE" ]; then
   LAST_CHECKPOINT=$(cat "$LAST_CHECKPOINT_FILE")
+fi
+
+# ---------------------------------------------------------------------------
+# Auto-stop guard: skip all checks after the monitoring window closes.
+# Prevents post-window Docker/host restarts from tainting a valid run.
+# SOAK_TARGET_HOURS defaults to 72 (LR-040 requirement).
+# Validation runs skip this guard (no fixed target duration).
+# Issue #1419.
+# ---------------------------------------------------------------------------
+SOAK_TARGET_HOURS_RAW="${SOAK_TARGET_HOURS:-72}"
+case "$SOAK_TARGET_HOURS_RAW" in
+  ''|*[!0-9]*)
+    echo "ERROR: SOAK_TARGET_HOURS must be an integer, got '$SOAK_TARGET_HOURS_RAW'. Falling back to 72." >&2
+    SOAK_TARGET_HOURS=72
+    ;;
+  *)
+    SOAK_TARGET_HOURS="$SOAK_TARGET_HOURS_RAW"
+    ;;
+esac
+if [ "$SOAK_RUN_INTENT" = "lr040" ] && [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOURS" ]; then
+  (
+    flock -x -w 30 200 || exit 0
+    _CK=-1
+    [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
+    if [ "$_CK" -ge "$SOAK_TARGET_HOURS" ]; then
+      : # monitoring window completion already recorded; do not mutate artifacts
+    elif [ "$ELAPSED_HOURS" -le "$_CK" ]; then
+      : # already written for this or a later hour within the window
+    else
+      echo "$TIMESTAMP - Hour $ELAPSED_HOURS: Monitoring window complete ($SOAK_TARGET_HOURS h reached)" \
+        >> "$ARTIFACT_PATH/hourly_checks.log"
+      # Cap the checkpoint at SOAK_TARGET_HOURS to act as a completion sentinel
+      echo "$SOAK_TARGET_HOURS" > "$LAST_CHECKPOINT_FILE"
+    fi
+  ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  echo "LR-040 monitoring window complete (${ELAPSED_HOURS}h >= ${SOAK_TARGET_HOURS}h). Skipping checks."
+  echo "Remove cron to stop invocations: crontab -l | grep -v soak_monitor | crontab -"
+  exit 0
 fi
 
 # Colors for output
