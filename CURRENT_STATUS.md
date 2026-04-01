@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-01
-**Latest Main Commit**: 04b91d4b — chore(sessions): nachziehen Session 18–21 — #1410 / #1411 / #1413 + Close-Commits
-**Previous**: bb0c42c0 — docs(status): reconcile LR-AUDIT-STATUS / CURRENT_STATUS SSOT separation (#1412)
+**Latest Main Commit**: 9f92651c — chore(session): close session #22 — git-divergenz + PR-batch #1414/#1415 + issues #1410–#1413 (#1416)
+**Previous**: 04b91d4b — chore(sessions): nachziehen Session 18–21 — #1410 / #1411 / #1413 + Close-Commits
 
 ---
 
@@ -32,7 +32,8 @@
   - **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
   - **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
   - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
-  - **Session 22, 2026-04-01**: Git-Divergenz aufgeloest (rebase origin/main, 2 Konflikt-Runden); PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen.
+  - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
+  - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
 
 ---
 
