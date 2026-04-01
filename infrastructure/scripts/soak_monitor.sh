@@ -57,6 +57,16 @@ ACTIVE_RUN_FILE="$ARTIFACT_ROOT/soak_active_run_path_${SOAK_RUN_INTENT}.txt"
 # Ensure script continues even if individual commands fail
 set +e
 
+# ---------------------------------------------------------------------------
+# flock portability: Git Bash on Windows does not ship flock.
+# _flock_or_direct wraps flock with a fallback that runs the subshell body
+# directly when flock is unavailable. On solo-maintainer setups (single cron
+# instance) the lock is a best-effort dedup guard, not a correctness
+# requirement — missing it is safe. Issue #1420.
+# ---------------------------------------------------------------------------
+_HAS_FLOCK=0
+command -v flock >/dev/null 2>&1 && _HAS_FLOCK=1
+
 _write_active_run_path() {
   local artifact_path="$1"
   mkdir -p "$ARTIFACT_ROOT"
@@ -197,8 +207,7 @@ case "$SOAK_TARGET_HOURS_RAW" in
     ;;
 esac
 if [ "$SOAK_RUN_INTENT" = "lr040" ] && [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOURS" ]; then
-  (
-    flock -x -w 30 200 || exit 0
+  _guard_write() {
     _CK=-1
     [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
     if [ "$_CK" -ge "$SOAK_TARGET_HOURS" ]; then
@@ -211,7 +220,12 @@ if [ "$SOAK_RUN_INTENT" = "lr040" ] && [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOUR
       # Cap the checkpoint at SOAK_TARGET_HOURS to act as a completion sentinel
       echo "$SOAK_TARGET_HOURS" > "$LAST_CHECKPOINT_FILE"
     fi
-  ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  }
+  if [ "$_HAS_FLOCK" -eq 1 ]; then
+    ( flock -x -w 30 200 || exit 0; _guard_write ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  else
+    _guard_write
+  fi
   echo "LR-040 monitoring window complete (${ELAPSED_HOURS}h >= ${SOAK_TARGET_HOURS}h). Skipping checks."
   echo "Remove cron to stop invocations: crontab -l | grep -v soak_monitor | crontab -"
   exit 0
@@ -409,21 +423,13 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
   # Don't exit - continue monitoring to capture full failure timeline
 else
   echo -e "${GREEN}✓ No restarts detected${NC}"
-  # Atomically check-and-write the hourly checkpoint under an exclusive lock.
-  # Without flock, two parallel cron/monitor instances (e.g. two containers
-  # running lr040_soak_monitor concurrently) both read the old LAST_CHECKPOINT,
-  # both decide "not yet written", and both append — producing the duplicates
-  # that Issue #1271 fixes. The lock serialises access so only the first
-  # instance to acquire it writes; the second finds the updated sentinel
-  # inside the lock and skips.
-  # -w 30: wait up to 30 s for the lock; on timeout, skip this write
-  # (prefer missing one entry over hanging the cron slot indefinitely).
-  (
-    flock -x -w 30 200 || {
-      echo "WARNING: could not acquire checkpoint lock within 30 s — skipping hourly log write"
-      exit 0
-    }
-    # Re-read sentinel inside the lock: another instance may have just written it.
+  # Check-and-write the hourly checkpoint with optional flock protection.
+  # On platforms with flock (Linux containers), the lock serialises access
+  # to prevent duplicate entries from parallel cron instances (Issue #1271).
+  # On platforms without flock (Git Bash / MSYS2 on Windows), the checkpoint
+  # is written directly — safe for solo-maintainer setups with a single
+  # cron instance (Issue #1420).
+  _checkpoint_write() {
     _CK=-1
     [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
     if [ "$ELAPSED_HOURS" -le "$_CK" ]; then
@@ -432,7 +438,18 @@ else
       echo "$TIMESTAMP - Hour $ELAPSED_HOURS: No restarts" >> "$ARTIFACT_PATH/hourly_checks.log"
       echo "$ELAPSED_HOURS" > "$LAST_CHECKPOINT_FILE"
     fi
-  ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  }
+  if [ "$_HAS_FLOCK" -eq 1 ]; then
+    (
+      flock -x -w 30 200 || {
+        echo "WARNING: could not acquire checkpoint lock within 30 s — skipping hourly log write"
+        exit 0
+      }
+      _checkpoint_write
+    ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  else
+    _checkpoint_write
+  fi
 fi
 
 # =============================================================================
