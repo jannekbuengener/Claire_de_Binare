@@ -40,6 +40,6 @@
 
 ## Gelernt / Feedback gespeichert
 
-- Session-Close-Commits bei Branch-Protection → Batch-PR statt Force-Push; Redundanz-Check nach abhängigen PRs (memory: feedback_session_close_pr_workflow.md)
+- Session-Close-Commits bei Branch-Protection → Batch-PR statt Force-Push; Redundanz-Check nach abhängigen PRs
 - Konflikte beim Rebase: immer erst prüfen ob Muster passt, nicht blind --theirs/--ours anwenden
 - PR-Branch-Bereinigung: cherry-pick sauberer als kompletter Rebase wenn Branch viele irrelevante Commits trägt

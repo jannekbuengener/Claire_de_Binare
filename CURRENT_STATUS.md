@@ -28,9 +28,6 @@
   - **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
   - **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
   - **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
-  - **Session 18, 2026-03-31**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. Commits 0266dbd + d034ecc7.
-  - **Session 19, 2026-03-31**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. `.cdb_local/.secrets`, Repo-`.secrets`, `.env.runtime` und `stack_up.ps1` aus aktiven Operator-Flows entfernt oder als `[LEGACY COMPAT]` markiert. 21 Dateien. Commits 009c8edf + f433ea7e.
-  - **Session 20, 2026-03-31**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. CHEATSHEET.md, REPO.map.json, ONBOARDING_LINKS/QUICK_START, ARCHITECTURE_COCKPIT, docs/env/index.md, tools/secrets/README.md, cdb-stack-adapter.ps1, README.md. 9 Dateien. Commit 24336365.
   - **Merged (Session 18, 2026-03-31)**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. PR #1415 (04b91d4b). Issue #1410 geschlossen.
   - **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
   - **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
