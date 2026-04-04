@@ -1,0 +1,51 @@
+schema_version: "1.0"
+handoff_instance: lr040_soak_pass_2026-04-04
+artifact_root: reports/p5_canary/2026-04-04/
+status: PRESTART_READY
+authorization: pending_human_gate
+evidence_lock_utc: 2026-04-04T12:43:24Z
+capture_state: all_endpoints_captured
+commit_sha: 7a05e40139f806a6a17e6b5d932959f8ec76768a
+worktree_status: clean  # keine geaenderten tracked files
+operator: jannekbuengener
+purpose: prestart_evidence_lock_after_lr040_soak_pass
+
+kill_switch_status:
+  active: false
+  source: http://127.0.0.1:8002/kill-switch
+  captured_utc: 2026-04-04T12:43:24Z
+  capture_state: captured
+  expected_field: active
+  required_value_before_start: false
+  gate_pass: true
+
+execution_status:
+  mode: mock
+  source: http://127.0.0.1:8003/status
+  captured_utc: 2026-04-04T12:43:24Z
+  capture_state: captured
+  canonical_field: execution_status.mode
+  required_value_before_start: mock
+  gate_pass: true
+
+risk_status:
+  circuit_breaker: false
+  source: http://127.0.0.1:8002/status
+  captured_utc: 2026-04-04T12:43:24Z
+  capture_state: captured
+  expected_field: risk_state.circuit_breaker
+  required_value_before_start: false
+  gate_pass: true
+
+gate_summary:
+  kill_switch_inactive: true
+  execution_mode_mock: true
+  circuit_breaker_inactive: true
+  all_gates_pass: true
+
+notes:
+  - LR-040 Soak Run soak_test_20260401_114850 formal PASS (72.19h, 0 restarts, 1.61% mem growth, 2.01% CPU avg)
+  - Alle drei Endpoint-Captures live gezogen am 2026-04-04T12:43:24Z
+  - Alle Hard-Gate-Checks bestanden
+  - Human Gate steht noch aus — status GO erst nach expliziter Operator-Freigabe
+  - Naechster Schritt: Human Gate + decision_record.yaml status auf GO setzen

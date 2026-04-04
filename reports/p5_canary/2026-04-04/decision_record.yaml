@@ -1,0 +1,44 @@
+schema_version: "1.0"
+decision_type: p5_canary_prestart
+decision_utc: 2026-04-04T12:43:24Z
+decision_date_utc: 2026-04-04
+operator: jannekbuengener
+source_commit_sha: 7a05e40139f806a6a17e6b5d932959f8ec76768a
+canary_artifact_path: reports/p5_canary/2026-04-04/
+
+# LR-040: Soak-Run soak_test_20260401_114850 (gestartet 2026-04-01T11:48:50Z)
+# Planmaessiges Ende: 2026-04-04T11:48:50Z
+# Evaluator ausgefuehrt: 2026-04-04T12:43:24Z
+# python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_20260401_114850
+# Exit-Code: 0
+lr040_pass_run_id: soak_test_20260401_114850
+lr040_pass_commit: 7a05e40139f806a6a17e6b5d932959f8ec76768a
+lr040_soak_artifact: artifacts/soak_test_20260401_114850
+lr040_verdict: PASS
+
+# status: GO nur setzen wenn:
+#   - LR-040 verdict == PASS  ← erfuellt
+#   - prestart_evidence_lock.yaml vollstaendig ausgefuellt (all_gates_pass: true)  ← erfuellt
+#   - endpoints/*.json live gecaptured  ← erfuellt
+#   - worktree_status: clean  ← erfuellt (keine geaenderten tracked files)
+#   - Human Gate explizit erteilt  ← AUSSTEHEND
+status: PRESTART_READY
+rationale: >
+  LR-040 Evaluator liefert deterministisch PASS (exit 0).
+  Soak-Artefakt soak_test_20260401_114850 lief 72.19h; alle 8 Gate-Checks bestanden:
+  duration_gte_72h=true, no_failed_marker=true, no_restart_alerts=true,
+  memory_growth 1.61% (<10%), cpu_avg 2.01% (<70%), 12 resource snapshots, 70 hourly entries.
+  Alle drei Endpoint-Captures (execution_status, risk_status, kill_switch) live gezogen
+  und Hard-Gate-Checks bestanden: mode=mock, circuit_breaker=false, kill_switch.active=false.
+  Human Gate steht aus. Status bleibt PRESTART_READY bis Operator explizit GO erteilt.
+
+hard_blockers:
+  - lr040_gate_verdict: PASS
+  - prestart_evidence_lock: COMPLETE
+  - human_gate: NOT_GRANTED
+
+notes:
+  - status GO erst nach expliziter Operator-Freigabe
+  - Diese Datei ist kein GO-Signal; nur der explizit gesetzte status-Wert zaehlt
+  - Alle Endpoint-Captures sind live am 2026-04-04T12:43:24Z gezogen
+  - Soak-Run ohne Restarts, ohne FAILED/INCONCLUSIVE-Marker abgeschlossen
