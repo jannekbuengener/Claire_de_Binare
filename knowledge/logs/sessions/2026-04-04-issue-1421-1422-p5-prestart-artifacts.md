@@ -1,4 +1,4 @@
-# Session 2026-04-04 — #1421 / #1422 P5-Prestart-Artefaktsatz + Gate-Abschluss
+# Session 25 (2026-04-04) — #1421 / #1422 P5-Prestart-Artefaktsatz + Gate-Abschluss
 
 ## Kontext
 
@@ -29,19 +29,20 @@
 - Konsistenz-Pruefung: `decision_record.yaml` ↔ `manifest.json` ↔ `prestart_evidence_lock.yaml` widerspruchsfrei
 - Policy-gate FAILURE (default-Kategorisierung `core/service` fuer `reports/`-Dateien) → Label `manual-approval` gesetzt → Rerun PASS
 - Alle Akzeptanzkriterien auf Artefaktebene erfuellt
-- Einziger offener Rest: Human Gate (NOT_GRANTED)
 - Issue #1422 kommentiert
 
-## Artefakte
+### Human Gate + Merge + Close
 
-- Commit `c54a4e56` auf Branch `chore/issue-1421-p5-prestart-artifacts`
-- PR #1432 (merge-pending, CI + policy-gate bestanden)
+- PR #1432 auf `main` gemergt (d530a7ea) — admin-merge nach Bot-Thread-Resolution
+- Human Gate **GRANTED** durch Operator am 2026-04-04
+- #1421 geschlossen (automatisch durch PR-Merge)
+- #1422 geschlossen (formaler Gate-Abschluss mit Human-Gate-Vermerk)
+- GO gilt fuer naechsten kontrollierten P5-Shadow-/Stabilitaetsschritt, keine Live-Aktivierung
+- #1423 ist freigestellt
 
-## Offene Reste
+## Offene Reste (out of scope)
 
-- PR #1432 braucht Merge
-- Human Gate NOT_GRANTED — expliziter Operator-Entscheid, kein Artefakt-Problem
-- `GO_NO_GO.md` reflektiert LR-040 PASS noch nicht (nicht Scope dieser Session)
+- `GO_NO_GO.md` reflektiert LR-040 PASS noch nicht
 - `LR-AUDIT-STATUS-2026-03-05.md` zeigt P4 noch als PARTIAL
 
 ## Feedback-Memory gespeichert
