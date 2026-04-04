@@ -3,21 +3,25 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-01
-**Latest Main Commit**: 9f92651c — chore(session): close session #22 — git-divergenz + PR-batch #1414/#1415 + issues #1410–#1413 (#1416)
-**Previous**: 04b91d4b — chore(sessions): nachziehen Session 18–21 — #1410 / #1411 / #1413 + Close-Commits
+**Last Updated**: 2026-04-04
+**Latest Main Commit**: 55734fcd — chore(session): close session #24 — #1426 market healthcheck start_period (#1430)
+**Previous**: 9f92651c — chore(session): close session #22 — git-divergenz + PR-batch #1414/#1415 + issues #1410–#1413 (#1416)
 
 ---
 
-## Repo / Engineering Status (2026-04-01)
+## Repo / Engineering Status (2026-04-04)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, aber durch gemergte PRs #1383/#1384/#1386 faktisch supersediert)
-  - #1285: fix(soak-monitor): use df -P to prevent false DISK_UNAVAILABLE on long mount paths (#1282)
-  - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
+  - #1432: evidence(p5): committed P5-Core-Artefaktsatz mit LR-040 PASS (#1421) — **MERGE-READY** (CI + policy-gate bestanden)
+  - #1431: chore(session): close session #24 — #1426 market healthcheck
+  - #1430: fix(market): add start_period to cdb_market healthcheck (#1426)
+  - #1429: fix(soak): treat docker disk evidence as valid fallback (#1427)
+  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
+  - #1285: fix(soak-monitor): use df -P (#1282)
+  - #1237: LR-040 runtime env prep (BLOCKIERT)
   - #1217: fix(digest): auto-close weekly digest
-  - #1207: feat(market): V3 shadow mode — cdb_market write path
+  - #1207: feat(market): V3 shadow mode
   - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
   - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
   - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
@@ -34,6 +38,8 @@
   - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
   - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
   - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
+  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (55734fcd).
+  - **Pending (Session 25, 2026-04-04)**: #1421/#1422 — Committed P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (c54a4e56). Status: PRESTART_READY, Human Gate ausstehend.
 
 ---
 
@@ -98,13 +104,13 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
-3. **LR-040 72h-Run abgeschlossen — INCONCLUSIVE:** `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json` — 77.75h, `duration_gte_72h`: true, `no_restart_alerts`: false (cause=`environment_interruption`, 12/12 Bulk-SUT-Restarts). Gate-Policy-Entscheidung (environment_interruption als Ausnahme) oder neuer ununterbr. 72h-Run erforderlich für PASS.
+3. **LR-040 72h-Run abgeschlossen — PASS:** `artifacts/soak_test_20260401_114850/lr040_soak_gate_eval.json` — 72.19h, alle 8 Gate-Checks bestanden. Committed unter `reports/p5_canary/2026-04-04/lr040/`. PR #1432 merge-pending.
 4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
 5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26), geschlossen 2026-03-27. Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
 6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
-9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
+9. **Human Gate:** Explizit erforderlich fuer P5/Canary — LR-040 PASS liegt jetzt vor, technisch PRESTART_READY, Operator-Entscheidung ausstehend.
 10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
 
 ---
