@@ -3,17 +3,17 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-05
-**Latest Main Commit**: e4d664e5 — chore(session): close session #28 — #1427 tests · #1426 fix · #1418 parent-close (#1439)
-**Previous**: 9d4a92c4 — docs(status): reconcile P5 proof status after #1423 handoff (#1437)
+**Last Updated**: 2026-04-06
+**Latest Main Commit**: 920e1901 — chore(session): close session #30 — #1438 · #1437 · #1439 merge batch (#1441)
+**Previous**: e4d664e5 — chore(session): close session #28 — #1427 tests · #1426 fix · #1418 parent-close (#1439)
 
 ---
 
-## Repo / Engineering Status (2026-04-05)
+## Repo / Engineering Status (2026-04-06)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1431: chore(session): close session #24 — #1426 market healthcheck (superseded; zu schliessen)
+  - #1398: fix(scripts): reconcile compose canon drift in active PS1 scripts (nicht merge-ready; Infra-Diff laesst Root-Skripte/aktive Docs stale; `BEHIND`; `policy-gate` derzeit prozedural)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT)
@@ -42,6 +42,7 @@
   - **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
   - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
   - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
+  - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
 
 ---
 
@@ -116,7 +117,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
 11. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
 12. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
-13. **PR #1431:** Session-Close-Commit fuer #1426 — durch PR #1430 (gemergt) inhaltlich ueberholt; schliessen.
+13. **#1398 / #1442:** PR #1398 bleibt nicht merge-ready. Der aktuelle Diff bereinigt nur `infrastructure/scripts/*`; operator-facing Root-`scripts/*` und aktive Docs bleiben stale. `policy-gate` ist aktuell prozedural, zusaetzlicher externer Blocker ist `BEHIND`. Erst technischen Drift schliessen, dann Label/Branch-Update/Checks.
 
 ---
 
