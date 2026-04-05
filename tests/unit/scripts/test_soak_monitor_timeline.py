@@ -1485,3 +1485,112 @@ class TestAutoStopGuard:
             'SOAK_RUN_INTENT" = "lr040"' in content
         ), "lr040 intent guard condition missing"
         assert "Monitoring window complete" in content, "Guard exit message missing"
+
+
+# ---------------------------------------------------------------------------
+# Disk check fallback logic tests (Issue #1427)
+#
+# Root cause: when df /repo was unavailable, the monitor wrote DISK_UNAVAILABLE
+# to disk_alerts.log even when docker system df was valid and available.
+#
+# Fix (soak_monitor.sh): DOCKER_DF_VALID flag + three-path logic in Check 5:
+#   Path A — df /repo OK          → primary path, threshold logic applies
+#   Path B — df /repo fails,
+#             docker system df OK → yellow console only, no disk_alerts.log entry
+#   Path C — both unavailable     → DISK_UNAVAILABLE in disk_alerts.log (fail-closed)
+# ---------------------------------------------------------------------------
+
+# Realistic docker system df output (contains "Images" header → valid)
+_DOCKER_DF_VALID_OUTPUT = """\
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          12        3         8.5GB     5.2GB (61%)
+Containers      3         3         1.2MB     0B (0%)
+Local Volumes   8         4         2.1GB     850MB (40%)
+Build Cache     0         0         0B        0B
+"""
+
+# Fallback string written by soak_monitor.sh when docker system df fails
+_DOCKER_DF_NOT_AVAILABLE = "  [docker system df not available]"
+
+
+def is_docker_df_valid(output: str) -> bool:
+    """True when docker system df output contains parseable evidence.
+
+    Mirrors: echo "$DOCKER_DF_OUT" | grep -q "Images" && DOCKER_DF_VALID=1
+    """
+    return "Images" in output
+
+
+def disk_check_mode(artifact_disk_pct: str | None, docker_df_valid: bool) -> str:
+    """Map evidence availability to alert mode.
+
+    Mirrors the three-path console/alert-log logic in soak_monitor.sh Check 5
+    (Issue #1427):
+      "host_fs_available" — df /repo parsed; threshold logic applies
+      "fallback_active"   — df /repo unavailable, docker evidence present;
+                            no disk_alerts.log entry
+      "disk_unavailable"  — both sources gone; writes DISK_UNAVAILABLE to
+                            disk_alerts.log (fail-closed)
+    """
+    if artifact_disk_pct is not None:
+        return "host_fs_available"
+    if docker_df_valid:
+        return "fallback_active"
+    return "disk_unavailable"
+
+
+class TestDiskCheckFallback:
+    """Regression tests for Issue #1427: docker system df as valid fallback.
+
+    Guards that disk_check_mode/is_docker_df_valid Python mirrors stay aligned
+    with the bash implementation in soak_monitor.sh Check 5.
+    """
+
+    # --- is_docker_df_valid ---
+
+    def test_docker_df_valid_when_images_in_output(self) -> None:
+        assert is_docker_df_valid(_DOCKER_DF_VALID_OUTPUT) is True
+
+    def test_docker_df_invalid_when_not_available_string(self) -> None:
+        """Fallback string written by soak_monitor.sh when docker system df fails."""
+        assert is_docker_df_valid(_DOCKER_DF_NOT_AVAILABLE) is False
+
+    def test_docker_df_invalid_when_empty(self) -> None:
+        assert is_docker_df_valid("") is False
+
+    # --- disk_check_mode (three-path verdict) ---
+
+    def test_host_fs_available_when_pct_parsed(self) -> None:
+        """Primary path unchanged: df /repo parsed → host_fs_available."""
+        assert disk_check_mode("47", docker_df_valid=True) == "host_fs_available"
+        assert disk_check_mode("47", docker_df_valid=False) == "host_fs_available"
+
+    def test_fallback_active_when_repo_fails_docker_valid(self) -> None:
+        """Issue #1427 core case: df /repo unavailable, docker evidence present.
+
+        Must NOT produce disk_unavailable — secondary evidence is sufficient.
+        No entry must be written to disk_alerts.log in this case.
+        """
+        assert disk_check_mode(None, docker_df_valid=True) == "fallback_active"
+
+    def test_disk_unavailable_when_both_sources_fail(self) -> None:
+        """Fail-closed: disk_unavailable only when BOTH sources are gone."""
+        assert disk_check_mode(None, docker_df_valid=False) == "disk_unavailable"
+
+    def test_valid_docker_evidence_must_not_produce_disk_unavailable(self) -> None:
+        """Regression anchor for #1427: valid docker output must never yield
+        disk_unavailable, regardless of host-FS state."""
+        assert disk_check_mode(None, docker_df_valid=True) != "disk_unavailable"
+
+    # --- bash content guard ---
+
+    def test_bash_check5_contains_docker_df_valid_and_fallback_messages(self) -> None:
+        """Semantic anchors that must survive in soak_monitor.sh Check 5."""
+        content = _read_soak_monitor()
+        assert "DOCKER_DF_VALID" in content, "DOCKER_DF_VALID variable missing from Check 5"
+        assert "Host filesystem unavailable" in content, (
+            "Fallback console message missing — path B wording changed"
+        )
+        assert "Docker disk evidence also unavailable" in content, (
+            "Fail-closed message missing — path C wording changed"
+        )

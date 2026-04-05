@@ -220,9 +220,6 @@ jobs:
       uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
       with:
         script: |
-          const fs = require('fs');
-          
-          let reportContent = '';
           const handlePermissionError = (error) => {
             if (
               error &&
@@ -235,39 +232,19 @@ jobs:
             }
             return false;
           };
-          try {
-            if (fs.existsSync('emoji-report.md')) {
-              reportContent = fs.readFileSync('emoji-report.md', 'utf8');
-            } else {
-              reportContent = '📊 Detaillierter Report nicht verfügbar.';
-            }
-          } catch (error) {
-            reportContent = `❌ Fehler beim Laden des Reports: ${error.message}`;
-          }
-          
-          const issueTitle = `🚫 Emoji Detection Alert - ${new Date().toISOString().split('T')[0]}`;
-          const issueBody = `
-          # 🚫 Emoji Detection Alert
-          
-          **Scan Details:**
-          - **Commit:** ${context.sha}
-          - **Branch:** ${context.ref}
-          - **Trigger:** ${context.eventName}
-          - **Emojis Found:** ${{ needs.emoji-detection.outputs.emojis-found }}
-          - **Blocked Count:** ${{ needs.emoji-detection.outputs.blocked-count }}
-          
-          ## 📋 Report
-          
-          ${reportContent}
-          
-          ## 🔧 Aktionen
-          
-          1. **Automatisch fixen:** Führe Workflow mit \`auto_fix: true\` aus
-          2. **Manuell überprüfen:** Lade Report-Artifacts herunter
-          3. **Whitelist updaten:** Füge erlaubte Emojis zur Konfiguration hinzu
-          
-          **Report Artifacts:** [Download](${context.payload.repository.html_url}/actions/runs/${context.runId})
-          `;
+
+          const issueTitle = `emoji-filter alert - ${new Date().toISOString().split('T')[0]}`;
+          const issueBody = [
+            '**Scan Details:**',
+            `- **Commit:** ${context.sha}`,
+            `- **Branch:** ${context.ref}`,
+            `- **Trigger:** ${context.eventName}`,
+            `- **Emojis Found:** ${{ needs.emoji-detection.outputs.emojis-found }}`,
+            `- **Blocked Count:** ${{ needs.emoji-detection.outputs.blocked-count }}`,
+            `- **Error-Severity Count:** ${{ needs.emoji-detection.outputs.error-count }}`,
+            '',
+            `**Full Report:** [Download Artifact](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+          ].join('\n');
           
           // Prüfe ob bereits Issue existiert
           const existingIssues = await github.rest.issues.listForRepo({
