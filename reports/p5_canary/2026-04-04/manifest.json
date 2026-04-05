@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "package_type": "p5-canary-artifacts",
-  "package_status": "PRESTART_READY",
+  "package_status": "GO",
   "artifact_instance_type": "committed_prestart_pass",
   "artifact_root": "reports/p5_canary/2026-04-04/",
   "commit_sha": "7a05e40139f806a6a17e6b5d932959f8ec76768a",
@@ -24,7 +24,7 @@
   "lr040_verdict": "PASS",
   "lr040_soak_artifact": "artifacts/soak_test_20260401_114850",
   "source_integrity": {
-    "handoff_state": "committed_prestart_ready",
+    "handoff_state": "committed_go",
     "runtime_capture_state": "captured",
     "lr040_state": "PASS",
     "all_required_paths_present": true,
@@ -35,8 +35,8 @@
     "state": "complete",
     "omitted_self_hash": "manifest.json",
     "files": {
-      "prestart_evidence_lock.yaml": "2451ee2bb89f94cfd948fec5249249bd5721d06703bf10229db13f238fe14bbe",
-      "decision_record.yaml": "e0cd88e3c3a8c0bc4bfeb2b3343958e69f2ea8f6c4470287b87faea8bf9fc2f7",
+      "prestart_evidence_lock.yaml": "f99670c32ac668042eee82624ae06a5e13a9c5bdfc301c0dfbf95b8515cded72",
+      "decision_record.yaml": "fa1a5a1af820224084f76332c7e9dce80586cdfc10cf4755b5757a9f8476e9ab",
       "endpoints/execution_status.json": "5ea4b33d8945bff67a806af7cc0fe5fe6959cb6603ed0fd464bf4d753d5f7243",
       "endpoints/risk_status.json": "eb73fef46978f824709a5f20d2ab23889d6640f963e915b3bdc9d3efbf3ff2dc",
       "endpoints/kill_switch_status.json": "62edd97262835310625203806b14fa1bcce70216efd0bebbfcd6319b4fa22d31",
@@ -44,10 +44,10 @@
     }
   },
   "notes": [
-    "PRESTART_READY: alle technischen Gates bestanden, Human Gate ausstehend.",
+    "GO: Human Gate GRANTED am 2026-04-04. Alle technischen Gates bestanden.",
     "LR-040 PASS: soak_test_20260401_114850 (72.19h, 0 restarts, 1.61% mem growth, 2.01% CPU avg).",
     "Endpoint-Captures live am 2026-04-04T12:43:24Z gezogen.",
-    "package_status GO erfordert: Human Gate explizit erteilt + decision_record status: GO.",
+    "Repo-backed GO-Anker: PR #1433 (4cda64ea), gemergt 2026-04-05T11:45:06Z.",
     "Kein Placeholder oder null in required fields."
   ]
 }

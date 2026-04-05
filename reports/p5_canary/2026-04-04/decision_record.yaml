@@ -1,9 +1,9 @@
 schema_version: "1.0"
 decision_type: p5_canary_prestart
-decision_utc: 2026-04-04T12:43:24Z
-decision_date_utc: 2026-04-04
+decision_utc: 2026-04-05T11:54:45Z
+decision_date_utc: 2026-04-05
 operator: jannekbuengener
-source_commit_sha: 7a05e40139f806a6a17e6b5d932959f8ec76768a
+source_commit_sha: 4cda64ea56cb7ec635e25e9cded4d210a9a024d4
 canary_artifact_path: reports/p5_canary/2026-04-04/
 
 # LR-040: Soak-Run soak_test_20260401_114850 (gestartet 2026-04-01T11:48:50Z)
@@ -21,8 +21,8 @@ lr040_verdict: PASS
 #   - prestart_evidence_lock.yaml vollstaendig ausgefuellt (all_gates_pass: true)  ← erfuellt
 #   - endpoints/*.json live gecaptured  ← erfuellt
 #   - worktree_status: clean  ← erfuellt (keine geaenderten tracked files)
-#   - Human Gate explizit erteilt  ← AUSSTEHEND
-status: PRESTART_READY
+#   - Human Gate explizit erteilt  ← GRANTED am 2026-04-04; repo-backed via PR #1433 (4cda64ea)
+status: GO
 rationale: >
   LR-040 Evaluator liefert deterministisch PASS (exit 0).
   Soak-Artefakt soak_test_20260401_114850 lief 72.19h; alle 8 Gate-Checks bestanden:
@@ -30,15 +30,18 @@ rationale: >
   memory_growth 1.61% (<10%), cpu_avg 2.01% (<70%), 12 resource snapshots, 70 hourly entries.
   Alle drei Endpoint-Captures (execution_status, risk_status, kill_switch) live gezogen
   und Hard-Gate-Checks bestanden: mode=mock, circuit_breaker=false, kill_switch.active=false.
-  Human Gate steht aus. Status bleibt PRESTART_READY bis Operator explizit GO erteilt.
+  Human Gate GRANTED am 2026-04-04 durch Operator jannekbuengener.
+  Evidence: knowledge/logs/sessions/2026-04-04-issue-1421-1422-p5-prestart-artifacts.md (Zeile 37).
+  Repo-backed GO-Anker: PR #1433 (4cda64ea), gemergt 2026-04-05T11:45:06Z.
+  GO gilt fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung.
 
 hard_blockers:
   - lr040_gate_verdict: PASS
   - prestart_evidence_lock: COMPLETE
-  - human_gate: NOT_GRANTED
+  - human_gate: GRANTED
 
 notes:
-  - status GO erst nach expliziter Operator-Freigabe
-  - Diese Datei ist kein GO-Signal; nur der explizit gesetzte status-Wert zaehlt
+  - Human Gate GRANTED am 2026-04-04. GO fuer kontrollierten P5-Shadow-Schritt, keine Produktionsfreigabe
+  - Repo-backed GO-Anker: PR #1433 / Merge-Commit 4cda64ea, gemergt 2026-04-05T11:45:06Z
   - Alle Endpoint-Captures sind live am 2026-04-04T12:43:24Z gezogen
   - Soak-Run ohne Restarts, ohne FAILED/INCONCLUSIVE-Marker abgeschlossen

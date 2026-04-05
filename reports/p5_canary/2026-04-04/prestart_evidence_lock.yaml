@@ -1,8 +1,8 @@
 schema_version: "1.0"
 handoff_instance: lr040_soak_pass_2026-04-04
 artifact_root: reports/p5_canary/2026-04-04/
-status: PRESTART_READY
-authorization: pending_human_gate
+status: GO
+authorization: human_gate_granted
 evidence_lock_utc: 2026-04-04T12:43:24Z
 capture_state: all_endpoints_captured
 commit_sha: 7a05e40139f806a6a17e6b5d932959f8ec76768a
@@ -47,5 +47,5 @@ notes:
   - LR-040 Soak Run soak_test_20260401_114850 formal PASS (72.19h, 0 restarts, 1.61% mem growth, 2.01% CPU avg)
   - Alle drei Endpoint-Captures live gezogen am 2026-04-04T12:43:24Z
   - Alle Hard-Gate-Checks bestanden
-  - Human Gate steht noch aus — status GO erst nach expliziter Operator-Freigabe
-  - Naechster Schritt: Human Gate + decision_record.yaml status auf GO setzen
+  - Human Gate GRANTED am 2026-04-04. GO fuer kontrollierten P5-Shadow-Schritt, keine Produktionsfreigabe
+  - commit_sha ist der Stand beim Evidence-Capture; GO-Stand siehe decision_record.yaml
