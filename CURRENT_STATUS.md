@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-05
-**Latest Main Commit**: 7793c028 — fix(market): add start_period to cdb_market healthcheck (#1426) (#1430)
-**Previous**: 468414fd — evidence(p5): lean shadow evidence handoff — closes #1423 (#1435)
+**Latest Main Commit**: ba2b13e4 — fix(soak): treat docker disk evidence as valid fallback when /repo unavailable (#1427) (#1429)
+**Previous**: 7793c028 — fix(market): add start_period to cdb_market healthcheck (#1426) (#1430)
 
 ---
 
@@ -14,7 +14,6 @@
 - **main**: green
 - **Open PRs (relevant/current focus)**:
   - #1431: chore(session): close session #24 — #1426 market healthcheck (superseded; zu schliessen)
-  - #1429: fix(soak): treat docker disk evidence as valid fallback + regression tests (#1427) — ci PASS, policy-gate FAIL (Label allow-core-change fehlt)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT)
@@ -41,6 +40,7 @@
   - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
   - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (45ee3b79).
   - **Merged (Session 28, 2026-04-05)**: #1426 — cdb_market healthcheck start_period: 30s. PR #1430 (7793c028). #1426 geschlossen. #1418 P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent).
+  - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
 
 ---
 
