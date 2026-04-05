@@ -3,18 +3,18 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-04
-**Latest Main Commit**: d530a7ea — evidence(p5): committed P5-Core-Artefaktsatz mit LR-040 PASS (#1421) (#1432)
-**Previous**: 55734fcd — chore(session): close session #24 — #1426 market healthcheck start_period (#1430)
+**Last Updated**: 2026-04-05
+**Latest Main Commit**: 7793c028 — fix(market): add start_period to cdb_market healthcheck (#1426) (#1430)
+**Previous**: 468414fd — evidence(p5): lean shadow evidence handoff — closes #1423 (#1435)
 
 ---
 
-## Repo / Engineering Status (2026-04-04)
+## Repo / Engineering Status (2026-04-05)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1431: chore(session): close session #24 — #1426 market healthcheck (likely superseded by #1430; to close after merge)
-  - #1429: fix(soak): treat docker disk evidence as valid fallback (#1427)
+  - #1431: chore(session): close session #24 — #1426 market healthcheck (superseded; zu schliessen)
+  - #1429: fix(soak): treat docker disk evidence as valid fallback + regression tests (#1427) — ci PASS, policy-gate FAIL (Label allow-core-change fehlt)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT)
@@ -38,6 +38,9 @@
   - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
   - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (55734fcd).
   - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 freigestellt.
+  - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
+  - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (45ee3b79).
+  - **Merged (Session 28, 2026-04-05)**: #1426 — cdb_market healthcheck start_period: 30s. PR #1430 (7793c028). #1426 geschlossen. #1418 P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent).
 
 ---
 
@@ -110,6 +113,8 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
 9. **Human Gate:** GRANTED (2026-04-04). GO fuer naechsten kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe.
 10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
+11. **PR #1429 (#1427 Disk-Fallback):** ci PASS, Label `allow-core-change` fehlt → policy-gate FAIL. Label setzen zum Merge.
+12. **PR #1431:** Session-Close-Commit fuer #1426 — durch PR #1430 (gemergt) inhaltlich ueberholt; schliessen.
 
 ---
 
