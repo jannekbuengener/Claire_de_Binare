@@ -35,11 +35,11 @@
   - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
   - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
   - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
-  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (55734fcd).
+  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (7793c028). Issue #1426 geschlossen.
   - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 als naechster Anschluss-Schritt freigegeben; spaeter via PR #1435 geschlossen.
   - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
   - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (1f3ec548). #1390 geschlossen.
-  - **Merged (Session 28, 2026-04-05)**: #1426 — cdb_market healthcheck start_period: 30s. PR #1430 (7793c028). #1426 geschlossen. #1418 P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent).
+  - **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
   - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
 
 ---
