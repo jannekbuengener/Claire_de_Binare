@@ -13,7 +13,7 @@
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1431: chore(session): close session #24 — #1426 market healthcheck
+  - #1431: chore(session): close session #24 — #1426 market healthcheck (likely superseded by #1430; to close after merge)
   - #1429: fix(soak): treat docker disk evidence as valid fallback (#1427)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)

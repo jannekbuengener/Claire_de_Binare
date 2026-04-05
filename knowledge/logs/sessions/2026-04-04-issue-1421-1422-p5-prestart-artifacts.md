@@ -42,8 +42,8 @@
 
 ## Offene Reste (out of scope)
 
-- `GO_NO_GO.md` reflektiert LR-040 PASS noch nicht
-- `LR-AUDIT-STATUS-2026-03-05.md` zeigt P4 noch als PARTIAL
+- `docs/live-readiness/GO_NO_GO.md` reflektiert LR-040 PASS noch nicht
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` zeigt P4 noch als PARTIAL
 
 ## Feedback-Memory gespeichert
 
