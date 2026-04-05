@@ -32,7 +32,7 @@
   - operator-facing Root-Entrypoints und aktive Docs bleiben auf stale `.env`-/`docker-compose`-Pfaden
   - Redirect-Hinweise im PR enthalten weiterhin rohe `docker compose -f ... up -d`-Fallbacks mit impliziter `cdb_network`-Voraussetzung
 - Check-Befund:
-  - `policy-gate` rot, aber prozedural
+  - `policy-gate` rot aus prozeduralem Grund: fuer PR #1398 aktuell erwartbar und nicht durch Labeln allein loesbar, weil der technische Drift offen bleibt und der Branch zudem `BEHIND` ist; erforderlich sind erst der inhaltliche Fix aus #1442, dann Update auf aktuellen `main` und Required Checks neu
   - Branch `BEHIND`
   - restliche relevante Checks gruen
 - Ergebnis: PR #1398 nicht merge-ready
