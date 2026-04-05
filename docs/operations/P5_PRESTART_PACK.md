@@ -1,11 +1,11 @@
 # P5 Prestart Pack
 
 - Control: `LR-050`
-- Status: `NO-GO`
-- Last updated: `2026-03-20`
+- Status: `REFERENCE TEMPLATE / LR-050 NO-GO`
+- Last updated: `2026-04-05`
 
 This document is a **template** and **governance anchor** for the P5 canary prestart evidence lock.
-It does **not** authorize a canary start. Start remains blocked until all NO-GO blockers are resolved.
+It does **not** authorize a canary start. A committed instance exists under `reports/p5_canary/2026-04-04/`, but `LR-050` remains fail-closed / `NO-GO` for live capital.
 
 It backs the following compensating controls defined in `governance/p5_canary_readiness.yaml`:
 - `prestart_evidence_lock`
@@ -23,17 +23,21 @@ Normative rule from `governance/p5_canary_readiness.yaml` for the current P5 / s
 
 ## 1. Current Status
 
-**Status: NO-GO**
+**Template status: reference only**
 
-Open blockers (must all resolve before any P5 start attempt):
+**Operational state: committed prestart pack GO exists; `LR-050` remains `NO-GO`.**
+
+Current repo-backed state:
 
 | Blocker | Required | Current State |
 |---------|----------|---------------|
-| LR-040 72h Soak PASS | YES | IMPLEMENTED — no 72h run evidence yet |
-| Committed P5 canary run artifact set | YES | None exists |
+| LR-040 72h Soak PASS | YES | PASS evidenced at `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` |
+| Committed P5 prestart pack | YES | Present at `reports/p5_canary/2026-04-04/` |
+| Lean shadow continuity proof | Required for proof continuity, not live approval | Present at `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` |
+| LR-050 live canary approval | YES | NOT GRANTED / fail-closed |
 
-Until both blockers are resolved, this template has no operative function.
-No section of this document authorizes, enables, or implies approval for a live canary start.
+The existence of the committed pack does not authorize, enable, or imply approval for a live canary start.
+No section of this template changes `LR-050` from `NO-GO`.
 
 ---
 
@@ -171,8 +175,9 @@ rationale: >
   <Freitext — warum GO oder NO-GO. Bei NO-GO: welcher Blocker verbleibt.>
 ```
 
-A `status: NO-GO` decision record is valid and expected during the current phase.
-A `status: GO` decision record is only valid after both blockers in §1 are resolved.
+A `status: NO-GO` decision record remains valid whenever any prestart gate fails.
+A `status: GO` decision record in the committed example means the prestart gate passed for the controlled post-proof shadow/stability step.
+It does **not** by itself clear `LR-050` or authorize live capital.
 
 ---
 
@@ -228,3 +233,6 @@ curl -s http://127.0.0.1:8002/kill-switch
 - `docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md` — detailed kill-switch precheck procedure
 - `docs/evidence/LR-040.md` — 72h soak gate (blocker)
 - `docs/operations/72H_SOAK_TEST_RUNBOOK.md` — soak test procedure
+- `reports/p5_canary/2026-04-04/prestart_evidence_lock.yaml` — committed prestart example
+- `reports/p5_canary/2026-04-04/decision_record.yaml` — committed prestart decision
+- `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` — committed continuity proof after prestart
