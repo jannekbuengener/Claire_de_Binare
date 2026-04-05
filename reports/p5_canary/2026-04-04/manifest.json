@@ -40,7 +40,8 @@
       "endpoints/execution_status.json": "5ea4b33d8945bff67a806af7cc0fe5fe6959cb6603ed0fd464bf4d753d5f7243",
       "endpoints/risk_status.json": "eb73fef46978f824709a5f20d2ab23889d6640f963e915b3bdc9d3efbf3ff2dc",
       "endpoints/kill_switch_status.json": "62edd97262835310625203806b14fa1bcce70216efd0bebbfcd6319b4fa22d31",
-      "lr040/lr040_soak_gate_eval.json": "0b4a8b9ccce37d3078965d739aaf44e9ce111b0e44b7185c4c346ca7fb3f14ce"
+      "lr040/lr040_soak_gate_eval.json": "0b4a8b9ccce37d3078965d739aaf44e9ce111b0e44b7185c4c346ca7fb3f14ce",
+      "lean_shadow_evidence_handoff.yaml": "c77fcbc3447e07a7aaa9e1e352463af8e3172711a47804a6d9bf6708c2e900db"
     }
   },
   "notes": [
