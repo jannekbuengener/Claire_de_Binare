@@ -1,3 +1,8 @@
+# LEGACY — superseded by BLUE/RED compose split (compose.blue.yml + compose.red.yml).
+# Still references .cdb_local/.secrets/.env.compose and the old base.yml/dev.yml topology.
+# Canonical stack-down: docker compose -f infrastructure/compose/compose.blue.yml down
+# Retained for reference only; do not use as an active entrypoint.
+
 Set-StrictMode -Version Latest
 
 $scriptDir = $PSScriptRoot

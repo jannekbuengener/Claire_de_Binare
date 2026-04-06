@@ -89,7 +89,6 @@ silent backlog TODOs; broader follow-up work belongs in GitHub issues.
 # Backup current config (canonical BLUE+RED compose files)
 cp infrastructure/compose/compose.blue.yml infrastructure/compose/compose.blue.yml.backup.$(date +%Y%m%d_%H%M%S)
 cp infrastructure/compose/compose.red.yml infrastructure/compose/compose.red.yml.backup.$(date +%Y%m%d_%H%M%S)
-# Legacy (CI/test only): cp infrastructure/compose/dev.yml infrastructure/compose/dev.yml.backup.$(date +%Y%m%d_%H%M%S)
 
 # Backup Redis streams (snapshot)
 docker exec cdb_redis sh -c 'redis-cli -a $(cat /run/secrets/redis_password) SAVE'
@@ -98,7 +97,6 @@ docker exec cdb_redis sh -c 'redis-cli -a $(cat /run/secrets/redis_password) SAV
 ### Step 2: Config Change
 ```yaml
 # In the canonical BLUE+RED compose files (compose.blue.yml / compose.red.yml):
-# (Legacy path: infrastructure/compose/dev.yml)
 cdb_execution:
   environment:
     MOCK_TRADING: "false"         # LIVE MODE
@@ -110,11 +108,6 @@ cdb_execution:
 # Canonical (BLUE+RED)
 docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
-
-# Legacy (CI/test only):
-# cd infrastructure/compose
-# $env:SECRETS_PATH="C:\Users\janne\Documents\.secrets\.cdb"
-# docker compose -f base.yml -f dev.yml up -d --build cdb_execution
 ```
 
 ### Step 4: Verification (CRITICAL)
@@ -156,10 +149,6 @@ docker compose -f infrastructure/compose/compose.red.yml down
 # Revert MOCK_TRADING/USE_REAL_BALANCE in compose.blue.yml / compose.red.yml
 docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
-
-# Legacy (CI/test only):
-# git checkout infrastructure/compose/dev.yml
-# docker compose -f base.yml -f dev.yml up -d --build cdb_execution
 
 # 4. Verify rollback
 docker logs cdb_execution --tail 50 | grep "Mode:"

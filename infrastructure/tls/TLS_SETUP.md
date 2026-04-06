@@ -43,11 +43,13 @@ This creates:
 ### 2. Start Stack with TLS
 
 ```powershell
-# Windows PowerShell
-.\infrastructure\scripts\stack_up.ps1 -TLS
+# Kanonisch: BLUE + TLS-Overlay, dann RED
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
-# With all production overlays
-.\infrastructure\scripts\stack_up.ps1 -Profile prod -TLS -NetworkIsolation
+# Mit Network-Isolation zusätzlich:
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml -f infrastructure/compose/network-prod.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### 3. Verify TLS
@@ -195,7 +197,8 @@ mv ../.cdb_local/tls ../.cdb_local/tls_backup
 mv ../.cdb_local/tls_new ../.cdb_local/tls
 
 # 4. Restart with TLS
-.\infrastructure\scripts\stack_up.ps1 -TLS
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---

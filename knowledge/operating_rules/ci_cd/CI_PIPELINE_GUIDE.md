@@ -229,14 +229,15 @@ gitleaks detect --source=. --config=gitleaks.toml
 
 **E2E Tests:**
 ```bash
-cd infrastructure/compose
-docker-compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Wait for services
 E2E_RUN=1 pytest tests/e2e/test_paper_trading_p0.py -v
 
 # Cleanup
-docker-compose -f base.yml -f dev.yml down -v
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 ```
 
 ---

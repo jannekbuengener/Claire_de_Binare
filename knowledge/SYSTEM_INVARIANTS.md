@@ -47,7 +47,7 @@ Ein Verstoss gegen diese Regeln bedeutet **Systembruch**.
 
 ### INV-022: TLS Optional aber Prepared
 **Regel:** TLS fuer Redis + PostgreSQL muss aktivierbar sein.
-**Implementierung:** `-TLS` Flag in stack_up.ps1.
+**Implementierung:** `tls.yml` Overlay + `SECRETS_PATH`-Pfad für TLS-Zertifikate. [LEGACY COMPAT: `-TLS` Flag in `infrastructure/scripts/stack_up.ps1`]
 **Pruefung:** tls.yml existiert und ist syntaktisch korrekt.
 
 ---

@@ -33,7 +33,7 @@
 ======================================================================
   Export Complete
 ======================================================================
-[INFO] Next step: Run 'infrastructure/scripts/stack_up.ps1' to load secrets
+[INFO] Next step: Restart stack: docker compose -f infrastructure/compose/compose.blue.yml up -d && docker compose -f infrastructure/compose/compose.red.yml up -d
 
 ```
 
@@ -75,41 +75,20 @@ POSTGRES_PASSWORD_DSN=<base64-encoded-32-bytes>
 - **Location:** Not in repo root (in tools/secrets/)
 - **Permissions:** Only readable by current user (Windows ACL)
 
-### 📊 Integration Ready
-- **stack_up.ps1 will auto-load** this file (B-lite)
-- **No manual ENV setup required**
-- **Disable via:** `$env:CDB_IGNORE_RUNTIME_ENV='1'`
+### 📊 Kanonischer Stack-Start nach Export
 
----
-
-## Stack Startup (B-lite Integration)
-
-**Command:**
 ```powershell
-.\infrastructure\scripts\stack_up.ps1
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
-**Expected Output (Snippet):**
-```
-=== Loading Runtime Env ===
-Source: D:\Dev\Workspaces\Repos\Claire_de_Binare\tools\secrets\.env.runtime
-  [OK] REDIS_PASSWORD (length: 32)
-  [OK] POSTGRES_PASSWORD (length: 32)
-  [OK] POSTGRES_PASSWORD_DSN (length: 32)
-  [OK] Loaded 3 runtime secrets
+Compose liest Secrets direkt aus `$SECRETS_PATH` (`~/Documents/.secrets/.cdb`).
+Die `.env.runtime`-Datei ist ein optionaler Export-Zwischenschritt; nicht zwingend für den Start.
 
-=== Loading Secrets ===
-Source: C:\Users\janne\Documents\.secrets\.cdb
-  [OK] REDIS_PASSWORD
-  [OK] POSTGRES_PASSWORD
-  [OK] GRAFANA_PASSWORD
-  [OK] All secrets loaded
-
-=== Starting Claire de Binare Stack ===
-...
-```
-
-**Result:** ✅ Secrets loaded automatically, no manual intervention
+> **[LEGACY COMPAT]** `infrastructure/scripts/stack_up.ps1` lädt `.env.runtime` automatisch,
+> wenn sie vorhanden ist (`CDB_IGNORE_RUNTIME_ENV=1` deaktiviert das).
+> Dieser Pfad ist nicht mehr der kanonische Operator-Startflow.
 
 ---
 

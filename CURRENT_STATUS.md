@@ -3,39 +3,52 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-03-29
-**Latest Commit**: c65552e — docs(lr-audit): reconcile phase status to 2026-03-29 (#1306)
+**Last Updated**: 2026-04-06
+**Latest Main Commit**: 26d91693 — fix(scripts): reconcile compose canon drift in active PS1 scripts (PR #1398, closes #1391)
+**Previous**: c0078bc0 — chore(session): close session #31 — #1398 review handoff (#1443)
 
 ---
 
-## Repo / Engineering Status (2026-03-24)
+## Repo / Engineering Status (2026-04-06)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1237: LR-040 runtime env prep (BLOCKIERT: DIRTY/CONFLICTING, CI FAIL, missing allow-core-change)
+  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
+  - #1285: fix(soak-monitor): use df -P (#1282)
+  - #1237: LR-040 runtime env prep (BLOCKIERT)
   - #1217: fix(digest): auto-close weekly digest
-  - #1207: feat(market): V3 shadow mode — cdb_market write path
-  - #1180: deps: ruff 0.15.6 bump
-- **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
-- **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
-- **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
-- **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
-- **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
+  - #1207: feat(market): V3 shadow mode
+  - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
+  - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
+  - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
+  - **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
+  - **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
+  - **Merged (Session 12, 2026-03-29)**: #1359/#1360/#1361/#1362/#1363 — Sessions-README, Signal-Alerts-Claim, Monitoring-Terminologie, INV-006 `min_qty_sum`, historische Governance-Artefakte markiert.
+  - **Merged (Session 13, 2026-03-30)**: #1370 — LR-007-Canon auf 72h-Validierungsfenster ausgerichtet (93daac4).
+  - **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
+  - **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
+  - **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
+  - **Merged (Session 18, 2026-03-31)**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. PR #1415 (04b91d4b). Issue #1410 geschlossen.
+  - **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
+  - **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
+  - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
+  - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
+  - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
+  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (7793c028). Issue #1426 geschlossen.
+  - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 als naechster Anschluss-Schritt freigegeben; spaeter via PR #1435 geschlossen.
+  - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
+  - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (1f3ec548). #1390 geschlossen.
+  - **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
+  - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
+  - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
+  - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
+  - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
 
 ---
 
-## Live-Readiness Phase Status (Stand 2026-03-29)
+## Live-Readiness
 
-| Phase | LR-Tasks | Status | Aenderung seit 2026-02-21 |
-|---|---|---|---|
-| P0 Preconditions | LR-001..003 | DONE | unveraendert |
-| P1 Deterministic Tests | LR-010, LR-011, LR-012 | PARTIAL | LR-010 PASS evidenced (#1223); LR-012 execution hardened (#1247) |
-| P2 E2E + Replay | LR-020, LR-021 | DONE | LR-020 STATE.yaml = DONE (#1190); Tier-2 FILLED, Decimal qty fix |
-| P3 Shadow Mode | LR-030, LR-031 | OPEN | SSOT: keine Evidence-Dateien in `docs/live-readiness/` bei Reconciliation 2026-03-29 verifiziert; als OPEN behandelt bis bestaetigt |
-| P4 Soak + Chaos | LR-040, LR-041, LR-042 | PARTIAL | LR-041 redis/postgres drill added (#1130); LR-042 metric fix (#1131); LR-040 gate evaluator + evidence docs (#1133) — Soak-Run 2026-03-22 FAILED (environment_interruption); Soak-Run 2026-03-24 FAILED (cdb_signal restart); **72h-Run 2026-03-25 12:12 UTC abgeschlossen: INCONCLUSIVE** (77.75h, `no_restart_alerts` FAIL, cause=`environment_interruption`; `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json`); Gate-Policy-Entscheidung oder neuer ununterbr. Run ausstehend |
-| P5 Canary Echtgeld | LR-050 | OPEN | Prestart-Normalisierung via PR #1226 gemerged (df169f4); LR-040, Prestart-Capture und Human Gate noch ausstehend |
-
-**Operative Gesamtverdikt: NO-GO** (unveraendert — P1/P3/P4 noch nicht vollstaendig, P5 Human Gate ausstehend)
+Operatives Go/No-Go-Verdikt: **NO-GO** — Phasenstatus und Verdikt-Quelle ausschliesslich unter [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md). Diese Datei ist nicht die operative SSOT fuer Live-Readiness.
 
 ---
 
@@ -44,6 +57,7 @@
 ### Live-Readiness
 - LR-010: Evidence-Status auf PASS hochgestuft (PR #1223)
 - LR-020: IMPLEMENTED / DONE — Tier-2 paper-trade flow mit FILLED-State, Decimal-qty-Fix, TRACE_CONTRACT_V1 (PR #1190)
+- LR-007: Spezifikation/Status auf das kanonische 72h-Validierungsfenster ausgerichtet; alte 30d-Draft-Wording entfernt (PR #1370)
 - LR-031: Threshold neu kalibriert auf min=1 (liveness floor, PR #1257 a407838); lean Run 23407946292 vollstaendig PASS (soak_gate + comparison + canonical package)
 - LR-041: Deterministischer Redis/Postgres-Recovery-Drill hinzugefuegt (PR #1130)
 
@@ -55,6 +69,9 @@
 - Makefile: docker-* Targets auf kanonischen BLUE/RED Pfad migriert (#1219)
 - Backup: Automatisierungs-Runbook + SurrealDB-Drill (#1175, #1130)
 - Governance: TODO/Placeholder-Lifecycle formalisiert (#1239)
+- Aktive Runtime-Doku verweist jetzt konsistent auf `compose.blue.yml` + `compose.red.yml`; unqualifiziertes `docker compose up -d` und base/dev-Canon aus aktiven Artefakten entfernt (#1382, #1386)
+- Incident-/Emergency-/CI-Dokumente auf Solo-Maintainer-Realitaet umgestellt; Mehrpersonen-Eskalationsketten aus aktiven SOPs entfernt (#1383)
+- Obsolete `BLACK`-Terminologie aus aktiven Live-Readiness- und Governance-Artefakten entfernt; aktive Domain-Bezeichnung jetzt `Risk Service` / `cdb_risk` (#1384, #1389)
 
 ### Soak-Monitor + Alerting (2026-03-24, Session 6)
 
@@ -90,17 +107,20 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
-3. **LR-040 72h-Run abgeschlossen — INCONCLUSIVE:** `artifacts/soak_test_20260325_121250/lr040_soak_gate_eval.json` — 77.75h, `duration_gte_72h`: true, `no_restart_alerts`: false (cause=`environment_interruption`, 12/12 Bulk-SUT-Restarts). Gate-Policy-Entscheidung (environment_interruption als Ausnahme) oder neuer ununterbr. 72h-Run erforderlich für PASS.
+3. **LR-040 72h-Run abgeschlossen — PASS:** `artifacts/soak_test_20260401_114850/lr040_soak_gate_eval.json` — 72.19h, alle 8 Gate-Checks bestanden. Committed unter `reports/p5_canary/2026-04-04/lr040/`. PR #1432 gemergt (d530a7ea).
 4. **#1282/#1283 (Disk-Check + generischer Pointer):** Gefixt (08f7e7b, 2026-03-26). `_write_active_run_path()` in `soak_monitor.sh` schreibt jetzt auch `soak_active_run_path.txt` für lr040 Runs; Validation-Runs unberührt. Disk-Check unterscheidet Command-Failure von Parse-Failure, schreibt Reason + Raw-Output in disk_evidence. +6 neue Regressionstests (4 Pointer-Sync, 2 Disk-Check).
 5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26), geschlossen 2026-03-27. Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
 6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
-8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
-9. **Human Gate:** Explizit erforderlich für P5/Canary — erst nach LR-040 PASS möglich.
+8. **Human Gate:** GRANTED (2026-04-04). GO fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe. Formalisiert in `decision_record.yaml` via PR #1434 (1a0ebaba).
+9. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
+10. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
+11. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
+12. **#1391/#1398 (compose canon drift):** CLOSED (2026-04-06). PR #1398 gemergt (26d91693). Legacy-Stubs fail-closed, $secretDir-Fix, aktive Docs bereinigt. Issues #1391 + #1442 geschlossen.
 
 ---
 
 ## Postmortem / Session Logs
 
 - `knowledge/logs/sessions/` — aktuelle Session-Logs
-- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-03-29, #1306)
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-04-05, PR #1437)

@@ -1,3 +1,9 @@
+# LEGACY — generates stack_up/down/status scripts for the old base.yml/dev.yml topology
+# with .cdb_local/.secrets paths and .env.compose references.
+# Superseded by the BLUE/RED compose split; canonical runtime-up is via:
+#   .\tools\cdb.ps1 runtime up  (calls infrastructure/scripts/setup_blue_red.ps1)
+# Retained for reference only; do not use as an active entrypoint.
+
 param(
     [string]$InventoryRelativePath = 'knowledge\CDB_DOCKER_STACK_INVENTORY.md'
 )

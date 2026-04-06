@@ -24,7 +24,7 @@ Wichtige kanonische Dateien:
 
 Aktueller Projektstand:
 - Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
-- Engineering-Status laut [`CURRENT_STATUS.md`](CURRENT_STATUS.md), Stand 2026-03-22: `main` gruen, 5 offene PRs, P0 `DONE`, P1/P3/P4 noch `PARTIAL` oder `OPEN`, P5 weiter offen.
+- Engineering-Status laut [`CURRENT_STATUS.md`](CURRENT_STATUS.md): `main` gruen; offene PRs und Arbeitsstatus aktuell dort einsehen.
 - Operatives Live-Readiness-Verdikt laut [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md): `NO-GO`; reale Trades bleiben durch Human Gate blockiert.
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und nicht der aktuelle Gesamtstatus.
 

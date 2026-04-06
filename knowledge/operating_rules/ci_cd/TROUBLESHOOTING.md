@@ -98,10 +98,10 @@ Container failed to start or health check misconfigured.
 
 **Step 1: Check local stack**
 ```bash
-cd infrastructure/compose
-docker-compose -f base.yml -f dev.yml up -d
-docker-compose ps
-docker-compose logs --tail=50
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml ps
+docker compose -f infrastructure/compose/compose.red.yml ps
 ```
 
 **Step 2: Common issues**
@@ -110,8 +110,8 @@ docker-compose logs --tail=50
 |-------|-----|
 | Port conflict | Stop other Docker containers |
 | Missing env vars | Check `.env` file |
-| Volume permissions | `docker-compose down -v` and restart |
-| Image not built | `docker-compose build` |
+| Volume permissions | `docker compose -f infrastructure/compose/compose.red.yml down && docker compose -f infrastructure/compose/compose.blue.yml down` then restart |
+| Image not built | `docker compose -f infrastructure/compose/compose.blue.yml build` |
 
 **Step 3: Manual health check**
 ```bash
