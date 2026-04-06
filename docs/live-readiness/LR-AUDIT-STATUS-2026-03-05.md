@@ -22,17 +22,17 @@ Scope: Echtgeld Go/No-Go readiness snapshot from existing live-readiness SSOT so
 | Phase | Blocking? | LR-Tasks | Status | Evidence / Links |
 |---|---|---|---|---|
 | P0 Preconditions | `true` | `LR-001`, `LR-002`, `LR-003` | `DONE` | State files DONE + all issues closed: [LR-001 #776](https://github.com/jannekbuengener/Claire_de_Binare/issues/776), [LR-002 #777](https://github.com/jannekbuengener/Claire_de_Binare/issues/777), [LR-003 #778](https://github.com/jannekbuengener/Claire_de_Binare/issues/778). Evidence: [LR-001-EVIDENCE](./LR-001-EVIDENCE.md), [LR-002-EVIDENCE](./LR-002-EVIDENCE.md), [LR-003-EVIDENCE](./LR-003-EVIDENCE.md) |
-| P1 Deterministic Tests | `false` | `LR-010`, `LR-011`, `LR-012` | `PARTIAL` | `LR-010` PASS: [LR-010-EVIDENCE.md](./LR-010-EVIDENCE.md), CI run `23295248170` (2026-03-19); [LR-011 #780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780) open; `LR-012` no evidence file (status unverified) |
+| P1 Deterministic Tests | `false` | `LR-010`, `LR-011`, `LR-012` | `PARTIAL` | `LR-010` PASS: [LR-010-EVIDENCE.md](./LR-010-EVIDENCE.md), CI run `23295248170` (2026-03-19); [LR-011 #780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780) closed (GitHub; PR #1106); `LR-012` no evidence file (status unverified) |
 | P2 E2E + Replay | `false` | `LR-020`, `LR-021` | `DONE` | `LR-020` DONE: [LR-020-STATE.yaml](./LR-020-STATE.yaml) commit `8c75697` (2026-03-17); [LR-021 #783](https://github.com/jannekbuengener/Claire_de_Binare/issues/783) closed, evidence slices 1–3 present |
 | P3 Shadow Mode | `false` | `LR-030`, `LR-031` | `PARTIAL` | `LR-030` issue [#784](https://github.com/jannekbuengener/Claire_de_Binare/issues/784) is closed; zero-execution proof is repo-backed in `docs/evidence/LR-030.md` and re-confirmed by `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` (10/10 gate checks PASS). `LR-031` issue [#785](https://github.com/jannekbuengener/Claire_de_Binare/issues/785) is closed; comparison layer is PASS-evidenced in `docs/evidence/LR-031.md` with calibrated thresholds in `docs/evidence/lr031_baseline_thresholds.json`. **Restunsicherheit:** the original `LR-030` issue wording still mentions `>24h` stable shadow mode plus monitoring/alerting evidence, which is not fully re-expressed in the current canonical SSOT. |
 | P4 Soak + Chaos | `false` | `LR-040`, `LR-041`, `LR-042` | `DONE` | `LR-040` PASS: `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` (72.19h, 8/8 checks, `soak_test_20260401_114850`); `LR-041` evidence present: `docs/evidence/LR-041.md`, [#787](https://github.com/jannekbuengener/Claire_de_Binare/issues/787) closed; `LR-042` evidence present: `docs/evidence/LR-042.md`, [#788](https://github.com/jannekbuengener/Claire_de_Binare/issues/788) closed |
-| P5 Canary Echtgeld | `false` (`gated: true`) | `LR-050` | `OPEN` | [LR-050 #792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792); committed prestart pack GO state exists under `reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`) and continuity proof exists via `lean_shadow_evidence_handoff.yaml`, but this does not authorize live capital and does not clear `LR-050` |
+| P5 Canary Echtgeld | `false` (`gated: true`) | `LR-050` | `OPEN` | issue [#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792) is closed in GitHub; this does not change P5 clearance or live-capital readiness; committed prestart pack GO state exists under `reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`) and continuity proof exists via `lean_shadow_evidence_handoff.yaml`, but this does not authorize live capital and does not clear `LR-050` |
 
 Phase notes (audit interpretation):
 
 - P0 is the only roadmap phase with explicit `blocking: true`. P0 is now fully consistent (state files + tracker aligned).
 - P0 issue-state drift was resolved on 2026-03-15; all three P0 issues are closed.
-- P1 is `PARTIAL`: `LR-010` PASS evidenced (CI run `23295248170`, 2026-03-19); `LR-011` open; `LR-012` status unverified (no evidence file).
+- P1 is `PARTIAL`: `LR-010` PASS evidenced (CI run `23295248170`, 2026-03-19); `LR-011` closed (GitHub, PR #1106); `LR-012` status unverified (no evidence file).
 - P2 is `DONE`: `LR-020-STATE.yaml` = DONE (commit `8c75697`); `LR-021` closed with evidence slices.
 - P3 is no longer evidence-empty: `LR-031` is PASS-evidenced and `LR-030` zero-execution behavior is repo-backed plus re-confirmed by the committed lean handoff. Operational status remains `PARTIAL` because the original `LR-030` issue wording still leaves residual uncertainty around `>24h` stable shadow mode / monitoring evidence.
 - P4 is `DONE`: `LR-040` PASS (72.19h soak, `soak_test_20260401_114850`); `LR-041` evidence present (`docs/evidence/LR-041.md`, #787 closed); `LR-042` evidence present (`docs/evidence/LR-042.md`, #788 closed).
@@ -61,7 +61,7 @@ DONE consistency checks:
 
 ## D) OPEN / Next Tasks (prioritized)
 
-1. `LR-011` ([#780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780)): execution state machine test coverage is required to prove deterministic order lifecycle transitions; DoD: full state transition matrix tested with pass/fail evidence.
+1. ~~`LR-011` ([#780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780)): execution state machine test coverage is required to prove deterministic order lifecycle transitions; DoD: full state transition matrix tested with pass/fail evidence.~~ Closed in GitHub (PR #1106).
 2. `LR-012` ([#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781)): malformed payload handling must fail closed; DoD: negative schema/payload tests pass and rejection paths are evidenced.
 3. ~~`LR-020` (#782)~~ DONE 2026-03-17: `LR-020-STATE.yaml` = DONE, commit `8c75697`.
 4. `LR-030` operational reconciliation only: issue [#784](https://github.com/jannekbuengener/Claire_de_Binare/issues/784) is closed and zero-execution proof is repo-backed, but the original issue wording still mentions `>24h` stable shadow mode plus monitoring/alerting evidence; canonical status therefore remains conservative until that wording is explicitly reconciled.
@@ -69,21 +69,19 @@ DONE consistency checks:
 6. ~~`LR-040` (#786)~~ PASS 2026-04-04: `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` (72.19h, 8/8 checks, `soak_test_20260401_114850`).
 7. ~~`LR-041` (#787)~~ CLOSED: evidence present (`docs/evidence/LR-041.md`); Redis/Postgres recovery drill implemented and evidenced.
 8. ~~`LR-042` (#788)~~ CLOSED: evidence present (`docs/evidence/LR-042.md`); network latency/loss drill implemented and evidenced.
-9. `LR-050` ([#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792)): canary checklist gates live capital exposure; DoD: checklist complete and explicitly approved by human gate.
+9. `LR-050` ([#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792)): issue closed in GitHub; this does not change P5 clearance or live-capital readiness; canary checklist gates live capital exposure; explicit human gate still required.
 10. ~~Tracker alignment task (P0)~~ Resolved 2026-03-15: `LR-001` #776 and `LR-003` #778 closed; state files and tracker consistent.
 
 Open LR issue map (quick reference):
 
 | LR Task | Issue | Why important | DoD (one sentence) |
 |---|---|---|---|
-| `LR-011` | [#780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780) | Prevents nondeterministic execution transitions | State transition tests cover all allowed and forbidden paths |
 | `LR-012` | [#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781) | Ensures fail-closed behavior on bad inputs | Negative payload suite rejects malformed events with evidence |
-| `LR-050` | [#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792) | Final gate before live capital exposure | Canary checklist approved under explicit human gate |
 
 ## E) Risks / Known Gaps
 
 - ~~P0 issue-state mismatch~~ Resolved 2026-03-15: state files and issue tracker are now consistent.
-- Deterministic test layer (P1) is incomplete; `LR-011` open, `LR-012` status unverified — regressions can pass unnoticed without full state-machine and negative-path coverage.
+- Deterministic test layer (P1) is incomplete; `LR-011` closed (GitHub, PR #1106), `LR-012` status unverified — regressions can pass unnoticed without full negative-path coverage.
 - ~~Full-pipeline paper trading evidence (P2) is still open~~ Resolved: `LR-020-STATE.yaml` = DONE (2026-03-17), `LR-021` closed.
 - P3 is no longer unverified: `LR-031` PASS evidence and `LR-030` zero-execution proof are repo-backed. Residual uncertainty remains only around whether the original `LR-030` issue wording (`>24h` stable shadow mode / monitoring+alerting) is fully satisfied by the current committed evidence.
 - ~~`LR-040` gate eval is `INCONCLUSIVE`~~ Resolved 2026-04-04: new uninterrupted 72h soak (`soak_test_20260401_114850`) delivered PASS. P4 advanced to DONE.

@@ -112,12 +112,11 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 5. **#1266/#1267 (Grafana execErrState):** Gefixt (216d0eb, 2026-03-26), geschlossen 2026-03-27. Root Cause: `KeepLastState` war nie ein gültiger Unified-Alerting-Wert; korrekt ist `KeepLast` (Grafana 10.4+/11.0+). Kein Image-Upgrade nötig. Beide Alert-Regeln und Tests aktualisiert.
 6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
-8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
-9. **Human Gate:** GRANTED (2026-04-04). GO fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe. Formalisiert in `decision_record.yaml` via PR #1434 (1a0ebaba).
-10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
-11. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
-12. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
-13. **#1391/#1398 (compose canon drift):** CLOSED (2026-04-06). PR #1398 gemergt (26d91693). Legacy-Stubs fail-closed, $secretDir-Fix, aktive Docs bereinigt. Issues #1391 + #1442 geschlossen.
+8. **Human Gate:** GRANTED (2026-04-04). GO fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe. Formalisiert in `decision_record.yaml` via PR #1434 (1a0ebaba).
+9. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
+10. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
+11. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
+12. **#1391/#1398 (compose canon drift):** CLOSED (2026-04-06). PR #1398 gemergt (26d91693). Legacy-Stubs fail-closed, $secretDir-Fix, aktive Docs bereinigt. Issues #1391 + #1442 geschlossen.
 
 ---
 
