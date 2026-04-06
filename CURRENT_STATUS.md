@@ -43,6 +43,7 @@
   - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
   - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
   - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
+  - **Session 34 (2026-04-06)**: Control-System umgesetzt — PR #1375 geschlossen (superseded); Control-Meta-Issue #1445 erstellt; CONTROL_REGISTER.md angelegt. PR #1446 offen. Naechster Schritt: LR-AUDIT-STATUS-Reconciliation (#780/#792 GitHub CLOSED vs. SSOT noch OPEN).
 
 ---
 
