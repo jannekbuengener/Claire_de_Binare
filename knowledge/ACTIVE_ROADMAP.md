@@ -7,13 +7,19 @@ Status: canonical local pointer page
 This file is the short roadmap entrypoint used by agents and humans at session
 start. It now resolves only to local working-repo sources.
 
-## Canonical Locations
+## Canonical Locations (current)
 
 - Working repo / engineering status: `CURRENT_STATUS.md`
 - Operational live-readiness status: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 - Historical knowledge snapshot: `knowledge/CURRENT_STATUS.md` (context only)
-- Detailed plans: `knowledge/roadmap/`
 - Canon and archive policy: `docs/meta/WORKING_REPO_CANON.md`
+
+## Historical Milestone Plans (context only)
+
+- `knowledge/roadmap/` — legacy M7/M8/M9 milestone plans from Dec 2025.
+  These reflect planning assumptions (team size, security lead, external pentest)
+  that no longer match the current solo-maintainer reality. Retained for
+  historical context, not as operative guidance.
 
 ## Current Focus
 
