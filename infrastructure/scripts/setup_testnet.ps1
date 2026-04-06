@@ -1,9 +1,24 @@
 #!/usr/bin/env pwsh
+# ============================================================================
+# LEGACY SCRIPT — .env-based testnet setup (pre-Blue/Red canon)
+# ============================================================================
+# This script reads MEXC credentials from a flat .env file.
+# The current runtime uses Docker secrets from ~/Documents/.secrets/.cdb/
+# and the Blue/Red compose canon.
+#
+# Canonical runtime entry points:
+#   .\tools\cdb.ps1 secrets init                           (secret setup)
+#   .\tools\cdb.ps1 runtime up                             (start stack)
+#   docker compose -f infrastructure/compose/compose.blue.yml up -d
+#   docker compose -f infrastructure/compose/compose.red.yml  up -d
+# ============================================================================
 <#
 .SYNOPSIS
-    MEXC Testnet Setup & Validation Script
+    LEGACY: MEXC Testnet Setup & Validation Script (.env-based)
 .DESCRIPTION
-    Helps configure MEXC testnet credentials and validates the connection
+    Helps configure MEXC testnet credentials and validates the connection.
+    NOTE: This script uses the legacy .env model. The current runtime uses
+    Docker secrets — see .\tools\cdb.ps1 secrets init.
 .EXAMPLE
     .\setup_testnet.ps1
 #>
@@ -17,6 +32,14 @@ if ($Help) {
     Get-Help $MyInvocation.MyCommand.Path -Detailed
     exit 0
 }
+
+Write-Host "ERROR: This script is legacy and must not be used." -ForegroundColor Red
+Write-Host ""
+Write-Host "The current runtime uses Docker secrets and the Blue/Red compose canon." -ForegroundColor Yellow
+Write-Host "Canonical entry points:" -ForegroundColor Yellow
+Write-Host "  .\tools\cdb.ps1 secrets init    (secret setup)" -ForegroundColor White
+Write-Host "  .\tools\cdb.ps1 runtime up       (full BLUE+RED stack restart)" -ForegroundColor White
+exit 1
 
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
@@ -146,7 +169,8 @@ Write-Host "=" * 50
 
 Write-Host "`n✅ MEXC Testnet is ready for testing!" -ForegroundColor Green
 Write-Host "`n🎯 Next Steps:" -ForegroundColor Cyan
-Write-Host "  1. Start services: docker-compose up -d" -ForegroundColor White
+Write-Host "  1. Start services: .\tools\cdb.ps1 runtime up" -ForegroundColor White
+Write-Host "     (or: docker compose -f infrastructure/compose/compose.blue.yml up -d)" -ForegroundColor DarkGray
 Write-Host "  2. Monitor logs: docker logs -f cdb_execution" -ForegroundColor White
 Write-Host "  3. Test order flow: python tests/test_mexc_integration.py" -ForegroundColor White
 Write-Host "`n💡 Trading Modes:" -ForegroundColor Cyan

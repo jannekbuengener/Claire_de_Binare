@@ -23,7 +23,7 @@ set -euo pipefail
 
 # Configuration
 TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-ARTIFACT_ROOT="artifacts"
+ARTIFACT_ROOT="${ARTIFACT_ROOT:-artifacts}"
 
 # ---------------------------------------------------------------------------
 # Run intent: lr040 (default) or validation (Issue #1278)
@@ -56,6 +56,16 @@ ACTIVE_RUN_FILE="$ARTIFACT_ROOT/soak_active_run_path_${SOAK_RUN_INTENT}.txt"
 
 # Ensure script continues even if individual commands fail
 set +e
+
+# ---------------------------------------------------------------------------
+# flock portability: Git Bash on Windows does not ship flock.
+# _flock_or_direct wraps flock with a fallback that runs the subshell body
+# directly when flock is unavailable. On solo-maintainer setups (single cron
+# instance) the lock is a best-effort dedup guard, not a correctness
+# requirement — missing it is safe. Issue #1420.
+# ---------------------------------------------------------------------------
+_HAS_FLOCK=0
+command -v flock >/dev/null 2>&1 && _HAS_FLOCK=1
 
 _write_active_run_path() {
   local artifact_path="$1"
@@ -177,6 +187,48 @@ LAST_CHECKPOINT_FILE="$ARTIFACT_PATH/last_checkpoint.txt"
 LAST_CHECKPOINT=-1
 if [ -f "$LAST_CHECKPOINT_FILE" ]; then
   LAST_CHECKPOINT=$(cat "$LAST_CHECKPOINT_FILE")
+fi
+
+# ---------------------------------------------------------------------------
+# Auto-stop guard: skip all checks after the monitoring window closes.
+# Prevents post-window Docker/host restarts from tainting a valid run.
+# SOAK_TARGET_HOURS defaults to 72 (LR-040 requirement).
+# Validation runs skip this guard (no fixed target duration).
+# Issue #1419.
+# ---------------------------------------------------------------------------
+SOAK_TARGET_HOURS_RAW="${SOAK_TARGET_HOURS:-72}"
+case "$SOAK_TARGET_HOURS_RAW" in
+  ''|*[!0-9]*)
+    echo "ERROR: SOAK_TARGET_HOURS must be an integer, got '$SOAK_TARGET_HOURS_RAW'. Falling back to 72." >&2
+    SOAK_TARGET_HOURS=72
+    ;;
+  *)
+    SOAK_TARGET_HOURS="$SOAK_TARGET_HOURS_RAW"
+    ;;
+esac
+if [ "$SOAK_RUN_INTENT" = "lr040" ] && [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOURS" ]; then
+  _guard_write() {
+    _CK=-1
+    [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
+    if [ "$_CK" -ge "$SOAK_TARGET_HOURS" ]; then
+      : # monitoring window completion already recorded; do not mutate artifacts
+    elif [ "$ELAPSED_HOURS" -le "$_CK" ]; then
+      : # already written for this or a later hour within the window
+    else
+      echo "$TIMESTAMP - Hour $ELAPSED_HOURS: Monitoring window complete ($SOAK_TARGET_HOURS h reached)" \
+        >> "$ARTIFACT_PATH/hourly_checks.log"
+      # Cap the checkpoint at SOAK_TARGET_HOURS to act as a completion sentinel
+      echo "$SOAK_TARGET_HOURS" > "$LAST_CHECKPOINT_FILE"
+    fi
+  }
+  if [ "$_HAS_FLOCK" -eq 1 ]; then
+    ( flock -x -w 30 200 || exit 0; _guard_write ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  else
+    _guard_write
+  fi
+  echo "LR-040 monitoring window complete (${ELAPSED_HOURS}h >= ${SOAK_TARGET_HOURS}h). Skipping checks."
+  echo "Remove cron to stop invocations: crontab -l | grep -v soak_monitor | crontab -"
+  exit 0
 fi
 
 # Colors for output
@@ -371,21 +423,13 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
   # Don't exit - continue monitoring to capture full failure timeline
 else
   echo -e "${GREEN}✓ No restarts detected${NC}"
-  # Atomically check-and-write the hourly checkpoint under an exclusive lock.
-  # Without flock, two parallel cron/monitor instances (e.g. two containers
-  # running lr040_soak_monitor concurrently) both read the old LAST_CHECKPOINT,
-  # both decide "not yet written", and both append — producing the duplicates
-  # that Issue #1271 fixes. The lock serialises access so only the first
-  # instance to acquire it writes; the second finds the updated sentinel
-  # inside the lock and skips.
-  # -w 30: wait up to 30 s for the lock; on timeout, skip this write
-  # (prefer missing one entry over hanging the cron slot indefinitely).
-  (
-    flock -x -w 30 200 || {
-      echo "WARNING: could not acquire checkpoint lock within 30 s — skipping hourly log write"
-      exit 0
-    }
-    # Re-read sentinel inside the lock: another instance may have just written it.
+  # Check-and-write the hourly checkpoint with optional flock protection.
+  # On platforms with flock (Linux containers), the lock serialises access
+  # to prevent duplicate entries from parallel cron instances (Issue #1271).
+  # On platforms without flock (Git Bash / MSYS2 on Windows), the checkpoint
+  # is written directly — safe for solo-maintainer setups with a single
+  # cron instance (Issue #1420).
+  _checkpoint_write() {
     _CK=-1
     [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
     if [ "$ELAPSED_HOURS" -le "$_CK" ]; then
@@ -394,7 +438,18 @@ else
       echo "$TIMESTAMP - Hour $ELAPSED_HOURS: No restarts" >> "$ARTIFACT_PATH/hourly_checks.log"
       echo "$ELAPSED_HOURS" > "$LAST_CHECKPOINT_FILE"
     fi
-  ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  }
+  if [ "$_HAS_FLOCK" -eq 1 ]; then
+    (
+      flock -x -w 30 200 || {
+        echo "WARNING: could not acquire checkpoint lock within 30 s — skipping hourly log write"
+        exit 0
+      }
+      _checkpoint_write
+    ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  else
+    _checkpoint_write
+  fi
 fi
 
 # =============================================================================
@@ -562,6 +617,12 @@ fi
 # Source 2: Docker space via socket (images, containers, volumes, build cache)
 DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not available]")
 
+# Determine whether Docker disk evidence is usable (Issue #1427).
+# A valid docker system df output contains "Images" in the table header.
+# The fallback string "[docker system df not available]" does not.
+DOCKER_DF_VALID=0
+echo "$DOCKER_DF_OUT" | grep -q "Images" && DOCKER_DF_VALID=1
+
 # Persist disk evidence at every checkpoint
 {
   echo "Timestamp: $TIMESTAMP"
@@ -591,8 +652,15 @@ if [ -n "$ARTIFACT_DISK_PCT" ]; then
     echo -e "${GREEN}✓ Artifact filesystem: ${ARTIFACT_DISK_PCT}% used (free: ${ARTIFACT_DISK_FREE})${NC}"
   fi
 else
-  echo -e "${YELLOW}⚠️  Artifact filesystem usage unavailable — check disk_evidence file${NC}"
-  echo "$TIMESTAMP - DISK_UNAVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}" >> "$ARTIFACT_PATH/disk_alerts.log"
+  # Issue #1427: distinguish partial evidence (Docker available) from total
+  # evidence failure. Host-FS status is already in disk_evidence_*.txt —
+  # only write to disk_alerts.log when evidence is truly degraded.
+  if [ "$DOCKER_DF_VALID" -eq 1 ]; then
+    echo -e "${YELLOW}⚠️  Host filesystem unavailable — Docker disk evidence present${NC}"
+  else
+    echo -e "${RED}⚠️  Disk evidence degraded — host filesystem and Docker disk both unavailable${NC}"
+    echo "$TIMESTAMP - DISK_UNAVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}, Docker disk evidence also unavailable" >> "$ARTIFACT_PATH/disk_alerts.log"
+  fi
 fi
 echo "  Evidence: $DISK_EVIDENCE_FILE"
 

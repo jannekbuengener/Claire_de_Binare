@@ -14,6 +14,7 @@
 | --- | --- | --- |
 | `infrastructure/compose/compose.blue.yml` | BLUE runtime services | Canonical |
 | `infrastructure/compose/compose.red.yml` | RED runtime services | Canonical |
+| `infrastructure/compose/logging.yml` | Logging overlay: Loki + Promtail + Alertmanager | Optional overlay — nicht Teil des Standard-BLUE/RED-Starts |
 | `infrastructure/compose/base.yml` | Shared/legacy compose fragment | Legacy: CI/test and explicit compatibility flows only |
 | `infrastructure/compose/dev.yml` | Legacy dev overlay | Legacy: CI/test and explicit compatibility flows only |
 | `infrastructure/scripts/setup_blue_red.ps1` | Start BLUE/RED runtime | Canonical |

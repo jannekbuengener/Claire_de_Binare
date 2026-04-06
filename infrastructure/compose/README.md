@@ -61,7 +61,7 @@ Mit `surrealdb-dev.yml` liegt SurrealDB lokal auf `127.0.0.1:8010`, damit es nic
 - **Services**: Redis, Postgres, Prometheus, Grafana
 - **Netzwerk**: cdb_network (bridge)
 - **Volumes**: Named Volumes (redis_data, postgres_data, etc.)
-- **Secrets**: Via ./.secrets/ Dateien
+- **Secrets**: Via `${SECRETS_PATH}` (`~/Documents/.secrets/.cdb`, kanonischer Pfad)
 
 ### test.yml
 - **Zweck**: Kanonische 431B Docker CI lab baseline

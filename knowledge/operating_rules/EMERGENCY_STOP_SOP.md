@@ -406,7 +406,7 @@ Before deploying to production:
 - **Code:** `core/safety/kill_switch.py`
 - **Unit Tests:** `tests/unit/safety/test_kill_switch.py`
 - **Integration Tests:** `tests/integration/test_emergency_stop.py`
-- **Related:** `docs/TRADING_MODES.md` (trading mode safety)
+- **Related:** `knowledge/systems/TRADING_MODES.md` (trading mode safety)
 - **Issue:** #250 (Emergency Stop Mechanism)
 
 ---

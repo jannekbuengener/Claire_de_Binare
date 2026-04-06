@@ -97,7 +97,7 @@ $services = @($blueRunning) + @($redRunning)
 
 if ($services.Count -eq 0) {
     Write-Warning 'No services are running; stack does not appear to be up.'
-    Write-Info 'Consider running ./stack_boot.ps1.'
+    Write-Info 'Consider running: .\tools\cdb.ps1 runtime up'
     exit 1
 }
 
@@ -159,7 +159,7 @@ if ($redIssues.Count -gt 0) {
 }
 
 Write-Info 'Run ./tools/cdb-stack-doctor.ps1 again after addressing errors.'
-Write-Info 'If secrets changed, run ./tools/cdb-secrets-sync.ps1.'
+Write-Info 'If secrets changed, run: .\tools\cdb.ps1 secrets init'
 
 # BLUE failures are hard errors; RED-only issues are warnings
 if ($blueIssues.Count -gt 0) { exit 1 }

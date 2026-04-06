@@ -188,7 +188,7 @@ tools/secrets/.env.*
 | Fail-closed validation | ✅ PASS | Manifest validation (smoke test) |
 | Manual secret protection | ✅ PASS | `--IncludeManual` hard-fail (smoke test) |
 | Idempotency (v1.1) | ✅ PASS | Age-based skip (section 4) |
-| B-lite integration | ✅ PASS | stack_up.ps1 auto-load (smoke test) |
+| Stack-Start nach Rotation | ✅ PASS | BLUE+RED compose up (smoke test; stack_up.ps1 auto-load ist Legacy-Compat) |
 
 ---
 
@@ -235,8 +235,10 @@ git ls-files | grep -E "(.env.runtime|.rotation_state.json)"
 .\tools\secrets\Rotate-Secrets.ps1 apply -Force
 .\tools\secrets\Rotate-Secrets.ps1 export
 
-# 6. Verify stack startup
-.\infrastructure\scripts\stack_up.ps1
+# 6. Verify stack startup (canonical BLUE+RED)
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---

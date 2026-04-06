@@ -417,7 +417,9 @@ class TestGenericPointerSync:
         """lr040: both soak_active_run_path_lr040.txt and soak_active_run_path.txt written."""
         artifact = str(tmp_path / "soak_test_20260326_120000")
         _simulate_write_active_run_path(artifact, tmp_path, "lr040")
-        assert (tmp_path / "soak_active_run_path_lr040.txt").read_text().strip() == artifact
+        assert (
+            tmp_path / "soak_active_run_path_lr040.txt"
+        ).read_text().strip() == artifact
         assert (tmp_path / "soak_active_run_path.txt").read_text().strip() == artifact
 
     def test_lr040_generic_pointer_matches_intent_pointer(self, tmp_path: Path) -> None:
@@ -433,12 +435,13 @@ class TestGenericPointerSync:
         artifact = str(tmp_path / "soak_validation_20260326_120000")
         _simulate_write_active_run_path(artifact, tmp_path, "validation")
         assert (
-            (tmp_path / "soak_active_run_path_validation.txt").read_text().strip()
-            == artifact
-        )
+            tmp_path / "soak_active_run_path_validation.txt"
+        ).read_text().strip() == artifact
         assert not (tmp_path / "soak_active_run_path.txt").exists()
 
-    def test_unknown_intent_does_not_write_generic_pointer(self, tmp_path: Path) -> None:
+    def test_unknown_intent_does_not_write_generic_pointer(
+        self, tmp_path: Path
+    ) -> None:
         """Unknown intent must not silently create soak_active_run_path.txt."""
         artifact = str(tmp_path / "soak_canary_20260326_120000")
         _simulate_write_active_run_path(artifact, tmp_path, "canary")
@@ -1279,10 +1282,10 @@ def resolve_pg_env(inspect_env_lines: list[str]) -> tuple[str | None, str | None
     db: str | None = None
     for line in inspect_env_lines:
         if line.startswith("POSTGRES_USER="):
-            value = line[len("POSTGRES_USER="):].strip()
+            value = line[len("POSTGRES_USER=") :].strip()
             user = value or None
         elif line.startswith("POSTGRES_DB="):
-            value = line[len("POSTGRES_DB="):].strip()
+            value = line[len("POSTGRES_DB=") :].strip()
             db = value or None
     return user, db
 
@@ -1324,14 +1327,20 @@ class TestDbGrowthPgEnvResolution:
 
     def test_old_hardcoding_removed(self) -> None:
         content = _read_soak_monitor()
-        assert "psql -U cdb" not in content, "Old hardcoding '-U cdb' must be removed (Issue #1281)"
-        assert "-d cdb_db" not in content, "Old hardcoding '-d cdb_db' must be removed (Issue #1281)"
+        assert (
+            "psql -U cdb" not in content
+        ), "Old hardcoding '-U cdb' must be removed (Issue #1281)"
+        assert (
+            "-d cdb_db" not in content
+        ), "Old hardcoding '-d cdb_db' must be removed (Issue #1281)"
 
     def test_runtime_resolution_uses_docker_inspect(self) -> None:
         content = _read_soak_monitor()
         check4 = _extract_check4(content)
         assert check4, "CHECK 4 section must exist in soak_monitor.sh"
-        assert "docker inspect" in check4, "Check 4 must use docker inspect to resolve PG_USER/PG_DB"
+        assert (
+            "docker inspect" in check4
+        ), "Check 4 must use docker inspect to resolve PG_USER/PG_DB"
         assert "POSTGRES_USER" in check4, "POSTGRES_USER must appear in Check 4"
         assert "POSTGRES_DB" in check4, "POSTGRES_DB must appear in Check 4"
 
@@ -1340,19 +1349,25 @@ class TestDbGrowthPgEnvResolution:
         check4 = _extract_check4(content)
         assert check4, "CHECK 4 section must exist"
         assert "/run/secrets" not in check4, "No secret paths allowed in Check 4"
-        assert "POSTGRES_PASSWORD" not in check4, "POSTGRES_PASSWORD must not appear in Check 4"
+        assert (
+            "POSTGRES_PASSWORD" not in check4
+        ), "POSTGRES_PASSWORD must not appear in Check 4"
 
     def test_success_message_only_on_psql_exit_zero(self) -> None:
         content = _read_soak_monitor()
         check4 = _extract_check4(content)
         success_pos = check4.find("Database metrics saved to")
         psql_exit_pos = check4.find("_PSQL_EXIT")
-        assert success_pos > psql_exit_pos, "Success message must appear after _PSQL_EXIT check"
+        assert (
+            success_pos > psql_exit_pos
+        ), "Success message must appear after _PSQL_EXIT check"
 
     # --- Python-Helfer: Env-Auflösungslogik ---
 
     def test_happy_path_both_vars_present(self) -> None:
-        user, db = resolve_pg_env(["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"])
+        user, db = resolve_pg_env(
+            ["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"]
+        )
         assert user == "claire_user"
         assert db == "claire_de_binare"
 
@@ -1374,12 +1389,14 @@ class TestDbGrowthPgEnvResolution:
         assert user is None, "Whitespace-only value must be treated as empty"
 
     def test_unrelated_env_vars_ignored(self) -> None:
-        user, db = resolve_pg_env([
-            "POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password",
-            "POSTGRES_USER=claire_user",
-            "POSTGRES_DB=claire_de_binare",
-            "PATH=/usr/local/bin:/usr/bin:/bin",
-        ])
+        user, db = resolve_pg_env(
+            [
+                "POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password",
+                "POSTGRES_USER=claire_user",
+                "POSTGRES_DB=claire_de_binare",
+                "PATH=/usr/local/bin:/usr/bin:/bin",
+            ]
+        )
         assert user == "claire_user"
         assert db == "claire_de_binare"
 
@@ -1388,7 +1405,9 @@ class TestDbGrowthPgEnvResolution:
     def test_inspect_fail_exit_code_captured(self) -> None:
         artifact = build_env_resolution_fail_artifact(2, "", "")
         assert artifact["exit_status"] == "2", "Real inspect exit code must be captured"
-        assert "failure_reason" not in artifact, "failure_reason must not appear when inspect failed"
+        assert (
+            "failure_reason" not in artifact
+        ), "failure_reason must not appear when inspect failed"
 
     def test_missing_keys_exit_status_and_failure_reason(self) -> None:
         artifact = build_env_resolution_fail_artifact(0, "", "claire_de_binare")
@@ -1403,6 +1422,175 @@ class TestDbGrowthPgEnvResolution:
         assert artifact["context_source"] == "docker_inspect_env"
 
     def test_old_values_not_in_resolved_path(self) -> None:
-        user, db = resolve_pg_env(["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"])
+        user, db = resolve_pg_env(
+            ["POSTGRES_USER=claire_user", "POSTGRES_DB=claire_de_binare"]
+        )
         assert user != "cdb", "Stale hardcoding 'cdb' must not appear"
         assert db != "cdb_db", "Stale hardcoding 'cdb_db' must not appear"
+
+
+# ---------------------------------------------------------------------------
+# Auto-stop guard helper (Issue #1419)
+#
+# Mirrors the bash guard added to soak_monitor.sh:
+#   if [ "$SOAK_RUN_INTENT" = "lr040" ] && \
+#      [ "$ELAPSED_HOURS" -ge "$SOAK_TARGET_HOURS" ]; then
+#       exit 0
+#   fi
+# ---------------------------------------------------------------------------
+
+
+def would_skip_guard(
+    elapsed_hours: int,
+    target_hours: int,
+    run_intent: str,
+) -> bool:
+    """True when the auto-stop guard would skip all checks.
+
+    The guard only activates for lr040 intent. Validation runs have no fixed
+    target duration and are never skipped.
+    """
+    return run_intent == "lr040" and elapsed_hours >= target_hours
+
+
+class TestAutoStopGuard:
+    """Tests for the auto-stop guard logic (Issue #1419)."""
+
+    def test_guard_skips_at_72h(self) -> None:
+        assert would_skip_guard(72, 72, "lr040") is True
+
+    def test_guard_allows_before_72h(self) -> None:
+        assert would_skip_guard(71, 72, "lr040") is False
+
+    def test_guard_skips_validation_never(self) -> None:
+        assert would_skip_guard(100, 72, "validation") is False
+
+    def test_guard_skips_above_target(self) -> None:
+        assert would_skip_guard(158, 72, "lr040") is True
+
+    def test_guard_custom_target(self) -> None:
+        assert would_skip_guard(5, 5, "lr040") is True
+
+    def test_guard_present_in_soak_monitor_sh(self) -> None:
+        """Verify the bash implementation contains the auto-stop guard."""
+        script = (
+            Path(__file__).resolve().parents[3]
+            / "infrastructure"
+            / "scripts"
+            / "soak_monitor.sh"
+        )
+        content = script.read_text(encoding="utf-8")
+        assert "SOAK_TARGET_HOURS" in content, "SOAK_TARGET_HOURS variable missing"
+        assert (
+            'SOAK_RUN_INTENT" = "lr040"' in content
+        ), "lr040 intent guard condition missing"
+        assert "Monitoring window complete" in content, "Guard exit message missing"
+
+
+# ---------------------------------------------------------------------------
+# Disk check fallback logic tests (Issue #1427)
+#
+# Root cause: when df /repo was unavailable, the monitor wrote DISK_UNAVAILABLE
+# to disk_alerts.log even when docker system df was valid and available.
+#
+# Fix (soak_monitor.sh): DOCKER_DF_VALID flag + three-path logic in Check 5:
+#   Path A — df /repo OK          → primary path, threshold logic applies
+#   Path B — df /repo fails,
+#             docker system df OK → yellow console only, no disk_alerts.log entry
+#   Path C — both unavailable     → DISK_UNAVAILABLE in disk_alerts.log (fail-closed)
+# ---------------------------------------------------------------------------
+
+# Realistic docker system df output (contains "Images" header → valid)
+_DOCKER_DF_VALID_OUTPUT = """\
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          12        3         8.5GB     5.2GB (61%)
+Containers      3         3         1.2MB     0B (0%)
+Local Volumes   8         4         2.1GB     850MB (40%)
+Build Cache     0         0         0B        0B
+"""
+
+# Fallback string written by soak_monitor.sh when docker system df fails
+_DOCKER_DF_NOT_AVAILABLE = "  [docker system df not available]"
+
+
+def is_docker_df_valid(output: str) -> bool:
+    """True when docker system df output contains parseable evidence.
+
+    Mirrors: echo "$DOCKER_DF_OUT" | grep -q "Images" && DOCKER_DF_VALID=1
+    """
+    return "Images" in output
+
+
+def disk_check_mode(artifact_disk_pct: str | None, docker_df_valid: bool) -> str:
+    """Map evidence availability to alert mode.
+
+    Mirrors the three-path console/alert-log logic in soak_monitor.sh Check 5
+    (Issue #1427):
+      "host_fs_available" — df /repo parsed; threshold logic applies
+      "fallback_active"   — df /repo unavailable, docker evidence present;
+                            no disk_alerts.log entry
+      "disk_unavailable"  — both sources gone; writes DISK_UNAVAILABLE to
+                            disk_alerts.log (fail-closed)
+    """
+    if artifact_disk_pct is not None:
+        return "host_fs_available"
+    if docker_df_valid:
+        return "fallback_active"
+    return "disk_unavailable"
+
+
+class TestDiskCheckFallback:
+    """Regression tests for Issue #1427: docker system df as valid fallback.
+
+    Guards that disk_check_mode/is_docker_df_valid Python mirrors stay aligned
+    with the bash implementation in soak_monitor.sh Check 5.
+    """
+
+    # --- is_docker_df_valid ---
+
+    def test_docker_df_valid_when_images_in_output(self) -> None:
+        assert is_docker_df_valid(_DOCKER_DF_VALID_OUTPUT) is True
+
+    def test_docker_df_invalid_when_not_available_string(self) -> None:
+        """Fallback string written by soak_monitor.sh when docker system df fails."""
+        assert is_docker_df_valid(_DOCKER_DF_NOT_AVAILABLE) is False
+
+    def test_docker_df_invalid_when_empty(self) -> None:
+        assert is_docker_df_valid("") is False
+
+    # --- disk_check_mode (three-path verdict) ---
+
+    def test_host_fs_available_when_pct_parsed(self) -> None:
+        """Primary path unchanged: df /repo parsed → host_fs_available."""
+        assert disk_check_mode("47", docker_df_valid=True) == "host_fs_available"
+        assert disk_check_mode("47", docker_df_valid=False) == "host_fs_available"
+
+    def test_fallback_active_when_repo_fails_docker_valid(self) -> None:
+        """Issue #1427 core case: df /repo unavailable, docker evidence present.
+
+        Must NOT produce disk_unavailable — secondary evidence is sufficient.
+        No entry must be written to disk_alerts.log in this case.
+        """
+        assert disk_check_mode(None, docker_df_valid=True) == "fallback_active"
+
+    def test_disk_unavailable_when_both_sources_fail(self) -> None:
+        """Fail-closed: disk_unavailable only when BOTH sources are gone."""
+        assert disk_check_mode(None, docker_df_valid=False) == "disk_unavailable"
+
+    def test_valid_docker_evidence_must_not_produce_disk_unavailable(self) -> None:
+        """Regression anchor for #1427: valid docker output must never yield
+        disk_unavailable, regardless of host-FS state."""
+        assert disk_check_mode(None, docker_df_valid=True) != "disk_unavailable"
+
+    # --- bash content guard ---
+
+    def test_bash_check5_contains_docker_df_valid_and_fallback_messages(self) -> None:
+        """Semantic anchors that must survive in soak_monitor.sh Check 5."""
+        content = _read_soak_monitor()
+        assert "DOCKER_DF_VALID" in content, "DOCKER_DF_VALID variable missing from Check 5"
+        assert "Host filesystem unavailable" in content, (
+            "Fallback console message missing — path B wording changed"
+        )
+        assert "Docker disk evidence also unavailable" in content, (
+            "Fail-closed message missing — path C wording changed"
+        )

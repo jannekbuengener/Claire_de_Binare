@@ -384,7 +384,7 @@ Siehe separate Datei: `docs/HITL_METRICS_MAPPING.md`
 
 - **Dashboard JSON**: infrastructure/monitoring/grafana/dashboards/claire_hitl_control_v1.json
 - **Emergency Stop SOP**: docs/EMERGENCY_STOP_SOP.md
-- **Trading Modes**: docs/TRADING_MODES.md
+- **Trading Modes**: knowledge/systems/TRADING_MODES.md
 - **Health Contract**: docs/HEALTH_CONTRACT.md
 - **Stack Lifecycle**: docs/STACK_LIFECYCLE.md
 - **Issue**: #244 (HITL Control Center)
