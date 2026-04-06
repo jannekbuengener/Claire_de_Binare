@@ -15,20 +15,26 @@ docker compose version
 ```
 ✅ Sollte funktionieren nach Neuinstallation
 
-### 2. Restore ausführen (kanonischer Einstieg)
+### 2. Verfügbare Backups anzeigen
 ```powershell
 make restore
-# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
+# → listet Archive in F:\Claire_Backups
+```
+
+### 3. Restore mit konkretem Backup-Namen ausführen
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.ps1 -BackupName cdb_backup_YYYYMMDD_HHMMSS
+# → Backup-Name aus Schritt 2 einsetzen
 ```
 ⏱️ Dauer: ~2-3 Minuten
 
-### 3. Stack starten
+### 4. Stack starten
 ```powershell
 make docker-up
 ```
 ⏱️ Dauer: ~30-60 Sekunden
 
-### 4. Backup-Health prüfen
+### 5. Backup-Health prüfen
 ```powershell
 make backup-health
 # → infrastructure/scripts/backup_health_check.ps1
@@ -141,5 +147,5 @@ cdb_paper_runner - running/healthy
 ---
 
 **Gesamt-Dauer für komplettes Restore:** ~5 Minuten  
-**Kanonischer Einstieg:** `make restore` → `infrastructure/scripts/restore_all.ps1`  
+**Kanonischer Einstieg:** `make restore` (Backup-Liste), dann `restore_all.ps1 -BackupName <name>`  
 **Hintergrund-Referenz:** `RESTORE_GUIDE.md` (historischer 2025-12-31-Snapshot)

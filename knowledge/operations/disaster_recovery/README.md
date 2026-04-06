@@ -67,14 +67,18 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 **Nach Docker Neuinstallation:**
 
 ```powershell
-# 1. Restore ausführen — kanonischer Einstieg (2-3 Min)
+# 1. Verfügbare Backups anzeigen
 make restore
-# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
+# → listet Archive in F:\Claire_Backups
 
-# 2. Stack starten (30-60 Sek)
+# 2. Restore mit konkretem Backup-Namen ausführen (2-3 Min)
+powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.ps1 -BackupName cdb_backup_YYYYMMDD_HHMMSS
+# → Backup-Name aus Schritt 1 einsetzen
+
+# 3. Stack starten (30-60 Sek)
 make docker-up
 
-# 3. Health prüfen
+# 4. Health prüfen
 make backup-health
 ```
 
@@ -124,8 +128,12 @@ docker network ls > ${BACKUP_DIR}\network_list.txt
 
 ### Kanonischer Einstieg (empfohlen):
 ```powershell
+# Schritt 1: verfügbare Backups anzeigen
 make restore
-# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
+# → listet Archive in F:\Claire_Backups
+
+# Schritt 2: Restore mit konkretem Namen ausführen
+powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.ps1 -BackupName cdb_backup_YYYYMMDD_HHMMSS
 ```
 
 ### Hintergrund-Referenz:
