@@ -4,7 +4,7 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-06
-**Latest Main Commit**: 26d91693 — fix(scripts): reconcile compose canon drift in active PS1 scripts (#1391)
+**Latest Main Commit**: 26d91693 — fix(scripts): reconcile compose canon drift in active PS1 scripts (PR #1398, closes #1391)
 **Previous**: c0078bc0 — chore(session): close session #31 — #1398 review handoff (#1443)
 
 ---
