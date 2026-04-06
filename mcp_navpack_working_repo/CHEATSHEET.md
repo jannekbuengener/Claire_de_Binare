@@ -29,7 +29,7 @@
 - `make help` — command surface; requires `make`.
 - `Get-ChildItem .github/workflows` — enumerate CI and automation workflows.
 - `Get-Content .github/workflows/ci.yml -TotalCount 160` — inspect the main CI contract.
-- `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml ps` — inspect the dev stack; requires Docker.
+- `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml ps` — inspect the canonical BLUE+RED runtime stack; requires Docker.
 - `python tools/validate_mcp_config.py tests/fixtures/mcp_smoke_config.json` — validate MCP config resolution; requires Python deps.
 - `pytest -q tests/smoke/test_mcp_runtime.py::test_mcp_time_server_runtime` — run the MCP smoke test; requires pytest and MCP deps.
 - `rg -n "TRADING_MODE|LIVE_TRADING_CONFIRMED" core docs` — find the safety gate and its docs; requires `rg`.
@@ -44,6 +44,6 @@
 - `AGENTS.md` here is a root pointer only; the canonical registry now lives in `agents/AGENTS.md` inside this repo.
 - The root `README.md` mixes status framing with repo structure; for navigation, `docs/index.md` is usually faster.
 - The main CI workflow excludes `test_mcp_time_server_runtime` from the bulk test step, so MCP runtime debugging needs the explicit smoke test.
-- Compose fragments in `infrastructure/compose/` are the preferred stack path; root-level legacy compose is only a fallback.
+- The canonical operator runtime is `compose.blue.yml + compose.red.yml`; `base.yml + dev.yml` are CI/testing-only and must not be used as a runtime path.
 - `core/config/trading_mode.py` will hard-exit on live mode without `LIVE_TRADING_CONFIRMED=yes`.
 - Root contains many historical governance/evidence work directories and zip bundles; they are noise for code/runtime navigation.

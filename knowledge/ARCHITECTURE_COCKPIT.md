@@ -47,10 +47,12 @@ graph LR
 ---
 
 ## ⚡ Runbook (Known-Good Commands)
-> **Stack reset + start**
-> `docker compose down -v`
-> `docker compose up -d --build`
-> `docker compose ps`
+> **Stack reset + start (BLUE+RED canonical runtime)**
+> `docker compose -f infrastructure/compose/compose.blue.yml down -v`
+> `docker compose -f infrastructure/compose/compose.red.yml down -v`
+> `docker compose -f infrastructure/compose/compose.blue.yml up -d`
+> `docker compose -f infrastructure/compose/compose.red.yml up -d`
+> `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/compose.red.yml ps`
 
 > **P0 E2E (Determinismus)**
 > ```powershell
@@ -71,7 +73,7 @@ graph LR
 
 ## ⚠️ Change-Safety (nur kontrolliert)
 
-- **`.cdb_local/.secrets`** → **niemals committen**, niemals in Docs/Issues.
+- **`~/Documents/.secrets/.cdb`** (`SECRETS_PATH`) → **niemals committen**, niemals in Docs/Issues.
 - **`docker-compose.yml` + Service-Namen/Netzwerk** → nur kleine, reviewte Änderungen (Default-Stack stabil halten).
 - **`infrastructure/database/schema.sql`** → Änderungen nur mit Review + E2E 2× back-to-back + klarer Schema-Strategie.
 - **`core/domain/*`** → high-impact: systemweiter Check nötig.

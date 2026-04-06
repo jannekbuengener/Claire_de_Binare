@@ -31,10 +31,11 @@
 git checkout main
 git pull
 
-# Stack
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml up -d
-docker compose ps
+# Stack (BLUE + RED)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml ps
+docker compose -f infrastructure/compose/compose.red.yml ps
 
 # DB Tabellen
 docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "\dt"

@@ -1,5 +1,11 @@
 #Requires -Version 5.1
 
+# LEGACY — the .cdb_local/.secrets -> .secrets/ sync flow is no longer the active secrets contract.
+# Current canon: Docker secrets sourced via SECRETS_PATH env var
+#   (default: ~/Documents/.secrets/.cdb), consumed directly by compose.blue.yml / compose.red.yml.
+# Canonical secrets init: .\tools\cdb.ps1 secrets init
+# Retained for reference only; do not use as an active entrypoint.
+
 <#
 .SYNOPSIS
     Synchronizes vault secrets into the workspace.
