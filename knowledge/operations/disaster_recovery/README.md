@@ -56,8 +56,9 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 - Bei Datenverlust: Fresh Init mit Schema
 
 ### Secrets (außerhalb Docker):
-- ✅ Bleiben erhalten: `C:\Users\janne\Documents\.secrets\.cdb\`
+- ✅ Bleiben erhalten: lokales Secrets-Verzeichnis (host-spezifisch, außerhalb Docker)
 - Enthalten: MEXC API Keys, Grafana/Postgres/Redis Passwords
+- Pfad: konfigurierbar über `SECRETS_PATH` — Standard: `~/Documents/.secrets/.cdb/`
 
 ---
 
@@ -67,7 +68,6 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 
 ```powershell
 # 1. Restore ausführen — kanonischer Einstieg (2-3 Min)
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 make restore
 # → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
 
@@ -124,7 +124,6 @@ docker network ls > ${BACKUP_DIR}\network_list.txt
 
 ### Kanonischer Einstieg (empfohlen):
 ```powershell
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 make restore
 # → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
 ```
@@ -138,7 +137,8 @@ Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) — historischer Event-Snapshot vom
 
 ### Nach Restore ausführen:
 ```powershell
-.\verify_restore.ps1
+make backup-health
+# → infrastructure/scripts/backup_health_check.ps1
 ```
 
 ### Manuelle Checks:
@@ -218,7 +218,7 @@ docker compose restart cdb_grafana
 ## 📝 Maintenance
 
 **Empfohlene Backup-Frequenz:**
-- **Täglich:** Automatisches Volume Backup (TODO)
+- **Täglich:** Automatisches Backup aktiv — Windows Task `Claire_Hourly_Backup` (siehe `docs/runbooks/BACKUP_AUTOMATION.md`)
 - **Vor Major Updates:** Manuelles Backup
 - **Vor Docker Neuinstallation:** Manuelles Backup (wie hier dokumentiert)
 
