@@ -11,9 +11,9 @@
 | File | Beschreibung | Verwendung |
 |------|--------------|------------|
 | **QUICK_START.md** | 🚀 3-Schritte Schnellanleitung | Nach Docker Neuinstallation |
-| **RESTORE_GUIDE.md** | 📖 Ausführliche Schritt-für-Schritt Anleitung | Detaillierte Restore-Prozedur |
-| **restore_volumes.ps1** | ⚡ Automatisches Restore-Script | PowerShell ausführen |
-| **verify_restore.ps1** | ✅ Verifications-Script | Nach Restore zur Validierung |
+| **RESTORE_GUIDE.md** | 📖 Historischer Event-Snapshot (2025-12-31) | Hintergrund-Referenz |
+| **restore_volumes.ps1** | ⚡ Historisches Restore-Script (2025-12-31-Snapshot) | Nicht aktive Kanonik — siehe `make restore` |
+| **verify_restore.ps1** | ✅ Historisches Verifikations-Script (2025-12-31-Snapshot) | Nicht aktive Kanonik |
 
 ---
 
@@ -66,16 +66,16 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 **Nach Docker Neuinstallation:**
 
 ```powershell
-# 1. Restore (2-3 Min)
-cd D:\Dev\Backups\docker_reinstall_YYYYMMDD_HHMMSS
-.\restore_volumes.ps1
+# 1. Restore ausführen — kanonischer Einstieg (2-3 Min)
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+make restore
+# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
 
 # 2. Stack starten (30-60 Sek)
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 make docker-up
 
-# 3. Verifizieren
-.\verify_restore.ps1
+# 3. Health prüfen
+make backup-health
 ```
 
 **Details:** Siehe [QUICK_START.md](./QUICK_START.md)
@@ -84,45 +84,53 @@ make docker-up
 
 ## 📋 Backup-Prozess
 
-### Manuelles Backup erstellen:
+### Kanonischer Einstieg:
 
 ```powershell
-# 1. Backup-Verzeichnis erstellen
+# Backup erstellen (Postgres + Redis → F:\Claire_Backups)
+make backup
+# → infrastructure/scripts/backup_all.ps1
+
+# Backup-Aktualität prüfen
+make backup-health
+# → infrastructure/scripts/backup_health_check.ps1
+```
+
+### Automatisches Backup (aktiv):
+- Windows Task `Claire_Hourly_Backup` via `infrastructure/scripts/setup_backup_task.ps1` — stündlich nach `F:\Claire_Backups`, Retention 14 Tage
+- Details: `docs/runbooks/BACKUP_AUTOMATION.md`
+
+### Manuelle Volume-Befehle (historische Referenz, 2025-12-31-Snapshot):
+
+```powershell
+# Direktes Volume-Backup (Hintergrund-Referenz, nicht kanonischer Einstieg)
 $BACKUP_DIR = "D:\Dev\Backups\docker_backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 mkdir $BACKUP_DIR
 
-# 2. Volumes sichern
 docker run --rm -v claire_de_binare_redis_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/redis_data.tar.gz -C /data .
 docker run --rm -v claire_de_binare_grafana_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/grafana_data.tar.gz -C /data .
 docker run --rm -v claire_de_binare_prom_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/prometheus_data.tar.gz -C /data .
 docker run --rm -v claire_de_binare_loki_data:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/loki_data.tar.gz -C /data .
 docker run --rm -v claude-memory:/data -v ${BACKUP_DIR}:/backup alpine tar czf /backup/claude_memory.tar.gz -C /data .
-
-# 3. Config sichern
 Copy-Item D:\Dev\Workspaces\Repos\Claire_de_Binare\.env ${BACKUP_DIR}\.env_backup
-
-# 4. Dokumentieren
 docker ps -a --format "{{.Names}}\t{{.Image}}\t{{.Status}}" > ${BACKUP_DIR}\container_list.txt
 docker volume ls > ${BACKUP_DIR}\volume_list.txt
 docker network ls > ${BACKUP_DIR}\network_list.txt
 ```
 
-### Automatisches Backup (TODO):
-- Cronjob/Task Scheduler für tägliche Backups
-- Retention Policy (z.B. 7 Tage behalten)
-- Backup-Validierung
-
 ---
 
 ## 🔧 Restore-Prozess
 
-### Automatisch (empfohlen):
+### Kanonischer Einstieg (empfohlen):
 ```powershell
-.\restore_volumes.ps1
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+make restore
+# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
 ```
 
-### Manuell:
-Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) für alle Commands
+### Hintergrund-Referenz:
+Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) — historischer Event-Snapshot vom 2025-12-31-Docker-Reinstall
 
 ---
 

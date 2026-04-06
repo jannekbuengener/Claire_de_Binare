@@ -1,10 +1,12 @@
 # 🚀 QUICK START - Nach Docker Neuinstallation
 
-**Backup Location:** `D:\Dev\Backups\docker_reinstall_20251231_075507`
+> **Hinweis:** Dieses Dokument enthält einen historischen Snapshot aus dem Docker-Reinstall 2025-12-31.  
+> **Aktuelle Backup-Location:** `F:\Claire_Backups`  
+> **Aktuelle Restore-Front-Door:** `make restore` (→ `infrastructure/scripts/restore_all.ps1`)
 
 ---
 
-## ⚡ 3-Schritte Restore (Automatisch)
+## ⚡ Restore — Kanonischer Einstieg
 
 ### 1. Docker verifizieren
 ```powershell
@@ -13,24 +15,24 @@ docker compose version
 ```
 ✅ Sollte funktionieren nach Neuinstallation
 
-### 2. Volumes + Config automatisch wiederherstellen
+### 2. Restore ausführen (kanonischer Einstieg)
 ```powershell
-cd D:\Dev\Backups\docker_reinstall_20251231_075507
-.\restore_volumes.ps1
+cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+make restore
+# → infrastructure/scripts/restore_all.ps1 — wählt interaktiv aus F:\Claire_Backups
 ```
 ⏱️ Dauer: ~2-3 Minuten
 
 ### 3. Stack starten
 ```powershell
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 make docker-up
 ```
 ⏱️ Dauer: ~30-60 Sekunden
 
-### 4. Verifizieren
+### 4. Backup-Health prüfen
 ```powershell
-cd D:\Dev\Backups\docker_reinstall_20251231_075507
-.\verify_restore.ps1
+make backup-health
+# → infrastructure/scripts/backup_health_check.ps1
 ```
 
 ---
