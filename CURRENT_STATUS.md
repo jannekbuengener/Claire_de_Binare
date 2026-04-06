@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-06
-**Latest Main Commit**: 920e1901 — chore(session): close session #30 — #1438 · #1437 · #1439 merge batch (#1441)
-**Previous**: e4d664e5 — chore(session): close session #28 — #1427 tests · #1426 fix · #1418 parent-close (#1439)
+**Latest Main Commit**: 26d91693 — fix(scripts): reconcile compose canon drift in active PS1 scripts (#1391)
+**Previous**: c0078bc0 — chore(session): close session #31 — #1398 review handoff (#1443)
 
 ---
 
@@ -13,7 +13,6 @@
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1398: fix(scripts): reconcile compose canon drift in active PS1 scripts (Root-Skript/Doc-Drift geschlossen; Branch up-to-date nach Merge; CI ausstehend)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT)
@@ -43,7 +42,7 @@
   - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
   - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
   - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
-  - **Session 32 (2026-04-06)**: PR #1398 — Root-Skript/Doc-Drift vollstaendig geschlossen. Fail-closed fuer beide Legacy-Stubs, $secretDir-Fix in compat copy, aktive Docs von stale Flows befreit. CI pending.
+  - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
 
 ---
 
@@ -118,7 +117,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
 11. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
 12. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
-13. **#1398:** Root-Skript/Doc-Drift vollstaendig geschlossen (Session 32, 2026-04-06). Legacy-Stubs fail-closed, $secretDir-Fix, Docs bereinigt. CI pending; Policy-Label-Entscheidung nach CI-Ergebnis.
+13. **#1391/#1398 (compose canon drift):** CLOSED (2026-04-06). PR #1398 gemergt (26d91693). Legacy-Stubs fail-closed, $secretDir-Fix, aktive Docs bereinigt. Issues #1391 + #1442 geschlossen.
 
 ---
 
