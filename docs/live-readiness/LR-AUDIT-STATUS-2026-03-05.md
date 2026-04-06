@@ -92,7 +92,7 @@ Open LR issue map (quick reference):
 ## F) Next Actions (next 7 days)
 
 1. ~~Resolve P0 tracking drift~~ Done (2026-03-15): #776 and #778 closed, state files consistent.
-2. Complete and evidence `LR-011` and `LR-012` test suites as highest-impact deterministic test blockers.
+2. ~~Complete and evidence `LR-011`~~ Closed (GitHub, PR #1106). Complete and evidence `LR-012` negative-path test suite.
 3. ~~Execute one full `LR-020` paper-trading E2E run~~ Done (2026-03-17): `LR-020-STATE.yaml` = DONE.
 4. Reconcile the canonical `LR-030` status wording against the existing zero-execution proof and committed lean handoff; until then keep P3 conservative rather than treating it as evidence-empty or fully done.
 5. ~~Resolve `LR-040` gate outcome~~ Done (2026-04-04): new 72h soak PASS; `LR-041`/`LR-042` closed with evidence.
