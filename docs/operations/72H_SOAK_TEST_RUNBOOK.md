@@ -24,6 +24,21 @@ Gate criteria:
 - Disk free > 10%
 - Signal queue length < 1000 (no stalls)
 
+## Runtime Requirement
+
+`soak_monitor.sh` is **Linux userland only**.
+
+- **Allowed:** native Linux shell, WSL2 Linux userland
+- **Not allowed:** native Windows, PowerShell, Git Bash, MSYS, MINGW, Cygwin
+
+`soak_monitor.sh` runs an active runtime precheck (`check_lr040_runtime_env.sh`)
+at startup and exits with a clear error if the runtime family, required tooling
+(`docker`, GNU `date -d`), or artifact-root writability checks fail.
+There is no silent fallback or best-effort mode — the script is fail-closed.
+
+To run on a Windows host, open a **WSL2 terminal** (e.g. `wsl`) and execute
+the script from within the WSL2 Linux userland.
+
 ## Pre-Flight: Windows Host
 
 On Windows hosts, automatic OS restarts can invalidate a 72h soak run.

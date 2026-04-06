@@ -26,6 +26,20 @@ TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-artifacts}"
 
 # ---------------------------------------------------------------------------
+# LR-040 Runtime Precheck (fail-closed)
+# Verifies supported runtime family (Linux/WSL2 only), required tooling,
+# and artifact-root writability before any run artifacts are created.
+# Exit 1 from the precheck aborts soak_monitor.sh immediately.
+# ---------------------------------------------------------------------------
+_LR040_PRECHECK="$(dirname "${BASH_SOURCE[0]}")/check_lr040_runtime_env.sh"
+if [ -x "$_LR040_PRECHECK" ]; then
+  "$_LR040_PRECHECK"
+else
+  echo "ERROR: LR-040 runtime precheck not found or not executable: $_LR040_PRECHECK" >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
 # Run intent: lr040 (default) or validation (Issue #1278)
 #
 # lr040      — canonical 72h soak run for LR-040 evidence
