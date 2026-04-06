@@ -117,7 +117,7 @@ make kill-switch-activate
 - ✅ Risk Limits konfiguriert und getestet
 - ✅ Emergency Stop SOP verstanden
 - ✅ Monitoring 24/7 verfügbar
-- ✅ Genehmigte Freigabe von System Owner
+- ✅ Alle Punkte dieser Checkliste vom Maintainer dokumentiert abgehakt
 
 **Wechsel durchführen:**
 
@@ -244,47 +244,40 @@ docker logs cdb_execution --tail 30
 
 ---
 
-## Eskalationsprozess
+## Entscheidungsprozess (Solo-Maintainer)
 
-### Stufe 1: Operator (Selbst)
+> **Realität**: Dieses Projekt wird von einem einzelnen Maintainer betrieben.
+> Es gibt keine Mehrpersonen-Rollenleiter. Alle Entscheidungen liegen beim Maintainer,
+> abgesichert durch fail-closed Defaults und dokumentierte Checklisten.
 
-**Befugnis:**
-- Dashboard Monitoring
-- Logs Einsicht
-- Kill-Switch Aktivierung bei Emergency
-- Order Cancellation (einzelne Orders)
+### Befugnis (Maintainer)
 
-**Kann NICHT:**
-- Trading Mode wechseln (PAPER → LIVE)
-- Risk Limits dauerhaft ändern
-- Kill-Switch deaktivieren ohne Justification
-
----
-
-### Stufe 2: Senior Operator / Risk Manager
-
-**Befugnis:**
-- Alles von Stufe 1
-- Risk Limits temporär anpassen
-- Kill-Switch deaktivieren (mit Begründung)
-- Manual Trading (via API)
-
-**Kann NICHT:**
-- Trading Mode LIVE aktivieren ohne Owner Approval
-- System-kritische Config ändern
-
----
-
-### Stufe 3: System Owner
-
-**Befugnis:**
-- Alles von Stufe 1 + 2
-- Trading Mode LIVE aktivieren
+- Dashboard Monitoring, Logs Einsicht
+- Kill-Switch Aktivierung und Deaktivierung (mit dokumentierter Begründung)
+- Order Cancellation
+- Risk Limits anpassen
+- Trading Mode wechseln (PAPER → LIVE), nur nach Checkliste (siehe Abschnitt 2)
 - System-kritische Config ändern
 - Deployment Genehmigungen
 - Emergency Shutdown
 
-**Eskalations-Kontakt**: Siehe EMERGENCY_STOP_SOP.md
+### Fail-Closed Prinzip
+
+Wo in einem Mehrpersonen-Setup eine zweite Person gegenzeichnen würde, gilt hier:
+
+- **Kill-Switch Deaktivierung**: Begründung muss im Audit Trail dokumentiert sein, bevor der Switch deaktiviert wird.
+- **LIVE-Mode-Freigabe**: Alle Voraussetzungen der Checkliste (Abschnitt 2) müssen nachweislich erfüllt sein. Kein Override ohne dokumentierte Begründung.
+- **Risk-Limit-Änderungen**: Änderung + Begründung im Git-Commit festhalten.
+
+### Eskalation bei Unsicherheit
+
+Wenn der Maintainer bei einer Entscheidung unsicher ist:
+
+1. Kill-Switch aktivieren (fail-closed)
+2. Situation dokumentieren
+3. Erst nach Analyse und dokumentierter Begründung weiterfahren
+
+**Notfallkontakt**: Siehe EMERGENCY_STOP_SOP.md
 
 ---
 
