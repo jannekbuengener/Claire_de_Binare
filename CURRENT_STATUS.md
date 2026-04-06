@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-06
-**Latest Main Commit**: 3936b291 — chore(session): close session #35 — #1448 PR-batch disposition (#1455)
-**Previous**: 7b40c0ca — docs(roadmap): frame M7 testnet plan as historical (#1377) (#1394)
+**Latest Main Commit**: 39c5d864 — chore(artifacts): commit untracked session logs, evidence, and helper artifacts (#1450) (#1457)
+**Previous**: f3f0357e — chore(session): close session #36 — #1449 policy-gate RCA (#1456)
 
 ---
 
@@ -45,6 +45,7 @@
   - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
   - **Merged (Session 35, 2026-04-06)**: #1448 — PR-Batch #1392–#1397 + #1446 disponiert. Gemergt: #1392 HITL solo-maintainer (0a4ac9ea), #1393 historical M7/M8/M9 entrypoints (132eafe7), #1394 M7 testnet historical (7b40c0ca), #1395 M8 security historical (b583e0a2), #1454 CONTROL_REGISTER.md (c3e5b6da). #1446 geschlossen (superseded). Hold: #1396 (DR-Docs Backup-Front-Door-Verifikation), #1397 (policy-gate, → #1449).
   - **Session 36 (2026-04-06)**: #1449 — policy-gate RCA abgeschlossen. Befund: eine Blocker-Familie (core/service-Default), 4 Ausprägungen: fehlende infra-only-Inferenz, mixed-file-set, non-privileged script paths (knowledge/operations/), Dependabot-Labels nicht als Override. RCA-Kommentar in #1449 gepostet. Keine Code-/Workflow-Änderungen.
+  - **Merged (Session 37, 2026-04-06)**: #1450 — 40 untracked Files klassifiziert (alle Bucket 1: commit). PR #1457 (39c5d864). 28 Session-Logs, 2 SDK-Tests, 3 DR-Evidence-Logs, 1 Infra-Script, 6 Docs/Reports. Working Tree clean.
 
 ---
 
