@@ -3,18 +3,17 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-05
-**Latest Main Commit**: 7793c028 — fix(market): add start_period to cdb_market healthcheck (#1426) (#1430)
-**Previous**: 468414fd — evidence(p5): lean shadow evidence handoff — closes #1423 (#1435)
+**Last Updated**: 2026-04-06
+**Latest Main Commit**: 920e1901 — chore(session): close session #30 — #1438 · #1437 · #1439 merge batch (#1441)
+**Previous**: e4d664e5 — chore(session): close session #28 — #1427 tests · #1426 fix · #1418 parent-close (#1439)
 
 ---
 
-## Repo / Engineering Status (2026-04-05)
+## Repo / Engineering Status (2026-04-06)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1431: chore(session): close session #24 — #1426 market healthcheck (superseded; zu schliessen)
-  - #1429: fix(soak): treat docker disk evidence as valid fallback + regression tests (#1427) — ci PASS, policy-gate FAIL (Label allow-core-change fehlt)
+  - #1398: fix(scripts): reconcile compose canon drift in active PS1 scripts (Root-Skript/Doc-Drift geschlossen; Branch up-to-date nach Merge; CI ausstehend)
   - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
   - #1285: fix(soak-monitor): use df -P (#1282)
   - #1237: LR-040 runtime env prep (BLOCKIERT)
@@ -36,11 +35,15 @@
   - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
   - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
   - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
-  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (55734fcd).
-  - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 freigestellt.
+  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (7793c028). Issue #1426 geschlossen.
+  - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 als naechster Anschluss-Schritt freigegeben; spaeter via PR #1435 geschlossen.
   - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
-  - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (45ee3b79).
-  - **Merged (Session 28, 2026-04-05)**: #1426 — cdb_market healthcheck start_period: 30s. PR #1430 (7793c028). #1426 geschlossen. #1418 P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent).
+  - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (1f3ec548). #1390 geschlossen.
+  - **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
+  - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
+  - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
+  - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
+  - **Session 32 (2026-04-06)**: PR #1398 — Root-Skript/Doc-Drift vollstaendig geschlossen. Fail-closed fuer beide Legacy-Stubs, $secretDir-Fix in compat copy, aktive Docs von stale Flows befreit. CI pending.
 
 ---
 
@@ -111,14 +114,15 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **LR-011:** State-machine-Test-Coverage noch offen (Issue #780).
-9. **Human Gate:** GRANTED (2026-04-04). GO fuer naechsten kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe.
+9. **Human Gate:** GRANTED (2026-04-04). GO fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe. Formalisiert in `decision_record.yaml` via PR #1434 (1a0ebaba).
 10. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
-11. **PR #1429 (#1427 Disk-Fallback):** ci PASS, Label `allow-core-change` fehlt → policy-gate FAIL. Label setzen zum Merge.
-12. **PR #1431:** Session-Close-Commit fuer #1426 — durch PR #1430 (gemergt) inhaltlich ueberholt; schliessen.
+11. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
+12. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
+13. **#1398:** Root-Skript/Doc-Drift vollstaendig geschlossen (Session 32, 2026-04-06). Legacy-Stubs fail-closed, $secretDir-Fix, Docs bereinigt. CI pending; Policy-Label-Entscheidung nach CI-Ergebnis.
 
 ---
 
 ## Postmortem / Session Logs
 
 - `knowledge/logs/sessions/` — aktuelle Session-Logs
-- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-03-29, #1306)
+- `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-04-05, PR #1437)

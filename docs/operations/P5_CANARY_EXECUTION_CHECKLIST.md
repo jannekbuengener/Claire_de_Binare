@@ -2,7 +2,7 @@
 
 - Control: `LR-050`
 - Status: `NO-GO`
-- Last updated: `2026-03-20`
+- Last updated: `2026-04-05`
 
 This checklist is a governance mapping document only. It does not authorize live trading.
 
@@ -61,18 +61,19 @@ The workflow terms `full|lean` refer to soak / collection profile labels and are
 | LR-003 | IMPLEMENTED | `docs/live-readiness/LR-003-EVIDENCE.md` | Control-specific evidence |
 | LR-010 | IMPLEMENTED | `docs/live-readiness/LR-010-EVIDENCE.md` | Control-specific evidence 2026-03-19: unit tests for circuit breakers, risk engine core, edge cases |
 | LR-020 | IMPLEMENTED | `docs/live-readiness/LR-020-EVIDENCE.md` | Tier-1 CI tests + Tier-2 live-stack run (FILLED). Historical run: precondition gating not explicit pre-run (see evidence doc §5). Prechecks now automated fail-closed in capture script schema 1.2. |
-| LR-030 | IMPLEMENTED | `docs/evidence/LR-030.md` | Fail-closed gate with PR1 hardening |
-| LR-031 | IMPLEMENTED | `docs/evidence/LR-031.md` | Comparison layer implemented, thresholds calibrated, verdict PASS |
-| LR-040 | IMPLEMENTED | `docs/evidence/LR-040.md` | Gate evaluator + monitoring tooling, no 72h run evidence yet |
+| LR-030 | IMPLEMENTED / RE-CONFIRMED | `docs/evidence/LR-030.md`; `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` | Fail-closed zero-execution gate is repo-backed; residual uncertainty remains only around the original `>24h` issue wording |
+| LR-031 | PASS-EVIDENCED | `docs/evidence/LR-031.md`; `docs/evidence/lr031_baseline_thresholds.json` | Comparison layer calibrated; PASS evidenced; not equivalent to LR-050 approval |
+| LR-040 | PASS | `docs/evidence/LR-040.md`; `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` | 72.19h PASS committed in P5 artifact root |
 | LR-041 | IMPLEMENTED | `docs/evidence/LR-041.md` | Deterministic Redis/Postgres restart recovery drill, runner merged, local drill evidence passed |
 | LR-042 | IMPLEMENTED | `docs/evidence/LR-042.md` | Control-specific evidence |
 
 ## 5. Current No-Go Reasons
 
-- No committed successful P5 canary run artifact set
+- `LR-050` remains `NO-GO`: a committed prestart pack GO state is not the same as live-canary approval.
+- A committed P5 core artifact set exists under `reports/p5_canary/2026-04-04/`, and continuity proof exists via `lean_shadow_evidence_handoff.yaml`; both are prerequisite evidence, not live-capital authorization.
 - `LR-020` now has control-specific evidence (Tier-1 CI + Tier-2 live-stack run); the original Tier-2 run's operational preconditions (kill-switch state, runtime mode) were not explicitly verified pre-run — only inferable ex post from run outcome (see `docs/live-readiness/LR-020-EVIDENCE.md` §5). These prechecks are now automated and fail-closed in the capture script (schema 1.2); this does not alter the historical run artifact and does not constitute P5 approval.
-- `LR-040` is IMPLEMENTED but no 72h soak run evidence exists yet (PASS requires actual run)
-- `LR-031` is IMPLEMENTED: comparison layer calibrated and PASS verified (2026-03-16)
+- P1 deterministic test coverage is still incomplete in the operational canon (`LR-011` open, `LR-012` unverified).
+- P3 is no longer evidence-empty, but residual uncertainty remains around the original `LR-030` issue wording (`>24h` stable shadow mode / monitoring+alerting) versus the currently committed zero-execution gate evidence.
 
 ## 6. Runtime-Mode and Kill-Switch Semantics
 
@@ -124,16 +125,12 @@ Optional reused shadow-prereq evidence:
 
 ## 9. Prestart Pack
 
-When all NO-GO blockers are resolved, the operator MUST complete the prestart evidence lock
-before any P5 canary start attempt:
+A committed instance of the prestart evidence lock now exists under `reports/p5_canary/2026-04-04/`.
+This satisfies the prestart-pack artifact requirement for the current proof path, but it does not authorize a live canary.
 
-- Template: `docs/operations/P5_PRESTART_PACK.md`
-- This document backs the compensating controls defined in `governance/p5_canary_readiness.yaml`:
-  - `prestart_evidence_lock`
-  - `canonical_runtime_mode_precheck`
-  - `decision_record_before_start`
-  - `no_code_or_config_change_after_prestart_lock`
-- Stack anchor: BLUE (`infrastructure/compose/compose.blue.yml`) — kill-switch at Port 8002,
-  execution at Port 8003, risk at Port 8002.
-- A completed, committed instance of the Prestart Pack is a required artifact before any P5 start.
-- P5 start remains blocked (NO-GO) until LR-040 72h PASS and a committed canary artifact set exist.
+- Template/reference: `docs/operations/P5_PRESTART_PACK.md`
+- Committed example: `reports/p5_canary/2026-04-04/prestart_evidence_lock.yaml`
+- Matching decision record: `reports/p5_canary/2026-04-04/decision_record.yaml`
+- Continuity proof after prestart: `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`
+- Stack anchor: BLUE (`infrastructure/compose/compose.blue.yml`) — kill-switch at Port 8002, execution at Port 8003, risk at Port 8002.
+- `LR-050` remains blocked (`NO-GO`) until an explicit live-canary approval is documented. The current artifacts do not authorize live capital.

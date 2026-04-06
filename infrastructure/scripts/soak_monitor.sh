@@ -617,6 +617,12 @@ fi
 # Source 2: Docker space via socket (images, containers, volumes, build cache)
 DOCKER_DF_OUT=$(docker system df 2>/dev/null || echo "  [docker system df not available]")
 
+# Determine whether Docker disk evidence is usable (Issue #1427).
+# A valid docker system df output contains "Images" in the table header.
+# The fallback string "[docker system df not available]" does not.
+DOCKER_DF_VALID=0
+echo "$DOCKER_DF_OUT" | grep -q "Images" && DOCKER_DF_VALID=1
+
 # Persist disk evidence at every checkpoint
 {
   echo "Timestamp: $TIMESTAMP"
@@ -646,8 +652,15 @@ if [ -n "$ARTIFACT_DISK_PCT" ]; then
     echo -e "${GREEN}✓ Artifact filesystem: ${ARTIFACT_DISK_PCT}% used (free: ${ARTIFACT_DISK_FREE})${NC}"
   fi
 else
-  echo -e "${YELLOW}⚠️  Artifact filesystem usage unavailable — check disk_evidence file${NC}"
-  echo "$TIMESTAMP - DISK_UNAVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}" >> "$ARTIFACT_PATH/disk_alerts.log"
+  # Issue #1427: distinguish partial evidence (Docker available) from total
+  # evidence failure. Host-FS status is already in disk_evidence_*.txt —
+  # only write to disk_alerts.log when evidence is truly degraded.
+  if [ "$DOCKER_DF_VALID" -eq 1 ]; then
+    echo -e "${YELLOW}⚠️  Host filesystem unavailable — Docker disk evidence present${NC}"
+  else
+    echo -e "${RED}⚠️  Disk evidence degraded — host filesystem and Docker disk both unavailable${NC}"
+    echo "$TIMESTAMP - DISK_UNAVAILABLE: ${DISK_UNAVAILABLE_REASON:-df /repo returned no parseable output}, Docker disk evidence also unavailable" >> "$ARTIFACT_PATH/disk_alerts.log"
+  fi
 fi
 echo "  Evidence: $DISK_EVIDENCE_FILE"
 
