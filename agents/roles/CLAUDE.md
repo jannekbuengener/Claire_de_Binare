@@ -92,6 +92,7 @@ Wenn das Verständnis falsch ist:
 
 ### Session-Ende (Pflicht)
 Keine Session gilt als abgeschlossen, bevor nicht:
+- `make pre-close` ausgeführt wurde und kein untracked Artefakt in kanonischen Pfaden gemeldet wird
 - eine Session-Datei gepflegt ist
 - `CURRENT_STATUS.md` aktualisiert wurde, wenn sich der Repo-/Engineering-Status
   geaendert hat

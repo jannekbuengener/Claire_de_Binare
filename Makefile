@@ -20,7 +20,7 @@
 
 MCP_CONFIG_PATHS ?=
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan pre-close
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -58,6 +58,9 @@ help:
 	@echo "  make backup-postgres-only    - Legacy PostgreSQL-only Backup"
 	@echo "  make restore                 - Restore aus F:\\Claire_Backups"
 	@echo "  make backup-health           - Backup-Aktualitaet pruefen"
+	@echo ""
+	@echo "Session-Close:"
+	@echo "  make pre-close               - Pre-close sweep: prueft untracked Artefakte in kanonischen Pfaden"
 	@echo ""
 	@echo "Repo-Hygiene & Rollback:"
 	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
@@ -179,6 +182,9 @@ docker-health:
 # ============================================================================
 # Paper Trading (14-Tage Test)
 # ============================================================================
+
+pre-close:
+	@bash scripts/pre_close_sweep.sh
 
 systemcheck:
 	@echo "🔍 Führe Pre-Flight-Checks aus..."
