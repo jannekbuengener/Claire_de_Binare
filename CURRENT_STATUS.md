@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-06
-**Latest Main Commit**: 26d91693 — fix(scripts): reconcile compose canon drift in active PS1 scripts (PR #1398, closes #1391)
-**Previous**: c0078bc0 — chore(session): close session #31 — #1398 review handoff (#1443)
+**Latest Main Commit**: 7b40c0ca — docs(roadmap): frame M7 testnet plan as historical (#1377) (#1394)
+**Previous**: c3e5b6da — docs(control): add CONTROL_REGISTER.md (#1445) (#1454)
 
 ---
 
@@ -43,6 +43,7 @@
   - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
   - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
   - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
+  - **Merged (Session 35, 2026-04-06)**: #1448 — PR-Batch #1392–#1397 + #1446 disponiert. Gemergt: #1392 HITL solo-maintainer (0a4ac9ea), #1393 historical M7/M8/M9 entrypoints (132eafe7), #1394 M7 testnet historical (7b40c0ca), #1395 M8 security historical (b583e0a2), #1454 CONTROL_REGISTER.md (c3e5b6da). #1446 geschlossen (superseded). Hold: #1396 (DR-Docs Backup-Front-Door-Verifikation), #1397 (policy-gate, → #1449).
 
 ---
 
