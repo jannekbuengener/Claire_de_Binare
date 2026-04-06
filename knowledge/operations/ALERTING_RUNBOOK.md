@@ -8,10 +8,11 @@
 
 ## Prerequisites
 
-Stack muss mit `-Logging` Flag gestartet sein:
+Stack muss laufen (BLUE + RED — RED enthält Alertmanager, Loki, Promtail):
 
 ```powershell
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -211,8 +212,9 @@ alertmanager: UP
 ## Quick Commands Reference
 
 ```powershell
-# Start stack with Alertmanager
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging
+# Start stack with Alertmanager (BLUE + RED)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Check Alertmanager health
 docker exec cdb_alertmanager wget -qO- http://localhost:9093/-/healthy

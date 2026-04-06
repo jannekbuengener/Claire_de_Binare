@@ -37,7 +37,7 @@
 [INFO]
 [INFO] Next steps:
 [INFO]   1. Run 'Rotate-Secrets.ps1 export' to generate .env.runtime
-[INFO]   2. Run 'infrastructure/scripts/stack_up.ps1' to restart stack
+[INFO]   2. Restart stack: docker compose -f infrastructure/compose/compose.blue.yml up -d && docker compose -f infrastructure/compose/compose.red.yml up -d
 
 ```
 

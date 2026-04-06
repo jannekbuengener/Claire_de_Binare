@@ -4,13 +4,14 @@ Purpose:
   Legacy bridge for experimental test_pack drills against older CDB stack scripts.
 
 Status:
-  - experimental / secondary
+  - experimental / secondary — NOT a canonical discovery or runtime entrypoint
   - not the canonical repo-wide 431C drill source of truth
-  - currently expects older `scripts\stack_up.ps1` / `scripts\stack_down.ps1` paths
+  - LEGACY BRIDGE: references `scripts\stack_up.ps1` / `scripts\stack_down.ps1` which no longer exist
+  - DO NOT USE for normal stack operations; canonical runtime is BLUE+RED via `tools\cdb.ps1 runtime up`
 
 How:
   - points to the working repo root
-  - calls scripts/stack_up.ps1 and scripts/stack_down.ps1
+  - attempts to call scripts/stack_up.ps1 and scripts/stack_down.ps1 (legacy paths, no longer present)
   - returns the compose invocation output into the evidence pack
 
 This keeps the Test Pack generic while still "clicking" into CDB with minimal friction.

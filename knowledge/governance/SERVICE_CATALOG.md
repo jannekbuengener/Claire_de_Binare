@@ -10,7 +10,8 @@
 
 | Status | Bedeutung |
 |--------|-----------|
-| **AKTIV** | Service läuft in Production/Dev Stack |
+| **AKTIV** | Service läuft in Production/Dev Stack (compose.blue.yml oder compose.red.yml) |
+| **OVERLAY** | Service in separatem Compose-Overlay (z.B. logging.yml), nicht Teil des Standard-BLUE/RED-Starts |
 | **BEREIT** | Code vollständig, Dockerfile vorhanden, Compose deaktiviert |
 | **GEPLANT** | Architektur definiert, Implementierung ausstehend |
 | **LEGACY** | Deprecated, wird nicht mehr verwendet |
@@ -62,13 +63,15 @@
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
 | **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |
 
-### Logging Overlay (logging.yml) — optional, via -Logging Flag
+### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
+
+Aktivierung: `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/logging.yml up -d`
 
 | Service | Container | Image | Status | Funktion |
 |---------|-----------|-------|--------|----------|
-| **Loki** | cdb_loki | grafana/loki:2.9.3 | **AKTIV** | Log Aggregation |
-| **Promtail** | cdb_promtail | grafana/promtail:2.9.3 | **AKTIV** | Log Shipping |
-| **Alertmanager** | cdb_alertmanager | prom/alertmanager:v0.27.0 | **AKTIV** | Alert Routing + Email |
+| **Loki** | cdb_loki | grafana/loki:2.9.3 | **OVERLAY** | Log Aggregation |
+| **Promtail** | cdb_promtail | grafana/promtail:2.9.3 | **OVERLAY** | Log Shipping |
+| **Alertmanager** | cdb_alertmanager | prom/alertmanager:v0.27.0 | **OVERLAY** | Alert Routing + Email |
 
 ---
 
@@ -101,9 +104,9 @@ Alle Services aus compose.blue.yml und compose.red.yml sind AKTIV und vollständ
 ## Compose-Architektur (kanonisch seit BLUE/RED-Split)
 
 ```
-compose.blue.yml   → BLUE: Data Layer + Control Layer + Core Trading
-compose.red.yml    → RED: Signal Generation + Monitoring
-logging.yml        → Logging Overlay (Loki + Promtail + Alertmanager, optional)
+compose.blue.yml   → BLUE: Data Layer + Control Layer + Core Trading  [kanonisch]
+compose.red.yml    → RED: Signal Generation + Monitoring               [kanonisch]
+logging.yml        → Logging Overlay (Loki + Promtail + Alertmanager)  [separates Overlay, nicht Standard-Start]
 ```
 
 Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch im Repo, sind aber nicht mehr kanonisch für den Betrieb.
@@ -144,3 +147,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2025-12-28 | GAP identifiziert: Signal Service fehlt in Compose | Claude |
 | 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
 | 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |
+| 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |

@@ -2,6 +2,13 @@
 
 **Safe testing environment for Claire de Binare trading bot**
 
+> **LEGACY NOTICE:** The `.env`-based configuration instructions in this guide reflect the
+> pre-canonical setup model. The current runtime uses Docker secrets
+> (`~/Documents/.secrets/.cdb/`) and the Blue/Red compose canon. For secret setup use
+> `.\tools\cdb.ps1 secrets init`; for stack start use `.\tools\cdb.ps1 runtime up`.
+> The sections below are retained for MEXC testnet credential context and historical
+> reference only — they do not describe the current operational path.
+
 ## Overview
 
 The MEXC Testnet provides a risk-free environment to test trading operations with **fake money** before going live.
@@ -39,12 +46,10 @@ MOCK_TRADING=false                    # false = use MEXC API
 DRY_RUN=true                          # true = log only (safest)
 ```
 
-### 3. Validate Setup
-
-Run setup script:
+### 3. Initialize Secrets (canonical)
 
 ```powershell
-.\scripts\setup_testnet.ps1
+.\tools\cdb.ps1 secrets init
 ```
 
 Expected output:
@@ -144,12 +149,12 @@ DRY_RUN=false
 ### Phase 1: Dry Run Testing
 
 ```bash
-# 1. Configure dry run mode
+# 1. Configure dry run mode (legacy .env model — see LEGACY NOTICE above)
 MEXC_TESTNET=true
 DRY_RUN=true
 
-# 2. Start services
-docker-compose up -d
+# 2. Start services (canonical)
+.\tools\cdb.ps1 runtime up
 
 # 3. Monitor logs (no real orders)
 docker logs -f cdb_execution
@@ -322,8 +327,8 @@ docker logs -f cdb_execution
 # Risk manager
 docker logs -f cdb_risk
 
-# All services
-docker-compose logs -f
+# All services (canonical)
+.\tools\cdb.ps1 service logs -ServiceName cdb_execution
 ```
 
 ### Check Order History

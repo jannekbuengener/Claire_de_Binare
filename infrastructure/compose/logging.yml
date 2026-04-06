@@ -1,6 +1,6 @@
 # Logging Overlay - Loki + Promtail + Alertmanager
 # Add centralized log aggregation and alert routing to the stack
-# Usage: Automatically included when stack_up.ps1 is called with -Logging flag
+# Usage: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/logging.yml up -d
 
 services:
   cdb_alertmanager:

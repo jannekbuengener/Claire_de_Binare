@@ -517,7 +517,7 @@ docker compose -f infrastructure/compose/compose.blue.yml restart cdb_redis
 - **Compose Files:** `infrastructure/compose/`
 - **Compose Layers Doc:** `infrastructure/compose/COMPOSE_LAYERS.md`
 - **Environment Template:** `.env.example`
-- **Trading Modes:** `docs/TRADING_MODES.md`
+- **Trading Modes:** `knowledge/systems/TRADING_MODES.md`
 - **Security:** `docs/SECURITY_HARDENING.md`
 
 ---
