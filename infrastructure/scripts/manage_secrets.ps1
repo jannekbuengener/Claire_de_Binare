@@ -28,8 +28,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Secret directory
-$secretDir = Join-Path $PSScriptRoot ".." ".." ".cdb_local" ".secrets"
+# Canonical secrets directory (Single Source of Truth)
+# Canonical: ~/Documents/.secrets/.cdb  (matches SECRETS_PATH in compose.blue.yml / compose.red.yml)
+$secretDir = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
 
 function Initialize-SecretDirectory {
     if (-not (Test-Path $secretDir)) {

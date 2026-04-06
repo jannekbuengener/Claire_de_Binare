@@ -1,9 +1,11 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Manage Docker secrets for Claire de Binare
+    Manage Docker secrets for Claire de Binare (compat copy)
 .DESCRIPTION
-    Create, rotate, and validate secrets for production deployment
+    Create, rotate, and validate secrets for production deployment.
+    NOTE: This is a compatibility copy. The primary CRUD/Ops entrypoint is
+    infrastructure/scripts/manage_secrets.ps1. Prefer that path for new usage.
 .PARAMETER Action
     Action to perform: setup, rotate, validate
 .PARAMETER SecretName

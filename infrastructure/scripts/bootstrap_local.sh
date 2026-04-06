@@ -66,17 +66,22 @@ else
     exit 1
 fi
 
-# 5. Start Docker Stack
-# Secondary convenience path: retains legacy base.yml + dev.yml behavior.
-echo -e "\n${YELLOW}5. Starting Docker Compose stack...${NC}"
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+# 5. Start Docker Stack (BLUE + RED)
+echo -e "\n${YELLOW}5. Starting Docker Compose stack (BLUE + RED)...${NC}"
+docker network create cdb_network 2>/dev/null || true
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # 6. Health Check Loop
 echo -e "\n${YELLOW}6. Waiting for services to be healthy...${NC}"
 MAX_RETRIES=30
 COUNT=0
 while [[ $COUNT -lt $MAX_RETRIES ]]; do
-    PENDING=$(docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING_BLUE=$(docker compose -f infrastructure/compose/compose.blue.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING_RED=$(docker compose -f infrastructure/compose/compose.red.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING="${PENDING_BLUE} ${PENDING_RED}"
+    PENDING="${PENDING## }"
+    PENDING="${PENDING%% }"
     if [[ -z "$PENDING" ]]; then
         echo -e "${GREEN}✅ All services are healthy!${NC}"
         break
@@ -88,7 +93,8 @@ done
 
 if [[ $COUNT -eq $MAX_RETRIES ]]; then
     echo -e "${RED}❌ Timeout waiting for services to be healthy.${NC}"
-    docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml ps
+    docker compose -f infrastructure/compose/compose.blue.yml ps
+    docker compose -f infrastructure/compose/compose.red.yml ps
 fi
 
 # 7. Basic Smoke Test

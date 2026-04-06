@@ -10,8 +10,7 @@
 #   2. Certificates in: ../.cdb_local/tls/
 #
 # Usage:
-#   docker-compose -f base.yml -f tls.yml up -d
-#   OR via stack_up.ps1 -TLS
+#   docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/tls.yml up -d
 
 services:
   cdb_redis:

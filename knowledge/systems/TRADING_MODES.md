@@ -346,7 +346,7 @@ ls /run/secrets/
 - **Tests:** `tests/unit/config/test_trading_mode.py`
 - **Related Issues:** #252 (Trading Mode Feature Flags)
 - **Security:** `docs/SECURITY_HARDENING.md`
-- **Testnet:** `docs/TESTNET_SETUP.md`
+- **Testnet:** `knowledge/operations/TESTNET_SETUP.md`
 
 ---
 

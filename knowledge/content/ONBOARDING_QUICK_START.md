@@ -10,7 +10,7 @@
 ## 🎯 Essential Reading (30 min)
 
 ### 1. README + Current Entry Chain (5 min)
-📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`COMPOSE_LAYERS.md`](../../infrastructure/compose/COMPOSE_LAYERS.md), [`QUICK_START.md`](../../infrastructure/docs/QUICK_START.md)
+📍 **Start:** `README.md` then [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md), [`LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md), [`knowledge/ACTIVE_ROADMAP.md`](../ACTIVE_ROADMAP.md)
 **What:** Project overview, current runtime model, canonical compose layers, getting started
 
 ### 2. System Context (5 min)
@@ -52,8 +52,9 @@ python -m venv .venv
 # 3. Install dev dependencies
 pip install -r requirements-dev.txt
 
-# 4. Setup secrets (see SECRETS.md)
-# Copy .cdb_local.secrets/ to C:/Users/<you>/Documents/.secrets/.cdb/
+# 4. Setup secrets (kanonischer Pfad: ~/Documents/.secrets/.cdb/)
+# Secrets anlegen: .\tools\secrets\Rotate-Secrets.ps1 apply
+# Docs: knowledge/governance/SECRETS_POLICY.md
 
 # 5. Start Docker stack (canonical BLUE+RED runtime)
 docker network create cdb_network 2>$null
@@ -115,7 +116,7 @@ docker ps --filter "name=cdb_"
 ### "I need to understand how secrets work"
 1. Architecture: `knowledge/SYSTEM.CONTEXT.md` (secrets section)
 2. Config: canonical BLUE+RED compose files (`infrastructure/compose/compose.blue.yml`)
-3. Local setup: `.cdb_local.secrets/` directory structure
+3. Local setup: `~/Documents/.secrets/.cdb/` (kanonischer Secrets-Pfad, `SECRETS_PATH`)
 
 ---
 
