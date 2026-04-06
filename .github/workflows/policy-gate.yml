@@ -114,6 +114,9 @@ jobs:
             } else if (changedFiles.length > 0 && changedFiles.every(isWorkflowFile)) {
               category = 'workflows-only';
               categorySource = 'file-inference';
+            } else if (changedFiles.length > 0 && changedFiles.every(isInfraFile)) {
+              category = 'infra-only';
+              categorySource = 'file-inference';
             }
 
             const failures = [];

@@ -93,6 +93,12 @@ and changed files:
 | `infra-only` | `infra-only` | `[infra-only]` or `infra-only:` | `infrastructure/**` and `.github/workflows/**` |
 | `core/service` | none | none | Any other diff; requires `manual-approval` or `allow-core-change` |
 
+> **Auto-inference:** `infra-only` is inferred automatically only when **all** changed files
+> are pure `infrastructure/**` paths. Mixed diffs (e.g. `infrastructure/**` +
+> `.github/workflows/**`) are **not** auto-inferred and remain fail-closed at `core/service`,
+> even though the `infra-only` category permits both path sets when set via label or title prefix.
+> An explicit label or title prefix is required for mixed diffs.
+
 Hard-fails for workflow changes in `.github/workflows/**`:
 
 - Any workflow containing `pull_request_target`
