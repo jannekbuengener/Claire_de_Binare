@@ -33,6 +33,14 @@ if ($Help) {
     exit 0
 }
 
+Write-Host "ERROR: This script is legacy and must not be used." -ForegroundColor Red
+Write-Host ""
+Write-Host "The current runtime uses Docker secrets and the Blue/Red compose canon." -ForegroundColor Yellow
+Write-Host "Canonical entry points:" -ForegroundColor Yellow
+Write-Host "  .\tools\cdb.ps1 secrets init    (secret setup)" -ForegroundColor White
+Write-Host "  .\tools\cdb.ps1 runtime up       (full BLUE+RED stack restart)" -ForegroundColor White
+exit 1
+
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
