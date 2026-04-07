@@ -85,6 +85,9 @@ Zusätzlich:
 | `testing` | Test-Coverage, E2E |
 | `dependencies` | Dependabot Updates |
 
+> **Hinweis:** `dependencies` ist kein policy-gate Override. Dependabot-PRs fallen weiterhin
+> in `core/service` und brauchen `manual-approval` oder `allow-core-change`.
+
 ---
 
 ## Beispiele

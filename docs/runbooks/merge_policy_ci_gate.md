@@ -81,6 +81,11 @@ Sentinel still point to the canonical names after the change.
 
 `Linting (Ruff)`, `Format Check (Black)`, and `Tests` also exist in `ci.yaml`, but the canonical PR contract intentionally remains the single aggregate check-run emitted by `.github/workflows/ci.yml`.
 
+### ci.yaml Freeze-Status
+
+`ci.yaml` ist **intentional frozen** (2026-04-07). Tool-Version-Drift gegenüber `ci.yml` ist
+akzeptabel und erfordert keine Nachführung. Nicht parity-tracked. Kein SSOT für Tool-Versionen.
+
 ## Policy Gate Categories
 
 `policy-gate` classifies pull requests deterministically from labels, title prefixes,
@@ -107,6 +112,12 @@ Hard-fails for workflow changes in `.github/workflows/**`:
 
 `manual-approval` and `allow-core-change` are explicit override labels for
 `core/service` PRs. They do not bypass the workflow safety checks above.
+
+### Dependabot / Bot PRs
+
+Dependabot-PRs fallen standardmäßig in `core/service`, weil das `dependencies`-Label
+**kein Gate-Override** ist. Sicherer Operator-Pfad: PR prüfen, dann `manual-approval`
+oder `allow-core-change` setzen. Keine Automatik. Das Gate bleibt fail-closed.
 
 The gate reevaluates on `opened`, `synchronize`, `reopened`, `labeled`,
 `unlabeled`, and `edited` so label removals cannot leave a stale PASS behind.
