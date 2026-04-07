@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '0 6 * * 0'  # Weekly performance check
 
+permissions:
+  contents: read
+
 jobs:
   performance-check:
     runs-on: ubuntu-latest
