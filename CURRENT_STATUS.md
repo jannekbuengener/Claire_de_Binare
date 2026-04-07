@@ -3,9 +3,9 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-06
-**Latest Main Commit**: 39c5d864 — chore(artifacts): commit untracked session logs, evidence, and helper artifacts (#1450) (#1457)
-**Previous**: f3f0357e — chore(session): close session #36 — #1449 policy-gate RCA (#1456)
+**Last Updated**: 2026-04-07
+**Latest Main Commit**: 53771330 — ci(legacy): mark ci.yaml as intentional freeze (#1476)
+**Previous**: f2410e06 — docs(ci): explicit freeze for ci.yaml + Dependabot override path (#1475)
 
 ---
 
@@ -46,6 +46,8 @@
   - **Merged (Session 35, 2026-04-06)**: #1448 — PR-Batch #1392–#1397 + #1446 disponiert. Gemergt: #1392 HITL solo-maintainer (0a4ac9ea), #1393 historical M7/M8/M9 entrypoints (132eafe7), #1394 M7 testnet historical (7b40c0ca), #1395 M8 security historical (b583e0a2), #1454 CONTROL_REGISTER.md (c3e5b6da). #1446 geschlossen (superseded). Hold: #1396 (DR-Docs Backup-Front-Door-Verifikation), #1397 (policy-gate, → #1449).
   - **Session 36 (2026-04-06)**: #1449 — policy-gate RCA abgeschlossen. Befund: eine Blocker-Familie (core/service-Default), 4 Ausprägungen: fehlende infra-only-Inferenz, mixed-file-set, non-privileged script paths (knowledge/operations/), Dependabot-Labels nicht als Override. RCA-Kommentar in #1449 gepostet. Keine Code-/Workflow-Änderungen.
   - **Merged (Session 37, 2026-04-06)**: #1450 — 40 untracked Files klassifiziert (alle Bucket 1: commit). PR #1457 (39c5d864). 28 Session-Logs, 2 SDK-Tests, 3 DR-Evidence-Logs, 1 Infra-Script, 6 Docs/Reports. Working Tree clean.
+  - **Merged (Session 38, 2026-04-07)**: Dep-Queue-Pass + LR-040-Fix — setup-python v6.2.0 (e8784235/#1121), pytest-cov 7.1.0 (4eec57ab/#1365), tabulate 0.10.0 (955e4410/#1115), pyyaml 6.0.3 (92fa39e0/#1179), ruff 0.15.8 (b88dd312/#1367), black 26.3.1 (c1161b5c/#1147). LR-040 soak_monitor fail-closed precheck (8aaf109a/#1467).
+  - **Merged (Session 39, 2026-04-07)**: CI SSOT Freeze + Governance-Deltas — PR #1475 (f2410e06) [docs-only]: ci.yaml Freeze-Status, Dependabot Override Path, LABELS.md. PR #1476 (53771330) [workflows-only]: ci.yaml Header-Kommentar. Issues geschlossen: #1474 (CI SSOT), #1462 (Dependabot-Pfad), #1471 (setup-python v6 Kompatibilitaet bestaetigt), #1472 (pre-close manual-only Governance-Entscheid). Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation ausstehend), #1473 (Backup-Drill nur nach Stack-Freigabe).
 
 ---
 
