@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-07
-**Latest Main Commit**: 6b53c6e8 — fix(backup): replace Compress-Archive with .NET streaming ZIP to fix OOM (#1478, #1479)
-**Previous**: 6b6575b4 — docs(status): reconcile CURRENT_STATUS.md to Session 39 / main@53771330
+**Latest Main Commit**: 23a6dae0 — docs(lr): reconcile LR-AUDIT-STATUS with tracker state for #780 and #792 (#1485)
+**Previous**: 6b53c6e8 — fix(backup): replace Compress-Archive with .NET streaming ZIP to fix OOM (#1478, #1479)
 
 ---
 
@@ -49,6 +49,7 @@
   - **Merged (Session 38, 2026-04-07)**: Dep-Queue-Pass + LR-040-Fix — setup-python v6.2.0 (e8784235/#1121), pytest-cov 7.1.0 (4eec57ab/#1365), tabulate 0.10.0 (955e4410/#1115), pyyaml 6.0.3 (92fa39e0/#1179), ruff 0.15.8 (b88dd312/#1367), black 26.3.1 (c1161b5c/#1147). LR-040 soak_monitor fail-closed precheck (8aaf109a/#1467).
   - **Merged (Session 39, 2026-04-07)**: CI SSOT Freeze + Governance-Deltas — PR #1475 (f2410e06) [docs-only]: ci.yaml Freeze-Status, Dependabot Override Path, LABELS.md. PR #1476 (53771330) [workflows-only]: ci.yaml Header-Kommentar. Issues geschlossen: #1474 (CI SSOT), #1462 (Dependabot-Pfad), #1471 (setup-python v6 Kompatibilitaet bestaetigt), #1472 (pre-close manual-only Governance-Entscheid). Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation ausstehend), #1473 (Backup-Drill nur nach Stack-Freigabe — Blocker #1478 damals noch offen).
   - **Merged (Session 40, 2026-04-07)**: #1478 — Compress-Archive OOM in `backup_all.ps1` behoben; `ZipFile.CreateFromDirectory` (.NET BCL, streaming) als Ersatz. PR #1479 (6b53c6e8). Backup-/Restore-Drill (#1473) erfolgreich abgeschlossen: `make backup` Exit-Code 0, ZIP 78.4 MB, Postgres (9 Tabellen) + Redis restored und verifiziert. Issues #1473 + #1478 geschlossen. Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation).
+  - **Merged (Session 41, 2026-04-07)**: Batch #1481–#1484 — LR-AUDIT-STATUS SSOT-Reconcile (LR-050 OPEN→NO-GO, LR-011 OPEN→PASS), DR-Front-Door vs. historischer 2025-12-31-Snapshot getrennt, enforce-root-baseline.ps1 repo-relativ, Secrets-Canon fail-closed (compose.blue+red: `:?SECRETS_PATH must be set`; Front-Doors: generischer Default+Guard). PR #1485 (23a6dae0). Issues #1481/#1482/#1483/#1484 geschlossen.
 
 ---
 
