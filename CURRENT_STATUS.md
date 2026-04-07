@@ -13,11 +13,11 @@
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
-  - #1285: fix(soak-monitor): use df -P (#1282)
-  - #1237: LR-040 runtime env prep (BLOCKIERT)
-  - #1217: fix(digest): auto-close weekly digest
-  - #1207: feat(market): V3 shadow mode
+  - #1366: deps(pip): bump redis from 7.2.0 to 7.4.0
+  - #1284: chore(deps): bump the pip group across 2 directories with 1 update
+  - #1259: deps(pip): bump prometheus-client from 0.21.1 to 0.24.1
+  - #1024: deps(pip): bump bandit from 1.9.3 to 1.9.4
+  - #1023: deps(pip): bump python-dotenv from 1.2.1 to 1.2.2
   - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
   - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
   - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
@@ -120,7 +120,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 6. **#1269 (midnight-rollover):** Geschlossen (2026-03-27). Live-Evidence aus `soak_test_20260325_121250`: beide UTC-Mitternachts-Grenzen (Hour 11 @ 2026-03-26 00:00, Hour 35 @ 2026-03-27 00:00) ohne Fragmentierung passiert. #1278 Pointer-Mechanismus bestätigt wirksam. Hour-29-Lücke = bekannte Umgebungsunterbrechung (2026-03-26 18:00 UTC). Formales Gate-Ergebnis: INCONCLUSIVE (s. Eintrag 3).
 7. **Grafana circuit_breaker alert aktiv:** Sendet gerade Alerts (laut Log), da circuit_breaker_active evaluiert wird. Normal — kein Blocker.
 8. **Human Gate:** GRANTED (2026-04-04). GO fuer kontrollierten P5-Shadow-/Stabilitaetsschritt. Keine Live-Aktivierung, keine Produktionsfreigabe. Formalisiert in `decision_record.yaml` via PR #1434 (1a0ebaba).
-9. **#1375:** Offene Sammel-PR ist durch die Einzelmerges #1383/#1384/#1386 fachlich ueberholt; entscheiden, ob schliessen oder sauber neu ausrichten.
+9. **#1375:** Geschlossen 2026-04-06 als obsolet; durch die Einzelmerges #1383/#1384/#1386 fachlich ersetzt.
 10. **#1423 (Lean Shadow Evidence Run):** Abgeschlossen (2026-04-05). Run 24001373890 PASS (10/10 Checks). Evidence-Handoff unter `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. PR #1435 (468414fd). Parent-Anchor #1418 ist CLOSED.
 11. **P4 DONE:** LR-040 PASS + LR-041/042 CLOSED mit Evidence. LR-AUDIT-STATUS reconciled (2026-04-05).
 12. **#1391/#1398 (compose canon drift):** CLOSED (2026-04-06). PR #1398 gemergt (26d91693). Legacy-Stubs fail-closed, $secretDir-Fix, aktive Docs bereinigt. Issues #1391 + #1442 geschlossen.
