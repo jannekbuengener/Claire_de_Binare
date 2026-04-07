@@ -83,7 +83,7 @@ Sentinel still point to the canonical names after the change.
 
 ### ci.yaml Freeze-Status
 
-`ci.yaml` ist **intentional frozen** (2026-04-07). Tool-Version-Drift gegenüber `ci.yml` ist
+`ci.yaml` ist **intentionally frozen** (2026-04-07). Tool-Version-Drift gegenüber `ci.yml` ist
 akzeptabel und erfordert keine Nachführung. Nicht parity-tracked. Kein SSOT für Tool-Versionen.
 
 ## Policy Gate Categories
@@ -115,9 +115,14 @@ Hard-fails for workflow changes in `.github/workflows/**`:
 
 ### Dependabot / Bot PRs
 
-Dependabot-PRs fallen standardmäßig in `core/service`, weil das `dependencies`-Label
-**kein Gate-Override** ist. Sicherer Operator-Pfad: PR prüfen, dann `manual-approval`
-oder `allow-core-change` setzen. Keine Automatik. Das Gate bleibt fail-closed.
+Dependabot-PRs für Python-Abhängigkeiten oder App-Code (z.B. `requirements*.txt`,
+`pyproject.toml`) fallen in `core/service`, weil das `dependencies`-Label **kein Gate-Override**
+ist und diese Dateien nicht unter `docs/**`, `.github/workflows/**` oder `infrastructure/**`
+liegen. Sicherer Operator-Pfad: PR prüfen, dann `manual-approval` oder `allow-core-change`
+setzen. Keine Automatik. Das Gate bleibt fail-closed.
+
+Dependabot-PRs, die **ausschließlich** `.github/workflows/**` oder `infrastructure/**` berühren,
+werden als `workflows-only` bzw. `infra-only` auto-inferred und benötigen keinen Override.
 
 The gate reevaluates on `opened`, `synchronize`, `reopened`, `labeled`,
 `unlabeled`, and `edited` so label removals cannot leave a stale PASS behind.

@@ -12,7 +12,7 @@ CI-Contract.
 - Canon-Runbook: [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
 
 Wichtig: `ci.yml` ist der PR-Gate-Workflow. Die groessere Push-/Dispatch-Pipeline
-[`ci.yaml`](../../.github/workflows/ci.yaml) ist **intentional frozen** (2026-04-07)
+[`ci.yaml`](../../.github/workflows/ci.yaml) ist **intentionally frozen** (2026-04-07)
 und nicht merge-relevant. Tool-Version-Drift ist akzeptabel.
 
 ## Workflow-Familien
