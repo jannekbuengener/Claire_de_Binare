@@ -27,4 +27,4 @@
 - Blocker = NO: Should PASS, but not hard blocker
 - Ohne vollständige PASS-Zeile für alle Blocker = YES: **NO GO**
 - `P5` remains `NO-GO`: committed prestart-pack GO state plus committed lean shadow handoff do not authorize live capital or clear `LR-050`.
-- `P3 Shadow Mode` remains `PARTIAL`: zero-execution proof is repo-backed, but the original `LR-030` issue wording still mentions `>24h` stable shadow mode / monitoring evidence.
+- `P3 Shadow Mode` remains `PARTIAL`: current canon proves the zero-execution / live-data hard gate plus a later `lean` continuity run (`soak_minutes: 5`), but not direct proof of the two original LR-030 criteria `>24h` stable shadow mode and functioning alerts.

@@ -61,7 +61,7 @@ The workflow terms `full|lean` refer to soak / collection profile labels and are
 | LR-003 | IMPLEMENTED | `docs/live-readiness/LR-003-EVIDENCE.md` | Control-specific evidence |
 | LR-010 | IMPLEMENTED | `docs/live-readiness/LR-010-EVIDENCE.md` | Control-specific evidence 2026-03-19: unit tests for circuit breakers, risk engine core, edge cases |
 | LR-020 | IMPLEMENTED | `docs/live-readiness/LR-020-EVIDENCE.md` | Tier-1 CI tests + Tier-2 live-stack run (FILLED). Historical run: precondition gating not explicit pre-run (see evidence doc §5). Prechecks now automated fail-closed in capture script schema 1.2. |
-| LR-030 | IMPLEMENTED / RE-CONFIRMED | `docs/evidence/LR-030.md`; `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` | Fail-closed zero-execution gate is repo-backed; residual uncertainty remains only around the original `>24h` issue wording |
+| LR-030 | IMPLEMENTED / RE-CONFIRMED | `docs/evidence/LR-030.md`; `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` | Fail-closed zero-execution / live-data gate is repo-backed; lean handoff re-confirms it for `5` minutes, but current canonical artifacts do not directly prove the original `>24h` stable-shadow or `alerts funktionieren` criteria |
 | LR-031 | PASS-EVIDENCED | `docs/evidence/LR-031.md`; `docs/evidence/lr031_baseline_thresholds.json` | Comparison layer calibrated; PASS evidenced; not equivalent to LR-050 approval |
 | LR-040 | PASS | `docs/evidence/LR-040.md`; `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` | 72.19h PASS committed in P5 artifact root |
 | LR-041 | IMPLEMENTED | `docs/evidence/LR-041.md` | Deterministic Redis/Postgres restart recovery drill, runner merged, local drill evidence passed |
@@ -73,7 +73,7 @@ The workflow terms `full|lean` refer to soak / collection profile labels and are
 - A committed P5 core artifact set exists under `reports/p5_canary/2026-04-04/`, and continuity proof exists via `lean_shadow_evidence_handoff.yaml`; both are prerequisite evidence, not live-capital authorization.
 - `LR-020` now has control-specific evidence (Tier-1 CI + Tier-2 live-stack run); the original Tier-2 run's operational preconditions (kill-switch state, runtime mode) were not explicitly verified pre-run — only inferable ex post from run outcome (see `docs/live-readiness/LR-020-EVIDENCE.md` §5). These prechecks are now automated and fail-closed in the capture script (schema 1.2); this does not alter the historical run artifact and does not constitute P5 approval.
 - P1 deterministic test coverage is still incomplete in the operational canon (`LR-011` open, `LR-012` unverified).
-- P3 is no longer evidence-empty, but residual uncertainty remains around the original `LR-030` issue wording (`>24h` stable shadow mode / monitoring+alerting) versus the currently committed zero-execution gate evidence.
+- P3 is no longer evidence-empty, but residual uncertainty remains around the two original LR-030 criteria not directly proven by the current canonical artifacts: `>24h` stable shadow mode and functioning alerts.
 
 ## 6. Runtime-Mode and Kill-Switch Semantics
 
