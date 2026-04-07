@@ -142,15 +142,17 @@ ifeq ($(OS),Windows_NT)
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
 	@pwsh -NoProfile -Command "docker network create cdb_network 2>&1 | Out-Null; Write-Host '✓ cdb_network bereit'"
-	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.blue.yml' up -d"
-	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.red.yml' up -d"
+	@pwsh -NoProfile -Command "if (-not $$env:SECRETS_PATH) { $$env:SECRETS_PATH = Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; if (-not (Test-Path $$env:SECRETS_PATH)) { Write-Error ('SECRETS_PATH not found: ' + $$env:SECRETS_PATH); exit 1 }; docker compose -f 'infrastructure/compose/compose.blue.yml' up -d"
+	@pwsh -NoProfile -Command "if (-not $$env:SECRETS_PATH) { $$env:SECRETS_PATH = Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; docker compose -f 'infrastructure/compose/compose.red.yml' up -d"
 	@pwsh -NoProfile -Command "Start-Sleep -Seconds 10"
 else
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
 	@docker network create cdb_network 2>/dev/null || true
-	@docker compose -f infrastructure/compose/compose.blue.yml up -d
-	@docker compose -f infrastructure/compose/compose.red.yml up -d
+	@export SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}; \
+	 [ -d "$$SECRETS_PATH" ] || { echo "ERROR: SECRETS_PATH not found: $$SECRETS_PATH" >&2; exit 1; }; \
+	 docker compose -f infrastructure/compose/compose.blue.yml up -d; \
+	 docker compose -f infrastructure/compose/compose.red.yml up -d
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
 endif

@@ -40,6 +40,13 @@ Write-Host "`n3. Validating environment..." -ForegroundColor Yellow
 & "$PSScriptRoot\check_env.ps1"  # Or stack_doctor if preferred
 
 # 4. Start Docker Stack (canonical BLUE+RED runtime)
+# Set SECRETS_PATH — generischer lokaler Default; fail-closed wenn nicht vorhanden
+if (-not $env:SECRETS_PATH) {
+    $env:SECRETS_PATH = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
+}
+if (-not (Test-Path $env:SECRETS_PATH)) {
+    Write-Error "Secrets directory not found: $env:SECRETS_PATH. Set SECRETS_PATH env var or create the directory."
+}
 Write-Host "`n4. Starting Docker Compose stack (BLUE+RED)..." -ForegroundColor Yellow
 $composeRoot = Join-Path $repoRoot "infrastructure\compose"
 docker network create cdb_network 2>$null

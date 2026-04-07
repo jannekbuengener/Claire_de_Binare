@@ -343,13 +343,13 @@ services:
 # ==================== SECRETS ====================
 secrets:
   redis_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/REDIS_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/REDIS_PASSWORD
   postgres_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/POSTGRES_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/POSTGRES_PASSWORD
   mexc_api_key:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/MEXC_API_KEY.txt
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/MEXC_API_KEY.txt
   mexc_api_secret:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/MEXC_API_SECRET.txt
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/MEXC_API_SECRET.txt
 
 # ==================== VOLUMES ====================
 volumes:

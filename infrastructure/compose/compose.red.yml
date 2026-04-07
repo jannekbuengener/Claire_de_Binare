@@ -228,21 +228,21 @@ services:
 # ==================== SECRETS ====================
 secrets:
   redis_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/REDIS_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/REDIS_PASSWORD
   postgres_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/POSTGRES_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/POSTGRES_PASSWORD
   postgres_password_dsn:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/POSTGRES_PASSWORD_DSN
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/POSTGRES_PASSWORD_DSN
   grafana_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/GRAFANA_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/GRAFANA_PASSWORD
   smtp_user:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/SMTP_USER
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/SMTP_USER
   smtp_password:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/SMTP_PASSWORD
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/SMTP_PASSWORD
   smtp_from:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/SMTP_FROM
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/SMTP_FROM
   alert_email_to:
-    file: ${SECRETS_PATH:-C:/Users/janne/Documents/.secrets/.cdb}/ALERT_EMAIL_TO
+    file: ${SECRETS_PATH:?SECRETS_PATH must be set}/ALERT_EMAIL_TO
 
 # ==================== VOLUMES ====================
 volumes:
