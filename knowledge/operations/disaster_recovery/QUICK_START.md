@@ -34,11 +34,17 @@ make docker-up
 ```
 ⏱️ Dauer: ~30-60 Sekunden
 
-### 5. Backup-Health prüfen
+### 5. Restore verifizieren
+
 ```powershell
-make backup-health
-# → infrastructure/scripts/backup_health_check.ps1
+# Redis — Schlüsselanzahl prüfen (> 0 erwartet)
+docker exec cdb_redis redis-cli DBSIZE
+
+# Postgres — Tabellen prüfen
+docker exec cdb_postgres psql -U postgres -c "\dt" 2>&1 | Select-String "public"
 ```
+
+> `make backup-health` prüft die Frische des letzten Backups, nicht den Restore-Erfolg. Backup-Frischecheck separat ausführen wenn gewünscht.
 
 ---
 
@@ -50,10 +56,9 @@ make backup-health
    ```
    Sollte zeigen: grafana, redis, signal, ws, risk, execution, db_writer, paper_runner
 
-2. **Grafana Dashboards:**
+2. **Grafana erreichbar** (wird via Repo-Provisioning geladen, nicht Teil des Restore-Scopes):
    - http://localhost:3000
    - Login: admin / (siehe Secrets)
-   - Sollte 8 Dashboards zeigen
 
 3. **Redis Daten:**
    ```powershell
@@ -95,18 +100,15 @@ docker ps -a | grep postgres
 
 ---
 
-## 📊 Was wurde wiederhergestellt
+## 📊 Was wird wiederhergestellt (aktueller Canon)
 
-| Component | Size | Status |
-|-----------|------|--------|
-| Grafana Dashboards (8) | 109MB | ✅ Gesichert |
-| Redis Daten | 85KB | ✅ Gesichert |
-| Prometheus Metriken | 2.0MB | ✅ Gesichert |
-| Claude Memory | 2.9KB | ✅ Gesichert |
-| Loki Logs | 671B | ✅ Gesichert |
-| PostgreSQL | - | ⚠️ Volume bleibt erhalten |
-| .env Config | 1.1KB | ✅ Gesichert |
-| Secrets | - | ✅ Bleiben außerhalb Docker |
+| Component | Methode | Status |
+|-----------|---------|--------|
+| PostgreSQL | SQL dump (pg_dumpall → restore) | ✅ Aktiver Restore-Scope |
+| Redis | dump.rdb | ✅ Aktiver Restore-Scope |
+| SurrealDB | Optional, wenn aktiv | ◻️ Wenn vorhanden |
+
+> **Historischer Scope (2025-12-31-Snapshot):** Frühere Backups enthielten Grafana-Volumes (109MB), Prometheus (2.0MB), Claude Memory (2.9KB), Loki (671B) — kein Teil des aktuellen `make backup`/`make restore`-Scopes.
 
 ---
 

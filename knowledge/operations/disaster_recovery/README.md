@@ -14,6 +14,7 @@
 | **RESTORE_GUIDE.md** | 📖 Historischer Event-Snapshot (2025-12-31) | Hintergrund-Referenz |
 | **restore_volumes.ps1** | ⚡ Historisches Restore-Script (2025-12-31-Snapshot) | Nicht aktive Kanonik — siehe `make restore` |
 | **verify_restore.ps1** | ✅ Historisches Verifikations-Script (2025-12-31-Snapshot) | Nicht aktive Kanonik |
+| **create_backup.ps1** | 💾 Historisches Backup-Script (2025-12-31-Snapshot) | Nicht aktive Kanonik — siehe `make backup` |
 
 ---
 
@@ -31,33 +32,20 @@ Diese Dokumentation beschreibt den **Docker Volume Backup und Restore Prozess** 
 
 ## 💾 Was wird gesichert
 
-### Kritische Daten:
-- ✅ **Grafana Dashboards** (8 Dashboards, ~109MB)
-  - System Performance, Signal Engine, Risk Manager
-  - Paper Trading, Execution, Database, HITL Control
-  - Dark Mode Theme
-- ✅ **Redis Datenbank** (~85KB)
-  - Session State, Cache, Pub/Sub Messages
-- ✅ **Prometheus Metriken** (~2MB)
-  - Zeitreihen-Daten, Performance Metrics
-- ✅ **Loki Logs** (~671B)
-  - Aggregierte Log-Daten
-- ✅ **Claude Memory** (~3KB)
-  - MCP Server Memory State
+### Aktueller Canon (`make backup`):
 
-### Konfiguration:
-- ✅ `.env` File
-- ✅ `.secrets.example/` Templates
-- ✅ Container/Volume/Network Listen
+- ✅ **PostgreSQL** (SQL dump via `pg_dumpall`)
+- ✅ **Redis** (`dump.rdb`)
+- ◻️ **SurrealDB** (optional, wenn aktiv)
 
-### PostgreSQL:
-- ⚠️ **Volume bleibt normalerweise erhalten** bei Docker Neuinstallation
-- Bei Migration: Manueller Export/Import empfohlen
-- Bei Datenverlust: Fresh Init mit Schema
+Backup-Root: `F:\Claire_Backups` — Retention: 14 Tage (automatisch via Windows Task `Claire_Hourly_Backup`, siehe `docs/runbooks/BACKUP_AUTOMATION.md`)
+
+### Historischer Scope (2025-12-31 — nicht aktiver Canon):
+
+Der Snapshot-Backup-Satz vom 2025-12-31 enthielt: Grafana-Volumes (~109MB), Prometheus-Metriken (~2MB), Loki-Logs (~671B), Claude Memory (~3KB). Diese Volumes sind kein Teil des aktuellen `make backup`-Scopes.
 
 ### Secrets (außerhalb Docker):
 - ✅ Bleiben erhalten: lokales Secrets-Verzeichnis (host-spezifisch, außerhalb Docker)
-- Enthalten: MEXC API Keys, Grafana/Postgres/Redis Passwords
 - Pfad: konfigurierbar über `SECRETS_PATH` — Standard: `~/Documents/.secrets/.cdb/`
 
 ---
@@ -78,8 +66,9 @@ powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.
 # 3. Stack starten (30-60 Sek)
 make docker-up
 
-# 4. Health prüfen
-make backup-health
+# 4. Restore verifizieren — Redis + Postgres
+docker exec cdb_redis redis-cli DBSIZE
+docker exec cdb_postgres psql -U postgres -c "\dt" 2>&1 | Select-String "public"
 ```
 
 **Details:** Siehe [QUICK_START.md](./QUICK_START.md)
@@ -141,31 +130,34 @@ Siehe [RESTORE_GUIDE.md](./RESTORE_GUIDE.md) — historischer Event-Snapshot vom
 
 ---
 
-## ✅ Verifikation
+## ✅ Verifikation nach Restore
 
-### Nach Restore ausführen:
+### Restore-Erfolg prüfen (manuelle DB-Checks):
+
 ```powershell
-make backup-health
-# → infrastructure/scripts/backup_health_check.ps1
+# Redis — Schlüsselanzahl (> 0 erwartet)
+docker exec cdb_redis redis-cli DBSIZE
+
+# Postgres — Tabellen prüfen
+docker exec cdb_postgres psql -U postgres -c "\dt" 2>&1 | Select-String "public"
 ```
 
-### Manuelle Checks:
+### Stack-Health:
+
 ```powershell
-# Docker Version
-docker --version
-docker compose version
-
-# Volumes existieren
-docker volume ls
-
 # Container laufen
 docker ps
 
-# Grafana Dashboards
-# → http://localhost:3000
+# Stack-Health (BLUE+RED)
+make docker-health
+```
 
-# Redis Daten
-docker exec cdb_redis redis-cli DBSIZE
+### Backup-Frischecheck (separat — prüft Backup-Aktualität, nicht Restore-Erfolg):
+
+```powershell
+make backup-health
+# → infrastructure/scripts/backup_health_check.ps1
+# → Prüft ob aktuelles Backup vorhanden und aktuell ist; NICHT ob Restore erfolgreich war
 ```
 
 ---
