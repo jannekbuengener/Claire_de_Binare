@@ -1,7 +1,7 @@
 # Live Readiness Audit Status - 2026-03-05
 
 Status date: 2026-03-05 (Europe/Berlin)
-Last reconciliation: 2026-04-05 (P4 PASS + P5 prestart GO + #1423 handoff reconciliation; prior: 2026-03-29 #1306)
+Last reconciliation: 2026-04-07 (LR-050 / #792 and LR-011 / #780 tracker-state reconciliation, issue #1481; prior: 2026-04-05 P4 PASS + P5 prestart GO + #1423 handoff)
 Scope: Echtgeld Go/No-Go readiness snapshot from existing live-readiness SSOT sources.
 
 ## A) Executive Summary
@@ -12,7 +12,7 @@ Scope: Echtgeld Go/No-Go readiness snapshot from existing live-readiness SSOT so
 - Current verdict: **NO-GO**.
 - Blocking phase in roadmap: `P0` (`blocking: true`).
 - `P0` is fully complete: all three state files are `DONE` and all corresponding GitHub issues (`LR-001` [#776](https://github.com/jannekbuengener/Claire_de_Binare/issues/776), `LR-002` [#777](https://github.com/jannekbuengener/Claire_de_Binare/issues/777), `LR-003` [#778](https://github.com/jannekbuengener/Claire_de_Binare/issues/778)) are closed. Tracker drift resolved as of 2026-03-15.
-- `P2` (E2E + Replay) is `DONE`. `P1` is `PARTIAL`. `P3` is `PARTIAL`: `LR-031` comparison is PASS-evidenced; `LR-030` zero-execution proof is repo-backed and re-confirmed by the committed lean handoff, but the original `LR-030` issue wording still leaves residual uncertainty around `>24h` stable shadow-mode / monitoring evidence. `P4` is `DONE` (`LR-040` PASS 72.19h soak; `LR-041`/`LR-042` closed with evidence). `P5` prestart pack is committed with GO status and a committed lean shadow evidence handoff exists; `LR-050` remains `OPEN` / fail-closed for live capital. System remains not ready for go-live.
+- `P2` (E2E + Replay) is `DONE`. `P1` is `PARTIAL`. `P3` is `PARTIAL`: `LR-031` comparison is PASS-evidenced; `LR-030` zero-execution proof is repo-backed and re-confirmed by the committed lean handoff, but the original `LR-030` issue wording still leaves residual uncertainty around `>24h` stable shadow-mode / monitoring evidence. `P4` is `DONE` (`LR-040` PASS 72.19h soak; `LR-041`/`LR-042` closed with evidence). `P5` prestart pack is committed with GO status and a committed lean shadow evidence handoff exists; `LR-050` remains `NO-GO` / fail-closed for live capital. System remains not ready for go-live.
 - `P5` canary is additionally gated by explicit human approval (`requires: explicit_human_approval`).
 - Guardrail reminder: **No real trades without human gate**.
 - Decision policy: evidence over assumptions; open blockers keep system in NO-GO.
@@ -26,7 +26,7 @@ Scope: Echtgeld Go/No-Go readiness snapshot from existing live-readiness SSOT so
 | P2 E2E + Replay | `false` | `LR-020`, `LR-021` | `DONE` | `LR-020` DONE: [LR-020-STATE.yaml](./LR-020-STATE.yaml) commit `8c75697` (2026-03-17); [LR-021 #783](https://github.com/jannekbuengener/Claire_de_Binare/issues/783) closed, evidence slices 1–3 present |
 | P3 Shadow Mode | `false` | `LR-030`, `LR-031` | `PARTIAL` | `LR-030` issue [#784](https://github.com/jannekbuengener/Claire_de_Binare/issues/784) is closed; zero-execution proof is repo-backed in `docs/evidence/LR-030.md` and re-confirmed by `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml` (10/10 gate checks PASS). `LR-031` issue [#785](https://github.com/jannekbuengener/Claire_de_Binare/issues/785) is closed; comparison layer is PASS-evidenced in `docs/evidence/LR-031.md` with calibrated thresholds in `docs/evidence/lr031_baseline_thresholds.json`. **Restunsicherheit:** the original `LR-030` issue wording still mentions `>24h` stable shadow mode plus monitoring/alerting evidence, which is not fully re-expressed in the current canonical SSOT. |
 | P4 Soak + Chaos | `false` | `LR-040`, `LR-041`, `LR-042` | `DONE` | `LR-040` PASS: `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` (72.19h, 8/8 checks, `soak_test_20260401_114850`); `LR-041` evidence present: `docs/evidence/LR-041.md`, [#787](https://github.com/jannekbuengener/Claire_de_Binare/issues/787) closed; `LR-042` evidence present: `docs/evidence/LR-042.md`, [#788](https://github.com/jannekbuengener/Claire_de_Binare/issues/788) closed |
-| P5 Canary Echtgeld | `false` (`gated: true`) | `LR-050` | `OPEN` | issue [#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792) is closed in GitHub; this does not change P5 clearance or live-capital readiness; committed prestart pack GO state exists under `reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`) and continuity proof exists via `lean_shadow_evidence_handoff.yaml`, but this does not authorize live capital and does not clear `LR-050` |
+| P5 Canary Echtgeld | `false` (`gated: true`) | `LR-050` | `NO-GO` | GitHub issue [#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792) is closed; this does not change P5 gate-clearance or live-capital readiness. Committed prestart-pack GO state exists under `reports/p5_canary/2026-04-04/` (`manifest.json`, `prestart_evidence_lock.yaml`, `decision_record.yaml`) and continuity proof exists via `lean_shadow_evidence_handoff.yaml`; these are prestart-only artifacts — they do not authorize live capital and do not clear `LR-050` |
 
 Phase notes (audit interpretation):
 
@@ -36,7 +36,7 @@ Phase notes (audit interpretation):
 - P2 is `DONE`: `LR-020-STATE.yaml` = DONE (commit `8c75697`); `LR-021` closed with evidence slices.
 - P3 is no longer evidence-empty: `LR-031` is PASS-evidenced and `LR-030` zero-execution behavior is repo-backed plus re-confirmed by the committed lean handoff. Operational status remains `PARTIAL` because the original `LR-030` issue wording still leaves residual uncertainty around `>24h` stable shadow mode / monitoring evidence.
 - P4 is `DONE`: `LR-040` PASS (72.19h soak, `soak_test_20260401_114850`); `LR-041` evidence present (`docs/evidence/LR-041.md`, #787 closed); `LR-042` evidence present (`docs/evidence/LR-042.md`, #788 closed).
-- P5 prestart pack is committed with GO status (`reports/p5_canary/2026-04-04/`); lean shadow evidence handoff is also committed there (`lean_shadow_evidence_handoff.yaml`). `LR-050` nevertheless remains `OPEN` / fail-closed, and P1 plus the LR-030 residual uncertainty remain unresolved.
+- P5 prestart pack is committed with GO status (`reports/p5_canary/2026-04-04/`); lean shadow evidence handoff is also committed there (`lean_shadow_evidence_handoff.yaml`). Both are prestart-only artifacts — they do not authorize live capital. `LR-050` nevertheless remains `NO-GO` / fail-closed, and P1 plus the LR-030 residual uncertainty remain unresolved.
 
 ## C) DONE Snapshot (LR-001..LR-007)
 
@@ -59,7 +59,7 @@ DONE consistency checks:
 - DONE snapshot quality is structurally acceptable for audit reference.
 - Tracker reconciliation complete: all DONE items have closed GitHub issues (verified 2026-03-15).
 
-## D) OPEN / Next Tasks (prioritized)
+## D) Conservative Holds / Next Tasks (prioritized)
 
 1. ~~`LR-011` ([#780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780)): execution state machine test coverage is required to prove deterministic order lifecycle transitions; DoD: full state transition matrix tested with pass/fail evidence.~~ Closed in GitHub (PR #1106).
 2. `LR-012` ([#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781)): malformed payload handling must fail closed; DoD: negative schema/payload tests pass and rejection paths are evidenced.

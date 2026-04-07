@@ -11,7 +11,7 @@
 | P0 | Contract Tests | PASS | YES | [LR-002-EVIDENCE](./LR-002-EVIDENCE.md), [LR-002-STATE](./LR-002-STATE.yaml) | jannekbuengener |
 | P0 | Kill-Switch + Limits | PASS | YES | [LR-003-EVIDENCE](./LR-003-EVIDENCE.md), [LR-003-STATE](./LR-003-STATE.yaml) | jannekbuengener |
 | P1 | Risk Engine Tests | PASS | NO | [LR-010-EVIDENCE](./LR-010-EVIDENCE.md) | jannekbuengener |
-| P1 | State Machine Tests | OPEN | NO | `#780` | jannekbuengener |
+| P1 | State Machine Tests | CLOSED | NO | `#780` closed (GitHub, PR #1106); see LR-011 | jannekbuengener |
 | P1 | Negative Payload | OPEN | NO | `#781` | jannekbuengener |
 | P2 | E2E Paper Trading | PASS | NO | [LR-020-EVIDENCE](./LR-020-EVIDENCE.md), [LR-020-STATE](./LR-020-STATE.yaml) | jannekbuengener |
 | P2 | Replay Framework | PASS | NO | [LR-021-EVIDENCE-SLICE1](./LR-021-EVIDENCE-SLICE1.md) | jannekbuengener |
