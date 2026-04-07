@@ -16,7 +16,7 @@ mypy==1.8.0
 
 # Code Quality
 black==26.1.0
-ruff==0.15.2
+ruff==0.15.9
 
 # Security Scanning
 bandit==1.9.3
