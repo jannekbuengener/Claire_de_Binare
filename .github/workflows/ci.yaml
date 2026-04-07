@@ -1,5 +1,7 @@
 # Secondary legacy multi-job pipeline.
 # This file is not the canonical PR gate and not the 431B Docker CI lab baseline.
+# LEGACY-FREEZE (2026-04-07): tool-version drift is acceptable.
+# Not parity-tracked with ci.yml. No version alignment required.
 name: CI/CD Pipeline
 
 on:
