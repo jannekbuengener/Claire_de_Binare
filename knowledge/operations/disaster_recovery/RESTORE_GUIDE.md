@@ -1,7 +1,12 @@
 # Docker Reinstall - Restore Guide
 
+> **Historischer Snapshot — 2025-12-31-Docker-Reinstall.**  
+> Aktuelle Restore-Front-Door: `make restore` (listet Backups), dann `restore_all.ps1 -BackupName <name>` (führt Restore aus)  
+> Aktuelle Backup-Location: `F:\Claire_Backups` — Setup und Health: `docs/runbooks/BACKUP_AUTOMATION.md`  
+> Die nachfolgenden Befehle sind event-spezifisch und referenzieren den damaligen Backup-Pfad.
+
 **Backup erstellt:** 2025-12-31 07:55:07
-**Backup Location:** D:\Dev\Backups\docker_reinstall_20251231_075507
+**Backup Location (historisch):** D:\Dev\Backups\docker_reinstall_20251231_075507
 
 ## ✅ Was wurde gesichert
 

@@ -103,13 +103,13 @@ make kill-switch-activate
 2. Logs überprüfen: `docker logs cdb_risk --tail 50`
 3. Root Cause identifizieren
 4. Problem beheben
-5. Deaktivierung nur nach Genehmigung (siehe EMERGENCY_STOP_SOP.md)
+5. Deaktivierung nur nach dokumentierter Prüfung (siehe EMERGENCY_STOP_SOP.md)
 
 ---
 
 ### 2. Trading Mode Wechsel (PAPER → STAGED → LIVE)
 
-**KRITISCH**: Nur mit expliziter Genehmigung!
+**KRITISCH**: Nur nach vollständig abgehakter Checkliste und dokumentierter Begründung.
 
 **Voraussetzungen für LIVE Mode:**
 - ✅ 14-Tage Paper Trading erfolgreich abgeschlossen
@@ -258,15 +258,15 @@ docker logs cdb_execution --tail 30
 - Risk Limits anpassen
 - Trading Mode wechseln (PAPER → LIVE), nur nach Checkliste (siehe Abschnitt 2)
 - System-kritische Config ändern
-- Deployment Genehmigungen
+- Deployments durchführen und dokumentieren
 - Emergency Shutdown
 
 ### Fail-Closed Prinzip
 
-Wo in einem Mehrpersonen-Setup eine zweite Person gegenzeichnen würde, gilt hier:
+Der Maintainer entscheidet selbst — strikt und dokumentationspflichtig:
 
 - **Kill-Switch Deaktivierung**: Begründung muss im Audit Trail dokumentiert sein, bevor der Switch deaktiviert wird.
-- **LIVE-Mode-Freigabe**: Alle Voraussetzungen der Checkliste (Abschnitt 2) müssen nachweislich erfüllt sein. Kein Override ohne dokumentierte Begründung.
+- **Trading-Mode-Wechsel auf LIVE**: Alle Voraussetzungen der Checkliste (Abschnitt 2) müssen nachweislich erfüllt sein. Kein Override ohne dokumentierte Begründung.
 - **Risk-Limit-Änderungen**: Änderung + Begründung im Git-Commit festhalten.
 
 ### Eskalation bei Unsicherheit
@@ -384,6 +384,5 @@ Siehe separate Datei: `docs/HITL_METRICS_MAPPING.md`
 
 ---
 
-**Genehmigt von**: [Pending]
-**Review Datum**: [Pending]
+**Zuletzt geprüft von**: Maintainer
 **Version**: 1.0
