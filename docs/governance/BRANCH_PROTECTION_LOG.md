@@ -4,7 +4,7 @@ This document records governance interventions on branch protection rules for au
 
 ---
 
-## 2026-04-08T12:16:03Z - Disable Code-Owner Review Self-Deadlock (PR #1023 / PR #1024)
+## 2026-04-08T12:16:03Z - Disable Code-Owner Review Self-Deadlock (PR #1505)
 
 **Context:** The repo still uses `.github/CODEOWNERS` with `* @jannekbuengener`, while `main` is operated in solo-maintainer mode with `required_approving_review_count: 0`.
 
