@@ -205,7 +205,42 @@ class Database:
                     metadata_json = json.dumps(metadata_payload)
 
                     has_order_id = self._orders_has_order_id(cur)
-                    # Insert into orders table
+                    if has_order_id and result.order_id:
+                        cur.execute(
+                            """
+                            UPDATE orders
+                            SET filled_size = %s,
+                                avg_fill_price = %s,
+                                status = %s,
+                                submitted_at = COALESCE(submitted_at, to_timestamp(%s)),
+                                filled_at = CASE
+                                    WHEN %s = %s THEN COALESCE(filled_at, to_timestamp(%s))
+                                    ELSE filled_at
+                                END,
+                                metadata = COALESCE(metadata, '{}'::jsonb) || %s::jsonb
+                            WHERE order_id = %s
+                            RETURNING id
+                        """,
+                            (
+                                result.filled_quantity,
+                                result.price,
+                                result.status.lower(),
+                                int(time.time()),
+                                result.status.lower(),
+                                OrderStatus.FILLED.value.lower(),
+                                int(time.time()),
+                                metadata_json,
+                                result.order_id,
+                            ),
+                        )
+                        if cur.fetchone():
+                            logger.info(
+                                "Updated order lifecycle in database: %s",
+                                result.order_id,
+                            )
+                            return True
+
+                    # Insert fallback for execution-local outcomes without a prior canonical order row.
                     if has_order_id:
                         cur.execute(
                             """

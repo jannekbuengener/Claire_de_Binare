@@ -25,13 +25,9 @@ class DummyRedisClient:
 class DummyDatabase:
     def __init__(self) -> None:
         self.saved_orders: list[ExecutionResult] = []
-        self.saved_trades: list[ExecutionResult] = []
 
     def save_order(self, result: ExecutionResult) -> None:
         self.saved_orders.append(result)
-
-    def save_trade(self, result: ExecutionResult) -> None:
-        self.saved_trades.append(result)
 
 
 def test_stats_increment_isolates_copy() -> None:
@@ -80,8 +76,7 @@ def test_publish_result_updates_stats_and_history(
         }
         assert dummy_redis.streams[0][0] == config.STREAM_ORDER_RESULTS
         assert dummy_db.saved_orders
-        assert dummy_db.saved_trades
-        assert dummy_db.saved_trades[0].metadata == {
+        assert dummy_db.saved_orders[0].metadata == {
             "signal_id": "sig-42",
             "expected_price": 41950.0,
         }

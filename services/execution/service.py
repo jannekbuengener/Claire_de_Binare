@@ -384,8 +384,6 @@ def _publish_result(result: ExecutionResult) -> None:
 
     if db:
         db.save_order(result)
-        if ExecutionResult._schema_status(result.status) == "FILLED":
-            db.save_trade(result)
 
 
 def process_order(order_data: object):

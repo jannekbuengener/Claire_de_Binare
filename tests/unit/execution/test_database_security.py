@@ -88,3 +88,39 @@ def test_save_trade_preserves_fill_context_metadata(mock_connect, mock_db_config
     parsed_metadata = json.loads(metadata_json)
     assert parsed_metadata["order_id"] == "test-order-ctx"
     assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123
+
+
+@patch("psycopg2.connect")
+def test_save_order_updates_existing_order_row_and_merges_metadata(
+    mock_connect, mock_db_config
+):
+    mock_conn = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.side_effect = [(1,), (123,)]
+
+    db = Database()
+    result = ExecutionResult(
+        order_id="ord-1498-update",
+        client_id="client-1498",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=1.0,
+        price=50000.0,
+        status=OrderStatus.FILLED.value,
+        timestamp="2026-01-01T00:00:00Z",
+        metadata={"fill_context": {"signal_ts_ms": 1700000000123}},
+    )
+
+    success = db.save_order(result)
+
+    assert success is True
+    assert mock_cur.execute.call_count == 3
+    update_query, update_params = mock_cur.execute.call_args_list[2][0]
+    assert "UPDATE orders" in update_query
+    assert "metadata = COALESCE(metadata, '{}'::jsonb) || %s::jsonb" in update_query
+    assert update_params[8] == "ord-1498-update"
+    parsed_metadata = json.loads(update_params[7])
+    assert parsed_metadata["order_id"] == "ord-1498-update"
+    assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123

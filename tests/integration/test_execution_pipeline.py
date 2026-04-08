@@ -29,13 +29,9 @@ class DummyRedisClient:
 class DummyDatabase:
     def __init__(self) -> None:
         self.saved_orders: list[str] = []
-        self.saved_trades: list[str] = []
 
     def save_order(self, result: object) -> None:
         self.saved_orders.append(result.order_id)
-
-    def save_trade(self, result: object) -> None:
-        self.saved_trades.append(result.order_id)
 
     def persist_correlation_event(self, **kwargs) -> bool:
         """No-op stub for Phase 8C (not validated by this test)."""
@@ -85,7 +81,6 @@ def test_process_order_publishes_real_result(monkeypatch: pytest.MonkeyPatch) ->
         data = json.loads(text)
         assert data["symbol"] == payload["symbol"]
         assert db_stub.saved_orders
-        assert db_stub.saved_trades
         stats_after = service.get_stats_copy()
         assert stats_after["orders_received"] == stats_before["orders_received"] + 1
         assert stats_after["orders_filled"] == stats_before["orders_filled"] + 1
@@ -163,7 +158,6 @@ def test_shadow_order_blocks_via_risk_contract_and_exports_metrics(
         assert "shadow mode" in (result.error_message or "").lower()
         executor.execute_order.assert_not_called()
         assert db_stub.saved_orders == ["test-ord-shadow-001"]
-        assert db_stub.saved_trades == []
         assert len(redis_stub.published) == 1
 
         channel, text = redis_stub.published[0]

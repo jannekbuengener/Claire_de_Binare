@@ -43,13 +43,9 @@ class DummyRedisClient:
 class DummyDatabase:
     def __init__(self) -> None:
         self.saved_orders: list[str] = []
-        self.saved_trades: list[str] = []
 
     def save_order(self, result: object) -> None:
         self.saved_orders.append(result.order_id)
-
-    def save_trade(self, result: object) -> None:
-        self.saved_trades.append(result.order_id)
 
     def persist_correlation_event(self, **kwargs) -> bool:
         return True
@@ -165,7 +161,6 @@ def test_tc_lr020_01_allow_path_fills_order(monkeypatch: pytest.MonkeyPatch) -> 
 
         # Persisted to DB (MockExecutor generates its own MOCK_<n> order_id)
         assert db_stub.saved_orders, "Order must be saved to DB"
-        assert db_stub.saved_trades, "Trade must be saved to DB"
     finally:
         service.stats.clear()
         service.stats.update(stats_before)

@@ -364,35 +364,74 @@ class DatabaseWriter:
             # Get limit price (NULL for market orders without limit)
             order_price = self.get_order_price(data)
             metadata = self.normalize_metadata(data.get("metadata"))
+            order_id = data.get("order_id")
 
             # Convert timestamp (handles Unix timestamps and ISO strings)
             timestamp = self.convert_timestamp(data.get("timestamp"))
 
             cursor = self.db_conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO orders
-                (symbol, side, order_type, price, size, approved, rejection_reason, status, metadata, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """,
-                (
-                    data.get("symbol"),
-                    self.normalize_side(data.get("side")),
-                    data.get("order_type", "market"),
-                    order_price,  # Can be None for market orders
-                    data.get("quantity", data.get("size", 0)),
-                    data.get("approved", False),
-                    data.get("rejection_reason"),
-                    data.get("status", "pending"),
-                    json.dumps(metadata),
-                    timestamp,
-                ),
-            )
-            order_id = cursor.fetchone()[0]
+            if order_id:
+                cursor.execute(
+                    """
+                    INSERT INTO orders
+                    (order_id, symbol, side, order_type, price, size, approved, rejection_reason, status, metadata, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (order_id) DO UPDATE
+                    SET symbol = EXCLUDED.symbol,
+                        side = EXCLUDED.side,
+                        order_type = EXCLUDED.order_type,
+                        price = EXCLUDED.price,
+                        size = EXCLUDED.size,
+                        approved = EXCLUDED.approved,
+                        rejection_reason = COALESCE(EXCLUDED.rejection_reason, orders.rejection_reason),
+                        status = CASE
+                            WHEN orders.status IN ('filled', 'partial', 'cancelled', 'rejected')
+                                THEN orders.status
+                            ELSE EXCLUDED.status
+                        END,
+                        metadata = COALESCE(EXCLUDED.metadata, '{}'::jsonb) || COALESCE(orders.metadata, '{}'::jsonb),
+                        created_at = LEAST(orders.created_at, EXCLUDED.created_at)
+                    RETURNING id
+                """,
+                    (
+                        order_id,
+                        data.get("symbol"),
+                        self.normalize_side(data.get("side")),
+                        data.get("order_type", "market"),
+                        order_price,
+                        data.get("quantity", data.get("size", 0)),
+                        data.get("approved", False),
+                        data.get("rejection_reason"),
+                        data.get("status", "pending"),
+                        json.dumps(metadata),
+                        timestamp,
+                    ),
+                )
+            else:
+                cursor.execute(
+                    """
+                    INSERT INTO orders
+                    (symbol, side, order_type, price, size, approved, rejection_reason, status, metadata, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                """,
+                    (
+                        data.get("symbol"),
+                        self.normalize_side(data.get("side")),
+                        data.get("order_type", "market"),
+                        order_price,
+                        data.get("quantity", data.get("size", 0)),
+                        data.get("approved", False),
+                        data.get("rejection_reason"),
+                        data.get("status", "pending"),
+                        json.dumps(metadata),
+                        timestamp,
+                    ),
+                )
+            persisted_order_id = cursor.fetchone()[0]
             logger.info(
                 "✅ Order persisted: ID=%d, %s %s",
-                order_id,
+                persisted_order_id,
                 data.get("symbol"),
                 data.get("side"),
             )

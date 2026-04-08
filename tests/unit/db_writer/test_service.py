@@ -128,6 +128,33 @@ def test_process_signal_event_persists_metadata_object(mock_postgres):
 
 
 @pytest.mark.unit
+def test_process_order_event_upserts_by_order_id_without_losing_terminal_status():
+    writer = DatabaseWriter()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = [7]
+
+    writer.process_order_event(
+        {
+            "order_id": "ord-1498-1",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "quantity": 0.01,
+            "price": 50000.0,
+            "approved": True,
+            "status": "pending",
+            "timestamp": 1700000000,
+            "metadata": {"signal_id": "sig-1498-1"},
+        }
+    )
+
+    query, params = cursor.execute.call_args[0]
+    assert "ON CONFLICT (order_id) DO UPDATE" in query
+    assert params[0] == "ord-1498-1"
+    assert json.loads(params[9]) == {"signal_id": "sig-1498-1"}
+
+
+@pytest.mark.unit
 @pytest.mark.unit
 @pytest.mark.skip(reason="Placeholder - needs implementation (Issue #308)")
 def test_service_initialization(mock_postgres, test_config):
