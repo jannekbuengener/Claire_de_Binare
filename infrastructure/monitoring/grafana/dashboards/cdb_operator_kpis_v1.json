@@ -1,0 +1,210 @@
+{
+  "uid": "cdb_operator_kpis_v1",
+  "title": "CDB - Operator KPIs",
+  "description": "Minimal operator KPI slice for issue #203. Postgres trades are the current canonical source for executed trades. Positive-trade count and positive-trade rate stay blocked until the active runtime path persists per-trade outcomes.",
+  "tags": [
+    "cdb",
+    "operator",
+    "kpi",
+    "issue-203"
+  ],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "1h"
+    ]
+  },
+  "refresh": "1m",
+  "style": "dark",
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "MINIMAL KPI SLICE",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "TRADES MADE",
+      "description": "Canonical operator count from PostgreSQL trades over the selected Grafana time range.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 1
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value"
+      }
+    },
+    {
+      "id": 3,
+      "type": "text",
+      "title": "POSITIVE TRADES",
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 1
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Not shown as a number yet.\n\nCurrent active runtime path persists executed trades in `trades`, but it does not persist a per-trade positive or negative outcome field. `positions.realized_pnl` is not a safe historical trade counter."
+      }
+    },
+    {
+      "id": 4,
+      "type": "text",
+      "title": "POSITIVE TRADES %",
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 1
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "Blocked on the same contract gap.\n\nThis should stay a derived query, not a raw metric, once a reliable positive-trade numerator exists on the active runtime path."
+      }
+    },
+    {
+      "id": 5,
+      "type": "row",
+      "title": "TRADE ACTIVITY",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "TRADES OVER TIME",
+      "description": "Executed trades grouped per hour from PostgreSQL trades over the selected Grafana time range.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 0,
+        "y": 7
+      },
+      "targets": [
+        {
+          "rawSql": "SELECT $__timeGroupAlias(timestamp, '1h'), COUNT(*)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "format": "time_series",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "drawStyle": "bars",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 60,
+            "gradientMode": "none",
+            "showPoints": "never",
+            "spanNulls": false
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [
+            "sum",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "text",
+      "title": "KPI CONTRACT",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "- `Trades made`: live from `trades.timestamp`\n- `Positive trades`: not yet repo-backed on the active runtime path\n- `Positive trades %`: intentionally withheld until the numerator exists\n\nIssue anchor: `#203`.\n\nThis dashboard stays deliberately narrow and does not backfill unsupported KPI semantics from non-canonical paths."
+      }
+    }
+  ]
+}
