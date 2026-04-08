@@ -101,7 +101,7 @@ def test_save_order_updates_existing_order_row_and_merges_metadata(
 
     db = Database()
     result = ExecutionResult(
-        order_id="ord-1498-update",
+        order_id="exchange-1498-update",
         client_id="client-1498",
         symbol="BTCUSDT",
         side="BUY",
@@ -110,7 +110,10 @@ def test_save_order_updates_existing_order_row_and_merges_metadata(
         price=50000.0,
         status=OrderStatus.FILLED.value,
         timestamp="2026-01-01T00:00:00Z",
-        metadata={"fill_context": {"signal_ts_ms": 1700000000123}},
+        metadata={
+            "order_id": "ord-1498-update",
+            "fill_context": {"signal_ts_ms": 1700000000123},
+        },
     )
 
     success = db.save_order(result)
@@ -123,4 +126,39 @@ def test_save_order_updates_existing_order_row_and_merges_metadata(
     assert update_params[8] == "ord-1498-update"
     parsed_metadata = json.loads(update_params[7])
     assert parsed_metadata["order_id"] == "ord-1498-update"
+    assert parsed_metadata["exchange_order_id"] == "exchange-1498-update"
     assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123
+
+
+@patch("psycopg2.connect")
+def test_save_order_skips_when_no_canonical_order_row_exists(
+    mock_connect, mock_db_config, caplog
+):
+    mock_conn = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.side_effect = [(1,), None]
+
+    db = Database()
+    result = ExecutionResult(
+        order_id="exchange-miss-1",
+        client_id="client-miss-1",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=0.0,
+        price=None,
+        status=OrderStatus.REJECTED.value,
+        timestamp="2026-01-01T00:00:00Z",
+        metadata={"order_id": "ord-miss-1"},
+    )
+
+    with caplog.at_level("WARNING"):
+        success = db.save_order(result)
+
+    assert success is False
+    assert mock_cur.execute.call_count == 3
+    update_query, update_params = mock_cur.execute.call_args_list[2][0]
+    assert "UPDATE orders" in update_query
+    assert update_params[8] == "ord-miss-1"
+    assert "no existing order row found" in caplog.text

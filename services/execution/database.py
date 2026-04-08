@@ -203,9 +203,24 @@ class Database:
                             "exchange_order_id", result.order_id
                         )
                     metadata_json = json.dumps(metadata_payload)
+                    canonical_order_id = metadata_payload.get("order_id")
 
                     has_order_id = self._orders_has_order_id(cur)
-                    if has_order_id and result.order_id:
+                    if not has_order_id:
+                        logger.warning(
+                            "Skipping order lifecycle update for %s: orders.order_id column missing",
+                            result.order_id,
+                        )
+                        return False
+
+                    if not canonical_order_id:
+                        logger.warning(
+                            "Skipping order lifecycle update for %s: missing canonical order_id",
+                            result.order_id,
+                        )
+                        return False
+
+                    if has_order_id:
                         cur.execute(
                             """
                             UPDATE orders
@@ -230,91 +245,22 @@ class Database:
                                 OrderStatus.FILLED.value.lower(),
                                 int(time.time()),
                                 metadata_json,
-                                result.order_id,
+                                canonical_order_id,
                             ),
                         )
                         if cur.fetchone():
                             logger.info(
                                 "Updated order lifecycle in database: %s",
-                                result.order_id,
+                                canonical_order_id,
                             )
                             return True
 
-                    # Insert fallback for execution-local outcomes without a prior canonical order row.
-                    if has_order_id:
-                        cur.execute(
-                            """
-                            INSERT INTO orders (
-                                order_id, symbol, side, order_type,
-                                size, price, filled_size, avg_fill_price,
-                                status, submitted_at, filled_at,
-                                approved, metadata
-                            ) VALUES (
-                                %s, %s, %s, %s,
-                                %s, %s, %s, %s,
-                                %s, to_timestamp(%s), to_timestamp(%s),
-                                %s, %s
-                            )
-                            RETURNING id
-                        """,
-                            (
-                                result.order_id,
-                                result.symbol,
-                                result.side.lower(),
-                                "market",
-                                result.quantity,
-                                result.price,
-                                result.filled_quantity,
-                                result.price,
-                                result.status.lower(),
-                                int(time.time()),
-                                (
-                                    int(time.time())
-                                    if result.status == OrderStatus.FILLED.value
-                                    else None
-                                ),
-                                True,  # approved
-                                metadata_json,
-                            ),
-                        )
-                    else:
-                        cur.execute(
-                            """
-                            INSERT INTO orders (
-                                symbol, side, order_type,
-                                size, price, filled_size, avg_fill_price,
-                                status, submitted_at, filled_at,
-                                approved, metadata
-                            ) VALUES (
-                                %s, %s, %s,
-                                %s, %s, %s, %s,
-                                %s, to_timestamp(%s), to_timestamp(%s),
-                                %s, %s
-                            )
-                            RETURNING id
-                        """,
-                            (
-                                result.symbol,
-                                result.side.lower(),
-                                "market",
-                                result.quantity,
-                                result.price,
-                                result.filled_quantity,
-                                result.price,
-                                result.status.lower(),
-                                int(time.time()),
-                                (
-                                    int(time.time())
-                                    if result.status == OrderStatus.FILLED.value
-                                    else None
-                                ),
-                                True,  # approved
-                                metadata_json,
-                            ),
-                        )
-
-                    logger.info(f"Saved order to database: {result.order_id}")
-                    return True
+                    logger.warning(
+                        "Skipping order lifecycle update for canonical order %s: no existing order row found (exchange_order_id=%s)",
+                        canonical_order_id,
+                        result.order_id,
+                    )
+                    return False
 
         except Exception as e:
             logger.error(f"Failed to save order: {e}")
