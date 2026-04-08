@@ -38,6 +38,9 @@ Die aktuelle Dependency-Map und die Rename-Regel stehen in
 
 - Required Check rot oder Branch Protection blockiert:
   - [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
+- PR-CI gruen, aber PR trotzdem blocked oder ein externer Check ist rot:
+  - [docs/runbooks/merge_policy_ci_gate.md](../runbooks/merge_policy_ci_gate.md)
+  - [docs/runbooks/resolve_review_threads_via_graphql.md](../runbooks/resolve_review_threads_via_graphql.md)
 - Project-v2 / Token / Scope Fehler:
   - [docs/runbooks/project_board_automation.md](../runbooks/project_board_automation.md)
 - `workflow_run`-Rename-Drift:

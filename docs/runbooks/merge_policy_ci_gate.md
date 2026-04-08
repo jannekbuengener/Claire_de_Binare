@@ -31,6 +31,38 @@ Merge-method guidance for proof/slice PRs is documented in
 - `.github/CODEOWNERS` remains review-routing metadata only; code-owner review is not an active merge requirement on `main`.
 - Six-Eyes is not technically enforced by the current PR template or branch protection configuration in this repo.
 
+## Blocked PR Diagnosis Order
+
+Use this order whenever a PR looks blocked even though PR CI is mostly green.
+
+1. Verify the live required contexts first. On `main`, the merge contract is only:
+   - `ci (Unit/Integration + Lint gesammelt)`
+   - `policy-gate`
+2. Verify the live branch-protection safety gates next. In the current setup, a PR can still be blocked by:
+   - `required_conversation_resolution=true`
+   - `required_status_checks.strict=true` (head branch not up to date with `main`)
+   - `required_linear_history=true`
+3. Only after steps 1 and 2 classify any other red checks. A red non-required check is not automatically a merge blocker.
+
+Recommended operator path:
+
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection
+gh pr view <number> --json mergeStateStatus,statusCheckRollup,reviewDecision
+gh api graphql -f query='query { repository(owner:"jannekbuengener", name:"Claire_de_Binare") { pullRequest(number: <number>) { reviewThreads(first: 100) { nodes { isResolved isOutdated path } } } } }'
+```
+
+If required contexts are green but the PR is still blocked, inspect unresolved, non-outdated review threads first. See
+[resolve_review_threads_via_graphql.md](resolve_review_threads_via_graphql.md)
+for the deterministic thread-resolution path.
+
+### Current Classification: `submit-pypi`
+
+- `submit-pypi` / `Automatic Dependency Submission` is currently **not** part of the required merge contract on `main`.
+- The workflow is currently not defined under [`.github/workflows/`](../../.github/workflows/); the observed runs come from a GitHub-managed dependency-submission path.
+- Failures on this check therefore must be classified as advisory diagnosis signal first, not as merge-contract failure, unless fresh GitHub evidence shows that branch protection or rulesets changed.
+- Current operator rule: when `submit-pypi` is red on an otherwise green PR, verify required contexts and unresolved review threads before treating the PR as merge-blocked by CI.
+
 ## Canonical PR Gate Contract
 
 The exact check-run names below are part of the merge contract on `main`:
