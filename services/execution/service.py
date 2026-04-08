@@ -3,6 +3,7 @@ Execution Service - Main Entry Point
 Claire de Binare Trading Bot
 """
 
+import copy
 import os
 import json
 import signal
@@ -144,6 +145,53 @@ def _validate_optional_json_object_field(payload: dict, field_name: str) -> None
     raise ValueError(f"Field '{field_name}' must be dict or JSON object string")
 
 
+def _parse_optional_int(value) -> int | None:
+    """Parse optional integer-like values without inventing replacements."""
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _build_result_metadata(order: Order) -> dict | None:
+    """Preserve order metadata and derive fill_context for execution results."""
+    if order.metadata is None:
+        return None
+
+    metadata = copy.deepcopy(order.metadata)
+    timing = metadata.get("timing") if isinstance(metadata.get("timing"), dict) else {}
+    freshness = (
+        metadata.get("freshness") if isinstance(metadata.get("freshness"), dict) else {}
+    )
+    timestamps_ms = (
+        freshness.get("timestamps_ms")
+        if isinstance(freshness.get("timestamps_ms"), dict)
+        else {}
+    )
+
+    signal_ts_ms = _parse_optional_int(timing.get("signal_ts_ms"))
+    if signal_ts_ms is None:
+        signal_ts_ms = _parse_optional_int(timestamps_ms.get("signal_ts_ms"))
+
+    decision_ts_ms = _parse_optional_int(timestamps_ms.get("now_ms"))
+    market_state_ts_ms = _parse_optional_int(timestamps_ms.get("market_state_ts_ms"))
+
+    if signal_ts_ms is None:
+        logger.warning(
+            "Order %s missing canonical signal_ts_ms in metadata; fill_context will stay explicit null",
+            order.order_id or order.client_id or "UNKNOWN_ORDER",
+        )
+
+    metadata["fill_context"] = {
+        "signal_ts_ms": signal_ts_ms,
+        "decision_ts_ms": decision_ts_ms,
+        "market_state_ts_ms": market_state_ts_ms,
+    }
+    return metadata
+
+
 def _parse_order_payload(order_data: object) -> Order | None:
     """Return validated Order or None for invalid payload input."""
     if not isinstance(order_data, dict):
@@ -163,6 +211,7 @@ def _parse_order_payload(order_data: object) -> Order | None:
 
     try:
         _validate_optional_json_object_field(sanitized_payload, "policy_snapshot")
+        _validate_optional_json_object_field(sanitized_payload, "metadata")
         order = Order.from_event(sanitized_payload)
     except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         _mark_invalid_payload("order_parse_failed", exc=exc)
@@ -324,6 +373,7 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
+            result.metadata = _build_result_metadata(order)
             logger.warning(
                 "REJECTED (no decision_id): %s %s qty=%.4f",
                 order.symbol,
@@ -352,6 +402,7 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
+            result.metadata = _build_result_metadata(order)
             logger.warning(
                 "SHADOW-BLOCKED: %s %s qty=%.4f (run_mode=shadow, zero execution)",
                 order.symbol,
@@ -390,6 +441,7 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
+            result.metadata = _build_result_metadata(order)
             logger.warning(
                 "KILL-SWITCH-BLOCKED in execution: %s %s reason=%s",
                 order.symbol,
@@ -422,6 +474,7 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
+            result.metadata = _build_result_metadata(order)
             increment_stat("orders_rejected")  # Thread-safe
             _publish_result(result)
             return result
@@ -443,6 +496,7 @@ def process_order(order_data: object):
 
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
+        result.metadata = _build_result_metadata(order)
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # order_id ist jetzt final (von executor zurückgegeben)

@@ -317,3 +317,83 @@ def test_kill_switch_inactive_passes(
 
     assert result is not None
     execution_harness.executor.execute_order.assert_called_once()
+
+
+@pytest.mark.unit
+def test_execution_result_propagates_fill_context(
+    execution_harness: _Harness,
+) -> None:
+    """Execution result must preserve signal timing in fill_context metadata."""
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="FILLED",
+        filled_quantity=0.001,
+        fill_id="f1",
+        order_id="o1",
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50000.0,
+    )
+
+    result = service.process_order(
+        _valid_order_payload(
+            run_mode="paper",
+            metadata={
+                "timing": {"signal_ts_ms": 1700000000123},
+                "freshness": {
+                    "staleness_s": 1.25,
+                    "data_silence_s": 0.75,
+                    "timestamps_ms": {
+                        "now_ms": 1700000001123,
+                        "signal_ts_ms": 1700000000123,
+                        "market_state_ts_ms": 1700000000023,
+                    },
+                },
+            },
+        )
+    )
+
+    assert result is not None
+    assert result.metadata is not None
+    assert result.metadata["fill_context"] == {
+        "signal_ts_ms": 1700000000123,
+        "decision_ts_ms": 1700000001123,
+        "market_state_ts_ms": 1700000000023,
+    }
+
+
+@pytest.mark.unit
+def test_execution_result_keeps_missing_signal_ts_explicit(
+    execution_harness: _Harness,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Missing upstream signal_ts_ms must remain explicit null, not synthetic."""
+    caplog.set_level(logging.WARNING)
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="FILLED",
+        filled_quantity=0.001,
+        fill_id="f1",
+        order_id="o1",
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50000.0,
+    )
+
+    result = service.process_order(
+        _valid_order_payload(
+            run_mode="paper",
+            metadata={
+                "timing": {"signal_ts_ms": None},
+                "freshness": {
+                    "timestamps_ms": {
+                        "now_ms": 1700000001123,
+                        "market_state_ts_ms": 1700000000023,
+                    }
+                },
+            },
+        )
+    )
+
+    assert result is not None
+    assert result.metadata is not None
+    assert result.metadata["fill_context"]["signal_ts_ms"] is None
+    assert "missing canonical signal_ts_ms" in caplog.text

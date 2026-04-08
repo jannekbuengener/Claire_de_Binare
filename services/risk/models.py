@@ -134,6 +134,7 @@ class Order:
     policy_snapshot: Optional[dict] = None
     # LR-762: Deterministic Decision Contract bundle (input+output+hashes)
     decision_contract_v1: Optional[dict] = None
+    metadata: Optional[dict] = None
 
     def to_dict(self) -> dict:
         result = {
@@ -170,6 +171,8 @@ class Order:
             )
             if _bundle_run_mode:
                 result["run_mode"] = _bundle_run_mode
+        if self.metadata is not None:
+            result["metadata"] = self.metadata
         return result
 
 

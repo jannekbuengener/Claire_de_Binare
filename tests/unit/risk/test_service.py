@@ -497,3 +497,93 @@ def test_check_position_limit_enforcement(mock_redis, mock_postgres):
         signal_2 = Signal(symbol="ETHUSDT", side="BUY", price=3000.0, timestamp=1)
         ok, reason = manager.check_position_limit(signal_2)
         assert ok is True
+
+
+@pytest.mark.unit
+def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_postgres):
+    """Approved orders must carry signal timestamp metadata for downstream execution."""
+    test_config = RiskConfig(
+        max_position_pct=0.10,
+        max_total_exposure_pct=0.30,
+        max_daily_drawdown_pct=0.05,
+        stop_loss_pct=0.02,
+        test_balance=1000.0,
+    )
+
+    with patch.object(risk_service, "config", test_config):
+        manager = RiskManager()
+        manager.allocation_state["paper"] = AllocationState(
+            allocation_pct=0.5,
+            cooldown_until=None,
+        )
+
+        original_last_prices = risk_service.risk_state.last_prices.copy()
+        original_total_exposure = risk_service.risk_state.total_exposure
+        original_risk_off = risk_service.risk_off_active
+
+        try:
+            risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+            risk_service.risk_state.total_exposure = 0.0
+            risk_service.risk_off_active = False
+
+            signal = Signal(
+                signal_id="test-sig-ts",
+                strategy_id="paper",
+                symbol="BTCUSDT",
+                side="BUY",
+                price=50000.0,
+                timestamp=1,
+                ts_ms=1700000000123,
+            )
+
+            evidence = {
+                "contract_version": risk_service.DECISION_CONTRACT_VERSION,
+                "signal_id": "test-sig-ts",
+                "decision_id": "test-dec-ts",
+                "trace_id": "test-trace-ts",
+                "staleness_s": 1.25,
+                "data_silence_s": 0.75,
+                "timestamps_ms": {
+                    "now_ms": 1700000001123,
+                    "signal_ts_ms": 1700000000123,
+                    "market_state_ts_ms": 1700000000023,
+                    "account_state_ts_ms": 1700000000011,
+                    "market_health_ts_ms": 1700000000017,
+                    "last_tick_ts_ms": 1700000000066,
+                    "max_ts_ms": 1700000000123,
+                },
+            }
+
+            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+            manager.check_exposure_limit = MagicMock(return_value=(True, "Exposure OK"))
+            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+            manager.calculate_position_size = MagicMock(return_value=(0.001, None))
+
+            with (
+                patch.object(
+                    risk_service,
+                    "decide_trade",
+                    return_value=(risk_service.DECISION_ALLOW, None, evidence),
+                ),
+                patch.object(manager, "_emit_risk_event", MagicMock()),
+                patch.object(
+                    manager,
+                    "_ensure_decision_contract_for_order",
+                    MagicMock(return_value=None),
+                ),
+            ):
+                order = manager.process_signal(signal)
+
+            assert order is not None
+            assert order.metadata == {
+                "timing": {"signal_ts_ms": 1700000000123},
+                "freshness": {
+                    "staleness_s": 1.25,
+                    "data_silence_s": 0.75,
+                    "timestamps_ms": evidence["timestamps_ms"],
+                },
+            }
+        finally:
+            risk_service.risk_state.last_prices = original_last_prices
+            risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_off_active = original_risk_off

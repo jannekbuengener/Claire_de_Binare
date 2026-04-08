@@ -49,3 +49,39 @@ def test_save_trade_metadata_json_serialization(mock_connect, mock_db_config):
     parsed_metadata = json.loads(metadata_json)
     assert parsed_metadata["order_id"] == 'test-uuid-123", "injected": "true'
     assert "injected" not in parsed_metadata or parsed_metadata["injected"] != "true"
+
+
+@patch("psycopg2.connect")
+def test_save_trade_preserves_fill_context_metadata(mock_connect, mock_db_config):
+    mock_conn = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+
+    db = Database()
+    result = ExecutionResult(
+        order_id="test-order-ctx",
+        client_id="client-ctx",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=1.0,
+        price=50000.0,
+        status=OrderStatus.FILLED.value,
+        timestamp="2026-01-01T00:00:00Z",
+        metadata={
+            "fill_context": {
+                "signal_ts_ms": 1700000000123,
+                "decision_ts_ms": 1700000001123,
+            }
+        },
+    )
+
+    success = db.save_trade(result)
+
+    assert success is True
+    args, kwargs = mock_cur.execute.call_args
+    query_params = args[1]
+    metadata_json = query_params[7]
+    parsed_metadata = json.loads(metadata_json)
+    assert parsed_metadata["order_id"] == "test-order-ctx"
+    assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123

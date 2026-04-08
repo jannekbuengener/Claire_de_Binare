@@ -77,6 +77,7 @@ class Order:
     output_hash: Optional[str] = None
     # Issue #748 Slice 2: Policy snapshot propagated from Risk Service
     policy_snapshot: Optional[dict] = None
+    metadata: Optional[dict] = None
     # LR-030: Shadow mode enforcement
     run_mode: Optional[str] = None
 
@@ -129,6 +130,7 @@ class Order:
             output_hash=payload.get("output_hash"),
             # Issue #748 Slice 2: policy_snapshot (JSON string from Redis → dict)
             policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
+            metadata=_parse_json_field(payload.get("metadata")),
             run_mode=_run_mode,
         )
 
@@ -181,6 +183,8 @@ class Order:
         # Issue #748 Slice 2: only emit when not None
         if self.policy_snapshot is not None:
             payload["policy_snapshot"] = self.policy_snapshot
+        if self.metadata is not None:
+            payload["metadata"] = self.metadata
         return payload
 
 
@@ -201,6 +205,7 @@ class ExecutionResult:
     error_message: Optional[str] = None
     timestamp: Optional[str] = None
     fill_id: Optional[str] = None  # Phase 8E: 1:1 mapping to order_id for FILL events
+    metadata: Optional[dict] = None
     type: Literal["order_result"] = "order_result"
 
     def __post_init__(self) -> None:
@@ -260,6 +265,8 @@ class ExecutionResult:
             payload["client_id"] = self.client_id
         if self.error_message is not None:
             payload["error_message"] = self.error_message
+        if self.metadata is not None:
+            payload["metadata"] = self.metadata
         return payload
 
 

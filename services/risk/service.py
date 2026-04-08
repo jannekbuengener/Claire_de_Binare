@@ -364,6 +364,19 @@ def decide_trade(
     return DECISION_ALLOW, None, evidence
 
 
+def _build_order_metadata(evidence: dict) -> dict:
+    """Build a compact metadata contract for downstream execution/persistence."""
+    timestamps_ms = copy.deepcopy(evidence.get("timestamps_ms") or {})
+    return {
+        "timing": {"signal_ts_ms": timestamps_ms.get("signal_ts_ms")},
+        "freshness": {
+            "staleness_s": evidence.get("staleness_s"),
+            "data_silence_s": evidence.get("data_silence_s"),
+            "timestamps_ms": timestamps_ms,
+        },
+    }
+
+
 def _phase9_enrich_evidence(
     evidence: dict,
     decision: str,
@@ -1800,6 +1813,7 @@ class RiskManager:
             output_hash=evidence.get("output_hash"),
             # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
             policy_snapshot=policy_snapshot,
+            metadata=_build_order_metadata(evidence),
         )
 
         # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit

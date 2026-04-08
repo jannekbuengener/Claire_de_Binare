@@ -6,7 +6,32 @@ Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
 Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 """
 
+import json
+import sys
+import types
+from unittest.mock import MagicMock
+
 import pytest
+
+if "prometheus_client" not in sys.modules:
+    prometheus_client = types.ModuleType("prometheus_client")
+
+    class _MetricStub:
+        def labels(self, **kwargs):
+            return self
+
+        def inc(self):
+            return None
+
+        def set_function(self, func):
+            return None
+
+    prometheus_client.Counter = lambda *args, **kwargs: _MetricStub()
+    prometheus_client.Gauge = lambda *args, **kwargs: _MetricStub()
+    prometheus_client.start_http_server = lambda *args, **kwargs: None
+    sys.modules["prometheus_client"] = prometheus_client
+
+from services.db_writer.db_writer import DatabaseWriter
 
 
 @pytest.mark.unit
@@ -73,3 +98,37 @@ def test_event_persistence(mock_postgres, signal_factory):
     Governance: CDB_PSM_POLICY.md (Event-Sourcing, Append-Only)
     """
     pass
+
+
+@pytest.mark.unit
+def test_process_trade_event_decodes_metadata_json_string():
+    """Trade metadata arriving as JSON string must be persisted as JSON object."""
+    writer = DatabaseWriter()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = [1]
+    writer.update_position_from_trade = MagicMock()
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "status": "filled",
+            "price": 50000.0,
+            "quantity": 0.001,
+            "timestamp": 1700000000,
+            "metadata": json.dumps(
+                {
+                    "fill_context": {
+                        "signal_ts_ms": 1700000000123,
+                        "decision_ts_ms": 1700000001123,
+                    }
+                }
+            ),
+        }
+    )
+
+    args, kwargs = cursor.execute.call_args
+    metadata_json = args[1][10]
+    parsed_metadata = json.loads(metadata_json)
+    assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123

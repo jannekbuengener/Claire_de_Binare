@@ -135,6 +135,31 @@ class DatabaseWriter:
         return utcnow()
 
     @staticmethod
+    def normalize_metadata(metadata_value: Any) -> Dict[str, Any]:
+        """Accept dicts or JSON strings and persist JSON objects without double encoding."""
+        if metadata_value is None:
+            return {}
+        if isinstance(metadata_value, dict):
+            return metadata_value
+        if isinstance(metadata_value, str):
+            try:
+                parsed = json.loads(metadata_value)
+            except json.JSONDecodeError:
+                logger.warning("Invalid metadata JSON string; persisting empty object")
+                return {}
+            if isinstance(parsed, dict):
+                return parsed
+            logger.warning(
+                "Metadata JSON did not decode to an object; persisting empty object"
+            )
+            return {}
+        logger.warning(
+            "Unsupported metadata type %s; persisting empty object",
+            type(metadata_value).__name__,
+        )
+        return {}
+
+    @staticmethod
     def normalize_side(value: str) -> str:
         """Normalize side strings to lowercase and handle missing values."""
         if value is None:
@@ -358,7 +383,7 @@ class DatabaseWriter:
                     data.get("approved", False),
                     data.get("rejection_reason"),
                     data.get("status", "pending"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self.normalize_metadata(data.get("metadata"))),
                     timestamp,
                 ),
             )
@@ -464,7 +489,7 @@ class DatabaseWriter:
                     data.get("fees", 0.0),
                     timestamp,
                     data.get("exchange", "MEXC"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self.normalize_metadata(data.get("metadata"))),
                 ),
             )
             trade_id = cursor.fetchone()[0]
