@@ -162,3 +162,34 @@ def test_save_order_skips_when_no_canonical_order_row_exists(
     assert "UPDATE orders" in update_query
     assert update_params[8] == "ord-miss-1"
     assert "no existing order row found" in caplog.text
+
+
+@patch("psycopg2.connect")
+def test_save_order_skips_when_canonical_order_id_missing_even_if_exchange_id_exists(
+    mock_connect, mock_db_config, caplog
+):
+    mock_conn = MagicMock()
+    mock_connect.return_value = mock_conn
+    mock_cur = mock_conn.cursor.return_value.__enter__.return_value
+    mock_cur.fetchone.side_effect = [(1,)]
+
+    db = Database()
+    result = ExecutionResult(
+        order_id="exchange-only-1",
+        client_id="client-exchange-only-1",
+        symbol="BTCUSDT",
+        side="BUY",
+        quantity=1.0,
+        filled_quantity=0.0,
+        price=None,
+        status=OrderStatus.REJECTED.value,
+        timestamp="2026-01-01T00:00:00Z",
+        metadata={"exchange": "mock"},
+    )
+
+    with caplog.at_level("WARNING"):
+        success = db.save_order(result)
+
+    assert success is False
+    assert mock_cur.execute.call_count == 2
+    assert "missing canonical order_id" in caplog.text

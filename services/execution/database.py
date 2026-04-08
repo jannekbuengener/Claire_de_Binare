@@ -191,19 +191,19 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    metadata_payload = (
+                    raw_metadata = (
                         dict(result.metadata)
                         if isinstance(result.metadata, dict)
                         else {}
                     )
+                    canonical_order_id = raw_metadata.get("order_id")
+                    metadata_payload = dict(raw_metadata)
                     metadata_payload.setdefault("source", "execution_service")
                     if result.order_id:
-                        metadata_payload.setdefault("order_id", result.order_id)
                         metadata_payload.setdefault(
                             "exchange_order_id", result.order_id
                         )
                     metadata_json = json.dumps(metadata_payload)
-                    canonical_order_id = metadata_payload.get("order_id")
 
                     has_order_id = self._orders_has_order_id(cur)
                     if not has_order_id:
