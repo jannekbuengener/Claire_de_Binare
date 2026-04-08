@@ -83,7 +83,7 @@ Open LR issue map (quick reference):
 - ~~P0 issue-state mismatch~~ Resolved 2026-03-15: state files and issue tracker are now consistent.
 - Deterministic test layer (P1) is incomplete; `LR-011` closed (GitHub, PR #1106), `LR-012` is only partially covered: the execution order negative-payload path is repo-backed, but the broader original scope (`candles` / `signals` / visibility) is not canonically evidenced and no dedicated `LR-012` full-scope closure exists.
 - ~~Full-pipeline paper trading evidence (P2) is still open~~ Resolved: `LR-020-STATE.yaml` = DONE (2026-03-17), `LR-021` closed.
-- P3 is no longer unverified: `LR-031` PASS evidence and `LR-030` zero-execution proof are repo-backed. Residual uncertainty remains only around whether the original `LR-030` issue wording is fully satisfied by the current committed evidence for `>24h` stable shadow mode and functioning alerts.
+- P3 is no longer unverified: `LR-031` PASS evidence and `LR-030` zero-execution proof are repo-backed. Residual uncertainty remains only because no direct committed evidence currently closes the two original `LR-030` criteria `>24h` stable shadow mode and functioning alerts.
 - ~~`LR-040` gate eval is `INCONCLUSIVE`~~ Resolved 2026-04-04: new uninterrupted 72h soak (`soak_test_20260401_114850`) delivered PASS. P4 advanced to DONE.
 - P5 prestart pack committed with GO status (`reports/p5_canary/2026-04-04/`); lean shadow evidence handoff is committed as continuity proof. `LR-050` nevertheless remains `NO-GO` for live capital. No staged live-capital rollout plan is approved.
 - Explicit human-gate requirement for real trades is active and must remain enforced until all gating conditions are met.
@@ -94,7 +94,7 @@ Open LR issue map (quick reference):
 1. ~~Resolve P0 tracking drift~~ Done (2026-03-15): #776 and #778 closed, state files consistent.
 2. ~~Complete and evidence `LR-011`~~ Closed (GitHub, PR #1106). Keep `LR-012` fail-closed in canon: the execution order negative-payload slice is repo-backed, but broader original-scope closure (`candles` / `signals` / visibility) is still not justified.
 3. ~~Execute one full `LR-020` paper-trading E2E run~~ Done (2026-03-17): `LR-020-STATE.yaml` = DONE.
-4. Keep `LR-030` conservative in canon until direct committed proof exists for the two original residual criteria: `>24h` stable shadow mode and functioning alerts.
+4. Keep `LR-030` conservative in the canonical status wording until direct committed proof exists for the two original residual criteria: `>24h` stable shadow mode and functioning alerts.
 5. ~~Resolve `LR-040` gate outcome~~ Done (2026-04-04): new 72h soak PASS; `LR-041`/`LR-042` closed with evidence.
 6. ~~Complete #1423 lean shadow evidence run and anchor handoff~~ Done (2026-04-05): continuity proof committed under `reports/p5_canary/2026-04-04/lean_shadow_evidence_handoff.yaml`. Keep canary `LR-050` in `NO-GO` state until an explicit live-canary approval exists.
 
