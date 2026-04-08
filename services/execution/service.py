@@ -3,9 +3,9 @@ Execution Service - Main Entry Point
 Claire de Binare Trading Bot
 """
 
-import copy
 import os
 import json
+import copy
 import signal
 import sys
 import logging
@@ -157,12 +157,33 @@ def _parse_optional_int(value) -> int | None:
         return None
 
 
-def _build_result_metadata(order: Order) -> dict | None:
-    """Preserve order metadata and derive fill_context for execution results."""
-    if order.metadata is None:
-        return None
+def _compact_metadata(value):
+    if isinstance(value, dict):
+        compacted = {}
+        for key, item in value.items():
+            if item is None:
+                continue
+            nested = _compact_metadata(item)
+            if nested in (None, {}, []):
+                continue
+            compacted[key] = nested
+        return compacted
+    return value
 
-    metadata = copy.deepcopy(order.metadata)
+
+def _compute_slippage_bps(expected_price, execution_price) -> float | None:
+    try:
+        expected = float(expected_price)
+        actual = float(execution_price)
+    except (TypeError, ValueError):
+        return None
+    if expected <= 0 or not math.isfinite(expected) or not math.isfinite(actual):
+        return None
+    return abs(actual - expected) / expected * 10000.0
+
+
+def _build_result_metadata(order: Order, result: ExecutionResult) -> dict:
+    metadata = copy.deepcopy(order.metadata) if isinstance(order.metadata, dict) else {}
     timing = metadata.get("timing") if isinstance(metadata.get("timing"), dict) else {}
     freshness = (
         metadata.get("freshness") if isinstance(metadata.get("freshness"), dict) else {}
@@ -172,25 +193,43 @@ def _build_result_metadata(order: Order) -> dict | None:
         if isinstance(freshness.get("timestamps_ms"), dict)
         else {}
     )
-
+    market_context = metadata.get("market_context", {})
+    expected_price = getattr(order, "price", None)
     signal_ts_ms = _parse_optional_int(timing.get("signal_ts_ms"))
     if signal_ts_ms is None:
         signal_ts_ms = _parse_optional_int(timestamps_ms.get("signal_ts_ms"))
 
-    decision_ts_ms = _parse_optional_int(timestamps_ms.get("now_ms"))
-    market_state_ts_ms = _parse_optional_int(timestamps_ms.get("market_state_ts_ms"))
-
+    fill_context = {
+        "signal_ts_ms": signal_ts_ms,
+        "decision_ts_ms": _parse_optional_int(timestamps_ms.get("now_ms")),
+        "market_state_ts_ms": _parse_optional_int(
+            timestamps_ms.get("market_state_ts_ms")
+        ),
+    }
     if signal_ts_ms is None:
         logger.warning(
             "Order %s missing canonical signal_ts_ms in metadata; fill_context will stay explicit null",
             order.order_id or order.client_id or "UNKNOWN_ORDER",
         )
 
-    metadata["fill_context"] = {
-        "signal_ts_ms": signal_ts_ms,
-        "decision_ts_ms": decision_ts_ms,
-        "market_state_ts_ms": market_state_ts_ms,
-    }
+    metadata.update(
+        _compact_metadata(
+            {
+                "signal_id": order.signal_id,
+                "strategy_id": order.strategy_id,
+                "decision_id": order.decision_id,
+                "trace_id": order.trace_id,
+                "order_id": order.order_id,
+                "exchange_order_id": result.order_id,
+                "exchange_trade_id": result.fill_id,
+                "regime_id": market_context.get("regime_id"),
+                "expected_price": expected_price,
+                "execution_price": result.price,
+                "slippage_bps": _compute_slippage_bps(expected_price, result.price),
+            }
+        )
+    )
+    metadata["fill_context"] = fill_context
     return metadata
 
 
@@ -375,13 +414,14 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
-            result.metadata = _build_result_metadata(order)
+            result.metadata = _build_result_metadata(order, result)
             logger.warning(
                 "REJECTED (no decision_id): %s %s qty=%.4f",
                 order.symbol,
                 order.side,
                 order.quantity,
             )
+            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             _publish_result(result)
             return result
@@ -404,13 +444,14 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
-            result.metadata = _build_result_metadata(order)
+            result.metadata = _build_result_metadata(order, result)
             logger.warning(
                 "SHADOW-BLOCKED: %s %s qty=%.4f (run_mode=shadow, zero execution)",
                 order.symbol,
                 order.side,
                 order.quantity,
             )
+            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             increment_stat("shadow_blocked")
             _publish_result(result)
@@ -443,13 +484,14 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
-            result.metadata = _build_result_metadata(order)
+            result.metadata = _build_result_metadata(order, result)
             logger.warning(
                 "KILL-SWITCH-BLOCKED in execution: %s %s reason=%s",
                 order.symbol,
                 order.side,
                 ks_reason,
             )
+            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             _publish_result(result)
             return result
@@ -476,7 +518,7 @@ def process_order(order_data: object):
                 strategy_id=order.strategy_id,
                 bot_id=order.bot_id,
             )
-            result.metadata = _build_result_metadata(order)
+            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")  # Thread-safe
             _publish_result(result)
             return result
@@ -498,7 +540,7 @@ def process_order(order_data: object):
 
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
-        result.metadata = _build_result_metadata(order)
+        result.metadata = _build_result_metadata(order, result)
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # order_id ist jetzt final (von executor zurückgegeben)

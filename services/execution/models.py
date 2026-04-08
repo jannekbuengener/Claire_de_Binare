@@ -59,6 +59,7 @@ class Order:
     symbol: str
     side: Literal["BUY", "SELL"]
     quantity: float
+    price: Optional[float] = None
     stop_loss_pct: Optional[float] = None
     strategy_id: Optional[str] = None
     bot_id: Optional[str] = None
@@ -109,6 +110,9 @@ class Order:
             symbol=payload["symbol"],
             side=side,
             quantity=float(payload["quantity"]),
+            price=(
+                float(payload["price"]) if payload.get("price") is not None else None
+            ),
             stop_loss_pct=(
                 float(payload["stop_loss_pct"])
                 if payload.get("stop_loss_pct") is not None
@@ -154,6 +158,8 @@ class Order:
             "quantity": self.quantity,
             "timestamp": timestamp_value,
         }
+        if self.price is not None:
+            payload["price"] = self.price
         if self.stop_loss_pct is not None:
             payload["stop_loss_pct"] = self.stop_loss_pct
         if self.strategy_id is not None:

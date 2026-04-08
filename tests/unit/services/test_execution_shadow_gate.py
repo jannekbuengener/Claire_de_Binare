@@ -192,6 +192,74 @@ def test_live_mode_not_blocked(
 
 
 @pytest.mark.unit
+def test_execution_result_inherits_order_decision_metadata(
+    execution_harness: _Harness,
+) -> None:
+    execution_harness.executor.execute_order.return_value = MagicMock(
+        status="FILLED",
+        filled_quantity=0.001,
+        fill_id="fill-1",
+        order_id="exchange-1",
+        symbol="BTCUSDT",
+        side="BUY",
+        price=50500.0,
+    )
+
+    payload = _valid_order_payload(
+        run_mode="paper",
+        signal_id="sig-1",
+        decision_id="dec-1",
+        trace_id="trace-1",
+        order_id="ord-1",
+        price=50000.0,
+        metadata={
+            "market_context": {
+                "regime_id": 0,
+            },
+            "freshness": {
+                "timestamps_ms": {
+                    "signal_ts_ms": 1700000000123,
+                    "now_ms": 1700000000999,
+                    "market_state_ts_ms": 1700000000000,
+                }
+            },
+        },
+    )
+
+    result = service.process_order(payload)
+
+    assert result is not None
+    assert result.metadata == {
+        "market_context": {
+            "regime_id": 0,
+        },
+        "freshness": {
+            "timestamps_ms": {
+                "signal_ts_ms": 1700000000123,
+                "now_ms": 1700000000999,
+                "market_state_ts_ms": 1700000000000,
+            }
+        },
+        "signal_id": "sig-1",
+        "strategy_id": "test",
+        "decision_id": "dec-1",
+        "trace_id": "trace-1",
+        "order_id": "ord-1",
+        "exchange_order_id": "exchange-1",
+        "exchange_trade_id": "fill-1",
+        "regime_id": 0,
+        "expected_price": 50000.0,
+        "execution_price": 50500.0,
+        "slippage_bps": 100.0,
+        "fill_context": {
+            "signal_ts_ms": 1700000000123,
+            "decision_ts_ms": 1700000000999,
+            "market_state_ts_ms": 1700000000000,
+        },
+    }
+
+
+@pytest.mark.unit
 def test_shadow_gate_independent_of_mock_trading(
     execution_harness: _Harness,
     monkeypatch: pytest.MonkeyPatch,

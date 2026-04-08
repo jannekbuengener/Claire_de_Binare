@@ -1,4 +1,4 @@
-"\"\"\"Unit-Tests für Execution-Service-Statistik und Publishing.\"\"\""
+'"""Unit-Tests für Execution-Service-Statistik und Publishing."""'
 
 from __future__ import annotations
 
@@ -48,7 +48,9 @@ def test_stats_increment_isolates_copy() -> None:
         service.stats.update(original)
 
 
-def test_publish_result_updates_stats_and_history(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_publish_result_updates_stats_and_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     original = service.stats.copy()
     dummy_redis = DummyRedisClient()
     dummy_db = DummyDatabase()
@@ -63,6 +65,7 @@ def test_publish_result_updates_stats_and_history(monkeypatch: pytest.MonkeyPatc
             filled_quantity=0.5,
             status=OrderStatus.FILLED.value,
             price=42000.0,
+            metadata={"signal_id": "sig-42", "expected_price": 41950.0},
         )
         service._publish_result(result)
 
@@ -71,9 +74,17 @@ def test_publish_result_updates_stats_and_history(monkeypatch: pytest.MonkeyPatc
         assert channel == config.TOPIC_ORDER_RESULTS
         payload = json.loads(payload_text)
         assert payload["order_id"] == result.order_id
+        assert json.loads(payload["metadata"]) == {
+            "signal_id": "sig-42",
+            "expected_price": 41950.0,
+        }
         assert dummy_redis.streams[0][0] == config.STREAM_ORDER_RESULTS
         assert dummy_db.saved_orders
         assert dummy_db.saved_trades
+        assert dummy_db.saved_trades[0].metadata == {
+            "signal_id": "sig-42",
+            "expected_price": 41950.0,
+        }
         stats_snapshot = service.get_stats_copy()
         assert stats_snapshot["last_result"]["order_id"] == result.order_id
     finally:

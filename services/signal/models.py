@@ -27,6 +27,7 @@ class Signal:
     pct_change_15m: float | None = None
     volume_15m: float | None = None
     ts_ms: int | None = None
+    metadata: dict | None = None
     type: Literal["signal"] = "signal"  # Type-safe event type
 
     def __post_init__(self):
@@ -58,6 +59,7 @@ class Signal:
                 "pct_change_15m": self.pct_change_15m,
                 "volume_15m": self.volume_15m,
                 "ts_ms": int(self.ts_ms) if self.ts_ms is not None else None,
+                "metadata": self.metadata,
             }.items()
             if v is not None
         }

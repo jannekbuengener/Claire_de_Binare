@@ -500,8 +500,7 @@ def test_check_position_limit_enforcement(mock_redis, mock_postgres):
 
 
 @pytest.mark.unit
-def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_postgres):
-    """Approved orders must carry signal timestamp metadata for downstream execution."""
+def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgres):
     test_config = RiskConfig(
         max_position_pct=0.10,
         max_total_exposure_pct=0.30,
@@ -516,16 +515,24 @@ def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_post
             allocation_pct=0.5,
             cooldown_until=None,
         )
+        manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
+        manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
+        manager.calculate_position_size = MagicMock(return_value=(0.001, None))
+        manager._ensure_decision_contract_for_order = MagicMock(return_value={})
 
         original_last_prices = risk_service.risk_state.last_prices.copy()
+        original_positions = risk_service.risk_state.positions.copy()
         original_total_exposure = risk_service.risk_state.total_exposure
         original_pending_exposure = risk_service.risk_state.pending_exposure_usdt
         original_pending_orders = risk_service.risk_state.pending_orders
-        original_pending_reservations = risk_service.risk_state.pending_reservations.copy()
+        original_pending_reservations = (
+            risk_service.risk_state.pending_reservations.copy()
+        )
         original_risk_off = risk_service.risk_off_active
 
         try:
             risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
+            risk_service.risk_state.positions = {}
             risk_service.risk_state.total_exposure = 0.0
             risk_service.risk_state.pending_exposure_usdt = 0.0
             risk_service.risk_state.pending_orders = 0
@@ -533,37 +540,43 @@ def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_post
             risk_service.risk_off_active = False
 
             signal = Signal(
-                signal_id="test-sig-ts",
+                signal_id="sig-1488",
                 strategy_id="paper",
+                bot_id="bot-1488",
                 symbol="BTCUSDT",
                 side="BUY",
                 price=50000.0,
-                timestamp=1,
+                timestamp=1700000000,
                 ts_ms=1700000000123,
+                reason="Momentum breakout",
             )
 
             evidence = {
                 "contract_version": risk_service.DECISION_CONTRACT_VERSION,
-                "signal_id": "test-sig-ts",
-                "decision_id": "test-dec-ts",
-                "trace_id": "test-trace-ts",
-                "staleness_s": 1.25,
-                "data_silence_s": 0.75,
+                "signal_id": "sig-1488",
+                "decision_id": "dec-1488",
+                "trace_id": "trace-1488",
+                "regime_id": 0,
+                "return_1m": 0.01,
+                "return_5m": 0.02,
+                "price_change_5m": 0.02,
+                "daily_drawdown_pct": 1.5,
+                "total_exposure_pct": 12.0,
+                "slippage_pct": 0.1,
+                "staleness_s": 1.2,
+                "data_silence_s": 0.8,
+                "thresholds": {"return_1m_min": -2.0},
+                "decision_context": {"inputs": {"regime_id": 0}},
+                "policy_id": "policy-1",
+                "policy_hash": "policy-hash",
+                "input_hash": "input-hash",
+                "output_hash": "output-hash",
                 "timestamps_ms": {
-                    "now_ms": 1700000001123,
+                    "now_ms": 1700000000999,
                     "signal_ts_ms": 1700000000123,
-                    "market_state_ts_ms": 1700000000023,
-                    "account_state_ts_ms": 1700000000011,
-                    "market_health_ts_ms": 1700000000017,
-                    "last_tick_ts_ms": 1700000000066,
-                    "max_ts_ms": 1700000000123,
+                    "market_state_ts_ms": 1700000000000,
                 },
             }
-
-            manager.check_drawdown_limit = MagicMock(return_value=(True, "Drawdown OK"))
-            manager.check_exposure_limit = MagicMock(return_value=(True, "Exposure OK"))
-            manager.check_position_limit = MagicMock(return_value=(True, "Position OK"))
-            manager.calculate_position_size = MagicMock(return_value=(0.001, None))
 
             with (
                 patch.object(
@@ -572,25 +585,48 @@ def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_post
                     return_value=(risk_service.DECISION_ALLOW, None, evidence),
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
-                patch.object(
-                    manager,
-                    "_ensure_decision_contract_for_order",
-                    MagicMock(return_value=None),
-                ),
             ):
                 order = manager.process_signal(signal)
 
             assert order is not None
             assert order.metadata == {
-                "timing": {"signal_ts_ms": 1700000000123},
+                "signal_id": "sig-1488",
+                "strategy_id": "paper",
+                "decision_id": "dec-1488",
+                "trace_id": "trace-1488",
+                "decision": "ALLOW",
+                "decision_context": {"inputs": {"regime_id": 0}},
+                "thresholds": {"return_1m_min": -2.0},
+                "policy_id": "policy-1",
+                "policy_hash": "policy-hash",
+                "input_hash": "input-hash",
+                "output_hash": "output-hash",
+                "market_context": {
+                    "regime_id": 0,
+                    "return_1m": 0.01,
+                    "return_5m": 0.02,
+                    "price_change_5m": 0.02,
+                },
+                "account_context": {
+                    "daily_drawdown_pct": 1.5,
+                    "total_exposure_pct": 12.0,
+                },
+                "execution_context": {
+                    "slippage_pct": 0.1,
+                },
                 "freshness": {
-                    "staleness_s": 1.25,
-                    "data_silence_s": 0.75,
-                    "timestamps_ms": evidence["timestamps_ms"],
+                    "staleness_s": 1.2,
+                    "data_silence_s": 0.8,
+                    "timestamps_ms": {
+                        "now_ms": 1700000000999,
+                        "signal_ts_ms": 1700000000123,
+                        "market_state_ts_ms": 1700000000000,
+                    },
                 },
             }
         finally:
             risk_service.risk_state.last_prices = original_last_prices
+            risk_service.risk_state.positions = original_positions
             risk_service.risk_state.total_exposure = original_total_exposure
             risk_service.risk_state.pending_exposure_usdt = original_pending_exposure
             risk_service.risk_state.pending_orders = original_pending_orders

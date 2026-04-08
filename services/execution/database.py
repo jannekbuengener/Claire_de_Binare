@@ -74,12 +74,10 @@ class Database:
         """Check if orders table has order_id column (cached)."""
         if self._orders_has_order_id_column is not None:
             return self._orders_has_order_id_column
-        cur.execute(
-            """
+        cur.execute("""
             SELECT 1 FROM information_schema.columns
             WHERE table_name = 'orders' AND column_name = 'order_id'
-        """
-        )
+        """)
         self._orders_has_order_id_column = cur.fetchone() is not None
         return self._orders_has_order_id_column
 
@@ -193,10 +191,17 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    metadata_payload = dict(result.metadata or {})
-                    metadata_payload["source"] = "execution_service"
+                    metadata_payload = (
+                        dict(result.metadata)
+                        if isinstance(result.metadata, dict)
+                        else {}
+                    )
+                    metadata_payload.setdefault("source", "execution_service")
                     if result.order_id:
-                        metadata_payload["order_id"] = result.order_id
+                        metadata_payload.setdefault("order_id", result.order_id)
+                        metadata_payload.setdefault(
+                            "exchange_order_id", result.order_id
+                        )
                     metadata_json = json.dumps(metadata_payload)
 
                     has_order_id = self._orders_has_order_id(cur)
@@ -297,6 +302,17 @@ class Database:
                     timestamp = int(
                         datetime.fromisoformat(result.timestamp).timestamp()
                     )
+                    metadata_payload = (
+                        dict(result.metadata)
+                        if isinstance(result.metadata, dict)
+                        else {}
+                    )
+                    if result.order_id:
+                        metadata_payload.setdefault("order_id", result.order_id)
+                        metadata_payload.setdefault(
+                            "exchange_order_id", result.order_id
+                        )
+                    metadata_payload.setdefault("source", "execution_service")
 
                     # Insert into trades table
                     cur.execute(
@@ -322,9 +338,7 @@ class Database:
                             result.price,  # execution_price = price for mock
                             "filled",  # Trade status (lowercase to match schema check constraint)
                             timestamp,  # Unix timestamp
-                            json.dumps(
-                                {**dict(result.metadata or {}), "order_id": result.order_id}
-                            ),
+                            json.dumps(metadata_payload),
                         ),
                     )
 
@@ -391,16 +405,14 @@ class Database:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     # Count orders by status
-                    cur.execute(
-                        """
+                    cur.execute("""
                         SELECT 
                             COUNT(*) FILTER (WHERE status = 'FILLED') as filled,
                             COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected,
                             COUNT(*) FILTER (WHERE status = 'PENDING') as pending,
                             COUNT(*) as total
                         FROM orders
-                    """
-                    )
+                    """)
 
                     row = cur.fetchone()
                     return {

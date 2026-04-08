@@ -12,6 +12,7 @@ import logging
 import logging.config
 import redis
 import importlib.util
+
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
 except ModuleNotFoundError as e:
@@ -79,6 +80,39 @@ stats = {
     "errors_total": 0,  # Total errors
     "errors_by_type": {},  # Errors grouped by error type
 }
+
+
+def _compact_metadata(value):
+    if isinstance(value, dict):
+        compacted = {}
+        for key, item in value.items():
+            if item is None:
+                continue
+            nested = _compact_metadata(item)
+            if nested in (None, {}, []):
+                continue
+            compacted[key] = nested
+        return compacted
+    return value
+
+
+def _build_signal_metadata(signal: Signal) -> dict:
+    return _compact_metadata(
+        {
+            "strategy_id": signal.strategy_id,
+            "bot_id": signal.bot_id,
+            "signal_reason": signal.reason,
+            "signal_inputs": {
+                "price": signal.price,
+                "pct_change": signal.pct_change,
+                "pct_change_15m": signal.pct_change_15m,
+                "volume_15m": signal.volume_15m,
+            },
+            "timing": {
+                "signal_ts_ms": signal.ts_ms,
+            },
+        }
+    )
 
 
 class SignalEngine:
@@ -244,6 +278,7 @@ class SignalEngine:
                     strategy_id=self.config.strategy_id,
                     bot_id=self.config.bot_id,
                 )
+                signal.metadata = _build_signal_metadata(signal)
 
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
@@ -445,7 +480,9 @@ if _FLASK_AVAILABLE:
         # Build error counter with labels
         error_lines = []
         for error_type, count in stats["errors_by_type"].items():
-            error_lines.append(f'signal_errors_total{{error_type="{error_type}"}} {count}')
+            error_lines.append(
+                f'signal_errors_total{{error_type="{error_type}"}} {count}'
+            )
 
         body = (
             "# HELP signals_generated_total Anzahl generierter Signale\n"
@@ -464,6 +501,7 @@ if _FLASK_AVAILABLE:
             + "\n"
         )
         return Response(body, mimetype="text/plain")
+
 else:
     app = None
 
