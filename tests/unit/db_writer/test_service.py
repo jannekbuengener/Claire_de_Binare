@@ -13,21 +13,48 @@ from unittest.mock import MagicMock
 
 import pytest
 
-if "prometheus_client" not in sys.modules:
+try:
+    import prometheus_client  # noqa: F401
+except ImportError:
+    _dummy_metrics = []
 
     class _DummyMetric:
+        def __init__(self, name: str):
+            self.name = name
+            self.value = 0
+            self._callback = None
+
         def labels(self, **kwargs):
             return self
 
-        def inc(self):
+        def inc(self, amount=1):
+            self.value += amount
+            return None
+
+        def set(self, value):
+            self.value = value
             return None
 
         def set_function(self, func):
+            self._callback = func
             return None
 
+        def render(self) -> str:
+            value = self._callback() if self._callback is not None else self.value
+            return f"{self.name} {value}\n"
+
+    def _make_metric(name, *args, **kwargs):
+        metric = _DummyMetric(name)
+        _dummy_metrics.append(metric)
+        return metric
+
     sys.modules["prometheus_client"] = SimpleNamespace(
-        Counter=lambda *args, **kwargs: _DummyMetric(),
-        Gauge=lambda *args, **kwargs: _DummyMetric(),
+        Counter=_make_metric,
+        Gauge=_make_metric,
+        generate_latest=lambda *args, **kwargs: "".join(
+            metric.render() for metric in _dummy_metrics
+        ).encode(),
+        CONTENT_TYPE_LATEST="text/plain; version=0.0.4",
         start_http_server=lambda *args, **kwargs: None,
     )
 from services.db_writer.db_writer import DatabaseWriter
