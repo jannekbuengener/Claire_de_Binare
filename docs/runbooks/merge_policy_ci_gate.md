@@ -125,6 +125,14 @@ setzen. Keine Automatik. Das Gate bleibt fail-closed.
 Dependabot-PRs, die **ausschließlich** `.github/workflows/**` oder `infrastructure/**` berühren,
 werden als `workflows-only` bzw. `infra-only` auto-inferred und benötigen keinen Override.
 
+Root `requirements.txt` und `requirements-dev.txt` sind aktuell ein CI/Test-/Convenience-Layer,
+nicht der Runtime-Truth für aktive Services. Für aktive Runtime-Pfade gilt als Dependency-Canon
+die Kombination aus service-lokalen `requirements.txt` plus den real referenzierten
+Dockerfile-Installationsstellen. Folge: root-only Dependabot-Bumps für runtime-relevante
+Libraries sind nicht als gleichwertige Runtime-Updates mergebar; sie bleiben geparkt oder
+werden nur zusammen mit einer Runtime-Reconciliation bewertet. Root-only Bumps bleiben nur dann
+sauber mergebar, wenn die Dependency für aktive Service-Buildpfade nicht runtime-relevant ist.
+
 The gate reevaluates on `opened`, `synchronize`, `reopened`, `labeled`,
 `unlabeled`, and `edited` so label removals cannot leave a stale PASS behind.
 

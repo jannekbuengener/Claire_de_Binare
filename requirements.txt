@@ -1,4 +1,6 @@
-
+# Root dependency layer for repo-level CI/test and convenience flows.
+# Active runtime canon lives in service-local requirements plus real Dockerfile
+# install paths; root-only bumps are not equivalent to runtime reconciliation.
 # Async Support
 # Claire de Binare Trading Bot
 # Core

@@ -1,4 +1,5 @@
-# Development and testing dependencies
+# Development and testing dependencies for repo-level CI/test only.
+# Active service runtime dependencies are controlled service-locally, not here.
 # Claire de Binare Trading Bot
 
 # Testing Framework (Issue #21 scaffolding)
