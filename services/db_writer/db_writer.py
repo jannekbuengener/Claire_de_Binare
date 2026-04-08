@@ -222,33 +222,6 @@ class DatabaseWriter:
             raise ValueError(f"Invalid price format: {raw}") from e
 
     @staticmethod
-    def normalize_metadata(value: Any) -> Dict[str, Any]:
-        """Normalize metadata payloads from Redis pub/sub into JSON objects."""
-        if value is None:
-            return {}
-        if isinstance(value, dict):
-            return value
-        if isinstance(value, str):
-            try:
-                parsed = json.loads(value)
-            except json.JSONDecodeError:
-                logger.warning(
-                    "Invalid metadata JSON string received; storing empty object"
-                )
-                return {}
-            if isinstance(parsed, dict):
-                return parsed
-            logger.warning(
-                "Metadata payload is not a JSON object; storing empty object"
-            )
-            return {}
-        logger.warning(
-            "Unsupported metadata payload type %s; storing empty object",
-            type(value).__name__,
-        )
-        return {}
-
-    @staticmethod
     def _get_positive_decimal(value: Any, field_name: str, data: Dict) -> Decimal:
         """
         Extract and validate a positive decimal value.
