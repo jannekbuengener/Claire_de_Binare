@@ -33,6 +33,7 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 | --- | --- | --- |
 | Operational / live-readiness status | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | Autoritative Quelle fuer aktuellen Go/No-Go-Status und operative Live-Readiness-Blocker |
 | Working repo / engineering status | `CURRENT_STATUS.md` | Autoritative Quelle fuer aktuellen Repo-, Main-, Test- und aktiven Arbeitsstatus |
+| Board / stage status | `docs/runbooks/CONTROL_REGISTER.md` plus GitHub Control Board Stage-/Milestone-Zustand | Autoritative Quelle fuer aktuellen Stage-/Operating-Focus; das Stage-System ist orthogonal zum LR-System |
 | Historical implementation / audit snapshots | `PROJECT_STATUS.md`, `knowledge/CURRENT_STATUS.md` | Nur punktuelle historische Snapshots; keine aktuelle operative oder repo-weite Wahrheit |
 | Evidence / milestone / governance reports | z. B. `docs/archive/governance-audit-2026-01-15.md`, `CODEX_RUN_REPORT.md`, `docs/governance/status/` | Nachweis-, Audit- oder Milestone-Artefakte; nicht-kanonisch fuer aktuellen Gesamtstatus |
 
@@ -40,6 +41,8 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 
 - `README.md` bleibt Front Door und darf Status nur zusammenfassen oder auf die
   jeweilige kanonische Quelle verweisen.
+- Board-/Stage-Claims und LR-Go/No-Go-Claims muessen explizit getrennt bleiben.
+- Eine Stage-Transition darf weder Live-Kapital-Freigabe noch Strategie-Validierung implizieren, solange die jeweilige kanonische Quelle das nicht ausdruecklich sagt.
 - Statusdateien mit historischem oder sekundaerem Charakter muessen ihren
   Status-Typ explizit kennzeichnen.
 - Neue Reports, Pass-Reports oder Audit-Snapshots duerfen scope-lokale Findings

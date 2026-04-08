@@ -15,8 +15,9 @@ MUST READ FIRST:
 - knowledge/CDB_KNOWLEDGE_HUB.md
 - CURRENT_STATUS.md
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+- docs/runbooks/CONTROL_REGISTER.md
 
-Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Working Repo ist maßgeblicher Canon.
+Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status; `docs/runbooks/CONTROL_REGISTER.md` = aktueller Board-/Stage-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Working Repo ist massgeblicher Canon. `trade-capable` ist kein LR-GO und kein Live-Kapital-Signal.
 
 ---
 

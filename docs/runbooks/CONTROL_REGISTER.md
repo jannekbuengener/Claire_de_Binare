@@ -1,16 +1,31 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-06
+**Letzte Aktualisierung:** 2026-04-08
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
+**Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
 
 ---
 
 ## Cockpit-Einstieg
 
 1. GitHub Issue `[CONTROL] Claire de Binare — Operatives Cockpit (dauerhaft offen)` — **#1445**
-2. `CURRENT_STATUS.md` — Repo/Engineering-Status, Session-Ledger
-3. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — Live-Readiness-Verdikt
+2. GitHub Issue `#1492` — ratifizierter Stage-Uebergang `stability -> trade-capable`
+3. `CURRENT_STATUS.md` — Repo/Engineering-Status, Session-Ledger
+4. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — Live-Readiness-Verdikt
+
+---
+
+## Aktueller Stage-Stand
+
+- Board-/Projekt-Stage: `trade-capable`
+- Ratifikation: 2026-04-08 via Issue `#1492`
+- Guardrails bleiben unveraendert:
+  - shadow/mock only
+  - kein Live-Kapital
+  - kein Grafana-Gate
+  - keine Strategie-Validierung
+  - `LR-050` bleibt `NO-GO`
 
 ---
 
@@ -18,11 +33,12 @@
 
 | Quelle | Zuständigkeit |
 |---|---|
+| `docs/runbooks/CONTROL_REGISTER.md` | Control-Board-Cockpit, aktueller Stage-/Operating-Focus |
 | `CURRENT_STATUS.md` | Repo-Stand, Session-Ledger, offene PRs |
 | `LR-AUDIT-STATUS-2026-03-05.md` | Live-Readiness-Phasenstatus, Go/No-Go-Verdikt |
 | `ACTIVE_ROADMAP.md` | Pointer auf beide SSoTs |
 
-Regel: Phasen-Status nie in CURRENT_STATUS eintragen. Verdikt nie aus CURRENT_STATUS ableiten.
+Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer Board-Stage ableiten. Board-Stage nie als implizites LR-GO lesen.
 
 ---
 

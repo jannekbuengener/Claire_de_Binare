@@ -4,6 +4,9 @@
 
 Deterministische Automation fuer Project v2 `CDB Control Board` ohne manuelles Klicken.
 
+Guardrail: Das Stage-System des Boards ist orthogonal zum LR-System. `trade-capable`
+ist kein Live-Kapital-GO und keine Strategie-Validierung.
+
 ## Komponenten
 
 - Upsert-Script: `scripts/project/upsert_control_board.py`
@@ -148,6 +151,10 @@ Aktionen:
   - `stability` -> `System ist stabil`
   - `trade-capable` -> `System kann handeln`
   - `strategy-validated` -> `Strategie ist validiert`
+
+Wichtig:
+- Diese Stage-Werte steuern Board-/Milestone-Organisation.
+- Sie aendern keinen LR-Go/No-Go-Status und heben `LR-050 NO-GO` nicht auf.
 
 Konfliktregeln (deterministisch):
 

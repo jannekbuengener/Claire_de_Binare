@@ -7,12 +7,13 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 **Canonical source:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 
 - **Scope basis:** `ROADMAP.yaml` + `LR-001..LR-007-STATE.yaml` + aktuelle GitHub-LR-Issues
-- **Last reconciliation:** 2026-03-29
-- **Roadmap status:** `P0` + `P2` DONE; `P1` + `P4` PARTIAL; `P3` + `P5` OPEN
+- **Last reconciliation:** 2026-04-07
+- **Roadmap status:** `P0` DONE; `P1` PARTIAL; `P2` DONE; `P3` PARTIAL; `P4` DONE; `P5` NO-GO
 - **Human gate:** Keine Echtgeld-Freigabe ohne vollstaendige Evidenz und explizite menschliche Freigabe
 
 **Einordnung:**<br>
 `CURRENT_STATUS.md` beschreibt den aktuellen Repo-/Main-/Testzustand.<br>
+`docs/runbooks/CONTROL_REGISTER.md` beschreibt den aktuellen Board-/Stage-Fokus; aktuell `trade-capable` (ratifiziert 2026-04-08), weiterhin ohne Live-Kapital und orthogonal zum LR-System.<br>
 `PROJECT_STATUS.md` ist ein historischer Implementierungs-Snapshot und kein operativer Go/No-Go-Status.<br>
 `knowledge/CURRENT_STATUS.md` ist nur ein historischer Knowledge-Snapshot und keine aktuelle Repo-/Ops-Quelle.
 
@@ -39,6 +40,7 @@ Er ist **kein Maß für Betriebsreife** und **kein Release-Gate**.
 ### Kurzfassung (fuer Leser mit wenig Zeit)
 
 - **Live Readiness:** NO-GO (siehe `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
+- **Control-Board Stage:** `trade-capable` (siehe `docs/runbooks/CONTROL_REGISTER.md`) bei weiterhin `LR-050 = NO-GO`
 - **Systemstatus:** Runtime migriert auf BLUE+RED; base.yml + dev.yml sind CI/Legacy-only
 - **Repo-/Teststatus:** siehe `CURRENT_STATUS.md`
 - **Historischer Implementierungsstand:** siehe `PROJECT_STATUS.md` (historischer Snapshot)
@@ -101,9 +103,10 @@ Kanonische 431C-Linie:
 >
 > | Quelle | Inhalt |
 > |---|---|
+> | [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md) | Board-/Stage-Status und operativer Fokus |
 > | [`CURRENT_STATUS.md`](CURRENT_STATUS.md) | Aktueller Repo-/Engineering-/Teststatus |
 > | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) | Operativer Go/No-Go (Live Readiness) |
-> | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Historischer Implementierungs-Snapshot (Stand 2026-01-07, archiviert) |
+> | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Historischer Implementierungs-Snapshot (Stand 2026-01-15, archiviert) |
 
 ---
 

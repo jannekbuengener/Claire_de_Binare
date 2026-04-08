@@ -14,9 +14,11 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 3. `knowledge/SYSTEM.CONTEXT.md`
 4. `CURRENT_STATUS.md` (current repo/engineering status)
 5. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go verdict)
-6. `knowledge/ACTIVE_ROADMAP.md`
+6. `docs/runbooks/CONTROL_REGISTER.md` (board/stage focus)
+7. `knowledge/ACTIVE_ROADMAP.md`
 
 **Live-Readiness: NO-GO** — no real trades without explicit human gate. See `docs/live-readiness/`.
+**Control Board Stage:** `trade-capable` (ratified 2026-04-08) — orthogonal to LR `NO-GO`; no live capital, no Grafana gate, no strategy validation.
 
 **Session-Ende (Pflicht):** Session-Log unter `knowledge/logs/sessions/YYYY-MM-DD-<topic>.md` ablegen. `CURRENT_STATUS.md` aktualisieren wenn sich Repo-/Engineering-Status geändert hat.
 
@@ -91,9 +93,16 @@ This is the canonical 431B baseline for isolated test/E2E labs — distinct from
 ```bash
 make systemcheck         # pre-flight checks before paper trading
 make paper-trading-start # requires running stack
+make paper-trading-logs  # live logs of paper-trading runner
+make paper-trading-stop
 make daily-check
 make backup              # Postgres + Redis to F:\Claire_Backups
 make security-scan       # gitleaks + ruff + bandit
+make pre-close           # pre-close sweep (untracked artefacts)
+make rollback MR=<number>  # rollback a merged MR
+make cleanup             # DRY-RUN: clean up merged branches
+make cleanup-live        # LIVE: clean up merged branches
+make mcp-config-validate # validate MCP configuration
 ```
 
 ---
@@ -184,6 +193,35 @@ Coverage target: 80% on `core/` and `services/` (enforced by `make test-coverage
 - `docs/live-readiness/` — LR-STATE.yaml files + evidence per phase (P0–P5)
 - `knowledge/logs/sessions/` — session evidence logs
 - `mcp_navpack_working_repo/` — MCP navigation presets (ENTRYPOINTS.yaml, CHEATSHEET.md)
+
+### Service Conventions
+
+All services under `services/` follow the same layout: `service.py`, `config.py`, `models.py`, `Dockerfile`, `requirements.txt`. The canonical entry point is:
+
+```bash
+python -m services.<name>.service
+```
+
+Logging is configured via `LOG_LEVEL` env var (or `logging_config.json` if present in the service dir).
+
+### Determinism & Audit Trail
+
+**No-float rule:** All monetary values must use `Decimal` with fixed quantization. `core/contracts/decision_contract_v1.py` defines `_MONEY_Q`, `_RATIO_Q`, `_QTY_Q` and enforces this via `_to_decimal()`. Never use `float` on the order path.
+
+**TRACE_CONTRACT_V1:** Use `build_decision_contract_v1_bundle` / `verify_decision_contract_v1_bundle` from `core/contracts/decision_contract_v1.py` to hash inputs and outputs for audit. Raise `DecisionContractError` on violation.
+
+**Envelope chain:** Shadow/replay produces a linked chain `DecisionEnvelopeV1 → OrderEnvelopeV1 → FillEnvelopeV1` (see `core/replay/envelopes.py`). `core/replay/canonical_json.py` provides sorted-key JSON serialization for deterministic hashes.
+
+### Agent SDK (`cdb_agent_sdk/`)
+
+Standalone Python package with analysis CLI tools (installed separately):
+
+```bash
+cdb-dataflow       # data-flow analysis
+cdb-determinism    # determinism inspection
+cdb-governance     # governance audit
+cdb-impact         # change-impact analysis
+```
 
 ### MINGW64 / Git Bash (Windows)
 

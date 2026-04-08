@@ -7,6 +7,7 @@ MUST READ FIRST:
 - knowledge/CDB_KNOWLEDGE_HUB.md
 - CURRENT_STATUS.md
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+- docs/runbooks/CONTROL_REGISTER.md
 - PROJECT_STATUS.md (historical only)
 
 ---
@@ -16,7 +17,9 @@ MUST READ FIRST:
 - Das Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
 - `CURRENT_STATUS.md` ist der aktuelle Repo- und Engineering-Status.
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` ist der operative Go/No-Go- und Echtgeld-Status.
+- `docs/runbooks/CONTROL_REGISTER.md` ist der aktuelle Board-/Stage-Status; aktuell `trade-capable`, aber orthogonal zu LR-`NO-GO`.
 - `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden.
+- Eine Board-Stage darf nie als Live-Kapital-Freigabe oder Strategie-Validierung interpretiert werden.
 - Bei Statuskonflikten gilt die SSOT-Regel aus `docs/meta/WORKING_REPO_CANON.md`.
 
 ---
