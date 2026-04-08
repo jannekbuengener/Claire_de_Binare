@@ -1,3 +1,8 @@
+# LEGACY — superseded by tools/cdb-stack-doctor.ps1 (BLUE/RED topology, current secrets contract).
+# This script still references .cdb_local/.secrets, old container names (cdb_core),
+# old compose files (base.yml/dev.yml), and the claire_de_binare_cdb_network naming.
+# Retained for reference only; do not use as an active entrypoint.
+#
 # stack_doctor.ps1 - Stack Health & Drift Detection
 # Detects configuration drift, orphaned resources, port conflicts
 # Acceptance Criterion G: Confusion-proofing (drift detection)

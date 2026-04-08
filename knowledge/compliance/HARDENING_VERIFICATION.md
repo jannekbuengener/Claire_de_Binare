@@ -121,7 +121,7 @@ docker ps --filter "name=promtail"
    - Complete architecture guide
    - Canonical vs legacy files
    - Layer architecture explanation
-   - Usage examples with stack_up.ps1
+   - Usage examples (stack_up.ps1-Referenzen darin sind [LEGACY COMPAT])
    - Secret management guide
    - Troubleshooting section
 
@@ -190,8 +190,8 @@ docker ps --filter "name=promtail"
 # Container restarting? Check logs:
 docker logs cdb_<service> --tail 30
 
-# Secret file error? Verify files:
-ls ../.cdb_local/.secrets/
+# Secret file error? Verify files (kanonischer Pfad):
+ls "$env:USERPROFILE\Documents\.secrets\.cdb"
 ```
 
 **Verification**: All common failure scenarios documented with executable commands
@@ -285,12 +285,14 @@ ls ../.cdb_local/.secrets/
    - Auto-fix capability with `-Fix` switch
    - Verbose mode for detailed diagnostics
 
-5. **Unified Stack Launcher**: `infrastructure/scripts/stack_up.ps1`
-   - Automatic overlay selection
-   - Profile support (-Profile dev/prod)
-   - Feature toggles (-Logging, -StrictHealth, -NetworkIsolation)
-   - Validation and error checking
-   - User feedback on enabled overlays
+5. **Kanonischer Stack-Start (BLUE+RED)**:
+   ```powershell
+   docker network create cdb_network 2>$null
+   docker compose -f infrastructure/compose/compose.blue.yml up -d
+   docker compose -f infrastructure/compose/compose.red.yml up -d
+   ```
+   > **[LEGACY COMPAT]** `infrastructure/scripts/stack_up.ps1` — Legacy-Script mit Overlay-Support und `.env.runtime` Auto-Load.
+   > Nicht mehr kanonischer Operator-Startflow.
 
 **Verification**:
 ```powershell
@@ -302,9 +304,6 @@ ls ../.cdb_local/.secrets/
 
 # Safe cleanup
 .\infrastructure\scripts\stack_clean.ps1
-
-# Start with logging
-.\infrastructure\scripts\stack_up.ps1 -Logging
 ```
 
 **Documented**: All scripts have built-in help and clear error messages
@@ -327,10 +326,10 @@ ls ../.cdb_local/.secrets/
 - Redis: Uses secret file at `/run/secrets/redis_password` (no env var needed)
 - Grafana: Uses `GRAFANA_PASSWORD_FILE=/run/secrets/grafana_password` (optional)
 
-**Secret Files** (workspace-level, outside Git):
-- `../.cdb_local/.secrets/redis_password` (24 bytes)
-- `../.cdb_local/.secrets/postgres_password` (0 bytes - OK for existing DB)
-- `../.cdb_local/.secrets/grafana_password` (directory - known issue, out of scope)
+**Secret Files** (außerhalb des Repos, kanonischer Pfad):
+- `~/Documents/.secrets/.cdb/REDIS_PASSWORD` (24+ bytes)
+- `~/Documents/.secrets/.cdb/POSTGRES_PASSWORD` (24+ bytes)
+- `~/Documents/.secrets/.cdb/GRAFANA_PASSWORD` (24+ bytes)
 
 **Verification** (performed 2025-12-24):
 ```bash
@@ -375,9 +374,10 @@ cdb_promtail    Up 8 hours
 cdb_grafana     Restarting (known issue - grafana_password directory)
 ```
 
-**Active Compose Layers**:
-- `docker-compose.base.yml` (legacy, will be removed)
-- `infrastructure/compose/base.yml` (canonical)
+**Active Compose Layers** (at time of verification):
+- `infrastructure/compose/compose.blue.yml` (canonical runtime — BLUE)
+- `infrastructure/compose/compose.red.yml` (canonical runtime — RED)
+- `infrastructure/compose/base.yml` (legacy — CI/test only)
 - `infrastructure/compose/logging.yml` (Loki + Promtail)
 
 **Network Isolation Status**: ✅ MAXIMUM
@@ -482,10 +482,9 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Operational Scripts
 
-1. **`infrastructure/scripts/stack_up.ps1`**
-   - Unified stack launcher
-   - Profile and overlay support
-   - Validation and health checks
+1. **`infrastructure/scripts/stack_up.ps1`** [LEGACY COMPAT]
+   - Legacy Stack-Launcher mit Overlay-Support und `.env.runtime` Auto-Load
+   - Kanonischer Operator-Start: `docker compose -f compose.blue.yml up -d` + `compose.red.yml`
 
 2. **`infrastructure/scripts/stack_clean.ps1`**
    - Safe cleanup with data preservation
@@ -534,8 +533,10 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Active Overlays
 
-1. **`infrastructure/compose/base.yml`** - Canonical base (infrastructure)
-2. **`infrastructure/compose/dev.yml`** - Development profile (port bindings)
+1. **`infrastructure/compose/compose.blue.yml`** - Canonical BLUE runtime (Core)
+2. **`infrastructure/compose/compose.red.yml`** - Canonical RED runtime (Signal + Monitoring)
+3. **`infrastructure/compose/base.yml`** - Legacy base (CI/test only)
+4. **`infrastructure/compose/dev.yml`** - Legacy dev overlay (CI/test only)
 3. **`infrastructure/compose/logging.yml`** - Loki + Promtail
 4. **`infrastructure/compose/network-prod.yml`** - Network isolation (internal: true)
 5. **`infrastructure/compose/healthchecks-strict.yml`** - Strict dependencies
@@ -556,7 +557,7 @@ All work committed to branch: `reset/from-codex-green`
 
 ### Security Improvements Identified
 
-From analysis of `Claire_de_Binare_Docs/_legacy_quarantine/files1_Tier1`:
+From analysis of files originally in `Claire_de_Binare_Docs/_legacy_quarantine/files1_Tier1` (retired pre-consolidation source, December 2024):
 
 1. **Non-Root Users** (HIGH Priority)
    - Legacy Dockerfiles use service-specific non-root users
@@ -585,10 +586,10 @@ From analysis of `Claire_de_Binare_Docs/_legacy_quarantine/files1_Tier1`:
 
 ### Immediate (Next Session)
 
-1. **Fix Grafana Issue**
-   - Convert `../.cdb_local/.secrets/grafana_password` from directory to file
-   - Restart Grafana
-   - Verify Loki datasource connection
+1. **Fix Grafana Issue** *(historische Notiz aus 2025-12-24, ggf. bereits erledigt)*
+   - Sicherstellen, dass `~/Documents/.secrets/.cdb/GRAFANA_PASSWORD` eine Datei ist, kein Verzeichnis
+   - Grafana neu starten
+   - Loki-Datasource-Verbindung verifizieren
 
 2. **Add Non-Root Users to Dockerfiles**
    - Extract pattern from legacy Dockerfiles
@@ -647,7 +648,7 @@ From analysis of `Claire_de_Binare_Docs/_legacy_quarantine/files1_Tier1`:
 | **No Plaintext Passwords** | ✅ | Only PASSWORD_FILE variants, verified in runtime |
 | **Docker Secrets Only** | ✅ | All services use /run/secrets/* mounts |
 | **No Both PASSWORD and PASSWORD_FILE** | ✅ | Verified via docker inspect |
-| **Workspace-Level Secrets** | ✅ | ../.cdb_local/.secrets/ outside Git |
+| **Workspace-Level Secrets** | ✅ | `~/Documents/.secrets/.cdb/` außerhalb des Repos |
 
 **Overall Status**: ✅ **HARDENING COMPLETE - ALL CRITERIA MET**
 

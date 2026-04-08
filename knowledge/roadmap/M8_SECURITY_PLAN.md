@@ -1,8 +1,15 @@
 # M8 SECURITY PLAN
 
+> **Historical Document** — This plan was drafted 2025-12-27 when the project
+> assumed dedicated security engineers, an on-call team, infra/legal handoff
+> structures, and budget for external pentesting. The project has since
+> consolidated to a solo-maintainer model. The plan is retained as a historical
+> reference for M8 scope and intent; staffing, role, and department-escalation
+> language no longer reflects the current operating reality.
+
 **Version:** 2.0
 **Date:** 2025-12-27
-**Status:** Active Refinement (v1 was placeholder from 2025-12-19)
+**Status:** Historical (drafted during Active Refinement, v1 was placeholder from 2025-12-19)
 **Scope:** Security Hardening & Production Readiness
 **Milestone:** M8 - Security
 **Issues:** #95-#106 (12 issues total)
@@ -15,7 +22,7 @@
 
 **Timeline:** 3-4 weeks (after M7 Testnet completion)
 **Critical Path:** M7 ✅ → M8 (Security) 🔄 → M9 (Release)
-**Resource Need:** 1 security engineer (lead), 1 developer (support), external pentest team
+**Resource Need:** Solo maintainer, open-source security tooling, external pentest if budgeted
 
 **Success Criteria:**
 - ✅ Penetration test completed with no P0/P1 vulnerabilities
@@ -41,8 +48,8 @@
 - Security monitoring & alerting (1-2 issues)
 
 **Known Blockers Identified in M7:**
-1. **Security Lead Assignment:** MUST assign before M8 start (ACTION REQUIRED)
-2. **Penetration Test Booking:** Schedule external team 2 weeks into M8 (ACTION REQUIRED)
+1. **Security review scope:** Define scope before M8 start
+2. **Penetration test tooling:** Decide self-service vs. external engagement
 
 ---
 
@@ -77,7 +84,7 @@
 - ✅ Secret inventory and rotation schedule
 
 **Resource Needs:**
-- 1 security engineer (lead)
+- Solo maintainer
 - OWASP ZAP, Bandit, pip audit tools
 - Access to all production-like environments
 
@@ -119,8 +126,8 @@
 - ✅ Pentest engagement started (external team actively testing)
 
 **Resource Needs:**
-- 1 security engineer + 1 developer (remediation work)
-- External pentest team (booked 2-4 weeks in advance)
+- Solo maintainer (remediation work)
+- External pentest if budgeted (or self-service tooling)
 - Staging environment (pentest target)
 
 **Risks:**
@@ -139,14 +146,14 @@
 **Focus Areas:**
 1. **Penetration Test - Execution (ongoing, 5d):**
    - External team actively testing (Week 3 Mon-Fri)
-   - Daily standups with pentest team (track progress, blockers)
+   - Daily check-ins with pentest provider if engaged (track progress, blockers)
    - Monitor for false positives or out-of-scope activity
    - Prepare for remediation sprint (Week 4)
 
 2. **Incident Response Planning (3d parallel):**
    - Create incident response runbook (`docs/security/INCIDENT_RESPONSE_RUNBOOK.md`)
    - Define severity levels (P0/P1/P2/P3)
-   - Define escalation paths (who to contact, when)
+   - Define escalation procedures (what to do, when)
    - Document playbooks:
      - Data breach response
      - System compromise response
@@ -156,19 +163,18 @@
 3. **Incident Response Drill (2d):**
    - Simulate security incident (e.g., "API key leaked on GitHub")
    - Validate runbook procedures (are they accurate?)
-   - Test escalation paths (do contacts respond?)
+   - Test escalation paths (are procedures actionable?)
    - Document lessons learned, update runbook
    - Repo source of truth for deterministic drill execution: `scripts/drills/` plus `tests/chaos/`; `tools/test_pack/` stays experimental
 
 **Deliverables:**
 - ✅ Penetration test complete (findings report from external team)
 - ✅ Incident response runbook validated through drill
-- ✅ Escalation contacts confirmed and documented
+- ✅ Escalation procedures confirmed and documented
 
 **Resource Needs:**
-- External pentest team (execution)
-- 1 security engineer (monitoring pentest, incident response planning)
-- On-call team (for incident response drill)
+- External pentest if engaged (execution)
+- Solo maintainer (monitoring pentest, incident response planning)
 
 **Risks:**
 - Pentest finds P0/P1 issues → Remediation sprint needed (extends M8 to Week 4+)
@@ -200,7 +206,7 @@
 3. **Security Monitoring Setup (1d):**
    - Validate security-specific dashboards (failed auth attempts, rate limit hits)
    - Setup security alerts (unusual access patterns, secret usage)
-   - Test alert routing (security team gets notified)
+   - Test alert routing (notifications reach maintainer)
 
 **Deliverables:**
 - ✅ All pentest P0/P1 findings remediated (or accepted with risk mitigation)
@@ -208,8 +214,8 @@
 - ✅ Security monitoring operational
 
 **Resource Needs:**
-- 1 security engineer + 1 developer (remediation)
-- External pentest team (optional revalidation)
+- Solo maintainer (remediation)
+- External pentest revalidation (if engaged)
 - Compliance tools (if applicable)
 
 **Risks:**
@@ -221,15 +227,13 @@
 ## Critical Blockers & Dependencies
 
 ### Hard Blockers (Must Resolve Before M8 Start)
-1. **Security Lead Assignment:**
-   - **Status:** UNASSIGNED (as of 2025-12-27)
-   - **Action:** Assign security engineer ASAP
-   - **Impact:** M8 cannot start without security lead
+1. **Security Review Scope:**
+   - **Action:** Define what security review covers (self-service tooling vs. external engagement)
+   - **Impact:** Scope determines timeline and budget
 
-2. **Penetration Test Booking:**
-   - **Status:** NOT BOOKED (as of 2025-12-27)
-   - **Action:** Book external pentest team (2-4 week lead time)
-   - **Impact:** Week 2-3 blocked without pentest team
+2. **Penetration Test Decision:**
+   - **Action:** Decide external pentest vs. self-service tooling (OWASP ZAP, Bandit)
+   - **Impact:** External engagement requires lead time and budget
 
 ### Dependencies from M7
 - ✅ M7 Complete (security prep checklist from Issue #52)
@@ -245,10 +249,9 @@
 ## Resource Allocation
 
 ### People
-- **Security Lead:** 1 FTE (entire M8 duration) - MUST ASSIGN BEFORE M8 START
-- **Developer Support:** 1 FTE (remediation work)
-- **External Pentest Team:** 1 week engagement (Week 2-3)
-- **On-Call Team:** Available for incident response drill
+- **Primary:** Solo maintainer (entire M8 duration)
+- **External Pentest:** Optional engagement if budgeted (1 week, Week 2-3)
+- _Historical note: original plan assumed Security Lead (1 FTE), Developer Support (1 FTE), and On-Call Team — not applicable in current setup_
 
 ### Tools & Services
 - **Vulnerability Scanners:** OWASP ZAP, Bandit, pip audit (open source)
@@ -269,14 +272,14 @@
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Security lead unavailable | HIGH | CRITICAL | Assign backup, escalate to exec team if needed |
-| Pentest team booking delays | MEDIUM | HIGH | Book 4+ weeks in advance, have backup vendor |
+| Maintainer unavailability | LOW | HIGH | Maintain handoff docs, document decisions |
+| Pentest engagement delays | MEDIUM | HIGH | Fall back to self-service tooling if external not feasible |
 | High volume of P0/P1 findings | MEDIUM | HIGH | Allocate Week 4+ buffer, prioritize ruthlessly |
 | Incident response drill fails | LOW | MEDIUM | Iterate runbook, re-drill if needed |
 | Compliance requirements unknown | LOW | MEDIUM | Clarify requirements early, separate project if large |
 | Secret rotation breaks services | LOW | MEDIUM | Test rotation in staging first, have rollback plan |
 
-**Overall Risk:** HIGH (security lead and pentest booking are critical blockers)
+**Overall Risk:** MEDIUM (pentest scope decision and remediation volume are main concerns)
 
 ---
 
@@ -297,7 +300,7 @@
 
 ### Nice-to-Have (M9 Scope if Not Done)
 - [ ] Load testing under adversarial conditions
-- [ ] Security training for team
+- [ ] Security training / knowledge documentation
 - [ ] Bug bounty program setup
 
 ---
@@ -352,10 +355,10 @@
 ## Action Items (Immediate)
 
 **Before M8 Start:**
-1. **CRITICAL:** Assign security lead (ACTION: Exec/HR)
-2. **CRITICAL:** Book external penetration test team (ACTION: Security Lead)
-3. Provision staging environment for pentest (ACTION: Infra team)
-4. Clarify compliance requirements (ACTION: Legal/Product)
+1. **CRITICAL:** Define security review scope and approach
+2. **CRITICAL:** Decide external pentest vs. self-service tooling (budget-dependent)
+3. Provision staging environment for security testing
+4. Clarify compliance requirements (if applicable)
 
 **Week 1 (M8 Start):**
 1. Complete attack surface mapping
@@ -375,10 +378,9 @@
 
 ---
 
-**Plan Status:** ✅ REFINED (v2.0)
-**Last Updated:** 2025-12-27
-**Next Review:** 1 week before M8 kickoff (verify pentest booking)
-**Owner:** Security Lead (TBD) + Claude (Session Lead) per Issue #107
+**Plan Status:** Historical (was REFINED v2.0)
+**Last Updated:** 2025-12-27 (original), 2026-03-30 (historical framing per #1378)
+**Owner:** Solo maintainer (originally drafted by Claude per Issue #107)
 
 ---
 

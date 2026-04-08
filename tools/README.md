@@ -36,17 +36,23 @@ Non-interactive form:
 - `tools/cdb-service-logs.ps1` - Read focused service logs during runtime diagnosis.
 - `infrastructure/scripts/smoke_test.ps1` - Validate the current BLUE core flow path. This does not validate the full BLUE+RED stack end-to-end.
 
+## Secrets Entrypoints
+
+- `infrastructure/scripts/manage_secrets.ps1` - **Primary CRUD / Ops entrypoint** for secret setup, single-secret rotation, validation, and listing.
+- `tools/secrets/Rotate-Secrets.ps1` - **Primary Rotation / Export entrypoint** for plan/apply bulk rotation and `.env.runtime` export.
+- `scripts/manage_secrets.ps1` - Compat copy of the infrastructure version; prefer the infrastructure path.
+- `tools/set_secrets.ps1` - Secondary legacy interactive setup helper.
+
 ## Secondary
 
 - `infrastructure/scripts/bootstrap_local.ps1` - Secondary convenience wrapper; not the canonical PowerShell v1 front door.
 - `infrastructure/scripts/bootstrap_local.sh` - Secondary non-Windows bootstrap helper; retains legacy convenience behavior and is not the PowerShell v1 front door.
 - `tools/cdb-stack-doctor.ps1` - Broader ad-hoc stack diagnostics helper outside the v1 corridor.
-- `tools/cdb-secrets-sync.ps1` - Local workspace/vault sync helper for secret files.
-- `tools/set_secrets.ps1` - Local secrets helper for workspace-managed flows.
 - `scripts/secrets/sync_cdb_secrets.ps1` - Repo-local helper for syncing GitHub Actions secrets when PAT fallback is used.
 
 ## Legacy/Stale
 
+- `infrastructure/scripts/legacy/cdb-secrets-sync.ps1` - Former sync helper; moved from `tools/` per #1404; not an active operator path.
 - `infrastructure/scripts/stack_up.ps1` - Older PowerShell stack launcher; keep for reference, not as the v1 discovery default.
 - `infrastructure/scripts/stack_verify.ps1` - Older verification path; use `tools/verify_stack.ps1` for v1 discovery.
 - `infrastructure/scripts/stack_doctor.ps1` - Older infra-local diagnostic entrypoint; prefer `tools/cdb-stack-doctor.ps1` when that style of helper is needed.

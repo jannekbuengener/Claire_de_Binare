@@ -45,7 +45,7 @@ This directory contains governance artifacts for the Claire de Binare (CDB) trad
   - Audit-domain integrity report for `audit_trail` and `governance_events`.
 
 ### MARKET_STATE_CONTRACT_V1.md
-Input contract defining the `market_state` object that BLUE services must provide to Risk (BLACK) for trade decisions. Enforces fail-closed behavior: missing required fields (`return_1m`, `return_5m`, `price_change_5m`) result in `RC_002` block.
+Input contract defining the `market_state` object that BLUE services must provide to the Risk Service (`cdb_risk`) for trade decisions. Enforces fail-closed behavior: missing required fields (`return_1m`, `return_5m`, `price_change_5m`) result in `RC_002` block.
 
 See: [MARKET_STATE_CONTRACT_V1.md](MARKET_STATE_CONTRACT_V1.md)
 

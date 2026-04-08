@@ -28,21 +28,6 @@ docker compose -f infrastructure/compose/compose.blue.yml down
 docker compose -f infrastructure/compose/compose.red.yml down
 ```
 
-### Stack starten (Legacy, CI/test only)
-
-```powershell
-# Legacy Dev Stack
-.\infrastructure\scripts\stack_up.ps1 -Profile dev
-
-# Mit Logging (Loki + Promtail)
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging
-
-# Mit TLS
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -TLS
-
-# Vollstaendig (Dev + Logging + TLS)
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Logging -TLS
-```
 
 ### Stack stoppen
 
@@ -83,7 +68,7 @@ cdb_db_writer       Up X minutes (healthy)
 cdb_paper_runner    Up X minutes (healthy)
 ```
 
-**Hinweis:** cdb_risk und cdb_execution haben keine expliziten Healthchecks in dev.yml.
+**Hinweis:** cdb_risk und cdb_execution haben keine expliziten Healthchecks.
 
 ---
 
@@ -138,9 +123,6 @@ docker exec cdb_postgres pg_isready -U postgres
 # Einzelner Service
 docker logs cdb_signal --tail 100 -f
 
-# Alle Services (legacy compose path)
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml logs -f
-
 # Nur Fehler
 docker logs cdb_risk 2>&1 | Select-String -Pattern "ERROR|CRITICAL"
 ```
@@ -162,18 +144,18 @@ Zugriff ueber Grafana: http://127.0.0.1:3000
 docker compose -f infrastructure/compose/compose.blue.yml restart
 docker compose -f infrastructure/compose/compose.red.yml restart
 
-# Legacy (CI/test only): Einzelnen Service neu starten
-# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml restart cdb_signal
+# Einzelnen Service neu starten (Beispiel BLUE-Service):
+docker compose -f infrastructure/compose/compose.blue.yml restart cdb_signal
 ```
 
 ### Service Rebuild
 
 ```powershell
-# Legacy (CI/test only):
-.\infrastructure\scripts\stack_up.ps1 -Profile dev -Rebuild
+# Kanonisch: Service neu bauen und starten (BLUE-Service)
+docker compose -f infrastructure/compose/compose.blue.yml up -d --build cdb_signal
 
-# Oder manuell (legacy):
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d --build cdb_signal
+# Kanonisch: RED-Service
+docker compose -f infrastructure/compose/compose.red.yml up -d --build cdb_signal
 ```
 
 ### Container Shell
@@ -300,17 +282,13 @@ docker compose -f infrastructure/compose/compose.red.yml down
 
 ```powershell
 # Kanonisch: stoppen und aufraeuumen
-docker compose -f infrastructure/compose/compose.blue.yml down
 docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker system prune -f
 
 # Neu starten
 docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
-
-# Legacy (CI/test only):
-# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml down -v
-# .\infrastructure\scripts\stack_up.ps1 -Profile dev
 ```
 
 ---

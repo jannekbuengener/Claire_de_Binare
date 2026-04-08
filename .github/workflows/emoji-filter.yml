@@ -30,6 +30,8 @@ jobs:
     outputs:
       emojis-found: ${{ steps.scan.outputs.emojis-found }}
       blocked-count: ${{ steps.scan.outputs.blocked-count }}
+      error-count: ${{ steps.scan.outputs.error-count }}
+      block-pr: ${{ steps.scan.outputs.block-pr }}
       report-path: ${{ steps.scan.outputs.report-path }}
     
     steps:
@@ -39,7 +41,7 @@ jobs:
         fetch-depth: 0  # Für vollständige History
     
     - name: 🐍 Setup Python
-      uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         cache: 'pip'
@@ -65,7 +67,7 @@ jobs:
           block_pr: true
         severity:
           code: "error"
-          comments: "warning"
+          comment: "warning"
         EOF
         fi
         
@@ -100,22 +102,26 @@ jobs:
 
         # Lese Ergebnisse
         BLOCKED_COUNT=0
+        ERROR_COUNT=0
         if [ -f emoji-report.json ]; then
           EMOJIS_FOUND=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data['summary']['emojis_found'])")
           BLOCKED_COUNT=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data['blocked_count'])")
+          ERROR_COUNT=$(python -c "import json; data=json.load(open('emoji-report.json')); print(data.get('error_count', 0))")
 
           echo "emojis-found=$EMOJIS_FOUND" >> $GITHUB_OUTPUT
           echo "blocked-count=$BLOCKED_COUNT" >> $GITHUB_OUTPUT
+          echo "error-count=$ERROR_COUNT" >> $GITHUB_OUTPUT
           echo "report-path=emoji-report.json" >> $GITHUB_OUTPUT
 
-          echo "📊 Ergebnisse: $EMOJIS_FOUND Emojis gefunden, $BLOCKED_COUNT blockiert"
+          echo "📊 Ergebnisse: $EMOJIS_FOUND Emojis gefunden, $BLOCKED_COUNT blockiert, $ERROR_COUNT mit Error-Severity"
         else
           echo "emojis-found=0" >> $GITHUB_OUTPUT
           echo "blocked-count=0" >> $GITHUB_OUTPUT
+          echo "error-count=0" >> $GITHUB_OUTPUT
         fi
 
         BLOCK_PR="false"
-        if [ "$BLOCKED_COUNT" -gt 0 ] && [ "$MODE" = "strict" ]; then
+        if [ "$ERROR_COUNT" -gt 0 ] && [ "$MODE" = "strict" ]; then
           BLOCK_PR="true"
         fi
         echo "block-pr=$BLOCK_PR" >> $GITHUB_OUTPUT
@@ -152,7 +158,7 @@ jobs:
     name: 🛡️ Security & Quality Check
     needs: emoji-detection
     runs-on: ubuntu-latest
-    if: needs.emoji-detection.outputs.blocked-count > 0
+    if: needs.emoji-detection.outputs.error-count > 0
     
     steps:
     - name: 📥 Checkout Code
@@ -199,7 +205,7 @@ jobs:
     name: 📢 Notifications
     needs: [emoji-detection, security-check]
     runs-on: ubuntu-latest
-    if: always() && needs.emoji-detection.outputs.blocked-count > 0
+    if: always() && needs.emoji-detection.outputs.error-count > 0
     permissions:
       issues: write
     
@@ -211,12 +217,9 @@ jobs:
     
     - name: 📧 Create Issue
       if: github.event_name == 'push' || github.event_name == 'schedule'
-      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
       with:
         script: |
-          const fs = require('fs');
-          
-          let reportContent = '';
           const handlePermissionError = (error) => {
             if (
               error &&
@@ -229,39 +232,19 @@ jobs:
             }
             return false;
           };
-          try {
-            if (fs.existsSync('emoji-report.md')) {
-              reportContent = fs.readFileSync('emoji-report.md', 'utf8');
-            } else {
-              reportContent = '📊 Detaillierter Report nicht verfügbar.';
-            }
-          } catch (error) {
-            reportContent = `❌ Fehler beim Laden des Reports: ${error.message}`;
-          }
-          
-          const issueTitle = `🚫 Emoji Detection Alert - ${new Date().toISOString().split('T')[0]}`;
-          const issueBody = `
-          # 🚫 Emoji Detection Alert
-          
-          **Scan Details:**
-          - **Commit:** ${context.sha}
-          - **Branch:** ${context.ref}
-          - **Trigger:** ${context.eventName}
-          - **Emojis Found:** ${{ needs.emoji-detection.outputs.emojis-found }}
-          - **Blocked Count:** ${{ needs.emoji-detection.outputs.blocked-count }}
-          
-          ## 📋 Report
-          
-          ${reportContent}
-          
-          ## 🔧 Aktionen
-          
-          1. **Automatisch fixen:** Führe Workflow mit \`auto_fix: true\` aus
-          2. **Manuell überprüfen:** Lade Report-Artifacts herunter
-          3. **Whitelist updaten:** Füge erlaubte Emojis zur Konfiguration hinzu
-          
-          **Report Artifacts:** [Download](${context.payload.repository.html_url}/actions/runs/${context.runId})
-          `;
+
+          const issueTitle = `emoji-filter alert - ${new Date().toISOString().split('T')[0]}`;
+          const issueBody = [
+            '**Scan Details:**',
+            `- **Commit:** ${context.sha}`,
+            `- **Branch:** ${context.ref}`,
+            `- **Trigger:** ${context.eventName}`,
+            `- **Emojis Found:** ${{ needs.emoji-detection.outputs.emojis-found }}`,
+            `- **Blocked Count:** ${{ needs.emoji-detection.outputs.blocked-count }}`,
+            `- **Error-Severity Count:** ${{ needs.emoji-detection.outputs.error-count }}`,
+            '',
+            `**Full Report:** [Download Artifact](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+          ].join('\n');
           
           // Prüfe ob bereits Issue existiert
           const existingIssues = await github.rest.issues.listForRepo({
@@ -335,7 +318,7 @@ jobs:
         name: emoji-detection-report-${{ github.run_number }}
     
     - name: 💬 Comment on PR
-      uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
       with:
         script: |
           const fs = require('fs');
@@ -415,12 +398,12 @@ jobs:
     name: 🚫 Block PR Merge  
     needs: emoji-detection
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.blocked-count > 0 && needs.emoji-detection.outputs.block-pr == 'true'
-    
+    if: github.event_name == 'pull_request' && needs.emoji-detection.outputs.block-pr == 'true'
+
     steps:
     - name: 🚫 Fail Check
       run: |
-        echo "::error::PR merge blocked due to emoji detection"
-        echo "🚫 Blocked emojis found: ${{ needs.emoji-detection.outputs.blocked-count }}"
+        echo "::error::PR merge blocked due to error-severity emoji detection"
+        echo "🚫 Error-severity emojis found: ${{ needs.emoji-detection.outputs.error-count }}"
         echo "📋 Please review the emoji detection report and fix issues before merging."
         exit 1

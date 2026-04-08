@@ -155,19 +155,16 @@ cdb-service-logs.ps1
 
 cdb-secrets-sync.ps1
 
-2025-12-27 – M7-M9 Roadmap Refinement Complete (Issue #107)
+2025-12-27 – M7-M9 Roadmap Refinement Complete (Issue #107) — **HISTORICAL**
 
-Epic #91 breakdown: M7 Testnet (4-6 weeks, 10 issues consolidated)
-
-M8 Security critical blockers: Security Lead + Pentest Booking ($10k-$30k)
-
-M9 Release: 2-3 weeks, SLA targets defined (99.9% uptime, <100ms p50 latency)
-
-Roadmaps: knowledge/roadmap/M7_TESTNET_PLAN.md (393 lines), M8_SECURITY_PLAN.md (386 lines), M9_RELEASE_PLAN.md (356 lines)
-
-Critical Path validated: M6 ✅ → M7 🔄 → M8 → M9
-
-Referenz: GitHub Issue #107
+> **Context:** Historical milestone plans from Dec 2025 assuming a multi-person
+> team with dedicated security lead and external pentest budget. These do not
+> reflect the current solo-maintainer operating model and are not operative
+> guidance. Details in `knowledge/roadmap/M7_TESTNET_PLAN.md`,
+> `M8_SECURITY_PLAN.md`, `M9_RELEASE_PLAN.md`. Current operative status:
+> `CURRENT_STATUS.md` and `docs/live-readiness/`.
+>
+> Referenz: GitHub Issue #107
 
 2025-12-19 – Agent Roles bleiben extern (external-only policy)
 
@@ -220,20 +217,17 @@ Kein Status, keine Entscheidungen
 
 (Sessions 2025-12-12A / 12B / 13B / 14A unverändert übernommen)
 
-7. Claude Tasklist – Delivery Plan (CDB)
+7. Claude Tasklist – Delivery Plan (CDB) — **HISTORICAL (Dec 2025)**
 
-Reihenfolge ist bewusst gewählt: früher Value, wenig Risiko
+> **Context:** This delivery plan was the initial bootstrap sequence. All items
+> were completed and merged. Retained for audit trail, not as active tasklist.
 
-PR-01 — CI-Guard (MUST)
-PR-02 — Safe Deletes (MUST)
-PR-03 — Makefile Fix (MUST)
-PR-04 — Unit-Test Skeletons (SHOULD)
-PR-05 — Compose Base/Dev Split (SHOULD)
-PR-06 — Replay-Enabler (SHOULD)
-
-Stop-Regel:
-
-Wenn Unsicherheit entsteht → stoppen und fragen.
+PR-01 — CI-Guard (MUST) — ✅ merged
+PR-02 — Safe Deletes (MUST) — ✅ merged
+PR-03 — Makefile Fix (MUST) — ✅ merged
+PR-04 — Unit-Test Skeletons (SHOULD) — ✅ merged
+PR-05 — Compose Base/Dev Split (SHOULD) — ✅ merged
+PR-06 — Replay-Enabler (SHOULD) — ✅ merged
 
 8. Delegation (Kurzreferenz)
 

@@ -2,20 +2,20 @@
 
 **Version**: V1
 **Owner**: BLUE (Signal/Market Data Services)
-**Consumer**: BLACK (Risk Service)
+**Consumer**: Risk Service (`cdb_risk`)
 **Status**: Active
 **Created**: 2026-02-14
 
 ## Purpose
 
-`market_state` is the BLUE-owned input contract that provides market context data to the Risk Service (BLACK) for trade decisions. BLACK does not compute any derived values - it validates inputs and blocks deterministically when required fields are missing or invalid.
+`market_state` is the BLUE-owned input contract that provides market context data to the Risk Service (`cdb_risk`) for trade decisions. Risk does not compute any derived values - it validates inputs and blocks deterministically when required fields are missing or invalid.
 
 ## Ownership Model
 
 | Component | Owner | Responsibility |
 |-----------|-------|----------------|
 | `market_state` production | BLUE | Compute and deliver all required fields |
-| `market_state` validation | BLACK | Validate presence, block if missing (fail-closed) |
+| `market_state` validation | Risk Service | Validate presence, block if missing (fail-closed) |
 | Return calculations | BLUE | `return_1m`, `return_5m`, `price_change_5m` |
 | Regime classification | BLUE | `regime_id` |
 
@@ -73,15 +73,15 @@ price_change_5m = abs((current_close - close_5_minutes_ago) / close_5_minutes_ag
 
 ## Invariants
 
-1. **BLACK does not compute returns**: Risk Service receives pre-computed values; it never accesses candle history.
+1. **Risk does not compute returns**: Risk Service receives pre-computed values; it never accesses candle history.
 
 2. **Fail-closed on missing required fields**:
    - `return_1m`, `return_5m`, `price_change_5m` is `None` → `BLOCK` with `RC_002`
    - `last_tick_ts_ms` is `None` → `BLOCK` with `RC_004` (data_silence_s cannot be computed)
 
-3. **No silent defaults**: BLACK never substitutes default values (e.g., 0.0) for missing data.
+3. **No silent defaults**: Risk never substitutes default values (e.g., 0.0) for missing data.
 
-4. **No fallback calculation**: If BLUE fails to deliver, BLACK blocks - there is no "best effort" path.
+4. **No fallback calculation**: If BLUE fails to deliver, Risk blocks - there is no "best effort" path.
 
 5. **Monotonic timestamps**: `last_tick_ts_ms` only increases (protects against replay/out-of-order data).
 

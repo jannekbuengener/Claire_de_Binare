@@ -208,8 +208,14 @@ class TestAlertingStructure:
 # Docker DNS removes a container's entry while it is stopped, so the window
 # between stop and start produces a genuine "no such host" lookup failure.
 #
-# Fix: execErrState: KeepLastState — during a datasource outage, alert rules
+# Fix: execErrState: KeepLast — during a datasource outage, alert rules
 # retain their last evaluation state instead of flipping to Error.
+#
+# Root cause of the first failed attempt (PR #1273, reverted 2026-03-24):
+# "KeepLastState" was used — but this string was never a valid Grafana unified
+# alerting enum value. The correct string is "KeepLast" (models.KeepLastErrState
+# in pkg/services/ngalert/models/alert_rule.go, added in Grafana 10.4/11.0).
+# Grafana 11.4.7 accepts "KeepLast" in provisioning YAML without issue.
 #
 # The datasource URL http://cdb_prometheus:9090 is CORRECT: both cdb_grafana
 # and cdb_prometheus are on cdb_network in compose.red.yml. The issue was the
@@ -217,12 +223,14 @@ class TestAlertingStructure:
 # ---------------------------------------------------------------------------
 
 
-VALID_EXEC_ERR_STATES = {"Error", "KeepLastState", "Alerting", "OK"}
+# Valid execErrState values in Grafana unified alerting provisioning YAML.
+# Source: pkg/services/ngalert/models/alert_rule.go (Grafana 11.4.7).
+# Note: "KeepLastState" is NOT a valid value (legacy string from classic alerting).
+VALID_EXEC_ERR_STATES = {"Error", "KeepLast", "Alerting", "OK"}
 
-# Rules that ideally would use KeepLastState, but Grafana 11.4.7-ubuntu does
-# not accept KeepLastState for execErrState in provisioning YAML — falls back to Error.
-# See: Issue #1266/#1267 (revert 2026-03-24: Grafana 11.4.7 incompatibility).
-KEEP_LAST_STATE_RULES: set[str] = set()  # No rules currently enforced
+# Rules that use KeepLast to suppress noisy DatasourceError alerts during
+# transient Prometheus restarts (Issue #1266/#1267, fixed 2026-03-26).
+KEEP_LAST_STATE_RULES: set[str] = {"cdb-orders-rejected", "cdb_error_rate_high"}
 
 
 class TestDatasourceUrlAndExecErrState:
@@ -287,34 +295,43 @@ class TestDatasourceUrlAndExecErrState:
 
     # --- execErrState ---
 
-    def test_orders_rejected_exec_err_state_is_valid(self) -> None:
-        """Issue #1266: KeepLastState is preferred but not supported by Grafana 11.4.7-ubuntu.
+    def test_orders_rejected_exec_err_state_is_keep_last(self) -> None:
+        """Issue #1266: orders_rejected must use KeepLast to suppress noisy DatasourceError mails.
 
-        Reverted to Error (2026-03-24). Grafana provisioning parser rejects KeepLastState
-        for execErrState in this version — causes Grafana startup failure (restart loop).
-        Update this test when the Grafana image is upgraded to a version that supports it.
+        KeepLast retains the last evaluation state when Prometheus is transiently unavailable
+        (e.g. Docker DNS removes cdb_prometheus during environment_interruption restart).
+
+        Note: "KeepLastState" (used in PR #1273, reverted) was never a valid unified alerting
+        string. The correct value is "KeepLast" — supported in Grafana 11.4.7.
         """
         docs = _load_alerting_files()
         rule = docs["orders_rejected.yml"]["groups"][0]["rules"][0]
-        assert rule["execErrState"] in VALID_EXEC_ERR_STATES
+        assert rule["execErrState"] == "KeepLast", (
+            f"orders_rejected must use KeepLast, got: {rule['execErrState']!r}"
+        )
 
-    def test_high_error_rate_exec_err_state_is_valid(self) -> None:
-        """Issue #1267: KeepLastState is preferred but not supported by Grafana 11.4.7-ubuntu.
-
-        Reverted to Error (2026-03-24). See test_orders_rejected_exec_err_state_is_valid.
-        """
+    def test_high_error_rate_exec_err_state_is_keep_last(self) -> None:
+        """Issue #1267: high_error_rate must use KeepLast for the same reason as #1266."""
         docs = _load_alerting_files()
         rule = docs["high_error_rate.yml"]["groups"][0]["rules"][0]
-        assert rule["execErrState"] in VALID_EXEC_ERR_STATES
+        assert rule["execErrState"] == "KeepLast", (
+            f"high_error_rate must use KeepLast, got: {rule['execErrState']!r}"
+        )
 
-    def test_keep_last_state_rules_do_not_use_error(self) -> None:
-        """Placeholder: KEEP_LAST_STATE_RULES is empty (Grafana 11.4.7 incompatibility).
+    def test_keep_last_rules_use_keep_last_not_error(self) -> None:
+        """Regression guard: KEEP_LAST_STATE_RULES must use KeepLast, not Error.
 
-        Re-enable when Grafana image is upgraded to a version that supports KeepLastState
-        for execErrState in provisioning YAML.
+        Ensures that no future edit silently reverts these rules to the noisy Error state.
         """
-        # KEEP_LAST_STATE_RULES is currently empty — nothing to assert
-        assert KEEP_LAST_STATE_RULES == set()
+        docs = _load_alerting_files()
+        for filename, doc in docs.items():
+            for group in doc.get("groups", []):
+                for rule in group.get("rules", []):
+                    if rule.get("uid") in KEEP_LAST_STATE_RULES:
+                        assert rule["execErrState"] == "KeepLast", (
+                            f"{filename}/{rule.get('title')}: "
+                            f"must use KeepLast, got {rule['execErrState']!r}"
+                        )
 
     def test_all_exec_err_states_are_valid(self) -> None:
         """All execErrState values must be in Grafana's allowed set."""
@@ -328,20 +345,21 @@ class TestDatasourceUrlAndExecErrState:
                         f"invalid execErrState '{state}'"
                     )
 
-    def test_old_bug_error_state_caused_noisy_mails(self) -> None:
-        """Document behaviour: execErrState=Error → DatasourceError alert fired.
+    def test_noisy_error_state_is_fixed(self) -> None:
+        """Regression: execErrState=Error on these rules caused DatasourceError spam.
 
         During environment_interruption restart, Docker DNS removes cdb_prometheus
-        while it is stopped. Grafana alert evaluation fires and gets 'no such host'.
-        With execErrState=Error, Grafana sets the rule to Error state and sends mail.
-        With execErrState=KeepLastState, the rule retains its previous Normal/OK state.
+        while it is stopped. Grafana alert evaluation gets 'no such host'.
+        With execErrState=Error, Grafana fires immediately and sends mail.
+        With execErrState=KeepLast, the rule retains its previous Normal/OK state.
 
-        Desired fix: KeepLastState. Blocked by Grafana 11.4.7-ubuntu incompatibility
-        (provisioning YAML parser rejects KeepLastState for execErrState).
-        Currently uses Error (known noisy). Track via Issue #1266/#1267.
+        Fix applied 2026-03-26: KeepLast (correct unified alerting string).
+        First attempt used "KeepLastState" — that string was never valid in unified alerting.
         """
         docs = _load_alerting_files()
-        # KEEP_LAST_STATE_RULES is empty; assert all rules use a valid state
         for filename in ("orders_rejected.yml", "high_error_rate.yml"):
             rule = docs[filename]["groups"][0]["rules"][0]
-            assert rule["execErrState"] in VALID_EXEC_ERR_STATES
+            assert rule["execErrState"] == "KeepLast", (
+                f"{filename}: execErrState must be KeepLast (not Error or KeepLastState), "
+                f"got {rule['execErrState']!r}"
+            )

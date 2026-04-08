@@ -81,10 +81,13 @@ with explicit intent.
 
 ## Supported Alternatives (tracked paths)
 
-- `scripts/manage_secrets.ps1` for secrets/ops setup tasks.
-- `scripts/setup_testnet.ps1` for testnet environment setup.
-- `scripts/activate_live_data.ps1` for live-data activation workflow.
+- `scripts/manage_secrets.ps1` — compat copy of `infrastructure/scripts/manage_secrets.ps1`;
+  prefer `.\tools\cdb.ps1 secrets init` or the infrastructure path for new usage.
 - `scripts/milestone-assignment.ps1` and `scripts/bulk-issue-labeling.ps1` for project/issue automation.
+
+Note: `scripts/activate_live_data.ps1` and `scripts/setup_testnet.ps1` are explicitly
+legacy and fail-closed (exit 1). Use `.\tools\cdb.ps1 runtime up` and
+`.\tools\cdb.ps1 secrets init` instead.
 
 ## Placement Rule for Personal Helpers
 

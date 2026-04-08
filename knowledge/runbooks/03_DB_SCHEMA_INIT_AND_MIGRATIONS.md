@@ -4,10 +4,11 @@ Init scripts run only on first startup with empty volume.
 
 Dev reload (wipe data):
 ```powershell
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker volume rm claire_de_binare_postgres_data
-docker compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 Prod apply (preserve data):

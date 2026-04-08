@@ -103,13 +103,13 @@ make kill-switch-activate
 2. Logs überprüfen: `docker logs cdb_risk --tail 50`
 3. Root Cause identifizieren
 4. Problem beheben
-5. Deaktivierung nur nach Genehmigung (siehe EMERGENCY_STOP_SOP.md)
+5. Deaktivierung nur nach dokumentierter Prüfung (siehe EMERGENCY_STOP_SOP.md)
 
 ---
 
 ### 2. Trading Mode Wechsel (PAPER → STAGED → LIVE)
 
-**KRITISCH**: Nur mit expliziter Genehmigung!
+**KRITISCH**: Nur nach vollständig abgehakter Checkliste und dokumentierter Begründung.
 
 **Voraussetzungen für LIVE Mode:**
 - ✅ 14-Tage Paper Trading erfolgreich abgeschlossen
@@ -117,7 +117,7 @@ make kill-switch-activate
 - ✅ Risk Limits konfiguriert und getestet
 - ✅ Emergency Stop SOP verstanden
 - ✅ Monitoring 24/7 verfügbar
-- ✅ Genehmigte Freigabe von System Owner
+- ✅ Alle Punkte dieser Checkliste vom Maintainer dokumentiert abgehakt
 
 **Wechsel durchführen:**
 
@@ -244,47 +244,40 @@ docker logs cdb_execution --tail 30
 
 ---
 
-## Eskalationsprozess
+## Entscheidungsprozess (Solo-Maintainer)
 
-### Stufe 1: Operator (Selbst)
+> **Realität**: Dieses Projekt wird von einem einzelnen Maintainer betrieben.
+> Es gibt keine Mehrpersonen-Rollenleiter. Alle Entscheidungen liegen beim Maintainer,
+> abgesichert durch fail-closed Defaults und dokumentierte Checklisten.
 
-**Befugnis:**
-- Dashboard Monitoring
-- Logs Einsicht
-- Kill-Switch Aktivierung bei Emergency
-- Order Cancellation (einzelne Orders)
+### Befugnis (Maintainer)
 
-**Kann NICHT:**
-- Trading Mode wechseln (PAPER → LIVE)
-- Risk Limits dauerhaft ändern
-- Kill-Switch deaktivieren ohne Justification
-
----
-
-### Stufe 2: Senior Operator / Risk Manager
-
-**Befugnis:**
-- Alles von Stufe 1
-- Risk Limits temporär anpassen
-- Kill-Switch deaktivieren (mit Begründung)
-- Manual Trading (via API)
-
-**Kann NICHT:**
-- Trading Mode LIVE aktivieren ohne Owner Approval
+- Dashboard Monitoring, Logs Einsicht
+- Kill-Switch Aktivierung und Deaktivierung (mit dokumentierter Begründung)
+- Order Cancellation
+- Risk Limits anpassen
+- Trading Mode wechseln (PAPER → LIVE), nur nach Checkliste (siehe Abschnitt 2)
 - System-kritische Config ändern
-
----
-
-### Stufe 3: System Owner
-
-**Befugnis:**
-- Alles von Stufe 1 + 2
-- Trading Mode LIVE aktivieren
-- System-kritische Config ändern
-- Deployment Genehmigungen
+- Deployments durchführen und dokumentieren
 - Emergency Shutdown
 
-**Eskalations-Kontakt**: Siehe EMERGENCY_STOP_SOP.md
+### Fail-Closed Prinzip
+
+Der Maintainer entscheidet selbst — strikt und dokumentationspflichtig:
+
+- **Kill-Switch Deaktivierung**: Begründung muss im Audit Trail dokumentiert sein, bevor der Switch deaktiviert wird.
+- **Trading-Mode-Wechsel auf LIVE**: Alle Voraussetzungen der Checkliste (Abschnitt 2) müssen nachweislich erfüllt sein. Kein Override ohne dokumentierte Begründung.
+- **Risk-Limit-Änderungen**: Änderung + Begründung im Git-Commit festhalten.
+
+### Eskalation bei Unsicherheit
+
+Wenn der Maintainer bei einer Entscheidung unsicher ist:
+
+1. Kill-Switch aktivieren (fail-closed)
+2. Situation dokumentieren
+3. Erst nach Analyse und dokumentierter Begründung weiterfahren
+
+**Notfallkontakt**: Siehe EMERGENCY_STOP_SOP.md
 
 ---
 
@@ -384,13 +377,12 @@ Siehe separate Datei: `docs/HITL_METRICS_MAPPING.md`
 
 - **Dashboard JSON**: infrastructure/monitoring/grafana/dashboards/claire_hitl_control_v1.json
 - **Emergency Stop SOP**: docs/EMERGENCY_STOP_SOP.md
-- **Trading Modes**: docs/TRADING_MODES.md
+- **Trading Modes**: knowledge/systems/TRADING_MODES.md
 - **Health Contract**: docs/HEALTH_CONTRACT.md
 - **Stack Lifecycle**: docs/STACK_LIFECYCLE.md
 - **Issue**: #244 (HITL Control Center)
 
 ---
 
-**Genehmigt von**: [Pending]
-**Review Datum**: [Pending]
+**Zuletzt geprüft von**: Maintainer
 **Version**: 1.0

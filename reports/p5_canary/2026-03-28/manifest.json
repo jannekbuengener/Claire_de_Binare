@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "package_type": "p5-canary-artifacts",
+  "package_status": "NO-GO",
+  "artifact_instance_type": "committed_prestart_no_go",
+  "artifact_root": "reports/p5_canary/2026-03-28/",
+  "commit_sha": "c315d076c989c6f40f113cccbe9e28fb91323630",
+  "commit_sha_role": "source_revision_at_prestart_capture",
+  "execution_runtime_mode": {
+    "value": null,
+    "value_basis": "not_captured_no_go_path",
+    "capture_state": "pending_runtime_capture",
+    "live_assertion": false,
+    "canonical_field": "execution_status.mode"
+  },
+  "evidence_lock_path": "prestart_evidence_lock.yaml",
+  "decision_record_path": "decision_record.yaml",
+  "endpoint_snapshots": {
+    "execution_status": null,
+    "risk_status": null,
+    "kill_switch_status": null,
+    "note": "not_captured — NO-GO path; endpoints/ directory absent"
+  },
+  "lr040_verdict_path": "lr040/lr040_soak_gate_eval.json",
+  "lr040_verdict": "INCONCLUSIVE",
+  "optional_shadow_prereq_package": {
+    "state": "not_materialized_in_this_handoff_instance",
+    "path": null,
+    "reason": "shadow_prereq_evidence remains separate from p5 core artifacts"
+  },
+  "source_integrity": {
+    "handoff_state": "committed_no_go",
+    "runtime_capture_state": "not_captured",
+    "lr040_state": "FAIL",
+    "all_required_paths_present": false,
+    "missing_paths": [
+      "endpoints/execution_status.json",
+      "endpoints/risk_status.json",
+      "endpoints/kill_switch_status.json"
+    ]
+  },
+  "checksums": {
+    "algorithm": "sha256",
+    "state": "partial — only committed files; endpoints/ not captured",
+    "omitted_self_hash": "manifest.json",
+    "files": {
+      "prestart_evidence_lock.yaml": "769df2a5bcff91fef46dda1c4717dcccd71eb7293062b73ea3c22af47ef8c940",
+      "decision_record.yaml": "00d0abb63e2fe88dd5f128b234cd861e0e4b47903f4afcfb243f26097aec1d60",
+      "endpoints/execution_status.json": null,
+      "endpoints/risk_status.json": null,
+      "endpoints/kill_switch_status.json": null,
+      "lr040/lr040_soak_gate_eval.json": "b7239be108d912577f73a57a859bb3f9958f00d762f3450b95e8495b28e9e3c1"
+    }
+  },
+  "notes": [
+    "NO-GO path: LR-040 INCONCLUSIVE (exit 1), fail-closed, Option A.",
+    "Endpoint captures not performed — NO-GO already established before BLUE-Stack capture.",
+    "Checksums only for files present at commit time. Endpoint nulls are intentional.",
+    "package_status GO requires: LR-040 PASS + all_required_paths_present: true + decision_record status: GO.",
+    "Next step: start new clean 72h soak run with new artifact directory."
+  ]
+}

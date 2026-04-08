@@ -3,6 +3,7 @@
 ## MUST READ FIRST
 Claude **muss** zu Beginn jeder Session folgende Dateien lesen:
 - agents/AGENTS.md
+- docs/meta/WORKING_REPO_CANON.md
 - knowledge/SYSTEM.CONTEXT.md
 - CURRENT_STATUS.md
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
@@ -91,6 +92,7 @@ Wenn das Verständnis falsch ist:
 
 ### Session-Ende (Pflicht)
 Keine Session gilt als abgeschlossen, bevor nicht:
+- `make pre-close` ausgeführt wurde und kein untracked Artefakt in kanonischen Pfaden gemeldet wird
 - eine Session-Datei gepflegt ist
 - `CURRENT_STATUS.md` aktualisiert wurde, wenn sich der Repo-/Engineering-Status
   geaendert hat
@@ -291,6 +293,7 @@ Stabil:
 
 Historischer Kontext:
 - knowledge/CURRENT_STATUS.md
+- PROJECT_STATUS.md
 
 ---
 

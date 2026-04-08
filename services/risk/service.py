@@ -908,7 +908,7 @@ class RiskManager:
         Source: Candles Service computes returns from stream.candles_1m
 
         Fail-closed: Returns None if key missing/expired/invalid.
-        BLACK does not compute returns - only validates and gates.
+        Risk does not compute returns - only validates and gates.
         """
         try:
             key = f"market_state:{symbol}"

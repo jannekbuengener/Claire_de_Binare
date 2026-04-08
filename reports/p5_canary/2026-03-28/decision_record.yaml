@@ -1,0 +1,46 @@
+schema_version: "1.0"
+decision_type: p5_canary_prestart
+decision_utc: 2026-03-28T18:15:31Z
+decision_date_utc: 2026-03-28
+operator: jannekbuengener
+source_commit_sha: c315d076c989c6f40f113cccbe9e28fb91323630
+canary_artifact_path: reports/p5_canary/2026-03-28/
+
+# LR-040: Soak-Run soak_test_20260325_121250 (gestartet 2026-03-25T12:12:50Z auf main@ac6ab87)
+# Planmaessiges Ende: 2026-03-28T12:12:50Z
+# Evaluator ausgefuehrt: 2026-03-28T18:15:31Z
+# python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_20260325_121250
+# Exit-Code: 1
+lr040_pass_run_id: NOT_AVAILABLE
+lr040_pass_commit: ac6ab87  # Commit an dem der Soak-Run gestartet wurde
+lr040_soak_artifact: artifacts/soak_test_20260325_121250
+lr040_verdict: INCONCLUSIVE
+
+# status: GO nur setzen wenn:
+#   - LR-040 verdict == PASS
+#   - prestart_evidence_lock.yaml vollstaendig ausgefuellt (all_gates_pass: true)
+#   - endpoints/*.json live gecaptured
+#   - worktree_status: clean
+#   - Human Gate explizit erteilt
+status: NO-GO
+rationale: >
+  LR-040 Evaluator liefert deterministisch INCONCLUSIVE (exit 1).
+  Soak-Artefakt soak_test_20260325_121250 lief 77.75h; duration_gte_72h=true,
+  no_failed_marker=true, memory_growth 1.14%, cpu_avg 2.13% — alle Metriken gruen.
+  soak_test_INCONCLUSIVE.txt ist vorhanden, ausgeloest durch einen post-72h
+  Docker/Host-Restart (2026-03-28 15:54 UTC, ca. 3h41m nach 72h-Ende).
+  Der Evaluator kennt keine Zeitfenster-Unterscheidung: Marker vorhanden => INCONCLUSIVE.
+  Option A / fail-closed: INCONCLUSIVE wird als NO-GO gewertet.
+  Naechster Schritt: neuer sauberer 72h-Soak-Run, dann erneute Evaluation.
+  Lean-Run (shadow-soak-evidence.yml) bleibt bis dahin blockiert.
+
+hard_blockers:
+  - lr040_gate_verdict: FAIL  # formales Verdict INCONCLUSIVE — kein Gate-Pass, daher FAIL
+  - prestart_evidence_lock: PENDING
+  - human_gate: NOT_GRANTED
+
+notes:
+  - Option A (fail-closed) wurde explizit vom Operator gewaehlt
+  - status: GO erst nach: LR-040 PASS + all_gates_pass: true + Human Gate erteilt
+  - Diese Datei ist kein GO-Signal; nur der explizit gesetzte status-Wert zaehlt
+  - endpoints/ fehlen — kein BLUE-Stack-Capture erfolgt, da NO-GO bereits feststeht

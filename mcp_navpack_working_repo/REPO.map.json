@@ -241,16 +241,16 @@
           "why": "Compose fragment topology and usage."
         },
         {
-          "path": "infrastructure/compose/base.yml",
-          "why": "Base compose fragment."
+          "path": "infrastructure/compose/compose.blue.yml",
+          "why": "Canonical BLUE stack (core, always-on runtime)."
         },
         {
-          "path": "infrastructure/compose/dev.yml",
-          "why": "Development compose overlay."
+          "path": "infrastructure/compose/compose.red.yml",
+          "why": "Canonical RED stack (signal + monitoring)."
         },
         {
-          "path": "infrastructure/scripts/stack_up.ps1",
-          "why": "Local stack bootstrap script."
+          "path": "infrastructure/scripts/setup_blue_red.ps1",
+          "why": "Canonical PowerShell runtime entrypoint for the BLUE+RED stack."
         },
         {
           "path": "infrastructure/scripts/stack_verify.ps1",

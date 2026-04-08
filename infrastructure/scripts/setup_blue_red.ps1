@@ -62,6 +62,16 @@ if ($networkExists) {
     Write-Host "  [OK] Network created" -ForegroundColor Green
 }
 
+# ==================== SECRETS_PATH ====================
+
+if (-not $env:SECRETS_PATH) {
+    $env:SECRETS_PATH = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
+}
+if (-not (Test-Path $env:SECRETS_PATH)) {
+    Write-Error "Secrets directory not found: $env:SECRETS_PATH. Set SECRETS_PATH env var or create the directory."
+}
+Write-Host "SECRETS_PATH: $env:SECRETS_PATH" -ForegroundColor Gray
+
 # ==================== BLUE STACK ====================
 
 Write-Host "`n[2/4] Starting BLUE stack (core trading)..." -ForegroundColor Yellow
@@ -94,8 +104,8 @@ if (-not $SkipSmokeTest) {
     $smokeScript = Join-Path $PSScriptRoot "..\..\scripts\smoke_core_flow.py"
 
     if (Test-Path $smokeScript) {
-        $env:REDIS_PASSWORD = Get-Content "$env:USERPROFILE\Documents\.secrets\.cdb\REDIS_PASSWORD" -Raw
-        $env:POSTGRES_PASSWORD = Get-Content "$env:USERPROFILE\Documents\.secrets\.cdb\POSTGRES_PASSWORD" -Raw
+        $env:REDIS_PASSWORD = (Get-Content (Join-Path $env:SECRETS_PATH "REDIS_PASSWORD") -Raw).Trim()
+        $env:POSTGRES_PASSWORD = (Get-Content (Join-Path $env:SECRETS_PATH "POSTGRES_PASSWORD") -Raw).Trim()
 
         python $smokeScript
 

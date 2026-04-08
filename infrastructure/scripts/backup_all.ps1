@@ -447,7 +447,10 @@ Write-Step "Compressing archive..."
 
 $archivePath = Join-Path $BackupDir "$BACKUP_NAME.zip"
 try {
-    Compress-Archive -Path $WORK_DIR -DestinationPath $archivePath -Force
+    # Use .NET streaming ZIP to avoid Compress-Archive OutOfMemoryException on large dumps
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    if (Test-Path $archivePath) { Remove-Item $archivePath -Force }
+    [System.IO.Compression.ZipFile]::CreateFromDirectory($WORK_DIR, $archivePath)
 
     if (Test-Path $archivePath) {
         $archiveSizeMB = [math]::Round((Get-Item $archivePath).Length / 1MB, 2)

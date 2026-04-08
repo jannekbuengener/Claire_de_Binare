@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.1",
+  "control": "LR-040",
+  "issue": "#786",
+  "run_intent": "lr040",
+  "verdict": "INCONCLUSIVE",
+  "checks": {
+    "hourly_log_present": true,
+    "duration_gte_72h": true,
+    "no_failed_marker": true,
+    "not_both_markers": true,
+    "no_restart_alerts": false,
+    "memory_growth_below_10pct": true,
+    "cpu_avg_below_70pct": true,
+    "resource_snapshots_present": true
+  },
+  "failures": [
+    "no_restart_alerts"
+  ],
+  "metrics": {
+    "duration_hours": 77.75,
+    "hourly_entries": 76,
+    "max_memory_growth_pct": 1.14,
+    "overall_cpu_avg_pct": 2.13,
+    "resource_snapshot_count": 14
+  },
+  "artifacts": {
+    "hourly_log": "hourly_checks.log",
+    "failed_marker": null,
+    "inconclusive_marker": "soak_test_INCONCLUSIVE.txt",
+    "restart_cause": "environment_interruption",
+    "restart_alerts": "restart_alerts.log",
+    "resource_snapshots": [
+      "resources_snapshot_20260325_12h.txt",
+      "resources_snapshot_20260325_13h.txt",
+      "resources_snapshot_20260325_19h.txt",
+      "resources_snapshot_20260326_01h.txt",
+      "resources_snapshot_20260326_07h.txt",
+      "resources_snapshot_20260326_13h.txt",
+      "resources_snapshot_20260326_19h.txt",
+      "resources_snapshot_20260327_01h.txt",
+      "resources_snapshot_20260327_07h.txt",
+      "resources_snapshot_20260327_13h.txt",
+      "resources_snapshot_20260327_19h.txt",
+      "resources_snapshot_20260328_01h.txt",
+      "resources_snapshot_20260328_07h.txt",
+      "resources_snapshot_20260328_13h.txt"
+    ]
+  }
+}

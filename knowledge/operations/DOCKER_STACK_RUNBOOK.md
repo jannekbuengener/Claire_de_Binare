@@ -52,20 +52,23 @@ docker logs cdb_<service> --tail 30
 **Quick Fix**:
 ```powershell
 # Step 1: Verify secret files exist and are FILES (not directories)
-ls ../.cdb_local/.secrets/
+# Kanonischer Pfad: ~/Documents/.secrets/.cdb/
+ls "$env:USERPROFILE\Documents\.secrets\.cdb"
 
 # Expected output:
-# -rw-r--r-- redis_password (24 bytes)
-# -rw-r--r-- postgres_password (any size)
+# -rw-r--r-- REDIS_PASSWORD (24+ bytes)
+# -rw-r--r-- POSTGRES_PASSWORD (any size)
 
 # Step 2: If directories exist, they're INVALID
 # Fix: Create actual files with password content
 # Example:
-"your_password_here" | Out-File -FilePath ../.cdb_local/.secrets/postgres_password -NoNewline -Encoding ASCII
+"your_password_here" | Out-File -FilePath "$env:USERPROFILE\Documents\.secrets\.cdb\POSTGRES_PASSWORD" -NoNewline -Encoding ASCII
 
 # Step 3: Restart stack
-docker-compose down
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -85,8 +88,10 @@ docker-compose down
 
 # Step 3: Restart PowerShell to apply changes
 # Step 4: Restart stack
-docker-compose down
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -103,11 +108,14 @@ netstat -ano | findstr :<PORT>
 # Step 2: Kill the process (if not needed)
 Stop-Process -Id <PID> -Force
 
-# Alternative: Change port in infrastructure/compose/dev.yml
+# Alternative: Change port in infrastructure/compose/compose.blue.yml or compose.red.yml
 # Example: Change "6379:6379" to "6380:6379"
 
 # Step 3: Restart stack
-.\infrastructure\scripts\stack_up.ps1
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -174,12 +182,13 @@ docker restart cdb_<service>
 
 ### 8. Stack Won't Start
 
-**Symptom**: `stack_up.ps1` fails or hangs
+**Symptom**: Stack fails to start or hangs
 
 **Quick Fix**:
 ```powershell
 # Step 1: Bring down everything
-docker-compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 
 # Step 2: Check for conflicting resources
 .\infrastructure\scripts\stack_doctor.ps1
@@ -188,7 +197,8 @@ docker-compose down
 .\infrastructure\scripts\stack_doctor.ps1 -Fix
 
 # Step 4: Try starting again
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -208,7 +218,7 @@ docker exec cdb_grafana ls -la /run/secrets/
 # Expected: postgres_password file should exist
 
 # Step 3: If secret missing, check compose file secret mounts
-# File: infrastructure/compose/base.yml
+# File: infrastructure/compose/compose.blue.yml
 # Should have:
 #   cdb_grafana:
 #     secrets:
@@ -319,10 +329,11 @@ docker exec cdb_postgres psql -U claire_user -d postgres -c "CREATE DATABASE cla
 
 **Dev: Force Schema Reload** (wipes all data):
 ```powershell
-cd infrastructure/compose
-docker-compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker volume rm claire_de_binare_postgres_data
-docker-compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 **Prod: Apply Schema Manually** (preserves data):
@@ -499,9 +510,11 @@ docker network inspect ${STACK_NAME}_cdb_network
 # Default (STACK_NAME=cdb): docker network inspect cdb_cdb_network
 
 # Restart networking
-docker-compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker network prune
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -529,7 +542,8 @@ docker logs cdb_<service> --tail 100 -f
 
 **All containers**:
 ```powershell
-docker-compose logs -f
+docker compose -f infrastructure/compose/compose.blue.yml logs -f
+docker compose -f infrastructure/compose/compose.red.yml logs -f
 ```
 
 **Specific time range** (via Loki):
@@ -546,9 +560,11 @@ docker-compose logs -f
 
 ```powershell
 # Truncate container logs
-docker-compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker system prune -a --volumes
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -559,13 +575,14 @@ docker system prune -a --volumes
 
 ```powershell
 # Step 1: Edit config file
-# Example: infrastructure/compose/dev.yml
+# Example: infrastructure/compose/compose.blue.yml or compose.red.yml
 
 # Step 2: Validate syntax
-docker-compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml config
+docker compose -f infrastructure/compose/compose.blue.yml config
 
 # Step 3: Apply changes (recreates containers)
-docker-compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -604,7 +621,8 @@ Start-Process "http://localhost:3000/datasources"
 
 ```powershell
 # Step 1: Stop everything
-docker-compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 
 # Step 2: Check for system-wide issues
 docker info
@@ -616,7 +634,8 @@ docker info
 Restart-Service docker
 
 # Step 5: Start stack fresh
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -643,7 +662,8 @@ docker exec cdb_postgres pg_isready
 # If healthy, data might be OK
 
 # Step 5: Restart all services
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ---
@@ -652,18 +672,20 @@ docker exec cdb_postgres pg_isready
 
 ```powershell
 # Step 1: IMMEDIATE - Isolate stack
-docker-compose down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 
-# Step 2: Enable network isolation for restart
-.\infrastructure\scripts\stack_up.ps1 -NetworkIsolation
+# Step 2: Restart with network isolation overlay
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/network-prod.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Step 3: Check for unauthorized access
 docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "SELECT * FROM pg_stat_activity;"
 
 # Step 4: Rotate all secrets
-# - Generate new passwords
-# - Update ../.cdb_local/.secrets/ files
-# - Restart services
+# - Neue Passwörter generieren via: .\tools\secrets\Rotate-Secrets.ps1 apply
+# - Secrets liegen in: ~/Documents/.secrets/.cdb/
+# - Stack neu starten (BLUE+RED)
 
 # Step 5: Verify compliance
 .\infrastructure\scripts\stack_doctor.ps1
@@ -704,7 +726,7 @@ Query: {container_name=~"cdb_.*"} |= "error" or "fatal" or "exception"
 
 - Create backup: `.\infrastructure\scripts\dr_backup.ps1`
 - Test rollback: `.\infrastructure\scripts\stack_tag.ps1 -Latest`
-- Update images: `docker-compose pull && .\infrastructure\scripts\stack_up.ps1`
+- Update images: `docker compose -f infrastructure/compose/compose.blue.yml pull && docker compose -f infrastructure/compose/compose.red.yml pull`, dann BLUE + RED neu starten
 
 ### Quarterly
 
@@ -727,7 +749,7 @@ Query: {container_name=~"cdb_.*"} |= "error" or "fatal" or "exception"
 ### Running E2E Tests Locally
 
 **Prerequisites**:
-- Stack running: `.\infrastructure\scripts\stack_up.ps1 -Logging`
+- Stack running (BLUE + RED): `docker compose -f infrastructure/compose/compose.blue.yml up -d && docker compose -f infrastructure/compose/compose.red.yml up -d`
 - Redis accessible: `docker exec cdb_redis redis-cli ping`
 - Core services healthy: `docker ps` shows 9+ containers running
 
@@ -782,7 +804,7 @@ GitHub Actions → E2E Tests - Paper Trading → Run workflow
 
 1. **Checkout** - Get PR code
 2. **Setup Python 3.11** - Install pytest + redis-py
-3. **Start Stack** - `docker-compose -f base.yml -f dev.yml up -d`
+3. **Start Stack** - `docker-compose -f base.yml -f dev.yml up -d` *(CI-intern, nicht der lokale Operator-Pfad)*
 4. **Health Checks** (60s timeout each):
    - Redis: `redis-cli ping` returns `PONG`
    - Postgres: `pg_isready` confirms accepting connections
@@ -792,7 +814,7 @@ GitHub Actions → E2E Tests - Paper Trading → Run workflow
    - `docker compose ps` (service status)
    - `docker compose logs --tail=300` (last 300 lines)
 7. **Upload Artifacts** - Logs saved for 7 days
-8. **Cleanup** - `docker-compose down -v` (always runs)
+8. **Cleanup** - `docker-compose down -v` (always runs) *(CI-intern)*
 
 ---
 
@@ -814,7 +836,8 @@ GitHub Actions → E2E Tests - Paper Trading → Run workflow
 **Logs Location (local)**:
 ```powershell
 # If tests fail locally, check:
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml logs --tail=300
+docker compose -f infrastructure/compose/compose.blue.yml logs --tail=300
+docker compose -f infrastructure/compose/compose.red.yml logs --tail=300
 
 # Specific service:
 docker logs cdb_execution --tail=100
@@ -1289,14 +1312,15 @@ pytest tests/e2e/test_paper_trading_p0.py -v --no-cov
 - **Compose files**: `infrastructure/compose/*.yml`
 - **Scripts**: `infrastructure/scripts/*.ps1`
 - **Configs**: `infrastructure/monitoring/*.yml`
-- **Secrets**: `../.cdb_local/.secrets/*`
+- **Secrets**: `~/Documents/.secrets/.cdb/*` (kanonischer `SECRETS_PATH`)
 - **Backups**: `infrastructure/dr_backups/*.zip`
 
 ### Useful Commands Cheat Sheet
 
 ```powershell
-# Quick start
-.\infrastructure\scripts\stack_up.ps1 -Logging
+# Quick start (BLUE + RED)
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Health check
 docker ps --format "table {{.Names}}\t{{.Status}}"

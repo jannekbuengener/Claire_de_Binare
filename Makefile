@@ -20,7 +20,7 @@
 
 MCP_CONFIG_PATHS ?=
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop rollback cleanup mcp-config-validate security-scan pre-close
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -59,6 +59,9 @@ help:
 	@echo "  make restore                 - Restore aus F:\\Claire_Backups"
 	@echo "  make backup-health           - Backup-Aktualitaet pruefen"
 	@echo ""
+	@echo "Session-Close:"
+	@echo "  make pre-close               - Pre-close sweep: prueft untracked Artefakte in kanonischen Pfaden"
+	@echo ""
 	@echo "Repo-Hygiene & Rollback:"
 	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
 	@echo "  make cleanup                 - Aufräumen merged Branches (DRY-RUN)"
@@ -90,12 +93,12 @@ test-coverage:
 
 test-e2e:
 	@echo "🚀 Führe E2E-Tests aus (benötigt laufende Container)..."
-	@echo "⚠️  Stelle sicher, dass 'docker compose up -d' läuft!"
+	@echo "⚠️  Stelle sicher, dass der Stack laeuft: make docker-up"
 	pytest -v -m e2e
 
 test-local:
 	@echo "🏠 Führe local-only Tests aus..."
-	@echo "⚠️  Stelle sicher, dass 'docker compose up -d' läuft!"
+	@echo "⚠️  Stelle sicher, dass der Stack laeuft: make docker-up"
 	pytest -v -m local_only
 
 test-local-stress:
@@ -139,15 +142,17 @@ ifeq ($(OS),Windows_NT)
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
 	@pwsh -NoProfile -Command "docker network create cdb_network 2>&1 | Out-Null; Write-Host '✓ cdb_network bereit'"
-	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.blue.yml' up -d"
-	@pwsh -NoProfile -Command "docker compose -f 'infrastructure/compose/compose.red.yml' up -d"
+	@pwsh -NoProfile -Command "if (-not $$env:SECRETS_PATH) { $$env:SECRETS_PATH = Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; if (-not (Test-Path $$env:SECRETS_PATH)) { Write-Error ('SECRETS_PATH not found: ' + $$env:SECRETS_PATH); exit 1 }; docker compose -f 'infrastructure/compose/compose.blue.yml' up -d"
+	@pwsh -NoProfile -Command "if (-not $$env:SECRETS_PATH) { $$env:SECRETS_PATH = Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; docker compose -f 'infrastructure/compose/compose.red.yml' up -d"
 	@pwsh -NoProfile -Command "Start-Sleep -Seconds 10"
 else
 docker-up:
 	@echo "🐳 Starte Docker Compose Stack (BLUE+RED)..."
 	@docker network create cdb_network 2>/dev/null || true
-	@docker compose -f infrastructure/compose/compose.blue.yml up -d
-	@docker compose -f infrastructure/compose/compose.red.yml up -d
+	@export SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}; \
+	 [ -d "$$SECRETS_PATH" ] || { echo "ERROR: SECRETS_PATH not found: $$SECRETS_PATH" >&2; exit 1; }; \
+	 docker compose -f infrastructure/compose/compose.blue.yml up -d; \
+	 docker compose -f infrastructure/compose/compose.red.yml up -d
 	@echo "⏳ Warte 10s bis Container hochgefahren sind..."
 	sleep 10
 endif
@@ -180,6 +185,9 @@ docker-health:
 # Paper Trading (14-Tage Test)
 # ============================================================================
 
+pre-close:
+	@bash scripts/pre_close_sweep.sh
+
 systemcheck:
 	@echo "🔍 Führe Pre-Flight-Checks aus..."
 	python infrastructure/scripts/systemcheck.py
@@ -207,7 +215,7 @@ backup-health:
 paper-trading-start: systemcheck
 	@echo "🚀 Starte Paper Trading Runner..."
 	@echo "⚠️  Stelle sicher, dass alle anderen Container laufen: make docker-up"
-	docker compose up -d cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_paper_runner
 	@echo ""
 	@echo "✅ Paper Trading Runner gestartet!"
 	@echo "   Logs anzeigen: make paper-trading-logs"
@@ -216,11 +224,11 @@ paper-trading-start: systemcheck
 
 paper-trading-logs:
 	@echo "📜 Paper Trading Logs (Ctrl+C zum Beenden)..."
-	docker compose logs -f cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml logs -f cdb_paper_runner
 
 paper-trading-stop:
 	@echo "🛑 Stoppe Paper Trading Runner..."
-	docker compose stop cdb_paper_runner
+	docker compose -f infrastructure/compose/compose.blue.yml stop cdb_paper_runner
 	@echo "✅ Paper Trading Runner gestoppt"
 
 # ============================================================================

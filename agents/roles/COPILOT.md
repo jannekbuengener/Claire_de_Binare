@@ -6,6 +6,8 @@
 - `knowledge/governance/CDB_AGENT_POLICY.md`
 - `knowledge/CDB_KNOWLEDGE_HUB.md`
 
+Aktueller Projektstatus: `CURRENT_STATUS.md` (Repo-/Engineering-Status); `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operativer Go/No-Go-Status).
+
 ---
 
 ## 1. Rolle & Mandat

@@ -1,4 +1,8 @@
 # Verification Script - Check if restore was successful
+#
+# ⚠️  HISTORISCHES ARTEFAKT — 2025-12-31-Docker-Reinstall-Event
+# Nicht aktiver Operator-Canon. Aktiver Canon: manuelle Postgres/Redis-Checks nach make restore
+# Hardcoded auf alten Volume-Set + host-spezifische Pfade (C:\Users\janne\..., D:\Dev\...)
 
 Write-Host "=== Docker Restore Verification ===" -ForegroundColor Green
 Write-Host ""

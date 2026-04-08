@@ -1,7 +1,9 @@
 ## PASS 4.5 Placeholder Cleanup Report
 
+> Historical generated report (2026-02-24). The `governance_core_status_report_work` source path refers to a local workspace that is no longer tracked.
+
 - Repo: `jannekbuengener/Claire_de_Binare`
-- CSV source: `governance_core_status_report_work\reports\GOVERNANCE_CORE_STATUS_REPORT_v2.csv`
+- CSV source: `governance_core_status_report_work\reports\GOVERNANCE_CORE_STATUS_REPORT_v2.csv` *(historical local path)*
 - Candidate issues (placeholder=true AND has_hard_evidence=true): `7`
 - Patched issues: `7`
 - evidence-only diff verified (all processed): `true`
