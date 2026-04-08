@@ -7,6 +7,7 @@ Zweck: Steuerung von Issues/PRs entlang der Stages (Beweisbarkeit -> Stabilitaet
 
 - Gilt fuer alle aktiven Issues/PRs, die im CDB Control Board landen.
 - Board ist "operational control": Ownership, Priorisierung, Evidence, Blocker, Routing.
+- Das Stage-System (`proof -> stability -> trade-capable -> strategy-validated`) ist orthogonal zum LR-System (`P0-P5`) und ersetzt kein LR-Go/No-Go-Verdikt.
 - Guardrail: Keine Aenderungen an Trading-Logik/Thresholds/Decision-Logik durch dieses Runbook.
 
 ## Pflichtfelder (Issue-Standard)
@@ -69,6 +70,7 @@ Board-Automation setzt/verifiziert:
 
 ## Guardrails
 
+- Keine Ableitung von Live-Kapital-Freigaben aus `Stage`.
 - Keine Aenderungen unter `knowledge/governance/**`.
 - Keine Code-/Policy-Aenderungen durch diese Doku.
 - Jede "Done"-Aussage braucht Evidence. Ohne Evidence kein Merge-Gate, kein "fertig".

@@ -5,8 +5,9 @@
 - `agents/AGENTS.md`
 - `knowledge/governance/CDB_AGENT_POLICY.md`
 - `knowledge/CDB_KNOWLEDGE_HUB.md`
+- `docs/runbooks/CONTROL_REGISTER.md`
 
-Aktueller Projektstatus: `CURRENT_STATUS.md` (Repo-/Engineering-Status); `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operativer Go/No-Go-Status).
+Aktueller Projektstatus: `CURRENT_STATUS.md` (Repo-/Engineering-Status); `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operativer Go/No-Go-Status); `docs/runbooks/CONTROL_REGISTER.md` (Board-/Stage-Status, aktuell `trade-capable` bei weiterhin `LR-050 NO-GO`).
 
 ---
 

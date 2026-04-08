@@ -16,6 +16,7 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
 8. Neue Issues/PRs erhalten automatisch einen Default-Status (Issue=`Backlog`, PR=`Review`).
 9. `status:*` Labels überschreiben/setzen den Project-Status per Label-Mapping.
 10. Milestone-Änderungen synchronisieren automatisch das passende `stage:*` Label.
+11. `stage:*` Labels sind Board-/Fokus-Signale und ersetzen keinen LR-Go/No-Go-Status.
 
 ## Hard Facts
 
@@ -49,6 +50,8 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
   Diese alten Labels werden weder im Board-Mapping noch in Workflows verwendet.
 - **Abgrenzung:** Project-v2-Statuswerte (`Backlog`, `Ready`, `In Progress`,
   `Review`, `Blocked`, `Done`) sind Board-Feldwerte, keine Labels.
+- **Abgrenzung:** `stage:*` Labels bilden das Board-Stage-System ab und sind
+  orthogonal zum LR-System in `docs/live-readiness/`.
 
 ## Automationen (Workflow-Dateien)
 

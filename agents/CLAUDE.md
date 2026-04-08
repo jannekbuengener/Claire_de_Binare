@@ -7,11 +7,13 @@ Claude **muss** zu Beginn jeder Session folgende Dateien lesen:
 - knowledge/SYSTEM.CONTEXT.md
 - CURRENT_STATUS.md
 - docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+- docs/runbooks/CONTROL_REGISTER.md
 - knowledge/ACTIVE_ROADMAP.md
 
 Diese Dateien sind die **autoritative Einstiegskette** für Kontext, Governance
 und die getrennten Statusrollen. `knowledge/CURRENT_STATUS.md` bleibt nur
-historischer Kontext.
+historischer Kontext. Board-/Stage-Status und LR-Go/No-Go muessen explizit
+getrennt gelesen werden.
 
 ---
 
