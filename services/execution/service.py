@@ -421,7 +421,6 @@ def process_order(order_data: object):
                 order.side,
                 order.quantity,
             )
-            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             _publish_result(result)
             return result
@@ -451,7 +450,6 @@ def process_order(order_data: object):
                 order.side,
                 order.quantity,
             )
-            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             increment_stat("shadow_blocked")
             _publish_result(result)
@@ -491,7 +489,6 @@ def process_order(order_data: object):
                 order.side,
                 ks_reason,
             )
-            result.metadata = _build_result_metadata(order, result)
             increment_stat("orders_rejected")
             _publish_result(result)
             return result

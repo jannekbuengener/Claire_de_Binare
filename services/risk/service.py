@@ -378,7 +378,7 @@ def decide_trade(
     return DECISION_ALLOW, None, evidence
 
 
-def _build_order_metadata(evidence: dict) -> dict:
+def _build_order_timing_metadata(evidence: dict) -> dict:
     """Build a compact metadata contract for downstream execution/persistence."""
     timestamps_ms = copy.deepcopy(evidence.get("timestamps_ms") or {})
     return {
@@ -1874,7 +1874,7 @@ class RiskManager:
             output_hash=evidence.get("output_hash"),
             # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
             policy_snapshot=policy_snapshot,
-            metadata=_build_order_metadata(evidence),
+            metadata=_build_order_timing_metadata(evidence),
         )
 
         # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit

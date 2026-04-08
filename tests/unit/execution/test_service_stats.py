@@ -1,4 +1,4 @@
-'"""Unit-Tests für Execution-Service-Statistik und Publishing."""'
+"""Unit-Tests fuer Execution-Service-Statistik und Publishing."""
 
 from __future__ import annotations
 
