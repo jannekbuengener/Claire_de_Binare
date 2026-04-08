@@ -16,7 +16,7 @@ import os
 import json
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, Optional
 
@@ -108,7 +108,7 @@ class DatabaseWriter:
 
         # If integer (Unix timestamp), convert to datetime
         if isinstance(timestamp_value, int):
-            return datetime.utcfromtimestamp(timestamp_value)
+            return datetime.fromtimestamp(timestamp_value, timezone.utc)
 
         # If string (ISO format), parse it
         if isinstance(timestamp_value, str):
@@ -168,6 +168,15 @@ class DatabaseWriter:
             return str(value).lower()
         except Exception:  # pragma: no cover - defensive fallback
             return ""
+
+    @staticmethod
+    def _decimal_or_zero(value: Any) -> Decimal:
+        """Return Decimal(value) or Decimal('0') for missing/null inputs."""
+        if value is None:
+            return Decimal("0")
+        if isinstance(value, Decimal):
+            return value
+        return Decimal(str(value))
 
     @staticmethod
     def normalize_exposure_pct(value) -> float:
@@ -262,6 +271,42 @@ class DatabaseWriter:
             raise ValueError(f"{field_name} must be > 0, got: {dec}")
 
         return dec
+
+    @staticmethod
+    def _fetch_open_position(cursor, symbol: str):
+        """Return the currently open position row for a symbol, if any."""
+        cursor.execute(
+            """
+            SELECT side, size, entry_price, realized_pnl, opened_at
+            FROM positions
+            WHERE symbol = %s AND closed_at IS NULL
+            """,
+            (symbol,),
+        )
+        return cursor.fetchone()
+
+    def _calculate_trade_realized_pnl(
+        self,
+        existing_position,
+        side: str,
+        execution_price: Decimal,
+        execution_qty: Decimal,
+    ) -> Optional[Decimal]:
+        """
+        Derive per-trade realized PnL for sell-side exit executions.
+
+        BUY rows do not carry a closed trade outcome and therefore return NULL.
+        SELL rows against an open long position carry realized PnL for the exited size.
+        """
+        if side != "sell" or existing_position is None:
+            return None
+
+        _, old_size, old_entry, _, _ = existing_position
+        closed_qty = min(execution_qty, old_size)
+        if closed_qty <= 0:
+            return None
+
+        return (execution_price - old_entry) * closed_qty
 
     def connect_redis(self):
         """Connect to Redis"""
@@ -496,6 +541,7 @@ class DatabaseWriter:
             # Convert timestamp
             timestamp = self.convert_timestamp(data.get("timestamp"))
             metadata = self.normalize_metadata(data.get("metadata"))
+            side = self.normalize_side(data.get("side"))
 
             # Calculate slippage in basis points (if target_price available)
             slippage_bps = None
@@ -513,22 +559,27 @@ class DatabaseWriter:
                     )
 
             cursor = self.db_conn.cursor()
+            existing_position = self._fetch_open_position(cursor, data.get("symbol"))
+            realized_pnl = self._calculate_trade_realized_pnl(
+                existing_position, side, execution_price, execution_qty
+            )
             cursor.execute(
                 """
                 INSERT INTO trades
-                (symbol, side, price, size, status, execution_price, slippage_bps, fees, timestamp, exchange, metadata)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                (symbol, side, price, size, status, execution_price, slippage_bps, fees, realized_pnl, timestamp, exchange, metadata)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """,
                 (
                     data.get("symbol"),
-                    self.normalize_side(data.get("side")),
+                    side,
                     execution_price,
                     execution_qty,
                     status,
                     execution_price,
                     slippage_bps,
                     data.get("fees", 0.0),
+                    realized_pnl,
                     timestamp,
                     data.get("exchange", "MEXC"),
                     json.dumps(metadata),
@@ -545,7 +596,7 @@ class DatabaseWriter:
             DB_WRITER_EVENTS_PROCESSED.labels(channel="order_results").inc()
 
             # Update positions table (source-of-truth for current holdings)
-            self.update_position_from_trade(data)
+            self.update_position_from_trade(data, existing_position=existing_position)
         except ValueError as e:
             # Validation error - log but don't crash the service
             logger.error(
@@ -558,7 +609,7 @@ class DatabaseWriter:
             logger.error("Failed to persist trade: %s", e)
             DB_WRITER_EVENTS_FAILED.labels(channel="order_results").inc()
 
-    def update_position_from_trade(self, data: Dict):
+    def update_position_from_trade(self, data: Dict, existing_position=None):
         """
         Update positions table based on filled order.
 
@@ -594,15 +645,11 @@ class DatabaseWriter:
             cursor = self.db_conn.cursor()
 
             # Get current position
-            cursor.execute(
-                """
-                SELECT side, size, entry_price, realized_pnl, opened_at
-                FROM positions
-                WHERE symbol = %s AND closed_at IS NULL
-                """,
-                (symbol,),
+            existing = (
+                existing_position
+                if existing_position is not None
+                else self._fetch_open_position(cursor, symbol)
             )
-            existing = cursor.fetchone()
 
             if side == "buy":
                 # BUY: Open or add to position
@@ -669,7 +716,9 @@ class DatabaseWriter:
 
                 if execution_qty >= old_size:
                     # Full close
-                    realized_pnl = float((execution_price - old_entry) * old_size)
+                    realized_pnl = self._calculate_trade_realized_pnl(
+                        existing, side, execution_price, execution_qty
+                    ) or Decimal("0")
                     cursor.execute(
                         """
                         UPDATE positions
@@ -687,13 +736,15 @@ class DatabaseWriter:
                         symbol,
                         old_size,
                         execution_price,
-                        realized_pnl,
+                        float(realized_pnl),
                     )
                 else:
                     # Partial close
                     new_size = old_size - execution_qty
-                    partial_pnl = float((execution_price - old_entry) * execution_qty)
-                    new_rpnl = old_rpnl + partial_pnl
+                    partial_pnl = self._calculate_trade_realized_pnl(
+                        existing, side, execution_price, execution_qty
+                    ) or Decimal("0")
+                    new_rpnl = self._decimal_or_zero(old_rpnl) + partial_pnl
 
                     cursor.execute(
                         """
@@ -712,7 +763,7 @@ class DatabaseWriter:
                         old_size,
                         new_size,
                         execution_price,
-                        partial_pnl,
+                        float(partial_pnl),
                     )
 
         except ValueError as e:

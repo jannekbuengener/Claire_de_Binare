@@ -1,7 +1,7 @@
 {
   "uid": "cdb_operator_kpis_v1",
   "title": "CDB - Operator KPIs",
-  "description": "Minimal operator KPI slice for issue #203. Postgres trades are the current canonical source for executed trades. Positive-trade count and positive-trade rate stay blocked until the active runtime path persists per-trade outcomes.",
+  "description": "Minimal operator KPI slice for issue #203. PostgreSQL trades remain the canonical source. Positive-trade count and positive-trade rate are derived from repo-backed per-trade realized outcomes on exit executions.",
   "tags": [
     "cdb",
     "operator",
@@ -44,7 +44,7 @@
       "id": 2,
       "type": "stat",
       "title": "TRADES MADE",
-      "description": "Canonical operator count from PostgreSQL trades over the selected Grafana time range.",
+      "description": "Canonical operator count of trades with a realized outcome over the selected Grafana time range.",
       "datasource": {
         "type": "postgres",
         "uid": "postgres"
@@ -57,7 +57,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT COUNT(*)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp)",
+          "rawSql": "SELECT COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp)",
           "format": "table",
           "refId": "A"
         }
@@ -96,38 +96,127 @@
     },
     {
       "id": 3,
-      "type": "text",
+      "type": "stat",
       "title": "POSITIVE TRADES",
+      "description": "Positive trade outcomes derived from trades.realized_pnl > 0 over the selected Grafana time range.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
       "gridPos": {
         "h": 5,
         "w": 8,
         "x": 8,
         "y": 1
       },
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(*) FILTER (WHERE realized_pnl > 0)::double precision AS \"Positive Trades\" FROM trades WHERE $__timeFilter(timestamp)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "decimals": 0
+        },
+        "overrides": []
+      },
       "options": {
-        "mode": "markdown",
-        "content": "Not shown as a number yet.\n\nCurrent active runtime path persists executed trades in `trades`, but it does not persist a per-trade positive or negative outcome field. `positions.realized_pnl` is not a safe historical trade counter."
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value"
       }
     },
     {
       "id": 4,
-      "type": "text",
+      "type": "stat",
       "title": "POSITIVE TRADES %",
+      "description": "Derived win-rate style KPI from positive trades divided by all trades with a realized outcome over the selected Grafana time range.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "postgres"
+      },
       "gridPos": {
         "h": 5,
         "w": 8,
         "x": 16,
         "y": 1
       },
+      "targets": [
+        {
+          "rawSql": "SELECT COALESCE(100.0 * COUNT(*) FILTER (WHERE realized_pnl > 0) / NULLIF(COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL), 0), 0.0) AS \"Positive Trade Rate\" FROM trades WHERE $__timeFilter(timestamp)",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 40
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          },
+          "decimals": 1
+        },
+        "overrides": []
+      },
       "options": {
-        "mode": "markdown",
-        "content": "Blocked on the same contract gap.\n\nThis should stay a derived query, not a raw metric, once a reliable positive-trade numerator exists on the active runtime path."
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value"
       }
     },
     {
       "id": 5,
       "type": "row",
-      "title": "TRADE ACTIVITY",
+      "title": "TRADE OUTCOMES",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -140,8 +229,8 @@
     {
       "id": 6,
       "type": "timeseries",
-      "title": "TRADES OVER TIME",
-      "description": "Executed trades grouped per hour from PostgreSQL trades over the selected Grafana time range.",
+      "title": "TRADES MADE OVER TIME",
+      "description": "Trades with a realized outcome grouped per hour from PostgreSQL trades over the selected Grafana time range.",
       "datasource": {
         "type": "postgres",
         "uid": "postgres"
@@ -154,7 +243,7 @@
       },
       "targets": [
         {
-          "rawSql": "SELECT $__timeGroupAlias(timestamp, '1h'), COUNT(*)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT $__timeGroupAlias(timestamp, '1h'), COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL)::double precision AS \"Trades\" FROM trades WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
           "format": "time_series",
           "refId": "A"
         }
@@ -203,7 +292,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "- `Trades made`: live from `trades.timestamp`\n- `Positive trades`: not yet repo-backed on the active runtime path\n- `Positive trades %`: intentionally withheld until the numerator exists\n\nIssue anchor: `#203`.\n\nThis dashboard stays deliberately narrow and does not backfill unsupported KPI semantics from non-canonical paths."
+        "content": "- `Trades made`: rows in `trades` with non-null `realized_pnl`\n- `Positive trades`: rows in `trades` where `realized_pnl > 0`\n- `Positive trades %`: derived query over the same realized-outcome denominator\n\nIssue anchor: `#203`.\n\n`realized_pnl` is only set on exit executions. BUY/open-add rows stay out of these KPI counts until they carry a closed outcome."
       }
     }
   ]

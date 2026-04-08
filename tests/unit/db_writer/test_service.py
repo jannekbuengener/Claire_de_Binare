@@ -8,6 +8,8 @@ Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 
 import json
 import sys
+from decimal import Decimal
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -213,6 +215,81 @@ def test_process_trade_event_decodes_metadata_json_string():
     )
 
     args, kwargs = cursor.execute.call_args
-    metadata_json = args[1][10]
+    metadata_json = args[1][11]
     parsed_metadata = json.loads(metadata_json)
     assert parsed_metadata["fill_context"]["signal_ts_ms"] == 1700000000123
+
+
+@pytest.mark.unit
+def test_calculate_trade_realized_pnl_returns_none_for_buy_side():
+    writer = DatabaseWriter()
+    existing_position = (
+        "long",
+        Decimal("1.0"),
+        Decimal("100.0"),
+        Decimal("0.0"),
+        datetime.now(timezone.utc),
+    )
+
+    realized_pnl = writer._calculate_trade_realized_pnl(
+        existing_position,
+        "buy",
+        Decimal("110.0"),
+        Decimal("1.0"),
+    )
+
+    assert realized_pnl is None
+
+
+@pytest.mark.unit
+def test_process_trade_event_persists_realized_pnl_for_full_close():
+    writer = DatabaseWriter()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.side_effect = [
+        ("long", Decimal("1.5"), Decimal("100.0"), Decimal("0.0"), datetime.now(timezone.utc)),
+        (7,),
+    ]
+
+    writer.process_trade_event(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 110.0,
+            "quantity": 2.0,
+            "timestamp": 1700000000,
+        }
+    )
+
+    insert_params = cursor.execute.call_args_list[1][0][1]
+    assert insert_params[8] == Decimal("15.00")
+
+
+@pytest.mark.unit
+def test_update_position_from_trade_handles_partial_close_decimal_pnl():
+    writer = DatabaseWriter()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = (
+        "long",
+        Decimal("2.0"),
+        Decimal("100.0"),
+        Decimal("3.0"),
+        datetime.now(timezone.utc),
+    )
+
+    writer.update_position_from_trade(
+        {
+            "symbol": "BTCUSDT",
+            "side": "SELL",
+            "status": "filled",
+            "price": 105.0,
+            "quantity": 0.5,
+            "timestamp": 1700000000,
+        }
+    )
+
+    update_params = cursor.execute.call_args_list[1][0][1]
+    assert update_params[0] == Decimal("1.5")
+    assert update_params[2] == Decimal("5.5")

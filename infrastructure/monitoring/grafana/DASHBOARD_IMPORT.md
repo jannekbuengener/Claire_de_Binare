@@ -6,26 +6,26 @@ Grafana runs at **http://localhost:3000**.
 - Username: `admin`
 - Password: per secret init (see `SECRETS_PATH` / `bootstrap_local.sh`); not stored in `.env`
 
-The active repo-backed dashboard canon is now a single file:
+The active repo-backed dashboard canon is a single file:
 - `dashboards/cdb_operator_kpis_v1.json`
 
 This dashboard is intentionally narrow and tied to issue `#203`.
 - Focus: the minimal operator KPI slice only
-- Canonical live number today: `Trades made`
-- Current datasource for that KPI: PostgreSQL table `trades`
-- `Positive trades` and `Positive trades %` are intentionally not rendered as numeric KPIs yet because the active runtime path does not persist per-trade outcome semantics in `trades`
+- Current datasource for all three KPIs: PostgreSQL table `trades`
+- Repo-backed outcome field: `trades.realized_pnl`
+- `Positive trades %` remains a derived query, not a raw stored metric
 
 ## KPI Contract In This Dashboard
 
 - `Trades made`
-  - query shape: `COUNT(*) FROM trades WHERE $__timeFilter(timestamp)`
-  - meaning: executed trades persisted by the active runtime path over the selected Grafana time range
+  - query shape: `COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL) FROM trades WHERE $__timeFilter(timestamp)`
+  - meaning: trade rows that carry a realized outcome over the selected Grafana time range
 - `Positive trades`
-  - status: blocked
-  - reason: no repo-backed per-trade positive or negative outcome field in `trades`
+  - query shape: `COUNT(*) FILTER (WHERE realized_pnl > 0) FROM trades WHERE $__timeFilter(timestamp)`
+  - meaning: positive realized outcomes over the selected Grafana time range
 - `Positive trades %`
-  - status: blocked
-  - reason: should remain a derived query once the numerator is repo-backed
+  - query shape: `100 * positive_trades / trades_made`
+  - meaning: derived ratio over the same realized-outcome denominator
 
 ## Provisioning
 

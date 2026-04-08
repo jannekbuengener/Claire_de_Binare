@@ -107,6 +107,7 @@ CREATE TABLE trades (
     execution_price DECIMAL(18, 8) NOT NULL,
     slippage_bps DECIMAL(10, 2), -- Slippage in Basis Points
     fees DECIMAL(18, 8) DEFAULT 0.0,
+    realized_pnl DECIMAL(18, 8),
 
     -- Timestamps
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -132,6 +133,7 @@ CREATE INDEX idx_trades_status ON trades(status);
 COMMENT ON TABLE trades IS 'Ausgeführte Trades vom Execution-Service';
 COMMENT ON COLUMN trades.slippage_bps IS 'Slippage in Basis Points (1 bps = 0.01%)';
 COMMENT ON COLUMN trades.exchange_trade_id IS 'Trade-ID von MEXC Exchange (im Live-Modus)';
+COMMENT ON COLUMN trades.realized_pnl IS 'Realisierter PnL für Exit-Executions; NULL solange der Trade-Row keinen abgeschlossenen Outcome trägt';
 
 -- ============================================================================
 -- POSITIONS - Aktuelle Positionen (Aggregiert aus Trades)
@@ -265,7 +267,7 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 
 INSERT INTO schema_version (version, description) VALUES
-    ('1.0.2', 'Initial schema with orders.price nullable + orders.order_id column');
+    ('1.0.10', 'Initial schema with orders.price nullable, orders.order_id, and trades.realized_pnl');
 
 -- ============================================================================
 -- VACUUM & ANALYZE - Optimiere nach Schema-Erstellung

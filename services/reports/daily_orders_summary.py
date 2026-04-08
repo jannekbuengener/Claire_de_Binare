@@ -73,7 +73,13 @@ def fetch_summary(conn, hours=24):
     ),
     trade_summary AS (
       SELECT
-        COUNT(*) AS total_trades,
+        COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL) AS total_trades,
+        COUNT(*) FILTER (WHERE realized_pnl > 0) AS positive_trades,
+        COALESCE(
+          100.0 * COUNT(*) FILTER (WHERE realized_pnl > 0)
+          / NULLIF(COUNT(*) FILTER (WHERE realized_pnl IS NOT NULL), 0),
+          0.0
+        ) AS positive_trade_rate,
         COALESCE(SUM(size * execution_price), 0) AS total_notional,
         COALESCE(SUM(fees), 0) AS total_fees
       FROM trades
@@ -82,7 +88,7 @@ def fetch_summary(conn, hours=24):
     SELECT
       o.total_orders, o.filled_count, o.rejected_count,
       o.cancelled_count, o.pending_count, o.total_notional,
-      t.total_trades, t.total_fees
+      t.total_trades, t.positive_trades, t.positive_trade_rate, t.total_fees
     FROM order_summary o, trade_summary t;
     """
 
@@ -114,7 +120,9 @@ def fetch_summary(conn, hours=24):
                 "pending": summary[4] or 0,
                 "notional": float(summary[5] or 0),
                 "total_trades": summary[6] or 0,
-                "total_fees": float(summary[7] or 0),
+                "positive_trades": summary[7] or 0,
+                "positive_trade_rate": float(summary[8] or 0),
+                "total_fees": float(summary[9] or 0),
                 "rejections": rejections,
             }
     except Exception as e:
@@ -200,7 +208,9 @@ def format_email_body(data, start_time, end_time):
 
         <h3>Trade Execution</h3>
         <ul>
-            <li><strong>Total Trades:</strong> {data['total_trades']}</li>
+            <li><strong>Trades Made:</strong> {data['total_trades']}</li>
+            <li><strong>Positive Trades:</strong> {data['positive_trades']}</li>
+            <li><strong>Positive Trade Rate:</strong> {data['positive_trade_rate']:.1f}%</li>
             <li><strong>Total Notional:</strong> ${data['notional']:,.2f}</li>
             <li><strong>Total Fees:</strong> ${data['total_fees']:.4f}</li>
         </ul>
