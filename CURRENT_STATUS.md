@@ -3,13 +3,13 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-07
-**Latest Main Commit**: 23a6dae0 — docs(lr): reconcile LR-AUDIT-STATUS with tracker state for #780 and #792 (#1485)
-**Previous**: 6b53c6e8 — fix(backup): replace Compress-Archive with .NET streaming ZIP to fix OOM (#1478, #1479)
+**Last Updated**: 2026-04-08
+**Latest Main Commit**: 49870e63 — fix(risk): trim unowned phase-2 metadata fields (#1500) (#1522)
+**Previous**: 3729c59f — fix(execution): remove order fallback insert after #1498 (#1520) (#1521)
 
 ---
 
-## Repo / Engineering Status (2026-04-07)
+## Repo / Engineering Status (2026-04-08)
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
@@ -50,6 +50,12 @@
   - **Merged (Session 39, 2026-04-07)**: CI SSOT Freeze + Governance-Deltas — PR #1475 (f2410e06) [docs-only]: ci.yaml Freeze-Status, Dependabot Override Path, LABELS.md. PR #1476 (53771330) [workflows-only]: ci.yaml Header-Kommentar. Issues geschlossen: #1474 (CI SSOT), #1462 (Dependabot-Pfad), #1471 (setup-python v6 Kompatibilitaet bestaetigt), #1472 (pre-close manual-only Governance-Entscheid). Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation ausstehend), #1473 (Backup-Drill nur nach Stack-Freigabe — Blocker #1478 damals noch offen).
   - **Merged (Session 40, 2026-04-07)**: #1478 — Compress-Archive OOM in `backup_all.ps1` behoben; `ZipFile.CreateFromDirectory` (.NET BCL, streaming) als Ersatz. PR #1479 (6b53c6e8). Backup-/Restore-Drill (#1473) erfolgreich abgeschlossen: `make backup` Exit-Code 0, ZIP 78.4 MB, Postgres (9 Tabellen) + Redis restored und verifiziert. Issues #1473 + #1478 geschlossen. Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation).
   - **Merged (Session 41, 2026-04-07)**: Batch #1481–#1484 — LR-AUDIT-STATUS SSOT-Reconcile (LR-050 OPEN→NO-GO, LR-011 OPEN→PASS), DR-Front-Door vs. historischer 2025-12-31-Snapshot getrennt, enforce-root-baseline.ps1 repo-relativ, Secrets-Canon fail-closed (compose.blue+red: `:?SECRETS_PATH must be set`; Front-Doors: generischer Default+Guard). PR #1485 (23a6dae0). Issues #1481/#1482/#1483/#1484 geschlossen.
+  - **Session 42 (2026-04-08)**: #1502 read-only disponiert. Befund: aktive Runtime-Canon kommt aus service-lokalen requirements + real referenzierten Dockerfile-Installationsstellen; root `requirements.txt` ist aktuell CI/Test-/Convenience-Layer, nicht Runtime-Truth. `redis` ist der staerkste Drift-Fall; `prometheus_client` bleibt wegen `db_writer` unpinned nicht sauber root-kontrolliert. Abschlusskommentar in #1502 gepostet; Status: bereit fuer Claude Code. Keine Repo-/Runtime-Reconciliation in dieser Session.
+  - **Merged (Session 43, 2026-04-08)**: #1488 — Decision-/Policy-/Trace-Kontext ueber den Signal->Order->Trade-Pfad persistiert. PR #1516 (3efe4410). Issue #1488 geschlossen.
+  - **Merged (Session 44, 2026-04-08)**: #1498 — verbleibende Dual-Writer-Naht fuer `orders`/`trades` reduziert; `trades` kanonisch ueber `db_writer`, `orders` kanonischer Insert plus execution-lokales Lifecycle-Enrichment. PR #1519 (2bfbeb30). Issue #1498 geschlossen.
+  - **Merged (Session 45, 2026-04-08)**: #1520 — execution-side Order-Fallback-Insert entfernt; Lifecycle-Updates binden jetzt fail-closed an kanonische `metadata.order_id`. PR #1521 (3729c59f). Issue #1520 geschlossen.
+  - **Merged (Session 46, 2026-04-08)**: #1500 — unowned Phase-2-Metadata-Felder aus dem persistierten Order-Vertrag entfernt; keine neuen `account_context.*`, keine neue `execution_context.slippage_pct`, kein `ingest_ts_ms` ohne kanonischen Producer. PR #1522 (49870e63). Issue #1500 geschlossen.
+  - **Session 47 (2026-04-08)**: #1509 GitHub-Reconciliation abgeschlossen. Der fruehere `prometheus_client`-Stub-Leak blockiert die gemeinsame Collection auf `main` nicht mehr; effektive Landing-Evidenz laeuft ueber die gemergten Folge-PRs #1516/#1519 statt ueber den urspruenglichen Branch-Commit. Abschlusskommentar in #1509 gepostet; Issue geschlossen.
 
 ---
 
