@@ -4,6 +4,47 @@ This document records governance interventions on branch protection rules for au
 
 ---
 
+## 2026-04-08T12:16:03Z - Disable Code-Owner Review Self-Deadlock (PR #1505)
+
+**Context:** The repo still uses `.github/CODEOWNERS` with `* @jannekbuengener`, while `main` is operated in solo-maintainer mode with `required_approving_review_count: 0`.
+
+**Problem:**
+- `require_code_owner_reviews: true` remained enabled even though self-approval is impossible and there is no second standing human reviewer
+- PR #1023 (`deps(pip): bump python-dotenv from 1.2.1 to 1.2.2`) and PR #1024 (`deps(pip): bump bandit from 1.9.3 to 1.9.4`) showed the failure mode directly: checks green, auto-merge enabled, merge still blocked by branch policy
+- This created a solo-maintainer self-deadlock without adding a real independent review gate
+
+**Action Taken:**
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_pull_request_reviews \
+  --method PATCH \
+  --field dismiss_stale_reviews=true \
+  --field require_code_owner_reviews=false \
+  --field require_last_push_approval=false \
+  --field required_approving_review_count=0
+```
+
+**Final State:**
+| Setting | Before | After |
+|---------|--------|-------|
+| `required_approving_review_count` | 0 | 0 |
+| `require_code_owner_reviews` | true | false |
+| `dismiss_stale_reviews` | true | true |
+| `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)`, `policy-gate` | unchanged |
+| `required_linear_history` | true | unchanged |
+| `required_conversation_resolution` | true | unchanged |
+| `enforce_admins` | true | unchanged |
+
+**Rationale:**
+- Required checks remain the real merge gate on `main`
+- `dismiss_stale_reviews`, `required_conversation_resolution`, `required_linear_history`, and `enforce_admins` remain active safety controls
+- Disabling `require_code_owner_reviews` removes only the unworkable solo self-lock; it does not relax the required-check contract
+
+**Decision:** In the current solo-maintainer topology, `.github/CODEOWNERS` remains routing metadata, not an enforced merge prerequisite.
+
+**Approver:** jannekbuengener (repo owner)
+
+---
+
 ## 2026-02-15T19:18:00Z - Phase 8C Merge (PR #839)
 
 **Context:** Solo-maintainer repo with `required_pull_request_reviews` blocking merge despite all status checks passing.

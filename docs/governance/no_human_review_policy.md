@@ -14,6 +14,9 @@ reviewer for routine PR flow.
 The repo already operates this way de facto since 2026-02-15
 (see [BRANCH_PROTECTION_LOG.md](BRANCH_PROTECTION_LOG.md) — PR #839, PR #846).
 This document makes the practice explicit and auditable.
+As of 2026-04-08, `require_code_owner_reviews` is explicitly disabled to avoid
+recreating the `.github/CODEOWNERS` self-deadlock later observed on PR #1023
+and PR #1024.
 
 ## Decision
 
@@ -22,11 +25,13 @@ This document makes the practice explicit and auditable.
 A PR may merge when:
 1. All required status checks pass (currently: `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`)
 2. All conversation threads are resolved (`required_conversation_resolution: true`)
-3. Live branch protection remains satisfied (`required_approving_review_count=0`, `require_code_owner_reviews=true`, `dismiss_stale_reviews=true`, `required_linear_history=true`)
+3. Live branch protection remains satisfied (`required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`, `required_linear_history=true`)
 4. A self-review comment is present (see template below)
 
 AI/Jules review comments are advisory only. They do not grant approval or merge
 rights, and Six-Eyes is not technically enforced by current branch protection.
+`.github/CODEOWNERS` remains available for routing/visibility, but code-owner
+review is not part of the active merge gate on `main`.
 
 ## Scope and Exceptions
 
@@ -100,7 +105,7 @@ to the required CI check suite.
 | `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)`, `policy-gate` | Merge-relevant required contexts on `main` |
 | `required_status_checks.strict` | `true` | Branch must be up-to-date |
 | `required_approving_review_count` | `0` | No fixed approving-review count |
-| `require_code_owner_reviews` | `true` | Review subsystem remains configured in branch protection |
+| `require_code_owner_reviews` | `false` | Disabled to avoid `.github/CODEOWNERS` self-deadlock in solo-maintainer mode |
 | `dismiss_stale_reviews` | `true` | Prior review state is invalidated after new pushes |
 | `required_linear_history` | `true` | Merge commits are disallowed on `main` |
 | `enforce_admins` | `true` | Admins also bound by checks |

@@ -12,7 +12,7 @@ for the policy rationale.
 Merge-method guidance for proof/slice PRs is documented in
 [merge_strategy_squash_vs_merge.md](./merge_strategy_squash_vs_merge.md).
 
-## Current State (as of 2026-03-10)
+## Current State (as of 2026-04-08)
 
 - Repo Actions workflow permissions: `Read and write`
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
@@ -20,7 +20,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - Main/dispatch CI pipeline: `.github/workflows/ci.yaml` (`name: CI/CD Pipeline`)
 - Sentinel source of truth: `.github/workflows/required-checks-audit.yml` is an on-demand `workflow_dispatch` audit that checks `policy-gate` + `ci (Unit/Integration + Lint gesammelt)` for the ref/SHA you run it on (use the relevant PR head ref for merge-contract audits)
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
-- Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=true`, `dismiss_stale_reviews=true`
+- Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`
 - Live branch protection safety settings also include `required_linear_history=true`, `required_conversation_resolution=true`, `enforce_admins=true`
 
 ## Review Signal vs Merge Rights
@@ -28,6 +28,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - Required merge checks on `main` are only `ci (Unit/Integration + Lint gesammelt)` and `policy-gate`.
 - AI reviewer workflows can emit comments or reviews, but they are not branch-protection-required contexts on `main`.
 - AI/Jules review output is advisory signal only and does not approve or merge PRs.
+- `.github/CODEOWNERS` remains review-routing metadata only; code-owner review is not an active merge requirement on `main`.
 - Six-Eyes is not technically enforced by the current PR template or branch protection configuration in this repo.
 
 ## Canonical PR Gate Contract
@@ -60,7 +61,7 @@ Sentinel still point to the canonical names after the change.
 
 - Route CI contract changes with labels `governance` and `scope:ci`.
 - Reference this contract issue in change PRs: #1073.
-- Default code owner remains `.github/CODEOWNERS` (`* @jannekbuengener`); governance/ops reviewers should be requested for CI-contract-impacting changes.
+- Default code owner remains `.github/CODEOWNERS` (`* @jannekbuengener`); reviewer requests for CI-contract-impacting changes are advisory routing only and do not create a merge requirement on `main`.
 
 ## Delta: `ci.yaml` vs. Canonical PR Gate
 
@@ -177,7 +178,7 @@ Expected output (key fields):
 | `required_status_checks.strict` | `true` |
 | `required_status_checks.contexts` | `["ci (Unit/Integration + Lint gesammelt)", "policy-gate"]` |
 | `required_approving_review_count` | `0` |
-| `require_code_owner_reviews` | `true` |
+| `require_code_owner_reviews` | `false` |
 | `dismiss_stale_reviews` | `true` |
 | `required_linear_history.enabled` | `true` |
 | `enforce_admins.enabled` | `true` |
@@ -185,13 +186,17 @@ Expected output (key fields):
 | `allow_force_pushes.enabled` | `false` |
 | `allow_deletions.enabled` | `false` |
 
+Do not set `require_code_owner_reviews=true` in the current solo-maintainer setup. With
+`.github/CODEOWNERS` set to `* @jannekbuengener` and `required_approving_review_count=0`,
+that combination recreates the self-deadlock observed on PR #1023 and PR #1024.
+
 ### Review Settings Drift Recovery
 
 ```bash
 gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_pull_request_reviews \
   --method PATCH \
   --field dismiss_stale_reviews=true \
-  --field require_code_owner_reviews=true \
+  --field require_code_owner_reviews=false \
   --field require_last_push_approval=false \
   --field required_approving_review_count=0
 ```
@@ -244,5 +249,7 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
   --method PATCH \
   --field required_approving_review_count=1
 ```
+
+If code-owner reviews are also re-enabled later, update the reviewer/CODEOWNERS topology first so the repo does not reintroduce the solo-maintainer self-lock.
 
 Document the change in [BRANCH_PROTECTION_LOG.md](../governance/BRANCH_PROTECTION_LOG.md).
