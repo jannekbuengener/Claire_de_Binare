@@ -607,13 +607,6 @@ def test_process_signal_attaches_compact_order_metadata(mock_redis, mock_postgre
                     "return_5m": 0.02,
                     "price_change_5m": 0.02,
                 },
-                "account_context": {
-                    "daily_drawdown_pct": 1.5,
-                    "total_exposure_pct": 12.0,
-                },
-                "execution_context": {
-                    "slippage_pct": 0.1,
-                },
                 "freshness": {
                     "staleness_s": 1.2,
                     "data_silence_s": 0.8,

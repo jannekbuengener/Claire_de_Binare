@@ -873,13 +873,6 @@ class RiskManager:
                     "return_5m": evidence.get("return_5m"),
                     "price_change_5m": evidence.get("price_change_5m"),
                 },
-                "account_context": {
-                    "daily_drawdown_pct": evidence.get("daily_drawdown_pct"),
-                    "total_exposure_pct": evidence.get("total_exposure_pct"),
-                },
-                "execution_context": {
-                    "slippage_pct": evidence.get("slippage_pct"),
-                },
                 "freshness": {
                     "staleness_s": evidence.get("staleness_s"),
                     "data_silence_s": evidence.get("data_silence_s"),
