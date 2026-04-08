@@ -1,76 +1,71 @@
 """
-Unit-Tests für DB Writer Service.
+Unit-Tests fur DB Writer Service.
 
 Governance: CDB_AGENT_POLICY.md, CDB_PSM_POLICY.md
 
 Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 """
 
+import importlib
 import json
 import sys
+import types
 from decimal import Decimal
 from datetime import datetime, timezone
-from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
-try:
-    __import__("prometheus_client")  # noqa: F401 — side-effect import: availability check
-except ImportError:
-    _dummy_metrics = []
 
-    class _DummyMetric:
-        def __init__(self, name: str):
-            self.name = name
-            self.value = 0
-            self._callback = None
+def _build_prometheus_client_stub() -> types.ModuleType:
+    """Provide only the prometheus API surface needed by db_writer tests."""
+    prometheus_client = types.ModuleType("prometheus_client")
 
+    class _MetricStub:
         def labels(self, **kwargs):
             return self
 
-        def inc(self, amount=1):
-            self.value += amount
+        def inc(self):
             return None
 
         def set(self, value):
-            self.value = value
             return None
 
         def set_function(self, func):
-            self._callback = func
             return None
 
-        def render(self) -> str:
-            value = self._callback() if self._callback is not None else self.value
-            return f"{self.name} {value}\n"
+    prometheus_client.Counter = lambda *args, **kwargs: _MetricStub()
+    prometheus_client.Gauge = lambda *args, **kwargs: _MetricStub()
+    prometheus_client.start_http_server = lambda *args, **kwargs: None
+    return prometheus_client
 
-    def _make_metric(name, *args, **kwargs):
-        metric = _DummyMetric(name)
-        _dummy_metrics.append(metric)
-        return metric
 
-    sys.modules["prometheus_client"] = SimpleNamespace(
-        Counter=_make_metric,
-        Gauge=_make_metric,
-        generate_latest=lambda *args, **kwargs: "".join(
-            metric.render() for metric in _dummy_metrics
-        ).encode(),
-        CONTENT_TYPE_LATEST="text/plain; version=0.0.4",
-        start_http_server=lambda *args, **kwargs: None,
+@pytest.fixture
+def database_writer_cls(monkeypatch):
+    """Import DatabaseWriter with a test-local prometheus stub when needed."""
+    monkeypatch.delitem(sys.modules, "services.db_writer.db_writer", raising=False)
+
+    monkeypatch.setitem(
+        sys.modules,
+        "prometheus_client",
+        _build_prometheus_client_stub(),
     )
-from services.db_writer.db_writer import DatabaseWriter
+
+    module = importlib.import_module("services.db_writer.db_writer")
+    return module.DatabaseWriter
 
 
 @pytest.mark.unit
-def test_normalize_exposure_pct_preserves_percentage_points():
-    assert DatabaseWriter.normalize_exposure_pct(10.0) == 10.0
-    assert DatabaseWriter.normalize_exposure_pct(0.5) == 0.5
+def test_normalize_exposure_pct_preserves_percentage_points(database_writer_cls):
+    assert database_writer_cls.normalize_exposure_pct(10.0) == 10.0
+    assert database_writer_cls.normalize_exposure_pct(0.5) == 0.5
 
 
 @pytest.mark.unit
-def test_process_portfolio_snapshot_persists_percentage_point_exposure():
-    writer = DatabaseWriter()
+def test_process_portfolio_snapshot_persists_percentage_point_exposure(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     writer.db_conn = MagicMock()
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.return_value = (1,)
@@ -104,11 +99,10 @@ def test_signal_type_mapping_from_side():
     but DB schema expected 'signal_type' (buy/sell lowercase).
 
     Verifies:
-    - side="BUY" → signal_type="buy"
-    - side="SELL" → signal_type="sell"
-    - Empty/missing → signal_type="unknown"
+    - side="BUY" -> signal_type="buy"
+    - side="SELL" -> signal_type="sell"
+    - Empty/missing -> signal_type="unknown"
     """
-    # Test data payloads
     test_cases = [
         ({"side": "BUY"}, "buy"),
         ({"side": "SELL"}, "sell"),
@@ -121,7 +115,6 @@ def test_signal_type_mapping_from_side():
     ]
 
     for payload, expected in test_cases:
-        # Apply same mapping logic as db_writer.py
         signal_type = payload.get("signal_type") or (payload.get("side") or "").lower()
         if not signal_type:
             signal_type = "unknown"
@@ -132,15 +125,18 @@ def test_signal_type_mapping_from_side():
 
 
 @pytest.mark.unit
-def test_normalize_metadata_parses_json_object_string():
-    metadata = DatabaseWriter.normalize_metadata('{"strategy_id":"paper"}')
+def test_normalize_metadata_parses_json_object_string(database_writer_cls):
+    metadata = database_writer_cls.normalize_metadata('{"strategy_id":"paper"}')
 
     assert metadata == {"strategy_id": "paper"}
 
 
 @pytest.mark.unit
-def test_process_signal_event_persists_metadata_object(mock_postgres):
-    writer = DatabaseWriter()
+def test_process_signal_event_persists_metadata_object(
+    mock_postgres,
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     writer.db_conn = mock_postgres
     cursor = mock_postgres.cursor.return_value
     cursor.fetchone.return_value = (1,)
@@ -163,8 +159,10 @@ def test_process_signal_event_persists_metadata_object(mock_postgres):
 
 
 @pytest.mark.unit
-def test_process_order_event_upserts_by_order_id_without_losing_terminal_status():
-    writer = DatabaseWriter()
+def test_process_order_event_upserts_by_order_id_without_losing_terminal_status(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     writer.db_conn = MagicMock()
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.return_value = [7]
@@ -220,9 +218,9 @@ def test_event_persistence(mock_postgres, signal_factory):
 
 
 @pytest.mark.unit
-def test_process_trade_event_decodes_metadata_json_string():
+def test_process_trade_event_decodes_metadata_json_string(database_writer_cls):
     """Trade metadata arriving as JSON string must be persisted as JSON object."""
-    writer = DatabaseWriter()
+    writer = database_writer_cls()
     writer.db_conn = MagicMock()
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.return_value = [1]
@@ -254,8 +252,10 @@ def test_process_trade_event_decodes_metadata_json_string():
 
 
 @pytest.mark.unit
-def test_calculate_trade_realized_pnl_returns_none_for_buy_side():
-    writer = DatabaseWriter()
+def test_calculate_trade_realized_pnl_returns_none_for_buy_side(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     existing_position = (
         "long",
         Decimal("1.0"),
@@ -275,12 +275,20 @@ def test_calculate_trade_realized_pnl_returns_none_for_buy_side():
 
 
 @pytest.mark.unit
-def test_process_trade_event_persists_realized_pnl_for_full_close():
-    writer = DatabaseWriter()
+def test_process_trade_event_persists_realized_pnl_for_full_close(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     writer.db_conn = MagicMock()
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.side_effect = [
-        ("long", Decimal("1.5"), Decimal("100.0"), Decimal("0.0"), datetime.now(timezone.utc)),
+        (
+            "long",
+            Decimal("1.5"),
+            Decimal("100.0"),
+            Decimal("0.0"),
+            datetime.now(timezone.utc),
+        ),
         (7,),
     ]
 
@@ -300,8 +308,10 @@ def test_process_trade_event_persists_realized_pnl_for_full_close():
 
 
 @pytest.mark.unit
-def test_update_position_from_trade_handles_partial_close_decimal_pnl():
-    writer = DatabaseWriter()
+def test_update_position_from_trade_handles_partial_close_decimal_pnl(
+    database_writer_cls,
+):
+    writer = database_writer_cls()
     writer.db_conn = MagicMock()
     cursor = writer.db_conn.cursor.return_value
     cursor.fetchone.return_value = (
