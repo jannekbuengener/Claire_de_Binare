@@ -36,69 +36,81 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
                                     [DB Writer] --> [PostgreSQL]
 ```
 
-### Services (AKTIV)
+### BLUE Stack (compose.blue.yml) — Core, always-on
 
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
-| WebSocket | cdb_ws | 8000 | Market Data Stream |
-| Signal | cdb_signal | 8005 | Signal Generation |
-| Risk | cdb_risk | 8002 | Risk Management, Circuit Breaker |
-| Execution | cdb_execution | 8003 | Order Execution |
-| DB Writer | cdb_db_writer | - | Event Persistenz |
+| PostgreSQL | cdb_postgres | 5432 | Persistenz |
+| Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
+| Market | cdb_market | 8009 | market_state:{symbol} Owner |
+| Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
+| Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
+| Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
+| Risk | cdb_risk | 8002 | Risk Gate, Circuit Breaker, Kill-Switch |
+| Execution | cdb_execution | 8003 | Order Execution (MOCK_TRADING=true) |
+| DB Writer | cdb_db_writer | — | Redis→PostgreSQL Persistenz |
 | Paper Runner | cdb_paper_runner | 8004 | Paper Trading Orchestrator |
 
-### Infrastruktur (AKTIV)
+### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated
 
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
-| Redis | cdb_redis | 6379 | Cache, Pub/Sub |
-| PostgreSQL | cdb_postgres | 5432 | Persistenz |
-| Prometheus | cdb_prometheus | 19090 | Metrics |
+| WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
+| Signal | cdb_signal | 8005 | Signal Generation |
+| Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
+| Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |
+| Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
+| cAdvisor | cdb_cadvisor | — | Container Metrics |
+| Reports | cdb_reports | — | Daily Order Summary |
 
-### Optional (Logging Stack)
+### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
-| Service | Container | Aktivierung |
-|---------|-----------|-------------|
-| Loki | cdb_loki | `-Logging` Flag |
-| Promtail | cdb_promtail | `-Logging` Flag |
+Aktivierung: `docker compose -f compose.blue.yml -f logging.yml up -d`
 
-### Deaktiviert (Code vorhanden)
-
-| Service | Grund | Action Required |
-|---------|-------|-----------------|
-| cdb_allocation | Fehlende Env-Vars | ALLOCATION_* definieren |
-| cdb_regime | Fehlende Env-Vars | REGIME_* definieren |
-| cdb_market | Nicht implementiert | service.py verifizieren |
+| Service | Container | Compose-Datei |
+|---------|-----------|---------------|
+| Loki | cdb_loki | logging.yml |
+| Promtail | cdb_promtail | logging.yml |
+| Alertmanager | cdb_alertmanager | logging.yml |
 
 ---
 
 ## 3. Runtime Reality (IST)
 
 ### Verification Command
-```powershell
-# Stack starten
-.\infrastructure\scripts\stack_up.ps1 -Profile dev
+```bash
+# Kanonischer Start
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
-# Vollstaendigkeitspruefung
-.\infrastructure\scripts\stack_verify.ps1
+# Oder via PowerShell
+.\tools\cdb.ps1 runtime up
 
 # Schnellcheck
 docker ps --filter "name=cdb_" --format "table {{.Names}}\t{{.Status}}"
 ```
 
-### Erwarteter Output (healthy)
+### Erwarteter Output (BLUE + RED healthy)
 ```
-cdb_redis         Up X minutes (healthy)
-cdb_postgres      Up X minutes (healthy)
-cdb_prometheus    Up X minutes (healthy)
-cdb_grafana       Up X minutes (healthy)
-cdb_ws            Up X minutes (healthy)
-cdb_signal        Up X minutes (healthy)
-cdb_risk          Up X minutes
-cdb_execution     Up X minutes
-cdb_db_writer     Up X minutes (healthy)
-cdb_paper_runner  Up X minutes (healthy)
+cdb_postgres          Up (healthy)
+cdb_redis             Up (healthy)
+cdb_market            Up (healthy)
+cdb_candles           Up (healthy)
+cdb_regime            Up (healthy)
+cdb_allocation        Up (healthy)
+cdb_risk              Up
+cdb_execution         Up
+cdb_db_writer         Up (healthy)
+cdb_paper_runner      Up (healthy)
+cdb_ws                Up (healthy)
+cdb_signal            Up (healthy)
+cdb_prometheus        Up (healthy)
+cdb_grafana           Up (healthy)
+cdb_postgres_exporter Up (healthy)
+cdb_redis_exporter    Up (healthy)
+cdb_cadvisor          Up
+cdb_reports           Up (healthy)
 ```
 
 ---
@@ -108,11 +120,11 @@ cdb_paper_runner  Up X minutes (healthy)
 ### Redis Channels
 | Channel | Publisher | Subscriber(s) |
 |---------|-----------|---------------|
-| market_data | cdb_ws | cdb_signal |
+| market_data | cdb_ws | cdb_market, cdb_candles, cdb_signal, cdb_paper_runner |
 | signals | cdb_signal | cdb_risk, cdb_db_writer |
 | orders | cdb_risk | cdb_execution, cdb_db_writer |
 | order_results | cdb_execution | cdb_risk, cdb_db_writer |
-| alerts | cdb_risk | (Monitoring) |
+| alerts | cdb_risk | — (kein verifizierter Subscriber; Fire-and-forget) |
 | portfolio_snapshots | cdb_paper_runner | cdb_db_writer |
 
 ### Event Types
@@ -135,29 +147,23 @@ cdb_paper_runner  Up X minutes (healthy)
 
 ## 6. Known Drifts (zu beheben)
 
-| Drift | Beschreibung | Priority |
-|-------|--------------|----------|
-| prod.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| tls.yml Naming | Referenziert `cdb_core` statt `cdb_signal` | HIGH |
-| CLAUDE.md Port | Signal als Port 8001 dokumentiert (ist 8005) | MEDIUM |
+Keine offenen Drifts.
+
+Historisch behoben:
+- prod.yml/tls.yml referenzierten `cdb_core` statt `cdb_signal` → behoben
+- CLAUDE.md hatte Signal als Port 8001 → korrigiert auf 8005
 
 ---
 
-## 7. Compose Layer Referenz
+## 7. Compose Layer Referenz (kanonisch)
 
 ```
-base.yml          -> Infrastruktur
-  |
-dev.yml           -> App-Services + Port-Bindings
-  |
-logging.yml       -> Loki + Promtail (optional)
-  |
-tls.yml           -> TLS Encryption (optional)
-  |
-healthchecks-strict.yml -> Strikte Checks (optional)
-  |
-network-prod.yml  -> Network Isolation (optional)
+compose.blue.yml   -> BLUE: Data + Control + Core Trading  [kanonisch]
+compose.red.yml    -> RED: Signal + Monitoring             [kanonisch]
+logging.yml        -> Logging Overlay (Loki + Promtail + Alertmanager) [separates Overlay, nicht Standard-Start]
 ```
+
+Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr kanonisch.
 
 ---
 
@@ -166,3 +172,6 @@ network-prod.yml  -> Network Isolation (optional)
 | Datum | Aenderung | Durch |
 |-------|-----------|-------|
 | 2025-12-28 | Initiale Erstellung via Context Build Sprint | Claude (Orchestrator) |
+| 2026-03-29 | market_data Subscriber-Liste: cdb_market, cdb_candles, cdb_paper_runner ergaenzt (#1323) | Claude |
+| 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
+| 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |

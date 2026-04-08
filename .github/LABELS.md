@@ -2,7 +2,7 @@
 
 **Status:** Aktiv  
 **Owner:** Maintainer  
-**Last Updated:** 2025-12-19
+**Last Updated:** 2026-04-07
 
 ---
 
@@ -84,6 +84,13 @@ Zusätzlich:
 | `postgres` | PostgreSQL, Schemas |
 | `testing` | Test-Coverage, E2E |
 | `dependencies` | Dependabot Updates |
+
+> **Hinweis:** `dependencies` ist kein policy-gate Override. Dependabot-PRs, die
+> Python-Abhängigkeiten oder App-Code berühren, fallen in `core/service` und brauchen
+> `manual-approval` oder `allow-core-change`.
+>
+> `manual-approval` und `allow-core-change` sind **Governance-only Labels** — sie werden
+> außerhalb des synced Label-Sets verwaltet und erscheinen nicht in `labels.json`.
 
 ---
 

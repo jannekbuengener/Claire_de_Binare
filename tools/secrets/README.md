@@ -109,14 +109,16 @@ Generates `.env.runtime` file with all auto secrets for injection into Docker st
 ## Integration
 
 ### With BLUE+RED Runtime
-The canonical runtime (`compose.blue.yml` + `compose.red.yml`) loads secrets from `SECRETS_PATH`.
-Legacy `stack_up.ps1` also loads `.env.runtime` if present.
-- Disable `.env.runtime` auto-load via: `$env:CDB_IGNORE_RUNTIME_ENV=1`
+The canonical runtime (`compose.blue.yml` + `compose.red.yml`) loads secrets directly from `SECRETS_PATH`
+(`~/Documents/.secrets/.cdb`). No `.env.runtime` required for normal operation.
+
+> **[DEPRECATED — NICHT VERWENDEN]** `infrastructure/scripts/stack_up.ps1` ist nicht mehr der kanonische Operator-Startflow.
+> Für den kanonischen Runtime-Start: `.\tools\cdb.ps1 runtime up` (bzw. `setup_blue_red.ps1` direkt).
 
 ### With Existing Tools
-- `set_secrets.ps1` - Manual initial secret setup (still valid)
-- `cdb-secrets-sync.ps1` - Sync .cdb_local → .secrets (still valid)
-- **NEW:** `Rotate-Secrets.ps1` - Incident response / periodic rotation
+- `set_secrets.ps1` - **[LEGACY — alter Pfad `.secrets/`, nicht kanonisch]** Manual initial secret setup. Kanonisch: `tools\secrets\Rotate-Secrets.ps1 apply`.
+- `cdb-secrets-sync.ps1` - **[LEGACY — alter Pfad `.cdb_local → .secrets`]** Sync-Helper. Nicht mehr kanonisch.
+- **Rotate-Secrets.ps1** - Incident response / periodic rotation (canonical)
 
 ## Evidence / Audit Trail
 
@@ -149,14 +151,10 @@ Run commands in order:
 2. `export` (creates .env.runtime)
 3. Start BLUE+RED runtime (`docker compose -f infrastructure/compose/compose.blue.yml up -d` + `compose.red.yml`)
 
-## Documentation (Docs Hub)
-
-This tool is governed by the official Docs Hub policies/runbooks:
-
-- **Secret Rotation Policy**
-  https://github.com/jannekbuengener/Claire_de_Binare_Docs/blob/main/knowledge/governance/SECRET_ROTATION_POLICY.md
+## Related Documentation
 
 - **Grafana Admin Incident Runbook (MANUAL rotation)**
-  https://github.com/jannekbuengener/Claire_de_Binare_Docs/blob/main/knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md
+  `knowledge/runbooks/GRAFANA_ADMIN_INCIDENT.md`
 
-**Tip:** Keep these links close during incidents — policy defines guardrails, runbook defines break-glass steps.
+**Note:** The former Docs Hub repository is retired. All active governance
+and runbook content lives in this working repo.

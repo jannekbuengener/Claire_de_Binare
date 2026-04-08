@@ -1,4 +1,4 @@
-# MEXC WebSocket V3 Protobuf Migration (Issue #TBD)
+# MEXC WebSocket V3 Protobuf Migration
 
 ## Status: 🟡 PROPOSED
 

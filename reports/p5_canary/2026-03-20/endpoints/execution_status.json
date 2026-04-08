@@ -1,0 +1,12 @@
+{
+  "status": "NOT_CAPTURED",
+  "capture_state": "pending_runtime_capture",
+  "reason": "no_runtime_actions_performed",
+  "contract_role": "committed_handoff_placeholder",
+  "source": "http://127.0.0.1:8003/status",
+  "expected_contract": {
+    "canonical_field": "execution_status.mode",
+    "expected_value_current_path": "mock",
+    "value_basis": "normative_required_value_current_path"
+  }
+}

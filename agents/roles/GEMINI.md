@@ -9,10 +9,14 @@ scope: governance_review
 
 MUST READ FIRST:
 - agents/AGENTS.md
-- governance/CDB_AGENT_POLICY.md
-- governance/CDB_GOVERNANCE.md
-- governance/CDB_CONSTITUTION.md
+- knowledge/governance/CDB_AGENT_POLICY.md
+- knowledge/governance/CDB_GOVERNANCE.md
+- knowledge/governance/CDB_CONSTITUTION.md
 - knowledge/CDB_KNOWLEDGE_HUB.md
+- CURRENT_STATUS.md
+- docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
+
+Canon- und Status-Guardrail: `CURRENT_STATUS.md` = aktueller Repo-/Engineering-Status; `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` = operativer Go/No-Go-Status. `PROJECT_STATUS.md` und `knowledge/CURRENT_STATUS.md` sind historische Snapshots und duerfen nicht als aktueller SSOT gelesen werden. Working Repo ist maßgeblicher Canon.
 
 ---
 
@@ -189,7 +193,7 @@ Er schützt Konsistenz, nicht Geschwindigkeit.
 ### PROJECT
 **Claire de Binare (CDB)**  
 Primary Coordination: **GitHub Issues**  
-Current State: **Critical fixes merged, CI stabilization in progress**
+Current State: see `CURRENT_STATUS.md` (Repo/Engineering) and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go verdict)
 
 ### MISSION
 Analysiere Repository, CI-Status, offene PRs, Docs und bekannte technische Schulden.  

@@ -266,6 +266,6 @@ class RiskState:
     pending_orders: int = 0
     last_prices: dict[str, float] = field(default_factory=dict)
 
-    # PR #XXX: Pre-Approval Exposure Reservation (Race Condition Fix)
+    # PR #617: Pre-Approval Exposure Reservation (Race Condition Fix)
     pending_exposure_usdt: float = 0.0
     pending_reservations: dict[str, float] = field(default_factory=dict)

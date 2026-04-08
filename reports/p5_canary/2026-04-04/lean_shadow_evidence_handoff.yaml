@@ -1,0 +1,39 @@
+schema_version: "1.0"
+handoff_type: lean_shadow_evidence_run
+purpose: post_go_shadow_evidence_anchor
+workflow_name: "Shadow + Soak Evidence"
+run_id: "24001373890"
+run_url: https://github.com/jannekbuengener/Claire_de_Binare/actions/runs/24001373890
+ref: refs/heads/main
+commit_sha: 1a0ebaba88fce8d6050f1a2bdb6093011dfe26bc
+soak_profile: lean
+soak_minutes: 5
+gate_status: PASS
+completed_utc: 2026-04-05T12:26:21Z
+artifact_name: shadow-soak-evidence-24001373890
+parent_proof_pack: reports/p5_canary/2026-04-04/
+operator: jannekbuengener
+
+gate_checks:
+  shadow_blocked_total_gte_1: true
+  execution_orders_filled_total_eq_0: true
+  auditable_reject_present: true
+  reject_filled_quantity_eq_0: true
+  shadow_probe_artifact_present: true
+  has_live_data_true: true
+  orders_approved_eq_0: true
+  risk_blocked_all_true: true
+  runtime_mode_verified: true
+  kill_switch_precheck_inactive: true
+
+probe_result:
+  probe_order_id: ci-shadow-probe-24001373890
+  order_result_status: REJECTED
+  error_message: "Order blocked: shadow mode (zero execution)"
+  filled_quantity: 0.0
+
+notes:
+  - Lean shadow evidence run triggered after formal GO path closure (PR #1434)
+  - All 10 gate checks PASS; shadow probe correctly REJECTED with zero execution
+  - This is the continuity proof following the P5 prestart pack
+  - Runtime mode mock confirmed; kill switch inactive

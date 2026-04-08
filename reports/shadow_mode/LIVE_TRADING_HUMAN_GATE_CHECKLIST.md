@@ -1,3 +1,10 @@
+> **HISTORICAL — INCIDENT GATE ONLY**
+> Erstellt am 2026-02-03 als manueller Gate-Checkpoint nach dem P0 Regime Consumer
+> Silent Failure (PR #774). Dieses Dokument ist ein Audit-Trail dieses spezifischen
+> Ereignisses. Es ist KEIN aktueller Prestart-Gate und dient NICHT als aktiver
+> Operator-Anker für P5-Canary-Readiness.
+> Aktueller Prestart-Anker: `docs/operations/P5_PRESTART_PACK.md`
+
 # Live Trading Human Gate Checklist
 
 **System:** Claire de Binare (CDB) Control Layer

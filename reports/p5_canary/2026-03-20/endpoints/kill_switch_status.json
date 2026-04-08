@@ -1,0 +1,11 @@
+{
+  "status": "NOT_CAPTURED",
+  "capture_state": "pending_runtime_capture",
+  "reason": "no_runtime_actions_performed",
+  "contract_role": "committed_handoff_placeholder",
+  "source": "http://127.0.0.1:8002/kill-switch",
+  "expected_contract": {
+    "expected_field": "active",
+    "expected_value_before_start": false
+  }
+}

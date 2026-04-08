@@ -1,0 +1,3 @@
+﻿cdb_database_surrealdb_data /data
+10b556005b4b2c6981b6d3dd96562e8e9827242b8cf04fd5dba427e92eda2de1 /logs
+

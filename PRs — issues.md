@@ -1,4 +1,7 @@
-PRs — nach Dringlichkeit (was zuerst “wert” ist)  
+<!-- Historical snapshot: stale PR priority list from late 2025 (PR #489–#530 era). Not current. -->
+<!-- Status: historical planning artifact — not an active entrypoint. -->
+
+PRs — nach Dringlichkeit (was zuerst “wert” ist)
 DRINGLICHKEIT 0 (Security/CI/Hardening, direkt block-reduzierend)
 
 * \#489 hardening: enforce threshold contract (\#487)  

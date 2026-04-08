@@ -1,0 +1,27 @@
+﻿{
+    "BackupName":  "cdb_backup_20260319_200420",
+    "ArchivePath":  "F:\\Claire_Backups\\cdb_backup_20260319_200420.zip",
+    "Components":  {
+                       "Postgres":  true,
+                       "Redis":  true,
+                       "SurrealDB":  true
+                   },
+    "SurrealDBEvidence":  {
+                              "Requested":  true,
+                              "Database":  "governance_mirror",
+                              "Tables":  [
+
+                                         ],
+                              "Namespace":  "governance",
+                              "ContainerName":  "cdb_surrealdb",
+                              "RecordCounts":  {
+
+                                               },
+                              "QueryStatus":  "count_check_unavailable",
+                              "Artifact":  "surrealdb_data",
+                              "Storage":  "file:/data/surrealdb",
+                              "VolumeName":  "cdb_database_surrealdb_data",
+                              "FileCount":  4,
+                              "TotalBytes":  57036
+                          }
+}

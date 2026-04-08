@@ -7,7 +7,7 @@
 **Canonical runtime:** BLUE+RED (`compose.blue.yml` + `compose.red.yml`).
 Start via `setup_blue_red.ps1` or manual `docker compose -f compose.blue.yml up -d` + `compose.red.yml`.
 The legacy `base.yml + dev.yml` path remains available for CI/test and explicit compatibility flows only.
-Note: `make docker-up` currently still starts the legacy stack (migration pending).
+Note: `make docker-up` starts the canonical BLUE+RED runtime.
 
 ---
 
@@ -114,18 +114,17 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 
 **Expected output:**
 ```
-🐳 Starte Docker Compose Stack...
-✓ Using Compose Fragments (base + dev)
-[+] Running 9/9
+[+] Running ...
  ✔ Network cdb_network         Created
  ✔ Container cdb_redis          Healthy
  ✔ Container cdb_postgres       Healthy
- ✔ Container cdb_prometheus     Healthy
- ✔ Container cdb_grafana        Healthy
- ✔ Container cdb_core           Healthy
  ✔ Container cdb_risk           Healthy
  ✔ Container cdb_execution      Healthy
  ✔ Container cdb_db_writer      Healthy
+ ✔ Container cdb_ws             Started
+ ✔ Container cdb_signal         Started
+ ✔ Container cdb_prometheus     Healthy
+ ✔ Container cdb_grafana        Healthy
 ```
 
 **Failure handling:**
@@ -518,7 +517,7 @@ docker compose -f infrastructure/compose/compose.blue.yml restart cdb_redis
 - **Compose Files:** `infrastructure/compose/`
 - **Compose Layers Doc:** `infrastructure/compose/COMPOSE_LAYERS.md`
 - **Environment Template:** `.env.example`
-- **Trading Modes:** `docs/TRADING_MODES.md`
+- **Trading Modes:** `knowledge/systems/TRADING_MODES.md`
 - **Security:** `docs/SECURITY_HARDENING.md`
 
 ---

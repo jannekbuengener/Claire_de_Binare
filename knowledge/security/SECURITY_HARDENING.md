@@ -6,6 +6,11 @@
 
 This guide covers security hardening requirements for production deployment with real money trading.
 
+Repo note (431C):
+- Canonical drill/simulation source of truth: repo-native `scripts/drills/` plus `tests/chaos/`
+- `tools/test_pack/` is experimental / secondary and not the repo-wide default harness
+- `infrastructure/scripts/security_audit.sh` is a legacy helper with stale repo assumptions, not the canonical drill path
+
 ---
 
 ## Security Layers
@@ -20,12 +25,12 @@ This guide covers security hardening requirements for production deployment with
 
 **MEXC API Keys:**
 ```yaml
-# docker-compose.yml
+# compose.blue.yml (kanonischer Pfad, via SECRETS_PATH)
 secrets:
   mexc_api_key:
-    file: ../.cdb_local/.secrets/mexc_api_key
+    file: ${SECRETS_PATH}/mexc_api_key
   mexc_api_secret:
-    file: ../.cdb_local/.secrets/mexc_api_secret
+    file: ${SECRETS_PATH}/mexc_api_secret
 ```
 
 **Service Configuration:**
@@ -61,9 +66,10 @@ MEXC_API_SECRET = _read_secret("mexc_api_secret", "MEXC_API_SECRET")
 **Procedure:**
 1. Generate new API key on MEXC
 2. Update secret files:
-   ```bash
-   echo "new_key" > ../.cdb_local/.secrets/mexc_api_key
-   echo "new_secret" > ../.cdb_local/.secrets/mexc_api_secret
+   ```powershell
+   # Kanonischer Pfad: ~/Documents/.secrets/.cdb/
+   [System.IO.File]::WriteAllText("$env:USERPROFILE\Documents\.secrets\.cdb\mexc_api_key",    "new_key")
+   [System.IO.File]::WriteAllText("$env:USERPROFILE\Documents\.secrets\.cdb\mexc_api_secret", "new_secret")
    ```
 3. Rolling restart services:
    ```bash
@@ -548,8 +554,8 @@ ALERT_RULES = {
 ### If API Key Compromised
 
 1. **Immediate:**
-   ```bash
-   redis-cli SET emergency_stop "API key compromised"
+   ```powershell
+   $env:MSYS_NO_PATHCONV=1; docker exec cdb_redis redis-cli SET emergency_stop "API key compromised"
    ```
 
 2. **Revoke:**
@@ -559,8 +565,8 @@ ALERT_RULES = {
 
 3. **Rotate:**
    - Generate new API key
-   - Update secrets
-   - Restart services
+   - Update secrets in `~/Documents/.secrets/.cdb/`
+   - Restart stack: `docker compose -f infrastructure/compose/compose.blue.yml up -d`
 
 4. **Audit:**
    - Review audit logs
@@ -570,9 +576,9 @@ ALERT_RULES = {
 ### If Unauthorized Trading Detected
 
 1. **Stop:**
-   ```bash
-   docker-compose stop cdb_execution
-   redis-cli SET emergency_stop "Unauthorized activity"
+   ```powershell
+   docker compose -f infrastructure/compose/compose.blue.yml stop cdb_execution
+   $env:MSYS_NO_PATHCONV=1; docker exec cdb_redis redis-cli SET emergency_stop "Unauthorized activity"
    ```
 
 2. **Assess:**

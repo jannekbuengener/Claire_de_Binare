@@ -1,0 +1,22 @@
+schema_version: "1.0"
+decision_type: committed_handoff_materialization
+decision_utc: NOT_CAPTURED
+decision_date_utc: 2026-03-20
+operator: pending_operator_assignment
+operator_state: no_human_operator_recorded
+source_commit_sha: c63b5e200b030aeb8516c5fad35b38f75b5bc69d
+canary_artifact_path: reports/p5_canary/2026-03-20/
+lr040_pass_run_id: NOT_AVAILABLE
+lr040_pass_commit: NOT_AVAILABLE
+status: NO-GO
+rationale: >
+  First committed P5 handoff instance created to materialize the current
+  repo-side NO-GO state without performing runtime capture. This artifact set is
+  a governance and handoff anchor only and does not authorize any P5 start
+  attempt.
+hard_blockers:
+  - no committed LR-040 PASS verdict anchor
+  - no complete committed P5 core artifact set with operationally captured values
+notes:
+  - no runtime actions were performed in this session
+  - this record is not a GO decision and does not imply start readiness

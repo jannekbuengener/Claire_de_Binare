@@ -1,5 +1,9 @@
 # Automatic Docker Volume Restore Script
 # Run this after Docker Desktop reinstallation
+#
+# ⚠️  HISTORISCHES ARTEFAKT — 2025-12-31-Docker-Reinstall-Event
+# Nicht aktiver Operator-Canon. Aktiver Canon: make restore (→ infrastructure/scripts/restore_all.ps1)
+# Hardcoded auf Backup-Pfad: D:\Dev\Backups\docker_reinstall_20251231_075507
 
 $BACKUP_DIR = "D:\Dev\Backups\docker_reinstall_20251231_075507"
 $REPO_DIR = "D:\Dev\Workspaces\Repos\Claire_de_Binare"

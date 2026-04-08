@@ -4,6 +4,8 @@
 
 This guide will help you set up your local development environment from scratch. Follow these steps to get up and running.
 
+For repo-wide PowerShell discovery, use [`tools/README.md`](tools/README.md). On Windows, use `.\tools\cdb.ps1` as the canonical PowerShell v1 front door. This guide only mirrors the canonical v1 entrypoints where they are directly needed for onboarding.
+
 ---
 
 ## Table of Contents
@@ -140,7 +142,7 @@ chmod +x infrastructure/scripts/init-secrets.sh
 
 **Windows (PowerShell)**:
 ```powershell
-.\infrastructure\scripts\init-secrets.ps1
+.\tools\cdb.ps1 secrets init
 ```
 
 This script generates:
@@ -183,19 +185,28 @@ Get-Content $env:USERPROFILE\Documents\.secrets\.cdb\REDIS_PASSWORD
 
 ### 1. Start the Development Stack
 
-**Option A: Using Docker Compose Directly** (Recommended):
+Canonical runtime note:
+- BLUE+RED is the canonical local runtime path.
+- `base.yml` + `test.yml` is the canonical Docker CI lab baseline for isolated CI/E2E execution.
+- `base.yml` + `dev.yml` are a secondary dev/compatibility path and not the onboarding default.
+- `base.yml` + `dev.yml` remain a secondary local/compatibility path, not the 431B CI-lab baseline.
+- `Makefile` is an operative front door, but not itself part of the PowerShell v1 toolchain.
+
+**Option A: Using Docker Compose Directly**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml up -d
+docker network create cdb_network 2>/dev/null || true
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
-**Option B: Using Makefile** (if Make is installed):
+**Option B: Using Makefile** (recommended if Make is installed):
 ```bash
 make docker-up
 ```
 
-**Option C: Using PowerShell Script** (Windows):
+**Option C: Using PowerShell Front Door** (Windows, canonical v1):
 ```powershell
-.\infrastructure\scripts\stack_up.ps1
+.\tools\cdb.ps1 runtime up
 ```
 
 ### 2. Monitor Startup
@@ -203,32 +214,32 @@ make docker-up
 Watch the containers start:
 
 ```bash
-docker compose -f infrastructure/compose/dev.yml ps
+make docker-health
+docker compose -f infrastructure/compose/compose.blue.yml ps
+docker compose -f infrastructure/compose/compose.red.yml ps
 ```
 
-Expected services:
-- `cdb_redis` - Redis stream broker
-- `cdb_postgres` - PostgreSQL database
-- `cdb_prometheus` - Metrics collection
-- `cdb_grafana` - Monitoring dashboard
-- `cdb_ws` - WebSocket service
-- `cdb_signal` - Signal generation
-- `cdb_candles` - Candle aggregation
-- `cdb_regime` - Regime detection
-- `cdb_allocation` - Portfolio allocation
-- `cdb_risk` - Risk management
-- `cdb_execution` - Order execution
-- `cdb_db_writer` - Database persistence
+For PowerShell-based verification, use:
+
+```powershell
+.\tools\cdb.ps1 stack verify
+```
 
 ### 3. Wait for Health Checks
 
 Give the stack 2-3 minutes to fully initialize. Check health status:
 
 ```bash
-docker compose -f infrastructure/compose/dev.yml ps
+make docker-health
 ```
 
-All services should show `healthy` or `running` status.
+`smoke_test.ps1` is available as a focused BLUE core-path validation:
+
+```powershell
+.\tools\cdb.ps1 runtime smoke
+```
+
+This validates the current BLUE core flow path, not the full BLUE+RED stack end-to-end.
 
 ---
 
@@ -259,7 +270,7 @@ Should return: `{"status": "healthy"}`
 
 **Check PostgreSQL**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml exec cdb_postgres psql -U claire_user -d claire_de_binare -c "\dt"
+docker exec cdb_postgres psql -U claire_user -d claire_de_binare -c "\dt"
 ```
 
 Should list database tables (signals, orders, fills, etc.).
@@ -268,14 +279,14 @@ Should list database tables (signals, orders, fills, etc.).
 
 **Check Redis**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml exec cdb_redis redis-cli -a $(cat ~/Documents/.secrets/.cdb/REDIS_PASSWORD) PING
+docker exec cdb_redis redis-cli -a $(cat ~/Documents/.secrets/.cdb/REDIS_PASSWORD) PING
 ```
 
 Should return: `PONG`
 
 **List Streams**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml exec cdb_redis redis-cli -a $(cat ~/Documents/.secrets/.cdb/REDIS_PASSWORD) KEYS "stream:*"
+docker exec cdb_redis redis-cli -a $(cat ~/Documents/.secrets/.cdb/REDIS_PASSWORD) KEYS "stream:*"
 ```
 
 Should show streams like: `stream:candles_1m`, `stream:signals`, `stream:orders`
@@ -296,41 +307,42 @@ If tests pass, your environment is correctly configured! ✅
 
 **All services**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml logs -f
+docker compose -f infrastructure/compose/compose.blue.yml logs -f
+docker compose -f infrastructure/compose/compose.red.yml logs -f
 ```
 
-**Specific service**:
-```bash
-docker compose -f infrastructure/compose/dev.yml logs -f cdb_signal
+**Specific service (PowerShell v1)**:
+```powershell
+.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Follow
 ```
 
 **Tail last 100 lines**:
-```bash
-docker compose -f infrastructure/compose/dev.yml logs --tail=100 -f cdb_risk
+```powershell
+.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100
 ```
 
 ### 2. Restarting a Service
 
 **After code changes**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml restart cdb_signal
+docker restart cdb_signal
 ```
 
 **Rebuild and restart**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml up -d --build cdb_signal
+make docker-up
 ```
 
 ### 3. Accessing Service Shell
 
 **Execute command in container**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml exec cdb_signal bash
+docker exec -it cdb_signal bash
 ```
 
 **Run Python REPL inside service**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml exec cdb_signal python3
+docker exec -it cdb_signal python3
 ```
 
 ### 4. Running Tests
@@ -354,12 +366,13 @@ make test-coverage
 
 **Stop all services**:
 ```bash
-docker compose -f infrastructure/compose/dev.yml down
+make docker-down
 ```
 
 **Stop and remove volumes** (⚠️ deletes data):
 ```bash
-docker compose -f infrastructure/compose/dev.yml down -v
+docker compose -f infrastructure/compose/compose.red.yml down -v
+docker compose -f infrastructure/compose/compose.blue.yml down -v
 ```
 
 ---
@@ -392,7 +405,7 @@ cp .env.example .env
 
 **Windows**:
 ```powershell
-.\infrastructure\scripts\init-secrets.ps1
+.\tools\cdb.ps1 secrets init
 ```
 
 ---
@@ -442,7 +455,7 @@ chmod 700 ~/Documents/.secrets/.cdb
 chmod 600 ~/Documents/.secrets/.cdb/*
 ```
 
-**Windows**: Run PowerShell as Administrator and re-run `init-secrets.ps1`
+**Windows**: Run PowerShell as Administrator and re-run `.\tools\cdb.ps1 secrets init`
 
 ---
 
@@ -451,8 +464,8 @@ chmod 600 ~/Documents/.secrets/.cdb/*
 **Symptom**: `docker compose ps` shows `unhealthy` status
 
 **Solution**: Check service logs:
-```bash
-docker compose -f infrastructure/compose/dev.yml logs <service_name>
+```powershell
+.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100
 ```
 
 Common causes:
@@ -479,8 +492,8 @@ Common causes:
 
 If you encounter issues not covered here:
 
-1. **Check stack health**: `./infrastructure/scripts/stack_doctor.ps1` (Windows) or `docker compose ps`
-2. **Review logs**: `docker compose logs -f`
+1. **Check stack health**: `make docker-health` or `.\tools\cdb.ps1 stack verify`
+2. **Review logs**: `.\tools\cdb.ps1 service logs -ServiceName <service>`
 3. **Search existing issues**: [GitHub Issues](https://github.com/jannekbuengener/Claire_de_Binare/issues)
 4. **Ask for help**: Open a new issue with:
    - Your OS and Docker version
@@ -553,15 +566,16 @@ test(allocation): add regime change tests
 
 | Task | Command |
 |------|---------|
-| **Start stack** | `docker compose -f infrastructure/compose/dev.yml up -d` |
-| **Stop stack** | `docker compose -f infrastructure/compose/dev.yml down` |
-| **View logs** | `docker compose -f infrastructure/compose/dev.yml logs -f` |
-| **Restart service** | `docker compose -f infrastructure/compose/dev.yml restart <service>` |
+| **PowerShell index** | `tools/README.md` |
+| **Start stack** | `make docker-up` or `.\tools\cdb.ps1 runtime up` |
+| **Stop stack** | `make docker-down` |
+| **View logs** | `.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Follow` |
+| **Verify stack** | `make docker-health` or `.\tools\cdb.ps1 stack verify` |
 | **Run tests** | `pytest tests/ -v` |
 | **Check coverage** | `make test-coverage` |
-| **Service shell** | `docker compose -f infrastructure/compose/dev.yml exec <service> bash` |
+| **Service shell** | `docker exec -it cdb_signal bash` |
 | **View secret** | `cat ~/Documents/.secrets/.cdb/REDIS_PASSWORD` |
-| **Rebuild service** | `docker compose -f infrastructure/compose/dev.yml up -d --build <service>` |
+| **Core smoke test** | `.\tools\cdb.ps1 runtime smoke` |
 
 ### Important URLs
 
@@ -573,7 +587,9 @@ test(allocation): add regime change tests
 
 - `.env` - Environment configuration
 - `~/Documents/.secrets/.cdb/` - Secrets directory
-- `infrastructure/compose/dev.yml` - Development stack definition
+- `tools/README.md` - Authoritative PowerShell index
+- `infrastructure/compose/compose.blue.yml` - Canonical BLUE stack definition
+- `infrastructure/compose/compose.red.yml` - Canonical RED stack definition
 - `PROJECT_STATUS.md` - Service implementation status
 - `Makefile` - Build and test targets
 
@@ -586,7 +602,7 @@ If you have any questions or run into issues, don't hesitate to ask in the proje
 ---
 
 **Document Version**: 1.0.0
-**Last Updated**: 2026-01-15
+**Last Updated**: 2026-03-19
 **Maintained By**: Development Team
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)

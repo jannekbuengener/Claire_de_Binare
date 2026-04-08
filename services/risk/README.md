@@ -1,5 +1,3 @@
-docker build -t cdb-risk-manager .
-docker run -p 8002:8002 --env-file ../../.env cdb-risk-manager
 # CDB Risk Manager
 
 ## 🚀 Überblick
@@ -17,14 +15,14 @@ blockiert und Alerts auf das Topic `alerts` schreibt.
 flowchart LR
   SIGNAL[Signal Engine] -->|signals| RISK[Risk Manager]
   RISK -->|orders| EXEC[Execution Service]
-  RISK -->|alerts| DASH[Dashboard]
+  RISK -->|alerts| PUB[Redis Pub/Sub, kein verifizierter Subscriber]
 ```
 
 ## ⚙️ Installation & Start
 
+Risk ist Teil des **BLUE**-Stacks (Core):
 ```powershell
-docker compose build risk_manager
-docker compose up -d risk_manager
+docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_risk
 curl http://localhost:8002/health
 ```
 
@@ -67,7 +65,7 @@ curl http://localhost:8002/health
 
 ```powershell
 pytest backoffice/services/risk_manager/tests -q
-redis-cli -a $REDIS_PASSWORD lrange alerts -5 -1
+redis-cli -a $REDIS_PASSWORD subscribe alerts
 ```
 
 - Weitere Schritte: `backoffice/docs/Risikomanagement-Logik.md`

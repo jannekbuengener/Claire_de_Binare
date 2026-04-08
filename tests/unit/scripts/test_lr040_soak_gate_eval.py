@@ -83,7 +83,7 @@ class TestLR040SoakGatePass:
         assert result["verdict"] == "PASS"
         assert result["failures"] == []
         assert result["control"] == "LR-040"
-        assert result["schema_version"] == "1.0"
+        assert result["schema_version"] == "1.1"
 
     def test_metrics_populated(self, tmp_path: Path) -> None:
         result = evaluate_lr040_soak(_write_passing_artifacts(tmp_path))
@@ -155,6 +155,141 @@ class TestLR040SoakGateFailClosed:
         (artifact_dir / "restart_alerts.log").write_text("", encoding="utf-8")
         result = evaluate_lr040_soak(artifact_dir)
         assert "no_restart_alerts" not in result["failures"]
+
+
+class TestLR040SoakGateInconclusive:
+    """Tests for environment_interruption classification (Issue #1270)."""
+
+    def test_inconclusive_on_env_interruption_marker(self, tmp_path: Path) -> None:
+        """soak_test_INCONCLUSIVE.txt present → verdict INCONCLUSIVE."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_INCONCLUSIVE.txt").write_text(
+            "2026-03-24 17:22:51 UTC - INCONCLUSIVE: Environment interruption detected"
+            " (cause=environment_interruption, containers=22/22, uptime_spread_s=1,"
+            " monitor_container_fresh=0)",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "INCONCLUSIVE"
+        # INCONCLUSIVE is a distinct verdict class, not a generic failed check.
+        assert "no_inconclusive_marker" not in result["failures"]
+
+    def test_inconclusive_is_not_pass(self, tmp_path: Path) -> None:
+        """INCONCLUSIVE must not be mistaken for PASS (fail-closed)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_INCONCLUSIVE.txt").write_text(
+            "inconclusive", encoding="utf-8"
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] != "PASS"
+
+    def test_inconclusive_with_restart_alerts_still_inconclusive(
+        self, tmp_path: Path
+    ) -> None:
+        """INCONCLUSIVE marker + restart_alerts.log → INCONCLUSIVE (env wins)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_INCONCLUSIVE.txt").write_text(
+            "inconclusive", encoding="utf-8"
+        )
+        (artifact_dir / "restart_alerts.log").write_text(
+            "2026-03-24 17:22:51 UTC - ENVIRONMENT_INTERRUPTION: 22/22 containers,"
+            " spread=1s, monitor_fresh=0",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "INCONCLUSIVE"
+
+    def test_sut_restart_marker_without_inconclusive_is_fail(
+        self, tmp_path: Path
+    ) -> None:
+        """soak_test_FAILED.txt without INCONCLUSIVE → FAIL (isolated SUT restart)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_FAILED.txt").write_text(
+            "2026-03-24 10:00:00 UTC - ABORT: Service restart detected"
+            " (cause=sut_restart, containers=1/22)",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "no_failed_marker" in result["failures"]
+        assert "no_inconclusive_marker" not in result["failures"]
+
+    def test_both_markers_is_fail_closed(self, tmp_path: Path) -> None:
+        """Both markers present simultaneously = scripting error → FAIL (fail-closed)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_FAILED.txt").write_text("failed", encoding="utf-8")
+        (artifact_dir / "soak_test_INCONCLUSIVE.txt").write_text(
+            "inconclusive", encoding="utf-8"
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "FAIL"
+        assert "not_both_markers" in result["failures"]
+        assert result["artifacts"]["restart_cause"] == "conflicting_markers"
+
+    def test_restart_cause_and_inconclusive_marker_in_artifacts(
+        self, tmp_path: Path
+    ) -> None:
+        """restart_cause and inconclusive_marker are present in the artifacts payload."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "soak_test_INCONCLUSIVE.txt").write_text(
+            "inconclusive", encoding="utf-8"
+        )
+        (artifact_dir / "restart_alerts.log").write_text(
+            "2026-03-24 17:22:51 UTC - ENVIRONMENT_INTERRUPTION: 22/22",
+            encoding="utf-8",
+        )
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["artifacts"]["restart_cause"] == "environment_interruption"
+        assert (
+            result["artifacts"]["inconclusive_marker"] == "soak_test_INCONCLUSIVE.txt"
+        )
+
+
+class TestLR040SoakGateRunIntent:
+    """Tests for run intent separation (Issue #1278)."""
+
+    def test_validation_intent_returns_not_applicable(self, tmp_path: Path) -> None:
+        """run_intent.txt = validation -> NOT_APPLICABLE, no LR-040 checks run."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "NOT_APPLICABLE"
+        assert result["run_intent"] == "validation"
+        assert result["checks"] == {}
+        assert result["failures"] == []
+        assert result["control"] == "LR-040"
+
+    def test_missing_run_intent_is_legacy_lr040(self, tmp_path: Path) -> None:
+        """No run_intent.txt (pre-#1278 artifacts) -> normal LR-040 evaluation."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        assert not (artifact_dir / "run_intent.txt").exists()
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "PASS"
+        assert result["run_intent"] == "lr040"
+
+    def test_lr040_intent_runs_normal_evaluation(self, tmp_path: Path) -> None:
+        """run_intent.txt = lr040 -> normal LR-040 evaluation proceeds."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("lr040\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "PASS"
+        assert result["run_intent"] == "lr040"
+        assert "hourly_log_present" in result["checks"]
+
+    def test_validation_intent_exit_code_nonzero(self, tmp_path: Path) -> None:
+        """NOT_APPLICABLE verdict must not be mistaken for PASS (fail-closed)."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        # main() uses: sys.exit(0 if result["verdict"] == "PASS" else 1)
+        assert result["verdict"] != "PASS"
+
+    def test_validation_intent_even_with_72h_data(self, tmp_path: Path) -> None:
+        """Validation run with full 72h data must still be NOT_APPLICABLE."""
+        artifact_dir = _write_passing_artifacts(tmp_path, hours=73)
+        (artifact_dir / "run_intent.txt").write_text("validation\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "NOT_APPLICABLE"
 
 
 class TestLR040SoakGateEdgeCases:

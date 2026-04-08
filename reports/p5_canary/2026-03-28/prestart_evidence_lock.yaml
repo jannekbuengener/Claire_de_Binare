@@ -1,0 +1,59 @@
+schema_version: "1.0"
+handoff_instance: lr040_soak_complete_2026-03-28
+artifact_root: reports/p5_canary/2026-03-28/
+status: NO-GO
+authorization: not_authorized
+evidence_lock_utc: 2026-03-28T18:15:31Z
+capture_state: no_go_before_runtime_capture
+commit_sha: c315d076c989c6f40f113cccbe9e28fb91323630
+worktree_status: dirty  # untracked files present at evidence-lock time
+operator: jannekbuengener
+purpose: prestart_evidence_lock_after_lr040_soak_completion
+
+# Endpoint-Captures wurden nicht durchgefuehrt.
+# Begruendung: LR-040 Evaluator liefert INCONCLUSIVE (exit 1) — NO-GO steht bereits
+# fest. Endpoint-Captures sind erst bei GO-Entscheidung sinnvoll und erforderlich.
+# Alle Capture-Felder bleiben auf null / pending / fail-closed.
+
+kill_switch_status:
+  active: null
+  source: http://127.0.0.1:8002/kill-switch
+  captured_utc: null
+  capture_state: pending
+  response: null
+  expected_field: active
+  required_value_before_start: false
+  gate_pass: false  # nicht gecaptured => fail-closed
+
+execution_status:
+  mode: null
+  source: http://127.0.0.1:8003/status
+  captured_utc: null
+  capture_state: pending
+  response: null
+  canonical_field: execution_status.mode
+  required_value_before_start: mock
+  gate_pass: false  # nicht gecaptured => fail-closed
+
+risk_status:
+  circuit_breaker: null
+  source: http://127.0.0.1:8002/status
+  captured_utc: null
+  capture_state: pending
+  response: null
+  expected_field: risk_state.circuit_breaker
+  required_value_before_start: false
+  gate_pass: false  # nicht gecaptured => fail-closed
+
+gate_summary:
+  kill_switch_inactive: false
+  execution_mode_mock: false
+  circuit_breaker_inactive: false
+  all_gates_pass: false
+
+notes:
+  - NO-GO vor Endpoint-Capture — LR-040 INCONCLUSIVE blockiert jeden GO-Pfad
+  - Endpoint-Captures bewusst nicht durchgefuehrt, da NO-GO bereits feststeht
+  - gate_pass-Felder auf false gesetzt (nicht gecaptured, fail-closed)
+  - keine Aenderung an bestehenden Evidence-Artefakten
+  - naechster Schritt: neuen sauberen 72h-Soak mit neuem Artefaktverzeichnis starten

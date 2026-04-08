@@ -1,8 +1,17 @@
 # M9 RELEASE PLAN
 
+> **⚠️ HISTORICAL CONTEXT (2025-12-27)**
+> Dieses Dokument wurde in einer Phase erstellt, als ein Mehrpersonen-Team
+> (SRE/DevOps Lead, On-call-Rotation, Infra Team) angenommen wurde.
+> Die aktuelle Betriebsrealität ist ein **Solo-Maintainer-Setup**.
+> Teamrollen-Annahmen (On-call, SRE Lead, Infra Team) sind nicht real besetzt.
+> Der Plan bleibt als Referenz für den fachlichen Scope erhalten, aber die
+> Ausführungsannahmen müssen gegen die Solo-Maintainer-Realität geprüft werden.
+> Siehe `docs/live-readiness/` für den aktuellen Go-Live-Pfad.
+
 **Version:** 2.0
 **Date:** 2025-12-27
-**Status:** Active Refinement (v1 was placeholder from 2025-12-19)
+**Status:** Historical — überholt durch Live-Readiness-Prozess (LR-*)
 **Scope:** Production Release & Go-Live
 **Milestone:** M9 - Release
 **Issues:** TBD (to be created after M8)
@@ -15,14 +24,14 @@
 
 **Timeline:** 2-3 weeks (after M8 Security completion)
 **Critical Path:** M6 ✅ → M7 ✅ → M8 ✅ → M9 (Release) 🔄
-**Resource Need:** 1 SRE/DevOps lead, 1-2 developers (on-call), infra team support
+**Betriebsmodell:** Solo-Maintainer mit KI-Unterstützung (kein Team)
 
 **Success Criteria:**
 - ✅ Production deployment successful (zero rollback)
 - ✅ 0 P0 issues in first 7 days
 - ✅ SLA targets met (uptime, latency, throughput)
 - ✅ Rollback plan validated and ready
-- ✅ On-call rotation staffed and trained
+- ✅ Monitoring + Alerting funktionsfähig (E-Mail an Maintainer)
 
 ---
 
@@ -344,10 +353,10 @@ After M9 close, transition to continuous improvement:
 
 ---
 
-**Plan Status:** ✅ REFINED (v2.0)
-**Last Updated:** 2025-12-27
-**Next Review:** Start of M9 (after M8 complete)
-**Owner:** SRE/DevOps Lead (TBD) + Claude (Session Lead) per Issue #107
+**Plan Status:** HISTORICAL (v2.0) — überholt durch LR-Prozess
+**Last Updated:** 2026-03-30
+**Next Review:** Nicht geplant (ersetzt durch Live-Readiness-Audits)
+**Owner:** Maintainer (Solo) + Claude (Session Lead)
 
 ---
 

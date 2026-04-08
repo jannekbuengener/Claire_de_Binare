@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Evaluate shadow-soak evidence with hard LR-030/LR-031 gate criteria."""
+"""Evaluate shadow-soak evidence with hard LR-030/LR-031 gate criteria.
+
+Canonical runtime-mode is taken only from ``endpoints/execution_status.json``
+field ``mode``. Shadow probe semantics and soak-profile labels are separate.
+"""
 
 from __future__ import annotations
 
@@ -64,7 +68,8 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
     has_live_data = evidence_index.get("has_live_data")
     orders_approved = _to_int(evidence_index.get("orders_approved"))
     risk_blocked_all = evidence_index.get("risk_blocked_all")
-    trading_mode = exec_status.get("mode")
+    # Canonical runtime-mode source: execution_status.mode
+    execution_runtime_mode = exec_status.get("mode")
     kill_switch_active = risk_status.get("risk_state", {}).get("circuit_breaker")
 
     checks = {
@@ -78,7 +83,7 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
         "has_live_data_true": has_live_data is True,
         "orders_approved_eq_0": orders_approved is not None and orders_approved == 0,
         "risk_blocked_all_true": risk_blocked_all is True,
-        "runtime_mode_verified": trading_mode == "mock",
+        "runtime_mode_verified": execution_runtime_mode == "mock",
         "kill_switch_precheck_inactive": kill_switch_active is False,
     }
 
@@ -98,7 +103,7 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
             "risk_blocked_all": risk_blocked_all,
         },
         "runtime": {
-            "trading_mode": trading_mode,
+            "trading_mode": execution_runtime_mode,
             "kill_switch_active": kill_switch_active,
         },
         "probe": {

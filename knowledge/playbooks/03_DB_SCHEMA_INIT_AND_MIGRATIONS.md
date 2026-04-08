@@ -10,10 +10,11 @@ Init Scripts in `/docker-entrypoint-initdb.d/` laufen **nur beim ersten Start**,
 
 ## Dev: Force Schema Reload (wipes data)
 ```powershell
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker volume rm claire_de_binare_postgres_data
-docker compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ## Prod: Apply Manually (preserves data)

@@ -1,27 +1,30 @@
-# Stack Golden Path — Windows 11 / PowerShell (2025-12-25)
+# Stack Golden Path — Windows 11 / PowerShell
 
 ## TL;DR
 **Ein Startpfad**. **Ein Stop-Pfad**. Debug in 30 Sekunden. Keine kreativen Varianten.
 
-## Start (Canonical)
+## Start (Canonical — BLUE + RED)
 ```powershell
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml up -d
-docker compose ps
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml ps
+docker compose -f infrastructure/compose/compose.red.yml ps
 ```
 
-## Stop (Canonical)
+## Stop (Canonical — RED zuerst, dann BLUE)
 ```powershell
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 ```
 
-## Dev Reset (WIPES DATA) — nur wenn DB-Init nicht gelaufen ist
+## DB Reset (WIPES DATA) — nur wenn DB-Init nicht gelaufen ist
 ```powershell
-cd infrastructure/compose
-docker compose -f base.yml -f dev.yml down
+docker compose -f infrastructure/compose/compose.red.yml down
+docker compose -f infrastructure/compose/compose.blue.yml down
 docker volume rm claire_de_binare_postgres_data
-docker compose -f base.yml -f dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ## Minimal Health Checklist

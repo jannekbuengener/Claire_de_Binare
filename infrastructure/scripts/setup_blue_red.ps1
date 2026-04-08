@@ -26,6 +26,10 @@
     # Start BLUE + RED with smoke test
 
 .EXAMPLE
+    .\tools\cdb.ps1 runtime up
+    # Canonical PowerShell v1 front door
+
+.EXAMPLE
     .\setup_blue_red.ps1 -SkipRed
     # Start BLUE only (for manual signal injection testing)
 #>
@@ -57,6 +61,16 @@ if ($networkExists) {
     }
     Write-Host "  [OK] Network created" -ForegroundColor Green
 }
+
+# ==================== SECRETS_PATH ====================
+
+if (-not $env:SECRETS_PATH) {
+    $env:SECRETS_PATH = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
+}
+if (-not (Test-Path $env:SECRETS_PATH)) {
+    Write-Error "Secrets directory not found: $env:SECRETS_PATH. Set SECRETS_PATH env var or create the directory."
+}
+Write-Host "SECRETS_PATH: $env:SECRETS_PATH" -ForegroundColor Gray
 
 # ==================== BLUE STACK ====================
 
@@ -90,8 +104,8 @@ if (-not $SkipSmokeTest) {
     $smokeScript = Join-Path $PSScriptRoot "..\..\scripts\smoke_core_flow.py"
 
     if (Test-Path $smokeScript) {
-        $env:REDIS_PASSWORD = Get-Content "$env:USERPROFILE\Documents\.secrets\.cdb\REDIS_PASSWORD" -Raw
-        $env:POSTGRES_PASSWORD = Get-Content "$env:USERPROFILE\Documents\.secrets\.cdb\POSTGRES_PASSWORD" -Raw
+        $env:REDIS_PASSWORD = (Get-Content (Join-Path $env:SECRETS_PATH "REDIS_PASSWORD") -Raw).Trim()
+        $env:POSTGRES_PASSWORD = (Get-Content (Join-Path $env:SECRETS_PATH "POSTGRES_PASSWORD") -Raw).Trim()
 
         python $smokeScript
 
@@ -161,4 +175,4 @@ Write-Host "`nNext Steps:" -ForegroundColor White
 Write-Host "  1. Check service status: docker compose -f infrastructure/compose/compose.blue.yml ps" -ForegroundColor Gray
 Write-Host "  2. View logs: docker compose -f infrastructure/compose/compose.blue.yml logs -f" -ForegroundColor Gray
 Write-Host "  3. Grafana: http://localhost:3000 (admin/password from secrets)" -ForegroundColor Gray
-Write-Host "  4. Re-run smoke test: python scripts/smoke_core_flow.py --verbose`n" -ForegroundColor Gray
+Write-Host "  4. Re-run smoke test: .\tools\cdb.ps1 runtime smoke -Verbose`n" -ForegroundColor Gray

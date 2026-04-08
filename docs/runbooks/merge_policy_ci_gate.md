@@ -81,6 +81,11 @@ Sentinel still point to the canonical names after the change.
 
 `Linting (Ruff)`, `Format Check (Black)`, and `Tests` also exist in `ci.yaml`, but the canonical PR contract intentionally remains the single aggregate check-run emitted by `.github/workflows/ci.yml`.
 
+### ci.yaml Freeze-Status
+
+`ci.yaml` ist **intentionally frozen** (2026-04-07). Tool-Version-Drift gegenüber `ci.yml` ist
+akzeptabel und erfordert keine Nachführung. Nicht parity-tracked. Kein SSOT für Tool-Versionen.
+
 ## Policy Gate Categories
 
 `policy-gate` classifies pull requests deterministically from labels, title prefixes,
@@ -93,6 +98,12 @@ and changed files:
 | `infra-only` | `infra-only` | `[infra-only]` or `infra-only:` | `infrastructure/**` and `.github/workflows/**` |
 | `core/service` | none | none | Any other diff; requires `manual-approval` or `allow-core-change` |
 
+> **Auto-inference:** `infra-only` is inferred automatically only when **all** changed files
+> are pure `infrastructure/**` paths. Mixed diffs (e.g. `infrastructure/**` +
+> `.github/workflows/**`) are **not** auto-inferred and remain fail-closed at `core/service`,
+> even though the `infra-only` category permits both path sets when set via label or title prefix.
+> An explicit label or title prefix is required for mixed diffs.
+
 Hard-fails for workflow changes in `.github/workflows/**`:
 
 - Any workflow containing `pull_request_target`
@@ -101,6 +112,17 @@ Hard-fails for workflow changes in `.github/workflows/**`:
 
 `manual-approval` and `allow-core-change` are explicit override labels for
 `core/service` PRs. They do not bypass the workflow safety checks above.
+
+### Dependabot / Bot PRs
+
+Dependabot-PRs für Python-Abhängigkeiten oder App-Code (z.B. `requirements*.txt`,
+`pyproject.toml`) fallen in `core/service`, weil das `dependencies`-Label **kein Gate-Override**
+ist und diese Dateien nicht unter `docs/**`, `.github/workflows/**` oder `infrastructure/**`
+liegen. Sicherer Operator-Pfad: PR prüfen, dann `manual-approval` oder `allow-core-change`
+setzen. Keine Automatik. Das Gate bleibt fail-closed.
+
+Dependabot-PRs, die **ausschließlich** `.github/workflows/**` oder `infrastructure/**` berühren,
+werden als `workflows-only` bzw. `infra-only` auto-inferred und benötigen keinen Override.
 
 The gate reevaluates on `opened`, `synchronize`, `reopened`, `labeled`,
 `unlabeled`, and `edited` so label removals cannot leave a stale PASS behind.

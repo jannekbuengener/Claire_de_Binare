@@ -1,13 +1,17 @@
-# Claire de Binare - Current Status
+# Claire de Binare - Current Status (Historical Knowledge Snapshot)
 
+**Status Class:** Historical / Knowledge Snapshot
+**Snapshot Scope:** Legacy knowledge-hub working snapshot
 **Last Updated:** 2026-01-10 18:30 CET
+**Authority:** Historical context only. This file is not the current live-readiness verdict and not the current repo/main/test status.
+**Current Canonical Sources:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (operational live readiness), `CURRENT_STATUS.md` (working repo / engineering status)
 **Branch:** main
 **Latest Commit:** 94488ca
 **Session:** Risk Position Sizing Fix + Order Observability
 
 ---
 
-## System Status: NO-GO (Post-Migration)
+## Historical Snapshot Status: NO-GO (Post-Migration)
 
 **Runtime:** BLUE+RED canonical (compose.blue.yml + compose.red.yml)
 **Trading Pipeline:** STABLE END-TO-END

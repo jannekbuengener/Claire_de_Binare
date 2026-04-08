@@ -20,6 +20,12 @@ docs/contracts/*.json text eol=lf
 # Keep this legacy CRLF blob unfiltered to prevent phantom modified state in fresh Windows worktrees.
 tools/enforce-root-baseline.ps1 -text
 
+# Frozen archive snapshot — exclude from GitHub Linguist language stats and
+# code-search prominence. These 635 files mirror the retired docs-hub topology
+# and overlap with active working-repo filenames (AGENTS.md, CLAUDE.md, etc.).
+# linguist-documentation reduces navigation noise without affecting git tracking.
+docs/archive/docs_hub_snapshot/** linguist-documentation=true
+
 # Binary files
 *.png binary
 *.jpg binary

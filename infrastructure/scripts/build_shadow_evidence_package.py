@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build and validate a canonical shadow-soak evidence package."""
+"""Build and validate a canonical shadow-soak evidence package.
+
+This package remains shadow-specific evidence. The run summary field
+``soak_profile`` names the shadow-soak collection profile; runtime-mode remains
+anchored in execution_status.mode and evidence_index trading_mode.
+"""
 
 from __future__ import annotations
 
@@ -57,6 +62,15 @@ def _sanitize_fragment(value: object) -> str:
     return sanitized or "unknown"
 
 
+def _get_soak_profile(run_summary: dict) -> object:
+    """Read the shadow-soak profile from run_summary.
+
+    ``mode`` is accepted as a legacy alias for backward compatibility with
+    older evidence directories.
+    """
+    return run_summary.get("soak_profile", run_summary.get("mode"))
+
+
 def _package_file_record(root: Path, relative_path: str) -> dict:
     path = root / relative_path
     if not path.is_file():
@@ -106,8 +120,8 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
 
     run_id = _sanitize_fragment(run_summary.get("run_id"))
     commit = _sanitize_fragment(str(run_summary.get("commit") or "")[:12])
-    mode = _sanitize_fragment(run_summary.get("mode"))
-    package_id = f"shadow-soak-{run_id}-{commit}-{mode}"
+    soak_profile = _sanitize_fragment(_get_soak_profile(run_summary))
+    package_id = f"shadow-soak-{run_id}-{commit}-{soak_profile}"
     package_root = evidence_dir / "packages" / package_id
     package_root.mkdir(parents=True, exist_ok=True)
 
@@ -133,7 +147,7 @@ def build_shadow_evidence_package(evidence_dir: Path) -> dict:
             "run_url": run_summary.get("run_url"),
             "ref": run_summary.get("ref"),
             "commit": run_summary.get("commit"),
-            "mode": run_summary.get("mode"),
+            "soak_profile": _get_soak_profile(run_summary),
             "soak_minutes": run_summary.get("soak_minutes"),
             "ended_at": run_summary.get("ended_at"),
         },

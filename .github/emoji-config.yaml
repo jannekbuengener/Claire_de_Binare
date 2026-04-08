@@ -15,4 +15,6 @@ reporting:
   markdown_summary: true
 severity:
   code: "error"
-  comments: "warning"
+  comment: "warning"
+  string: "info"
+  variable: "info"

@@ -1,29 +1,40 @@
-# CDB Office Pack — Command Sheet (PowerShell)
-Stand: 2025-12-16
+# CDB Command Sheet (PowerShell)
+Stand: 2026-03-19
 
 ## Zweck
-In **< 60 Sekunden startklar** sein: Repos finden, Status prüfen, Tasks ausführen.
+Schneller Einstieg ins Working Repo.
 
----
+Autoritativer PowerShell-Index:
+- `tools/README.md`
 
-## 1. Repos finden
+## 1. Working Repo
 ```powershell
-$ROOT = "C:\Users\janne\Documents\GitHub\Workspaces"
-
-# Working Repo
-$WORKING = "C:\Users\janne\Documents\GitHub\Workspaces\Claire_de_Binare"
-cd $WORKING
+$WORKING = "D:\Dev\Workspaces\Repos\Claire_de_Binare"
+Set-Location $WORKING
 git status
-
-# Docs Hub Repo finden
-Get-ChildItem $ROOT -Directory | Where-Object {
-  Test-Path (Join-Path $_.FullName "DOCS_HUB_INDEX.md")
-} | Select-Object FullName
 ```
 
----
+## 2. Canonical v1 Front Door
+- `.\tools\cdb.ps1 secrets init`
+- `.\tools\cdb.ps1 runtime up`
+- `.\tools\cdb.ps1 stack verify`
+- `.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100`
+- `.\tools\cdb.ps1 runtime smoke`
 
-## 2. Baseline Snapshot (beide Repos)
+Hinweis:
+- `smoke_test.ps1` validiert aktuell den BLUE-Core-Pfad, nicht pauschal den gesamten BLUE+RED-Stack.
+- `bootstrap_local.ps1` und `bootstrap_local.sh` bleiben Secondary Convenience Wrapper und sind nicht die kanonische Front Door.
+
+## 3. Operative Front Door
+`Makefile` ist fuer viele Standardablaeufe die operative Front Door, aber nicht selbst Teil der PowerShell-v1-Toolchain.
+
+```powershell
+make docker-up
+make docker-health
+make docker-down
+```
+
+## 4. Repo Snapshot
 ```powershell
 git branch
 git status
@@ -31,41 +42,7 @@ git log -1 --oneline
 git ls-files --others --exclude-standard
 ```
 
----
-
-## 3. Standard Workflows
-### Docker
-```powershell
-make docker-up
-make docker-health
-make docker-down
-```
-
-### Tests
-```powershell
-make test
-```
-
----
-
-## 4. Papertrading Smoke-Checks
-```powershell
-docker ps
-docker compose ps
-docker compose logs --tail=50
-```
-
----
-
-## 5. Git Hygiene
-```powershell
-git fetch --all --prune
-git status
-```
-
----
-
-## 6. Safety Reminder
+## 5. Safety Reminder
 - Kein Live-Trading aktivieren
 - Keine Secrets committen
 - Hardening = erst Report, dann Diff

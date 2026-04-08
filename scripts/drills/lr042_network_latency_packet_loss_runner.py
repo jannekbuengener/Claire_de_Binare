@@ -1,4 +1,4 @@
-"""Deterministic LR-042 chaos drill for network latency and packet loss."""
+"""Canonical repo-native 431C chaos drill for network latency and packet loss."""
 
 from __future__ import annotations
 

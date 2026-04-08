@@ -1,7 +1,12 @@
 # Docker Reinstall - Restore Guide
 
+> **Historischer Snapshot — 2025-12-31-Docker-Reinstall.**  
+> Aktuelle Restore-Front-Door: `make restore` (listet Backups), dann `restore_all.ps1 -BackupName <name>` (führt Restore aus)  
+> Aktuelle Backup-Location: `F:\Claire_Backups` — Setup und Health: `docs/runbooks/BACKUP_AUTOMATION.md`  
+> Die nachfolgenden Befehle sind event-spezifisch und referenzieren den damaligen Backup-Pfad.
+
 **Backup erstellt:** 2025-12-31 07:55:07
-**Backup Location:** D:\Dev\Backups\docker_reinstall_20251231_075507
+**Backup Location (historisch):** D:\Dev\Backups\docker_reinstall_20251231_075507
 
 ## ✅ Was wurde gesichert
 
@@ -85,13 +90,16 @@ docker volume create claire_de_binare_postgres_data
 # Falls leer: Fresh Init beim ersten Start
 ```
 
-### 5. Stack starten
+### 5. Stack starten (BLUE+RED)
 ```bash
 cd D:\Dev\Workspaces\Repos\Claire_de_Binare
+# Netzwerk sicherstellen
+docker network create cdb_network 2>/dev/null
 # Fix Postgres Mount-Problem falls nötig (alter Pfad C:\Users\janne\Documents\...)
 make docker-up
-# ODER
-docker compose up -d
+# ODER explizit:
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
 ### 6. Verifizierung

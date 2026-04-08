@@ -7,11 +7,37 @@ Issue #428.
 Run the full CDB Compose stack for 72 consecutive hours with zero
 container restarts. This gate must pass before any live deployment.
 
+This runbook produces raw 72h soak run artifacts under
+`artifacts/soak_test_*`. It does not define or create the normative committed
+P5 core artifact contract under `reports/p5_canary/<YYYY-MM-DD>/`, and it does
+not produce a P5 start authorization by itself.
+
+Terminology used here follows current governance:
+- `execution_status.mode` is the canonical runtime-mode field
+- the current shadow-/prestart-prereq path expects runtime-mode `mock`
+- `shadow` names shadow/probe/evidence semantics
+- `full|lean` name soak/collection profiles, not runtime-mode values
+
 Gate criteria:
 - Zero container restarts across all `cdb_*` services
 - No OOM kills
 - Disk free > 10%
 - Signal queue length < 1000 (no stalls)
+
+## Runtime Requirement
+
+`soak_monitor.sh` is **Linux userland only**.
+
+- **Allowed:** native Linux shell, WSL2 Linux userland
+- **Not allowed:** native Windows, PowerShell, Git Bash, MSYS, MINGW, Cygwin
+
+`soak_monitor.sh` runs an active runtime precheck (`check_lr040_runtime_env.sh`)
+at startup and exits with a clear error if the runtime family, required tooling
+(`docker`, GNU `date -d`), or artifact-root writability checks fail.
+There is no silent fallback or best-effort mode — the script is fail-closed.
+
+To run on a Windows host, open a **WSL2 terminal** (e.g. `wsl`) and execute
+the script from within the WSL2 Linux userland.
 
 ## Pre-Flight: Windows Host
 
@@ -87,7 +113,8 @@ chmod +x infrastructure/scripts/soak_monitor.sh
 
 > **Note:** The CI workflow `shadow-soak-evidence.yml` runs automated
 > shadow-soak evidence collection and is not the same as this manual
-> runtime soak procedure.
+> 72h runtime soak procedure. In that workflow, `full|lean` are collection
+> profiles and not runtime-mode values.
 
 ## During the Run
 
@@ -153,6 +180,9 @@ docker compose -f infrastructure/compose/compose.blue.yml down
 - `restart_alerts.log` — empty if test passed
 - `soak_test_FAILED.txt` — absent if test passed
 
+These are raw run artifacts for LR-040 evaluation. They are not the committed
+P5 core evidence root.
+
 **Evaluate (LR-040 gate):**
 
 ```bash
@@ -160,9 +190,19 @@ python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_test_YYYYMM
 cat artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json
 ```
 
-**Go / No-Go decision:**
+**Committed P5 reference path (separate, outside this runbook):**
+- `reports/p5_canary/<YYYY-MM-DD>/lr040/lr040_soak_gate_eval.json`
+
+**Verdict interpretation (no P5 release decision):**
 - PASS: `lr040_soak_gate_eval.json` verdict is `PASS`
 - FAIL: any check failed — see `failures` array for root cause before re-attempting
+- INCONCLUSIVE: environment interruption detected (Docker-daemon or host restart,
+  identified by bulk-restart heuristic). Run is invalid but not a SUT defect.
+  Run must be restarted. See `soak_test_INCONCLUSIVE.txt` for details
+  (`containers`, `uptime_spread_s`, `monitor_container_fresh`). exit 1 (fail-closed).
+- A PASS here is a necessary LR-040 evidence anchor only; it does not, by
+  itself, create the committed P5 core artifact set and does not change P5 from
+  `NO-GO`
 
 ## Troubleshooting: Common Issues
 
@@ -191,3 +231,42 @@ If `SoakTest_MessageQueueStalled` fires (queue > 1000 for 10 min):
 2. Check Redis: `docker exec cdb_redis redis-cli XLEN stream.orders`
 3. If consumer is alive but slow: resource contention — check CPU/memory
 4. If consumer is dead: abort, capture logs
+
+## Validation Mode (Issue #1278)
+
+Short verification runs test the same monitor mechanics without creating
+LR-040 ambiguity. Use validation mode when:
+
+- Verifying bugfixes to the soak monitor (e.g. midnight rollover, restart detection)
+- Smoke-testing the monitoring pipeline before a real 72h run
+- Running short regression checks after infrastructure changes
+
+**Start a validation run:**
+
+```bash
+SOAK_RUN_INTENT=validation ./infrastructure/scripts/soak_monitor.sh
+```
+
+**Key differences from an LR-040 run:**
+
+| Aspect | LR-040 (`lr040`) | Validation (`validation`) |
+|---|---|---|
+| Artifact prefix | `artifacts/soak_test_*` | `artifacts/soak_validation_*` |
+| Active-run pointer | `soak_active_run_path_lr040.txt` (+ `soak_active_run_path.txt` synced, Issue #1283) | `soak_active_run_path_validation.txt` |
+| Intent marker | `run_intent.txt` = `lr040` | `run_intent.txt` = `validation` |
+| Gate evaluator verdict | PASS / FAIL / INCONCLUSIVE | NOT_APPLICABLE (exit 1) |
+| Monitor mechanics | identical | identical |
+
+**Running the gate evaluator on a validation run:**
+
+```bash
+python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_validation_YYYYMMDD_HHMMSS/
+# → verdict: NOT_APPLICABLE, exit 1 (fail-closed)
+```
+
+The gate evaluator reads `run_intent.txt` and refuses to produce a PASS
+for validation runs. This is intentional — validation artifacts are not
+canonical LR-040 evidence.
+
+**Default behavior:** Without `SOAK_RUN_INTENT`, the monitor defaults to
+`lr040` (backwards-compatible with all existing runs).

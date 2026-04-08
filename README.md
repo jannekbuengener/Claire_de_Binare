@@ -3,26 +3,26 @@ Welcome to the Claire de Binare repository. This project is a complex system for
 ---
 ## 🚦 Live Readiness (Operational Gate)
 
-**Status:** ✅ **LIVE-READY**  
-**Gate:** PASSED (LR-001 → LR-007 vollständig abgeschlossen)
+**Status:** ❌ **NO-GO**<br>
+**Canonical source:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 
-- **Completion:** ★★★★★ **100 %**
-- **Tasks:** 7 / 7 DONE · 0 BLOCKED
-- **Validator:** `python scripts/lr004_completion_guard.py --check` → **PASS**
-- **Last verified:** 2026-02-10 15:50 CET
-- **Commit:** `27d2f4b9cda518821ae855009db68793cd9656cf`
+- **Scope basis:** `ROADMAP.yaml` + `LR-001..LR-007-STATE.yaml` + aktuelle GitHub-LR-Issues
+- **Last reconciliation:** 2026-03-29
+- **Roadmap status:** `P0` + `P2` DONE; `P1` + `P4` PARTIAL; `P3` + `P5` OPEN
+- **Human gate:** Keine Echtgeld-Freigabe ohne vollstaendige Evidenz und explizite menschliche Freigabe
 
-**Interpretation (bindend):**  
-Das System ist **betriebsfähig**, **governance-konform**, **fail-closed**, **recovery-fähig** und kann im Shadow / Live-Betrieb laufen.  
-Es gibt **keine offenen Blocker** für den operativen Einsatz.
+**Einordnung:**<br>
+`CURRENT_STATUS.md` beschreibt den aktuellen Repo-/Main-/Testzustand.<br>
+`PROJECT_STATUS.md` ist ein historischer Implementierungs-Snapshot und kein operativer Go/No-Go-Status.<br>
+`knowledge/CURRENT_STATUS.md` ist nur ein historischer Knowledge-Snapshot und keine aktuelle Repo-/Ops-Quelle.
 
 ---
 
-## 🧭 Post-Live Development (nicht gate-relevant)
+## 🧭 Geplante Erweiterungen (nicht gate-relevant)
 
-**Ausbaugrad:** **~72 %**  
+**Ausbaugrad:** **~72 %**
 *(Backlog, Optimierungen, Erweiterungen – kein Einfluss auf Live-Betrieb)*
-Diese Kennzahl beschreibt **Weiterentwicklung nach Erreichen der Live Readiness**, z. B.:
+Diese Kennzahl beschreibt **geplante Weiterentwicklung ausserhalb des LR-Gates**, z. B.:
 
 - Performance-Optimierungen  
 - Zusätzliche Tests (Chaos / Perf)  
@@ -38,9 +38,10 @@ Er ist **kein Maß für Betriebsreife** und **kein Release-Gate**.
 
 ### Kurzfassung (fuer Leser mit wenig Zeit)
 
-- **Live Readiness:** NO-GO (Post-Migration, BLUE+RED canonical runtime)
+- **Live Readiness:** NO-GO (siehe `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
 - **Systemstatus:** Runtime migriert auf BLUE+RED; base.yml + dev.yml sind CI/Legacy-only
-- **Offene Issues:** betreffen Ausbau, nicht Betrieb
+- **Repo-/Teststatus:** siehe `CURRENT_STATUS.md`
+- **Historischer Implementierungsstand:** siehe `PROJECT_STATUS.md` (historischer Snapshot)
 
 ---
 
@@ -53,108 +54,56 @@ This repository contains all the necessary components to run and develop Claire 
 - **Governance:** A comprehensive set of documents defining the project's constitution, policies, and operational guidelines.
 - **Tooling:** A collection of scripts and tools to aid in development, deployment, and maintenance.
 
-## Tooling & Helper Scripts (Cheat Sheet)
+## PowerShell Toolchain
 
-| Script | Zweck | Hinweis zur Nutzung |
-| --- | --- | --- |
-| `scripts/lr004_completion_guard.py` | Validiert deterministisch den Abschluss von LR-001 bis LR-007 und sichert das Live-Readiness-Gate ab. | Wird manuell zum Reporten eingesetzt und läuft automatisiert als Gate-Check. |
-| `scripts/lr003_contract_drift_guard.py` | Überwacht Contract-Drift-Indikatoren und schlägt Alarm bei Abweichungen. | Teil der Live-Readiness-Toolchain; bei Verdacht auf Drift einsetzen. |
-| `scripts/manage_secrets.ps1` | Erstellt, rotiert und validiert Produktions-Geheimnisse mit restriktiven Berechtigungen. | Ops-only: Use the secrets rotator/init tooling to generate/rotate/validate secrets; do not hardcode paths in docs—if unsure, run the validate/rotate command and follow its output. |
-| `scripts/setup_testnet.ps1` | Führt die MEXC-Testnet-Vorbereitung inklusive Credential-Validierung durch. | Sicherer Test-Setup-Flow; keine Änderungen am Live-Stack. |
-| `scripts/smart_health_check.py` | Fragt Health-Endpunkte lokaler Services ab und liefert Diagnose-Summary. | Read-only-Diagnose: nur GET-Requests gegen /health ausführen. |
-| `scripts/activate_live_data.ps1` | Schaltet das System auf Live Data (echte APIs und echtes Kapital) um und startet die Container neu. | Ops-only und mit höchster Vorsicht: echtes Geld, reale Märkte. |
+Der autoritative repo-weite PowerShell-Index liegt in [`tools/README.md`](tools/README.md).
 
-## 📊 Projektstatus
+Dort ist die Discovery in `Canonical v1 Front Door`, `Canonical v1 Scripts`, `Secondary` und `Legacy/Stale` konsolidiert.
 
-### Gesamtfortschritt
-```
-Issues geschlossen: 202 / 300 (67.3%)
-███████████████░░░░░ 67.3%
+Bevorzugter Windows/PowerShell-v1-Einstiegspunkt:
+
+```powershell
+.\tools\cdb.ps1 secrets init
+.\tools\cdb.ps1 runtime up
+.\tools\cdb.ps1 stack verify
+.\tools\cdb.ps1 service logs -ServiceName cdb_risk -Lines 100
+.\tools\cdb.ps1 runtime smoke
 ```
 
-### 🏗️ Architektur-Komponenten
+Der Dispatcher ist bewusst duenn und ruft nur den fixierten v1-Korridor auf: `init-secrets.ps1`, `setup_blue_red.ps1`, `verify_stack.ps1`, `cdb-service-logs.ps1` und `smoke_test.ps1`.
 
-| Komponente | Status | Fortschritt |
-|------------|--------|-------------|
-| **Core Modules** (6) | ✅ | 95% |
-| `core/clients/` - MEXC API Client | ✅ | 100% |
-| `core/config/` - Konfiguration | ✅ | 100% |
-| `core/domain/` - Domain Models | ✅ | 100% |
-| `core/indicators/` - Technische Indikatoren | ✅ | 100% |
-| `core/safety/` - Circuit Breaker | ✅ | 100% |
-| `core/utils/` - Rate Limiter | ✅ | 100% |
+`Makefile` bleibt die operative Front Door fuer haeufige Ablaufe wie `make docker-up`, `make docker-health` und `make docker-down`, ist aber nicht selbst Teil der PowerShell-v1-Toolchain.
 
-### 🔧 Services (9)
+## Docker CI Lab Baseline
 
-| Service | Beschreibung | Status |
-|---------|-------------|--------|
-| `services/allocation/` | Portfolio Allocation | 🟡 30% |
-| `services/db_writer/` | DB Persistenz | ✅ 90% |
-| `services/execution/` | Order Execution | ✅ 85% |
-| `services/market/` | Market Data | ✅ 95% |
-| `services/paper_trading/` | Paper Trading Runner | ✅ 75% |
-| `services/regime/` | Market Regime Detection | ✅ 70% |
-| `services/risk/` | Risk Management | ✅ 80% |
-| `services/signal/` | Signal Generation | ✅ 85% |
-| `services/ws/` | WebSocket Handler | ✅ 90% |
+Kanonische 431B-Linie:
 
-**Durchschnitt Services: 80%**
-
-### 🧪 Test-Infrastruktur
-
-| Kategorie | Anzahl | Status |
-|-----------|--------|--------|
-| Test-Dateien | 27 | ✅ |
-| Test-Funktionen | 254 | ✅ |
-| Unit Tests | ✅ | 75% |
-| Integration Tests | 🟡 | 50% |
-| E2E Tests | 🟢 | 50% |
-| Performance Tests | 🟡 | 30% |
-| Chaos Tests | 🔴 | 10% |
-
-### 📈 Monitoring & Observability
-
-| Element | Anzahl | Status |
-|---------|--------|--------|
-| Grafana Dashboards | 8 | ✅ 70% |
-| Prometheus Configs | 2 | ✅ |
-| Alert Rules | 1 | 🟡 40% |
-| Docker Services | 9 | ✅ |
-| Health Checks | 9 | ✅ |
-
-### 🎯 Milestone-Fortschritt
-
-| Milestone | Beschreibung | Status |
-|-----------|-------------|--------|
-| **M1** Foundation | Basis-Architektur | ✅ 100% |
-| **M2** Trading Core | Signal/Execution | ✅ 95% |
-| **M3** Risk Layer | Circuit Breaker | ✅ 90% |
-| **M4** Market Data | WebSocket/OHLCV | ✅ 85% |
-| **M5** Persistenz | DB Schema | 🟡 65% |
-| **M6** ML Prep | Indicators | ✅ 80% |
-| **M7** Testnet | Paper Trading | 🟢 70% |
-| **M8** Stabilization | E2E Tests | 🟢 60% |
-| **M9** Production | Live Trading | 🟡 30% |
-
-### 📊 Zusammenfassung
-
-```
-┌─────────────────────────────────────────────┐
-│  PROJEKT-REIFE: 72%                         │
-│  █████████████████░░░░░░                    │
-├─────────────────────────────────────────────┤
-│  Code: 3566 Python-Dateien                  │
-│  Commits: 261 (2025)                        │
-│  Issues: 202 closed / 98 open               │
-│  Tests: 79 Test-Dateien                     │
-│  Branches: 99 remote                        │
-│  Services: 9 healthy                        │
-│  Security: 4 Vulnerabilities behoben        │
-│  CI/CD: ci + policy-gate (required)          │
-└─────────────────────────────────────────────┘
+```bash
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
 
-*Stand: 2026-01-07 (GitHub Live Data)*
+Rollentrennung:
+- `base.yml + test.yml` = kanonische Docker-CI-Lab-Baseline fuer isolierte Test-/E2E-Labs
+- `base.yml + dev.yml` = CI/Testing-only; kein normaler Runtime-Pfad
+- `compose.blue.yml + compose.red.yml` = lokale Operator-Runtime, nicht die CI-Lab-Baseline
+
+## Security Simulation Source of Truth
+
+Kanonische 431C-Linie:
+
+- `scripts/drills/` plus `tests/chaos/` = repo-native Source of Truth fuer deterministische Drill-/Chaos-Ausfuehrung und Gate-Tests
+- `tools/test_pack/` = sekundaerer experimenteller/importierter Bestand; nicht die repo-weite Default-Linie
+- `infrastructure/scripts/security_audit.sh` = Legacy-/Stale-Helper mit alten Repo-Annahmen; nur Referenz, nicht Harness-Canon
+
+## 📚 Statusquellen
+
+> **Kein aktueller Status hier.** Diese Section ist kein Go/No-Go-Indikator und kein operativer Readiness-Stand.
+>
+> | Quelle | Inhalt |
+> |---|---|
+> | [`CURRENT_STATUS.md`](CURRENT_STATUS.md) | Aktueller Repo-/Engineering-/Teststatus |
+> | [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md) | Operativer Go/No-Go (Live Readiness) |
+> | [`PROJECT_STATUS.md`](PROJECT_STATUS.md) | Historischer Implementierungs-Snapshot (Stand 2026-01-07, archiviert) |
 
 ---
 
@@ -177,8 +126,8 @@ cp .env.example .env
 # 3. Initialize secrets (Linux/Mac)
 ./infrastructure/scripts/init-secrets.sh
 
-# Windows (PowerShell):
-# .\infrastructure\scripts\init-secrets.ps1
+# Windows (PowerShell, canonical v1 front door):
+# .\tools\cdb.ps1 secrets init
 
 # 4. Validate environment (Linux/Mac)
 ./infrastructure/scripts/validate-environment.sh
@@ -188,15 +137,23 @@ docker network create cdb_network 2>/dev/null || true
 docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
 
-# Legacy (CI/test only):
-# docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+# Windows (PowerShell, canonical v1 front door):
+# .\tools\cdb.ps1 runtime up
 
 # 6. Verify health
 make docker-health
 
+# PowerShell v1 front door:
+# .\tools\cdb.ps1 stack verify
+
+# Focused BLUE core-path smoke:
+# .\tools\cdb.ps1 runtime smoke
+
 # 7. Access Grafana
 # http://localhost:3000 (admin / see GRAFANA_PASSWORD in secrets)
 ```
+
+Repo-weite PowerShell-Discovery: [`tools/README.md`](tools/README.md). `bootstrap_local.ps1` und `bootstrap_local.sh` bleiben Secondary Convenience Wrapper und sind nicht der kanonische Windows/PowerShell-v1-Einstieg.
 
 ## Navigation (MCP)
 
@@ -218,7 +175,7 @@ Die lokale Canon-Matrix fuer aktive Doku liegt im Working Repo: [`docs/meta/WORK
 If you encounter issues:
 
 1. **Missing .env**: Run `cp .env.example .env`
-2. **Secret errors**: Run `./infrastructure/scripts/init-secrets.sh` (or `.ps1` on Windows)
+2. **Secret errors**: Run `./infrastructure/scripts/init-secrets.sh` on Linux/Mac or `.\tools\cdb.ps1 secrets init` on Windows
 3. **Port conflicts**: Check for services using ports 6379, 5432, 3000, 9090, 8000
 4. **Permission denied**: Fix secrets permissions: `chmod 700 ~/Documents/.secrets/.cdb && chmod 600 ~/Documents/.secrets/.cdb/*`
 
@@ -227,7 +184,7 @@ See **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** for detailed troubles
 ### Documentation
 
 - **Setup Guide**: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) - Comprehensive onboarding
-- **Service Status**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Service implementation audit
-- **Governance**: [Governance Audit](governance-audit-2026-01-15.md) - Governance compliance
+- **Service Audit (2026-01-15)**: [PROJECT_STATUS.md](PROJECT_STATUS.md) - Historical service implementation audit
+- **Governance**: [Governance Audit](docs/archive/governance-audit-2026-01-15.md) - Historical governance audit snapshot
 - **Agent Registry**: [agents/AGENTS.md](agents/AGENTS.md) - Local agent entrypoint
 - **Policies**: `knowledge/governance/` - Canonical governance and policy documents

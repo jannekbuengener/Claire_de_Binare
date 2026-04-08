@@ -10,7 +10,7 @@
 #
 # ENV:
 #   SECRETS_PATH=/path/to/.secrets/.cdb
-#   CDB_NETWORK_NAME=cdb_cdb_network  (override if STACK_NAME differs)
+#   CDB_NETWORK_NAME=cdb_network  (override only if the external network differs)
 #   SURREALDB_ENV file content (outside git):
 #     SURREAL_USER=...
 #     SURREAL_PASS=...
@@ -22,13 +22,14 @@ services:
     image: surrealdb/surrealdb:latest
     container_name: cdb_surrealdb
     restart: unless-stopped
+    user: "0:0"
     env_file:
       - ${SECRETS_PATH}/SURREALDB_ENV
-    command: ["sh", "-c", "surreal start --log info --user \"$SURREAL_USER\" --pass \"$SURREAL_PASS\" --bind 0.0.0.0:8000 file:/data/surrealdb"]
+    command: ["start", "--log", "info", "--bind", "0.0.0.0:8000", "surrealkv:/data/surrealdb"]
     volumes:
       - surrealdb_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health > /dev/null 2>&1 || exit 1"]
+      test: ["CMD", "/surreal", "is-ready", "-e", "ws://127.0.0.1:8000"]
       interval: 10s
       timeout: 3s
       retries: 3
@@ -43,4 +44,4 @@ volumes:
 networks:
   cdb_network:
     external: true
-    name: ${CDB_NETWORK_NAME:-cdb_cdb_network}
+    name: ${CDB_NETWORK_NAME:-cdb_network}

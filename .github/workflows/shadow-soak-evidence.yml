@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "Execution mode"
+        description: "Soak / collection profile (not runtime mode)"
         required: true
         default: full
         type: choice
@@ -33,24 +33,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Resolve soak mode
+      - name: Resolve soak profile
         id: soak-mode
         shell: bash
         run: |
           set -euo pipefail
-          mode="full"
+          soak_profile="full"
 
           if [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
             if [[ "${{ github.event.schedule || '' }}" == "0 2 * * *" ]]; then
-              mode="lean"
+              soak_profile="lean"
             else
-              mode="full"
+              soak_profile="full"
             fi
           elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            mode="${{ github.event.inputs.mode || 'full' }}"
+            soak_profile="${{ github.event.inputs.mode || 'full' }}"
           fi
 
-          case "$mode" in
+          case "$soak_profile" in
             lean)
               soak_minutes="${LEAN_SOAK_MINUTES}"
               build_stack="false"
@@ -60,19 +60,19 @@ jobs:
               build_stack="true"
               ;;
             *)
-              echo "::error::Unsupported soak mode: ${mode}"
+              echo "::error::Unsupported soak profile: ${soak_profile}"
               exit 1
               ;;
           esac
 
-          echo "mode=${mode}" >> "$GITHUB_OUTPUT"
+          echo "soak_profile=${soak_profile}" >> "$GITHUB_OUTPUT"
           echo "soak_minutes=${soak_minutes}" >> "$GITHUB_OUTPUT"
           echo "build_stack=${build_stack}" >> "$GITHUB_OUTPUT"
 
           {
-            echo "## Shadow+Soak Mode"
+            echo "## Shadow+Soak Profile"
             echo ""
-            echo "- mode: ${mode}"
+            echo "- soak_profile: ${soak_profile}"
             echo "- soak_minutes: ${soak_minutes}"
             echo "- build_stack: ${build_stack}"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -233,11 +233,14 @@ jobs:
             cdb_risk:
               user: "0"
               environment:
+                # Shadow remains probe / intent / evidence semantics in this workflow.
                 TRADING_MODE: shadow
                 TRACE_CONTRACT_V1_ENABLED: "1"
             cdb_execution:
               user: "0"
               environment:
+                # Canonical runtime-mode is read later from execution_status.mode.
+                # For the current shadow-prereq path it must resolve to "mock".
                 MOCK_TRADING: "true"
                 TRADING_MODE: shadow
                 TRACE_CONTRACT_V1_ENABLED: "1"
@@ -316,7 +319,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence/endpoints
-          # Execution service: mode must be "mock" for shadow soak
+          # Canonical runtime-mode is execution_status.mode. The workflow-level
+          # full/lean labels are soak profiles only and are not runtime modes.
+          # For the current shadow-prereq path, execution_status.mode must be "mock".
           exec_status_rc=0
           curl --connect-timeout 5 --max-time 15 -fsS http://127.0.0.1:8003/status \
             -o evidence/endpoints/execution_status.json || exec_status_rc=$?
@@ -597,7 +602,7 @@ jobs:
             fi
             optional_rows="${optional_rows}| ${svc} | ${status} |"$'\n'
           done
-          # Validate runtime-mode from pre-probe execution_status capture
+          # Validate canonical runtime-mode from pre-probe execution_status capture.
           if [ -f evidence/endpoints/execution_status.json ]; then
             exec_mode=$(python3 -c "import json,pathlib; d=json.loads(pathlib.Path('evidence/endpoints/execution_status.json').read_text()); print(d.get('mode','UNKNOWN'))" 2>/dev/null || echo "PARSE_ERROR")
             if [ "$exec_mode" != "mock" ]; then
@@ -612,6 +617,8 @@ jobs:
           if [ "$gate_pass" -eq 1 ]; then
             gate_status="PASS"
           fi
+          # run_summary records the soak / collection profile only.
+          # Runtime-mode remains anchored in endpoints/execution_status.json.
           cat > evidence/run_summary.json <<EOF
           {
             "run_id": "${GITHUB_RUN_ID}",
@@ -620,7 +627,7 @@ jobs:
             "commit": "${GITHUB_SHA}",
             "status": "${JOB_STATUS}",
             "gate_status": "${gate_status}",
-            "mode": "${{ steps.soak-mode.outputs.mode }}",
+            "soak_profile": "${{ steps.soak-mode.outputs.soak_profile }}",
             "soak_minutes": ${{ steps.soak-mode.outputs.soak_minutes }},
             "ended_at": "${end_time}"
           }
@@ -645,7 +652,7 @@ jobs:
           - Ref: ${GITHUB_REF}
           - Commit: ${GITHUB_SHA}
           - Status: ${JOB_STATUS}
-          - Mode: ${{ steps.soak-mode.outputs.mode }}
+          - Soak profile: ${{ steps.soak-mode.outputs.soak_profile }}
           - Soak minutes: ${{ steps.soak-mode.outputs.soak_minutes }}
           - Ended: ${end_time}
 

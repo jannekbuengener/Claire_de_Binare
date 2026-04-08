@@ -1,0 +1,72 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-18T11:04:12.386260+00:00",
+  "candles_key_prefix": "market_state",
+  "shadow_key_prefix": "market_state_shadow",
+  "tolerances": {
+    "return_fields_abs": 1e-09,
+    "last_tick_ts_ms_ms": 90000,
+    "ts_ms_gap_ms": 90000
+  },
+  "symbols_checked": 1,
+  "symbols_pass": 1,
+  "symbols_fail": 0,
+  "overall": "PASS",
+  "overall_reason": "all 1 symbol(s) within tolerance",
+  "symbol_results": [
+    {
+      "symbol": "BTCUSDT",
+      "result": "PASS",
+      "reason": "",
+      "fields": [
+        {
+          "field": "ts_ms_gap",
+          "candles_value": 1773831839766,
+          "shadow_value": 1773831852127,
+          "gap_ms": 12361,
+          "max_gap_ms": 90000,
+          "result": "PASS"
+        },
+        {
+          "field": "return_1m",
+          "candles_value": -0.00012232746955336397,
+          "shadow_value": -0.00012232746955336397,
+          "tolerance": 1e-09,
+          "delta": 0.0,
+          "result": "PASS"
+        },
+        {
+          "field": "return_5m",
+          "candles_value": -0.0007227051676663517,
+          "shadow_value": -0.0007227051676663517,
+          "tolerance": 1e-09,
+          "delta": 0.0,
+          "result": "PASS"
+        },
+        {
+          "field": "price_change_5m",
+          "candles_value": 0.0007227051676663517,
+          "shadow_value": 0.0007227051676663517,
+          "tolerance": 1e-09,
+          "delta": 0.0,
+          "result": "PASS"
+        },
+        {
+          "field": "last_tick_ts_ms",
+          "candles_value": 1773831840185,
+          "shadow_value": 1773831852473,
+          "tolerance_ms": 90000,
+          "delta_ms": 12288,
+          "result": "PASS"
+        },
+        {
+          "field": "regime_id",
+          "candles_value": null,
+          "shadow_value": null,
+          "result": "PASS",
+          "reason": "both absent \u2014 fail-closed: no regime signal for either writer"
+        }
+      ]
+    }
+  ]
+}

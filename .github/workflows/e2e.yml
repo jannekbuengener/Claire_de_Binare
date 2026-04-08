@@ -1,3 +1,5 @@
+# Secondary CI smoke workflow.
+# 431B canonical Docker CI lab baseline lives at infrastructure/compose/base.yml + infrastructure/compose/test.yml.
 name: E2E Tests
 
 on:
@@ -15,6 +17,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   e2e_smoke:
@@ -134,7 +139,7 @@ jobs:
           chmod 644 "$SECRETS_PATH"/*
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.12'
 
@@ -170,7 +175,7 @@ jobs:
           CDB_POLICY_VERSION=${policy_version}
           EOF
 
-      - name: Start Docker Compose stack
+      - name: Start Docker Compose stack (secondary CI smoke path)
         id: start_stack
         shell: bash
         run: |

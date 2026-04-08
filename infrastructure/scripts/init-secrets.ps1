@@ -10,6 +10,9 @@ This script should be run ONCE when setting up a new development environment.
 
 .EXAMPLE
 .\init-secrets.ps1
+
+.EXAMPLE
+.\tools\cdb.ps1 secrets init
 #>
 
 param(
@@ -74,7 +77,7 @@ Write-Host "`n=== Secrets initialized successfully ===" -ForegroundColor Green
 Write-Host @"
 
 Next steps:
-1. Run the stack: .\infrastructure\scripts\stack_up.ps1
+1. Run the canonical PowerShell v1 front door: .\tools\cdb.ps1 runtime up
 2. Access Grafana: http://localhost:3000 (admin / <GRAFANA_PASSWORD>)
 
 To view a secret:

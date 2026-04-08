@@ -1,13 +1,19 @@
 # Claire de Binare - Project Status
 
 **Last Updated**: 2026-01-15
+**Status Class**: Historical / Audit Snapshot
 **Status Type**: Service Implementation Audit (historical snapshot from 2026-01-15)
+**Authority**: Historical service implementation audit only; not the current live-readiness verdict and not the current repo/main/test status.
+**Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+**Working Repo Canon**: `CURRENT_STATUS.md`
 **Related Issue**: #148
 **Auditor**: Claude Code (autonomous)
 
 ---
 
 ## Executive Summary
+
+This section preserves the 2026-01-15 audit viewpoint. Do not read it as the current project-wide operational or engineering status.
 
 **Overall Project Health**: 🟢 **STRONG**
 
@@ -21,7 +27,7 @@ Claire de Binare demonstrates mature service architecture with **9 containerized
 - Test Coverage: **80%+ requirement** enforced
 - CI/CD Pipeline: ✅ Complete with delivery gate
 
-**Status**: Ready for Shadow Mode validation (all blockers resolved)
+**Historical Audit Verdict**: Ready for Shadow Mode validation (all blockers resolved on 2026-01-15)
 
 ---
 

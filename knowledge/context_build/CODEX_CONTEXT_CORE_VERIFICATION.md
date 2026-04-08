@@ -14,23 +14,21 @@ governance, and operational mistakes.
 
 ## AUTHORITATIVE INPUTS
 
-### Docs Repository (Context Core)
+### Context Core (Working Repo)
 - knowledge/ARCHITECTURE_MAP.md
-- governance/SERVICE_CATALOG.md
+- knowledge/governance/SERVICE_CATALOG.md
 - knowledge/GOVERNANCE_QUICKREF.md
 - knowledge/SYSTEM_INVARIANTS.md
 - knowledge/OPERATIONS_RUNBOOK.md
 - knowledge/CURRENT_STATUS.md
 
 ### Working Repository
-- docker-compose.base.yml
 - infrastructure/compose/base.yml
 - infrastructure/compose/dev.yml
 - infrastructure/compose/prod.yml
 - infrastructure/compose/tls.yml
 
 ### Scripts
-- stack_up.ps1
 - infrastructure/scripts/stack_up.ps1
 - infrastructure/scripts/stack_verify.ps1
 

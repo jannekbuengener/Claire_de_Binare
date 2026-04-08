@@ -153,6 +153,8 @@ Current assessment: **70% DOCUMENTED, 30% PENDING IMPLEMENTATION**.
 
 **Risk:** LOW - Comprehensive playbook, needs drill validation.
 
+**Repo note (431C):** Use repo-native `scripts/drills/` plus `tests/chaos/` as the current drill source of truth. `tools/test_pack/` remains experimental only.
+
 ---
 
 ### Issue #106 - OWASP Top 10 Audit

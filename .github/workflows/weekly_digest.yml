@@ -409,3 +409,14 @@ jobs:
           echo "Summary: open_items(issues=${open_issue_count}, prs=${open_pr_count}, total=${open_total_count}); now=${now_count}, blocked=${blocked_count}, eingang=${eingang_count}, pr_review=${pr_review_count}"
           echo "Status summary (open): backlog=${status_backlog_count}, ready=${status_ready_count}, in_progress=${status_in_progress_count}, review=${status_review_count}, blocked=${status_blocked_count}, done=${status_done_count}"
           echo "Stage summary (open): proof=${stage_proof_count}, stability=${stage_stability_count}, trade_capable=${stage_trade_count}, strategy_validated=${stage_validated_count}, monetization=${stage_monetization_count}, scale=${stage_scale_count}"
+
+          current_state="$(gh api "repos/${repo}/issues/${issue_number}" --jq '.state')"
+          if [[ "$current_state" == "open" ]]; then
+            gh issue close "${issue_number}" \
+              --repo "${repo}" \
+              --reason "not planned" \
+              --comment "Generated reporting artifact. Closed intentionally to keep the open issue list focused on actionable work. Weekly digest history remains preserved in the issue body/workflow."
+            echo "Digest issue #${issue_number} closed (reporting artifact)."
+          else
+            echo "Digest issue #${issue_number} already closed (state=${current_state}), skipping."
+          fi
