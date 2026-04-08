@@ -1,4 +1,5 @@
 # Claire de Binare - Test Overlay
+# Canonical 431B Docker CI lab overlay
 # Isolated E2E test stack with all services
 # Usage: docker compose -f base.yml -f test.yml up --abort-on-container-exit
 

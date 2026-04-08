@@ -1,3 +1,6 @@
+<!-- Historical snapshot: stale repo overview from late 2025 (PR #493–#497 era). Not current. -->
+<!-- Status: historical planning artifact — not an active entrypoint. Current repo status: CURRENT_STATUS.md -->
+
 ## Repository‑Überblick
 
 * **Name:** `Claire_de_Binare` (Privates Repo, Default‑Branch: `main`).

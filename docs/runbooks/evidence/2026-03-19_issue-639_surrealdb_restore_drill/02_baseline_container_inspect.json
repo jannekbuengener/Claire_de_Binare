@@ -1,0 +1,326 @@
+﻿[
+    {
+        "Id": "9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54",
+        "Created": "2026-03-19T18:46:06.630134419Z",
+        "Path": "/surreal",
+        "Args": [
+            "start",
+            "--log",
+            "info",
+            "--bind",
+            "0.0.0.0:8000",
+            "surrealkv:/data/surrealdb"
+        ],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 66755,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-03-19T18:46:07.003317486Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-03-19T19:03:28.04323452Z",
+                        "End": "2026-03-19T19:03:28.269412076Z",
+                        "ExitCode": 0,
+                        "Output": "OK\n"
+                    },
+                    {
+                        "Start": "2026-03-19T19:03:38.270690315Z",
+                        "End": "2026-03-19T19:03:38.513955691Z",
+                        "ExitCode": 0,
+                        "Output": "OK\n"
+                    },
+                    {
+                        "Start": "2026-03-19T19:03:48.5136087Z",
+                        "End": "2026-03-19T19:03:48.784369497Z",
+                        "ExitCode": 0,
+                        "Output": "OK\n"
+                    },
+                    {
+                        "Start": "2026-03-19T19:03:58.785337184Z",
+                        "End": "2026-03-19T19:03:59.035907622Z",
+                        "ExitCode": 0,
+                        "Output": "OK\n"
+                    },
+                    {
+                        "Start": "2026-03-19T19:04:09.037043887Z",
+                        "End": "2026-03-19T19:04:09.244168015Z",
+                        "ExitCode": 0,
+                        "Output": "OK\n"
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:65000ff205b08363b035b457f292dc0a0b1cd4212935dd5ea94073cf67adf306",
+        "ResolvConfPath": "/var/lib/docker/containers/9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54/hostname",
+        "HostsPath": "/var/lib/docker/containers/9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54/hosts",
+        "LogPath": "/var/lib/docker/containers/9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54/9469de121757b4bb504d19b88b1c1b3b8552679407bbbae7d2c36dedaa383a54-json.log",
+        "Name": "/cdb_surrealdb",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "cdb_database_surrealdb_data:/data:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {}
+            },
+            "NetworkMode": "cdb_network",
+            "PortBindings": {
+                "8000/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "8010"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "unless-stopped",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "private",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": null,
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": null,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "10b556005b4b2c6981b6d3dd96562e8e9827242b8cf04fd5dba427e92eda2de1",
+                "Source": "/var/lib/docker/volumes/10b556005b4b2c6981b6d3dd96562e8e9827242b8cf04fd5dba427e92eda2de1/_data",
+                "Destination": "/logs",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            },
+            {
+                "Type": "volume",
+                "Name": "cdb_database_surrealdb_data",
+                "Source": "/var/lib/docker/volumes/cdb_database_surrealdb_data/_data",
+                "Destination": "/data",
+                "Driver": "local",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "9469de121757",
+            "Domainname": "",
+            "User": "0:0",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "8000/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "SURREAL_PASS=codex-pass",
+                "SURREAL_USER=codex",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin:/bin",
+                "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt",
+                "SURREAL_BIND=0.0.0.0:8000"
+            ],
+            "Cmd": [
+                "start",
+                "--log",
+                "info",
+                "--bind",
+                "0.0.0.0:8000",
+                "surrealkv:/data/surrealdb"
+            ],
+            "Healthcheck": {
+                "Test": [
+                    "CMD",
+                    "/surreal",
+                    "is-ready",
+                    "-e",
+                    "ws://127.0.0.1:8000"
+                ],
+                "Interval": 10000000000,
+                "Timeout": 3000000000,
+                "StartPeriod": 10000000000,
+                "Retries": 3
+            },
+            "Image": "surrealdb/surrealdb:latest",
+            "Volumes": {
+                "/data": {},
+                "/logs": {}
+            },
+            "WorkingDir": "",
+            "Entrypoint": [
+                "/surreal"
+            ],
+            "Labels": {
+                "com.docker.compose.config-hash": "78da5e4de685bdec8e26c05e57b5ce4d78a303e9086ff25e4e52432c227cdbdb",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:65000ff205b08363b035b457f292dc0a0b1cd4212935dd5ea94073cf67adf306",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "cdb_database",
+                "com.docker.compose.project.config_files": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\compose\\surrealdb.yml,D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\compose\\surrealdb-dev.yml",
+                "com.docker.compose.project.working_dir": "D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare\\infrastructure\\compose",
+                "com.docker.compose.service": "cdb_surrealdb",
+                "com.docker.compose.version": "5.1.0",
+                "dev.chainguard.image.title": "glibc-dynamic",
+                "dev.chainguard.package.main": "",
+                "org.opencontainers.image.authors": "Chainguard Team https://www.chainguard.dev/",
+                "org.opencontainers.image.created": "2026-03-10T16:59:21Z",
+                "org.opencontainers.image.source": "https://github.com/chainguard-images/images/tree/main/images/glibc-dynamic",
+                "org.opencontainers.image.title": "glibc-dynamic",
+                "org.opencontainers.image.url": "https://images.chainguard.dev/directory/image/glibc-dynamic/overview",
+                "org.opencontainers.image.vendor": "Chainguard"
+            },
+            "StopTimeout": 1
+        },
+        "NetworkSettings": {
+            "SandboxID": "83c1c821ac58e9bcd933a1b474ea24e447b1aae8f53d55780ff4e66b7ed6c1a3",
+            "SandboxKey": "/var/run/docker/netns/83c1c821ac58",
+            "Ports": {
+                "8000/tcp": [
+                    {
+                        "HostIp": "127.0.0.1",
+                        "HostPort": "8010"
+                    }
+                ]
+            },
+            "Networks": {
+                "cdb_network": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "cdb_surrealdb",
+                        "cdb_surrealdb"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "d7e910fab3a040838c8c8890d5e19ac8852cb5fcc2f782bacb467c0f058b2a1c",
+                    "EndpointID": "6395326afaeb8b6574d9baaa393de0f1e82bd5be09e1d2471df0bebb59baabf2",
+                    "Gateway": "172.19.0.1",
+                    "IPAddress": "172.19.0.22",
+                    "MacAddress": "1a:66:e7:f3:b0:78",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "cdb_surrealdb",
+                        "9469de121757"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:495305b57c4202f3cf4420ed36ac2b73ada3f929b2366d428be0dddf5ddcd3ed",
+            "size": 2189,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    }
+]

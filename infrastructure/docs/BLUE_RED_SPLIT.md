@@ -214,6 +214,44 @@ operator runtime path.
 
 ---
 
+## Network Cutover (Issue #1210)
+
+**Symptom:** BLUE services land on `claire_de_binare_cdb_network` instead of
+`cdb_network` when the stack was previously started via `base.yml + dev.yml`.
+
+**Root cause:** `base.yml` defines `cdb_network` as an internal bridge; Docker
+auto-prefixes the project name → `claire_de_binare_cdb_network`. The canonical
+`compose.blue.yml` declares `cdb_network` as `external: true` — requires the
+network to exist before stack start.
+
+**Detection:**
+```powershell
+docker inspect cdb_allocation | Select-String "claire_de_binare"
+# Empty output = on cdb_network (correct)
+# "claire_de_binare_cdb_network" in output = legacy network (needs cutover)
+```
+
+**Cutover procedure (low risk, brief outage):**
+```powershell
+# 1. Ensure cdb_network exists
+docker network create cdb_network
+
+# 2. Force-recreate BLUE to attach to correct network
+docker compose -f infrastructure/compose/compose.blue.yml up -d --force-recreate
+
+# 3. Verify
+docker inspect cdb_allocation cdb_candles cdb_db_writer cdb_paper_runner cdb_regime \
+  | Select-String "NetworkMode|cdb_network|claire_de_binare"
+
+# 4. Restart RED to ensure it can reach BLUE services
+docker compose -f infrastructure/compose/compose.red.yml up -d --force-recreate
+```
+
+**After cutover:** `make docker-up` / `make docker-down` use canonical BLUE+RED
+paths and will no longer trigger this drift.
+
+---
+
 ## Rationale for Design Choices
 
 ### Why Not Blue-Green Deployment?

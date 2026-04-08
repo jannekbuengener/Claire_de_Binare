@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 #
-# One-Click Local Bootstrap for Claire de Binare (Linux/Mac)
+# Secondary convenience bootstrap for Claire de Binare (Linux/Mac)
 #
 # This script initializes secrets, validates the environment,
 # starts the Docker stack, and runs basic health checks.
+#
+# Windows/PowerShell canonical v1 front door:
+#   .\tools\cdb.ps1
+#
+# Note:
+#   This helper is not the canonical PowerShell v1 front door and retains
+#   convenience-oriented local bootstrap behavior.
 #
 # Usage:
 #   ./infrastructure/scripts/bootstrap_local.sh
@@ -17,7 +24,8 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-echo -e "${CYAN}=== Claire de Binare - Local Bootstrap ===${NC}"
+echo -e "${CYAN}=== Claire de Binare - Local Bootstrap (Secondary Convenience Wrapper) ===${NC}"
+echo -e "${YELLOW}Windows/PowerShell canonical v1 front door: .\\tools\\cdb.ps1${NC}"
 
 # 1. Initialize Secrets
 echo -e "\n${YELLOW}1. Initializing secrets...${NC}"
@@ -58,16 +66,22 @@ else
     exit 1
 fi
 
-# 5. Start Docker Stack
-echo -e "\n${YELLOW}5. Starting Docker Compose stack...${NC}"
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+# 5. Start Docker Stack (BLUE + RED)
+echo -e "\n${YELLOW}5. Starting Docker Compose stack (BLUE + RED)...${NC}"
+docker network create cdb_network 2>/dev/null || true
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # 6. Health Check Loop
 echo -e "\n${YELLOW}6. Waiting for services to be healthy...${NC}"
 MAX_RETRIES=30
 COUNT=0
 while [[ $COUNT -lt $MAX_RETRIES ]]; do
-    PENDING=$(docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING_BLUE=$(docker compose -f infrastructure/compose/compose.blue.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING_RED=$(docker compose -f infrastructure/compose/compose.red.yml ps --format json | jq -r 'select(.Health != "healthy") | .Service' | xargs)
+    PENDING="${PENDING_BLUE} ${PENDING_RED}"
+    PENDING="${PENDING## }"
+    PENDING="${PENDING%% }"
     if [[ -z "$PENDING" ]]; then
         echo -e "${GREEN}✅ All services are healthy!${NC}"
         break
@@ -79,7 +93,8 @@ done
 
 if [[ $COUNT -eq $MAX_RETRIES ]]; then
     echo -e "${RED}❌ Timeout waiting for services to be healthy.${NC}"
-    docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml ps
+    docker compose -f infrastructure/compose/compose.blue.yml ps
+    docker compose -f infrastructure/compose/compose.red.yml ps
 fi
 
 # 7. Basic Smoke Test
@@ -102,4 +117,5 @@ echo -e "\n${CYAN}==========================================${NC}"
 echo -e "${GREEN}Bootstrap complete!${NC}"
 echo -e "Access Grafana at http://localhost:3000 (admin / see secrets)"
 echo -e "Run tests with: make test"
+echo -e "Canonical Windows/PowerShell v1 commands: .\\tools\\cdb.ps1 help"
 echo -e "${CYAN}==========================================${NC}"

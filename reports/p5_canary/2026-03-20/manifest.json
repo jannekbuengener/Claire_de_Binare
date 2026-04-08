@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "package_type": "p5-canary-artifacts",
+  "package_status": "NO-GO",
+  "artifact_instance_type": "committed_handoff_placeholder",
+  "artifact_root": "reports/p5_canary/2026-03-20/",
+  "commit_sha": "c63b5e200b030aeb8516c5fad35b38f75b5bc69d",
+  "commit_sha_role": "source_revision_before_handoff_instantiation",
+  "execution_runtime_mode": {
+    "value": "mock",
+    "value_basis": "normative_required_value_current_path",
+    "capture_state": "pending_runtime_capture",
+    "live_assertion": false,
+    "canonical_field": "execution_status.mode"
+  },
+  "evidence_lock_path": "prestart_evidence_lock.yaml",
+  "decision_record_path": "decision_record.yaml",
+  "endpoint_snapshots": {
+    "execution_status": "endpoints/execution_status.json",
+    "risk_status": "endpoints/risk_status.json",
+    "kill_switch_status": "endpoints/kill_switch_status.json"
+  },
+  "lr040_verdict_path": "lr040/lr040_soak_gate_eval.json",
+  "optional_shadow_prereq_package": {
+    "state": "not_materialized_in_this_handoff_instance",
+    "path": null,
+    "reason": "shadow_prereq_evidence remains separate from p5 core artifacts"
+  },
+  "source_integrity": {
+    "handoff_state": "committed_no_go_placeholder",
+    "runtime_capture_state": "not_captured",
+    "lr040_state": "not_run",
+    "all_required_paths_present": true
+  },
+  "checksums": {
+    "algorithm": "sha256",
+    "state": "materialized_for_committed_files_except_manifest_self_hash",
+    "omitted_self_hash": "manifest.json",
+    "files": {
+      "README.md": "5c3b22022af8ff01ab127ca4ca229308e8ef29771cc166e0b94f27334b8feeda",
+      "prestart_evidence_lock.yaml": "29d6bcf6aaca381ceff298b9df671965a5e0249b0dcaa20e99cd40eddaa6cf18",
+      "decision_record.yaml": "cfa9898628331bb6b43c085ef6c112efe2cf32dbf7eec935efae041852b2b28b",
+      "endpoints/execution_status.json": "6ef35041b4a61b04d288c2c19df452ce75610a0588de85ea6edbf1eb5bc3e9a4",
+      "endpoints/risk_status.json": "a097ca959630b2441f8c9ad6a155e8aa5ed7a1866f136c850add795d76bb36da",
+      "endpoints/kill_switch_status.json": "7e1973a819e47f8911256af22189e9138a24d04865921ee8e4a7cfc2f976ec7d",
+      "lr040/lr040_soak_gate_eval.json": "a609c681e68e308c00fcddfb41516277805949179f43114ef9b10d06fb429feb"
+    }
+  },
+  "notes": [
+    "This manifest materializes the first committed P5 handoff instance without runtime capture.",
+    "P5 remains NO-GO.",
+    "No runtime actions or local service queries were performed."
+  ]
+}

@@ -26,3 +26,4 @@ Files:
 
 Notes:
 - Snapshot ist ein Governance-/Audit-Artefakt. Keine Aussagen über Trading-Performance.
+- Historisch: Referenzen auf `Claire_de_Binare_Docs` und `governance_*_work/` Pfade spiegeln den Stand vom 2026-02-24 (pre-consolidation). Nicht als aktuelle Repo-Topologie lesen.

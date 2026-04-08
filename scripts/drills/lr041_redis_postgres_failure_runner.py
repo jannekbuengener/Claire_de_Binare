@@ -1,4 +1,4 @@
-"""Deterministic LR-041 chaos drill for Redis and Postgres restart recovery."""
+"""Canonical repo-native 431C chaos drill for Redis and Postgres restart recovery."""
 
 from __future__ import annotations
 

@@ -1,4 +1,5 @@
 # tools/test_pack/tools/metrics/metrics_snapshot.py
+# Status: experimental helper under tools/test_pack, not the canonical 431C source of truth.
 # Purpose: capture a minimal Prometheus metrics snapshot for chaos drills.
 # Stdlib only.
 

@@ -115,7 +115,7 @@ jobs:
             echo "auth_mode=PAT" >> "$GITHUB_OUTPUT"
             echo "Auth mode selected: PAT"
           else
-            echo "Missing ADD_TO_PROJECT_PAT (Projects v2 token). Run scripts/secrets/sync_cdb_secrets.ps1 (SSOT external dir), or configure CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID)." >&2
+            echo "Missing ADD_TO_PROJECT_PAT (Projects v2 token). Run scripts/secrets/sync_cdb_secrets.ps1 (repo-local helper), or configure CDB_GH_APP_ID + CDB_GH_APP_PRIVATE_KEY (+ optional CDB_GH_APP_INSTALLATION_ID)." >&2
             exit 1
           fi
 

@@ -5,11 +5,14 @@ Purpose: validate the consolidated Working Repo baseline after retiring the spli
 ## What It Checks
 
 - Required local canon directories exist:
-  - `agents/`
-  - `docs/`
-  - `governance/`
-  - `knowledge/`
-  - `mcp_navpack_working_repo/`
+  - `agents/` — canonical agent registry
+  - `docs/` — navigation, runbooks, archive
+  - `governance/` — operational governance files (DELIVERY_APPROVED.yaml, SECRETS_POLICY.md etc.); tracked at root; not listed in `docs/meta/WORKING_REPO_CANON.md` canon matrix but validated here as a required presence
+  - `knowledge/` — canonical knowledge hub
+  - `mcp_navpack_working_repo/` — active navigation pack
+
+Note: `docs/meta/WORKING_REPO_CANON.md` is the canonical authority for the active path matrix.
+This script checks structural presence; the canon document defines what is authoritative.
 - Required local entrypoints exist:
   - `README.md`
   - `AGENTS.md`

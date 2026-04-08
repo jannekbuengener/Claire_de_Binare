@@ -41,9 +41,9 @@ class DimensionalityAuditor:
 
     def scan_signal_service(self) -> DimensionalityComponent:
         """Scannt Signal Service für Feature-Dimensionalität."""
-        # TODO: Parse signal/config.py für n_features
-        # TODO: Parse signal/models.py für Signal Schema
-        # TODO: Zähle Output-Felder
+        # TODO(#128): Parse signal/config.py für n_features
+        # TODO(#128): Parse signal/models.py für Signal Schema
+        # TODO(#128): Zähle Output-Felder
 
         # Placeholder:
         return DimensionalityComponent(
@@ -56,8 +56,8 @@ class DimensionalityAuditor:
 
     def scan_risk_service(self) -> DimensionalityComponent:
         """Scannt Risk Service für Risk Metrics."""
-        # TODO: Parse risk/metrics.py für getrackte Metriken
-        # TODO: Zähle Portfolio-Level + Per-Position Metriken
+        # TODO(#128): Parse risk/metrics.py für getrackte Metriken
+        # TODO(#128): Zähle Portfolio-Level + Per-Position Metriken
 
         return DimensionalityComponent(
             name="Risk Metrics",
@@ -69,8 +69,8 @@ class DimensionalityAuditor:
 
     def scan_execution_service(self) -> DimensionalityComponent:
         """Scannt Execution Service für Portfolio State."""
-        # TODO: Parse execution/models.py für Position Schema
-        # TODO: Zähle Fields pro Position
+        # TODO(#128): Parse execution/models.py für Position Schema
+        # TODO(#128): Zähle Fields pro Position
 
         return DimensionalityComponent(
             name="Portfolio State",
@@ -82,8 +82,8 @@ class DimensionalityAuditor:
 
     def estimate_market_state(self) -> DimensionalityComponent:
         """Schätzt Market State Dimensionen."""
-        # TODO: Config-File für n_symbols lesen
-        # TODO: Standard Market Variables (price, vol, spread, volume)
+        # TODO(#128): Config-File für n_symbols lesen
+        # TODO(#128): Standard Market Variables (price, vol, spread, volume)
 
         return DimensionalityComponent(
             name="Market State",
@@ -95,8 +95,8 @@ class DimensionalityAuditor:
 
     def analyze_temporal_dependencies(self) -> DimensionalityComponent:
         """Analysiert zeitliche Abhängigkeiten."""
-        # TODO: Prüfe ob Modelle History benötigen (t-1, t-2, ...)
-        # TODO: Risk/VaR Windows aus Config lesen
+        # TODO(#128): Prüfe ob Modelle History benötigen (t-1, t-2, ...)
+        # TODO(#128): Risk/VaR Windows aus Config lesen
 
         return DimensionalityComponent(
             name="Temporal State",
@@ -110,9 +110,9 @@ class DimensionalityAuditor:
         """Identifiziert Dekompositions-Möglichkeiten."""
         opportunities = []
 
-        # TODO: Sector Clustering (prüfe ob Symbols gruppiert werden können)
-        # TODO: Time-Scale Separation (intraday vs. daily)
-        # TODO: Feature Correlation (falls Daten verfügbar)
+        # TODO(#128): Sector Clustering (prüfe ob Symbols gruppiert werden können)
+        # TODO(#128): Time-Scale Separation (intraday vs. daily)
+        # TODO(#128): Feature Correlation (falls Daten verfügbar)
 
         opportunities.append(
             {

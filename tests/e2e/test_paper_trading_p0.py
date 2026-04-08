@@ -14,7 +14,7 @@ Validates: Order → Execution → order_results publishing → Subscriber recep
 3. test_stream_persistence - Stream.fills event storage
 
 **Prerequisites:**
-- Stack must be running (docker-compose up)
+- BLUE+RED stack must be running (make docker-up, or compose.blue.yml + compose.red.yml)
 - Redis accessible at cdb_redis:6379 (or localhost:6379 with port mapping)
 - Execution service subscribed to 'orders' channel
 

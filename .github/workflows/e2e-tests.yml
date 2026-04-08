@@ -1,3 +1,5 @@
+# Secondary E2E workflow path.
+# 431B canonical Docker CI lab baseline lives at infrastructure/compose/base.yml + infrastructure/compose/test.yml.
 name: E2E Tests - Paper Trading
 
 on:
@@ -164,7 +166,7 @@ jobs:
           echo "ALERT_EMAIL_TO=ci-stub@example.invalid" >> "$GITHUB_ENV"
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.11'
 
@@ -176,7 +178,7 @@ jobs:
       - name: MCP Validation
         run: make mcp-config-validate MCP_CONFIG_PATHS="tests/fixtures/mcp_smoke_config.json"
 
-      - name: Start Stack (base + dev)
+      - name: Start Stack (base + dev, secondary path)
         working-directory: infrastructure/compose
         env:
           SECRETS_PATH: ${{ env.SECRETS_PATH }}

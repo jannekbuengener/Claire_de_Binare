@@ -1,10 +1,11 @@
-"""E2E Test: Docker Compose Full Stack Validierung.
+"""E2E Test: Docker Compose Full Stack Validierung — VERLOSUNG / LEGACY.
 
-Dieser Test prüft, ob alle Claire-Services erfolgreich starten und
-ihre Health-Checks bestehen.
+⚠️  Dieser Test stammt aus der Single-Compose-Ära. Der kanonische Runtime-Pfad
+    ist BLUE+RED (compose.blue.yml + compose.red.yml). Die Service-Liste und
+    Port-Zuordnungen sind nicht mehr aktuell. Siehe 01_STACK_GOLDEN_PATH.md.
 
-Voraussetzung: docker compose up -d
-Ausführung: pytest -v -m e2e tests/e2e/test_docker_compose_full_stack.py
+Voraussetzung (historisch): docker compose up -d  (NICHT mehr kanonisch)
+Ausführung (war): pytest -v -m e2e tests/e2e/test_docker_compose_full_stack.py
 """
 
 from __future__ import annotations

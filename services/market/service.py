@@ -9,9 +9,14 @@ Endpoints:
   GET /status                 — operational stats + cached symbols
   GET /market/price/<symbol>  — last-known price entry for a symbol
 
-NOTE (PR1): This service intentionally does not write to ``market_state:{symbol}``.
-Existing consumers (cdb_risk, cdb_signal) depend on computed fields in that key
-that are written by cdb_candles. The architecture of that key is deferred to PR2.
+Market State V1 (Issue #1201 Delta 1 — shadow mode):
+  This service computes and writes ``market_state_shadow:{symbol}`` (shadow key)
+  in parallel with ``cdb_candles`` writing to the live ``market_state:{symbol}``.
+  The shadow key is used for Evidence Gate comparison only — no consumer reads it.
+
+  Shadow mode is the default (MARKET_STATE_KEY_PREFIX=market_state_shadow).
+  Cutover to the live key requires a passing Evidence Gate run and an explicit
+  MARKET_STATE_KEY_PREFIX=market_state env-var change in compose.blue.yml.
 """
 
 import json
@@ -26,6 +31,15 @@ from flask import Flask, jsonify
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 from core.utils.redis_payload import sanitize_market_data
+
+# ─── Market State V1 config ───────────────────────────────────────────────────
+# Mirrors cdb_candles config defaults exactly (no drift).
+
+MARKET_CANDLES_STREAM = os.getenv("MARKET_CANDLES_STREAM", "stream.candles_1m")
+MARKET_REGIME_STREAM = os.getenv("MARKET_REGIME_STREAM", "stream.regime_signals")
+MARKET_STATE_KEY_PREFIX = os.getenv("MARKET_STATE_KEY_PREFIX", "market_state_shadow")
+MARKET_STATE_TTL_SECONDS = int(os.getenv("MARKET_STATE_TTL_SECONDS", "120"))
+MARKET_REGIME_STALENESS_SECONDS = int(os.getenv("MARKET_REGIME_STALENESS_SECONDS", "300"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,6 +75,8 @@ _cache_lock = threading.Lock()
 _stats: dict[str, int] = {
     "messages_received": 0,
     "messages_invalid": 0,
+    "market_state_updates": 0,
+    "market_state_skipped": 0,
 }
 
 _redis_client: redis.Redis | None = None
@@ -118,6 +134,148 @@ def _process_message(raw: str) -> None:
             )
         except redis.RedisError as exc:
             logger.warning("Redis write failed for %s: %s", key, exc)
+        _update_market_state(key, entry["ts_ms"], _redis_client)
+
+
+# ─── Market State V1 ─────────────────────────────────────────────────────────
+#
+# Identical contract to cdb_candles._lookup_regime_id / _update_market_state.
+# No creative reinterpretation — any behavior change here is a bug.
+
+
+def _lookup_regime_id(symbol: str, redis_client: redis.Redis) -> "int | None":
+    """Lookup regime_id from stream.regime_signals (deterministic mapping).
+
+    Mapping (identical to cdb_candles):
+    - TREND → 0, RANGE → 1, HIGH_VOL_* → 2, CRISIS → 3
+    - missing / stale / invalid → None (fail-closed: RC_001 blocks)
+    """
+    try:
+        raw_entries = redis_client.xrevrange(MARKET_REGIME_STREAM, "+", "-", count=50)
+
+        regime_entry = None
+        for _entry_id, payload in raw_entries:
+            if payload.get("symbol") == symbol:
+                regime_entry = payload
+                break
+
+        if regime_entry is None:
+            return None
+
+        ts_raw = regime_entry.get("ts")
+        if ts_raw is None:
+            return None
+        try:
+            regime_ts = int(ts_raw)
+        except (ValueError, TypeError):
+            return None
+
+        if regime_ts < 1_000_000_000 or regime_ts > 4_000_000_000:
+            return None
+
+        now_s = int(time.time())
+        age = now_s - regime_ts
+        if age < 0:
+            return None
+        if age > MARKET_REGIME_STALENESS_SECONDS:
+            return None
+
+        regime_str = (regime_entry.get("regime") or "").upper()
+        if regime_str == "TREND":
+            return 0
+        elif regime_str == "RANGE":
+            return 1
+        elif regime_str.startswith("HIGH_VOL"):
+            return 2
+        elif regime_str == "CRISIS":
+            return 3
+        else:
+            return None
+
+    except Exception as exc:
+        logger.warning("regime_id error for %s: %s", symbol, exc)
+        return None
+
+
+def _update_market_state(
+    symbol: str, last_tick_ts_ms: "int | None", redis_client: redis.Redis
+) -> None:
+    """Compute market_state V1 from candle history and persist to Redis.
+
+    Identical contract to cdb_candles._update_market_state (no drift):
+    - Source: stream.candles_1m (last 6 candles via XREVRANGE, newest first)
+    - Output: market_state:{symbol} with TTL 120s
+    - Fail-closed: < 6 candles → no write; close=0 → no write
+
+    Index semantics (XREVRANGE newest first):
+      candles[0] = latest (now), candles[1] = 1m ago, candles[5] = 5m ago
+    """
+    try:
+        raw_entries = redis_client.xrevrange(MARKET_CANDLES_STREAM, "+", "-", count=100)
+
+        candles = []
+        for _entry_id, payload in raw_entries:
+            if payload.get("symbol") == symbol:
+                candles.append(payload)
+                if len(candles) >= 6:
+                    break
+
+        if len(candles) < 6:
+            _stats["market_state_skipped"] += 1
+            logger.debug(
+                "market_state skip: %s has only %d candles (need 6)", symbol, len(candles)
+            )
+            return
+
+        try:
+            close_now = float(candles[0].get("close", 0))
+            close_1m_ago = float(candles[1].get("close", 0))
+            close_5m_ago = float(candles[5].get("close", 0))
+        except (TypeError, ValueError):
+            _stats["market_state_skipped"] += 1
+            logger.warning("market_state skip: %s invalid close values", symbol)
+            return
+
+        if close_1m_ago == 0 or close_5m_ago == 0:
+            _stats["market_state_skipped"] += 1
+            logger.warning("market_state skip: %s close=0 in history", symbol)
+            return
+
+        return_1m = (close_now - close_1m_ago) / close_1m_ago
+        return_5m = (close_now - close_5m_ago) / close_5m_ago
+        price_change_5m = abs(return_5m)
+
+        regime_id = _lookup_regime_id(symbol, redis_client)
+
+        ts_ms = int(time.time() * 1000)
+        market_state = {
+            "symbol": symbol,
+            "return_1m": return_1m,
+            "return_5m": return_5m,
+            "price_change_5m": price_change_5m,
+            "ts_ms": ts_ms,
+            "close_now": close_now,
+            "close_1m_ago": close_1m_ago,
+            "close_5m_ago": close_5m_ago,
+            "last_tick_ts_ms": last_tick_ts_ms,
+        }
+        if regime_id is not None:
+            market_state["regime_id"] = regime_id
+
+        key = f"{MARKET_STATE_KEY_PREFIX}:{symbol}"
+        redis_client.setex(key, MARKET_STATE_TTL_SECONDS, json.dumps(market_state))
+
+        _stats["market_state_updates"] += 1
+        logger.debug(
+            "market_state updated: %s return_1m=%.6f return_5m=%.6f",
+            symbol,
+            return_1m,
+            return_5m,
+        )
+
+    except Exception as exc:
+        _stats["market_state_skipped"] += 1
+        logger.error("market_state error for %s: %s", symbol, exc)
 
 
 # ─── Flask endpoints ──────────────────────────────────────────────────────────
@@ -168,8 +326,11 @@ def market_price(symbol: str):
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 
+_FLASK_PORT: int = int(os.getenv("MARKET_PORT", "8009"))
+
+
 def _run_flask() -> None:
-    app.run(host="0.0.0.0", port=8004, debug=False)
+    app.run(host="0.0.0.0", port=_FLASK_PORT, debug=False)
 
 
 def main() -> None:
@@ -186,7 +347,7 @@ def main() -> None:
 
     flask_thread = threading.Thread(target=_run_flask, daemon=True)
     flask_thread.start()
-    logger.info("Flask API started on port 8004")
+    logger.info("Flask API started on port %d", _FLASK_PORT)
 
     if _redis_client is None:
         logger.warning("No Redis connection — cannot subscribe; service in degraded mode")

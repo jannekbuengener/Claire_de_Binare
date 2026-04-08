@@ -1,8 +1,9 @@
 # 📊 Claire de Binare - Project Analytics & Time Tracking
 
-**Live Analytics Dashboard** - Generiert: 2026-01-07
+**Status:** Historical analytics snapshot — Generiert: 2026-01-07 (nicht aktuell)
+**Authority:** Zeitgebundener Activity-Report. Kein aktueller Projekt-/Ops-Status.
+**Current canonical sources:** `CURRENT_STATUS.md` (Repo/Engineering), `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` (Go/No-Go)
 **Zeitraum:** 12. Dezember 2025 - 7. Januar 2026 (~27 Tage)
-**Status:** Aktiv | Reife: 72%
 
 ---
 

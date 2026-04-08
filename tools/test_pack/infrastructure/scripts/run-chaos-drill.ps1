@@ -2,6 +2,11 @@
 <#!
 Chaos Drill Harness (upgradeable)
 
+Status:
+  - experimental / secondary helper under tools/test_pack
+  - not the canonical repo-wide 431C drill source of truth
+  - repo-native `scripts/drills/` + `tests/chaos/` are the canonical line
+
 What it does:
   - prepares an evidence pack folder
   - (optional) brings up a stack (generic docker-compose.yml OR via integrations/cdb-stack-adapter.ps1)
@@ -20,10 +25,10 @@ param(
   [Parameter(Mandatory=$true)][string]$ScenarioFile,
   [Parameter(Mandatory=$true)][string]$EvidenceDir,
 
-  # Generic mode (fallback):
+  # Generic mode (legacy fallback inside the experimental pack):
   [string]$ComposeFile = "docker-compose.yml",
 
-  # CDB mode (preferred when you have the repo locally):
+  # CDB mode (best-effort adapter for older repo layouts):
   [string]$CdbRepoRoot = "",
 
   # Ingestion config

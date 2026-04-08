@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "verdict": "NOT_RUN",
+  "status": "PENDING_RUNTIME_EVIDENCE",
+  "reason": "no_72h_soak_run_performed",
+  "contract_role": "committed_handoff_placeholder",
+  "expected_raw_artifact": "artifacts/soak_test_YYYYMMDD_HHMMSS/lr040_soak_gate_eval.json",
+  "expected_committed_reference_path": "reports/p5_canary/2026-03-20/lr040/lr040_soak_gate_eval.json",
+  "pass_required_before_start": true,
+  "governance_effect": "LR-040 PASS remains required; P5 stays NO-GO",
+  "notes": [
+    "This file is a committed placeholder anchor only.",
+    "It does not represent a completed 72h run.",
+    "No evaluator was executed in this session."
+  ]
+}

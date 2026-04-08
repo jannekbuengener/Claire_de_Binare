@@ -1,6 +1,7 @@
 # Test Overlay - Isolated E2E Test Execution
 
 **Purpose**: Provides isolated test stack for running E2E tests without affecting development or production data.
+**Status**: Canonical Docker CI lab baseline for 431B (`base.yml + test.yml`).
 
 ---
 
@@ -64,6 +65,9 @@ test.yml          # Test overrides (isolated volumes, test runner)
   =
 Isolated test stack
 ```
+
+For 431B, this is the canonical Docker CI lab baseline.
+`base.yml + dev.yml` remains a secondary local/compatibility path and is not the CI-lab default.
 
 ### Key Isolation Features
 
@@ -264,7 +268,8 @@ ERROR: Network cdb_network declared as external, but could not be found
 # Create network manually
 docker network create cdb_network
 
-# Or start dev stack first (creates network)
+# Secondary fallback only: start dev stack first to create the shared network
+# This is not the canonical 431B CI-lab path.
 docker compose -f base.yml -f dev.yml up -d
 docker compose -f base.yml -f dev.yml down
 

@@ -1,20 +1,28 @@
 ---
 title: Claude Project Overview
-status: draft
+status: historical
 date: 2025-12-19
 owner: codex
+superseded_by: knowledge/SYSTEM.CONTEXT.md
 ---
+
+> **⚠ Historical Document (2025-12-19)**
+> This snapshot predates the Docs-Hub consolidation (early 2026).
+> `Claire_de_Binare_Docs` was retired; all content now lives in
+> the mono-repo `Claire_de_Binare`.
+> Current entry point: `knowledge/SYSTEM.CONTEXT.md`.
+
 # Claude Project Overview
 
 ## Purpose
 Provide Claude a concise, current snapshot of repo structure, active work, and blockers.
 
-## Repo Topology
-- Docs Hub (canonical): `Claire_de_Binare_Docs`
-- Working Repo (execution only): `Claire_de_Binare`
+## Repo Topology (pre-consolidation, retired)
+- ~~Docs Hub (canonical): `Claire_de_Binare_Docs`~~ — retired, consolidated into mono-repo
+- ~~Working Repo (execution only): `Claire_de_Binare`~~ — now the single canonical repo
 
 ## Current Workstreams (high-level)
-- Paper Trading M7 planning: sprint plan + testnet plan drafted in Docs Hub.
+- Paper Trading M7 planning: sprint plan + testnet plan drafted in Docs Hub (retired).
 - Security M8: Trivy scan in CI, non-root hardening for market + db_writer.
 - CI stability: gitleaks ignore path, Redis import stub, and CI deps fixes.
 
@@ -25,11 +33,11 @@ Provide Claude a concise, current snapshot of repo structure, active work, and b
     - 3903e98 (query_analytics harden)
     - 6cf07a8 (Trivy scan + non-root + local-only tests)
     - acb1d27 (CI deps for tests)
-- Docs Hub: `copilot/improve-deep-issues-pipeline`
+- Docs Hub (retired): `copilot/improve-deep-issues-pipeline`
   - Recent commit: 948fa0f (incident response + pentest stubs + perf baselines)
 
-## Key Files (Claude should scan)
-- Docs Hub:
+## Key Files (as of 2025-12-19; paths may have moved post-consolidation)
+- Docs Hub (retired):
   - `knowledge/systems/PAPER_TRADING_ARCHITECTURE.md`
   - `knowledge/testing/PAPER_TRADING_TEST_REQUIREMENTS.md`
   - `knowledge/tasklists/M7_SPRINT_PLAN.md`

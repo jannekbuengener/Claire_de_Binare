@@ -6,35 +6,47 @@ Governance-konforme Infrastruktur-Definition (CDB_INFRA_POLICY.md).
 
 ```
 infrastructure/compose/
-├── base.yml    # Core Infrastructure (Redis, Postgres, Prometheus, Grafana)
-├── dev.yml     # Dev Overrides (Port-Bindings, Debug-Volumes)
-├── prod.yml    # Prod Overrides (Resource-Limits, Security)
-├── surrealdb.yml     # SurrealDB sidecar stack (cdb_database)
-├── surrealdb-dev.yml # SurrealDB dev ports (localhost only)
-└── README.md   # Diese Datei
+├── compose.blue.yml     # BLUE runtime (Core: Postgres, Redis, Risk, Execution, …)
+├── compose.red.yml      # RED runtime (Signal, WS, Prometheus, Grafana, …)
+├── base.yml             # Legacy shared base (CI/test only)
+├── dev.yml              # Legacy dev overlay (CI/test only)
+├── test.yml             # 431B Docker CI lab overlay
+├── Dockerfile.test      # Test-runner image for test.yml
+├── TEST_OVERLAY_README.md # CI-lab usage notes
+├── prod.yml             # Legacy prod overlay
+├── surrealdb.yml        # SurrealDB sidecar stack
+├── surrealdb-dev.yml    # SurrealDB dev ports (localhost only)
+└── README.md            # Diese Datei
 ```
 
-## Usage
+## Kanonische Pfade
 
-### Development
+### Lokale Runtime
 ```bash
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
-### Production
+### Docker CI Lab Baseline (431B)
 ```bash
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/prod.yml up -d
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
 
-### Legacy (Fallback)
+### Legacy Compose Chain (CI/test only)
+
+`base.yml + dev.yml` ist **nicht** der kanonische Runtime-Pfad. Sie bleibt nur fuer CI-Labs und explizite Kompatibilitaetsflows:
+
 ```bash
-docker compose up -d  # Nutzt root-level docker-compose.yml
+# CI Lab Baseline
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up --abort-on-container-exit
 ```
 
 ### SurrealDB Sidecar (Standalone)
 ```bash
 docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose/surrealdb-dev.yml up -d
 ```
+
+Mit `surrealdb-dev.yml` liegt SurrealDB lokal auf `127.0.0.1:8010`, damit es nicht mit `cdb_ws` auf `127.0.0.1:8000` kollidiert.
 
 ## Governance-Compliance
 
@@ -45,14 +57,20 @@ docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose
 ## Fragmente-Beschreibung
 
 ### base.yml
-- **Zweck**: Core Infrastructure (immer benötigt)
+- **Zweck**: Shared base fuer dev/prod/test
 - **Services**: Redis, Postgres, Prometheus, Grafana
 - **Netzwerk**: cdb_network (bridge)
 - **Volumes**: Named Volumes (redis_data, postgres_data, etc.)
-- **Secrets**: Via ./.secrets/ Dateien
+- **Secrets**: Via `${SECRETS_PATH}` (`~/Documents/.secrets/.cdb`, kanonischer Pfad)
+
+### test.yml
+- **Zweck**: Kanonische 431B Docker CI lab baseline
+- **Modell**: Isolierter Test-Overlay ueber `base.yml`
+- **Isolation**: Separate `_test` Container, Volumes und `cdb_test_network`
+- **Runner**: `cdb_test_runner` baut aus `Dockerfile.test` und fuehrt pytest im Container aus
 
 ### dev.yml
-- **Zweck**: Development Overrides
+- **Zweck**: Secondary local/compatibility overrides
 - **Port-Bindings**: Alle Services extern erreichbar
 - **Debug-Volumes**: Logs gemountet
 - **Relaxed Security**: Kein read-only, CAP_DROP
@@ -67,13 +85,11 @@ docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose
 
 ## Migration von Legacy
 
-Legacy `docker-compose.yml` bleibt als Fallback erhalten (Abwärtskompatibilität).
+Die root-level `docker-compose.yml` existiert nicht mehr im Working Repo.
 
-**Empfohlene Migration:**
-1. Testen mit Dev-Fragmenten: `docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml up -d`
-2. Validieren: Alle Services starten korrekt
-3. Makefile anpassen: `make docker-up` nutzt Fragmente
-4. Legacy `docker-compose.yml` als Backup behalten
+**Kanonische Pfade:**
+1. **Runtime:** `compose.blue.yml` + `compose.red.yml` (oder `make docker-up`)
+2. **CI-Lab:** `base.yml` + `test.yml` (isolierter Test-Overlay)
 
 ## Kubernetes-Readiness
 
@@ -85,7 +101,5 @@ Diese Fragmente sind K8s-ready:
 
 ## Nächste Schritte
 
-- [ ] Makefile anpassen (PR-03)
-- [ ] .env.example aktualisieren
-- [ ] CI-Integration (.gitlab-ci.yml prüft Fragmente)
+- [ ] Sekundaere Workflow-Pfade bei Bedarf spaeter auf die 431B-Baseline ziehen
 - [ ] K8s-Manifeste aus Fragmenten generieren (via Kompose)

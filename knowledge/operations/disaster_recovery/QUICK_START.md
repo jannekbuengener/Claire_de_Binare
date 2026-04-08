@@ -1,10 +1,12 @@
 # 🚀 QUICK START - Nach Docker Neuinstallation
 
-**Backup Location:** `D:\Dev\Backups\docker_reinstall_20251231_075507`
+> **Hinweis:** Dieses Dokument enthält einen historischen Snapshot aus dem Docker-Reinstall 2025-12-31.  
+> **Aktuelle Backup-Location:** `F:\Claire_Backups`  
+> **Aktuelle Restore-Front-Door:** `make restore` (→ `infrastructure/scripts/restore_all.ps1`)
 
 ---
 
-## ⚡ 3-Schritte Restore (Automatisch)
+## ⚡ Restore — Kanonischer Einstieg
 
 ### 1. Docker verifizieren
 ```powershell
@@ -13,25 +15,36 @@ docker compose version
 ```
 ✅ Sollte funktionieren nach Neuinstallation
 
-### 2. Volumes + Config automatisch wiederherstellen
+### 2. Verfügbare Backups anzeigen
 ```powershell
-cd D:\Dev\Backups\docker_reinstall_20251231_075507
-.\restore_volumes.ps1
+make restore
+# → listet Archive in F:\Claire_Backups
+```
+
+### 3. Restore mit konkretem Backup-Namen ausführen
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File infrastructure/scripts/restore_all.ps1 -BackupName cdb_backup_YYYYMMDD_HHMMSS
+# → Backup-Name aus Schritt 2 einsetzen
 ```
 ⏱️ Dauer: ~2-3 Minuten
 
-### 3. Stack starten
+### 4. Stack starten
 ```powershell
-cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 make docker-up
 ```
 ⏱️ Dauer: ~30-60 Sekunden
 
-### 4. Verifizieren
+### 5. Restore verifizieren
+
 ```powershell
-cd D:\Dev\Backups\docker_reinstall_20251231_075507
-.\verify_restore.ps1
+# Redis — Schlüsselanzahl prüfen (> 0 erwartet)
+docker exec cdb_redis redis-cli DBSIZE
+
+# Postgres — Tabellen prüfen
+docker exec cdb_postgres psql -U postgres -c "\dt" 2>&1 | Select-String "public"
 ```
+
+> `make backup-health` prüft die Frische des letzten Backups, nicht den Restore-Erfolg. Backup-Frischecheck separat ausführen wenn gewünscht.
 
 ---
 
@@ -43,10 +56,9 @@ cd D:\Dev\Backups\docker_reinstall_20251231_075507
    ```
    Sollte zeigen: grafana, redis, signal, ws, risk, execution, db_writer, paper_runner
 
-2. **Grafana Dashboards:**
+2. **Grafana erreichbar** (wird via Repo-Provisioning geladen, nicht Teil des Restore-Scopes):
    - http://localhost:3000
    - Login: admin / (siehe Secrets)
-   - Sollte 8 Dashboards zeigen
 
 3. **Redis Daten:**
    ```powershell
@@ -71,9 +83,7 @@ docker compose logs cdb_postgres
 docker compose logs cdb_execution
 ```
 
-**Häufige Ursache:** Alte Pfade in Compose Files
-- Suche nach: `C:\Users\janne\Documents\GitHub\Workspaces\`
-- Ersetze mit: `D:\Dev\Workspaces\Repos\`
+**Häufige Ursache:** Falsche Pfade in `.env` oder fehlende Secrets — Logs prüfen.
 
 ### Problem: Postgres startet nicht
 **Container ID prüfen:**
@@ -82,78 +92,32 @@ docker ps -a | grep postgres
 ```
 
 **Mount-Fehler?**
-- Prüfe: `infrastructure/compose/base.yml`
-- Entferne alte absolute Pfade
+- Compose-Konfiguration auf absolute Host-Pfade prüfen
 - Volume-Namen sollten ausreichen (keine Host-Mounts für schema.sql nötig)
 
 ### Problem: Grafana zeigt keine Dashboards
-**Restore nochmal:**
-```powershell
-docker volume rm claire_de_binare_grafana_data
-docker volume create claire_de_binare_grafana_data
-docker run --rm -v claire_de_binare_grafana_data:/var/lib/grafana -v D:\Dev\Backups\docker_reinstall_20251231_075507\grafana_data:/backup alpine cp -r /backup/. /var/lib/grafana/
-docker compose restart cdb_grafana
-```
+**Restore nochmal:** `make restore` erneut ausführen oder manuell aus `F:\Claire_Backups` wiederherstellen.
 
 ---
 
-## 📊 Was wurde wiederhergestellt
+## 📊 Was wird wiederhergestellt (aktueller Canon)
 
-| Component | Size | Status |
-|-----------|------|--------|
-| Grafana Dashboards (8) | 109MB | ✅ Gesichert |
-| Redis Daten | 85KB | ✅ Gesichert |
-| Prometheus Metriken | 2.0MB | ✅ Gesichert |
-| Claude Memory | 2.9KB | ✅ Gesichert |
-| Loki Logs | 671B | ✅ Gesichert |
-| PostgreSQL | - | ⚠️ Volume bleibt erhalten |
-| .env Config | 1.1KB | ✅ Gesichert |
-| Secrets | - | ✅ Bleiben außerhalb Docker |
+| Component | Methode | Status |
+|-----------|---------|--------|
+| PostgreSQL | SQL dump (pg_dumpall → restore) | ✅ Aktiver Restore-Scope |
+| Redis | dump.rdb | ✅ Aktiver Restore-Scope |
+| SurrealDB | Optional, wenn aktiv | ◻️ Wenn vorhanden |
+
+> **Historischer Scope (2025-12-31-Snapshot):** Frühere Backups enthielten Grafana-Volumes (109MB), Prometheus (2.0MB), Claude Memory (2.9KB), Loki (671B) — kein Teil des aktuellen `make backup`/`make restore`-Scopes.
 
 ---
 
-## 🔧 Manuelle Restore-Commands (falls Scripts fehlschlagen)
+## 🔧 Historische Referenz: Manuelle Volume-Commands (2025-12-31-Snapshot)
 
-**Redis:**
-```powershell
-docker volume create claire_de_binare_redis_data
-docker run --rm -v claire_de_binare_redis_data:/data -v D:\Dev\Backups\docker_reinstall_20251231_075507\redis_data:/backup alpine cp -r /backup/. /data/
-```
+> Diese Befehle stammen aus dem Docker-Reinstall-Event vom 2025-12-31 und referenzieren den damaligen Backup-Pfad.  
+> **Aktuelle Front Door:** `make restore` (→ `infrastructure/scripts/restore_all.ps1`)
 
-**Grafana:**
-```powershell
-docker volume create claire_de_binare_grafana_data
-docker run --rm -v claire_de_binare_grafana_data:/var/lib/grafana -v D:\Dev\Backups\docker_reinstall_20251231_075507\grafana_data:/backup alpine cp -r /backup/. /var/lib/grafana/
-```
-
-**Prometheus:**
-```powershell
-docker volume create claire_de_binare_prom_data
-docker run --rm -v claire_de_binare_prom_data:/data -v D:\Dev\Backups\docker_reinstall_20251231_075507:/backup alpine sh -c "cd /data && tar xzf /backup/prometheus_data.tar.gz"
-```
-
-**Loki:**
-```powershell
-docker volume create claire_de_binare_loki_data
-docker run --rm -v claire_de_binare_loki_data:/data -v D:\Dev\Backups\docker_reinstall_20251231_075507:/backup alpine sh -c "cd /data && tar xzf /backup/loki_data.tar.gz"
-```
-
-**Claude Memory:**
-```powershell
-docker volume create claude-memory
-docker run --rm -v claude-memory:/data -v D:\Dev\Backups\docker_reinstall_20251231_075507:/backup alpine sh -c "cd /data && tar xzf /backup/claude_memory.tar.gz"
-```
-
-**PostgreSQL (falls Volume weg ist):**
-```powershell
-docker volume create claire_de_binare_postgres_data
-# Fresh init beim ersten Start - Datenbank wird neu initialisiert
-```
-
-**Config:**
-```powershell
-Copy-Item D:\Dev\Backups\docker_reinstall_20251231_075507\.env_backup D:\Dev\Workspaces\Repos\Claire_de_Binare\.env -Force
-```
+Hintergrund-Befehle für direktes Volume-Restore falls `make restore` nicht verfügbar ist — Backup-Pfad muss auf aktuelles Archiv in `F:\Claire_Backups` angepasst werden.
 
 ---
 
@@ -185,5 +149,5 @@ cdb_paper_runner - running/healthy
 ---
 
 **Gesamt-Dauer für komplettes Restore:** ~5 Minuten  
-**Scripts:** `restore_volumes.ps1`, `verify_restore.ps1`  
-**Manuelle Anleitung:** `RESTORE_GUIDE.md`
+**Kanonischer Einstieg:** `make restore` (Backup-Liste), dann `restore_all.ps1 -BackupName <name>`  
+**Hintergrund-Referenz:** `RESTORE_GUIDE.md` (historischer 2025-12-31-Snapshot)

@@ -3,11 +3,15 @@
 ## MUST READ FIRST
 Claude **muss** zu Beginn jeder Session folgende Dateien lesen:
 - agents/AGENTS.md
+- docs/meta/WORKING_REPO_CANON.md
 - knowledge/SYSTEM.CONTEXT.md
-- knowledge/CURRENT_STATUS.md
+- CURRENT_STATUS.md
+- docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md
 - knowledge/ACTIVE_ROADMAP.md
 
-Diese Dateien sind die **autoritative Quelle** für Kontext, Status und Governance.
+Diese Dateien sind die **autoritative Einstiegskette** für Kontext, Governance
+und die getrennten Statusrollen. `knowledge/CURRENT_STATUS.md` bleibt nur
+historischer Kontext.
 
 ---
 
@@ -88,8 +92,10 @@ Wenn das Verständnis falsch ist:
 
 ### Session-Ende (Pflicht)
 Keine Session gilt als abgeschlossen, bevor nicht:
+- `make pre-close` ausgeführt wurde und kein untracked Artefakt in kanonischen Pfaden gemeldet wird
 - eine Session-Datei gepflegt ist
-- `knowledge/CURRENT_STATUS.md` aktualisiert wurde
+- `CURRENT_STATUS.md` aktualisiert wurde, wenn sich der Repo-/Engineering-Status
+  geaendert hat
 - Blocker benannt oder gelöst sind
 
 ---
@@ -278,12 +284,16 @@ Keine Architektur-/Prozessdokumente außerhalb `/knowledge`.
 
 ## 10. Dateistatus
 Lebendig:
-- knowledge/CURRENT_STATUS.md
+- CURRENT_STATUS.md
 - knowledge/logs/sessions/*.md
 
 Stabil:
 - knowledge/SYSTEM.CONTEXT.md
 - knowledge/ACTIVE_ROADMAP.md
+
+Historischer Kontext:
+- knowledge/CURRENT_STATUS.md
+- PROJECT_STATUS.md
 
 ---
 

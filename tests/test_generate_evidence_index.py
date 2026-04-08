@@ -189,7 +189,7 @@ class TestGenerateIndexHappyPath:
         assert index["schema_version"] == "1.0"
         assert index["run_id"] == "12345"
         assert index["commit"] == "abc123"
-        assert index["mode"] == "full"
+        assert index["soak_profile"] == "full"
         assert index["soak_minutes"] == 30
         assert index["gate_status"] == "PASS"
 

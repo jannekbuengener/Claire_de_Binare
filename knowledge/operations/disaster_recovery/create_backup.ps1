@@ -1,5 +1,10 @@
 # Docker Volume Backup Script für Claire de Binare
 # Erstellt vollständiges Backup aller kritischen Volumes
+#
+# ⚠️  HISTORISCHES ARTEFAKT — 2025-12-31-Docker-Reinstall-Event
+# Nicht aktiver Operator-Canon. Aktiver Canon: make backup (→ infrastructure/scripts/backup_all.ps1)
+# Dieser Script sichert den alten Volume-Set (Grafana, Prometheus, Loki, Claude Memory),
+# NICHT den aktuellen Backup-Scope (Postgres + Redis).
 
 param(
     [string]$BackupRoot = "D:\Dev\Backups",

@@ -1,9 +1,11 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Manage Docker secrets for Claire de Binare
+    Manage Docker secrets for Claire de Binare (compat copy)
 .DESCRIPTION
-    Create, rotate, and validate secrets for production deployment
+    Create, rotate, and validate secrets for production deployment.
+    NOTE: This is a compatibility copy. The primary CRUD/Ops entrypoint is
+    infrastructure/scripts/manage_secrets.ps1. Prefer that path for new usage.
 .PARAMETER Action
     Action to perform: setup, rotate, validate
 .PARAMETER SecretName
@@ -28,8 +30,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Secret directory
-$secretDir = Join-Path $PSScriptRoot ".." ".." ".cdb_local" ".secrets"
+# Canonical secrets directory (matches SECRETS_PATH in compose.blue.yml / compose.red.yml)
+$secretDir = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
 
 function Initialize-SecretDirectory {
     if (-not (Test-Path $secretDir)) {
@@ -231,7 +233,8 @@ switch ($Action) {
         }
 
         Write-Host "`n⚠️  Remember to restart services:" -ForegroundColor Yellow
-        Write-Host "   docker-compose up -d --no-deps --force-recreate cdb_execution cdb_risk" -ForegroundColor White
+        Write-Host "   .\tools\cdb.ps1 runtime up" -ForegroundColor White
+        Write-Host "   (full BLUE+RED stack restart, not targeted; handles network creation)" -ForegroundColor DarkGray
     }
 
     "validate" {

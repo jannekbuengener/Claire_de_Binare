@@ -1,0 +1,79 @@
+{
+  "schema_version": "1",
+  "generated_at": "2026-03-18T12:17:58+00:00",
+  "issue": "#1201",
+  "title": "Post-Cutover Evidence Run — market_state Contract V1",
+  "branch": "feat/cdb-market-move-to-blue-1202",
+  "stack_context": "Legacy stack (base.yml + dev.yml). cdb_market run from source with cutover config.",
+  "environment": {
+    "MARKET_STATE_KEY_PREFIX": "market_state",
+    "MARKET_PORT": "8009",
+    "REDIS_HOST": "localhost",
+    "REDIS_PORT": "6379"
+  },
+  "observations": {
+    "flask_port": {
+      "expected": 8009,
+      "observed": 8009,
+      "result": "PASS",
+      "evidence": "log: 'Flask API started on port 8009' + Flask running on http://127.0.0.1:8009"
+    },
+    "live_key_written": {
+      "key": "market_state:BTCUSDT",
+      "result": "PASS",
+      "evidence": "key present in Redis, KEYS market_state* returns only market_state:BTCUSDT"
+    },
+    "shadow_key_absent": {
+      "key": "market_state_shadow:BTCUSDT",
+      "result": "PASS",
+      "evidence": "KEYS market_state* returns no shadow key — cutover config active"
+    },
+    "ttl_stable": {
+      "expected_ttl_s": 120,
+      "observed_ttl_s": 120,
+      "result": "PASS"
+    },
+    "ts_ms_monotone": {
+      "snapshot_1": 1773832611675,
+      "snapshot_2": 1773832629655,
+      "snapshot_3": 1773832665691,
+      "delta_1_2_ms": 17980,
+      "delta_2_3_ms": 36036,
+      "result": "PASS",
+      "note": "ts_ms strictly increasing across 3 snapshots over ~54s"
+    },
+    "contract_v1_fields": {
+      "return_1m": "present",
+      "return_5m": "present",
+      "price_change_5m": "present",
+      "ts_ms": "present",
+      "last_tick_ts_ms": "present",
+      "regime_id": "absent (fail-closed: no regime signal)",
+      "result": "PASS"
+    },
+    "cdb_risk_health": {
+      "url": "http://localhost:8002/health",
+      "observed": {"service": "risk_manager", "status": "ok", "version": "0.1.0"},
+      "result": "PASS"
+    },
+    "kill_switch_verification": {
+      "method": "code execution + unit tests",
+      "env": "CANDLE_WRITE_MARKET_STATE=false",
+      "observed_write_market_state": false,
+      "_update_market_state_called": false,
+      "unit_tests_green": 8,
+      "result": "PASS",
+      "note": "Verified by runtime code execution and 8 unit tests. BLUE stack applies via compose.blue.yml."
+    }
+  },
+  "symbols_verified": ["BTCUSDT"],
+  "overall": "PASS",
+  "overall_reason": "All cutover assertions verified: live key written, shadow key absent, TTL=120s, ts_ms monotone, Contract V1 complete, cdb_risk healthy, kill-switch proven.",
+  "cutover_decision": "GO",
+  "limitation": "cdb_candles kill-switch not verified in a running container (legacy stack has no kill-switch code). Proof via unit tests + compose.blue.yml config. Full BLUE stack restart would provide integrated proof.",
+  "next_steps": [
+    "PR feat/cdb-market-move-to-blue-1202 → main with label allow-core-change",
+    "BLUE stack restart activates compose.blue.yml cutover config",
+    "Post-BLUE-restart: verify cdb_candles CANDLE_WRITE_MARKET_STATE=false in container env"
+  ]
+}

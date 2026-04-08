@@ -1,6 +1,6 @@
 # Secret Rotation Policy (CDB)
 
-**Issue:** #TBD (cdb-secrets-rotator implementation)
+**Note:** cdb-secrets-rotator implementation is pending; no tracking issue created yet.
 **Status:** Active
 **Last Updated:** 2026-01-28
 **Tool:** `tools/secrets/Rotate-Secrets.ps1`
@@ -147,10 +147,12 @@ cd D:\Dev\Workspaces\Repos\Claire_de_Binare
 
 #### Step 4: Restart Stack (2-3 minutes)
 ```powershell
-.\infrastructure\scripts\stack_up.ps1
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
-- Auto-loads `.env.runtime` (B-lite integration)
-- Restarts affected services with new secrets
+- Startet BLUE+RED Stack mit neuen Secrets
+- Startet betroffene Services neu
 
 #### Step 5: Verify (30 seconds)
 ```powershell
@@ -172,16 +174,22 @@ If `GRAFANA_ADMIN_PASSWORD` was also compromised:
 
 ## Integration with Existing Tools
 
-### Existing Scripts (Unchanged)
-- `tools/set_secrets.ps1` - Manual initial setup (interactive prompts)
-- `tools/cdb-secrets-sync.ps1` - Sync .cdb_local → .secrets (legacy)
+### Bestehende Scripts
+- `tools/set_secrets.ps1` - Manuelles initiales Setup (interaktive Eingabe); schreibt in `.secrets/` (Legacy-Pfad)
+- `tools/cdb-secrets-sync.ps1` - **[LEGACY COMPAT]** Sync `.cdb_local → .secrets` (alter Pfad). Nicht der kanonische Setup-Pfad.
 
 ### New Script (Rotation)
 - `tools/secrets/Rotate-Secrets.ps1` - Incident response + periodic rotation
 
-### Stack Startup (B-lite Integration)
-- `infrastructure/scripts/stack_up.ps1` - Auto-loads `.env.runtime` if present
-- Disable via: `$env:CDB_IGNORE_RUNTIME_ENV='1'`
+### Stack Startup (Kanonischer BLUE+RED Pfad)
+```powershell
+docker network create cdb_network 2>$null
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+```
+
+> **[LEGACY COMPAT]** `infrastructure/scripts/stack_up.ps1` lädt `.env.runtime` automatisch, wenn vorhanden (B-lite).
+> Dieser Pfad ist nicht mehr der kanonische Operator-Startflow.
 
 ---
 

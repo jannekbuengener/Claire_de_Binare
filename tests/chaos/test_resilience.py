@@ -1,3 +1,5 @@
+"""Canonical repo-native 431C gate test coverage for LR-042 resilience drills."""
+
 import json
 import os
 import subprocess

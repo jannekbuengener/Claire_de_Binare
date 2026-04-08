@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
-    One-Click Local Bootstrap for Claire de Binare (Windows/PowerShell)
+    Secondary convenience bootstrap for Claire de Binare (Windows/PowerShell)
 
 .DESCRIPTION
     This script initializes secrets, creates .env, validates the environment,
     starts the Docker stack, and runs basic health checks.
+
+    Canonical PowerShell v1 front door:
+    .\tools\cdb.ps1
 
 .EXAMPLE
     .\infrastructure\scripts\bootstrap_local.ps1
@@ -13,7 +16,8 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-Write-Host "=== Claire de Binare - Local Bootstrap ===" -ForegroundColor Cyan
+Write-Host "=== Claire de Binare - Local Bootstrap (Secondary Convenience Wrapper) ===" -ForegroundColor Cyan
+Write-Host "Canonical PowerShell v1 front door: .\tools\cdb.ps1" -ForegroundColor Yellow
 
 # 1. Initialize Secrets
 Write-Host "`n1. Initializing secrets..." -ForegroundColor Yellow
@@ -36,6 +40,13 @@ Write-Host "`n3. Validating environment..." -ForegroundColor Yellow
 & "$PSScriptRoot\check_env.ps1"  # Or stack_doctor if preferred
 
 # 4. Start Docker Stack (canonical BLUE+RED runtime)
+# Set SECRETS_PATH — generischer lokaler Default; fail-closed wenn nicht vorhanden
+if (-not $env:SECRETS_PATH) {
+    $env:SECRETS_PATH = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
+}
+if (-not (Test-Path $env:SECRETS_PATH)) {
+    Write-Error "Secrets directory not found: $env:SECRETS_PATH. Set SECRETS_PATH env var or create the directory."
+}
 Write-Host "`n4. Starting Docker Compose stack (BLUE+RED)..." -ForegroundColor Yellow
 $composeRoot = Join-Path $repoRoot "infrastructure\compose"
 docker network create cdb_network 2>$null
@@ -107,6 +118,7 @@ Write-Host "`n==========================================" -ForegroundColor Cyan
 Write-Host "Bootstrap complete!" -ForegroundColor Green
 Write-Host "Access Grafana at http://localhost:3000 (admin / see secrets)"
 Write-Host "Run tests with: make test"
+Write-Host "Canonical PowerShell v1 commands: .\tools\cdb.ps1 help"
 Write-Host "==========================================" -ForegroundColor Cyan
 
 Pop-Location

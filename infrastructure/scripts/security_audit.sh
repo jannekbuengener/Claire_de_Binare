@@ -2,6 +2,8 @@
 # SECURITY AUDIT SCRIPT - Claire de Binare
 # Phase 1: Kritische Security-Checks
 # Ausführung: bash security_audit.sh
+# Status: Legacy / stale helper, not part of the canonical 431C drill/simulation source of truth.
+# Note: This script still assumes backoffice/ and root docker-compose.yml paths. Keep for reference only until it is rewritten or retired.
 
 echo "================================================"
 echo "  CLAIRE DE BINARE - SECURITY AUDIT PHASE 1"

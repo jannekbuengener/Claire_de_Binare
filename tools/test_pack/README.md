@@ -1,6 +1,14 @@
-# CDB Test Pack v2 (Upgradeable)
+# CDB Test Pack v2 (Frozen Import Snapshot)
 
-This pack is the “safety + readiness” layer before anything touches a real market.
+Status:
+- Frozen experimental / import snapshot.
+- Not maintained as an active repo path.
+- Not the canonical repo-wide 431C drill/simulation source of truth.
+- The canonical repo-native line is `scripts/drills/` plus `tests/chaos/`.
+- Do not add new operational or governance anchors into this pack.
+- Active checklist references were moved to repo-native docs under `docs/operations/`.
+
+This pack is a portable “safety + readiness” experiment layer before anything touches a real market.
 
 It is built around four things you can prove with evidence packs:
 1) Planning consistency (do we all mean the same thing?)
@@ -14,7 +22,7 @@ It is built around four things you can prove with evidence packs:
 - Templates for assertions and evidence documentation
 - A tiny Mock Exchange server (stdlib-only) as a drop-in test target
 
-## How we run it (recommended order)
+## Pack-local run order
 1) Planning lint → baseline “we’re aligned”
 2) Mock Exchange smoke → baseline “order lifecycle works”
 3) Chaos drill → baseline “risk + safeguards hold”
@@ -24,6 +32,9 @@ It is built around four things you can prove with evidence packs:
 Requirements:
 - Python 3.10+
 - PowerShell 7+
+
+Note:
+- The commands below are pack-local examples, not the canonical repo-wide 431C drill path.
 
 ### Generate a scenario
 ```powershell

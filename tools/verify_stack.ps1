@@ -23,6 +23,8 @@
     pwsh -File tools/verify_stack.ps1
 .EXAMPLE
     pwsh -File tools/verify_stack.ps1 -Verbose -Json
+.EXAMPLE
+    .\tools\cdb.ps1 stack verify
 #>
 param(
     [switch]$Verbose,

@@ -69,6 +69,7 @@ class RegimeService:
         self.current_regime: dict[str, str] = defaultdict(lambda: "UNKNOWN")
         self.candidate_regime: dict[str, str | None] = defaultdict(lambda: None)
         self.candidate_count: dict[str, int] = defaultdict(int)
+        self.last_emitted_ts: dict[str, float] = defaultdict(float)
 
     def connect_redis(self):
         self.redis_client = redis.Redis(
@@ -100,6 +101,8 @@ class RegimeService:
         self.redis_client.xadd(self.config.output_stream, sanitized, maxlen=10000)
         stats["regime_changes"] += 1
         stats["last_regime"] = sanitized
+        key = f"{candle.symbol}:{candle.timeframe}:{candle.venue or ''}"
+        self.last_emitted_ts[key] = time.time()
         logger.info(
             "Regime-Signal: %s %s %s",
             candle.symbol,
@@ -127,6 +130,15 @@ class RegimeService:
         if raw_regime == self.current_regime[key]:
             self.candidate_regime[key] = None
             self.candidate_count[key] = 0
+            # Heartbeat: re-emit unchanged regime so downstream staleness checks pass.
+            # Without this, a stable regime produces no stream entries → _lookup_regime_id
+            # sees a stale ts → returns None → market_state has no regime_id → RC_001 blocks.
+            if (
+                raw_regime != "UNKNOWN"
+                and time.time() - self.last_emitted_ts[key]
+                > self.config.heartbeat_interval_s
+            ):
+                self._emit_regime(candle, raw_regime, adx, atr)
             return
 
         if self.candidate_regime[key] != raw_regime:

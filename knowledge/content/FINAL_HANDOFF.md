@@ -1,8 +1,12 @@
-# Final Handoff — CDB_GITHUB_MANAGER
+# Final Handoff — CDB_GITHUB_MANAGER (Historical — 2025-12-16)
 
-**Date:** 2025-12-16  
-**Session:** Feierabend-Session (Home Office)  
-**Agent:** Copilot  
+> **Note:** Historical snapshot from the split-repo era. References to "Docs Hub"
+> and "Docs Hub Guard" reflect the repo topology as of 2025-12-16. The Docs Hub
+> repository was retired in #1140.
+
+**Date:** 2025-12-16
+**Session:** Feierabend-Session (Home Office)
+**Agent:** Copilot
 **Status:** ✅ **COMPLETE & READY FOR HANDOFF**
 
 ---

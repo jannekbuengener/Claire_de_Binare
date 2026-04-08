@@ -12,15 +12,30 @@ The normal operator/runtime path is **BLUE+RED**:
 
 See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
 
-### Legacy Base Layer (CI-Only)
-- **`infrastructure/compose/base.yml`** - Legacy base configuration
+## Canonical Docker CI Lab Baseline
+
+For 431B, the canonical Docker CI lab baseline is:
+- **`infrastructure/compose/base.yml` + `infrastructure/compose/test.yml`**
+  - Shared infra base plus isolated `_test` services
+  - Separate `cdb_test_network` and test-only volumes
+  - Containerized pytest execution via `cdb_test_runner` and `Dockerfile.test`
+
+### Shared Base Layer
+- **`infrastructure/compose/base.yml`** - Shared base configuration
   - Core infrastructure services (Redis, Postgres, Prometheus, Grafana)
   - Production-ready defaults (no port bindings, secret-based auth)
   - Healthchecks for infrastructure services
   - Network: `cdb_network` (bridge)
-  - **Active CI consumers:** `shadow-soak-evidence.yml`, `e2e.yml`, `e2e-tests.yml`
+  - Shared by local overlays and the canonical CI lab baseline
 
-### Legacy Profile Overlays (CI-Only)
+### Canonical Test Overlay
+- **`infrastructure/compose/test.yml`** - Canonical 431B CI lab overlay
+  - `_test` service variants for isolated E2E execution
+  - `cdb_test_runner` executes pytest inside the lab
+  - Uses `Dockerfile.test` as the existing runner image
+  - Preferred over `dev.yml` when the goal is an isolated CI/test lab
+
+### Secondary Dev/Compatibility Overlay
 - **`infrastructure/compose/dev.yml`** - Development profile
   - Port bindings for local access (127.0.0.1 only)
   - Application services:
@@ -29,27 +44,28 @@ See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
     - Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
   - Debug volumes (logs mounted for easy access)
   - Port mappings: Fixed to match Dockerfile EXPOSE directives (PORT:PORT instead of PORT:8000)
+  - Still used by some older/secondary workflow paths, but not the canonical 431B baseline
 
 ### Feature Overlays
 - **`infrastructure/compose/logging.yml`** - Centralized logging
   - Loki log aggregation server
   - Promtail log collector (scrapes Docker container logs)
   - 7-day retention policy
-  - Enable with: `stack_up.ps1 -Logging`
+  - Direct usage: `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/logging.yml up -d`
 
 - **`infrastructure/compose/network-prod.yml`** - Network isolation
   - Sets all services to `internal: true` (no external access)
   - For production deployments only
-  - Enable with: `stack_up.ps1 -NetworkIsolation`
+  - Direct usage: `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/network-prod.yml up -d`
 
 - **`infrastructure/compose/healthchecks-strict.yml`** - Strict health dependencies
   - Adds `depends_on` with `condition: service_healthy`
   - Prevents cascade failures during startup
-  - Enable with: `stack_up.ps1 -StrictHealth`
+  - Direct usage: `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/healthchecks-strict.yml -f infrastructure/compose/healthchecks-mounts.yml up -d`
 
 - **`infrastructure/compose/healthchecks-mounts.yml`** - External healthcheck scripts
   - Mounts `infrastructure/healthchecks/` directory for custom scripts
-  - Required with `-StrictHealth`
+  - Used together with `healthchecks-strict.yml`
   - Example: `db_writer_redis_ping.py`
 
 - **`infrastructure/compose/rollback.yml`** - Tag-based rollback
@@ -86,31 +102,42 @@ See `infrastructure/docs/BLUE_RED_SPLIT.md` for the full architecture.
 
 ## Usage
 
-### Development (Default)
+### Local Runtime (Default)
 ```powershell
-.\infrastructure\scripts\stack_up.ps1
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
-Equivalent to:
+
+### Docker CI Lab Baseline (431B)
 ```powershell
-docker-compose `
-  -f docker-compose.base.yml `
+docker compose `
+  -f infrastructure/compose/base.yml `
+  -f infrastructure/compose/test.yml `
+  up --abort-on-container-exit
+```
+
+### Secondary Dev/Compatibility Path
+```powershell
+docker compose `
   -f infrastructure/compose/base.yml `
   -f infrastructure/compose/dev.yml `
   up -d
 ```
+This path remains valid for local/dev-oriented flows and older CI consumers, but is not the canonical 431B baseline.
 
-### Development with Logging
+### With Logging Overlay
 ```powershell
-.\infrastructure\scripts\stack_up.ps1 -Logging
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/logging.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 Adds:
-- `infrastructure/compose/logging.yml`
-- Services: Loki + Promtail
+- Services: Loki + Promtail (via `logging.yml`)
 - Access Loki: `http://localhost:3100` (via Grafana)
 
-### Production
+### With Network Isolation + Strict Healthchecks
 ```powershell
-.\infrastructure\scripts\stack_up.ps1 -Profile prod -NetworkIsolation -StrictHealth
+docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/network-prod.yml -f infrastructure/compose/healthchecks-strict.yml -f infrastructure/compose/healthchecks-mounts.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 Adds:
 - `infrastructure/compose/network-prod.yml` (internal network)
@@ -136,7 +163,7 @@ Adds:
 
 ### 4. Git-Friendly
 - Configuration files are committed
-- Secrets are NOT committed (external files in `../.cdb_local/.secrets/`)
+- Secrets are NOT committed (external files in `~/Documents/.secrets/.cdb/`, via `SECRETS_PATH`)
 - Generated files (rollback-temp.yml) are gitignored
 
 ## File Hierarchy
@@ -148,8 +175,9 @@ Claire_de_Binare/
 ├── docker-compose.dev.yml          [LEGACY - do not use]
 └── infrastructure/
     ├── compose/
-    │   ├── base.yml                ✓ CANONICAL BASE
-    │   ├── dev.yml                 ✓ Dev profile
+    │   ├── base.yml                ✓ Shared base
+    │   ├── test.yml                ✓ Canonical 431B CI lab overlay
+    │   ├── dev.yml                 ✓ Secondary dev/compat overlay
     │   ├── logging.yml             ✓ Loki + Promtail overlay
     │   ├── network-prod.yml        ✓ Network isolation overlay
     │   ├── healthchecks-strict.yml ✓ Strict healthcheck overlay
@@ -164,7 +192,7 @@ Claire_de_Binare/
     │   ├── promtail-config.yml
     │   └── grafana/
     └── scripts/
-        └── stack_up.ps1            ✓ Unified entry point
+        └── stack_up.ps1            [Legacy helper — nicht der kanonische Operatorpfad]
 ```
 
 ## Overlay Development Guidelines
@@ -174,50 +202,36 @@ When creating a new overlay:
 1. **Name**: Descriptive, kebab-case (e.g., `feature-name.yml`)
 2. **Location**: `infrastructure/compose/`
 3. **Documentation**: Add to this file
-4. **Switch**: Add to `stack_up.ps1` parameters
-5. **Self-contained**: Don't depend on other overlays (except base)
-6. **Comment**: Add header comment explaining purpose and usage
+4. **Self-contained**: Don't depend on other overlays (except base)
+5. **Comment**: Add header comment explaining purpose and direct usage
 
 Example overlay header:
 ```yaml
 # Feature Name Overlay
 # Brief description of what this overlay does
-# Usage: stack_up.ps1 -FeatureName
+# Usage: docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/feature-name.yml up -d
 ```
 
 ## Migration Path (Legacy → Canonical)
 
-### Phase 1: Dual Support (Current)
-- Both legacy and canonical files exist
-- `stack_up.ps1` uses canonical files
-- Old scripts still work with legacy files
-
-### Phase 2: Deprecation Warnings
-- Add deprecation headers to legacy files
-- Update all documentation to use canonical files
-- Create `LEGACY_FILES.md` with migration guide
-
-### Phase 3: Removal
-- Remove `docker-compose.base.yml`
-- Remove `docker-compose.yml`
-- Remove `docker-compose.dev.yml`
-- Update CI/CD to use canonical files
-
-**Current Phase**: Phase 2 (Deprecation Warnings)
+**Status:** Abgeschlossen. BLUE+RED ist der kanonische Operator-Runtime-Pfad.
+Legacy-Dateien (`docker-compose.base.yml`, `docker-compose.yml`, `docker-compose.dev.yml`) sind deprecated und nicht mehr aktiv genutzt.
 
 ## Secret Management
 
-All secrets are stored in `../.cdb_local/.secrets/` (workspace-level, outside Git):
-- `redis_password` (24 bytes)
-- `postgres_password` (empty for existing DB, populated on init)
-- `grafana_password` (optional)
+Kanonischer Secrets-Pfad: `~/Documents/.secrets/.cdb/` (via `SECRETS_PATH`-Umgebungsvariable)
+- `REDIS_PASSWORD`
+- `POSTGRES_PASSWORD`
+- `GRAFANA_PASSWORD`
 
 Secret files are referenced in compose as:
 ```yaml
 secrets:
   redis_password:
-    file: ../../../.cdb_local/.secrets/redis_password  # 3 levels up from infrastructure/compose/
+    file: ${SECRETS_PATH}/REDIS_PASSWORD
 ```
+
+`SECRETS_PATH` wird beim Stack-Start gesetzt (z.B. durch `tools/stack_boot.ps1` oder manuell).
 
 **NEVER commit secrets to Git!**
 
@@ -233,10 +247,9 @@ secrets:
 
 ### Issue: Legacy files being used
 **Cause**: Old scripts or manual docker-compose commands
-**Fix**: Use `stack_up.ps1` instead of direct docker-compose
+**Fix**: Use canonical BLUE+RED path: `docker compose -f infrastructure/compose/compose.blue.yml up -d && docker compose -f infrastructure/compose/compose.red.yml up -d`
 
 ## See Also
 
 - `LEGACY_FILES.md` - Migration guide for deprecated files
 - `DOCKER_STACK_RUNBOOK.md` - Operational procedures
-- `infrastructure/scripts/stack_up.ps1` - Unified stack launcher

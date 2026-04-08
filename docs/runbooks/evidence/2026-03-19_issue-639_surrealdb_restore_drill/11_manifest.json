@@ -1,0 +1,45 @@
+﻿{
+    "ComponentSelection":  {
+                               "Postgres":  true,
+                               "Redis":  true,
+                               "SurrealDB":  true
+                           },
+    "GitCommit":  "325d410d8d34cdf73bedde7a1cbf9e964f92db83",
+    "Timestamp":  "2026-03-19T20:04:42.3812591+01:00",
+    "Components":  {
+                       "Postgres":  true,
+                       "Redis":  true,
+                       "SurrealDB":  true
+                   },
+    "RetentionDays":  14,
+    "Evidence":  {
+                     "Postgres":  {
+                                      "SizeBytes":  219120326,
+                                      "Artifact":  "postgres_dump.sql"
+                                  },
+                     "Redis":  {
+                                   "SizeBytes":  6750174,
+                                   "Artifact":  "redis_dump.rdb"
+                               },
+                     "SurrealDB":  {
+                                       "Requested":  true,
+                                       "Database":  "governance_mirror",
+                                       "Tables":  [
+
+                                                  ],
+                                       "Namespace":  "governance",
+                                       "ContainerName":  "cdb_surrealdb",
+                                       "RecordCounts":  {
+
+                                                        },
+                                       "QueryStatus":  "count_check_unavailable",
+                                       "Artifact":  "surrealdb_data",
+                                       "Storage":  "file:/data/surrealdb",
+                                       "VolumeName":  "cdb_database_surrealdb_data",
+                                       "FileCount":  4,
+                                       "TotalBytes":  57036
+                                   }
+                 },
+    "BackupDir":  "F:\\Claire_Backups",
+    "BackupName":  "cdb_backup_20260319_200420"
+}

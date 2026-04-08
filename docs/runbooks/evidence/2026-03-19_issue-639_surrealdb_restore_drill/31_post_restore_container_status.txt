@@ -1,0 +1,2 @@
+﻿NAMES           STATUS                    PORTS
+cdb_surrealdb   Up 19 seconds (healthy)   127.0.0.1:8010->8000/tcp

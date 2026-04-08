@@ -18,6 +18,10 @@
     # Run smoke test with standard output
 
 .EXAMPLE
+    .\tools\cdb.ps1 runtime smoke
+    # Canonical PowerShell v1 front door
+
+.EXAMPLE
     .\smoke_test.ps1 -Verbose
     # Run smoke test with detailed debug output
 #>

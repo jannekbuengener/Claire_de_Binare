@@ -1,8 +1,15 @@
 # M7 TESTNET PLAN
 
+> **Historical Document** — This plan was drafted 2025-12-27 when the project
+> assumed a small-team setup (dedicated developer, infra engineer, tech lead).
+> The project has since consolidated to a solo-maintainer model. The plan is
+> retained as a historical reference for M7 scope and intent; staffing
+> assumptions, FTE estimates, and team-escalation language no longer reflect
+> the current operating reality.
+
 **Version:** 2.0
 **Date:** 2025-12-27
-**Status:** Active Refinement (v1 was placeholder from 2025-12-19)
+**Status:** Historical (drafted during Active Refinement, v1 was placeholder from 2025-12-19)
 **Scope:** Testnet (Paper Trading) Infrastructure Implementation
 **Milestone:** M7 - Testnet
 **Epic:** #91 Paper Trading Test Infrastructure
@@ -15,7 +22,7 @@
 
 **Timeline:** 4-6 weeks (depending on M6 completion and resource availability)
 **Critical Path:** M6 (Docker Baseline) ✅ → M7 (Testnet) 🔄 → M8 (Security) → M9 (Release)
-**Resource Need:** 1-2 developers, infra access, testnet API keys
+**Resource Need:** Solo maintainer, infra access, testnet API keys
 
 **Success Criteria:**
 - ✅ 5 P0 E2E tests passing consistently
@@ -133,7 +140,7 @@
 **Risks:**
 - E2E tests flaky due to timing issues (→ add retries, fix race conditions)
 - Performance targets not met (→ optimization sprint needed, may slip M7)
-- Monitoring setup blocked by infra access (→ escalate to infra team)
+- Monitoring setup blocked by infra access (→ self-provision or defer)
 
 **Blockers:**
 - Grafana instance provisioning (ACTION: request staging Grafana if not available)
@@ -222,7 +229,7 @@
 - ✅ Architecture docs gap analysis complete, critical docs updated
 
 **Resource Needs:**
-- 1 developer (full-time or 0.5 FTE if tasks parallelized)
+- Solo maintainer (tasks serialized)
 - Security scanning tools (OWASP ZAP, Bandit for Python)
 - Diagram tools (Mermaid, draw.io)
 
@@ -276,17 +283,16 @@
    - **Mitigation:** Mock interface, defer to M8
 2. **Grafana Provisioning:** If no staging instance, monitoring (#53) delayed
    - **Mitigation:** Use local Grafana, migrate to staging in M8
-3. **Security Lead Assignment:** M8 prep (#52) requires security expert
-   - **Mitigation:** Preliminary work can be done by M7 team, full audit in M8
+3. **Security Prep:** M8 prep (#52) requires security review
+   - **Mitigation:** Preliminary work done by maintainer, full audit scope in M8
 
 ---
 
 ## Resource Allocation
 
 ### People
-- **Primary:** 1 full-time developer (entire M7 duration)
-- **Support:** 0.5 FTE infra engineer (Week 2-3 for monitoring setup)
-- **Escalation:** Tech lead available for blockers (on-call basis)
+- **Primary:** Solo maintainer (entire M7 duration)
+- _Historical note: original plan assumed 0.5 FTE infra engineer + tech lead on-call — not applicable in current setup_
 
 ### Tools & Infrastructure
 - **Compute:** Local Docker + staging environment
@@ -314,7 +320,7 @@
 | Grafana access blocked | LOW | LOW | Use local Grafana, migrate to staging later |
 | Security scans find P0 bugs | LOW | MEDIUM | Fix immediately, defer P1/P2 to M8 |
 | Documentation gaps larger than expected | LOW | LOW | Prioritize critical paths only |
-| Developer unavailability | LOW | HIGH | Cross-train backup, maintain handoff docs |
+| Maintainer unavailability | LOW | HIGH | Maintain handoff docs, document decisions |
 
 **Overall Risk:** MEDIUM (event-store dependency is main concern)
 
@@ -351,8 +357,8 @@
 - Monitoring setup (M8 adds security-specific dashboards)
 
 ### M8 Blockers Identified in M7
-- Security Lead assignment (ACTION: Assign before M8 start)
-- Penetration test booking (ACTION: Schedule 2 weeks into M8)
+- Security review scope definition (ACTION: Define before M8 start)
+- Penetration test tooling setup (ACTION: Schedule early in M8)
 
 ---
 
@@ -381,10 +387,9 @@
 
 ---
 
-**Plan Status:** ✅ REFINED (v2.0)
-**Last Updated:** 2025-12-27
-**Next Review:** Start of Week 1 (M7 kickoff)
-**Owner:** Claude (Session Lead) per Issue #107
+**Plan Status:** Historical (was REFINED v2.0)
+**Last Updated:** 2025-12-27 (original), 2026-03-30 (historical framing per #1377)
+**Owner:** Solo maintainer (originally drafted by Claude per Issue #107)
 
 ---
 

@@ -14,12 +14,16 @@ and that key entrypoints no longer use the external Docs Hub as the default path
 #>
 [CmdletBinding()]
 param(
-    [string]$WorkingRepoPath = 'D:\Dev\Workspaces\Repos\Claire_de_Binare',
+    [string]$WorkingRepoPath,
     [switch]$DryRun
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+if (-not $WorkingRepoPath) {
+    $WorkingRepoPath = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+}
 
 $requiredDirectories = @(
     'agents',
@@ -45,7 +49,7 @@ $requiredFiles = @(
 
 $legacyPathPatterns = @(
     '\.\./Claire_de_Binare_Docs',
-    'D:\\Dev\\Workspaces\\Repos\\Claire_de_Binare_Docs',
+    '[A-Za-z]:\\.*Claire_de_Binare_Docs',
     'canonical agent registry lives in the separate Docs Hub repo',
     'Working Repo relies on the Docs Hub canonical registry'
 )

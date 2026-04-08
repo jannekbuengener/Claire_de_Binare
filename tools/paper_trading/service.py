@@ -330,6 +330,118 @@ System Health:
         except Exception as e:
             return f"Report generation failed: {e}"
 
+    def _compute_portfolio_snapshot(self):
+        """
+        Compute a portfolio snapshot payload from the positions table.
+
+        Returns a dict compatible with db_writer.process_portfolio_snapshot.
+        Raises on DB error so snapshot_loop can catch and skip the iteration.
+        """
+        starting_capital = float(os.getenv("PAPER_STARTING_CAPITAL", "100000.0"))
+
+        with self.postgres_conn.cursor() as cursor:
+            # Aggregate open and closed position PnL from positions table.
+            # Open position: closed_at IS NULL AND side != 'none'
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(SUM(unrealized_pnl), 0.0)                          AS total_unrealized_pnl,
+                    COALESCE(SUM(realized_pnl), 0.0)                            AS total_realized_pnl,
+                    COUNT(*) FILTER (WHERE closed_at IS NULL AND side != 'none') AS open_positions,
+                    COALESCE(
+                        SUM(
+                            CASE WHEN closed_at IS NULL AND side != 'none'
+                            THEN size * COALESCE(current_price, 0.0)
+                            ELSE 0.0 END
+                        ), 0.0
+                    )                                                            AS open_exposure_value
+                FROM positions
+                """
+            )
+            row = cursor.fetchone()
+
+        total_unrealized_pnl = float(row[0])
+        total_realized_pnl = float(row[1])
+        open_positions = int(row[2])
+        open_exposure_value = float(row[3])
+
+        total_equity = starting_capital + total_realized_pnl + total_unrealized_pnl
+        if total_equity <= 0:
+            # DB constraint requires total_equity > 0; clamp and flag explicitly.
+            logger.warning(
+                f"Computed total_equity={total_equity:.4f} <= 0 "
+                f"(starting_capital={starting_capital}, realized={total_realized_pnl:.4f}, "
+                f"unrealized={total_unrealized_pnl:.4f}). Clamping to 0.01 to satisfy DB constraint."
+            )
+            total_equity = 0.01
+
+        total_exposure_pct = min(open_exposure_value / total_equity, 1.0) if total_equity > 0 else 0.0
+
+        # daily_pnl: delta to first snapshot of today already in DB.
+        # Fallback 0.0 if no prior snapshot exists for today.
+        daily_pnl = 0.0
+        try:
+            with self.postgres_conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT total_equity
+                    FROM portfolio_snapshots
+                    WHERE timestamp::date = CURRENT_DATE
+                    ORDER BY timestamp ASC
+                    LIMIT 1
+                    """
+                )
+                day_start_row = cursor.fetchone()
+                if day_start_row:
+                    daily_pnl = total_equity - float(day_start_row[0])
+        except Exception as e:
+            logger.warning(f"Could not compute daily_pnl, defaulting to 0.0: {e}")
+
+        return {
+            "timestamp": utcnow().isoformat(),
+            "equity": total_equity,
+            "cash": max(0.0, total_equity - open_exposure_value),
+            "margin_used": open_exposure_value,
+            "daily_pnl": daily_pnl,
+            "total_unrealized_pnl": total_unrealized_pnl,
+            "total_realized_pnl": total_realized_pnl,
+            "total_exposure_pct": round(total_exposure_pct, 4),
+            "max_drawdown_pct": 0.0,
+            "num_positions": open_positions,
+            "metadata": {"source": "paper_runner"},
+        }
+
+    def snapshot_loop(self):
+        """
+        Periodically publish a portfolio snapshot to Redis channel 'portfolio_snapshots'.
+        db_writer subscribes to this channel and persists each payload to PostgreSQL.
+
+        Interval: PAPER_SNAPSHOT_INTERVAL_SECONDS (default 3600).
+        Errors are logged but never abort the loop.
+        """
+        interval = int(os.getenv("PAPER_SNAPSHOT_INTERVAL_SECONDS", "3600"))
+        logger.info(f"📸 Snapshot loop started (interval={interval}s)")
+
+        while self.running:
+            time.sleep(interval)
+
+            if not self.running:
+                break
+
+            try:
+                payload = self._compute_portfolio_snapshot()
+                self.redis_client.publish(
+                    "portfolio_snapshots", json.dumps(payload)
+                )
+                logger.info(
+                    f"📸 Portfolio snapshot published: equity={payload['equity']:.2f}, "
+                    f"daily_pnl={payload['daily_pnl']:.2f}, "
+                    f"realized_pnl={payload['total_realized_pnl']:.2f}, "
+                    f"open_positions={payload['num_positions']}"
+                )
+            except Exception as e:
+                logger.error(f"Snapshot publish failed (loop continues): {e}")
+
     def run(self):
         """Main run loop"""
         logger.info("🚀 Paper Trading Runner started")
@@ -344,9 +456,11 @@ System Health:
         # Start background threads
         health_thread = threading.Thread(target=self.health_check_loop, daemon=True)
         report_thread = threading.Thread(target=self.daily_report, daemon=True)
+        snapshot_thread = threading.Thread(target=self.snapshot_loop, daemon=True)
 
         health_thread.start()
         report_thread.start()
+        snapshot_thread.start()
 
         # Main event loop (blocks here)
         try:

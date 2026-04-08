@@ -20,8 +20,12 @@ Status: canonical
 
 Rule: no live deployment without explicit user gate.
 
-Canonical file:
-- `knowledge/governance/DELIVERY_APPROVED.yaml`
+Canonical file (CI-enforced):
+- `governance/DELIVERY_APPROVED.yaml`
+
+The active CI workflow (`delivery-gate.yml`) reads `governance/DELIVERY_APPROVED.yaml`
+at the repo root. A duplicate exists at `knowledge/governance/DELIVERY_APPROVED.yaml`
+and is not CI-active; see #1311 for cleanup.
 
 ## 3. Agent Behavior
 
@@ -63,7 +67,9 @@ Must not:
 
 ## 7. Session-End Minimum
 
-- update `knowledge/CURRENT_STATUS.md` when needed
+- update `CURRENT_STATUS.md` when repo/main/test/dependency status materially changes
+- update `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` only when the operational Go/No-Go verdict or its gating evidence changes
+- update `knowledge/CURRENT_STATUS.md` only for historical snapshot maintenance or context backfill
 - leave evidence in local issue, report, or knowledge paths
 - state blockers explicitly
 - do not offload the final state to an external docs repo
