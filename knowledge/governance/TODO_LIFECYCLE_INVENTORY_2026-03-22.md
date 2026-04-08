@@ -30,6 +30,11 @@ relations:
 
 ## 2. Active-Path Violations — Resolved in This Pass
 
+Historical note:
+- The dashboard rows in this section are an audit snapshot from 2026-03-22.
+- The referenced files `cdb_system_health_owner_v1.json` and `cdb_money_result_owner_v1.json` were later removed from the active dashboard canon during the 2026-04-08/09 consolidation work (`#1532`, `#1533`).
+- Keep these rows as historical evidence for the 2026-03-22 audit only; do not read them as current dashboard canon.
+
 ### Code / Scripts
 
 | File | Change | Policy Rule |
@@ -45,8 +50,8 @@ relations:
 
 | File | Change | Policy Rule |
 |---|---|---|
-| `infrastructure/monitoring/grafana/dashboards/cdb_money_result_owner_v1.json` | `TODO (missing KPIs)` → `PLACEHOLDER(#203)` in description + panel content | Rule 3 |
-| `infrastructure/monitoring/grafana/dashboards/cdb_system_health_owner_v1.json` | `TODO (missing KPIs)` → `PLACEHOLDER(#203)` in description, content, and 4 panel titles | Rule 3 |
+| `infrastructure/monitoring/grafana/dashboards/cdb_money_result_owner_v1.json` | Historical audit entry only; file was later removed from active canon | Rule 3 |
+| `infrastructure/monitoring/grafana/dashboards/cdb_system_health_owner_v1.json` | Historical audit entry only; file was later removed from active canon | Rule 3 |
 
 ### Governance / Knowledge Docs
 

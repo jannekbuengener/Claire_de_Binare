@@ -103,16 +103,15 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 **Geschlossen**: #1269 (midnight-rollover UTC→MESZ) — Live-Evidence aus `soak_test_20260325_121250` bestätigt: beide UTC-Mitternachts-Grenzen (Hour 11 + Hour 35) ohne Fragmentierung oder Schedule-Misfire passiert. #1278 Pointer-Mechanismus wirksam (2026-03-27).
 
 ### Observability / Grafana (2026-03-22)
-- Dashboard-Footprint: 15 → 2 Dashboards (#1251, Commit 6bb4532)
-  - entfernt: 13 ARCHIVED + 1 Platzhalter-Huelle (cdb_money_result_owner_v1)
-  - verbleibend: `cdb_system_health_owner_v1` (Prometheus, nicht bereinigt), `cdb_trading_performance_v1` (neu, minimal)
-- `cdb_trading_performance_v1.json`: Prometheus (system health, circuit breaker, kill switch, trade pipeline) + PostgreSQL (equity, daily PnL, realized PnL, equity curve)
+- Dashboard-Canon nach Folgearbeiten #1532 + #1533: 1 aktives Dashboard
+  - aktiv: `cdb_operator_kpis_v1.json`
+  - entfernt/superseded: `cdb_system_health_owner_v1.json`, `cdb_trading_performance_v1.json`
+- `cdb_operator_kpis_v1.json`: PostgreSQL-backed Operator-KPIs fuer `Trades made`, `Positive trades` und `Positive trades %`
 - Publish-Kette geschlossen (#1255, Commit c26b08d): `paper_runner` publiziert jetzt stündlich (konfigurierbar) Portfolio-Snapshots auf Redis-Channel `portfolio_snapshots` → `db_writer` → PostgreSQL → Grafana
 - CLAUDE.md im Repo-Root angelegt (Commit 1116275)
 - Restunsicherheiten Observability:
   - `max_drawdown_pct` im Snapshot aktuell Platzhalter (0.0)
-  - `cdb_system_health_owner_v1.json`: 43 Panels, viele Platzhalter — kein eigener Cleanup-Issue
-  - `infrastructure/monitoring/grafana/DASHBOARD_IMPORT.md` veraltet
+  - keine weiteren Dashboard-Files im aktiven Canon; getrennte Drift-Themen bleiben ausserhalb dieses Blocks
 
 ---
 

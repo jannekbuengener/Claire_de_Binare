@@ -5,6 +5,11 @@
 **Status:** ERLEDIGT
 **Issues:** #1251 (closed), #1255 (closed)
 
+Historical note:
+- This session log is a point-in-time record for 2026-03-22.
+- Dashboard references below were later superseded by the 2026-04-08/09 consolidation work (`#1532`, `#1533`).
+- The active dashboard canon is now the single file `infrastructure/monitoring/grafana/dashboards/cdb_operator_kpis_v1.json`.
+
 ---
 
 ## Ausgangslage
