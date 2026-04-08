@@ -205,7 +205,8 @@ jobs:
     name: 📢 Notifications
     needs: [emoji-detection, security-check]
     runs-on: ubuntu-latest
-    if: always() && needs.emoji-detection.outputs.error-count > 0
+    # Keep lenient scans advisory-only; open issues only when the scan is in blocking mode.
+    if: always() && needs.emoji-detection.outputs.block-pr == 'true'
     permissions:
       issues: write
     
