@@ -91,7 +91,8 @@ Currently supported versions for security updates:
 - **Tresor Zone:** Physically separated (not in Docker stack)
 
 ### Dependencies
-- See `requirements.txt` for all Python dependencies
+- Root `requirements.txt` / `requirements-dev.txt` cover CI, test, and local convenience dependencies.
+- Active runtime Python dependencies are defined per service via service-local `requirements.txt` files or, where applicable, service Dockerfiles.
 - Regular updates via Dependabot
 - Critical CVEs patched within 7 days
 
