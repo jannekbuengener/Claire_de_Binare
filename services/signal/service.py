@@ -245,6 +245,25 @@ class SignalEngine:
                     bot_id=self.config.bot_id,
                 )
 
+                # Phase-1 metadata: small, real, replayable context block
+                _signal_inputs = {
+                    k: v
+                    for k, v in {
+                        "price": signal.price,
+                        "pct_change": signal.pct_change,
+                        "pct_change_15m": signal.pct_change_15m,
+                        "volume_15m": signal.volume_15m,
+                    }.items()
+                    if v is not None
+                }
+                signal.metadata = {
+                    "strategy_id": signal.strategy_id,
+                    "bot_id": signal.bot_id,
+                    "signal_reason": signal.reason,
+                    "signal_inputs": _signal_inputs,
+                    "timing": {"signal_ts_ms": signal.ts_ms},
+                }
+
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
                     f"({signal.pct_change:+.2f}%)"

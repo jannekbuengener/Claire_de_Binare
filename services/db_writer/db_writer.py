@@ -88,6 +88,22 @@ class DatabaseWriter:
         self.pubsub = None
 
     @staticmethod
+    def _coerce_metadata(raw) -> dict:
+        """Normalize metadata to dict regardless of whether it arrived as dict or JSON string.
+
+        Prevents double-encoding (quoted JSON) in JSONB columns.
+        """
+        if isinstance(raw, dict):
+            return raw
+        if isinstance(raw, str):
+            try:
+                parsed = json.loads(raw)
+                return parsed if isinstance(parsed, dict) else {}
+            except (json.JSONDecodeError, TypeError, ValueError):
+                return {}
+        return {}
+
+    @staticmethod
     def convert_timestamp(timestamp_value):
         """
         Convert timestamp to PostgreSQL-compatible format.
@@ -313,7 +329,7 @@ class DatabaseWriter:
                     data.get("confidence", 0.5),
                     timestamp,
                     data.get("source", "signal_engine"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self._coerce_metadata(data.get("metadata"))),
                 ),
             )
             signal_id = cursor.fetchone()[0]
@@ -358,7 +374,7 @@ class DatabaseWriter:
                     data.get("approved", False),
                     data.get("rejection_reason"),
                     data.get("status", "pending"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self._coerce_metadata(data.get("metadata"))),
                     timestamp,
                 ),
             )
@@ -464,7 +480,7 @@ class DatabaseWriter:
                     data.get("fees", 0.0),
                     timestamp,
                     data.get("exchange", "MEXC"),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self._coerce_metadata(data.get("metadata"))),
                 ),
             )
             trade_id = cursor.fetchone()[0]
@@ -670,7 +686,7 @@ class DatabaseWriter:
                     self.normalize_exposure_pct(data.get("total_exposure_pct", 0.0)),
                     data.get("max_drawdown_pct", 0),
                     data.get("num_positions", data.get("open_positions", 0)),
-                    json.dumps(data.get("metadata", {})),
+                    json.dumps(self._coerce_metadata(data.get("metadata"))),
                 ),
             )
             snapshot_id = cursor.fetchone()[0]

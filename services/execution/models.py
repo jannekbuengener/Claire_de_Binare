@@ -79,6 +79,8 @@ class Order:
     policy_snapshot: Optional[dict] = None
     # LR-030: Shadow mode enforcement
     run_mode: Optional[str] = None
+    # Phase-1 metadata: decision context propagated from Risk Service
+    metadata: Optional[dict] = None
 
     @classmethod
     def from_event(cls, payload: dict) -> "Order":
@@ -130,6 +132,8 @@ class Order:
             # Issue #748 Slice 2: policy_snapshot (JSON string from Redis → dict)
             policy_snapshot=_parse_json_field(payload.get("policy_snapshot")),
             run_mode=_run_mode,
+            # Phase-1 metadata: parse dict or JSON string from Redis
+            metadata=_parse_json_field(payload.get("metadata")),
         )
 
     def to_dict(self) -> dict:
@@ -181,6 +185,9 @@ class Order:
         # Issue #748 Slice 2: only emit when not None
         if self.policy_snapshot is not None:
             payload["policy_snapshot"] = self.policy_snapshot
+        # Phase-1 metadata: carry through if present
+        if self.metadata is not None:
+            payload["metadata"] = self.metadata
         return payload
 
 
@@ -201,6 +208,7 @@ class ExecutionResult:
     error_message: Optional[str] = None
     timestamp: Optional[str] = None
     fill_id: Optional[str] = None  # Phase 8E: 1:1 mapping to order_id for FILL events
+    metadata: Optional[dict] = None  # Phase-1: trade fill context
     type: Literal["order_result"] = "order_result"
 
     def __post_init__(self) -> None:

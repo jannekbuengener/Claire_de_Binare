@@ -1777,6 +1777,44 @@ class RiskManager:
             stats["orders_skipped"] += 1
             return None
 
+        # Phase-1 metadata: build decision context block from evidence
+        _market_ctx = {
+            k: v
+            for k, v in {
+                "regime_id": evidence.get("regime_id"),
+                "return_1m": evidence.get("return_1m"),
+                "return_5m": evidence.get("return_5m"),
+                "price_change_5m": evidence.get("price_change_5m"),
+            }.items()
+            if v is not None
+        }
+        _freshness = {
+            k: v
+            for k, v in {
+                "staleness_s": evidence.get("staleness_s"),
+                "data_silence_s": evidence.get("data_silence_s"),
+                "timestamps_ms": evidence.get("timestamps_ms"),
+            }.items()
+            if v is not None
+        }
+        order_metadata = {
+            "signal_id": evidence.get("signal_id"),
+            "strategy_id": signal.strategy_id,
+            "decision_id": evidence.get("decision_id"),
+            "trace_id": evidence.get("trace_id"),
+            "decision": "ALLOW",
+            "reason_code": None,
+            "decision_context": evidence.get("decision_context"),
+            "thresholds": evidence.get("thresholds"),
+            "policy_id": evidence.get("policy_id"),
+            "policy_hash": evidence.get("policy_hash"),
+            "input_hash": evidence.get("input_hash"),
+            "output_hash": evidence.get("output_hash"),
+            "policy_snapshot": policy_snapshot,  # local var, not evidence.get()
+            "market_context": _market_ctx,
+            "freshness": _freshness,
+        }
+
         order = Order(
             symbol=signal.symbol,
             side=signal.side,
@@ -1800,6 +1838,8 @@ class RiskManager:
             output_hash=evidence.get("output_hash"),
             # Issue #748 Slice 2: Policy snapshot (None when toggle OFF)
             policy_snapshot=policy_snapshot,
+            # Phase-1 metadata
+            metadata=order_metadata,
         )
 
         # PR #619: HARD EXPOSURE GATE - Block order if projected exposure exceeds limit

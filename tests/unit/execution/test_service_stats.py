@@ -27,10 +27,10 @@ class DummyDatabase:
         self.saved_orders: list[ExecutionResult] = []
         self.saved_trades: list[ExecutionResult] = []
 
-    def save_order(self, result: ExecutionResult) -> None:
+    def save_order(self, result: ExecutionResult, **kwargs) -> None:
         self.saved_orders.append(result)
 
-    def save_trade(self, result: ExecutionResult) -> None:
+    def save_trade(self, result: ExecutionResult, **kwargs) -> None:
         self.saved_trades.append(result)
 
 

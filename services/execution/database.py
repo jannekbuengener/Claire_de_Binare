@@ -185,7 +185,7 @@ class Database:
             logger.warning(f"⚠️ correlation_ledger {event_type} write failed: {e}")
             return False
 
-    def save_order(self, result: ExecutionResult) -> bool:
+    def save_order(self, result: ExecutionResult, order_metadata: Optional[dict] = None) -> bool:
         """
         Save order to orders table
         Returns True on success, False on failure
@@ -193,9 +193,11 @@ class Database:
         try:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
-                    metadata_payload = {"source": "execution_service"}
+                    metadata_payload: dict = {"source": "execution_service"}
                     if result.order_id:
                         metadata_payload["order_id"] = result.order_id
+                    if order_metadata:
+                        metadata_payload.update(order_metadata)
                     metadata_json = json.dumps(metadata_payload)
 
                     has_order_id = self._orders_has_order_id(cur)
@@ -281,12 +283,12 @@ class Database:
 
     def save_trade(self, result: ExecutionResult) -> bool:
         """
-        Save filled order as trade to trades table
-        Only called for FILLED orders
-        Returns True on success, False on failure
+        Save filled/partially-filled order as trade to trades table.
+        Returns True on success, False on failure.
         """
-        if result.status != OrderStatus.FILLED.value:
-            logger.warning(f"Skipping trade save - order not filled: {result.order_id}")
+        _is_execution = ExecutionResult._schema_status(result.status) == "FILLED"
+        if not _is_execution:
+            logger.warning(f"Skipping trade save - order not executed: {result.order_id}")
             return False
 
         try:
@@ -296,6 +298,12 @@ class Database:
                     timestamp = int(
                         datetime.fromisoformat(result.timestamp).timestamp()
                     )
+
+                    # Phase-1 metadata: use trade fill context if available, fallback minimal
+                    if result.metadata:
+                        trade_meta = result.metadata
+                    else:
+                        trade_meta = {"order_id": result.order_id}
 
                     # Insert into trades table
                     cur.execute(
@@ -321,9 +329,7 @@ class Database:
                             result.price,  # execution_price = price for mock
                             "filled",  # Trade status (lowercase to match schema check constraint)
                             timestamp,  # Unix timestamp
-                            json.dumps(
-                                {"order_id": result.order_id}
-                            ),  # store order_id in metadata
+                            json.dumps(trade_meta),
                         ),
                     )
 

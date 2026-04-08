@@ -27,6 +27,7 @@ class Signal:
     pct_change_15m: float | None = None
     volume_15m: float | None = None
     ts_ms: int | None = None
+    metadata: Optional[dict] = None  # Phase-1: carry-through, not consumed by Risk
     type: Literal["signal"] = "signal"  # Type-safe event type
 
     def __post_init__(self):
@@ -36,7 +37,7 @@ class Signal:
 
     def to_dict(self) -> dict:
         """Convert to a plain dictionary for transport."""
-        return {
+        d = {
             "type": self.type,
             "signal_id": self.signal_id,
             "strategy_id": self.strategy_id,
@@ -54,6 +55,9 @@ class Signal:
             "volume_15m": self.volume_15m,
             "ts_ms": self.ts_ms,
         }
+        if self.metadata is not None:
+            d["metadata"] = self.metadata
+        return d
 
     @classmethod
     def from_dict(cls, data: dict) -> "Signal":
@@ -77,6 +81,20 @@ class Signal:
             ts_ms = int(ts_ms_raw) if ts_ms_raw is not None else None
         except (TypeError, ValueError):
             ts_ms = None
+
+        # metadata: tolerant parse — dict passthrough or JSON-string decode
+        import json as _json
+        _raw_meta = data.get("metadata")
+        if isinstance(_raw_meta, dict):
+            _metadata = _raw_meta
+        elif isinstance(_raw_meta, str):
+            try:
+                _parsed = _json.loads(_raw_meta)
+                _metadata = _parsed if isinstance(_parsed, dict) else None
+            except (ValueError, TypeError):
+                _metadata = None
+        else:
+            _metadata = None
 
         return cls(
             signal_id=data.get("signal_id"),
@@ -102,6 +120,7 @@ class Signal:
             pct_change_15m=pct_change_15m,
             volume_15m=volume_15m,
             ts_ms=ts_ms,
+            metadata=_metadata,
         )
 
 
@@ -134,6 +153,8 @@ class Order:
     policy_snapshot: Optional[dict] = None
     # LR-762: Deterministic Decision Contract bundle (input+output+hashes)
     decision_contract_v1: Optional[dict] = None
+    # Phase-1 metadata: decision context for replay/audit
+    metadata: Optional[dict] = None
 
     def to_dict(self) -> dict:
         result = {
@@ -170,6 +191,8 @@ class Order:
             )
             if _bundle_run_mode:
                 result["run_mode"] = _bundle_run_mode
+        if self.metadata is not None:
+            result["metadata"] = self.metadata
         return result
 
 

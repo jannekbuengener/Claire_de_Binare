@@ -31,10 +31,10 @@ class DummyDatabase:
         self.saved_orders: list[str] = []
         self.saved_trades: list[str] = []
 
-    def save_order(self, result: object) -> None:
+    def save_order(self, result: object, **kwargs) -> None:
         self.saved_orders.append(result.order_id)
 
-    def save_trade(self, result: object) -> None:
+    def save_trade(self, result: object, **kwargs) -> None:
         self.saved_trades.append(result.order_id)
 
     def persist_correlation_event(self, **kwargs) -> bool:

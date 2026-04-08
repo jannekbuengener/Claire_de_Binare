@@ -408,7 +408,11 @@ System Health:
             "total_exposure_pct": round(total_exposure_pct, 4),
             "max_drawdown_pct": 0.0,
             "num_positions": open_positions,
-            "metadata": {"source": "paper_runner"},
+            "metadata": {
+                "source": "paper_runner",
+                "deployment_mode": os.getenv("CDB_RUN_MODE", "paper"),
+                "snapshot_quality": {"positions_count": open_positions},
+            },
         }
 
     def snapshot_loop(self):

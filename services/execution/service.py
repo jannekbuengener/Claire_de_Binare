@@ -13,6 +13,7 @@ import math
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 import importlib.util
 
 try:
@@ -263,7 +264,17 @@ def init_services():
         return False
 
 
-def _publish_result(result: ExecutionResult) -> None:
+def _compute_slippage_bps(expected: Optional[float], actual: Optional[float]) -> Optional[float]:
+    """Return absolute slippage in basis points, or None if inputs are missing/zero."""
+    if expected is None or actual is None or expected == 0:
+        return None
+    try:
+        return abs(float(actual) - float(expected)) / float(expected) * 10000
+    except (TypeError, ZeroDivisionError):
+        return None
+
+
+def _publish_result(result: ExecutionResult, order: Optional["Order"] = None) -> None:
     """Publish order result to Redis (pubsub + stream) and persist to DB."""
     event_payload = sanitize_payload(result.to_dict())
     set_stat("last_result", event_payload)  # Thread-safe
@@ -293,7 +304,7 @@ def _publish_result(result: ExecutionResult) -> None:
     logger.info(f"Published result to {config.TOPIC_ORDER_RESULTS}")
 
     if db:
-        db.save_order(result)
+        db.save_order(result, order_metadata=order.metadata if order else None)
         if ExecutionResult._schema_status(result.status) == "FILLED":
             db.save_trade(result)
 
@@ -331,7 +342,7 @@ def process_order(order_data: object):
                 order.quantity,
             )
             increment_stat("orders_rejected")
-            _publish_result(result)
+            _publish_result(result, order=order)
             return result
 
         # LR-030: Shadow-mode execution gate (always active, not toggle-gated).
@@ -360,7 +371,7 @@ def process_order(order_data: object):
             )
             increment_stat("orders_rejected")
             increment_stat("shadow_blocked")
-            _publish_result(result)
+            _publish_result(result, order=order)
             return result
 
         # LR-030: Kill-switch gate in Execution Service (defense-in-depth).
@@ -397,7 +408,7 @@ def process_order(order_data: object):
                 ks_reason,
             )
             increment_stat("orders_rejected")
-            _publish_result(result)
+            _publish_result(result, order=order)
             return result
 
         if (
@@ -423,7 +434,7 @@ def process_order(order_data: object):
                 bot_id=order.bot_id,
             )
             increment_stat("orders_rejected")  # Thread-safe
-            _publish_result(result)
+            _publish_result(result, order=order)
             return result
 
         logger.info(
@@ -443,6 +454,38 @@ def process_order(order_data: object):
 
         result.strategy_id = order.strategy_id
         result.bot_id = order.bot_id
+
+        # Phase-1: build trade metadata for filled/partial orders
+        _schema_st = ExecutionResult._schema_status(result.status)
+        _is_executed = _schema_st == "FILLED" or result.status == OrderStatus.PARTIALLY_FILLED.value
+        if _is_executed:
+            _order_meta = order.metadata or {}
+            _fill_ctx_ts = _order_meta.get("freshness", {}).get("timestamps_ms", {})
+            # execution.models.Order has no 'price' field (risk-only); use getattr
+            _order_price = getattr(order, "price", None)
+            _exec_price = getattr(result, "price", None)
+            _trade_meta: dict = {
+                "signal_id": order.signal_id,
+                "strategy_id": order.strategy_id,
+                "decision_id": order.decision_id,
+                "trace_id": order.trace_id,
+                "order_id": result.order_id,
+                "expected_price": _order_price,
+                "execution_price": _exec_price,
+                "slippage_bps": _compute_slippage_bps(_order_price, _exec_price),
+                "fill_context": {
+                    k: v for k, v in {
+                        "signal_ts_ms": _order_meta.get("timing", {}).get("signal_ts_ms"),
+                        "decision_ts_ms": _fill_ctx_ts.get("now_ms"),
+                        "market_state_ts_ms": _fill_ctx_ts.get("market_state_ts_ms"),
+                    }.items() if v is not None
+                },
+            }
+            _regime = _order_meta.get("market_context", {}).get("regime_id")
+            if _regime is not None:
+                _trade_meta["regime_id"] = _regime
+            # strip top-level None values
+            result.metadata = {k: v for k, v in _trade_meta.items() if v is not None}
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
         # order_id ist jetzt final (von executor zurückgegeben)
@@ -578,7 +621,7 @@ def process_order(order_data: object):
                 "Order rejected: %s - %s", result.order_id, result.error_message
             )
 
-        _publish_result(result)
+        _publish_result(result, order=order)
 
         return result
     except Exception as exc:
