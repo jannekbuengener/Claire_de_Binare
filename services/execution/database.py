@@ -194,7 +194,7 @@ class Database:
             with self.get_connection() as conn:
                 with conn.cursor() as cur:
                     metadata_payload = dict(result.metadata or {})
-                    metadata_payload.setdefault("source", "execution_service")
+                    metadata_payload["source"] = "execution_service"
                     if result.order_id:
                         metadata_payload["order_id"] = result.order_id
                     metadata_json = json.dumps(metadata_payload)

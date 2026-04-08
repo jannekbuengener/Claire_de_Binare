@@ -7,29 +7,9 @@ Note: Placeholder tests marked with @pytest.mark.skip (Issue #308)
 """
 
 import json
-import sys
-import types
 from unittest.mock import MagicMock
 
 import pytest
-
-if "prometheus_client" not in sys.modules:
-    prometheus_client = types.ModuleType("prometheus_client")
-
-    class _MetricStub:
-        def labels(self, **kwargs):
-            return self
-
-        def inc(self):
-            return None
-
-        def set_function(self, func):
-            return None
-
-    prometheus_client.Counter = lambda *args, **kwargs: _MetricStub()
-    prometheus_client.Gauge = lambda *args, **kwargs: _MetricStub()
-    prometheus_client.start_http_server = lambda *args, **kwargs: None
-    sys.modules["prometheus_client"] = prometheus_client
 
 from services.db_writer.db_writer import DatabaseWriter
 

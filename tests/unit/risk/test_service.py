@@ -519,11 +519,17 @@ def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_post
 
         original_last_prices = risk_service.risk_state.last_prices.copy()
         original_total_exposure = risk_service.risk_state.total_exposure
+        original_pending_exposure = risk_service.risk_state.pending_exposure_usdt
+        original_pending_orders = risk_service.risk_state.pending_orders
+        original_pending_reservations = risk_service.risk_state.pending_reservations.copy()
         original_risk_off = risk_service.risk_off_active
 
         try:
             risk_service.risk_state.last_prices = {"BTCUSDT": 50000.0}
             risk_service.risk_state.total_exposure = 0.0
+            risk_service.risk_state.pending_exposure_usdt = 0.0
+            risk_service.risk_state.pending_orders = 0
+            risk_service.risk_state.pending_reservations = {}
             risk_service.risk_off_active = False
 
             signal = Signal(
@@ -586,4 +592,7 @@ def test_process_signal_attaches_signal_timestamp_metadata(mock_redis, mock_post
         finally:
             risk_service.risk_state.last_prices = original_last_prices
             risk_service.risk_state.total_exposure = original_total_exposure
+            risk_service.risk_state.pending_exposure_usdt = original_pending_exposure
+            risk_service.risk_state.pending_orders = original_pending_orders
+            risk_service.risk_state.pending_reservations = original_pending_reservations
             risk_service.risk_off_active = original_risk_off

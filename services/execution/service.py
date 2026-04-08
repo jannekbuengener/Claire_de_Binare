@@ -149,6 +149,8 @@ def _parse_optional_int(value) -> int | None:
     """Parse optional integer-like values without inventing replacements."""
     if value is None:
         return None
+    if isinstance(value, bool):
+        return None
     try:
         return int(value)
     except (TypeError, ValueError):
