@@ -72,7 +72,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 |---|---|---|
 | `weekly_digest.yml` | wöchentlich | Issue-/Status-Digest |
 | `governance-audit.yml` | manuell | Governance-Audit |
-| `gemini-scheduled-triage.yml` | geplant | Gemini-Triage |
+| `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
 | `project_reconcile_daily.yml` | täglich | Board-Reconciliation |
 | `control_board_upsert.yml` | Mo 02:30 UTC | GitHub Project #8 Upsert |
 

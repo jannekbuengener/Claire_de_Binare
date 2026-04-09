@@ -1,8 +1,9 @@
 name: '📋 Gemini Scheduled Issue Triage'
 
 on:
-  schedule:
-    - cron: '0 6 * * 0' # Runs weekly (reduced for billing)
+  # Scheduled execution is intentionally parked fail-closed. The workflow had
+  # been failing weekly under the repo's pinned-action policy and there is no
+  # current unlabeled/triage backlog that justifies ongoing failure noise.
   workflow_dispatch:
 
 concurrency:
