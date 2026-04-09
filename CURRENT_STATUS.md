@@ -13,11 +13,7 @@
 
 - **main**: green
 - **Open PRs (relevant/current focus)**:
-  - #1375: docs: close #1374 #1373 #1372 (noch OPEN, faktisch supersediert)
-  - #1285: fix(soak-monitor): use df -P (#1282)
-  - #1237: LR-040 runtime env prep (BLOCKIERT)
-  - #1217: fix(digest): auto-close weekly digest
-  - #1207: feat(market): V3 shadow mode
+  - keine
   - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
   - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
   - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
@@ -58,6 +54,7 @@
   - **Session 47 (2026-04-08)**: #1509 GitHub-Reconciliation abgeschlossen. Der fruehere `prometheus_client`-Stub-Leak blockiert die gemeinsame Collection auf `main` nicht mehr; effektive Landing-Evidenz laeuft ueber die gemergten Folge-PRs #1516/#1519 statt ueber den urspruenglichen Branch-Commit. Abschlusskommentar in #1509 gepostet; Issue geschlossen.
   - **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
   - **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
+  - **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
 
 ---
 
