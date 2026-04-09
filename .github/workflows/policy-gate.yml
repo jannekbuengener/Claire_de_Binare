@@ -42,14 +42,18 @@ jobs:
 
             const changedFiles = files.map((file) => file.filename);
             const isDocsFile = (path) => path.startsWith('docs/') || path.toLowerCase().endsWith('.md');
+            const workflowPathDescription =
+              '.github/workflows/*.yml and .github/workflows/*.yaml';
             const isWorkflowFile = (path) =>
               path.startsWith('.github/workflows/') &&
               (path.endsWith('.yml') || path.endsWith('.yaml'));
-            const workflowScopeCompanionDocs = new Set([
+            const workflowScopeCompanionDocPaths = [
               'docs/runbooks/project_board_automation.md',
               'docs/runbooks/merge_policy_ci_gate.md',
               'docs/runbooks/CONTROL_REGISTER.md',
-            ]);
+            ];
+            const workflowScopeCompanionDocs = new Set(workflowScopeCompanionDocPaths);
+            const workflowScopeCompanionDocsList = workflowScopeCompanionDocPaths.join(', ');
             const isWorkflowScopeCompanionDoc = (path) =>
               workflowScopeCompanionDocs.has(path);
             const isInfraFile = (path) => path.startsWith('infrastructure/');
@@ -147,7 +151,7 @@ jobs:
               );
               if (invalidWorkflowFiles.length > 0) {
                 failures.push(
-                  `workflows-only allows only .github/workflows/** plus the fixed companion docs docs/runbooks/project_board_automation.md, docs/runbooks/merge_policy_ci_gate.md, and docs/runbooks/CONTROL_REGISTER.md, but found: ${invalidWorkflowFiles.join(', ')}`
+                  `workflows-only allows only ${workflowPathDescription} plus the fixed companion docs ${workflowScopeCompanionDocsList}, but found: ${invalidWorkflowFiles.join(', ')}`
                 );
               } else {
                 passes.push('workflows-only scope validated');
