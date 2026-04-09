@@ -854,7 +854,6 @@ class TestServiceHealthCheck:
             "cdb_cadvisor",
             "cdb_reports",
             "cdb_alertmanager",
-            "cdb_node_exporter",
         }
         assert non_sut.isdisjoint(
             set(SUT_SERVICES)
@@ -865,7 +864,7 @@ class TestServiceHealthCheck:
         assert "lr040_soak_monitor" not in SUT_SERVICES
 
     def test_extra_containers_do_not_inflate_sut_count(self) -> None:
-        """22 cdb_* containers on host must not inflate the 12-service SUT count."""
+        """21 cdb_* containers on host must not inflate the 12-service SUT count."""
         all_host_cdb = SUT_SERVICES + [
             "cdb_prometheus",
             "cdb_grafana",
@@ -874,7 +873,6 @@ class TestServiceHealthCheck:
             "cdb_cadvisor",
             "cdb_reports",
             "cdb_alertmanager",
-            "cdb_node_exporter",
             "cdb_market_eth",
             "cdb_gh_runner",
         ]
@@ -894,7 +892,7 @@ class TestServiceHealthCheck:
 
     def test_old_bug_reproduction(self) -> None:
         """Document the old bug: broad cdb_* count >> static EXPECTED_SERVICES=8."""
-        # Simulate full host: 22 cdb_* containers running
+        # Simulate full host: 21 cdb_* containers running
         all_cdb_on_host = [
             "cdb_postgres",
             "cdb_redis",
@@ -915,13 +913,12 @@ class TestServiceHealthCheck:
             "cdb_cadvisor",
             "cdb_reports",
             "cdb_alertmanager",
-            "cdb_node_exporter",
             "cdb_market_eth",
             "cdb_gh_runner",
         ]
-        old_running = len(all_cdb_on_host)  # 22
+        old_running = len(all_cdb_on_host)  # 21
         old_expected = 8  # hardcoded in old script
-        # Old output: "22/8 services running" — semantically wrong
+        # Old output: "21/8 services running" — semantically wrong
         assert old_running > old_expected, "Documents the old Soll/Ist mismatch"
 
         # New approach: only the 12 curated SUT services

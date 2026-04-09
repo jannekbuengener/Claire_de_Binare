@@ -33,11 +33,6 @@ services:
     ports:
       - "127.0.0.1:9187:9187"
 
-  cdb_node_exporter:
-    # Override: drop rslave mount propagation (unsupported on Docker Desktop/WSL2)
-    volumes:
-      - /:/host:ro
-
   cdb_redis_exporter:
     ports:
       - "127.0.0.1:9121:9121"

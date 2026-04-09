@@ -172,18 +172,6 @@ services:
     networks:
       - cdb_network
 
-  cdb_node_exporter:
-    image: prom/node-exporter:v1.8.1
-    container_name: cdb_node_exporter
-    restart: unless-stopped
-    command:
-      - '--path.rootfs=/host'
-    volumes:
-      - /:/host:ro,rslave
-    pid: host
-    networks:
-      - cdb_network
-
 # Secrets from Single Source of Truth
 # Path set via SECRETS_PATH environment variable (default: ~/Documents/.secrets/.cdb)
 secrets:

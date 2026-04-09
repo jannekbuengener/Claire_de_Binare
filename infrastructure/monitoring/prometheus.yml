@@ -30,7 +30,6 @@ scrape_configs:
           instance: 'cdb_execution'
           service: 'trading'
     metrics_path: '/metrics'
-
   # Signal Engine
   - job_name: 'cdb_signal'
     static_configs:
@@ -111,13 +110,4 @@ scrape_configs:
         labels:
           instance: 'cdb_paper_runner'
           service: 'trading'
-    metrics_path: '/metrics'
-
-  # Node Exporter (host metrics)
-  - job_name: 'cdb_node_exporter'
-    static_configs:
-      - targets: ['cdb_node_exporter:9100']
-        labels:
-          instance: 'cdb_node_exporter'
-          service: 'infra'
     metrics_path: '/metrics'

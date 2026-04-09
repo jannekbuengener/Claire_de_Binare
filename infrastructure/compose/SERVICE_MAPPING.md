@@ -59,7 +59,7 @@
 |---------|--------|-------------|
 | `cdb_loki` | Not in current compose | Removed earlier |
 | `cdb_promtail` | Not in current compose | Removed earlier |
-| `cdb_node_exporter` | Windows/WSL2 mount issues | cAdvisor for container metrics |
+| `cdb_node_exporter` | Removed from active BLUE+RED runtime canon due to Windows/WSL2 mount propagation issues | cAdvisor for container metrics; no host node-exporter metrics in current canon |
 
 ---
 

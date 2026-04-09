@@ -95,7 +95,7 @@ CDB is split into **BLUE** (Always-On Core) and **RED** (Optional Signals+Monito
 |---------|--------|
 | `cdb_loki` | Not in current compose (already removed) |
 | `cdb_promtail` | Not in current compose (already removed) |
-| `cdb_node_exporter` | Windows/WSL2 mount propagation issues |
+| `cdb_node_exporter` | Removed from active BLUE+RED runtime canon; Windows/WSL2 mount propagation issues and no supported host node-exporter surface in current stack |
 
 ---
 
