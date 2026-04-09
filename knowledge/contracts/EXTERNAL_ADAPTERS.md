@@ -100,6 +100,28 @@ The strategy adapter does **not** publish directly to Redis and does **not**
 bypass `services/signal/models.py` or the canonical `signal` contract. The core
 must translate candidates into canonical signal events.
 
+## Canonical Config Surface for `primary_breakout_v1`
+
+Canonical code contract: `core/contracts/primary_breakout_v1_config.py`
+Canonical schema: `docs/contracts/primary_breakout_v1_config.schema.json`
+
+The v1 config surface is intentionally small and explicit:
+
+- `strategy_id = primary_breakout_v1`
+- `symbol = BTCUSDT`
+- `entry_lookback_minutes = 240`
+- `exit_lookback_minutes = 120`
+- `breakout_buffer = 0.0005`
+- `min_minutes_between_entries = 60`
+- `trade_side_mode = long_only`
+
+Boundary rules for this config cut:
+
+- no additional config keys
+- no short-side switch in v1
+- no multi-asset surface
+- no service wiring implied by this config contract
+
 ## Execution Adapter Contract
 
 Canonical code contract: `core/contracts/external_adapter_contracts.py`

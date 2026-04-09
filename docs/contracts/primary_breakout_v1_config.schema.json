@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Primary Breakout v1 Strategy Config Contract",
+  "$comment": "Canonical v1 config surface for primary_breakout_v1. No additional properties allowed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "strategy_id",
+    "symbol",
+    "entry_lookback_minutes",
+    "exit_lookback_minutes",
+    "breakout_buffer",
+    "min_minutes_between_entries",
+    "trade_side_mode"
+  ],
+  "properties": {
+    "strategy_id": {
+      "type": "string",
+      "const": "primary_breakout_v1",
+      "default": "primary_breakout_v1"
+    },
+    "symbol": {
+      "type": "string",
+      "const": "BTCUSDT",
+      "default": "BTCUSDT"
+    },
+    "entry_lookback_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 240
+    },
+    "exit_lookback_minutes": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 120
+    },
+    "breakout_buffer": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.0005
+    },
+    "min_minutes_between_entries": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 60
+    },
+    "trade_side_mode": {
+      "type": "string",
+      "const": "long_only",
+      "default": "long_only"
+    }
+  }
+}
