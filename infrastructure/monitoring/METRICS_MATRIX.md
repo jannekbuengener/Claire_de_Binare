@@ -16,10 +16,10 @@ Collection authority:
 
 ## Ist-Zustand
 
-- Prometheus currently defines 11 scrape jobs in `infrastructure/monitoring/prometheus.yml`.
+- Prometheus currently defines 10 scrape jobs in `infrastructure/monitoring/prometheus.yml`.
 - Repo-backed custom `/metrics` producers exist for `cdb_risk`, `cdb_execution`, `cdb_signal`, `cdb_db_writer`, `cdb_ws`, and `cdb_candles`.
 - Repo-backed exporter jobs exist for `cdb_postgres`, `cdb_redis`, and `cdb_cadvisor`.
-- `cdb_paper_runner` is configured as a scrape target, but the repo-backed service only exposes `/health` and `/status`; no `/metrics` endpoint exists.
+- `cdb_paper_runner` exists as a repo-backed runtime service, but it is intentionally not part of the active Prometheus scrape canon because the service only exposes `/health` and `/status`.
 - `cdb_node_exporter` is intentionally not part of the active BLUE+RED runtime canon; `#1528` removed the historical `base.yml` / `dev.yml` wiring and the Prometheus scrape job instead of restoring the exporter.
 - `infrastructure/monitoring/KPI_REFERENCE.md` had become broader than the repo-backed metric surface and is now reduced to a front-door pointer to this file.
 
@@ -37,8 +37,6 @@ Collection authority:
 | `cdb_postgres` | postgres-exporter | `cdb_postgres_exporter:9187/metrics` | `infrastructure/compose/base.yml`, `infrastructure/compose/compose.red.yml` | `aktiv` | Standard exporter surface; exact collector set not customized in repo |
 | `cdb_redis` | redis-exporter | `cdb_redis_exporter:9121/metrics` | `infrastructure/compose/base.yml`, `infrastructure/compose/compose.red.yml` | `aktiv` | Standard exporter surface; exact collector set not customized in repo |
 | `cdb_cadvisor` | cAdvisor | `cdb_cadvisor:8080/metrics` | `infrastructure/compose/base.yml`, `infrastructure/compose/compose.red.yml` | `aktiv` | Container resource metrics |
-| `cdb_paper_runner` | Paper Trading Runner | `cdb_paper_runner:8004/metrics` | `tools/paper_trading/service.py`, `infrastructure/compose/compose.blue.yml` | `deprecated/drift` | Service exists, but only `/health` and `/status` are repo-backed |
-
 Note:
 - Prometheus generates `up{job,instance,...}` for every configured scrape target. To avoid duplicating one row per job, `up` is only called out below where it is the main known signal for a drifted or exporter-backed target.
 
@@ -98,8 +96,6 @@ Note:
 | `cdb_cadvisor` | cAdvisor | `cdb_cadvisor:8080/metrics` | `container_memory_limit_bytes` | `gauge` | Per-container memory limit | `infra` | `aktiv` | cAdvisor container labels | `kandidat` |
 | `cdb_cadvisor` | cAdvisor | `cdb_cadvisor:8080/metrics` | `container_restart_count` | `gauge` | Container restart count used by soak/infra alerts | `infra` | `aktiv` | cAdvisor container labels | `kandidat` |
 | `cdb_cadvisor` | cAdvisor | `cdb_cadvisor:8080/metrics` | `container_memory_oom_kill_total` | `counter` | OOM kill count per container | `infra` | `aktiv` | cAdvisor container labels | `kandidat` |
-| `cdb_paper_runner` | Paper Trading Runner | `cdb_paper_runner:8004/metrics` | `up` | `gauge` | Prometheus scrape success for the configured paper-runner target | `infra` | `deprecated/drift` | `job`, `instance`, static target labels | `eher nicht` |
-
 ### Documented but not repo-backed as active exports
 
 | job_name | source_service / exporter | scrape_target / endpoint | metric_name | type | kurze Bedeutung | class | status | labels | spaetere dashboard_eignung |
@@ -113,13 +109,13 @@ Note:
 
 1. `infrastructure/monitoring/KPI_REFERENCE.md` documented Signal metrics with outdated names (`latency_samples`, `latency_sum_ms`, `latency_count`, `errors_total`) while the actual service exports `signal_processing_latency_ms_*` and `signal_errors_total`.
 2. `infrastructure/monitoring/KPI_REFERENCE.md` documented Candle metrics with outdated names (`candles_*`) and extra market-state counters that are tracked in memory but not exposed on `/metrics`.
-3. `prometheus.yml` scrapes `cdb_paper_runner:8004/metrics`, but `tools/paper_trading/service.py` only exposes `/health` and `/status`.
+3. `#1536` resolved the stale `cdb_paper_runner` scrape by removing the `prometheus.yml` job instead of inventing a fake `/metrics` endpoint for a health/status-only runtime.
 4. `#1528` resolved the `cdb_node_exporter` canon split by removing the stale scrape job and historical `base.yml` / `dev.yml` service wiring to match the active BLUE+RED runtime and `SERVICE_MAPPING.md`.
 5. `infrastructure/monitoring/alerts.yml` is reconciled fail-closed against the current repo-backed metric surface:
    - retained repo-backed examples: `circuit_breaker_active`, `pg_up`, `redis_up`, `execution_orders_received_total`, `signals_received_total`, `orders_approved_total`, `orders_blocked_total`, `execution_orders_filled_total`, `container_*`
    - stale/non-repo-backed alert expressions were removed instead of being kept on guessed metric names: `cdb_daily_drawdown_pct`, `cdb_latency_seconds_bucket`, `cdb_errors_total`, `cdb_requests_total`, `cdb_order_processing_seconds`, `cdb_position_utilization_pct`, `cdb_orders_processed_total`, `cdb_signal_queue_length`
    - `SoakTest_HighMemoryUsage` now uses repo-backed cAdvisor metric `container_memory_limit_bytes` instead of the previously unverified `container_spec_memory_limit_bytes`
-6. `infrastructure/compose/COMPOSE_LAYERS.md` still says `cdb_paper_runner` is disabled / not implemented, which no longer matches the repo-backed service and compose wiring. That drift is adjacent context, not changed in this session.
+6. `#1537` resolved the front-door compose drift by marking `cdb_paper_runner` active in `infrastructure/compose/COMPOSE_LAYERS.md` to match the repo-backed dev overlay and runtime wiring.
 
 ## Schnitt fuer spaetere Grafana- und KPI-Auswahl
 
