@@ -1,0 +1,94 @@
+name: CDB Control Follow-up Classifier
+
+on:
+  workflow_dispatch:
+    inputs:
+      finding_text:
+        description: "Repo-backed control finding to classify"
+        required: true
+        type: string
+      issue_number:
+        description: "Optional issue number to receive a comment"
+        required: false
+        type: string
+      output_target:
+        description: "Where to publish the result"
+        required: true
+        default: summary_only
+        type: choice
+        options:
+          - summary_only
+          - summary_and_issue_comment
+
+permissions:
+  contents: read
+  issues: write
+  models: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Ensure wrapper is executable
+        shell: bash
+        run: chmod +x .github/scripts/run_cdb_control_followup.sh
+
+      - name: Run classifier
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          output_json="artifacts/cdb-control-followup/result.json"
+          summary_md="artifacts/cdb-control-followup/summary.md"
+
+          .github/scripts/run_cdb_control_followup.sh \
+            ".github/prompts/cdb-control-followup.prompt.yml" \
+            "${{ inputs.finding_text }}" \
+            "$output_json" \
+            "$summary_md"
+
+          {
+            echo "result_json=$output_json"
+            echo "summary_md=$summary_md"
+            echo "classification=$(jq -r '.classification' "$output_json")"
+            echo "confidence=$(jq -r '.confidence' "$output_json")"
+          } >> "$GITHUB_OUTPUT"
+
+          cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment on issue
+        if: ${{ inputs.output_target == 'summary_and_issue_comment' && inputs.issue_number != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          issue_number="${{ inputs.issue_number }}"
+          if ! [[ "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "::error::issue_number must be numeric."
+            exit 1
+          fi
+
+          summary_file="${{ steps.classify.outputs.summary_md }}"
+          body_json="$(jq -Rs '{body: .}' < "$summary_file")"
+
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/issues/${issue_number}/comments" \
+            --input - <<< "$body_json"
+
+      - name: Upload classifier artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cdb-control-followup-classification
+          path: artifacts/cdb-control-followup/
+          if-no-files-found: error

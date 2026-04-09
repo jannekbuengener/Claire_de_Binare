@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-08
+**Letzte Aktualisierung:** 2026-04-09
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -72,9 +72,20 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 |---|---|---|
 | `weekly_digest.yml` | wöchentlich | Issue-/Status-Digest |
 | `governance-audit.yml` | manuell | Governance-Audit |
+| `cdb-control-followup-classifier.yml` | manuell | Human-in-the-loop Klassifikation repo-backed Control-Findings |
 | `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
 | `project_reconcile_daily.yml` | täglich | Board-Reconciliation |
 | `control_board_upsert.yml` | Mo 02:30 UTC | GitHub Project #8 Upsert |
+
+---
+
+## Manuelle HITL-Klassifikation
+
+- Workflow: `.github/workflows/cdb-control-followup-classifier.yml`
+- Prompt-Canon: `.github/prompts/cdb-control-followup.prompt.yml`
+- Ausführung: nur `workflow_dispatch`, kein Auto-Issueing, keine automatische Repo-Mutation
+- Ausgabe: immer Step Summary + Artefakt; optional zusätzlicher Kommentar auf ein bewusst gesetztes Ziel-Issue
+- Guardrail: fail-closed bei ungültigem JSON oder nicht numerischer `issue_number`
 
 ---
 
