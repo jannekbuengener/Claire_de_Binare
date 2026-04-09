@@ -177,7 +177,7 @@ groups:
     interval: 30s
     rules:
       - alert: SoakTest_ServiceDown
-        expr: up{job=~"cdb_(redis|postgres|ws|signal|risk|execution|db_writer|paper_runner)"} == 0
+        expr: up{job=~"cdb_(redis|postgres|ws|signal|risk|execution|db_writer)"} == 0
         for: 5m
         labels:
           severity: critical

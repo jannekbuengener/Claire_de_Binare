@@ -103,11 +103,3 @@ scrape_configs:
           service: 'infra'
     metrics_path: '/metrics'
 
-  # Paper Trading Runner
-  - job_name: 'cdb_paper_runner'
-    static_configs:
-      - targets: ['cdb_paper_runner:8004']
-        labels:
-          instance: 'cdb_paper_runner'
-          service: 'trading'
-    metrics_path: '/metrics'
