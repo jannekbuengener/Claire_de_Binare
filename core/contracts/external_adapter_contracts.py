@@ -4,6 +4,7 @@ This module is intentionally runtime-light:
 - no registry
 - no dynamic loading
 - no service wiring
+- static adapter registry lives separately in `external_adapter_registry.py`
 
 It defines the smallest shared contract surface that later adapters can
 implement without bypassing the existing core safety path.
@@ -17,6 +18,8 @@ from typing import Any, Literal, Mapping, Protocol, runtime_checkable
 
 RunMode = Literal["shadow", "paper", "replay", "live"]
 TradeSide = Literal["BUY", "SELL"]
+StrategyAdapterId = Literal["momentum_builtin"]
+ExecutionAdapterId = Literal["mock_builtin", "mexc_builtin"]
 ExecutionStatus = Literal[
     "PENDING",
     "SUBMITTED",
