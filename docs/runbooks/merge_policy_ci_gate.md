@@ -127,7 +127,7 @@ and changed files:
 | Category | Label | Title prefix | Allowed files |
 |-------|-------|-------|-------|
 | `docs-only` | `docs-only` | `[docs-only]` or `docs-only:` | `docs/**` and `*.md` |
-| `workflows-only` | `workflows-only` | `[workflows-only]` or `workflows-only:` | `.github/workflows/**` |
+| `workflows-only` | `workflows-only` | `[workflows-only]` or `workflows-only:` | `.github/workflows/**` plus the fixed companion docs `docs/runbooks/project_board_automation.md`, `docs/runbooks/merge_policy_ci_gate.md`, `docs/runbooks/CONTROL_REGISTER.md` |
 | `infra-only` | `infra-only` | `[infra-only]` or `infra-only:` | `infrastructure/**` and `.github/workflows/**` |
 | `core/service` | none | none | Any other diff; requires `manual-approval` or `allow-core-change` |
 
@@ -136,6 +136,12 @@ and changed files:
 > `.github/workflows/**`) are **not** auto-inferred and remain fail-closed at `core/service`,
 > even though the `infra-only` category permits both path sets when set via label or title prefix.
 > An explicit label or title prefix is required for mixed diffs.
+>
+> `workflows-only` is auto-inferred for pure `.github/workflows/**` diffs and for narrow
+> workflow-maintenance diffs that add only the fixed companion docs
+> `docs/runbooks/project_board_automation.md`,
+> `docs/runbooks/merge_policy_ci_gate.md`, or `docs/runbooks/CONTROL_REGISTER.md`.
+> Other mixed `workflow + docs` diffs remain fail-closed at `core/service`.
 
 Hard-fails for workflow changes in `.github/workflows/**`:
 
