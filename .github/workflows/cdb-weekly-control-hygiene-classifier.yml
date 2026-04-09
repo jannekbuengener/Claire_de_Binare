@@ -1,0 +1,93 @@
+name: CDB Weekly Control Hygiene Classifier
+
+on:
+  schedule:
+    - cron: "30 7 * * 1"
+    - cron: "30 7 * * 4"
+    - cron: "30 7 * * 5"
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: "Whether to publish weekly control comment and follow-up issues"
+        required: true
+        default: dry_run
+        type: choice
+        options:
+          - dry_run
+          - publish
+      max_followup_issues:
+        description: "Hard cap for newly emitted follow-up issues"
+        required: true
+        default: "2"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  weekly-hygiene:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Resolve inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            publish_mode="${{ inputs.publish_mode }}"
+            max_followup_issues="${{ inputs.max_followup_issues }}"
+          else
+            publish_mode="publish"
+            max_followup_issues="2"
+          fi
+
+          if ! [[ "$max_followup_issues" =~ ^[0-9]+$ ]]; then
+            echo "::error::max_followup_issues must be numeric."
+            exit 1
+          fi
+
+          if [[ "$max_followup_issues" -lt 0 || "$max_followup_issues" -gt 2 ]]; then
+            echo "::error::max_followup_issues must be between 0 and 2 for this slice."
+            exit 1
+          fi
+
+          {
+            echo "publish_mode=$publish_mode"
+            echo "max_followup_issues=$max_followup_issues"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run weekly hygiene classifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          result_json="artifacts/cdb-weekly-hygiene/result.json"
+          summary_md="artifacts/cdb-weekly-hygiene/summary.md"
+
+          python3 .github/scripts/weekly_control_hygiene_classifier.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --register-file "docs/runbooks/CONTROL_REGISTER.md" \
+            --workflow-dir ".github/workflows" \
+            --result-file "$result_json" \
+            --summary-file "$summary_md" \
+            --publish-mode "${{ steps.resolve.outputs.publish_mode }}" \
+            --max-followup-issues "${{ steps.resolve.outputs.max_followup_issues }}"
+
+          cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload weekly hygiene artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cdb-weekly-control-hygiene
+          path: artifacts/cdb-weekly-hygiene/
+          if-no-files-found: error
