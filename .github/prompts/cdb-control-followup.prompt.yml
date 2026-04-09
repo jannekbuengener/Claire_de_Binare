@@ -17,6 +17,7 @@ messages:
       - Use only repo-backed evidence in the input.
       - Do not invent files, issues, or history.
       - Prefer report_only when the evidence is weak or the note is better kept in the control thread.
+      - When the sources already match and there is no repo drift, use report_only and make suggested_next_step a no-op such as recording or monitoring the observation instead of proposing a repo change.
       - Choose follow_up_issue only when the fix is concrete, bounded, and separately actionable as a small repo change.
       - If the scope, ownership, or evidence is ambiguous, return unclear.
       - If a finding names a workflow only generically, keep that generic label in affected_artifacts instead of guessing a file path.
@@ -56,6 +57,10 @@ testData:
       docs/runbooks/CONTROL_REGISTER.md says the board stage is trade-capable, but docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md still says NO-GO. The claim crosses stage and live-readiness semantics without a small isolated fix.
     expected: |
       {"classification":"unclear","confidence":0.79,"affected_artifacts":["docs/runbooks/CONTROL_REGISTER.md","docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md"],"suggested_next_step":"Collect a narrower repo-backed finding or split the issue into a board-stage note and a live-readiness note."}
+  - input: |
+      .github/workflows/weekly_digest_failure_alert.yml is an active workflow surface on main with successful workflow_run executions on 2026-03-16, 2026-03-18, 2026-03-23, 2026-03-30, and 2026-04-06, and docs/runbooks/CONTROL_REGISTER.md now lists it under Aktive Infra-Workflows with its real trigger and purpose. Evidence is repo-backed and run-backed. The affected artifacts are .github/workflows/weekly_digest_failure_alert.yml and docs/runbooks/CONTROL_REGISTER.md. The sources now match and there is no drift.
+    expected: |
+      {"classification":"report_only","confidence":0.9,"affected_artifacts":[".github/workflows/weekly_digest_failure_alert.yml","docs/runbooks/CONTROL_REGISTER.md"],"suggested_next_step":"Record the observation in the control thread; no repo change is needed."}
 
 evaluators:
   - name: Similarity
