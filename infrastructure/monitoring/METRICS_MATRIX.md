@@ -115,9 +115,10 @@ Note:
 2. `infrastructure/monitoring/KPI_REFERENCE.md` documented Candle metrics with outdated names (`candles_*`) and extra market-state counters that are tracked in memory but not exposed on `/metrics`.
 3. `prometheus.yml` scrapes `cdb_paper_runner:8004/metrics`, but `tools/paper_trading/service.py` only exposes `/health` and `/status`.
 4. `#1528` resolved the `cdb_node_exporter` canon split by removing the stale scrape job and historical `base.yml` / `dev.yml` service wiring to match the active BLUE+RED runtime and `SERVICE_MAPPING.md`.
-5. `infrastructure/monitoring/alerts.yml` still mixes repo-backed metrics with stale names:
-   - repo-backed examples: `circuit_breaker_active`, `pg_up`, `redis_up`, `execution_orders_received_total`, `signals_received_total`, `orders_approved_total`, `orders_blocked_total`, `execution_orders_filled_total`, `container_*`
-   - stale/non-repo-backed examples: `cdb_daily_drawdown_pct`, `cdb_latency_seconds_bucket`, `cdb_errors_total`, `cdb_requests_total`, `cdb_order_processing_seconds`, `cdb_position_utilization_pct`, `cdb_orders_processed_total`, `cdb_signal_queue_length`
+5. `infrastructure/monitoring/alerts.yml` is reconciled fail-closed against the current repo-backed metric surface:
+   - retained repo-backed examples: `circuit_breaker_active`, `pg_up`, `redis_up`, `execution_orders_received_total`, `signals_received_total`, `orders_approved_total`, `orders_blocked_total`, `execution_orders_filled_total`, `container_*`
+   - stale/non-repo-backed alert expressions were removed instead of being kept on guessed metric names: `cdb_daily_drawdown_pct`, `cdb_latency_seconds_bucket`, `cdb_errors_total`, `cdb_requests_total`, `cdb_order_processing_seconds`, `cdb_position_utilization_pct`, `cdb_orders_processed_total`, `cdb_signal_queue_length`
+   - `SoakTest_HighMemoryUsage` now uses repo-backed cAdvisor metric `container_memory_limit_bytes` instead of the previously unverified `container_spec_memory_limit_bytes`
 6. `infrastructure/compose/COMPOSE_LAYERS.md` still says `cdb_paper_runner` is disabled / not implemented, which no longer matches the repo-backed service and compose wiring. That drift is adjacent context, not changed in this session.
 
 ## Schnitt fuer spaetere Grafana- und KPI-Auswahl
