@@ -74,6 +74,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | `weekly_digest_failure_alert.yml` | nach `weekly_digest.yml` | Failure-Eskalation als `report:weekly-fail` Issue nur bei echtem Fehler |
 | `governance-audit.yml` | manuell | Governance-Audit |
 | `cdb-control-followup-classifier.yml` | manuell | Human-in-the-loop Klassifikation repo-backed Control-Findings |
+| `cdb-post-merge-followup-scanner.yml` | bei gemergten PRs + manuell | Repo-backed Post-Merge-Scan fuer kleine Nachzugspakete; Kommentar nach `#1445` oder enges dedupe-sicheres Follow-up-Issue |
 | `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
 | `project_reconcile_daily.yml` | täglich | Board-Reconciliation |
 | `control_board_upsert.yml` | Mo 02:30 UTC | GitHub Project #8 Upsert |
