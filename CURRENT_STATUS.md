@@ -4,8 +4,8 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-09
-**Latest Main Commit**: 4159066d — fix(monitoring): retire stale alert expressions (#1538) (#1541)
-**Previous**: 8838a161 — docs(compose): reconcile paper runner dev overlay status (#1537) (#1540)
+**Latest Main Commit**: 28c5457e — ci(workflows): park scheduled gemini triage fail-closed (#1543)
+**Previous**: 4159066d — fix(monitoring): retire stale alert expressions (#1538) (#1541)
 
 ---
 
@@ -57,6 +57,7 @@
   - **Merged (Session 46, 2026-04-08)**: #1500 — unowned Phase-2-Metadata-Felder aus dem persistierten Order-Vertrag entfernt; keine neuen `account_context.*`, keine neue `execution_context.slippage_pct`, kein `ingest_ts_ms` ohne kanonischen Producer. PR #1522 (49870e63). Issue #1500 geschlossen.
   - **Session 47 (2026-04-08)**: #1509 GitHub-Reconciliation abgeschlossen. Der fruehere `prometheus_client`-Stub-Leak blockiert die gemeinsame Collection auf `main` nicht mehr; effektive Landing-Evidenz laeuft ueber die gemergten Folge-PRs #1516/#1519 statt ueber den urspruenglichen Branch-Commit. Abschlusskommentar in #1509 gepostet; Issue geschlossen.
   - **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
+  - **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
 
 ---
 
