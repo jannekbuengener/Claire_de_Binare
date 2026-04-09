@@ -39,9 +39,9 @@ For 431B, the canonical Docker CI lab baseline is:
 - **`infrastructure/compose/dev.yml`** - Development profile
   - Port bindings for local access (127.0.0.1 only)
   - Application services:
-    - Active: cdb_signal, cdb_risk, cdb_execution, cdb_db_writer
+    - Active: cdb_signal, cdb_risk, cdb_execution, cdb_db_writer, cdb_paper_runner
     - Disabled (missing config): cdb_allocation, cdb_regime
-    - Disabled (not implemented): cdb_ws, cdb_market, cdb_paper_runner
+    - Disabled (not implemented): cdb_ws, cdb_market
   - Debug volumes (logs mounted for easy access)
   - Port mappings: Fixed to match Dockerfile EXPOSE directives (PORT:PORT instead of PORT:8000)
   - Still used by some older/secondary workflow paths, but not the canonical 431B baseline
