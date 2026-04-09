@@ -38,6 +38,8 @@ messages:
       - affected_artifacts must list only concrete repo paths or the literal string "workflow file" when the finding references a workflow change without naming a path.
       - Do not invent placeholder paths such as "your_workflow_file.yaml" or abbreviations such as "workflow".
       - suggested_next_step must be a short, concrete next action.
+      - If the finding explicitly says the sources now match or there is no drift, suggested_next_step must explicitly say that no repo change is needed.
+      - Never tell the user to update a file when the finding itself says the sources already match or that there is no drift.
 
   - role: user
     content: |
