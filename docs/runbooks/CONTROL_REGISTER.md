@@ -71,6 +71,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | Workflow | Trigger | Zweck |
 |---|---|---|
 | `weekly_digest.yml` | wöchentlich | Issue-/Status-Digest |
+| `weekly_digest_failure_alert.yml` | nach `weekly_digest.yml` | Failure-Eskalation als `report:weekly-fail` Issue nur bei echtem Fehler |
 | `governance-audit.yml` | manuell | Governance-Audit |
 | `cdb-control-followup-classifier.yml` | manuell | Human-in-the-loop Klassifikation repo-backed Control-Findings |
 | `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
