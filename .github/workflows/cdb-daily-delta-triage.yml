@@ -1,0 +1,94 @@
+name: CDB Daily Delta Triage
+
+on:
+  schedule:
+    - cron: "20 6 * * 2"
+    - cron: "20 6 * * 3"
+    - cron: "20 6 * * 5"
+    - cron: "20 6 * * 0"
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: "Whether to publish daily control comment and optional follow-up issue"
+        required: true
+        default: dry_run
+        type: choice
+        options:
+          - dry_run
+          - publish
+      max_followup_issues:
+        description: "Hard cap for newly emitted follow-up issues (daily lane)"
+        required: true
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  daily-delta:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Resolve inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            publish_mode="${{ inputs.publish_mode }}"
+            max_followup_issues="${{ inputs.max_followup_issues }}"
+          else
+            publish_mode="publish"
+            max_followup_issues="1"
+          fi
+
+          if ! [[ "$max_followup_issues" =~ ^[0-9]+$ ]]; then
+            echo "::error::max_followup_issues must be numeric."
+            exit 1
+          fi
+
+          if [[ "$max_followup_issues" -lt 0 || "$max_followup_issues" -gt 1 ]]; then
+            echo "::error::max_followup_issues must be between 0 and 1 for this daily slice."
+            exit 1
+          fi
+
+          {
+            echo "publish_mode=$publish_mode"
+            echo "max_followup_issues=$max_followup_issues"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run daily delta triage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          result_json="artifacts/cdb-daily-delta-triage/result.json"
+          summary_md="artifacts/cdb-daily-delta-triage/summary.md"
+
+          python3 .github/scripts/daily_delta_triage.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --register-file "docs/runbooks/CONTROL_REGISTER.md" \
+            --workflow-dir ".github/workflows" \
+            --result-file "$result_json" \
+            --summary-file "$summary_md" \
+            --publish-mode "${{ steps.resolve.outputs.publish_mode }}" \
+            --max-followup-issues "${{ steps.resolve.outputs.max_followup_issues }}"
+
+          cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload daily delta artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cdb-daily-delta-triage
+          path: artifacts/cdb-daily-delta-triage/
+          if-no-files-found: error
