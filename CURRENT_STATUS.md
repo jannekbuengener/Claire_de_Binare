@@ -4,57 +4,62 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-09
-**Latest Main Commit**: 28c5457e — ci(workflows): park scheduled gemini triage fail-closed (#1543)
-**Previous**: 4159066d — fix(monitoring): retire stale alert expressions (#1538) (#1541)
+**GitHub Boundary**: Live commit- and PR-state stays in GitHub/`gh`; this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
 ## Repo / Engineering Status (2026-04-09)
 
 - **main**: green
-- **Open PRs (relevant/current focus)**:
+- **Active GitHub focus (manual, non-exhaustive)**:
   - keine
-  - **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
-  - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
-  - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
-  - **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
-  - **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
-  - **Merged (Session 12, 2026-03-29)**: #1359/#1360/#1361/#1362/#1363 — Sessions-README, Signal-Alerts-Claim, Monitoring-Terminologie, INV-006 `min_qty_sum`, historische Governance-Artefakte markiert.
-  - **Merged (Session 13, 2026-03-30)**: #1370 — LR-007-Canon auf 72h-Validierungsfenster ausgerichtet (93daac4).
-  - **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
-  - **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
-  - **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
-  - **Merged (Session 18, 2026-03-31)**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. PR #1415 (04b91d4b). Issue #1410 geschlossen.
-  - **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
-  - **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
-  - **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
-  - **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
-  - **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
-  - **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (7793c028). Issue #1426 geschlossen.
-  - **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 als naechster Anschluss-Schritt freigegeben; spaeter via PR #1435 geschlossen.
-  - **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
-  - **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (1f3ec548). #1390 geschlossen.
-  - **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
-  - **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
-  - **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
-  - **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
-  - **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
-  - **Merged (Session 35, 2026-04-06)**: #1448 — PR-Batch #1392–#1397 + #1446 disponiert. Gemergt: #1392 HITL solo-maintainer (0a4ac9ea), #1393 historical M7/M8/M9 entrypoints (132eafe7), #1394 M7 testnet historical (7b40c0ca), #1395 M8 security historical (b583e0a2), #1454 CONTROL_REGISTER.md (c3e5b6da). #1446 geschlossen (superseded). Hold: #1396 (DR-Docs Backup-Front-Door-Verifikation), #1397 (policy-gate, → #1449).
-  - **Session 36 (2026-04-06)**: #1449 — policy-gate RCA abgeschlossen. Befund: eine Blocker-Familie (core/service-Default), 4 Ausprägungen: fehlende infra-only-Inferenz, mixed-file-set, non-privileged script paths (knowledge/operations/), Dependabot-Labels nicht als Override. RCA-Kommentar in #1449 gepostet. Keine Code-/Workflow-Änderungen.
-  - **Merged (Session 37, 2026-04-06)**: #1450 — 40 untracked Files klassifiziert (alle Bucket 1: commit). PR #1457 (39c5d864). 28 Session-Logs, 2 SDK-Tests, 3 DR-Evidence-Logs, 1 Infra-Script, 6 Docs/Reports. Working Tree clean.
-  - **Merged (Session 38, 2026-04-07)**: Dep-Queue-Pass + LR-040-Fix — setup-python v6.2.0 (e8784235/#1121), pytest-cov 7.1.0 (4eec57ab/#1365), tabulate 0.10.0 (955e4410/#1115), pyyaml 6.0.3 (92fa39e0/#1179), ruff 0.15.8 (b88dd312/#1367), black 26.3.1 (c1161b5c/#1147). LR-040 soak_monitor fail-closed precheck (8aaf109a/#1467).
-  - **Merged (Session 39, 2026-04-07)**: CI SSOT Freeze + Governance-Deltas — PR #1475 (f2410e06) [docs-only]: ci.yaml Freeze-Status, Dependabot Override Path, LABELS.md. PR #1476 (53771330) [workflows-only]: ci.yaml Header-Kommentar. Issues geschlossen: #1474 (CI SSOT), #1462 (Dependabot-Pfad), #1471 (setup-python v6 Kompatibilitaet bestaetigt), #1472 (pre-close manual-only Governance-Entscheid). Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation ausstehend), #1473 (Backup-Drill nur nach Stack-Freigabe — Blocker #1478 damals noch offen).
-  - **Merged (Session 40, 2026-04-07)**: #1478 — Compress-Archive OOM in `backup_all.ps1` behoben; `ZipFile.CreateFromDirectory` (.NET BCL, streaming) als Ersatz. PR #1479 (6b53c6e8). Backup-/Restore-Drill (#1473) erfolgreich abgeschlossen: `make backup` Exit-Code 0, ZIP 78.4 MB, Postgres (9 Tabellen) + Redis restored und verifiziert. Issues #1473 + #1478 geschlossen. Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation).
-  - **Merged (Session 41, 2026-04-07)**: Batch #1481–#1484 — LR-AUDIT-STATUS SSOT-Reconcile (LR-050 OPEN→NO-GO, LR-011 OPEN→PASS), DR-Front-Door vs. historischer 2025-12-31-Snapshot getrennt, enforce-root-baseline.ps1 repo-relativ, Secrets-Canon fail-closed (compose.blue+red: `:?SECRETS_PATH must be set`; Front-Doors: generischer Default+Guard). PR #1485 (23a6dae0). Issues #1481/#1482/#1483/#1484 geschlossen.
-  - **Session 42 (2026-04-08)**: #1502 read-only disponiert. Befund: aktive Runtime-Canon kommt aus service-lokalen requirements + real referenzierten Dockerfile-Installationsstellen; root `requirements.txt` ist aktuell CI/Test-/Convenience-Layer, nicht Runtime-Truth. `redis` ist der staerkste Drift-Fall; `prometheus_client` bleibt wegen `db_writer` unpinned nicht sauber root-kontrolliert. Abschlusskommentar in #1502 gepostet; Status: bereit fuer Claude Code. Keine Repo-/Runtime-Reconciliation in dieser Session.
-  - **Merged (Session 43, 2026-04-08)**: #1488 — Decision-/Policy-/Trace-Kontext ueber den Signal->Order->Trade-Pfad persistiert. PR #1516 (3efe4410). Issue #1488 geschlossen.
-  - **Merged (Session 44, 2026-04-08)**: #1498 — verbleibende Dual-Writer-Naht fuer `orders`/`trades` reduziert; `trades` kanonisch ueber `db_writer`, `orders` kanonischer Insert plus execution-lokales Lifecycle-Enrichment. PR #1519 (2bfbeb30). Issue #1498 geschlossen.
-  - **Merged (Session 45, 2026-04-08)**: #1520 — execution-side Order-Fallback-Insert entfernt; Lifecycle-Updates binden jetzt fail-closed an kanonische `metadata.order_id`. PR #1521 (3729c59f). Issue #1520 geschlossen.
-  - **Merged (Session 46, 2026-04-08)**: #1500 — unowned Phase-2-Metadata-Felder aus dem persistierten Order-Vertrag entfernt; keine neuen `account_context.*`, keine neue `execution_context.slippage_pct`, kein `ingest_ts_ms` ohne kanonischen Producer. PR #1522 (49870e63). Issue #1500 geschlossen.
-  - **Session 47 (2026-04-08)**: #1509 GitHub-Reconciliation abgeschlossen. Der fruehere `prometheus_client`-Stub-Leak blockiert die gemeinsame Collection auf `main` nicht mehr; effektive Landing-Evidenz laeuft ueber die gemergten Folge-PRs #1516/#1519 statt ueber den urspruenglichen Branch-Commit. Abschlusskommentar in #1509 gepostet; Issue geschlossen.
-  - **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
-  - **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
-  - **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
+- **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
+
+---
+
+## Session Ledger (historical, not active focus)
+
+- **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
+- **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
+- **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
+- **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
+- **Merged (Session 11, 2026-03-27)**: #1290 — .gitignore Δ1–Δ4 (5a50700), #1234 geschlossen.
+- **Merged (Session 12, 2026-03-29)**: #1359/#1360/#1361/#1362/#1363 — Sessions-README, Signal-Alerts-Claim, Monitoring-Terminologie, INV-006 `min_qty_sum`, historische Governance-Artefakte markiert.
+- **Merged (Session 13, 2026-03-30)**: #1370 — LR-007-Canon auf 72h-Validierungsfenster ausgerichtet (93daac4).
+- **Merged (Session 14, 2026-03-30)**: #1382/#1383/#1384/#1386 — BLUE+RED-Startup-Canon, Solo-Maintainer-SOPs, LR-BLACK-Stack-Terminologie und aktive Infra-Canon-Doku bereinigt.
+- **Merged (Session 15, 2026-03-30)**: #1389 — aktive Governance-/Risk-Terminologie auf `Risk Service` / `cdb_risk` vereinheitlicht (e48add6).
+- **Merged (Session 17, 2026-03-31)**: #1408 — Batch #1403–#1407: knowledge link drift + secrets helper legacy + contributor docs + test-pack entrypoints (c6a51cd). Issues #1403–#1407 geschlossen.
+- **Merged (Session 18, 2026-03-31)**: #1410 — Aktive Runbooks/Playbooks/Templates auf BLUE+RED Runtime-Canon bereinigt. 24 Dateien. PR #1415 (04b91d4b). Issue #1410 geschlossen.
+- **Merged (Session 19, 2026-03-31)**: #1411 — Aktive Secrets-/Runbook-/Evidence-Doku auf SECRETS_PATH-Canon gezogen. 21 Dateien. PR #1415 (04b91d4b). Issue #1411 geschlossen.
+- **Merged (Session 20, 2026-03-31)**: #1413 — Legacy-Ops-/Secrets-Pointer aus aktiven Discovery-Surfaces entfernt. 9 Dateien. PR #1415 (04b91d4b). Issue #1413 geschlossen.
+- **Merged (Session 21+22, 2026-03-31/04-01)**: #1412 — LR-AUDIT-STATUS / CURRENT_STATUS SSOT-Trennung bereinigt. Operative Phasentabelle aus CURRENT_STATUS.md entfernt; Rueckkopplung in LR-AUDIT-STATUS beseitigt; P-Phasen-Inline-Status aus AGENTS.md entfernt. PR #1414 (bb0c42c0). Issue #1412 geschlossen.
+- **Merged (Session 22, 2026-04-01)**: Git-Divergenz aufgeloest; PR-Batch #1414+#1415 durchgezogen; Issues #1410/#1411/#1412/#1413 geschlossen. PR #1416 (9f92651c).
+- **Merged (Session 23, 2026-04-01)**: #1409 — ARCHITECTURE_MAP + SERVICE_CATALOG gegen BLUE/RED-Runtime reconciled; Logging Overlay als separates Overlay klassifiziert; CDB_DOCKER_STACK_INVENTORY ergaenzt. PR #1416 (9f92651c). Issue #1409 geschlossen.
+- **Merged (Session 24, 2026-04-04)**: #1426 — cdb_market healthcheck start_period auf 30s. PR #1430 (7793c028). Issue #1426 geschlossen.
+- **Merged (Session 25, 2026-04-04)**: #1421/#1422 — P5-Core-Artefaktsatz mit LR-040 PASS + Live-Captures. PR #1432 (d530a7ea). Human Gate GRANTED. #1421 + #1422 geschlossen. #1423 als naechster Anschluss-Schritt freigegeben; spaeter via PR #1435 geschlossen.
+- **Merged (Session 26, 2026-04-05)**: #1423 — Lean Shadow Evidence Run + Handoff. PR #1433 (4cda64ea, Session-Close), PR #1434 (1a0ebaba, formale Gaps), PR #1435 (468414fd, Evidence-Handoff). P4 DONE reconciled. #1423 geschlossen.
+- **Merged (Session 27, 2026-04-05)**: #1390 — emoji-filter: compact auto-issue body zu Summary + Artifact-Link. PR #1438 (1f3ec548). #1390 geschlossen.
+- **Session 28 (2026-04-05)**: #1418 — P5-Proof-Anchor geschlossen (alle Child-Issues CLOSED, manifest self-konsistent). #1426 Issue-Closure verifiziert (PR #1430 war bereits in Session 24 gemergt).
+- **Merged (Session 29, 2026-04-05)**: #1427 — soak-monitor Docker-Disk-Fallback. PR #1429 (ba2b13e4). #1427 geschlossen.
+- **Merged (Session 30, 2026-04-05)**: PRs #1438/#1437/#1439 — Session-Close-Batch: emoji-filter compact body, P5-Status-Reconciliation, Session-28/29-Close + Merge-Konflikt-Auflösung + SHA-Korrekturen. PR #1439 (e4d664e5).
+- **Session 31 (2026-04-06)**: PR #1441 auf `main` verifiziert (920e1901); superseded PRs #1431/#1436 geschlossen; PR #1398 read-only geprueft und wegen offenem Root-Skript-/Doc-Drift nicht freigegeben. Follow-up #1442 angelegt.
+- **Merged (Session 32+33, 2026-04-06)**: #1391 — compose canon drift vollstaendig geschlossen. PR #1398 (26d91693). Issues #1391 + #1442 geschlossen.
+- **Merged (Session 35, 2026-04-06)**: #1448 — PR-Batch #1392–#1397 + #1446 disponiert. Gemergt: #1392 HITL solo-maintainer (0a4ac9ea), #1393 historical M7/M8/M9 entrypoints (132eafe7), #1394 M7 testnet historical (7b40c0ca), #1395 M8 security historical (b583e0a2), #1454 CONTROL_REGISTER.md (c3e5b6da). #1446 geschlossen (superseded). Hold: #1396 (DR-Docs Backup-Front-Door-Verifikation), #1397 (policy-gate, → #1449).
+- **Session 36 (2026-04-06)**: #1449 — policy-gate RCA abgeschlossen. Befund: eine Blocker-Familie (core/service-Default), 4 Ausprägungen: fehlende infra-only-Inferenz, mixed-file-set, non-privileged script paths (knowledge/operations/), Dependabot-Labels nicht als Override. RCA-Kommentar in #1449 gepostet. Keine Code-/Workflow-Änderungen.
+- **Merged (Session 37, 2026-04-06)**: #1450 — 40 untracked Files klassifiziert (alle Bucket 1: commit). PR #1457 (39c5d864). 28 Session-Logs, 2 SDK-Tests, 3 DR-Evidence-Logs, 1 Infra-Script, 6 Docs/Reports. Working Tree clean.
+- **Merged (Session 38, 2026-04-07)**: Dep-Queue-Pass + LR-040-Fix — setup-python v6.2.0 (e8784235/#1121), pytest-cov 7.1.0 (4eec57ab/#1365), tabulate 0.10.0 (955e4410/#1115), pyyaml 6.0.3 (92fa39e0/#1179), ruff 0.15.8 (b88dd312/#1367), black 26.3.1 (c1161b5c/#1147). LR-040 soak_monitor fail-closed precheck (8aaf109a/#1467).
+- **Merged (Session 39, 2026-04-07)**: CI SSOT Freeze + Governance-Deltas — PR #1475 (f2410e06) [docs-only]: ci.yaml Freeze-Status, Dependabot Override Path, LABELS.md. PR #1476 (53771330) [workflows-only]: ci.yaml Header-Kommentar. Issues geschlossen: #1474 (CI SSOT), #1462 (Dependabot-Pfad), #1471 (setup-python v6 Kompatibilitaet bestaetigt), #1472 (pre-close manual-only Governance-Entscheid). Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation ausstehend), #1473 (Backup-Drill nur nach Stack-Freigabe — Blocker #1478 damals noch offen).
+- **Merged (Session 40, 2026-04-07)**: #1478 — Compress-Archive OOM in `backup_all.ps1` behoben; `ZipFile.CreateFromDirectory` (.NET BCL, streaming) als Ersatz. PR #1479 (6b53c6e8). Backup-/Restore-Drill (#1473) erfolgreich abgeschlossen: `make backup` Exit-Code 0, ZIP 78.4 MB, Postgres (9 Tabellen) + Redis restored und verifiziert. Issues #1473 + #1478 geschlossen. Bewusst offen: #1463 (externe Node.js-Runtime-Verifikation).
+- **Merged (Session 41, 2026-04-07)**: Batch #1481–#1484 — LR-AUDIT-STATUS SSOT-Reconcile (LR-050 OPEN→NO-GO, LR-011 OPEN→PASS), DR-Front-Door vs. historischer 2025-12-31-Snapshot getrennt, enforce-root-baseline.ps1 repo-relativ, Secrets-Canon fail-closed (compose.blue+red: `:?SECRETS_PATH must be set`; Front-Doors: generischer Default+Guard). PR #1485 (23a6dae0). Issues #1481/#1482/#1483/#1484 geschlossen.
+- **Session 42 (2026-04-08)**: #1502 read-only disponiert. Befund: aktive Runtime-Canon kommt aus service-lokalen requirements + real referenzierten Dockerfile-Installationsstellen; root `requirements.txt` ist aktuell CI/Test-/Convenience-Layer, nicht Runtime-Truth. `redis` ist der staerkste Drift-Fall; `prometheus_client` bleibt wegen `db_writer` unpinned nicht sauber root-kontrolliert. Abschlusskommentar in #1502 gepostet; Status: bereit fuer Claude Code. Keine Repo-/Runtime-Reconciliation in dieser Session.
+- **Merged (Session 43, 2026-04-08)**: #1488 — Decision-/Policy-/Trace-Kontext ueber den Signal->Order->Trade-Pfad persistiert. PR #1516 (3efe4410). Issue #1488 geschlossen.
+- **Merged (Session 44, 2026-04-08)**: #1498 — verbleibende Dual-Writer-Naht fuer `orders`/`trades` reduziert; `trades` kanonisch ueber `db_writer`, `orders` kanonischer Insert plus execution-lokales Lifecycle-Enrichment. PR #1519 (2bfbeb30). Issue #1498 geschlossen.
+- **Merged (Session 45, 2026-04-08)**: #1520 — execution-side Order-Fallback-Insert entfernt; Lifecycle-Updates binden jetzt fail-closed an kanonische `metadata.order_id`. PR #1521 (3729c59f). Issue #1520 geschlossen.
+- **Merged (Session 46, 2026-04-08)**: #1500 — unowned Phase-2-Metadata-Felder aus dem persistierten Order-Vertrag entfernt; keine neuen `account_context.*`, keine neue `execution_context.slippage_pct`, kein `ingest_ts_ms` ohne kanonischen Producer. PR #1522 (49870e63). Issue #1500 geschlossen.
+- **Session 47 (2026-04-08)**: #1509 GitHub-Reconciliation abgeschlossen. Der fruehere `prometheus_client`-Stub-Leak blockiert die gemeinsame Collection auf `main` nicht mehr; effektive Landing-Evidenz laeuft ueber die gemergten Folge-PRs #1516/#1519 statt ueber den urspruenglichen Branch-Commit. Abschlusskommentar in #1509 gepostet; Issue geschlossen.
+- **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
+- **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
+- **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
 
 ---
 
@@ -114,7 +119,9 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 ---
 
-## Known Blockers / Next Actions
+## Residual Notes / Not a Live Queue
+
+Nur explizit als offen oder aktuell markierte Punkte sind aktiver Arbeitsfokus. Geschlossene, supersedierte oder historische Hinweise bleiben hier als Restkontext stehen und sind kein GitHub-Live-Mirror.
 
 1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
