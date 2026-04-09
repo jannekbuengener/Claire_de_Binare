@@ -4,7 +4,7 @@
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Last Updated**: 2026-04-09
-**GitHub Boundary**: Live commit- and PR-state stays in GitHub/`gh`; this file is a curated repo/engineering ledger, not a live mirror.
+**GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
@@ -121,7 +121,7 @@ Neue Testdatei: `tests/unit/scripts/test_grafana_alerting_provisioning.py` (21 T
 
 ## Residual Notes / Not a Live Queue
 
-Nur explizit als offen oder aktuell markierte Punkte sind aktiver Arbeitsfokus. Geschlossene, supersedierte oder historische Hinweise bleiben hier als Restkontext stehen und sind kein GitHub-Live-Mirror.
+Nur explizit als offen oder aktuell markierte Punkte sind aktiver Arbeitsfokus. Geschlossene, supersedierte oder historische Hinweise bleiben hier als Restkontext stehen und sind kein GitHub-Live-Mirror; den aktuellen Live-State einzelner Issues oder PRs immer direkt in GitHub pruefen.
 
 1. **#1277 (soak restart scope):** Gemerged (PR #1279, `b5486c9`). Check 1 auf 12 SUT-Services eingeschränkt; Non-SUT-Restarts nur INFO.
 2. **#1278 (validation mode):** Gemerged (PR #1280, `ac6ab87`). Separater Artifact-Namespace, Pointer, `run_intent.txt`, Gate-Evaluator `NOT_APPLICABLE` für Validation Runs.
