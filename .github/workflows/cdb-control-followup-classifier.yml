@@ -33,6 +33,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
+      - name: Install gh-models extension
+        shell: bash
+        run: gh extension install github/gh-models --force
+
       - name: Ensure wrapper is executable
         shell: bash
         run: chmod +x .github/scripts/run_cdb_control_followup.sh
