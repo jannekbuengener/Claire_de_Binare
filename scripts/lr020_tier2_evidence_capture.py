@@ -161,7 +161,7 @@ def _build_signal(
     """Signal payload for integrated pipeline injection (signals mode).
 
     Field values are chosen to pass all Risk Service thresholds:
-      pct_change_15m > 0.03  (threshold: signal_pct_change_15m_min)
+      pct_change_15m > 3.0   (threshold: signal_pct_change_15m_min)
       volume_15m     > 0.165 (threshold: signal_volume_15m_min)
       ts_ms          fresh   (staleness_s < 5s when Risk evaluates)
 
@@ -182,7 +182,7 @@ def _build_signal(
         "bot_id": bot_id,
         "symbol": "BTCUSDT",
         "side": "BUY",
-        "pct_change_15m": 0.05,
+        "pct_change_15m": 5.0,
         "volume_15m": 0.20,
         "ts_ms": now_ms,
     }

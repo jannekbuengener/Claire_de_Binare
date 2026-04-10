@@ -62,7 +62,7 @@ _SIGNAL_ALLOW = {
     "symbol": "BTCUSDT",
     "signal_id": "lr020-sig-001",
     "ts_ms": _NOW_MS - 100,  # 0.1 s old
-    "pct_change_15m": 0.05,  # > 0.03 threshold
+    "pct_change_15m": 5.0,  # > 3.0 threshold
     "volume_15m": 0.2,  # > 0.165 threshold
 }
 

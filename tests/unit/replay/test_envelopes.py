@@ -21,8 +21,8 @@ SAMPLE_SNAPSHOT = {
 
 SAMPLE_DECISION_CONTEXT = {
     "contract_version": "decision_contract_v1",
-    "inputs": {"symbol": "BTCUSDT", "slippage_pct": 0.001},
-    "thresholds": {"blocked_regimes": [3, 4], "max_slippage_pct": 0.002},
+    "inputs": {"symbol": "BTCUSDT", "slippage_pct": 0.1},
+    "thresholds": {"blocked_regimes": [3, 4], "max_slippage_pct": 0.2},
 }
 
 

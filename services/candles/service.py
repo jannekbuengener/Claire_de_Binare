@@ -250,9 +250,9 @@ class CandleService:
                 logger.warning("market_state skip: %s close=0 in history", symbol)
                 return
 
-            # Compute returns (as fractions, not percentages)
-            return_1m = (close_now - close_1m_ago) / close_1m_ago
-            return_5m = (close_now - close_5m_ago) / close_5m_ago
+            # Canonical runtime contract: percentage points (10.0 == 10%)
+            return_1m = ((close_now - close_1m_ago) / close_1m_ago) * 100.0
+            return_5m = ((close_now - close_5m_ago) / close_5m_ago) * 100.0
             price_change_5m = abs(return_5m)
 
             # Lookup regime_id from stream.regime_signals (fail-closed)
@@ -287,7 +287,7 @@ class CandleService:
 
             stats["market_state_updates"] += 1
             logger.debug(
-                "market_state updated: %s return_1m=%.6f return_5m=%.6f",
+                "market_state updated: %s return_1m=%.6f%% return_5m=%.6f%%",
                 symbol,
                 return_1m,
                 return_5m,

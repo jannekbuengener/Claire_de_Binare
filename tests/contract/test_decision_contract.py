@@ -113,8 +113,8 @@ def test_decision_rc_001_regime_block():
 @pytest.mark.contract
 def test_decision_rc_010_signal_thresholds():
     now_ms, signal, market_state, account_state, market_health = _base_inputs()
-    # Threshold is 0.03 (3% as fraction), so 0.02 (2%) should trigger RC_010
-    signal["pct_change_15m"] = 0.02
+    # Canonical unit is percentage points: 0.05 means 0.05%, not 5%.
+    signal["pct_change_15m"] = 0.05
     decision, reason_code, _ = risk_service.decide_trade(
         signal, market_state, account_state, market_health, now_ms
     )

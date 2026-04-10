@@ -191,14 +191,14 @@ class TestComputeEventHash:
             "ts_ms": 1000,
             "payload": {"symbol": "BTCUSDT", "decision": "ALLOW"},
             "decision_context": {
-                "inputs": {"slippage_pct": 0.001, "symbol": "BTCUSDT"},
-                "thresholds": {"max_slippage_pct": 0.002},
+                "inputs": {"slippage_pct": 0.1, "symbol": "BTCUSDT"},
+                "thresholds": {"max_slippage_pct": 0.2},
             },
         }
         env2 = {
             "decision_context": {
-                "thresholds": {"max_slippage_pct": 0.002},
-                "inputs": {"symbol": "BTCUSDT", "slippage_pct": 0.001},
+                "thresholds": {"max_slippage_pct": 0.2},
+                "inputs": {"symbol": "BTCUSDT", "slippage_pct": 0.1},
             },
             "payload": {"decision": "ALLOW", "symbol": "BTCUSDT"},
             "ts_ms": 1000,
@@ -447,7 +447,7 @@ class TestEmitOrderEnvelope:
                 decision_id="dec-001",
                 order_id="ord-001",
                 trace_id="trace-001",
-                decision_context={"thresholds": {"max_slippage_pct": 0.002}},
+                decision_context={"thresholds": {"max_slippage_pct": 0.2}},
             )
         parsed = json.loads(caplog.records[0].message)
         assert parsed["event_type"] == "ORDER"
@@ -456,7 +456,7 @@ class TestEmitOrderEnvelope:
         )
         assert parsed["correlation_id"] == compute_correlation_id("sig-001")
         assert parsed["trace_id"] == "trace-001"
-        assert parsed["decision_context"] == {"thresholds": {"max_slippage_pct": 0.002}}
+        assert parsed["decision_context"] == {"thresholds": {"max_slippage_pct": 0.2}}
 
 
 class TestEmitFillEnvelope:

@@ -162,14 +162,14 @@ KILL_SWITCH_BLOCK_REASON_CODE = "KILL_SWITCH_ACTIVE"
 KILL_SWITCH_UNEVALUABLE_REASON_CODE = "KILL_SWITCH_UNEVALUABLE"
 
 DECISION_THRESHOLDS = {
+    # Canonical runtime/evidence unit for these fields is percentage points.
+    # Example: 3.0 == 3%, 0.5 == 0.5%.
     "return_1m_min": -2.0,
     "return_5m_min": -5.0,
     "price_change_5m_abs_max": 10.0,
     "staleness_s_max": 5.0,
     "data_silence_s_max": 30.0,
-    # P90-calibrated thresholds (see RISK_RC002_CALIBRATION_EVIDENCE.md)
-    # Data arrives as fractions (0.01 = 1%), not percentages
-    "signal_pct_change_15m_min": 0.03,  # ~10% pass rate (P90 = 0.034)
+    "signal_pct_change_15m_min": 3.0,
     "signal_volume_15m_min": 0.165,  # ~10% pass rate (P90 = 0.166)
     "daily_drawdown_pct_max": 5.0,
     "total_exposure_pct_max": 50.0,

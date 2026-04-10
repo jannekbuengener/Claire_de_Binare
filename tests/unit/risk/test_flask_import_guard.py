@@ -153,7 +153,7 @@ class TestFlaskImportGuard:
 
             # decide_trade mit minimalen Inputs ausfuehren
             decision, reason_code, evidence = mod.decide_trade(
-                signal={"symbol": "BTCUSDT", "pct_change_15m": 0.05, "volume_15m": 0.2,
+                signal={"symbol": "BTCUSDT", "pct_change_15m": 5.0, "volume_15m": 0.2,
                         "ts_ms": 1000000, "signal_id": "test-001"},
                 market_state={"regime_id": 0, "return_1m": 0.5, "return_5m": 1.0,
                               "price_change_5m": 0.3, "ts_ms": 1000000,

@@ -64,7 +64,7 @@ def _make_mock_redis(candle_entries: list, regime_entries: list) -> MagicMock:
 
 @pytest.mark.unit
 def test_correct_return_calculation():
-    """return_1m and return_5m computed correctly from 6 candles."""
+    """return_1m and return_5m are emitted as percentage points."""
     # candles[0]=110, candles[1]=100, candles[5]=50 (newest first)
     closes = [110.0, 100.0, 99.0, 98.0, 97.0, 50.0]
     mock_redis = _make_mock_redis(_candle_entries("BTCUSDT", closes), [])
@@ -76,9 +76,9 @@ def test_correct_return_calculation():
     assert key == f"{svc.MARKET_STATE_KEY_PREFIX}:BTCUSDT"
     assert ttl == svc.MARKET_STATE_TTL_SECONDS
     payload = json.loads(raw)
-    assert payload["return_1m"] == pytest.approx((110 - 100) / 100)
-    assert payload["return_5m"] == pytest.approx((110 - 50) / 50)
-    assert payload["price_change_5m"] == pytest.approx(abs((110 - 50) / 50))
+    assert payload["return_1m"] == pytest.approx(((110 - 100) / 100) * 100)
+    assert payload["return_5m"] == pytest.approx(((110 - 50) / 50) * 100)
+    assert payload["price_change_5m"] == pytest.approx(abs(((110 - 50) / 50) * 100))
     assert svc._stats["market_state_updates"] == 1
     assert svc._stats["market_state_skipped"] == 0
 

@@ -29,9 +29,9 @@ from dual_write_evidence_gate import (
 
 def _make_state(
     symbol: str = "BTCUSDT",
-    return_1m: float = 0.01,
-    return_5m: float = 0.05,
-    price_change_5m: float = 0.05,
+    return_1m: float = 10.0,
+    return_5m: float = 120.0,
+    price_change_5m: float = 120.0,
     ts_ms: int = 1_700_000_060_000,
     last_tick_ts_ms: int | None = 1_700_000_059_000,
     regime_id: int | None = 0,
@@ -134,8 +134,8 @@ def test_ts_ms_gap_at_boundary_pass():
 @pytest.mark.unit
 def test_return_1m_divergence_fail():
     """return_1m delta above tolerance → FAIL."""
-    c = _make_state(return_1m=0.01)
-    s = _make_state(return_1m=0.01 + RETURN_TOL * 10)
+    c = _make_state(return_1m=10.0)
+    s = _make_state(return_1m=10.0 + RETURN_TOL * 10)
     result = compare_symbol("BTCUSDT", c, s)
     assert result["result"] == "FAIL"
     field = next(f for f in result["fields"] if f["field"] == "return_1m")
@@ -145,8 +145,8 @@ def test_return_1m_divergence_fail():
 @pytest.mark.unit
 def test_return_5m_divergence_fail():
     """return_5m delta above tolerance → FAIL."""
-    c = _make_state(return_5m=0.05)
-    s = _make_state(return_5m=0.05 + RETURN_TOL * 10)
+    c = _make_state(return_5m=120.0)
+    s = _make_state(return_5m=120.0 + RETURN_TOL * 10)
     result = compare_symbol("BTCUSDT", c, s)
     field = next(f for f in result["fields"] if f["field"] == "return_5m")
     assert field["result"] == "FAIL"
@@ -155,8 +155,8 @@ def test_return_5m_divergence_fail():
 @pytest.mark.unit
 def test_price_change_5m_divergence_fail():
     """price_change_5m delta above tolerance → FAIL."""
-    c = _make_state(price_change_5m=0.05)
-    s = _make_state(price_change_5m=0.05 + RETURN_TOL * 10)
+    c = _make_state(price_change_5m=120.0)
+    s = _make_state(price_change_5m=120.0 + RETURN_TOL * 10)
     result = compare_symbol("BTCUSDT", c, s)
     field = next(f for f in result["fields"] if f["field"] == "price_change_5m")
     assert field["result"] == "FAIL"
@@ -165,7 +165,7 @@ def test_price_change_5m_divergence_fail():
 @pytest.mark.unit
 def test_return_fields_within_tolerance_pass():
     """Float return fields identical → all PASS."""
-    raw = _make_state(return_1m=0.01234567890, return_5m=0.05, price_change_5m=0.05)
+    raw = _make_state(return_1m=1.234567890, return_5m=5.0, price_change_5m=5.0)
     result = compare_symbol("BTCUSDT", raw, raw)
     for fname in ("return_1m", "return_5m", "price_change_5m"):
         field = next(f for f in result["fields"] if f["field"] == fname)

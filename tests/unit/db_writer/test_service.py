@@ -63,6 +63,39 @@ from services.db_writer.db_writer import DatabaseWriter
 
 
 @pytest.mark.unit
+def test_normalize_exposure_pct_preserves_percentage_points():
+    assert DatabaseWriter.normalize_exposure_pct(10.0) == 10.0
+    assert DatabaseWriter.normalize_exposure_pct(0.5) == 0.5
+
+
+@pytest.mark.unit
+def test_process_portfolio_snapshot_persists_percentage_point_exposure():
+    writer = DatabaseWriter()
+    writer.db_conn = MagicMock()
+    cursor = writer.db_conn.cursor.return_value
+    cursor.fetchone.return_value = (1,)
+
+    writer.process_portfolio_snapshot(
+        {
+            "timestamp": datetime.now(timezone.utc),
+            "total_equity": 10000.0,
+            "available_balance": 9000.0,
+            "margin_used": 1000.0,
+            "daily_pnl": 50.0,
+            "total_unrealized_pnl": 25.0,
+            "total_realized_pnl": 10.0,
+            "total_exposure_pct": 10.0,
+            "max_drawdown_pct": 1.5,
+            "open_positions": 2,
+            "metadata": {"source": "test"},
+        }
+    )
+
+    insert_params = cursor.execute.call_args[0][1]
+    assert insert_params[7] == 10.0
+
+
+@pytest.mark.unit
 def test_signal_type_mapping_from_side():
     """
     Test: signal_type backward compatibility mapping from 'side' field.

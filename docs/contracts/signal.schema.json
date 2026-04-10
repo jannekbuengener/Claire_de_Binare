@@ -25,8 +25,14 @@
     "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
     "price": {"type": "number"},
     "reason": {"type": "string"},
-    "pct_change": {"type": "number"},
-    "pct_change_15m": {"type": "number"},
+    "pct_change": {
+      "type": "number",
+      "description": "Percentage-point price change; 3.0 means 3%."
+    },
+    "pct_change_15m": {
+      "type": "number",
+      "description": "Percentage-point signal momentum over the lookback window; 3.0 means 3%."
+    },
     "volume_15m": {"type": "number"},
     "ts_ms": {"type": "integer"}
   }

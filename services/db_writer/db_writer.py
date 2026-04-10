@@ -180,18 +180,11 @@ class DatabaseWriter:
 
     @staticmethod
     def normalize_exposure_pct(value) -> float:
-        """Normalize exposure values sent either as decimal (0-1) or percentage (0-100)."""
+        """Clamp portfolio exposure percentage points (10.0 == 10%)."""
         try:
             exposure = float(value)
         except (TypeError, ValueError):
             return 0.0
-
-        if exposure > 1:
-            logger.warning(
-                "Portfolio snapshot total_exposure_pct looks like a percentage (%.4f); normalizing by /100",
-                exposure,
-            )
-            return exposure / 100.0
 
         if exposure < 0:
             logger.warning(

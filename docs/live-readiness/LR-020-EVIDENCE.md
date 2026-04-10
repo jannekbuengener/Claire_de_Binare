@@ -64,7 +64,7 @@ no live stack, no `E2E_RUN=1` guard. Runs in CI as part of
 [probe] → signals channel (3 Risk subscribers confirmed)
             ↓
         Risk Service (DECISION_ALLOW: regime=TREND, data fresh, signal quality OK,
-                      drawdown=0.01%, exposure=0.05%, TRACE_CONTRACT_V1_ENABLED=1)
+                      drawdown=0.5%, exposure=10.0%, TRACE_CONTRACT_V1_ENABLED=1)
             ↓
         orders channel (with decision_contract_v1 bundle attached)
             ↓
