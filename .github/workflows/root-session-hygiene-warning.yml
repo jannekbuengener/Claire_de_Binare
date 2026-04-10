@@ -1,0 +1,58 @@
+name: Root Session Hygiene Warning
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  root-session-hygiene-warning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve diff refs
+        id: refs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            base_ref="${{ github.event.pull_request.base.sha }}"
+            head_ref="${{ github.event.pull_request.head.sha }}"
+          else
+            base_ref="origin/main"
+            head_ref="${GITHUB_SHA}"
+            git fetch origin main --depth=1
+          fi
+
+          echo "base_ref=$base_ref" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Run warning scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/root-session-hygiene
+
+          python3 .github/scripts/root_session_hygiene_warn.py \
+            --base "${{ steps.refs.outputs.base_ref }}" \
+            --head "${{ steps.refs.outputs.head_ref }}" \
+            --output-json artifacts/root-session-hygiene/result.json \
+            --output-md artifacts/root-session-hygiene/summary.md
+
+          cat artifacts/root-session-hygiene/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: root-session-hygiene-warning
+          path: artifacts/root-session-hygiene/
+          if-no-files-found: error
