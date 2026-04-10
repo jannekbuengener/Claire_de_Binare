@@ -56,6 +56,12 @@ class TestMarketDataContract:
         """additionalProperties muss false sein (strict contract)"""
         assert schema["additionalProperties"] is False
 
+    def test_pct_change_field_documents_percentage_points(self, schema):
+        """pct_change muss die aktive Einheit explizit als Prozentpunkte dokumentieren."""
+        pct_change_description = schema["properties"]["pct_change"]["description"]
+        assert "Percentage-point" in pct_change_description
+        assert "3.0 means 3%." in pct_change_description
+
     def test_valid_examples(self, schema):
         """Alle valid examples müssen gegen Schema validieren"""
         examples = load_json(MARKET_DATA_VALID)
@@ -138,6 +144,18 @@ class TestSignalContract:
         assert "symbol" in required
         assert "side" in required
         assert "timestamp" in required
+
+    def test_pct_change_fields_document_percentage_points(self, schema):
+        """Signal pct_change Felder müssen ihre Einheit explizit als Prozentpunkte dokumentieren."""
+        pct_change_description = schema["properties"]["pct_change"]["description"]
+        pct_change_15m_description = schema["properties"]["pct_change_15m"][
+            "description"
+        ]
+
+        assert "Percentage-point" in pct_change_description
+        assert "3.0 means 3%." in pct_change_description
+        assert "Percentage-point" in pct_change_15m_description
+        assert "3.0 means 3%." in pct_change_15m_description
 
     def test_schema_no_additional_properties(self, schema):
         """additionalProperties muss false sein (strict contract)"""

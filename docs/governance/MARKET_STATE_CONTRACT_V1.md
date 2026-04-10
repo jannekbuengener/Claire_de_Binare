@@ -23,9 +23,9 @@
 
 | Field | Type | Unit | Description |
 |-------|------|------|-------------|
-| `return_1m` | `float` | fraction | 1-minute price return: `(close_now - close_1m_ago) / close_1m_ago` |
-| `return_5m` | `float` | fraction | 5-minute price return: `(close_now - close_5m_ago) / close_5m_ago` |
-| `price_change_5m` | `float` | fraction | Absolute 5-minute price change (for volatility check) |
+| `return_1m` | `float` | percentage points | 1-minute price return: `((close_now - close_1m_ago) / close_1m_ago) * 100` |
+| `return_5m` | `float` | percentage points | 5-minute price return: `((close_now - close_5m_ago) / close_5m_ago) * 100` |
+| `price_change_5m` | `float` | percentage points | Absolute 5-minute price change (for volatility check) |
 
 ## Required Fields for Data Freshness (V1)
 
@@ -53,23 +53,26 @@
 ### return_1m
 ```
 return_1m = (current_close - close_1_minute_ago) / close_1_minute_ago
+return_1m_pct = return_1m * 100
 ```
-- **Range**: Typically -0.05 to +0.05 (±5%)
+- **Range**: Typically -5.0 to +5.0 (±5%)
 - **Safety threshold**: `return_1m > -2.0` (RC_002 blocks if ≤ -2.0)
 
 ### return_5m
 ```
 return_5m = (current_close - close_5_minutes_ago) / close_5_minutes_ago
+return_5m_pct = return_5m * 100
 ```
-- **Range**: Typically -0.10 to +0.10 (±10%)
+- **Range**: Typically -10.0 to +10.0 (±10%)
 - **Safety threshold**: `return_5m > -5.0` (RC_002 blocks if ≤ -5.0)
 
 ### price_change_5m
 ```
 price_change_5m = abs((current_close - close_5_minutes_ago) / close_5_minutes_ago)
+price_change_5m_pct = price_change_5m * 100
 ```
-- **Range**: 0.0 to ~0.10 (0-10%)
-- **Safety threshold**: `abs(price_change_5m) < 10.0` (RC_002 blocks if ≥ 10.0)
+- **Range**: 0.0 to ~10.0 (0-10%)
+- **Safety threshold**: `abs(price_change_5m) <= 10.0` (RC_002 blocks if > 10.0)
 
 ## Invariants
 
@@ -106,9 +109,9 @@ if (
 ```json
 {
   "market_state": {
-    "return_1m": -0.0023,
-    "return_5m": 0.0012,
-    "price_change_5m": 0.0035,
+    "return_1m": -0.23,
+    "return_5m": 0.12,
+    "price_change_5m": 0.35,
     "ts_ms": 1771074848286,
     "last_tick_ts_ms": 1771074848100,
     "regime_id": 0,
