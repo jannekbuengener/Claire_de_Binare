@@ -8,6 +8,7 @@
 # Allow official test suite in tests/ directory (must come AFTER wildcard)
 !tests/**/*.py
 !tests/**/*.js
+!services/validation/strategy_backtest_runner.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js
 debug_*.py
