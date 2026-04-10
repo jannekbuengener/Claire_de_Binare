@@ -33,18 +33,22 @@ from core.utils.redis_payload import sanitize_payload
 from core.utils.uuid_gen import generate_uuid_hex
 from core.utils.trace_toggle import trace_contract_v1_enabled
 from core.auth import validate_all_auth
+from core.contracts.external_adapter_contracts import ExecutionAdapterRequest
+from core.contracts.external_adapter_registry import (
+    EXECUTION_ADAPTER_ENV_VAR,
+    MEXC_BUILTIN,
+    MOCK_BUILTIN,
+    build_execution_adapter,
+    resolve_execution_adapter_id,
+)
 
 try:
     from . import config
     from .models import Order, ExecutionResult, OrderStatus
-    from .mock_executor import MockExecutor
-    from .live_executor import LiveExecutor
     from .database import Database
 except ImportError:
     import config
     from models import Order, ExecutionResult, OrderStatus
-    from mock_executor import MockExecutor
-    from live_executor import LiveExecutor
     from database import Database
 
 # Logging setup mit zentraler Konfiguration
@@ -314,18 +318,27 @@ def init_services():
         pubsub.subscribe(config.TOPIC_ORDERS)
         logger.info(f"Subscribed to topic: {config.TOPIC_ORDERS}")
 
-        # Initialize executor - LIVE DATA CONVERSION
-        if config.MOCK_TRADING:
-            executor = MockExecutor()
-            logger.info("🟢 Using MockExecutor (Paper Trading Mode)")
-        else:
+        adapter_id = resolve_execution_adapter_id(
+            os.getenv(EXECUTION_ADAPTER_ENV_VAR),
+            mock_trading=config.MOCK_TRADING,
+        )
+
+        if adapter_id == MOCK_BUILTIN:
+            executor = build_execution_adapter(
+                adapter_id,
+                mock_trading=config.MOCK_TRADING,
+            )
+            logger.info("🟢 Using execution adapter: %s (Paper Trading Mode)", adapter_id)
+        elif adapter_id == MEXC_BUILTIN:
             dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
             testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
             if not dry_run and (not config.MEXC_API_KEY or not config.MEXC_API_SECRET):
                 raise RuntimeError(
                     "Missing MEXC API credentials for live trading. Set MEXC_API_KEY/MEXC_API_SECRET or enable DRY_RUN."
                 )
-            executor = LiveExecutor(
+            executor = build_execution_adapter(
+                adapter_id,
+                mock_trading=config.MOCK_TRADING,
                 api_key=config.MEXC_API_KEY or None,
                 api_secret=config.MEXC_API_SECRET or None,
                 testnet=testnet,
@@ -338,7 +351,13 @@ def init_services():
                 )
             else:
                 mode = "TESTNET" if testnet else "LIVE"
-                logger.warning(f"🔴 Live Executor in {mode} mode - REAL MONEY!")
+                logger.warning(
+                    "🔴 Execution adapter %s in %s mode - REAL MONEY!",
+                    adapter_id,
+                    mode,
+                )
+        else:
+            raise RuntimeError(f"Unsupported execution adapter id: {adapter_id}")
 
         # Initialize database
         db = _init_with_retry(
@@ -526,15 +545,44 @@ def process_order(order_data: object):
         )
 
         if executor is None:
-            raise RuntimeError("Executor not initialised")
+            raise RuntimeError("Execution adapter not initialised")
 
-        # Execute order
-        result = executor.execute_order(order)
-        if result is None:
-            raise RuntimeError("Executor returned no result")
+        adapter_run_mode = order.run_mode if order.run_mode else (
+            "paper" if config.MOCK_TRADING else "live"
+        )
+        adapter_response = executor.execute(
+            ExecutionAdapterRequest(
+                order=order.to_dict(),
+                run_mode=adapter_run_mode,
+                decision_contract_v1={},
+                runtime_context={
+                    "strategy_id": order.strategy_id,
+                    "bot_id": order.bot_id,
+                    "adapter_id": getattr(executor, "adapter_id", None),
+                },
+                policy_snapshot=order.policy_snapshot,
+            )
+        )
 
-        result.strategy_id = order.strategy_id
-        result.bot_id = order.bot_id
+        result = ExecutionResult(
+            order_id=adapter_response.order_id,
+            symbol=order.symbol,
+            side=order.side,
+            quantity=order.quantity,
+            filled_quantity=adapter_response.filled_quantity,
+            status=adapter_response.status,
+            strategy_id=order.strategy_id,
+            bot_id=order.bot_id,
+            client_id=order.client_id,
+            price=adapter_response.price,
+            error_message=adapter_response.error_message,
+            timestamp=utcnow().isoformat(),
+            fill_id=(
+                getattr(adapter_response, "fill_id", None) or adapter_response.order_id
+                if adapter_response.status == OrderStatus.FILLED.value
+                else None
+            ),
+        )
         result.metadata = _build_result_metadata(order, result)
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger

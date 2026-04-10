@@ -62,7 +62,17 @@ class BuiltinMomentumStrategyAdapter:
 
     adapter_id: StrategyAdapterId = MOMENTUM_BUILTIN
 
+    def __init__(
+        self,
+        evaluate_fn: Callable[[StrategyAdapterRequest], StrategyAdapterResponse]
+        | None = None,
+    ) -> None:
+        self._evaluate_fn = evaluate_fn
+
     def evaluate(self, request: StrategyAdapterRequest) -> StrategyAdapterResponse:
+        if self._evaluate_fn is not None:
+            return self._evaluate_fn(request)
+
         snapshot = request.market_snapshot
         event = request.market_event
         runtime_context = request.runtime_context

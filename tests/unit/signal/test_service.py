@@ -19,6 +19,10 @@ if str(services_path) not in sys.path:
 from service import SignalEngine
 from config import SignalConfig
 from models import MarketData, Signal
+from core.contracts.external_adapter_contracts import (
+    StrategyAdapterResponse,
+    StrategySignalCandidate,
+)
 
 
 @pytest.mark.unit
@@ -409,3 +413,62 @@ def test_primary_breakout_v1_emits_sell_even_when_entry_is_blocked():
         assert exit_signal is not None
         assert exit_signal.side == "SELL"
         assert exit_signal.reason == "channel_exit"
+
+
+@pytest.mark.unit
+def test_signal_engine_uses_registry_selected_adapter():
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        bot_id="test_bot",
+        threshold_pct=3.0,
+        min_volume=100000.0,
+    )
+    adapter = MagicMock()
+    adapter.adapter_id = "momentum_builtin"
+    adapter.evaluate.return_value = StrategyAdapterResponse(
+        signals=(
+            StrategySignalCandidate(
+                strategy_id="test_strategy",
+                symbol="BTCUSDT",
+                side="BUY",
+                reason="Momentum: +3.5000% > 3.0%",
+                price=50000.0,
+                pct_change=3.5,
+                metadata={"adapter_id": "momentum_builtin"},
+            ),
+        )
+    )
+
+    with patch("service.config", test_config), patch(
+        "service.build_strategy_adapter", return_value=adapter
+    ):
+        engine = SignalEngine()
+        signal = engine.process_market_data(
+            {
+                "symbol": "BTCUSDT",
+                "price": 50000.0,
+                "timestamp": 1609459200,
+                "pct_change": 3.5,
+                "volume": 200000.0,
+            }
+        )
+
+    assert signal is not None
+    adapter.evaluate.assert_called_once()
+    assert signal.strategy_id == "test_strategy"
+    assert signal.metadata["adapter"] == {"adapter_id": "momentum_builtin"}
+
+
+@pytest.mark.unit
+def test_signal_engine_fails_closed_on_unknown_adapter_id(monkeypatch):
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        threshold_pct=3.0,
+        lookback_minutes=15,
+        min_volume=100000.0,
+    )
+    monkeypatch.setenv("SIGNAL_ADAPTER_ID", "does_not_exist")
+
+    with patch("service.config", test_config):
+        with pytest.raises(KeyError, match="Unknown strategy adapter id"):
+            SignalEngine()

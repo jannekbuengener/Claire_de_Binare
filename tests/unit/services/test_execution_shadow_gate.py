@@ -103,7 +103,7 @@ def test_shadow_mode_blocks_execution(
     assert result is not None
     assert result.status == "REJECTED"
     assert "shadow mode" in result.error_message
-    execution_harness.executor.execute_order.assert_not_called()
+    execution_harness.executor.execute.assert_not_called()
     assert service.stats["shadow_blocked"] == 1
     assert service.stats["orders_rejected"] == 1
     assert "SHADOW-BLOCKED" in caplog.text
@@ -130,7 +130,7 @@ def test_paper_mode_not_blocked(
     execution_harness: _Harness,
 ) -> None:
     """Order with run_mode='paper' must NOT be blocked by shadow gate."""
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -143,7 +143,7 @@ def test_paper_mode_not_blocked(
     result = service.process_order(_valid_order_payload(run_mode="paper"))
 
     assert result is not None
-    execution_harness.executor.execute_order.assert_called_once()
+    execution_harness.executor.execute.assert_called_once()
     assert service.stats["shadow_blocked"] == 0
 
 
@@ -152,7 +152,7 @@ def test_none_mode_not_blocked(
     execution_harness: _Harness,
 ) -> None:
     """Order with run_mode=None (legacy) must NOT be blocked."""
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -165,7 +165,7 @@ def test_none_mode_not_blocked(
     result = service.process_order(_valid_order_payload())  # no run_mode
 
     assert result is not None
-    execution_harness.executor.execute_order.assert_called_once()
+    execution_harness.executor.execute.assert_called_once()
     assert service.stats["shadow_blocked"] == 0
 
 
@@ -174,7 +174,7 @@ def test_live_mode_not_blocked(
     execution_harness: _Harness,
 ) -> None:
     """Order with run_mode='live' must NOT be blocked by shadow gate."""
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -187,7 +187,7 @@ def test_live_mode_not_blocked(
     result = service.process_order(_valid_order_payload(run_mode="live"))
 
     assert result is not None
-    execution_harness.executor.execute_order.assert_called_once()
+    execution_harness.executor.execute.assert_called_once()
     assert service.stats["shadow_blocked"] == 0
 
 
@@ -195,7 +195,7 @@ def test_live_mode_not_blocked(
 def test_execution_result_inherits_order_decision_metadata(
     execution_harness: _Harness,
 ) -> None:
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="fill-1",
@@ -272,7 +272,7 @@ def test_shadow_gate_independent_of_mock_trading(
 
     assert result is not None
     assert result.status == "REJECTED"
-    execution_harness.executor.execute_order.assert_not_called()
+    execution_harness.executor.execute.assert_not_called()
     assert service.stats["shadow_blocked"] == 1
 
 
@@ -339,7 +339,7 @@ def test_kill_switch_active_blocks_execution(
     assert result is not None
     assert result.status == "REJECTED"
     assert "kill-switch" in result.error_message.lower()
-    execution_harness.executor.execute_order.assert_not_called()
+    execution_harness.executor.execute.assert_not_called()
     assert "KILL-SWITCH-BLOCKED" in caplog.text
 
 
@@ -363,7 +363,7 @@ def test_kill_switch_eval_error_fails_closed(
     assert result is not None
     assert result.status == "REJECTED"
     assert "kill-switch" in result.error_message.lower()
-    execution_harness.executor.execute_order.assert_not_called()
+    execution_harness.executor.execute.assert_not_called()
 
 
 @pytest.mark.unit
@@ -371,7 +371,7 @@ def test_kill_switch_inactive_passes(
     execution_harness: _Harness,
 ) -> None:
     """Kill-switch inactive must not block order (fixture default)."""
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -384,7 +384,7 @@ def test_kill_switch_inactive_passes(
     result = service.process_order(_valid_order_payload(run_mode="paper"))
 
     assert result is not None
-    execution_harness.executor.execute_order.assert_called_once()
+    execution_harness.executor.execute.assert_called_once()
 
 
 @pytest.mark.unit
@@ -392,7 +392,7 @@ def test_execution_result_propagates_fill_context(
     execution_harness: _Harness,
 ) -> None:
     """Execution result must preserve signal timing in fill_context metadata."""
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -436,7 +436,7 @@ def test_execution_result_keeps_missing_signal_ts_explicit(
 ) -> None:
     """Missing upstream signal_ts_ms must remain explicit null, not synthetic."""
     caplog.set_level(logging.WARNING)
-    execution_harness.executor.execute_order.return_value = MagicMock(
+    execution_harness.executor.execute.return_value = MagicMock(
         status="FILLED",
         filled_quantity=0.001,
         fill_id="f1",
@@ -465,3 +465,17 @@ def test_execution_result_keeps_missing_signal_ts_explicit(
     assert result.metadata is not None
     assert result.metadata["fill_context"]["signal_ts_ms"] is None
     assert "missing canonical signal_ts_ms" in caplog.text
+
+
+@pytest.mark.unit
+def test_init_services_fails_closed_on_unknown_execution_adapter_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("EXECUTION_ADAPTER_ID", "does_not_exist")
+    monkeypatch.setattr(service, "_init_with_retry", MagicMock())
+    monkeypatch.setattr(service, "redis_client", None)
+    monkeypatch.setattr(service, "pubsub", None)
+    monkeypatch.setattr(service, "executor", None)
+    monkeypatch.setattr(service, "db", None)
+
+    assert service.init_services() is False

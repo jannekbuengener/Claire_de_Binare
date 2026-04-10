@@ -37,6 +37,15 @@ from core.utils.uuid_gen import (
     compute_event_pk,
 )
 from core.contracts import PRIMARY_BREAKOUT_V1_STRATEGY_ID
+from core.contracts.external_adapter_contracts import (
+    StrategyAdapterRequest,
+    StrategyAdapterResponse,
+    StrategySignalCandidate,
+)
+from core.contracts.external_adapter_registry import (
+    SIGNAL_ADAPTER_ENV_VAR,
+    build_strategy_adapter,
+)
 
 try:
     from .config import config
@@ -155,6 +164,152 @@ class SignalEngine:
         except ValueError as e:
             logger.error(f"Config-Fehler: {e}")
             sys.exit(1)
+
+        adapter_id = os.getenv(SIGNAL_ADAPTER_ENV_VAR)
+        self.strategy_adapter = build_strategy_adapter(
+            adapter_id,
+            evaluate_fn=self._evaluate_builtin_strategy,
+        )
+        logger.info(
+            "Strategy adapter resolved: %s",
+            getattr(self.strategy_adapter, "adapter_id", "UNKNOWN"),
+        )
+
+    def _build_strategy_runtime_context(self, market_data: MarketData) -> dict:
+        return {
+            "threshold_pct": self.config.threshold_pct,
+            "min_volume": self.config.min_volume,
+            "strategy_id": self.config.strategy_id,
+            "bot_id": self.config.bot_id,
+            "market_data_obj": market_data,
+        }
+
+    @staticmethod
+    def _build_market_snapshot(market_data: MarketData) -> dict:
+        return {
+            "symbol": market_data.symbol,
+            "price": market_data.price,
+            "pct_change": market_data.pct_change,
+            "volume": market_data.volume,
+            "volume_15m": market_data.volume,
+            "trade_qty": market_data.trade_qty,
+            "timestamp": market_data.timestamp,
+        }
+
+    def _signal_from_candidate(
+        self, candidate: StrategySignalCandidate, market_data: MarketData
+    ) -> Signal:
+        now_ms = int(time.time() * 1000)
+        signal = Signal(
+            signal_id=f"sig-{generate_uuid_hex(length=32)}",
+            symbol=candidate.symbol,
+            side=candidate.side,
+            reason=candidate.reason,
+            timestamp=now_ms // 1000,
+            ts_ms=now_ms,
+            price=candidate.price if candidate.price is not None else market_data.price,
+            pct_change=(
+                candidate.pct_change
+                if candidate.pct_change is not None
+                else market_data.pct_change
+            ),
+            pct_change_15m=market_data.pct_change,
+            volume_15m=market_data.volume,
+            strategy_id=candidate.strategy_id,
+            bot_id=self.config.bot_id,
+            confidence=candidate.confidence,
+        )
+        metadata = _build_signal_metadata(signal)
+        if candidate.metadata:
+            adapter_metadata = dict(candidate.metadata)
+            signal_metadata = adapter_metadata.pop("signal_metadata", None)
+            if isinstance(signal_metadata, dict):
+                metadata.update(signal_metadata)
+            if adapter_metadata:
+                metadata["adapter"] = adapter_metadata
+        signal.metadata = _compact_metadata(metadata)
+        return signal
+
+    def _evaluate_builtin_strategy(
+        self, request: StrategyAdapterRequest
+    ) -> StrategyAdapterResponse:
+        adapter_id = getattr(self.strategy_adapter, "adapter_id", "UNKNOWN")
+        market_data_obj = request.runtime_context.get("market_data_obj")
+        if isinstance(market_data_obj, MarketData):
+            market_data = market_data_obj
+        else:
+            market_data = MarketData.from_dict(dict(request.market_event))
+
+        if self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID:
+            breakout_signal = self._process_primary_breakout_v1(
+                market_data,
+                dict(request.market_event),
+            )
+            if breakout_signal is None:
+                return StrategyAdapterResponse(
+                    diagnostics={
+                        "adapter_id": adapter_id,
+                        "status": "no_signal",
+                    }
+                )
+            return StrategyAdapterResponse(
+                signals=(
+                    StrategySignalCandidate(
+                        strategy_id=breakout_signal.strategy_id,
+                        symbol=breakout_signal.symbol,
+                        side=breakout_signal.side,
+                        reason=breakout_signal.reason,
+                        confidence=breakout_signal.confidence,
+                        price=breakout_signal.price,
+                        pct_change=breakout_signal.pct_change,
+                        metadata={
+                            "adapter_id": adapter_id,
+                            "signal_metadata": breakout_signal.metadata or {},
+                        },
+                    ),
+                ),
+                diagnostics={
+                    "adapter_id": adapter_id,
+                    "status": "signal_emitted",
+                },
+            )
+
+        if (
+            market_data.pct_change is None
+            or market_data.pct_change < self.config.threshold_pct
+            or market_data.volume < self.config.min_volume
+        ):
+            return StrategyAdapterResponse(
+                diagnostics={
+                    "adapter_id": adapter_id,
+                    "status": "no_signal",
+                    "pct_change": market_data.pct_change,
+                    "threshold_pct": self.config.threshold_pct,
+                    "volume": market_data.volume,
+                    "min_volume": self.config.min_volume,
+                }
+            )
+
+        return StrategyAdapterResponse(
+            signals=(
+                StrategySignalCandidate(
+                    strategy_id=self.config.strategy_id,
+                    symbol=market_data.symbol,
+                    side="BUY",
+                    reason=(
+                        f"Momentum: {market_data.pct_change:+.4f}% > "
+                        f"{self.config.threshold_pct}%"
+                    ),
+                    price=market_data.price,
+                    pct_change=market_data.pct_change,
+                    metadata={"adapter_id": adapter_id},
+                ),
+            ),
+            diagnostics={
+                "adapter_id": adapter_id,
+                "status": "signal_emitted",
+            },
+        )
 
     def _get_postgres_conn(self) -> Optional[psycopg2.extensions.connection]:
         """Get or create Postgres connection for correlation_ledger writes."""
@@ -455,49 +610,16 @@ class SignalEngine:
                     f"(@ ${market_data.price:.2f} → {market_data.pct_change:+.4f}%)"
                 )
 
-            if self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID:
-                breakout_signal = self._process_primary_breakout_v1(market_data, data)
-                if breakout_signal is not None:
-                    logger.info(
-                        "✨ Breakout-Signal generiert: %s %s @ $%.2f",
-                        breakout_signal.symbol,
-                        breakout_signal.side,
-                        breakout_signal.price or 0.0,
-                    )
-                    latency_ms = (time.time() - start_time) * 1000
-                    self._record_latency(latency_ms)
-                    return breakout_signal
-                latency_ms = (time.time() - start_time) * 1000
-                self._record_latency(latency_ms)
-                return None
-
-            # Prüfe Momentum-Schwelle (legacy built-in fallback path)
-            if market_data.pct_change >= self.config.threshold_pct:
-                # Volume-Check
-                if market_data.volume < self.config.min_volume:
-                    logger.debug(
-                        f"{market_data.symbol}: Volume zu niedrig ({market_data.volume})"
-                    )
-                    return None
-
-                # Signal generieren
-                now_ms = int(time.time() * 1000)
-                signal = Signal(
-                    signal_id=f"sig-{generate_uuid_hex(length=32)}",
+            response = self.strategy_adapter.evaluate(
+                StrategyAdapterRequest(
                     symbol=market_data.symbol,
-                    side="BUY",
-                    reason=f"Momentum: {market_data.pct_change:+.4f}% > {self.config.threshold_pct}%",
-                    timestamp=now_ms // 1000,
-                    ts_ms=now_ms,
-                    price=market_data.price,
-                    pct_change=market_data.pct_change,
-                    pct_change_15m=market_data.pct_change,
-                    volume_15m=market_data.volume,
-                    strategy_id=self.config.strategy_id,
-                    bot_id=self.config.bot_id,
+                    market_event=data,
+                    market_snapshot=self._build_market_snapshot(market_data),
+                    runtime_context=self._build_strategy_runtime_context(market_data),
                 )
-                signal.metadata = _build_signal_metadata(signal)
-
+            )
+            if response.signals:
+                signal = self._signal_from_candidate(response.signals[0], market_data)
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
                     f"({signal.pct_change:+.2f}%)"
