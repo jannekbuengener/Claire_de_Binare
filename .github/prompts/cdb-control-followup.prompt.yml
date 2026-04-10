@@ -125,4 +125,4 @@ evaluators:
   - name: Similarity
     uses: github/similarity
 modelParameters:
-  temperature: 0.6
+  temperature: 0.73
