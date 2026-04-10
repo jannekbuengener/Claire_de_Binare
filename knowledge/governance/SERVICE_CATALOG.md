@@ -48,10 +48,10 @@
 
 | Surface | Code | Status | Funktion |
 |---------|------|--------|----------|
-| **Replay Historical Bridge** | core/replay/historical_bridge.py | **AKTIV (code-level)** | Deterministischer 1m-BTCUSDT Input-Bridge fuer `primary_breakout_v1` |
-| **Strategy Backtest Runner** | services/validation/strategy_backtest_runner.py | **AKTIV (code-level)** | Deterministischer Validation-Runner mit schema-basiertem Gate-Report |
+| **Replay Historical Bridge** | core/replay/historical_bridge.py | **BEREIT** | Deterministischer 1m-BTCUSDT Input-Bridge fuer `primary_breakout_v1` |
+| **Strategy Backtest Runner** | services/validation/strategy_backtest_runner.py | **BEREIT** | Deterministischer Validation-Runner mit schema-basiertem Gate-Report |
 
-Hinweis: Diese Surfaces sind Validation-/Replay-Pfade und keine Runtime-Publisher fuer die Persistenzkanaele des DB Writers.
+Hinweis: Diese Surfaces sind im Code nutzbar, werden aber nicht als eigenstaendige Compose-Services deployed. Sie sind Validation-/Replay-Pfade und keine Runtime-Publisher fuer die Persistenzkanaele des DB Writers.
 
 ---
 

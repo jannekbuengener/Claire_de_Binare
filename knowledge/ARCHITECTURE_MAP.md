@@ -133,7 +133,7 @@ cdb_reports           Up (healthy)
 - `POSITION_OPENED` - Position eroeffnet
 
 ### Strategy-v1 Runtime Boundaries (current main)
-- **Signal**: traegt den minimalen `primary_breakout_v1`-Pfad (entry/exit/cooldown) und den bestehenden `momentum_builtin`-Pfad; die Auswahl erfolgt statisch ueber repo-owned Adapter-IDs (`SIGNAL_ADAPTER_ID`), nicht ueber Plugin-Discovery.
+- **Signal**: traegt den minimalen `primary_breakout_v1`-Pfad (entry/exit/cooldown) und den bestehenden `momentum_builtin`-Pfad; die Strategieauswahl erfolgt ueber `SIGNAL_STRATEGY_ID`, die Adaptergrenze bleibt statisch/repo-owned (`SIGNAL_ADAPTER_ID`), ohne Plugin-Discovery.
 - **Execution**: waehlt statisch zwischen `mock_builtin` und `mexc_builtin` (`EXECUTION_ADAPTER_ID`) und bleibt fail-closed bei unbekannter Adapter-ID.
 - **Risk**: bleibt zentrale Core-Grenze fuer Decision-, Run-Mode- und Policy-Logik; keine Adapter-Selektion umgeht diese Grenze.
 - **Persistence**: `cdb_db_writer` bleibt kanonischer Persistenzpfad fuer Runtime-Events; Validation-/Replay-Artefakte sind davon getrennt.
