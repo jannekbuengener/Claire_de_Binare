@@ -12,6 +12,7 @@ import logging
 import logging.config
 import redis
 import importlib.util
+from collections import defaultdict
 
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
@@ -22,7 +23,7 @@ except ModuleNotFoundError as e:
         raise
 except ValueError:
     _FLASK_AVAILABLE = False
-from typing import Optional
+from typing import Any, Optional
 from pathlib import Path
 
 import psycopg2
@@ -35,6 +36,7 @@ from core.utils.uuid_gen import (
     compute_correlation_id,
     compute_event_pk,
 )
+from core.contracts import PRIMARY_BREAKOUT_V1_STRATEGY_ID
 
 try:
     from .config import config
@@ -115,6 +117,20 @@ def _build_signal_metadata(signal: Signal) -> dict:
     )
 
 
+def _as_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+            return False
+    return False
+
+
 class SignalEngine:
     """Momentum-Signal-Engine"""
 
@@ -127,6 +143,10 @@ class SignalEngine:
             PriceBuffer()
         )  # Stateful pct_change calculation (Issue #345)
         self._pg_conn: Optional[psycopg2.extensions.connection] = None  # Phase 8C
+        self._high_history: dict[str, list[float]] = defaultdict(list)
+        self._low_history: dict[str, list[float]] = defaultdict(list)
+        self._last_entry_ts_ms: dict[str, int] = {}
+        self._position_open_by_symbol: dict[str, bool] = defaultdict(bool)
 
         # Validiere Config
         try:
@@ -229,6 +249,188 @@ class SignalEngine:
             logger.error(f"Redis-Verbindung fehlgeschlagen: {e}")
             sys.exit(1)
 
+    def _load_market_state(self, symbol: str) -> dict[str, Any]:
+        if not self.redis_client:
+            return {}
+
+        tried: list[str] = []
+        for prefix in (
+            self.config.market_state_key_prefix,
+            "market_state",
+            "market_state_shadow",
+        ):
+            if prefix in tried:
+                continue
+            tried.append(prefix)
+            key = f"{prefix}:{symbol}"
+            raw = self.redis_client.get(key)
+            if not raw:
+                continue
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError:
+                logger.warning("Invalid market_state JSON at key=%s", key)
+                return {}
+            if isinstance(parsed, dict):
+                return parsed
+        return {}
+
+    def _append_breakout_history(self, symbol: str, high_now: float, low_now: float) -> None:
+        max_lookback = max(
+            self.config.entry_lookback_minutes, self.config.exit_lookback_minutes
+        )
+        highs = self._high_history[symbol]
+        lows = self._low_history[symbol]
+        highs.append(high_now)
+        lows.append(low_now)
+        if len(highs) > max_lookback:
+            del highs[:-max_lookback]
+        if len(lows) > max_lookback:
+            del lows[:-max_lookback]
+
+    def _process_primary_breakout_v1(
+        self, market_data: MarketData, raw_data: dict[str, Any]
+    ) -> Optional[Signal]:
+        symbol = market_data.symbol.upper()
+        if symbol != self.config.symbol:
+            return None
+
+        close_now = float(market_data.close or market_data.price)
+        high_now = float(market_data.high or close_now)
+        low_now = float(market_data.low or close_now)
+        now_ms = int((market_data.timestamp or int(time.time())) * 1000)
+
+        highs = self._high_history[symbol]
+        lows = self._low_history[symbol]
+        prior_highs = highs[-self.config.entry_lookback_minutes :]
+        prior_lows = lows[-self.config.exit_lookback_minutes :]
+
+        highest_high = (
+            max(prior_highs)
+            if len(prior_highs) >= self.config.entry_lookback_minutes
+            else None
+        )
+        lowest_low = (
+            min(prior_lows)
+            if len(prior_lows) >= self.config.exit_lookback_minutes
+            else None
+        )
+
+        market_state = self._load_market_state(symbol)
+        regime_id = raw_data.get("regime_id", market_state.get("regime_id"))
+        state_ts_ms = market_state.get("ts_ms")
+        market_state_fresh = False
+        regime_fresh = False
+        if isinstance(state_ts_ms, (int, float)):
+            market_state_fresh = (
+                now_ms - int(state_ts_ms)
+            ) <= self.config.market_state_staleness_s * 1000
+            regime_fresh = market_state_fresh and regime_id is not None
+        if not market_state_fresh and "market_state_fresh" in raw_data:
+            market_state_fresh = _as_bool(raw_data["market_state_fresh"])
+        if not regime_fresh and "regime_fresh" in raw_data:
+            regime_fresh = _as_bool(raw_data["regime_fresh"])
+
+        has_trend_regime = regime_id in {0, "TREND"}
+        entry_blocked = any(
+            _as_bool(raw_data.get(name))
+            or _as_bool(market_state.get(name))
+            for name in (
+                "shutdown_active",
+                "kill_switch_active",
+                "risk_blocked",
+                "allocation_blocked",
+                "core_blocked",
+            )
+        )
+
+        cooldown_active = False
+        if symbol in self._last_entry_ts_ms:
+            cooldown_ms = self.config.min_minutes_between_entries * 60 * 1000
+            cooldown_active = now_ms - self._last_entry_ts_ms[symbol] < cooldown_ms
+
+        # Exits are allowed even when entry gates are blocked.
+        if (
+            self._position_open_by_symbol[symbol]
+            and lowest_low is not None
+            and close_now < lowest_low
+        ):
+            breakout_signal = Signal(
+                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                symbol=symbol,
+                side="SELL",
+                reason="channel_exit",
+                timestamp=now_ms // 1000,
+                ts_ms=now_ms,
+                price=close_now,
+                pct_change=market_data.pct_change,
+                pct_change_15m=market_data.pct_change,
+                volume_15m=market_data.volume,
+                strategy_id=self.config.strategy_id,
+                bot_id=self.config.bot_id,
+            )
+            breakout_signal.metadata = _compact_metadata(
+                {
+                    "strategy_id": self.config.strategy_id,
+                    "signal_reason": "channel_exit",
+                    "regime_id": regime_id,
+                    "close_now": close_now,
+                    "highest_high": highest_high,
+                    "lowest_low": lowest_low,
+                    "entry_lookback_minutes": self.config.entry_lookback_minutes,
+                    "exit_lookback_minutes": self.config.exit_lookback_minutes,
+                    "breakout_buffer": self.config.breakout_buffer,
+                }
+            )
+            self._position_open_by_symbol[symbol] = False
+            self._append_breakout_history(symbol, high_now, low_now)
+            return breakout_signal
+
+        entry_ready = (
+            highest_high is not None
+            and market_state_fresh
+            and regime_fresh
+            and has_trend_regime
+            and not entry_blocked
+            and not cooldown_active
+            and close_now > highest_high * (1 + self.config.breakout_buffer)
+        )
+        if entry_ready:
+            breakout_signal = Signal(
+                signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                symbol=symbol,
+                side="BUY",
+                reason="breakout_entry",
+                timestamp=now_ms // 1000,
+                ts_ms=now_ms,
+                price=close_now,
+                pct_change=market_data.pct_change,
+                pct_change_15m=market_data.pct_change,
+                volume_15m=market_data.volume,
+                strategy_id=self.config.strategy_id,
+                bot_id=self.config.bot_id,
+            )
+            breakout_signal.metadata = _compact_metadata(
+                {
+                    "strategy_id": self.config.strategy_id,
+                    "signal_reason": "breakout_entry",
+                    "regime_id": regime_id,
+                    "close_now": close_now,
+                    "highest_high": highest_high,
+                    "lowest_low": lowest_low,
+                    "entry_lookback_minutes": self.config.entry_lookback_minutes,
+                    "exit_lookback_minutes": self.config.exit_lookback_minutes,
+                    "breakout_buffer": self.config.breakout_buffer,
+                }
+            )
+            self._last_entry_ts_ms[symbol] = now_ms
+            self._position_open_by_symbol[symbol] = True
+            self._append_breakout_history(symbol, high_now, low_now)
+            return breakout_signal
+
+        self._append_breakout_history(symbol, high_now, low_now)
+        return None
+
     def process_market_data(self, data: dict) -> Optional[Signal]:
         """
         Verarbeitet Marktdaten und generiert ggf. Signal
@@ -253,7 +455,23 @@ class SignalEngine:
                     f"(@ ${market_data.price:.2f} → {market_data.pct_change:+.4f}%)"
                 )
 
-            # Prüfe Momentum-Schwelle
+            if self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID:
+                breakout_signal = self._process_primary_breakout_v1(market_data, data)
+                if breakout_signal is not None:
+                    logger.info(
+                        "✨ Breakout-Signal generiert: %s %s @ $%.2f",
+                        breakout_signal.symbol,
+                        breakout_signal.side,
+                        breakout_signal.price or 0.0,
+                    )
+                    latency_ms = (time.time() - start_time) * 1000
+                    self._record_latency(latency_ms)
+                    return breakout_signal
+                latency_ms = (time.time() - start_time) * 1000
+                self._record_latency(latency_ms)
+                return None
+
+            # Prüfe Momentum-Schwelle (legacy built-in fallback path)
             if market_data.pct_change >= self.config.threshold_pct:
                 # Volume-Check
                 if market_data.volume < self.config.min_volume:
@@ -375,8 +593,17 @@ class SignalEngine:
         stats["started_at"] = utcnow().isoformat()
 
         logger.info("🚀 Signal-Engine gestartet")
-        logger.info(f"   Schwelle: {self.config.threshold_pct}%")
-        logger.info(f"   Lookback: {self.config.lookback_minutes}min")
+        if self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID:
+            logger.info("   Strategie: primary_breakout_v1")
+            logger.info(
+                "   Entry/Exit Lookback: %s/%s min",
+                self.config.entry_lookback_minutes,
+                self.config.exit_lookback_minutes,
+            )
+            logger.info("   Breakout Buffer: %s", self.config.breakout_buffer)
+        else:
+            logger.info(f"   Schwelle: {self.config.threshold_pct}%")
+            logger.info(f"   Lookback: {self.config.lookback_minutes}min")
         logger.info(f"   Min. Volume: {self.config.min_volume}")
 
         try:

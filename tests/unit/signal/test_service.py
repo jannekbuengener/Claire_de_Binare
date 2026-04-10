@@ -77,6 +77,15 @@ def test_config_validation():
     with pytest.raises(ValueError, match="SIGNAL_STRATEGY_ID muss gesetzt sein"):
         invalid_config_3.validate()
 
+    invalid_breakout = SignalConfig(
+        strategy_id="primary_breakout_v1", trade_side_mode="short_only"
+    )
+    with pytest.raises(
+        ValueError,
+        match="SIGNAL_TRADE_SIDE_MODE muss fuer primary_breakout_v1 long_only sein",
+    ):
+        invalid_breakout.validate()
+
 
 @pytest.mark.unit
 def test_signal_generation():
@@ -234,3 +243,169 @@ def test_backward_compatibility_with_pct_change():
         assert signal is not None
         assert signal.pct_change == 2.5
         assert "Momentum: +2.5000%" in signal.reason
+
+
+@pytest.mark.unit
+def test_primary_breakout_v1_generates_buy_signal_on_breakout():
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100000.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        base_ts = 1700000000
+        seed = [
+            {"price": 100.0, "high": 100.0, "low": 99.0},
+            {"price": 101.0, "high": 101.0, "low": 100.0},
+            {"price": 102.0, "high": 102.0, "low": 101.0},
+        ]
+        for idx, row in enumerate(seed):
+            payload = {
+                "symbol": "BTCUSDT",
+                "timestamp": base_ts + idx * 60,
+                "price": row["price"],
+                "close": row["price"],
+                "high": row["high"],
+                "low": row["low"],
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            assert engine.process_market_data(payload) is None
+
+        breakout = engine.process_market_data(
+            {
+                "symbol": "BTCUSDT",
+                "timestamp": base_ts + 180,
+                "price": 103.0,
+                "close": 103.0,
+                "high": 103.0,
+                "low": 102.0,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+        )
+
+        assert breakout is not None
+        assert breakout.side == "BUY"
+        assert breakout.strategy_id == "primary_breakout_v1"
+        assert breakout.reason == "breakout_entry"
+
+
+@pytest.mark.unit
+def test_primary_breakout_v1_respects_entry_cooldown():
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100000.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        base_ts = 1700000000
+        for idx, price in enumerate([100.0, 101.0, 102.0, 103.0]):
+            payload = {
+                "symbol": "BTCUSDT",
+                "timestamp": base_ts + idx * 60,
+                "price": price,
+                "close": price,
+                "high": price,
+                "low": price - 1.0,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            signal = engine.process_market_data(payload)
+            if idx < 3:
+                assert signal is None
+            else:
+                assert signal is not None
+                assert signal.side == "BUY"
+
+        cooldown_blocked = engine.process_market_data(
+            {
+                "symbol": "BTCUSDT",
+                "timestamp": base_ts + 240,
+                "price": 104.0,
+                "close": 104.0,
+                "high": 104.0,
+                "low": 103.0,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+        )
+        assert cooldown_blocked is None
+
+
+@pytest.mark.unit
+def test_primary_breakout_v1_emits_sell_even_when_entry_is_blocked():
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100000.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        base_ts = 1700000000
+        for idx, price in enumerate([100.0, 101.0, 102.0, 103.0]):
+            signal = engine.process_market_data(
+                {
+                    "symbol": "BTCUSDT",
+                    "timestamp": base_ts + idx * 60,
+                    "price": price,
+                    "close": price,
+                    "high": price,
+                    "low": price - 1.0,
+                    "volume": 200000.0,
+                    "regime_id": "TREND",
+                    "market_state_fresh": True,
+                    "regime_fresh": True,
+                }
+            )
+            if idx == 3:
+                assert signal is not None
+                assert signal.side == "BUY"
+
+        exit_signal = engine.process_market_data(
+            {
+                "symbol": "BTCUSDT",
+                "timestamp": base_ts + 240,
+                "price": 90.0,
+                "close": 90.0,
+                "high": 91.0,
+                "low": 90.0,
+                "volume": 200000.0,
+                "regime_id": "RANGE",
+                "market_state_fresh": False,
+                "regime_fresh": False,
+                "risk_blocked": True,
+            }
+        )
+
+        assert exit_signal is not None
+        assert exit_signal.side == "SELL"
+        assert exit_signal.reason == "channel_exit"
