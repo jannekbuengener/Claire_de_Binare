@@ -92,6 +92,23 @@ def test_config_validation():
 
 
 @pytest.mark.unit
+def test_primary_breakout_v1_rejects_non_canonical_strategy_adapter(monkeypatch):
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        threshold_pct=3.0,
+        lookback_minutes=15,
+        min_volume=100000.0,
+        trade_side_mode="long_only",
+    )
+    monkeypatch.setenv("SIGNAL_ADAPTER_ID", "does_not_exist")
+
+    with patch("service.config", test_config):
+        with pytest.raises(SystemExit) as excinfo:
+            SignalEngine()
+    assert excinfo.value.code == 1
+
+
+@pytest.mark.unit
 def test_signal_generation():
     """
     Test: Signals werden korrekt generiert.

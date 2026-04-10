@@ -215,6 +215,9 @@ backup-health:
 paper-trading-start: systemcheck
 	@echo "🚀 Starte Paper Trading Runner..."
 	@echo "⚠️  Stelle sicher, dass alle anderen Container laufen: make docker-up"
+	@if [ "$${SIGNAL_STRATEGY_ID:-primary_breakout_v1}" != "primary_breakout_v1" ]; then echo "Error: SIGNAL_STRATEGY_ID must be primary_breakout_v1 for the paper path"; exit 1; fi
+	@if [ "$${SIGNAL_ADAPTER_ID:-momentum_builtin}" != "momentum_builtin" ]; then echo "Error: SIGNAL_ADAPTER_ID must be momentum_builtin for the current main adapter path"; exit 1; fi
+	@if [ "$${SIGNAL_TRADE_SIDE_MODE:-long_only}" != "long_only" ]; then echo "Error: SIGNAL_TRADE_SIDE_MODE must be long_only for primary_breakout_v1"; exit 1; fi
 	docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_paper_runner
 	@echo ""
 	@echo "✅ Paper Trading Runner gestartet!"

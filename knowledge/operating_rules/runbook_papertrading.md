@@ -16,7 +16,13 @@ cp .env.example .env
 
 # Step 2: Verify paper mode configuration
 Get-Content .env | Select-String "SIGNAL_STRATEGY_ID"
-# Expected: SIGNAL_STRATEGY_ID=paper
+# Expected: SIGNAL_STRATEGY_ID=primary_breakout_v1
+
+Get-Content .env | Select-String "SIGNAL_ADAPTER_ID"
+# Expected: SIGNAL_ADAPTER_ID=momentum_builtin
+
+Get-Content .env | Select-String "SIGNAL_TRADE_SIDE_MODE"
+# Expected: SIGNAL_TRADE_SIDE_MODE=long_only
 
 Get-Content .env | Select-String "DRY_RUN"
 # Expected: DRY_RUN=true
@@ -73,7 +79,9 @@ curl http://localhost:8004/health
 
 | Variable | Default | Purpose | Safety |
 |----------|---------|---------|--------|
-| `SIGNAL_STRATEGY_ID` | `paper` | Strategy mode | ⚠️ `paper`=safe, `live`=DANGER |
+| `SIGNAL_STRATEGY_ID` | `primary_breakout_v1` | Canonical strategy on paper path | ⚠️ Keep on `primary_breakout_v1`; `live` remains DANGER |
+| `SIGNAL_ADAPTER_ID` | `momentum_builtin` | Current main-backed strategy adapter path | ⚠️ Must stay `momentum_builtin` for current boundary |
+| `SIGNAL_TRADE_SIDE_MODE` | `long_only` | primary v1 side guard | ⚠️ Must stay `long_only` for `primary_breakout_v1` |
 | `DRY_RUN` | `true` | Log-only mode | ⚠️ Must be `true` for testing |
 | `MEXC_TESTNET` | `true` | Exchange testnet | ⚠️ Must be `true` for testing |
 | `PAPER_TRADING_DURATION_DAYS` | `14` | Test duration | Optional |
@@ -83,7 +91,9 @@ curl http://localhost:8004/health
 
 Before starting paper trading:
 
-- [ ] `SIGNAL_STRATEGY_ID=paper` (NOT live)
+- [ ] `SIGNAL_STRATEGY_ID=primary_breakout_v1` (paper path only)
+- [ ] `SIGNAL_ADAPTER_ID=momentum_builtin` (current main adapter boundary)
+- [ ] `SIGNAL_TRADE_SIDE_MODE=long_only` (primary v1 guard)
 - [ ] `DRY_RUN=true` (NO real trades)
 - [ ] `MEXC_TESTNET=true` (TESTNET only)
 - [ ] Secret files exist and are FILES (not directories)

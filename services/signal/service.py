@@ -43,6 +43,7 @@ from core.contracts.external_adapter_contracts import (
     StrategySignalCandidate,
 )
 from core.contracts.external_adapter_registry import (
+    MOMENTUM_BUILTIN,
     SIGNAL_ADAPTER_ENV_VAR,
     build_strategy_adapter,
 )
@@ -166,6 +167,18 @@ class SignalEngine:
             sys.exit(1)
 
         adapter_id = os.getenv(SIGNAL_ADAPTER_ENV_VAR)
+        if (
+            self.config.strategy_id == PRIMARY_BREAKOUT_V1_STRATEGY_ID
+            and adapter_id
+            and adapter_id.strip() != MOMENTUM_BUILTIN
+        ):
+            logger.error(
+                "Config-Fehler: SIGNAL_ADAPTER_ID=%r ist fuer primary_breakout_v1 ungueltig "
+                "(erwartet: %s)",
+                adapter_id,
+                MOMENTUM_BUILTIN,
+            )
+            sys.exit(1)
         self.strategy_adapter = build_strategy_adapter(
             adapter_id,
             evaluate_fn=self._evaluate_builtin_strategy,

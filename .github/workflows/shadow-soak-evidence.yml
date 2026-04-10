@@ -223,7 +223,13 @@ jobs:
             cdb_signal:
               user: "0"
               environment:
-                SIGNAL_STRATEGY_ID: paper
+                SIGNAL_STRATEGY_ID: primary_breakout_v1
+                SIGNAL_ADAPTER_ID: momentum_builtin
+                SIGNAL_ENTRY_LOOKBACK_MIN: "240"
+                SIGNAL_EXIT_LOOKBACK_MIN: "120"
+                SIGNAL_BREAKOUT_BUFFER: "0.0005"
+                SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES: "60"
+                SIGNAL_TRADE_SIDE_MODE: long_only
             cdb_candles:
               user: "0"
             cdb_allocation:
