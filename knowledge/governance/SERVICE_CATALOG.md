@@ -29,9 +29,9 @@
 | **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
 | **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
-| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch |
-| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default) |
-| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz |
+| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Zentrale Decision-/Run-Mode-/Policy-Grenze (Risk Gate, Circuit Breaker, Kill-Switch) |
+| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution ueber statische Adapter-Selektion (`mock_builtin`/`mexc_builtin`) |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Kanonische Redis→PostgreSQL Persistenz (`signals`/`orders`/`order_results`/`portfolio_snapshots`) |
 | **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
@@ -39,8 +39,30 @@
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
 | **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
-| **Signal** | cdb_signal | 8005 | services/signal/ | **AKTIV** | Signal Generation, Momentum-Strategie |
+| **Signal** | cdb_signal | 8005 | services/signal/ | **AKTIV** | Signal Generation mit minimalem `primary_breakout_v1`-Footprint und `momentum_builtin` ueber statische Adapter-Grenze |
 | **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
+
+---
+
+## Validation / Replay Surface (current main)
+
+| Surface | Code | Status | Funktion |
+|---------|------|--------|----------|
+| **Replay Historical Bridge** | core/replay/historical_bridge.py | **AKTIV (code-level)** | Deterministischer 1m-BTCUSDT Input-Bridge fuer `primary_breakout_v1` |
+| **Strategy Backtest Runner** | services/validation/strategy_backtest_runner.py | **AKTIV (code-level)** | Deterministischer Validation-Runner mit schema-basiertem Gate-Report |
+
+Hinweis: Diese Surfaces sind Validation-/Replay-Pfade und keine Runtime-Publisher fuer die Persistenzkanaele des DB Writers.
+
+---
+
+## Service Ownership Boundaries (current main, kanonisch)
+
+- **Signal**: erzeugt Signalkandidaten (`primary_breakout_v1` + `momentum_builtin`) ueber statische, repo-owned Adapterwahl; keine Plugin-Discovery.
+- **Execution**: fuehrt nur bereits risk-gegate-te Orders aus; Adapter-Selektion statisch/fail-closed (`EXECUTION_ADAPTER_ID`).
+- **Risk**: bleibt zentrale Entscheidungsgrenze fuer Run-Mode, Decision, Thresholds und Policy-Kontext.
+- **DB Writer**: bleibt reine Persistenzschicht; keine Vermischung mit Validation- oder Replay-Gating.
+- **Replay/Validation**: historischer Bridge + Backtest-Runner als separater deterministischer Validationspfad.
+- **Unit-/Scale-Canon**: aktive Surfaces nutzen Prozentpunkt-Semantik fuer die betroffenen Return-/Pct- und Schwellenfelder (`3.0 == 3%`).
 
 ---
 
@@ -148,3 +170,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
 | 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |
+| 2026-04-11 | Strategy-v1 Drift-Batch nach #1598/#1600/#1602/#1613: Service-Boundaries fuer Signal/Execution/Risk/DB Writer sowie Replay-/Validation-Surfaces current-main-wahr nachgezogen | Codex |
