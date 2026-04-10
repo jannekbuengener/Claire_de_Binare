@@ -11,3 +11,15 @@ relations:
     - scripts/replay/lr021_replay.py
     - tests/unit/replay/
 """
+
+from .historical_bridge import (
+    HistoricalBridgeError,
+    PrimaryBreakoutBridgeConfig,
+    build_primary_breakout_historical_bridge,
+)
+
+__all__ = [
+    "HistoricalBridgeError",
+    "PrimaryBreakoutBridgeConfig",
+    "build_primary_breakout_historical_bridge",
+]
