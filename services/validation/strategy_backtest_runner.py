@@ -17,8 +17,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from core.contracts.external_adapter_contracts import StrategyAdapterRequest
-from core.contracts.external_adapter_registry import build_strategy_adapter
+from core.contracts.external_adapter_contracts import (
+    StrategyAdapterRequest,
+    StrategyAdapterResponse,
+    StrategySignalCandidate,
+)
 from core.replay.historical_bridge import (
     PRIMARY_BREAKOUT_STRATEGY_ID,
     PRIMARY_BREAKOUT_SYMBOL,
@@ -33,6 +36,7 @@ THRESHOLD_PROFILE_ID = "primary_breakout_v1_validation_thresholds"
 THRESHOLD_PROFILE_VERSION = "1"
 DEFAULT_REPORT_DIR = Path("reports") / "primary_breakout_v1_backtest"
 _EPSILON = 1e-12
+_RUNNER_ADAPTER_ID = "primary_breakout_runner_v1"
 
 
 class PrimaryBreakoutBacktestError(ValueError):
@@ -197,6 +201,139 @@ def _simulate_trade(
     }
 
 
+def _serialize_response(response: StrategyAdapterResponse) -> dict[str, Any]:
+    return {
+        "signals": [
+            {
+                "strategy_id": signal.strategy_id,
+                "symbol": signal.symbol,
+                "side": signal.side,
+                "reason": signal.reason,
+                "price": signal.price,
+                "metadata": dict(signal.metadata or {}),
+            }
+            for signal in response.signals
+        ],
+        "diagnostics": dict(response.diagnostics or {}),
+    }
+
+
+def _evaluate_primary_breakout_request(
+    request: StrategyAdapterRequest,
+    *,
+    position_open: bool,
+    last_entry_ts_ms: int | None,
+    config: PrimaryBreakoutBacktestRunConfig,
+) -> tuple[StrategyAdapterResponse, int | None]:
+    market_state = request.market_event.get("market_state")
+    if not isinstance(market_state, Mapping):
+        raise PrimaryBreakoutBacktestError("market_state missing in historical request")
+
+    ts_ms_raw = request.market_event.get("ts_ms")
+    if ts_ms_raw is None:
+        raise PrimaryBreakoutBacktestError("ts_ms missing in historical request")
+    ts_ms = int(ts_ms_raw)
+
+    close_now = _first_number(
+        market_state.get("close_now"),
+        request.market_snapshot.get("close"),
+        request.market_event.get("close"),
+        request.market_event.get("price"),
+    )
+    highest_high = _first_number(market_state.get("highest_high"))
+    lowest_low = _first_number(market_state.get("lowest_low"))
+    if close_now is None or highest_high is None or lowest_low is None:
+        return (
+            StrategyAdapterResponse(
+                diagnostics={
+                    "adapter_id": _RUNNER_ADAPTER_ID,
+                    "status": "insufficient_input",
+                }
+            ),
+            last_entry_ts_ms,
+        )
+
+    regime_id = market_state.get("regime_id")
+    market_state_fresh = bool(market_state.get("market_state_fresh"))
+    regime_fresh = bool(market_state.get("regime_fresh"))
+    has_trend_regime = regime_id in {0, "TREND"}
+    entry_blocked = any(
+        bool(market_state.get(name))
+        for name in (
+            "shutdown_active",
+            "kill_switch_active",
+            "risk_blocked",
+            "allocation_blocked",
+            "core_blocked",
+        )
+    )
+    entry_cooldown_active = bool(market_state.get("entry_cooldown_active"))
+    if not entry_cooldown_active and last_entry_ts_ms is not None:
+        cooldown_ms = config.bridge.min_minutes_between_entries * 60_000
+        entry_cooldown_active = ts_ms - last_entry_ts_ms < cooldown_ms
+
+    if position_open and close_now < lowest_low:
+        return (
+            StrategyAdapterResponse(
+                signals=(
+                    StrategySignalCandidate(
+                        strategy_id=PRIMARY_BREAKOUT_STRATEGY_ID,
+                        symbol=PRIMARY_BREAKOUT_SYMBOL,
+                        side="SELL",
+                        reason="channel_exit",
+                        price=close_now,
+                        metadata={"adapter_id": _RUNNER_ADAPTER_ID},
+                    ),
+                ),
+                diagnostics={
+                    "adapter_id": _RUNNER_ADAPTER_ID,
+                    "status": "signal_emitted",
+                },
+            ),
+            last_entry_ts_ms,
+        )
+
+    entry_ready = (
+        not position_open
+        and market_state_fresh
+        and regime_fresh
+        and has_trend_regime
+        and not entry_blocked
+        and not entry_cooldown_active
+        and close_now > highest_high * (1 + config.bridge.breakout_buffer)
+    )
+    if entry_ready:
+        return (
+            StrategyAdapterResponse(
+                signals=(
+                    StrategySignalCandidate(
+                        strategy_id=PRIMARY_BREAKOUT_STRATEGY_ID,
+                        symbol=PRIMARY_BREAKOUT_SYMBOL,
+                        side="BUY",
+                        reason="breakout_entry",
+                        price=close_now,
+                        metadata={"adapter_id": _RUNNER_ADAPTER_ID},
+                    ),
+                ),
+                diagnostics={
+                    "adapter_id": _RUNNER_ADAPTER_ID,
+                    "status": "signal_emitted",
+                },
+            ),
+            ts_ms,
+        )
+
+    return (
+        StrategyAdapterResponse(
+            diagnostics={
+                "adapter_id": _RUNNER_ADAPTER_ID,
+                "status": "no_signal",
+            }
+        ),
+        last_entry_ts_ms,
+    )
+
+
 def _build_report(
     *,
     bridge_requests: Sequence[StrategyAdapterRequest],
@@ -300,12 +437,12 @@ def run_primary_breakout_backtest(
     bridge_requests = build_primary_breakout_historical_bridge(
         candles, config=active_config.bridge
     )
-    adapter = build_strategy_adapter(PRIMARY_BREAKOUT_STRATEGY_ID)
     simulator = ExecutionSimulator()
 
     output_requests: list[dict[str, Any]] = []
     trades: list[dict[str, Any]] = []
     open_position: dict[str, Any] | None = None
+    last_entry_ts_ms: int | None = None
     market_state_fresh_count = 0
     regime_fresh_count = 0
     replay_signature: list[dict[str, Any]] = []
@@ -317,23 +454,13 @@ def run_primary_breakout_backtest(
         market_state_fresh_count += int(market_state_fresh)
         regime_fresh_count += int(regime_fresh)
 
-        response = adapter.evaluate(request)
-        replay_signature.append(
-            {
-                "signals": [
-                    {
-                        "strategy_id": signal.strategy_id,
-                        "symbol": signal.symbol,
-                        "side": signal.side,
-                        "reason": signal.reason,
-                        "price": signal.price,
-                        "metadata": dict(signal.metadata or {}),
-                    }
-                    for signal in response.signals
-                ],
-                "diagnostics": dict(response.diagnostics or {}),
-            }
+        response, last_entry_ts_ms = _evaluate_primary_breakout_request(
+            request,
+            position_open=open_position is not None,
+            last_entry_ts_ms=last_entry_ts_ms,
+            config=active_config,
         )
+        replay_signature.append(_serialize_response(response))
 
         for signal in response.signals:
             signal_payload = {
@@ -404,23 +531,23 @@ def run_primary_breakout_backtest(
                 )
                 open_position = None
 
-    deterministic_replay_ok = replay_signature == [
-        {
-            "signals": [
-                {
-                    "strategy_id": signal.strategy_id,
-                    "symbol": signal.symbol,
-                    "side": signal.side,
-                    "reason": signal.reason,
-                    "price": signal.price,
-                    "metadata": dict(signal.metadata or {}),
-                }
-                for signal in adapter.evaluate(request).signals
-            ],
-            "diagnostics": dict(adapter.evaluate(request).diagnostics or {}),
-        }
-        for request in bridge_requests
-    ]
+    replay_check_signature: list[dict[str, Any]] = []
+    replay_position_open = False
+    replay_last_entry_ts_ms: int | None = None
+    for request in bridge_requests:
+        response, replay_last_entry_ts_ms = _evaluate_primary_breakout_request(
+            request,
+            position_open=replay_position_open,
+            last_entry_ts_ms=replay_last_entry_ts_ms,
+            config=active_config,
+        )
+        replay_check_signature.append(_serialize_response(response))
+        for signal in response.signals:
+            if signal.side == "BUY":
+                replay_position_open = True
+            elif signal.side == "SELL":
+                replay_position_open = False
+    deterministic_replay_ok = replay_signature == replay_check_signature
 
     data_integrity_ok = len(bridge_requests) > 0 and open_position is None
     return _build_report(
@@ -436,4 +563,3 @@ def run_primary_breakout_backtest(
         data_integrity_ok=data_integrity_ok,
         deterministic_replay_ok=deterministic_replay_ok,
     )
-

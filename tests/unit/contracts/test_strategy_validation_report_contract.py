@@ -136,4 +136,3 @@ def test_threshold_profile_is_consistent_and_fail_closed() -> None:
     assert review["min_closed_trades_recommended"] >= pass_fail["min_closed_trades_total"]
     assert review["min_profit_factor_recommended"] >= pass_fail["min_profit_factor"]
     assert review["max_max_drawdown_r_recommended"] <= pass_fail["max_max_drawdown_r"]
-

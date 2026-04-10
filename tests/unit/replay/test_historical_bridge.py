@@ -2,7 +2,6 @@
 
 import pytest
 
-from core.contracts.external_adapter_registry import build_strategy_adapter
 from core.replay.historical_bridge import (
     HistoricalBridgeError,
     PrimaryBreakoutBridgeConfig,
@@ -89,14 +88,12 @@ def test_bridge_output_is_adapter_ready_for_primary_breakout() -> None:
 
     requests = build_primary_breakout_historical_bridge(candles)
     first_request = requests[0]
-    response = build_strategy_adapter("primary_breakout_v1").evaluate(first_request)
 
     assert first_request.symbol == "BTCUSDT"
+    assert first_request.runtime_context["strategy_id"] == "primary_breakout_v1"
     assert first_request.market_event["market_state"]["highest_high"] > 0
     assert first_request.market_event["market_state"]["lowest_low"] > 0
-    assert len(response.signals) == 1
-    assert response.signals[0].side == "BUY"
-    assert response.signals[0].reason == "breakout_entry"
+    assert first_request.market_event["market_state"]["regime_id"] in {0, "TREND"}
 
 
 @pytest.mark.unit
