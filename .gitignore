@@ -77,6 +77,9 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+tmp*/
+tmp_*/
+tmp-*/
 
 # Local development
 .env
@@ -145,6 +148,9 @@ Claire_de_Binare_Docs/
 .claude/
 .gemini/
 gha-creds-*.json
+.codex-worktree-*/
+codex-worktree-*/
+evals/
 
 # Auto Claude data directory
 .auto-claude/
