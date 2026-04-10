@@ -468,6 +468,34 @@ def test_execution_result_keeps_missing_signal_ts_explicit(
 
 
 @pytest.mark.unit
+def test_process_order_supports_legacy_execute_order_executor(
+    execution_harness: _Harness,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _LegacyExecutor:
+        def execute_order(self, order):
+            return MagicMock(
+                status="FILLED",
+                filled_quantity=order.quantity,
+                fill_id="legacy-fill-1",
+                order_id="legacy-order-1",
+                symbol=order.symbol,
+                side=order.side,
+                price=50000.0,
+                error_message=None,
+            )
+
+    monkeypatch.setattr(service, "executor", _LegacyExecutor())
+    result = service.process_order(_valid_order_payload(run_mode="paper"))
+
+    assert result is not None
+    assert result.status == "FILLED"
+    assert result.order_id == "legacy-order-1"
+    assert result.fill_id == "legacy-fill-1"
+    assert result.strategy_id == "test"
+
+
+@pytest.mark.unit
 def test_init_services_fails_closed_on_unknown_execution_adapter_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

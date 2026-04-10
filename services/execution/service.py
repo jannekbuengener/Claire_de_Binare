@@ -547,42 +547,56 @@ def process_order(order_data: object):
         if executor is None:
             raise RuntimeError("Execution adapter not initialised")
 
-        adapter_run_mode = order.run_mode if order.run_mode else (
-            "paper" if config.MOCK_TRADING else "live"
-        )
-        adapter_response = executor.execute(
-            ExecutionAdapterRequest(
-                order=order.to_dict(),
-                run_mode=adapter_run_mode,
-                decision_contract_v1={},
-                runtime_context={
-                    "strategy_id": order.strategy_id,
-                    "bot_id": order.bot_id,
-                    "adapter_id": getattr(executor, "adapter_id", None),
-                },
-                policy_snapshot=order.policy_snapshot,
+        execute_v2 = getattr(executor, "execute", None)
+        if callable(execute_v2):
+            adapter_run_mode = order.run_mode if order.run_mode else (
+                "paper" if config.MOCK_TRADING else "live"
             )
-        )
+            adapter_response = execute_v2(
+                ExecutionAdapterRequest(
+                    order=order.to_dict(),
+                    run_mode=adapter_run_mode,
+                    decision_contract_v1={},
+                    runtime_context={
+                        "strategy_id": order.strategy_id,
+                        "bot_id": order.bot_id,
+                        "adapter_id": getattr(executor, "adapter_id", None),
+                    },
+                    policy_snapshot=order.policy_snapshot,
+                )
+            )
 
-        result = ExecutionResult(
-            order_id=adapter_response.order_id,
-            symbol=order.symbol,
-            side=order.side,
-            quantity=order.quantity,
-            filled_quantity=adapter_response.filled_quantity,
-            status=adapter_response.status,
-            strategy_id=order.strategy_id,
-            bot_id=order.bot_id,
-            client_id=order.client_id,
-            price=adapter_response.price,
-            error_message=adapter_response.error_message,
-            timestamp=utcnow().isoformat(),
-            fill_id=(
-                getattr(adapter_response, "fill_id", None) or adapter_response.order_id
-                if adapter_response.status == OrderStatus.FILLED.value
-                else None
-            ),
-        )
+            result = ExecutionResult(
+                order_id=adapter_response.order_id,
+                symbol=order.symbol,
+                side=order.side,
+                quantity=order.quantity,
+                filled_quantity=adapter_response.filled_quantity,
+                status=adapter_response.status,
+                strategy_id=order.strategy_id,
+                bot_id=order.bot_id,
+                client_id=order.client_id,
+                price=adapter_response.price,
+                error_message=adapter_response.error_message,
+                timestamp=utcnow().isoformat(),
+                fill_id=(
+                    getattr(adapter_response, "fill_id", None)
+                    or adapter_response.order_id
+                    if adapter_response.status == OrderStatus.FILLED.value
+                    else None
+                ),
+            )
+        else:
+            execute_v1 = getattr(executor, "execute_order", None)
+            if not callable(execute_v1):
+                raise RuntimeError("Execution adapter missing execute interface")
+
+            result = execute_v1(order)
+            if result is None:
+                raise RuntimeError("Executor returned no result")
+            result.strategy_id = order.strategy_id
+            result.bot_id = order.bot_id
+
         result.metadata = _build_result_metadata(order, result)
 
         # Phase 8C/8E: Persist ORDER and FILL events to correlation_ledger
