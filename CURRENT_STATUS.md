@@ -3,12 +3,12 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-09
+**Last Updated**: 2026-04-10
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-04-09)
+## Repo / Engineering Status (2026-04-10)
 
 - **main**: green
 - **Active GitHub focus (manual, non-exhaustive)**:
@@ -60,6 +60,7 @@
 - **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
 - **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
 - **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
+- **Merged (Session 51-55, 2026-04-10)**: Strategy-v1-Cluster current-main-wahr gelandet: PR #1598 (unit/scale reland, `8309f6fc`), PR #1600 (minimaler `primary_breakout_v1` Footprint, `192a8f32`), PR #1602 (statische Strategy-/Execution-Adapter-Grenze, `b1bac4ad`), PR #1613 (deterministischer `primary_breakout_v1` Backtest-/Validation-Pfad, `c0004ed4`), PR #1615 (Paper-/Shadow-Evidence-Bridge, `b3c5ccca`). Danach Issues #1572/#190/#207/#1573 gegen `origin/main` geschlossen; Board-Stage bleibt `trade-capable`, LR bleibt `NO-GO`.
 
 ---
 
