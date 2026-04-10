@@ -1,7 +1,7 @@
 # External Strategy and Execution Adapters
 
 **Issue:** #190  
-**Status:** Static registry boundary active; runtime wiring pending via `#1580`  
+**Status:** Spec draft  
 **Scope:** Define the smallest contract boundary for externally dockable
 strategy and execution adapters without building a plugin platform.
 
@@ -71,7 +71,6 @@ source of truth for governance or safety.
 ## Strategy Adapter Contract
 
 Canonical code contract: `core/contracts/external_adapter_contracts.py`
-Static registry: `core/contracts/external_adapter_registry.py`
 
 ### Input
 
@@ -126,7 +125,6 @@ Boundary rules for this config cut:
 ## Execution Adapter Contract
 
 Canonical code contract: `core/contracts/external_adapter_contracts.py`
-Static registry: `core/contracts/external_adapter_registry.py`
 
 ### Input
 
@@ -160,36 +158,31 @@ normalized outcome for the core to persist and publish.
 
 The smallest viable selection model is static and repo-owned:
 
-- one named strategy adapter id: `momentum_builtin`
-- two named execution adapter ids: `mock_builtin`, `mexc_builtin`
-- registry lives in-repo under `core/contracts/external_adapter_registry.py`
-- selection stays ID-based only
+- one named strategy adapter id, for example `momentum_builtin`
+- one named execution adapter id, for example `mock_builtin`, `mexc_builtin`
+- service config selects an adapter id or explicit import path
+- registry stays local to the service or core package
 - no remote loading
 - no arbitrary package discovery
 
-Canonical selection surface reserved for follow-up wiring:
+Recommended config surface for a follow-up implementation:
 
 - `SIGNAL_ADAPTER_ID`
 - `EXECUTION_ADAPTER_ID`
 
-Current default semantics after the registry cut:
-
-- strategy default: `momentum_builtin`
-- execution default: `mock_builtin` when `MOCK_TRADING=true`
-- execution default: `mexc_builtin` when `MOCK_TRADING=false`
-
 Current envs such as `SIGNAL_STRATEGY_ID`, `MOCK_TRADING`, and MEXC-specific
-credentials remain the active runtime path until `#1580` wires the services to
-the static registry.
+credentials remain valid until the registry cut is implemented.
 
 ## Smallest Meaningful Follow-up Implementation
 
 This spec intentionally stops before runtime wiring. The next safe repo slice
 would be:
 
-1. Keep the static registry and fixed adapter IDs as the only selection surface.
-2. Wire `cdb_signal` and `cdb_execution` to that surface in `#1580`.
-3. Keep Risk, contract verification, publishing, and evidence paths unchanged.
+1. Wrap the current momentum logic behind a first-party `StrategyAdapter`.
+2. Wrap `MockExecutor` and `LiveExecutor` behind first-party
+   `ExecutionAdapter` shims.
+3. Add a small in-repo registry in `cdb_signal` and `cdb_execution`.
+4. Keep Risk, contract verification, publishing, and evidence paths unchanged.
 
 This preserves the current core safety path while allowing external strategies
 or venue adapters to dock at explicit seams.
