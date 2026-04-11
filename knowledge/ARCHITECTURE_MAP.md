@@ -42,7 +42,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 |---------|-----------|------|----------|
 | PostgreSQL | cdb_postgres | 5432 | Persistenz |
 | Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
-| Market | cdb_market | 8009 | market_state:{symbol} Owner |
+| Market | cdb_market | 8009 | market_state:{symbol} Owner; Redis-subscription mit Retry/Reconnect, /health fail-closed bei Redis-Ausfall |
 | Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
 | Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
 | Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
@@ -185,3 +185,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
 | 2026-04-11 | Strategy-v1 Drift-Batch nach #1598/#1600/#1602/#1613: Signal-/Execution-Boundary, deterministischer Replay-/Validation-Pfad und Unit-/Scale-Canon auf current-main nachgezogen | Codex |
+| 2026-04-11 | Market runtime reconcile nach #1630: Redis-Reconnect-Verhalten und fail-closed /health-Semantik fuer `cdb_market` dokumentiert | Codex |

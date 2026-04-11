@@ -17,7 +17,7 @@ Zweck: Duenne Human-in-the-loop Operationalisierung fuer repo-backed Control-Fin
 
 1. GitHub Actions -> `CDB Control Follow-up Classifier`
 2. `finding_text` mit einem konkreten repo-backed Finding fuellen
-3. optional `issue_number` setzen, wenn das Ergebnis auch als Kommentar auf ein bestehendes Issue soll
+3. `issue_number` setzen, wenn `output_target=summary_and_issue_comment` (bei `summary_only` bleibt es optional)
 4. `output_target`:
    - `summary_only`
    - `summary_and_issue_comment`
@@ -33,5 +33,6 @@ Zweck: Duenne Human-in-the-loop Operationalisierung fuer repo-backed Control-Fin
 ## Guardrails
 
 - fail-closed bei ungueltigem JSON
+- fail-closed wenn `summary_and_issue_comment` ohne `issue_number` gestartet wird
 - fail-closed bei nicht numerischer `issue_number`
 - `follow_up_issue` nur bei kleinem, getrennt bearbeitbarem Fixpaket

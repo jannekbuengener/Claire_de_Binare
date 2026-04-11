@@ -25,7 +25,7 @@
 
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
-| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201) |
+| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner; Redis-subscription mit Retry/Reconnect, /health fail-closed bei Redis-Ausfall (Issue #1201) |
 | **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
 | **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
@@ -58,6 +58,7 @@ Hinweis: Diese Surfaces sind im Code nutzbar, werden aber nicht als eigenstaendi
 ## Service Ownership Boundaries (current main, kanonisch)
 
 - **Signal**: erzeugt Signalkandidaten (`primary_breakout_v1` + `momentum_builtin`) ueber statische, repo-owned Adapterwahl; keine Plugin-Discovery.
+- **Market**: konsumiert `market_data` via Redis Pub/Sub mit Retry/Reconnect; solange Redis/Subscription fehlt, bleibt die Health-Surface fail-closed (`503 degraded`).
 - **Execution**: fuehrt nur bereits risk-gegate-te Orders aus; Adapter-Selektion statisch/fail-closed (`EXECUTION_ADAPTER_ID`).
 - **Risk**: bleibt zentrale Entscheidungsgrenze fuer Run-Mode, Decision, Thresholds und Policy-Kontext.
 - **DB Writer**: bleibt reine Persistenzschicht; keine Vermischung mit Validation- oder Replay-Gating.
@@ -171,3 +172,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |
 | 2026-04-11 | Strategy-v1 Drift-Batch nach #1598/#1600/#1602/#1613: Service-Boundaries fuer Signal/Execution/Risk/DB Writer sowie Replay-/Validation-Surfaces current-main-wahr nachgezogen | Codex |
+| 2026-04-11 | Runtime-reconcile nach #1630: Market-Service-Beschreibung auf Redis-Retry/Reconnect und fail-closed Health-Semantik nachgezogen | Codex |

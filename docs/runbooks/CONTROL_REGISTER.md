@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-09
+**Letzte Aktualisierung:** 2026-04-11
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -89,7 +89,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 - Prompt-Canon: `.github/prompts/cdb-control-followup.prompt.yml`
 - Ausführung: nur `workflow_dispatch`, kein Auto-Issueing, keine automatische Repo-Mutation
 - Ausgabe: immer Step Summary + Artefakt; optional zusätzlicher Kommentar auf ein bewusst gesetztes Ziel-Issue
-- Guardrail: fail-closed bei ungültigem JSON oder nicht numerischer `issue_number`
+- Guardrail: fail-closed bei ungueltigem JSON, bei `summary_and_issue_comment` ohne `issue_number`, oder bei nicht numerischer `issue_number`
 
 ---
 
