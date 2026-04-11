@@ -39,7 +39,9 @@ MARKET_CANDLES_STREAM = os.getenv("MARKET_CANDLES_STREAM", "stream.candles_1m")
 MARKET_REGIME_STREAM = os.getenv("MARKET_REGIME_STREAM", "stream.regime_signals")
 MARKET_STATE_KEY_PREFIX = os.getenv("MARKET_STATE_KEY_PREFIX", "market_state_shadow")
 MARKET_STATE_TTL_SECONDS = int(os.getenv("MARKET_STATE_TTL_SECONDS", "120"))
-MARKET_REGIME_STALENESS_SECONDS = int(os.getenv("MARKET_REGIME_STALENESS_SECONDS", "300"))
+MARKET_REGIME_STALENESS_SECONDS = int(
+    os.getenv("MARKET_REGIME_STALENESS_SECONDS", "300")
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -50,6 +52,7 @@ logger = logging.getLogger(__name__)
 
 MARKET_PRICE_TTL_SECONDS = 30
 SUBSCRIBE_CHANNEL = "market_data"
+REDIS_RETRY_SECONDS = int(os.getenv("MARKET_REDIS_RETRY_SECONDS", "5"))
 
 # ─── Prometheus metrics ───────────────────────────────────────────────────────
 
@@ -89,6 +92,26 @@ def _build_redis_client() -> redis.Redis:
     port = int(os.getenv("REDIS_PORT", "6379"))
     password = os.getenv("REDIS_PASSWORD") or None
     return redis.Redis(host=host, port=port, password=password, decode_responses=True)
+
+
+def _connect_redis_loop() -> redis.Redis:
+    """Retry Redis connection until available; keeps health fail-closed meanwhile."""
+    global _redis_connected, _subscription_active
+    while True:
+        try:
+            client = _build_redis_client()
+            client.ping()
+            _redis_connected = True
+            return client
+        except redis.RedisError as exc:
+            _redis_connected = False
+            _subscription_active = False
+            logger.warning(
+                "Redis unavailable: %s — retrying in %ss",
+                exc,
+                REDIS_RETRY_SECONDS,
+            )
+            time.sleep(REDIS_RETRY_SECONDS)
 
 
 def _process_message(raw: str) -> None:
@@ -223,7 +246,9 @@ def _update_market_state(
         if len(candles) < 6:
             _stats["market_state_skipped"] += 1
             logger.debug(
-                "market_state skip: %s has only %d candles (need 6)", symbol, len(candles)
+                "market_state skip: %s has only %d candles (need 6)",
+                symbol,
+                len(candles),
             )
             return
 
@@ -291,7 +316,10 @@ def health():
         issues.append("redis unavailable")
     if not _subscription_active:
         issues.append("no active subscription")
-    return jsonify({"status": "degraded", "service": "market_data", "detail": issues}), 503
+    return (
+        jsonify({"status": "degraded", "service": "market_data", "detail": issues}),
+        503,
+    )
 
 
 @app.route("/status", methods=["GET"])
@@ -337,38 +365,35 @@ def _run_flask() -> None:
 def main() -> None:
     global _redis_client, _redis_connected, _subscription_active
 
-    try:
-        _redis_client = _build_redis_client()
-        _redis_client.ping()
-        _redis_connected = True
-        logger.info("Redis connected at %s", os.getenv("REDIS_HOST", "localhost"))
-    except redis.RedisError as exc:
-        logger.warning("Redis unavailable at startup: %s — running in degraded mode", exc)
-        _redis_client = None
-
     flask_thread = threading.Thread(target=_run_flask, daemon=True)
     flask_thread.start()
     logger.info("Flask API started on port %d", _FLASK_PORT)
 
-    if _redis_client is None:
-        logger.warning("No Redis connection — cannot subscribe; service in degraded mode")
-        while True:
-            time.sleep(60)
+    while True:
+        try:
+            if _redis_client is None:
+                _redis_client = _connect_redis_loop()
+                logger.info(
+                    "Redis connected at %s", os.getenv("REDIS_HOST", "localhost")
+                )
 
-    try:
-        pubsub = _redis_client.pubsub()
-        pubsub.subscribe(SUBSCRIBE_CHANNEL)
-        _subscription_active = True
-        logger.info("Subscribed to channel: %s", SUBSCRIBE_CHANNEL)
-        for message in pubsub.listen():
-            if message["type"] != "message":
-                continue
-            _process_message(message["data"])
-    except KeyboardInterrupt:
-        logger.info("Shutting down")
-    except redis.RedisError as exc:
-        logger.error("PubSub error: %s", exc)
-        sys.exit(1)
+            pubsub = _redis_client.pubsub()
+            pubsub.subscribe(SUBSCRIBE_CHANNEL)
+            _subscription_active = True
+            logger.info("Subscribed to channel: %s", SUBSCRIBE_CHANNEL)
+            for message in pubsub.listen():
+                if message["type"] != "message":
+                    continue
+                _process_message(message["data"])
+        except KeyboardInterrupt:
+            logger.info("Shutting down")
+            return
+        except redis.RedisError as exc:
+            _subscription_active = False
+            _redis_connected = False
+            _redis_client = None
+            logger.error("PubSub error: %s — reconnecting", exc)
+            time.sleep(REDIS_RETRY_SECONDS)
 
 
 if __name__ == "__main__":

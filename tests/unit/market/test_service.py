@@ -166,3 +166,27 @@ def test_metrics_endpoint_returns_prometheus_output():
     assert response.status_code == 200
     assert "text/plain" in response.content_type
     assert b"market_messages_received_total" in response.data
+
+
+@pytest.mark.unit
+def test_connect_redis_loop_retries_then_recovers(monkeypatch):
+    attempts = {"count": 0}
+    expected_client = MagicMock()
+
+    def fake_build_client():
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise svc.redis.RedisError("temporary outage")
+        return expected_client
+
+    sleeps = []
+
+    monkeypatch.setattr(svc, "_build_redis_client", fake_build_client)
+    monkeypatch.setattr(svc.time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    recovered_client = svc._connect_redis_loop()
+
+    assert recovered_client is expected_client
+    assert attempts["count"] == 2
+    assert sleeps == [svc.REDIS_RETRY_SECONDS]
+    assert svc._redis_connected is True
