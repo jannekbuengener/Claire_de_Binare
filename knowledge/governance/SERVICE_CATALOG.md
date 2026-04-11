@@ -25,13 +25,13 @@
 
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
-| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner; Redis-subscription mit Retry/Reconnect, /health fail-closed bei Redis-Ausfall (Issue #1201) |
+| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201) |
 | **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
 | **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
-| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Zentrale Decision-/Run-Mode-/Policy-Grenze (Risk Gate, Circuit Breaker, Kill-Switch) |
-| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution ueber statische Adapter-Selektion (`mock_builtin`/`mexc_builtin`) |
-| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Kanonische Redis→PostgreSQL Persistenz (`signals`/`orders`/`order_results`/`portfolio_snapshots`) |
+| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch |
+| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default) |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz |
 | **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
@@ -39,31 +39,10 @@
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
 | **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
-| **Signal** | cdb_signal | 8005 | services/signal/ | **AKTIV** | Signal Generation mit minimalem `primary_breakout_v1`-Footprint und `momentum_builtin` ueber statische Adapter-Grenze |
+| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default, `momentum_builtin` statische Adapter-Grenze) |
 | **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
 
----
-
-## Validation / Replay Surface (current main)
-
-| Surface | Code | Status | Funktion |
-|---------|------|--------|----------|
-| **Replay Historical Bridge** | core/replay/historical_bridge.py | **BEREIT** | Deterministischer 1m-BTCUSDT Input-Bridge fuer `primary_breakout_v1` |
-| **Strategy Backtest Runner** | services/validation/strategy_backtest_runner.py | **BEREIT** | Deterministischer Validation-Runner mit schema-basiertem Gate-Report |
-
-Hinweis: Diese Surfaces sind im Code nutzbar, werden aber nicht als eigenstaendige Compose-Services deployed. Sie sind Validation-/Replay-Pfade und keine Runtime-Publisher fuer die Persistenzkanaele des DB Writers.
-
----
-
-## Service Ownership Boundaries (current main, kanonisch)
-
-- **Signal**: erzeugt Signalkandidaten (`primary_breakout_v1` + `momentum_builtin`) ueber statische, repo-owned Adapterwahl; keine Plugin-Discovery.
-- **Market**: konsumiert `market_data` via Redis Pub/Sub mit Retry/Reconnect; solange Redis/Subscription fehlt, bleibt die Health-Surface fail-closed (`503 degraded`).
-- **Execution**: fuehrt nur bereits risk-gegate-te Orders aus; Adapter-Selektion statisch/fail-closed (`EXECUTION_ADAPTER_ID`).
-- **Risk**: bleibt zentrale Entscheidungsgrenze fuer Run-Mode, Decision, Thresholds und Policy-Kontext.
-- **DB Writer**: bleibt reine Persistenzschicht; keine Vermischung mit Validation- oder Replay-Gating.
-- **Replay/Validation**: historischer Bridge + Backtest-Runner als separater deterministischer Validationspfad.
-- **Unit-/Scale-Canon**: aktive Surfaces nutzen Prozentpunkt-Semantik fuer die betroffenen Return-/Pct- und Schwellenfelder (`3.0 == 3%`).
+Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.py` bei `8001`; im kanonischen RED-Runtime-Pfad wird fuer `cdb_signal` in `infrastructure/compose/compose.red.yml` explizit `SIGNAL_PORT=8005` gesetzt.
 
 ---
 
@@ -171,5 +150,5 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
 | 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |
-| 2026-04-11 | Strategy-v1 Drift-Batch nach #1598/#1600/#1602/#1613: Service-Boundaries fuer Signal/Execution/Risk/DB Writer sowie Replay-/Validation-Surfaces current-main-wahr nachgezogen | Codex |
-| 2026-04-11 | Runtime-reconcile nach #1630: Market-Service-Beschreibung auf Redis-Retry/Reconnect und fail-closed Health-Semantik nachgezogen | Codex |
+| 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
+| 2026-04-11 | Signal/Risk Runtime-Drift bereinigt: Signal-Strategie-/Stream-Semantik und Risk-Input-/Metric-Semantik auf current-main präzisiert | Codex |

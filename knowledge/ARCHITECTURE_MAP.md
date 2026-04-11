@@ -42,7 +42,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 |---------|-----------|------|----------|
 | PostgreSQL | cdb_postgres | 5432 | Persistenz |
 | Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
-| Market | cdb_market | 8009 | market_state:{symbol} Owner; Redis-subscription mit Retry/Reconnect, /health fail-closed bei Redis-Ausfall |
+| Market | cdb_market | 8009 | market_state:{symbol} Owner |
 | Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
 | Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
 | Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
@@ -56,13 +56,15 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
-| Signal | cdb_signal | 8005 | Signal Generation (`primary_breakout_v1` footprint + `momentum_builtin` via static adapter boundary) |
+| Signal | cdb_signal | 8005 (Runtime) | Signal Generation |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
 | Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |
 | Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 | Reports | cdb_reports | — | Daily Order Summary |
+
+Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
 
 ### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
@@ -132,14 +134,6 @@ cdb_reports           Up (healthy)
 - `ORDER_PLACED` - Order an Exchange gesendet
 - `POSITION_OPENED` - Position eroeffnet
 
-### Strategy-v1 Runtime Boundaries (current main)
-- **Signal**: traegt den minimalen `primary_breakout_v1`-Pfad (entry/exit/cooldown) und den bestehenden `momentum_builtin`-Pfad; die Strategieauswahl erfolgt ueber `SIGNAL_STRATEGY_ID`, die Adaptergrenze bleibt statisch/repo-owned (`SIGNAL_ADAPTER_ID`), ohne Plugin-Discovery.
-- **Execution**: waehlt statisch zwischen `mock_builtin` und `mexc_builtin` (`EXECUTION_ADAPTER_ID`) und bleibt fail-closed bei unbekannter Adapter-ID.
-- **Risk**: bleibt zentrale Core-Grenze fuer Decision-, Run-Mode- und Policy-Logik; keine Adapter-Selektion umgeht diese Grenze.
-- **Persistence**: `cdb_db_writer` bleibt kanonischer Persistenzpfad fuer Runtime-Events; Validation-/Replay-Artefakte sind davon getrennt.
-- **Deterministischer Validation-Pfad**: `core/replay/historical_bridge.py` + `services/validation/strategy_backtest_runner.py` bilden den repo-backed Backtest-/Validation-Pfad fuer `primary_breakout_v1`.
-- **Unit-/Scale-Canon**: aktive Market-State-/Signal-/Risk-Surfaces fuehren Prozentpunkt-Semantik (`3.0 == 3%`) als current-main-Contract.
-
 ---
 
 ## 5. Invariants (nicht verhandelbar)
@@ -150,7 +144,6 @@ cdb_reports           Up (healthy)
 4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay
 5. **TLS Optional**: Aktivierbar via `-TLS` Flag (Redis + PostgreSQL)
 6. **Localhost Binding**: Alle Ports auf 127.0.0.1 (keine externe Exposition)
-7. **Static Adapter Selection**: Strategy-/Execution-Selection ist statisch und repo-owned; keine dynamische Adapter-Discovery
 
 ---
 
@@ -184,5 +177,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-03-29 | market_data Subscriber-Liste: cdb_market, cdb_candles, cdb_paper_runner ergaenzt (#1323) | Claude |
 | 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
-| 2026-04-11 | Strategy-v1 Drift-Batch nach #1598/#1600/#1602/#1613: Signal-/Execution-Boundary, deterministischer Replay-/Validation-Pfad und Unit-/Scale-Canon auf current-main nachgezogen | Codex |
-| 2026-04-11 | Market runtime reconcile nach #1630: Redis-Reconnect-Verhalten und fail-closed /health-Semantik fuer `cdb_market` dokumentiert | Codex |
+| 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |

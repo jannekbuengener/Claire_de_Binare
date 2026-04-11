@@ -20,6 +20,7 @@ Deterministischer, fail-closed Risk-Gate-Service zwischen Signal und Execution.
 
 - Endpoint-Port: `RISK_PORT` (Default `8002`)
 - HTTP Endpoints: `/health`, `/status`, `/metrics`
+- Relevante Metrics: `signals_received_total`, `orders_blocked_total`, `risk_alerts_generated_total`
 
 Start im BLUE-Stack:
 
@@ -30,7 +31,7 @@ docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_risk
 ## Key Config
 
 - `MAX_POSITION_PCT`
-- `MAX_TOTAL_EXPOSURE_PCT` / `MAX_EXPOSURE_PCT`
+- `MAX_TOTAL_EXPOSURE_PCT` / `MAX_EXPOSURE_PCT` (Default effektiv `0.30`)
 - `MAX_DAILY_DRAWDOWN_PCT`
 - `EARLY_LIVE_MAX_ALLOC`
 - `USE_LIVE_BALANCE`, `USE_REAL_BALANCE`

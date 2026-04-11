@@ -17,7 +17,7 @@ Event-getriebene Signal-Erzeugung aus `market_data` mit statischer Adapter-Grenz
 
 ## Runtime Surface
 
-- Endpoint-Port: `SIGNAL_PORT` (Default `8001`)
+- Endpoint-Port: `SIGNAL_PORT` (Config-Default `8001`; RED-Runtime `8005` via `compose.red.yml`)
 - HTTP Endpoints: `/health`, `/status`, `/metrics`
 
 Start im RED-Stack:
@@ -34,6 +34,7 @@ docker compose -f infrastructure/compose/compose.red.yml up -d cdb_signal
 - `SIGNAL_EXIT_LOOKBACK_MIN`
 - `SIGNAL_BREAKOUT_BUFFER`
 - `SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES`
+- `SIGNAL_OUTPUT_STREAM`
 
 ## Canonical References
 
