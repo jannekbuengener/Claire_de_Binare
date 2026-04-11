@@ -60,7 +60,6 @@
 - **Merged (Session 48, 2026-04-09)**: Cleanup-Strang #1536/#1537/#1538 fachlich in Reihenfolge gelandet: PR #1539 (ac3e92d3) entfernt den stale `cdb_paper_runner`-Scrape fail-closed, PR #1540 (8838a161) zieht `COMPOSE_LAYERS.md` auf den repo-backed dev-Overlay-Status, PR #1541 (4159066d) reconciled `alerts.yml` gegen die aktuelle Metrics-SSOT und zieht `METRICS_MATRIX.md` ohne Drift-Reanimation nach. Issues #1536/#1537/#1538 geschlossen.
 - **Merged (Session 49, 2026-04-09)**: #1543 — `gemini-scheduled-triage.yml` fail-closed geparkt. Weekly `schedule` entfernt, `workflow_dispatch` bewusst erhalten, `CONTROL_REGISTER.md` auf `manuell (geparkt fail-closed)` nachgezogen.
 - **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
-- **Session 51 (2026-04-10)**: KW15-Kommentare zusammengefasst und bewertet; Monatlicher Audit April 2026 durchgefuehrt (7 Tage ueberfaellig seit 2026-04-03). Befund: Drift-Level GERING — alle KW15-Punkte abgeschlossen, kein neuer Issue erforderlich ausser bereits bestehendem #1603 (Architektur-Drift nach PR #1602). Session-Log: `knowledge/logs/sessions/2026-04-10-kw15-comments-evaluation.md`.
 
 ---
 

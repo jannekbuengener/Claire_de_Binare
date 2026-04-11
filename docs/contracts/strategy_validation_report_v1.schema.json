@@ -1,0 +1,286 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Primary Breakout V1 Validation Report Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "run_metadata",
+    "config_snapshot",
+    "dataset_summary",
+    "metrics",
+    "thresholds_applied",
+    "gate_result"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "strategy_validation_report.v1"
+    },
+    "strategy_id": {
+      "const": "primary_breakout_v1"
+    },
+    "run_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "generated_at",
+        "source",
+        "code_commit"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "historical_backtest_v1"
+          ]
+        },
+        "code_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{7,40}$"
+        }
+      }
+    },
+    "config_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_lookback_minutes",
+        "exit_lookback_minutes",
+        "breakout_buffer",
+        "min_minutes_between_entries",
+        "trade_side_mode"
+      ],
+      "properties": {
+        "entry_lookback_minutes": {
+          "const": 240
+        },
+        "exit_lookback_minutes": {
+          "const": 120
+        },
+        "breakout_buffer": {
+          "const": 0.0005
+        },
+        "min_minutes_between_entries": {
+          "const": 60
+        },
+        "trade_side_mode": {
+          "const": "long_only"
+        }
+      }
+    },
+    "dataset_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "symbol",
+        "timeframe",
+        "candles_total",
+        "period_start_ts_ms",
+        "period_end_ts_ms"
+      ],
+      "properties": {
+        "symbol": {
+          "const": "BTCUSDT"
+        },
+        "timeframe": {
+          "const": "1m"
+        },
+        "candles_total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "period_start_ts_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "period_end_ts_ms": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "signals_total",
+        "buy_signals_total",
+        "sell_signals_total",
+        "closed_trades_total",
+        "win_rate",
+        "profit_factor",
+        "expectancy_r",
+        "max_drawdown_r",
+        "market_state_fresh_ratio",
+        "regime_fresh_ratio",
+        "data_integrity_ok",
+        "deterministic_replay_ok"
+      ],
+      "properties": {
+        "signals_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "buy_signals_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sell_signals_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "closed_trades_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "win_rate": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "profit_factor": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "expectancy_r": {
+          "type": "number"
+        },
+        "max_drawdown_r": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "market_state_fresh_ratio": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "regime_fresh_ratio": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "data_integrity_ok": {
+          "type": "boolean"
+        },
+        "deterministic_replay_ok": {
+          "type": "boolean"
+        }
+      }
+    },
+    "thresholds_applied": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "threshold_profile_id",
+        "threshold_profile_version",
+        "pass_fail"
+      ],
+      "properties": {
+        "threshold_profile_id": {
+          "type": "string",
+          "const": "primary_breakout_v1_validation_thresholds"
+        },
+        "threshold_profile_version": {
+          "type": "string",
+          "const": "1"
+        },
+        "pass_fail": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "min_closed_trades_total",
+            "min_profit_factor",
+            "min_expectancy_r",
+            "max_max_drawdown_r",
+            "min_market_state_fresh_ratio",
+            "min_regime_fresh_ratio",
+            "require_data_integrity_ok",
+            "require_deterministic_replay_ok"
+          ],
+          "properties": {
+            "min_closed_trades_total": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "min_profit_factor": {
+              "type": "number",
+              "minimum": 0.0
+            },
+            "min_expectancy_r": {
+              "type": "number"
+            },
+            "max_max_drawdown_r": {
+              "type": "number",
+              "minimum": 0.0
+            },
+            "min_market_state_fresh_ratio": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "min_regime_fresh_ratio": {
+              "type": "number",
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "require_data_integrity_ok": {
+              "type": "boolean"
+            },
+            "require_deterministic_replay_ok": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "gate_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "failed_criteria",
+        "review_flags"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "REVIEW",
+            "FAIL"
+          ]
+        },
+        "failed_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "review_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

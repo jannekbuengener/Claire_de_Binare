@@ -8,6 +8,7 @@
 # Allow official test suite in tests/ directory (must come AFTER wildcard)
 !tests/**/*.py
 !tests/**/*.js
+!services/validation/strategy_backtest_runner.py
 !cdb_agent_sdk/tests/**/*.py
 !cdb_agent_sdk/tests/**/*.js
 debug_*.py
@@ -76,6 +77,9 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+tmp*/
+tmp_*/
+tmp-*/
 
 # Local development
 .env
@@ -141,9 +145,14 @@ Claire_de_Binare_Docs/
 .cdb_local/
 
 # AI tooling local state
+.claude_settings.json
 .claude/
 .gemini/
+.agent_briefings/
 gha-creds-*.json
+.codex-worktree-*/
+codex-worktree-*/
+evals/
 
 # Auto Claude data directory
 .auto-claude/

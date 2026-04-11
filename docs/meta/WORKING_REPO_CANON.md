@@ -63,8 +63,6 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 | `CDB_CONSTITUTION.md` | `knowledge/governance/CDB_CONSTITUTION.md` |
 | `CDB_GOVERNANCE.md` | `knowledge/governance/CDB_GOVERNANCE.md` |
 | `LEGACY_FILES.md` | `docs/archive/LEGACY_FILES.md` |
-| `ORCHESTRATOR_PACK_144.md` | `docs/archive/ORCHESTRATOR_PACK_144.md` |
-| `DOCS_MOVED_TO_DOCS_HUB.md` | this file |
 
 ## Repo Rules
 

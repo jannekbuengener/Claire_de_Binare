@@ -1,0 +1,33 @@
+{
+  "schema_version": "strategy_validation_thresholds.v1",
+  "strategy_id": "primary_breakout_v1",
+  "threshold_profile_id": "primary_breakout_v1_validation_thresholds",
+  "threshold_profile_version": "1",
+  "pass_fail": {
+    "min_closed_trades_total": 20,
+    "min_profit_factor": 1.05,
+    "min_expectancy_r": 0.0,
+    "max_max_drawdown_r": 3.0,
+    "min_market_state_fresh_ratio": 0.99,
+    "min_regime_fresh_ratio": 0.99,
+    "require_data_integrity_ok": true,
+    "require_deterministic_replay_ok": true
+  },
+  "review_only": {
+    "min_closed_trades_recommended": 40,
+    "min_profit_factor_recommended": 1.2,
+    "max_max_drawdown_r_recommended": 2.0
+  },
+  "non_canonical_metrics": [
+    "cagr",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "calmar_ratio",
+    "mar_ratio",
+    "pnl_usd_absolute"
+  ],
+  "policy": {
+    "fail_when_any_pass_fail_rule_is_violated": true,
+    "review_when_passes_but_review_only_rules_are_violated": true
+  }
+}

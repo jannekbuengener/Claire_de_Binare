@@ -52,6 +52,9 @@ Interpretation:
 
 - Local helper scripts and machine-specific outputs belong in `.local/` or outside repo.
 - For known local-only script policy, see [local_ops_artifacts.md](./local_ops_artifacts.md).
+- CI warning support: `.github/workflows/root-session-hygiene-warning.yml` surfaces potential root/session artifact additions in PR diffs as warnings (non-blocking).
+- Scanner implementation: `.github/scripts/root_session_hygiene_warn.py`.
+- Intended behavior: early visibility, manual review, no merge gate and no auto-cleanup.
 
 ## Scope Guard
 

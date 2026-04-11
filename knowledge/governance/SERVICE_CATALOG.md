@@ -39,8 +39,10 @@
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
 | **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
-| **Signal** | cdb_signal | 8005 | services/signal/ | **AKTIV** | Signal Generation, Momentum-Strategie |
+| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default, `momentum_builtin` statische Adapter-Grenze) |
 | **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
+
+Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.py` bei `8001`; im kanonischen RED-Runtime-Pfad wird fuer `cdb_signal` in `infrastructure/compose/compose.red.yml` explizit `SIGNAL_PORT=8005` gesetzt.
 
 ---
 
@@ -148,3 +150,5 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2025-12-28 | Signal Service aktiviert: cdb_core → cdb_signal (Port 8005) | Claude |
 | 2026-03-29 | BLUE/RED-Split reconciliation: market/candles/regime/allocation→AKTIV, Exporter/Reports/Alertmanager ergänzt, Image-Versionen aktualisiert, Compose-Referenzen auf compose.blue/red.yml (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |
+| 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
+| 2026-04-11 | Signal/Risk Runtime-Drift bereinigt: Signal-Strategie-/Stream-Semantik und Risk-Input-/Metric-Semantik auf current-main präzisiert | Codex |

@@ -56,13 +56,15 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
-| Signal | cdb_signal | 8005 | Signal Generation |
+| Signal | cdb_signal | 8005 (Runtime) | Signal Generation |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
 | Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |
 | Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 | Reports | cdb_reports | — | Daily Order Summary |
+
+Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
 
 ### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
@@ -175,3 +177,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-03-29 | market_data Subscriber-Liste: cdb_market, cdb_candles, cdb_paper_runner ergaenzt (#1323) | Claude |
 | 2026-03-29 | BLUE/RED reconciliation: alle Services nach Compose-Realitaet, Known Drifts bereinigt, Compose-Referenzen aktualisiert (#1302) | Claude |
 | 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
+| 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |

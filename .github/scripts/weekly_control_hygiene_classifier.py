@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
-
+from urllib.parse import quote
 
 CONTROL_ISSUE_NUMBER = 1445
 COMMENT_MARKER = "<!-- cdb-weekly-hygiene:{week_key} -->"
@@ -19,6 +19,7 @@ FOLLOWUP_MARKER = "<!-- cdb-weekly-hygiene-followup:{fingerprint} -->"
 REPORT_WINDOW_DAYS = 21
 STALE_DAYS = 60
 MAX_FOLLOWUP_DEFAULT = 2
+BASE_BRANCH = "main"
 
 
 @dataclass
@@ -30,6 +31,7 @@ class Candidate:
     affected_artifacts: list[str]
     suggested_next_step: str
     evidence: str
+    cleanup_state: str | None = None
     issue_title: str | None = None
     issue_labels: list[str] | None = None
     fingerprint: str | None = None
@@ -47,7 +49,9 @@ def run(args: list[str], *, input_text: str | None = None) -> str:
         check=False,
     )
     if proc.returncode != 0:
-        raise RuntimeError(f"command failed ({proc.returncode}): {' '.join(args)}\n{proc.stderr.strip()}")
+        raise RuntimeError(
+            f"command failed ({proc.returncode}): {' '.join(args)}\n{proc.stderr.strip()}"
+        )
     return proc.stdout
 
 
@@ -116,6 +120,250 @@ def make_fingerprint(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
 
 
+def extract_issue_number_from_branch(branch_name: str) -> int | None:
+    match = re.search(
+        r"(?:^|[-_/])(issue|ops|bug|feat|feature|codex)[-_/]?(\d+)(?:$|[-_/])",
+        branch_name,
+    )
+    if not match:
+        return None
+    try:
+        return int(match.group(2))
+    except ValueError:
+        return None
+
+
+def branch_obsolescence_candidates(
+    repo: str, open_issues: list[dict[str, Any]]
+) -> list[Candidate]:
+    try:
+        branches = gh_api_json([f"repos/{repo}/branches?per_page=100"])
+        open_prs = gh_json(
+            repo,
+            [
+                "pr",
+                "list",
+                "--state",
+                "open",
+                "--limit",
+                "200",
+                "--json",
+                "headRefName",
+            ],
+        )
+        closed_prs = gh_json(
+            repo,
+            [
+                "pr",
+                "list",
+                "--state",
+                "closed",
+                "--limit",
+                "200",
+                "--json",
+                "number,headRefName,url,mergedAt,closedAt",
+            ],
+        )
+    except Exception as exc:
+        return [
+            Candidate(
+                rule_id="branch_obsolescence",
+                title="Branch obsolescence scan unavailable",
+                classification="unclear",
+                confidence=0.55,
+                affected_artifacts=["refs/heads/*"],
+                suggested_next_step=(
+                    "Treat branch cleanup as blocked for this run and inspect scanner access/auth before any deletion decision."
+                ),
+                evidence=f"Repo-backed branch scan failed: {exc}",
+                cleanup_state="unclear",
+            )
+        ]
+
+    if not isinstance(branches, list):
+        return [
+            Candidate(
+                rule_id="branch_obsolescence",
+                title="Branch obsolescence scan returned unexpected payload",
+                classification="unclear",
+                confidence=0.52,
+                affected_artifacts=["refs/heads/*"],
+                suggested_next_step="Fail closed and inspect branch API response shape before acting on cleanup decisions.",
+                evidence="Expected a list of branches from GitHub API.",
+                cleanup_state="unclear",
+            )
+        ]
+
+    open_pr_heads = {
+        item.get("headRefName") for item in open_prs if isinstance(item, dict)
+    }
+    latest_closed_by_head: dict[str, dict[str, Any]] = {}
+    for item in closed_prs:
+        if not isinstance(item, dict):
+            continue
+        head = item.get("headRefName")
+        if not head or head in latest_closed_by_head:
+            continue
+        latest_closed_by_head[head] = item
+
+    open_issue_numbers = {
+        int(item["number"])
+        for item in open_issues
+        if isinstance(item.get("number"), int)
+    }
+    findings: list[Candidate] = []
+    for raw_branch in sorted(
+        branches, key=lambda x: x.get("name", "") if isinstance(x, dict) else ""
+    ):
+        if not isinstance(raw_branch, dict):
+            continue
+        branch_name = raw_branch.get("name")
+        if not isinstance(branch_name, str):
+            continue
+        if branch_name in {BASE_BRANCH, "master"}:
+            continue
+        if raw_branch.get("protected") is True:
+            continue
+        if branch_name in open_pr_heads:
+            continue
+
+        compare_ref = f"{quote(BASE_BRANCH, safe='')}...{quote(branch_name, safe='')}"
+        try:
+            compare = gh_api_json([f"repos/{repo}/compare/{compare_ref}"])
+        except Exception:
+            findings.append(
+                Candidate(
+                    rule_id="branch_obsolescence",
+                    title=f"Branch obsolescence unclear: {branch_name}",
+                    classification="unclear",
+                    confidence=0.58,
+                    affected_artifacts=[f"branch:{branch_name}"],
+                    suggested_next_step=(
+                        "Keep branch untouched and inspect compare API state manually before classifying cleanup readiness."
+                    ),
+                    evidence=f"Could not compare {branch_name} against {BASE_BRANCH}.",
+                    cleanup_state="unclear",
+                )
+            )
+            continue
+
+        ahead_by = int(compare.get("ahead_by", 0))
+        behind_by = int(compare.get("behind_by", 0))
+        status = str(compare.get("status", "unknown"))
+        if ahead_by > 0:
+            continue
+
+        linked_issue = extract_issue_number_from_branch(branch_name)
+        closed_pr = latest_closed_by_head.get(branch_name)
+        pr_hint = "no closed PR metadata found"
+        if closed_pr and closed_pr.get("mergedAt"):
+            pr_hint = (
+                f"last PR #{closed_pr.get('number')} merged ({closed_pr.get('url')})"
+            )
+        elif closed_pr and closed_pr.get("closedAt"):
+            pr_hint = f"last PR #{closed_pr.get('number')} closed without merge ({closed_pr.get('url')})"
+
+        if linked_issue is not None and linked_issue in open_issue_numbers:
+            findings.append(
+                Candidate(
+                    rule_id="branch_obsolescence",
+                    title=f"Branch cleanup unclear due to open linked issue: {branch_name}",
+                    classification="unclear",
+                    confidence=0.66,
+                    affected_artifacts=[
+                        f"branch:{branch_name}",
+                        f"issue #{linked_issue}",
+                    ],
+                    suggested_next_step=(
+                        "Do not delete this branch yet; reconcile linked open issue ownership/status first."
+                    ),
+                    evidence=(
+                        f"Branch {branch_name} has no unique commits vs {BASE_BRANCH} "
+                        f"(status={status}, ahead={ahead_by}, behind={behind_by}) but appears linked to open issue #{linked_issue}; "
+                        f"{pr_hint}."
+                    ),
+                    cleanup_state="unclear",
+                )
+            )
+            continue
+
+        fingerprint = make_fingerprint(
+            f"branch_cleanup_ready:{branch_name}:{status}:{ahead_by}:{behind_by}"
+        )
+        findings.append(
+            Candidate(
+                rule_id="branch_obsolescence",
+                title=f"Branch cleanup-ready candidate: {branch_name}",
+                classification="follow_up_issue",
+                confidence=0.88,
+                affected_artifacts=[
+                    f"branch:{branch_name}",
+                    f"refs/heads/{branch_name}",
+                ],
+                suggested_next_step=(
+                    "Run report-first confirmation in the weekly lane and perform branch deletion only via explicit manual approval."
+                ),
+                evidence=(
+                    f"Branch {branch_name} has no unique commits vs {BASE_BRANCH} "
+                    f"(status={status}, ahead={ahead_by}, behind={behind_by}), no open PR, and no linked open issue signal; {pr_hint}."
+                ),
+                cleanup_state="cleanup_ready",
+                issue_title=f"Weekly hygiene: review deletion of obsolete branch {branch_name}",
+                issue_labels=[
+                    "scope:ci",
+                    "type:chore",
+                    "agent:codex",
+                    "manual-approval",
+                ],
+                fingerprint=fingerprint,
+            )
+        )
+
+    if findings:
+        return findings
+    return [
+        Candidate(
+            rule_id="branch_obsolescence",
+            title="No cleanup-ready obsolete branch candidates in this run",
+            classification="report_only",
+            confidence=0.8,
+            affected_artifacts=["refs/heads/*"],
+            suggested_next_step="Keep weekly branch obsolescence scan active; no branch delete candidate this week.",
+            evidence="No non-protected branch without open PR met the cleanup-ready gate in this run.",
+            cleanup_state="report_only",
+        )
+    ]
+
+
+def local_worktree_boundary_candidate() -> Candidate:
+    return Candidate(
+        rule_id="worktree_obsolescence_boundary",
+        title="Local worktree cleanup remains manual/local-only",
+        classification="report_only",
+        confidence=0.95,
+        affected_artifacts=[
+            "tools/cleanup/worktree_obsolescence_cleanup.ps1",
+            "docs/runbooks/CDB_WEEKLY_CONTROL_HYGIENE_CLASSIFIER.md",
+        ],
+        suggested_next_step=(
+            "Run local worktree cleanup in dry_run mode first and execute only after explicit manual approval."
+        ),
+        evidence=(
+            "GitHub-hosted Actions cannot inspect or delete workstation-local worktrees (for example D:\\Dev\\...). "
+            "Weekly hosted scan publishes classification only; local cleanup is a separate manual path."
+        ),
+        cleanup_state="report_only",
+    )
+
+
+def cleanup_state_counts(candidates: list[Candidate]) -> dict[str, int]:
+    counts = {"cleanup_ready": 0, "report_only": 0, "unclear": 0}
+    for cand in candidates:
+        if cand.cleanup_state in counts:
+            counts[cand.cleanup_state] += 1
+    return counts
+
+
 def parked_active_drift(open_issues: list[dict[str, Any]]) -> list[Candidate]:
     candidates: list[Candidate] = []
     active_explicit = {"prio:must", "prio:should"}
@@ -136,7 +384,9 @@ def parked_active_drift(open_issues: list[dict[str, Any]]) -> list[Candidate]:
             f"Issue #{issue_no} is labeled status:parked but still has active delivery labels "
             f"{', '.join(active_labels)}."
         )
-        fingerprint = make_fingerprint(f"parked_active:{issue_no}:{','.join(sorted(active_labels))}")
+        fingerprint = make_fingerprint(
+            f"parked_active:{issue_no}:{','.join(sorted(active_labels))}"
+        )
         candidates.append(
             Candidate(
                 rule_id="parked_active_drift",
@@ -157,7 +407,9 @@ def parked_active_drift(open_issues: list[dict[str, Any]]) -> list[Candidate]:
     return candidates
 
 
-def stale_open_issue_candidates(open_issues: list[dict[str, Any]], now: datetime) -> list[Candidate]:
+def stale_open_issue_candidates(
+    open_issues: list[dict[str, Any]], now: datetime
+) -> list[Candidate]:
     cutoff = now - timedelta(days=STALE_DAYS)
     stale: list[dict[str, Any]] = []
     for issue in open_issues:
@@ -195,7 +447,9 @@ def stale_open_issue_candidates(open_issues: list[dict[str, Any]], now: datetime
     ]
 
 
-def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) -> list[Candidate]:
+def workflow_register_drift(
+    workflow_dir: Path, register_map: dict[str, str]
+) -> list[Candidate]:
     candidates: list[Candidate] = []
     for workflow_name, trigger_note in register_map.items():
         file_path = workflow_dir / workflow_name
@@ -208,7 +462,10 @@ def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) ->
                     title=f"Workflow listed but file missing: {workflow_name}",
                     classification="follow_up_issue",
                     confidence=0.95,
-                    affected_artifacts=["docs/runbooks/CONTROL_REGISTER.md", f".github/workflows/{workflow_name}"],
+                    affected_artifacts=[
+                        "docs/runbooks/CONTROL_REGISTER.md",
+                        f".github/workflows/{workflow_name}",
+                    ],
                     suggested_next_step=(
                         "Open a small follow-up to either restore the workflow file or remove/update "
                         "the CONTROL_REGISTER entry."
@@ -225,12 +482,22 @@ def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) ->
         triggers = extract_triggers(wf_text)
         note = trigger_note.lower()
         manual_only_note = "manuell" in note and not any(
-            word in note for word in ("mo", "di", "mi", "do", "fr", "sa", "so", "wöchentlich", "taeglich", "täglich")
+            word in note
+            for word in (
+                "mo",
+                "di",
+                "mi",
+                "do",
+                "fr",
+                "sa",
+                "so",
+                "wöchentlich",
+                "taeglich",
+                "täglich",
+            )
         )
         if manual_only_note and "schedule" in triggers:
-            evidence = (
-                f"{workflow_name} is marked manual in CONTROL_REGISTER but workflow still defines schedule trigger."
-            )
+            evidence = f"{workflow_name} is marked manual in CONTROL_REGISTER but workflow still defines schedule trigger."
             fingerprint = make_fingerprint(f"workflow_manual_schedule:{workflow_name}")
             candidates.append(
                 Candidate(
@@ -238,7 +505,10 @@ def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) ->
                     title=f"Manual-vs-schedule drift: {workflow_name}",
                     classification="follow_up_issue",
                     confidence=0.94,
-                    affected_artifacts=["docs/runbooks/CONTROL_REGISTER.md", f".github/workflows/{workflow_name}"],
+                    affected_artifacts=[
+                        "docs/runbooks/CONTROL_REGISTER.md",
+                        f".github/workflows/{workflow_name}",
+                    ],
                     suggested_next_step=(
                         "Open a narrow follow-up to align workflow triggers and CONTROL_REGISTER note."
                     ),
@@ -249,16 +519,17 @@ def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) ->
                 )
             )
         if "wöchentlich" in note and "schedule" not in triggers:
-            evidence = (
-                f"{workflow_name} is marked weekly in CONTROL_REGISTER but has no schedule trigger."
-            )
+            evidence = f"{workflow_name} is marked weekly in CONTROL_REGISTER but has no schedule trigger."
             candidates.append(
                 Candidate(
                     rule_id="workflow_register_drift",
                     title=f"Weekly trigger note drift: {workflow_name}",
                     classification="unclear",
                     confidence=0.64,
-                    affected_artifacts=["docs/runbooks/CONTROL_REGISTER.md", f".github/workflows/{workflow_name}"],
+                    affected_artifacts=[
+                        "docs/runbooks/CONTROL_REGISTER.md",
+                        f".github/workflows/{workflow_name}",
+                    ],
                     suggested_next_step=(
                         "Verify intent in control thread first; if weekly execution is still required, open a small "
                         "trigger-note reconciliation follow-up."
@@ -269,7 +540,9 @@ def workflow_register_drift(workflow_dir: Path, register_map: dict[str, str]) ->
     return candidates
 
 
-def recent_workflow_noise(repo: str, register_map: dict[str, str], now: datetime) -> list[Candidate]:
+def recent_workflow_noise(
+    repo: str, register_map: dict[str, str], now: datetime
+) -> list[Candidate]:
     candidates: list[Candidate] = []
     since = now - timedelta(days=REPORT_WINDOW_DAYS)
     for workflow_name in register_map:
@@ -337,7 +610,11 @@ def ensure_followup_issue(repo: str, candidate: Candidate) -> dict[str, Any]:
     marker = FOLLOWUP_MARKER.format(fingerprint=candidate.fingerprint)
     found = existing_followup(repo, marker)
     if found:
-        return {"action": "existing", "number": found["number"], "url": found["html_url"]}
+        return {
+            "action": "existing",
+            "number": found["number"],
+            "url": found["html_url"],
+        }
 
     body = (
         "## Weekly Control Hygiene Follow-up\n\n"
@@ -359,7 +636,10 @@ def ensure_followup_issue(repo: str, candidate: Candidate) -> dict[str, Any]:
     return {"action": "created", "number": issue_no, "url": url}
 
 
-def build_comment(week: str, candidates: list[Candidate], issue_events: list[dict[str, Any]]) -> str:
+def build_comment(
+    week: str, candidates: list[Candidate], issue_events: list[dict[str, Any]]
+) -> str:
+    counts = cleanup_state_counts(candidates)
     lines = [
         "## Weekly Control Hygiene Classifier",
         "",
@@ -367,6 +647,12 @@ def build_comment(week: str, candidates: list[Candidate], issue_events: list[dic
         "",
         f"- Week: `{week}`",
         f"- Findings: `{len(candidates)}`",
+        (
+            "- Cleanup states: "
+            f"`cleanup_ready={counts['cleanup_ready']}`, "
+            f"`report_only={counts['report_only']}`, "
+            f"`unclear={counts['unclear']}`"
+        ),
         f"- Follow-up issues emitted: `{len(issue_events)}`",
         "",
     ]
@@ -383,6 +669,11 @@ def build_comment(week: str, candidates: list[Candidate], issue_events: list[dic
                 f"### {cand.title}",
                 f"- Rule: `{cand.rule_id}`",
                 f"- Classification: `{cand.classification}`",
+                (
+                    f"- Cleanup state: `{cand.cleanup_state}`"
+                    if cand.cleanup_state is not None
+                    else "- Cleanup state: `n/a`"
+                ),
                 f"- Confidence: `{cand.confidence}`",
                 f"- Affected artifacts: `{', '.join(cand.affected_artifacts)}`",
                 f"- Suggested next step: {cand.suggested_next_step}",
@@ -400,7 +691,9 @@ def build_comment(week: str, candidates: list[Candidate], issue_events: list[dic
 
 def upsert_control_comment(repo: str, week: str, body: str) -> dict[str, Any]:
     marker = COMMENT_MARKER.format(week_key=week)
-    comments = gh_api_json([f"repos/{repo}/issues/{CONTROL_ISSUE_NUMBER}/comments?per_page=100"])
+    comments = gh_api_json(
+        [f"repos/{repo}/issues/{CONTROL_ISSUE_NUMBER}/comments?per_page=100"]
+    )
     existing = None
     if isinstance(comments, list):
         for item in comments:
@@ -410,12 +703,24 @@ def upsert_control_comment(repo: str, week: str, body: str) -> dict[str, Any]:
     payload = json.dumps({"body": body})
     if existing is None:
         created = gh_api_json(
-            ["--method", "POST", f"repos/{repo}/issues/{CONTROL_ISSUE_NUMBER}/comments", "--input", "-"],
+            [
+                "--method",
+                "POST",
+                f"repos/{repo}/issues/{CONTROL_ISSUE_NUMBER}/comments",
+                "--input",
+                "-",
+            ],
             input_text=payload,
         )
         return {"action": "created", "url": created.get("html_url")}
     updated = gh_api_json(
-        ["--method", "PATCH", f"repos/{repo}/issues/comments/{existing['id']}", "--input", "-"],
+        [
+            "--method",
+            "PATCH",
+            f"repos/{repo}/issues/comments/{existing['id']}",
+            "--input",
+            "-",
+        ],
         input_text=payload,
     )
     return {"action": "updated", "url": updated.get("html_url")}
@@ -458,6 +763,8 @@ def main() -> int:
     findings.extend(stale_open_issue_candidates(open_issues, now))
     findings.extend(workflow_register_drift(args.workflow_dir, register_map))
     findings.extend(recent_workflow_noise(args.repo, register_map, now))
+    findings.extend(branch_obsolescence_candidates(args.repo, open_issues))
+    findings.append(local_worktree_boundary_candidate())
 
     # keep deterministic order: follow_up_issue first, then unclear, then report_only
     order = {"follow_up_issue": 0, "unclear": 1, "report_only": 2}
@@ -465,7 +772,9 @@ def main() -> int:
 
     issue_events: list[dict[str, Any]] = []
     if args.publish_mode == "publish":
-        followups = [f for f in findings if f.classification == "follow_up_issue"][: args.max_followup_issues]
+        followups = [f for f in findings if f.classification == "follow_up_issue"][
+            : args.max_followup_issues
+        ]
         for cand in followups:
             issue_events.append(ensure_followup_issue(args.repo, cand))
 
@@ -479,6 +788,7 @@ def main() -> int:
         "week_key": wk,
         "publish_mode": args.publish_mode,
         "findings_count": len(findings),
+        "cleanup_state_counts": cleanup_state_counts(findings),
         "findings": [asdict(item) for item in findings],
         "issue_events": issue_events,
         "control_comment": comment_event,

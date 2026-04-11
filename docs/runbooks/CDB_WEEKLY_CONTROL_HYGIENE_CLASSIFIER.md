@@ -10,6 +10,7 @@ Zweck: kleiner weekly hygiene/reconciliation Layer fuer den operativen Control-T
 - Output:
   - ein dedupe-sicherer Wochenkommentar unter `#1445`
   - optional enge Follow-up-Issues, hart gecappt auf `0..2` pro Run
+  - branch/worktree-obsolescence Klassifikation mit `cleanup_ready` / `report_only` / `unclear`
 
 ## Abgrenzung
 
@@ -29,6 +30,10 @@ Zweck: kleiner weekly hygiene/reconciliation Layer fuer den operativen Control-T
    - Drift zwischen `docs/runbooks/CONTROL_REGISTER.md` Trigger-Note und realen Workflow-Triggers
 4. `workflow_noise`
    - wiederholte Failure-Muster auf aktiven Workflows im 21-Tage-Fenster
+5. `branch_obsolescence`
+   - repo-/GitHub-backed Branch-Kandidaten ohne Open-PR und ohne unique Delta vs `main`
+6. `worktree_obsolescence_boundary`
+   - explizite Boundary: Hosted Actions klassifizieren nur, lokale Worktree-Loeschung bleibt manuell
 
 ## Klassifikation und Guardrails
 
@@ -36,11 +41,26 @@ Zweck: kleiner weekly hygiene/reconciliation Layer fuer den operativen Control-T
   - `report_only`
   - `follow_up_issue`
   - `unclear`
+- Cleanup-Status fuer Obsolescence-Kandidaten:
+  - `cleanup_ready`
+  - `report_only`
+  - `unclear`
 - harte Regeln:
   - kein Auto-Repo-Change
   - kein Issue-Flood
   - Follow-up-Issues pro Run max `2`
   - dedupe ueber stabile Marker im Kommentar und im Folge-Issue
+  - branch-cleanup Follow-up-Issues tragen `manual-approval` als primaeren Gate-Label
+
+## Environment Boundary (hosted vs local)
+
+- GitHub-hosted Actions koennen **keine** lokalen Worktrees unter `D:\Dev\...` inspizieren oder loeschen.
+- Weekly workflow liefert deshalb nur repo-backed Detection + Klassifikation.
+- Lokale Worktree-Loeschung laeuft ausschliesslich ueber den manuellen/local path:
+  - `tools/cleanup/worktree_obsolescence_cleanup.ps1`
+- Dieser lokale Path ist strikt report-first:
+  1. `dry_run` ausfuehren und Report sichern
+  2. nur bei `cleanup_ready` + explizitem Human-Entscheid `execute` ausfuehren
 
 ## Trigger
 
@@ -58,3 +78,13 @@ Zweck: kleiner weekly hygiene/reconciliation Layer fuer den operativen Control-T
 - bei `publish`:
   - Wochenkommentar unter `#1445` wird erstellt/aktualisiert
   - Follow-up-Issues nur fuer klare, kleine Pakete und nur innerhalb des Caps
+
+## Lokaler Cleanup-Path (manual)
+
+```powershell
+# report-first (default)
+.\tools\cleanup\worktree_obsolescence_cleanup.ps1
+
+# execute nur nach expliziter Freigabe
+.\tools\cleanup\worktree_obsolescence_cleanup.ps1 -Mode execute -ApprovalIssue 1589
+```
