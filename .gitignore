@@ -148,6 +148,7 @@ Claire_de_Binare_Docs/
 .claude_settings.json
 .claude/
 .gemini/
+.agent_briefings/
 gha-creds-*.json
 .codex-worktree-*/
 codex-worktree-*/
