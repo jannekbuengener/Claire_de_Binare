@@ -33,6 +33,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
+      - name: Validate output target inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          output_target="${{ inputs.output_target }}"
+          issue_number="${{ inputs.issue_number }}"
+
+          if [[ "$output_target" == "summary_and_issue_comment" && -z "$issue_number" ]]; then
+            echo "::error::issue_number is required when output_target is summary_and_issue_comment."
+            exit 1
+          fi
+
+          if [[ -n "$issue_number" ]] && ! [[ "$issue_number" =~ ^[0-9]+$ ]]; then
+            echo "::error::issue_number must be numeric."
+            exit 1
+          fi
+
       - name: Install gh-models extension
         env:
           GH_TOKEN: ${{ github.token }}
