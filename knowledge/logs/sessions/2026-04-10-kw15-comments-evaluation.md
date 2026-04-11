@@ -119,7 +119,7 @@ Alle aktiven Workflows klassifiziert:
 - ⚠️ **#1603** (Architektur-Doku-Reconcile nach PR #1602) — bereits als GitHub-Issue getrackt, offen
 
 **Neue Issues nötig:**
-- Kein zusätzlicher neues Issue erforderlich.
+- Kein zusätzliches neues Issue erforderlich.
 - Monatlicher Audit: wird in diesem Session-Log dokumentiert (s. Abschnitt IV).
 - Architektur-Drift #1602: bereits als **#1603** getrackt.
 
@@ -149,7 +149,7 @@ Alle aktiven Workflows klassifiziert:
 - **BLACK/Risk Service Terminologie:** `docs/runbooks/CONTROL_REGISTER.md` enthält "BLACK" nur als Beschriftung eines Drift-Vektors selbst (nicht als aktive Terminologie-Verwendung); keine aktiven Code-/Doku-Treffer gefunden — **kein aktiver Treffer**
 - **Stack-Canon single-compose:** `compose.blue.yml` + `compose.red.yml` korrekt als BLUE/RED-Canon gesetzt — **kein Treffer**
 - **Secrets-Canon:** `SECRETS_PATH` env-var als Canon in compose-Dateien enforced (via `:?SECRETS_PATH must be set`) — **kein Treffer**
-- **Discovery-Surfaces aktuell:** `mcp_navpack_working_repo/ENTRYPOINTS.yaml` und `CHEATSHEET.md` vorhanden; ENTRYPOINTS verweist auf aktuelle Kernpfade; keine verwaisten Verweise gefunden — **ja, aktuell**
+- **Discovery-Surfaces aktuell:** `mcp_navpack_working_repo/ENTRYPOINTS.yaml` und `mcp_navpack_working_repo/CHEATSHEET.md` vorhanden; ENTRYPOINTS verweist auf aktuelle Kernpfade; keine verwaisten Verweise gefunden — **ja, aktuell**
 
 ### D) ARCHITECTURE_MAP / SERVICE_CATALOG
 
