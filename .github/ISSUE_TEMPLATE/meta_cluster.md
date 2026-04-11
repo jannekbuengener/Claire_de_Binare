@@ -41,15 +41,27 @@ assignees: []
 
 ---
 
+## Closure / Bookkeeping
+- Das Meta-Issue bleibt offen, bis die relevanten Child-Issues erfolgreich gemerged und danach geschlossen sind.
+- Child-Issues, die nur lokal fertig oder review-ready sind, zaehlen nicht als abgeschlossen.
+- `CURRENT_STATUS.md` aktualisieren, wenn sich der sichtbare Repo-/Engineering-Stand aendert.
+- `knowledge/CURRENT_STATUS.md` nur dann aktualisieren, wenn der historische Mirror bewusst nachgezogen wird.
+- Einen append-only Ledger-Eintrag unter `knowledge/agent_trust/ledger/` anhaengen, wenn sich Status oder Zuordnung aendert.
+- `docs/runbooks/CONTROL_REGISTER.md` nur dann aktualisieren, wenn das Cluster Control-Board-Stage, Operating Focus oder Control-Surfaces betrifft.
+
+---
+
 ## Decisions
 - …
 
 ---
 
 ## Definition of Done
-- Alle Child-Issues geschlossen
-- Ledger vollständig/konsistent
-- Meta-Issue geschlossen
+- Alle Child-Issues erfolgreich gemerged und geschlossen
+- Ledger vollständig, konsistent und append-only gepflegt
+- `CURRENT_STATUS.md` synchronisiert
+- `knowledge/CURRENT_STATUS.md` synchronisiert, falls der Mirror betroffen ist
+- Meta-Issue erst nach erfolgreichem Merge-Stand geschlossen
 
 ---
 

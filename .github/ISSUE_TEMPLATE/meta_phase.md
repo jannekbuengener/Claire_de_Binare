@@ -30,7 +30,7 @@ assignees: []
 
 ## Governance Steps
 1. Status-Review aller zugehörigen Issues
-2. Ledger-Update (falls Statuswechsel / Entscheidung)
+2. Append-only Ledger-Update (falls Statuswechsel / Entscheidung)
 3. Entscheidung: GO / NO-GO
 
 ---
@@ -41,9 +41,12 @@ assignees: []
 ---
 
 ## Definition of Done
-- Gate offiziell abgeschlossen
+- Gate offiziell erst nach erfolgreichem Merge der erfuellten Aenderungen abgeschlossen
 - Entscheidungen dokumentiert
-- Ledger konsistent
+- Ledger konsistent und append-only gepflegt
+- `CURRENT_STATUS.md` synchronisiert, wenn der Gate-Stand den Repo-/Engineering-Stand aendert
+- `knowledge/CURRENT_STATUS.md` synchronisiert, wenn der historische Mirror nachgezogen wird
+- `docs/runbooks/CONTROL_REGISTER.md` nur dann aktualisieren, wenn das Gate Control-Board-Stage, Operating Focus oder Control-Surfaces betrifft
 
 ---
 

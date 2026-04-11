@@ -1,6 +1,6 @@
 
 name: Task
-description: Standard task (DoD required)
+description: Standard task (DoD required, merge-gated closure)
 title: "SCOPE - Phase N - Meta"
 labels: ["task"]
 body:
@@ -31,6 +31,20 @@ body:
       required: true
 
   - type: textarea
+    id: closure_bookkeeping
+    attributes:
+      label: Closure / Bookkeeping
+      description: Required repo updates before the issue may be closed
+      value: |
+        - [ ] Changes are merged successfully into the target branch before closing the issue
+        - [ ] `CURRENT_STATUS.md` updated
+        - [ ] `knowledge/CURRENT_STATUS.md` updated when the mirror needs reconciliation
+        - [ ] Append-only ledger entry added under `knowledge/agent_trust/ledger/`
+        - [ ] `docs/runbooks/CONTROL_REGISTER.md` updated only if control-board stage, operating focus, or control surfaces change
+    validations:
+      required: true
+
+  - type: textarea
     id: dod
     attributes:
       label: Definition of Done
@@ -38,6 +52,7 @@ body:
       value: |
         - [ ] Change implemented
         - [ ] Tests/validation run
-        - [ ] Docs updated (if needed)
+        - [ ] Docs updated where needed
+        - [ ] Issue stays open until the merged result is on the target branch
     validations:
       required: true

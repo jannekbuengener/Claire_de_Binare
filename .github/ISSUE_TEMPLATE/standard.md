@@ -7,7 +7,7 @@ assignees: []
 ---
 
 ## Context
-- **Quelle (lokal):** `D:\Dev\Workspaces\Prompts\PAINPOINTS`
+- **Quelle (Repo):** `CURRENT_STATUS.md`, `docs/templates/README_TEMPLATE_PACK.md`
 - **Beschreibung:**  
   Kurz und präzise: Was ist das Problem / Ziel?
 - **Warum relevant:**  
@@ -31,6 +31,16 @@ assignees: []
 
 ---
 
+## Closure / Bookkeeping
+- Das Issue bleibt offen, bis die erforderlichen Aenderungen erfolgreich in den Ziel-Branch gemerged sind.
+- Draft-PRs, lokale Fertigstellung oder Review-Ready-PRs zaehlen nicht als abgeschlossen.
+- `CURRENT_STATUS.md` aktualisieren.
+- `knowledge/CURRENT_STATUS.md` aktualisieren, wenn die Knowledge-Mirror- oder Snapshot-Lage nachgezogen werden muss.
+- Einen append-only Ledger-Eintrag unter `knowledge/agent_trust/ledger/` anhaengen.
+- `docs/runbooks/CONTROL_REGISTER.md` nur dann aktualisieren, wenn das Issue Control-Board-Stage, Operating Focus oder dort getrackte Control-Surfaces aendert.
+
+---
+
 ## Analysis (Agent – comment-only)
 > Wird durch den zuständigen Agenten als **Kommentar** ergänzt.
 
@@ -49,7 +59,7 @@ assignees: []
 
 ## Governance Steps (verpflichtend)
 1. Analyse-Kommentar durch Agent
-2. **Ledger-Eintrag**, sobald Status = `READY_FOR_IMPLEMENTATION`  
+2. **Append-only Ledger-Eintrag**, sobald Status = `READY_FOR_IMPLEMENTATION`
    - Pfad: `knowledge/agent_trust/ledger/`
    - Datei: `<timestamp>__issue_status__<agent>.yaml`
 3. Priorisierung festlegen (P0 / P1 / P2)
@@ -67,9 +77,12 @@ assignees: []
 
 ## Definition of Done
 - Alle Acceptance Criteria erfüllt
-- Relevante PR(s) gemerged
-- Issue geschlossen
-- Ledger konsistent & vollständig
+- Relevante PR(s) erfolgreich gemerged
+- Issue erst nach erfolgreichem Merge geschlossen
+- `CURRENT_STATUS.md` synchronisiert
+- `knowledge/CURRENT_STATUS.md` synchronisiert, falls der Mirror betroffen ist
+- Ledger konsistent, vollständig und append-only gepflegt
+- `docs/runbooks/CONTROL_REGISTER.md` nur aktualisiert, wenn Control-Kontext betroffen ist
 
 ---
 

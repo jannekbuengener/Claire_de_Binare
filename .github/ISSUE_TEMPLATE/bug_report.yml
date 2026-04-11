@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug or issue
+description: Report a bug or issue. If it becomes tracked work, closure is merge-gated and bookkeeping is required.
 title: '[Bug] '
 labels: ['type:bug', 'prio:should']
 body:
@@ -24,6 +24,21 @@ body:
     attributes:
       label: Actual Behavior / Impact
       description: What happens and why it matters
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_contract
+    attributes:
+      label: Tracked-work Contract
+      description: Use this only if the report is turned into implementation work
+      value: |
+        If this bug report becomes tracked work:
+        - [ ] Keep the implementation issue open until the fix is merged successfully into the target branch.
+        - [ ] Update `CURRENT_STATUS.md`.
+        - [ ] Update `knowledge/CURRENT_STATUS.md` when the mirror needs reconciliation.
+        - [ ] Append one event under `knowledge/agent_trust/ledger/`.
+        - [ ] Update `docs/runbooks/CONTROL_REGISTER.md` only if the fix changes control-board stage, operating focus, or control surfaces.
     validations:
       required: true
 

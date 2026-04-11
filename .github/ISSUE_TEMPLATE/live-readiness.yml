@@ -1,5 +1,5 @@
 name: Live Readiness Issue
-description: Echtgeld Live Readiness Task
+description: Echtgeld Live Readiness Task (merge-gated closure, ledger required)
 body:
   - type: textarea
     id: goal
@@ -15,12 +15,26 @@ body:
     id: pass
     attributes:
       label: Pass-Kriterien
+      description: Include the merge-gated closure rule and the evidence needed to clear the gate.
     validations:
       required: true
   - type: textarea
     id: evidence
     attributes:
       label: Evidence (Links, Logs, Metrics)
+    validations:
+      required: true
+  - type: textarea
+    id: bookkeeping
+    attributes:
+      label: Closure / Bookkeeping
+      description: Required repo updates before the issue may be closed
+      value: |
+        - [ ] Changes are merged successfully into the target branch before closing the issue
+        - [ ] `CURRENT_STATUS.md` updated
+        - [ ] `knowledge/CURRENT_STATUS.md` updated when the mirror needs reconciliation
+        - [ ] Append-only ledger entry added under `knowledge/agent_trust/ledger/`
+        - [ ] `docs/runbooks/CONTROL_REGISTER.md` updated only if control-board stage, operating focus, or control surfaces change
     validations:
       required: true
   - type: dropdown

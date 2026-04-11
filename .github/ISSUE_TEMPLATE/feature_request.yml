@@ -1,5 +1,5 @@
 name: Feature Request
-description: Propose a new feature or enhancement
+description: Propose a new feature or enhancement. If it becomes tracked work, closure is merge-gated and bookkeeping is required.
 title: '[Feature] '
 labels: ['type:feature', 'prio:nice']
 body:
@@ -24,6 +24,21 @@ body:
     attributes:
       label: Proposed Solution
       description: Smallest viable approach
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation_contract
+    attributes:
+      label: Tracked-work Contract
+      description: Use this only if the request is turned into implementation work
+      value: |
+        If this feature request becomes tracked work:
+        - [ ] Keep the implementation issue open until the change is merged successfully into the target branch.
+        - [ ] Update `CURRENT_STATUS.md`.
+        - [ ] Update `knowledge/CURRENT_STATUS.md` when the mirror needs reconciliation.
+        - [ ] Append one event under `knowledge/agent_trust/ledger/`.
+        - [ ] Update `docs/runbooks/CONTROL_REGISTER.md` only if the change alters control-board stage, operating focus, or control surfaces.
     validations:
       required: true
 
