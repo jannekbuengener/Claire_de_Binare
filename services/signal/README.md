@@ -1,68 +1,43 @@
-# CDB Signal Engine
+# Signal Service (`cdb_signal`)
 
-## 🚀 Überblick
-Event-getriebener Microservice, der Momentum-Signale aus Live-Marktdaten
-generiert und auf das Redis-Topic `signals` publiziert.
+Event-getriebene Signal-Erzeugung aus `market_data` mit statischer Adapter-Grenze.
 
-## 🧩 Architektur-Einordnung
+## Current-main Scope
 
-- Eingehende Topics: `market_data`
-- Ausgehende Topics: `signals`
-- Port/Endpoints: `8005` (`/health`, `/status`, `/metrics`)
-- Abhängigkeiten: Redis (`cdb_redis`), Bot WS Screener (`cdb_ws`)
+- Erzeugt Signale fuer den Risk Service (`cdb_risk`).
+- Default-Strategiepfad ist `primary_breakout_v1`.
+- Adapter-Auswahl bleibt fail-closed und statisch (kein dynamisches Runtime-Routing).
+- Kein Live-Authorization-Gate: Stage/LR-Gates bleiben ausserhalb dieses Service.
 
-```mermaid
-flowchart LR
-   FEED[Bot WS Screener] -->|market_data| SIGNAL[Signal Engine]
-   SIGNAL -->|signals| RISK[Risk Manager]
-```
+## Topics / Streams
 
-## ⚙️ Installation & Start
+- Input Topic: `market_data`
+- Output Topic: `signals`
+- Output Stream: `stream.signals` (konfigurierbar via `SIGNAL_OUTPUT_STREAM`)
 
-Signal ist Teil des **RED**-Stacks:
+## Runtime Surface
+
+- Endpoint-Port: `SIGNAL_PORT` (Default `8001`)
+- HTTP Endpoints: `/health`, `/status`, `/metrics`
+
+Start im RED-Stack:
+
 ```powershell
 docker compose -f infrastructure/compose/compose.red.yml up -d cdb_signal
-curl http://localhost:8005/health
 ```
 
-- Health-Endpoint: `http://localhost:8005/health`
-- Metrics: `http://localhost:8005/metrics` (Prometheus Format)
+## Key Config
 
-## 📊 Monitoring & Health
+- `SIGNAL_STRATEGY_ID`
+- `SIGNAL_SYMBOL`
+- `SIGNAL_ENTRY_LOOKBACK_MIN`
+- `SIGNAL_EXIT_LOOKBACK_MIN`
+- `SIGNAL_BREAKOUT_BUFFER`
+- `SIGNAL_MIN_MINUTES_BETWEEN_ENTRIES`
 
-| Endpoint  | Beschreibung                |
-|-----------|-----------------------------|
-| `/health` | JSON Status mit Timestamp   |
-| `/status` | Letztes Signal, Queue-Status|
-| `/metrics`| `signals_generated_total`, Latenzen |
+## Canonical References
 
-## 🧠 Logik / Features
-
-- Top-Mover Analyse (`TOP_N`, `LOOKBACK_MINUTES` aus `.env`)
-- Momentum-Score (prozentuale Veränderung, Volumenfilter)
-- Konfigurierbare Mindestliquidität (`SIGNAL_MIN_VOLUME`, optional)
-- Glitch-Schutz: Idle-Timeout (geplant, nicht implementiert — kein Publish auf `alerts` durch Signal-Service)
-
-## 🧾 Konfiguration
-
-| Variable               | Default | Beschreibung                    |
-|------------------------|---------|---------------------------------|
-| `LOOKBACK_MINUTES`     | `15`    | Candlestick-Fenster             |
-| `TOP_N`                | `5`     | Anzahl beobachteter Symbole     |
-| `SYMBOL_WHITELIST`     | `.env`  | Override für Symbolauswahl      |
-| `MAX_POSITION_PCT`     | `.env`  | Limit, das an Risk weitergereicht wird |
-| `REDIS_HOST/PORT`      | `redis/6379` | Pub/Sub Verbindung         |
-
-## 🧪 Tests & Validierung
-
-```powershell
-pytest backoffice/services/signal_engine/tests -q
-redis-cli -a $REDIS_PASSWORD monitor  # kurzfristig zum Trace
-```
-
-- Verweis auf `backoffice/docs/END_TO_END_TEST_GUIDE.md`
-
-## 🪶 Lizenz & Credits
-
-- Maintainer: Signal Squad (Claire de Binare Core Team)
-- Nutzung intern, Source proprietär
+- `services/signal/service.py`
+- `services/signal/config.py`
+- `knowledge/contracts/PRIMARY_BREAKOUT_V1.md`
+- `knowledge/contracts/PRIMARY_BREAKOUT_V1_VALIDATION.md`
