@@ -41,7 +41,6 @@ This document maps the dependency and coupling relationships across the `.github
 
 | Workflow | Command file(s) |
 |---|---|
-| `gemini-dispatch.yml` | `commands/gemini-dispatch.toml` |
 | `gemini-invoke.yml` (reusable) | `commands/gemini-invoke.toml` |
 | `gemini-review.yml` (reusable) | `commands/gemini-review.toml` |
 | `gemini-triage.yml` (reusable) | `commands/gemini-triage.toml` |
@@ -101,10 +100,9 @@ graph TD
     end
 
     subgraph "Commands"
-        C1[gemini-dispatch.toml]
-        C2[gemini-invoke.toml]
-        C3[gemini-review.toml]
-        C4[gemini-triage.toml]
+        C1[gemini-invoke.toml]
+        C2[gemini-review.toml]
+        C3[gemini-triage.toml]
     end
 
     subgraph "Output Surfaces"
@@ -167,10 +165,9 @@ graph TD
     S2 --> P1
 
     %% Command connections
-    GD --> C1
-    GI --> C2
-    GR --> C3
-    GT --> C4
+    GI --> C1
+    GR --> C2
+    GT --> C3
 
     %% Gemini call chain
     GD -- workflow_call --> GI

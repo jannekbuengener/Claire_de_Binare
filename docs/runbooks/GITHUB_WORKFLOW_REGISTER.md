@@ -67,6 +67,9 @@ If a field cannot be resolved from row + profile + override, treat it as **not s
 - `perm:w-security` — includes `security-events:write`
 - `perm:oidc` — includes `id-token:write`
 - `perm:models-read` — includes `models:read`
+- `perm:checks-read` — includes `checks:read`
+- `perm:actions-read` — includes `actions:read`
+- `perm:pr-read` — includes `pull-requests:read`
 - `perm:implicit` — no explicit top-level permissions block (evaluate YAML/job-level scopes directly)
 
 **Primary-input profiles**
@@ -115,7 +118,7 @@ Only entries that differ materially from their group baseline are listed.
 | `claude.yml` | `perm:oidc` | — |
 | `claude-code-review.yml` | `perm:oidc` | — |
 | `opencode.yml` | `perm:oidc` | — |
-| `gemini-dispatch.yml` | `perm:implicit` | `in:command:gemini-dispatch.toml` |
+| `gemini-dispatch.yml` | `perm:implicit` | — |
 | `gemini-invoke.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-invoke.toml` |
 | `gemini-review.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-review.toml` |
 | `gemini-triage.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-triage.toml` |
@@ -128,11 +131,11 @@ Only entries that differ materially from their group baseline are listed.
 | `bulk-issue-labeling.yml` | `perm:w-issues` | — |
 | `comprehensive-issue-labeling.yml` | `perm:w-issues` | — |
 | `milestone-assignment.yml` | `perm:w-issues` | — |
-| `required-checks-audit.yml` | `checks:read` (plus read-only scopes) | — |
-| `governance-audit.yml` | `actions:read` (plus read-only scopes) | — |
+| `required-checks-audit.yml` | `perm:checks-read` (plus read-only scopes) | — |
+| `governance-audit.yml` | `perm:actions-read` (plus read-only scopes) | — |
 | `ai-review-router.yml` | `perm:w-pr` | — |
 | `smart-insights.yml` | `perm:implicit` | — |
-| `delivery-gate.yml` | `pull-requests:read` (plus read-only scopes) | — |
+| `delivery-gate.yml` | `perm:pr-read` (plus read-only scopes) | — |
 | `docker-publish.yml` | `perm:w-packages` | — |
 | `gitleaks.yml` | `perm:w-security` | — |
 | `trivy.yml` | `perm:w-security` | — |
@@ -203,7 +206,7 @@ AI-backed review, triage, agent invocation, emoji automation, and MCP runtime.
 | `claude.yml` | aktiv | PR, issues | Invoke Claude AI for issue/PR assistance | — | Issue/PR comment from Claude | O | AI-assisted; review response |
 | `claude-code-review.yml` | aktiv | PR | Claude automated code review on PRs | — | PR review comment | O | Review AI feedback |
 | `opencode.yml` | aktiv | PRcomment | Invoke OpenCode AI on PR review comment | — | PR follow-up comment | O | Review AI feedback |
-| `gemini-dispatch.yml` | aktiv | dispatch | Dispatch Gemini AI tasks (routes to invoke/review/triage) | `commands/gemini-dispatch.toml` | Routes to reusable Gemini flow | O | Manual trigger |
+| `gemini-dispatch.yml` | aktiv | dispatch | Dispatch Gemini AI tasks (routes to invoke/review/triage) | — | Routes to reusable Gemini flow | O | Manual trigger |
 | `gemini-invoke.yml` | aktiv | wcall | **Reusable:** Invoke Gemini AI on issue/PR | `commands/gemini-invoke.toml` | Issue/PR comment from Gemini | O | Called via gemini-dispatch |
 | `gemini-review.yml` | aktiv | wcall | **Reusable:** Gemini AI code review | `commands/gemini-review.toml` | PR review comment | O | Called via gemini-dispatch |
 | `gemini-triage.yml` | aktiv | wcall | **Reusable:** Gemini AI issue triage + labeling | `commands/gemini-triage.toml` | Issue labels + triage comment | O | Called via gemini-dispatch |

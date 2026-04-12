@@ -139,7 +139,6 @@ This folder and its docs make it navigable.
 
 | Command file | Backing workflow |
 |---|---|
-| `commands/gemini-dispatch.toml` | `gemini-dispatch.yml` |
 | `commands/gemini-invoke.toml` | `gemini-invoke.yml` (reusable) |
 | `commands/gemini-review.toml` | `gemini-review.yml` (reusable) |
 | `commands/gemini-scheduled-triage.toml` | `gemini-scheduled-triage.yml` (parked) |
