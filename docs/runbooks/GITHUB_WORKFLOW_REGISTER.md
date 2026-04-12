@@ -194,7 +194,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | `auto-label.yml` | historisch | issues, label | Legacy: auto-label issues | — | Issue labels | — | Do not enable without review |
 | `bulk-issue-labeling.yml` | historisch | dispatch | Legacy: bulk-label issues manually | — | Bulk issue labels | — | Do not enable without review |
 | `comprehensive-issue-labeling.yml` | historisch | issues, dispatch | Legacy: comprehensive issue labeling logic | — | Issue labels | — | Do not enable without review |
-| `issue-governance.yml` | historisch | issues | Legacy: issue governance enforcement | — | Issue governance action | — | Do not enable without review |
+| `issue-governance.yml` | parked | dispatch | **Deprecated (#1642)**: M1-M9 milestone mapping retired. Auto-trigger removed; dispatch-only stub prints deprecation notice. | — | Deprecation notice only | — | Auto-trigger removed in #1642; do not re-enable issues trigger without review |
 | `milestone-assignment.yml` | historisch | dispatch | Legacy: manual milestone assignment | — | Milestone on issue | — | Do not enable without review |
 
 ---

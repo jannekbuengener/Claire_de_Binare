@@ -1,103 +1,28 @@
+# ⚠️ DEPRECATED: Parked in #1642 (2026-04-13).
+# This workflow mapped "Phase N" in issue titles to M1-M9 milestone prefixes.
+# The M1-M9 milestone scheme was retired during milestone consolidation (see
+# milestone-assignment.yml which carries the same DEPRECATED notice).
+# Audit evidence: 0 open issues matched Phase-N patterns; all recent automatic
+# runs logged "No phase detected (or unmapped). Skipping." — pure runner noise.
+# Auto-trigger removed. Retained as workflow_dispatch with a deprecation notice
+# job only; the stale github-script logic is removed to avoid a broken manual path.
+# See .github/README.md for current control-plane documentation.
 
 name: Issue Governance (Milestones)
 
 on:
-  issues:
-    types: [opened, edited, reopened]
+  workflow_dispatch:
 
 permissions:
-  issues: write
   contents: read
 
 jobs:
-  milestone-autofix:
+  deprecated-notice:
     runs-on: ubuntu-latest
     steps:
-      - name: Set milestone from Phase in title
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const title = context.payload.issue.title || "";
-            // Match "... - Phase <n> - ..."
-            const m = title.match(/\bPhase\s+(\d+)\b/i);
-            let phase = m ? parseInt(m[1], 10) : null;
-
-            // Optional: "Final" keyword -> M9
-            const isFinal = /\bfinal\b/i.test(title);
-
-            const phaseToMilestonePrefix = {
-              0: "M1",
-              1: "M2",
-              2: "M3",
-              3: "M4",
-              4: "M7",
-              5: "M8",
-              6: "M6",
-            };
-
-            let targetPrefix = null;
-            if (isFinal) targetPrefix = "M9";
-            else if (phase !== null && phaseToMilestonePrefix[phase] !== undefined) {
-              targetPrefix = phaseToMilestonePrefix[phase];
-            } else {
-              core.info("No phase detected (or unmapped). Skipping.");
-              return;
-            }
-
-            const { owner, repo } = context.repo;
-            const milestones = await github.paginate(github.rest.issues.listMilestones, {
-              owner, repo, state: "open", per_page: 100,
-            });
-
-            const target = milestones.find(ms => (ms.title || "").startsWith(targetPrefix));
-            if (!target) {
-              core.warning(`Target milestone starting with "${targetPrefix}" not found. Skipping.`);
-              return;
-            }
-
-            const issue = context.payload.issue;
-            const inboxMilestone = milestones.find(ms => (ms.title || "").trim().toLowerCase() === "inbox");
-            const { data: liveIssue } = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: issue.number,
-            });
-            const currentMilestone = liveIssue.milestone || null;
-            const current = currentMilestone ? currentMilestone.number : null;
-            const inboxNumber = inboxMilestone ? inboxMilestone.number : null;
-
-            if (current === target.number) {
-              core.info(`Milestone already set to ${target.title}.`);
-              return;
-            }
-
-            if (currentMilestone && current !== inboxNumber) {
-              core.info(`Issue #${issue.number} already has explicit milestone ${currentMilestone.title}. Skipping override.`);
-              return;
-            }
-
-            const { data: refreshedIssue } = await github.rest.issues.get({
-              owner,
-              repo,
-              issue_number: issue.number,
-            });
-            const refreshedMilestone = refreshedIssue.milestone || null;
-            const refreshedNumber = refreshedMilestone ? refreshedMilestone.number : null;
-
-            if (refreshedNumber === target.number) {
-              core.info(`Milestone already set to ${target.title}.`);
-              return;
-            }
-
-            if (refreshedMilestone && refreshedNumber !== inboxNumber) {
-              core.info(`Issue #${issue.number} already has explicit milestone ${refreshedMilestone.title}. Skipping override.`);
-              return;
-            }
-
-            await github.rest.issues.update({
-              owner, repo,
-              issue_number: issue.number,
-              milestone: target.number,
-            });
-
-            core.info(`Milestone set to ${target.title} for issue #${issue.number}.`);
+      - name: Deprecation notice
+        run: |
+          echo "⚠️  Issue Governance (Milestones) is deprecated."
+          echo "The M1-M9 milestone mapping was retired during milestone consolidation."
+          echo "Auto-trigger was removed in #1642 — this job exists only as a safe dispatch stub."
+          echo "See .github/README.md for current control-plane documentation."
