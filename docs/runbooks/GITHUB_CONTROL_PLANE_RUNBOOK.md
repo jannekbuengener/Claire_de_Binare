@@ -65,6 +65,13 @@ Cross-reference:
 - `.github/README.md` (`Issue templates as control-plane surface (in scope)`)
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (`#1640 minimum-field coverage model`)
 
+## 1b. Merge and closure guardrail (Option A / #1661)
+
+- Repo-wide GitHub Auto-Merge is disabled (`allow_auto_merge=false`).
+- Never use `gh pr merge --auto` in this repository.
+- For `.github`, meta, governance, and closure-sensitive PRs: merge manually only after final human review.
+- Merge state does not prove completion state; issue/PR closure semantics remain acceptance-first and merged-`main` based.
+
 ---
 
 ## 2. How to Read a Workflow Safely

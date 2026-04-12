@@ -52,6 +52,8 @@ Kurzer Betriebsleitfaden für die Repo-Organisation über Milestones, Labels und
   `Review`, `Blocked`, `Done`) sind Board-Feldwerte, keine Labels.
 - **Abgrenzung:** `stage:*` Labels bilden das Board-Stage-System ab und sind
   orthogonal zum LR-System in `docs/live-readiness/`.
+- **Merge-Governance:** Repo-weites Auto-Merge ist deaktiviert (`allow_auto_merge=false`);
+  Merges erfolgen manuell nach finalem Human-Review.
 
 ## Automationen (Workflow-Dateien)
 
@@ -120,9 +122,9 @@ Symptome:
 Fix:
 1. Runbook nutzen: `docs/runbooks/resolve_review_threads_via_graphql.md`
 2. Offene Review-Threads per GraphQL resolve.
-3. Merge erneut setzen:
+3. Nach finalem Human-Review manuell mergen:
    ```bash
-   gh pr merge <PR_NR> --auto --squash --delete-branch
+   gh pr merge <PR_NR> --squash --delete-branch
    ```
 
 ### 3) Project-Scopes fehlen / falscher Token aktiv (`GH_TOKEN` vs `GITHUB_TOKEN`)

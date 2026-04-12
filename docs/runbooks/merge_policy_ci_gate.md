@@ -12,7 +12,7 @@ for the policy rationale.
 Merge-method guidance for proof/slice PRs is documented in
 [merge_strategy_squash_vs_merge.md](./merge_strategy_squash_vs_merge.md).
 
-## Current State (as of 2026-04-08)
+## Current State (as of 2026-04-12)
 
 - Repo Actions workflow permissions: `Read and write`
 - Canonical PR gate workflow: `.github/workflows/ci.yml` (`name: ci`)
@@ -22,6 +22,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - Governance decision: the PR gate wins, not the larger workflow. `ci.yaml` is not merge-relevant until explicitly consolidated into the PR contract.
 - Live branch protection review settings: `required_approving_review_count=0`, `require_code_owner_reviews=false`, `dismiss_stale_reviews=true`
 - Live branch protection safety settings also include `required_linear_history=true`, `required_conversation_resolution=true`, `enforce_admins=true`
+- Repo-level auto-merge setting: `allow_auto_merge=false` (Option A, issue #1661)
 
 ## Review Signal vs Merge Rights
 
@@ -30,6 +31,7 @@ Merge-method guidance for proof/slice PRs is documented in
 - AI/Jules review output is advisory signal only and does not approve or merge PRs.
 - `.github/CODEOWNERS` remains review-routing metadata only; code-owner review is not an active merge requirement on `main`.
 - Six-Eyes is not technically enforced by the current PR template or branch protection configuration in this repo.
+- Auto-merge is not allowed in this repo. Merge only after final human review; do not use `gh pr merge --auto`.
 
 ## Blocked PR Diagnosis Order
 
@@ -248,20 +250,36 @@ gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection/required_
   --field required_approving_review_count=0
 ```
 
-### Enable Auto-merge (optional)
+### Auto-Merge Policy (Option A - required)
 
 ```bash
-# Enable auto-merge at repo level (PRs merge when checks pass):
+# Enforce repo-wide no-auto-merge policy:
 gh api repos/jannekbuengener/Claire_de_Binare \
   --method PATCH \
-  --field allow_auto_merge=true
+  --field allow_auto_merge=false
 ```
 
-Then per PR:
+Verify:
 
 ```bash
-gh pr merge <number> --auto --squash
+gh api repos/jannekbuengener/Claire_de_Binare \
+  --jq '{"allow_auto_merge":.allow_auto_merge}'
 ```
+
+Expected output:
+
+```json
+{"allow_auto_merge":false}
+```
+
+Merge execution rule:
+
+```bash
+# Final human review first; then manual merge (no --auto):
+gh pr merge <number> --squash --delete-branch
+```
+
+Merge state must not replace completion state. Use `Closes #...` only when acceptance is satisfied against merged `main`.
 
 ### Adding Required Checks
 

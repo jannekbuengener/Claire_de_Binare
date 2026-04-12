@@ -12,11 +12,12 @@ Scope: proof/slice PRs, evidence PRs, and CI/governance changes.
   - Keeps `main` linear and easy to audit.
   - Reduces noisy intermediate commits from slice work.
   - Matches evidence-first workflow (evidence lives in PR/issue links, not commit chains).
+  - Repo policy (#1661 Option A): GitHub Auto-Merge is disabled (`allow_auto_merge=false`).
 
 CLI default:
 
 ```bash
-gh pr merge <number> --auto --squash --delete-branch
+gh pr merge <number> --squash --delete-branch
 ```
 
 ## Decision Rules
@@ -66,6 +67,7 @@ gh pr merge <number> --rebase --delete-branch
 - If policy-gate category prefixes are used (`docs-only:`, `workflows-only:`, `infra-only:`), keep them consistent with changed files.
 - Put evidence links in PR body and/or linked issue comments.
 - Do not rely on commit history as the primary evidence carrier.
+- Merge state is not completion state; closure claims remain acceptance-first and merged-`main` based.
 
 ## Notes
 

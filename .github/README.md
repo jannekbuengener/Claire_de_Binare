@@ -222,5 +222,8 @@ See `control-plane/README.md` for full usage.
 2. Sync duties for that class satisfied? (seal doc § 3)
 3. New or changed automation side effects declared in PR body?
 4. PR template `.github` section checked?
+5. Repo policy respected? Auto-merge is disabled repo-wide (`allow_auto_merge=false`), so do not use `gh pr merge --auto`.
+6. Final human review completed before merge for control-plane/meta/governance/closure-sensitive work.
+7. Closure semantics preserved? Merge state is not completion state; issue closure remains acceptance + merged-`main` based.
 
-Typo fixes and harmless comment updates (`doc-only`) only need rules 1 and 4.
+Typo fixes and harmless comment updates (`doc-only`) still require rules 1, 4, and 5.

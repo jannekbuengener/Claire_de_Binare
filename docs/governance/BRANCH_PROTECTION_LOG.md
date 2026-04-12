@@ -4,6 +4,40 @@ This document records governance interventions on branch protection rules for au
 
 ---
 
+## 2026-04-12T11:35:24Z - Disable Repo Auto-Merge (Issue #1661, Option A)
+
+**Context:** Issue #1661 mandated Option A: disable GitHub Auto-Merge repo-wide to remove
+merge-state/closure-state race risk for control-plane, meta, governance, and other closure-sensitive work.
+
+**Action Taken:**
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare \
+  --method PATCH \
+  --field allow_auto_merge=false
+```
+
+**Verification:**
+```bash
+gh api repos/jannekbuengener/Claire_de_Binare --jq '{"allow_auto_merge":.allow_auto_merge}'
+gh api graphql -f query='query { repository(owner:"jannekbuengener", name:"Claire_de_Binare") { autoMergeAllowed } }'
+```
+
+**Final State:**
+| Setting | Before | After |
+|---------|--------|-------|
+| `allow_auto_merge` | `true` | `false` |
+| `autoMergeAllowed` (GraphQL) | `true` | `false` |
+
+**Rationale:**
+- Control-plane/meta/governance and closure-sensitive PRs require deterministic final human review before merge.
+- Merge state must not be treated as completion proof; closure semantics remain acceptance + merged-`main` based.
+
+**Decision:** Repo-wide Auto-Merge is disabled and not allowed for this repository.
+
+**Approver:** jannekbuengener (repo owner)
+
+---
+
 ## 2026-04-08T12:16:03Z - Disable Code-Owner Review Self-Deadlock (PR #1505)
 
 **Context:** The repo still uses `.github/CODEOWNERS` with `* @jannekbuengener`, while `main` is operated in solo-maintainer mode with `required_approving_review_count: 0`.

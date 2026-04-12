@@ -93,6 +93,13 @@ A `.github/` PR is merge-ready when **all** of the following are true:
 **Exception for `doc-only`:** A pure typo fix or comment clarification that changes no documented
 field satisfies merge-readiness by completing rules 1 and 7 only.
 
+### Global merge/closure guardrail (all classes)
+
+- Repo-wide GitHub Auto-Merge is disabled (`allow_auto_merge=false`); never use `gh pr merge --auto`.
+- `.github`, meta, governance, and closure-sensitive PRs are merged manually only after final human review.
+- Merge state is transport state only and must not replace completion/acceptance state.
+- `Closes #...` remains valid only when acceptance is satisfied against merged `main`.
+
 ---
 
 ## 5. Review Depth
@@ -119,7 +126,8 @@ Three lightweight, real enforcement paths:
 ### 6.1 PR Template Checklist (primary)
 
 `.github/pull_request_template.md` contains a `.github` control-plane section. Every PR author
-explicitly identifies the change class and confirms sync duties before merging.
+explicitly identifies the change class, confirms sync duties, and applies the merge/closure
+guardrails before merging.
 This is the day-to-day gate.
 
 ### 6.2 Collection Layer Validator (secondary)
