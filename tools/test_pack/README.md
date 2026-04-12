@@ -65,3 +65,59 @@ python tools\mock_exchange\mock_exchange.py --port 18080
 - Expand assertions in `tools/assertions/evaluate_assertions.py` for your gates
 - Add additional Prometheus queries in `tools/metrics/metrics_snapshot.py`
 - Add more scenarios in `scenarios/catalog.yaml`
+
+---
+
+## mock_exchange nested repo (`tools/test_pack/mock_exchange/`)
+
+> **Status:** Local reference copy — not integrated, not staged, gitignored. (#1645 Slice A, #1648)
+
+### What it is
+
+`tools/test_pack/mock_exchange/` is a local clone of
+[`github.com/didac-crst/mockexchange`](https://github.com/didac-crst/mockexchange) v0.1.5.
+It is a **full paper-trading platform** (MockX Engine + Oracle + Periscope) —
+a dockerized, ccxt-compatible exchange emulator backed by Valkey/Redis.
+
+This is **distinct** from the pack-local `tools/mock_exchange/mock_exchange.py` (stdlib-only,
+no dependencies) used in the quickstart above.
+
+### Why it is gitignored
+
+The path contains its own `.git` directory and remote. Staging it without explicit intent
+would create a mode-160000 gitlink (broken submodule reference). It was added to `.gitignore`
+in `#1645 Slice A` to prevent accidental staging.
+
+### Current handling decision
+
+**Option chosen: keep as local reference copy, no active CDB integration yet.**
+
+Rationale:
+- CDB has no concrete current test/adapter use case that requires the full Docker stack.
+- The simpler pack-local mock (`tools/mock_exchange/mock_exchange.py`) covers existing
+  order-lifecycle smoke tests adequately.
+- The full suite (Engine + Oracle + Periscope + Valkey) adds a heavyweight Docker dependency
+  that is not justified without a specific integration target.
+- The path is browsable locally as a reference without any Git or build risk.
+
+### Future integration path (when a concrete use case emerges)
+
+If CDB needs the Engine package for adapter or backtest testing, install directly from the
+upstream Git tag — **do not commit the nested repo**:
+
+```bash
+# Engine only (headless exchange emulator + REST API)
+pip install "git+https://github.com/didac-crst/mockexchange.git@v0.1.5#subdirectory=packages/engine"
+
+# Oracle only (price feed service)
+pip install "git+https://github.com/didac-crst/mockexchange.git@v0.1.5#subdirectory=packages/oracle"
+```
+
+Add the chosen package to the relevant `requirements*.txt` with the exact tag pinned.
+Open a dedicated issue before doing so (tracked under `#1648`).
+
+### What must NOT happen
+
+- Do not `git add tools/test_pack/mock_exchange/` — the `.gitignore` entry prevents this.
+- Do not introduce it as a Git submodule without explicit intent and a dedicated issue.
+- Do not remove the local copy without first deciding whether the pip-from-tag path is ready.
