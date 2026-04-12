@@ -1,0 +1,51 @@
+id: cdb-daily-delta-triage
+kind: control_workflow
+status: active
+owner_surface: ".github"
+
+workflow:
+  path: ".github/workflows/cdb-daily-delta-triage.yml"
+  triggers:
+    - schedule
+    - workflow_dispatch
+  permissions:
+    contents: read
+    issues: write
+    actions: read
+
+purpose: >
+  Scheduled triage workflow (Tue/Wed/Fri/Sun 06:20 UTC) that reads the Control Register
+  at runtime, analyses recent delta signals, and creates at most one follow-up issue
+  per run. The Control Register path is passed as a CLI argument to the triage script,
+  making it a hard runtime dependency (not advisory docs).
+
+outputs:
+  - "optional:github_issue (max 1 per run)"
+  - "step_summary"
+
+dependencies:
+  scripts:
+    - ".github/scripts/daily_delta_triage.py"
+  required_files:
+    - "docs/runbooks/CONTROL_REGISTER.md"
+  docs:
+    - "docs/runbooks/CONTROL_REGISTER.md"
+
+control:
+  fail_posture: fail_closed
+  human_touchpoint: false
+  auto_issue_creation: true
+  review_required_for_repo_mutation: false
+
+mutation_surfaces:
+  issues:
+    - "optional:follow_up_issue (bounded: max 1 per run)"
+
+discovery:
+  register_group: "scheduled-triage"
+  related_control_issue: 1445
+  dedupe_key: "workflow:cdb-daily-delta-triage"
+
+tests:
+  smoke:
+    - ".github/control-plane/test/cdb-daily-delta-triage/smoke.sh"

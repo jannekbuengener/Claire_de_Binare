@@ -1,0 +1,62 @@
+id: cdb-control-followup-classifier
+kind: control_workflow
+status: manual_only
+owner_surface: ".github"
+
+workflow:
+  path: ".github/workflows/cdb-control-followup-classifier.yml"
+  triggers:
+    - workflow_dispatch
+  permissions:
+    contents: read
+    issues: write
+    models: read
+
+purpose: >
+  Manual HITL classifier that applies the CDB control-followup prompt to a specified
+  GitHub issue, producing a structured classification result (artifact + optional issue
+  comment). Triggered exclusively by workflow_dispatch; never auto-fires.
+
+inputs:
+  - name: issue_number
+    required: true
+    description: GitHub issue number to classify.
+  - name: post_comment
+    required: false
+    description: "Whether to post the result as a comment on the issue (default: false)."
+
+outputs:
+  - "artifact:cdb-control-followup/result.json"
+  - "artifact:cdb-control-followup/summary.md"
+  - "optional:github_issue_comment"
+  - "step_summary"
+
+dependencies:
+  scripts:
+    - ".github/scripts/run_cdb_control_followup.sh"
+  prompts:
+    - ".github/prompts/cdb-control-followup.prompt.yml"
+  docs:
+    - "docs/runbooks/CONTROL_REGISTER.md"
+
+control:
+  fail_posture: fail_closed
+  human_touchpoint: true
+  auto_issue_creation: false
+  review_required_for_repo_mutation: false
+
+mutation_surfaces:
+  comments:
+    - "optional:target_issue"
+  artifacts:
+    - "artifacts/cdb-control-followup/result.json"
+    - "artifacts/cdb-control-followup/summary.md"
+
+discovery:
+  register_group: "human-in-the-loop"
+  related_control_issue: 1445
+  dedupe_key: "workflow:cdb-control-followup-classifier"
+
+tests:
+  smoke:
+    - ".github/control-plane/test/cdb-control-followup-classifier/smoke.sh"

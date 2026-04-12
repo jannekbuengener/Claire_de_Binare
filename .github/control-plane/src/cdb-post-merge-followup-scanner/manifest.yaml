@@ -1,0 +1,52 @@
+id: cdb-post-merge-followup-scanner
+kind: control_workflow
+status: active
+owner_surface: ".github"
+
+workflow:
+  path: ".github/workflows/cdb-post-merge-followup-scanner.yml"
+  triggers:
+    - pull_request:closed
+    - workflow_dispatch
+  permissions:
+    contents: read
+    issues: write
+    models: read
+    pull-requests: read
+
+purpose: >
+  Automated scanner that fires on PR merge (pull_request:closed) and applies the
+  CDB control-followup prompt to the merged PR. Produces a structured follow-up
+  analysis and posts a comment to the CDB weekly cockpit issue (#1445).
+  Also supports manual dispatch for ad-hoc re-analysis.
+
+outputs:
+  - "github_issue_comment:#1445"
+  - "step_summary"
+
+dependencies:
+  scripts:
+    - ".github/scripts/post_merge_followup_scanner.py"
+  prompts:
+    - ".github/prompts/cdb-control-followup.prompt.yml"
+  docs:
+    - "docs/runbooks/CONTROL_REGISTER.md"
+
+control:
+  fail_posture: report_only
+  human_touchpoint: false
+  auto_issue_creation: false
+  review_required_for_repo_mutation: false
+
+mutation_surfaces:
+  comments:
+    - "#1445 (weekly cockpit)"
+
+discovery:
+  register_group: "post-merge-automation"
+  related_control_issue: 1445
+  dedupe_key: "workflow:cdb-post-merge-followup-scanner"
+
+tests:
+  smoke:
+    - ".github/control-plane/test/cdb-post-merge-followup-scanner/smoke.sh"

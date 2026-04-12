@@ -1,0 +1,208 @@
+# CDB .github Control-Plane Manifest Schema
+# Version: 1
+# Validator: .github/scripts/control_plane_validate.py
+#
+# This is the authoritative field spec for manifest.yaml files under
+# .github/control-plane/src/<unit-id>/manifest.yaml
+#
+# Fields marked path_checked: true are verified to exist on disk by the validator.
+# Fields marked path_checked: false are advisory only (not validated against disk).
+
+schema_version: "1"
+
+fields:
+
+  id:
+    type: string
+    required: true
+    path_checked: false
+    description: >
+      Unique unit identifier. Must match the parent directory name exactly.
+    example: "cdb-control-followup-classifier"
+
+  kind:
+    type: enum
+    required: true
+    values:
+      - control_workflow
+      - prompt
+      - script
+      - command
+    description: Asset type being cataloged.
+
+  status:
+    type: enum
+    required: true
+    values:
+      - active             # triggered automatically or commonly used
+      - manual_only        # workflow_dispatch only; never triggered automatically
+      - parked             # fail-closed disabled; not currently operational
+      - historical_unclear # uncertain status; needs owner decision
+    description: Operational status of this unit.
+
+  owner_surface:
+    type: string
+    required: true
+    path_checked: false
+    description: Primary GitHub surface that owns this unit.
+    example: ".github"
+
+  workflow:
+    type: mapping
+    required: true
+    fields:
+      path:
+        type: string
+        required: true
+        path_checked: true
+        description: Repo-relative path to the workflow YAML file.
+        example: ".github/workflows/cdb-control-followup-classifier.yml"
+      triggers:
+        type: list[string]
+        required: true
+        path_checked: false
+        description: >
+          Declared trigger types. The validator cross-checks top-level trigger names
+          against the real workflow 'on:' section.
+          Sub-type suffix notation is permitted (e.g., pull_request:closed) and is
+          normalized to the top-level name for comparison.
+        example: ["workflow_dispatch"]
+      permissions:
+        type: mapping
+        required: true
+        path_checked: false
+        description: >
+          Declared workflow-level permissions. The validator cross-checks this dict
+          against the real 'permissions:' block in the workflow YAML.
+        example:
+          contents: read
+          issues: write
+
+  purpose:
+    type: string
+    required: true
+    path_checked: false
+    description: Single-paragraph description of what this unit does operationally.
+
+  inputs:
+    type: list[mapping]
+    required: false
+    path_checked: false
+    description: Declared workflow_dispatch inputs (advisory; not path-checked).
+    fields:
+      name:
+        type: string
+        required: true
+      required:
+        type: boolean
+        required: true
+      description:
+        type: string
+        required: false
+
+  outputs:
+    type: list[string]
+    required: false
+    path_checked: false
+    description: >
+      Declared output surfaces. Convention: step_summary, artifact:<name>,
+      github_issue_comment, optional:<surface>.
+
+  dependencies:
+    type: mapping
+    required: false
+    fields:
+      scripts:
+        type: list[string]
+        path_checked: true
+        description: Script files this unit depends on at runtime.
+      prompts:
+        type: list[string]
+        path_checked: true
+        description: Prompt files this unit depends on at runtime.
+      required_files:
+        type: list[string]
+        path_checked: true
+        description: >
+          Other required runtime files this unit opens or reads directly
+          (e.g., a config file or runbook passed as a CLI argument).
+      docs:
+        type: list[string]
+        path_checked: false
+        description: >
+          Advisory documentation references. Not path-checked. Use for human
+          context only; do not put runtime file dependencies here.
+
+  control:
+    type: mapping
+    required: true
+    fields:
+      fail_posture:
+        type: enum
+        required: true
+        values:
+          - fail_closed
+          - report_only
+        description: How the unit behaves on errors or unexpected conditions.
+      human_touchpoint:
+        type: boolean
+        required: true
+        description: Whether this unit requires or assumes human interaction (HITL).
+      auto_issue_creation:
+        type: boolean
+        required: true
+        description: Whether this unit can autonomously create GitHub issues.
+      review_required_for_repo_mutation:
+        type: boolean
+        required: false
+        description: Whether a human review gate is required before repo mutations.
+
+  mutation_surfaces:
+    type: mapping
+    required: false
+    description: GitHub surfaces this unit can write to.
+    fields:
+      comments:
+        type: list[string]
+        description: Issue or PR comment targets.
+      artifacts:
+        type: list[string]
+        description: GitHub Actions artifact paths.
+      issues:
+        type: list[string]
+        description: Issue creation targets (e.g., optional_follow_up_issue).
+
+  discovery:
+    type: mapping
+    required: true
+    fields:
+      register_group:
+        type: string
+        required: true
+        description: >
+          Functional group for the workflow register and generated docs.
+        example: "human-in-the-loop"
+      related_control_issue:
+        type: integer
+        required: false
+        description: Primary GitHub issue number for this unit's control context.
+      dedupe_key:
+        type: string
+        required: true
+        description: >
+          Stable unique key for deduplication across generated outputs and drift scans.
+          Convention: workflow:<workflow-filename-without-extension>
+        example: "workflow:cdb-control-followup-classifier"
+
+  tests:
+    type: mapping
+    required: true
+    fields:
+      smoke:
+        type: list[string]
+        path_checked: true
+        description: >
+          Paths to smoke scripts for this unit. Each smoke script is a thin wrapper
+          that calls: control_plane_validate.py --unit-id <id>
+        example:
+          - ".github/control-plane/test/cdb-control-followup-classifier/smoke.sh"
