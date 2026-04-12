@@ -21,10 +21,123 @@
 | **Status** | `aktiv` / `manual-only` / `parked` / `historisch` |
 | **Trigger(s)** | Abbreviated: `push`, `PR`, `sched`, `dispatch`, `wrun` (workflow_run), `wcall` (workflow_call), `issues`, `PRcomment` |
 | **Purpose** | One-line description |
-| **Scripts / Prompts** | Supporting files from `.github/scripts/` or `.github/prompts/` |
-| **Key outputs** | What it mutates or produces |
+| **Scripts / Prompts** | Supporting files from `.github/scripts/`, `.github/prompts/`, or `.github/commands/` where applicable |
+| **Key outputs** | Primary outputs / artifacts / mutation surfaces |
 | **FP** | Fail posture: `C` = fail-closed (blocks CI/merge), `O` = fail-open (advisory) |
 | **HT** | Human touchpoint |
+
+---
+
+## #1640 minimum-field coverage model (repo-true, fail-closed)
+
+This register intentionally uses a compact two-layer model:
+1. **Workflow row layer** (`File`, `Purpose`, `Trigger(s)`, support links, outputs/mutations, `FP`, `HT`)
+2. **Profile layer** (permissions, primary inputs, owner/canon) with explicit defaults + explicit overrides
+
+If a field cannot be resolved from row + profile + override, treat it as **not satisfied** and inspect the workflow YAML directly before making governance claims.
+
+| #1640 minimum field | Where modeled |
+|---|---|
+| file path | `File` column |
+| purpose | `Purpose` column |
+| trigger(s) | `Trigger(s)` column |
+| permissions | Profile layer below (`perm:*`) + workflow override table |
+| primary inputs | Profile layer below (`in:*`) + workflow override table |
+| primary outputs / artifacts | `Key outputs` column |
+| linked prompts / scripts / commands | `Scripts / Prompts` column |
+| linked issues / project surfaces / labels / comments / repo mutations | `Key outputs` column (surface terms) |
+| fail posture | `FP` column |
+| human touchpoint | `HT` column |
+| owner / canonical doc link | Register-wide defaults below |
+
+### Register-wide defaults (all workflow entries)
+
+- **Owner:** `@jannekbuengener` via `.github/CODEOWNERS`
+- **Canonical doc set:** `.github/README.md`, this register, `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`, `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`
+- **Human review rule:** merge/closure decisions are human-gated; no automatic acceptance inference from this document alone
+
+### Permission and primary-input profiles
+
+**Permission profiles**
+- `perm:r` — explicit read-only scopes (or no explicit write scopes)
+- `perm:w-issues` — includes `issues:write`
+- `perm:w-pr` — includes `pull-requests:write`
+- `perm:w-contents` — includes `contents:write`
+- `perm:w-packages` — includes `packages:write`
+- `perm:w-security` — includes `security-events:write`
+- `perm:oidc` — includes `id-token:write`
+- `perm:models-read` — includes `models:read`
+- `perm:implicit` — no explicit top-level permissions block (evaluate YAML/job-level scopes directly)
+
+**Primary-input profiles**
+- `in:event` — GitHub event payload for declared trigger
+- `in:dispatch` — explicit `workflow_dispatch` inputs
+- `in:schedule` — cron/time-based trigger input
+- `in:wrun` / `in:wcall` — upstream workflow context
+- `in:labels-spec` — `.github/workflows/labels.json`
+- `in:script:*` / `in:prompt:*` / `in:command:*` — linked support artifacts
+- `in:control-register` — `docs/runbooks/CONTROL_REGISTER.md` consumed at runtime
+
+### Group baselines (inherit unless overridden below)
+
+| Group | Permission baseline | Primary-input baseline |
+|---|---|---|
+| Group 1 Reconcile | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 2 CI / Quality | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 3 Spezialpfad / AI / Agent | `perm:r` | `in:event` / `in:dispatch` |
+| Group 4 Hygiene | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 5 Reporting / Control | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 6 Audit / Governance | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 7 Delivery / Gates | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 8 Security | `perm:r` | `in:event` / `in:dispatch` / `in:schedule` |
+| Group 9 Historisch / Unklar | `perm:r` | `in:event` / `in:dispatch` |
+
+### Workflow-specific permission/input overrides
+
+Only entries that differ materially from their group baseline are listed.
+
+| Workflow | Permission override | Primary-input override |
+|---|---|---|
+| `sync-labels.yml` | `perm:w-issues` | `in:labels-spec` |
+| `label-bootstrap.yml` | `perm:w-issues`, `perm:w-pr` | `in:labels-spec` |
+| `auto-label.yml` | `perm:w-issues` | — |
+| `auto-milestone.yml` | `perm:w-issues` | — |
+| `auto-milestone-label-dispatch.yml` | `perm:w-contents` | — |
+| `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
+| `control_board_auto_routing.yml` | `perm:w-issues` | — |
+| `control-board-routing-label-dispatch.yml` | `perm:w-contents` | — |
+| `cdb-daily-delta-triage.yml` | `perm:w-issues` | `in:script:daily_delta_triage.py`, `in:control-register` |
+| `cdb-weekly-control-hygiene-classifier.yml` | `perm:w-issues` | `in:script:weekly_control_hygiene_classifier.py` |
+| `cdb-post-merge-followup-scanner.yml` | `perm:w-issues`, `perm:models-read` | `in:script:post_merge_followup_scanner.py`, `in:prompt:cdb-control-followup.prompt.yml` |
+| `cdb-control-followup-classifier.yml` | `perm:w-issues`, `perm:models-read` | `in:script:run_cdb_control_followup.sh`, `in:prompt:cdb-control-followup.prompt.yml` |
+| `weekly_digest.yml` | `perm:implicit` | — |
+| `weekly_digest_failure_alert.yml` | `perm:w-issues` | `in:wrun` |
+| `claude.yml` | `perm:oidc` | — |
+| `claude-code-review.yml` | `perm:oidc` | — |
+| `opencode.yml` | `perm:oidc` | — |
+| `gemini-dispatch.yml` | `perm:implicit` | `in:command:gemini-dispatch.toml` |
+| `gemini-invoke.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-invoke.toml` |
+| `gemini-review.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-review.toml` |
+| `gemini-triage.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-triage.toml` |
+| `gemini-scheduled-triage.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:command:gemini-scheduled-triage.toml` |
+| `emoji-filter.yml` | `perm:w-issues` | `in:script:advanced-emoji-filter.py` |
+| `emoji-bot.yml` | `perm:w-contents` | `in:script:advanced-emoji-filter.py` |
+| `e2e-tests.yml` | `perm:w-issues` | — |
+| `root-session-hygiene-warning.yml` | — | `in:script:root_session_hygiene_warn.py` |
+| `copilot-housekeeping.yml` | `perm:w-issues`, `perm:w-pr` | — |
+| `bulk-issue-labeling.yml` | `perm:w-issues` | — |
+| `comprehensive-issue-labeling.yml` | `perm:w-issues` | — |
+| `milestone-assignment.yml` | `perm:w-issues` | — |
+| `required-checks-audit.yml` | `checks:read` (plus read-only scopes) | — |
+| `governance-audit.yml` | `actions:read` (plus read-only scopes) | — |
+| `ai-review-router.yml` | `perm:w-pr` | — |
+| `smart-insights.yml` | `perm:implicit` | — |
+| `delivery-gate.yml` | `pull-requests:read` (plus read-only scopes) | — |
+| `docker-publish.yml` | `perm:w-packages` | — |
+| `gitleaks.yml` | `perm:w-security` | — |
+| `trivy.yml` | `perm:w-security` | — |
+| `security-scan.yml` | `perm:w-security` | — |
+| `stale.yml` | `perm:implicit` | — |
 
 ---
 

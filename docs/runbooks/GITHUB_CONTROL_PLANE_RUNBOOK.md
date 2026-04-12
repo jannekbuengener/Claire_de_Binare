@@ -40,6 +40,33 @@ Layer 4: Documentation (introduced #1640)
 
 ---
 
+## 1a. Issue templates as control-plane surface
+
+Issue templates under `.github/ISSUE_TEMPLATE/` are in-scope control-plane assets, not passive docs.
+
+| Family | Files | Operational meaning |
+|---|---|---|
+| Intake-first | `bug_report.yml`, `feature_request.yml` | Initial intake surface; may remain intake-only |
+| Tracked-work | `task.yml`, `live-readiness.yml` | Work contract surface with explicit closure/bookkeeping expectations |
+| Governance-heavy / meta | `standard.md`, `meta_cluster.md`, `meta_phase.md`, `meta_tracking.md`, `meta_governance.md` | Coordination/policy framing for issue lifecycle and decision gates |
+| Config | `config.yml` | Template UX and routing links |
+
+**Runtime boundary (important):**
+- Workflows do not currently read `.github/ISSUE_TEMPLATE/*` files directly.
+- Template semantics therefore act as governance/intake contract first, runtime coupling second (via issue metadata and labels after issue creation).
+
+**How templates connect to workflows and merge semantics:**
+1. Templates shape labels/scope/state at intake.
+2. Issue-event workflows consume that state for routing/label/project automation.
+3. Merge-gated closure/bookkeeping expectations are enforced by human review and governance process, not by implicit workflow parsing.
+
+Cross-reference:
+- `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` (`Workflow -> Issue Template Relationships`)
+- `.github/README.md` (`Issue templates as control-plane surface (in scope)`)
+- `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` (`#1640 minimum-field coverage model`)
+
+---
+
 ## 2. How to Read a Workflow Safely
 
 For every workflow you open, extract these fields in order:

@@ -147,6 +147,34 @@ This folder and its docs make it navigable.
 
 ---
 
+## Issue templates as control-plane surface (in scope)
+
+Issue templates are not decorative text files; they are part of the `.github` control plane because they define intake shape, governance expectations, and downstream label/state signals.
+
+| Template family | Files | Role in control plane |
+|---|---|---|
+| Intake-first | `bug_report.yml`, `feature_request.yml` | Captures problem/request intake; may later be promoted to tracked work |
+| Tracked-work | `task.yml`, `live-readiness.yml` | Implementation/gate-oriented intake with explicit closure + bookkeeping contract |
+| Governance-heavy / meta | `standard.md`, `meta_cluster.md`, `meta_phase.md`, `meta_tracking.md`, `meta_governance.md` | Coordination/policy framing with merge-gated closure semantics and governance obligations |
+| Template config | `config.yml` | Controls issue-template UX and contact links |
+
+**Intake-only vs tracked/governance-heavy**
+- Intake-only forms can remain discussion/intake artifacts.
+- Tracked-work and governance-heavy forms explicitly define merge-gated closure and bookkeeping expectations.
+
+**Relation to PR/merge closure semantics**
+- Template text defines that issue closure is tied to merged target-branch reality.
+- This is a governance contract for humans/reviewers; workflows do not currently parse template files directly at runtime.
+
+**Relation to bookkeeping/governance expectations**
+- Tracked templates carry checklist expectations (status sync, ledger hygiene, control-surface updates when relevant).
+- These expectations align with `pull_request_template.md`, `docs/governance/GITHUB_CONTROL_PLANE_SEAL.md`, and the operational runbooks.
+
+**Relation to workflows, root files, and governance surfaces**
+- Issue-event workflows consume issue labels/state shaped at intake (routing, project sync, triage).
+- Root governance files (`CODEOWNERS`, `pull_request_template.md`, `SECURITY.md`, labels/milestones docs) provide adjacent policy rails.
+- Relationship model and boundaries: `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` (§ `Workflow → Issue Template Relationships`).
+
 ## Root-file reference
 
 | File | Purpose |

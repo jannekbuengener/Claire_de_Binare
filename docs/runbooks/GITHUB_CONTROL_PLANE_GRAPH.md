@@ -65,6 +65,23 @@ This document maps the dependency and coupling relationships across the `.github
 
 ---
 
+## 4a. Workflow → Issue Template Relationships
+
+This section models the `workflow -> issue template` relationship in three explicit classes to avoid fake runtime edges.
+
+**Runtime fact (repo scan):** no workflow YAML currently references `.github/ISSUE_TEMPLATE/*` directly.
+
+| Coupling class | Repo-true status | Workflow side | Template side |
+|---|---|---|---|
+| **Direct runtime coupling** | **None at present** | No workflow reads template files at runtime | Templates are rendered by GitHub UI, not by workflow steps |
+| **Governance/intake coupling** | **Present** | Issue-event flows consume issue labels/state created at intake (`issues` triggers like `auto-milestone*`, `project_status_*`, `control_board_auto_routing`, `triage_guard`, `add_to_project`) | Intake forms (`bug_report.yml`, `feature_request.yml`, `task.yml`, `live-readiness.yml`) pre-shape labels/scope and therefore downstream routing |
+| **Policy/bookkeeping coupling (human gate)** | **Present** | Workflows do not enforce merge-gated closure/bookkeeping checklists by themselves | Governance-heavy templates (`standard.md`, `meta_cluster.md`, `meta_phase.md`, `meta_tracking.md`, `meta_governance.md`) define closure/bookkeeping expectations that operators apply during PR/issue handling |
+| **No direct runtime relationship** | **Explicitly true for most non-issue workflows** | `push` / `pull_request` / `schedule` / `workflow_call` flows execute independently of template files | Templates do not alter those runtime paths unless issue metadata later enters workflow triggers |
+
+**Fail-closed interpretation:** do not infer template-enforcement automation where no direct runtime edge exists. Treat template semantics as governance contract unless a workflow explicitly parses/enforces them.
+
+---
+
 ## 5. Mermaid: Coupling Graph
 
 ```mermaid
@@ -317,5 +334,6 @@ Legacy copy of `ci.yml`. Coexists silently. Risk of accidental activation. Shoul
 - `.github/README.md` — canonical entrypoint
 - `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` — how to read and debug workflows
 - `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` — full 65-workflow register
+- `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` § "Issue templates as control-plane surface" — intake/policy depth
 - `.github/control-plane/README.md` — manifest collection layer
 - `docs/runbooks/CONTROL_REGISTER.md` — board stage, LR verdict, active infra list
