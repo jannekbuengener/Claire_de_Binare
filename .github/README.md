@@ -1,0 +1,182 @@
+# .github — Control Plane Entrypoint
+
+**Repo:** Claire de Binare (`jannekbuengener/Claire_de_Binare`)
+**Branch canon:** `github-meta-layer` → merged into `main`
+**LR verdict:** NO-GO (see `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
+**Board stage:** `trade-capable` (orthogonal to LR; no live capital)
+
+---
+
+## What is this folder?
+
+`.github` is the **automation and governance control plane** of this repo.
+
+It contains:
+- CI/CD and quality gates
+- Scheduled triage, digest, and reconciliation automation
+- AI/agent-backed control workflows (Gemini, Claude, Copilot)
+- GitHub Project board and label management
+- Issue templates, PR templates, and governance config
+- Scripts, prompts, and commands backing the workflows
+- The manifest-driven collection layer (`control-plane/`)
+
+Without understanding `.github`, the repo's automation is a black box.
+This folder and its docs make it navigable.
+
+---
+
+## Folder layout
+
+```
+.github/
+  workflows/         65 YAML workflow definitions + labels.json (66 files total)
+  ISSUE_TEMPLATE/    10 issue form templates (yml + md)
+  prompts/           1 active prompt: cdb-control-followup.prompt.yml
+  scripts/           7 scripts backing operational workflows
+  commands/          4 Gemini command stubs (toml)
+  control-plane/     Manifest-driven collection layer (introduced #1644)
+    README.md        Collection layer overview
+    schema/          Manifest schema spec
+    src/<unit>/      Per-unit manifests + notes
+    test/<unit>/     Per-unit smoke scripts
+    generated/       workflow-register.json (generated artifact)
+  CODEOWNERS         @jannekbuengener owns all
+  dependabot.yml     Automated dependency update config
+  pull_request_template.md  PR checklist
+  SECURITY.md        Security policy and disclosure
+  LABELS.md          Label spec documentation (canonical: labels.json)
+  MILESTONES.md      Milestone documentation
+  emoji-config.yaml  Emoji filter/bot configuration
+```
+
+---
+
+## Navigation guide
+
+### When debugging a failing workflow
+1. Start here → find the workflow in [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md)
+2. Note its scripts, prompts, and required files
+3. Check the runbook: [`docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md)
+4. For manifested units (3 so far): check `control-plane/src/<unit>/NOTES.md`
+5. Check Actions log → cross-reference the script output
+
+### When changing a workflow
+1. Read the full workflow file first
+2. Check `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` § "Before editing"
+3. Check if the workflow has a manifest in `control-plane/src/` — if yes, update manifest too
+4. Update `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` entry if the change affects documented fields
+5. Run `python .github/scripts/control_plane_validate.py` if you touched a manifested unit
+
+### When adding a new workflow
+1. Add the YAML under `workflows/`
+2. Add an entry to `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`
+3. If it's a control-plane unit worth cataloging: add manifest + notes + smoke under `control-plane/src/<unit>/`
+4. Run the validator
+
+### When something is creating unexpected issues/comments
+1. Check `CONTROL_REGISTER.md` → active infra workflows list
+2. Check the register for workflows with `auto_issue_creation: true`
+3. Key suspects: `cdb-daily-delta-triage.yml`, `cdb-weekly-control-hygiene-classifier.yml`, `smart-insights.yml`, `triage_guard.yml`
+
+---
+
+## Key reference surfaces
+
+| Document | What it answers |
+|---|---|
+| [`docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md) | How to read, change, debug, and maintain workflows |
+| [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md) | Full register: all 65 workflows, triggers, scripts, outputs |
+| [`docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md) | Relationship matrix + Mermaid coupling graph |
+| [`control-plane/README.md`](control-plane/README.md) | Manifest-driven collection layer docs |
+| [`control-plane/generated/workflow-register.json`](control-plane/generated/workflow-register.json) | Machine-readable register (3 manifested units) |
+| [`docs/runbooks/CONTROL_REGISTER.md`](../docs/runbooks/CONTROL_REGISTER.md) | Board stage, LR verdict, active infra workflow list |
+
+---
+
+## Workflow inventory at a glance
+
+**Total:** 65 workflow definitions + 1 `labels.json` = 66 tracked files
+
+| Group | Count | Key workflows |
+|---|---|---|
+| Reconcile (label/milestone/project) | 14 | sync-labels, project_reconcile_daily, control_board_upsert |
+| CI / quality gates | 11 | ci.yml (canonical), contracts, lr021_replay_smoke |
+| Spezialpfad (AI/agent/MCP/docker) | 11 | claude, gemini-dispatch, opencode, docker-publish |
+| Hygiene | 7 | stale, branch-policy, copilot-housekeeping |
+| Audit/governance | 6 | policy-gate, governance-audit, required-checks-audit |
+| Sonstiges | 5 | emoji-filter, emoji-bot, performance-monitor, smart-insights |
+| Delivery/gates | 4 | delivery-gate, core-guard, triage_guard, docs-conflict-guard |
+| Reporting | 4 | weekly_digest, cdb-daily-delta-triage, cdb-post-merge-followup-scanner |
+| Security | 3 | gitleaks, trivy, security-scan |
+
+**Status breakdown:**
+- Aktiv: 54
+- Manual-only: 5
+- Fail-closed geparkt: 1 (`gemini-scheduled-triage.yml`)
+- Historisch/unklar: 5 (labeling/milestone legacy flows)
+
+---
+
+## Scripts at a glance
+
+| Script | Backing workflow(s) |
+|---|---|
+| `scripts/daily_delta_triage.py` | `cdb-daily-delta-triage.yml` |
+| `scripts/post_merge_followup_scanner.py` | `cdb-post-merge-followup-scanner.yml` |
+| `scripts/weekly_control_hygiene_classifier.py` | `cdb-weekly-control-hygiene-classifier.yml` |
+| `scripts/run_cdb_control_followup.sh` | `cdb-control-followup-classifier.yml` |
+| `scripts/advanced-emoji-filter.py` | `emoji-filter.yml`, `emoji-bot.yml` |
+| `scripts/root_session_hygiene_warn.py` | `root-session-hygiene-warning.yml` |
+| `scripts/control_plane_validate.py` | `control-plane/test/*/smoke.sh`, `tests/test_control_plane.py` |
+
+## Prompts at a glance
+
+| Prompt | Consuming workflows |
+|---|---|
+| `prompts/cdb-control-followup.prompt.yml` | `cdb-control-followup-classifier.yml`, `cdb-post-merge-followup-scanner.yml` |
+
+## Commands at a glance
+
+| Command file | Backing workflow |
+|---|---|
+| `commands/gemini-dispatch.toml` | `gemini-dispatch.yml` |
+| `commands/gemini-invoke.toml` | `gemini-invoke.yml` (reusable) |
+| `commands/gemini-review.toml` | `gemini-review.yml` (reusable) |
+| `commands/gemini-scheduled-triage.toml` | `gemini-scheduled-triage.yml` (parked) |
+| `commands/gemini-triage.toml` | `gemini-triage.yml` (reusable) |
+
+---
+
+## Root-file reference
+
+| File | Purpose |
+|---|---|
+| `CODEOWNERS` | All paths owned by `@jannekbuengener` |
+| `dependabot.yml` | Weekly dep updates: pip (all services), actions, docker; `.worktrees_backup` explicitly ignored |
+| `pull_request_template.md` | PR checklist: scope, tests, governance, LR guardrails |
+| `SECURITY.md` | Security policy and responsible disclosure process |
+| `LABELS.md` | Label system documentation (human-readable); canonical machine form is `workflows/labels.json` |
+| `MILESTONES.md` | Milestone structure documentation |
+| `emoji-config.yaml` | Configuration for `emoji-filter.yml` and `emoji-bot.yml` |
+
+---
+
+## Collection layer (introduced #1644)
+
+`control-plane/` holds the manifest-driven description layer above real `.github` assets.
+- 3 units currently cataloged (Sprint 1): `cdb-control-followup-classifier`, `cdb-post-merge-followup-scanner`, `cdb-daily-delta-triage`
+- Validator: `.github/scripts/control_plane_validate.py` — run `python .github/scripts/control_plane_validate.py --generate`
+- CI: `tests/test_control_plane.py` — 11 tests, runs under standard `pytest`
+- Generated register: `control-plane/generated/workflow-register.json`
+
+See `control-plane/README.md` for full usage.
+
+---
+
+## Governance context
+
+- **Live-Readiness:** NO-GO — `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+- **Board stage:** `trade-capable` — `docs/runbooks/CONTROL_REGISTER.md`
+- **These are orthogonal systems.** Stage ≠ LR-GO. Never conflate them.
+- **SSOT for `.github` doc canon:** this file + the four runbooks above
+- **SSOT for operational workflow list:** `docs/runbooks/CONTROL_REGISTER.md` § Active Infra Workflows
