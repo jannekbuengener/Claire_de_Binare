@@ -180,3 +180,20 @@ See `control-plane/README.md` for full usage.
 - **These are orthogonal systems.** Stage ≠ LR-GO. Never conflate them.
 - **SSOT for `.github` doc canon:** this file + the four runbooks above
 - **SSOT for operational workflow list:** `docs/runbooks/CONTROL_REGISTER.md` § Active Infra Workflows
+
+---
+
+## Governance Seal
+
+`.github/` is a protected control-plane surface. A change here is **not complete** until its governance obligations are satisfied.
+
+**Seal policy:** [`docs/governance/GITHUB_CONTROL_PLANE_SEAL.md`](../docs/governance/GITHUB_CONTROL_PLANE_SEAL.md)
+
+**Quick check before merging a `.github/` PR:**
+
+1. Which change class? (`doc-only` / `behavior-neutral` / `behavior-change` / `new-surface` / `removal` / `governance-only`)
+2. Sync duties for that class satisfied? (seal doc § 3)
+3. New or changed automation side effects declared in PR body?
+4. PR template `.github` section checked?
+
+Typo fixes and harmless comment updates (`doc-only`) only need rules 1 and 4.

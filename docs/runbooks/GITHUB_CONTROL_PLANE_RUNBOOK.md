@@ -270,3 +270,26 @@ pytest tests/test_control_plane.py -v
 - `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` — relationship matrix + Mermaid graph
 - `.github/control-plane/README.md` — collection layer usage
 - `docs/runbooks/CONTROL_REGISTER.md` — board stage + LR verdict + active infra list
+
+---
+
+## 10. Governance Seal Reference
+
+The `.github` control plane is governed by a seal policy introduced in #1643.
+
+**Full policy:** [`docs/governance/GITHUB_CONTROL_PLANE_SEAL.md`](../../docs/governance/GITHUB_CONTROL_PLANE_SEAL.md)
+
+**Core rule:** every `.github/` change must satisfy the sync duties for its change class before merge.
+
+**Six change classes:**
+- `doc-only` — comment, annotation, README update; no sync required unless register field affected
+- `behavior-neutral` — rename/reformat/pin; update register + graph if renamed
+- `behavior-change` — trigger/permission/script change; update register row + declare side effects
+- `new-surface` — new workflow/script/prompt/command/template; new register entry required
+- `removal/deprecation` — remove or park; update register status + graph coupling
+- `governance-only` — CODEOWNERS/PR template/SECURITY.md/seal doc; update seal if policy changes
+
+**Enforcement:**
+- PR template `.github` section — day-to-day gate on every PR
+- `python .github/scripts/control_plane_validate.py` — required for any manifested-unit change
+- Seal doc as compliance SSOT — undocumented drift = non-compliant
