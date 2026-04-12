@@ -192,3 +192,7 @@ scripts/cdb_ops.ps1
 
 # Decision Contract audit records (generated at runtime + by tests)
 reports/decision_contract/
+
+# Local nested repo — mock exchange dependency candidate (github.com/didac-crst/mockexchange)
+# Intentionally kept local; must not be staged as gitlink or committed as submodule (#1645)
+tools/test_pack/mock_exchange/
