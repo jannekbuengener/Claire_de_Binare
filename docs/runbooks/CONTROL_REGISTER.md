@@ -53,6 +53,7 @@ Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer B
 | Runbook legacy stack_up | keine base+dev Referenz in aktiven Runbooks | #1410 |
 | Discovery-Surfaces | ENTRYPOINTS.yaml / CHEATSHEET aktuell | #1413 |
 | ARCHITECTURE_MAP | bei Service-Change nachziehen | #1409 |
+| GitHub Actions UI Workflow-Count > Repo-Count | `state: active` in API ≠ ausführbar; gelöschte Dateien behalten historische Registrierung; platform-managed dynamic Workflows (Copilot/Dependabot/CodeQL) zählen zusätzlich; erwartet, kein Risiko | #1666 |
 
 Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene Aufgaben interpretieren.
 
