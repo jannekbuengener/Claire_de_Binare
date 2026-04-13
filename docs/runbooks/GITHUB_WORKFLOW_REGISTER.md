@@ -199,17 +199,21 @@ Build, test, and quality assurance automation.
 
 AI-backed review, triage, agent invocation, emoji automation, and MCP runtime.
 
-> Gemini `workflow_call` workflows (`gemini-invoke`, `gemini-review`, `gemini-triage`) are reusable libraries — they have **no standalone trigger**.
+> Gemini `workflow_call` workflows (`gemini-invoke`, `gemini-review`, `gemini-triage`) are reusable libraries — they have **no standalone trigger** and currently have **no internal caller** in this repo.
+>
+> **`.github/commands/*.toml` coupling model:** Each Gemini workflow passes `prompt: '/command-name'` to the `run-gemini-cli` action. By Gemini CLI convention, `/command-name` resolves to `.github/commands/command-name.toml` at runtime. These TOML files are the **actual runtime prompt inputs** — not documentation stubs or placeholders. Without the TOML file the corresponding workflow would have no prompt to execute.
+>
+> **`gemini-dispatch.yml` is currently a noop placeholder.** Its implementation prints a placeholder string and does not invoke any of the reusable Gemini sub-workflows. The three `workflow_call` workflows are therefore not reachable from within this repo through an internal trigger chain.
 
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
 | `claude.yml` | aktiv | PR, issues | Invoke Claude AI for issue/PR assistance | — | Issue/PR comment from Claude | O | AI-assisted; review response |
 | `claude-code-review.yml` | aktiv | PR | Claude automated code review on PRs | — | PR review comment | O | Review AI feedback |
 | `opencode.yml` | aktiv | PRcomment | Invoke OpenCode AI on PR review comment | — | PR follow-up comment | O | Review AI feedback |
-| `gemini-dispatch.yml` | aktiv | dispatch | Dispatch Gemini AI tasks (routes to invoke/review/triage) | — | Routes to reusable Gemini flow | O | Manual trigger |
-| `gemini-invoke.yml` | aktiv | wcall | **Reusable:** Invoke Gemini AI on issue/PR | `commands/gemini-invoke.toml` | Issue/PR comment from Gemini | O | Called via gemini-dispatch |
-| `gemini-review.yml` | aktiv | wcall | **Reusable:** Gemini AI code review | `commands/gemini-review.toml` | PR review comment | O | Called via gemini-dispatch |
-| `gemini-triage.yml` | aktiv | wcall | **Reusable:** Gemini AI issue triage + labeling | `commands/gemini-triage.toml` | Issue labels + triage comment | O | Called via gemini-dispatch |
+| `gemini-dispatch.yml` | aktiv | dispatch | **Noop placeholder** — does not invoke reusable Gemini sub-workflows | — | Prints placeholder only; no Gemini invocation | O | Manual trigger |
+| `gemini-invoke.yml` | aktiv | wcall | **Reusable:** Invoke Gemini AI on issue/PR | `commands/gemini-invoke.toml` | Issue/PR comment from Gemini | O | No internal caller in this repo |
+| `gemini-review.yml` | aktiv | wcall | **Reusable:** Gemini AI code review | `commands/gemini-review.toml` | PR review comment | O | No internal caller in this repo |
+| `gemini-triage.yml` | aktiv | wcall | **Reusable:** Gemini AI issue triage + labeling | `commands/gemini-triage.toml` | Issue labels + triage comment | O | No internal caller in this repo |
 | `gemini-scheduled-triage.yml` | **parked** | dispatch (schedule removed) | Gemini scheduled triage — **PARKED fail-closed** | `commands/gemini-scheduled-triage.toml` | (Disabled) | — | Re-enable requires explicit decision |
 | `emoji-filter.yml` | aktiv | push, sched, dispatch | Filter/enforce emoji usage rules in issues/PRs | `scripts/advanced-emoji-filter.py` | Filtered content / report | O | Config via `emoji-config.yaml` |
 | `emoji-bot.yml` | aktiv | dispatch | Manual emoji bot operations | `scripts/advanced-emoji-filter.py` | Bot comment or action | O | Manual-only |
