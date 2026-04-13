@@ -260,10 +260,9 @@ jobs:
               ]
             ' <<<"$items_json")"
 
-            project_items_json="$(jq -cn \
-              --argjson cur "$project_items_json" \
-              --argjson add "$page_entries_json" \
-              '$cur + $add'
+            project_items_json="$(
+              printf '%s\n' "$project_items_json" "$page_entries_json" |
+              jq -sc '.[0] + .[1]'
             )"
 
             has_next="$(jq -r '.data.user.projectV2.items.pageInfo.hasNextPage // false' <<<"$items_json")"
