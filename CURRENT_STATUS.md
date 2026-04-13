@@ -3,12 +3,12 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-10
+**Last Updated**: 2026-04-13
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-04-10)
+## Repo / Engineering Status (2026-04-13)
 
 - **main**: green
 - **Active GitHub focus (manual, non-exhaustive)**:
@@ -62,6 +62,8 @@
 - **Session 50 (2026-04-09)**: Wochenfokus-Abgleich fuer Fr 2026-04-10 repo-backed nachgezogen. Der frueher genannte Dependabot-Batch #1367/#1366/#1365 ist obsolet (#1367 + #1365 MERGED, #1366 CLOSED); aktuell keine offenen PRs und kein kleiner neuer PR-Hygiene-/Evidence-Handoff-Blocker belegt.
 - **Session 51 (2026-04-10)**: KW15-Kommentare zusammengefasst und bewertet; Monatlicher Audit April 2026 durchgefuehrt (7 Tage ueberfaellig seit 2026-04-03). Befund: Drift-Level GERING — alle KW15-Punkte abgeschlossen, kein neuer Issue erforderlich ausser bereits bestehendem #1603 (Architektur-Drift nach PR #1602). Session-Log: `knowledge/logs/sessions/2026-04-10-kw15-comments-evaluation.md`.
 - **Merged (Session 51-55, 2026-04-10)**: Strategy-v1-Cluster current-main-wahr gelandet: PR #1598 (unit/scale reland, `8309f6fc`), PR #1600 (minimaler `primary_breakout_v1` Footprint, `192a8f32`), PR #1602 (statische Strategy-/Execution-Adapter-Grenze, `b1bac4ad`), PR #1613 (deterministischer `primary_breakout_v1` Backtest-/Validation-Pfad, `c0004ed4`), PR #1615 (Paper-/Shadow-Evidence-Bridge, `b3c5ccca`). Danach Issues #1572/#190/#207/#1573 gegen `origin/main` geschlossen; Board-Stage bleibt `trade-capable`, LR bleibt `NO-GO`.
+- **Merged (2026-04-11)**: PR #1682 (`aee8685f`) — fix(workflow): weekly_digest.yml jq-Arg-Limit bei Pagination behoben.
+- **Merged (2026-04-13)**: PR #1684 (`01cb574f`) — feat(agents): cdb-session-start fail-closed Skill hinzugefuegt (`.codex/cdb_skills/cdb-session-start/`). PR #1685 (`7b5f748e`) — feat(agents): cdb-session-close mit Hard-Complete-Delivery-Verifikation erweitert (`.codex/cdb_skills/cdb-session-close/`). PR #1686 (`9b037ae8`) — docs(control): erwarteten GitHub-Actions-Workflow-Count-Drift in CONTROL_REGISTER.md dokumentiert. Issue #1666 geschlossen.
 
 ---
 
