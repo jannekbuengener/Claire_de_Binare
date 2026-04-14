@@ -5,6 +5,8 @@ on:
     - cron: '0 12 * * 1'  # Weekly on Monday at noon
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   smart-insights:
     runs-on: ubuntu-latest
