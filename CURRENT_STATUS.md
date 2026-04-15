@@ -11,8 +11,7 @@
 ## Repo / Engineering Status (2026-04-15)
 
 - **main**: green
-- **Active GitHub focus (manual, non-exhaustive)**:
-  - #1603 (Architektur-Doku-Reconcile nach PR #1602) — offen, wartet auf engen Doku-Fix
+- **Active GitHub focus (manual, non-exhaustive)**: keine
 - **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
 
 ---
