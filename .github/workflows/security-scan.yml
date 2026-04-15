@@ -116,7 +116,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
@@ -293,7 +293,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Build Service Image
         id: build_custom_image
@@ -332,7 +332,7 @@ jobs:
     if: always()
 
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
