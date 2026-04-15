@@ -45,4 +45,4 @@ Alle 7 PRs: state=MERGED. Kein PR aus dem Batch offen.
 
 ## Restunsicherheiten
 
-keine
+- Keine.
