@@ -3,7 +3,7 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-13
+**Last Updated**: 2026-04-15
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
@@ -64,6 +64,7 @@
 - **Merged (Session 51-55, 2026-04-10)**: Strategy-v1-Cluster current-main-wahr gelandet: PR #1598 (unit/scale reland, `8309f6fc`), PR #1600 (minimaler `primary_breakout_v1` Footprint, `192a8f32`), PR #1602 (statische Strategy-/Execution-Adapter-Grenze, `b1bac4ad`), PR #1613 (deterministischer `primary_breakout_v1` Backtest-/Validation-Pfad, `c0004ed4`), PR #1615 (Paper-/Shadow-Evidence-Bridge, `b3c5ccca`). Danach Issues #1572/#190/#207/#1573 gegen `origin/main` geschlossen; Board-Stage bleibt `trade-capable`, LR bleibt `NO-GO`.
 - **Merged (2026-04-11)**: PR #1682 (`aee8685f`) — fix(workflow): weekly_digest.yml jq-Arg-Limit bei Pagination behoben.
 - **Merged (2026-04-13)**: PR #1684 (`01cb574f`) — feat(agents): cdb-session-start fail-closed Skill hinzugefuegt (`.codex/cdb_skills/cdb-session-start/`). PR #1685 (`7b5f748e`) — feat(agents): cdb-session-close mit Hard-Complete-Delivery-Verifikation erweitert (`.codex/cdb_skills/cdb-session-close/`). PR #1686 (`9b037ae8`) — docs(control): erwarteten GitHub-Actions-Workflow-Count-Drift in CONTROL_REGISTER.md dokumentiert. Issue #1666 geschlossen. PR #1689 (`8932e25c`) — docs(workflows): Gemini-Command-TOML-Coupling-Modell dokumentiert, Dispatch-Status klargestellt. Issue #1667 geschlossen. PR #1690 (`2b839f9c`) — docs(claude): cdb-session-start/cdb-session-close als Pflicht-Session-Boundary-Skills in CLAUDE.md verdrahtet. Issue #1688 geschlossen.
+- **Merged (2026-04-15)**: pip-bump-Batch #1668–#1674 — 7 PRs: #1674 mcp 1.26.0→1.27.0 (`52da3a17`), #1673 requests 2.33.0→2.33.1 (`1a38d57b`), #1672 pytest 9.0.2→9.0.3 (`c89f060d`), #1671 ruff 0.15.9→0.15.10 (`c72dc23b`), #1670 python-json-logger 4.0.0→4.1.0 (`753e094e`), #1669 mypy 1.8.0→1.20.0 (`4adc88a5`), #1668 prometheus-client 0.21.1→0.25.0 (`bfbb015b`). Alle 7 gemergt, CI gruen.
 
 ---
 
