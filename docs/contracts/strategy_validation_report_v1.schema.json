@@ -112,7 +112,7 @@
           "minimum": 0
         },
         "period_start_ts_ms": {
-          "description": "First effective bridge evaluation timestamp — after warm-up consumption of max(entry_lookback, exit_lookback) candles. Offset from requested_period_start_ts_ms by max_lookback * 60_000 ms.",
+          "description": "First effective bridge evaluation timestamp — after warm-up consumption of max(entry_lookback_minutes, exit_lookback_minutes) candles. Offset from requested_period_start_ts_ms by max(entry_lookback_minutes, exit_lookback_minutes) * 60_000 ms.",
           "type": "integer",
           "minimum": 0
         },
