@@ -3,7 +3,7 @@
 
 **Version:** 1.0
 **Status:** Active
-**Last Updated:** 2026-02-09
+**Last Updated:** 2026-04-16
 **Canonical Location:** `knowledge/governance/SYSTEM_INVARIANTS.md`
 
 ---
@@ -50,11 +50,11 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Enforcement:**
 - Test: `tests/contract/test_decision_contract.py::test_decision_allow` (baseline ALLOW requires all checks)
 - Code: `services/risk/service.py::decide_trade()` returns `DECISION_BLOCK` by default
-- Spec: Working Repo `services/risk/README.md` documents "Default: BLOCK. Allow only if A ∧ B ∧ C"
+- Spec: Working Repo `core/contracts/decision_contract_v1.py` definiert Decision Contract v1 Interface
 
 **References:**
 - Working Repo: `tests/contract/test_decision_contract.py` (16 deterministic tests)
-- Working Repo: `services/risk/README.md` §Decision Contract 0/1 v1
+- Working Repo: `core/contracts/decision_contract_v1.py` (Decision Contract v1 Interface)
 - Working Repo: `services/risk/service.py::decide_trade()`
 
 ---
@@ -66,12 +66,11 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 **Rationale:** Risk controls are the critical safety layer. Execution without risk validation violates fail-closed principle.
 
 **Enforcement:**
-- Architecture: Working Repo `services/risk/README.md` documents stream topology (signals → Risk → orders → Execution)
+- Architecture: Working Repo `services/risk/README.md` §Topics / Streams (signals → Risk → orders → Execution)
 - Healthcheck: Working Repo `infrastructure/compose/healthchecks-strict.yml` (Execution depends_on Risk service_healthy)
 - Docker: Working Repo `infrastructure/compose/base.yml` defines service dependencies
 
 **References:**
-- Working Repo: `services/risk/README.md` (architecture diagram flowchart lines 16-21)
 - Working Repo: `infrastructure/compose/healthchecks-strict.yml::cdb_execution.depends_on`
 - Working Repo: `infrastructure/compose/base.yml`
 
@@ -90,7 +89,6 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 **References:**
 - Working Repo: `tests/contract/test_decision_contract.py::test_decision_first_fail_*` (4 ordering tests)
-- Working Repo: `services/risk/README.md` §Decision Contract (First-Fail Reihenfolge line 52)
 - Working Repo: `services/risk/service.py::decide_trade()`
 
 ---
@@ -398,11 +396,9 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 
 **Enforcement:**
 - Code: Working Repo `services/risk/service.py::decide_trade()` does not reference confidence field
-- Contract: Working Repo `services/risk/README.md` §Decision Contract "Confidence ist kein Gate"
 - Model: Working Repo `services/signal/models.py` defines confidence as optional informational field
 
 **References:**
-- Working Repo: `services/risk/README.md` line 54 (Confidence ist kein Gate)
 - Working Repo: `services/risk/service.py::decide_trade()`
 - Working Repo: `services/signal/models.py` (Signal dataclass)
 
@@ -431,7 +427,7 @@ This is not a redesign proposal, implementation guide, or "nice to have" require
 | INV-017: Reason Code Taxonomy Completeness | `docs/live-readiness/LR-004-SPEC.md` §5.2 + lr004_completion_guard.py |
 | INV-018: Manifest Immutability | `docs/live-readiness/LR-004-SPEC.md` §3.4 |
 | INV-019: Deterministic Replay-Verifiability | `docs/live-readiness/LR-006-EVIDENCE.md` Example 1 walkthrough |
-| INV-020: No Confidence-Based Gating | `services/risk/README.md` + decide_trade() implementation |
+| INV-020: No Confidence-Based Gating | `services/risk/service.py::decide_trade()` (confidence nicht referenziert) |
 
 **Note:** All paths in Canonical Map refer to Working Repo (`Claire_de_Binare`) unless explicitly prefixed.
 

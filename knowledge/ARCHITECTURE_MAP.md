@@ -42,7 +42,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 |---------|-----------|------|----------|
 | PostgreSQL | cdb_postgres | 5432 | Persistenz |
 | Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
-| Market | cdb_market | 8009 | market_state:{symbol} Owner |
+| Market | cdb_market | 8009 | market_state:{symbol} Owner; Redis retry/reconnect bis verfügbar, /health fail-closed |
 | Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
 | Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
 | Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
@@ -154,6 +154,7 @@ Keine offenen Drifts.
 Historisch behoben:
 - prod.yml/tls.yml referenzierten `cdb_core` statt `cdb_signal` → behoben
 - CLAUDE.md hatte Signal als Port 8001 → korrigiert auf 8005
+- Market-Zeile Section 2: Retry/Reconnect + fail-closed /health Semantik ergänzt (issue #1646, 2026-04-16)
 
 ---
 
