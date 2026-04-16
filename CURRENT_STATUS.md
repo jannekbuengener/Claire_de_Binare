@@ -66,6 +66,7 @@
 - **Merged (2026-04-15)**: pip-bump-Batch #1668–#1674 — 7 PRs: #1674 mcp 1.26.0→1.27.0 (`52da3a17`), #1673 requests 2.33.0→2.33.1 (`1a38d57b`), #1672 pytest 9.0.2→9.0.3 (`c89f060d`), #1671 ruff 0.15.9→0.15.10 (`c72dc23b`), #1670 python-json-logger 4.0.0→4.1.0 (`753e094e`), #1669 mypy 1.8.0→1.20.0 (`4adc88a5`), #1668 prometheus-client 0.21.1→0.25.0 (`bfbb015b`). Alle 7 gemergt, CI gruen.
 - **Merged (2026-04-16)**: PR #1707 (`d456770e`) — fix(validation): Period-Window-Semantik in `primary_breakout_v1` Backtest-Runner/Report geklaert. Explizite Feldtrennung `requested_period_*` vs effektive `period_*` in `dataset_summary`. Schema-, Doku- und Test-Nachzug. Issue #1706 geschlossen.
 - **Session 2026-04-16**: #1709 — Architektur-Drift-Verifikation nach PR #1707. Befund: kein realer Drift. `ARCHITECTURE_MAP.md` und `SERVICE_CATALOG.md` korrekt (kein Eintrag fuer Offline-Tool `strategy_backtest_runner.py` vorgesehen; Contract-Doku bereits durch PR #1707 in `knowledge/contracts/PRIMARY_BREAKOUT_V1_VALIDATION.md` korrekt nachgezogen). Keine Architektur-/Service-Catalog-Aenderung. Issue #1709 geschlossen.
+- **Merged (2026-04-16)**: PR #1719 (`3ddfd0ce`) — fix(security): pin `postgres:15.17-alpine` to 2026-04-16 rebuild digest (#1717). Digest `sha256:1c52f5ad...`. Alpine OS 0 CRITICAL/0 HIGH (libssl3/libcrypto3/libxml2 resolved); gosu-binary 8 findings (non-addressable). #1718 (redis) bleibt upstream-blocked. Security-Epic #1649.
 
 ---
 
