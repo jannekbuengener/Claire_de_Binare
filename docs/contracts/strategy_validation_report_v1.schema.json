@@ -85,6 +85,8 @@
         "symbol",
         "timeframe",
         "candles_total",
+        "requested_period_start_ts_ms",
+        "requested_period_end_ts_ms",
         "period_start_ts_ms",
         "period_end_ts_ms"
       ],
@@ -99,11 +101,23 @@
           "type": "integer",
           "minimum": 1
         },
+        "requested_period_start_ts_ms": {
+          "description": "First candle timestamp in the raw input series passed to the runner (requested window start).",
+          "type": "integer",
+          "minimum": 0
+        },
+        "requested_period_end_ts_ms": {
+          "description": "Last candle timestamp in the raw input series passed to the runner (requested window end).",
+          "type": "integer",
+          "minimum": 0
+        },
         "period_start_ts_ms": {
+          "description": "First effective bridge evaluation timestamp — after warm-up consumption of max(entry_lookback, exit_lookback) candles. Offset from requested_period_start_ts_ms by max_lookback * 60_000 ms.",
           "type": "integer",
           "minimum": 0
         },
         "period_end_ts_ms": {
+          "description": "Last effective bridge evaluation timestamp. Aligns with requested_period_end_ts_ms.",
           "type": "integer",
           "minimum": 0
         }

@@ -74,6 +74,35 @@ def test_primary_breakout_backtest_runner_is_deterministic_and_schema_valid() ->
 
 
 @pytest.mark.unit
+def test_primary_breakout_backtest_runner_period_window_semantics() -> None:
+    """Requested vs effective period boundaries are distinct and correctly related.
+
+    _candles() produces 380 candles starting at ts_ms=1_700_000_000_000 with 1m cadence.
+    With entry_lookback_minutes=240 the bridge warm-up consumes candles[0..239], so the
+    first effective bridge request corresponds to candles[240].
+    """
+    candles = _candles()
+    config = PrimaryBreakoutBacktestRunConfig()
+    report = run_primary_breakout_backtest(candles, run_config=config, code_commit="a9a62be")
+
+    ds = report["dataset_summary"]
+    start_ts = 1_700_000_000_000
+    end_ts = start_ts + 379 * 60_000
+    max_lookback = max(
+        config.bridge.entry_lookback_minutes, config.bridge.exit_lookback_minutes
+    )
+
+    assert ds["requested_period_start_ts_ms"] == start_ts
+    assert ds["requested_period_end_ts_ms"] == end_ts
+    # Effective start is offset by exactly max_lookback * 60_000 ms from requested start.
+    assert ds["period_start_ts_ms"] == start_ts + max_lookback * 60_000
+    # Effective end aligns with the last raw candle.
+    assert ds["period_end_ts_ms"] == end_ts
+    # Invariant: effective start must be strictly after requested start.
+    assert ds["period_start_ts_ms"] > ds["requested_period_start_ts_ms"]
+
+
+@pytest.mark.unit
 def test_primary_breakout_backtest_runner_fail_closed_on_invalid_config() -> None:
     candles = _candles()
     config = PrimaryBreakoutBacktestRunConfig(order_size=0.0)

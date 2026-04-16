@@ -40,6 +40,8 @@ def _valid_report_payload() -> dict:
             "symbol": "BTCUSDT",
             "timeframe": "1m",
             "candles_total": 3000,
+            "requested_period_start_ts_ms": 1_699_985_600_000,
+            "requested_period_end_ts_ms": 1_700_179_940_000,
             "period_start_ts_ms": 1_700_000_000_000,
             "period_end_ts_ms": 1_700_179_940_000,
         },

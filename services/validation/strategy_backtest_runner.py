@@ -345,11 +345,16 @@ def _build_report(
     regime_fresh_ratio: float,
     data_integrity_ok: bool,
     deterministic_replay_ok: bool,
+    requested_period_start_ts_ms: int,
+    requested_period_end_ts_ms: int,
 ) -> dict[str, Any]:
     if not bridge_requests:
         raise PrimaryBreakoutBacktestError("bridge produced no requests")
 
     run_id = _deterministic_run_id(bridge_requests, run_config, code_commit)
+    # Effective bridge start: first candle after the warm-up window
+    # (max(entry_lookback, exit_lookback) candles consumed as lookback).
+    # Offset from requested_period_start_ts_ms by max_lookback * 60_000 ms.
     first_ts_ms = int(bridge_requests[0].market_event["ts_ms"])
     last_ts_ms = int(bridge_requests[-1].market_event["ts_ms"])
 
@@ -415,6 +420,8 @@ def _build_report(
             "candles_total": len(bridge_requests) + max(
                 run_config.bridge.entry_lookback_minutes, run_config.bridge.exit_lookback_minutes
             ),
+            "requested_period_start_ts_ms": requested_period_start_ts_ms,
+            "requested_period_end_ts_ms": requested_period_end_ts_ms,
             "period_start_ts_ms": first_ts_ms,
             "period_end_ts_ms": last_ts_ms,
         },
@@ -437,6 +444,9 @@ def run_primary_breakout_backtest(
     bridge_requests = build_primary_breakout_historical_bridge(
         candles, config=active_config.bridge
     )
+    # Extract raw candle boundaries after bridge validation succeeds (guarantees non-empty + valid).
+    requested_period_start_ts_ms = int(candles[0]["ts_ms"])
+    requested_period_end_ts_ms = int(candles[-1]["ts_ms"])
     simulator = ExecutionSimulator()
 
     output_requests: list[dict[str, Any]] = []
@@ -562,4 +572,6 @@ def run_primary_breakout_backtest(
         regime_fresh_ratio=(regime_fresh_count / len(bridge_requests) if bridge_requests else 0.0),
         data_integrity_ok=data_integrity_ok,
         deterministic_replay_ok=deterministic_replay_ok,
+        requested_period_start_ts_ms=requested_period_start_ts_ms,
+        requested_period_end_ts_ms=requested_period_end_ts_ms,
     )

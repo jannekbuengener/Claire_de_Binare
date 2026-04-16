@@ -84,3 +84,19 @@ The following are not canonical gate metrics in v1:
 - `pnl_usd_absolute`
 
 These may be informative in research notes, but they do not decide v1 gate outcome.
+
+## Dataset Summary — Period Window Semantics
+
+The `dataset_summary` block distinguishes two timestamp boundaries:
+
+| Field | Meaning |
+|---|---|
+| `requested_period_start_ts_ms` | First candle `ts_ms` in the raw input series passed to the runner |
+| `requested_period_end_ts_ms` | Last candle `ts_ms` in the raw input series passed to the runner |
+| `period_start_ts_ms` | First **effective** bridge evaluation timestamp — after warm-up consumption of `max(entry_lookback_minutes, exit_lookback_minutes)` candles |
+| `period_end_ts_ms` | Last effective bridge evaluation timestamp (aligns with `requested_period_end_ts_ms`) |
+
+With default config (`entry_lookback_minutes=240`, `exit_lookback_minutes=120`), the effective
+period start is offset by exactly `240 × 60,000 ms = 14,400,000 ms` from the requested start.
+This offset is expected and is not a data error — it reflects the warm-up window consumed by the
+bridge before the first evaluable candle.
