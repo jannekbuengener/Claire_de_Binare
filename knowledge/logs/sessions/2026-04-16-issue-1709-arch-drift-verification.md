@@ -2,7 +2,7 @@
 
 **Session-Typ:** Docs-only Verifikation
 **Issue:** #1709 — Reconcile architecture docs after PR #1707 service/runtime changes
-**Ergebnis:** Kein realer Drift belegt. Keine Repo-Aenderung. Issue geschlossen.
+**Ergebnis:** Kein realer Drift belegt. Keine Architektur-/Service-Catalog-Aenderung erforderlich. Issue geschlossen.
 
 ---
 
