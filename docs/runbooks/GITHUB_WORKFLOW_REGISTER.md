@@ -103,7 +103,6 @@ Only entries that differ materially from their group baseline are listed.
 |---|---|---|
 | `sync-labels.yml` | `perm:w-issues` | `in:labels-spec` |
 | `label-bootstrap.yml` | `perm:w-issues`, `perm:w-pr` | `in:labels-spec` |
-| `auto-label.yml` | `perm:w-issues` | — |
 | `auto-milestone.yml` | `perm:w-issues` | — |
 | `auto-milestone-label-dispatch.yml` | `perm:w-contents` | — |
 | `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
@@ -129,7 +128,6 @@ Only entries that differ materially from their group baseline are listed.
 | `root-session-hygiene-warning.yml` | — | `in:script:root_session_hygiene_warn.py` |
 | `copilot-housekeeping.yml` | `perm:w-issues`, `perm:w-pr` | — |
 | `bulk-issue-labeling.yml` | `perm:w-issues` | — |
-| `comprehensive-issue-labeling.yml` | `perm:w-issues` | — |
 | `milestone-assignment.yml` | `perm:w-issues` | — |
 | `required-checks-audit.yml` | `perm:checks-read` (plus read-only scopes) | — |
 | `governance-audit.yml` | `perm:actions-read` (plus read-only scopes) | — |
@@ -311,9 +309,9 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
-| `auto-label.yml` | historisch | issues, label | Legacy: auto-label issues | — | Issue labels | — | Do not enable without review |
+| `auto-label.yml` | parked | dispatch | **Deprecated (#1642)**: Keyword-matching label logic retired. Auto-trigger removed; dispatch-only stub prints deprecation notice. | — | Deprecation notice only | — | Auto-trigger removed in #1642; do not re-enable issues trigger without review |
 | `bulk-issue-labeling.yml` | historisch | dispatch | Legacy: bulk-label issues manually | — | Bulk issue labels | — | Do not enable without review |
-| `comprehensive-issue-labeling.yml` | historisch | issues, dispatch | Legacy: comprehensive issue labeling logic | — | Issue labels | — | Do not enable without review |
+| `comprehensive-issue-labeling.yml` | parked | dispatch | **Deprecated (#1642)**: Comprehensive keyword-matching and stale issue-range labeling retired. Auto-trigger removed; dispatch-only stub prints deprecation notice. | — | Deprecation notice only | — | Auto-trigger removed in #1642; do not re-enable issues trigger without review |
 | `issue-governance.yml` | parked | dispatch | **Deprecated (#1642)**: M1-M9 milestone mapping retired. Auto-trigger removed; dispatch-only stub prints deprecation notice. | — | Deprecation notice only | — | Auto-trigger removed in #1642; do not re-enable issues trigger without review |
 | `milestone-assignment.yml` | historisch | dispatch | Legacy: manual milestone assignment | — | Milestone on issue | — | Do not enable without review |
 
@@ -335,23 +333,24 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 |---|---|
 | aktiv | 52 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
-| parked | 1 (`gemini-scheduled-triage`) |
-| historisch | 5 |
+| parked | 4 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`) |
+| historisch | 3 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **64** (wait: aktiv 52 + manual 4 + parked 1 + historisch 5 + frozen 1 = 63... see note below) |
+| **Total** | **64** (aktiv 52 + manual 4 + parked 4 + historisch 3 + frozen 1 = 64... see note below) |
 
 > **Count note:** `ci.yaml` is categorized as `historisch` (frozen legacy copy) — included in the historisch count.
-> Revised: aktiv=52, manual-only=4, parked=1, historisch=6 (including ci.yaml), total=63. The remaining 2 come from `gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml` being `workflow_call` (reusable) type — aktiv but not independently runnable. Adjust aktiv=49, reusable=3.
+> Revised: aktiv=52, manual-only=4, parked=4, historisch=4 (including ci.yaml), total=64. The remaining 2 come from `gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml` being `workflow_call` (reusable) type — aktiv but not independently runnable. Adjust aktiv=49, reusable=3.
+> `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 
 | Status | Count |
 |---|---|
 | aktiv (independently triggered) | 49 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
-| parked | 1 |
-| historisch / unklar | 5 |
+| parked | 4 |
+| historisch / unklar | 3 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **63** |
+| **Total** | **64** |
 
 > **Methodology note:** The 65-workflow count from the #1633 audit included `ci.yaml` (frozen/historisch) and counted all YAML files in the folder. Some workflows (`gemini-invoke.yml` etc.) are technically active but only as reusable libraries. The status refinements above are additive to the #1633 baseline.
 
