@@ -17,7 +17,7 @@ services:
   # ==================== DATA LAYER ====================
 
   cdb_postgres:
-    image: postgres:15.17-alpine
+    image: postgres:15.17-alpine@sha256:1c52f5ad23db5d7648a63634444af76de48e63b860fccbe3e3a5458b2812eaed
     container_name: cdb_postgres
     restart: unless-stopped
     environment:

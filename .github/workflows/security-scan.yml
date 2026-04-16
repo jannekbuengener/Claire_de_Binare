@@ -40,7 +40,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
-          - postgres:15.17-alpine
+          - postgres:15.17-alpine@sha256:1c52f5ad23db5d7648a63634444af76de48e63b860fccbe3e3a5458b2812eaed
           - prom/prometheus:v3.10.0@sha256:4a61322ac1103a0e3aea2a61ef1718422a48fa046441f299d71e660a3bc71ae9
           - grafana/grafana:11.4.7-ubuntu@sha256:c20611d00f4ddeb8cb73d9b73ecfdaab9775c81c9df627a91a366d9e95bbd800
       fail-fast: false
@@ -246,7 +246,7 @@ jobs:
       matrix:
         image:
           - redis:7.4.8-alpine@sha256:8b81dd37ff027bec4e516d41acfbe9fe2460070dc6d4a4570a2ac5b9d59df065
-          - postgres:15.17-alpine
+          - postgres:15.17-alpine@sha256:1c52f5ad23db5d7648a63634444af76de48e63b860fccbe3e3a5458b2812eaed
       fail-fast: false
 
     env:
