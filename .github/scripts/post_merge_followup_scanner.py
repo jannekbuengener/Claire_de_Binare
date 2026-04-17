@@ -125,6 +125,24 @@ def parse_added_lines(diff_text: str) -> dict[str, list[str]]:
     return added
 
 
+def parse_changed_lines(diff_text: str) -> dict[str, list[tuple[str, str]]]:
+    changed: dict[str, list[tuple[str, str]]] = {}
+    current_file: str | None = None
+    for raw_line in diff_text.splitlines():
+        if raw_line.startswith("+++ b/"):
+            current_file = raw_line[6:]
+            changed.setdefault(current_file, [])
+            continue
+        if raw_line.startswith("diff --git "):
+            current_file = None
+            continue
+        if current_file is None:
+            continue
+        if raw_line.startswith(("+", "-")) and not raw_line.startswith(("+++", "---")):
+            changed[current_file].append((raw_line[0], raw_line[1:]))
+    return changed
+
+
 def relative_paths(files: list[dict[str, Any]]) -> list[str]:
     return [entry["path"] for entry in files]
 
@@ -142,6 +160,60 @@ def shortlist(paths: list[str], *, limit: int = 4) -> list[str]:
     if len(paths) <= limit:
         return paths
     return paths[:limit]
+
+
+def strip_image_digest(image_ref: str) -> str:
+    return re.sub(r"@sha256:[0-9a-f]{64}$", "", image_ref.strip(), flags=re.IGNORECASE)
+
+
+def normalize_image_change_line(line: str) -> str | None:
+    compose_match = re.match(r"^\s*image:\s*(?P<ref>\S+)\s*$", line)
+    if compose_match:
+        return f"image:{strip_image_digest(compose_match.group('ref'))}"
+
+    dockerfile_match = re.match(
+        r"^\s*FROM\s+(?P<ref>\S+)(?:\s+AS\s+(?P<alias>\S+))?\s*$",
+        line,
+        flags=re.IGNORECASE,
+    )
+    if dockerfile_match:
+        alias = dockerfile_match.group("alias")
+        suffix = f" AS {alias}" if alias else ""
+        return f"FROM {strip_image_digest(dockerfile_match.group('ref'))}{suffix}"
+
+    return None
+
+
+def is_digest_only_image_change(changes: list[tuple[str, str]]) -> bool:
+    if not changes:
+        return False
+
+    removed: list[str] = []
+    added: list[str] = []
+    saw_digest_reference = False
+
+    for sign, line in changes:
+        normalized = normalize_image_change_line(line)
+        if normalized is None:
+            return False
+        if "@sha256:" in line.lower():
+            saw_digest_reference = True
+        if sign == "-":
+            removed.append(normalized)
+        elif sign == "+":
+            added.append(normalized)
+
+    return saw_digest_reference and sorted(removed) == sorted(added)
+
+
+def service_runtime_changes_are_digest_only(
+    service_runtime_files: list[str],
+    *,
+    changed_lines: dict[str, list[tuple[str, str]]],
+) -> bool:
+    return bool(service_runtime_files) and all(
+        is_digest_only_image_change(changed_lines.get(path, [])) for path in service_runtime_files
+    )
 
 
 def build_finding(
@@ -178,6 +250,7 @@ def detect_findings(pr: dict[str, Any], diff_text: str) -> list[Finding]:
     pr_url = pr["url"]
     pr_title = pr["title"]
     added_lines = parse_added_lines(diff_text)
+    changed_lines = parse_changed_lines(diff_text)
 
     service_runtime_files = [
         path
@@ -193,7 +266,15 @@ def detect_findings(pr: dict[str, Any], diff_text: str) -> list[Finding]:
             "infrastructure/compose/COMPOSE_LAYERS.md",
         }
     ]
-    if service_runtime_files and not touched(active_files, ARCHITECTURE_DOCS):
+    digest_only_service_runtime_change = service_runtime_changes_are_digest_only(
+        service_runtime_files,
+        changed_lines=changed_lines,
+    )
+    if (
+        service_runtime_files
+        and not digest_only_service_runtime_change
+        and not touched(active_files, ARCHITECTURE_DOCS)
+    ):
         trigger_files = shortlist(service_runtime_files)
         affected_candidates = trigger_files + ARCHITECTURE_DOCS
         finding_input = f"""
