@@ -203,7 +203,7 @@ def is_digest_only_image_change(changes: list[tuple[str, str]]) -> bool:
         elif sign == "+":
             added.append(normalized)
 
-    return saw_digest_reference and sorted(removed) == sorted(added)
+    return saw_digest_reference and removed == added
 
 
 def service_runtime_changes_are_digest_only(

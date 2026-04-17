@@ -80,6 +80,27 @@ diff --git a/services/execution/Dockerfile b/services/execution/Dockerfile
     assert "architecture_service_catalog_drift" not in _rule_ids(findings)
 
 
+def test_image_swaps_do_not_count_as_digest_only_change() -> None:
+    pr = _make_pr(
+        2003,
+        "refactor(runtime): swap images between services",
+        "infrastructure/compose/compose.blue.yml",
+    )
+    diff_text = """\
+diff --git a/infrastructure/compose/compose.blue.yml b/infrastructure/compose/compose.blue.yml
++++ b/infrastructure/compose/compose.blue.yml
+@@ -10,8 +10,8 @@ services:
+-    image: service-a:1.0.0@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+-    image: service-b:2.0.0@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
++    image: service-b:2.0.0@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
++    image: service-a:1.0.0@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+"""
+
+    findings = scanner.detect_findings(pr, diff_text)
+
+    assert "architecture_service_catalog_drift" in _rule_ids(findings)
+
+
 def test_tag_change_still_triggers_architecture_followup() -> None:
     pr = _make_pr(
         2001,
