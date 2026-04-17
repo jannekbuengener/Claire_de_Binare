@@ -69,9 +69,9 @@ jobs:
     
     - name: 🤖 Process Bot Command
       id: bot-command
+      env:
+        COMMENT_BODY: ${{ github.event.comment.body }}
       run: |
-        COMMENT_BODY="${{ github.event.comment.body }}"
-        
         if [[ "$COMMENT_BODY" == *"/emoji-fix"* ]]; then
           echo "command=fix" >> $GITHUB_OUTPUT
           echo "🔧 Auto-Fix Befehl erkannt"
@@ -127,10 +127,10 @@ jobs:
     
     - name: 📝 Update Whitelist
       if: steps.bot-command.outputs.command == 'whitelist'
+      env:
+        EMOJIS: ${{ steps.bot-command.outputs.whitelist_emojis }}
       run: |
         echo "📝 Update Whitelist..."
-        
-        EMOJIS="${{ steps.bot-command.outputs.whitelist_emojis }}"
         
         if [ -n "$EMOJIS" ]; then
           # Backup Config
@@ -140,9 +140,10 @@ jobs:
           python -c "
         import yaml
         import sys
+        import os
 
         config_path = '.github/emoji-config.yaml'
-        emojis = '$EMOJIS'.strip().split()
+        emojis = os.environ.get('EMOJIS', '').strip().split()
 
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
