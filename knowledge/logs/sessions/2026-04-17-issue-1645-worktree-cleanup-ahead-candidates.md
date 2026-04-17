@@ -36,7 +36,7 @@ Jeder Kandidat als eigenständiger Slice mit festem Ablauf:
 ## Muster / Erkenntnisse
 
 **Konsistenter Dirty-State:**
-Alle 6 Worktrees hatten `D .mcp.json` — alte Credential-Datei (`glsa_kiNdufwm7SCnbGhtAPKma0gltXXUkYd4_d98916f0` Grafana-Token + Postgres-Passwort) war committed und dann aus dem Working Tree gelöscht. Pre-existing history exposure, nicht neu. Ursache: `git worktree remove --force` nötig in allen Fällen.
+Alle 6 Worktrees hatten `D .mcp.json` — alte Credential-Datei (`<redacted>` Grafana-Token + `<redacted>` Postgres-Passwort) war committed und dann aus dem Working Tree gelöscht. Pre-existing history exposure, nicht neu. Ursache: `git worktree remove --force` nötig in allen Fällen.
 
 **Batch-Klassifikation Remote-Status unzuverlässig:**
 Erste Batch-Klassifikation hatte `ci/automerge-jules` und `ci/627-guardrails` als "kein Remote" eingestuft — beide hatten tatsächlich `origin/*`-Remotes. Lesson: Remote-Status immer live via `git branch -r | grep <branch>` prüfen, nie aus Batch ableiten.
