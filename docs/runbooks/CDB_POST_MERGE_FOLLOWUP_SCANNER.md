@@ -16,6 +16,7 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
    - service-/runtime-nahe Aenderungen ohne Nachzug in:
      - `knowledge/ARCHITECTURE_MAP.md`
      - `knowledge/governance/SERVICE_CATALOG.md`
+   - **Suppression:** unterdrueckt, wenn alle betroffenen service-/runtime-nahen Dateien ausschliesslich einen `@sha256`-Digest-Bump enthalten und der semantische Image-Tag unveraendert bleibt (digest-only image-pin, z.B. `postgres:15.17-alpine@sha256:old` → `postgres:15.17-alpine@sha256:new`); gilt fuer `image:`-Zeilen in Compose-Dateien und `FROM`-Zeilen in Dockerfiles — implementiert in PR #1729 (#1726)
 2. `runbook_evidence_followup_drift`
    - workflow-/control-nahe Aenderungen ohne Runbook-/Evidence-Begleitung in:
      - `docs/runbooks/`
