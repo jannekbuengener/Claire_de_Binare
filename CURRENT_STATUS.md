@@ -3,12 +3,12 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-16
+**Last Updated**: 2026-04-17
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-04-16)
+## Repo / Engineering Status (2026-04-17)
 
 - **main**: green
 - **Active GitHub focus (manual, non-exhaustive)**: keine
