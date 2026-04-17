@@ -77,7 +77,7 @@ docker run --rm aquasec/trivy image cdb_signal:latest
 
 ### Known Accepted Risks
 Base images (Redis, Postgres) have gosu CVEs that are documented as accepted risk.
-See `docs/security/TRIAGE_RUNBOOK.md`.
+See [docs/security/TRIAGE_RUNBOOK.md](../../../docs/security/TRIAGE_RUNBOOK.md).
 
 ---
 
@@ -309,7 +309,7 @@ pytest ...
 
 1. **Check existing issues:** Search for similar problems
 2. **CI/CD Documentation:** See `CI_PIPELINE_GUIDE.md`
-3. **Security Issues:** See `docs/security/TRIAGE_RUNBOOK.md`
+3. **Security Issues:** See [docs/security/TRIAGE_RUNBOOK.md](../../../docs/security/TRIAGE_RUNBOOK.md)
 4. **Create issue:** Use `type:bug` + `scope:ci` labels
 
 ---
