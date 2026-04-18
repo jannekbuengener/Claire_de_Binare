@@ -198,11 +198,14 @@ jobs:
     
     - name: 💬 Reply to Comment
       uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+      env:
+        WHITELIST_EMOJIS: ${{ steps.bot-command.outputs.whitelist_emojis }}
       with:
         script: |
           const command = '${{ steps.bot-command.outputs.command }}';
           const fixApplied = process.env.fix_applied === 'true';
           const whitelistUpdated = process.env.whitelist_updated === 'true';
+          const whitelistEmojis = process.env.WHITELIST_EMOJIS || '';
           const blockedCount = process.env.blocked_count || '0';
           
           let replyText = `🤖 **Emoji Bot Response**\n\n`;
@@ -225,7 +228,7 @@ jobs:
           } else if (command === 'whitelist') {
             if (whitelistUpdated) {
               replyText += `✅ **Whitelist erfolgreich aktualisiert!**\n\n`;
-              replyText += `📝 Emojis wurden zur Whitelist hinzugefügt: ${{ steps.bot-command.outputs.whitelist_emojis }}\n`;
+              replyText += `📝 Emojis wurden zur Whitelist hinzugefügt: ${whitelistEmojis}\n`;
               replyText += `📋 Verbleibende blockierte Emojis: ${blockedCount}\n`;
             } else {
               replyText += `❌ **Whitelist-Update fehlgeschlagen.**\n\n`;
