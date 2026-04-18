@@ -85,10 +85,10 @@ class TestCoreSecretsIntegrityReport:
         verification_md = (out_dir / "verification.md").read_text(encoding="utf-8")
         assert "`core_secrets`" in verification_md
         assert "binance_api_key" not in verification_md
-        assert "| `core_secrets` | `entry-0001` |" in verification_md
+        assert "| `-` | `-` | - | `-` | `-` | `-` |" in verification_md
         assert "binance_api_key" not in json.dumps(persisted_report, sort_keys=True)
-        assert "row_id" not in persisted_report["entries"][0]
-        assert persisted_report["entries"][0]["row_ref"] == "entry-0001"
+        assert persisted_report["entries"] == []
+        assert persisted_report["entries_redacted"] == 1
 
     def test_build_report_supports_service_secrets_storage_alias(self):
         key = "test-core-secrets-key"
@@ -133,4 +133,6 @@ class TestCoreSecretsIntegrityReport:
 
         assert exit_code == 1
         assert report["status"] == "FAIL"
-        assert report["entries"][0]["reason_code"] == REASON_HASH_MISMATCH
+        assert report["failed_entries"] == 1
+        assert report["entries"] == []
+        assert report["entries_redacted"] == 1

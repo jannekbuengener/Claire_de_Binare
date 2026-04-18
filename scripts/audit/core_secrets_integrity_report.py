@@ -319,20 +319,19 @@ def build_verification_md(report: dict[str, Any]) -> str:
 
 
 def _sanitize_report_for_artifacts(report: dict[str, Any]) -> dict[str, Any]:
-    sanitized = dict(report)
-    sanitized_entries: list[dict[str, Any]] = []
-    for idx, entry in enumerate(report["entries"], start=1):
-        sanitized_entry = {
-            "table": entry.get("table"),
-            "row_ref": f"entry-{idx:04d}",
-            "status": entry.get("status"),
-            "reason_code": entry.get("reason_code"),
-            "stored_hash_prefix": entry.get("stored_hash_prefix"),
-            "expected_hash_prefix": entry.get("expected_hash_prefix"),
-        }
-        sanitized_entries.append(sanitized_entry)
-    sanitized["entries"] = sanitized_entries
-    return sanitized
+    return {
+        "schema": report["schema"],
+        "status": report["status"],
+        "reason_code": report["reason_code"],
+        "integrity_key_env": report["integrity_key_env"],
+        "table": dict(report["table"]),
+        "schema_check": dict(report["schema_check"]),
+        "total_entries": report["total_entries"],
+        "failed_entries": report["failed_entries"],
+        "failed_schema_checks": report["failed_schema_checks"],
+        "entries_redacted": report["total_entries"],
+        "entries": [],
+    }
 
 
 def write_report_artifacts(report: dict[str, Any], out_dir: str) -> None:
