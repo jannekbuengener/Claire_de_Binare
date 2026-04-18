@@ -333,6 +333,7 @@ def _sanitize_report_for_artifacts(report: dict[str, Any]) -> dict[str, Any]:
     sanitized_entries: list[dict[str, Any]] = []
     for entry in report["entries"]:
         sanitized_entry = dict(entry)
+        sanitized_entry.pop("row_id", None)
         sanitized_entry["row_id_masked"] = _mask_row_id(entry.get("row_id"))
         sanitized_entries.append(sanitized_entry)
     sanitized["entries"] = sanitized_entries
