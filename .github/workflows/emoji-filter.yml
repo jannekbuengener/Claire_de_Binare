@@ -19,6 +19,9 @@ on:
         default: '.'
         type: string
 
+permissions:
+  contents: read
+
 env:
   PYTHON_VERSION: '3.11'
 
@@ -26,6 +29,8 @@ jobs:
   emoji-detection:
     name: 🔍 Emoji Detection
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     outputs:
       emojis-found: ${{ steps.scan.outputs.emojis-found }}

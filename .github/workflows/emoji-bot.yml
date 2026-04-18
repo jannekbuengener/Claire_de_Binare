@@ -301,6 +301,8 @@ jobs:
   help-command:
     name: ❓ Bot Help
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
     if: |
       github.event.issue.pull_request && 
       (contains(github.event.comment.body, '/emoji-help') || 
