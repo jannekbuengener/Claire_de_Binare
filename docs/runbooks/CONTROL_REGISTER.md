@@ -88,7 +88,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 
 - `security-scan.yml`: Trivy-SARIF-Uploads muessen explizit stabile Kategorien verwenden (`trivy-base-*`, `trivy-custom-*`), damit Digest-/Tag-Bumps keine neuen Code-Scanning-Baselines aufspalten. Security-Triage und Dismiss-Cluster bleiben im `docs/security/TRIAGE_RUNBOOK.md` verankert.
 - `emoji-bot.yml`: Kommentarinhalt aus `issue_comment` bleibt untrusted Input und darf nur ueber `env`/kontrollierte Uebergaben in Shell- oder Python-Schritte fliessen. Der Workflow ist ein Operator-Helfer, keine Evidenz- oder Freigabe-Surface. Bekannte Residual-Haertung fuer multiline-Outputs an `$GITHUB_OUTPUT` bleibt separater Folgescope und wird hier nicht ueberdehnt.
-- `.github/scripts/advanced-emoji-filter.py`: Emoji-Erkennung laeuft fail-closed ueber `emoji.emoji_list(...)` statt ueber breite Unicode-Range-Regexe (CodeQL `py/overly-large-range` Nachzug aus PR #1757). Der Script bleibt ein Operator-Helper fuer Kommentarhygiene; keine LR-/Freigabe-Evidenz ableiten.
+- `.github/scripts/advanced-emoji-filter.py`: Emoji-Erkennung laeuft fail-closed primaer ueber `emoji.emoji_list(...)`; die frueheren breiten Unicode-Range-Regexe wurden im CodeQL-Nachzug aus PR #1757 entfernt. Der Script bleibt ein Operator-Helper fuer Kommentarhygiene; keine LR-/Freigabe-Evidenz ableiten.
 
 ---
 
