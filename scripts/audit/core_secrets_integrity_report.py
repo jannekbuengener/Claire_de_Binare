@@ -8,6 +8,7 @@ storage and fails closed when the external integrity key is unavailable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -297,7 +298,9 @@ def build_verification_md(report: dict[str, Any]) -> str:
     )
 
     for entry in report["entries"]:
-        record_id = entry["row_id"] if entry["row_id"] is not None else "<missing>"
+        record_id = entry.get("row_id_masked")
+        if record_id is None:
+            record_id = entry["row_id"] if entry["row_id"] is not None else "<missing>"
         lines.append(
             f"| `{DISPLAY_NAME}` | `{record_id}` | {entry['status']} | "
             f"`{entry['reason_code']}` | `{entry['stored_hash_prefix']}` | "
@@ -318,17 +321,36 @@ def build_verification_md(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _mask_row_id(row_id: Any) -> str:
+    if row_id is None:
+        return "<missing>"
+    digest = hashlib.sha256(str(row_id).encode("utf-8")).hexdigest()
+    return f"sha256:{digest[:12]}"
+
+
+def _sanitize_report_for_artifacts(report: dict[str, Any]) -> dict[str, Any]:
+    sanitized = dict(report)
+    sanitized_entries: list[dict[str, Any]] = []
+    for entry in report["entries"]:
+        sanitized_entry = dict(entry)
+        sanitized_entry["row_id_masked"] = _mask_row_id(entry.get("row_id"))
+        sanitized_entries.append(sanitized_entry)
+    sanitized["entries"] = sanitized_entries
+    return sanitized
+
+
 def write_report_artifacts(report: dict[str, Any], out_dir: str) -> None:
     """Write report artifacts to disk."""
     os.makedirs(out_dir, exist_ok=True)
+    artifact_report = _sanitize_report_for_artifacts(report)
 
     with open(os.path.join(out_dir, "report.json"), "w", encoding="utf-8") as handle:
-        handle.write(json.dumps(report, indent=2, sort_keys=True) + "\n")
+        handle.write(json.dumps(artifact_report, indent=2, sort_keys=True) + "\n")
 
     with open(
         os.path.join(out_dir, "verification.md"), "w", encoding="utf-8"
     ) as handle:
-        handle.write(build_verification_md(report))
+        handle.write(build_verification_md(artifact_report))
 
 
 def generate_report(

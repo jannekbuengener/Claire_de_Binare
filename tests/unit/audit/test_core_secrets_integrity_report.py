@@ -83,10 +83,8 @@ class TestCoreSecretsIntegrityReport:
         assert report["table"]["storage_table"] == "core_secrets"
         verification_md = (out_dir / "verification.md").read_text(encoding="utf-8")
         assert "`core_secrets`" in verification_md
-        assert (
-            "| `core_secrets` | `binance_api_key` | OK | `INTEGRITY_OK` |"
-            in verification_md
-        )
+        assert "binance_api_key" not in verification_md
+        assert "| `core_secrets` | `sha256:" in verification_md
 
     def test_build_report_supports_service_secrets_storage_alias(self):
         key = "test-core-secrets-key"
