@@ -2523,7 +2523,8 @@ if _FLASK_AVAILABLE:
                 state_file=state_file, create_if_missing=False
             )
         except Exception as exc:
-            return jsonify({"error": f"state read failed: {exc}"}), 500
+            logger.error(f"Kill-switch state read failed: {exc}")
+            return jsonify({"error": "state_read_failed"}), 500
         return jsonify(
             {
                 "active": active,

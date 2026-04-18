@@ -108,7 +108,7 @@ class KillSwitch:
             return {
                 "state": KillSwitchState.ACTIVE.value,
                 "reason": KillSwitchReason.SYSTEM_ERROR.value,
-                "message": f"State file read error: {e}",
+                "message": "State file read error",
                 "activated_at": utcnow().isoformat(),
             }
 

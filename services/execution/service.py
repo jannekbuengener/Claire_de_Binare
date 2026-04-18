@@ -912,7 +912,7 @@ if _FLASK_AVAILABLE:
             return jsonify({"count": len(recent_orders), "orders": recent_orders}), 200
         except Exception as e:
             logger.error(f"Error retrieving orders: {e}")
-            return jsonify({"error": str(e)}), 500
+            return jsonify({"error": "internal_server_error"}), 500
 
 else:
     app = None
