@@ -545,7 +545,7 @@ creation_rules:
 cat > secrets.yaml << EOF
 database:
   password: supersecret123
-api_key: sk-live-abc123
+api_key: <example-api-key>
 EOF
 sops --encrypt secrets.yaml > secrets.sops.yaml
 rm secrets.yaml  # Delete plaintext

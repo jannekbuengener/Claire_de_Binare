@@ -114,12 +114,12 @@ signature = hmac.new(
     hashlib.sha256
 ).hexdigest()
 
-# Result: e4f8a9b2c3d7e8f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4
+# Result: <example-hmac-signature>
 ```
 
 **Request**:
 ```bash
-curl -X POST "https://api.mexc.com/api/v3/order?symbol=BTCUSDT&side=BUY&type=MARKET&quantity=0.01&timestamp=1698745123456&recvWindow=5000&signature=e4f8a9b2c3d7e8f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4" \
+curl -X POST "https://api.mexc.com/api/v3/order?symbol=BTCUSDT&side=BUY&type=MARKET&quantity=0.01&timestamp=1698745123456&recvWindow=5000&signature=<example-hmac-signature>" \
      -H "X-MEXC-APIKEY: REDACTED_MEXC_KEY"
 ```
 

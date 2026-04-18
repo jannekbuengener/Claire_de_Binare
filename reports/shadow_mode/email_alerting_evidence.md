@@ -146,8 +146,8 @@ modified:   infrastructure/compose/base.yml
 1. **Trigger Test Alert:**
    ```bash
    # Temporarily set threshold to always trigger
-   curl -X PUT http://localhost:3000/api/v1/provisioning/alert-rules/cdb_orders_rejected \
-     -u "admin:PASSWORD" \
+curl -X PUT http://localhost:3000/api/v1/provisioning/alert-rules/cdb_orders_rejected \
+     -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
      -H "Content-Type: application/json" \
      -d '{"condition": "C", "data": [...], "noDataState": "Alerting", ...}'
    ```

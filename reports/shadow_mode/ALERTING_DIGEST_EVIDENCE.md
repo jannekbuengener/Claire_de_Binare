@@ -403,7 +403,8 @@ docker logs cdb_grafana --since 24h | grep -i "notification sent"
 
 **Rollback Command:**
 ```bash
-curl -u admin:PASSWORD -X PUT \
+curl -X PUT \
+  -H "Authorization: Bearer ${GRAFANA_TOKEN}" \
   -H "Content-Type: application/json" \
   -d @notification_policy_backup_20260119.json \
   http://localhost:3000/api/v1/provisioning/policies

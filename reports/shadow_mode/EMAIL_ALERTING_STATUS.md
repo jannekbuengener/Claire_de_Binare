@@ -153,8 +153,8 @@ GF_SMTP_STARTTLS_POLICY=MandatoryStartTLS
 
 5. Verify notification policy:
    ```bash
-   curl -s http://localhost:3000/api/v1/provisioning/policies \
-     -u "admin:PASSWORD"
+curl -s http://localhost:3000/api/v1/provisioning/policies \
+     -H "Authorization: Bearer ${GRAFANA_TOKEN}"
    ```
 
 ---

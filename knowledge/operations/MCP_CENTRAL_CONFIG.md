@@ -68,10 +68,10 @@ D:\Dev\Workspaces\Repos\Claire_de_Binare\.mcp.json
 docker exec cdb_grafana grafana-cli admin reset-admin-password admin
 
 # 2. Create new service account
-curl -X POST http://localhost:3000/api/serviceaccounts -u admin:admin -H "Content-Type: application/json" -d '{"name": "mcp-server", "role": "Admin"}'
+curl -X POST http://localhost:3000/api/serviceaccounts -H "Authorization: Bearer <grafana-admin-token>" -H "Content-Type: application/json" -d '{"name": "mcp-server", "role": "Admin"}'
 
 # 3. Create token
-curl -X POST http://localhost:3000/api/serviceaccounts/2/tokens -u admin:admin -H "Content-Type: application/json" -d '{"name": "mcp-token"}'
+curl -X POST http://localhost:3000/api/serviceaccounts/2/tokens -H "Authorization: Bearer <grafana-admin-token>" -H "Content-Type: application/json" -d '{"name": "mcp-token"}'
 
 # 4. Update D:\Dev\Config\MCP\claire-de-binare.mcp.json
 # 5. Restart alle Agenten

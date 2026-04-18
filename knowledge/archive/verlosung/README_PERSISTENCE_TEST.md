@@ -86,12 +86,12 @@ export $(cat .env | grep -v '^#' | xargs)
 # Oder für diese Session:
 export REDIS_HOST=localhost
 export REDIS_PORT=6379
-export REDIS_PASSWORD=claire_redis_secret_2024
+export REDIS_PASSWORD=<example-redis-password>
 export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
 export POSTGRES_DB=claire_de_binare
 export POSTGRES_USER=claire_user
-export POSTGRES_PASSWORD=claire_db_secret_2024
+export POSTGRES_PASSWORD=<example-postgres-password>
 ```
 
 ---
