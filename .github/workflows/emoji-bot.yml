@@ -207,6 +207,12 @@ jobs:
           const whitelistUpdated = process.env.whitelist_updated === 'true';
           const whitelistEmojis = process.env.WHITELIST_EMOJIS || '';
           const blockedCount = process.env.blocked_count || '0';
+          const sanitizeReflectedText = (value) => {
+            const compactValue = value.replace(/\r?\n+/g, ' ').trim();
+            if (!compactValue) return '(leer)';
+            return compactValue.replace(/@/g, '@\u200b').replace(/`/g, "'");
+          };
+          const safeWhitelistEmojis = sanitizeReflectedText(whitelistEmojis);
           
           let replyText = `🤖 **Emoji Bot Response**\n\n`;
           
@@ -228,7 +234,7 @@ jobs:
           } else if (command === 'whitelist') {
             if (whitelistUpdated) {
               replyText += `✅ **Whitelist erfolgreich aktualisiert!**\n\n`;
-              replyText += `📝 Emojis wurden zur Whitelist hinzugefügt: ${whitelistEmojis}\n`;
+              replyText += `📝 Emojis wurden zur Whitelist hinzugefügt: \`${safeWhitelistEmojis}\`\n`;
               replyText += `📋 Verbleibende blockierte Emojis: ${blockedCount}\n`;
             } else {
               replyText += `❌ **Whitelist-Update fehlgeschlagen.**\n\n`;
