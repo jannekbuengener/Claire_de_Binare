@@ -29,6 +29,22 @@ class EmojiDetection:
     is_whitelisted: bool = False
 
 
+@dataclass
+class EmojiMatch:
+    text: str
+    start_index: int
+    end_index: int
+
+    def start(self) -> int:
+        return self.start_index
+
+    def end(self) -> int:
+        return self.end_index
+
+    def group(self) -> str:
+        return self.text
+
+
 class EmojiAnalyzer:
     def __init__(self, config_path: str = ".github/emoji-config.yaml"):
         self.config = self.load_config(config_path)
@@ -39,23 +55,6 @@ class EmojiAnalyzer:
             "blocked_emojis": 0,
             "whitelisted_emojis": 0,
         }
-
-        # Kompilierte Regex für bessere Performance
-        self.emoji_pattern = re.compile(
-            "["
-            "\U0001F600-\U0001F64F"  # Emoticons
-            "\U0001F300-\U0001F5FF"  # Misc Symbols and Pictographs
-            "\U0001F680-\U0001F6FF"  # Transport & Map
-            "\U0001F1E6-\U0001F1FF"  # Regional Indicator Symbols
-            "\U00002700-\U000027BF"  # Dingbats
-            "\U00002600-\U000026FF"  # Misc symbols
-            "\U0001F900-\U0001F9FF"  # Supplemental Symbols
-            "\U0001FA70-\U0001FAFF"  # Extended Symbols
-            "\U0001F3FB-\U0001F3FF"  # Skin tone modifiers
-            "\U0000200D"  # Zero width joiner
-            "\U0000FE0F"  # Variation Selector-16
-            "]+"
-        )
 
         # Context-Erkennung Patterns
         self.comment_patterns = {
@@ -193,8 +192,13 @@ class EmojiAnalyzer:
             content = file_path.read_text(encoding="utf-8")
             self.stats["files_scanned"] += 1
 
-            # Suche mit Regex
-            for match in self.emoji_pattern.finditer(content):
+            # Suche über emoji-Library statt Unicode-Range-Regex
+            for token in emoji.emoji_list(content):
+                match = EmojiMatch(
+                    text=token["emoji"],
+                    start_index=token["match_start"],
+                    end_index=token["match_end"],
+                )
                 emoji_char = match.group()
                 context = self.analyze_context(content, match, str(file_path))
                 is_whitelisted = self.is_whitelisted(emoji_char, context)
