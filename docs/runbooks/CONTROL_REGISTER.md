@@ -1,6 +1,6 @@
 # Control Register
 
-**Letzte Aktualisierung:** 2026-04-17
+**Letzte Aktualisierung:** 2026-04-18
 **SSOT Live-Readiness:** `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 **Verdict:** NO-GO
 **Control-Board Stage:** `trade-capable` (ratifiziert 2026-04-08 via Issue `#1492`)
@@ -81,6 +81,13 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
 | `project_reconcile_daily.yml` | täglich | Board-Reconciliation |
 | `control_board_upsert.yml` | Mo 02:30 UTC | GitHub Project #8 Upsert |
+
+---
+
+## Workflow-Control-Notizen
+
+- `security-scan.yml`: Trivy-SARIF-Uploads muessen explizit stabile Kategorien verwenden (`trivy-base-*`, `trivy-custom-*`), damit Digest-/Tag-Bumps keine neuen Code-Scanning-Baselines aufspalten. Security-Triage und Dismiss-Cluster bleiben im `docs/security/TRIAGE_RUNBOOK.md` verankert.
+- `emoji-bot.yml`: Kommentarinhalt aus `issue_comment` bleibt untrusted Input und darf nur ueber `env`/kontrollierte Uebergaben in Shell- oder Python-Schritte fliessen. Der Workflow ist ein Operator-Helfer, keine Evidenz- oder Freigabe-Surface. Bekannte Residual-Haertung fuer multiline-Outputs an `$GITHUB_OUTPUT` bleibt separater Folgescope und wird hier nicht ueberdehnt.
 
 ---
 
