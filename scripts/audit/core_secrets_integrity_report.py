@@ -418,7 +418,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if report["status"] == "PASS":
         print(
-            f"PASS: validated {report['total_entries']} core-secrets rows.",
+            "PASS: core-secrets integrity verification completed.",
             file=sys.stderr,
         )
         return 0
