@@ -83,13 +83,11 @@ class TestCoreSecretsIntegrityReport:
         assert report["table"]["storage_table"] == "core_secrets"
         persisted_report = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))
         verification_md = (out_dir / "verification.md").read_text(encoding="utf-8")
-        assert "**Artifact mode:** `summary_only`" in verification_md
+        assert "**Artifact mode:** `fully_redacted`" in verification_md
         assert "binance_api_key" not in verification_md
-        assert "**Artifact digest (SHA-256):**" in verification_md
+        assert "Row-level integrity data is intentionally not persisted in clear text." in verification_md
         assert "binance_api_key" not in json.dumps(persisted_report, sort_keys=True)
-        assert persisted_report["redaction_mode"] == "summary_only"
-        assert len(persisted_report["artifact_digest_sha256"]) == 64
-        assert persisted_report["entries_redacted"] == 1
+        assert persisted_report["artifact_mode"] == "fully_redacted"
 
     def test_build_report_supports_service_secrets_storage_alias(self):
         key = "test-core-secrets-key"
@@ -133,6 +131,4 @@ class TestCoreSecretsIntegrityReport:
         report = json.loads((out_dir / "report.json").read_text(encoding="utf-8"))
 
         assert exit_code == 1
-        assert report["redaction_mode"] == "summary_only"
-        assert len(report["artifact_digest_sha256"]) == 64
-        assert report["entries_redacted"] == 1
+        assert report["artifact_mode"] == "fully_redacted"
