@@ -177,7 +177,8 @@ class TestMexcTestnetExternal:
         assert external_client is not None
         parsed_url = urlparse(external_client.base_url)
         hostname = (parsed_url.hostname or "").lower()
-        assert "testnet" in hostname or hostname == "contract.mexc.com"
+        assert parsed_url.scheme == "https"
+        assert hostname == "contract.mexc.com"
         logger.info("Testnet client initialized")
 
     def test_get_account_balance(self, external_client):
