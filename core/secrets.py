@@ -52,23 +52,21 @@ def read_secret(secret_name: str, fallback_env: Optional[str] = None) -> str:
     if secret_path.is_file():
         try:
             value = secret_path.read_text().strip()
-            logger.debug(f"Loaded secret '{secret_name}' from Docker secrets")
+            logger.debug("Loaded secret from Docker secrets")
             return value
-        except Exception as e:
-            logger.warning(f"Failed to read Docker secret '{secret_name}': {e}")
+        except Exception:
+            logger.warning("Failed to read Docker secret")
 
     # Fallback to environment variable (development)
     if fallback_env:
         value = os.getenv(fallback_env, "")
         if value:
-            logger.debug(f"Loaded secret '{secret_name}' from env var '{fallback_env}'")
+            logger.debug("Loaded secret from environment variable fallback")
             return value
         else:
-            logger.warning(
-                f"Secret '{secret_name}' not found in Docker secrets or env var '{fallback_env}'"
-            )
+            logger.warning("Secret not found in Docker secrets or environment fallback")
     else:
-        logger.warning(f"Secret '{secret_name}' not found (no fallback env specified)")
+        logger.warning("Secret not found (no fallback env configured)")
 
     return ""
 
@@ -106,26 +104,24 @@ def read_secret_file(file_path: str, fallback_env: Optional[str] = None) -> str:
     if secret_file.is_file():
         try:
             value = secret_file.read_text().strip()
-            logger.debug(f"Loaded secret from file: {file_path}")
+            logger.debug("Loaded secret from configured secret file")
             return value
-        except Exception as e:
-            logger.warning(f"Failed to read secret file '{file_path}': {e}")
+        except Exception:
+            logger.warning("Failed to read configured secret file")
     elif secret_file.exists():
         # Path exists but is not a file (likely a directory)
-        logger.error(
-            f"Secret path '{file_path}' exists but is not a file (IsADirectoryError prevented)"
-        )
+        logger.error("Secret path exists but is not a file (IsADirectoryError prevented)")
 
     # Fallback to environment variable
     if fallback_env:
         value = os.getenv(fallback_env, "")
         if value:
-            logger.debug(f"Loaded secret from env var '{fallback_env}' (file path fallback)")
+            logger.debug("Loaded secret from environment variable file fallback")
             return value
         else:
-            logger.warning(f"Secret not found at '{file_path}' or env var '{fallback_env}'")
+            logger.warning("Secret not found in configured file path or environment fallback")
     else:
-        logger.warning(f"Secret not found at '{file_path}' (no fallback env specified)")
+        logger.warning("Secret not found in configured file path (no fallback env configured)")
 
     return ""
 

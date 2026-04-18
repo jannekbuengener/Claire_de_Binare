@@ -69,7 +69,7 @@ class EmailAlerter:
                 "(need smtp_from, alert_email_to, smtp_password)"
             )
         else:
-            logger.info("EmailAlerter: enabled — sending to %s", self.recipient)
+            logger.info("EmailAlerter: enabled")
 
     # ------------------------------------------------------------------
     # Deduplication

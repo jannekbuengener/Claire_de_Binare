@@ -3,6 +3,8 @@ name: Gemini Dispatch
 on:
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   noop:
     runs-on: ubuntu-latest
