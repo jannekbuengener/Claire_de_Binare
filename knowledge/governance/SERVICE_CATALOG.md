@@ -25,7 +25,7 @@
 
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
-| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201); Redis retry/reconnect bis verfügbar, /health fail-closed |
+| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201); Redis retry/reconnect bis verfügbar, /health fail-closed; Email-Alerter ohne Empfaenger-Klartext-Logging |
 | **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
 | **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
@@ -152,3 +152,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-01 | Logging Overlay: Status AKTIV→OVERLAY für Loki/Promtail/Alertmanager; Status-Definition OVERLAY ergänzt; Aktivierungsbefehl explizit; Compose-Architektur-Notation präzisiert (#1409) | Claude |
 | 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
 | 2026-04-11 | Signal/Risk Runtime-Drift bereinigt: Signal-Strategie-/Stream-Semantik und Risk-Input-/Metric-Semantik auf current-main präzisiert | Codex |
+| 2026-04-18 | PR #1752 Nachzug: Market Email-Alerter-Init ohne Empfaenger-Klartext-Logging in Katalogfunktion nachgezogen | Codex |
