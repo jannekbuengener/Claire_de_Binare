@@ -144,7 +144,7 @@ cdb_reports           Up (healthy)
 4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay
 5. **TLS Optional**: Aktivierbar via `-TLS` Flag (Redis + PostgreSQL)
 6. **Localhost Binding**: Alle Ports auf 127.0.0.1 (keine externe Exposition)
-7. **Secrets/Logging Hygiene**: Secret-Loader und SMTP-Alerter protokollieren keine secret-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext.
+7. **Secrets/Logging Hygiene**: Secret-Loader und SMTP-Alerter protokollieren keine secret-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext; Service-API-Fehlerantworten bleiben auf sichere Fehlercodes ohne Exception-/Stacktrace-Details begrenzt.
 
 ---
 
@@ -181,3 +181,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-01 | Logging Overlay: Aktivierungsspalte auf compose-Datei-Referenz umgestellt (war: -Logging Flag); Compose-Referenzblock präzisiert (#1409) | Claude |
 | 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
 | 2026-04-18 | Security-Hygiene nach PR #1752 ergänzt: Secret-/SMTP-Logging ohne secret-abgeleitete Klartext-Details dokumentiert | Codex |
+| 2026-04-18 | PR #1755 Nachzug: fail-closed Fehlerantworten ohne Stacktrace-/Exception-Text für Risk/Execution/Kill-Switch dokumentiert | Codex |
