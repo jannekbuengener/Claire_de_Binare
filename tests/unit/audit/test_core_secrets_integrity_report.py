@@ -85,9 +85,10 @@ class TestCoreSecretsIntegrityReport:
         verification_md = (out_dir / "verification.md").read_text(encoding="utf-8")
         assert "`core_secrets`" in verification_md
         assert "binance_api_key" not in verification_md
-        assert "| `core_secrets` | `sha256:" in verification_md
+        assert "| `core_secrets` | `entry-0001` |" in verification_md
         assert "binance_api_key" not in json.dumps(persisted_report, sort_keys=True)
         assert "row_id" not in persisted_report["entries"][0]
+        assert persisted_report["entries"][0]["row_ref"] == "entry-0001"
 
     def test_build_report_supports_service_secrets_storage_alias(self):
         key = "test-core-secrets-key"

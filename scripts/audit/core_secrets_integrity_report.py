@@ -8,7 +8,6 @@ storage and fails closed when the external integrity key is unavailable.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -298,9 +297,7 @@ def build_verification_md(report: dict[str, Any]) -> str:
     )
 
     for entry in report["entries"]:
-        record_id = entry.get("row_id_masked")
-        if record_id is None:
-            record_id = entry["row_id"] if entry["row_id"] is not None else "<missing>"
+        record_id = entry.get("row_ref", "<redacted>")
         lines.append(
             f"| `{DISPLAY_NAME}` | `{record_id}` | {entry['status']} | "
             f"`{entry['reason_code']}` | `{entry['stored_hash_prefix']}` | "
@@ -321,20 +318,18 @@ def build_verification_md(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _mask_row_id(row_id: Any) -> str:
-    if row_id is None:
-        return "<missing>"
-    digest = hashlib.sha256(str(row_id).encode("utf-8")).hexdigest()
-    return f"sha256:{digest[:12]}"
-
-
 def _sanitize_report_for_artifacts(report: dict[str, Any]) -> dict[str, Any]:
     sanitized = dict(report)
     sanitized_entries: list[dict[str, Any]] = []
-    for entry in report["entries"]:
-        sanitized_entry = dict(entry)
-        sanitized_entry.pop("row_id", None)
-        sanitized_entry["row_id_masked"] = _mask_row_id(entry.get("row_id"))
+    for idx, entry in enumerate(report["entries"], start=1):
+        sanitized_entry = {
+            "table": entry.get("table"),
+            "row_ref": f"entry-{idx:04d}",
+            "status": entry.get("status"),
+            "reason_code": entry.get("reason_code"),
+            "stored_hash_prefix": entry.get("stored_hash_prefix"),
+            "expected_hash_prefix": entry.get("expected_hash_prefix"),
+        }
         sanitized_entries.append(sanitized_entry)
     sanitized["entries"] = sanitized_entries
     return sanitized
