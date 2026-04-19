@@ -82,6 +82,7 @@
 - **Merged (2026-04-19)**: PR #1767 (`34d55655`) — security: narrow Prometheus base-image refresh for Trivy; `prom/prometheus` v3.10.0 → v3.11.2 (CVE-2026-40179-Slice). SERVICE_CATALOG entsprechend nachgezogen. Refs #1445.
 - **Merged (2026-04-19)**: PR #1768 (`d4b3cf4c`) — security: narrow Redis digest refresh for Trivy reduction; `redis:7.4.8-alpine`-Digest aktualisiert (digest-only, semantischer Tag unveraendert). Refs #1445.
 - **Session 2026-04-19 (#1769/#1770/#1771)**: Docs-Reconcile-Batch nach LR-012- und Security-Reduction-Slices. #1769: CONTROL_REGISTER PR-#1768-Note. #1770: CURRENT_STATUS Ledger-Nachzug (#1766–#1768). #1771: SERVICE_CATALOG Prometheus v3.10.0→v3.11.2 Katalog-Nachzug.
+- **Merged (2026-04-19)**: PR #1775 (`db948a7b`) — docs(roadmap): ACTIVE_ROADMAP auf Backtesting/Validation-Fokus reorientiert; trade-capable != LR-Go Guardrail explizit gesetzt; kanonische Zeiger ergänzt (CONTROL_REGISTER, PRIMARY_BREAKOUT_V1.md, Validation-Runner). Issue #1772 geschlossen.
 
 ---
 
