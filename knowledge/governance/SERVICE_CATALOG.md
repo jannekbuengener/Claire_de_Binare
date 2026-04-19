@@ -59,7 +59,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
-| **Prometheus** | cdb_prometheus | prom/prometheus:v3.10.0 | 19090→9090 | **AKTIV** | Metrics Collection |
+| **Prometheus** | cdb_prometheus | prom/prometheus:v3.11.2 | 19090→9090 | **AKTIV** | Metrics Collection |
 | **Grafana** | cdb_grafana | grafana/grafana:11.4.7 | 3000 | **AKTIV** | Dashboards |
 | **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
