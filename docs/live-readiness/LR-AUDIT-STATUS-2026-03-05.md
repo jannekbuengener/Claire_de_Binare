@@ -1,7 +1,7 @@
 # Live Readiness Audit Status - 2026-03-05
 
 Status date: 2026-03-05 (Europe/Berlin)
-Last reconciliation: 2026-04-07 (LR-050 / #792 and LR-011 / #780 tracker-state reconciliation, issue #1481; prior: 2026-04-05 P4 PASS + P5 prestart GO + #1423 handoff)
+Last reconciliation: 2026-04-19 (LR-012 / #781 issue-state reconciliation, issue #1765; prior: 2026-04-07 LR-050 / #792 and LR-011 / #780 tracker-state reconciliation, issue #1481; 2026-04-05 P4 PASS + P5 prestart GO + #1423 handoff)
 Scope: Echtgeld Go/No-Go readiness snapshot from existing live-readiness SSOT sources.
 
 ## A) Executive Summary
@@ -62,7 +62,7 @@ DONE consistency checks:
 ## D) Conservative Holds / Next Tasks (prioritized)
 
 1. ~~`LR-011` ([#780](https://github.com/jannekbuengener/Claire_de_Binare/issues/780)): execution state machine test coverage is required to prove deterministic order lifecycle transitions; DoD: full state transition matrix tested with pass/fail evidence.~~ Closed in GitHub (PR #1106).
-2. `LR-012` ([#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781)): keep `PARTIAL` fail-closed. The execution order negative-payload path is repo-backed, but no canonical full-scope closure exists for the broader original issue scope (`candles` / `signals` / visibility); closure is therefore not justified.
+2. `LR-012` ([#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781)): issue is closed in GitHub; keep `PARTIAL` fail-closed. The execution order negative-payload path is repo-backed, but no canonical full-scope closure exists for the broader original issue scope (`candles` / `signals` / visibility); closure is therefore not justified.
 3. ~~`LR-020` (#782)~~ DONE 2026-03-17: `LR-020-STATE.yaml` = DONE, commit `8c75697`.
 4. `LR-030` operational reconciliation only: issue [#784](https://github.com/jannekbuengener/Claire_de_Binare/issues/784) is closed and the zero-execution / live-data core is repo-backed plus re-confirmed by the committed lean handoff, but no direct committed proof currently closes the two original residual criteria: `>24h` stable shadow mode and functioning alerts.
 5. ~~`LR-031` ([#785](https://github.com/jannekbuengener/Claire_de_Binare/issues/785))~~ CLOSED / PASS-evidenced: comparison layer calibrated, thresholds committed, PASS evidence documented in `docs/evidence/LR-031.md`.
@@ -72,11 +72,11 @@ DONE consistency checks:
 9. `LR-050` ([#792](https://github.com/jannekbuengener/Claire_de_Binare/issues/792)): issue closed in GitHub; this does not change P5 clearance or live-capital readiness; canary checklist gates live capital exposure; explicit human gate still required.
 10. ~~Tracker alignment task (P0)~~ Resolved 2026-03-15: `LR-001` #776 and `LR-003` #778 closed; state files and tracker consistent.
 
-Open LR issue map (quick reference):
+LR reference map (quick reference; issue state reconciled):
 
 | LR Task | Issue | Why important | DoD (one sentence) |
 |---|---|---|---|
-| `LR-012` | [#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781) | Keeps LR canon aligned to the repo-backed execution slice without overstating broader scope closure | Preserve `PARTIAL` until broader original scope (`candles` / `signals` / visibility) is either canonically narrowed or separately evidenced |
+| `LR-012` | [#781](https://github.com/jannekbuengener/Claire_de_Binare/issues/781) (closed) | Keeps LR canon aligned to the repo-backed execution slice without overstating broader scope closure | Preserve `PARTIAL` until broader original scope (`candles` / `signals` / visibility) is either canonically narrowed or separately evidenced |
 
 ## E) Risks / Known Gaps
 
