@@ -1,0 +1,35 @@
+{
+  "strategy_id": "primary_breakout_v1",
+  "code_commit": "3b404922f8837edc07dd19092ec8cef3877ba6f2",
+  "seed": 42,
+  "timeframe": "1m",
+  "source_files": [
+    "logs\\events\\events_20260401.jsonl",
+    "logs\\events\\events_20260402.jsonl",
+    "logs\\events\\events_20260403.jsonl",
+    "logs\\events\\events_20260404.jsonl",
+    "logs\\events\\events_20260405.jsonl",
+    "logs\\events\\events_20260406.jsonl",
+    "logs\\events\\events_20260407.jsonl",
+    "logs\\events\\events_20260408.jsonl",
+    "logs\\events\\events_20260409.jsonl",
+    "logs\\events\\events_20260410.jsonl",
+    "logs\\events\\events_20260411.jsonl",
+    "logs\\events\\events_20260412.jsonl",
+    "logs\\events\\events_20260413.jsonl",
+    "logs\\events\\events_20260414.jsonl"
+  ],
+  "source_rows_market_data_btcusdt": 1847493,
+  "missing_minutes_filled": 3473,
+  "candles_total": 20160,
+  "dataset_sha256": "01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
+  "requested_period_start_ts_ms": 1775001600000,
+  "requested_period_end_ts_ms": 1776211140000,
+  "bridge_config": {
+    "entry_lookback_minutes": 240,
+    "exit_lookback_minutes": 120,
+    "breakout_buffer": 0.0005,
+    "min_minutes_between_entries": 60,
+    "trade_side_mode": "long_only"
+  }
+}

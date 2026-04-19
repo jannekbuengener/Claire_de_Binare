@@ -1,0 +1,29 @@
+{
+  "dataset_type": "local_real_tick_aggregation",
+  "symbol": "BTCUSDT",
+  "timeframe": "1m",
+  "source_files": [
+    "logs\\events\\events_20260401.jsonl",
+    "logs\\events\\events_20260402.jsonl",
+    "logs\\events\\events_20260403.jsonl",
+    "logs\\events\\events_20260404.jsonl",
+    "logs\\events\\events_20260405.jsonl",
+    "logs\\events\\events_20260406.jsonl",
+    "logs\\events\\events_20260407.jsonl",
+    "logs\\events\\events_20260408.jsonl",
+    "logs\\events\\events_20260409.jsonl",
+    "logs\\events\\events_20260410.jsonl",
+    "logs\\events\\events_20260411.jsonl",
+    "logs\\events\\events_20260412.jsonl",
+    "logs\\events\\events_20260413.jsonl",
+    "logs\\events\\events_20260414.jsonl"
+  ],
+  "source_window_utc": {
+    "start_ts_ms": 1775001600000,
+    "end_ts_ms": 1776211140000
+  },
+  "extraction_method": "aggregate market_data tick events by minute: open/high/low/close, volume=sum(trade_qty), fill missing minutes with previous close and zero volume",
+  "source_rows_market_data_btcusdt": 1847493,
+  "missing_minutes_filled": 3473,
+  "dataset_sha256": "01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12"
+}
