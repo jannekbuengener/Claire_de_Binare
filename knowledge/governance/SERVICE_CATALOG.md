@@ -154,4 +154,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-11 | Signal/Risk Runtime-Drift bereinigt: Signal-Strategie-/Stream-Semantik und Risk-Input-/Metric-Semantik auf current-main präzisiert | Codex |
 | 2026-04-18 | PR #1752 Nachzug: Market Email-Alerter-Init ohne Empfaenger-Klartext-Logging in Katalogfunktion nachgezogen | Codex |
 | 2026-04-18 | PR #1755 Nachzug: Risk-/Execution-Fehlerantworten und Kill-Switch-Fallback auf stacktrace-freie Fehlercodes/Safemessages dokumentiert | Codex |
-| 2026-04-19 | Prometheus-Image-Version nachgezogen: v3.10.0 → v3.11.2 (PR #1767, #1771); enger Katalog-Nachzug gegen current-main | Codex |
+| 2026-04-19 | Prometheus-Image-Version nachgezogen: v3.10.0 → v3.11.2 (PR #1767, Issue #1771); enger Katalog-Nachzug gegen current-main | Codex |
