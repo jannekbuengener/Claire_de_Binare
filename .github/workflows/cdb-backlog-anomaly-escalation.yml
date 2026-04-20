@@ -1,0 +1,152 @@
+name: CDB Backlog Anomaly Escalation
+
+on:
+  workflow_run:
+    workflows: ["CDB Backlog Curation"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Workflow run ID from CDB Backlog Curation"
+        required: true
+        type: string
+      publish_mode:
+        description: "Whether to emit bounded follow-up issues"
+        required: true
+        default: dry_run
+        type: choice
+        options:
+          - dry_run
+          - publish
+      max_followup_issues:
+        description: "Hard cap for newly created follow-up issues (0..1)"
+        required: true
+        default: "1"
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  escalate:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Resolve escalation inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            run_id="${{ inputs.run_id }}"
+            publish_mode="${{ inputs.publish_mode }}"
+            max_followup_issues="${{ inputs.max_followup_issues }}"
+          else
+            run_id="${{ github.event.workflow_run.id }}"
+            publish_mode="publish"
+            max_followup_issues="1"
+          fi
+
+          if ! [[ "$run_id" =~ ^[0-9]+$ ]]; then
+            echo "::error::run_id must be numeric."
+            exit 1
+          fi
+          if ! [[ "$max_followup_issues" =~ ^[0-9]+$ ]]; then
+            echo "::error::max_followup_issues must be numeric."
+            exit 1
+          fi
+          if [[ "$max_followup_issues" -lt 0 || "$max_followup_issues" -gt 1 ]]; then
+            echo "::error::max_followup_issues must be between 0 and 1 for this escalation lane."
+            exit 1
+          fi
+
+          {
+            echo "run_id=$run_id"
+            echo "publish_mode=$publish_mode"
+            echo "max_followup_issues=$max_followup_issues"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download backlog-curation handoff artifact
+        id: handoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact_root="artifacts/cdb-backlog-anomaly-escalation"
+          input_dir="${artifact_root}/input"
+          mkdir -p "$input_dir"
+
+          artifacts_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${{ steps.resolve.outputs.run_id }}/artifacts")"
+          artifact_name="$(printf '%s' "$artifacts_json" | python3 -c 'import json,re,sys; data=json.load(sys.stdin); names=[a.get("name","") for a in data.get("artifacts",[]) if re.fullmatch(r"backlog-curation-issue-\d+", a.get("name","")) and not a.get("expired", False)]; print(sorted(names)[-1] if names else "")')"
+
+          if [[ -z "$artifact_name" ]]; then
+            echo "artifact_exists=false" >> "$GITHUB_OUTPUT"
+            echo "No backlog-curation handoff artifact found for run ${{ steps.resolve.outputs.run_id }}." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          gh run download "${{ steps.resolve.outputs.run_id }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name "$artifact_name" \
+            --dir "$input_dir"
+
+          artifact_path="$(find "$input_dir" -type f -name 'issue-*.json' | head -n 1 || true)"
+          if [[ -z "$artifact_path" ]]; then
+            echo "artifact_exists=false" >> "$GITHUB_OUTPUT"
+            echo "Downloaded $artifact_name but no issue-*.json was found." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          {
+            echo "artifact_exists=true"
+            echo "artifact_path=$artifact_path"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run backlog anomaly escalation
+        if: ${{ steps.handoff.outputs.artifact_exists == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          result_json="artifacts/cdb-backlog-anomaly-escalation/result.json"
+          summary_md="artifacts/cdb-backlog-anomaly-escalation/summary.md"
+
+          python3 .github/scripts/backlog_anomaly_escalation.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --artifact-file "${{ steps.handoff.outputs.artifact_path }}" \
+            --result-file "$result_json" \
+            --summary-file "$summary_md" \
+            --publish-mode "${{ steps.resolve.outputs.publish_mode }}" \
+            --max-followup-issues "${{ steps.resolve.outputs.max_followup_issues }}"
+
+          cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Write no-op escalation artifact
+        if: ${{ steps.handoff.outputs.artifact_exists != 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact_root="artifacts/cdb-backlog-anomaly-escalation"
+          mkdir -p "$artifact_root"
+          printf '%s\n' '{"status":"no_handoff_artifact","issue_events":[],"decisions":[]}' > "${artifact_root}/result.json"
+          printf '%s\n' "# CDB Backlog Anomaly Escalation" "" "No backlog-curation handoff artifact was available in this run." > "${artifact_root}/summary.md"
+
+      - name: Upload escalation artifact
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cdb-backlog-anomaly-escalation
+          path: artifacts/cdb-backlog-anomaly-escalation/
+          if-no-files-found: error

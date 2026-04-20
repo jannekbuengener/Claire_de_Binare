@@ -29,10 +29,10 @@ This folder and its docs make it navigable.
 
 ```
 .github/
-  workflows/         66 YAML workflow definitions + labels.json (67 files total)
+  workflows/         67 YAML workflow definitions + labels.json (68 files total)
   ISSUE_TEMPLATE/    10 issue form templates (yml + md)
   prompts/           1 active prompt: cdb-control-followup.prompt.yml
-  scripts/           8 scripts backing operational workflows
+  scripts/           9 scripts backing operational workflows
   commands/          4 Gemini command stubs (toml)
   control-plane/     Manifest-driven collection layer (introduced #1644)
     README.md        Collection layer overview
@@ -76,7 +76,7 @@ This folder and its docs make it navigable.
 ### When something is creating unexpected issues/comments
 1. Check `CONTROL_REGISTER.md` → active infra workflows list
 2. Check the register for workflows with `auto_issue_creation: true`
-3. Key suspects: `cdb-daily-delta-triage.yml`, `cdb-weekly-control-hygiene-classifier.yml`, `smart-insights.yml`, `triage_guard.yml`
+3. Key suspects: `cdb-daily-delta-triage.yml`, `cdb-weekly-control-hygiene-classifier.yml`, `cdb-backlog-anomaly-escalation.yml`, `smart-insights.yml`, `triage_guard.yml`
 
 ---
 
@@ -85,7 +85,7 @@ This folder and its docs make it navigable.
 | Document | What it answers |
 |---|---|
 | [`docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md) | How to read, change, debug, and maintain workflows |
-| [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md) | Full register: all 66 workflows, triggers, scripts, outputs |
+| [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md) | Full register: all 67 workflows, triggers, scripts, outputs |
 | [`docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md) | Relationship matrix + Mermaid coupling graph |
 | [`control-plane/README.md`](control-plane/README.md) | Manifest-driven collection layer docs |
 | [`control-plane/generated/workflow-register.json`](control-plane/generated/workflow-register.json) | Machine-readable register (3 manifested units) |
@@ -95,7 +95,7 @@ This folder and its docs make it navigable.
 
 ## Workflow inventory at a glance
 
-**Total:** 66 workflow definitions + 1 `labels.json` = 67 tracked files
+**Total:** 67 workflow definitions + 1 `labels.json` = 68 tracked files
 
 | Group | Count | Key workflows |
 |---|---|---|
@@ -106,16 +106,17 @@ This folder and its docs make it navigable.
 | Audit/governance | 6 | policy-gate, governance-audit, required-checks-audit |
 | Sonstiges | 5 | emoji-filter, emoji-bot, performance-monitor, smart-insights |
 | Delivery/gates | 4 | delivery-gate, core-guard, triage_guard, docs-conflict-guard |
-| Reporting | 5 | weekly_digest, cdb-daily-delta-triage, cdb-post-merge-followup-scanner, cdb-backlog-curation |
+| Reporting | 6 | weekly_digest, cdb-daily-delta-triage, cdb-post-merge-followup-scanner, cdb-backlog-curation, cdb-backlog-anomaly-escalation |
 | Security | 3 | gitleaks, trivy, security-scan |
 
 **Status breakdown:**
-- Aktiv: 55
+- Aktiv: 56
 - Manual-only: 5
 - Fail-closed geparkt: 1 (`gemini-scheduled-triage.yml`)
 - Historisch/unklar: 5 (labeling/milestone legacy flows)
 
 `cdb-backlog-curation.yml` is an artifact-only companion workflow for qualified `issues.labeled` events. It uploads `artifacts/backlog-curation/issue-<number>.json` and does not mutate issues, labels, or comments.
+`cdb-backlog-anomaly-escalation.yml` is the separate phase-1 escalation lane. It consumes backlog-curation handoff artifacts, classifies typed anomalies fail-closed (`report_only` / `follow_up_issue` / `unclear`), blocks sensitive/private findings from public issue emission, and emits at most one dedupe-safe follow-up issue per run.
 
 ---
 
@@ -125,6 +126,7 @@ This folder and its docs make it navigable.
 |---|---|
 | `scripts/daily_delta_triage.py` | `cdb-daily-delta-triage.yml` |
 | `scripts/backlog_curation.py` | `cdb-backlog-curation.yml` |
+| `scripts/backlog_anomaly_escalation.py` | `cdb-backlog-anomaly-escalation.yml` |
 | `scripts/post_merge_followup_scanner.py` | `cdb-post-merge-followup-scanner.yml` |
 | `scripts/weekly_control_hygiene_classifier.py` | `cdb-weekly-control-hygiene-classifier.yml` |
 | `scripts/run_cdb_control_followup.sh` | `cdb-control-followup-classifier.yml` |

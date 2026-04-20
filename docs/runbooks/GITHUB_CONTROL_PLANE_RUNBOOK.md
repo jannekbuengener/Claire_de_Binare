@@ -13,13 +13,13 @@ The `.github` control plane has four functional layers:
 
 ```
 Layer 1: Assets
-  .github/workflows/*.yml      65 workflow definitions + labels.json
+  .github/workflows/*.yml      67 workflow definitions + labels.json
   .github/ISSUE_TEMPLATE/      10 issue form templates
   .github/pull_request_template.md
   .github/CODEOWNERS, dependabot.yml, SECURITY.md, LABELS.md, MILESTONES.md, emoji-config.yaml
 
 Layer 2: Support files
-  .github/scripts/             7 Python/Shell scripts (backing operational workflows)
+  .github/scripts/             9 Python/Shell scripts (backing operational workflows)
   .github/prompts/             1 prompt YAML (shared: classifier + scanner)
   .github/commands/            4 Gemini TOML stubs (backing gemini-dispatch family)
 
@@ -170,6 +170,7 @@ Run through this checklist **before** modifying any `.github/workflows/*.yml`:
 Likely suspects (from #1633 audit):
 - `cdb-daily-delta-triage.yml` — creates issues when delta score > threshold
 - `cdb-weekly-control-hygiene-classifier.yml` — creates hygiene issues
+- `cdb-backlog-anomaly-escalation.yml` — creates bounded follow-up issues from typed backlog-curation anomalies
 - `smart-insights.yml` — AI-driven issue creation
 - `triage_guard.yml` — creates issues on label events
 Check issue labels for `control-delta`, `hygiene`, `triage` prefixes.
@@ -218,6 +219,7 @@ Workflows that **mutate repo state** outside their own run:
 | `add_to_project.yml` | Adds items to project | Issues trigger |
 | `cdb-daily-delta-triage.yml` | Creates issues (bounded) | Schedule 4×/week |
 | `cdb-weekly-control-hygiene-classifier.yml` | Creates issues | Mo/Do/Fr 07:30 UTC |
+| `cdb-backlog-anomaly-escalation.yml` | Creates issues (bounded, dedupe-safe) | workflow_run after cdb-backlog-curation + dispatch |
 | `cdb-post-merge-followup-scanner.yml` | Creates follow-up comments/issues | PR:merged |
 | `cdb-control-followup-classifier.yml` | Creates issue comments | Manual-only |
 | `smart-insights.yml` | Creates AI-driven issues | Schedule + dispatch |
@@ -238,7 +240,7 @@ Workflows that **mutate repo state** outside their own run:
 | Is the repo live-trade-ready? | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` |
 | What is the current Board stage? | `docs/runbooks/CONTROL_REGISTER.md` |
 | Which workflows are actively operational? | `docs/runbooks/CONTROL_REGISTER.md` § Active Infra Workflows |
-| Complete workflow register (all 65)? | `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` |
+| Complete workflow register (all 67)? | `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` |
 | What does a workflow do in detail? | The workflow YAML itself + register entry |
 | What scripts back a workflow? | `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` |
 | Which labels exist? | `.github/workflows/labels.json` (canonical); `.github/LABELS.md` (docs) |
