@@ -134,6 +134,20 @@ def test_historical_paths_are_excluded_from_sources() -> None:
     assert "knowledge/ARCHITECTURE_MAP.md" in source_paths
 
 
+def test_version_strings_do_not_degrade_partial_curation() -> None:
+    payload = _payload(
+        event_label="context:curate",
+        labels=["context:curate"],
+        body="Validate against Python 3.12.1 and the v2.0.0 rollout notes before implementation.",
+    )
+
+    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    assert artifact["curation_status"]["state"] == "partial"
+    assert artifact["ambiguities"] == []
+
+
 def test_explicit_valid_repo_paths_are_prioritized_before_default_tiers() -> None:
     payload = _payload(
         event_label="task",

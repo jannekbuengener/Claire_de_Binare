@@ -20,7 +20,7 @@ HISTORICAL_PREFIXES = ("docs/archive/", "knowledge/logs/", "reports/")
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 BACKTICK_PATTERN = re.compile(r"`([^`\n]+)`")
 GENERIC_PATH_PATTERN = re.compile(
-    r"(?<!://)(?<![A-Za-z]:[\\/])(?:^|[\s(])([.A-Za-z0-9_/\-]+(?:/[.A-Za-z0-9_/\-]+)*\.[A-Za-z0-9_.-]+)(?=$|[\s),:;])"
+    r"(?<!://)(?<![A-Za-z]:[\\/])(?:^|[\s(])([.A-Za-z0-9_\-]+(?:/[.A-Za-z0-9_\-]+)+\.[A-Za-z0-9_.-]+)(?=$|[\s),:;])"
 )
 
 DEFAULT_SOURCES = [
@@ -105,24 +105,25 @@ def normalize_path(candidate: str) -> str | None:
     return cleaned
 
 
-def extract_explicit_repo_paths(*texts: str) -> list[str]:
-    paths: list[str] = []
+def extract_explicit_repo_paths(*texts: str) -> tuple[list[str], list[str]]:
+    direct_paths: list[str] = []
+    generic_paths: list[str] = []
     for text in texts:
         if not text:
             continue
         for raw_candidate in MARKDOWN_LINK_PATTERN.findall(text):
             normalized = normalize_path(raw_candidate)
-            if normalized and normalized not in paths:
-                paths.append(normalized)
+            if normalized and normalized not in direct_paths:
+                direct_paths.append(normalized)
         for raw_candidate in BACKTICK_PATTERN.findall(text):
             normalized = normalize_path(raw_candidate)
-            if normalized and normalized not in paths:
-                paths.append(normalized)
+            if normalized and normalized not in direct_paths:
+                direct_paths.append(normalized)
         for raw_candidate in GENERIC_PATH_PATTERN.findall(text):
             normalized = normalize_path(raw_candidate)
-            if normalized and normalized not in paths:
-                paths.append(normalized)
-    return paths
+            if normalized and normalized not in direct_paths and normalized not in generic_paths:
+                generic_paths.append(normalized)
+    return direct_paths, generic_paths
 
 
 def issue_labels(payload: dict[str, Any]) -> list[str]:
@@ -208,18 +209,28 @@ def resolve_sources(
     title = issue.get("title") or ""
     body = issue.get("body") or ""
 
-    explicit_candidates = extract_explicit_repo_paths(title, body)
+    direct_candidates, generic_candidates = extract_explicit_repo_paths(title, body)
     valid_explicit: list[str] = []
     excluded_explicit: list[str] = []
     missing_explicit: list[str] = []
 
-    for candidate in explicit_candidates:
+    for candidate in direct_candidates:
         if is_historical_path(candidate):
             excluded_explicit.append(candidate)
             continue
         full_path = repo_root / candidate
         if not full_path.is_file():
             missing_explicit.append(candidate)
+            continue
+        if candidate not in valid_explicit:
+            valid_explicit.append(candidate)
+
+    for candidate in generic_candidates:
+        if is_historical_path(candidate):
+            excluded_explicit.append(candidate)
+            continue
+        full_path = repo_root / candidate
+        if not full_path.is_file():
             continue
         if candidate not in valid_explicit:
             valid_explicit.append(candidate)
