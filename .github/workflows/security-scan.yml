@@ -59,7 +59,7 @@ jobs:
           echo "TRIVY_SAFE_IMAGE=$safe_image" >> $GITHUB_ENV
 
       - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'json'
@@ -83,7 +83,7 @@ jobs:
           jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
@@ -171,7 +171,7 @@ jobs:
 
       - name: Run Trivy Scan
         if: steps.build_custom_image.outcome == 'success'
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
           format: 'json'
@@ -218,7 +218,7 @@ jobs:
           fi
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         if: always() && steps.build_custom_image.outcome == 'success'
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
