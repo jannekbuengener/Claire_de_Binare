@@ -43,11 +43,16 @@ ARCHITECTURE_SURFACES = {
     "knowledge/ARCHITECTURE_MAP.md",
     "knowledge/governance/SERVICE_CATALOG.md",
 }
+CONTRACT_PREFIXES = (
+    "knowledge/contracts/",
+    "core/contracts/",
+    "docs/contracts/",
+)
 
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 BACKTICK_PATTERN = re.compile(r"`([^`\n]+)`")
 GENERIC_PATH_PATTERN = re.compile(
-    r"(?<!://)(?<![A-Za-z]:[\\/])(?:^|[\s(])([.A-Za-z0-9_/\-]+(?:/[.A-Za-z0-9_/\-]+)*\.[A-Za-z0-9_.-]+)(?=$|[\s),:;])"
+    r"(?<!://)(?<![A-Za-z]:[\\/])(?:^|[\s(])([.A-Za-z0-9_\-]+(?:/[.A-Za-z0-9_/\-]+)+\.[A-Za-z][A-Za-z0-9_.-]*)(?=$|[\s),:;])"
 )
 
 DEFAULT_SOURCES = [
@@ -175,7 +180,7 @@ def categorize_explicit_path(path: str) -> str:
         return "architecture"
     if path.startswith(".github/") or path.startswith("docs/runbooks/GITHUB_"):
         return "control_plane"
-    if path.startswith("knowledge/contracts/"):
+    if path.startswith(CONTRACT_PREFIXES):
         return "contract"
     if "validation" in path.lower():
         return "validation"
@@ -187,7 +192,7 @@ def categorize_explicit_path(path: str) -> str:
 def is_tier4_explicit_path(path: str) -> bool:
     lowered = path.lower()
     return (
-        path.startswith("knowledge/contracts/")
+        path.startswith(CONTRACT_PREFIXES)
         or "validation" in lowered
         or "strategy" in lowered
     )
@@ -627,7 +632,25 @@ def write_artifact_for_event(
     if artifact is None:
         return None
 
-    issue_number = artifact["issue"]["number"]
+    raw_issue_number = artifact["issue"]["number"]
+    if isinstance(raw_issue_number, bool):
+        print(
+            f"Invalid issue number in curated artifact: expected int or digit string, got {raw_issue_number!r}.",
+            file=sys.stderr,
+        )
+        return None
+    if isinstance(raw_issue_number, int):
+        issue_number = raw_issue_number
+    elif isinstance(raw_issue_number, str) and raw_issue_number.isdigit():
+        issue_number = int(raw_issue_number)
+    else:
+        print(
+            f"Invalid issue number in curated artifact: expected int or digit string, got {raw_issue_number!r}.",
+            file=sys.stderr,
+        )
+        return None
+
+    artifact["issue"]["number"] = issue_number
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / f"issue-{issue_number}.json"
     artifact_path.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")

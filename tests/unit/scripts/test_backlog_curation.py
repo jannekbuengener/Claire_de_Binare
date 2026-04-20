@@ -26,7 +26,7 @@ def _payload(
     title: str = "Sample issue",
     body: str = "",
     milestone: str | None = None,
-    number: int = 1794,
+    number: int | str = 1794,
 ) -> dict[str, object]:
     issue_labels = [{"name": label} for label in labels]
     issue: dict[str, object] = {
@@ -177,6 +177,49 @@ def test_write_artifact_for_event_creates_expected_file(tmp_path: Path) -> None:
     assert artifact_path is not None and artifact_path.exists()
 
 
+def test_write_artifact_for_event_coerces_digit_string_issue_number(tmp_path: Path) -> None:
+    payload = _payload(
+        event_label="task",
+        labels=["task"],
+        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
+        number="2005",
+    )
+
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(payload), encoding="utf-8")
+    artifact_dir = tmp_path / "artifacts"
+
+    artifact_path = backlog_curation.write_artifact_for_event(
+        event_path=event_path,
+        repo_root=REPO_ROOT,
+        artifact_dir=artifact_dir,
+    )
+
+    assert artifact_path == artifact_dir / "issue-2005.json"
+    assert artifact_path is not None and artifact_path.exists()
+
+
+def test_write_artifact_for_event_rejects_non_numeric_issue_number(tmp_path: Path) -> None:
+    payload = _payload(
+        event_label="task",
+        labels=["task"],
+        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
+        number="v2.0.0",
+    )
+
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(payload), encoding="utf-8")
+    artifact_dir = tmp_path / "artifacts"
+
+    artifact_path = backlog_curation.write_artifact_for_event(
+        event_path=event_path,
+        repo_root=REPO_ROOT,
+        artifact_dir=artifact_dir,
+    )
+
+    assert artifact_path is None
+
+
 def test_artifact_contract_contains_required_schema_fields() -> None:
     payload = _payload(
         event_label="task",
@@ -280,3 +323,38 @@ def test_sensitive_context_blocks_public_issue_hints() -> None:
     assert all(
         finding["public_issue_allowed"] is False for finding in artifact["anomalies"]["findings"]
     )
+
+
+def test_semver_tokens_are_not_treated_as_missing_repo_paths() -> None:
+    payload = _payload(
+        event_label="context:curate",
+        labels=["context:curate"],
+        body="Investigate migration constraints around Python 3.12.1 and v2.0.0 releases.",
+    )
+
+    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    assert artifact["curation_status"]["state"] == "partial"
+    assert not any(
+        finding["type"] == "broken_reference" for finding in artifact["anomalies"]["findings"]
+    )
+
+
+def test_core_contract_path_is_classified_as_tier4_contract_source() -> None:
+    payload = _payload(
+        event_label="context:curate",
+        labels=["context:curate"],
+        body="Inspect `core/contracts/decision_contract_v1.py` for contract compatibility.",
+    )
+
+    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    source = next(
+        item
+        for item in artifact["sources"]
+        if item["path"] == "core/contracts/decision_contract_v1.py"
+    )
+    assert source["category"] == "contract"
+    assert source["confidence"] == 0.95
