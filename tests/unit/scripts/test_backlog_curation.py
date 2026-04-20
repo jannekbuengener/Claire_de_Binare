@@ -358,3 +358,76 @@ def test_core_contract_path_is_classified_as_tier4_contract_source() -> None:
     )
     assert source["category"] == "contract"
     assert source["confidence"] == 0.95
+
+
+def test_extract_explicit_repo_paths_from_backticks() -> None:
+    """Test path extraction from backtick-delimited text."""
+    result = backlog_curation.extract_explicit_repo_paths(
+        "The file `docs/runbooks/CONTROL_REGISTER.md` needs review."
+    )
+    assert "docs/runbooks/CONTROL_REGISTER.md" in result
+
+
+def test_extract_explicit_repo_paths_from_markdown_links() -> None:
+    """Test path extraction from markdown link syntax."""
+    result = backlog_curation.extract_explicit_repo_paths(
+        "See [docs](docs/runbooks/CONTROL_REGISTER.md) for details."
+    )
+    assert "docs/runbooks/CONTROL_REGISTER.md" in result
+
+
+def test_extract_explicit_repo_paths_rejects_urls() -> None:
+    """Test that HTTP/HTTPS URLs are rejected."""
+    result = backlog_curation.extract_explicit_repo_paths(
+        "Check https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/file.md"
+    )
+    assert not any("github.com" in path for path in result)
+
+
+def test_extract_explicit_repo_paths_rejects_windows_drive_paths() -> None:
+    r"""Test that Windows drive paths (e.g., C:\path) are rejected."""
+    result = backlog_curation.extract_explicit_repo_paths(
+        "Config in `C:\\Windows\\System32\\config.txt` and `docs/config.md`"
+    )
+    assert "docs/config.md" in result
+    assert not any("Windows" in path for path in result)
+
+
+def test_normalize_path_rejects_windows_drive_with_leading_slash() -> None:
+    r"""Test that Windows drive paths with prefixes like /C:\path are normalized and rejected."""
+    # This tests the fix for the review comment about drive-path order
+    result = backlog_curation.normalize_path("/C:\\Users\\file.txt")
+    assert result is None
+
+
+def test_normalize_path_rejects_windows_drive_with_leading_dot_slash() -> None:
+    r"""Test that Windows drive paths with ./ prefix are normalized and rejected."""
+    result = backlog_curation.normalize_path("./C:\\Users\\file.txt")
+    assert result is None
+
+
+def test_normalize_path_handles_path_traversal() -> None:
+    """Test that path traversal attempts (../) are rejected."""
+    result = backlog_curation.normalize_path("../../../etc/passwd")
+    assert result is None
+
+
+def test_normalize_path_normalizes_relative_paths() -> None:
+    """Test that leading ./ and / are stripped."""
+    result = backlog_curation.normalize_path("./docs/runbooks/CONTROL_REGISTER.md")
+    assert result == "docs/runbooks/CONTROL_REGISTER.md"
+
+    result = backlog_curation.normalize_path("/docs/runbooks/CONTROL_REGISTER.md")
+    assert result == "docs/runbooks/CONTROL_REGISTER.md"
+
+
+def test_extract_explicit_repo_paths_adversarial_many_slashes() -> None:
+    """Test that adversarial input with many slashes doesn't cause performance issues."""
+    # This tests robustness against ReDoS
+    import time
+
+    adversarial = "a" + "/" * 100 + "b" * 100 + ".txt"
+    start = time.time()
+    result = backlog_curation.extract_explicit_repo_paths(adversarial)
+    elapsed = time.time() - start
+    assert elapsed < 1.0, f"Path extraction took {elapsed}s (should complete in <1s)"
