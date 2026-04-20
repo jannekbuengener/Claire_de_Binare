@@ -130,7 +130,10 @@ def test_historical_paths_are_excluded_from_sources() -> None:
 
     assert artifact is not None
     source_paths = [source["path"] for source in artifact["sources"]]
-    assert "docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md" not in source_paths
+    assert (
+        "docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md"
+        not in source_paths
+    )
     assert "knowledge/ARCHITECTURE_MAP.md" in source_paths
 
 
@@ -146,6 +149,42 @@ def test_version_strings_do_not_degrade_partial_curation() -> None:
     assert artifact is not None
     assert artifact["curation_status"]["state"] == "partial"
     assert artifact["ambiguities"] == []
+
+
+def test_core_and_docs_contract_paths_are_tier4_context() -> None:
+    payload = _payload(
+        event_label="task",
+        labels=["task"],
+        body=(
+            "Inspect `core/contracts/decision_contract_v1.py` and "
+            "`docs/contracts/strategy_validation_report_v1.schema.json`."
+        ),
+    )
+
+    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    source_map = {source["path"]: source for source in artifact["sources"]}
+    assert (
+        source_map["core/contracts/decision_contract_v1.py"]["category"] == "contract"
+    )
+    assert (
+        source_map["core/contracts/decision_contract_v1.py"]["reason"]
+        == "Explicitly referenced in the issue and clearly relevant as contract/validation/strategy context."
+    )
+    assert source_map["core/contracts/decision_contract_v1.py"]["confidence"] == 0.95
+    assert (
+        source_map["docs/contracts/strategy_validation_report_v1.schema.json"][
+            "category"
+        ]
+        == "contract"
+    )
+    assert (
+        source_map["docs/contracts/strategy_validation_report_v1.schema.json"][
+            "confidence"
+        ]
+        == 0.95
+    )
 
 
 def test_explicit_valid_repo_paths_are_prioritized_before_default_tiers() -> None:
@@ -191,6 +230,31 @@ def test_write_artifact_for_event_creates_expected_file(tmp_path: Path) -> None:
     assert artifact_path is not None and artifact_path.exists()
 
 
+def test_write_artifact_for_event_returns_none_for_invalid_issue_number(
+    tmp_path: Path,
+) -> None:
+    payload = _payload(
+        event_label="task",
+        labels=["task"],
+        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
+        number=2004,
+    )
+    payload["issue"]["number"] = "v2.0.0"
+
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(payload), encoding="utf-8")
+    artifact_dir = tmp_path / "artifacts"
+
+    artifact_path = backlog_curation.write_artifact_for_event(
+        event_path=event_path,
+        repo_root=REPO_ROOT,
+        artifact_dir=artifact_dir,
+    )
+
+    assert artifact_path is None
+    assert list(artifact_dir.glob("issue-*.json")) == []
+
+
 def test_artifact_contract_contains_required_schema_fields() -> None:
     payload = _payload(
         event_label="task",
@@ -210,8 +274,18 @@ def test_artifact_contract_contains_required_schema_fields() -> None:
         "execution_hint",
         "ambiguities",
     }
-    assert set(artifact["issue"].keys()) == {"number", "title", "url", "labels", "milestone"}
-    assert set(artifact["trigger"].keys()) == {"event_name", "matched_rules", "manual_override"}
+    assert set(artifact["issue"].keys()) == {
+        "number",
+        "title",
+        "url",
+        "labels",
+        "milestone",
+    }
+    assert set(artifact["trigger"].keys()) == {
+        "event_name",
+        "matched_rules",
+        "manual_override",
+    }
     assert set(artifact["curation_status"].keys()) == {"state", "confidence", "summary"}
     assert set(artifact["execution_hint"].keys()) == {
         "recommended_first_step",
@@ -219,7 +293,8 @@ def test_artifact_contract_contains_required_schema_fields() -> None:
         "suggested_next_action",
     }
     assert all(
-        set(source.keys()) == {"path", "category", "reason", "confidence", "must_read", "priority"}
+        set(source.keys())
+        == {"path", "category", "reason", "confidence", "must_read", "priority"}
         for source in artifact["sources"]
     )
     priorities = [source["priority"] for source in artifact["sources"]]

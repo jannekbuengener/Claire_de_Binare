@@ -13,9 +13,21 @@ SCHEMA_VERSION = "v1"
 TASK_LABEL = "task"
 MANUAL_OVERRIDE_LABEL = "context:curate"
 TYPE_LABELS = {"type:bug", "type:feature", "type:refactor"}
-SCOPE_LABELS = {"scope:core", "scope:infra", "scope:ci", "scope:data", "scope:monitoring"}
+SCOPE_LABELS = {
+    "scope:core",
+    "scope:infra",
+    "scope:ci",
+    "scope:data",
+    "scope:monitoring",
+}
 RELEVANT_EVENT_LABELS = {TASK_LABEL, MANUAL_OVERRIDE_LABEL, *TYPE_LABELS, *SCOPE_LABELS}
 HISTORICAL_PREFIXES = ("docs/archive/", "knowledge/logs/", "reports/")
+CONTRACT_PREFIXES = (
+    "knowledge/contracts/",
+    "core/contracts/",
+    "docs/contracts/",
+    "contracts/",
+)
 
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 BACKTICK_PATTERN = re.compile(r"`([^`\n]+)`")
@@ -121,7 +133,11 @@ def extract_explicit_repo_paths(*texts: str) -> tuple[list[str], list[str]]:
                 direct_paths.append(normalized)
         for raw_candidate in GENERIC_PATH_PATTERN.findall(text):
             normalized = normalize_path(raw_candidate)
-            if normalized and normalized not in direct_paths and normalized not in generic_paths:
+            if (
+                normalized
+                and normalized not in direct_paths
+                and normalized not in generic_paths
+            ):
                 generic_paths.append(normalized)
     return direct_paths, generic_paths
 
@@ -136,16 +152,23 @@ def issue_labels(payload: dict[str, Any]) -> list[str]:
     return result
 
 
+def is_contract_path(path: str) -> bool:
+    return path.startswith(CONTRACT_PREFIXES)
+
+
 def categorize_explicit_path(path: str) -> str:
     if path == "docs/runbooks/CONTROL_REGISTER.md":
         return "runbook"
     if path == "CURRENT_STATUS.md":
         return "status_surface"
-    if path in {"knowledge/ARCHITECTURE_MAP.md", "knowledge/governance/SERVICE_CATALOG.md"}:
+    if path in {
+        "knowledge/ARCHITECTURE_MAP.md",
+        "knowledge/governance/SERVICE_CATALOG.md",
+    }:
         return "architecture"
     if path.startswith(".github/") or path.startswith("docs/runbooks/GITHUB_"):
         return "control_plane"
-    if path.startswith("knowledge/contracts/"):
+    if is_contract_path(path):
         return "contract"
     if "validation" in path.lower():
         return "validation"
@@ -156,11 +179,7 @@ def categorize_explicit_path(path: str) -> str:
 
 def is_tier4_explicit_path(path: str) -> bool:
     lowered = path.lower()
-    return (
-        path.startswith("knowledge/contracts/")
-        or "validation" in lowered
-        or "strategy" in lowered
-    )
+    return is_contract_path(path) or "validation" in lowered or "strategy" in lowered
 
 
 def build_explicit_source(path: str) -> dict[str, Any]:
@@ -169,7 +188,9 @@ def build_explicit_source(path: str) -> dict[str, Any]:
         reason = "Explicitly referenced in the issue and clearly relevant as contract/validation/strategy context."
         confidence = 0.95
     else:
-        reason = "Explicitly referenced in the issue and exists in the active repo scope."
+        reason = (
+            "Explicitly referenced in the issue and exists in the active repo scope."
+        )
         confidence = 0.98
     return {
         "path": path,
@@ -196,7 +217,11 @@ def qualify_issue(labels: list[str]) -> tuple[bool, list[str], bool]:
         matched_rules.extend(matched_types)
         matched_rules.extend(matched_scopes)
 
-    qualified = manual_override or TASK_LABEL in label_set or (bool(matched_types) and bool(matched_scopes))
+    qualified = (
+        manual_override
+        or TASK_LABEL in label_set
+        or (bool(matched_types) and bool(matched_scopes))
+    )
     return qualified, matched_rules, manual_override
 
 
@@ -330,14 +355,18 @@ def build_execution_hint(sources: list[dict[str, Any]], state: str) -> dict[str,
     }
 
 
-def curate_issue_payload(payload: dict[str, Any], *, repo_root: Path) -> dict[str, Any] | None:
+def curate_issue_payload(
+    payload: dict[str, Any], *, repo_root: Path
+) -> dict[str, Any] | None:
     labels = issue_labels(payload)
     qualified, matched_rules, manual_override = qualify_issue(labels)
     if not qualified:
         return None
 
     issue = payload.get("issue", {})
-    sources, ambiguities, valid_explicit, weak_explicit = resolve_sources(payload, repo_root=repo_root)
+    sources, ambiguities, valid_explicit, weak_explicit = resolve_sources(
+        payload, repo_root=repo_root
+    )
     state, confidence, summary = determine_curation_status(
         sources=sources,
         valid_explicit=valid_explicit,
@@ -381,7 +410,18 @@ def write_artifact_for_event(
     if artifact is None:
         return None
 
-    issue_number = artifact["issue"]["number"]
+    issue_number_raw = artifact["issue"]["number"]
+    if isinstance(issue_number_raw, int):
+        issue_number = issue_number_raw
+    elif isinstance(issue_number_raw, str) and issue_number_raw.isdigit():
+        issue_number = int(issue_number_raw)
+    else:
+        print(
+            "No backlog-curation artifact produced: missing/invalid issue number in payload.",
+            file=sys.stderr,
+        )
+        return None
+
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = artifact_dir / f"issue-{issue_number}.json"
     artifact_path.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
@@ -389,7 +429,9 @@ def write_artifact_for_event(
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build backlog-curation artifact from an issues.labeled payload.")
+    parser = argparse.ArgumentParser(
+        description="Build backlog-curation artifact from an issues.labeled payload."
+    )
     parser.add_argument("--event-path", required=True, type=Path)
     parser.add_argument("--repo-root", required=True, type=Path)
     parser.add_argument("--artifact-dir", required=True, type=Path)
