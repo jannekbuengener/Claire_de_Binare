@@ -1,0 +1,58 @@
+name: CDB Backlog Curation
+
+on:
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || 'global' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  curate:
+    if: >-
+      ${{
+        contains(
+          fromJson('["task","context:curate","type:bug","type:feature","type:refactor","scope:core","scope:infra","scope:ci","scope:data","scope:monitoring"]'),
+          github.event.label.name
+        )
+      }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Build backlog-curation artifact
+        id: curate
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact_dir="artifacts/backlog-curation"
+          artifact_path="${artifact_dir}/issue-${{ github.event.issue.number }}.json"
+
+          python3 .github/scripts/backlog_curation.py \
+            --event-path "${GITHUB_EVENT_PATH}" \
+            --repo-root "${GITHUB_WORKSPACE}" \
+            --artifact-dir "${artifact_dir}"
+
+          if [[ -f "${artifact_path}" ]]; then
+            echo "artifact_exists=true" >> "${GITHUB_OUTPUT}"
+            echo "artifact_path=${artifact_path}" >> "${GITHUB_OUTPUT}"
+            echo "Backlog-curation artifact ready: ${artifact_path}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "artifact_exists=false" >> "${GITHUB_OUTPUT}"
+            echo "No backlog-curation artifact produced for the current issue state." >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+      - name: Upload backlog-curation artifact
+        if: ${{ steps.curate.outputs.artifact_exists == 'true' }}
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: backlog-curation-issue-${{ github.event.issue.number }}
+          path: ${{ steps.curate.outputs.artifact_path }}
+          if-no-files-found: error

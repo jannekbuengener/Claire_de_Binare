@@ -29,10 +29,10 @@ This folder and its docs make it navigable.
 
 ```
 .github/
-  workflows/         65 YAML workflow definitions + labels.json (66 files total)
+  workflows/         66 YAML workflow definitions + labels.json (67 files total)
   ISSUE_TEMPLATE/    10 issue form templates (yml + md)
   prompts/           1 active prompt: cdb-control-followup.prompt.yml
-  scripts/           7 scripts backing operational workflows
+  scripts/           8 scripts backing operational workflows
   commands/          4 Gemini command stubs (toml)
   control-plane/     Manifest-driven collection layer (introduced #1644)
     README.md        Collection layer overview
@@ -85,7 +85,7 @@ This folder and its docs make it navigable.
 | Document | What it answers |
 |---|---|
 | [`docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md) | How to read, change, debug, and maintain workflows |
-| [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md) | Full register: all 65 workflows, triggers, scripts, outputs |
+| [`docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`](../docs/runbooks/GITHUB_WORKFLOW_REGISTER.md) | Full register: all 66 workflows, triggers, scripts, outputs |
 | [`docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md`](../docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md) | Relationship matrix + Mermaid coupling graph |
 | [`control-plane/README.md`](control-plane/README.md) | Manifest-driven collection layer docs |
 | [`control-plane/generated/workflow-register.json`](control-plane/generated/workflow-register.json) | Machine-readable register (3 manifested units) |
@@ -95,7 +95,7 @@ This folder and its docs make it navigable.
 
 ## Workflow inventory at a glance
 
-**Total:** 65 workflow definitions + 1 `labels.json` = 66 tracked files
+**Total:** 66 workflow definitions + 1 `labels.json` = 67 tracked files
 
 | Group | Count | Key workflows |
 |---|---|---|
@@ -106,14 +106,16 @@ This folder and its docs make it navigable.
 | Audit/governance | 6 | policy-gate, governance-audit, required-checks-audit |
 | Sonstiges | 5 | emoji-filter, emoji-bot, performance-monitor, smart-insights |
 | Delivery/gates | 4 | delivery-gate, core-guard, triage_guard, docs-conflict-guard |
-| Reporting | 4 | weekly_digest, cdb-daily-delta-triage, cdb-post-merge-followup-scanner |
+| Reporting | 5 | weekly_digest, cdb-daily-delta-triage, cdb-post-merge-followup-scanner, cdb-backlog-curation |
 | Security | 3 | gitleaks, trivy, security-scan |
 
 **Status breakdown:**
-- Aktiv: 54
+- Aktiv: 55
 - Manual-only: 5
 - Fail-closed geparkt: 1 (`gemini-scheduled-triage.yml`)
 - Historisch/unklar: 5 (labeling/milestone legacy flows)
+
+`cdb-backlog-curation.yml` is an artifact-only companion workflow for qualified `issues.labeled` events. It uploads `artifacts/backlog-curation/issue-<number>.json` and does not mutate issues, labels, or comments.
 
 ---
 
@@ -122,6 +124,7 @@ This folder and its docs make it navigable.
 | Script | Backing workflow(s) |
 |---|---|
 | `scripts/daily_delta_triage.py` | `cdb-daily-delta-triage.yml` |
+| `scripts/backlog_curation.py` | `cdb-backlog-curation.yml` |
 | `scripts/post_merge_followup_scanner.py` | `cdb-post-merge-followup-scanner.yml` |
 | `scripts/weekly_control_hygiene_classifier.py` | `cdb-weekly-control-hygiene-classifier.yml` |
 | `scripts/run_cdb_control_followup.sh` | `cdb-control-followup-classifier.yml` |

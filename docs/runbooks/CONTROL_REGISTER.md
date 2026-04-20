@@ -75,6 +75,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | `weekly_digest_failure_alert.yml` | nach `weekly_digest.yml` | Failure-Eskalation als `report:weekly-fail` Issue nur bei echtem Fehler |
 | `cdb-weekly-control-hygiene-classifier.yml` | Mo/Do/Fr 07:30 UTC + manuell | Weekly hygiene/reconciliation fuer `#1445`; dedupe-sicherer Wochenkommentar, branch-obsolescence Klassifikation (repo-backed) und lokaler/manual worktree-cleanup handoff; optional max 0..2 enge Follow-up-Issues |
 | `cdb-daily-delta-triage.yml` | Di/Mi/Fr/So 06:20 UTC + manuell | Daily fresh-delta triage fuer `#1445`; delta-only gegen letzten Daily-Marker, optional max 0..1 enges Follow-up-Issue |
+| `cdb-backlog-curation.yml` | `issues.labeled` (qualifizierte Labels only) | Artifact-only Companion-Workflow fuer implementation-relevante Issues; erzeugt agent-readable JSON unter `artifacts/backlog-curation/issue-<number>.json`, ohne Labels/Kommentare/Issues zu mutieren |
 | `governance-audit.yml` | manuell | Governance-Audit |
 | `cdb-control-followup-classifier.yml` | manuell | Human-in-the-loop Klassifikation repo-backed Control-Findings |
 | `cdb-post-merge-followup-scanner.yml` | bei gemergten PRs + manuell | Repo-backed Post-Merge-Scan fuer kleine Nachzugspakete; Kommentar nach `#1445` oder enges dedupe-sicheres Follow-up-Issue; `architecture_service_catalog_drift` wird unterdrueckt fuer digest-only Image-Pin-Aenderungen (semantischer Tag unveraendert, nur `@sha256`-Digest aktualisiert — PR #1729) |

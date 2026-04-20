@@ -2,7 +2,7 @@
 
 **Repo:** Claire de Binare
 **Canon date:** 2026-05 (generated for #1640 from #1633 audit + live trigger scan)
-**Total workflow definitions:** 65 YAML files
+**Total workflow definitions:** 66 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -108,6 +108,7 @@ Only entries that differ materially from their group baseline are listed.
 | `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
 | `control_board_auto_routing.yml` | `perm:w-issues` | — |
 | `control-board-routing-label-dispatch.yml` | `perm:w-contents` | — |
+| `cdb-backlog-curation.yml` | — | `in:script:backlog_curation.py` |
 | `cdb-daily-delta-triage.yml` | `perm:w-issues` | `in:script:daily_delta_triage.py`, `in:control-register` |
 | `cdb-weekly-control-hygiene-classifier.yml` | `perm:w-issues` | `in:script:weekly_control_hygiene_classifier.py` |
 | `cdb-post-merge-followup-scanner.yml` | `perm:w-issues`, `perm:models-read` | `in:script:post_merge_followup_scanner.py`, `in:prompt:cdb-control-followup.prompt.yml` |
@@ -237,7 +238,7 @@ Repo health, staleness, documentation quality, and audit cleanliness.
 
 ---
 
-## Group 5: Reporting / Control Signals — 7 workflows
+## Group 5: Reporting / Control Signals — 8 workflows
 
 Digest, delta triage, post-merge scanning, and issue-signal creation.
 
@@ -247,6 +248,7 @@ Digest, delta triage, post-merge scanning, and issue-signal creation.
 |---|---|---|---|---|---|---|---|
 | `weekly_digest.yml` | aktiv | sched (weekly), dispatch | Post weekly digest comment on cockpit issue #1445 | — | Comment on #1445 | O | Weekly review in #1445 |
 | `weekly_digest_failure_alert.yml` | aktiv | wrun (after weekly_digest) | Alert when weekly_digest fails | — | Failure alert comment | O | Investigate after failed digest |
+| `cdb-backlog-curation.yml` | aktiv | issues:labeled | Artifact-only companion curation for qualified implementation issues | `scripts/backlog_curation.py` | JSON artifact `artifacts/backlog-curation/issue-<number>.json` (no repo mutation) | O | Review artifact when issue is implementation-relevant |
 | `cdb-daily-delta-triage.yml` | aktiv | sched (Tue/Wed/Fri/Sun 06:20 UTC), dispatch | Daily delta scoring: reads CONTROL_REGISTER.md, creates bounded issues | `scripts/daily_delta_triage.py` | Bounded issue creation (delta-scored) | O | Daily check in #1445 |
 | `cdb-post-merge-followup-scanner.yml` | aktiv | PR:merged, dispatch | Scan merged PRs for follow-up actions | `scripts/post_merge_followup_scanner.py` + `prompts/cdb-control-followup.prompt.yml` | Follow-up issues/comments | O | Post-merge review |
 | `cdb-weekly-control-hygiene-classifier.yml` | aktiv | sched (Mo/Do/Fr 07:30 UTC), dispatch | Weekly hygiene classification: creates hygiene issues | `scripts/weekly_control_hygiene_classifier.py` | Hygiene issues | O | Weekly review |
@@ -323,7 +325,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 |---|---|---|
 | `labels.json` | Canonical label definitions (machine-readable) | `sync-labels.yml`, `label-bootstrap.yml` |
 
-> `labels.json` is **not** a workflow definition. It is a data file. The count of 65 workflows does not include it.
+> `labels.json` is **not** a workflow definition. It is a data file. The count of 66 workflows does not include it.
 
 ---
 
@@ -331,28 +333,28 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv | 52 |
+| aktiv | 55 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
 | parked | 4 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`) |
-| historisch | 3 |
+| historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **64** (aktiv 52 + manual 4 + parked 4 + historisch 3 + frozen 1 = 64... see note below) |
+| **Total** | **66** (aktiv 55 + manual 4 + parked 4 + historisch 2 + frozen 1 = 66... see note below) |
 
-> **Count note:** `ci.yaml` is categorized as `historisch` (frozen legacy copy) — included in the historisch count.
-> Revised: aktiv=52, manual-only=4, parked=4, historisch=4 (including ci.yaml), total=64. The remaining 2 come from `gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml` being `workflow_call` (reusable) type — aktiv but not independently runnable. Adjust aktiv=49, reusable=3.
+> **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
+> Of the 55 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 
 | Status | Count |
 |---|---|
-| aktiv (independently triggered) | 49 |
+| aktiv (independently triggered) | 52 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
 | parked | 4 |
-| historisch / unklar | 3 |
+| historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **64** |
+| **Total** | **66** |
 
-> **Methodology note:** The 65-workflow count from the #1633 audit included `ci.yaml` (frozen/historisch) and counted all YAML files in the folder. Some workflows (`gemini-invoke.yml` etc.) are technically active but only as reusable libraries. The status refinements above are additive to the #1633 baseline.
+> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
 
 ---
 
