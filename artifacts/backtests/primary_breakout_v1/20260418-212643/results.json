@@ -1,0 +1,62 @@
+{
+  "schema_version": "strategy_validation_report.v1",
+  "strategy_id": "primary_breakout_v1",
+  "run_metadata": {
+    "run_id": "bt-86986d8b4e320dbe",
+    "generated_at": "2026-04-14T23:59:00+00:00",
+    "source": "historical_backtest_v1",
+    "code_commit": "3b404922f8837edc07dd19092ec8cef3877ba6f2"
+  },
+  "config_snapshot": {
+    "entry_lookback_minutes": 240,
+    "exit_lookback_minutes": 120,
+    "breakout_buffer": 0.0005,
+    "min_minutes_between_entries": 60,
+    "trade_side_mode": "long_only"
+  },
+  "dataset_summary": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "candles_total": 20160,
+    "requested_period_start_ts_ms": 1775001600000,
+    "requested_period_end_ts_ms": 1776211140000,
+    "period_start_ts_ms": 1775016000000,
+    "period_end_ts_ms": 1776211140000
+  },
+  "metrics": {
+    "signals_total": 44,
+    "buy_signals_total": 22,
+    "sell_signals_total": 22,
+    "closed_trades_total": 22,
+    "win_rate": 0.45454545454545453,
+    "profit_factor": 1.6418273136923363,
+    "expectancy_r": 0.0017134571864283214,
+    "max_drawdown_r": 0.022599448094972167,
+    "market_state_fresh_ratio": 1.0,
+    "regime_fresh_ratio": 1.0,
+    "data_integrity_ok": true,
+    "deterministic_replay_ok": true
+  },
+  "thresholds_applied": {
+    "threshold_profile_id": "primary_breakout_v1_validation_thresholds",
+    "threshold_profile_version": "1",
+    "pass_fail": {
+      "min_closed_trades_total": 20,
+      "min_profit_factor": 1.05,
+      "min_expectancy_r": 0.0,
+      "max_max_drawdown_r": 3.0,
+      "min_market_state_fresh_ratio": 0.99,
+      "min_regime_fresh_ratio": 0.99,
+      "require_data_integrity_ok": true,
+      "require_deterministic_replay_ok": true
+    }
+  },
+  "gate_result": {
+    "status": "REVIEW",
+    "failed_criteria": [],
+    "review_flags": [
+      "closed_trades_total"
+    ],
+    "notes": "review-only thresholds flagged"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "signals_total": 44,
+  "buy_signals_total": 22,
+  "sell_signals_total": 22,
+  "closed_trades_total": 22,
+  "win_rate": 0.45454545454545453,
+  "profit_factor": 1.6418273136923363,
+  "expectancy_r": 0.0017134571864283214,
+  "max_drawdown_r": 0.022599448094972167,
+  "market_state_fresh_ratio": 1.0,
+  "regime_fresh_ratio": 1.0,
+  "data_integrity_ok": true,
+  "deterministic_replay_ok": true
+}

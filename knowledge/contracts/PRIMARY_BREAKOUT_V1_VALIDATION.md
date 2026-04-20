@@ -100,3 +100,44 @@ With default config (`entry_lookback_minutes=240`, `exit_lookback_minutes=120`),
 period start is offset by exactly `240 × 60,000 ms = 14,400,000 ms` from the requested start.
 This offset is expected and is not a data error — it reflects the warm-up window consumed by the
 bridge before the first evaluable candle.
+
+## Canonical Reference Run
+
+The canonical offline reference run for `primary_breakout_v1` is the committed
+artifact bundle at:
+
+- `artifacts/backtests/primary_breakout_v1/20260418-212643/`
+
+Reference anchors:
+
+- `code_commit`: `3b404922f8837edc07dd19092ec8cef3877ba6f2`
+- `run_id`: `bt-86986d8b4e320dbe`
+- `dataset_type`: `local_real_tick_aggregation`
+- `dataset_sha256`: `01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12`
+- requested period: `1775001600000 .. 1776211140000`
+- effective period: `1775016000000 .. 1776211140000`
+- `gate_result.status = REVIEW`
+- `data_integrity_ok = true`
+- `deterministic_replay_ok = true`
+
+Required files in this canonical bundle:
+
+- `results.json`
+- `metrics.json`
+- `extraction_manifest.json`
+- `config.resolved.json`
+- `report.md`
+- `compare.md`
+- `dataset.candles.json`
+
+Fail-closed reading rules:
+
+- This reference run is the canonical offline comparison anchor for the existing
+  v1 historical validation path only.
+- The canonical result of this reference run is `REVIEW`, not `PASS`.
+- This reference bundle does not by itself establish a repo-self-contained rerun
+  entry path.
+- This reference bundle does not imply paper readiness, shadow readiness,
+  live-readiness progress, or Echtgeld approval.
+- This slice does not change strategy logic, thresholds, symbol scope, or side
+  mode.
