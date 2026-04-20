@@ -197,8 +197,8 @@ def verify_replay_execution_result(result: ReplayExecutionResult) -> None:
     Checks:
       - run_id is non-empty string
       - event counts are non-negative
-      - envelope_hashes list is non-empty and all strings
-      - if error_message is set, event counts should be zero
+      - envelope_hashes list entries are 64-char hex strings (list itself may be empty)
+      - if error_message is set, all event/order/fill counts should be zero
 
     Args:
         result: ReplayExecutionResult instance.
@@ -241,10 +241,13 @@ def verify_replay_execution_result(result: ReplayExecutionResult) -> None:
             )
 
     if result.error_message is not None and (
-        result.events_processed > 0 or result.decisions_made > 0
+        result.events_processed > 0
+        or result.decisions_made > 0
+        or result.orders_placed > 0
+        or result.fills_recorded > 0
     ):
         raise ReplayDeterminismError(
-            "Inconsistent result: error_message set but event counts > 0"
+            "Inconsistent result: error_message set but event/order/fill counts > 0"
         )
 
 

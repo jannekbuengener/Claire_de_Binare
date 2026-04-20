@@ -284,7 +284,8 @@ class TestBuildReplayReportInput:
         er = result.execution_result
         assert er.events_processed == 400
         assert er.decisions_made == 6
-        assert er.orders_placed == 3
+        # orders_placed counts BUY + SELL signals: 3 + 3 = 6
+        assert er.orders_placed == 6
         assert er.fills_recorded == 3
         assert er.envelope_hashes == []
 

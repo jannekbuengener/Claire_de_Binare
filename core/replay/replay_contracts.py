@@ -27,7 +27,7 @@ relations:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from typing import Any, Dict, List, Optional, Literal
 
 
@@ -216,8 +216,8 @@ class ReplayIntegrity:
     integrity_ok: bool
     """True if all checks passed"""
 
-    failed_checks: List[str] = ()
-    """Non-empty if integrity_ok is False; list of failed check descriptions"""
+    failed_checks: tuple[str, ...] = ()
+    """Non-empty if integrity_ok is False; tuple of failed check descriptions"""
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -290,7 +290,7 @@ class ReplayReportArtifactManifest:
     report_artifact_uri: str
     """URI/path to the final replay report artifact"""
 
-    supplementary_artifacts: Dict[str, str] = ()
+    supplementary_artifacts: dict[str, str] = field(default_factory=dict)
     """Optional additional artifact URIs (e.g., market snapshots, regime logs)"""
 
     def to_dict(self) -> dict:

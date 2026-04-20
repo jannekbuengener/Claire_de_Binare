@@ -209,6 +209,10 @@ class ReplayReporter:
             audit_log.append(
                 "INFO: Gate result already present in report_input; evaluation skipped"
             )
+            # Normalize gate_result regardless of source to preserve canonical
+            # determinism and exclude wall-clock fields from report content.
+            if "gate_result" in report_dict:
+                report_dict["gate_result"] = _strip_wall_clock(report_dict["gate_result"])
         else:
             audit_log.append(
                 "INFO: Gate evaluation skipped (no gate_evaluator configured)"

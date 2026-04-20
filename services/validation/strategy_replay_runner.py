@@ -300,7 +300,8 @@ def _build_replay_report_input(
         run_id=run_id,
         events_processed=int(dataset.get("candles_total", 0)),
         decisions_made=int(metrics.get("signals_total", 0)),
-        orders_placed=int(metrics.get("buy_signals_total", 0)),
+        orders_placed=int(metrics.get("buy_signals_total", 0))
+        + int(metrics.get("sell_signals_total", 0)),
         fills_recorded=int(metrics.get("closed_trades_total", 0)),
         # Shadow replay does not emit an envelope chain — empty list is correct.
         envelope_hashes=[],
