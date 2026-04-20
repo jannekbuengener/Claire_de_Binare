@@ -167,3 +167,4 @@ Nur explizit als offen oder aktuell markierte Punkte sind aktiver Arbeitsfokus. 
 
 - `knowledge/logs/sessions/` — aktuelle Session-Logs
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-04-05, PR #1437)
+
