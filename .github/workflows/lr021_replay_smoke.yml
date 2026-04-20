@@ -1,10 +1,19 @@
 name: lr021-replay-smoke
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deterministic_verify:
+        description: "Fail run when replay determinism check fails"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  schedule:
+    # Weekly replay smoke to keep the offline replay surface visible.
+    - cron: "30 3 * * 1"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,57 +24,159 @@ permissions:
 
 jobs:
   lr021-replay-smoke:
-    name: LR-021 Replay Smoke (fixture → hashes)
+    name: LR-021 Replay Smoke (offline shadow bundle)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      REPLAY_ARTIFACT_ROOT: artifacts/replay_smoke
+      REPLAY_INPUT_FILE: artifacts/replay_smoke/input/btcusdt_1m_smoke.json
+      REPLAY_OUTPUT_DIR: artifacts/replay_smoke/reports
+      REPLAY_DETERMINISTIC_VERIFY_INPUT: ${{ github.event.inputs.deterministic_verify || 'true' }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install dependencies
+        shell: bash
         run: |
+          set -euo pipefail
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
-      - name: Run LR-021 replay
+      - name: Build deterministic smoke input candles
+        shell: bash
         run: |
-          mkdir -p artifacts
-          python scripts/replay/lr021_replay.py \
-            --input  tests/fixtures/replay/lr021_sample_envelopes.jsonl \
-            --output artifacts/lr021_output.jsonl
+          set -euo pipefail
+          mkdir -p "$(dirname "$REPLAY_INPUT_FILE")"
+          python - <<'PY'
+          import json
+          from pathlib import Path
 
-      - name: Verify hashes against golden file
+          base_ts_ms = 1_700_000_000_000
+          rows = []
+          for i in range(260):
+              px = float(50_000 + i)
+              rows.append(
+                  {
+                      "ts_ms": base_ts_ms + i * 60_000,
+                      "symbol": "BTCUSDT",
+                      "close": px,
+                      "high": px + 50.0,
+                      "low": px - 50.0,
+                      "volume": 1_000.0,
+                      "regime_id": 0,
+                  }
+              )
+
+          out = Path("artifacts/replay_smoke/input/btcusdt_1m_smoke.json")
+          out.write_text(json.dumps(rows), encoding="utf-8")
+          print(f"Wrote {len(rows)} candles to {out}")
+          PY
+
+      - name: Run canonical replay smoke
+        shell: bash
         run: |
-          python -c "
-          import json, sys
+          set -euo pipefail
+          mkdir -p "$REPLAY_ARTIFACT_ROOT"
 
-          with open('artifacts/lr021_output.jsonl') as f:
-              actual = [json.loads(l) for l in f if l.strip()]
-          with open('tests/fixtures/replay/lr021_expected_hashes.jsonl') as f:
-              expected = [json.loads(l) for l in f if l.strip()]
+          case "$REPLAY_DETERMINISTIC_VERIFY_INPUT" in
+            true) deterministic_verify="1" ;;
+            false) deterministic_verify="0" ;;
+            *)
+              echo "::error::Unsupported deterministic_verify input: $REPLAY_DETERMINISTIC_VERIFY_INPUT"
+              exit 1
+              ;;
+          esac
 
-          if len(actual) != len(expected):
-              print(f'FAIL: line count mismatch: got {len(actual)}, expected {len(expected)}')
-              sys.exit(1)
+          make replay-shadow-run \
+            REPLAY_INPUT_CANDLES="$REPLAY_INPUT_FILE" \
+            REPLAY_OUTPUT_DIR="$REPLAY_OUTPUT_DIR" \
+            REPLAY_DRY_RUN=0 \
+            REPLAY_DETERMINISTIC_VERIFY="$deterministic_verify" \
+            2>&1 | tee "$REPLAY_ARTIFACT_ROOT/replay_run.log"
 
-          ok = True
-          for i, (a, e) in enumerate(zip(actual, expected), start=1):
-              for field in ('event_hash', 'chain_hash'):
-                  av, ev = a.get(field), e.get(field)
-                  if ev is not None and av != ev:
-                      print(f'FAIL line {i}: {field} mismatch')
-                      print(f'  got:      {av}')
-                      print(f'  expected: {ev}')
-                      ok = False
+      - name: Build replay smoke summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
 
-          if ok:
-              print(f'OK: {len(actual)} envelopes, all hashes match')
-          else:
-              sys.exit(1)
-          "
+          artifact_root = Path(os.environ["REPLAY_ARTIFACT_ROOT"])
+          output_root = Path(os.environ["REPLAY_OUTPUT_DIR"])
+          run_dirs = sorted(p for p in output_root.iterdir() if p.is_dir())
+          if len(run_dirs) != 1:
+              raise SystemExit(
+                  f"Expected exactly one replay run directory under {output_root}, found {len(run_dirs)}"
+              )
+
+          run_dir = run_dirs[0]
+          required = [
+              "report.json",
+              "manifest.json",
+              "audit.log",
+              "config.resolved.json",
+              "env_redacted.txt",
+          ]
+          missing = [name for name in required if not (run_dir / name).exists()]
+          if missing:
+              raise SystemExit(f"Replay bundle missing required files: {missing}")
+
+          report = json.loads((run_dir / "report.json").read_text(encoding="utf-8"))
+          run_id = report["run_spec"]["replay_run_id"]
+          gate_status = (report.get("gate_result") or {}).get("status", "UNKNOWN")
+          deterministic_ok = report["replay_integrity"]["integrity_ok"]
+          decisions = report["execution_result"]["decisions_made"]
+          events = report["execution_result"]["events_processed"]
+
+          metadata = {
+              "event_name": os.environ.get("GITHUB_EVENT_NAME", "unknown"),
+              "deterministic_verify_input": os.environ.get(
+                  "REPLAY_DETERMINISTIC_VERIFY_INPUT", "true"
+              ),
+              "run_id": run_id,
+              "gate_status": gate_status,
+              "deterministic_replay_ok": deterministic_ok,
+              "events_processed": events,
+              "decisions_made": decisions,
+              "bundle_dir": str(run_dir),
+          }
+          (artifact_root / "metadata.json").write_text(
+              json.dumps(metadata, indent=2, sort_keys=True), encoding="utf-8"
+          )
+
+          summary_md = "\n".join(
+              [
+                  "## LR-021 Replay Smoke",
+                  "",
+                  f"- event: `{metadata['event_name']}`",
+                  f"- deterministic_verify_input: `{metadata['deterministic_verify_input']}`",
+                  f"- run_id: `{run_id}`",
+                  f"- gate_status: `{gate_status}`",
+                  f"- deterministic_replay_ok: `{deterministic_ok}`",
+                  f"- events_processed: `{events}`",
+                  f"- decisions_made: `{decisions}`",
+                  f"- bundle_dir: `{run_dir}`",
+              ]
+          )
+          (artifact_root / "summary.md").write_text(summary_md + "\n", encoding="utf-8")
+          PY
+
+          cat "$REPLAY_ARTIFACT_ROOT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload replay smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: replay-smoke-${{ github.run_id }}
+          path: artifacts/replay_smoke/
+          if-no-files-found: error
