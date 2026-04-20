@@ -36,9 +36,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
       - name: Resolve escalation inputs
         id: resolve
         shell: bash
@@ -49,10 +46,12 @@ jobs:
             run_id="${{ inputs.run_id }}"
             publish_mode="${{ inputs.publish_mode }}"
             max_followup_issues="${{ inputs.max_followup_issues }}"
+            script_ref="${GITHUB_SHA}"
           else
             run_id="${{ github.event.workflow_run.id }}"
             publish_mode="publish"
             max_followup_issues="1"
+            script_ref="${{ github.event.workflow_run.head_sha }}"
           fi
 
           if ! [[ "$run_id" =~ ^[0-9]+$ ]]; then
@@ -72,6 +71,7 @@ jobs:
             echo "run_id=$run_id"
             echo "publish_mode=$publish_mode"
             echo "max_followup_issues=$max_followup_issues"
+            echo "script_ref=$script_ref"
           } >> "$GITHUB_OUTPUT"
 
       - name: Download backlog-curation handoff artifact
@@ -122,8 +122,14 @@ jobs:
 
           result_json="artifacts/cdb-backlog-anomaly-escalation/result.json"
           summary_md="artifacts/cdb-backlog-anomaly-escalation/summary.md"
+          script_file="$(mktemp)"
 
-          python3 .github/scripts/backlog_anomaly_escalation.py \
+          gh api "repos/${GITHUB_REPOSITORY}/contents/.github/scripts/backlog_anomaly_escalation.py?ref=${{ steps.resolve.outputs.script_ref }}" \
+            --jq '.content' \
+            | tr -d '\n' \
+            | base64 -d > "$script_file"
+
+          python3 "$script_file" \
             --repo "${GITHUB_REPOSITORY}" \
             --artifact-file "${{ steps.handoff.outputs.artifact_path }}" \
             --result-file "$result_json" \
@@ -131,6 +137,7 @@ jobs:
             --publish-mode "${{ steps.resolve.outputs.publish_mode }}" \
             --max-followup-issues "${{ steps.resolve.outputs.max_followup_issues }}"
 
+          rm -f "$script_file"
           cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Write no-op escalation artifact
