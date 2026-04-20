@@ -52,7 +52,7 @@ CONTRACT_PREFIXES = (
 MARKDOWN_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 BACKTICK_PATTERN = re.compile(r"`([^`\n]+)`")
 GENERIC_PATH_PATTERN = re.compile(
-    r"(?<!://)(?<![A-Za-z]:[\\/])(?:^|[\s(])([.A-Za-z0-9_\-]+(?:/[.A-Za-z0-9_/\-]+)+\.[A-Za-z][A-Za-z0-9_.-]*)(?=$|[\s),:;])"
+    r"(?:^|[\s(])([.A-Za-z0-9_/\-]+\.[A-Za-z][A-Za-z0-9_./\-]*)(?=[\s),:;]|$)"
 )
 
 DEFAULT_SOURCES = [
@@ -127,15 +127,24 @@ def normalize_path(candidate: str) -> str | None:
     cleaned = candidate.strip().strip("\"'`<>[](){}:,;")
     if not cleaned:
         return None
+    # Reject URLs and anchors early
     if "://" in cleaned or cleaned.startswith("#"):
         return None
+    # Remove fragment identifiers and normalize path separators
     cleaned = cleaned.split("#", 1)[0].replace("\\", "/")
+    # Normalize leading slashes and dots
     if cleaned.startswith("./"):
         cleaned = cleaned[2:]
     if cleaned.startswith("/"):
         cleaned = cleaned[1:]
+    # Reject Windows drive paths (e.g., C:\path, D:/path), including prefixed forms
+    # such as /C:\path or ./C:\path after normalization above
+    if re.match(r"^[A-Za-z]:[/\\]", cleaned):
+        return None
+    # Reject path traversal attempts
     if cleaned.startswith("../") or "/../" in cleaned:
         return None
+    # Validate character set: paths should contain only word chars, dots, slashes, and hyphens
     if not re.fullmatch(r"[.A-Za-z0-9_/\-]+", cleaned):
         return None
     return cleaned
