@@ -138,14 +138,14 @@ docker inspect cdb_paper_runner --format='{{.State.Health.Status}}'
 
 ### Event Logs
 
-Paper trading events logged to: `logs/paper_trading_YYYY-MM-DD.jsonl`
+Paper trading events logged to: `logs/events/events_YYYYMMDD.jsonl`
 
 ```powershell
 # View today's events
-Get-Content logs/paper_trading_$(Get-Date -Format "yyyy-MM-dd").jsonl | ConvertFrom-Json | Format-Table
+Get-Content logs/events/events_$(Get-Date -Format "yyyyMMdd").jsonl | ConvertFrom-Json | Format-Table
 
 # Count events by type
-Get-Content logs/paper_trading_*.jsonl | ConvertFrom-Json | Group-Object event_type | Select-Object Count,Name
+Get-Content logs/events/events_*.jsonl | ConvertFrom-Json | Group-Object event_type | Select-Object Count,Name
 ```
 
 ---
@@ -295,7 +295,7 @@ python -m pytest tests/e2e/test_paper_trading_p0.py -v -rs --no-cov
 - [ ] All services start: `make docker-up`
 - [ ] All services healthy: `make docker-health` (all show "healthy")
 - [ ] Paper runner healthy: `curl http://localhost:8004/health` (returns 200 OK)
-- [ ] Events logging: `ls logs/paper_trading_*.jsonl` (files exist)
+- [ ] Events logging: `ls logs/events/events_*.jsonl` (files exist)
 - [ ] E2E tests pass: `pytest tests/e2e/test_paper_trading_p0.py` (all PASS)
 - [ ] No errors in logs: `docker logs cdb_paper_runner | Select-String "ERROR"` (empty)
 
@@ -364,7 +364,7 @@ make docker-health
 After successful paper trading setup:
 
 1. **Monitor for 24 hours**: Ensure no errors in logs
-2. **Review event logs**: `logs/paper_trading_*.jsonl`
+2. **Review event logs**: `logs/events/events_*.jsonl`
 3. **Run full 14-day test**: Let paper runner complete full cycle
 4. **Review results**: Analyze P&L, trade accuracy, signal quality
 
