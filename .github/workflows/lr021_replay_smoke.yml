@@ -143,6 +143,10 @@ jobs:
               "deterministic_verify_input": os.environ.get(
                   "REPLAY_DETERMINISTIC_VERIFY_INPUT", "true"
               ),
+              # replay_execution_status: this summary step ran, meaning the replay
+              # execution completed without a runner-level crash. Distinct from
+              # gate_status, which is the fachliches strategy-gate result.
+              "replay_execution_status": "PASS",
               "run_id": run_id,
               "gate_status": gate_status,
               "deterministic_replay_ok": deterministic_ok,
@@ -154,18 +158,31 @@ jobs:
               json.dumps(metadata, indent=2, sort_keys=True), encoding="utf-8"
           )
 
+          # Semantic separation: pipeline step completion vs. fachliches gate result.
+          # gate_status reflects strategy-gate threshold evaluation (offline replay).
+          # A gate_status of FAIL does NOT mean the pipeline failed — it means the
+          # replay strategy gates were not satisfied (expected for synthetic smoke data).
+          # Einordnung: Offline-Replay-Evidenz; kein LR-/Live-/Echtgeld-Freigabe-Signal.
           summary_md = "\n".join(
               [
-                  "## LR-021 Replay Smoke",
+                  "## LR-021 Replay Smoke — Offline-Evidenz",
                   "",
+                  "**Replay-Ausführung: vollständig** (dieser Step lief durch)",
+                  "",
+                  "### Trigger",
                   f"- event: `{metadata['event_name']}`",
                   f"- deterministic_verify_input: `{metadata['deterministic_verify_input']}`",
+                  "",
+                  "### Replay-Ergebnis (fachlich)",
                   f"- run_id: `{run_id}`",
-                  f"- gate_status: `{gate_status}`",
+                  f"- gate_status: `{gate_status}` — fachliches Strategie-Gate-Ergebnis (Schwellwert-Prüfung offline)",
                   f"- deterministic_replay_ok: `{deterministic_ok}`",
                   f"- events_processed: `{events}`",
                   f"- decisions_made: `{decisions}`",
                   f"- bundle_dir: `{run_dir}`",
+                  "",
+                  "> **Einordnung:** `gate_status` ist das fachliche Strategie-Gate-Ergebnis — kein Pipeline-Fehler,",
+                  "> keine LR-/Live-/Echtgeld-Freigabe. Offline-Replay-Evidenz.",
               ]
           )
           (artifact_root / "summary.md").write_text(summary_md + "\n", encoding="utf-8")
