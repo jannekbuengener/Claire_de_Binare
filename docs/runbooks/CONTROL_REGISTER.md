@@ -42,6 +42,32 @@ Regel: Phasen-Status nie in CURRENT_STATUS eintragen. LR-Verdikt nie aus einer B
 
 ---
 
+## Replay-Status-Spiegelung (offline / control)
+
+- Kanonischer Replay-Lauf: `.github/workflows/lr021_replay_smoke.yml` (on-demand + schedule), Entry-Point `make replay-shadow-run`.
+- Primäre Run-Wahrheit: GitHub Actions Run + Artifact `replay-smoke-<run_id>` (inkl. `report.json`/`manifest.json`/`audit.log`).
+- Spiegel-Surfaces (knapp, kein Doppel-Reporting):
+  1. `#1445` (Cockpit): kompakter Pointer auf letzten relevanten Replay-Smoke (PASS/FAIL + Run/Artifact-Link).
+  2. `#1784` (Paper-Control): nur wenn fuer den laufenden Paper-Betrieb operativ relevant.
+  3. `#1786` (Checkpoint): optional als Einzeiler im regulaeren Checkpoint.
+- Guardrail: Offline-Replay-Evidenz ist **nicht** LR-Go/No-Go und **nicht** Echtgeld-Go.
+  LR-Verdikt bleibt ausschliesslich `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.
+
+### Standardtext fuer Replay-Status (Kommentarvorlage)
+
+```md
+### Replay Smoke (offline)
+- Zeitpunkt (UTC):
+- Trigger: workflow_dispatch | schedule
+- Ergebnis: PASS | FAIL
+- Run: <GitHub Actions Run URL>
+- Artefakt: replay-smoke-<run_id>
+- run_id / gate_status / deterministic_replay_ok:
+- Einordnung: Offline-Replay-Evidenz; keine LR-/Live-/Echtgeld-Freigabe.
+```
+
+---
+
 ## Wiederkehrende Drift-Vektoren
 
 | Drift-Typ | Prüfung | Kontext-Issues |
@@ -75,7 +101,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | `weekly_digest_failure_alert.yml` | nach `weekly_digest.yml` | Failure-Eskalation als `report:weekly-fail` Issue nur bei echtem Fehler |
 | `cdb-weekly-control-hygiene-classifier.yml` | Mo/Do/Fr 07:30 UTC + manuell | Weekly hygiene/reconciliation fuer `#1445`; dedupe-sicherer Wochenkommentar, branch-obsolescence Klassifikation (repo-backed) und lokaler/manual worktree-cleanup handoff; optional max 0..2 enge Follow-up-Issues |
 | `cdb-daily-delta-triage.yml` | Di/Mi/Fr/So 06:20 UTC + manuell | Daily fresh-delta triage fuer `#1445`; delta-only gegen letzten Daily-Marker, optional max 0..1 enges Follow-up-Issue |
-| `cdb-backlog-curation.yml` | `issues.labeled` (qualifizierte Labels only) | Artifact-only Companion-Workflow fuer implementation-relevante Issues; erzeugt agent-readable JSON unter `artifacts/backlog-curation/issue-<number>.json`, ohne Labels/Kommentare/Issues zu mutieren |
+| `cdb-backlog-curation.yml` | `issues.labeled` (`task` oder gepaarte `type:*` + `scope:*` Labels) | Bounded issue-scoped Companion-Workflow fuer implementation-relevante Issues; erzeugt agent-readable JSON unter `artifacts/backlog-curation/issue-<number>.json` mit Handoff-Klassen/Budgets/Fingerprint und postet einen dedupe-sicheren Receipt-Kommentar direkt unter dem betroffenen Issue |
 | `cdb-backlog-anomaly-escalation.yml` | `workflow_run` (nach `cdb-backlog-curation`) + manuell | Separate Phase-1-Eskalationslane fuer starke typed backlog-curation Anomalien; klassifiziert fail-closed (`report_only` / `follow_up_issue` / `unclear`), blockiert sensitive/private Findings fuer public auto-issueing und emittiert dedupe-safe max 0..1 Follow-up-Issue |
 | `governance-audit.yml` | manuell | Governance-Audit |
 | `cdb-control-followup-classifier.yml` | manuell | Human-in-the-loop Klassifikation repo-backed Control-Findings |

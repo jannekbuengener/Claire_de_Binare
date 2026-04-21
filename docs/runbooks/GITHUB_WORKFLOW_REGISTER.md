@@ -108,7 +108,7 @@ Only entries that differ materially from their group baseline are listed.
 | `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
 | `control_board_auto_routing.yml` | `perm:w-issues` | — |
 | `control-board-routing-label-dispatch.yml` | `perm:w-contents` | — |
-| `cdb-backlog-curation.yml` | — | `in:script:backlog_curation.py` |
+| `cdb-backlog-curation.yml` | `perm:w-issues` | `in:script:backlog_curation.py` |
 | `cdb-backlog-anomaly-escalation.yml` | `perm:w-issues`, `perm:actions-read` | `in:wrun`, `in:script:backlog_anomaly_escalation.py` |
 | `cdb-daily-delta-triage.yml` | `perm:w-issues` | `in:script:daily_delta_triage.py`, `in:control-register` |
 | `cdb-weekly-control-hygiene-classifier.yml` | `perm:w-issues` | `in:script:weekly_control_hygiene_classifier.py` |
@@ -182,7 +182,7 @@ Build, test, and quality assurance automation.
 | `ci.yml` | aktiv | push, PR | Canonical CI gate: lint (ruff, black), pytest unit+integration | — | CI pass/fail on PR | **C** | Required check; blocks merge |
 | `ci.yaml` | historisch | push, PR | **FROZEN legacy copy of ci.yml** — do not activate | — | Duplicate CI (frozen) | C | Do not touch |
 | `contracts.yml` | aktiv | push, dispatch, sched | Contract/schema smoke tests | — | Contract test results | O | On contract schema changes |
-| `lr021_replay_smoke.yml` | aktiv | PR, push | LR-021 replay smoke (live-readiness evidence) | — | Smoke pass/fail | O | LR evidence review |
+| `lr021_replay_smoke.yml` | aktiv | dispatch, sched | LR-021 offline replay smoke (control-visible artifact bundle) | — | PASS/FAIL + Step Summary + `replay-smoke-<run_id>` artifact | O | Cockpit `#1445` spiegeln; optional `#1784`/`#1786` |
 | `python-compat.yml` | aktiv | sched, dispatch, push | Python version compatibility matrix | — | Compat matrix results | O | On major Python upgrade |
 | `performance-monitor.yml` | aktiv | push, dispatch, sched | Performance benchmark monitoring | — | Perf report / artifact | O | On regression detection |
 | `e2e.yml` | aktiv | push, dispatch, sched | End-to-end test suite (container-required) | — | E2E pass/fail | O | Local/CD env only |
@@ -249,7 +249,7 @@ Digest, backlog/anomaly triage, post-merge scanning, and issue-signal creation.
 |---|---|---|---|---|---|---|---|
 | `weekly_digest.yml` | aktiv | sched (weekly), dispatch | Post weekly digest comment on cockpit issue #1445 | — | Comment on #1445 | O | Weekly review in #1445 |
 | `weekly_digest_failure_alert.yml` | aktiv | wrun (after weekly_digest) | Alert when weekly_digest fails | — | Failure alert comment | O | Investigate after failed digest |
-| `cdb-backlog-curation.yml` | aktiv | issues:labeled | Artifact-only companion curation for qualified implementation issues | `scripts/backlog_curation.py` | JSON artifact `artifacts/backlog-curation/issue-<number>.json` with typed anomaly handoff block (no repo mutation) | O | Review artifact when issue is implementation-relevant |
+| `cdb-backlog-curation.yml` | aktiv | issues:labeled | Bounded issue-scoped curation for implementation issues qualified via `task` or paired `type:*` + `scope:*` labels | `scripts/backlog_curation.py` | JSON artifact `artifacts/backlog-curation/issue-<number>.json` with typed handoff classes/read budgets/fingerprint + dedupe-safe receipt comment on the source issue | O | Review artifact + issue receipt when issue is implementation-relevant |
 | `cdb-backlog-anomaly-escalation.yml` | aktiv | wrun (after cdb-backlog-curation), dispatch | Separate phase-1 lane: classify typed backlog-curation anomalies and emit only bounded dedupe-safe follow-up issues when strong and allowed | `scripts/backlog_anomaly_escalation.py` | Escalation artifact + optional bounded follow-up issue creation (max 0..1) | O | Review escalations when curation anomalies are strong |
 | `cdb-daily-delta-triage.yml` | aktiv | sched (Tue/Wed/Fri/Sun 06:20 UTC), dispatch | Daily delta scoring: reads CONTROL_REGISTER.md, creates bounded issues | `scripts/daily_delta_triage.py` | Bounded issue creation (delta-scored) | O | Daily check in #1445 |
 | `cdb-post-merge-followup-scanner.yml` | aktiv | PR:merged, dispatch | Scan merged PRs for follow-up actions | `scripts/post_merge_followup_scanner.py` + `prompts/cdb-control-followup.prompt.yml` | Follow-up issues/comments | O | Post-merge review |

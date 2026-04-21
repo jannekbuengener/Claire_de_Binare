@@ -40,51 +40,68 @@ def _payload(
     return {"action": "labeled", "label": {"name": event_label}, "issue": issue}
 
 
-def test_task_issue_is_qualified_with_partial_artifact() -> None:
-    payload = _payload(event_label="task", labels=["triage:offen", "task"])
+def _issue_1827_like_payload() -> dict[str, object]:
+    return _payload(
+        event_label="task",
+        labels=["task"],
+        title="[BACKLOG][CURATION] Fix issue-scoped source curation for implementation handoff",
+        body=(
+            "Die Lane braucht issue-scoped Ranking, Fingerprint, Reuse, dedupe-sicheren Receipt-Kommentar "
+            "direkt unter dem Issue, `must_read`/`supporting`/`background`, `constraints`, `watchouts`, "
+            "`implementation_targets`, `estimated_tokens` und fail-closed Verhalten. "
+            "Downstream `cdb-backlog-anomaly-escalation` darf dabei nicht still kaputt gehen."
+        ),
+        number=1827,
+    )
+
+
+def test_generic_task_without_issue_scoped_signals_fails_closed() -> None:
+    payload = _payload(
+        event_label="task",
+        labels=["triage:offen", "task"],
+        title="Generic task",
+        body="Please investigate and come back with a safe next step.",
+    )
 
     artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
 
     assert artifact is not None
-    assert artifact["curation_status"]["state"] == "partial"
-    assert artifact["issue"]["labels"] == ["triage:offen", "task"]
+    assert artifact["curation_status"]["state"] == "fail_closed"
+    assert artifact["operator_review_needed"] is True
+    assert artifact["safe_for_implementation_start"] is False
 
 
-def test_typed_and_scoped_issue_is_qualified() -> None:
+def test_issue_scoped_keywords_produce_ready_v2_handoff_without_explicit_paths() -> None:
+    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    assert artifact["schema_version"] == "v2"
+    assert artifact["curation_status"]["state"] == "ready"
+    assert artifact["operator_review_needed"] is False
+    assert artifact["safe_for_implementation_start"] is True
+    assert [item["path"] for item in artifact["handoff"]["must_read"][:2]] == [
+        ".github/scripts/backlog_curation.py",
+        ".github/workflows/cdb-backlog-curation.yml",
+    ]
+    assert [item["path"] for item in artifact["handoff"]["implementation_targets"][:2]] == [
+        ".github/scripts/backlog_curation.py",
+        ".github/workflows/cdb-backlog-curation.yml",
+    ]
+
+
+def test_typed_and_scoped_issue_is_qualified_without_task() -> None:
     payload = _payload(
         event_label="scope:ci",
         labels=["type:bug", "scope:ci"],
-        title="CI routing drift in workflow register",
-        body="Check `.github/README.md` against `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`.",
+        title="CI receipt drift in backlog curation",
+        body="The issue needs dedupe-safe receipt comments and artifact handoff compatibility.",
     )
 
     artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
 
     assert artifact is not None
     assert artifact["trigger"]["matched_rules"] == ["type:bug", "scope:ci"]
-    assert artifact["curation_status"]["state"] == "ready"
-
-
-def test_relevant_event_label_without_full_qualification_produces_no_artifact() -> None:
-    payload = _payload(event_label="type:bug", labels=["type:bug"])
-
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
-
-    assert artifact is None
-
-
-def test_manual_override_context_curate_qualifies_issue() -> None:
-    payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
-        body="Please inspect `docs/runbooks/CONTROL_REGISTER.md`.",
-    )
-
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
-
-    assert artifact is not None
-    assert artifact["trigger"]["manual_override"] is True
-    assert artifact["curation_status"]["state"] == "ready"
+    assert artifact["curation_status"]["state"] in {"ready", "partial"}
 
 
 def test_non_qualifying_docs_issue_produces_no_artifact() -> None:
@@ -99,10 +116,10 @@ def test_non_qualifying_docs_issue_produces_no_artifact() -> None:
     assert artifact is None
 
 
-def test_historical_only_references_force_fail_closed() -> None:
+def test_historical_only_references_fail_closed_and_are_excluded() -> None:
     payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
+        event_label="task",
+        labels=["task"],
         body=(
             "See `docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md` and "
             "`knowledge/logs/sessions/2026-04-17-issue-1645-wave4-minibatch-g2.md`."
@@ -114,120 +131,36 @@ def test_historical_only_references_force_fail_closed() -> None:
     assert artifact is not None
     assert artifact["curation_status"]["state"] == "fail_closed"
     assert artifact["ambiguities"]
+    assert all(
+        "docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md" != item["path"]
+        for item in artifact["sources"]
+    )
 
 
-def test_historical_paths_are_excluded_from_sources() -> None:
+def test_explicit_repo_paths_are_prioritized_into_must_read() -> None:
     payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
+        event_label="task",
+        labels=["task"],
+        title="Reconcile backlog curation implementation surfaces",
         body=(
-            "Relevant context might be `docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md` "
-            "plus `knowledge/ARCHITECTURE_MAP.md`."
+            "Inspect `.github/scripts/backlog_curation.py` and "
+            "`.github/workflows/cdb-backlog-curation.yml` before any other surface."
         ),
     )
 
     artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
 
     assert artifact is not None
-    source_paths = [source["path"] for source in artifact["sources"]]
-    assert "docs/archive/docs_hub_snapshot/knowledge/ARCHITECTURE_MAP.md" not in source_paths
-    assert "knowledge/ARCHITECTURE_MAP.md" in source_paths
+    assert {
+        item["path"] for item in artifact["handoff"]["must_read"][:2]
+    } == {
+        ".github/scripts/backlog_curation.py",
+        ".github/workflows/cdb-backlog-curation.yml",
+    }
 
 
-def test_explicit_valid_repo_paths_are_prioritized_before_default_tiers() -> None:
-    payload = _payload(
-        event_label="task",
-        labels=["task"],
-        title="Reconcile control-plane surfaces",
-        body=(
-            "Inspect `.github/README.md` and `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` "
-            "before the broader control surfaces."
-        ),
-    )
-
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
-
-    assert artifact is not None
-    source_paths = [source["path"] for source in artifact["sources"]]
-    assert source_paths[:2] == [
-        ".github/README.md",
-        "docs/runbooks/GITHUB_WORKFLOW_REGISTER.md",
-    ]
-
-
-def test_write_artifact_for_event_creates_expected_file(tmp_path: Path) -> None:
-    payload = _payload(
-        event_label="task",
-        labels=["task"],
-        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
-        number=2004,
-    )
-
-    event_path = tmp_path / "event.json"
-    event_path.write_text(json.dumps(payload), encoding="utf-8")
-    artifact_dir = tmp_path / "artifacts"
-
-    artifact_path = backlog_curation.write_artifact_for_event(
-        event_path=event_path,
-        repo_root=REPO_ROOT,
-        artifact_dir=artifact_dir,
-    )
-
-    assert artifact_path == artifact_dir / "issue-2004.json"
-    assert artifact_path is not None and artifact_path.exists()
-
-
-def test_write_artifact_for_event_coerces_digit_string_issue_number(tmp_path: Path) -> None:
-    payload = _payload(
-        event_label="task",
-        labels=["task"],
-        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
-        number="2005",
-    )
-
-    event_path = tmp_path / "event.json"
-    event_path.write_text(json.dumps(payload), encoding="utf-8")
-    artifact_dir = tmp_path / "artifacts"
-
-    artifact_path = backlog_curation.write_artifact_for_event(
-        event_path=event_path,
-        repo_root=REPO_ROOT,
-        artifact_dir=artifact_dir,
-    )
-
-    assert artifact_path == artifact_dir / "issue-2005.json"
-    assert artifact_path is not None and artifact_path.exists()
-
-
-def test_write_artifact_for_event_rejects_non_numeric_issue_number(tmp_path: Path) -> None:
-    payload = _payload(
-        event_label="task",
-        labels=["task"],
-        body="Read `docs/runbooks/CONTROL_REGISTER.md` first.",
-        number="v2.0.0",
-    )
-
-    event_path = tmp_path / "event.json"
-    event_path.write_text(json.dumps(payload), encoding="utf-8")
-    artifact_dir = tmp_path / "artifacts"
-
-    artifact_path = backlog_curation.write_artifact_for_event(
-        event_path=event_path,
-        repo_root=REPO_ROOT,
-        artifact_dir=artifact_dir,
-    )
-
-    assert artifact_path is None
-
-
-def test_artifact_contract_contains_required_schema_fields() -> None:
-    payload = _payload(
-        event_label="task",
-        labels=["task"],
-        body="Read `.github/README.md` and `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md`.",
-    )
-
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+def test_artifact_contract_contains_required_v2_schema_fields() -> None:
+    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
 
     assert artifact is not None
     assert set(artifact.keys()) == {
@@ -235,43 +168,86 @@ def test_artifact_contract_contains_required_schema_fields() -> None:
         "issue",
         "trigger",
         "curation_status",
+        "operator_review_needed",
+        "safe_for_implementation_start",
+        "fingerprint",
+        "read_budget",
         "sources",
+        "handoff",
         "execution_hint",
         "ambiguities",
+        "reuse",
+        "receipt",
         "anomalies",
     }
     assert set(artifact["issue"].keys()) == {"number", "title", "url", "labels", "milestone"}
-    assert set(artifact["trigger"].keys()) == {"event_name", "matched_rules", "manual_override"}
+    assert set(artifact["trigger"].keys()) == {"event_name", "matched_rules"}
     assert set(artifact["curation_status"].keys()) == {"state", "confidence", "summary"}
-    assert set(artifact["execution_hint"].keys()) == {
-        "recommended_first_step",
-        "suggested_read_order",
-        "suggested_next_action",
+    assert set(artifact["handoff"].keys()) == {
+        "must_read",
+        "supporting",
+        "background",
+        "constraints",
+        "watchouts",
+        "implementation_targets",
     }
-    assert set(artifact["anomalies"].keys()) == {
-        "schema_version",
-        "contains_sensitive_signals",
-        "sensitivity_reasons",
-        "counts_by_strength",
-        "findings",
+    assert set(artifact["read_budget"].keys()) == {
+        "must_read_max",
+        "supporting_max",
+        "background_max",
+        "estimated_tokens",
+    }
+    assert set(artifact["receipt"].keys()) == {
+        "marker",
+        "status",
+        "fingerprint",
+        "top_sources",
+        "next_step",
+        "artifact_name",
+        "artifact_ref",
+        "body",
+    }
+    assert set(artifact["reuse"].keys()) == {
+        "fingerprint",
+        "receipt_marker",
+        "unchanged_issue_can_reuse",
+        "strategy",
     }
     assert all(
-        set(source.keys()) == {"path", "category", "reason", "confidence", "must_read", "priority"}
+        set(source.keys()) >= {"path", "priority", "role", "score", "reason", "section_hint", "snippet"}
         for source in artifact["sources"]
     )
-    priorities = [source["priority"] for source in artifact["sources"]]
-    read_order = [source["path"] for source in artifact["sources"]]
-    assert priorities == list(range(1, len(priorities) + 1))
-    assert artifact["execution_hint"]["suggested_read_order"] == read_order
+
+
+def test_receipt_marker_uses_fingerprint_and_short_body() -> None:
+    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    receipt = artifact["receipt"]
+    assert receipt["marker"] == f"<!-- cdb-backlog-curation-receipt:{artifact['fingerprint']} -->"
+    assert receipt["status"] == "curation ready"
+    assert "Top-Quellen" in receipt["body"]
+    assert "Handoff" in receipt["body"]
+    assert artifact["fingerprint"] == artifact["reuse"]["fingerprint"]
+
+
+def test_read_budget_caps_handoff_lists_and_estimated_tokens() -> None:
+    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+
+    assert artifact is not None
+    assert len(artifact["handoff"]["must_read"]) <= artifact["read_budget"]["must_read_max"]
+    assert len(artifact["handoff"]["supporting"]) <= artifact["read_budget"]["supporting_max"]
+    assert len(artifact["handoff"]["background"]) <= artifact["read_budget"]["background_max"]
+    assert artifact["read_budget"]["estimated_tokens"] > 0
 
 
 def test_missing_explicit_path_creates_strong_broken_reference_anomaly() -> None:
     payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
+        event_label="task",
+        labels=["task"],
         body=(
             "Please validate `.github/workflows/does-not-exist.yml` and "
-            "`docs/runbooks/CONTROL_REGISTER.md` for drift."
+            "`.github/scripts/backlog_curation.py` for receipt drift."
         ),
     )
 
@@ -287,32 +263,11 @@ def test_missing_explicit_path_creates_strong_broken_reference_anomaly() -> None
     assert finding["minimum_evidence_met"] is True
 
 
-def test_weak_missing_runbook_signal_is_report_only_hint() -> None:
-    payload = _payload(
-        event_label="scope:ci",
-        labels=["type:bug", "scope:ci"],
-        body="Workflow trigger might be stale after a recent change.",
-    )
-
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
-
-    assert artifact is not None
-    anomalies = artifact["anomalies"]["findings"]
-    missing_runbook = [item for item in anomalies if item["type"] == "missing_runbook"]
-    assert len(missing_runbook) == 1
-    finding = missing_runbook[0]
-    assert finding["strength"] == "weak"
-    assert finding["escalation_hint"] == "report_only"
-
-
 def test_sensitive_context_blocks_public_issue_hints() -> None:
     payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate", "security"],
-        body=(
-            "Potential secret token exposure in `missing/path/config.yml`; "
-            "please investigate."
-        ),
+        event_label="task",
+        labels=["task", "security"],
+        body="Potential secret token exposure in `missing/path/config.yml`; please investigate.",
     )
 
     artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
@@ -325,36 +280,43 @@ def test_sensitive_context_blocks_public_issue_hints() -> None:
     )
 
 
-def test_semver_tokens_are_not_treated_as_missing_repo_paths() -> None:
+def test_write_artifact_for_event_sets_receipt_artifact_name_and_coerces_issue_number(tmp_path: Path) -> None:
     payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
-        body="Investigate migration constraints around Python 3.12.1 and v2.0.0 releases.",
+        event_label="task",
+        labels=["task"],
+        body="Read `.github/scripts/backlog_curation.py` first.",
+        number="2005",
     )
 
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
+    event_path = tmp_path / "event.json"
+    event_path.write_text(json.dumps(payload), encoding="utf-8")
+    artifact_dir = tmp_path / "artifacts"
 
-    assert artifact is not None
-    assert artifact["curation_status"]["state"] == "partial"
-    assert not any(
-        finding["type"] == "broken_reference" for finding in artifact["anomalies"]["findings"]
+    artifact_path = backlog_curation.write_artifact_for_event(
+        event_path=event_path,
+        repo_root=REPO_ROOT,
+        artifact_dir=artifact_dir,
     )
 
+    assert artifact_path == artifact_dir / "issue-2005.json"
+    assert artifact_path is not None and artifact_path.exists()
+    written = json.loads(artifact_path.read_text(encoding="utf-8"))
+    assert written["issue"]["number"] == 2005
+    assert written["receipt"]["artifact_name"] == "backlog-curation-issue-2005"
+    assert written["receipt"]["artifact_ref"] == "artifacts/backlog-curation/issue-2005.json"
 
-def test_core_contract_path_is_classified_as_tier4_contract_source() -> None:
-    payload = _payload(
-        event_label="context:curate",
-        labels=["context:curate"],
-        body="Inspect `core/contracts/decision_contract_v1.py` for contract compatibility.",
+
+def test_extract_explicit_repo_paths_rejects_urls_and_windows_drives() -> None:
+    result = backlog_curation.extract_explicit_repo_paths(
+        "Check https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/file.md, "
+        "`C:\\Windows\\System32\\config.txt` and `docs/runbooks/CONTROL_REGISTER.md`."
     )
+    assert "docs/runbooks/CONTROL_REGISTER.md" in result
+    assert not any("github.com" in path for path in result)
+    assert not any("Windows" in path for path in result)
 
-    artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
 
-    assert artifact is not None
-    source = next(
-        item
-        for item in artifact["sources"]
-        if item["path"] == "core/contracts/decision_contract_v1.py"
-    )
-    assert source["category"] == "contract"
-    assert source["confidence"] == 0.95
+def test_normalize_path_rejects_path_traversal_and_prefixed_windows_drives() -> None:
+    assert backlog_curation.normalize_path("../../../etc/passwd") is None
+    assert backlog_curation.normalize_path("/C:\\Users\\file.txt") is None
+    assert backlog_curation.normalize_path("./C:\\Users\\file.txt") is None

@@ -46,12 +46,48 @@ def _anomaly(
 
 def _artifact(findings: list[dict[str, object]], *, sensitive: bool = False) -> dict[str, object]:
     return {
-        "schema_version": "v1",
+        "schema_version": "v2",
         "issue": {
             "number": 1795,
             "title": "Backlog curation escalation",
             "url": "https://github.com/jannekbuengener/Claire_de_Binare/issues/1795",
         },
+        "fingerprint": "fp-1795",
+        "read_budget": {
+            "must_read_max": 3,
+            "supporting_max": 4,
+            "background_max": 2,
+            "estimated_tokens": 1200,
+        },
+        "reuse": {
+            "fingerprint": "fp-1795",
+            "receipt_marker": "<!-- cdb-backlog-curation-receipt:fp-1795 -->",
+            "unchanged_issue_can_reuse": True,
+            "strategy": "reuse if unchanged",
+        },
+        "receipt": {
+            "marker": "<!-- cdb-backlog-curation-receipt:fp-1795 -->",
+            "status": "curation ready",
+            "fingerprint": "fp-1795",
+            "top_sources": [
+                ".github/scripts/backlog_curation.py",
+                ".github/workflows/cdb-backlog-curation.yml",
+            ],
+            "next_step": "Read must_read first.",
+            "artifact_name": "backlog-curation-issue-1795",
+            "artifact_ref": "artifacts/backlog-curation/issue-1795.json",
+            "body": "receipt",
+        },
+        "handoff": {
+            "must_read": [],
+            "supporting": [],
+            "background": [],
+            "constraints": [],
+            "watchouts": [],
+            "implementation_targets": [],
+        },
+        "operator_review_needed": False,
+        "safe_for_implementation_start": True,
         "anomalies": {
             "schema_version": "v1",
             "contains_sensitive_signals": sensitive,
@@ -192,6 +228,27 @@ def test_ensure_followup_issue_reuses_existing_ticket(monkeypatch: pytest.Monkey
     assert result["number"] == 2111
 
 
+def test_load_artifact_accepts_v2_handoff_extras(tmp_path: Path) -> None:
+    artifact = _artifact(
+        [
+            _anomaly(
+                anomaly_id="follow1",
+                anomaly_type="broken_reference",
+                confidence=0.94,
+                strength="strong",
+                escalation_hint="follow_up_candidate",
+            )
+        ]
+    )
+    artifact_file = tmp_path / "issue-1795.json"
+    artifact_file.write_text(json.dumps(artifact), encoding="utf-8")
+
+    loaded = escalation.load_artifact(artifact_file)
+
+    assert loaded["schema_version"] == "v2"
+    assert loaded["anomalies"]["findings"][0]["id"] == "follow1"
+
+
 def test_main_dry_run_does_not_emit_issues(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     artifact = _artifact(
         [
@@ -238,9 +295,12 @@ def test_main_dry_run_does_not_emit_issues(tmp_path: Path, monkeypatch: pytest.M
     assert result["issue_events"] == []
 
 
-def test_backlog_curation_workflow_remains_artifact_only() -> None:
+def test_backlog_curation_workflow_posts_receipt_and_uses_existing_labels_only() -> None:
     workflow_path = REPO_ROOT / ".github" / "workflows" / "cdb-backlog-curation.yml"
-    payload = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    workflow_text = workflow_path.read_text(encoding="utf-8")
+    payload = yaml.safe_load(workflow_text)
 
-    assert payload["permissions"] == {"contents": "read"}
-    assert "issues" not in payload["permissions"]
+    assert payload["permissions"] == {"contents": "read", "issues": "write"}
+    step_names = [step["name"] for step in payload["jobs"]["curate"]["steps"]]
+    assert "Post issue-scoped curation receipt" in step_names
+    assert "context:curate" not in workflow_text

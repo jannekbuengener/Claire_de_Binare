@@ -10,13 +10,14 @@ concurrency:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   curate:
     if: >-
       ${{
         contains(
-          fromJson('["task","context:curate","type:bug","type:feature","type:refactor","scope:core","scope:infra","scope:ci","scope:data","scope:monitoring"]'),
+          fromJson('["task","type:bug","type:feature","type:refactor","scope:core","scope:infra","scope:ci","scope:data","scope:monitoring"]'),
           github.event.label.name
         )
       }}
@@ -56,3 +57,33 @@ jobs:
           name: backlog-curation-issue-${{ github.event.issue.number }}
           path: ${{ steps.curate.outputs.artifact_path }}
           if-no-files-found: error
+
+      - name: Post issue-scoped curation receipt
+        if: ${{ steps.curate.outputs.artifact_exists == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact_path="${{ steps.curate.outputs.artifact_path }}"
+          issue_number="${{ github.event.issue.number }}"
+          body_file="$(mktemp)"
+
+          receipt_json="$(python3 -c 'import json,sys; data=json.load(open(sys.argv[1], encoding="utf-8")); print(json.dumps(data["receipt"]))' "$artifact_path")"
+          marker="$(printf '%s' "$receipt_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["marker"])')"
+          fingerprint="$(printf '%s' "$receipt_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["fingerprint"])')"
+          status="$(printf '%s' "$receipt_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')"
+          printf '%s' "$receipt_json" | python3 -c 'import json,sys; from pathlib import Path; Path(sys.argv[1]).write_text(json.load(sys.stdin)["body"], encoding="utf-8")' "$body_file"
+
+          comments="$(gh issue view "$issue_number" --repo "${GITHUB_REPOSITORY}" --json comments --jq ".comments[].body")"
+          if printf '%s' "$comments" | grep -Fq "$marker"; then
+            echo "Reused existing curation receipt for fingerprint ${fingerprint}." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            gh issue comment "$issue_number" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --body-file "$body_file"
+            echo "Posted issue-scoped curation receipt (${status}) for fingerprint ${fingerprint}." >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
+          rm -f "$body_file"
