@@ -83,6 +83,8 @@
 - **Merged (2026-04-19)**: PR #1768 (`d4b3cf4c`) — security: narrow Redis digest refresh for Trivy reduction; `redis:7.4.8-alpine`-Digest aktualisiert (digest-only, semantischer Tag unveraendert). Refs #1445.
 - **Session 2026-04-19 (#1769/#1770/#1771)**: Docs-Reconcile-Batch nach LR-012- und Security-Reduction-Slices. #1769: CONTROL_REGISTER PR-#1768-Note. #1770: CURRENT_STATUS Ledger-Nachzug (#1766–#1768). #1771: SERVICE_CATALOG Prometheus v3.10.0→v3.11.2 Katalog-Nachzug.
 - **Merged (2026-04-19)**: PR #1775 (`db948a7b`) — docs(roadmap): ACTIVE_ROADMAP auf Backtesting/Validation-Fokus reorientiert; trade-capable != LR-Go Guardrail explizit gesetzt; kanonische Zeiger ergänzt (CONTROL_REGISTER, PRIMARY_BREAKOUT_V1.md, Validation-Runner). Issue #1772 geschlossen.
+- **Merged (2026-04-20)**: LR-021 Replay-Stack complete landing: PR #1808 (`2bb9ff7c`) — feat(replay): LR-021 deterministic replay infrastructure — full stack (#1806 → #1804). 21 files (7194 insertions), 461 unit tests all green. Issues #1806/#1801/#1802/#1803/#1805/#1804 all closed with landing comments. Post-merge architecture docs: PR #1810 (`dd556cbc`) — docs: reconcile architecture docs after PR #1808 replay stack. Replay infrastructure stable; no LR/live-trading gate implicit. Operational Cockpit (#1445) commentary updated.
+- **Queued (2026-04-20)**: Non-blocking infrastructure PRs in backlog: PR #1811 (redis_exporter healthcheck: wget → nc), PR #1812 (backlog_curation regex ReDoS hardening).
 
 ---
 
@@ -165,3 +167,4 @@ Nur explizit als offen oder aktuell markierte Punkte sind aktiver Arbeitsfokus. 
 
 - `knowledge/logs/sessions/` — aktuelle Session-Logs
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` — operativer Live-Readiness-Verdict (letzte Reconciliation 2026-04-05, PR #1437)
+

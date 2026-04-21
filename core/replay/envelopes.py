@@ -56,6 +56,8 @@ class DecisionEnvelopeV1:
     output_hash: Optional[str] = None
     decision_context: Optional[Dict[str, Any]] = None
     policy_snapshot: Optional[Dict[str, Any]] = None
+    replay_run_id: Optional[str] = None
+    replay_envelope_index: Optional[int] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -87,6 +89,10 @@ class DecisionEnvelopeV1:
             result["decision_context"] = self.decision_context
         if self.policy_snapshot is not None:
             result["policy_snapshot"] = self.policy_snapshot
+        if self.replay_run_id is not None:
+            result["replay_run_id"] = self.replay_run_id
+        if self.replay_envelope_index is not None:
+            result["replay_envelope_index"] = self.replay_envelope_index
         return result
 
 
@@ -108,6 +114,8 @@ class OrderEnvelopeV1:
     output_hash: Optional[str] = None
     decision_context: Optional[Dict[str, Any]] = None
     policy_snapshot: Optional[Dict[str, Any]] = None
+    replay_run_id: Optional[str] = None
+    replay_envelope_index: Optional[int] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -139,6 +147,10 @@ class OrderEnvelopeV1:
             result["decision_context"] = self.decision_context
         if self.policy_snapshot is not None:
             result["policy_snapshot"] = self.policy_snapshot
+        if self.replay_run_id is not None:
+            result["replay_run_id"] = self.replay_run_id
+        if self.replay_envelope_index is not None:
+            result["replay_envelope_index"] = self.replay_envelope_index
         return result
 
 
@@ -160,6 +172,8 @@ class FillEnvelopeV1:
     output_hash: Optional[str] = None
     decision_context: Optional[Dict[str, Any]] = None
     policy_snapshot: Optional[Dict[str, Any]] = None
+    replay_run_id: Optional[str] = None
+    replay_envelope_index: Optional[int] = None
 
     def to_dict(self) -> dict:
         """Convert to dict, omitting None-valued optional fields."""
@@ -191,4 +205,8 @@ class FillEnvelopeV1:
             result["decision_context"] = self.decision_context
         if self.policy_snapshot is not None:
             result["policy_snapshot"] = self.policy_snapshot
+        if self.replay_run_id is not None:
+            result["replay_run_id"] = self.replay_run_id
+        if self.replay_envelope_index is not None:
+            result["replay_envelope_index"] = self.replay_envelope_index
         return result

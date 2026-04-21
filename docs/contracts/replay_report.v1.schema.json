@@ -1,0 +1,286 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Deterministic Replay Report Contract",
+  "description": "Machine-readable contract for replay execution reports. Separate from strategy_validation_report_v1.schema.json. Focuses on envelope chain integrity, determinism, and artifact manifest.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_type",
+    "strategy_id",
+    "run_spec",
+    "execution_result",
+    "replay_integrity",
+    "envelope_summary",
+    "artifact_manifest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "replay_report.v1",
+      "description": "Fixed schema version identifier for replay reports"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": ["shadow_replay", "deterministic_replay"],
+      "description": "shadow_replay: reference/non-binding; deterministic_replay: canonical"
+    },
+    "strategy_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Strategy identifier (e.g., 'primary_breakout_v1')"
+    },
+    "run_spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replay_run_id",
+        "strategy_id",
+        "symbol",
+        "start_ts_ms",
+        "end_ts_ms",
+        "code_commit",
+        "run_mode"
+      ],
+      "properties": {
+        "replay_run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique replay run identifier"
+        },
+        "strategy_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Strategy being replayed"
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Trading symbol (e.g., 'BTCUSDT')"
+        },
+        "start_ts_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Replay window start in milliseconds"
+        },
+        "end_ts_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Replay window end in milliseconds"
+        },
+        "code_commit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{7,40}$",
+          "description": "Git commit hash for reproducibility"
+        },
+        "run_mode": {
+          "type": "string",
+          "enum": ["shadow", "paper", "replay", "live"],
+          "description": "Execution mode context"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional diagnostic metadata"
+        }
+      }
+    },
+    "execution_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "events_processed",
+        "decisions_made",
+        "orders_placed",
+        "fills_recorded",
+        "envelope_hashes"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Replay run identifier"
+        },
+        "events_processed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of events successfully processed"
+        },
+        "decisions_made": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of risk decisions emitted"
+        },
+        "orders_placed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of orders placed"
+        },
+        "fills_recorded": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of fills recorded"
+        },
+        "envelope_hashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "description": "Ordered SHA256 hashes of envelopes (deterministic order)"
+        },
+        "report_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Overall execution hash (computed after completion)"
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Error description if execution failed"
+        }
+      }
+    },
+    "replay_integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "envelope_count",
+        "envelope_chain_hash",
+        "event_loop_states_hash",
+        "integrity_ok"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Replay run identifier"
+        },
+        "envelope_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of envelopes in chain"
+        },
+        "envelope_chain_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hash of ordered envelope sequence"
+        },
+        "event_loop_states_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Hash of event loop state snapshots"
+        },
+        "integrity_ok": {
+          "type": "boolean",
+          "description": "True if all determinism checks passed"
+        },
+        "failed_checks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "Non-empty only if integrity_ok is False"
+        }
+      }
+    },
+    "envelope_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_envelopes_total",
+        "order_envelopes_total",
+        "fill_envelopes_total"
+      ],
+      "properties": {
+        "decision_envelopes_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of DecisionEnvelopeV1"
+        },
+        "order_envelopes_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of OrderEnvelopeV1"
+        },
+        "fill_envelopes_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of FillEnvelopeV1"
+        },
+        "first_envelope_ts_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Timestamp of first envelope"
+        },
+        "last_envelope_ts_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Timestamp of last envelope"
+        },
+        "metadata": {
+          "type": "object",
+          "description": "Optional envelope distribution metadata"
+        }
+      }
+    },
+    "artifact_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "envelope_log_uri",
+        "event_loop_states_uri",
+        "report_artifact_uri"
+      ],
+      "properties": {
+        "envelope_log_uri": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URI/path to replay envelope log"
+        },
+        "event_loop_states_uri": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URI/path to event loop state snapshots"
+        },
+        "report_artifact_uri": {
+          "type": "string",
+          "minLength": 1,
+          "description": "URI/path to final replay report artifact"
+        },
+        "supplementary_artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional additional artifact URIs"
+        }
+      }
+    },
+    "config_snapshot": {
+      "type": "object",
+      "description": "Optional strategy configuration snapshot at replay time"
+    },
+    "dataset_summary": {
+      "type": "object",
+      "description": "Optional market data summary (symbol, timeframe, candle count, etc.)"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Optional performance metrics (signals, trades, P&L, etc.)"
+    },
+    "thresholds_applied": {
+      "type": "object",
+      "description": "Optional gate thresholds if validation was performed"
+    },
+    "gate_result": {
+      "type": "object",
+      "description": "Optional gate decision (PASS/REVIEW/FAIL) if validation was performed"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Optional additional metadata for audit/diagnostic purposes"
+    }
+  }
+}

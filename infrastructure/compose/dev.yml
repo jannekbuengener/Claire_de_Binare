@@ -89,7 +89,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-      SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-paper}
+      SIGNAL_STRATEGY_ID: ${SIGNAL_STRATEGY_ID:-primary_breakout_v1}
       SIGNAL_PORT: "8005"
       SIGNAL_THRESHOLD_PCT: "0.005"  # Issue #345: Evidence-based: 100ms trades max ~0.014%, most <0.01%
       SIGNAL_MIN_VOLUME: "0"  # DISABLED: Raw trades use 'qty' field, not 'volume' (mapping unresolved; see knowledge/contracts/CONTRACTS.md)
@@ -155,7 +155,7 @@ services:
       REDIS_HOST: cdb_redis
       ALLOCATION_PORT: "8006"
       ALLOCATION_REGIME_MIN_STABLE_SECONDS: "60"
-      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}}'
+      ALLOCATION_RULES_JSON: '{"paper": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}, "primary_breakout_v1": {"STEADY_BULLISH": 0.3, "TREND": 0.3, "VOLATILE_RANGE": 0.1, "RANGE": 0.1, "HIGH_VOL_CHAOTIC": 0.02, "UNKNOWN": 0.0}}'
     entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && exec python -u service.py"]
     ports:
       - "127.0.0.1:8006:8006"

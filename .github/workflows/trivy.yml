@@ -39,7 +39,7 @@ jobs:
 
       # Trivy DB Cache (macht Runs schneller/stabiler)
       - name: Cache Trivy DB
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.cache/trivy
           key: trivy-${{ runner.os }}-${{ github.workflow }}-${{ github.sha }}
@@ -54,7 +54,7 @@ jobs:
         run: docker info
 
       - name: Debug Trivy action version
-        run: echo "Using aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac"
+        run: echo "Using aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143"
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
@@ -94,7 +94,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy (JSON)
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # v0.68.1 default trivy
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -147,13 +147,13 @@ jobs:
           fi
 
       - name: Upload Trivy JSON
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: trivy-container-${{ github.run_number }}
           path: trivy-results.json
 
       - name: Run Trivy (SARIF)
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # v0.68.1 default trivy
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -170,7 +170,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Security
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v3
         with:
           sarif_file: trivy-results.sarif
 

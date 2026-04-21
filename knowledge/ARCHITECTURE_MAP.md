@@ -136,15 +136,39 @@ cdb_reports           Up (healthy)
 
 ---
 
-## 5. Invariants (nicht verhandelbar)
+## 5. Core Libraries (nicht runtime-services, sondern shared infrastruktur)
+
+### Replay Infrastructure (LR-021, PR #1808)
+
+| Module | File | Funktion | Status |
+|--------|------|----------|--------|
+| **Replay Contracts** | `core/replay/replay_contracts.py` | Frozen dataclasses für Replay-Input/Output; determinism envelope tracking | **AKTIV** (PR #1808) |
+| **Replay Determinism** | `core/replay/determinism.py` | Canonical JSON hashing, integrity verification, error validation | **AKTIV** (PR #1808) |
+| **Replay Clock Context** | `core/replay/clock_context.py` | Deterministic, wall-clock-free time handling für replay events | **AKTIV** (PR #1808) |
+| **Replay Execution** | `core/replay/execution.py` | Envelope chain emission, order/fill wrapping für replay runs | **AKTIV** (PR #1808) |
+| **Deterministic Loop** | `core/replay/deterministic_loop.py` | Tick-by-tick replay orchestration mit integrity gate | **AKTIV** (PR #1808) |
+| **Envelopes** | `core/replay/envelopes.py` | Decision/Order/Fill envelope types + replay metadata fields | **AKTIV** (PR #1808) |
+
+**Nutzung:** Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis/DB-Integration.
+
+**Reporter & CLI:**
+| Component | File | Funktion | Status |
+|-----------|------|----------|--------|
+| **Replay Reporter** | `services/validation/replay_reporter.py` | Deterministic artifact bundle writer (report.json, manifest.json, audit.log) | **AKTIV** (PR #1808) |
+| **Replay CLI** | `services/validation/strategy_replay_runner.py` | Thin operator entry-point, config validation, exit codes | **AKTIV** (PR #1808) |
+
+---
+
+## 6. Invariants (nicht verhandelbar)
 
 1. **Paper Trading Default**: Live Trading erfordert explizites Delivery Gate
 2. **Event Sourcing**: Alle State-Aenderungen ueber Events (Replay-faehig)
 3. **Circuit Breaker**: Risk Service gated alle Order Execution
-4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay
+4. **Determinismus**: Reproduzierbare Ergebnisse via Event Replay (LR-021: deterministic shadow replay via `core/replay/` stack)
 5. **TLS Optional**: Aktivierbar via `-TLS` Flag (Redis + PostgreSQL)
 6. **Localhost Binding**: Alle Ports auf 127.0.0.1 (keine externe Exposition)
 7. **Secrets/Logging Hygiene**: Secret-Loader und SMTP-Alerter protokollieren keine secret-abgeleiteten Identifikatoren oder Empfaengeradressen im Klartext; Service-API-Fehlerantworten bleiben auf sichere Fehlercodes ohne Exception-/Stacktrace-Details begrenzt.
+8. **Canonical Determinism**: Alle kanonischen Report-Felder sind frei von Wall-Clock-Zeit; deterministische JSON-Serialisierung via `core/replay/canonical_json.py` (LR-021)
 
 ---
 
@@ -182,3 +206,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-11 | Signal-Port-Semantik präzisiert: Config-Default `SIGNAL_PORT=8001`, kanonischer Runtime-Port `8005` via `compose.red.yml` | Codex |
 | 2026-04-18 | Security-Hygiene nach PR #1752 ergänzt: Secret-/SMTP-Logging ohne secret-abgeleitete Klartext-Details dokumentiert | Codex |
 | 2026-04-18 | PR #1755 Nachzug: fail-closed Fehlerantworten ohne Stacktrace-/Exception-Text für Risk/Execution/Kill-Switch dokumentiert | Codex |
+| 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay + services/validation reporter/CLI) als Core Libraries dokumentiert (Issue #1809) | Codex |

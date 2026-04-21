@@ -56,7 +56,7 @@ jobs:
 
       - name: Upload SARIF
         if: steps.sarif.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v3
         with:
           sarif_file: results.sarif
         continue-on-error: true  # Don't fail if no SARIF generated
@@ -91,7 +91,7 @@ jobs:
 
       - name: Upload Full Scan SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v3
         with:
           sarif_file: gitleaks-full.sarif
         continue-on-error: true

@@ -67,7 +67,7 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy > /dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "nc -z localhost 9090 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -135,7 +135,7 @@ services:
     depends_on:
       - cdb_postgres
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:9187/"]
+      test: ["CMD-SHELL", "nc -z localhost 9187 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -153,7 +153,7 @@ services:
     depends_on:
       - cdb_redis
     healthcheck:
-      test: ["CMD-SHELL", "kill -0 1"]
+      test: ["CMD-SHELL", "nc -z localhost 9121 || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -59,7 +59,7 @@ jobs:
           echo "TRIVY_SAFE_IMAGE=$safe_image" >> $GITHUB_ENV
 
       - name: Run Trivy Scan
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'json'
@@ -83,7 +83,7 @@ jobs:
           jq -r '.Results[].Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL") | "\(.Severity) \(.VulnerabilityID) \(.PkgName // "unknown") \(.InstalledVersion // "")"' "$report" | head -n "${TRIVY_SUMMARY_MAX}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: '${{ matrix.image }}'
           format: 'sarif'
@@ -92,13 +92,13 @@ jobs:
           output: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
 
       - name: Upload Trivy Results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: trivy-base-${{ env.TRIVY_SAFE_IMAGE }}-${{ github.run_number }}
           path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v3
         if: always()
         with:
           sarif_file: 'trivy-${{ env.TRIVY_SAFE_IMAGE }}.sarif'
@@ -171,7 +171,7 @@ jobs:
 
       - name: Run Trivy Scan
         if: steps.build_custom_image.outcome == 'success'
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
           format: 'json'
@@ -218,7 +218,7 @@ jobs:
           fi
 
       - name: Run Trivy SARIF
-        uses: aquasecurity/trivy-action@22438a435773de8c97dc0958cc0b823c45b064ac # master
+        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # master
         if: always() && steps.build_custom_image.outcome == 'success'
         with:
           image-ref: 'cdb_${{ matrix.service }}:scan'
@@ -229,13 +229,13 @@ jobs:
 
       - name: Upload Trivy Results
         if: always() && steps.build_custom_image.outcome == 'success'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: trivy-custom-${{ matrix.service }}-${{ github.run_number }}
           path: trivy-*.json
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v3
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v3
         if: always() && steps.build_custom_image.outcome == 'success'
         with:
           sarif_file: 'trivy-cdb_${{ matrix.service }}.sarif'
@@ -275,7 +275,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.SCAN_ARTIFACT_NAME }}
           path: scan-${{ env.SCAN_IMAGE_LABEL }}.txt
@@ -325,7 +325,7 @@ jobs:
 
       - name: Upload Scan Results
         if: always() && steps.build_custom_image.outcome == 'success'
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: scan-cdb_${{ matrix.service }}-${{ github.run_number }}
           path: scan-cdb_${{ matrix.service }}.txt
