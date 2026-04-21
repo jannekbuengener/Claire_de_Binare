@@ -320,3 +320,35 @@ def test_normalize_path_rejects_path_traversal_and_prefixed_windows_drives() -> 
     assert backlog_curation.normalize_path("../../../etc/passwd") is None
     assert backlog_curation.normalize_path("/C:\\Users\\file.txt") is None
     assert backlog_curation.normalize_path("./C:\\Users\\file.txt") is None
+
+
+def test_extract_explicit_repo_paths_from_backticks() -> None:
+    result = backlog_curation.extract_explicit_repo_paths(
+        "The file `docs/runbooks/CONTROL_REGISTER.md` needs review."
+    )
+    assert "docs/runbooks/CONTROL_REGISTER.md" in result
+
+
+def test_extract_explicit_repo_paths_from_markdown_links() -> None:
+    result = backlog_curation.extract_explicit_repo_paths(
+        "See [docs](docs/runbooks/CONTROL_REGISTER.md) for details."
+    )
+    assert "docs/runbooks/CONTROL_REGISTER.md" in result
+
+
+def test_normalize_path_normalizes_relative_paths() -> None:
+    result = backlog_curation.normalize_path("./docs/runbooks/CONTROL_REGISTER.md")
+    assert result == "docs/runbooks/CONTROL_REGISTER.md"
+
+    result = backlog_curation.normalize_path("/docs/runbooks/CONTROL_REGISTER.md")
+    assert result == "docs/runbooks/CONTROL_REGISTER.md"
+
+
+def test_extract_explicit_repo_paths_adversarial_many_slashes() -> None:
+    import time
+
+    adversarial = "a" + "/" * 100 + "b" * 100 + ".txt"
+    start = time.time()
+    result = backlog_curation.extract_explicit_repo_paths(adversarial)
+    elapsed = time.time() - start
+    assert elapsed < 1.0, f"Path extraction took {elapsed}s (should complete in <1s)"
