@@ -7,7 +7,7 @@ werkzeug>=3.1.4  # Security: Fix CVEs in Dependabot alerts #339
 psycopg2-binary==2.9.11  # Phase 8C: correlation_ledger persistence
 
 # Utilities
-python-dotenv==1.0.0
+python-dotenv==1.2.2
 
 # CI security: Trivy HIGH CVEs
 jaraco.context==6.1.0
