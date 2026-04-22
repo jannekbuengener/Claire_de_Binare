@@ -150,6 +150,7 @@ cdb_reports           Up (healthy)
 | **Envelopes** | `core/replay/envelopes.py` | Decision/Order/Fill envelope types + replay metadata fields | **AKTIV** (PR #1808) |
 | **Dataset Spec** | `core/replay/dataset_spec.py` | Frozen request-spec für historische Replay-Datasets (ARVP §4.2); Fingerprint via canonical_hash | **AKTIV** (PR #1856) |
 | **Dataset Provider** | `core/replay/dataset_provider.py` | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres); ARVP §4.2 | **AKTIV** (PR #1856) |
+| **Replay Scheduler** | `core/replay/scheduler.py` | Event-time replay scheduler mit deterministischen Speed-Profilen, Warmup/Live-Split und fail-closed Boundary-Validation | **AKTIV** (PR #1859) |
 
 **Nutzung:** Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets können über `DBBackedDatasetProvider` aus `candles_1m` (Postgres) bezogen werden.
 
@@ -157,7 +158,7 @@ cdb_reports           Up (healthy)
 | Component | File | Funktion | Status |
 |-----------|------|----------|--------|
 | **Replay Reporter** | `services/validation/replay_reporter.py` | Deterministic artifact bundle writer (report.json, manifest.json, audit.log) | **AKTIV** (PR #1808) |
-| **Replay CLI** | `services/validation/strategy_replay_runner.py` | Thin operator entry-point, config validation, exit codes | **AKTIV** (PR #1808) |
+| **Replay CLI** | `services/validation/strategy_replay_runner.py` | Thin operator entry-point; fail-closed `speedup_profile` validation und Scheduler-Metadaten unter `dataset_summary["scheduler"]` | **AKTIV** (PR #1808, PR #1859) |
 
 ---
 
@@ -210,3 +211,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-18 | PR #1755 Nachzug: fail-closed Fehlerantworten ohne Stacktrace-/Exception-Text für Risk/Execution/Kill-Switch dokumentiert | Codex |
 | 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay + services/validation reporter/CLI) als Core Libraries dokumentiert (Issue #1809) | Codex |
 | 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) ergänzt (Issue #1857) | Codex |
+| 2026-04-22 | PR #1859 Nachzug: `core/replay/scheduler.py` und minimaler Replay-CLI-Scheduler-Pfad (`speedup_profile`, `dataset_summary["scheduler"]`) ergänzt (Issue #1860) | Codex |
