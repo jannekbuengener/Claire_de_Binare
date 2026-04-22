@@ -15,6 +15,7 @@ Funktionen:
 import os
 import json
 import logging
+import threading
 import time
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -25,6 +26,7 @@ import psycopg2
 
 from core.utils.clock import utcnow
 from prometheus_client import Counter, Gauge, start_http_server
+from services.db_writer.candle_normalizer import normalize_candle_stream_entry
 
 # Logging Setup
 logging.basicConfig(
@@ -52,6 +54,9 @@ DB_WRITER_UPTIME_SECONDS = Gauge(
     "Service uptime in seconds.",
 )
 DB_WRITER_UPTIME_SECONDS.set_function(lambda: max(0.0, time.time() - START_TIME))
+
+# Stream key consumed by the candle persistence worker (Issue #1855)
+_CANDLE_STREAM_KEY = "stream.candles_1m"
 
 # Trade Status Definitions
 # Only filled/partial trades are persisted to trades table
@@ -842,6 +847,99 @@ class DatabaseWriter:
         else:
             logger.warning(f"Unknown channel: {channel}")
 
+    def _persist_candle_entry(self, cursor, row: dict) -> bool:
+        """Insert a normalised candle row into ``candles_1m``.
+
+        Uses ON CONFLICT DO NOTHING so the path is fully idempotent.
+        Returns True on successful insert (or harmless duplicate), False on error.
+        """
+        try:
+            cursor.execute(
+                """
+                INSERT INTO candles_1m
+                    (symbol, ts_ms, open, high, low, close, volume, trade_count, regime_id)
+                VALUES
+                    (%(symbol)s, %(ts_ms)s, %(open)s, %(high)s, %(low)s, %(close)s,
+                     %(volume)s, %(trade_count)s, %(regime_id)s)
+                ON CONFLICT (symbol, ts_ms) DO NOTHING
+                """,
+                row,
+            )
+            return True
+        except Exception as exc:
+            logger.error("candle_writer: DB insert failed for %s@%s: %s", row.get("symbol"), row.get("ts_ms"), exc)
+            return False
+
+    def _candle_stream_worker(self) -> None:
+        """Daemon thread: reads ``stream.candles_1m`` via XREAD and persists candles.
+
+        Owns dedicated Redis and PostgreSQL connections (not shared with the main
+        PubSub loop) to avoid cross-thread psycopg2 / redis-py state issues.
+
+        Cursor note: ``last_id`` starts at ``"0-0"`` on every startup, so entries
+        still in the Redis stream are replayed from the stream head. Entries already
+        trimmed by ``maxlen`` are silently absent; this is a known limitation of the
+        current slice — gap-safe cursor persistence is reserved for a follow-up task.
+        """
+        logger.info("candle_writer: starting daemon thread for %s", _CANDLE_STREAM_KEY)
+
+        # Own Redis connection for this thread
+        try:
+            candle_redis = redis.Redis(
+                host=self.redis_host,
+                port=self.redis_port,
+                password=self.redis_password,
+                decode_responses=True,
+            )
+            candle_redis.ping()
+        except Exception as exc:
+            logger.error("candle_writer: Redis connection failed, thread will not start: %s", exc)
+            return
+
+        # Own psycopg2 connection (not shared with main thread)
+        try:
+            candle_db = psycopg2.connect(
+                host=self.postgres_host,
+                port=self.postgres_port,
+                database=self.postgres_db,
+                user=self.postgres_user,
+                password=self.postgres_password,
+            )
+            candle_db.autocommit = True
+        except Exception as exc:
+            logger.error("candle_writer: PostgreSQL connection failed, thread will not start: %s", exc)
+            return
+
+        logger.info("candle_writer: connected to Redis + PostgreSQL; consuming %s", _CANDLE_STREAM_KEY)
+        last_id = "0-0"
+        cursor = candle_db.cursor()
+
+        while True:
+            try:
+                results = candle_redis.xread({_CANDLE_STREAM_KEY: last_id}, count=100, block=2000)
+            except Exception as exc:
+                logger.error("candle_writer: XREAD error: %s — retrying", exc)
+                time.sleep(2)
+                continue
+
+            if not results:
+                continue
+
+            for _stream_name, entries in results:
+                for entry_id, fields in entries:
+                    row = normalize_candle_stream_entry(fields)
+                    if row is None:
+                        logger.warning("candle_writer: invalid payload for entry %s, skipping", entry_id)
+                        DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
+                        last_id = entry_id  # deliberate skip — bad payload cannot be retried
+                        continue
+                    if self._persist_candle_entry(cursor, row):
+                        DB_WRITER_EVENTS_PROCESSED.labels(channel="candles_1m").inc()
+                        last_id = entry_id  # advance cursor only after confirmed persist
+                    else:
+                        DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
+                        # do NOT advance last_id: transient DB error → retry on next XREAD
+
     def run(self):
         """Main event loop"""
         logger.info("Starting DB Writer Service...")
@@ -856,6 +954,15 @@ class DatabaseWriter:
 
         logger.info("DB Writer Service started ✅")
         logger.info("Listening for events...")
+
+        # Candle persistence worker — daemon thread so it exits with the process
+        candle_thread = threading.Thread(
+            target=self._candle_stream_worker,
+            name="candle-stream-worker",
+            daemon=True,
+        )
+        candle_thread.start()
+        logger.info("candle_writer: worker thread started")
 
         # Event loop
         try:

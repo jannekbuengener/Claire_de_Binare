@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS positions CASCADE;
 DROP TABLE IF EXISTS trades CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS signals CASCADE;
+DROP TABLE IF EXISTS candles_1m CASCADE;
 
 -- ============================================================================
 -- SIGNALS - Trading-Signale vom Signal-Engine
@@ -220,6 +221,47 @@ COMMENT ON COLUMN portfolio_snapshots.total_exposure_pct IS 'Gesamt-Exposure als
 COMMENT ON COLUMN portfolio_snapshots.max_drawdown_pct IS 'Maximaler Drawdown seit Snapshot-Start';
 
 -- ============================================================================
+-- CANDLES_1M - Persistente 1-Minuten-OHLCV-Candles für ARVP Replay-Input
+-- ============================================================================
+-- Persistenz-Vorbedingung für DB-backed Replay-Inputs (Issue #1855).
+-- Candles entstehen in cdb_candles und fliessen ephemer durch stream.candles_1m
+-- in Redis. Dieses Table speichert sie dauerhaft, damit DBBackedDatasetProvider
+-- (#1841) sie deterministisch als historisches Window abfragen kann.
+-- ============================================================================
+
+CREATE TABLE candles_1m (
+    id          BIGSERIAL                NOT NULL,
+    symbol      VARCHAR(20)              NOT NULL,
+    ts_ms       BIGINT                   NOT NULL,
+    open        DECIMAL(18, 8)           NOT NULL,
+    high        DECIMAL(18, 8)           NOT NULL,
+    low         DECIMAL(18, 8)           NOT NULL,
+    close       DECIMAL(18, 8)           NOT NULL,
+    volume      DECIMAL(18, 8)           NOT NULL DEFAULT 0.0,
+    trade_count INTEGER                  NOT NULL DEFAULT 0,
+    regime_id   SMALLINT,
+    ingested_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT candles_1m_pkey          PRIMARY KEY (id),
+    CONSTRAINT candles_1m_ts_positive   CHECK (ts_ms > 0),
+    CONSTRAINT candles_1m_open_positive CHECK (open > 0),
+    CONSTRAINT candles_1m_high_positive CHECK (high > 0),
+    CONSTRAINT candles_1m_low_positive  CHECK (low > 0),
+    CONSTRAINT candles_1m_close_positive CHECK (close > 0),
+    CONSTRAINT candles_1m_high_gte_low  CHECK (high >= low),
+    CONSTRAINT candles_1m_volume_nonneg CHECK (volume >= 0),
+    CONSTRAINT candles_1m_trades_nonneg CHECK (trade_count >= 0),
+    CONSTRAINT candles_1m_unique        UNIQUE (symbol, ts_ms)
+    -- UNIQUE (symbol, ts_ms) implicitly creates the B-tree index needed for
+    -- deterministic window queries: WHERE symbol=? AND ts_ms BETWEEN ? AND ?
+);
+
+COMMENT ON TABLE candles_1m IS 'Persistente 1m-OHLCV-Candles aus stream.candles_1m fuer ARVP DB-backed Replay-Input (#1855)';
+COMMENT ON COLUMN candles_1m.ts_ms IS 'Candle-Startzeit als Unix-Millisekunden (UTC). Primary sort key fuer historische Fensterabfragen.';
+COMMENT ON COLUMN candles_1m.regime_id IS 'Marktregime zum Emissionszeitpunkt (NULL = kein Signal vorhanden). Nicht im Candle-Stream; reserviert fuer spaetere Anreicherung.';
+COMMENT ON COLUMN candles_1m.ingested_at IS 'DB-Eingangszeit (Audit). Kein Replay-Feld.';
+
+-- ============================================================================
 -- GRANTS - Permissions für claire_user
 -- ============================================================================
 
@@ -267,7 +309,8 @@ CREATE TABLE IF NOT EXISTS schema_version (
 );
 
 INSERT INTO schema_version (version, description) VALUES
-    ('1.0.10', 'Initial schema with orders.price nullable, orders.order_id, and trades.realized_pnl');
+    ('1.0.10', 'Initial schema with orders.price nullable, orders.order_id, and trades.realized_pnl'),
+    ('1.1.0', 'Add candles_1m table for ARVP DB-backed replay persistence (Issue #1855)');
 
 -- ============================================================================
 -- VACUUM & ANALYZE - Optimiere nach Schema-Erstellung
@@ -278,7 +321,7 @@ VACUUM ANALYZE;
 -- ============================================================================
 -- SCHEMA-ERSTELLUNG ABGESCHLOSSEN
 -- ============================================================================
--- Tabellen: signals, orders, trades, positions, portfolio_snapshots
+-- Tabellen: signals, orders, trades, positions, portfolio_snapshots, candles_1m
 -- User: claire_user (mit vollen Rechten)
 -- Initial Equity: 100,000 USDT
 -- Status: ✅ Ready for Paper Trading
