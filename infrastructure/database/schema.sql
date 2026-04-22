@@ -244,7 +244,13 @@ CREATE TABLE candles_1m (
 
     CONSTRAINT candles_1m_pkey          PRIMARY KEY (id),
     CONSTRAINT candles_1m_ts_positive   CHECK (ts_ms > 0),
+    CONSTRAINT candles_1m_open_positive CHECK (open > 0),
+    CONSTRAINT candles_1m_high_positive CHECK (high > 0),
+    CONSTRAINT candles_1m_low_positive  CHECK (low > 0),
     CONSTRAINT candles_1m_close_positive CHECK (close > 0),
+    CONSTRAINT candles_1m_high_gte_low  CHECK (high >= low),
+    CONSTRAINT candles_1m_volume_nonneg CHECK (volume >= 0),
+    CONSTRAINT candles_1m_trades_nonneg CHECK (trade_count >= 0),
     CONSTRAINT candles_1m_unique        UNIQUE (symbol, ts_ms)
     -- UNIQUE (symbol, ts_ms) implicitly creates the B-tree index needed for
     -- deterministic window queries: WHERE symbol=? AND ts_ms BETWEEN ? AND ?

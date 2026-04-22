@@ -91,7 +91,7 @@ def normalize_candle_stream_entry(payload: dict) -> dict | None:
         logger.warning("candle_normalizer: invalid symbol=%r", symbol)
         return None
 
-    # --- OHLC Decimal fields (required, must be > 0) ---
+    # --- OHLC Decimal fields (required, must be > 0 and finite) ---
     ohlc: dict[str, Decimal] = {}
     for field in ("open", "high", "low", "close"):
         raw = payload[field]
@@ -99,6 +99,11 @@ def normalize_candle_stream_entry(payload: dict) -> dict | None:
             val = Decimal(str(raw))
         except (InvalidOperation, TypeError):
             logger.warning("candle_normalizer: invalid %s=%r", field, raw)
+            return None
+        if not val.is_finite():
+            # Decimal('NaN') / Decimal('Infinity') — is_finite() guards the <= 0 check
+            # below which would raise InvalidOperation on NaN.
+            logger.warning("candle_normalizer: non-finite %s=%r", field, raw)
             return None
         if val <= 0:
             logger.warning("candle_normalizer: %s must be > 0, got %s", field, val)
@@ -124,6 +129,12 @@ def normalize_candle_stream_entry(payload: dict) -> dict | None:
         except (InvalidOperation, TypeError):
             logger.warning("candle_normalizer: invalid volume=%r", volume_raw)
             return None
+        if not volume.is_finite():
+            logger.warning("candle_normalizer: non-finite volume=%r", volume_raw)
+            return None
+        if volume < 0:
+            logger.warning("candle_normalizer: volume must be >= 0, got %s", volume)
+            return None
 
     # --- trade_count from "trades": optional; missing → 0; present-but-invalid → None ---
     trades_raw = payload.get("trades")
@@ -134,6 +145,9 @@ def normalize_candle_stream_entry(payload: dict) -> dict | None:
             trade_count = int(trades_raw)
         except (ValueError, TypeError):
             logger.warning("candle_normalizer: invalid trades=%r", trades_raw)
+            return None
+        if trade_count < 0:
+            logger.warning("candle_normalizer: trade_count must be >= 0, got %d", trade_count)
             return None
 
     return {

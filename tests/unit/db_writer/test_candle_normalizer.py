@@ -293,9 +293,60 @@ def test_high_equal_to_low_is_valid(valid_payload):
     assert result is not None
 
 
+
 # ---------------------------------------------------------------------------
-# Extra (unknown) fields are silently ignored
+# Non-finite Decimal values → None (NaN / Infinity guards)
 # ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+def test_nan_close_returns_none(valid_payload):
+    """Decimal('NaN') on a required OHLC field must fail-closed."""
+    valid_payload["close"] = "NaN"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+@pytest.mark.unit
+def test_infinity_close_returns_none(valid_payload):
+    """Decimal('Infinity') must fail-closed — would bypass the > 0 check."""
+    valid_payload["close"] = "Infinity"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+@pytest.mark.unit
+def test_negative_infinity_close_returns_none(valid_payload):
+    valid_payload["close"] = "-Infinity"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+@pytest.mark.unit
+def test_nan_volume_returns_none(valid_payload):
+    valid_payload["volume"] = "NaN"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+@pytest.mark.unit
+def test_infinity_volume_returns_none(valid_payload):
+    valid_payload["volume"] = "Infinity"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+# ---------------------------------------------------------------------------
+# Negative optional-field values → None
+# ---------------------------------------------------------------------------
+
+@pytest.mark.unit
+def test_negative_volume_returns_none(valid_payload):
+    """Negative volume is an invalid OHLCV value → fail-closed."""
+    valid_payload["volume"] = "-0.01"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
+
+@pytest.mark.unit
+def test_negative_trade_count_returns_none(valid_payload):
+    """Negative trade_count is physically impossible → fail-closed."""
+    valid_payload["trades"] = "-1"
+    assert normalize_candle_stream_entry(valid_payload) is None
+
 
 @pytest.mark.unit
 def test_extra_fields_in_payload_are_ignored(valid_payload):

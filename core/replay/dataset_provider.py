@@ -190,6 +190,12 @@ class FileBackedDatasetProvider:
                 )
             if not data:
                 raise DatasetLoadError(f"Dataset file contains an empty array: {file_path}")
+            for idx, item in enumerate(data):
+                if not isinstance(item, dict):
+                    raise DatasetLoadError(
+                        f"Expected JSON object at index {idx} in {file_path}, "
+                        f"got {type(item).__name__}."
+                    )
             return data
 
         # JSONL: one JSON object per line

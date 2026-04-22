@@ -927,16 +927,18 @@ class DatabaseWriter:
 
             for _stream_name, entries in results:
                 for entry_id, fields in entries:
-                    last_id = entry_id
                     row = normalize_candle_stream_entry(fields)
                     if row is None:
                         logger.warning("candle_writer: invalid payload for entry %s, skipping", entry_id)
                         DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
+                        last_id = entry_id  # deliberate skip — bad payload cannot be retried
                         continue
                     if self._persist_candle_entry(cursor, row):
                         DB_WRITER_EVENTS_PROCESSED.labels(channel="candles_1m").inc()
+                        last_id = entry_id  # advance cursor only after confirmed persist
                     else:
                         DB_WRITER_EVENTS_FAILED.labels(channel="candles_1m").inc()
+                        # do NOT advance last_id: transient DB error → retry on next XREAD
 
     def run(self):
         """Main event loop"""

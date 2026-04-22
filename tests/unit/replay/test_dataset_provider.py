@@ -419,6 +419,17 @@ def test_file_backed_null_required_field_raises(tmp_path: object) -> None:
         FileBackedDatasetProvider().load(spec)
 
 
+@pytest.mark.unit
+def test_file_backed_array_element_not_dict_raises(tmp_path: object) -> None:
+    """JSON array containing a non-object element → DatasetLoadError (fail-closed)."""
+    data = [{"ts_ms": _BASE_START_MS, "high": 50000.0, "low": 49000.0, "close": 49500.0}, 42]
+    f = tmp_path / "data.json"
+    f.write_text(json.dumps(data), encoding="utf-8")
+    spec = _make_spec(file_path=str(f))
+    with pytest.raises(DatasetLoadError, match="Expected JSON object at index"):
+        FileBackedDatasetProvider().load(spec)
+
+
 # ---------------------------------------------------------------------------
 # DBBackedDatasetProvider
 # ---------------------------------------------------------------------------
