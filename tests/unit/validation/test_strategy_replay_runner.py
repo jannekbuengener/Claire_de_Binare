@@ -11,9 +11,8 @@ Tests cover:
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -23,7 +22,6 @@ from services.validation.strategy_replay_runner import (
     _DEFAULT_OUTPUT_DIR,
     _DEFAULT_STRATEGY_ID,
     _DEFAULT_SYMBOL,
-    _FALLBACK_CODE_COMMIT,
     AcceleratedShadowReplayConfig,
     ReplayRunnerError,
     _build_replay_report_input,
@@ -122,6 +120,7 @@ class TestAcceleratedShadowReplayConfig:
         assert cfg.strategy_id == _DEFAULT_STRATEGY_ID
         assert cfg.symbol == _DEFAULT_SYMBOL
         assert cfg.adapter_id == _DEFAULT_ADAPTER_ID
+        assert cfg.speedup_profile == "instant"
         assert cfg.output_directory == _DEFAULT_OUTPUT_DIR
         assert cfg.order_size == 1.0
         assert cfg.order_book_depth_multiplier == 10_000.0
@@ -160,6 +159,14 @@ class TestAcceleratedShadowReplayConfig:
             input_candles_file="x.json", adapter_id="unknown_adapter"
         )
         with pytest.raises(ValueError, match="unsupported adapter_id"):
+            cfg.validate()
+
+    def test_validate_fails_unsupported_speedup_profile(self):
+        cfg = AcceleratedShadowReplayConfig(
+            input_candles_file="x.json",
+            speedup_profile="100x",
+        )
+        with pytest.raises(ValueError, match="Unknown speedup profile"):
             cfg.validate()
 
     def test_validate_fails_zero_order_size(self):
@@ -342,6 +349,28 @@ class TestBuildReplayReportInput:
         assert r1.replay_integrity.envelope_chain_hash == r2.replay_integrity.envelope_chain_hash
         assert r1.replay_integrity.envelope_chain_hash == canonical_hash([])
 
+    def test_embeds_scheduler_metadata_in_dataset_summary(self, tmp_path):
+        report = _minimal_backtest_report()
+        cfg = _minimal_valid_config(speedup_profile="2x")
+        scheduler_metadata = {
+            "profile": "2x",
+            "warmup_count": 240,
+            "live_candle_count": 60,
+            "event_time_span_ms": 3_540_000,
+            "simulated_elapsed_ms": 1_770_000,
+        }
+
+        result = _build_replay_report_input(
+            report,
+            cfg,
+            "abc1234",
+            tmp_path,
+            scheduler_metadata=scheduler_metadata,
+        )
+
+        assert result.dataset_summary is not None
+        assert result.dataset_summary["scheduler"] == scheduler_metadata
+
 
 # ---------------------------------------------------------------------------
 # TestRunAcceleratedShadowReplay
@@ -350,10 +379,10 @@ class TestBuildReplayReportInput:
 class TestRunAcceleratedShadowReplay:
     """Full-flow tests with run_primary_breakout_backtest and ReplayReporter mocked."""
 
-    def _make_candles_file(self, tmp_path: Path) -> Path:
+    def _make_candles_file(self, tmp_path: Path, count: int = 300) -> Path:
         candles = [{"ts_ms": 1_000_000 + i * 60_000, "close": 50000.0,
                     "high": 51000.0, "low": 49000.0, "regime_id": 0,
-                    "symbol": "BTCUSDT"} for i in range(3)]
+                    "symbol": "BTCUSDT"} for i in range(count)]
         f = tmp_path / "candles.json"
         f.write_text(json.dumps(candles), encoding="utf-8")
         return f
@@ -390,6 +419,30 @@ class TestRunAcceleratedShadowReplay:
 
         assert (bundle_dir / "config.resolved.json").exists()
         assert (bundle_dir / "env_redacted.txt").exists()
+
+    @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_scheduler_metadata_embedded_in_report_input(
+        self, mock_write, mock_backtest, tmp_path
+    ):
+        bundle_dir = tmp_path / "bt-abc1234567890123"
+        bundle_dir.mkdir()
+        mock_backtest.return_value = _minimal_backtest_report()
+        mock_write.return_value = bundle_dir
+
+        f = self._make_candles_file(tmp_path)
+        cfg = AcceleratedShadowReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            speedup_profile="2x",
+        )
+        exit_code = run_accelerated_shadow_replay(cfg)
+
+        assert exit_code == 0
+        report_input = mock_write.call_args.args[0]
+        assert report_input.dataset_summary is not None
+        assert report_input.dataset_summary["scheduler"]["profile"] == "2x"
+        assert report_input.dataset_summary["scheduler"]["warmup_count"] == 240
 
     def test_missing_input_file_returns_2(self, tmp_path):
         cfg = AcceleratedShadowReplayConfig(
@@ -710,6 +763,25 @@ class TestMainArgParse:
                 main()
 
         assert captured[0].deterministic_verify is True
+
+    def test_speedup_profile_flag_applied(self, tmp_path):
+        candles = [{"ts_ms": 1_000_000}]
+        f = tmp_path / "c.json"
+        f.write_text(json.dumps(candles))
+        captured = []
+
+        def capture(cfg):
+            captured.append(cfg)
+            return 0
+
+        with patch(
+            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            side_effect=capture,
+        ):
+            with patch("sys.argv", ["prog", "--input-candles", str(f), "--speedup-profile", "5x"]):
+                main()
+
+        assert captured[0].speedup_profile == "5x"
 
     def test_exit_code_semantics_0(self, tmp_path):
         candles = [{"ts_ms": 1_000_000}]

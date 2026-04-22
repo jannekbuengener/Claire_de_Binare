@@ -22,6 +22,7 @@ Usage:
         [--strategy-id primary_breakout_v1] \\
         [--symbol BTCUSDT] \\
         [--adapter-id primary_breakout_runner_v1] \\
+        [--speedup-profile instant|1x|2x|5x|10x] \\
         [--dry-run] \\
         [--deterministic-verify]
 
@@ -53,6 +54,8 @@ from pathlib import Path
 from typing import Any
 
 from core.replay.canonical_json import canonical_hash
+from core.replay.dataset_provider import DatasetResult
+from core.replay.dataset_spec import DatasetSpec
 from core.replay.historical_bridge import (
     HistoricalBridgeError,
     PrimaryBreakoutBridgeConfig,
@@ -66,6 +69,11 @@ from core.replay.replay_contracts import (
     ReplayReportArtifactManifest,
     ReplayReportInput,
     ReplayRunSpec,
+)
+from core.replay.scheduler import (
+    ReplayScheduler,
+    SchedulerConfig,
+    SchedulerError,
 )
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from services.validation.strategy_backtest_runner import (
@@ -139,6 +147,9 @@ class AcceleratedShadowReplayConfig:
     adapter_id: str = _DEFAULT_ADAPTER_ID
     """Adapter identifier. Must be in _SUPPORTED_ADAPTER_IDS."""
 
+    speedup_profile: str = "instant"
+    """Deterministic replay scheduler speed profile."""
+
     output_directory: str = _DEFAULT_OUTPUT_DIR
     """Root output directory for replay artifact bundles."""
 
@@ -185,6 +196,10 @@ class AcceleratedShadowReplayConfig:
                 f"unsupported adapter_id {self.adapter_id!r}; "
                 f"supported: {sorted(_SUPPORTED_ADAPTER_IDS)}"
             )
+        try:
+            SchedulerConfig(profile=self.speedup_profile).validate()
+        except SchedulerError as exc:
+            raise ValueError(str(exc)) from exc
         if self.order_size <= 0:
             raise ValueError("order_size must be > 0")
         if self.order_book_depth_multiplier <= 0:
@@ -268,11 +283,60 @@ def _redact_env() -> dict[str, str]:
     return {k: v for k, v in os.environ.items() if k in _SAFE_ENV_KEYS}
 
 
+def _build_scheduler_metadata(
+    candles: list[dict[str, Any]],
+    *,
+    input_path: Path,
+    config: AcceleratedShadowReplayConfig,
+    warmup_count: int,
+) -> dict[str, Any]:
+    """Derive deterministic scheduler metadata from the loaded candle series."""
+    if len(candles) <= warmup_count:
+        raise ReplayRunnerError(
+            f"scheduler requires at least {warmup_count + 1} candles for "
+            f"warmup_count={warmup_count}; got {len(candles)}"
+        )
+
+    try:
+        start_ts_ms = int(candles[warmup_count]["ts_ms"])
+        end_ts_ms = int(candles[-1]["ts_ms"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ReplayRunnerError(
+            "scheduler requires numeric ts_ms on the first live candle and last candle"
+        ) from exc
+
+    spec = DatasetSpec(
+        symbol=config.symbol,
+        timeframe="1m",
+        start_ts_ms=start_ts_ms,
+        end_ts_ms=end_ts_ms,
+        warmup_candles=warmup_count,
+        source="file",
+        file_path=str(input_path),
+    )
+    try:
+        spec.validate()
+        dataset_result = DatasetResult(
+            spec=spec,
+            candles=tuple(dict(candle) for candle in candles),
+            fingerprint=spec.fingerprint(),
+            warmup_count=warmup_count,
+            effective_candle_count=len(candles) - warmup_count,
+        )
+        return ReplayScheduler().schedule(
+            dataset_result,
+            SchedulerConfig(profile=config.speedup_profile),
+        ).to_dict()
+    except ValueError as exc:
+        raise ReplayRunnerError(f"scheduler validation failed: {exc}") from exc
+
+
 def _build_replay_report_input(
     backtest_report: dict[str, Any],
     config: AcceleratedShadowReplayConfig,
     code_commit: str,
     output_dir: Path,
+    scheduler_metadata: dict[str, Any] | None = None,
 ) -> ReplayReportInput:
     """Bridge a backtest runner report to a ReplayReportInput.
 
@@ -283,7 +347,9 @@ def _build_replay_report_input(
     No metrics are recalculated; all values are derived from the backtest report.
     """
     run_id: str = backtest_report["run_metadata"]["run_id"]
-    dataset: dict[str, Any] = backtest_report["dataset_summary"]
+    dataset: dict[str, Any] = dict(backtest_report["dataset_summary"])
+    if scheduler_metadata is not None:
+        dataset["scheduler"] = dict(scheduler_metadata)
     metrics: dict[str, Any] = backtest_report["metrics"]
 
     run_spec = ReplayRunSpec(
@@ -347,7 +413,7 @@ def _build_replay_report_input(
         envelope_summary=envelope_summary,
         artifact_manifest=artifact_manifest,
         config_snapshot=backtest_report.get("config_snapshot"),
-        dataset_summary=backtest_report.get("dataset_summary"),
+        dataset_summary=dataset,
         metrics=metrics,
         thresholds_applied=backtest_report.get("thresholds_applied"),
         # gate_result already computed by the backtest runner; reporter will skip evaluation.
@@ -373,6 +439,7 @@ def _write_supplementary_artifacts(
         "strategy_id": config.strategy_id,
         "symbol": config.symbol,
         "adapter_id": config.adapter_id,
+        "speedup_profile": config.speedup_profile,
         "output_directory": config.output_directory,
         "order_size": config.order_size,
         "order_book_depth_multiplier": config.order_book_depth_multiplier,
@@ -421,21 +488,36 @@ def run_accelerated_shadow_replay(config: AcceleratedShadowReplayConfig) -> int:
         )
         return 0
 
+    run_cfg = PrimaryBreakoutBacktestRunConfig(
+        bridge=PrimaryBreakoutBridgeConfig(
+            entry_lookback_minutes=config.entry_lookback_minutes,
+            exit_lookback_minutes=config.exit_lookback_minutes,
+            breakout_buffer=config.breakout_buffer,
+            min_minutes_between_entries=config.min_minutes_between_entries,
+        ),
+        order_size=config.order_size,
+        order_book_depth_multiplier=config.order_book_depth_multiplier,
+    )
+    warmup_count = max(
+        run_cfg.bridge.entry_lookback_minutes,
+        run_cfg.bridge.exit_lookback_minutes,
+    )
+    try:
+        scheduler_metadata = _build_scheduler_metadata(
+            candles,
+            input_path=input_path,
+            config=config,
+            warmup_count=warmup_count,
+        )
+    except ReplayRunnerError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
     output_dir = Path(config.output_directory)
     code_commit = _get_code_commit()
 
     # Delegate to the existing backtest surface (business logic lives here)
     try:
-        run_cfg = PrimaryBreakoutBacktestRunConfig(
-            bridge=PrimaryBreakoutBridgeConfig(
-                entry_lookback_minutes=config.entry_lookback_minutes,
-                exit_lookback_minutes=config.exit_lookback_minutes,
-                breakout_buffer=config.breakout_buffer,
-                min_minutes_between_entries=config.min_minutes_between_entries,
-            ),
-            order_size=config.order_size,
-            order_book_depth_multiplier=config.order_book_depth_multiplier,
-        )
         backtest_report = run_primary_breakout_backtest(
             candles,
             run_config=run_cfg,
@@ -451,7 +533,11 @@ def run_accelerated_shadow_replay(config: AcceleratedShadowReplayConfig) -> int:
     # Bridge backtest report → replay contract shape
     try:
         report_input = _build_replay_report_input(
-            backtest_report, config, code_commit, output_dir
+            backtest_report,
+            config,
+            code_commit,
+            output_dir,
+            scheduler_metadata=scheduler_metadata,
         )
     except Exception as exc:
         print(f"ERROR: Failed to build replay report input: {exc}", file=sys.stderr)
@@ -544,6 +630,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         help=f"Adapter identifier. Default: {_DEFAULT_ADAPTER_ID!r}",
     )
     parser.add_argument(
+        "--speedup-profile",
+        default="instant",
+        metavar="PROFILE",
+        help="Deterministic scheduler speed profile. Default: 'instant'.",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
@@ -569,6 +661,7 @@ def main() -> int:
             strategy_id=args.strategy_id,
             symbol=args.symbol,
             adapter_id=args.adapter_id,
+            speedup_profile=args.speedup_profile,
             output_directory=args.output_dir,
             dry_run=args.dry_run,
             deterministic_verify=args.deterministic_verify,
