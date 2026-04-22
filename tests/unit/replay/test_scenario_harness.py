@@ -270,7 +270,11 @@ class TestRunScenarioGroup:
 
         specs = [_spec("baseline")]
         with pytest.raises(ScenarioHarnessError, match="must return ScenarioRunResult"):
-            run_scenario_group(specs, run_fn=bad_fn, output_dir=tmp_path)  # type: ignore[arg-type]
+            run_scenario_group(  # type: ignore[arg-type]
+                specs,
+                run_fn=bad_fn,
+                output_dir=tmp_path,
+            )
 
     def test_run_fn_wrong_scenario_id_raises(self, tmp_path: Path) -> None:
         def wrong_id_fn(spec: ScenarioSpec) -> ScenarioRunResult:

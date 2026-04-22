@@ -12,6 +12,7 @@ Non-goals:
 
 from __future__ import annotations
 
+import copy
 import re
 from dataclasses import dataclass
 from datetime import timezone
@@ -29,7 +30,12 @@ class ScenarioHarnessError(ValueError):
 
 
 def _utc_now_iso() -> str:
-    return utcnow().replace(tzinfo=timezone.utc).isoformat()
+    dt = utcnow()
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat()
 
 
 def _require_non_empty_string(value: object, field_name: str) -> None:
@@ -55,9 +61,9 @@ class ScenarioSpec:
         _require_non_empty_string(self.description, "description")
         if not isinstance(self.config_overrides, dict):
             raise ScenarioHarnessError("config_overrides must be a dict")
-        # Defensive copy: prevents external mutation from affecting harness
-        # determinism after construction.
-        object.__setattr__(self, "config_overrides", dict(self.config_overrides))
+        # Defensive deep copy: prevents external mutation of nested structures
+        # from affecting harness determinism after construction.
+        object.__setattr__(self, "config_overrides", copy.deepcopy(self.config_overrides))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -261,7 +267,11 @@ def run_scenario_group(
             )
 
     scenario_ids = [spec.scenario_id for spec in scenario_specs]
-    resolved_group_id = group_id if group_id is not None else build_scenario_group_id(scenario_ids)
+    resolved_group_id = (
+        group_id
+        if group_id is not None
+        else build_scenario_group_id(scenario_ids)
+    )
     output_path = Path(output_dir)
     artifact_root = str(output_path / resolved_group_id)
     started_at_utc = _utc_now_iso()
