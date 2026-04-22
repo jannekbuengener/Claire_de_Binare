@@ -12,12 +12,9 @@ Current implementation status
     Loads from a local JSON-array or JSONL file. Validates ordering, 1-minute
     cadence, required fields, and warmup sufficiency.
 
-``DBBackedDatasetProvider`` — **not implemented**.
-    Raises ``NotImplementedError``. The Postgres schema
-    (``infrastructure/database/schema.sql``) has no candles table.
-    ``cdb_db_writer`` does not persist candle data — candles flow through Redis
-    ``stream.candles_1m`` and are ephemeral. DB-backed replay input requires a
-    candles persistence layer. Tracked in GitHub Issue #1841.
+``DBBackedDatasetProvider`` — **implemented** (Issue #1841 / PR #1857).
+    Queries the ``candles_1m`` Postgres table populated by ``cdb_db_writer``
+    from ``stream.candles_1m``. Persistence layer landed in Issue #1855 / PR #1856.
 
 Boundary note
 -------------
@@ -69,6 +66,53 @@ class DatasetProvider(Protocol):
     def load(self, spec: DatasetSpec) -> DatasetResult: ...
 
 
+def _validate_candle_series(candles: list[dict], source_label: str) -> None:
+    """Validate a candle series for shape, ordering, and 1-minute cadence.
+
+    Shared by all providers. ``source_label`` is included in error messages
+    for diagnostic clarity (e.g. ``str(file_path)`` or ``"db:BTCUSDT"``).
+
+    Checks (in order):
+      - Non-empty series
+      - All ``_REQUIRED_CANDLE_FIELDS`` present and non-None in every row
+      - ``ts_ms`` strictly increasing across consecutive rows
+      - Exactly ``_ONE_MINUTE_MS`` (60 000 ms) gap between consecutive rows
+    """
+    if not candles:
+        raise DatasetLoadError(f"No candles in dataset: {source_label}")
+
+    for idx, candle in enumerate(candles):
+        missing = _REQUIRED_CANDLE_FIELDS - candle.keys()
+        if missing:
+            raise DatasetLoadError(
+                f"Candle at index {idx} is missing required fields "
+                f"{sorted(missing)}: {candle!r}"
+            )
+        for key in _REQUIRED_CANDLE_FIELDS:
+            if candle[key] is None:
+                raise DatasetLoadError(
+                    f"Candle at index {idx} has None value for required field "
+                    f"{key!r}: {candle!r}"
+                )
+
+    for idx in range(1, len(candles)):
+        prev_ts = candles[idx - 1]["ts_ms"]
+        curr_ts = candles[idx]["ts_ms"]
+        if curr_ts <= prev_ts:
+            raise DatasetLoadError(
+                f"ts_ms must be strictly increasing: "
+                f"candle[{idx - 1}]={prev_ts}, candle[{idx}]={curr_ts}. "
+                f"Source: {source_label}"
+            )
+        delta = curr_ts - prev_ts
+        if delta != _ONE_MINUTE_MS:
+            raise DatasetLoadError(
+                f"1m cadence violation: expected {_ONE_MINUTE_MS}ms gap, "
+                f"got {delta}ms between candle[{idx - 1}] (ts={prev_ts}) "
+                f"and candle[{idx}] (ts={curr_ts}). Source: {source_label}"
+            )
+
+
 class FileBackedDatasetProvider:
     """Load historical candle data from a local JSON-array or JSONL file.
 
@@ -111,7 +155,7 @@ class FileBackedDatasetProvider:
             ) from exc
 
         candles = self._parse(raw, file_path)
-        self._validate_series(candles, file_path)
+        _validate_candle_series(candles, str(file_path))
 
         if len(candles) <= spec.warmup_candles:
             raise DatasetLoadError(
@@ -171,58 +215,118 @@ class FileBackedDatasetProvider:
             raise DatasetLoadError(f"Dataset file contains no candle rows: {file_path}")
         return rows
 
-    def _validate_series(self, candles: list[dict], file_path: Path) -> None:
-        if not candles:
-            raise DatasetLoadError(f"No candles in dataset: {file_path}")
-
-        for idx, candle in enumerate(candles):
-            missing = _REQUIRED_CANDLE_FIELDS - candle.keys()
-            if missing:
-                raise DatasetLoadError(
-                    f"Candle at index {idx} is missing required fields "
-                    f"{sorted(missing)}: {candle!r}"
-                )
-
-        for idx in range(1, len(candles)):
-            prev_ts = candles[idx - 1]["ts_ms"]
-            curr_ts = candles[idx]["ts_ms"]
-            if curr_ts <= prev_ts:
-                raise DatasetLoadError(
-                    f"ts_ms must be strictly increasing: "
-                    f"candle[{idx - 1}]={prev_ts}, candle[{idx}]={curr_ts}. "
-                    f"File: {file_path}"
-                )
-            delta = curr_ts - prev_ts
-            if delta != _ONE_MINUTE_MS:
-                raise DatasetLoadError(
-                    f"1m cadence violation: expected {_ONE_MINUTE_MS}ms gap, "
-                    f"got {delta}ms between candle[{idx - 1}] (ts={prev_ts}) "
-                    f"and candle[{idx}] (ts={curr_ts}). File: {file_path}"
-                )
-
 
 class DBBackedDatasetProvider:
-    """Placeholder for DB-backed historical replay input.
+    """Load historical candle data from the Postgres ``candles_1m`` table.
 
-    NOT IMPLEMENTED in this phase.
+    Requires an injected psycopg2-compatible database connection. The provider
+    does not manage the connection lifecycle.
 
-    Reason: The Postgres schema (``infrastructure/database/schema.sql``) has no
-    candles table. The ``cdb_db_writer`` service does not persist candle data —
-    candles flow through Redis ``stream.candles_1m`` (ephemeral) and are never
-    written to Postgres. Until a candles persistence layer exists, DB-backed
-    replay input is not repo-backed implementable.
+    Validates:
+      - ``spec.source == "db"`` (fail-closed on source mismatch)
+      - DB result covers the full requested window including warmup rows:
+        first row ``ts_ms`` == ``warmup_start_ms``, last row ``ts_ms`` ==
+        ``spec.end_ts_ms``
+      - All required fields present and non-None in each row
+      - ``ts_ms`` strictly increasing at exactly 1-minute cadence
 
-    This gap is tracked in GitHub Issue #1841.
+    Note on ``db_dataset_id``
+    -------------------------
+    ``spec.db_dataset_id`` is a **caller-provided logical label** used for
+    audit trail and deterministic fingerprinting via ``DatasetSpec.fingerprint()``.
+    It does NOT resolve to a persisted dataset record and does NOT constrain
+    the DB query. The query is keyed solely on ``spec.symbol`` and the time
+    window ``[warmup_start_ms, spec.end_ts_ms]``.
+
+    Candle persistence is provided by ``cdb_db_writer`` from
+    ``stream.candles_1m`` (landed in GitHub Issue #1855 / PR #1856).
+    Tracked in GitHub Issue #1841.
     """
+
+    def __init__(self, db_conn) -> None:
+        """Inject a psycopg2 connection. Provider does not manage connection lifecycle."""
+        self._db_conn = db_conn
 
     def load(self, spec: DatasetSpec) -> DatasetResult:
         spec.validate()
-        raise NotImplementedError(
-            "DB-backed dataset loading is not implemented. "
-            "The Postgres schema has no candles table "
-            "(see infrastructure/database/schema.sql). "
-            "cdb_db_writer does not persist candle data — "
-            "candles are ephemeral in Redis stream.candles_1m. "
-            "DB-backed replay input requires a candles persistence layer. "
-            "Tracked in GitHub Issue #1841."
+
+        if spec.source != "db":
+            raise DatasetLoadError(
+                f"DBBackedDatasetProvider requires source='db', "
+                f"got source={spec.source!r}."
+            )
+
+        warmup_start_ms: int = spec.start_ts_ms - spec.warmup_candles * _ONE_MINUTE_MS
+
+        try:
+            cursor = self._db_conn.cursor()
+            cursor.execute(
+                """
+                SELECT ts_ms, open, high, low, close, volume, trade_count
+                FROM candles_1m
+                WHERE symbol = %s
+                  AND ts_ms >= %s
+                  AND ts_ms <= %s
+                ORDER BY ts_ms ASC
+                """,
+                (spec.symbol, warmup_start_ms, spec.end_ts_ms),
+            )
+            rows = cursor.fetchall()
+        except Exception as exc:
+            raise DatasetLoadError(
+                f"DB query failed for candles_1m (symbol={spec.symbol!r}, "
+                f"window=[{warmup_start_ms}, {spec.end_ts_ms}]): {exc}"
+            ) from exc
+
+        if not rows:
+            raise DatasetLoadError(
+                f"No candles found in candles_1m for symbol={spec.symbol!r} "
+                f"in window [{warmup_start_ms}, {spec.end_ts_ms}]. "
+                f"Hint: candles_1m is populated by cdb_db_writer from stream.candles_1m."
+            )
+
+        if rows[0][0] != warmup_start_ms:
+            raise DatasetLoadError(
+                f"candles_1m is missing warmup data for symbol={spec.symbol!r}: "
+                f"expected first candle at ts_ms={warmup_start_ms}, "
+                f"got ts_ms={rows[0][0]}. "
+                f"Ensure stream.candles_1m has been persisted with sufficient history."
+            )
+
+        candles: list[dict] = [
+            {
+                "ts_ms": row[0],
+                "open": row[1],
+                "high": row[2],
+                "low": row[3],
+                "close": row[4],
+                "volume": row[5],
+                "trade_count": row[6],
+            }
+            for row in rows
+        ]
+
+        _validate_candle_series(candles, source_label=f"db:{spec.symbol}")
+
+        if candles[-1]["ts_ms"] != spec.end_ts_ms:
+            raise DatasetLoadError(
+                f"candles_1m is missing end-boundary data for symbol={spec.symbol!r}: "
+                f"expected last candle at ts_ms={spec.end_ts_ms}, "
+                f"got ts_ms={candles[-1]['ts_ms']}."
+            )
+
+        if len(candles) <= spec.warmup_candles:
+            raise DatasetLoadError(
+                f"Insufficient candles for db:{spec.symbol}: {len(candles)} total, "
+                f"{spec.warmup_candles} warmup required. "
+                f"Need at least {spec.warmup_candles + 1} candles."
+            )
+
+        return DatasetResult(
+            spec=spec,
+            candles=tuple(dict(c) for c in candles),
+            fingerprint=spec.fingerprint(),
+            warmup_count=spec.warmup_candles,
+            effective_candle_count=len(candles) - spec.warmup_candles,
         )
+

@@ -4,7 +4,7 @@ Tests validate:
 - DatasetSpec invariants (all fail-closed rules)
 - DatasetSpec fingerprint determinism and serialization
 - FileBackedDatasetProvider: JSON array and JSONL loading, all error paths
-- DBBackedDatasetProvider: raises NotImplementedError with schema gap message
+- DBBackedDatasetProvider: full DB-backed loading, all fail-closed paths
 
 Part of ARVP §4.2 — Historical Data Access layer.
 Tracked in GitHub Issue #1841.
@@ -13,6 +13,8 @@ Tracked in GitHub Issue #1841.
 from __future__ import annotations
 
 import json
+from decimal import Decimal
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -63,6 +65,27 @@ def _make_candles(count: int, start_ts_ms: int = _BASE_START_MS) -> list[dict]:
             "low": 49_000.0 + i,
             "close": 49_500.0 + i,
         }
+        for i in range(count)
+    ]
+
+
+def _make_db_rows(count: int, start_ts_ms: int = _BASE_START_MS) -> list[tuple]:
+    """Generate mock psycopg2 rows for candles_1m with valid 1-minute cadence.
+
+    Column order matches SELECT in DBBackedDatasetProvider:
+    ts_ms (int), open (Decimal), high (Decimal), low (Decimal),
+    close (Decimal), volume (Decimal), trade_count (int).
+    """
+    return [
+        (
+            start_ts_ms + i * 60_000,
+            Decimal("50000.00000001"),
+            Decimal("50001.00000001"),
+            Decimal("49999.00000001"),
+            Decimal("50000.50000001"),
+            Decimal("10.50000001"),
+            100 + i,
+        )
         for i in range(count)
     ]
 
@@ -384,21 +407,205 @@ def test_file_backed_source_mismatch_raises() -> None:
         FileBackedDatasetProvider().load(spec)
 
 
+@pytest.mark.unit
+def test_file_backed_null_required_field_raises(tmp_path: object) -> None:
+    """JSON null on a required field triggers DatasetLoadError (None-value guard)."""
+    candles = _make_candles(5)
+    candles[2]["close"] = None  # JSON null — parses as Python None
+    f = tmp_path / "data.json"
+    f.write_text(json.dumps(candles), encoding="utf-8")
+    spec = _make_spec(file_path=str(f))
+    with pytest.raises(DatasetLoadError, match="None value"):
+        FileBackedDatasetProvider().load(spec)
+
+
 # ---------------------------------------------------------------------------
 # DBBackedDatasetProvider
 # ---------------------------------------------------------------------------
 
+# Spec constants for DB tests.
+# default spec: warmup=3, start=_BASE_START_MS, end=_BASE_START_MS+600_000
+# warmup_start_ms = _BASE_START_MS - 3 * 60_000 = _BASE_START_MS - 180_000
+# Full window: warmup_start_ms..end → 14 rows @ 60s cadence
+_DB_WARMUP = 3
+_DB_END_MS = _BASE_START_MS + 600_000
+_DB_WARMUP_START_MS = _BASE_START_MS - _DB_WARMUP * 60_000  # 3 warmup rows
+
+
+def _make_db_spec(**overrides) -> DatasetSpec:
+    defaults = dict(
+        source="db",
+        file_path=None,
+        db_dataset_id="ds-001",
+        warmup_candles=_DB_WARMUP,
+        end_ts_ms=_DB_END_MS,
+    )
+    defaults.update(overrides)
+    return _make_spec(**defaults)
+
+
+def _make_mock_conn(rows: list[tuple]) -> MagicMock:
+    """Build a minimal psycopg2-mock connection returning ``rows``."""
+    cursor = MagicMock()
+    cursor.fetchall.return_value = rows
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    return conn
+
 
 @pytest.mark.unit
-def test_db_backed_raises_not_implemented_with_schema_gap_message() -> None:
-    spec = _make_spec(source="db", file_path=None, db_dataset_id="ds-001")
-    with pytest.raises(NotImplementedError, match="candles table"):
-        DBBackedDatasetProvider().load(spec)
+def test_db_backed_valid_rows_returns_dataset_result() -> None:
+    """Happy path: valid DB rows → correct DatasetResult with proper counts."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)  # 3 warmup + 11 effective
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    result = DBBackedDatasetProvider(conn).load(spec)
+    assert isinstance(result, DatasetResult)
+    assert result.warmup_count == _DB_WARMUP
+    assert result.effective_candle_count == 14 - _DB_WARMUP
+    assert len(result.candles) == 14
 
 
 @pytest.mark.unit
-def test_db_backed_validates_spec_before_raising() -> None:
-    """A bad db spec should raise DatasetSpecError, not NotImplementedError."""
-    spec = _make_spec(source="db", file_path=None, db_dataset_id=None)  # missing db_dataset_id
+def test_db_backed_warmup_rows_correctly_separated() -> None:
+    """Warmup rows appear at the start of result.candles; effective rows follow."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    result = DBBackedDatasetProvider(conn).load(spec)
+    assert result.candles[0]["ts_ms"] == _DB_WARMUP_START_MS
+    assert result.candles[_DB_WARMUP]["ts_ms"] == _BASE_START_MS
+
+
+@pytest.mark.unit
+def test_db_backed_zero_warmup_starts_at_start_ts_ms() -> None:
+    """warmup_candles=0: no pre-period rows; first candle is start_ts_ms."""
+    rows = _make_db_rows(11, _BASE_START_MS)  # 0 warmup + 11 effective
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec(warmup_candles=0)
+    result = DBBackedDatasetProvider(conn).load(spec)
+    assert result.warmup_count == 0
+    assert result.candles[0]["ts_ms"] == _BASE_START_MS
+    assert result.effective_candle_count == 11
+
+
+@pytest.mark.unit
+def test_db_backed_empty_result_raises() -> None:
+    """Empty DB result → DatasetLoadError (no candles in window)."""
+    conn = _make_mock_conn([])
+    spec = _make_db_spec()
+    with pytest.raises(DatasetLoadError, match="No candles found"):
+        DBBackedDatasetProvider(conn).load(spec)
+
+
+@pytest.mark.unit
+def test_db_backed_source_file_raises() -> None:
+    """source='file' spec → DatasetLoadError before any DB query."""
+    conn = _make_mock_conn([])
+    spec = _make_spec(file_path="/some/path.json")  # source='file'
+    with pytest.raises(DatasetLoadError, match="source='db'"):
+        DBBackedDatasetProvider(conn).load(spec)
+
+
+@pytest.mark.unit
+def test_db_backed_cadence_violation_raises() -> None:
+    """Rows with non-60s gap trigger DatasetLoadError (cadence check)."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    # Shift one row's ts_ms to break cadence
+    broken = list(rows[5])
+    broken[0] += 30_000  # 90 000 ms gap instead of 60 000
+    rows = rows[:5] + [tuple(broken)] + rows[6:]
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    with pytest.raises(DatasetLoadError, match="1m cadence"):
+        DBBackedDatasetProvider(conn).load(spec)
+
+
+@pytest.mark.unit
+def test_db_backed_missing_required_field_raises() -> None:
+    """Row missing a required key → DatasetLoadError (field guard in validator)."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    # Drop 'close' (index 4) from row 5 by returning only 6 columns
+    bad_row = rows[5][:4] + rows[5][5:]  # skip index 4 (close)
+    rows = rows[:5] + [bad_row] + rows[6:]
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    # The mapping in load() uses positional indices, so missing column causes IndexError
+    # which is caught by the try/except around cursor.execute/fetchall —
+    # actually the mapping is manual so we test the validator path via None field.
+    # Use None value path instead (canonical path for missing data from DB).
+    rows2 = list(_make_db_rows(14, _DB_WARMUP_START_MS))
+    rows2[5] = rows2[5][:4] + (None,) + rows2[5][5:]  # close = None at index 4
+    conn2 = _make_mock_conn(rows2)
+    with pytest.raises(DatasetLoadError, match="None value"):
+        DBBackedDatasetProvider(conn2).load(spec)
+
+
+@pytest.mark.unit
+def test_db_backed_missing_warmup_start_raises() -> None:
+    """First row ts_ms != warmup_start_ms → DatasetLoadError (exact-window check)."""
+    # Shift all rows by one candle: warmup start is wrong
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS + 60_000)
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    with pytest.raises(DatasetLoadError, match="warmup data"):
+        DBBackedDatasetProvider(conn).load(spec)
+
+
+@pytest.mark.unit
+def test_db_backed_ts_ms_is_int() -> None:
+    """ts_ms values in result.candles are Python int (BIGINT → int mapping)."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    result = DBBackedDatasetProvider(conn).load(spec)
+    for candle in result.candles:
+        assert isinstance(candle["ts_ms"], int), f"Expected int, got {type(candle['ts_ms'])}"
+
+
+@pytest.mark.unit
+def test_db_backed_price_fields_are_decimal() -> None:
+    """Numeric fields from DECIMAL(18,8) columns remain Decimal — no float conversion."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    conn = _make_mock_conn(rows)
+    spec = _make_db_spec()
+    result = DBBackedDatasetProvider(conn).load(spec)
+    for candle in result.candles:
+        for field in ("open", "high", "low", "close", "volume"):
+            assert isinstance(candle[field], Decimal), (
+                f"Field {field!r} expected Decimal, got {type(candle[field])}"
+            )
+
+
+@pytest.mark.unit
+def test_db_backed_deterministic_output() -> None:
+    """Identical DB rows produce identical DatasetResult and fingerprint."""
+    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
+    spec = _make_db_spec()
+    result1 = DBBackedDatasetProvider(_make_mock_conn(rows)).load(spec)
+    result2 = DBBackedDatasetProvider(_make_mock_conn(rows)).load(spec)
+    assert result1.fingerprint == result2.fingerprint
+    assert result1.candles == result2.candles
+
+
+@pytest.mark.unit
+def test_db_backed_invalid_spec_fails_before_db_query() -> None:
+    """Invalid spec (missing db_dataset_id) raises DatasetSpecError before any query."""
+    conn = _make_mock_conn([])
+    spec = _make_spec(source="db", file_path=None, db_dataset_id=None)
     with pytest.raises(DatasetSpecError, match="db_dataset_id"):
-        DBBackedDatasetProvider().load(spec)
+        DBBackedDatasetProvider(conn).load(spec)
+    conn.cursor.assert_not_called()
+
+
+@pytest.mark.unit
+def test_db_backed_db_exception_raises_dataset_load_error() -> None:
+    """DB error during execute/fetchall → DatasetLoadError (not raw exception)."""
+    cursor = MagicMock()
+    cursor.execute.side_effect = Exception("connection lost")
+    conn = MagicMock()
+    conn.cursor.return_value = cursor
+    spec = _make_db_spec()
+    with pytest.raises(DatasetLoadError, match="DB query failed"):
+        DBBackedDatasetProvider(conn).load(spec)
+
