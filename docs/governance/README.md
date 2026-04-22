@@ -31,6 +31,17 @@ This directory contains governance artifacts for the Claire de Binare (CDB) trad
 
 ---
 
+## ARVP Platform Governance
+
+- [arvp_platform.md](arvp_platform.md)
+  — Canonical terminology, module map, and scope boundaries for the
+    Accelerated Replay Validation Platform (ARVP). Establishes `ARVP` as
+    the umbrella term, anchors the foundation (PR `#1808`, issues
+    `#1801–#1806`) and defines productization layer boundaries and
+    naming rules for all follow-up issues and PRs.
+
+---
+
 ## Local Governance Files
 
 ### DB Layer Governance
