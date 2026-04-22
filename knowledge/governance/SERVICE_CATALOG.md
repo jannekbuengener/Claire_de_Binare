@@ -31,7 +31,7 @@
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
 | **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details |
 | **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default); `/orders` Fehlerantworten nur mit sicherem Fehlercode |
-| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz; `candle_normalizer.py` persistiert `stream.candles_1m` → `candles_1m` Postgres-Tabelle (PR #1856) |
 | **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
@@ -64,6 +64,8 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | **Envelopes** | `core/replay/envelopes.py` | **AKTIV** (PR #1808) | Decision/Order/Fill envelope types + replay metadata |
 | **Replay Reporter** | `services/validation/replay_reporter.py` | **AKTIV** (PR #1808) | Artifact bundle writer (report.json, manifest.json, audit.log) |
 | **Replay CLI** | `services/validation/strategy_replay_runner.py` | **AKTIV** (PR #1808) | Thin operator entry-point, config validation, exit codes 0/1/2 |
+| **Dataset Spec** | `core/replay/dataset_spec.py` | **AKTIV** (PR #1856) | Frozen request-spec für historische Replay-Datasets (ARVP §4.2); Fingerprint via canonical_hash |
+| **Dataset Provider** | `core/replay/dataset_provider.py` | **AKTIV** (PR #1856) | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres); ARVP §4.2 |
 
 **Interne Abhängigkeiten:** Nutzen `core/replay/canonical_json.py` (deterministic serialization), `core/replay/envelopes.py` (envelope tracking).
 
@@ -183,3 +185,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-18 | PR #1755 Nachzug: Risk-/Execution-Fehlerantworten und Kill-Switch-Fallback auf stacktrace-freie Fehlercodes/Safemessages dokumentiert | Codex |
 | 2026-04-19 | Prometheus-Image-Version nachgezogen: v3.10.0 → v3.11.2 (PR #1767, Issue #1771); enger Katalog-Nachzug gegen current-main | Codex |
 | 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay/ + services/validation/) als Core Libraries dokumentiert; 6 Modules + 2 Components + 453 Tests (Issue #1809) | Codex |
+| 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) in Core Libraries ergänzt; DB-Writer Candle-Persistence (candle_normalizer.py → candles_1m) nachgezogen (Issue #1857) | Codex |
