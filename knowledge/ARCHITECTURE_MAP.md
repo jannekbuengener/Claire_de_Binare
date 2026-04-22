@@ -151,7 +151,7 @@ cdb_reports           Up (healthy)
 | **Dataset Spec** | `core/replay/dataset_spec.py` | Frozen request-spec für historische Replay-Datasets (ARVP §4.2); Fingerprint via canonical_hash | **AKTIV** (PR #1856) |
 | **Dataset Provider** | `core/replay/dataset_provider.py` | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres); ARVP §4.2 | **AKTIV** (PR #1856) |
 
-**Nutzung:**Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis/DB-Integration.
+**Nutzung:** Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets können über `DBBackedDatasetProvider` aus `candles_1m` (Postgres) bezogen werden.
 
 **Reporter & CLI:**
 | Component | File | Funktion | Status |
