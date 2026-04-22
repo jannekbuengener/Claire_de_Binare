@@ -237,6 +237,12 @@ class TestLoadCandles:
         with pytest.raises(ReplayRunnerError, match="parse error"):
             _load_candles(f)
 
+    def test_json_array_non_object_row_raises(self, tmp_path):
+        f = tmp_path / "bad_row.json"
+        f.write_text(json.dumps([{"ts_ms": 1_000_000}, 123]), encoding="utf-8")
+        with pytest.raises(ReplayRunnerError, match="must be a JSON object"):
+            _load_candles(f)
+
     def test_malformed_jsonl_raises(self, tmp_path):
         f = tmp_path / "bad.jsonl"
         f.write_text('{"ts_ms": 1}\nbad line\n', encoding="utf-8")
@@ -447,6 +453,16 @@ class TestRunAcceleratedShadowReplay:
     def test_missing_input_file_returns_2(self, tmp_path):
         cfg = AcceleratedShadowReplayConfig(
             input_candles_file=str(tmp_path / "missing.json"),
+            output_directory=str(tmp_path),
+        )
+        exit_code = run_accelerated_shadow_replay(cfg)
+        assert exit_code == 2
+
+    def test_non_object_json_array_row_returns_2(self, tmp_path):
+        f = tmp_path / "bad_row.json"
+        f.write_text(json.dumps([{"ts_ms": 1_000_000}, 123]), encoding="utf-8")
+        cfg = AcceleratedShadowReplayConfig(
+            input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
         exit_code = run_accelerated_shadow_replay(cfg)

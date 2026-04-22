@@ -257,6 +257,11 @@ def _load_candles(path: Path) -> list[dict[str, Any]]:
             raise ReplayRunnerError("candles JSON root must be an array")
         if not data:
             raise ReplayRunnerError("candles array is empty")
+        for idx, row in enumerate(data):
+            if not isinstance(row, dict):
+                raise ReplayRunnerError(
+                    f"candles JSON array item at index {idx} must be a JSON object"
+                )
         return data
 
     # JSONL (one JSON object per line)
@@ -327,7 +332,7 @@ def _build_scheduler_metadata(
             dataset_result,
             SchedulerConfig(profile=config.speedup_profile),
         ).to_dict()
-    except ValueError as exc:
+    except (TypeError, ValueError) as exc:
         raise ReplayRunnerError(f"scheduler validation failed: {exc}") from exc
 
 
