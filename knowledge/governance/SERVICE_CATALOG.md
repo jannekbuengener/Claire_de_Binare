@@ -31,7 +31,7 @@
 | **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
 | **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details |
 | **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default); `/orders` Fehlerantworten nur mit sicherem Fehlercode |
-| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz; `candle_normalizer.py` persistiert `stream.candles_1m` → `candles_1m` Postgres-Tabelle (PR #1856) |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz; `db_writer.py` schreibt `stream.candles_1m` in `candles_1m` (Postgres), `candle_normalizer.py` normalisiert die Stream-Payloads auf dem Write-Pfad (PR #1856) |
 | **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
@@ -52,7 +52,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 **Pfad:** `core/replay/`, `services/validation/` (reporter + CLI)
 
-**Funktion:** Deterministic shadow replay stack für accelerated backtesting, validation und gate evaluation offline (keine live/paper/Redis/DB-Integration).
+**Funktion:** Deterministic shadow replay stack für accelerated backtesting, validation und gate evaluation offline, ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets können über `DBBackedDatasetProvider` aus `candles_1m` (Postgres) bezogen werden.
 
 | Module/Component | Code-Pfad | Status | Beschreibung |
 |---|---|---|---|
