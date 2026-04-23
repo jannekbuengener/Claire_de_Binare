@@ -24,13 +24,13 @@ Non-goals:
 from __future__ import annotations
 
 import pathlib
-import random
 import re
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Sequence
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.utils.seed import SeedManager
 
 _PNL_Q = Decimal("0.00000001")
 _RATE_Q = Decimal("0.00000001")
@@ -430,13 +430,13 @@ def compute_resampling_stability(
         input_fingerprint=input_fingerprint,
     )
 
-    rng = random.Random(config.seed)
+    rng = SeedManager(config.seed)
     sample_values: dict[str, list[int | Decimal]] = {
         kpi: [] for kpi in config.selected_kpis
     }
     for _ in range(config.sample_count):
         sampled_blocks = [
-            blocks_list[rng.randrange(len(blocks_list))]
+            blocks_list[rng.random_int(0, len(blocks_list) - 1)]
             for _ in range(config.sample_block_count)
         ]
         aggregate = _aggregate_blocks(sampled_blocks)
