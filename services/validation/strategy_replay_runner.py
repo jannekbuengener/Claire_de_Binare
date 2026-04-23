@@ -85,6 +85,17 @@ from core.replay.run_registry import (
     build_replay_provenance_fingerprint,
     build_replay_run_id,
 )
+from core.replay.scenario_packs import (
+    list_builtin_scenario_ids,
+    run_builtin_scenario_group,
+)
+from core.replay.scenario_harness import (
+    ScenarioRunResult,
+    ScenarioSpec,
+)
+from core.replay.replay_report_builder import (
+    build_scenario_comparison_summary,
+)
 from core.utils.clock import utcnow
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from services.validation.strategy_backtest_runner import (
@@ -145,11 +156,17 @@ class ReplayRunnerError(RuntimeError):
 # Config
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True, slots=True)
-class AcceleratedShadowReplayConfig:
+class ARVPReplayConfig:
     """Minimal, fail-closed config for an accelerated shadow replay run."""
 
-    input_candles_file: str
-    """Path to candle input file (JSON array or JSONL).  Required."""
+    input_candles_file: str = ""
+    """Path to candle input file (JSON array or JSONL)."""
+
+    dataset_source: str = "file"
+    """Dataset input source: 'file' or 'db'."""
+
+    db_dataset_id: str | None = None
+    """Persisted dataset record ID."""
 
     strategy_id: str = _DEFAULT_STRATEGY_ID
     """Strategy identifier. Must be in _SUPPORTED_STRATEGY_IDS."""
@@ -190,6 +207,12 @@ class AcceleratedShadowReplayConfig:
     deterministic_verify: bool = False
     """Exit with code 2 if the replay determinism check fails."""
 
+    scenario_ids: tuple[str, ...] | None = None
+    """Tuple of built-in scenario IDs to run as a group."""
+
+    scenario_group_id: str | None = None
+    """Optional explicit scenario group ID."""
+
     def validate(self) -> None:
         """Fail-closed config validation. Raises ValueError on any violation."""
         if not self.input_candles_file:
@@ -225,6 +248,157 @@ class AcceleratedShadowReplayConfig:
             raise ValueError("breakout_buffer must be >= 0")
         if self.min_minutes_between_entries < 0:
             raise ValueError("min_minutes_between_entries must be >= 0")
+
+        # Scenario group validation
+        if self.scenario_ids is not None:
+            if not self.scenario_ids:
+                raise ValueError("scenario_ids must be a non-empty tuple")
+            known_scenarios = set(list_builtin_scenario_ids())
+            for sid in self.scenario_ids:
+                if sid not in known_scenarios:
+                    raise ValueError(
+                        f"unknown scenario_id {sid!r}; known: {sorted(known_scenarios)}"
+                    )
+
+
+# Backward-compatible alias for existing tests/callers.
+AcceleratedShadowReplayConfig = ARVPReplayConfig
+
+
+# ---------------------------------------------------------------------------
+# Scenario override mapping (fail-closed)
+# ---------------------------------------------------------------------------
+_SCENARIO_GROUP_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
+
+# Mapping: scenario override key -> ExecutionSimulator config field
+_SCNARIO_OVERRIDE_KEY_TO_SIMULATOR: dict[str, str] = {
+    "execution_slippage_bps": "BASE_SLIPPAGE_BPS",
+    "fill_rate": "FILL_THRESHOLD",
+    "fill_depth_factor": "DEPTH_IMPACT_FACTOR",
+    "execution_delay_bars": "EXECUTION_DELAY_BARS",
+}
+
+_ALLOWED_SCENARIO_OVERRIDE_KEYS: frozenset[str] = frozenset(
+    {
+        "pack_id",
+        "pack_version",
+        "execution_slippage_bps",
+        "fill_rate",
+        "fill_depth_factor",
+        "execution_delay_bars",
+        "feed_gap_bars",
+        "execution_posture",
+    }
+)
+
+# Overrides die fail-closed rejected werden
+_UNSUPPORTED_SCENARIO_OVERRIDES: frozenset[str] = frozenset(
+    {
+        "feed_gap_seconds",
+        "drop_ticks_on_gap",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ScenarioResolvedOverrides:
+    """Internal split between execution-simulator and replay-data overrides."""
+
+    simulator_config: dict[str, Any]
+    replay_data_overrides: dict[str, Any]
+
+
+def _apply_scenario_overrides(
+    base_config: ARVPReplayConfig,
+    overrides: dict[str, Any],
+) -> ScenarioResolvedOverrides:
+    """Resolve scenario overrides into execution vs replay-data surfaces."""
+    # Check for unsupported overrides first
+    unsupported = set(overrides.keys()) & _UNSUPPORTED_SCENARIO_OVERRIDES
+    if unsupported:
+        raise ReplayRunnerError(
+            f"Scenario override not currently supported: {sorted(unsupported)}. "
+            f"Supported overrides: {sorted(_ALLOWED_SCENARIO_OVERRIDE_KEYS)}. "
+            f"`feed_gap_seconds` is not representable on the strict 1m replay canvas; "
+            f"use explicit bar-level semantics instead."
+        )
+
+    # Check for unknown keys
+    unknown = set(overrides.keys()) - _ALLOWED_SCENARIO_OVERRIDE_KEYS
+    if unknown:
+        raise ReplayRunnerError(
+            f"Scenario overrides contain unknown keys: {sorted(unknown)}. "
+            f"Supported overrides: {sorted(_ALLOWED_SCENARIO_OVERRIDE_KEYS)}"
+        )
+
+    # Build simulator config
+    sim_config: dict[str, Any] = {}
+    replay_data_overrides: dict[str, Any] = {}
+    for override_key, sim_field in _SCNARIO_OVERRIDE_KEY_TO_SIMULATOR.items():
+        if override_key in overrides:
+            value = overrides[override_key]
+            sim_config[sim_field] = value
+
+    if "feed_gap_bars" in overrides:
+        replay_data_overrides["feed_gap_bars"] = overrides["feed_gap_bars"]
+
+    # Pass execution_posture as simulator metadata (dokumentiert, keine numerische Wirkung)
+    posture = overrides.get("execution_posture")
+    if posture:
+        sim_config["_execution_posture"] = posture
+
+    return ScenarioResolvedOverrides(
+        simulator_config=sim_config,
+        replay_data_overrides=replay_data_overrides,
+    )
+
+
+def _apply_replay_data_overrides(
+    candles: list[dict[str, Any]],
+    overrides: dict[str, Any],
+    *,
+    warmup_count: int,
+) -> list[dict[str, Any]]:
+    """Apply deterministic replay-data perturbations without breaking 1m cadence.
+
+    ``feed_gap_bars`` is modeled as a midpoint-aligned stale-feed window across the
+    live 1m bars. Gap bars repeat the last visible bar, flip freshness to false,
+    and carry a marker consumed by the historical bridge.
+    """
+    if not overrides:
+        return candles
+
+    perturbed = [dict(candle) for candle in candles]
+    feed_gap_bars = overrides.get("feed_gap_bars")
+    if feed_gap_bars is None:
+        return perturbed
+    if isinstance(feed_gap_bars, bool) or not isinstance(feed_gap_bars, int):
+        raise ReplayRunnerError("feed_gap_bars must be an integer >= 1")
+    if feed_gap_bars < 1:
+        raise ReplayRunnerError("feed_gap_bars must be >= 1")
+
+    live_count = len(perturbed) - warmup_count
+    if live_count <= 0:
+        raise ReplayRunnerError("feed_gap_bars requires at least one live candle")
+    if feed_gap_bars >= live_count:
+        raise ReplayRunnerError(
+            "feed_gap_bars must leave at least one unaffected live candle"
+        )
+
+    gap_start = warmup_count + (live_count - feed_gap_bars) // 2
+    source_index = max(0, gap_start - 1)
+    stale_source = dict(perturbed[source_index])
+
+    for idx in range(gap_start, gap_start + feed_gap_bars):
+        gap_row = dict(stale_source)
+        gap_row["ts_ms"] = perturbed[idx]["ts_ms"]
+        gap_row["market_state_fresh"] = False
+        gap_row["regime_fresh"] = False
+        gap_row["data_gap_active"] = True
+        gap_row["volume"] = 0.0
+        perturbed[idx] = gap_row
+
+    return perturbed
 
 
 # ---------------------------------------------------------------------------
@@ -306,7 +480,7 @@ def _utc_now_iso() -> str:
 
 
 def _build_provenance_config_snapshot(
-    config: AcceleratedShadowReplayConfig,
+    config: ARVPReplayConfig,
 ) -> dict[str, Any]:
     return {
         "order_size": config.order_size,
@@ -322,7 +496,7 @@ def _build_dataset_result(
     candles: list[dict[str, Any]],
     *,
     input_path: Path,
-    config: AcceleratedShadowReplayConfig,
+    config: ARVPReplayConfig,
     warmup_count: int,
 ) -> DatasetResult:
     """Build the deterministic dataset result used by scheduler and runner layers."""
@@ -369,10 +543,14 @@ def _build_scheduler_metadata(
 ) -> dict[str, Any]:
     """Derive deterministic scheduler metadata from a validated dataset result."""
     try:
-        return ReplayScheduler().schedule(
-            dataset_result,
-            SchedulerConfig(profile=speedup_profile),
-        ).to_dict()
+        return (
+            ReplayScheduler()
+            .schedule(
+                dataset_result,
+                SchedulerConfig(profile=speedup_profile),
+            )
+            .to_dict()
+        )
     except (TypeError, ValueError) as exc:
         raise ReplayRunnerError(f"scheduler validation failed: {exc}") from exc
 
@@ -443,7 +621,7 @@ def _append_failed_record(
 
 def _build_replay_report_input(
     backtest_report: dict[str, Any],
-    config: AcceleratedShadowReplayConfig,
+    config: ARVPReplayConfig,
     code_commit: str,
     output_dir: Path,
     scheduler_metadata: dict[str, Any] | None = None,
@@ -460,7 +638,9 @@ def _build_replay_report_input(
 
     No metrics are recalculated; all values are derived from the backtest report.
     """
-    execution_run_id: str = execution_provenance_id or backtest_report["run_metadata"]["run_id"]
+    execution_run_id: str = (
+        execution_provenance_id or backtest_report["run_metadata"]["run_id"]
+    )
     run_id: str = runner_run_id or execution_run_id
     dataset: dict[str, Any] = dict(backtest_report["dataset_summary"])
     if dataset_fingerprint is not None:
@@ -509,9 +689,7 @@ def _build_replay_report_input(
         event_loop_states_hash=empty_chain_hash,
         integrity_ok=determinism_ok,
         failed_checks=(
-            ()
-            if determinism_ok
-            else ("deterministic_replay_check_failed",)
+            () if determinism_ok else ("deterministic_replay_check_failed",)
         ),
     )
 
@@ -553,7 +731,7 @@ def _build_replay_report_input(
 
 def _write_supplementary_artifacts(
     bundle_dir: Path,
-    config: AcceleratedShadowReplayConfig,
+    config: ARVPReplayConfig,
     code_commit: str,
 ) -> None:
     """Write config.resolved.json and env_redacted.txt into the bundle directory.
@@ -594,15 +772,20 @@ def _write_supplementary_artifacts(
 # ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
-def run_accelerated_shadow_replay(config: AcceleratedShadowReplayConfig) -> int:
-    """Orchestrate a full accelerated shadow replay run.
+def run_accelerated_shadow_replay(config: ARVPReplayConfig) -> int:
+    """Orchestrate a full ARVP replay run (baseline or scenario group).
 
     Args:
-        config: Validated AcceleratedShadowReplayConfig instance.
+        config: Validated ARVPReplayConfig instance.
 
     Returns:
         Exit code integer: 0 success, 1 config error, 2 runtime/input error.
     """
+    # Scenario group path
+    if config.scenario_ids:
+        return _run_scenario_group_path_with_candles(config)
+
+    # Baseline path: load candles first, then continue
     input_path = Path(config.input_candles_file)
 
     # Load + validate candles (also covers dry-run path)
@@ -1004,7 +1187,117 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         default=False,
         help="Exit with code 2 if the replay determinism check fails.",
     )
+    parser.add_argument(
+        "--scenario-group",
+        default=None,
+        metavar="ID,ID,...",
+        help="Comma-separated built-in scenario IDs (baseline,pessimistic_execution,...)",
+    )
+    parser.add_argument(
+        "--scenario-group-id",
+        default=None,
+        metavar="ID",
+        help="Optional explicit scenario group ID",
+    )
     return parser
+
+
+def _run_baseline_path(
+    config: ARVPReplayConfig,
+    candles: list[dict[str, Any]],
+) -> int:
+    """Run baseline single replay. Extracted for reuse."""
+    # ... this is placeholder - real logic extracted below
+    return 0
+
+
+def _run_scenario_group_path_with_candles(config: ARVPReplayConfig) -> int:
+    input_path = Path(config.input_candles_file)
+    try:
+        candles = _load_candles(input_path)
+    except ReplayRunnerError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    if config.dry_run:
+        print(
+            "DRY-RUN: scenario group valid, input file accessible. "
+            f"{len(candles)} candles found."
+        )
+        return 0
+
+    return _run_scenario_group_path(config, candles)
+
+
+def _run_scenario_group_path(
+    config: ARVPReplayConfig,
+    candles: list[dict[str, Any]],
+) -> int:
+    """Run scenario group via harness."""
+    output_dir = Path(config.output_directory)
+    code_commit = _get_code_commit()
+
+    def run_single(spec: ScenarioSpec) -> ScenarioRunResult:
+        try:
+            run_cfg = PrimaryBreakoutBacktestRunConfig(
+                bridge=PrimaryBreakoutBridgeConfig(
+                    entry_lookback_minutes=config.entry_lookback_minutes,
+                    exit_lookback_minutes=config.exit_lookback_minutes,
+                    breakout_buffer=config.breakout_buffer,
+                    min_minutes_between_entries=config.min_minutes_between_entries,
+                ),
+                order_size=config.order_size,
+                order_book_depth_multiplier=config.order_book_depth_multiplier,
+            )
+            warmup_count = max(
+                run_cfg.bridge.entry_lookback_minutes,
+                run_cfg.bridge.exit_lookback_minutes,
+            )
+            resolved_overrides = _apply_scenario_overrides(config, spec.config_overrides)
+            scenario_candles = _apply_replay_data_overrides(
+                candles,
+                resolved_overrides.replay_data_overrides,
+                warmup_count=warmup_count,
+            )
+
+            backtest_report = run_primary_breakout_backtest(
+                scenario_candles,
+                run_config=run_cfg,
+                simulator_config=resolved_overrides.simulator_config,
+                code_commit=code_commit,
+            )
+
+            run_id = backtest_report["run_metadata"]["run_id"]
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=0,
+                run_id=run_id,
+            )
+        except ReplayRunnerError as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+        except Exception as exc:
+            return ScenarioRunResult(
+                scenario_id=spec.scenario_id,
+                exit_code=2,
+                failure_reason=str(exc),
+            )
+
+    manifest = run_builtin_scenario_group(
+        config.scenario_ids,
+        run_fn=run_single,
+        output_dir=output_dir,
+        group_id=config.scenario_group_id,
+    )
+
+    summary = build_scenario_comparison_summary(manifest)
+    summary_path = Path(manifest.artifact_root) / "scenario_comparison_summary.md"
+    summary_path.write_text(summary, encoding="utf-8")
+
+    return 0 if manifest.failed_count == 0 else 2
 
 
 def main() -> int:
@@ -1012,8 +1305,14 @@ def main() -> int:
     parser = _build_argument_parser()
     args = parser.parse_args()
 
+    scenario_ids = None
+    if args.scenario_group:
+        scenario_ids = tuple(
+            part.strip() for part in args.scenario_group.split(",") if part.strip()
+        )
+
     try:
-        config = AcceleratedShadowReplayConfig(
+        config = ARVPReplayConfig(
             input_candles_file=args.input_candles,
             strategy_id=args.strategy_id,
             symbol=args.symbol,
@@ -1022,6 +1321,8 @@ def main() -> int:
             output_directory=args.output_dir,
             dry_run=args.dry_run,
             deterministic_verify=args.deterministic_verify,
+            scenario_ids=scenario_ids,
+            scenario_group_id=args.scenario_group_id,
         )
         config.validate()
     except ValueError as exc:

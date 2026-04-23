@@ -97,6 +97,34 @@ def test_bridge_output_is_adapter_ready_for_primary_breakout() -> None:
 
 
 @pytest.mark.unit
+def test_bridge_marks_gap_rows_as_insufficient_input_requests() -> None:
+    candles = _candles()
+    gap_idx = 240
+    stale_source = dict(candles[gap_idx - 1])
+    candles[gap_idx] = {
+        **stale_source,
+        "ts_ms": candles[gap_idx]["ts_ms"],
+        "volume": 0.0,
+        "market_state_fresh": False,
+        "regime_fresh": False,
+        "data_gap_active": True,
+    }
+
+    requests = build_primary_breakout_historical_bridge(candles)
+    gap_request = requests[0]
+
+    assert gap_request.market_event["market_state"]["data_gap_active"] is True
+    assert gap_request.market_event["market_state"]["market_state_fresh"] is False
+    assert gap_request.market_event["market_state"]["regime_fresh"] is False
+    assert "close_now" not in gap_request.market_event["market_state"]
+    assert "price" not in gap_request.market_event
+    assert "close" not in gap_request.market_event
+    assert "close" not in gap_request.market_snapshot
+    assert "high" not in gap_request.market_snapshot
+    assert "low" not in gap_request.market_snapshot
+
+
+@pytest.mark.unit
 def test_bridge_rejects_invalid_trade_side_mode_in_config() -> None:
     candles = _candles()
     config = PrimaryBreakoutBridgeConfig(trade_side_mode="both")

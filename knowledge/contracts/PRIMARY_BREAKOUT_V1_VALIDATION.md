@@ -28,6 +28,14 @@ Rationale:
 - Keep the set small, auditable, and directly tied to strategy behavior and data quality.
 - Do not expand to research-heavy scorecards in v1.
 
+`data_integrity_ok` semantics:
+- `data_integrity_ok` is not a performance or profitability indicator.
+- `data_integrity_ok` expresses terminal run cleanliness: the historical validation run must end with no open position and no pending execution signals.
+- `data_integrity_ok = false` is intentionally fail-closed for terminal end states such as `open_position_at_end` and `pending_signals_at_end`.
+- The additive block `metrics.data_integrity_diagnostics` explains that fail-closed result with `data_integrity_reason`, `open_position_at_end`, and `pending_signals_at_end`.
+- These diagnostics do not soften the policy and do not change gate evaluation.
+- The runner does not perform a silent end-of-window auto-close. Any future end-of-window close behavior would require a new explicit policy and contract surface.
+
 ## Machine-readable Report Contract
 
 Contract file:

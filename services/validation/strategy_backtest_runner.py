@@ -56,7 +56,9 @@ class PrimaryBreakoutBacktestRunConfig:
         if self.order_size <= 0:
             raise PrimaryBreakoutBacktestError("order_size must be > 0")
         if self.order_book_depth_multiplier <= 0:
-            raise PrimaryBreakoutBacktestError("order_book_depth_multiplier must be > 0")
+            raise PrimaryBreakoutBacktestError(
+                "order_book_depth_multiplier must be > 0"
+            )
 
 
 def _canonical_json(value: Any) -> str:
@@ -71,6 +73,7 @@ def _deterministic_run_id(
     requests: Sequence[StrategyAdapterRequest],
     config: PrimaryBreakoutBacktestRunConfig,
     code_commit: str,
+    simulator_config: Mapping[str, Any] | None = None,
 ) -> str:
     payload = {
         "code_commit": code_commit,
@@ -85,6 +88,8 @@ def _deterministic_run_id(
             for request in requests
         ],
     }
+    if simulator_config:
+        payload["simulator_config"] = dict(simulator_config)
     return f"bt-{_sha256_text(_canonical_json(payload))[:16]}"
 
 
@@ -101,6 +106,98 @@ def _first_number(*values: Any) -> float | None:
         except (TypeError, ValueError):
             continue
     return None
+
+
+def _extract_execution_delay_bars(
+    simulator_config: Mapping[str, Any] | None,
+) -> int:
+    if simulator_config is None:
+        return 0
+    delay_bars = simulator_config.get("EXECUTION_DELAY_BARS", 0)
+    if delay_bars is None:
+        return 0
+    if isinstance(delay_bars, bool) or not isinstance(delay_bars, int):
+        raise PrimaryBreakoutBacktestError(
+            "EXECUTION_DELAY_BARS must be an integer >= 0"
+        )
+    if delay_bars < 0:
+        raise PrimaryBreakoutBacktestError("EXECUTION_DELAY_BARS must be >= 0")
+    return delay_bars
+
+
+def _execution_bar_volatility(
+    request: StrategyAdapterRequest,
+    reference_price: float,
+) -> float:
+    if reference_price <= 0:
+        return 0.0
+
+    open_price = _first_number(
+        request.market_snapshot.get("open"),
+        request.market_event.get("open"),
+        reference_price,
+    )
+    close_price = _first_number(
+        request.market_snapshot.get("close"),
+        request.market_event.get("close"),
+        request.market_event.get("price"),
+        reference_price,
+    )
+    high_price = _first_number(
+        request.market_snapshot.get("high"),
+        request.market_event.get("high"),
+    )
+    low_price = _first_number(
+        request.market_snapshot.get("low"),
+        request.market_event.get("low"),
+    )
+
+    bar_move = (
+        abs(close_price - open_price) / reference_price
+        if open_price is not None and close_price is not None
+        else 0.0
+    )
+    bar_range = (
+        abs(high_price - low_price) / reference_price
+        if high_price is not None and low_price is not None
+        else 0.0
+    )
+    return max(bar_move, bar_range, 0.0)
+
+
+def _build_pending_execution(
+    signal: StrategySignalCandidate,
+    request_index: int,
+    bridge_requests: Sequence[StrategyAdapterRequest],
+    execution_delay_bars: int,
+) -> dict[str, Any]:
+    target_idx = request_index + execution_delay_bars
+    if target_idx >= len(bridge_requests):
+        raise PrimaryBreakoutBacktestError(
+            "Delayed execution out of range: "
+            f"signal at index {request_index} with execution_delay_bars="
+            f"{execution_delay_bars} targets index {target_idx}, "
+            f"but only {len(bridge_requests)} bridge requests are available"
+        )
+
+    execution_request = bridge_requests[target_idx]
+    execution_price = _first_number(
+        execution_request.market_snapshot.get("close"),
+        execution_request.market_event.get("close"),
+        execution_request.market_event.get("price"),
+        signal.price,
+    )
+    if execution_price is None:
+        raise PrimaryBreakoutBacktestError("delayed execution target missing price")
+
+    return {
+        "side": signal.side,
+        "target_idx": target_idx,
+        "execution_price": execution_price,
+        "ts_ms": int(execution_request.market_event["ts_ms"]),
+        "volume": _first_number(execution_request.market_snapshot.get("volume")) or 0.0,
+        "volatility": _execution_bar_volatility(execution_request, execution_price),
+    }
 
 
 def _extract_thresholds() -> dict[str, Any]:
@@ -120,7 +217,9 @@ def _extract_thresholds() -> dict[str, Any]:
     }
 
 
-def _evaluate_gate(metrics: Mapping[str, Any], thresholds: Mapping[str, Any]) -> dict[str, Any]:
+def _evaluate_gate(
+    metrics: Mapping[str, Any], thresholds: Mapping[str, Any]
+) -> dict[str, Any]:
     pass_fail = thresholds["pass_fail"]
     failed_criteria: list[str] = []
     if int(metrics["closed_trades_total"]) < pass_fail["min_closed_trades_total"]:
@@ -131,13 +230,19 @@ def _evaluate_gate(metrics: Mapping[str, Any], thresholds: Mapping[str, Any]) ->
         failed_criteria.append("min_expectancy_r")
     if float(metrics["max_drawdown_r"]) > pass_fail["max_max_drawdown_r"]:
         failed_criteria.append("max_max_drawdown_r")
-    if float(metrics["market_state_fresh_ratio"]) < pass_fail["min_market_state_fresh_ratio"]:
+    if (
+        float(metrics["market_state_fresh_ratio"])
+        < pass_fail["min_market_state_fresh_ratio"]
+    ):
         failed_criteria.append("min_market_state_fresh_ratio")
     if float(metrics["regime_fresh_ratio"]) < pass_fail["min_regime_fresh_ratio"]:
         failed_criteria.append("min_regime_fresh_ratio")
     if bool(metrics["data_integrity_ok"]) is not pass_fail["require_data_integrity_ok"]:
         failed_criteria.append("data_integrity_ok")
-    if bool(metrics["deterministic_replay_ok"]) is not pass_fail["require_deterministic_replay_ok"]:
+    if (
+        bool(metrics["deterministic_replay_ok"])
+        is not pass_fail["require_deterministic_replay_ok"]
+    ):
         failed_criteria.append("deterministic_replay_ok")
 
     review_flags: list[str] = []
@@ -158,7 +263,9 @@ def _evaluate_gate(metrics: Mapping[str, Any], thresholds: Mapping[str, Any]) ->
 
     notes = None
     if status != "PASS":
-        notes = "failed criteria" if failed_criteria else "review-only thresholds flagged"
+        notes = (
+            "failed criteria" if failed_criteria else "review-only thresholds flagged"
+        )
 
     payload: dict[str, Any] = {
         "status": status,
@@ -198,6 +305,111 @@ def _simulate_trade(
         "partial_fill": result.partial_fill,
         "fill_ratio": result.fill_ratio,
         "notes": result.notes,
+    }
+
+
+def _execute_pending_signal(
+    exec_info: dict[str, Any],
+    open_position: dict[str, Any] | None,
+    trades: list[dict[str, Any]],
+    simulator: ExecutionSimulator,
+    config: PrimaryBreakoutBacktestRunConfig,
+) -> dict[str, Any] | None:
+    """Execute a pending signal from the delayed execution queue."""
+    side = exec_info["side"]
+    execution_price = exec_info["execution_price"]
+    ts_ms = exec_info["ts_ms"]
+    volume = exec_info["volume"]
+    volatility = exec_info["volatility"]
+
+    if side == "BUY":
+        if open_position is not None:
+            return open_position
+        fill = _simulate_trade(
+            side="buy",
+            price=execution_price,
+            ts_ms=ts_ms,
+            volume=volume,
+            simulator=simulator,
+            order_size=config.order_size,
+            order_book_depth_multiplier=config.order_book_depth_multiplier,
+            volatility=volatility,
+        )
+        return {
+            "entry_price": fill["avg_fill_price"],
+            "entry_ts_ms": ts_ms,
+            "entry_fee": fill["fees"],
+        }
+    elif side == "SELL" and open_position is not None:
+        fill = _simulate_trade(
+            side="sell",
+            price=execution_price,
+            ts_ms=ts_ms,
+            volume=volume,
+            simulator=simulator,
+            order_size=config.order_size,
+            order_book_depth_multiplier=config.order_book_depth_multiplier,
+            volatility=volatility,
+        )
+        entry_price = float(open_position["entry_price"])
+        exit_price = float(fill["avg_fill_price"])
+        trade_r = (exit_price - entry_price) / entry_price
+        trades.append(
+            {
+                "entry_ts_ms": int(open_position["entry_ts_ms"]),
+                "exit_ts_ms": ts_ms,
+                "entry_price": entry_price,
+                "exit_price": exit_price,
+                "entry_fee": float(open_position["entry_fee"]),
+                "exit_fee": float(fill["fees"]),
+                "r_return": trade_r,
+            }
+        )
+        return None
+    return open_position
+
+
+def _build_data_integrity_diagnostics(
+    open_position: Mapping[str, Any] | None,
+    pending_signals: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Serialize the terminal runner state without changing gate semantics."""
+
+    serialized_open_position: dict[str, Any] | None = None
+    if open_position is not None:
+        serialized_open_position = {
+            "entry_price": float(open_position["entry_price"]),
+            "entry_ts_ms": int(open_position["entry_ts_ms"]),
+            "entry_fee": float(open_position["entry_fee"]),
+        }
+
+    serialized_pending_signals = [
+        {
+            "side": str(pending["side"]),
+            "target_idx": int(pending["target_idx"]),
+            "execution_price": float(pending["execution_price"]),
+            "ts_ms": int(pending["ts_ms"]),
+            "volume": float(pending["volume"]),
+            "volatility": float(pending["volatility"]),
+        }
+        for pending in pending_signals
+    ]
+
+    has_open_position = serialized_open_position is not None
+    has_pending_signals = bool(serialized_pending_signals)
+    if has_open_position and has_pending_signals:
+        reason = "open_position_and_pending_signals_at_end"
+    elif has_open_position:
+        reason = "open_position_at_end"
+    elif has_pending_signals:
+        reason = "pending_signals_at_end"
+    else:
+        reason = "clean"
+
+    return {
+        "data_integrity_reason": reason,
+        "open_position_at_end": serialized_open_position,
+        "pending_signals_at_end": serialized_pending_signals,
     }
 
 
@@ -339,11 +551,13 @@ def _build_report(
     bridge_requests: Sequence[StrategyAdapterRequest],
     run_config: PrimaryBreakoutBacktestRunConfig,
     code_commit: str,
+    simulator_config: Mapping[str, Any] | None,
     output_requests: Sequence[dict[str, Any]],
     trades: Sequence[dict[str, Any]],
     market_state_fresh_ratio: float,
     regime_fresh_ratio: float,
     data_integrity_ok: bool,
+    data_integrity_diagnostics: Mapping[str, Any],
     deterministic_replay_ok: bool,
     requested_period_start_ts_ms: int,
     requested_period_end_ts_ms: int,
@@ -351,7 +565,12 @@ def _build_report(
     if not bridge_requests:
         raise PrimaryBreakoutBacktestError("bridge produced no requests")
 
-    run_id = _deterministic_run_id(bridge_requests, run_config, code_commit)
+    run_id = _deterministic_run_id(
+        bridge_requests,
+        run_config,
+        code_commit,
+        simulator_config=simulator_config,
+    )
     # Effective bridge start: first candle after the warm-up window
     # (max(entry_lookback, exit_lookback) candles consumed as lookback).
     # Offset from requested_period_start_ts_ms by max_lookback * 60_000 ms.
@@ -381,7 +600,9 @@ def _build_report(
 
     signals_total = len(output_requests)
     buy_signals_total = sum(1 for signal in output_requests if signal["side"] == "BUY")
-    sell_signals_total = sum(1 for signal in output_requests if signal["side"] == "SELL")
+    sell_signals_total = sum(
+        1 for signal in output_requests if signal["side"] == "SELL"
+    )
     metrics = {
         "signals_total": signals_total,
         "buy_signals_total": buy_signals_total,
@@ -394,6 +615,7 @@ def _build_report(
         "market_state_fresh_ratio": market_state_fresh_ratio,
         "regime_fresh_ratio": regime_fresh_ratio,
         "data_integrity_ok": data_integrity_ok,
+        "data_integrity_diagnostics": dict(data_integrity_diagnostics),
         "deterministic_replay_ok": deterministic_replay_ok,
     }
     thresholds = _extract_thresholds()
@@ -417,8 +639,10 @@ def _build_report(
         "dataset_summary": {
             "symbol": PRIMARY_BREAKOUT_SYMBOL,
             "timeframe": "1m",
-            "candles_total": len(bridge_requests) + max(
-                run_config.bridge.entry_lookback_minutes, run_config.bridge.exit_lookback_minutes
+            "candles_total": len(bridge_requests)
+            + max(
+                run_config.bridge.entry_lookback_minutes,
+                run_config.bridge.exit_lookback_minutes,
             ),
             "requested_period_start_ts_ms": requested_period_start_ts_ms,
             "requested_period_end_ts_ms": requested_period_end_ts_ms,
@@ -435,19 +659,24 @@ def run_primary_breakout_backtest(
     candles: Sequence[Mapping[str, Any]],
     *,
     run_config: PrimaryBreakoutBacktestRunConfig | None = None,
+    simulator_config: Mapping[str, Any] | None = None,
     code_commit: str = "unknown",
 ) -> dict[str, Any]:
     """Run the deterministic historical backtest and return the schema report."""
 
     active_config = run_config or PrimaryBreakoutBacktestRunConfig()
     active_config.validate()
+    if simulator_config is not None and not isinstance(simulator_config, Mapping):
+        raise PrimaryBreakoutBacktestError("simulator_config must be a mapping")
+    active_simulator_config = dict(simulator_config or {})
+    execution_delay_bars = _extract_execution_delay_bars(active_simulator_config)
     bridge_requests = build_primary_breakout_historical_bridge(
         candles, config=active_config.bridge
     )
     # Extract raw candle boundaries after bridge validation succeeds (guarantees non-empty + valid).
     requested_period_start_ts_ms = int(candles[0]["ts_ms"])
     requested_period_end_ts_ms = int(candles[-1]["ts_ms"])
-    simulator = ExecutionSimulator()
+    simulator = ExecutionSimulator(active_simulator_config)
 
     output_requests: list[dict[str, Any]] = []
     trades: list[dict[str, Any]] = []
@@ -455,9 +684,28 @@ def run_primary_breakout_backtest(
     last_entry_ts_ms: int | None = None
     market_state_fresh_count = 0
     regime_fresh_count = 0
+    pending_signals: list[dict[str, Any]] = []
     replay_signature: list[dict[str, Any]] = []
 
-    for request in bridge_requests:
+    for request_index, request in enumerate(bridge_requests):
+        if execution_delay_bars > 0 and pending_signals:
+            due_signals: list[dict[str, Any]] = []
+            remaining_signals: list[dict[str, Any]] = []
+            for pending in pending_signals:
+                if pending["target_idx"] == request_index:
+                    due_signals.append(pending)
+                else:
+                    remaining_signals.append(pending)
+            pending_signals = remaining_signals
+            for exec_info in due_signals:
+                open_position = _execute_pending_signal(
+                    exec_info,
+                    open_position,
+                    trades,
+                    simulator,
+                    active_config,
+                )
+
         market_state = request.market_event["market_state"]
         market_state_fresh = bool(market_state.get("market_state_fresh"))
         regime_fresh = bool(market_state.get("regime_fresh"))
@@ -483,7 +731,20 @@ def run_primary_breakout_backtest(
             }
             output_requests.append(signal_payload)
 
-            signal_price = _first_number(signal.price, request.market_snapshot.get("close"))
+            if execution_delay_bars > 0:
+                pending_signals.append(
+                    _build_pending_execution(
+                        signal,
+                        request_index,
+                        bridge_requests,
+                        execution_delay_bars,
+                    )
+                )
+                continue
+
+            signal_price = _first_number(
+                signal.price, request.market_snapshot.get("close")
+            )
             if signal_price is None:
                 raise PrimaryBreakoutBacktestError("signal missing price")
             ts_ms = int(request.market_event["ts_ms"])
@@ -544,7 +805,24 @@ def run_primary_breakout_backtest(
     replay_check_signature: list[dict[str, Any]] = []
     replay_position_open = False
     replay_last_entry_ts_ms: int | None = None
-    for request in bridge_requests:
+    replay_pending_signals: list[dict[str, Any]] = []
+    for request_index, request in enumerate(bridge_requests):
+        if execution_delay_bars > 0 and replay_pending_signals:
+            due_signals: list[dict[str, Any]] = []
+            remaining_signals: list[dict[str, Any]] = []
+            for pending in replay_pending_signals:
+                if pending["target_idx"] == request_index:
+                    due_signals.append(pending)
+                else:
+                    remaining_signals.append(pending)
+            replay_pending_signals = remaining_signals
+            for pending in due_signals:
+                if pending["side"] == "BUY":
+                    if not replay_position_open:
+                        replay_position_open = True
+                elif pending["side"] == "SELL" and replay_position_open:
+                    replay_position_open = False
+
         response, replay_last_entry_ts_ms = _evaluate_primary_breakout_request(
             request,
             position_open=replay_position_open,
@@ -553,24 +831,46 @@ def run_primary_breakout_backtest(
         )
         replay_check_signature.append(_serialize_response(response))
         for signal in response.signals:
+            if execution_delay_bars > 0:
+                replay_pending_signals.append(
+                    _build_pending_execution(
+                        signal,
+                        request_index,
+                        bridge_requests,
+                        execution_delay_bars,
+                    )
+                )
+                continue
             if signal.side == "BUY":
                 replay_position_open = True
             elif signal.side == "SELL":
                 replay_position_open = False
     deterministic_replay_ok = replay_signature == replay_check_signature
 
-    data_integrity_ok = len(bridge_requests) > 0 and open_position is None
+    data_integrity_diagnostics = _build_data_integrity_diagnostics(
+        open_position,
+        pending_signals,
+    )
+    data_integrity_ok = (
+        len(bridge_requests) > 0
+        and open_position is None
+        and not pending_signals
+    )
     return _build_report(
         bridge_requests=bridge_requests,
         run_config=active_config,
         code_commit=code_commit,
+        simulator_config=active_simulator_config,
         output_requests=output_requests,
         trades=trades,
         market_state_fresh_ratio=(
             market_state_fresh_count / len(bridge_requests) if bridge_requests else 0.0
         ),
-        regime_fresh_ratio=(regime_fresh_count / len(bridge_requests) if bridge_requests else 0.0),
+        regime_fresh_ratio=(
+            regime_fresh_count / len(bridge_requests) if bridge_requests else 0.0
+        ),
         data_integrity_ok=data_integrity_ok,
+        data_integrity_diagnostics=data_integrity_diagnostics,
         deterministic_replay_ok=deterministic_replay_ok,
         requested_period_start_ts_ms=requested_period_start_ts_ms,
         requested_period_end_ts_ms=requested_period_end_ts_ms,

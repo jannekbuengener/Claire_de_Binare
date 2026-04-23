@@ -8,7 +8,14 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft7Validator
 
+import services.validation.strategy_backtest_runner as backtest_runner
+from core.contracts.external_adapter_contracts import (
+    StrategyAdapterRequest,
+    StrategyAdapterResponse,
+    StrategySignalCandidate,
+)
 from services.validation.strategy_backtest_runner import (
+    _build_data_integrity_diagnostics,
     PrimaryBreakoutBacktestError,
     PrimaryBreakoutBacktestRunConfig,
     run_primary_breakout_backtest,
@@ -53,6 +60,32 @@ def _candles() -> list[dict]:
 
 def _load_schema() -> dict:
     return json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+
+
+def _bridge_requests() -> list[StrategyAdapterRequest]:
+    base_ts_ms = 1_700_000_000_000
+    closes = (100.0, 101.0, 102.0)
+    return [
+        StrategyAdapterRequest(
+            symbol="BTCUSDT",
+            market_event={
+                "ts_ms": base_ts_ms + index * 60_000,
+                "market_state": {
+                    "market_state_fresh": True,
+                    "regime_fresh": True,
+                },
+            },
+            market_snapshot={
+                "open": close - 0.5,
+                "high": close + 0.5,
+                "low": close - 0.5,
+                "close": close,
+                "volume": 1_000.0,
+            },
+            runtime_context={},
+        )
+        for index, close in enumerate(closes)
+    ]
 
 
 @pytest.mark.unit
@@ -109,3 +142,417 @@ def test_primary_breakout_backtest_runner_fail_closed_on_invalid_config() -> Non
 
     with pytest.raises(PrimaryBreakoutBacktestError, match="order_size must be > 0"):
         run_primary_breakout_backtest(candles, run_config=config, code_commit="a9a62be")
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_surfaces_clean_end_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candles = _candles()[:3]
+    requests = _bridge_requests()
+
+    def fake_build_bridge(
+        _candles_input: list[dict],
+        *,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> list[StrategyAdapterRequest]:
+        return requests
+
+    def fake_evaluate(
+        request: StrategyAdapterRequest,
+        *,
+        position_open: bool,
+        last_entry_ts_ms: int | None,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> tuple[StrategyAdapterResponse, int | None]:
+        ts_ms = int(request.market_event["ts_ms"])
+        if ts_ms == int(requests[0].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="BUY",
+                            reason="test_entry",
+                            price=100.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        if ts_ms == int(requests[1].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="SELL",
+                            reason="test_exit",
+                            price=101.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        return StrategyAdapterResponse(diagnostics={"status": "no_signal"}), last_entry_ts_ms
+
+    def fake_simulate_trade(
+        *,
+        side: str,
+        price: float,
+        ts_ms: int,
+        volume: float,
+        simulator: object,
+        order_size: float,
+        order_book_depth_multiplier: float,
+        volatility: float,
+    ) -> dict[str, float | bool | str | None]:
+        return {
+            "side": side,
+            "ts_ms": ts_ms,
+            "filled_size": order_size,
+            "avg_fill_price": price,
+            "slippage_bps": 0.0,
+            "fees": 0.0,
+            "partial_fill": False,
+            "fill_ratio": 1.0,
+            "notes": None,
+        }
+
+    monkeypatch.setattr(
+        backtest_runner,
+        "build_primary_breakout_historical_bridge",
+        fake_build_bridge,
+    )
+    monkeypatch.setattr(
+        backtest_runner,
+        "_evaluate_primary_breakout_request",
+        fake_evaluate,
+    )
+    monkeypatch.setattr(backtest_runner, "_simulate_trade", fake_simulate_trade)
+
+    report = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="a9a62be",
+    )
+
+    diagnostics = report["metrics"]["data_integrity_diagnostics"]
+    assert report["metrics"]["data_integrity_ok"] is True
+    assert diagnostics["data_integrity_reason"] == "clean"
+    assert diagnostics["open_position_at_end"] is None
+    assert diagnostics["pending_signals_at_end"] == []
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_surfaces_open_position_end_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candles = _candles()[:3]
+    requests = _bridge_requests()
+
+    def fake_build_bridge(
+        _candles_input: list[dict],
+        *,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> list[StrategyAdapterRequest]:
+        return requests
+
+    def fake_evaluate(
+        request: StrategyAdapterRequest,
+        *,
+        position_open: bool,
+        last_entry_ts_ms: int | None,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> tuple[StrategyAdapterResponse, int | None]:
+        ts_ms = int(request.market_event["ts_ms"])
+        if ts_ms == int(requests[0].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="BUY",
+                            reason="test_entry",
+                            price=100.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        return StrategyAdapterResponse(diagnostics={"status": "no_signal"}), last_entry_ts_ms
+
+    def fake_simulate_trade(
+        *,
+        side: str,
+        price: float,
+        ts_ms: int,
+        volume: float,
+        simulator: object,
+        order_size: float,
+        order_book_depth_multiplier: float,
+        volatility: float,
+    ) -> dict[str, float | bool | str | None]:
+        return {
+            "side": side,
+            "ts_ms": ts_ms,
+            "filled_size": order_size,
+            "avg_fill_price": price,
+            "slippage_bps": 0.0,
+            "fees": 0.0,
+            "partial_fill": False,
+            "fill_ratio": 1.0,
+            "notes": None,
+        }
+
+    monkeypatch.setattr(
+        backtest_runner,
+        "build_primary_breakout_historical_bridge",
+        fake_build_bridge,
+    )
+    monkeypatch.setattr(
+        backtest_runner,
+        "_evaluate_primary_breakout_request",
+        fake_evaluate,
+    )
+    monkeypatch.setattr(backtest_runner, "_simulate_trade", fake_simulate_trade)
+
+    report = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="a9a62be",
+    )
+
+    diagnostics = report["metrics"]["data_integrity_diagnostics"]
+    assert report["metrics"]["data_integrity_ok"] is False
+    assert diagnostics["data_integrity_reason"] == "open_position_at_end"
+    assert diagnostics["open_position_at_end"] == {
+        "entry_price": 100.0,
+        "entry_ts_ms": int(requests[0].market_event["ts_ms"]),
+        "entry_fee": 0.0,
+    }
+    assert diagnostics["pending_signals_at_end"] == []
+
+
+@pytest.mark.unit
+def test_build_data_integrity_diagnostics_surfaces_pending_signals() -> None:
+    diagnostics = _build_data_integrity_diagnostics(
+        None,
+        (
+            {
+                "side": "BUY",
+                "target_idx": 7,
+                "execution_price": 101.25,
+                "ts_ms": 1_700_000_060_000,
+                "volume": 2.5,
+                "volatility": 0.01,
+            },
+        ),
+    )
+
+    assert diagnostics["data_integrity_reason"] == "pending_signals_at_end"
+    assert diagnostics["open_position_at_end"] is None
+    assert diagnostics["pending_signals_at_end"] == [
+        {
+            "side": "BUY",
+            "target_idx": 7,
+            "execution_price": 101.25,
+            "ts_ms": 1_700_000_060_000,
+            "volume": 2.5,
+            "volatility": 0.01,
+        }
+    ]
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_delays_execution_by_bar_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candles = _candles()[:3]
+    requests = _bridge_requests()
+    baseline_calls: list[dict[str, float]] = []
+    delayed_calls: list[dict[str, float]] = []
+    active_calls = baseline_calls
+
+    def fake_build_bridge(
+        _candles_input: list[dict],
+        *,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> list[StrategyAdapterRequest]:
+        return requests
+
+    def fake_evaluate(
+        request: StrategyAdapterRequest,
+        *,
+        position_open: bool,
+        last_entry_ts_ms: int | None,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> tuple[StrategyAdapterResponse, int | None]:
+        ts_ms = int(request.market_event["ts_ms"])
+        if ts_ms == int(requests[0].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="BUY",
+                            reason="test_entry",
+                            price=100.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        if ts_ms == int(requests[1].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="SELL",
+                            reason="test_exit",
+                            price=101.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        return StrategyAdapterResponse(diagnostics={"status": "no_signal"}), last_entry_ts_ms
+
+    def fake_simulate_trade(
+        *,
+        side: str,
+        price: float,
+        ts_ms: int,
+        volume: float,
+        simulator: object,
+        order_size: float,
+        order_book_depth_multiplier: float,
+        volatility: float,
+    ) -> dict[str, float | bool | str | None]:
+        active_calls.append({"price": price, "ts_ms": ts_ms})
+        return {
+            "side": side,
+            "ts_ms": ts_ms,
+            "filled_size": order_size,
+            "avg_fill_price": price,
+            "slippage_bps": 0.0,
+            "fees": 0.0,
+            "partial_fill": False,
+            "fill_ratio": 1.0,
+            "notes": None,
+        }
+
+    monkeypatch.setattr(
+        backtest_runner,
+        "build_primary_breakout_historical_bridge",
+        fake_build_bridge,
+    )
+    monkeypatch.setattr(
+        backtest_runner,
+        "_evaluate_primary_breakout_request",
+        fake_evaluate,
+    )
+    monkeypatch.setattr(backtest_runner, "_simulate_trade", fake_simulate_trade)
+
+    baseline_report = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="a9a62be",
+    )
+    active_calls = delayed_calls
+    delayed_report = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        simulator_config={"EXECUTION_DELAY_BARS": 1},
+        code_commit="a9a62be",
+    )
+
+    assert [call["ts_ms"] for call in baseline_calls] == [
+        int(requests[0].market_event["ts_ms"]),
+        int(requests[1].market_event["ts_ms"]),
+    ]
+    assert [call["ts_ms"] for call in delayed_calls] == [
+        int(requests[1].market_event["ts_ms"]),
+        int(requests[2].market_event["ts_ms"]),
+    ]
+    assert baseline_calls[0]["price"] == 100.0
+    assert delayed_calls[0]["price"] == 101.0
+    assert baseline_report["metrics"]["closed_trades_total"] == 1
+    assert delayed_report["metrics"]["closed_trades_total"] == 1
+    assert baseline_report["metrics"]["expectancy_r"] != delayed_report["metrics"]["expectancy_r"]
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_fails_closed_on_out_of_range_delay(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    candles = _candles()[:3]
+    requests = _bridge_requests()
+
+    def fake_build_bridge(
+        _candles_input: list[dict],
+        *,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> list[StrategyAdapterRequest]:
+        return requests
+
+    def fake_evaluate(
+        request: StrategyAdapterRequest,
+        *,
+        position_open: bool,
+        last_entry_ts_ms: int | None,
+        config: PrimaryBreakoutBacktestRunConfig,
+    ) -> tuple[StrategyAdapterResponse, int | None]:
+        if int(request.market_event["ts_ms"]) == int(requests[-1].market_event["ts_ms"]):
+            return (
+                StrategyAdapterResponse(
+                    signals=(
+                        StrategySignalCandidate(
+                            strategy_id="primary_breakout_v1",
+                            symbol="BTCUSDT",
+                            side="BUY",
+                            reason="late_entry",
+                            price=102.0,
+                            metadata={"adapter_id": "test"},
+                        ),
+                    ),
+                    diagnostics={"status": "signal_emitted"},
+                ),
+                last_entry_ts_ms,
+            )
+        return StrategyAdapterResponse(diagnostics={"status": "no_signal"}), last_entry_ts_ms
+
+    monkeypatch.setattr(
+        backtest_runner,
+        "build_primary_breakout_historical_bridge",
+        fake_build_bridge,
+    )
+    monkeypatch.setattr(
+        backtest_runner,
+        "_evaluate_primary_breakout_request",
+        fake_evaluate,
+    )
+
+    with pytest.raises(PrimaryBreakoutBacktestError, match="Delayed execution out of range"):
+        run_primary_breakout_backtest(
+            candles,
+            run_config=PrimaryBreakoutBacktestRunConfig(),
+            simulator_config={"EXECUTION_DELAY_BARS": 1},
+            code_commit="a9a62be",
+        )

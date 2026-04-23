@@ -160,6 +160,7 @@ def build_primary_breakout_historical_bridge(
         row = candles[index]
         close_now = _required_number(row, "close")
         ts_ms = _required_int(row, "ts_ms")
+        data_gap_active = _optional_bool(row, "data_gap_active", default=False)
 
         entry_window = candles[
             index - active_config.entry_lookback_minutes : index
@@ -174,9 +175,6 @@ def build_primary_breakout_historical_bridge(
                 row, "market_state_fresh", default=True
             ),
             "regime_fresh": _optional_bool(row, "regime_fresh", default=True),
-            "close_now": close_now,
-            "highest_high": highest_high,
-            "lowest_low": lowest_low,
             "entry_cooldown_active": _optional_bool(
                 row, "entry_cooldown_active", default=False
             ),
@@ -190,6 +188,12 @@ def build_primary_breakout_historical_bridge(
             ),
             "core_blocked": _optional_bool(row, "core_blocked", default=False),
         }
+        if data_gap_active:
+            market_state["data_gap_active"] = True
+        else:
+            market_state["close_now"] = close_now
+            market_state["highest_high"] = highest_high
+            market_state["lowest_low"] = lowest_low
         last_entry_ts_ms = _optional_int(row, "last_entry_ts_ms")
         if last_entry_ts_ms is not None:
             market_state["last_entry_ts_ms"] = last_entry_ts_ms
@@ -197,21 +201,26 @@ def build_primary_breakout_historical_bridge(
         market_event = {
             "symbol": PRIMARY_BREAKOUT_SYMBOL,
             "ts_ms": ts_ms,
-            "price": close_now,
-            "close": close_now,
             "market_state": market_state,
         }
         market_snapshot = {
             "symbol": PRIMARY_BREAKOUT_SYMBOL,
-            "price": close_now,
-            "close": close_now,
-            "high": _required_number(row, "high"),
-            "low": _required_number(row, "low"),
-            "volume": _required_number(row, "volume")
-            if row.get("volume") is not None
-            else 0.0,
             "timestamp": ts_ms,
         }
+        if data_gap_active:
+            market_snapshot["volume"] = (
+                _required_number(row, "volume") if row.get("volume") is not None else 0.0
+            )
+        else:
+            market_event["price"] = close_now
+            market_event["close"] = close_now
+            market_snapshot["price"] = close_now
+            market_snapshot["close"] = close_now
+            market_snapshot["high"] = _required_number(row, "high")
+            market_snapshot["low"] = _required_number(row, "low")
+            market_snapshot["volume"] = (
+                _required_number(row, "volume") if row.get("volume") is not None else 0.0
+            )
         requests.append(
             StrategyAdapterRequest(
                 symbol=PRIMARY_BREAKOUT_SYMBOL,

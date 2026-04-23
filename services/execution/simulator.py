@@ -36,6 +36,7 @@ class ExecutionResult:
         fees: Total trading fees in quote currency.
         partial_fill: Whether this was a partial fill.
         fill_ratio: Ratio of filled to requested size (0.0-1.0).
+        execution_posture: Execution posture from scenario (baseline/pessimistic/etc).
         notes: Optional execution notes.
     """
 
@@ -45,6 +46,7 @@ class ExecutionResult:
     fees: float
     partial_fill: bool
     fill_ratio: float
+    execution_posture: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -83,10 +85,14 @@ class ExecutionSimulator:
         # Funding rate
         self.funding_rate = float(self.config.get("FUNDING_RATE", 0.0001))
 
+        # Execution posture metadata (from scenario packs)
+        self.execution_posture = self.config.get("_execution_posture", "baseline")
+
         logger.info(
             f"ExecutionSimulator initialized: "
             f"maker_fee={self.maker_fee:.4f} taker_fee={self.taker_fee:.4f} "
-            f"base_slippage={self.base_slippage_bps:.1f}bps"
+            f"base_slippage={self.base_slippage_bps:.1f}bps "
+            f"posture={self.execution_posture}"
         )
 
     def simulate_market_order(
@@ -169,6 +175,7 @@ class ExecutionSimulator:
             fees=fees,
             partial_fill=partial_fill,
             fill_ratio=fill_ratio,
+            execution_posture=self.execution_posture,
             notes=f"Market order {side} with {slippage_bps:.1f}bps slippage",
         )
 

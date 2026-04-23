@@ -93,10 +93,9 @@ class TestGetScenarioPack:
             "execution_slippage_bps",
             "fill_rate",
             "execution_posture",
-            "execution_delay_ms",
+            "execution_delay_bars",
             "fill_depth_factor",
-            "feed_gap_seconds",
-            "drop_ticks_on_gap",
+            "feed_gap_bars",
         }
         assert not perturbation_keys.intersection(overrides.keys())
 
@@ -121,9 +120,10 @@ class TestGetScenarioPack:
     def test_delayed_execution_overrides(self) -> None:
         spec = get_scenario_pack("delayed_execution")
         o = spec.config_overrides
-        assert o["execution_delay_ms"] == 500
+        assert o["execution_delay_bars"] == 1
         assert o["execution_posture"] == "delayed"
         assert o["pack_id"] == "delayed_execution"
+        assert "execution_delay_ms" not in o
 
     # --- low_liquidity ---
 
@@ -139,9 +139,10 @@ class TestGetScenarioPack:
     def test_feed_gap_overrides(self) -> None:
         spec = get_scenario_pack("feed_gap")
         o = spec.config_overrides
-        assert o["feed_gap_seconds"] == 30
-        assert o["drop_ticks_on_gap"] is True
+        assert o["feed_gap_bars"] == 2
         assert o["pack_id"] == "feed_gap"
+        assert "feed_gap_seconds" not in o
+        assert "drop_ticks_on_gap" not in o
 
     # --- determinism ---
 

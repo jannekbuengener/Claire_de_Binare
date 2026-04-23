@@ -48,7 +48,9 @@ BUILTIN_SCENARIO_IDS: tuple[str, ...] = (
 _PACK_VERSION = "1"
 
 
-def _make_spec(scenario_id: str, description: str, overrides: dict[str, Any]) -> ScenarioSpec:
+def _make_spec(
+    scenario_id: str, description: str, overrides: dict[str, Any]
+) -> ScenarioSpec:
     """Build a ScenarioSpec with provenance keys injected into config_overrides."""
     provenance: dict[str, Any] = {
         "pack_id": scenario_id,
@@ -86,11 +88,12 @@ _PACKS: dict[str, ScenarioSpec] = {
     "delayed_execution": _make_spec(
         scenario_id="delayed_execution",
         description=(
-            "Delayed execution: deterministic execution delay injected per order. "
-            "Models latency degradation and late-arrival execution conditions."
+            "Delayed execution: deterministic bar-level execution delay. "
+            "Signal at index i executes at index i+K where K = execution_delay_bars. "
+            "Uses price from K bars later."
         ),
         overrides={
-            "execution_delay_ms": 500,
+            "execution_delay_bars": 1,
             "execution_posture": "delayed",
         },
     ),
@@ -108,21 +111,19 @@ _PACKS: dict[str, ScenarioSpec] = {
     "feed_gap": _make_spec(
         scenario_id="feed_gap",
         description=(
-            "Feed-gap: deterministic data-gap injection consistent with the replay "
-            "input model. Models feed interruptions and stale-tick conditions."
+            "Feed-gap: deterministic bar-level stale-feed injection on the 1m "
+            "replay canvas. Converts a contiguous midpoint window into stale, "
+            "non-fresh replay bars instead of pretending sub-minute raw-data gaps."
         ),
         overrides={
-            "feed_gap_seconds": 30,
-            "drop_ticks_on_gap": True,
+            "feed_gap_bars": 2,
         },
     ),
 }
 
 # Validate internal consistency at import time (unconditional: not skipped under -O).
 if set(_PACKS.keys()) != set(BUILTIN_SCENARIO_IDS):
-    raise ScenarioPackError(
-        "Mismatch between _PACKS keys and BUILTIN_SCENARIO_IDS"
-    )
+    raise ScenarioPackError("Mismatch between _PACKS keys and BUILTIN_SCENARIO_IDS")
 
 
 # ---------------------------------------------------------------------------
@@ -158,8 +159,7 @@ def get_scenario_pack(scenario_id: str) -> ScenarioSpec:
     if stored is None:
         known = ", ".join(repr(k) for k in BUILTIN_SCENARIO_IDS)
         raise ScenarioPackError(
-            f"Unknown scenario pack {scenario_id!r}. "
-            f"Known built-in packs: {known}"
+            f"Unknown scenario pack {scenario_id!r}. Known built-in packs: {known}"
         )
     # Return a fresh copy; ScenarioSpec.__post_init__ deep-copies config_overrides.
     return ScenarioSpec(
@@ -169,7 +169,9 @@ def get_scenario_pack(scenario_id: str) -> ScenarioSpec:
     )
 
 
-def _write_specs_artifact(artifact_root: str, spec_dicts: Sequence[dict[str, Any]]) -> None:
+def _write_specs_artifact(
+    artifact_root: str, spec_dicts: Sequence[dict[str, Any]]
+) -> None:
     """Write scenario_specs.json into the group artifact directory.
 
     Accepts pre-captured spec dicts (snapshots taken before run_fn executes)

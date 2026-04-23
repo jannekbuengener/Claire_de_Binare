@@ -184,7 +184,104 @@
           "maximum": 1.0
         },
         "data_integrity_ok": {
+          "description": "Terminal run-cleanliness indicator. True only when the runner finishes with no open_position and no pending_signals. This is not a performance or profitability metric.",
           "type": "boolean"
+        },
+        "data_integrity_diagnostics": {
+          "description": "Additive diagnostic block that explains the fail-closed terminal state behind data_integrity_ok. This block adds transparency only and does not change gate policy.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "data_integrity_reason",
+            "open_position_at_end",
+            "pending_signals_at_end"
+          ],
+          "properties": {
+            "data_integrity_reason": {
+              "description": "Canonical terminal-state reason. 'clean' means no open_position and no pending_signals remained at dataset end. Any other value explains why data_integrity_ok is false.",
+              "type": "string",
+              "enum": [
+                "clean",
+                "open_position_at_end",
+                "pending_signals_at_end",
+                "open_position_and_pending_signals_at_end"
+              ]
+            },
+            "open_position_at_end": {
+              "description": "Serialized open position still present when the run reached dataset end. Null means this dimension is clean. No synthetic end-of-window close is implied.",
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "entry_price",
+                    "entry_ts_ms",
+                    "entry_fee"
+                  ],
+                  "properties": {
+                    "entry_price": {
+                      "type": "number"
+                    },
+                    "entry_ts_ms": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "entry_fee": {
+                      "type": "number",
+                      "minimum": 0.0
+                    }
+                  }
+                }
+              ]
+            },
+            "pending_signals_at_end": {
+              "description": "Delayed execution signals still queued when the run reached dataset end. A non-empty array is fail-closed and indicates the run did not finish with a fully drained execution queue.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "side",
+                  "target_idx",
+                  "execution_price",
+                  "ts_ms",
+                  "volume",
+                  "volatility"
+                ],
+                "properties": {
+                  "side": {
+                    "type": "string",
+                    "enum": [
+                      "BUY",
+                      "SELL"
+                    ]
+                  },
+                  "target_idx": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "execution_price": {
+                    "type": "number"
+                  },
+                  "ts_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "volume": {
+                    "type": "number",
+                    "minimum": 0.0
+                  },
+                  "volatility": {
+                    "type": "number",
+                    "minimum": 0.0
+                  }
+                }
+              }
+            }
+          }
         },
         "deterministic_replay_ok": {
           "type": "boolean"

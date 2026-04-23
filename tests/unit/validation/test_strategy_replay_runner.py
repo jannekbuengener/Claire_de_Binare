@@ -26,6 +26,8 @@ from services.validation.strategy_replay_runner import (
     _DEFAULT_SYMBOL,
     AcceleratedShadowReplayConfig,
     ReplayRunnerError,
+    _apply_replay_data_overrides,
+    _apply_scenario_overrides,
     _build_replay_report_input,
     _load_candles,
     run_accelerated_shadow_replay,
@@ -48,6 +50,7 @@ def _minimal_backtest_report(
     period_start_ts_ms: int = 1_700_000_000_000,
     period_end_ts_ms: int = 1_700_100_000_000,
     gate_status: str = "PASS",
+    data_integrity_reason: str = "clean",
 ) -> dict:
     return {
         "schema_version": "strategy_validation_report.v1",
@@ -86,6 +89,11 @@ def _minimal_backtest_report(
             "market_state_fresh_ratio": 0.99,
             "regime_fresh_ratio": 0.99,
             "data_integrity_ok": True,
+            "data_integrity_diagnostics": {
+                "data_integrity_reason": data_integrity_reason,
+                "open_position_at_end": None,
+                "pending_signals_at_end": [],
+            },
             "deterministic_replay_ok": deterministic_ok,
         },
         "thresholds_applied": {
@@ -339,6 +347,18 @@ class TestBuildReplayReportInput:
 
         assert result.metrics is not None
         assert result.metrics["profit_factor"] == 1.3
+
+    def test_data_integrity_diagnostics_passed_through(self, tmp_path):
+        report = _minimal_backtest_report(data_integrity_reason="open_position_at_end")
+        cfg = _minimal_valid_config()
+        result = _build_replay_report_input(report, cfg, "abc1234", tmp_path)
+
+        assert result.metrics is not None
+        assert result.metrics["data_integrity_diagnostics"] == {
+            "data_integrity_reason": "open_position_at_end",
+            "open_position_at_end": None,
+            "pending_signals_at_end": [],
+        }
 
     def test_config_snapshot_passed_through(self, tmp_path):
         report = _minimal_backtest_report()
@@ -825,6 +845,124 @@ class TestDryRun:
         run_accelerated_shadow_replay(cfg)
         # output directory must NOT be created
         assert not (tmp_path / "out").exists()
+
+    def test_scenario_group_dry_run_returns_0(self, tmp_path, capsys):
+        candles = [{"ts_ms": 1_000_000}]
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(candles), encoding="utf-8")
+
+        cfg = AcceleratedShadowReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            dry_run=True,
+            scenario_ids=("baseline", "delayed_execution"),
+        )
+
+        exit_code = run_accelerated_shadow_replay(cfg)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "DRY-RUN" in captured.out
+        assert "scenario group" in captured.out
+
+
+# ---------------------------------------------------------------------------
+# TestScenarioOverrides
+# ---------------------------------------------------------------------------
+@pytest.mark.unit
+class TestScenarioOverrides:
+    def test_apply_scenario_overrides_maps_explicit_bar_delay(self):
+        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+
+        result = _apply_scenario_overrides(
+            cfg,
+            {
+                "execution_delay_bars": 1,
+                "execution_posture": "delayed",
+            },
+        )
+
+        assert result.simulator_config["EXECUTION_DELAY_BARS"] == 1
+        assert result.simulator_config["_execution_posture"] == "delayed"
+        assert result.replay_data_overrides == {}
+
+    def test_apply_scenario_overrides_rejects_execution_delay_ms(self):
+        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+
+        with pytest.raises(ReplayRunnerError, match="unknown keys"):
+            _apply_scenario_overrides(cfg, {"execution_delay_ms": 500})
+
+    def test_apply_scenario_overrides_maps_feed_gap_to_replay_data_surface(self):
+        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+
+        result = _apply_scenario_overrides(cfg, {"feed_gap_bars": 2})
+
+        assert result.simulator_config == {}
+        assert result.replay_data_overrides == {"feed_gap_bars": 2}
+
+    def test_apply_scenario_overrides_rejects_seconds_gap_semantics(self):
+        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+
+        with pytest.raises(ReplayRunnerError, match="not representable"):
+            _apply_scenario_overrides(cfg, {"feed_gap_seconds": 30})
+
+
+@pytest.mark.unit
+class TestReplayDataOverrides:
+    def test_apply_replay_data_overrides_injects_midpoint_gap(self):
+        candles = [
+            {
+                "symbol": "BTCUSDT",
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": 100.0 + i,
+                "high": 101.0 + i,
+                "low": 99.0 + i,
+                "close": 100.5 + i,
+                "volume": 10.0 + i,
+                "regime_id": 0,
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            for i in range(10)
+        ]
+
+        perturbed = _apply_replay_data_overrides(
+            candles,
+            {"feed_gap_bars": 2},
+            warmup_count=4,
+        )
+
+        assert perturbed[6]["data_gap_active"] is True
+        assert perturbed[7]["data_gap_active"] is True
+        assert perturbed[6]["market_state_fresh"] is False
+        assert perturbed[7]["regime_fresh"] is False
+        assert perturbed[6]["close"] == candles[5]["close"]
+        assert perturbed[7]["high"] == candles[5]["high"]
+        assert perturbed[6]["ts_ms"] == candles[6]["ts_ms"]
+        assert perturbed[7]["ts_ms"] == candles[7]["ts_ms"]
+        assert "data_gap_active" not in perturbed[5]
+
+    def test_apply_replay_data_overrides_rejects_gap_covering_all_live_bars(self):
+        candles = [
+            {
+                "symbol": "BTCUSDT",
+                "ts_ms": 1_000_000 + i * 60_000,
+                "open": 100.0,
+                "high": 101.0,
+                "low": 99.0,
+                "close": 100.5,
+                "volume": 10.0,
+                "regime_id": 0,
+            }
+            for i in range(6)
+        ]
+
+        with pytest.raises(ReplayRunnerError, match="unaffected live candle"):
+            _apply_replay_data_overrides(
+                candles,
+                {"feed_gap_bars": 3},
+                warmup_count=3,
+            )
 
 
 # ---------------------------------------------------------------------------
