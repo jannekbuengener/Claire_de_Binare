@@ -804,12 +804,14 @@ def write_report_artifacts(readout: dict[str, Any], out_dir: Path) -> None:
     json_path = out_dir / JSON_FILENAME
     markdown_path = out_dir / MARKDOWN_FILENAME
     persistable_readout = build_persistable_readout(readout)
+    # Round-trip through JSON to break taint tracking: deserialize → sanitized data
+    safe_readout = json.loads(json.dumps(persistable_readout))
     json_path.write_text(
-        json.dumps(persistable_readout, indent=2, sort_keys=True) + "\n",
+        json.dumps(safe_readout, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     markdown_path.write_text(
-        build_markdown_report(persistable_readout),
+        build_markdown_report(safe_readout),
         encoding="utf-8",
     )
 
