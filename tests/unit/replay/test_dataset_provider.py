@@ -43,7 +43,7 @@ def _make_spec(
     warmup_candles: int = 3,
     source: str = "file",
     file_path: str | None = "/tmp/data.json",
-    db_dataset_id: str | None = None,
+    db_dataset_window: str | None = None,
 ) -> DatasetSpec:
     return DatasetSpec(
         symbol=symbol,
@@ -53,7 +53,7 @@ def _make_spec(
         warmup_candles=warmup_candles,
         source=source,
         file_path=file_path,
-        db_dataset_id=db_dataset_id,
+        db_dataset_window=db_dataset_window,
     )
 
 
@@ -74,7 +74,7 @@ def _make_db_rows(count: int, start_ts_ms: int = _BASE_START_MS) -> list[tuple]:
 
     Column order matches SELECT in DBBackedDatasetProvider:
     ts_ms (int), open (Decimal), high (Decimal), low (Decimal),
-    close (Decimal), volume (Decimal), trade_count (int).
+    close (Decimal), volume (Decimal), trade_count (int), regime_id (int).
     """
     return [
         (
@@ -85,6 +85,7 @@ def _make_db_rows(count: int, start_ts_ms: int = _BASE_START_MS) -> list[tuple]:
             Decimal("50000.50000001"),
             Decimal("10.50000001"),
             100 + i,
+            0,
         )
         for i in range(count)
     ]
@@ -103,7 +104,11 @@ def test_valid_file_spec_validates_without_error() -> None:
 
 @pytest.mark.unit
 def test_valid_db_spec_validates_without_error() -> None:
-    spec = _make_spec(source="db", file_path=None, db_dataset_id="ds-001")
+    spec = _make_spec(
+        source="db",
+        file_path=None,
+        db_dataset_window=f"{_BASE_START_MS}:{_BASE_START_MS + 600_000}",
+    )
     spec.validate()
 
 
@@ -155,22 +160,26 @@ def test_file_source_missing_file_path_rejected() -> None:
 
 
 @pytest.mark.unit
-def test_file_source_with_db_dataset_id_rejected() -> None:
-    spec = _make_spec(source="file", file_path="/tmp/f.json", db_dataset_id="ds-001")
+def test_file_source_with_db_dataset_window_rejected() -> None:
+    spec = _make_spec(
+        source="file", file_path="/tmp/f.json", db_dataset_window="1180000:1540000"
+    )
     with pytest.raises(DatasetSpecError, match="mutually exclusive"):
         spec.validate()
 
 
 @pytest.mark.unit
-def test_db_source_missing_db_dataset_id_rejected() -> None:
-    spec = _make_spec(source="db", file_path=None, db_dataset_id=None)
-    with pytest.raises(DatasetSpecError, match="db_dataset_id"):
+def test_db_source_missing_db_dataset_window_rejected() -> None:
+    spec = _make_spec(source="db", file_path=None, db_dataset_window=None)
+    with pytest.raises(DatasetSpecError, match="db_dataset_window"):
         spec.validate()
 
 
 @pytest.mark.unit
 def test_db_source_with_file_path_rejected() -> None:
-    spec = _make_spec(source="db", file_path="/tmp/f.json", db_dataset_id="ds-001")
+    spec = _make_spec(
+        source="db", file_path="/tmp/f.json", db_dataset_window="1180000:1540000"
+    )
     with pytest.raises(DatasetSpecError, match="mutually exclusive"):
         spec.validate()
 
@@ -182,18 +191,22 @@ def test_db_source_with_file_path_rejected() -> None:
 
 @pytest.mark.unit
 def test_to_dict_omits_none_optional_fields() -> None:
-    spec = _make_spec(source="file", file_path="/tmp/f.json", db_dataset_id=None)
+    spec = _make_spec(source="file", file_path="/tmp/f.json", db_dataset_window=None)
     d = spec.to_dict()
-    assert "db_dataset_id" not in d
+    assert "db_dataset_window" not in d
     assert d["file_path"] == "/tmp/f.json"
 
 
 @pytest.mark.unit
-def test_to_dict_includes_db_dataset_id_when_set() -> None:
-    spec = _make_spec(source="db", file_path=None, db_dataset_id="ds-abc")
+def test_to_dict_includes_db_dataset_window_when_set() -> None:
+    spec = _make_spec(
+        source="db",
+        file_path=None,
+        db_dataset_window=f"{_BASE_START_MS}:{_BASE_START_MS + 600_000}",
+    )
     d = spec.to_dict()
     assert "file_path" not in d
-    assert d["db_dataset_id"] == "ds-abc"
+    assert d["db_dataset_window"] == f"{_BASE_START_MS}:{_BASE_START_MS + 600_000}"
 
 
 @pytest.mark.unit
@@ -402,7 +415,11 @@ def test_file_backed_warmup_exceeds_candle_count_raises(tmp_path: object) -> Non
 @pytest.mark.unit
 def test_file_backed_source_mismatch_raises() -> None:
     """FileBackedDatasetProvider refuses a db-source spec."""
-    spec = _make_spec(source="db", file_path=None, db_dataset_id="ds-001")
+    spec = _make_spec(
+        source="db",
+        file_path=None,
+        db_dataset_window=f"{_BASE_START_MS}:{_BASE_START_MS + 600_000}",
+    )
     with pytest.raises(DatasetLoadError, match="source='file'"):
         FileBackedDatasetProvider().load(spec)
 
@@ -447,7 +464,7 @@ def _make_db_spec(**overrides) -> DatasetSpec:
     defaults = dict(
         source="db",
         file_path=None,
-        db_dataset_id="ds-001",
+        db_dataset_window=f"{_BASE_START_MS}:{_DB_END_MS}",
         warmup_candles=_DB_WARMUP,
         end_ts_ms=_DB_END_MS,
     )
@@ -601,10 +618,10 @@ def test_db_backed_deterministic_output() -> None:
 
 @pytest.mark.unit
 def test_db_backed_invalid_spec_fails_before_db_query() -> None:
-    """Invalid spec (missing db_dataset_id) raises DatasetSpecError before any query."""
+    """Invalid spec (missing db_dataset_window) raises DatasetSpecError before any query."""
     conn = _make_mock_conn([])
-    spec = _make_spec(source="db", file_path=None, db_dataset_id=None)
-    with pytest.raises(DatasetSpecError, match="db_dataset_id"):
+    spec = _make_spec(source="db", file_path=None, db_dataset_window=None)
+    with pytest.raises(DatasetSpecError, match="db_dataset_window"):
         DBBackedDatasetProvider(conn).load(spec)
     conn.cursor.assert_not_called()
 

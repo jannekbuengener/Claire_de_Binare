@@ -1,8 +1,8 @@
-"""Accelerated shadow replay CLI entry point for primary_breakout_v1.
+"""ARVP replay CLI entry point for primary_breakout_v1.
 
 Thin operator-facing CLI that:
   - validates a minimal replay config fail-closed
-  - loads historical candle input from file (JSON array or JSONL)
+  - loads historical candle input from file or db via the canonical dataset layer
   - delegates to the existing backtest surface (strategy_backtest_runner)
   - builds a ReplayReportInput and writes the artifact bundle via ReplayReporter
   - writes supplementary artifacts (config.resolved.json, env_redacted.txt)
@@ -15,16 +15,27 @@ Exit codes:
     2  Input / runtime error (malformed candles, bridge failure, execution
        failure, reporter failure, or determinism failure with --deterministic-verify).
 
-Usage:
-    python -m services.validation.strategy_replay_runner \\
-        --input-candles candles.json \\
-        [--output-dir artifacts/replay_reports] \\
-        [--strategy-id primary_breakout_v1] \\
-        [--symbol BTCUSDT] \\
-        [--adapter-id primary_breakout_runner_v1] \\
-        [--speedup-profile instant|1x|2x|5x|10x] \\
-        [--dry-run] \\
-        [--deterministic-verify]
+ Usage:
+     python -m services.validation.strategy_replay_runner \\
+         --dataset-source file \\
+         --input-candles candles.json \\
+         [--output-dir artifacts/replay_reports] \\
+         [--strategy-id primary_breakout_v1] \\
+         [--symbol BTCUSDT] \\
+         [--adapter-id primary_breakout_runner_v1] \\
+         [--speedup-profile instant|1x|2x|5x|10x] \\
+         [--dry-run] \\
+         [--deterministic-verify]
+     python -m services.validation.strategy_replay_runner \\
+         --dataset-source db \\
+         --db-dataset-window START_TS_MS:END_TS_MS \\
+         [--output-dir artifacts/replay_reports] \\
+         [--strategy-id primary_breakout_v1] \\
+         [--symbol BTCUSDT] \\
+         [--adapter-id primary_breakout_runner_v1] \\
+         [--speedup-profile instant|1x|2x|5x|10x] \\
+         [--dry-run] \\
+         [--deterministic-verify]
 
 Governance: Issue #1804 (LR-021 Replay CLI Slice)
 
@@ -55,8 +66,13 @@ from pathlib import Path
 from typing import Any
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
-from core.replay.dataset_provider import DatasetResult
-from core.replay.dataset_spec import DatasetSpec
+from core.replay.dataset_provider import (
+    DBBackedDatasetProvider,
+    DatasetLoadError,
+    DatasetResult,
+    FileBackedDatasetProvider,
+)
+from core.replay.dataset_spec import DatasetSpec, DatasetSpecError
 from core.replay.historical_bridge import (
     HistoricalBridgeError,
     PrimaryBreakoutBridgeConfig,
@@ -99,6 +115,7 @@ from core.replay.replay_report_builder import (
     build_scenario_comparison_summary,
 )
 from core.utils.clock import utcnow
+from core.utils.postgres_client import create_postgres_connection
 from services.validation.replay_reporter import ReplayReporter, ReplayReporterError
 from services.validation.strategy_backtest_runner import (
     PrimaryBreakoutBacktestError,
@@ -159,7 +176,7 @@ class ReplayRunnerError(RuntimeError):
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True, slots=True)
 class ARVPReplayConfig:
-    """Minimal, fail-closed config for an accelerated shadow replay run."""
+    """Minimal, fail-closed config for an ARVP replay run."""
 
     input_candles_file: str = ""
     """Path to candle input file (JSON array or JSONL)."""
@@ -167,8 +184,8 @@ class ARVPReplayConfig:
     dataset_source: str = "file"
     """Dataset input source: 'file' or 'db'."""
 
-    db_dataset_id: str | None = None
-    """Persisted dataset record ID."""
+    db_dataset_window: str | None = None
+    """DB-backed dataset window: 'START_TS_MS:END_TS_MS' (epoch millis)."""
 
     strategy_id: str = _DEFAULT_STRATEGY_ID
     """Strategy identifier. Must be in _SUPPORTED_STRATEGY_IDS."""
@@ -217,8 +234,36 @@ class ARVPReplayConfig:
 
     def validate(self) -> None:
         """Fail-closed config validation. Raises ValueError on any violation."""
-        if not self.input_candles_file:
-            raise ValueError("input_candles_file is required")
+        dataset_source = (self.dataset_source or "").strip()
+        if dataset_source not in {"file", "db"}:
+            raise ValueError(
+                f"dataset_source must be 'file' or 'db', got {self.dataset_source!r}"
+            )
+
+        if dataset_source == "file":
+            if not self.input_candles_file:
+                raise ValueError(
+                    "dataset_source='file' requires input_candles_file "
+                    "(use --input-candles)"
+                )
+            if self.db_dataset_window is not None:
+                raise ValueError(
+                    "dataset_source='file' and dataset_source='db' are mutually exclusive: "
+                    "db_dataset_window must be None when dataset_source='file'."
+                )
+        else:
+            if self.db_dataset_window is None or not str(self.db_dataset_window).strip():
+                raise ValueError(
+                    "dataset_source='db' requires db_dataset_window (use --db-dataset-window)"
+                )
+            if self.input_candles_file:
+                raise ValueError(
+                    "dataset_source='db' and dataset_source='file' are mutually exclusive: "
+                    "input_candles_file must be empty when dataset_source='db'."
+                )
+
+            # Fail-closed: db_dataset_window must include an explicit window.
+            _parse_db_dataset_window(self.db_dataset_window)
         if self.strategy_id not in _SUPPORTED_STRATEGY_IDS:
             raise ValueError(
                 f"unsupported strategy_id {self.strategy_id!r}; "
@@ -263,8 +308,39 @@ class ARVPReplayConfig:
                     )
 
 
-# Backward-compatible alias for existing tests/callers.
-AcceleratedShadowReplayConfig = ARVPReplayConfig
+_DB_DATASET_WINDOW_RE = re.compile(r"^(?P<start>\d+):(?P<end>\d+)$")
+
+
+def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
+    """Parse ``db_dataset_window`` into an explicit (start_ts_ms, end_ts_ms) window.
+
+    Front-door contract: for DB-backed datasets, operators must provide the
+    replay window explicitly as ``START_TS_MS:END_TS_MS`` (UTC epoch millis).
+    """
+    raw = str(db_dataset_window).strip()
+    match = _DB_DATASET_WINDOW_RE.match(raw)
+    if not match:
+        raise ValueError(
+            "db_dataset_window must be in the form 'START_TS_MS:END_TS_MS' (epoch millis), "
+            f"got {db_dataset_window!r}"
+        )
+    try:
+        start_ts_ms = int(match.group("start"))
+        end_ts_ms = int(match.group("end"))
+    except ValueError as exc:
+        raise ValueError(
+            "db_dataset_window must contain integer START_TS_MS and END_TS_MS, "
+            f"got {db_dataset_window!r}"
+        ) from exc
+    if start_ts_ms <= 0 or end_ts_ms <= 0:
+        raise ValueError(
+            f"db_dataset_window timestamps must be > 0, got {db_dataset_window!r}"
+        )
+    if start_ts_ms >= end_ts_ms:
+        raise ValueError(
+            f"db_dataset_window start must be < end, got {db_dataset_window!r}"
+        )
+    return start_ts_ms, end_ts_ms
 
 
 # ---------------------------------------------------------------------------
@@ -424,54 +500,6 @@ def _get_code_commit() -> str:
     return _FALLBACK_CODE_COMMIT
 
 
-def _load_candles(path: Path) -> list[dict[str, Any]]:
-    """Load candles from a JSON array or JSONL file. Raises ReplayRunnerError on failure."""
-    if not path.exists():
-        raise ReplayRunnerError(f"input candles file not found: {path}")
-    try:
-        text = path.read_text(encoding="utf-8").strip()
-    except OSError as exc:
-        raise ReplayRunnerError(f"cannot read candles file: {exc}") from exc
-
-    if not text:
-        raise ReplayRunnerError("input candles file is empty")
-
-    # JSON array
-    if text.startswith("["):
-        try:
-            data = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise ReplayRunnerError(f"candles JSON parse error: {exc}") from exc
-        if not isinstance(data, list):
-            raise ReplayRunnerError("candles JSON root must be an array")
-        if not data:
-            raise ReplayRunnerError("candles array is empty")
-        for idx, row in enumerate(data):
-            if not isinstance(row, dict):
-                raise ReplayRunnerError(
-                    f"candles JSON array item at index {idx} must be a JSON object"
-                )
-        return data
-
-    # JSONL (one JSON object per line)
-    rows: list[dict[str, Any]] = []
-    for i, line in enumerate(text.splitlines(), start=1):
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError as exc:
-            raise ReplayRunnerError(f"JSONL parse error at line {i}: {exc}") from exc
-        if not isinstance(row, dict):
-            raise ReplayRunnerError(f"JSONL line {i} must be a JSON object")
-        rows.append(row)
-
-    if not rows:
-        raise ReplayRunnerError("candles file contains no valid rows")
-    return rows
-
-
 def _redact_env() -> dict[str, str]:
     """Return a small subset of environment variables safe to surface in logs."""
     return {k: v for k, v in os.environ.items() if k in _SAFE_ENV_KEYS}
@@ -494,48 +522,89 @@ def _build_provenance_config_snapshot(
     }
 
 
-def _build_dataset_result(
-    candles: list[dict[str, Any]],
-    *,
-    input_path: Path,
+def _load_dataset_result(
     config: ARVPReplayConfig,
+    *,
     warmup_count: int,
 ) -> DatasetResult:
-    """Build the deterministic dataset result used by scheduler and runner layers."""
-    if len(candles) <= warmup_count:
-        raise ReplayRunnerError(
-            f"scheduler requires at least {warmup_count + 1} candles for "
-            f"warmup_count={warmup_count}; got {len(candles)}"
+    """Load + validate dataset via the canonical dataset provider layer."""
+    dataset_source = (config.dataset_source or "").strip()
+    if dataset_source == "file":
+        input_path = Path(config.input_candles_file)
+        temp_spec = DatasetSpec(
+            symbol=config.symbol,
+            timeframe="1m",
+            start_ts_ms=0,
+            end_ts_ms=0,
+            warmup_candles=warmup_count,
+            source="file",
+            file_path=str(input_path),
         )
+        try:
+            temp_result = FileBackedDatasetProvider().load(temp_spec)
+        except (DatasetLoadError, DatasetSpecError) as exc:
+            raise ReplayRunnerError(str(exc)) from exc
 
-    try:
-        start_ts_ms = int(candles[warmup_count]["ts_ms"])
-        end_ts_ms = int(candles[-1]["ts_ms"])
-    except (KeyError, TypeError, ValueError) as exc:
-        raise ReplayRunnerError(
-            "scheduler requires numeric ts_ms on the first live candle and last candle"
-        ) from exc
+        candles = list(temp_result.candles)
+        try:
+            start_ts_ms = int(candles[warmup_count]["ts_ms"])
+            end_ts_ms = int(candles[-1]["ts_ms"])
+        except (KeyError, TypeError, ValueError, IndexError) as exc:
+            raise ReplayRunnerError(
+                "dataset requires numeric ts_ms on the first live candle and last candle"
+            ) from exc
 
-    spec = DatasetSpec(
-        symbol=config.symbol,
-        timeframe="1m",
-        start_ts_ms=start_ts_ms,
-        end_ts_ms=end_ts_ms,
-        warmup_candles=warmup_count,
-        source="file",
-        file_path=str(input_path),
-    )
-    try:
-        spec.validate()
+        spec = DatasetSpec(
+            symbol=config.symbol,
+            timeframe="1m",
+            start_ts_ms=start_ts_ms,
+            end_ts_ms=end_ts_ms,
+            warmup_candles=warmup_count,
+            source="file",
+            file_path=str(input_path),
+        )
+        try:
+            spec.validate()
+        except DatasetSpecError as exc:
+            raise ReplayRunnerError(f"dataset spec validation failed: {exc}") from exc
+
         return DatasetResult(
             spec=spec,
-            candles=tuple(dict(candle) for candle in candles),
+            candles=temp_result.candles,
             fingerprint=spec.fingerprint(),
             warmup_count=warmup_count,
             effective_candle_count=len(candles) - warmup_count,
         )
-    except (TypeError, ValueError) as exc:
-        raise ReplayRunnerError(f"dataset validation failed: {exc}") from exc
+
+    if dataset_source == "db":
+        start_ts_ms, end_ts_ms = _parse_db_dataset_window(
+            str(config.db_dataset_window)
+        )
+        spec = DatasetSpec(
+            symbol=config.symbol,
+            timeframe="1m",
+            start_ts_ms=start_ts_ms,
+            end_ts_ms=end_ts_ms,
+            warmup_candles=warmup_count,
+            source="db",
+            file_path=None,
+            db_dataset_window=str(config.db_dataset_window),
+        )
+        try:
+            conn = create_postgres_connection()
+        except Exception as exc:
+            raise ReplayRunnerError(f"failed to connect to Postgres: {exc}") from exc
+        try:
+            return DBBackedDatasetProvider(conn).load(spec)
+        except (DatasetLoadError, DatasetSpecError) as exc:
+            raise ReplayRunnerError(str(exc)) from exc
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+    raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
 
 
 def _build_scheduler_metadata(
@@ -746,6 +815,9 @@ def _write_supplementary_artifacts(
         OSError if either file cannot be written.
     """
     resolved_config: dict[str, Any] = {
+        "dataset_source": config.dataset_source,
+        "input_candles_file": config.input_candles_file,
+        "db_dataset_window": config.db_dataset_window,
         "strategy_id": config.strategy_id,
         "symbol": config.symbol,
         "adapter_id": config.adapter_id,
@@ -774,7 +846,7 @@ def _write_supplementary_artifacts(
 # ---------------------------------------------------------------------------
 # Orchestration
 # ---------------------------------------------------------------------------
-def run_accelerated_shadow_replay(config: ARVPReplayConfig) -> int:
+def run_arvp_replay(config: ARVPReplayConfig) -> int:
     """Orchestrate a full ARVP replay run (baseline or scenario group).
 
     Args:
@@ -783,28 +855,6 @@ def run_accelerated_shadow_replay(config: ARVPReplayConfig) -> int:
     Returns:
         Exit code integer: 0 success, 1 config error, 2 runtime/input error.
     """
-    # Scenario group path
-    if config.scenario_ids:
-        return _run_scenario_group_path_with_candles(config)
-
-    # Baseline path: load candles first, then continue
-    input_path = Path(config.input_candles_file)
-
-    # Load + validate candles (also covers dry-run path)
-    try:
-        candles = _load_candles(input_path)
-    except ReplayRunnerError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
-        return 2
-
-    if config.dry_run:
-        print(
-            f"DRY-RUN: config valid, input file accessible. {len(candles)} candles found."
-        )
-        return 0
-
-    output_dir = Path(config.output_directory)
-    code_commit = _get_code_commit()
     run_cfg = PrimaryBreakoutBacktestRunConfig(
         bridge=PrimaryBreakoutBridgeConfig(
             entry_lookback_minutes=config.entry_lookback_minutes,
@@ -819,13 +869,29 @@ def run_accelerated_shadow_replay(config: ARVPReplayConfig) -> int:
         run_cfg.bridge.entry_lookback_minutes,
         run_cfg.bridge.exit_lookback_minutes,
     )
+
+    # Scenario group path
+    if config.scenario_ids:
+        return _run_scenario_group_path_with_candles(config, warmup_count=warmup_count)
+
     try:
-        dataset_result = _build_dataset_result(
-            candles,
-            input_path=input_path,
-            config=config,
-            warmup_count=warmup_count,
+        dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
+    except ReplayRunnerError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    candles: list[dict[str, Any]] = [dict(candle) for candle in dataset_result.candles]
+
+    if config.dry_run:
+        print(
+            "DRY-RUN: config valid, dataset loaded. "
+            f"source={config.dataset_source!r}, candles_total={len(candles)}."
         )
+        return 0
+
+    output_dir = Path(config.output_directory)
+    code_commit = _get_code_commit()
+    try:
         scheduler_metadata = _build_scheduler_metadata(
             dataset_result,
             speedup_profile=config.speedup_profile,
@@ -1132,7 +1198,7 @@ def run_accelerated_shadow_replay(config: ARVPReplayConfig) -> int:
 def _build_argument_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="strategy_replay_runner",
-        description="Accelerated shadow replay CLI for primary_breakout_v1.",
+        description="ARVP replay CLI for primary_breakout_v1.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Exit codes:\n"
@@ -1142,10 +1208,23 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--dataset-source",
+        default="file",
+        choices=("file", "db"),
+        metavar="SOURCE",
+        help="Dataset input source. Default: 'file'.",
+    )
+    parser.add_argument(
         "--input-candles",
-        required=True,
+        default="",
         metavar="FILE",
-        help="Path to candle input file (JSON array or JSONL). Required.",
+        help="Path to candle input file (JSON array or JSONL). Required when --dataset-source=file.",
+    )
+    parser.add_argument(
+        "--db-dataset-window",
+        default=None,
+        metavar="START_TS_MS:END_TS_MS",
+        help="DB-backed dataset window (epoch millis). Required when --dataset-source=db.",
     )
     parser.add_argument(
         "--output-dir",
@@ -1204,27 +1283,23 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_baseline_path(
+def _run_scenario_group_path_with_candles(
     config: ARVPReplayConfig,
-    candles: list[dict[str, Any]],
+    *,
+    warmup_count: int,
 ) -> int:
-    """Run baseline single replay. Extracted for reuse."""
-    # ... this is placeholder - real logic extracted below
-    return 0
-
-
-def _run_scenario_group_path_with_candles(config: ARVPReplayConfig) -> int:
-    input_path = Path(config.input_candles_file)
     try:
-        candles = _load_candles(input_path)
+        dataset_result = _load_dataset_result(config, warmup_count=warmup_count)
     except ReplayRunnerError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
+    candles: list[dict[str, Any]] = [dict(candle) for candle in dataset_result.candles]
+
     if config.dry_run:
         print(
-            "DRY-RUN: scenario group valid, input file accessible. "
-            f"{len(candles)} candles found."
+            "DRY-RUN: scenario group valid, dataset loaded. "
+            f"source={config.dataset_source!r}, candles_total={len(candles)}."
         )
         return 0
 
@@ -1320,6 +1395,8 @@ def main() -> int:
     try:
         config = ARVPReplayConfig(
             input_candles_file=args.input_candles,
+            dataset_source=args.dataset_source,
+            db_dataset_window=args.db_dataset_window,
             strategy_id=args.strategy_id,
             symbol=args.symbol,
             adapter_id=args.adapter_id,
@@ -1335,7 +1412,7 @@ def main() -> int:
         print(f"ERROR: Config validation failed: {exc}", file=sys.stderr)
         return 1
 
-    return run_accelerated_shadow_replay(config)
+    return run_arvp_replay(config)
 
 
 if __name__ == "__main__":

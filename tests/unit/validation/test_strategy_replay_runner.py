@@ -1,10 +1,9 @@
 """Unit tests for services/validation/strategy_replay_runner.py.
 
 Tests cover:
-  - AcceleratedShadowReplayConfig defaults and fail-closed validation
-  - _load_candles: JSON array, JSONL, missing file, empty file, malformed JSON
+  - ARVPReplayConfig defaults and fail-closed validation
   - _build_replay_report_input: correct field mapping, determinism toggle
-  - run_accelerated_shadow_replay: exit codes 0/1/2, dry-run, bundle written
+  - run_arvp_replay: exit codes 0/1/2, dry-run, bundle written
   - main(): arg parsing, defaults, exit codes
 """
 
@@ -12,7 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -26,13 +25,12 @@ from services.validation.strategy_replay_runner import (
     _DEFAULT_OUTPUT_DIR,
     _DEFAULT_STRATEGY_ID,
     _DEFAULT_SYMBOL,
-    AcceleratedShadowReplayConfig,
+    ARVPReplayConfig,
     ReplayRunnerError,
     _apply_replay_data_overrides,
     _apply_scenario_overrides,
     _build_replay_report_input,
-    _load_candles,
-    run_accelerated_shadow_replay,
+    run_arvp_replay,
     main,
 )
 from core.replay.canonical_json import canonical_hash
@@ -116,19 +114,21 @@ def _minimal_backtest_report(
     }
 
 
-def _minimal_valid_config(**overrides) -> AcceleratedShadowReplayConfig:
+def _minimal_valid_config(**overrides) -> ARVPReplayConfig:
     defaults = {"input_candles_file": "candles.json"}
     defaults.update(overrides)
-    return AcceleratedShadowReplayConfig(**defaults)
+    return ARVPReplayConfig(**defaults)
 
 
 # ---------------------------------------------------------------------------
-# TestAcceleratedShadowReplayConfig
+# TestARVPReplayConfig
 # ---------------------------------------------------------------------------
 @pytest.mark.unit
-class TestAcceleratedShadowReplayConfig:
+class TestARVPReplayConfig:
     def test_defaults_are_set(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="input.json")
+        cfg = ARVPReplayConfig(input_candles_file="input.json")
+        assert cfg.dataset_source == "file"
+        assert cfg.db_dataset_window is None
         assert cfg.strategy_id == _DEFAULT_STRATEGY_ID
         assert cfg.symbol == _DEFAULT_SYMBOL
         assert cfg.adapter_id == _DEFAULT_ADAPTER_ID
@@ -144,37 +144,100 @@ class TestAcceleratedShadowReplayConfig:
         assert cfg.deterministic_verify is False
 
     def test_validate_passes_valid_config(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
         cfg.validate()  # Must not raise
 
     def test_validate_fails_missing_input_file(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="")
-        with pytest.raises(ValueError, match="input_candles_file is required"):
+        cfg = ARVPReplayConfig(input_candles_file="")
+        with pytest.raises(ValueError, match="dataset_source='file' requires input_candles_file"):
+            cfg.validate()
+
+    def test_validate_passes_db_source_with_db_dataset_window(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window="1180000:1540000",
+        )
+        cfg.validate()  # Must not raise
+
+    def test_validate_fails_db_source_missing_db_dataset_window(self):
+        cfg = ARVPReplayConfig(dataset_source="db", db_dataset_window=None)
+        with pytest.raises(
+            ValueError, match="dataset_source='db' requires db_dataset_window"
+        ):
+            cfg.validate()
+
+    def test_validate_fails_db_source_with_input_candles_file(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window="1180000:1540000",
+            input_candles_file="candles.json",
+        )
+        with pytest.raises(ValueError, match="input_candles_file must be empty"):
+            cfg.validate()
+
+    def test_validate_fails_file_source_with_db_dataset_window(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="file",
+            input_candles_file="candles.json",
+            db_dataset_window="1180000:1540000",
+        )
+        with pytest.raises(ValueError, match="db_dataset_window must be None"):
+            cfg.validate()
+
+    def test_validate_fails_unknown_dataset_source(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="s3",
+            input_candles_file="candles.json",
+        )
+        with pytest.raises(ValueError, match="dataset_source must be 'file' or 'db'"):
+            cfg.validate()
+
+    def test_db_dataset_id_field_is_not_supported(self):
+        with pytest.raises(TypeError):
+            ARVPReplayConfig(  # type: ignore[call-arg]
+                dataset_source="db",
+                db_dataset_id="1180000:1540000",
+            )
+
+    def test_validate_fails_db_dataset_window_without_explicit_window(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window="ds-001",
+        )
+        with pytest.raises(ValueError, match="START_TS_MS:END_TS_MS"):
+            cfg.validate()
+
+    def test_validate_fails_db_dataset_window_with_start_gte_end(self):
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window="1540000:1540000",
+        )
+        with pytest.raises(ValueError, match="start must be < end"):
             cfg.validate()
 
     def test_validate_fails_unsupported_strategy_id(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", strategy_id="unsupported_strategy"
         )
         with pytest.raises(ValueError, match="unsupported strategy_id"):
             cfg.validate()
 
     def test_validate_fails_unsupported_symbol(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", symbol="ETHUSDT"
         )
         with pytest.raises(ValueError, match="unsupported symbol"):
             cfg.validate()
 
     def test_validate_fails_unsupported_adapter_id(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", adapter_id="unknown_adapter"
         )
         with pytest.raises(ValueError, match="unsupported adapter_id"):
             cfg.validate()
 
     def test_validate_fails_unsupported_speedup_profile(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json",
             speedup_profile="100x",
         )
@@ -182,98 +245,30 @@ class TestAcceleratedShadowReplayConfig:
             cfg.validate()
 
     def test_validate_fails_zero_order_size(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", order_size=0.0
         )
         with pytest.raises(ValueError, match="order_size must be > 0"):
             cfg.validate()
 
     def test_validate_fails_negative_order_size(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", order_size=-1.0
         )
         with pytest.raises(ValueError, match="order_size must be > 0"):
             cfg.validate()
 
     def test_validate_fails_zero_depth_multiplier(self):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file="x.json", order_book_depth_multiplier=0.0
         )
         with pytest.raises(ValueError, match="order_book_depth_multiplier must be > 0"):
             cfg.validate()
 
     def test_config_is_frozen(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="x.json")
+        cfg = ARVPReplayConfig(input_candles_file="x.json")
         with pytest.raises((AttributeError, TypeError)):
             cfg.order_size = 99.0  # type: ignore[misc]
-
-
-# ---------------------------------------------------------------------------
-# TestLoadCandles
-# ---------------------------------------------------------------------------
-@pytest.mark.unit
-class TestLoadCandles:
-    def test_load_json_array(self, tmp_path):
-        data = [{"ts_ms": 1_000_000, "close": 50000.0, "high": 51000.0, "low": 49000.0,
-                 "regime_id": 0, "symbol": "BTCUSDT"}]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(data), encoding="utf-8")
-        result = _load_candles(f)
-        assert len(result) == 1
-        assert result[0]["ts_ms"] == 1_000_000
-
-    def test_load_jsonl(self, tmp_path):
-        rows = [
-            {"ts_ms": 1_000_000, "close": 50000.0},
-            {"ts_ms": 1_060_000, "close": 50100.0},
-        ]
-        f = tmp_path / "candles.jsonl"
-        f.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
-        result = _load_candles(f)
-        assert len(result) == 2
-        assert result[1]["ts_ms"] == 1_060_000
-
-    def test_missing_file_raises(self, tmp_path):
-        with pytest.raises(ReplayRunnerError, match="not found"):
-            _load_candles(tmp_path / "nonexistent.json")
-
-    def test_empty_file_raises(self, tmp_path):
-        f = tmp_path / "empty.json"
-        f.write_text("", encoding="utf-8")
-        with pytest.raises(ReplayRunnerError, match="empty"):
-            _load_candles(f)
-
-    def test_malformed_json_array_raises(self, tmp_path):
-        f = tmp_path / "bad.json"
-        f.write_text("[{bad json", encoding="utf-8")
-        with pytest.raises(ReplayRunnerError, match="parse error"):
-            _load_candles(f)
-
-    def test_json_array_non_object_row_raises(self, tmp_path):
-        f = tmp_path / "bad_row.json"
-        f.write_text(json.dumps([{"ts_ms": 1_000_000}, 123]), encoding="utf-8")
-        with pytest.raises(ReplayRunnerError, match="must be a JSON object"):
-            _load_candles(f)
-
-    def test_malformed_jsonl_raises(self, tmp_path):
-        f = tmp_path / "bad.jsonl"
-        f.write_text('{"ts_ms": 1}\nbad line\n', encoding="utf-8")
-        with pytest.raises(ReplayRunnerError, match="JSONL parse error"):
-            _load_candles(f)
-
-    def test_json_non_array_raises(self, tmp_path):
-        f = tmp_path / "obj.json"
-        f.write_text('{"key": "value"}', encoding="utf-8")
-        # Does not start with "[" → treated as JSONL; single line is valid dict
-        result = _load_candles(f)
-        assert isinstance(result, list)
-        assert len(result) == 1
-
-    def test_empty_array_raises(self, tmp_path):
-        f = tmp_path / "empty_arr.json"
-        f.write_text("[]", encoding="utf-8")
-        with pytest.raises(ReplayRunnerError, match="empty"):
-            _load_candles(f)
 
 
 # ---------------------------------------------------------------------------
@@ -403,10 +398,10 @@ class TestBuildReplayReportInput:
 
 
 # ---------------------------------------------------------------------------
-# TestRunAcceleratedShadowReplay
+# TestRunARVPReplay
 # ---------------------------------------------------------------------------
 @pytest.mark.unit
-class TestRunAcceleratedShadowReplay:
+class TestRunARVPReplay:
     """Full-flow tests with run_primary_breakout_backtest and ReplayReporter mocked."""
 
     def _make_candles_file(self, tmp_path: Path, count: int = 300) -> Path:
@@ -432,12 +427,56 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 0
+
+    @patch("services.validation.strategy_replay_runner.create_postgres_connection")
+    @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
+    @patch.object(ReplayReporter, "write_bundle")
+    def test_successful_run_db_dataset_returns_0(
+        self, mock_write, mock_backtest, mock_pg, tmp_path
+    ):
+        mock_backtest.return_value = _minimal_backtest_report()
+        self._mock_bundle_dir(mock_write, tmp_path)
+
+        warmup_count = 3
+        warmup_start = 1_000_000
+        start_ts_ms = warmup_start + warmup_count * 60_000
+        rows = [
+            (
+                warmup_start + i * 60_000,
+                100.0,
+                101.0,
+                99.0,
+                100.5,
+                10.0,
+                100 + i,
+                0,
+            )
+            for i in range(10)
+        ]
+        end_ts_ms = rows[-1][0]
+
+        cursor = MagicMock()
+        cursor.fetchall.return_value = rows
+        conn = MagicMock()
+        conn.cursor.return_value = cursor
+        mock_pg.return_value = conn
+
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window=f"{start_ts_ms}:{end_ts_ms}",
+            output_directory=str(tmp_path),
+            entry_lookback_minutes=warmup_count,
+            exit_lookback_minutes=2,
+        )
+        exit_code = run_arvp_replay(cfg)
+        assert exit_code == 0
+        conn.close.assert_called()
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
     @patch.object(ReplayReporter, "write_bundle")
@@ -446,11 +485,11 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        run_accelerated_shadow_replay(cfg)
+        run_arvp_replay(cfg)
 
         report_input = mock_write.call_args.args[0]
         bundle_dir = Path(tmp_path) / report_input.run_spec.replay_run_id
@@ -466,12 +505,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             speedup_profile="2x",
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 0
         report_input = mock_write.call_args.args[0]
@@ -488,13 +527,13 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             speedup_profile="5x",
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 0
         report_input = mock_write.call_args.args[0]
@@ -516,12 +555,12 @@ class TestRunAcceleratedShadowReplay:
 
         mock_backtest.side_effect = PrimaryBreakoutBacktestError("boom")
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 2
         records = ReplayRunRegistry(tmp_path / "run_registry.jsonl").load_all()
@@ -537,13 +576,13 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             speedup_profile="10x",
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 0
         registry = ReplayRunRegistry(tmp_path / "run_registry.jsonl")
@@ -574,12 +613,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 0
         report_input = mock_write.call_args.args[0]
@@ -606,31 +645,31 @@ class TestRunAcceleratedShadowReplay:
         mock_append.side_effect = [None, RunRegistryError("disk full")]
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 2
 
     def test_missing_input_file_returns_2(self, tmp_path):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(tmp_path / "missing.json"),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     def test_non_object_json_array_row_returns_2(self, tmp_path):
         f = tmp_path / "bad_row.json"
         f.write_text(json.dumps([{"ts_ms": 1_000_000}, 123]), encoding="utf-8")
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -639,11 +678,11 @@ class TestRunAcceleratedShadowReplay:
         mock_backtest.side_effect = HistoricalBridgeError("bad candles")
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -652,11 +691,11 @@ class TestRunAcceleratedShadowReplay:
         mock_backtest.side_effect = PrimaryBreakoutBacktestError("boom")
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -667,11 +706,11 @@ class TestRunAcceleratedShadowReplay:
         mock_write.side_effect = ReplayReporterError("schema fail")
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -683,12 +722,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             deterministic_verify=False,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "WARNING" in captured.err
@@ -702,12 +741,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             deterministic_verify=True,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -719,12 +758,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             deterministic_verify=True,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 2
         registry = ReplayRunRegistry(tmp_path / "run_registry.jsonl")
@@ -746,12 +785,12 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             deterministic_verify=True,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 0
 
     @patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest")
@@ -763,13 +802,13 @@ class TestRunAcceleratedShadowReplay:
         self._mock_bundle_dir(mock_write, tmp_path)
 
         f = self._make_candles_file(tmp_path)
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             order_size=2.0,
             entry_lookback_minutes=180,
         )
-        run_accelerated_shadow_replay(cfg)
+        run_arvp_replay(cfg)
 
         mock_backtest.assert_called_once()
         call_kwargs = mock_backtest.call_args
@@ -783,89 +822,151 @@ class TestRunAcceleratedShadowReplay:
 # ---------------------------------------------------------------------------
 @pytest.mark.unit
 class TestDryRun:
-    def test_dry_run_returns_0_with_valid_input(self, tmp_path):
-        candles = [{"ts_ms": 1_000_000}]
+    def _make_valid_candles_file(self, tmp_path: Path, count: int = 10) -> Path:
+        candles = [
+            {
+                "symbol": "BTCUSDT",
+                "ts_ms": 1_000_000 + i * 60_000,
+                "high": 51000.0,
+                "low": 49000.0,
+                "close": 50000.0,
+                "regime_id": 0,
+            }
+            for i in range(count)
+        ]
         f = tmp_path / "candles.json"
         f.write_text(json.dumps(candles), encoding="utf-8")
+        return f
 
-        cfg = AcceleratedShadowReplayConfig(
+    def test_dry_run_returns_0_with_valid_input(self, tmp_path):
+        f = self._make_valid_candles_file(tmp_path, count=5)
+
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             dry_run=True,
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 0
 
     def test_dry_run_prints_candle_count(self, tmp_path, capsys):
-        candles = [{"ts_ms": 1_000_000 + i * 60_000} for i in range(5)]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(candles), encoding="utf-8")
+        f = self._make_valid_candles_file(tmp_path, count=5)
 
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             dry_run=True,
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
-        run_accelerated_shadow_replay(cfg)
+        run_arvp_replay(cfg)
         captured = capsys.readouterr()
-        assert "5" in captured.out
+        assert "candles_total=5" in captured.out
         assert "DRY-RUN" in captured.out
 
     def test_dry_run_does_not_call_backtest(self, tmp_path):
-        candles = [{"ts_ms": 1_000_000}]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(candles), encoding="utf-8")
+        f = self._make_valid_candles_file(tmp_path, count=5)
 
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             dry_run=True,
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
         with patch(
             "services.validation.strategy_replay_runner.run_primary_breakout_backtest"
         ) as mock_bt:
-            run_accelerated_shadow_replay(cfg)
+            run_arvp_replay(cfg)
             mock_bt.assert_not_called()
 
     def test_dry_run_missing_file_returns_2(self, tmp_path):
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(tmp_path / "missing.json"),
             dry_run=True,
         )
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
         assert exit_code == 2
 
     def test_dry_run_does_not_write_bundle(self, tmp_path):
-        candles = [{"ts_ms": 1_000_000}]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(candles), encoding="utf-8")
+        f = self._make_valid_candles_file(tmp_path, count=5)
 
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path / "out"),
             dry_run=True,
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
-        run_accelerated_shadow_replay(cfg)
+        run_arvp_replay(cfg)
         # output directory must NOT be created
         assert not (tmp_path / "out").exists()
 
     def test_scenario_group_dry_run_returns_0(self, tmp_path, capsys):
-        candles = [{"ts_ms": 1_000_000}]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(candles), encoding="utf-8")
+        f = self._make_valid_candles_file(tmp_path, count=5)
 
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             dry_run=True,
             scenario_ids=("baseline", "delayed_execution"),
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
 
-        exit_code = run_accelerated_shadow_replay(cfg)
+        exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 0
         captured = capsys.readouterr()
         assert "DRY-RUN" in captured.out
         assert "scenario group" in captured.out
+
+    def test_scenario_group_dry_run_db_dataset_window_returns_0(self, tmp_path, capsys):
+        warmup_count = 3
+        warmup_start = 1_000_000
+        start_ts_ms = warmup_start + warmup_count * 60_000
+        rows = [
+            (
+                warmup_start + i * 60_000,
+                100.0,
+                101.0,
+                99.0,
+                100.5,
+                10.0,
+                100 + i,
+                0,
+            )
+            for i in range(10)
+        ]
+        end_ts_ms = rows[-1][0]
+
+        cursor = MagicMock()
+        cursor.fetchall.return_value = rows
+        conn = MagicMock()
+        conn.cursor.return_value = cursor
+
+        cfg = ARVPReplayConfig(
+            dataset_source="db",
+            db_dataset_window=f"{start_ts_ms}:{end_ts_ms}",
+            output_directory=str(tmp_path),
+            dry_run=True,
+            scenario_ids=("baseline", "delayed_execution"),
+            entry_lookback_minutes=warmup_count,
+            exit_lookback_minutes=2,
+        )
+
+        with patch(
+            "services.validation.strategy_replay_runner.create_postgres_connection",
+            return_value=conn,
+        ):
+            exit_code = run_arvp_replay(cfg)
+
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "DRY-RUN" in captured.out
+        assert "scenario group" in captured.out
+        assert "source='db'" in captured.out
 
     @pytest.mark.parametrize(
         ("error_cls", "message"),
@@ -877,21 +978,21 @@ class TestDryRun:
     def test_scenario_group_runtime_errors_return_2(
         self, tmp_path, capsys, error_cls, message
     ):
-        candles = [{"ts_ms": 1_000_000}]
-        f = tmp_path / "candles.json"
-        f.write_text(json.dumps(candles), encoding="utf-8")
+        f = self._make_valid_candles_file(tmp_path, count=5)
 
-        cfg = AcceleratedShadowReplayConfig(
+        cfg = ARVPReplayConfig(
             input_candles_file=str(f),
             output_directory=str(tmp_path),
             scenario_ids=("baseline",),
+            entry_lookback_minutes=1,
+            exit_lookback_minutes=1,
         )
 
         with patch(
             "services.validation.strategy_replay_runner.run_builtin_scenario_group",
             side_effect=error_cls(message),
         ):
-            exit_code = run_accelerated_shadow_replay(cfg)
+            exit_code = run_arvp_replay(cfg)
 
         assert exit_code == 2
         captured = capsys.readouterr()
@@ -904,7 +1005,7 @@ class TestDryRun:
 @pytest.mark.unit
 class TestScenarioOverrides:
     def test_apply_scenario_overrides_maps_explicit_bar_delay(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
 
         result = _apply_scenario_overrides(
             cfg,
@@ -919,13 +1020,13 @@ class TestScenarioOverrides:
         assert result.replay_data_overrides == {}
 
     def test_apply_scenario_overrides_rejects_execution_delay_ms(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
 
         with pytest.raises(ReplayRunnerError, match="unknown keys"):
             _apply_scenario_overrides(cfg, {"execution_delay_ms": 500})
 
     def test_apply_scenario_overrides_maps_feed_gap_to_replay_data_surface(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
 
         result = _apply_scenario_overrides(cfg, {"feed_gap_bars": 2})
 
@@ -933,7 +1034,7 @@ class TestScenarioOverrides:
         assert result.replay_data_overrides == {"feed_gap_bars": 2}
 
     def test_apply_scenario_overrides_rejects_seconds_gap_semantics(self):
-        cfg = AcceleratedShadowReplayConfig(input_candles_file="candles.json")
+        cfg = ARVPReplayConfig(input_candles_file="candles.json")
 
         with pytest.raises(ReplayRunnerError, match="not representable"):
             _apply_scenario_overrides(cfg, {"feed_gap_seconds": 30})
@@ -1004,10 +1105,7 @@ class TestReplayDataOverrides:
 class TestMainArgParse:
     def test_missing_input_candles_exits_1_or_2(self, tmp_path):
         with patch("sys.argv", ["prog"]):
-            with pytest.raises(SystemExit) as exc_info:
-                main()
-            # argparse exits with 2 on missing required arg
-            assert exc_info.value.code != 0
+            assert main() == 1
 
     def test_unsupported_strategy_exits_1(self, tmp_path, capsys):
         candles = [{"ts_ms": 1_000_000}]
@@ -1023,13 +1121,75 @@ class TestMainArgParse:
         f = tmp_path / "c.json"
         f.write_text(json.dumps(candles))
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             return_value=0,
         ) as mock_run:
             with patch("sys.argv", ["prog", "--input-candles", str(f)]):
                 result = main()
         assert result == 0
         mock_run.assert_called_once()
+
+    def test_db_invocation_calls_runner(self, tmp_path):
+        with patch(
+            "services.validation.strategy_replay_runner.run_arvp_replay",
+            return_value=0,
+        ) as mock_run:
+            with patch(
+                "sys.argv",
+                [
+                    "prog",
+                    "--dataset-source",
+                    "db",
+                    "--db-dataset-window",
+                    "1180000:1540000",
+                ],
+            ):
+                result = main()
+        assert result == 0
+        mock_run.assert_called_once()
+
+    def test_db_missing_db_dataset_window_exits_1(self, tmp_path):
+        with patch(
+            "sys.argv",
+            [
+                "prog",
+                "--dataset-source",
+                "db",
+            ],
+        ):
+            assert main() == 1
+
+    def test_db_with_input_candles_is_rejected(self, tmp_path):
+        candles = [{"ts_ms": 1_000_000}]
+        f = tmp_path / "c.json"
+        f.write_text(json.dumps(candles))
+        with patch(
+            "sys.argv",
+            [
+                "prog",
+                "--dataset-source",
+                "db",
+                "--db-dataset-window",
+                "1180000:1540000",
+                "--input-candles",
+                str(f),
+            ],
+        ):
+            assert main() == 1
+
+    def test_db_dataset_id_flag_is_not_supported(self, tmp_path):
+        with patch(
+            "sys.argv",
+            [
+                "prog",
+                "--dataset-source",
+                "db",
+                "--db-dataset-id",
+                "1180000:1540000",
+            ],
+        ):
+            with pytest.raises(SystemExit):
+                main()
 
     def test_default_strategy_id_is_set(self, tmp_path):
         candles = [{"ts_ms": 1_000_000}]
@@ -1042,7 +1202,7 @@ class TestMainArgParse:
             return 0
 
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
             with patch("sys.argv", ["prog", "--input-candles", str(f)]):
@@ -1062,7 +1222,7 @@ class TestMainArgParse:
 
         custom_dir = str(tmp_path / "custom_out")
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
             with patch("sys.argv", [
@@ -1083,7 +1243,7 @@ class TestMainArgParse:
             return 0
 
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
             with patch("sys.argv", ["prog", "--input-candles", str(f), "--dry-run"]):
@@ -1102,7 +1262,7 @@ class TestMainArgParse:
             return 0
 
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
             with patch("sys.argv", [
@@ -1123,7 +1283,7 @@ class TestMainArgParse:
             return 0
 
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             side_effect=capture,
         ):
             with patch("sys.argv", ["prog", "--input-candles", str(f), "--speedup-profile", "5x"]):
@@ -1136,7 +1296,7 @@ class TestMainArgParse:
         f = tmp_path / "c.json"
         f.write_text(json.dumps(candles))
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             return_value=0,
         ):
             with patch("sys.argv", ["prog", "--input-candles", str(f)]):
@@ -1148,7 +1308,7 @@ class TestMainArgParse:
         f = tmp_path / "c.json"
         f.write_text(json.dumps(candles))
         with patch(
-            "services.validation.strategy_replay_runner.run_accelerated_shadow_replay",
+            "services.validation.strategy_replay_runner.run_arvp_replay",
             return_value=2,
         ):
             with patch("sys.argv", ["prog", "--input-candles", str(f)]):

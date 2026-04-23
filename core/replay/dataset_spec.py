@@ -16,12 +16,14 @@ hashing is deferred to the runner/reporting layer.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Literal
 
 from core.replay.canonical_json import canonical_hash
 
 _VALID_SYMBOLS: frozenset[str] = frozenset({"BTCUSDT"})
 _VALID_TIMEFRAMES: frozenset[str] = frozenset({"1m"})
+_DB_DATASET_WINDOW_RE = re.compile(r"^(?P<start>\d+):(?P<end>\d+)$")
 
 
 class DatasetSpecError(ValueError):
@@ -47,13 +49,13 @@ class DatasetSpec:
         warm-up. Must be >= 0.
     source:
         ``"file"`` — load from a local file (``file_path`` required).
-        ``"db"``  — load from Postgres (``db_dataset_id`` required; not yet
-        implemented — see ``DBBackedDatasetProvider``).
+        ``"db"``  — load from Postgres (``db_dataset_window`` required; see
+        ``DBBackedDatasetProvider``).
     file_path:
         Absolute path to a JSON-array or JSONL file. Required when
         ``source="file"``; must be ``None`` when ``source="db"``.
-    db_dataset_id:
-        Identifier for a persisted dataset record. Required when
+    db_dataset_window:
+        Explicit dataset window label (``START_TS_MS:END_TS_MS``). Required when
         ``source="db"``; must be ``None`` when ``source="file"``.
     """
 
@@ -64,7 +66,7 @@ class DatasetSpec:
     warmup_candles: int
     source: Literal["file", "db"]
     file_path: str | None = None
-    db_dataset_id: str | None = None
+    db_dataset_window: str | None = None
 
     def validate(self) -> None:
         """Fail-closed invariant check. Raises ``DatasetSpecError`` on any violation."""
@@ -87,18 +89,42 @@ class DatasetSpec:
         if self.source == "file":
             if self.file_path is None:
                 raise DatasetSpecError("source='file' requires file_path.")
-            if self.db_dataset_id is not None:
+            if self.db_dataset_window is not None:
                 raise DatasetSpecError(
                     "source='file' and source='db' fields are mutually exclusive: "
-                    "db_dataset_id must be None when source='file'."
+                    "db_dataset_window must be None when source='file'."
                 )
         elif self.source == "db":
-            if self.db_dataset_id is None:
-                raise DatasetSpecError("source='db' requires db_dataset_id.")
+            if self.db_dataset_window is None:
+                raise DatasetSpecError("source='db' requires db_dataset_window.")
             if self.file_path is not None:
                 raise DatasetSpecError(
                     "source='file' and source='db' fields are mutually exclusive: "
                     "file_path must be None when source='db'."
+                )
+            if self.start_ts_ms >= self.end_ts_ms:
+                raise DatasetSpecError(
+                    f"db dataset window requires start_ts_ms < end_ts_ms, "
+                    f"got start_ts_ms={self.start_ts_ms}, end_ts_ms={self.end_ts_ms}."
+                )
+            raw = str(self.db_dataset_window).strip()
+            match = _DB_DATASET_WINDOW_RE.match(raw)
+            if not match:
+                raise DatasetSpecError(
+                    "db_dataset_window must be in the form 'START_TS_MS:END_TS_MS' (epoch millis)."
+                )
+            try:
+                label_start = int(match.group("start"))
+                label_end = int(match.group("end"))
+            except ValueError as exc:
+                raise DatasetSpecError(
+                    "db_dataset_window must contain integer START_TS_MS and END_TS_MS."
+                ) from exc
+            if label_start != self.start_ts_ms or label_end != self.end_ts_ms:
+                raise DatasetSpecError(
+                    "db_dataset_window must match start_ts_ms and end_ts_ms: "
+                    f"db_dataset_window={self.db_dataset_window!r}, "
+                    f"start_ts_ms={self.start_ts_ms}, end_ts_ms={self.end_ts_ms}."
                 )
         else:
             raise DatasetSpecError(
@@ -117,8 +143,8 @@ class DatasetSpec:
         }
         if self.file_path is not None:
             d["file_path"] = self.file_path
-        if self.db_dataset_id is not None:
-            d["db_dataset_id"] = self.db_dataset_id
+        if self.db_dataset_window is not None:
+            d["db_dataset_window"] = self.db_dataset_window
         return d
 
     def fingerprint(self) -> str:

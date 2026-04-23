@@ -236,9 +236,9 @@ class DBBackedDatasetProvider:
       - All required fields present and non-None in each row
       - ``ts_ms`` strictly increasing at exactly 1-minute cadence
 
-    Note on ``db_dataset_id``
+    Note on ``db_dataset_window``
     -------------------------
-    ``spec.db_dataset_id`` is a **caller-provided logical label** used for
+    ``spec.db_dataset_window`` is a **caller-provided logical label** used for
     audit trail and deterministic fingerprinting via ``DatasetSpec.fingerprint()``.
     It does NOT resolve to a persisted dataset record and does NOT constrain
     the DB query. The query is keyed solely on ``spec.symbol`` and the time
@@ -268,7 +268,7 @@ class DBBackedDatasetProvider:
             cursor = self._db_conn.cursor()
             cursor.execute(
                 """
-                SELECT ts_ms, open, high, low, close, volume, trade_count
+                SELECT ts_ms, open, high, low, close, volume, trade_count, COALESCE(regime_id, 0)
                 FROM candles_1m
                 WHERE symbol = %s
                   AND ts_ms >= %s
@@ -301,6 +301,7 @@ class DBBackedDatasetProvider:
 
         candles: list[dict] = [
             {
+                "symbol": spec.symbol,
                 "ts_ms": row[0],
                 "open": row[1],
                 "high": row[2],
@@ -308,6 +309,7 @@ class DBBackedDatasetProvider:
                 "close": row[4],
                 "volume": row[5],
                 "trade_count": row[6],
+                "regime_id": row[7],
             }
             for row in rows
         ]

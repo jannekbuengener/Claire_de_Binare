@@ -1,20 +1,24 @@
 # ARVP — Accelerated Replay Validation Platform
 
-**Status:** Governance anchor (foundation DONE; productization in progress)
+**Status:** Governance anchor (core merged; operator front door + MUST layers implemented on the 1m replay canvas)
 **Canonical term:** `ARVP` — Accelerated Replay Validation Platform
 **Foundation PR:** `#1808` (merged 2026-04-20)
 **Foundation issues:** `#1801`, `#1802`, `#1803`, `#1804`, `#1805`, `#1806`
 **Productization epic:** `#1839`
+**Repo snapshot date:** 2026-04-23
 
 ---
 
 ## 1. Why this document exists
 
-The ARVP replay foundation landed in full via PR `#1808`. The codebase now
-contains a strong deterministic replay core, but the product-level vocabulary
-is fragmented. The same capability appears under "deterministic replay loop",
-"shadow replay", "offline replay", "LR-021 replay", and "accelerated shadow
-replay" depending on the source file.
+The ARVP replay foundation landed in full via PR `#1808`, and the repo now
+contains a merged, operator-facing ARVP entry point plus the core MUST layers
+(historical dataset access, scheduler, run registry, scenario harness, scenario packs)
+on the strict 1m replay canvas.
+
+Historically, the product-level vocabulary was fragmented. This document
+establishes the canonical name and module map and records the current merged
+capabilities vs. explicit non-goals.
 
 This document establishes the single canonical name and module map so that:
 - all future issues, PRs, and docs can reference one unambiguous term
@@ -32,7 +36,7 @@ layer-specific module names (see §4) for narrower references.
 |---|---|
 | **ARVP** | Accelerated Replay Validation Platform — the full productized capability |
 | **ARVP foundation** | The deterministic replay core landed via PR `#1808` |
-| **ARVP productization** | The platform layers not yet implemented (see §5) |
+| **ARVP productization** | Ongoing layering beyond the merged core (see §4/§5); do not treat merged MUST layers as "not yet implemented" |
 
 **Do not use** as primary names: "shadow replay", "offline replay",
 "LR-021 replay", "deterministic replay platform". These terms may appear in
@@ -70,6 +74,18 @@ Supporting utilities (present before PR `#1808`, part of the foundation layer):
 **These foundation modules are complete.** Productization issues must not
 re-implement or silently replace any of them.
 
+### 3.1 Current merged operator-facing capability (repo-true)
+
+The following capabilities are **implemented and merged** (as of 2026-04-23):
+
+- Operator-facing ARVP replay entry point (`services/validation/strategy_replay_runner.py`)
+- Explicit dataset source handling (`file` / `db`) via the canonical dataset layer
+- Scenario-group workflow (multi-variant execution over one historical window)
+- Thin reporting + scenario artifacts (bundle + scenario comparison summary)
+- `delayed_execution` as explicit bar-level surface (no ms→bar shim)
+- `feed_gap` as explicit bar-level replay data-gap surface
+- Fail-closed data-integrity diagnostics surfaced via the report/metrics pipeline
+
 ---
 
 ## 4. Module boundaries
@@ -89,6 +105,7 @@ Supports file-backed and DB-backed providers under one canonical dataset spec.
 Produces a deterministic dataset fingerprint.
 **Not in scope:** Live/paper/Redis data. Synthetic generation.
 **Issue:** `#1841`
+**Status:** Implemented (merged; used by operator entry point)
 
 ### 4.3 Replay Scheduler
 
@@ -96,6 +113,7 @@ Produces a deterministic dataset fingerprint.
 (1×, 2×, 5×, 10×, instant). Deterministic tick delivery to the replay loop.
 **Not in scope:** Wall-clock scheduling of live services. Async frameworks.
 **Issue:** `#1842`
+**Status:** Implemented (merged; used by operator entry point)
 
 ### 4.4 Replay Run Orchestration / Run Registry
 
@@ -103,6 +121,7 @@ Produces a deterministic dataset fingerprint.
 concise operator summaries per run.
 **Not in scope:** Scenario orchestration (that is §4.5). Parallel execution.
 **Issue:** `#1843`
+**Status:** Implemented (merged; used by operator entry point)
 
 ### 4.5 Scenario Harness
 
@@ -110,6 +129,7 @@ concise operator summaries per run.
 Scenario identity, parameter binding, grouped output per scenario set.
 **Not in scope:** Scenario pack definitions (those are §4.6).
 **Issue:** `#1844`
+**Status:** Implemented (merged; used by operator entry point)
 
 ### 4.6 Scenario Packs
 
@@ -119,6 +139,7 @@ Each pack has a stable id, explicit parameters, documented perturbation intent,
 and deterministic behavior.
 **Not in scope:** Arbitrary user-defined DSLs. Counterfactual free-form perturbation.
 **Issue:** `#1845`
+**Status:** Implemented (merged; used by operator entry point)
 
 ### 4.7 Regime Analytics / Scorecards
 
@@ -175,9 +196,11 @@ NICE (robustness extensions, only after MUST+SHOULD):
   #1850 → #1851 → #1852
 ```
 
-The correct cutoff when capacity is limited: finish MUST first, then
-SHOULD in order, then NICE. Robustness layers before the scenario baseline
-is in place is optimization theater.
+The correct cutoff when capacity is limited: finish MUST first, then SHOULD in order,
+then NICE.
+
+Repo note (2026-04-23): The MUST chain is present and exercised by the canonical
+operator entry point. Remaining work is SHOULD/NICE layering, not "core missing."
 
 ---
 
@@ -189,6 +212,9 @@ The following are explicitly out of scope for ARVP productization:
 - Refactoring live trading or paper trading runtime services
 - ML-first strategy research
 - Multi-strategy generalization beyond `primary_breakout_v1`
+- Sub-minute replay canvas (the current canvas is strict 1m)
+- Any hidden ms→bar / seconds→bars shims (bar-level surfaces must be explicit)
+- Any implicit end-of-window auto-close semantics
 - Replacing genuine paper runs with replay
 - Building a heavyweight UI/dashboard before core productization slices exist
 - LR phase decisions, Echtgeld authorization, or live-capital enablement
