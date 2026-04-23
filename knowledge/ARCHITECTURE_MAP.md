@@ -152,13 +152,20 @@ cdb_reports           Up (healthy)
 | **Dataset Provider** | `core/replay/dataset_provider.py` | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres); ARVP §4.2 | **AKTIV** (PR #1856) |
 | **Replay Scheduler** | `core/replay/scheduler.py` | Event-time replay scheduler mit deterministischen Speed-Profilen, Warmup/Live-Split und fail-closed Boundary-Validation | **AKTIV** (PR #1859) |
 
-**Nutzung:** Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets können über `DBBackedDatasetProvider` aus `candles_1m` (Postgres) bezogen werden.
+**Nutzung:** Shadow replay (accelerated backtesting, validation, gate evaluation offline) ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets via `DatasetSpec` + `DatasetProvider` (FileBackedDatasetProvider für JSON/JSONL, DBBackedDatasetProvider für Postgres `candles_1m`).
+
+**Operator-Facing Dataset Layer (ARVP §4.2):**
+- **Dataset Source**: `--dataset-source file|db` (default: `file`)
+- **File Mode**: `--input-candles FILE` (JSON array oder JSONL)
+- **DB Mode**: `--db-dataset-window START_TS_MS:END_TS_MS` (Explicit window label aus Postgres `candles_1m`)
+- **Fail-Closed**: Beide Quellen validieren Ordering, 1-Minute-Takt, erforderliche Felder. Mutually-exclusive: `source='file'` XOR `source='db'`.
+- **Source-Aware Paths**: Baseline und scenario-group Workflows unterstützen beide Dataset-Quellen.
 
 **Reporter & CLI:**
 | Component | File | Funktion | Status |
 |-----------|------|----------|--------|
 | **Replay Reporter** | `services/validation/replay_reporter.py` | Deterministic artifact bundle writer (report.json, manifest.json, audit.log) | **AKTIV** (PR #1808) |
-| **Replay CLI** | `services/validation/strategy_replay_runner.py` | Thin operator entry-point; fail-closed `speedup_profile` validation und Scheduler-Metadaten unter `dataset_summary["scheduler"]` | **AKTIV** (PR #1808, PR #1859) |
+| **ARVP Replay CLI** | `services/validation/strategy_replay_runner.py` | Operator-facing entry-point (`run_arvp_replay()` → `main()`). Fail-closed: validates `--dataset-source` (file\|db), `--speedup-profile`, scheduler metadata. Exit Codes 0/1/2. Source-aware baseline + scenario-group paths. | **AKTIV** (PR #1808, PR #1859, PR #1891) |
 
 ---
 
@@ -212,3 +219,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay + services/validation reporter/CLI) als Core Libraries dokumentiert (Issue #1809) | Codex |
 | 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) ergänzt (Issue #1857) | Codex |
 | 2026-04-22 | PR #1859 Nachzug: `core/replay/scheduler.py` und minimaler Replay-CLI-Scheduler-Pfad (`speedup_profile`, `dataset_summary["scheduler"]`) ergänzt (Issue #1860) | Codex |
+| 2026-04-23 | PR #1891 Nachzug: ARVP Operator-Facing Dataset Layer finalisiert (file\|db modes, db_dataset_window format, source-aware paths, legacy naming entfernt). CLI-Naming: run_accelerated_shadow_replay → run_arvp_replay (Issue #1892) | Codex |

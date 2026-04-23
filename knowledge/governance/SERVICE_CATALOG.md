@@ -52,7 +52,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 
 **Pfad:** `core/replay/`, `services/validation/` (reporter + CLI)
 
-**Funktion:** Deterministic shadow replay stack für accelerated backtesting, validation und gate evaluation offline, ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets können über `DBBackedDatasetProvider` aus `candles_1m` (Postgres) bezogen werden.
+**Funktion:** Deterministic shadow replay stack für accelerated backtesting, validation und gate evaluation offline, ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets via `DatasetSpec` + `DatasetProvider` (FileBackedDatasetProvider für JSON/JSONL, DBBackedDatasetProvider für Postgres `candles_1m`).
 
 | Module/Component | Code-Pfad | Status | Beschreibung |
 |---|---|---|---|
@@ -62,11 +62,11 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | **Replay Execution** | `core/replay/execution.py` | **AKTIV** (PR #1808) | Envelope chain emission, order/fill wrapping |
 | **Deterministic Loop** | `core/replay/deterministic_loop.py` | **AKTIV** (PR #1808) | Tick-by-tick replay orchestration mit integrity gate |
 | **Envelopes** | `core/replay/envelopes.py` | **AKTIV** (PR #1808) | Decision/Order/Fill envelope types + replay metadata |
-| **Dataset Spec** | `core/replay/dataset_spec.py` | **AKTIV** (PR #1856) | Frozen request-spec für historische Replay-Datasets (ARVP §4.2); Fingerprint via canonical_hash |
-| **Dataset Provider** | `core/replay/dataset_provider.py` | **AKTIV** (PR #1856) | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres); ARVP §4.2 |
+| **Dataset Spec** | `core/replay/dataset_spec.py` | **AKTIV** (PR #1856) | Immutable request spec für historische Replay-Datasets (ARVP §4.2). Frozen fields: `source` (file\|db), `file_path` (file mode), `db_dataset_window` (db mode: START_TS_MS:END_TS_MS). Fingerprint via canonical_hash. Fail-closed validation: mutually exclusive source fields. |
+| **Dataset Provider** | `core/replay/dataset_provider.py` | **AKTIV** (PR #1856, PR #1891) | FileBackedDatasetProvider (JSON/JSONL) + DBBackedDatasetProvider (candles_1m Postgres). Operator-facing API: `--dataset-source file\|db`, `--input-candles FILE` (file mode), `--db-dataset-window START_TS_MS:END_TS_MS` (db mode). Beide validieren Ordering, 1m-Takt, erforderliche Felder (ts_ms, high, low, close). ARVP §4.2 data-shape layer (regime_id/window boundary enforcement gehört zum Bridge/Runner). |
 | **Replay Scheduler** | `core/replay/scheduler.py` | **AKTIV** (PR #1859) | Event-time replay scheduler mit deterministischen Speed-Profilen, Warmup/Live-Split und fail-closed Boundary-Validation |
 | **Replay Reporter** | `services/validation/replay_reporter.py` | **AKTIV** (PR #1808) | Artifact bundle writer (report.json, manifest.json, audit.log) |
-| **Replay CLI** | `services/validation/strategy_replay_runner.py` | **AKTIV** (PR #1808, PR #1859) | Thin operator entry-point; fail-closed `speedup_profile` validation und Scheduler-Metadaten unter `dataset_summary["scheduler"]`; Exit Codes 0/1/2 |
+| **ARVP Replay CLI** | `services/validation/strategy_replay_runner.py` | **AKTIV** (PR #1808, PR #1859, PR #1891) | Operator-facing entry-point: `run_arvp_replay()` → `main()`. Validates fail-closed: `--dataset-source` (file\|db), `--speedup-profile`, scheduler metadata. Source-aware baseline + scenario-group paths. Exit Codes 0/1/2 (success/validation/runtime). Config: ARVPReplayConfig mit dataset/strategy/adapter/scheduler params. Legacy naming removed (accelerated_shadow_replay → arvp). |
 
 **Interne Abhängigkeiten:** Nutzen `core/replay/canonical_json.py` (deterministic serialization), `core/replay/envelopes.py` (envelope tracking).
 
@@ -188,3 +188,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-20 | PR #1808 Nachzug: LR-021 deterministic replay infrastructure (core/replay/ + services/validation/) als Core Libraries dokumentiert; 6 Modules + 2 Components + 453 Tests (Issue #1809) | Codex |
 | 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) in Core Libraries ergänzt; DB-Writer Candle-Persistence (candle_normalizer.py → candles_1m) nachgezogen (Issue #1857) | Codex |
 | 2026-04-22 | PR #1859 Nachzug: `core/replay/scheduler.py` und minimaler Replay-CLI-Scheduler-Pfad (`speedup_profile`, `dataset_summary["scheduler"]`) im Replay-Katalog ergänzt (Issue #1860) | Codex |
+| 2026-04-23 | PR #1891 Nachzug: ARVP Finalization – Dataset Layer (file\|db operator-facing front-door, db_dataset_window format, source-aware paths), CLI naming (run_arvp_replay canonical), legacy code removed, fail-closed validation finalized. DatasetSpec/DatasetProvider erweiterte Beschreibungen (Issue #1892) | Codex |
