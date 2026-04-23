@@ -16,6 +16,8 @@ from unittest.mock import patch
 
 import pytest
 
+from core.replay.scenario_harness import ScenarioHarnessError
+from core.replay.scenario_packs import ScenarioPackError
 from core.replay.run_registry import ReplayRunRegistry, RunRegistryError
 from core.replay.dataset_spec import DatasetSpec
 from services.validation.replay_reporter import ReplayReporter
@@ -864,6 +866,36 @@ class TestDryRun:
         captured = capsys.readouterr()
         assert "DRY-RUN" in captured.out
         assert "scenario group" in captured.out
+
+    @pytest.mark.parametrize(
+        ("error_cls", "message"),
+        [
+            (ScenarioHarnessError, "invalid scenario group"),
+            (ScenarioPackError, "unknown scenario pack"),
+        ],
+    )
+    def test_scenario_group_runtime_errors_return_2(
+        self, tmp_path, capsys, error_cls, message
+    ):
+        candles = [{"ts_ms": 1_000_000}]
+        f = tmp_path / "candles.json"
+        f.write_text(json.dumps(candles), encoding="utf-8")
+
+        cfg = AcceleratedShadowReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            scenario_ids=("baseline",),
+        )
+
+        with patch(
+            "services.validation.strategy_replay_runner.run_builtin_scenario_group",
+            side_effect=error_cls(message),
+        ):
+            exit_code = run_accelerated_shadow_replay(cfg)
+
+        assert exit_code == 2
+        captured = capsys.readouterr()
+        assert f"ERROR: {message}" in captured.err
 
 
 # ---------------------------------------------------------------------------

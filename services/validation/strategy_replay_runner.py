@@ -88,8 +88,10 @@ from core.replay.run_registry import (
 from core.replay.scenario_packs import (
     list_builtin_scenario_ids,
     run_builtin_scenario_group,
+    ScenarioPackError,
 )
 from core.replay.scenario_harness import (
+    ScenarioHarnessError,
     ScenarioRunResult,
     ScenarioSpec,
 )
@@ -1286,12 +1288,16 @@ def _run_scenario_group_path(
                 failure_reason=str(exc),
             )
 
-    manifest = run_builtin_scenario_group(
-        config.scenario_ids,
-        run_fn=run_single,
-        output_dir=output_dir,
-        group_id=config.scenario_group_id,
-    )
+    try:
+        manifest = run_builtin_scenario_group(
+            config.scenario_ids,
+            run_fn=run_single,
+            output_dir=output_dir,
+            group_id=config.scenario_group_id,
+        )
+    except (ScenarioHarnessError, ScenarioPackError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
 
     summary = build_scenario_comparison_summary(manifest)
     summary_path = Path(manifest.artifact_root) / "scenario_comparison_summary.md"
