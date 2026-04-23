@@ -695,21 +695,121 @@ def build_exportable_readout(readout: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def build_persistable_readout(readout: dict[str, Any]) -> dict[str, Any]:
+    """
+    Build a readout structure safe for persistence (JSON/Markdown export).
+    
+    Excludes secret_scanning alerts entirely and replaces their summary
+    entries with coverage-only markers to avoid taint tracking of secret
+    payloads through to file I/O sinks.
+    
+    Only code_scanning and dependabot alerts are included in the
+    persisted output.
+    """
+    persistable_surfaces: list[dict[str, Any]] = []
+    for surface in readout["surfaces"]:
+        if surface["source"] == "secret_scanning":
+            persistable_surfaces.append({
+                "source": "secret_scanning",
+                "endpoint": str(surface["endpoint"]),
+                "status": str(surface["status"]),
+                "alert_count": None,
+                "artifact_detail_status": "redacted",
+                "note": "payload-redacted: secret scanning details excluded from artifacts",
+            })
+        else:
+            persistable_surfaces.append({
+                "source": str(surface["source"]),
+                "endpoint": str(surface["endpoint"]),
+                "status": str(surface["status"]),
+                "alert_count": (
+                    int(surface["alert_count"])
+                    if surface["alert_count"] is not None
+                    else None
+                ),
+                "artifact_detail_status": str(surface["artifact_detail_status"]),
+            })
+            if isinstance(surface.get("note"), str):
+                persistable_surfaces[-1]["note"] = surface["note"]
+
+    persistable_alerts: list[dict[str, Any]] = []
+    for alert in readout["alerts"]:
+        if alert["source"] != "secret_scanning":
+            persistable_alerts.append({
+                "source": str(alert["source"]),
+                "number": alert.get("number"),
+                "state": str(alert["state"]),
+                "severity": str(alert["severity"]),
+                "subject": str(alert["subject"]),
+                "rule_or_advisory": (
+                    str(alert["rule_or_advisory"])
+                    if isinstance(alert.get("rule_or_advisory"), str)
+                    else None
+                ),
+                "package": (
+                    str(alert["package"])
+                    if isinstance(alert.get("package"), str)
+                    else None
+                ),
+                "affected_path": (
+                    str(alert["affected_path"])
+                    if isinstance(alert.get("affected_path"), str)
+                    else None
+                ),
+                "affected_component": (
+                    str(alert["affected_component"])
+                    if isinstance(alert.get("affected_component"), str)
+                    else None
+                ),
+                "branch": str(alert["branch"]),
+                "created_at": (
+                    str(alert["created_at"])
+                    if isinstance(alert.get("created_at"), str)
+                    else None
+                ),
+                "updated_at": (
+                    str(alert["updated_at"])
+                    if isinstance(alert.get("updated_at"), str)
+                    else None
+                ),
+                "age_bucket": str(alert["age_bucket"]),
+                "url": str(alert["url"]) if isinstance(alert.get("url"), str) else None,
+                "tool": str(alert["tool"]) if isinstance(alert.get("tool"), str) else None,
+            })
+
+    summary = readout["summary"]
+    persistable_summary = {
+        "total_alerts": int(summary["total_alerts"]),
+        "counts_by_source": _copy_count_rows(summary["counts_by_source"]),
+        "counts_by_state": _copy_count_rows(summary["counts_by_state"]),
+        "counts_by_severity": _copy_count_rows(summary["counts_by_severity"]),
+        "top_subjects": _copy_count_rows(summary["top_subjects"]),
+        "top_components": _copy_count_rows(summary["top_components"]),
+    }
+
+    return {
+        "schema_version": str(readout["schema_version"]),
+        "repo": str(readout["repo"]),
+        "reference_now_utc": str(readout["reference_now_utc"]),
+        "status": str(readout["status"]),
+        "readable_surface_count": int(readout["readable_surface_count"]),
+        "surfaces": persistable_surfaces,
+        "summary": persistable_summary,
+        "alerts": persistable_alerts,
+    }
+
+
 def write_report_artifacts(readout: dict[str, Any], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / JSON_FILENAME
     markdown_path = out_dir / MARKDOWN_FILENAME
-    export_readout = build_exportable_readout(readout)
-    # codeql[py/clear-text-storage-sensitive-data]: export_readout contains only
-    # pre-redacted, export-safe fields; secret-scanning raw payload is discarded at fetch time.
+    persistable_readout = build_persistable_readout(readout)
     json_path.write_text(
-        json.dumps(export_readout, indent=2, sort_keys=True) + "\n",
+        json.dumps(persistable_readout, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    # codeql[py/clear-text-storage-sensitive-data]: export_readout contains only
-    # pre-redacted, export-safe fields; secret-scanning raw payload is discarded at fetch time.
     markdown_path.write_text(
-        build_markdown_report(export_readout),
+        build_markdown_report(persistable_readout),
         encoding="utf-8",
     )
 
