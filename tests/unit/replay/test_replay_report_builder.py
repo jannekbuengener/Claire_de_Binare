@@ -14,12 +14,19 @@ from decimal import Decimal
 import pytest
 
 from core.replay.regime_analytics import RegimeScorecard, RegimeSegmentStats
+from core.replay.resampling import (
+    ResamplingConfig,
+    ResamplingKPISummary,
+    ResamplingSourceProvenance,
+    ResamplingStabilityArtifact,
+)
 from core.replay.replay_report_builder import (
     ReplayReportBuilderError,
     _MANAGEMENT_REPORT_FILENAME,
     _RUN_INDEX_FILENAME,
     build_management_report,
     build_regime_scorecard_summary,
+    build_resampling_stability_summary,
     build_run_summary_text,
     build_scenario_comparison_summary,
     write_management_report,
@@ -38,6 +45,7 @@ _FINISHED = "2026-04-01T10:05:00+00:00"
 _EXECUTION_PROV = "bt-" + "b" * 16
 _GROUP_FP = "c" * 64
 _INPUT_FP = "d" * 64
+_CONFIG_FP = "e" * 64
 
 
 # ---------------------------------------------------------------------------
@@ -121,6 +129,68 @@ def _scorecard(**overrides: object) -> RegimeScorecard:
     }
     fields.update(overrides)
     return RegimeScorecard(**fields)
+
+
+def _stability(**overrides: object) -> ResamplingStabilityArtifact:
+    config = ResamplingConfig(
+        method="block_bootstrap",
+        sample_count=32,
+        sample_block_count=4,
+        seed=7,
+        selected_kpis=("pnl_sum", "fill_rate"),
+    )
+    provenance = ResamplingSourceProvenance(
+        source_run_id="replay-aabbccddeeff-0001",
+        run_count=1,
+        block_count=4,
+        dataset_fingerprint=_DATASET_FP,
+        execution_provenance_id=_EXECUTION_PROV,
+        input_fingerprint=_INPUT_FP,
+    )
+    summaries = (
+        ResamplingKPISummary(
+            kpi="pnl_sum",
+            sample_count=32,
+            baseline="1.23456789",
+            minimum="0.50000000",
+            p05="0.80000000",
+            p50="1.20000000",
+            p95="1.70000000",
+            maximum="2.00000000",
+            empirical_span="1.50000000",
+        ),
+        ResamplingKPISummary(
+            kpi="fill_rate",
+            sample_count=32,
+            baseline="0.90000000",
+            minimum="0.50000000",
+            p05="0.66666667",
+            p50="0.83333333",
+            p95="1.00000000",
+            maximum="1.00000000",
+            empirical_span="0.50000000",
+        ),
+    )
+    fields: dict = {
+        "schema_version": "replay_resampling_stability.v1",
+        "resampling_method": "block_bootstrap",
+        "sample_count": 32,
+        "sample_block_count": 4,
+        "config": config,
+        "config_fingerprint": _CONFIG_FP,
+        "source_provenance": provenance,
+        "baseline_metrics": {
+            "pnl_sum": "1.23456789",
+            "fill_rate": "0.90000000",
+        },
+        "kpi_summaries": summaries,
+        "operator_summary": (
+            "method=block_bootstrap; samples=32; blocks_per_sample=4; seed=7",
+            "pnl_sum: baseline=1.23456789; empirical_band_p05_p95=0.80000000..1.70000000; span=1.50000000",
+        ),
+    }
+    fields.update(overrides)
+    return ResamplingStabilityArtifact(**fields)
 
 
 def _ok_result(scenario_id: str, run_id: str = "replay-aabbccddeeff-0001") -> ScenarioRunResult:
@@ -368,6 +438,40 @@ class TestBuildRegimeScorecardSummary:
 
 
 # ---------------------------------------------------------------------------
+# build_resampling_stability_summary
+# ---------------------------------------------------------------------------
+
+
+class TestBuildResamplingStabilitySummary:
+    def test_contains_run_id(self) -> None:
+        stability = _stability()
+        text = build_resampling_stability_summary(stability)
+        assert stability.source_provenance.source_run_id in text
+
+    def test_contains_method(self) -> None:
+        stability = _stability()
+        text = build_resampling_stability_summary(stability)
+        assert "block_bootstrap" in text
+
+    def test_contains_kpi_values(self) -> None:
+        stability = _stability()
+        text = build_resampling_stability_summary(stability)
+        assert "pnl_sum" in text
+        assert "0.80000000" in text
+        assert "0.90000000" in text
+
+    def test_contains_operator_summary(self) -> None:
+        stability = _stability()
+        text = build_resampling_stability_summary(stability)
+        assert "Operator Summary" in text
+        assert "samples=32" in text
+
+    def test_rejects_invalid_type(self) -> None:
+        with pytest.raises(ReplayReportBuilderError, match="Expected ResamplingStabilityArtifact"):
+            build_resampling_stability_summary("bad")  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
 # build_management_report
 # ---------------------------------------------------------------------------
 
@@ -390,6 +494,13 @@ class TestBuildManagementReport:
         text = build_management_report(record=rec, scorecard=sc)
         assert "TREND" in text
 
+    def test_with_stability_contains_section(self) -> None:
+        rec = _completed_record()
+        stability = _stability()
+        text = build_management_report(record=rec, stability=stability)
+        assert "Resampling Stability" in text
+        assert "block_bootstrap" in text
+
     def test_all_three_sections(self) -> None:
         rec = _completed_record()
         m = _manifest((_ok_result("baseline"), _fail_result("feed_gap")))
@@ -398,6 +509,22 @@ class TestBuildManagementReport:
         assert rec.run_id in text
         assert m.group_id in text
         assert "TREND" in text
+
+    def test_all_optional_sections(self) -> None:
+        rec = _completed_record()
+        m = _manifest((_ok_result("baseline"), _fail_result("feed_gap")))
+        sc = _scorecard()
+        stability = _stability()
+        text = build_management_report(
+            record=rec,
+            manifest=m,
+            scorecard=sc,
+            stability=stability,
+        )
+        assert rec.run_id in text
+        assert m.group_id in text
+        assert "TREND" in text
+        assert "Resampling Stability" in text
 
     def test_failed_run_report_includes_failure_reason(self) -> None:
         rec = _failed_record()
@@ -415,6 +542,12 @@ class TestBuildManagementReport:
         rec = _completed_record()
         sc = _scorecard()
         text = build_management_report(record=rec, scorecard=sc)
+        assert "---" in text
+
+    def test_separator_present_with_stability(self) -> None:
+        rec = _completed_record()
+        stability = _stability()
+        text = build_management_report(record=rec, stability=stability)
         assert "---" in text
 
     def test_no_section_divider_without_optional_args(self) -> None:
@@ -444,6 +577,11 @@ class TestBuildManagementReport:
         rec = _completed_record()
         with pytest.raises(ReplayReportBuilderError, match="scorecard must be"):
             build_management_report(record=rec, scorecard=42)  # type: ignore[arg-type]
+
+    def test_rejects_invalid_stability(self) -> None:
+        rec = _completed_record()
+        with pytest.raises(ReplayReportBuilderError, match="stability must be"):
+            build_management_report(record=rec, stability=42)  # type: ignore[arg-type]
 
 
 # ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ relations:
     - core.replay.run_registry     (ReplayRunRecord)
     - core.replay.scenario_harness (ScenarioGroupManifest)
     - core.replay.regime_analytics (RegimeScorecard)
+    - core.replay.resampling       (ResamplingStabilityArtifact)
     - core.replay.canonical_json   (canonical_json_dumps)
 """
 
@@ -33,6 +34,7 @@ from typing import Sequence
 
 from core.replay.canonical_json import canonical_json_dumps
 from core.replay.regime_analytics import RegimeScorecard
+from core.replay.resampling import ResamplingStabilityArtifact
 from core.replay.run_registry import ReplayRunRecord
 from core.replay.scenario_harness import ScenarioGroupManifest
 
@@ -197,17 +199,65 @@ def build_regime_scorecard_summary(scorecard: RegimeScorecard) -> str:
     return "\n".join(lines)
 
 
+def build_resampling_stability_summary(stability: ResamplingStabilityArtifact) -> str:
+    """Build a markdown operator summary for a resampling stability artifact."""
+    if not isinstance(stability, ResamplingStabilityArtifact):
+        raise ReplayReportBuilderError(
+            f"Expected ResamplingStabilityArtifact, got {type(stability).__name__}"
+        )
+
+    provenance = stability.source_provenance
+    lines: list[str] = [
+        f"# Resampling Stability: {provenance.source_run_id}",
+        "",
+        "| Field | Value |",
+        "|-------|-------|",
+        f"| Method | {stability.resampling_method} |",
+        f"| Sample count | {stability.sample_count} |",
+        f"| Blocks per sample | {stability.sample_block_count} |",
+        f"| Source blocks | {provenance.block_count} |",
+        f"| Dataset fingerprint | {_trunc(provenance.dataset_fingerprint)}… |",
+        f"| Execution provenance | {provenance.execution_provenance_id} |",
+        f"| Config fingerprint | {_trunc(stability.config_fingerprint)}… |",
+        "",
+        "## Empirical KPI Bands",
+        "",
+        "| KPI | Baseline | Min | P05 | P50 | P95 | Max | Span |",
+        "|-----|----------|-----|-----|-----|-----|-----|------|",
+    ]
+
+    for summary in stability.kpi_summaries:
+        lines.append(
+            f"| {summary.kpi}"
+            f" | {summary.baseline}"
+            f" | {summary.minimum}"
+            f" | {summary.p05}"
+            f" | {summary.p50}"
+            f" | {summary.p95}"
+            f" | {summary.maximum}"
+            f" | {summary.empirical_span} |"
+        )
+
+    lines.extend(["", "## Operator Summary", ""])
+    for line in stability.operator_summary:
+        lines.append(f"- {line}")
+
+    return "\n".join(lines)
+
+
 def build_management_report(
     *,
     record: ReplayRunRecord,
     manifest: ScenarioGroupManifest | None = None,
     scorecard: RegimeScorecard | None = None,
+    stability: ResamplingStabilityArtifact | None = None,
 ) -> str:
     """Build a management-grade markdown report for a replay run.
 
     Combines a per-run operator summary with optional scenario comparison and
-    regime scorecard sections.  All content is grounded in the supplied domain
-    objects; no narrative is invented.  No I/O is performed.
+    regime scorecard / resampling stability sections.  All content is grounded
+    in the supplied domain objects; no narrative is invented.  No I/O is
+    performed.
     """
     if not isinstance(record, ReplayRunRecord):
         raise ReplayReportBuilderError(
@@ -223,6 +273,11 @@ def build_management_report(
             f"scorecard must be RegimeScorecard or None, "
             f"got {type(scorecard).__name__}"
         )
+    if stability is not None and not isinstance(stability, ResamplingStabilityArtifact):
+        raise ReplayReportBuilderError(
+            f"stability must be ResamplingStabilityArtifact or None, "
+            f"got {type(stability).__name__}"
+        )
 
     sections: list[str] = [build_run_summary_text(record)]
 
@@ -231,6 +286,9 @@ def build_management_report(
 
     if scorecard is not None:
         sections.extend(["", "---", "", build_regime_scorecard_summary(scorecard)])
+
+    if stability is not None:
+        sections.extend(["", "---", "", build_resampling_stability_summary(stability)])
 
     return "\n".join(sections)
 
