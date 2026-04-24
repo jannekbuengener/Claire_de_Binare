@@ -166,8 +166,8 @@ This is not a failure. This is a prerequisite clarification.
 
 **For governance reconciliation:**
 - If an ARVP proposal seems to drift, reference this document
-- Use the anti-drift rules (§4) as a checklist
-- Keep the focus on the five success criteria (§3)
+- Use the [Anti-Drift Rules](#anti-drift-rules) as a checklist
+- Keep the focus on the [Product-Level Success Criteria](#product-level-success-criteria)
 
 ---
 
@@ -176,7 +176,7 @@ This is not a failure. This is a prerequisite clarification.
 This document is deliberately narrow. It does not prescribe:
 
 - Exact execution-realism gap prioritization (defer to calibration evidence)
-- Specific regime regime thresholds or classification rules (defer to domain data)
+- Specific regime thresholds or classification rules (defer to domain data)
 - Implementation details or timelines for any slice (defer to owner + team)
 - Full feature roadmap (that belongs in GitHub issues and PRs)
 
@@ -208,7 +208,7 @@ The intent will be sufficiently embodied in the product once the repo has:
 - A clearly usable ARVP path for accelerated replay through the real strategy/execution path
 - Realistic execution stress
 - Replay-vs-paper comparison with evidence-driven gap identification
-- Regime-aware interpretation without over-inferencing
+- Regime-aware interpretation without over-inferring
 
 At that point, the north-star anchor may become reference-only (not decision-level).
 
