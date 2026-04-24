@@ -124,7 +124,12 @@ def _make_shadow(
     fill_rate_delta: Decimal = Decimal("0.01000000"),
     signal_count_delta: int = -2,
     fill_count_delta: int = -1,
+    explicit_rejects_available: bool = True,
 ) -> ShadowComparisonResult:
+    fill_rate_replay = Decimal("0.85000000") if explicit_rejects_available else None
+    fill_rate_paper = Decimal("0.84000000") if explicit_rejects_available else None
+    fill_rate_delta_value = fill_rate_delta if explicit_rejects_available else None
+    actual_reject_count_delta = 0 if explicit_rejects_available else None
     return ShadowComparisonResult(
         comparison_fingerprint="d" * 64,
         status="aligned" if alignment_issue is None else "misaligned",
@@ -134,11 +139,13 @@ def _make_shadow(
         symbol="BTCUSDT",
         strategy_id="primary_breakout_v1",
         signal_count_delta=signal_count_delta,
+        order_count_delta=0,
         fill_count_delta=fill_count_delta,
-        reject_count_delta=0,
-        fill_rate_replay=Decimal("0.85000000"),
-        fill_rate_paper=Decimal("0.84000000"),
-        fill_rate_delta=fill_rate_delta,
+        inferred_unfilled_count_delta=0,
+        actual_reject_count_delta=actual_reject_count_delta,
+        fill_rate_replay=fill_rate_replay,
+        fill_rate_paper=fill_rate_paper,
+        fill_rate_delta=fill_rate_delta_value,
         window_start_utc_replay="2026-04-01T00:00:00+00:00",
         window_end_utc_replay="2026-04-22T00:00:00+00:00",
         window_start_utc_paper="2026-04-01T00:00:00+00:00",
@@ -380,6 +387,14 @@ class TestInformationalFindings:
         bundle = ARVPEvidenceBundle(record=_make_record(), shadow=shadow)
         verdict = build_arvp_gate_verdict(bundle)
         assert any("fill_rate_delta" in f for f in verdict.informational_findings)
+
+    def test_aligned_shadow_without_explicit_rejects_marks_unavailable(self) -> None:
+        shadow = _make_shadow(alignment_issue=None, explicit_rejects_available=False)
+        bundle = ARVPEvidenceBundle(record=_make_record(), shadow=shadow)
+        verdict = build_arvp_gate_verdict(bundle)
+        assert any(
+            "explicit_rejects_unavailable" in f for f in verdict.informational_findings
+        )
 
     def test_aligned_shadow_informational_contains_signal_count_delta(self) -> None:
         shadow = _make_shadow(
