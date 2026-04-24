@@ -27,6 +27,7 @@ from core.replay.shadow_compare import (
     ShadowComparisonResult,
     build_calibration_summary,
     compare_windows,
+    compare_windows_or_unusable,
     write_shadow_comparison_artifact,
 )
 
@@ -51,8 +52,10 @@ def _make_replay(**kw) -> ReplayOutputWindow:
         window_start_utc=_START,
         window_end_utc=_END,
         signal_count=10,
+        order_count=10,
         fill_count=8,
-        reject_count=2,
+        actual_reject_count=2,
+        inferred_unfilled_count=2,
         dataset_fingerprint=_FP,
     )
     defaults.update(kw)
@@ -66,8 +69,10 @@ def _make_paper(**kw) -> PaperReferenceWindow:
         window_start_utc=_START,
         window_end_utc=_END,
         signal_count=12,
+        order_count=12,
         fill_count=9,
-        reject_count=3,
+        actual_reject_count=3,
+        inferred_unfilled_count=3,
         provenance_id="paper-run-001",
     )
     defaults.update(kw)
@@ -118,9 +123,13 @@ class TestPaperReferenceWindow:
         with pytest.raises(ShadowCompareError, match="fill_count"):
             _make_paper(fill_count=-1)
 
-    def test_negative_reject_count_raises(self):
-        with pytest.raises(ShadowCompareError, match="reject_count"):
-            _make_paper(reject_count=-1)
+    def test_negative_order_count_raises(self):
+        with pytest.raises(ShadowCompareError, match="order_count"):
+            _make_paper(order_count=-1)
+
+    def test_negative_unfilled_count_raises(self):
+        with pytest.raises(ShadowCompareError, match="inferred_unfilled_count"):
+            _make_paper(inferred_unfilled_count=-1)
 
     def test_bool_count_raises(self):
         with pytest.raises(ShadowCompareError, match="signal_count"):
@@ -158,9 +167,13 @@ class TestReplayOutputWindow:
         with pytest.raises(ShadowCompareError, match="fill_count"):
             _make_replay(fill_count=-1)
 
+    def test_negative_order_count_raises(self):
+        with pytest.raises(ShadowCompareError, match="order_count"):
+            _make_replay(order_count=-1)
+
     def test_bool_count_raises(self):
-        with pytest.raises(ShadowCompareError, match="reject_count"):
-            _make_replay(reject_count=False)
+        with pytest.raises(ShadowCompareError, match="inferred_unfilled_count"):
+            _make_replay(inferred_unfilled_count=False)
 
 
 # ---------------------------------------------------------------------------
@@ -187,10 +200,15 @@ class TestCompareWindowsAligned:
         # replay=8, paper=9  →  8 - 9 = -1
         assert result.fill_count_delta == -1
 
-    def test_reject_count_delta(self):
+    def test_actual_reject_count_delta(self):
         result = compare_windows(_make_replay(), _make_paper())
         # replay=2, paper=3  →  2 - 3 = -1
-        assert result.reject_count_delta == -1
+        assert result.actual_reject_count_delta == -1
+
+    def test_inferred_unfilled_count_delta(self):
+        result = compare_windows(_make_replay(), _make_paper())
+        # replay=2, paper=3  →  2 - 3 = -1
+        assert result.inferred_unfilled_count_delta == -1
 
     def test_fill_rate_replay(self):
         result = compare_windows(_make_replay(), _make_paper())
@@ -235,8 +253,20 @@ class TestCompareWindowsAligned:
 
     def test_zero_counts_no_error(self):
         # fill_rate must not divide by zero when counts are both 0
-        r = _make_replay(signal_count=0, fill_count=0, reject_count=0)
-        p = _make_paper(signal_count=0, fill_count=0, reject_count=0)
+        r = _make_replay(
+            signal_count=0,
+            order_count=0,
+            fill_count=0,
+            actual_reject_count=0,
+            inferred_unfilled_count=0,
+        )
+        p = _make_paper(
+            signal_count=0,
+            order_count=0,
+            fill_count=0,
+            actual_reject_count=0,
+            inferred_unfilled_count=0,
+        )
         result = compare_windows(r, p)
         assert result.fill_rate_replay == Decimal("0.00000000")
         assert result.fill_rate_paper == Decimal("0.00000000")
@@ -418,8 +448,10 @@ class TestWriteShadowComparisonArtifact:
             "symbol",
             "strategy_id",
             "signal_count_delta",
+            "order_count_delta",
             "fill_count_delta",
-            "reject_count_delta",
+            "inferred_unfilled_count_delta",
+            "actual_reject_count_delta",
             "fill_rate_replay",
             "fill_rate_paper",
             "fill_rate_delta",
@@ -439,6 +471,18 @@ class TestWriteShadowComparisonArtifact:
         text_a = (tmp_path / "a" / "shadow_comparison.json").read_text()
         text_b = (tmp_path / "b" / "shadow_comparison.json").read_text()
         assert text_a == text_b
+
+    def test_aligned_result_omits_explicit_reject_keys_when_missing(self, tmp_path):
+        replay = _make_replay(actual_reject_count=None, inferred_unfilled_count=2)
+        paper = _make_paper(actual_reject_count=None, inferred_unfilled_count=3)
+        result = compare_windows(replay, paper)
+        write_shadow_comparison_artifact(result, tmp_path)
+        data = json.loads((tmp_path / "shadow_comparison.json").read_text())
+        assert data["status"] == "aligned"
+        assert "actual_reject_count_delta" not in data
+        assert "fill_rate_replay" not in data
+        assert "fill_rate_paper" not in data
+        assert "fill_rate_delta" not in data
 
     def test_creates_artifact_root_if_missing(self, tmp_path, result):
         nested = tmp_path / "deep" / "nested"

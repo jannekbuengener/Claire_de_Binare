@@ -7,6 +7,8 @@ Design rules:
   - Both sides are explicit, caller-supplied structs (no live data access).
   - compare_windows() is a pure function; fails closed on misalignment or
     missing reference.
+  - compare_windows_or_unusable() is a pure helper that converts fail-closed
+    compare failures into an explicit unusable result struct.
   - All rate values use Decimal with fixed quantization (no-float rule).
   - Deterministic: same inputs produce identical comparison_fingerprint.
   - write_shadow_comparison_artifact() is the sole I/O entry point; fail-closed.
@@ -51,6 +53,8 @@ _SHADOW_COMPARISON_FILENAME = "shadow_comparison.json"
 # Validation patterns (consistent with run_registry conventions)
 _RUN_ID_RE = re.compile(r"^replay-[a-f0-9]{12}-\d{4}$")
 _HEX_64_RE = re.compile(r"^[a-f0-9]{64}$")
+_STATUS_ALIGNED = "aligned"
+_STATUS_UNUSABLE = "unusable"
 
 
 # ---------------------------------------------------------------------------
@@ -119,8 +123,10 @@ class PaperReferenceWindow:
     window_start_utc: str
     window_end_utc: str
     signal_count: int
+    order_count: int
     fill_count: int
-    reject_count: int
+    actual_reject_count: int | None
+    inferred_unfilled_count: int
     provenance_id: str
 
     def __post_init__(self) -> None:
@@ -135,22 +141,29 @@ class PaperReferenceWindow:
             )
         for name, val in (
             ("signal_count", self.signal_count),
+            ("order_count", self.order_count),
             ("fill_count", self.fill_count),
-            ("reject_count", self.reject_count),
+            ("inferred_unfilled_count", self.inferred_unfilled_count),
         ):
             _require_non_negative_int(val, name)
+        if self.actual_reject_count is not None:
+            _require_non_negative_int(self.actual_reject_count, "actual_reject_count")
 
     def to_dict(self) -> dict:
-        return {
+        result: dict[str, object] = {
             "fill_count": self.fill_count,
+            "inferred_unfilled_count": self.inferred_unfilled_count,
+            "order_count": self.order_count,
             "provenance_id": self.provenance_id,
-            "reject_count": self.reject_count,
             "signal_count": self.signal_count,
             "strategy_id": self.strategy_id,
             "symbol": self.symbol,
             "window_end_utc": self.window_end_utc,
             "window_start_utc": self.window_start_utc,
         }
+        if self.actual_reject_count is not None:
+            result["actual_reject_count"] = self.actual_reject_count
+        return result
 
 
 @dataclass(frozen=True, slots=True)
@@ -168,8 +181,10 @@ class ReplayOutputWindow:
     window_start_utc: str
     window_end_utc: str
     signal_count: int
+    order_count: int
     fill_count: int
-    reject_count: int
+    actual_reject_count: int | None
+    inferred_unfilled_count: int
     dataset_fingerprint: str
 
     def __post_init__(self) -> None:
@@ -187,20 +202,24 @@ class ReplayOutputWindow:
             )
         for name, val in (
             ("signal_count", self.signal_count),
+            ("order_count", self.order_count),
             ("fill_count", self.fill_count),
-            ("reject_count", self.reject_count),
+            ("inferred_unfilled_count", self.inferred_unfilled_count),
         ):
             _require_non_negative_int(val, name)
+        if self.actual_reject_count is not None:
+            _require_non_negative_int(self.actual_reject_count, "actual_reject_count")
         if not _HEX_64_RE.match(self.dataset_fingerprint):
             raise ShadowCompareError(
                 "dataset_fingerprint must be a 64-char lowercase hex hash"
             )
 
     def to_dict(self) -> dict:
-        return {
+        result: dict[str, object] = {
             "dataset_fingerprint": self.dataset_fingerprint,
             "fill_count": self.fill_count,
-            "reject_count": self.reject_count,
+            "inferred_unfilled_count": self.inferred_unfilled_count,
+            "order_count": self.order_count,
             "run_id": self.run_id,
             "signal_count": self.signal_count,
             "strategy_id": self.strategy_id,
@@ -208,6 +227,9 @@ class ReplayOutputWindow:
             "window_end_utc": self.window_end_utc,
             "window_start_utc": self.window_start_utc,
         }
+        if self.actual_reject_count is not None:
+            result["actual_reject_count"] = self.actual_reject_count
+        return result
 
 
 # ---------------------------------------------------------------------------
@@ -234,25 +256,25 @@ class ShadowComparisonResult:
     symbol: str
     strategy_id: str
     signal_count_delta: int
+    order_count_delta: int
     fill_count_delta: int
-    reject_count_delta: int
-    fill_rate_replay: Decimal
-    fill_rate_paper: Decimal
-    fill_rate_delta: Decimal
+    inferred_unfilled_count_delta: int
+    actual_reject_count_delta: int | None
+    fill_rate_replay: Decimal | None
+    fill_rate_paper: Decimal | None
+    fill_rate_delta: Decimal | None
     window_start_utc_replay: str
     window_end_utc_replay: str
     window_start_utc_paper: str
     window_end_utc_paper: str
 
     def to_dict(self) -> dict:
-        result: dict = {
+        result: dict[str, object] = {
             "comparison_fingerprint": self.comparison_fingerprint,
             "fill_count_delta": self.fill_count_delta,
-            "fill_rate_delta": str(self.fill_rate_delta),
-            "fill_rate_paper": str(self.fill_rate_paper),
-            "fill_rate_replay": str(self.fill_rate_replay),
+            "inferred_unfilled_count_delta": self.inferred_unfilled_count_delta,
+            "order_count_delta": self.order_count_delta,
             "paper_provenance_id": self.paper_provenance_id,
-            "reject_count_delta": self.reject_count_delta,
             "replay_run_id": self.replay_run_id,
             "signal_count_delta": self.signal_count_delta,
             "status": self.status,
@@ -263,6 +285,14 @@ class ShadowComparisonResult:
             "window_start_utc_paper": self.window_start_utc_paper,
             "window_start_utc_replay": self.window_start_utc_replay,
         }
+        if self.actual_reject_count_delta is not None:
+            result["actual_reject_count_delta"] = self.actual_reject_count_delta
+        if self.fill_rate_replay is not None:
+            result["fill_rate_replay"] = str(self.fill_rate_replay)
+        if self.fill_rate_paper is not None:
+            result["fill_rate_paper"] = str(self.fill_rate_paper)
+        if self.fill_rate_delta is not None:
+            result["fill_rate_delta"] = str(self.fill_rate_delta)
         if self.alignment_issue is not None:
             result["alignment_issue"] = self.alignment_issue
         return result
@@ -317,23 +347,33 @@ def compare_windows(
             f"({paper.window_start_utc} – {paper.window_end_utc})"
         )
 
-    fill_rate_r = _compute_fill_rate(replay.fill_count, replay.reject_count)
-    fill_rate_p = _compute_fill_rate(paper.fill_count, paper.reject_count)
-    fill_rate_delta = (fill_rate_r - fill_rate_p).quantize(_RATE_Q)
+    reject_delta: int | None = None
+    fill_rate_r: Decimal | None = None
+    fill_rate_p: Decimal | None = None
+    fill_rate_delta: Decimal | None = None
+    if replay.actual_reject_count is not None and paper.actual_reject_count is not None:
+        reject_delta = replay.actual_reject_count - paper.actual_reject_count
+        fill_rate_r = _compute_fill_rate(replay.fill_count, replay.actual_reject_count)
+        fill_rate_p = _compute_fill_rate(paper.fill_count, paper.actual_reject_count)
+        fill_rate_delta = (fill_rate_r - fill_rate_p).quantize(_RATE_Q)
 
     fingerprint = canonical_hash({"paper": paper.to_dict(), "replay": replay.to_dict()})
 
     return ShadowComparisonResult(
         comparison_fingerprint=fingerprint,
-        status="aligned",
+        status=_STATUS_ALIGNED,
         alignment_issue=None,
         replay_run_id=replay.run_id,
         paper_provenance_id=paper.provenance_id,
         symbol=replay.symbol,
         strategy_id=replay.strategy_id,
         signal_count_delta=replay.signal_count - paper.signal_count,
+        order_count_delta=replay.order_count - paper.order_count,
         fill_count_delta=replay.fill_count - paper.fill_count,
-        reject_count_delta=replay.reject_count - paper.reject_count,
+        inferred_unfilled_count_delta=(
+            replay.inferred_unfilled_count - paper.inferred_unfilled_count
+        ),
+        actual_reject_count_delta=reject_delta,
         fill_rate_replay=fill_rate_r,
         fill_rate_paper=fill_rate_p,
         fill_rate_delta=fill_rate_delta,
@@ -344,14 +384,56 @@ def compare_windows(
     )
 
 
-def build_calibration_summary(result: ShadowComparisonResult) -> str:
-    """Build a concise operator-readable calibration summary.
+def compare_windows_or_unusable(
+    replay: ReplayOutputWindow,
+    paper: PaperReferenceWindow | None,
+) -> ShadowComparisonResult:
+    """Compare windows, or return an explicit unusable result.
+
+    This is a pure helper that converts ShadowCompareError into a
+    machine-readable unusable artifact, rather than raising.
+
+    The returned unusable result is deterministic: fingerprint includes
+    the caller-supplied inputs and the error text.
+    """
+    try:
+        return compare_windows(replay, paper)
+    except ShadowCompareError as exc:
+        paper_dict = None if paper is None else paper.to_dict()
+        fingerprint = canonical_hash(
+            {"paper": paper_dict, "replay": replay.to_dict(), "error": str(exc)}
+        )
+        return ShadowComparisonResult(
+            comparison_fingerprint=fingerprint,
+            status=_STATUS_UNUSABLE,
+            alignment_issue=str(exc),
+            replay_run_id=replay.run_id,
+            paper_provenance_id=paper.provenance_id if paper is not None else "missing",
+            symbol=replay.symbol,
+            strategy_id=replay.strategy_id,
+            signal_count_delta=0,
+            order_count_delta=0,
+            fill_count_delta=0,
+            inferred_unfilled_count_delta=0,
+            actual_reject_count_delta=None,
+            fill_rate_replay=None,
+            fill_rate_paper=None,
+            fill_rate_delta=None,
+            window_start_utc_replay=replay.window_start_utc,
+            window_end_utc_replay=replay.window_end_utc,
+            window_start_utc_paper=paper.window_start_utc if paper is not None else "",
+            window_end_utc_paper=paper.window_end_utc if paper is not None else "",
+        )
+
+
+def build_comparison_summary(result: ShadowComparisonResult) -> str:
+    """Build a concise operator-readable comparison summary.
 
     Every line maps directly to a field in ShadowComparisonResult.
     No invented narrative or subjective commentary.
     """
     lines = [
-        "# Replay-vs-Paper Calibration Summary",
+        "# Replay-vs-Paper Comparison Summary",
         "",
         f"Status:           {result.status}",
         f"Replay run:       {result.replay_run_id}",
@@ -366,17 +448,35 @@ def build_calibration_summary(result: ShadowComparisonResult) -> str:
         "",
         "## Count Deltas (replay − paper)",
         f"Signal count delta:  {result.signal_count_delta:+d}",
+        f"Order count delta:   {result.order_count_delta:+d}",
         f"Fill count delta:    {result.fill_count_delta:+d}",
-        f"Reject count delta:  {result.reject_count_delta:+d}",
+        "Reject delta:        only available when explicit reject data exists.",
+        "Unfilled order delta: informational proxy, not treated as reject evidence.",
+        f"Unfilled order delta: {result.inferred_unfilled_count_delta:+d}",
         "",
-        "## Fill Rate",
-        f"Replay fill rate:  {result.fill_rate_replay}",
-        f"Paper fill rate:   {result.fill_rate_paper}",
-        f"Fill rate delta:   {result.fill_rate_delta:+}",
     ]
+    if result.actual_reject_count_delta is not None:
+        lines += [f"Reject count delta:  {result.actual_reject_count_delta:+d}"]
+    if (
+        result.fill_rate_replay is not None
+        and result.fill_rate_paper is not None
+        and result.fill_rate_delta is not None
+    ):
+        lines += [
+            "",
+            "## Fill Rate (explicit rejects only)",
+            f"Replay fill rate:  {result.fill_rate_replay}",
+            f"Paper fill rate:   {result.fill_rate_paper}",
+            f"Fill rate delta:   {result.fill_rate_delta:+}",
+        ]
     if result.alignment_issue is not None:
         lines += ["", f"Alignment issue: {result.alignment_issue}"]
     return "\n".join(lines)
+
+
+def build_calibration_summary(result: ShadowComparisonResult) -> str:
+    """Backward compatible alias for build_comparison_summary()."""
+    return build_comparison_summary(result)
 
 
 def write_shadow_comparison_artifact(
