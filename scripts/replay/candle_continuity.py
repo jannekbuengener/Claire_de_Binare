@@ -7,6 +7,7 @@ Issue #1906 scope:
 
 This script does not synthesize candles and does not soften replay contracts.
 """
+# ruff: noqa: E402
 
 from __future__ import annotations
 
