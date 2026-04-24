@@ -20,7 +20,9 @@ Non-goals:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import timezone
+
+from core.utils.clock import utcnow
 from typing import Any, Mapping, Sequence
 
 _CONTRACT_VERSION = "arvp_paper_reference_window.v1"
@@ -82,7 +84,11 @@ def build_export_request(
     extracted_by = _require_non_empty_string(extracted_by, "extracted_by")
     source_query_intent = _require_non_empty_string(source_query_intent, "source_query_intent")
     if extracted_at_utc is None:
-        extracted_at_utc = datetime.now(timezone.utc).isoformat()
+        dt = utcnow()
+        if dt.tzinfo is None:
+            extracted_at_utc = dt.replace(tzinfo=timezone.utc).isoformat()
+        else:
+            extracted_at_utc = dt.astimezone(timezone.utc).isoformat()
     else:
         extracted_at_utc = _require_non_empty_string(extracted_at_utc, "extracted_at_utc")
     return ExportRequest(
@@ -191,4 +197,7 @@ def export_paper_reference_window(
         "extracted_by": request.extracted_by,
         "events": events,
     }
+
+
+
 
