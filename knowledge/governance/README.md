@@ -19,3 +19,4 @@ relations:
 *   [CDB Governance (CDB_GOVERNANCE.md)](CDB_GOVERNANCE.md)
 *   [CDB Agent Policy (CDB_AGENT_POLICY.md)](CDB_AGENT_POLICY.md)
 *   [CDB Trust Score Policy (CDB_TRUST_SCORE_POLICY.md)](CDB_TRUST_SCORE_POLICY.md)
+*   [ARVP Product Intent (ARVP_PRODUCT_INTENT.md)](ARVP_PRODUCT_INTENT.md) — north-star anchor for accelerated replay paper-mode platform
