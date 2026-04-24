@@ -1,0 +1,155 @@
+from __future__ import annotations
+
+from decimal import Decimal
+
+import pytest
+
+from scripts.replay.candle_continuity import (
+    CandleContinuityError,
+    CandleRow,
+    build_continuity_report,
+    candle_rows_checksum,
+    collapse_missing_timestamps,
+    expected_timestamps,
+    parse_binance_kline,
+)
+
+
+BASE_TS = 1_000_000_020_000
+
+
+def test_expected_timestamps_include_warmup_and_end() -> None:
+    assert expected_timestamps(
+        start_ts_ms=BASE_TS,
+        end_ts_ms=BASE_TS + 120_000,
+        warmup_candles=2,
+    ) == [
+        BASE_TS - 120_000,
+        BASE_TS - 60_000,
+        BASE_TS,
+        BASE_TS + 60_000,
+        BASE_TS + 120_000,
+    ]
+
+
+def test_build_continuity_report_marks_ready_when_all_expected_exist() -> None:
+    observed = expected_timestamps(
+        start_ts_ms=BASE_TS,
+        end_ts_ms=BASE_TS + 120_000,
+        warmup_candles=1,
+    )
+    report = build_continuity_report(
+        symbol="btcusdt",
+        start_ts_ms=BASE_TS,
+        end_ts_ms=BASE_TS + 120_000,
+        warmup_candles=1,
+        observed_ts_ms=observed,
+    )
+    assert report["symbol"] == "BTCUSDT"
+    assert report["replay_ready"] is True
+    assert report["missing_count"] == 0
+    assert report["gaps"] == []
+    assert len(report["continuity_fingerprint"]) == 64
+
+
+def test_build_continuity_report_localizes_missing_gap() -> None:
+    observed = [
+        BASE_TS - 60_000,
+        BASE_TS,
+        BASE_TS + 120_000,
+    ]
+    report = build_continuity_report(
+        symbol="BTCUSDT",
+        start_ts_ms=BASE_TS,
+        end_ts_ms=BASE_TS + 120_000,
+        warmup_candles=1,
+        observed_ts_ms=observed,
+    )
+    assert report["replay_ready"] is False
+    assert report["missing_count"] == 1
+    assert report["gaps"] == [
+        {
+            "start_ts_ms": BASE_TS + 60_000,
+            "end_ts_ms": BASE_TS + 60_000,
+            "missing_count": 1,
+            "timestamps": [BASE_TS + 60_000],
+        }
+    ]
+
+
+def test_collapse_missing_timestamps_groups_contiguous_ranges() -> None:
+    assert collapse_missing_timestamps(
+        [1000, 1000 + 60_000, 1000 + 180_000]
+    ) == [
+        {
+            "start_ts_ms": 1000,
+            "end_ts_ms": 61_000,
+            "missing_count": 2,
+            "timestamps": [1000, 61_000],
+        },
+        {
+            "start_ts_ms": 181_000,
+            "end_ts_ms": 181_000,
+            "missing_count": 1,
+            "timestamps": [181_000],
+        },
+    ]
+
+
+def test_parse_binance_kline_maps_real_source_row() -> None:
+    row = parse_binance_kline(
+        "btcusdt",
+        [
+            1_000_000_020_000,
+            "50000.01000000",
+            "50010.02000000",
+            "49990.03000000",
+            "50005.04000000",
+            "12.34567890",
+            1_000_000_079_999,
+            "617000.00",
+            42,
+        ],
+    )
+    assert row == CandleRow(
+        symbol="BTCUSDT",
+        ts_ms=1_000_000_020_000,
+        open=Decimal("50000.01000000"),
+        high=Decimal("50010.02000000"),
+        low=Decimal("49990.03000000"),
+        close=Decimal("50005.04000000"),
+        volume=Decimal("12.34567890"),
+        trade_count=42,
+    )
+
+
+def test_parse_binance_kline_rejects_unaligned_open_time() -> None:
+    with pytest.raises(CandleContinuityError, match="1m-aligned"):
+        parse_binance_kline(
+            "BTCUSDT",
+            [1_000_000_020_001, "1", "1", "1", "1", "1", 0, "0", 1],
+        )
+
+
+def test_candle_rows_checksum_is_stable_and_order_independent() -> None:
+    a = CandleRow(
+        symbol="BTCUSDT",
+        ts_ms=1_000_000_020_000,
+        open=Decimal("1.0"),
+        high=Decimal("2.0"),
+        low=Decimal("1.0"),
+        close=Decimal("1.5"),
+        volume=Decimal("3.0"),
+        trade_count=4,
+    )
+    b = CandleRow(
+        symbol="BTCUSDT",
+        ts_ms=1_000_000_080_000,
+        open=Decimal("1.5"),
+        high=Decimal("2.5"),
+        low=Decimal("1.4"),
+        close=Decimal("2.0"),
+        volume=Decimal("5.0"),
+        trade_count=6,
+    )
+    assert candle_rows_checksum([a, b]) == candle_rows_checksum([b, a])

@@ -262,6 +262,40 @@ COMMENT ON COLUMN candles_1m.regime_id IS 'Marktregime zum Emissionszeitpunkt (N
 COMMENT ON COLUMN candles_1m.ingested_at IS 'DB-Eingangszeit (Audit). Kein Replay-Feld.';
 
 -- ============================================================================
+-- CANDLE_BACKFILL_IMPORTS - Provenance fuer echte historische Candle-Backfills
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS candle_backfill_imports (
+    import_id              UUID PRIMARY KEY,
+    source                 TEXT                     NOT NULL,
+    source_url             TEXT                     NOT NULL,
+    import_command         TEXT                     NOT NULL,
+    imported_at            TIMESTAMP WITH TIME ZONE NOT NULL,
+    symbol                 VARCHAR(20)              NOT NULL,
+    start_ts_ms            BIGINT                   NOT NULL,
+    end_ts_ms              BIGINT                   NOT NULL,
+    row_count              INTEGER                  NOT NULL,
+    inserted_count         INTEGER                  NOT NULL,
+    skipped_existing_count INTEGER                  NOT NULL,
+    checksum_sha256        CHAR(64)                 NOT NULL,
+    payload                JSONB                    NOT NULL,
+
+    CONSTRAINT candle_backfill_window_valid CHECK (start_ts_ms <= end_ts_ms),
+    CONSTRAINT candle_backfill_counts_nonneg CHECK (
+        row_count >= 0 AND inserted_count >= 0 AND skipped_existing_count >= 0
+    ),
+    CONSTRAINT candle_backfill_checksum_hex CHECK (checksum_sha256 ~ '^[0-9a-f]{64}$')
+);
+
+CREATE INDEX IF NOT EXISTS idx_candle_backfill_symbol_window
+    ON candle_backfill_imports(symbol, start_ts_ms, end_ts_ms);
+
+COMMENT ON TABLE candle_backfill_imports IS 'Provenance records for real-source candle backfills into public.candles_1m (#1906).';
+COMMENT ON COLUMN candle_backfill_imports.source IS 'Real historical source identifier, e.g. binance_spot_api_v3_klines. No mock source allowed.';
+COMMENT ON COLUMN candle_backfill_imports.checksum_sha256 IS 'SHA-256 over canonical imported candle rows.';
+COMMENT ON COLUMN candle_backfill_imports.payload IS 'Full import manifest including source query/URL, command, row counts, and stable row payloads.';
+
+-- ============================================================================
 -- GRANTS - Permissions für claire_user
 -- ============================================================================
 
@@ -310,7 +344,8 @@ CREATE TABLE IF NOT EXISTS schema_version (
 
 INSERT INTO schema_version (version, description) VALUES
     ('1.0.10', 'Initial schema with orders.price nullable, orders.order_id, and trades.realized_pnl'),
-    ('1.1.0', 'Add candles_1m table for ARVP DB-backed replay persistence (Issue #1855)');
+    ('1.1.0', 'Add candles_1m table for ARVP DB-backed replay persistence (Issue #1855)'),
+    ('1.1.1', 'Add candle backfill provenance table for ARVP replay data continuity (Issue #1906)');
 
 -- ============================================================================
 -- VACUUM & ANALYZE - Optimiere nach Schema-Erstellung
@@ -321,7 +356,7 @@ VACUUM ANALYZE;
 -- ============================================================================
 -- SCHEMA-ERSTELLUNG ABGESCHLOSSEN
 -- ============================================================================
--- Tabellen: signals, orders, trades, positions, portfolio_snapshots, candles_1m
+-- Tabellen: signals, orders, trades, positions, portfolio_snapshots, candles_1m, candle_backfill_imports
 -- User: claire_user (mit vollen Rechten)
 -- Initial Equity: 100,000 USDT
 -- Status: ✅ Ready for Paper Trading
