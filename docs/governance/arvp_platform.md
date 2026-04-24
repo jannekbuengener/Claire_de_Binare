@@ -162,6 +162,9 @@ behavior for simulator calibration. Identify systematic execution divergence.
 **Not in scope:** Replacing paper runs with replay. LR-upgrade decisions.
 **Issue:** `#1848`
 
+**Paper reference contract (repo-backed, fail-closed):**
+- `docs/governance/arvp_paper_reference_contract.md` (Issue `#1901`)
+
 ### 4.10 Gates / Evidence Integration
 
 **Scope:** Feed ARVP outputs into validation evidence workflows and
