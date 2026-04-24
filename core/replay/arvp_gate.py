@@ -229,11 +229,20 @@ def build_arvp_gate_verdict(bundle: ARVPEvidenceBundle) -> ARVPGateVerdict:
 
     if bundle.shadow is not None and bundle.shadow.alignment_issue is None:
         s = bundle.shadow
-        informational.append(
-            f"shadow_comparison: fill_rate_delta={s.fill_rate_delta} "
-            f"signal_count_delta={s.signal_count_delta} "
-            f"fill_count_delta={s.fill_count_delta}"
-        )
+        if s.fill_rate_delta is not None:
+            informational.append(
+                f"shadow_comparison: fill_rate_delta={s.fill_rate_delta} "
+                f"actual_reject_count_delta={s.actual_reject_count_delta} "
+                f"signal_count_delta={s.signal_count_delta} "
+                f"fill_count_delta={s.fill_count_delta}"
+            )
+        else:
+            informational.append(
+                "shadow_comparison: explicit_rejects_unavailable "
+                f"inferred_unfilled_count_delta={s.inferred_unfilled_count_delta} "
+                f"signal_count_delta={s.signal_count_delta} "
+                f"fill_count_delta={s.fill_count_delta}"
+            )
 
     blocking_tuple = tuple(sorted(blocking))
     informational_tuple = tuple(sorted(informational))
