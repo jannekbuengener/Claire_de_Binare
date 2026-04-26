@@ -89,7 +89,7 @@ This evidence does not imply:
 
 ## Remaining red checks
 
-#1905 currently still carries the conflicting label combination status:parked plus stage:strategy-validated.
+The previously identified label conflict on #1905 (status:parked plus stage:strategy-validated) was a historical tracker-hygiene point and has since been cleansed; live status is now status:parked only.
 
 The source artifacts are local, not committed.
 
