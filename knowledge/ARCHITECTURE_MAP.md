@@ -56,7 +56,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
-| Signal | cdb_signal | 8005 (Runtime) | Signal Generation |
+| Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback) |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
 | Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |
@@ -165,11 +165,37 @@ cdb_reports           Up (healthy)
 | Component | File | Funktion | Status |
 |-----------|------|----------|--------|
 | **Replay Reporter** | `services/validation/replay_reporter.py` | Deterministic artifact bundle writer (report.json, manifest.json, audit.log) | **AKTIV** (PR #1808) |
-| **ARVP Replay CLI** | `services/validation/strategy_replay_runner.py` | Operator-facing entry-point (`run_arvp_replay()` → `main()`). Fail-closed: validates `--dataset-source` (file\|db), `--speedup-profile`, scheduler metadata. Exit Codes 0/1/2. Source-aware baseline + scenario-group paths. | **AKTIV** (PR #1808, PR #1859, PR #1891) |
+| **Backtest Runner** | `services/validation/strategy_backtest_runner.py` | Deterministische `primary_breakout_v1` Backtest-Fläche. Implementiert opt-in Gate-Trace (`gate_trace_path`) für JSONL-Entscheidungsprotokollierung; kein Standard-Output ohne Opt-in; kein Trace im zweiten Determinismus-Pass. | **AKTIV** (PR #1944) |
+| **ARVP Replay CLI** | `services/validation/strategy_replay_runner.py` | Operator-facing entry-point (`run_arvp_replay()` → `main()`). Fail-closed: validates `--dataset-source` (file\|db), `--speedup-profile`, scheduler metadata. Exponiert `--gate-trace-path` und reicht diesen an den Backtest-Runner weiter. Exit Codes 0/1/2. Source-aware baseline + scenario-group paths. | **AKTIV** (PR #1808, PR #1859, PR #1891, PR #1944) |
+| **Shadow Comparison** | `core/replay/shadow_compare.py` | Deterministic, offline comparison of replay output windows against explicit paper-trading reference windows. Pure function; fail-closed on misalignment. Decimal-quantized rate values. | **AKTIV** (PR #1914) |
+| **Replay vs Paper Compare** | `core/replay/replay_vs_paper_compare.py` | Glue layer consuming replay_report.v1 + arvp_paper_reference_window.v1; produces shadow_comparison.json + shadow_comparison_summary.md. Deterministic; explicit reject data handling; fail-closed on missing inputs. | **AKTIV** (PR #1914) |
+| **Compare CLI Runner** | `services/validation/replay_vs_paper_compare_runner.py` | Operator-facing CLI (`--replay-report FILE --paper-reference FILE --output-dir DIR`). Produces shadow_comparison artifacts. Exit codes: 0 aligned / 1 usage error / 2 parse/unusable. | **AKTIV** (PR #1914) |
+| **ARVP Gate** | `core/replay/arvp_gate.py` | Machine-readable verdict surface: aggregates replay/comparison/scenario/regime artifacts into pass/fail/blocked verdict with explicit blocking vs informational rule classification. Deterministic fingerprinting. | **AKTIV** (PR #1914) |
+| **Simulator Calibration Report** | `core/replay/simulator_calibration_report.py` | Consumes shadow_comparison.json; produces simulator_calibration_report.json + simulator_calibration_summary.md with drift classification (optimistic/pessimistic/ambiguous/unusable). Deterministic; explicit fill_rate_delta handling. | **AKTIV** (PR #1916) |
+| **Calibration Report CLI** | `services/validation/simulator_calibration_report_runner.py` | Operator-facing CLI (`--comparison shadow_comparison.json --output-dir DIR`). Exit codes: 0 aligned / 1 usage error / 2 parse/unusable. | **AKTIV** (PR #1916) |
+| **ARVP Regime Scorecards** | `core/replay/arvp_regime_scorecards.py` | Regime-segmented reading surface for replay + comparison outputs. Deterministic; explicit on missing regime context (status: ok/unavailable/insufficient-data). Reporting only, no policy semantics. | **AKTIV** (PR #1918) |
+| **Regime Scorecard CLI** | `services/validation/arvp_regime_scorecard_runner.py` | Operator-facing CLI (`--run-id ID --replay-trace FILE --comparison FILE --output-dir DIR`). Optional inputs; fail-closed on invalid JSON. Produces arvp_regime_scorecard.json + arvp_regime_scorecard_summary.md. Exit codes: 0 ok / 1 usage / 2 parse error. | **AKTIV** (PR #1918) |
+| **Paper Reference Window Export** | `core/replay/paper_reference_window_export.py` | Export comparison-grade paper_reference_window from correlation_ledger. Fail-closed on missing/invalid fields; deterministic ordering by (timestamp_ms, event_pk). Requires ≥1 ORDER + ≥1 FILL with paper_-prefix. | **AKTIV** (PR #1920) |
+| **Paper Reference Window CLI** | `services/validation/paper_reference_window_runner.py` | Operator-facing CLI (`--strategy-id ID --symbol SYM --start-ts-ms TS --end-ts-ms TS --output FILE`). Reads correlation_ledger from Postgres; produces arvp_paper_reference_window.v1 JSON. Exit codes: 0 success / 1 usage / 2 DB/contract error. | **AKTIV** (PR #1920) |
 
 ---
 
-## 6. Invariants (nicht verhandelbar)
+## 6. Strategic Service Semantics (Runtime vs Validation)
+
+### Signal Lookback Semantik (primary_breakout_v1)
+- **Zeitgestempelte Historie**: High/Low-Werte werden mit `ts_ms` gepflegt.
+- **Zeitfenster-Lookback**: Entry-/Exit-Lookback werden als Zeitfenster (Minuten) evaluiert, nicht als Event-Count.
+- **Warmup-Validierung**: Ein Signal wird nur generiert, wenn die Historie die volle Fenster-Spanne im aktuellen Fenster abdeckt (Warmup-Check).
+- **Entscheidungs-Reihenfolge**: Die Entscheidung (Signal-Evaluierung) erfolgt **vor** dem Append des aktuellen Ticks/Candles in die Historie.
+
+### Validation Gate Trace
+- **Opt-in Diagnose**: Der `primary_breakout_v1` Gate-Trace ist eine opt-in Diagnosefläche für Backtests und Replays.
+- **Kein Standard-Output**: Ohne explizites `--gate-trace-path` erfolgt keine Trace-Emission.
+- **Audit-Zweck**: Dient der Identifizierung von Replay-/Paper-Drift durch detaillierte Protokollierung der Schwellenwert-Entscheidungen pro Schritt.
+
+---
+
+## 7. Invariants (nicht verhandelbar)
 
 1. **Paper Trading Default**: Live Trading erfordert explizites Delivery Gate
 2. **Event Sourcing**: Alle State-Aenderungen ueber Events (Replay-faehig)
@@ -220,3 +246,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-22 | PR #1856 Nachzug: ARVP §4.2 DatasetSpec + DatasetProvider (FileBackedDatasetProvider + DBBackedDatasetProvider) ergänzt (Issue #1857) | Codex |
 | 2026-04-22 | PR #1859 Nachzug: `core/replay/scheduler.py` und minimaler Replay-CLI-Scheduler-Pfad (`speedup_profile`, `dataset_summary["scheduler"]`) ergänzt (Issue #1860) | Codex |
 | 2026-04-23 | PR #1891 Nachzug: ARVP Operator-Facing Dataset Layer finalisiert (file\|db modes, db_dataset_window format, source-aware paths, legacy naming entfernt). CLI-Naming: run_accelerated_shadow_replay → run_arvp_replay (Issue #1892) | Codex |
+| 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |

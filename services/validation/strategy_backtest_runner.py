@@ -15,7 +15,7 @@ import json
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Optional, Sequence
 
 from core.contracts.external_adapter_contracts import (
     StrategyAdapterRequest,
@@ -436,6 +436,7 @@ def _evaluate_primary_breakout_request(
     position_open: bool,
     last_entry_ts_ms: int | None,
     config: PrimaryBreakoutBacktestRunConfig,
+    gate_trace_callback: Optional[Callable[[Mapping[str, Any]], None]] = None,
 ) -> tuple[StrategyAdapterResponse, int | None]:
     market_state = request.market_event.get("market_state")
     if not isinstance(market_state, Mapping):
@@ -514,6 +515,29 @@ def _evaluate_primary_breakout_request(
         and not entry_cooldown_active
         and close_now > highest_high * (1 + config.bridge.breakout_buffer)
     )
+
+    if gate_trace_callback:
+        gate_trace_callback(
+            {
+                "ts_ms": ts_ms,
+                "symbol": request.symbol,
+                "close_now": close_now,
+                "highest_high": highest_high,
+                "breakout_threshold": highest_high * (1 + config.bridge.breakout_buffer),
+                "breakout_buffer": config.bridge.breakout_buffer,
+                "market_state_fresh": market_state_fresh,
+                "regime_fresh": regime_fresh,
+                "regime_id": regime_id,
+                "has_trend_regime": has_trend_regime,
+                "entry_blocked": entry_blocked,
+                "entry_cooldown_active": entry_cooldown_active,
+                "position_open": position_open,
+                "last_entry_ts_ms": last_entry_ts_ms,
+                "entry_ready": entry_ready,
+                "status": "signal_emitted" if entry_ready else "no_signal",
+            }
+        )
+
     if entry_ready:
         return (
             StrategyAdapterResponse(
@@ -661,6 +685,7 @@ def run_primary_breakout_backtest(
     run_config: PrimaryBreakoutBacktestRunConfig | None = None,
     simulator_config: Mapping[str, Any] | None = None,
     code_commit: str = "unknown",
+    gate_trace_path: Path | None = None,
 ) -> dict[str, Any]:
     """Run the deterministic historical backtest and return the schema report."""
 
@@ -687,120 +712,144 @@ def run_primary_breakout_backtest(
     pending_signals: list[dict[str, Any]] = []
     replay_signature: list[dict[str, Any]] = []
 
-    for request_index, request in enumerate(bridge_requests):
-        if execution_delay_bars > 0 and pending_signals:
-            due_signals: list[dict[str, Any]] = []
-            remaining_signals: list[dict[str, Any]] = []
-            for pending in pending_signals:
-                if pending["target_idx"] == request_index:
-                    due_signals.append(pending)
-                else:
-                    remaining_signals.append(pending)
-            pending_signals = remaining_signals
-            for exec_info in due_signals:
-                open_position = _execute_pending_signal(
-                    exec_info,
-                    open_position,
-                    trades,
-                    simulator,
-                    active_config,
-                )
+    trace_writer = None
+    if gate_trace_path:
+        try:
+            trace_writer = open(gate_trace_path, "w", encoding="utf-8")
+        except OSError as exc:
+            raise PrimaryBreakoutBacktestError(
+                f"Failed to open gate trace path {gate_trace_path}: {exc}"
+            ) from exc
 
-        market_state = request.market_event["market_state"]
-        market_state_fresh = bool(market_state.get("market_state_fresh"))
-        regime_fresh = bool(market_state.get("regime_fresh"))
-        market_state_fresh_count += int(market_state_fresh)
-        regime_fresh_count += int(regime_fresh)
-
-        response, last_entry_ts_ms = _evaluate_primary_breakout_request(
-            request,
-            position_open=open_position is not None,
-            last_entry_ts_ms=last_entry_ts_ms,
-            config=active_config,
-        )
-        replay_signature.append(_serialize_response(response))
-
-        for signal in response.signals:
-            signal_payload = {
-                "strategy_id": signal.strategy_id,
-                "symbol": signal.symbol,
-                "side": signal.side,
-                "reason": signal.reason,
-                "price": signal.price,
-                "metadata": dict(signal.metadata or {}),
-            }
-            output_requests.append(signal_payload)
-
-            if execution_delay_bars > 0:
-                pending_signals.append(
-                    _build_pending_execution(
-                        signal,
-                        request_index,
-                        bridge_requests,
-                        execution_delay_bars,
+    try:
+        for request_index, request in enumerate(bridge_requests):
+            if execution_delay_bars > 0 and pending_signals:
+                due_signals: list[dict[str, Any]] = []
+                remaining_signals: list[dict[str, Any]] = []
+                for pending in pending_signals:
+                    if pending["target_idx"] == request_index:
+                        due_signals.append(pending)
+                    else:
+                        remaining_signals.append(pending)
+                pending_signals = remaining_signals
+                for exec_info in due_signals:
+                    open_position = _execute_pending_signal(
+                        exec_info,
+                        open_position,
+                        trades,
+                        simulator,
+                        active_config,
                     )
-                )
-                continue
 
-            signal_price = _first_number(
-                signal.price, request.market_snapshot.get("close")
-            )
-            if signal_price is None:
-                raise PrimaryBreakoutBacktestError("signal missing price")
-            ts_ms = int(request.market_event["ts_ms"])
-            volume = _first_number(request.market_snapshot.get("volume")) or 0.0
-            volatility = abs(
-                (
-                    signal_price
-                    - _first_number(request.market_snapshot.get("close"), signal_price)
-                )
-                / signal_price
-            )
+            market_state = request.market_event["market_state"]
+            market_state_fresh = bool(market_state.get("market_state_fresh"))
+            regime_fresh = bool(market_state.get("regime_fresh"))
+            market_state_fresh_count += int(market_state_fresh)
+            regime_fresh_count += int(regime_fresh)
 
-            if signal.side == "BUY":
-                if open_position is not None:
-                    continue
-                fill = _simulate_trade(
-                    side="buy",
-                    price=signal_price,
-                    ts_ms=ts_ms,
-                    volume=volume,
-                    simulator=simulator,
-                    order_size=active_config.order_size,
-                    order_book_depth_multiplier=active_config.order_book_depth_multiplier,
-                    volatility=volatility,
-                )
-                open_position = {
-                    "entry_price": fill["avg_fill_price"],
-                    "entry_ts_ms": ts_ms,
-                    "entry_fee": fill["fees"],
+            gate_trace_callback = None
+            if trace_writer:
+
+                def gate_trace_callback(data: Mapping[str, Any]) -> None:
+                    trace_writer.write(
+                        json.dumps({**data, "request_index": request_index}) + "\n"
+                    )
+
+            response, last_entry_ts_ms = _evaluate_primary_breakout_request(
+                request,
+                position_open=open_position is not None,
+                last_entry_ts_ms=last_entry_ts_ms,
+                config=active_config,
+                gate_trace_callback=gate_trace_callback,
+            )
+            replay_signature.append(_serialize_response(response))
+
+            for signal in response.signals:
+                signal_payload = {
+                    "strategy_id": signal.strategy_id,
+                    "symbol": signal.symbol,
+                    "side": signal.side,
+                    "reason": signal.reason,
+                    "price": signal.price,
+                    "metadata": dict(signal.metadata or {}),
                 }
-            elif signal.side == "SELL" and open_position is not None:
-                fill = _simulate_trade(
-                    side="sell",
-                    price=signal_price,
-                    ts_ms=ts_ms,
-                    volume=volume,
-                    simulator=simulator,
-                    order_size=active_config.order_size,
-                    order_book_depth_multiplier=active_config.order_book_depth_multiplier,
-                    volatility=volatility,
+                output_requests.append(signal_payload)
+
+                if execution_delay_bars > 0:
+                    pending_signals.append(
+                        _build_pending_execution(
+                            signal,
+                            request_index,
+                            bridge_requests,
+                            execution_delay_bars,
+                        )
+                    )
+                    continue
+
+                signal_price = _first_number(
+                    signal.price, request.market_snapshot.get("close")
                 )
-                entry_price = float(open_position["entry_price"])
-                exit_price = float(fill["avg_fill_price"])
-                trade_r = (exit_price - entry_price) / entry_price
-                trades.append(
-                    {
-                        "entry_ts_ms": int(open_position["entry_ts_ms"]),
-                        "exit_ts_ms": ts_ms,
-                        "entry_price": entry_price,
-                        "exit_price": exit_price,
-                        "entry_fee": float(open_position["entry_fee"]),
-                        "exit_fee": float(fill["fees"]),
-                        "r_return": trade_r,
+                if signal_price is None:
+                    raise PrimaryBreakoutBacktestError("signal missing price")
+                ts_ms = int(request.market_event["ts_ms"])
+                volume = _first_number(request.market_snapshot.get("volume")) or 0.0
+                volatility = abs(
+                    (
+                        signal_price
+                        - _first_number(
+                            request.market_snapshot.get("close"), signal_price
+                        )
+                    )
+                    / signal_price
+                )
+
+                if signal.side == "BUY":
+                    if open_position is not None:
+                        continue
+                    fill = _simulate_trade(
+                        side="buy",
+                        price=signal_price,
+                        ts_ms=ts_ms,
+                        volume=volume,
+                        simulator=simulator,
+                        order_size=active_config.order_size,
+                        order_book_depth_multiplier=active_config.order_book_depth_multiplier,
+                        volatility=volatility,
+                    )
+                    open_position = {
+                        "entry_price": fill["avg_fill_price"],
+                        "entry_ts_ms": ts_ms,
+                        "entry_fee": fill["fees"],
                     }
-                )
-                open_position = None
+                elif signal.side == "SELL" and open_position is not None:
+                    fill = _simulate_trade(
+                        side="sell",
+                        price=signal_price,
+                        ts_ms=ts_ms,
+                        volume=volume,
+                        simulator=simulator,
+                        order_size=active_config.order_size,
+                        order_book_depth_multiplier=active_config.order_book_depth_multiplier,
+                        volatility=volatility,
+                    )
+                    entry_price = float(open_position["entry_price"])
+                    exit_price = float(fill["avg_fill_price"])
+                    trade_r = (exit_price - entry_price) / entry_price
+                    trades.append(
+                        {
+                            "entry_ts_ms": int(open_position["entry_ts_ms"]),
+                            "exit_ts_ms": ts_ms,
+                            "entry_price": entry_price,
+                            "exit_price": exit_price,
+                            "entry_fee": float(open_position["entry_fee"]),
+                            "exit_fee": float(fill["fees"]),
+                            "r_return": trade_r,
+                        }
+                    )
+                    open_position = None
+    finally:
+        if trace_writer:
+            trace_writer.close()
 
     replay_check_signature: list[dict[str, Any]] = []
     replay_position_open = False
@@ -828,6 +877,7 @@ def run_primary_breakout_backtest(
             position_open=replay_position_open,
             last_entry_ts_ms=replay_last_entry_ts_ms,
             config=active_config,
+            gate_trace_callback=None,  # Do not trace in second pass
         )
         replay_check_signature.append(_serialize_response(response))
         for signal in response.signals:
@@ -852,9 +902,7 @@ def run_primary_breakout_backtest(
         pending_signals,
     )
     data_integrity_ok = (
-        len(bridge_requests) > 0
-        and open_position is None
-        and not pending_signals
+        len(bridge_requests) > 0 and open_position is None and not pending_signals
     )
     return _build_report(
         bridge_requests=bridge_requests,

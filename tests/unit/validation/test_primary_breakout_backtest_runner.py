@@ -164,6 +164,7 @@ def test_primary_breakout_backtest_runner_surfaces_clean_end_state(
         position_open: bool,
         last_entry_ts_ms: int | None,
         config: PrimaryBreakoutBacktestRunConfig,
+        gate_trace_callback: object = None,
     ) -> tuple[StrategyAdapterResponse, int | None]:
         ts_ms = int(request.market_event["ts_ms"])
         if ts_ms == int(requests[0].market_event["ts_ms"]):
@@ -270,6 +271,7 @@ def test_primary_breakout_backtest_runner_surfaces_open_position_end_state(
         position_open: bool,
         last_entry_ts_ms: int | None,
         config: PrimaryBreakoutBacktestRunConfig,
+        gate_trace_callback: object = None,
     ) -> tuple[StrategyAdapterResponse, int | None]:
         ts_ms = int(request.market_event["ts_ms"])
         if ts_ms == int(requests[0].market_event["ts_ms"]):
@@ -396,6 +398,7 @@ def test_primary_breakout_backtest_runner_delays_execution_by_bar_index(
         position_open: bool,
         last_entry_ts_ms: int | None,
         config: PrimaryBreakoutBacktestRunConfig,
+        gate_trace_callback: object = None,
     ) -> tuple[StrategyAdapterResponse, int | None]:
         ts_ms = int(request.market_event["ts_ms"])
         if ts_ms == int(requests[0].market_event["ts_ms"]):
@@ -518,6 +521,7 @@ def test_primary_breakout_backtest_runner_fails_closed_on_out_of_range_delay(
         position_open: bool,
         last_entry_ts_ms: int | None,
         config: PrimaryBreakoutBacktestRunConfig,
+        gate_trace_callback: object = None,
     ) -> tuple[StrategyAdapterResponse, int | None]:
         if int(request.market_event["ts_ms"]) == int(requests[-1].market_event["ts_ms"]):
             return (
@@ -556,3 +560,58 @@ def test_primary_breakout_backtest_runner_fails_closed_on_out_of_range_delay(
             simulator_config={"EXECUTION_DELAY_BARS": 1},
             code_commit="a9a62be",
         )
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_gate_trace_path_is_opt_in(tmp_path: Path) -> None:
+    """Verify that without gate_trace_path, no file is created and results remain stable."""
+    candles = _candles()[:250]
+    trace_path = tmp_path / "not_created.jsonl"
+
+    # Run twice to ensure no side effects
+    report_1 = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="opt-in-test",
+    )
+    report_2 = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="opt-in-test",
+    )
+
+    assert not trace_path.exists()
+    assert report_1 == report_2
+
+
+@pytest.mark.unit
+def test_primary_breakout_backtest_runner_gate_trace_schema_and_single_pass(tmp_path: Path) -> None:
+    """Verify JSONL schema and ensure determinism pass does not double-write traces."""
+    candles = _candles()[:250]
+    trace_path = tmp_path / "gate_trace.jsonl"
+
+    run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="trace-schema-test",
+        gate_trace_path=trace_path,
+    )
+
+    assert trace_path.exists()
+    lines = trace_path.read_text(encoding="utf-8").strip().split("\n")
+
+    # Count should match bridge requests (250 candles - 240 warmup = 10 requests)
+    assert len(lines) == 10
+
+    required_fields = {
+        "request_index", "ts_ms", "symbol", "close_now", "highest_high",
+        "breakout_threshold", "breakout_buffer", "market_state_fresh",
+        "regime_fresh", "regime_id", "has_trend_regime", "entry_blocked",
+        "entry_cooldown_active", "position_open", "last_entry_ts_ms",
+        "entry_ready", "status"
+    }
+
+    for line in lines:
+        record = json.loads(line)
+        missing = required_fields - set(record.keys())
+        assert not missing, f"Missing fields in trace record: {missing}"
