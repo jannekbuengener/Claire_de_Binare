@@ -153,8 +153,8 @@ class SignalEngine:
             PriceBuffer()
         )  # Stateful pct_change calculation (Issue #345)
         self._pg_conn: Optional[psycopg2.extensions.connection] = None  # Phase 8C
-        self._high_history: dict[str, list[float]] = defaultdict(list)
-        self._low_history: dict[str, list[float]] = defaultdict(list)
+        self._high_history: dict[str, list[tuple[int, float]]] = defaultdict(list)
+        self._low_history: dict[str, list[tuple[int, float]]] = defaultdict(list)
         self._last_entry_ts_ms: dict[str, int] = {}
         self._position_open_by_symbol: dict[str, bool] = defaultdict(bool)
 
@@ -443,18 +443,25 @@ class SignalEngine:
                 return parsed
         return {}
 
-    def _append_breakout_history(self, symbol: str, high_now: float, low_now: float) -> None:
-        max_lookback = max(
+    def _update_breakout_history(
+        self, symbol: str, high_now: float, low_now: float, now_ms: int
+    ) -> None:
+        max_lookback_min = max(
             self.config.entry_lookback_minutes, self.config.exit_lookback_minutes
         )
+        limit_ms = now_ms - max_lookback_min * 60 * 1000
+
         highs = self._high_history[symbol]
         lows = self._low_history[symbol]
-        highs.append(high_now)
-        lows.append(low_now)
-        if len(highs) > max_lookback:
-            del highs[:-max_lookback]
-        if len(lows) > max_lookback:
-            del lows[:-max_lookback]
+
+        highs.append((now_ms, high_now))
+        lows.append((now_ms, low_now))
+
+        # Prune old entries
+        while highs and highs[0][0] < limit_ms:
+            highs.pop(0)
+        while lows and lows[0][0] < limit_ms:
+            lows.pop(0)
 
     def _process_primary_breakout_v1(
         self, market_data: MarketData, raw_data: dict[str, Any]
@@ -468,19 +475,37 @@ class SignalEngine:
         low_now = float(market_data.low or close_now)
         now_ms = int((market_data.timestamp or int(time.time())) * 1000)
 
-        highs = self._high_history[symbol]
-        lows = self._low_history[symbol]
-        prior_highs = highs[-self.config.entry_lookback_minutes :]
-        prior_lows = lows[-self.config.exit_lookback_minutes :]
+        # Time-based windowing
+        entry_lookback_ms = self.config.entry_lookback_minutes * 60_000
+        exit_lookback_ms = self.config.exit_lookback_minutes * 60_000
+
+        entry_limit = now_ms - entry_lookback_ms
+        exit_limit = now_ms - exit_lookback_ms
+
+        prior_high_entries = [e for e in self._high_history[symbol] if e[0] >= entry_limit]
+        prior_low_entries = [e for e in self._low_history[symbol] if e[0] >= exit_limit]
+
+        prior_highs = [p for ts, p in prior_high_entries]
+        prior_lows = [p for ts, p in prior_low_entries]
+
+        # Warmup check: Do we have at least the required history span in the CURRENT window?
+        entry_warmup_ok = (
+            bool(prior_high_entries)
+            and (now_ms - min(ts for ts, _ in prior_high_entries)) >= entry_lookback_ms
+        )
+        exit_warmup_ok = (
+            bool(prior_low_entries)
+            and (now_ms - min(ts for ts, _ in prior_low_entries)) >= exit_lookback_ms
+        )
 
         highest_high = (
             max(prior_highs)
-            if len(prior_highs) >= self.config.entry_lookback_minutes
+            if prior_highs and entry_warmup_ok
             else None
         )
         lowest_low = (
             min(prior_lows)
-            if len(prior_lows) >= self.config.exit_lookback_minutes
+            if prior_lows and exit_warmup_ok
             else None
         )
 
@@ -517,13 +542,16 @@ class SignalEngine:
             cooldown_ms = self.config.min_minutes_between_entries * 60 * 1000
             cooldown_active = now_ms - self._last_entry_ts_ms[symbol] < cooldown_ms
 
+        # Signal Logic
+        result_signal = None
+
         # Exits are allowed even when entry gates are blocked.
         if (
             self._position_open_by_symbol[symbol]
             and lowest_low is not None
             and close_now < lowest_low
         ):
-            breakout_signal = Signal(
+            result_signal = Signal(
                 signal_id=f"sig-{generate_uuid_hex(length=32)}",
                 symbol=symbol,
                 side="SELL",
@@ -537,7 +565,7 @@ class SignalEngine:
                 strategy_id=self.config.strategy_id,
                 bot_id=self.config.bot_id,
             )
-            breakout_signal.metadata = _compact_metadata(
+            result_signal.metadata = _compact_metadata(
                 {
                     "strategy_id": self.config.strategy_id,
                     "signal_reason": "channel_exit",
@@ -551,53 +579,51 @@ class SignalEngine:
                 }
             )
             self._position_open_by_symbol[symbol] = False
-            self._append_breakout_history(symbol, high_now, low_now)
-            return breakout_signal
 
-        entry_ready = (
-            highest_high is not None
-            and market_state_fresh
-            and regime_fresh
-            and has_trend_regime
-            and not entry_blocked
-            and not cooldown_active
-            and close_now > highest_high * (1 + self.config.breakout_buffer)
-        )
-        if entry_ready:
-            breakout_signal = Signal(
-                signal_id=f"sig-{generate_uuid_hex(length=32)}",
-                symbol=symbol,
-                side="BUY",
-                reason="breakout_entry",
-                timestamp=now_ms // 1000,
-                ts_ms=now_ms,
-                price=close_now,
-                pct_change=market_data.pct_change,
-                pct_change_15m=market_data.pct_change,
-                volume_15m=market_data.volume,
-                strategy_id=self.config.strategy_id,
-                bot_id=self.config.bot_id,
+        else:
+            entry_ready = (
+                highest_high is not None
+                and market_state_fresh
+                and regime_fresh
+                and has_trend_regime
+                and not entry_blocked
+                and not cooldown_active
+                and close_now > highest_high * (1 + self.config.breakout_buffer)
             )
-            breakout_signal.metadata = _compact_metadata(
-                {
-                    "strategy_id": self.config.strategy_id,
-                    "signal_reason": "breakout_entry",
-                    "regime_id": regime_id,
-                    "close_now": close_now,
-                    "highest_high": highest_high,
-                    "lowest_low": lowest_low,
-                    "entry_lookback_minutes": self.config.entry_lookback_minutes,
-                    "exit_lookback_minutes": self.config.exit_lookback_minutes,
-                    "breakout_buffer": self.config.breakout_buffer,
-                }
-            )
-            self._last_entry_ts_ms[symbol] = now_ms
-            self._position_open_by_symbol[symbol] = True
-            self._append_breakout_history(symbol, high_now, low_now)
-            return breakout_signal
+            if entry_ready:
+                result_signal = Signal(
+                    signal_id=f"sig-{generate_uuid_hex(length=32)}",
+                    symbol=symbol,
+                    side="BUY",
+                    reason="breakout_entry",
+                    timestamp=now_ms // 1000,
+                    ts_ms=now_ms,
+                    price=close_now,
+                    pct_change=market_data.pct_change,
+                    pct_change_15m=market_data.pct_change,
+                    volume_15m=market_data.volume,
+                    strategy_id=self.config.strategy_id,
+                    bot_id=self.config.bot_id,
+                )
+                result_signal.metadata = _compact_metadata(
+                    {
+                        "strategy_id": self.config.strategy_id,
+                        "signal_reason": "breakout_entry",
+                        "regime_id": regime_id,
+                        "close_now": close_now,
+                        "highest_high": highest_high,
+                        "lowest_low": lowest_low,
+                        "entry_lookback_minutes": self.config.entry_lookback_minutes,
+                        "exit_lookback_minutes": self.config.exit_lookback_minutes,
+                        "breakout_buffer": self.config.breakout_buffer,
+                    }
+                )
+                self._last_entry_ts_ms[symbol] = now_ms
+                self._position_open_by_symbol[symbol] = True
 
-        self._append_breakout_history(symbol, high_now, low_now)
-        return None
+        # Append AFTER decision
+        self._update_breakout_history(symbol, high_now, low_now, now_ms)
+        return result_signal
 
     def process_market_data(self, data: dict) -> Optional[Signal]:
         """

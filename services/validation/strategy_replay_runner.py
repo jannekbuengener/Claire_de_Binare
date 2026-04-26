@@ -220,6 +220,9 @@ class ARVPReplayConfig:
     min_minutes_between_entries: int = 60
     """Minimum cooldown between entry signals."""
 
+    gate_trace_path: Path | None = None
+    """Optional path for entry gate trace JSONL."""
+
     dry_run: bool = False
     """Validate config + input only; do not execute or write artifacts."""
 
@@ -295,6 +298,12 @@ class ARVPReplayConfig:
             raise ValueError("breakout_buffer must be >= 0")
         if self.min_minutes_between_entries < 0:
             raise ValueError("min_minutes_between_entries must be >= 0")
+
+        if self.scenario_ids and self.gate_trace_path:
+            raise ValueError(
+                "--gate-trace-path is not supported with --scenario-group (multiple scenarios "
+                "would overwrite the same trace file). Run scenarios individually to use tracing."
+            )
 
         # Scenario group validation
         if self.scenario_ids is not None:
@@ -949,6 +958,7 @@ def run_arvp_replay(config: ARVPReplayConfig) -> int:
             candles,
             run_config=run_cfg,
             code_commit=code_commit,
+            gate_trace_path=config.gate_trace_path,
         )
     except (HistoricalBridgeError, PrimaryBreakoutBacktestError) as exc:
         try:
@@ -1251,6 +1261,13 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         help=f"Adapter identifier. Default: {_DEFAULT_ADAPTER_ID!r}",
     )
     parser.add_argument(
+        "--gate-trace-path",
+        default=None,
+        metavar="PATH",
+        type=Path,
+        help="Optional path for entry gate trace JSONL.",
+    )
+    parser.add_argument(
         "--speedup-profile",
         default="instant",
         metavar="PROFILE",
@@ -1402,6 +1419,7 @@ def main() -> int:
             adapter_id=args.adapter_id,
             speedup_profile=args.speedup_profile,
             output_directory=args.output_dir,
+            gate_trace_path=args.gate_trace_path,
             dry_run=args.dry_run,
             deterministic_verify=args.deterministic_verify,
             scenario_ids=scenario_ids,

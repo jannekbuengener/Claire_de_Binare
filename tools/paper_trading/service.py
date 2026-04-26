@@ -73,10 +73,14 @@ class PaperTradingRunner:
         self.event_count = 0
         self.alert_sent_times = {}  # Debounce alerts
 
+        # Initialize email alerter first to avoid AttributeError in connection error paths
+        self.email_alerter = EmailAlerter()
+        self.redis_client = None
+        self.postgres_conn = None
+
         # Initialize connections
         self.redis_client = self._init_redis()
         self.postgres_conn = self._init_postgres()
-        self.email_alerter = EmailAlerter()
 
         # Ensure logs directory
         Path("logs").mkdir(exist_ok=True)
