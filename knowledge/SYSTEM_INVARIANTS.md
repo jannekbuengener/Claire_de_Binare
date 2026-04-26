@@ -102,11 +102,6 @@ Ein Verstoss gegen diese Regeln bedeutet **Systembruch**.
 **Pfad:** `knowledge/`, `docs/`, `agents/`, `.github/` im Repo `Claire_de_Binare`.
 **Pruefung:** Keine Default-Navigation oder Resolver duerfen ein externes Docs Repo als Pflicht voraussetzen.
 
-### INV-052: Session Hygiene
-**Regel:** Keine Session ohne Issue-Pflege.
-**Umsetzung:** Am Session-Ende mindestens ein GitHub Issue.
-**Pruefung:** CURRENT_STATUS.md referenziert aktive Issues.
-
 ---
 
 ## Verletzungsprotokoll
