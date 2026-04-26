@@ -1291,6 +1291,60 @@ class TestMainArgParse:
 
         assert captured[0].speedup_profile == "5x"
 
+    def test_gate_trace_path_flag_applied(self, tmp_path):
+        candles = [{"ts_ms": 1_000_000}]
+        f = tmp_path / "c.json"
+        f.write_text(json.dumps(candles))
+        captured = []
+        trace_path = tmp_path / "gate.jsonl"
+
+        def capture(cfg):
+            captured.append(cfg)
+            return 0
+
+        with patch(
+            "services.validation.strategy_replay_runner.run_arvp_replay",
+            side_effect=capture,
+        ):
+            with patch("sys.argv", [
+                "prog", "--input-candles", str(f), "--gate-trace-path", str(trace_path)
+            ]):
+                main()
+
+        assert captured[0].gate_trace_path == trace_path
+
+    def test_validate_fails_on_gate_trace_with_scenario_group(self):
+        cfg = ARVPReplayConfig(
+            input_candles_file="c.json",
+            scenario_ids=("baseline",),
+            gate_trace_path=Path("trace.jsonl"),
+        )
+        with pytest.raises(ValueError, match="not supported with --scenario-group"):
+            cfg.validate()
+
+    def test_run_arvp_replay_propagates_gate_trace_path(self, tmp_path):
+        from services.validation.strategy_replay_runner import run_arvp_replay
+
+        f = tmp_path / "c.json"
+        candles = [{"ts_ms": 1_000_000 + i * 60_000, "close": 100.0, "high": 101.0,
+                   "low": 99.0, "regime_id": 0, "symbol": "BTCUSDT"} for i in range(250)]
+        f.write_text(json.dumps(candles))
+
+        trace_path = tmp_path / "gate.jsonl"
+        cfg = ARVPReplayConfig(
+            input_candles_file=str(f),
+            output_directory=str(tmp_path),
+            gate_trace_path=trace_path,
+        )
+
+        with patch("services.validation.strategy_replay_runner.run_primary_breakout_backtest") as mock_bt:
+            mock_bt.return_value = _minimal_backtest_report()
+            with patch.object(ReplayReporter, "write_bundle") as mock_write:
+                mock_write.return_value = tmp_path / "bundle"
+                run_arvp_replay(cfg)
+
+                assert mock_bt.call_args.kwargs["gate_trace_path"] == trace_path
+
     def test_exit_code_semantics_0(self, tmp_path):
         candles = [{"ts_ms": 1_000_000}]
         f = tmp_path / "c.json"
