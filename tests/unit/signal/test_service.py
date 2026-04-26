@@ -489,3 +489,162 @@ def test_signal_engine_fails_closed_on_unknown_adapter_id(monkeypatch):
     with patch("service.config", test_config):
         with pytest.raises(KeyError, match="Unknown strategy adapter id"):
             SignalEngine()
+
+
+@pytest.mark.unit
+def test_lookback_time_vs_trade_count():
+    """
+    Regression: Hohe Trade-Frequenz innerhalb von Sekunden darf Lookback-Fenster (Minuten) nicht füllen.
+    """
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        symbol = "BTCUSDT"
+
+        # Sende 10 Trades innerhalb von 10 Sekunden (alle > Vorheriger High)
+        # Aber alle innerhalb derselben Minute.
+        for i in range(10):
+            payload = {
+                "symbol": symbol,
+                "timestamp": 1700000000 + i,  # +1s Schritte
+                "price": 100.0 + i,
+                "high": 100.0 + i,
+                "low": 99.0 + i,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            signal = engine.process_market_data(payload)
+            # Erwartung: Kein Signal, da Lookback 3 Min erfordert, wir aber erst 10s Historie haben.
+            # Im alten (fehlerhaften) Code waere len(highs) >= 3 erfuellt gewesen.
+            assert signal is None, f"Signal fälschlicherweise bei Trade {i} generiert (Trade-Count Drift)"
+
+
+@pytest.mark.unit
+def test_lookback_positive_time_trigger():
+    """
+    Test: Nach ausreichendem Zeitfenster (Minuten) löst Breakout BUY aus.
+    """
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        symbol = "BTCUSDT"
+        base_ts = 1700000000
+
+        # Fülle Historie über 4 Minuten (1 Trade pro Minute)
+        for i in range(4):
+            payload = {
+                "symbol": symbol,
+                "timestamp": base_ts + (i * 60),  # +1m Schritte
+                "price": 100.0 + i,
+                "high": 100.0 + i,
+                "low": 99.0 + i,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            signal = engine.process_market_data(payload)
+            if i < 3:
+                assert signal is None
+            else:
+                # Nach 3 Minuten (4. Trade bei T+3m) sollte ein Breakout möglich sein,
+                # sofern der Preis das High der letzten 3m (102.0) schlägt.
+                # Aber hier ist price=103.0 und max(prior_highs) = max(100, 101, 102) = 102.0.
+                assert signal is not None
+                assert signal.side == "BUY"
+
+
+@pytest.mark.unit
+def test_lookback_gap_regression():
+    """
+    Regression: Nach einer langen Datenlücke darf erst dann ein Signal erfolgen,
+    wenn das aktuelle Fenster zeitlich wieder gefüllt ist.
+    """
+    test_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=60,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        symbol = "BTCUSDT"
+        t0 = 1700000000
+
+        # 1. Initialer Aufbau (alt, wird später gepruned)
+        for i in range(5):
+            payload = {
+                "symbol": symbol,
+                "timestamp": t0 + i,
+                "price": 100.0,
+                "high": 100.0,
+                "low": 99.0,
+                "volume": 200000.0,
+                "risk_blocked": True,  # Verhindere BUY
+            }
+            engine.process_market_data(payload)
+
+        # 2. Lange Datenlücke (1 Stunde)
+        t_gap = t0 + 3600
+
+        # 3. Neue Trades innerhalb weniger Sekunden
+        # Erwartung: Kein BUY, da das Fenster [t_gap - 3m, t_gap] nur Daten von vor 1 Sekunde enthält.
+        for i in range(3):
+            payload = {
+                "symbol": symbol,
+                "timestamp": t_gap + i,
+                "price": 110.0,  # Deutlicher Breakout gegenüber 100.0
+                "high": 110.0,
+                "low": 109.0,
+                "volume": 200000.0,
+                "regime_id": "TREND",
+                "market_state_fresh": True,
+                "regime_fresh": True,
+            }
+            signal = engine.process_market_data(payload)
+            assert (
+                signal is None
+            ), f"Signal fälschlicherweise nach Gap bei Trade {i} generiert (Warmup Drift)"
+
+        # 4. Nach 3 Minuten (t_gap + 180s) sollte es wieder gehen
+        payload_final = {
+            "symbol": symbol,
+            "timestamp": t_gap + 180,
+            "price": 115.0,
+            "high": 115.0,
+            "low": 114.0,
+            "volume": 200000.0,
+            "regime_id": "TREND",
+            "market_state_fresh": True,
+            "regime_fresh": True,
+        }
+        signal = engine.process_market_data(payload_final)
+        assert signal is not None
+        assert signal.side == "BUY"
