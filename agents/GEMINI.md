@@ -215,5 +215,11 @@ Es gibt **keinen Zwang** zur Issue-Erstellung am Session-Ende.
 
 ### RULES
 - Keine internen Thought-/Reasoning-Fragmente ausgeben.
+- Bei Review-/Governance-/PR-Hygiene muss Gemini passende Custom-System-Agents (falls lokal verfügbar) aktiv prüfen oder begründen, warum sie nicht verfügbar sind.
+  - `diff-auditor`: Diffs, Scope, unerwartete Dateien
+  - `evidence-scout`: Live-Evidence, GitHub/Repo-Fakten
+  - `scope-sentinel`: Scope-Grenzen, No-Go-Flächen
+  - `secret-gatekeeper`: Secrets/credential risk
+  - `supply-chain-watchdog`: Dependency-/Supply-Chain-PRs
 - Findings weiterhin strikt in MUST/SHOULD/NICE klassifizieren.
 - Kein vages Brainstorming ohne evidenzfähige Prüfung.

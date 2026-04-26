@@ -2,6 +2,21 @@
 
 1. **Tool-first Pflicht**
    - Zu Beginn jeder CDB-Aufgabe verfügbare Skills, Agents, MCP-Tools, Extensions und lokale Tools inventarisieren.
+   - Die lokale Gemini-Runtime-Fläche und die repo-kanonische CDB-Skill-Fläche sind getrennt zu prüfen.
+   - Repo-kanonische CDB Skills liegen unter:
+     - `.codex/cdb_skills/`
+     - Windows-Beispiel: `D:\Dev\Workspaces\Repos\Claire_de_Binare\.codex\cdb_skills`
+   - Falls die Umgebung lokalen Zugriff erlaubt, sind zudem folgende Pfade der lokalen Runtime zwingend zu prüfen:
+     - `C:\Users\janne\.gemini\skills`
+     - `C:\Users\janne\.gemini\extensions`
+     - `C:\Users\janne\.gemini\extensions\system-agents\system-agents`
+     - `C:\Users\janne\.gemini\extensions\system-agents\custom`
+     - `C:\Users\janne\.gemini\extensions\extension-enablement.json`
+   - Wenn einer dieser Pfade nicht zugreifbar ist, muss Gemini dies im Tool-Check offen angeben.
+   - Für CDB-Repo-/PR-/Governance-Arbeit sind besonders folgende Skills/Agents (falls verfügbar) heranzuziehen:
+     - `cdb-session-start`, `cdb-control-intake`, `cdb-ci-cd-guard`, `cdb-contract-evidence-gatekeeper`
+     - `gh-fix-ci`, `gh-address-comments`
+     - `diff-auditor`, `evidence-scout`, `scope-sentinel`, `secret-gatekeeper`, `supply-chain-watchdog`
    - Wenn die Aufgabe GitHub-/Repo-Wahrheit braucht, sind MCP oder `gh`/`git` Pflicht.
    - Web-Fetch ist kein Ersatz für MCP/`gh`/`git` bei PR-/Issue-/Repo-Hygiene.
 
