@@ -16,7 +16,7 @@
 # Utilities
 # Web Framework
 aiohttp>=3.13.5
-cryptography==46.0.7
+cryptography==47.0.0
 flask==3.1.3
 werkzeug>=3.1.8  # Security: Fix CVEs in Dependabot alerts #339
 psycopg2-binary==2.9.12
