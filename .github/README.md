@@ -111,9 +111,10 @@ This folder and its docs make it navigable.
 
 **Status breakdown:**
 - Aktiv: 54
-- Manual-only: 5
-- Fail-closed geparkt: 1 (`gemini-scheduled-triage.yml`)
-- Historisch/unklar: 5 (labeling/milestone legacy flows)
+- Manual-only: 4
+- Fail-closed geparkt: 4
+- Historisch: 2
+- Frozen legacy: 1 (`ci.yaml`)
 
 `cdb-backlog-curation.yml` is a bounded issue-scoped companion workflow for qualified `issues.labeled` events (`task` or paired `type:*` + `scope:*`). It uploads `artifacts/backlog-curation/issue-<number>.json` with typed handoff classes (`must_read`, `supporting`, `background`, `constraints`, `watchouts`, `implementation_targets`) and posts a dedupe-safe receipt comment on the source issue.
 `cdb-backlog-anomaly-escalation.yml` is the separate phase-1 escalation lane. It consumes backlog-curation handoff artifacts, classifies typed anomalies fail-closed (`report_only` / `follow_up_issue` / `unclear`), blocks sensitive/private findings from public issue emission, and emits at most one dedupe-safe follow-up issue per run.

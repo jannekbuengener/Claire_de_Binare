@@ -339,7 +339,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | **Total** | **65** (aktiv 54 + manual 4 + parked 4 + historisch 2 + frozen 1 = 65... see note below) |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
-> Of the 56 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
+> Of the 54 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 
 | Status | Count |
@@ -352,7 +352,7 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | frozen legacy | 1 (`ci.yaml`) |
 | **Total** | **65** |
 
-> **Methodology note:** The current repo has 67 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
+> **Methodology note:** The current repo has 65 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
 
 ---
 
