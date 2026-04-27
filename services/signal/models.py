@@ -3,8 +3,26 @@ Signal Engine - Data Models
 Datenklassen für Market-Data (signal_engine specific)
 """
 
+import time
 from dataclasses import dataclass
 from typing import Literal, Optional
+
+
+def normalize_ts_ms(ts: int | float | None) -> int:
+    """
+    Normalizes a timestamp to milliseconds.
+    - None/0 -> current wallclock ms
+    - < 4e9 -> seconds (normalized to ms)
+    - >= 4e9 -> already ms (kept as is)
+    """
+    if ts is None or ts == 0:
+        return int(time.time() * 1000)
+
+    # Threshold 4e9 covers seconds up to year 2096
+    if ts < 4_000_000_000:
+        return int(ts * 1000)
+
+    return int(ts)
 
 
 @dataclass
@@ -119,14 +137,12 @@ class MarketData:
             if isinstance(data.get("symbol"), str)
             else data["symbol"]
         )
-        timestamp = data.get("timestamp")
-        if timestamp is None:
-            timestamp = data.get("ts_ms", 0)
+        timestamp = normalize_ts_ms(data.get("timestamp") or data.get("ts_ms"))
 
         return cls(
             symbol=symbol,
             price=float(data["price"]),
-            timestamp=int(timestamp or 0),
+            timestamp=timestamp,
             schema_version=data.get("schema_version"),
             source=data.get("source"),
             trade_qty=trade_qty,

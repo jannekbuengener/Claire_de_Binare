@@ -473,7 +473,7 @@ class SignalEngine:
         close_now = float(market_data.close or market_data.price)
         high_now = float(market_data.high or close_now)
         low_now = float(market_data.low or close_now)
-        now_ms = int((market_data.timestamp or int(time.time())) * 1000)
+        now_ms = int(market_data.timestamp or int(time.time() * 1000))
 
         # Time-based windowing
         entry_lookback_ms = self.config.entry_lookback_minutes * 60_000
