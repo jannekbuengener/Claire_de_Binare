@@ -54,7 +54,7 @@ jobs:
         run: docker info
 
       - name: Debug Trivy action version
-        run: echo "Using aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143"
+        run: echo "Using aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25"
 
       - name: Compute Trivy allowlist (Debian tracker)
         run: |
@@ -94,7 +94,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run Trivy (JSON)
-        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # v0.68.1 default trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
@@ -153,7 +153,7 @@ jobs:
           path: trivy-results.json
 
       - name: Run Trivy (SARIF)
-        uses: aquasecurity/trivy-action@876cf04c63f65e9799bcf1043b584e72469c7143 # v0.68.1 default trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.68.1 default trivy
         with:
           scan-type: "fs"
           scan-ref: "."
