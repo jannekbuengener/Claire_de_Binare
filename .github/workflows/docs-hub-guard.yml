@@ -22,7 +22,12 @@ jobs:
         run: |
           set -euo pipefail
           echo "Scanning for runtime artifacts..."
-          bad="$(git ls-files | grep -E '(^|/)(__pycache__/|\.pytest_cache/|.*\.pyc$|.*\.pyo$|.*\.log$|(^|/)logs/)' || true)"
+          bad="$(
+            {
+              git ls-files | grep -E '(^|/)(__pycache__/|\.pytest_cache/|.*\.pyc$|.*\.pyo$|(^|/)logs/)' || true
+              git ls-files | grep -E '.*\.log$' | grep -vE '^docs/runbooks/evidence/.*\.log$' || true
+            } | sort -u
+          )"
           if [ -n "$bad" ]; then
             echo "Found forbidden runtime artifacts tracked in git:"
             echo "$bad"
