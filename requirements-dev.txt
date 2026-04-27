@@ -30,7 +30,7 @@ werkzeug>=3.1.8  # Security: CVE fixes
 psycopg2-binary==2.9.12
 requests==2.33.1
 cryptography==46.0.7
-aiohttp>=3.13.3
+aiohttp>=3.13.5
 python-dateutil==2.8.2
 tabulate==0.10.0
 
