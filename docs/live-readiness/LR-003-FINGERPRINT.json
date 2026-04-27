@@ -1,14 +1,14 @@
 {
   "version": "1.0",
-  "generated_at": "2026-02-15T12:04:29.071633+00:00",
+  "generated_at": "2026-04-27T18:42:26.408894+00:00",
   "protected_files": [
     {
       "path": "docs/contracts/market_data.schema.json",
-      "sha256": "379a2a3650b1a2a1487984bfd6612e00fd6a67c7315030c2bff86915277dad30"
+      "sha256": "0001cdc89d53b3b11a0e5644c1342ac445318946757ddabb553d0c39040e0aac"
     },
     {
       "path": "docs/contracts/signal.schema.json",
-      "sha256": "7434602005a7b083f804ae526b6819ce11992fdba90420636206dc0b13267ffc"
+      "sha256": "3c404c334b314d5dab50603871e47b4b5e5baa1ea733e7cbfe7b369d5b3882a7"
     },
     {
       "path": "services/risk/reason_codes.py",
@@ -16,8 +16,8 @@
     },
     {
       "path": "tests/contract/test_decision_contract.py",
-      "sha256": "9faad4a692e5a1bcc5d555c7fd857d801a19aa675ee3c4b53f02e09434d98aa4"
+      "sha256": "1814b33b0aac4726e1cc87a100af62ffd7454860f7003767f2d3f45d7904aeb8"
     }
   ],
-  "combined_sha256": "77a19fce2661ddcc8aeb5d01904558fadee8acb29b49dc63cdf9d80fd665eb09"
+  "combined_sha256": "4302cd987081d1d5c975ad7fa415dad5ea61e318fd31e706b6071e03aac447ee"
 }
