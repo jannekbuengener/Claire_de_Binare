@@ -2,7 +2,7 @@
 
 **Repo:** Claire de Binare
 **Canon date:** 2026-05 (generated for #1640 from #1633 audit + live trigger scan)
-**Total workflow definitions:** 67 YAML files
+**Total workflow definitions:** 65 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -116,8 +116,6 @@ Only entries that differ materially from their group baseline are listed.
 | `cdb-control-followup-classifier.yml` | `perm:w-issues`, `perm:models-read` | `in:script:run_cdb_control_followup.sh`, `in:prompt:cdb-control-followup.prompt.yml` |
 | `weekly_digest.yml` | `perm:implicit` | — |
 | `weekly_digest_failure_alert.yml` | `perm:w-issues` | `in:wrun` |
-| `claude.yml` | `perm:oidc` | — |
-| `claude-code-review.yml` | `perm:oidc` | — |
 | `opencode.yml` | `perm:oidc` | — |
 | `gemini-dispatch.yml` | `perm:implicit` | — |
 | `gemini-invoke.yml` | `perm:w-issues`, `perm:w-pr`, `perm:oidc` | `in:wcall`, `in:command:gemini-invoke.toml` |
@@ -195,7 +193,7 @@ Build, test, and quality assurance automation.
 
 ---
 
-## Group 3: Spezialpfad / AI / Agent — 11 workflows
+## Group 3: Spezialpfad / AI / Agent — 9 workflows
 
 AI-backed review, triage, agent invocation, emoji automation, and MCP runtime.
 
@@ -207,8 +205,6 @@ AI-backed review, triage, agent invocation, emoji automation, and MCP runtime.
 
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
-| `claude.yml` | aktiv | PR, issues | Invoke Claude AI for issue/PR assistance | — | Issue/PR comment from Claude | O | AI-assisted; review response |
-| `claude-code-review.yml` | aktiv | PR | Claude automated code review on PRs | — | PR review comment | O | Review AI feedback |
 | `opencode.yml` | aktiv | PRcomment | Invoke OpenCode AI on PR review comment | — | PR follow-up comment | O | Review AI feedback |
 | `gemini-dispatch.yml` | aktiv | dispatch | **Noop placeholder** — does not invoke reusable Gemini sub-workflows | — | Prints placeholder only; no Gemini invocation | O | Manual trigger |
 | `gemini-invoke.yml` | aktiv | wcall | **Reusable:** Invoke Gemini AI on issue/PR | `commands/gemini-invoke.toml` | Issue/PR comment from Gemini | O | No internal caller in this repo |
@@ -335,12 +331,12 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv | 56 |
+| aktiv | 54 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
 | parked | 4 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **67** (aktiv 56 + manual 4 + parked 4 + historisch 2 + frozen 1 = 67... see note below) |
+| **Total** | **65** (aktiv 54 + manual 4 + parked 4 + historisch 2 + frozen 1 = 65... see note below) |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
 > Of the 56 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
@@ -348,13 +344,13 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv (independently triggered) | 53 |
+| aktiv (independently triggered) | 51 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
 | parked | 4 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **67** |
+| **Total** | **65** |
 
 > **Methodology note:** The current repo has 67 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
 

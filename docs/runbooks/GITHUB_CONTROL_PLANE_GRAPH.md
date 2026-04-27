@@ -132,8 +132,6 @@ graph TD
         GI[gemini-invoke.yml]
         GR[gemini-review.yml]
         GT[gemini-triage.yml]
-        CL[claude.yml]
-        CLR[claude-code-review.yml]
         OC[opencode.yml]
         EF[emoji-filter.yml]
     end
@@ -262,8 +260,6 @@ These workflows are self-contained (no `.github/scripts/` or `.github/prompts/` 
 | `e2e-happy-path.yaml` | CI |
 | `core-guard.yml` | CI |
 | `shadow-soak-evidence.yml` | CI |
-| `claude.yml` | Spezialpfad |
-| `claude-code-review.yml` | Spezialpfad |
 | `opencode.yml` | Spezialpfad |
 | `mcp_runtime.yml` | Spezialpfad |
 | `stale.yml` | Hygiene |

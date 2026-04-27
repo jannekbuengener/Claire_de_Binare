@@ -191,9 +191,7 @@ Label events (`issues: labeled`) trigger: `auto-milestone.yml`, `auto-milestone-
 ### 4.6 A policy-gate check is blocking unexpectedly
 `policy-gate.yml` classifies PRs as `docs-only` (no CI required) vs. `code` (full CI required). Its classification logic is in the YAML itself (`*.md` → docs-only). If a non-docs change is wrongly classified as docs-only, check the changed files list and the path matcher.
 
-### 4.7 Claude / Copilot isn't responding to an issue or PR
-- `claude.yml`: responds to `pull_request` + `issues` events (requires `@claude` or configured triggers)
-- `claude-code-review.yml`: fires on `pull_request` events
+### 4.7 OpenCode / Copilot isn't responding to an issue or PR
 - `opencode.yml`: fires on `pull_request_review_comment`
 Check GitHub Actions permissions for the token — AI workflows require `id-token: write`.
 
