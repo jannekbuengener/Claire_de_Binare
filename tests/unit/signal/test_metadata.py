@@ -16,6 +16,9 @@ def _primary_breakout_config(*, bot_id: str | None = "bot-1") -> SignalConfig:
         strategy_id="primary_breakout_v1",
         symbol="BTCUSDT",
         bot_id=bot_id,
+        threshold_pct=3.0,
+        lookback_minutes=15,
+        min_volume=100000.0,
         entry_lookback_minutes=240,
         exit_lookback_minutes=120,
         breakout_buffer=0.0005,
@@ -32,6 +35,9 @@ def test_build_runtime_config_snapshot_contains_expected_fields() -> None:
         "strategy_id": "primary_breakout_v1",
         "symbol": "BTCUSDT",
         "bot_id": "bot-1",
+        "threshold_pct": 3.0,
+        "lookback_minutes": 15,
+        "min_volume": 100000.0,
         "entry_lookback_minutes": 240,
         "exit_lookback_minutes": 120,
         "breakout_buffer": 0.0005,
@@ -53,6 +59,9 @@ def test_build_config_hash_is_deterministic() -> None:
         "strategy_id": "primary_breakout_v1",
         "symbol": "BTCUSDT",
         "bot_id": "bot-1",
+        "threshold_pct": 3.0,
+        "lookback_minutes": 15,
+        "min_volume": 100000.0,
         "entry_lookback_minutes": 240,
         "exit_lookback_minutes": 120,
         "breakout_buffer": 0.0005,
@@ -65,6 +74,9 @@ def test_build_config_hash_is_deterministic() -> None:
         "breakout_buffer": 0.0005,
         "exit_lookback_minutes": 120,
         "entry_lookback_minutes": 240,
+        "min_volume": 100000.0,
+        "lookback_minutes": 15,
+        "threshold_pct": 3.0,
         "bot_id": "bot-1",
         "symbol": "BTCUSDT",
         "strategy_id": "primary_breakout_v1",
@@ -79,6 +91,39 @@ def test_build_config_hash_is_deterministic_with_empty_bot_id() -> None:
 
     assert snapshot["bot_id"] == ""
     assert _build_config_hash(snapshot) == _build_config_hash(dict(snapshot))
+
+
+@pytest.mark.unit
+def test_build_config_hash_changes_when_threshold_pct_changes() -> None:
+    base_snapshot = _build_runtime_config_snapshot(_primary_breakout_config())
+    changed_snapshot = _build_runtime_config_snapshot(
+        _primary_breakout_config()
+    )
+    changed_snapshot["threshold_pct"] = 4.0
+
+    assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
+
+
+@pytest.mark.unit
+def test_build_config_hash_changes_when_min_volume_changes() -> None:
+    base_snapshot = _build_runtime_config_snapshot(_primary_breakout_config())
+    changed_snapshot = _build_runtime_config_snapshot(
+        _primary_breakout_config()
+    )
+    changed_snapshot["min_volume"] = 200000.0
+
+    assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
+
+
+@pytest.mark.unit
+def test_build_config_hash_changes_when_lookback_minutes_changes() -> None:
+    base_snapshot = _build_runtime_config_snapshot(_primary_breakout_config())
+    changed_snapshot = _build_runtime_config_snapshot(
+        _primary_breakout_config()
+    )
+    changed_snapshot["lookback_minutes"] = 30
+
+    assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
 
 
 @pytest.mark.unit
