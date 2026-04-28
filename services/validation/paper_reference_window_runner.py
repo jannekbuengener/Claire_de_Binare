@@ -35,6 +35,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--start-ts-ms", required=True, type=int)
     p.add_argument("--end-ts-ms", required=True, type=int)
     p.add_argument(
+        "--bot-id",
+        help="Optional bot_id filter applied via SIGNAL anchor metadata.",
+    )
+    p.add_argument(
+        "--config-hash",
+        help="Optional config_hash filter applied via SIGNAL anchor metadata.",
+    )
+    p.add_argument(
         "--output",
         default="artifacts/paper_reference_windows/paper_reference_window.json",
         help="Output path for paper_reference_window JSON.",
@@ -45,6 +53,21 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Extractor identifier (non-empty).",
     )
     return p.parse_args(argv)
+
+
+def _build_source_query_intent(args: argparse.Namespace) -> str:
+    qualifiers = [
+        "select correlation_ledger events by symbol+timestamp_ms window",
+        "validate payload.strategy_id",
+        "resolve bot_id/config_hash via SIGNAL anchors",
+        "enforce homogeneity+chain-integrity fail-closed",
+        "qualify paper via order_id prefix",
+    ]
+    if args.bot_id:
+        qualifiers.append(f"filter bot_id={args.bot_id}")
+    if args.config_hash:
+        qualifiers.append(f"filter config_hash={args.config_hash}")
+    return "; ".join(qualifiers)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -65,7 +88,9 @@ def main(argv: list[str] | None = None) -> int:
             start_ts_ms_utc=int(args.start_ts_ms),
             end_ts_ms_utc=int(args.end_ts_ms),
             extracted_by=str(args.extracted_by),
-            source_query_intent="select correlation_ledger events by symbol+timestamp_ms window; qualify paper via order_id prefix; validate payload.strategy_id",
+            source_query_intent=_build_source_query_intent(args),
+            bot_id=str(args.bot_id) if args.bot_id is not None else None,
+            config_hash=str(args.config_hash) if args.config_hash is not None else None,
         )
 
         conn = create_postgres_connection()
@@ -109,11 +134,11 @@ def main(argv: list[str] | None = None) -> int:
     print(
         "OK: paper_reference_window exported "
         f"(strategy_id={request.strategy_id}, symbol={request.symbol}, "
-        f"window=[{request.start_ts_ms_utc},{request.end_ts_ms_utc}])"
+        f"window=[{request.start_ts_ms_utc},{request.end_ts_ms_utc}], "
+        f"bot_id={request.bot_id or '*'}, config_hash={request.config_hash or '*'})"
     )
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
