@@ -128,6 +128,30 @@ def _build_config_hash(snapshot: dict[str, Any]) -> str:
     return canonical_hash(snapshot)
 
 
+_RESERVED_SIGNAL_METADATA_KEYS = frozenset(
+    {
+        "strategy_id",
+        "bot_id",
+        "timing",
+        "config_snapshot",
+        "config_hash",
+        "signal_reason",
+        "signal_inputs",
+    }
+)
+
+
+def _merge_candidate_signal_metadata(
+    core_metadata: dict[str, Any], candidate_signal_metadata: dict[str, Any]
+) -> dict[str, Any]:
+    merged = dict(core_metadata)
+    for key, value in candidate_signal_metadata.items():
+        if key in _RESERVED_SIGNAL_METADATA_KEYS:
+            continue
+        merged[key] = value
+    return merged
+
+
 def _build_signal_metadata(
     signal: Signal,
     *,
@@ -270,7 +294,7 @@ class SignalEngine:
             adapter_metadata = dict(candidate.metadata)
             signal_metadata = adapter_metadata.pop("signal_metadata", None)
             if isinstance(signal_metadata, dict):
-                metadata.update(signal_metadata)
+                metadata = _merge_candidate_signal_metadata(metadata, signal_metadata)
             if adapter_metadata:
                 metadata["adapter"] = adapter_metadata
         signal.metadata = _compact_metadata(metadata)
