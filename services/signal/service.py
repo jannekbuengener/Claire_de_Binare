@@ -38,6 +38,7 @@ from core.utils.uuid_gen import (
     compute_event_pk,
 )
 from core.contracts import PRIMARY_BREAKOUT_V1_STRATEGY_ID
+from core.utils.paper_probe_toggle import paper_evidence_probe_enabled
 from core.contracts.external_adapter_contracts import (
     StrategyAdapterRequest,
     StrategyAdapterResponse,
@@ -588,7 +589,7 @@ class SignalEngine:
         if not regime_fresh and "regime_fresh" in raw_data:
             regime_fresh = _as_bool(raw_data["regime_fresh"])
 
-        has_trend_regime = regime_id in {0, "TREND"}
+        has_trend_regime = regime_id in {0, "TREND"} or paper_evidence_probe_enabled()
         entry_blocked = any(
             _as_bool(raw_data.get(name))
             or _as_bool(market_state.get(name))

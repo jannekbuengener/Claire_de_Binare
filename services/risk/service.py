@@ -49,6 +49,7 @@ from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_payload
 from core.utils.redis_client import create_redis_client
 from core.utils.trace_toggle import trace_contract_v1_enabled, allow_evidence_debt
+from core.utils.paper_probe_toggle import paper_evidence_probe_enabled
 
 if TYPE_CHECKING:
     from core.replay.publisher import EnvelopePublisher
@@ -349,7 +350,8 @@ def decide_trade(
     if regime_id is None or regime_id not in {0, 1, 2, 3}:
         return DECISION_BLOCK, RC_001, evidence
     if regime_id in {2, 3}:
-        return DECISION_BLOCK, RC_001, evidence
+        if not paper_evidence_probe_enabled():
+            return DECISION_BLOCK, RC_001, evidence
 
     # 4) Signal
     if symbol is None or symbol == "" or pct_change_15m is None or volume_15m is None:
@@ -358,15 +360,22 @@ def decide_trade(
         pct_change_15m < DECISION_THRESHOLDS["signal_pct_change_15m_min"]
         or volume_15m < DECISION_THRESHOLDS["signal_volume_15m_min"]
     ):
-        return DECISION_BLOCK, RC_010, evidence
+        if not paper_evidence_probe_enabled():
+            return DECISION_BLOCK, RC_010, evidence
 
     # 5) Portfolio/Execution
     if daily_drawdown_pct is None:
-        return DECISION_BLOCK, RC_020, evidence
+        if paper_evidence_probe_enabled():
+            daily_drawdown_pct = 0.0
+        else:
+            return DECISION_BLOCK, RC_020, evidence
     if daily_drawdown_pct >= DECISION_THRESHOLDS["daily_drawdown_pct_max"]:
         return DECISION_BLOCK, RC_020, evidence
     if total_exposure_pct is None:
-        return DECISION_BLOCK, RC_021, evidence
+        if paper_evidence_probe_enabled():
+            total_exposure_pct = 0.0
+        else:
+            return DECISION_BLOCK, RC_021, evidence
     if total_exposure_pct >= DECISION_THRESHOLDS["total_exposure_pct_max"]:
         return DECISION_BLOCK, RC_021, evidence
     # RC_022: Slippage check - skip ONLY if market_health not available
@@ -1761,10 +1770,11 @@ class RiskManager:
         if risk_off_active and not self._is_reduce_only_allowed(signal):
             # Early-Live exception: allow small allocations despite risk_off
             if not self._is_early_live_exception(signal.strategy_id):
-                logger.warning("Signal blockiert: Risk-Off Reduce-Only")
-                stats["orders_blocked"] += 1
-                risk_state.signals_blocked += 1
-                return None
+                if not paper_evidence_probe_enabled():
+                    logger.warning("Signal blockiert: Risk-Off Reduce-Only")
+                    stats["orders_blocked"] += 1
+                    risk_state.signals_blocked += 1
+                    return None
 
         # Layer 1: Circuit Breaker
         ok, reason = self.check_drawdown_limit()
