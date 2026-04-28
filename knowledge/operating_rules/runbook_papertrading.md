@@ -73,6 +73,67 @@ curl http://localhost:8004/health
 
 ---
 
+## Paper-Capture Checkpoint Time-Integrity
+
+**Grundregel:** Paper-Capture läuft gegen reale Marktzeit. ARVP-Replay darf beschleunigen. Paper-Monitoring darf es nicht. Kein Agent darf Monitoring-Zeit simulieren oder vorspulen.
+
+### Checkpoint-Typen (verbindlich)
+
+Jeder Monitoring-Report muss exakt einen dieser Typen deklarieren:
+
+| Typ | Bedingung | Bedeutung |
+|---|---|---|
+| `instant_snapshot` | Kein vorangegangener Checkpoint bekannt, oder `real_elapsed_time` < konfiguriertes Intervall | Momentaufnahme ohne Zeitverfluss-Aussage; kein Zyklus-Abschluss |
+| `real_elapsed_checkpoint` | `real_elapsed_time >= konfiguriertes Intervall`, belegbar durch Zeitstempel-Delta | Echter Monitoring-Zyklus abgeschlossen |
+| `scheduled_follow_up_needed` | Checkpoint initiiert, konfiguriertes Intervall noch nicht abgelaufen | Nächster Check ausstehend; Wecker noch nicht erreicht |
+
+Fehlt die Typdeklaration → Default: `instant_snapshot` (fail-closed).
+
+### Pflichtfelder pro Checkpoint-Report
+
+```yaml
+checkpoint_type: instant_snapshot | real_elapsed_checkpoint | scheduled_follow_up_needed
+checkpoint_started_at: "<ISO8601>"        # Zeitpunkt des letzten vorherigen Checks (oder "unknown" wenn nicht bekannt)
+checkpoint_observed_at: "<ISO8601>"       # Zeitpunkt dieses Checks
+real_elapsed_time: "<HH:MM:SS>"           # Differenz observed_at - started_at; "unknown" wenn started_at fehlt
+next_real_checkpoint_due_at: "<ISO8601>"  # Wann ist der nächste echte Zyklus fällig; "TBD" wenn Wecker nicht gestellt
+```
+
+### Stop-Bedingung für Agenten
+
+Ein Agent darf einen Report **nur als `real_elapsed_checkpoint`** klassifizieren, wenn **alle drei Bedingungen** erfüllt sind:
+
+1. `checkpoint_started_at` ist bekannt und belegt.
+2. `checkpoint_observed_at` ist der tatsächliche Zeitpunkt des aktuellen Checks.
+3. `real_elapsed_time = checkpoint_observed_at - checkpoint_started_at >= konfiguriertes Monitoring-Intervall`.
+
+Fehlt eine dieser Bedingungen → Typ zwingend `instant_snapshot`, auch wenn das Intervall nominell "abgelaufen" sein könnte.
+
+### Verbote (absolut)
+
+- Kein Agent darf einen 30-Minuten-, 60-Minuten- oder 120-Minuten-Checkpoint als abgeschlossen melden, ohne dass `real_elapsed_time >= Intervall` aus belegbaren Zeitstempeln ableitbar ist.
+- Kein Agent darf fehlende Zeitdaten durch Annahmen ersetzen.
+- Checkpoint-Berichte ohne `checkpoint_type`-Deklaration gelten als `instant_snapshot`.
+- Eine Kette von `instant_snapshot`-Reports ersetzt keinen `real_elapsed_checkpoint`.
+
+### Freigabe-Regel (Operator)
+
+Der Operator bestätigt einen Monitoring-Zyklus als abgeschlossen, wenn:
+
+- ein realer Wecker oder eine externe Zeitreferenz den Ablauf des Intervalls bestätigt, **oder**
+- der Zeitstempel-Delta zwischen zwei aufeinanderfolgenden Checkpoint-Kommentaren das konfigurierte Intervall nachweislich überschreitet.
+
+### Trennung Paper-Capture / ARVP-Replay
+
+| Modus | Zeitbasis | Monitoring |
+|---|---|---|
+| Paper-Capture | **Reale Marktzeit** | Checkpoints müssen reale Zeit belegen |
+| ARVP-Replay | Beschleunigt (simuliert) | Separater Kontext; keine Paper-Capture-Aussage |
+
+Diese Modi dürfen in Checkpoint-Reports **nicht** vermischt werden. Ein ARVP-Replay-Ergebnis ist kein Ersatz für einen Paper-Capture-Checkpoint.
+
+---
+
 ## Configuration
 
 ### Environment Variables
