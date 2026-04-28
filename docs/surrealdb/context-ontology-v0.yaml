@@ -1,0 +1,360 @@
+schema_version: "0.1"
+status: "draft"
+authority:
+  epic: 1976
+  issue: 2038
+  depends_on:
+    - 1980
+guardrails:
+  - "Board-Stage darf nie als Live-Readiness-Go modelliert werden"
+  - "CURRENT_STATUS darf nie als Live-Wahrheit modelliert werden"
+  - "Keine Echtgeld-/Live-Freigabe ableiten"
+  - "Kein Runtime-Umbau"
+  - "Keine produktive SurrealDB-Aktivierung"
+  - "Kein Trading-State"
+  - "Keine Secrets"
+concepts:
+  - canonical_name: "Agent Memory"
+    definition: "Scoped persistence layer for agent experiences, session context, and learned patterns within the Context Intelligence System."
+    aliases:
+      - "agent_mem"
+      - "memory"
+    must_not_mean:
+      - "Kein Runtime-Trading-State"
+      - "Kein Live-Positions-Tracker"
+    related_concepts:
+      - "Context Briefing"
+      - "Evidence Fabric"
+      - "Decision Graph"
+    required_evidence:
+      - "Agent session logs (paper/shadow only)"
+      - "Memory read/write audit trail"
+    related_gates:
+      - "Human-GO for memory scope changes"
+
+  - canonical_name: "Agent OS"
+    definition: "Framework for structured interaction between Context Intelligence System and agent runtimes, defining contracts and lifecycle."
+    aliases:
+      - "agent_operating_system"
+      - "aOS"
+    must_not_mean:
+      - "Kein Trading-Executor"
+      - "Kein Live-Order-Router"
+    related_concepts:
+      - "Context Tools"
+      - "MCP Bridge"
+      - "Agent Memory"
+    required_evidence:
+      - "Agent OS specification document"
+      - "Interface contract definitions"
+    related_gates:
+      - "Human-GO for agent runtime activation"
+
+  - canonical_name: "Context Briefing"
+    definition: "Task-specific context package generated for agents, containing relevant knowledge, evidence, and impact analysis."
+    aliases:
+      - "briefing"
+      - "context_pack"
+    must_not_mean:
+      - "Kein Live-Trading-Signal"
+      - "Keine Order-Empfehlung"
+    related_concepts:
+      - "Agent Memory"
+      - "Impact Radar"
+      - "Evidence Fabric"
+    required_evidence:
+      - "Briefing generation logs"
+      - "Source hash references"
+    related_gates:
+      - "Human-GO for production briefing templates"
+
+  - canonical_name: "Contradiction Detection"
+    definition: "System capability to identify conflicts between documentation, code, evidence, and operational reality."
+    aliases:
+      - "contradiction"
+      - "conflict_detection"
+    must_not_mean:
+      - "Kein Trading-Signal-Generator"
+      - "Keine automatische Korrektur"
+    related_concepts:
+      - "Evidence Fabric"
+      - "Scope Drift"
+      - "Self-Explanation"
+    required_evidence:
+      - "Contradiction detection logs"
+      - "Source comparison artifacts"
+    related_gates:
+      - "Human-GO for contradiction resolution"
+
+  - canonical_name: "Decision Contract"
+    definition: "Formalized decision record with explicit justification, evidence bundle, and audit trail for governance compliance."
+    aliases:
+      - "decision"
+      - "contract"
+    must_not_mean:
+      - "Kein Trading-Entscheidungs-Executor"
+      - "Keine automatische Order-Ausfuehrung"
+    related_concepts:
+      - "Evidence Bundle"
+      - "Governance Gate"
+      - "Human GO"
+    required_evidence:
+      - "Decision record with hash-backed evidence"
+      - "Audit log entry"
+    related_gates:
+      - "Governance Gate"
+      - "Human-GO for substantial decisions"
+
+  - canonical_name: "Decision Debt"
+    definition: "Accumulated unmade, deferred, or undocumented decisions that create governance risk and operational uncertainty."
+    aliases:
+      - "debt"
+      - "decision_lag"
+    must_not_mean:
+      - "Kein Trading-Stop-Signal"
+      - "Keine automatische Blockade"
+    related_concepts:
+      - "Governance Gate"
+      - "Evidence Fabric"
+      - "Scope Drift"
+    required_evidence:
+      - "Decision debt register"
+      - "Deferred decision log"
+    related_gates:
+      - "Governance Gate for debt threshold"
+
+  - canonical_name: "Evidence Bundle"
+    definition: "Structured collection of proof artifacts (hashes, logs, documents) that supports a claim, decision, or governance state."
+    aliases:
+      - "bundle"
+      - "evidence_pack"
+    must_not_mean:
+      - "Kein Trading-Performance-Proof"
+      - "Keine Live-PnL-Evidenz"
+    related_concepts:
+      - "Decision Contract"
+      - "Evidence Fabric"
+      - "Claim Model"
+    required_evidence:
+      - "Bundle manifest with source hashes"
+      - "Artifact integrity verification"
+    related_gates:
+      - "Governance Gate for evidence sufficiency"
+
+  - canonical_name: "Evidence Fabric"
+    definition: "Connected, queryable web of evidence linking claims, decisions, code, documentation, and operational artifacts."
+    aliases:
+      - "fabric"
+      - "evidence_graph"
+    must_not_mean:
+      - "Kein Trading-Data-Warehouse"
+      - "Kein Live-Market-Data-Store"
+    related_concepts:
+      - "Evidence Bundle"
+      - "Decision Graph"
+      - "Claim Model"
+    required_evidence:
+      - "Graph relationship manifest"
+      - "Evidence provenance trail"
+    related_gates:
+      - "Human-GO for fabric schema changes"
+
+  - canonical_name: "Governance Gate"
+    definition: "Explicit checkpoint requiring validation, evidence review, and/or human authorization before progression to next state."
+    aliases:
+      - "gate"
+      - "checkpoint"
+    must_not_mean:
+      - "Kein Live-Trading-Gate"
+      - "Keine automatische Freigabe"
+    related_concepts:
+      - "Human GO"
+      - "No-Go"
+      - "Decision Contract"
+    required_evidence:
+      - "Gate passage log"
+      - "Evidence bundle reference"
+    related_gates:
+      - "Self-referencing: must be explicitly passed"
+
+  - canonical_name: "Human GO"
+    definition: "Explicit human authorization required for substantial system changes, data mutations, or state transitions."
+    aliases:
+      - "GO"
+      - "human_authorization"
+    must_not_mean:
+      - "Kein automatisches GO durch Board-Stage"
+      - "Kein implizites GO durch Systemstatus"
+    related_concepts:
+      - "Governance Gate"
+      - "No-Go"
+      - "Live-Readiness"
+    required_evidence:
+      - "Explicit human authorization record"
+      - "Decision contract with human signature"
+    related_gates:
+      - "Governance Gate requiring Human-GO"
+
+  - canonical_name: "Impact Radar"
+    definition: "Analytical capability to detect and assess the downstream effects of changes across the system, codebase, and documentation."
+    aliases:
+      - "radar"
+      - "impact_analysis"
+    must_not_mean:
+      - "Kein Trading-Impact-Predictor"
+      - "Keine Live-Risk-Bewertung"
+    related_concepts:
+      - "Context Briefing"
+      - "Dependency Graph"
+      - "Scope Drift"
+    required_evidence:
+      - "Impact analysis report"
+      - "Dependency edge verification"
+    related_gates:
+      - "Human-GO for production radar activation"
+
+  - canonical_name: "Live-Readiness"
+    definition: "Operational phase status indicating system capability for live trading, gated by explicit evidence, audits, and human authorization."
+    aliases:
+      - "LR"
+      - "live_status"
+    must_not_mean:
+      - "Kein Board-Stage trade-capable"
+      - "Kein implizites GO durch Stage-Erreichung"
+    related_concepts:
+      - "Human GO"
+      - "No-Go"
+      - "Governance Gate"
+    required_evidence:
+      - "LR-AUDIT-STATUS document"
+      - "Live-Readiness evidence bundle"
+    related_gates:
+      - "Governance Gate for LR-Go"
+      - "Human-GO for Live-Readiness"
+
+  - canonical_name: "No-Go"
+    definition: "Explicit denial, blockade, or stop condition preventing progression, activation, or live operation."
+    aliases:
+      - "halt"
+      - "block"
+    must_not_mean:
+      - "Kein Trading-Stop-Loss"
+      - "Keine automatische Order-Blockade"
+    related_concepts:
+      - "Human GO"
+      - "Governance Gate"
+      - "Live-Readiness"
+    required_evidence:
+      - "No-Go declaration with rationale"
+      - "Block condition documentation"
+    related_gates:
+      - "Governance Gate enforcing No-Go"
+
+  - canonical_name: "Paper Reference"
+    definition: "Trading strategy execution against historical data without real money, used for validation, testing, and replay."
+    aliases:
+      - "paper"
+      - "backtest"
+    must_not_mean:
+      - "Kein Live-Trading"
+      - "Keine Echtgeld-Aktivierung"
+    related_concepts:
+      - "Replay"
+      - "Shadow Mode"
+      - "Live-Readiness"
+    required_evidence:
+      - "Paper trading logs"
+      - "Strategy validation report"
+    related_gates:
+      - "Human-GO for paper-to-live transition"
+
+  - canonical_name: "Replay"
+    definition: "Re-execution of trading strategies or system decisions against historical data for validation, debugging, and audit."
+    aliases:
+      - "replay_run"
+      - "historical_execution"
+    must_not_mean:
+      - "Kein Live-Trading"
+      - "Keine Echtgeld-Ausfuehrung"
+    related_concepts:
+      - "Paper Reference"
+      - "Evidence Fabric"
+      - "Decision Graph"
+    required_evidence:
+      - "Replay execution report"
+      - "Deterministic replay verification"
+    related_gates:
+      - "Human-GO for replay-based decisions"
+
+  - canonical_name: "Risk Surface"
+    definition: "Quantified map of system exposures, vulnerabilities, and risk vectors across code, infrastructure, and operational domains."
+    aliases:
+      - "risk_map"
+      - "exposure_surface"
+    must_not_mean:
+      - "Kein Live-Trading-Risk-Management"
+      - "Keine Echtgeld-Risk-Engine"
+    related_concepts:
+      - "Evidence Fabric"
+      - "Impact Radar"
+      - "Governance Gate"
+    required_evidence:
+      - "Risk surface assessment"
+      - "Exposure quantification report"
+    related_gates:
+      - "Governance Gate for risk threshold"
+
+  - canonical_name: "Scope Drift"
+    definition: "Uncontrolled expansion beyond defined project boundaries, mission scope, or architectural intent without explicit authorization."
+    aliases:
+      - "drift"
+      - "scope_creep"
+    must_not_mean:
+      - "Kein Trading-Strategy-Drift"
+      - "Keine automatische Scope-Erweiterung"
+    related_concepts:
+      - "Governance Gate"
+      - "Decision Debt"
+      - "Contradiction Detection"
+    required_evidence:
+      - "Scope drift detection log"
+      - "Mission boundary comparison"
+    related_gates:
+      - "Governance Gate for scope change"
+      - "Human-GO for scope expansion"
+
+  - canonical_name: "Self-Explanation"
+    definition: "System capability to provide traceable, evidence-backed rationale for its outputs, recommendations, and state."
+    aliases:
+      - "explanation"
+      - "rationale"
+    must_not_mean:
+      - "Kein Trading-Signal-Grund"
+      - "Keine Order-Rechtfertigung"
+    related_concepts:
+      - "Contradiction Detection"
+      - "Evidence Fabric"
+      - "Decision Contract"
+    required_evidence:
+      - "Explanation trace log"
+      - "Source hash reference"
+    related_gates:
+      - "Human-GO for explanation layer activation"
+
+  - canonical_name: "Shadow Mode"
+    definition: "System operates in parallel to production without executing real trades, used for validation, comparison, and safe observation."
+    aliases:
+      - "shadow"
+      - "parallel_run"
+    must_not_mean:
+      - "Kein Live-Trading"
+      - "Keine Echtgeld-Order"
+    related_concepts:
+      - "Paper Reference"
+      - "Replay"
+      - "Live-Readiness"
+    required_evidence:
+      - "Shadow mode execution logs"
+      - "Parallel run comparison report"
+    related_gates:
+      - "Human-GO for shadow-to-live transition"
