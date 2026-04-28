@@ -24,6 +24,8 @@ def _primary_breakout_config(*, bot_id: str | None = "bot-1") -> SignalConfig:
         breakout_buffer=0.0005,
         min_minutes_between_entries=60,
         trade_side_mode="long_only",
+        market_state_key_prefix="market_state",
+        market_state_staleness_s=30,
     )
 
 
@@ -43,6 +45,8 @@ def test_build_runtime_config_snapshot_contains_expected_fields() -> None:
         "breakout_buffer": 0.0005,
         "min_minutes_between_entries": 60,
         "trade_side_mode": "long_only",
+        "market_state_key_prefix": "market_state",
+        "market_state_staleness_s": 30,
     }
 
 
@@ -67,8 +71,12 @@ def test_build_config_hash_is_deterministic() -> None:
         "breakout_buffer": 0.0005,
         "min_minutes_between_entries": 60,
         "trade_side_mode": "long_only",
+        "market_state_key_prefix": "market_state",
+        "market_state_staleness_s": 30,
     }
     snapshot_b = {
+        "market_state_staleness_s": 30,
+        "market_state_key_prefix": "market_state",
         "trade_side_mode": "long_only",
         "min_minutes_between_entries": 60,
         "breakout_buffer": 0.0005,
@@ -122,6 +130,28 @@ def test_build_config_hash_changes_when_lookback_minutes_changes() -> None:
         _primary_breakout_config()
     )
     changed_snapshot["lookback_minutes"] = 30
+
+    assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
+
+
+@pytest.mark.unit
+def test_build_config_hash_changes_when_market_state_key_prefix_changes() -> None:
+    base_snapshot = _build_runtime_config_snapshot(_primary_breakout_config())
+    changed_snapshot = _build_runtime_config_snapshot(
+        _primary_breakout_config()
+    )
+    changed_snapshot["market_state_key_prefix"] = "shadow_market_state"
+
+    assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
+
+
+@pytest.mark.unit
+def test_build_config_hash_changes_when_market_state_staleness_changes() -> None:
+    base_snapshot = _build_runtime_config_snapshot(_primary_breakout_config())
+    changed_snapshot = _build_runtime_config_snapshot(
+        _primary_breakout_config()
+    )
+    changed_snapshot["market_state_staleness_s"] = 45
 
     assert _build_config_hash(base_snapshot) != _build_config_hash(changed_snapshot)
 

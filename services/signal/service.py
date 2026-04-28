@@ -123,6 +123,8 @@ def _build_runtime_config_snapshot(config: SignalConfig) -> dict[str, Any]:
             "breakout_buffer": config.breakout_buffer,
             "min_minutes_between_entries": config.min_minutes_between_entries,
             "trade_side_mode": config.trade_side_mode,
+            "market_state_key_prefix": config.market_state_key_prefix,
+            "market_state_staleness_s": config.market_state_staleness_s,
         }
     )
 
