@@ -16,7 +16,7 @@ if str(services_path) not in sys.path:
     sys.path.insert(0, str(services_path))
 
 # Import from signal service package
-from service import SignalEngine
+from service import SignalEngine, _build_config_hash, _build_runtime_config_snapshot
 from config import SignalConfig
 from models import MarketData, Signal
 from core.contracts.external_adapter_contracts import (
@@ -321,6 +321,10 @@ def test_primary_breakout_v1_generates_buy_signal_on_breakout():
         assert breakout.side == "BUY"
         assert breakout.strategy_id == "primary_breakout_v1"
         assert breakout.reason == "breakout_entry"
+        assert breakout.metadata is not None
+        expected_snapshot = _build_runtime_config_snapshot(test_config)
+        assert breakout.metadata["config_snapshot"] == expected_snapshot
+        assert breakout.metadata["config_hash"] == _build_config_hash(expected_snapshot)
 
 
 @pytest.mark.unit
@@ -430,6 +434,106 @@ def test_primary_breakout_v1_emits_sell_even_when_entry_is_blocked():
         assert exit_signal is not None
         assert exit_signal.side == "SELL"
         assert exit_signal.reason == "channel_exit"
+        assert exit_signal.metadata is not None
+        expected_snapshot = _build_runtime_config_snapshot(test_config)
+        assert exit_signal.metadata["config_snapshot"] == expected_snapshot
+        assert exit_signal.metadata["config_hash"] == _build_config_hash(
+            expected_snapshot
+        )
+
+
+@pytest.mark.unit
+def test_signal_from_candidate_contains_config_snapshot_and_hash():
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        bot_id="audit-bot",
+        entry_lookback_minutes=5,
+        exit_lookback_minutes=3,
+        breakout_buffer=0.01,
+        min_minutes_between_entries=15,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        signal = engine._signal_from_candidate(
+            StrategySignalCandidate(
+                strategy_id="test_strategy",
+                symbol="ETHUSDT",
+                side="BUY",
+                reason="Momentum candidate",
+                price=42.0,
+                pct_change=1.23,
+            ),
+            MarketData(
+                symbol="ETHUSDT",
+                price=42.0,
+                timestamp=1700000000,
+                pct_change=1.23,
+                volume=500000.0,
+            ),
+        )
+
+    expected_snapshot = _build_runtime_config_snapshot(test_config)
+    assert signal.metadata is not None
+    assert signal.metadata["config_snapshot"] == expected_snapshot
+    assert signal.metadata["config_hash"] == _build_config_hash(expected_snapshot)
+
+
+@pytest.mark.unit
+def test_signal_from_candidate_protects_reserved_audit_metadata():
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        bot_id="audit-bot",
+        entry_lookback_minutes=5,
+        exit_lookback_minutes=3,
+        breakout_buffer=0.01,
+        min_minutes_between_entries=15,
+        trade_side_mode="long_only",
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        signal = engine._signal_from_candidate(
+            StrategySignalCandidate(
+                strategy_id="test_strategy",
+                symbol="ETHUSDT",
+                side="BUY",
+                reason="Momentum candidate",
+                price=42.0,
+                pct_change=1.23,
+                metadata={
+                    "signal_metadata": {
+                        "config_hash": "evil",
+                        "config_snapshot": {"strategy_id": "evil"},
+                        "strategy_id": "evil",
+                        "bot_id": "evil",
+                        "timing": {"signal_ts_ms": 1},
+                        "regime_id": "TREND",
+                        "custom_marker": "adapter-ok",
+                    }
+                },
+            ),
+            MarketData(
+                symbol="ETHUSDT",
+                price=42.0,
+                timestamp=1700000000,
+                pct_change=1.23,
+                volume=500000.0,
+            ),
+        )
+
+    expected_snapshot = _build_runtime_config_snapshot(test_config)
+    assert signal.metadata is not None
+    assert signal.metadata["config_hash"] == _build_config_hash(expected_snapshot)
+    assert signal.metadata["config_snapshot"] == expected_snapshot
+    assert signal.metadata["strategy_id"] == "test_strategy"
+    assert signal.metadata["bot_id"] == "audit-bot"
+    assert signal.metadata["timing"]["signal_ts_ms"] == signal.ts_ms
+    assert signal.metadata["regime_id"] == "TREND"
+    assert signal.metadata["custom_marker"] == "adapter-ok"
 
 
 @pytest.mark.unit

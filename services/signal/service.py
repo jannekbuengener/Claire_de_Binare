@@ -29,6 +29,7 @@ from pathlib import Path
 import psycopg2
 import psycopg2.extensions
 
+from core.replay.canonical_json import canonical_hash
 from core.utils.clock import utcnow
 from core.utils.redis_payload import sanitize_signal
 from core.utils.uuid_gen import (
@@ -49,7 +50,7 @@ from core.contracts.external_adapter_registry import (
 )
 
 try:
-    from .config import config
+    from .config import SignalConfig, config
     from .models import MarketData, Signal
     from .price_buffer import PriceBuffer
 except ImportError:
@@ -57,7 +58,7 @@ except ImportError:
     repo_root = Path(__file__).resolve().parents[2]
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from services.signal.config import config
+    from services.signal.config import SignalConfig, config
     from services.signal.models import MarketData, Signal
     from services.signal.price_buffer import PriceBuffer
 
@@ -108,7 +109,60 @@ def _compact_metadata(value):
     return value
 
 
-def _build_signal_metadata(signal: Signal) -> dict:
+def _build_runtime_config_snapshot(config: SignalConfig) -> dict[str, Any]:
+    return _compact_metadata(
+        {
+            "strategy_id": config.strategy_id,
+            "symbol": config.symbol,
+            "bot_id": config.bot_id or "",
+            "threshold_pct": config.threshold_pct,
+            "lookback_minutes": config.lookback_minutes,
+            "min_volume": config.min_volume,
+            "entry_lookback_minutes": config.entry_lookback_minutes,
+            "exit_lookback_minutes": config.exit_lookback_minutes,
+            "breakout_buffer": config.breakout_buffer,
+            "min_minutes_between_entries": config.min_minutes_between_entries,
+            "trade_side_mode": config.trade_side_mode,
+            "market_state_key_prefix": config.market_state_key_prefix,
+            "market_state_staleness_s": config.market_state_staleness_s,
+        }
+    )
+
+
+def _build_config_hash(snapshot: dict[str, Any]) -> str:
+    return canonical_hash(snapshot)
+
+
+_RESERVED_SIGNAL_METADATA_KEYS = frozenset(
+    {
+        "strategy_id",
+        "bot_id",
+        "timing",
+        "config_snapshot",
+        "config_hash",
+        "signal_reason",
+        "signal_inputs",
+    }
+)
+
+
+def _merge_candidate_signal_metadata(
+    core_metadata: dict[str, Any], candidate_signal_metadata: dict[str, Any]
+) -> dict[str, Any]:
+    merged = dict(core_metadata)
+    for key, value in candidate_signal_metadata.items():
+        if key in _RESERVED_SIGNAL_METADATA_KEYS:
+            continue
+        merged[key] = value
+    return merged
+
+
+def _build_signal_metadata(
+    signal: Signal,
+    *,
+    config_snapshot: dict[str, Any],
+    config_hash: str,
+) -> dict:
     return _compact_metadata(
         {
             "strategy_id": signal.strategy_id,
@@ -123,6 +177,8 @@ def _build_signal_metadata(signal: Signal) -> dict:
             "timing": {
                 "signal_ts_ms": signal.ts_ms,
             },
+            "config_snapshot": config_snapshot,
+            "config_hash": config_hash,
         }
     )
 
@@ -213,6 +269,8 @@ class SignalEngine:
         self, candidate: StrategySignalCandidate, market_data: MarketData
     ) -> Signal:
         now_ms = int(time.time() * 1000)
+        config_snapshot = _build_runtime_config_snapshot(self.config)
+        config_hash = _build_config_hash(config_snapshot)
         signal = Signal(
             signal_id=f"sig-{generate_uuid_hex(length=32)}",
             symbol=candidate.symbol,
@@ -232,12 +290,16 @@ class SignalEngine:
             bot_id=self.config.bot_id,
             confidence=candidate.confidence,
         )
-        metadata = _build_signal_metadata(signal)
+        metadata = _build_signal_metadata(
+            signal,
+            config_snapshot=config_snapshot,
+            config_hash=config_hash,
+        )
         if candidate.metadata:
             adapter_metadata = dict(candidate.metadata)
             signal_metadata = adapter_metadata.pop("signal_metadata", None)
             if isinstance(signal_metadata, dict):
-                metadata.update(signal_metadata)
+                metadata = _merge_candidate_signal_metadata(metadata, signal_metadata)
             if adapter_metadata:
                 metadata["adapter"] = adapter_metadata
         signal.metadata = _compact_metadata(metadata)
@@ -470,6 +532,8 @@ class SignalEngine:
         if symbol != self.config.symbol:
             return None
 
+        config_snapshot = _build_runtime_config_snapshot(self.config)
+        config_hash = _build_config_hash(config_snapshot)
         close_now = float(market_data.close or market_data.price)
         high_now = float(market_data.high or close_now)
         low_now = float(market_data.low or close_now)
@@ -567,8 +631,11 @@ class SignalEngine:
             )
             result_signal.metadata = _compact_metadata(
                 {
-                    "strategy_id": self.config.strategy_id,
-                    "signal_reason": "channel_exit",
+                    **_build_signal_metadata(
+                        result_signal,
+                        config_snapshot=config_snapshot,
+                        config_hash=config_hash,
+                    ),
                     "regime_id": regime_id,
                     "close_now": close_now,
                     "highest_high": highest_high,
@@ -576,6 +643,8 @@ class SignalEngine:
                     "entry_lookback_minutes": self.config.entry_lookback_minutes,
                     "exit_lookback_minutes": self.config.exit_lookback_minutes,
                     "breakout_buffer": self.config.breakout_buffer,
+                    "min_minutes_between_entries": self.config.min_minutes_between_entries,
+                    "trade_side_mode": self.config.trade_side_mode,
                 }
             )
             self._position_open_by_symbol[symbol] = False
@@ -607,8 +676,11 @@ class SignalEngine:
                 )
                 result_signal.metadata = _compact_metadata(
                     {
-                        "strategy_id": self.config.strategy_id,
-                        "signal_reason": "breakout_entry",
+                        **_build_signal_metadata(
+                            result_signal,
+                            config_snapshot=config_snapshot,
+                            config_hash=config_hash,
+                        ),
                         "regime_id": regime_id,
                         "close_now": close_now,
                         "highest_high": highest_high,
@@ -616,6 +688,8 @@ class SignalEngine:
                         "entry_lookback_minutes": self.config.entry_lookback_minutes,
                         "exit_lookback_minutes": self.config.exit_lookback_minutes,
                         "breakout_buffer": self.config.breakout_buffer,
+                        "min_minutes_between_entries": self.config.min_minutes_between_entries,
+                        "trade_side_mode": self.config.trade_side_mode,
                     }
                 )
                 self._last_entry_ts_ms[symbol] = now_ms
