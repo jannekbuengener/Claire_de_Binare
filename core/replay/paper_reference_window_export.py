@@ -94,7 +94,7 @@ def _resolve_signal_bot_id(payload: Mapping[str, Any]) -> str:
         raise PaperReferenceExportError(
             "payload.metadata.config_snapshot.bot_id must be a string"
         )
-    return snapshot_bot_id
+    return snapshot_bot_id.strip()
 
 
 def _resolve_signal_config_hash(payload: Mapping[str, Any]) -> str:

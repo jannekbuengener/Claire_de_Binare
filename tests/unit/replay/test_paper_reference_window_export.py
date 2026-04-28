@@ -489,6 +489,70 @@ def test_filters_export_by_bot_id_only() -> None:
     ]
 
 
+def test_filters_export_by_trimmed_config_snapshot_bot_id_fallback() -> None:
+    request = build_export_request(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        start_ts_ms_utc=1000,
+        end_ts_ms_utc=2000,
+        extracted_by="unit-test",
+        extracted_at_utc="2026-04-24T00:00:00+00:00",
+        source_query_intent="unit-test",
+        bot_id="bot-a",
+    )
+    rows = [
+        _signal_row(
+            event_pk="sig-a",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1100,
+            bot_id="bot-a",
+            config_hash="cfg-a",
+        ),
+        _order_row(
+            event_pk="ord-a",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1200,
+        ),
+        _fill_row(
+            event_pk="fill-a",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1300,
+        ),
+        _signal_row(
+            event_pk="sig-b",
+            correlation_id="c2",
+            signal_id="sig2",
+            timestamp_ms=1400,
+            bot_id="bot-b",
+            config_hash="cfg-a",
+        ),
+    ]
+    rows[0]["payload"].pop("bot_id")
+    rows[0]["payload"]["metadata"].pop("bot_id")
+    rows[0]["payload"]["metadata"]["config_snapshot"]["bot_id"] = "  bot-a  "
+
+    payload = export_paper_reference_window(request=request, rows=rows)
+
+    assert [event["correlation_id"] for event in payload["events"]] == [
+        "c1",
+        "c1",
+        "c1",
+    ]
+    assert [event["event_type"] for event in payload["events"]] == [
+        "SIGNAL",
+        "ORDER",
+        "FILL",
+    ]
+
+
 def test_filters_export_by_config_hash_only() -> None:
     request = build_export_request(
         strategy_id="primary_breakout_v1",
