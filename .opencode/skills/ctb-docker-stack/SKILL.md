@@ -5,6 +5,11 @@ description: Ops skillpack for the current CDB stack. Use when Codex needs comma
 
 # CDB Ops Stack Skillpack
 
+## Discovery mapping
+- Folder: ctb-docker-stack
+- Skill name: ctb-ops-stack-skillpack
+- Treat these as the same OpenCode skill surface; do not rename the folder or the skill in this patch.
+
 ## Canon first
 - Working repo only.
 - Start control-first:
