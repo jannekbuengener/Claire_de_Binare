@@ -30,6 +30,44 @@ EVIDENCE_SURFACES = [
     "CURRENT_STATUS.md",
     "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
 ]
+RUNTIME_REBUILD_COMPOSE_FILES = [
+    "infrastructure/compose/compose.blue.yml",
+    "infrastructure/compose/compose.red.yml",
+    "infrastructure/compose/test.yml",
+]
+RUNTIME_REBUILD_DOCKERFILES = [
+    "services/market/Dockerfile",
+    "services/candles/Dockerfile",
+    "services/regime/Dockerfile",
+    "services/allocation/Dockerfile",
+    "services/risk/Dockerfile",
+    "services/execution/Dockerfile",
+    "services/db_writer/Dockerfile",
+    "services/ws/Dockerfile",
+    "services/signal/Dockerfile",
+    "services/reports/Dockerfile",
+    "tools/paper_trading/Dockerfile",
+    "infrastructure/compose/Dockerfile.test",
+]
+RUNTIME_REBUILD_TRIGGER_FILES = RUNTIME_REBUILD_COMPOSE_FILES + RUNTIME_REBUILD_DOCKERFILES
+RUNTIME_REBUILD_CI_LAB_FILES = {
+    "infrastructure/compose/Dockerfile.test",
+    "infrastructure/compose/test.yml",
+}
+RUNTIME_SERVICE_BY_DOCKERFILE = {
+    "services/market/Dockerfile": "cdb_market",
+    "services/candles/Dockerfile": "cdb_candles",
+    "services/regime/Dockerfile": "cdb_regime",
+    "services/allocation/Dockerfile": "cdb_allocation",
+    "services/risk/Dockerfile": "cdb_risk",
+    "services/execution/Dockerfile": "cdb_execution",
+    "services/db_writer/Dockerfile": "cdb_db_writer",
+    "services/ws/Dockerfile": "cdb_ws",
+    "services/signal/Dockerfile": "cdb_signal",
+    "services/reports/Dockerfile": "cdb_reports",
+    "tools/paper_trading/Dockerfile": "cdb_paper_runner",
+    "infrastructure/compose/Dockerfile.test": "cdb_test_runner",
+}
 ISSUE_MARKER_TEMPLATE = "<!-- cdb-post-merge-followup-issue:{fingerprint} -->"
 COMMENT_MARKER_TEMPLATE = "<!-- cdb-post-merge-followup-comment:pr-{pr_number} -->"
 COMMENT_HEADER = "## Post-Merge Follow-up Scan"
@@ -61,6 +99,7 @@ class Finding:
     evidence_lines: list[str]
     issue_title: str
     labels: list[str]
+    force_follow_up_issue: bool = False
 
 
 def run_command(args: list[str], *, input_text: str | None = None) -> str:
@@ -162,6 +201,10 @@ def shortlist(paths: list[str], *, limit: int = 4) -> list[str]:
     return paths[:limit]
 
 
+def unique_sorted(values: list[str]) -> list[str]:
+    return sorted(set(values))
+
+
 def strip_image_digest(image_ref: str) -> str:
     return re.sub(r"@sha256:[0-9a-f]{64}$", "", image_ref.strip(), flags=re.IGNORECASE)
 
@@ -216,6 +259,36 @@ def service_runtime_changes_are_digest_only(
     )
 
 
+def runtime_rebuild_trigger_files(active_files: list[str]) -> list[str]:
+    return [path for path in active_files if path in RUNTIME_REBUILD_TRIGGER_FILES]
+
+
+def runtime_services_for_trigger_files(
+    trigger_files: list[str],
+    changed_lines: dict[str, list[tuple[str, str]]],
+) -> list[str]:
+    services: list[str] = []
+    for path in trigger_files:
+        service = RUNTIME_SERVICE_BY_DOCKERFILE.get(path)
+        if service:
+            services.append(service)
+
+        if path in RUNTIME_REBUILD_COMPOSE_FILES:
+            for _, line in changed_lines.get(path, []):
+                for dockerfile, mapped_service in RUNTIME_SERVICE_BY_DOCKERFILE.items():
+                    if dockerfile in line:
+                        services.append(mapped_service)
+
+    return unique_sorted(services)
+
+
+def runtime_rebuild_labels(trigger_files: list[str]) -> list[str]:
+    labels = ["scope:infra", "agent:codex"]
+    if any(path in RUNTIME_REBUILD_CI_LAB_FILES for path in trigger_files):
+        labels.append("scope:ci")
+    return labels
+
+
 def build_finding(
     *,
     pr_number: int,
@@ -227,6 +300,7 @@ def build_finding(
     evidence_lines: list[str],
     issue_title: str,
     labels: list[str],
+    force_follow_up_issue: bool = False,
 ) -> Finding:
     key = "|".join([str(pr_number), rule_id] + sorted(trigger_files))
     return Finding(
@@ -239,6 +313,7 @@ def build_finding(
         evidence_lines=evidence_lines,
         issue_title=issue_title,
         labels=labels,
+        force_follow_up_issue=force_follow_up_issue,
     )
 
 
@@ -291,6 +366,43 @@ PR #{pr_number} ({pr_title}) changed service/runtime surfaces {", ".join(trigger
                 evidence_lines=[],
                 issue_title=f"Reconcile architecture docs after PR #{pr_number} service/runtime changes",
                 labels=["scope:docs", "type:docs", "agent:codex"],
+            )
+        )
+
+    runtime_rebuild_files = runtime_rebuild_trigger_files(active_files)
+    runtime_rebuild_change_is_digest_only = service_runtime_changes_are_digest_only(
+        runtime_rebuild_files,
+        changed_lines=changed_lines,
+    )
+    if runtime_rebuild_files and not runtime_rebuild_change_is_digest_only:
+        trigger_files = shortlist(runtime_rebuild_files)
+        services = runtime_services_for_trigger_files(runtime_rebuild_files, changed_lines)
+        service_note = ", ".join(services) if services else "unknown from changed lines"
+        evidence_lines = [
+            f"Runtime trigger files: {', '.join(trigger_files)}",
+            f"Affected runtime services: {service_note}",
+            "Operator action required: prüfen, ob BLUE/RED runtime rebuild/recreate nötig ist.",
+            "No automatic docker compose up, rebuild, recreate, restart, live enable, or trading action is authorized.",
+        ]
+        finding_input = f"""
+PR #{pr_number} ({pr_title}) changed Docker/Compose runtime build surfaces {", ".join(trigger_files)}. Evidence is repo-backed from the merged PR diff {pr_url}. Affected runtime services inferred from active BLUE/RED and CI-lab build references: {service_note}. This deterministic follow-up must create a narrow operator issue to review whether a manual runtime rebuild/recreate is needed. The issue must not run Docker commands, must not auto-restart services, must not imply live-readiness, and must not authorize Echtgeld or live trading.
+
+Manual operator hints only, not executed by this workflow. Replace <service> with the affected service and run only after explicit operator GO in the matching runtime context:
+- docker compose -f infrastructure/compose/compose.blue.yml up -d --build --force-recreate <service>
+- docker compose -f infrastructure/compose/compose.red.yml up -d --build --force-recreate <service>
+        """
+        findings.append(
+            build_finding(
+                pr_number=pr_number,
+                rule_id="docker_runtime_rebuild_followup_required",
+                title="Docker runtime rebuild/recreate follow-up required",
+                classification_input=finding_input,
+                trigger_files=trigger_files,
+                affected_candidates=runtime_rebuild_files,
+                evidence_lines=evidence_lines,
+                issue_title=f"Review runtime rebuild/recreate need after PR #{pr_number} Docker changes",
+                labels=runtime_rebuild_labels(runtime_rebuild_files),
+                force_follow_up_issue=True,
             )
         )
 
@@ -414,7 +526,7 @@ def classify_finding(
         raise RuntimeError(
             "gh models run returned empty response — models API unavailable or quota exceeded"
         )
-    payload = json.loads(raw)
+    payload = json.loads(extract_json_payload(raw))
     if payload.get("classification") not in {"report_only", "follow_up_issue", "unclear"}:
         raise RuntimeError("classifier returned invalid classification")
     confidence = payload.get("confidence")
@@ -433,6 +545,34 @@ def classify_finding(
     if not isinstance(next_step, str) or not next_step:
         raise RuntimeError("classifier returned invalid suggested_next_step")
     return payload
+
+
+def extract_json_payload(raw: str) -> str:
+    stripped = raw.strip()
+    fence_match = re.fullmatch(r"```(?:json)?\s*(?P<payload>.*?)\s*```", stripped, re.DOTALL)
+    if fence_match:
+        return fence_match.group("payload").strip()
+    return stripped
+
+
+def classification_for_finding(
+    *,
+    prompt_file: Path,
+    finding: Finding,
+) -> dict[str, Any]:
+    if finding.force_follow_up_issue:
+        return {
+            "classification": "follow_up_issue",
+            "confidence": 1.0,
+            "affected_artifacts": finding.affected_candidates,
+            "suggested_next_step": (
+                "Open a narrow operator follow-up to review whether a manual "
+                "BLUE/RED runtime rebuild or recreate is needed; do not run "
+                "Docker commands automatically."
+            ),
+        }
+
+    return classify_finding(prompt_file=prompt_file, finding=finding)
 
 
 def gh_repo_json(repo: str, args: list[str]) -> Any:
@@ -481,14 +621,39 @@ def ensure_issue(
             "url": existing.get("html_url"),
         }
 
+    publication_basis = (
+        "deterministic follow-up issue"
+        if finding.force_follow_up_issue
+        else "classifier follow-up issue"
+    )
+    effective_classification = (
+        "follow_up_issue" if finding.force_follow_up_issue else classification["classification"]
+    )
+    guardrails_block = ""
+    if finding.force_follow_up_issue:
+        guardrails_block = (
+            f"### Guardrails\n\n"
+            f"- Operator prüfen: rebuild/recreate nötig?\n"
+            f"- No automatic Docker runtime command is executed by this workflow.\n"
+            f"- No auto-restart, no live-readiness upgrade, no Echtgeld-GO, no live trading enablement.\n\n"
+            f"### Manual operator hints (not executed)\n\n"
+            f"```bash\n"
+            f"docker compose -f infrastructure/compose/compose.blue.yml up -d --build --force-recreate <service>\n"
+            f"docker compose -f infrastructure/compose/compose.red.yml up -d --build --force-recreate <service>\n"
+            f"```\n\n"
+            f"Replace `<service>` with the affected service and run only after explicit "
+            f"operator GO in the matching runtime context.\n\n"
+        )
     affected = "\n".join(f"- `{path}`" for path in classification["affected_artifacts"])
     body = (
         f"## Post-Merge Follow-up Finding\n\n"
         f"{marker}\n\n"
         f"- Source PR: #{pr['number']} ({pr['url']})\n"
         f"- Rule: `{finding.rule_id}`\n"
-        f"- Classification: `{classification['classification']}`\n"
+        f"- Classification: `{effective_classification}`\n"
         f"- Confidence: `{classification['confidence']}`\n\n"
+        f"- Publication basis: `{publication_basis}`\n\n"
+        f"{guardrails_block}"
         f"### Why this is a small follow-up\n\n"
         f"{classification['suggested_next_step']}\n\n"
         f"### Affected artifacts\n\n"
@@ -685,14 +850,14 @@ def main() -> int:
     results: list[dict[str, Any]] = []
     comment_findings: list[dict[str, Any]] = []
     for finding in candidates:
-        classification = classify_finding(
+        classification = classification_for_finding(
             prompt_file=args.prompt_file,
             finding=finding,
         )
         item = asdict(finding)
         item["classification"] = classification
         if args.publish_mode == "publish":
-            if classification["classification"] == "follow_up_issue":
+            if finding.force_follow_up_issue or classification["classification"] == "follow_up_issue":
                 item["publication"] = ensure_issue(
                     repo=args.repo,
                     pr=pr,

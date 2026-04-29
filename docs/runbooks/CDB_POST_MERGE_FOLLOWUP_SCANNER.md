@@ -30,6 +30,26 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
      - `mcp_navpack_working_repo/CHEATSHEET.md`
 4. `canon_terminology_drift`
    - offensichtliche Re-Introduktion bekannter Canon-Verstoesse in aktiven Diffs
+5. `docker_runtime_rebuild_followup_required`
+   - Dockerfile-/Compose-Build-Aenderungen, bei denen nach Merge operatorisch
+     geprueft werden muss, ob die lokale BLUE/RED-Runtime manuell neu gebaut
+     oder recreated werden soll
+   - Trigger:
+     - `infrastructure/compose/compose.blue.yml`
+     - `infrastructure/compose/compose.red.yml`
+     - `infrastructure/compose/test.yml`
+     - aktive BLUE/RED-Dockerfiles unter `services/` und `tools/paper_trading/`
+     - `infrastructure/compose/Dockerfile.test`
+   - **Suppression:** unterdrueckt reine `image:`-/`FROM`-Digest-Bumps, wenn der
+     semantische Image-Tag unveraendert bleibt
+   - **Labels:** immer `scope:infra` + `agent:codex`; zusaetzlich `scope:ci`
+     nur fuer `infrastructure/compose/Dockerfile.test` oder
+     `infrastructure/compose/test.yml`
+   - **Guardrail:** wird deterministisch ohne Modellklassifikation als
+     Follow-up-Issue klassifiziert und erzeugt nur ein dedupe-sicheres
+     Operator-Follow-up-Issue; der Workflow fuehrt keine Docker-Kommandos aus,
+     startet nichts neu und impliziert kein LR-Go, kein Echtgeld-GO und keine
+     Live-Trading-Freigabe
 
 ## Klassifikation und Ausgabe
 
@@ -39,6 +59,9 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
   - `unclear`
 - `follow_up_issue`
   - erzeugt ein enges dedupe-sicheres GitHub-Issue
+- `docker_runtime_rebuild_followup_required`
+  - wird deterministisch ohne Modellklassifikation als Follow-up-Issue
+    klassifiziert und publiziert
 - `report_only` oder `unclear`
   - werden dedupe-sicher als Kommentar unter `#1445` festgehalten
 - kein Befund
