@@ -32,7 +32,7 @@ Ermöglichung semantischer Ähnlichkeitssuche ergänzend zu Graph- und Fulltext-
 Optimierung der textbasierten Suche innerhalb der Dokumentations-Chunks und Code-Kommentare.
 
 ### Design
-- **Indexer**: `FULLTEXT` Index auf `content` Feldern in der `chunk` Tabelle.
+- **Indexer**: `FULLTEXT` Index auf `content` Feldern in der `doc_chunk` Tabelle.
 - **Tokenization**: Standardmäßig `class::token::tokenizer::en` (Englisch), da Code und Doku primär Englisch sind.
 - **Scoring**: Nutzung von BM25 für Relevanz-Ranking.
 - **Fuzzy Search**: Deaktiviert für Code-Präzision, optional für Doku-Suche.
@@ -116,4 +116,4 @@ Siehe separates Dokument: `docs/surrealdb/context-wave21-completion-gates.md`.
 ## Provenance
 - **Epic**: #1976
 - **Phase**: Phase 5 (Governance Intelligence Runtime)
-- **Authority**: Gemini (Operator Mode)
+- **Provenance**: operator-assisted draft; authority remains Git repo, linked issues, and reviewed PR state.

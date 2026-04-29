@@ -43,6 +43,7 @@ Agenten MÜSSEN dieses Dokument vor Änderungen an Context-Intelligence-Dokument
 | Issue #2039 | Validation Checklist (dieses Dokument) | IN PROGRESS |
 | `docs/surrealdb/context-intelligence-system.md` | Architektur | Exists |
 | `docs/surrealdb/context-intelligence-roadmap.md` | Roadmap | Exists |
+| `docs/surrealdb/context-ontology-v0.yaml` | Ontology Seed | Exists |
 | `docs/surrealdb/context-wave21-cross-cutting-hardening.md` | Planung | Exists |
 | `docs/surrealdb/context-wave21-completion-gates.md` | Gates | Exists |
 
@@ -202,7 +203,7 @@ Vor Änderungen an `docs/surrealdb/context-wave21-cross-cutting-hardening.md`:
 
 ---
 
-## 10. Evidence-/Trust-Checkliste
+## 11. Evidence-/Trust-Checkliste
 
 Für alle Context-Intelligence-Artefakte:
 
@@ -222,7 +223,7 @@ Für alle Context-Intelligence-Artefakte:
 
 ---
 
-## 10. Human-GO-/Stop-Condition-Checkliste
+## 12. Human-GO-/Stop-Condition-Checkliste
 
 | # | Prüfpunkt | Ja/Nein | Beleg |
 |---|-----------|---------|-------|
@@ -239,7 +240,7 @@ Für alle Context-Intelligence-Artefakte:
 
 ---
 
-## 11. Anti-Kriterien
+## 13. Anti-Kriterien
 
 Artefakte DÜRFEN NICHT enthalten:
 
@@ -256,7 +257,7 @@ Artefakte DÜRFEN NICHT enthalten:
 
 ---
 
-## 12. Agenten-Review-Prozess
+## 14. Agenten-Review-Prozess
 
 Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Prozess durchlaufen:
 
@@ -267,8 +268,8 @@ Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Pr
 4. [ ] Diff-Scope prüfen: Welche Zeilen ändern sich?
 5. [ ] Guardrail-Check gegen Abschnitt 4 (G1-G10)
 6. [ ] Anti-Kriterien-Check gegen Abschnitt 11 (AK1-AK8)
-7. [ ] Evidence/Trust-Check gegen Abschnitt 9 (E1-E9)
-8. [ ] Human-GO/Stop-Check gegen Abschnitt 10 (H1-H8)
+7. [ ] Evidence/Trust-Check gegen Abschnitt 11 (E1-E9)
+8. [ ] Human-GO/Stop-Check gegen Abschnitt 12 (H1-H8)
 9. [ ] Wenn ALLE Checks bestanden: Änderung vornehmen
 10. [ ] Wenn EIN Check fehlschlägt: STOPP, Issue-Kommentar schreiben
 11. [ ] Nach Änderung: Merge-Gate-Check (Abschnitt 13)
@@ -277,7 +278,7 @@ Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Pr
 
 ---
 
-## 13. Merge-Gate-Checkliste
+## 15. Merge-Gate-Checkliste
 
 Vor jedem Merge von Context-Intelligence-Artefakten:
 
@@ -302,7 +303,7 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 
 ---
 
-## 14. Restunsicherheiten und spätere Automatisierung
+## 16. Restunsicherheiten und spätere Automatisierung
 
 ### Restunsicherheiten
 - **#2037 Schema-Draft**: Noch nicht gelandet. Schema-Prüfpunkte in Abschnitt 7 sind als Gate formuliert. Sobald #2037 gelandet ist, muss Abschnitt 7 gegen das tatsächliche Schema validiert werden.
@@ -316,7 +317,7 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 
 ---
 
-## 15. Validierungs-Checkliste für dieses Dokument selbst
+## 17. Validierungs-Checkliste für dieses Dokument selbst
 
 | # | Prüfpunkt | Ja/Nein | Beleg |
 |---|-----------|---------|-------|
@@ -328,12 +329,12 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 | V6 | Roadmap-Checkliste (Abschnitt 6) enthält R1-R12 | | |
 | V7 | Schema-Draft-Gate (Abschnitt 7) ist als Gate für #2037 formuliert (nicht als erledigt) | | |
 | V8 | Ontology-Checkliste (Abschnitt 8) enthält O1-O18 | | |
-| V9 | Evidence-Checkliste (Abschnitt 9) enthält E1-E9 | | |
-| V10 | Human-GO-Checkliste (Abschnitt 10) enthält H1-H8 | | |
-| V11 | Anti-Kriterien (Abschnitt 11) enthalten AK1-AK8 | | |
-| V12 | Agenten-Review-Prozess (Abschnitt 12) ist definiert | | |
-| V13 | Merge-Gate-Checkliste (Abschnitt 13) enthält M1-M13 | | |
-| V14 | Restunsicherheiten (Abschnitt 14) erwähnen #2037 als offen | | |
+| V9 | Evidence-Checkliste (Abschnitt 11) enthält E1-E9 | | |
+| V10 | Human-GO-Checkliste (Abschnitt 12) enthält H1-H8 | | |
+| V11 | Anti-Kriterien (Abschnitt 13) enthalten AK1-AK8 | | |
+| V12 | Agenten-Review-Prozess (Abschnitt 14) ist definiert | | |
+| V13 | Merge-Gate-Checkliste (Abschnitt 15) enthält M1-M13 | | |
+| V14 | Restunsicherheiten (Abschnitt 16) erwähnen #2037 als offen | | |
 | V15 | Dieses Dokument enthält keine Trading-State-Tabellen | | |
 | V16 | Dieses Dokument enthält keine Secrets | | |
 | V17 | Dieses Dokument impliziert kein Live-Go | | |
