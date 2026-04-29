@@ -23,7 +23,7 @@ description: 'Trading-system development for Claire de Binare in the current wor
 ## Routing rule
 - If the task is mainly backtesting, prefer `cdb-backtest-engine`.
 - If the task is mainly exchange-boundary work, prefer `cdb-exchange-adapters`.
-- If the task is mainly gating or limits, prefer `risk-governance`.
+- If the task is mainly gating or limits, prefer `cdb-risk-governance`.
 - Use this skill when the request spans multiple of those areas.
 
 ## Working rules
