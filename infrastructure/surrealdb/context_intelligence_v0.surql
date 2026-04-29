@@ -50,6 +50,7 @@ DEFINE FIELD freshness ON TABLE repo_artifact TYPE string;
 DEFINE FIELD confidence ON TABLE repo_artifact TYPE float;
 DEFINE FIELD comment ON TABLE repo_artifact TYPE string;
 DEFINE FIELD created_at ON TABLE repo_artifact TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_repo_artifact_artifact_id_unique ON TABLE repo_artifact FIELDS artifact_id UNIQUE;
 DEFINE INDEX idx_repo_artifact_source_path ON TABLE repo_artifact FIELDS source_path;
 DEFINE INDEX idx_repo_artifact_source_hash ON TABLE repo_artifact FIELDS source_hash;
 DEFINE INDEX idx_repo_artifact_created_at ON TABLE repo_artifact FIELDS created_at;
@@ -71,6 +72,7 @@ DEFINE FIELD source_commit ON TABLE code_symbol TYPE string;
 DEFINE FIELD confidence ON TABLE code_symbol TYPE float;
 DEFINE FIELD comment ON TABLE code_symbol TYPE string;
 DEFINE FIELD created_at ON TABLE code_symbol TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_code_symbol_symbol_id_unique ON TABLE code_symbol FIELDS symbol_id UNIQUE;
 DEFINE INDEX idx_code_symbol_qualified_name ON TABLE code_symbol FIELDS qualified_name;
 DEFINE INDEX idx_code_symbol_file_path ON TABLE code_symbol FIELDS file_path;
 DEFINE INDEX idx_code_symbol_created_at ON TABLE code_symbol FIELDS created_at;
@@ -91,6 +93,7 @@ DEFINE FIELD freshness ON TABLE doc_page TYPE string;
 DEFINE FIELD confidence ON TABLE doc_page TYPE float;
 DEFINE FIELD comment ON TABLE doc_page TYPE string;
 DEFINE FIELD created_at ON TABLE doc_page TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_doc_page_page_id_unique ON TABLE doc_page FIELDS page_id UNIQUE;
 DEFINE INDEX idx_doc_page_source_path ON TABLE doc_page FIELDS source_path;
 DEFINE INDEX idx_doc_page_source_hash ON TABLE doc_page FIELDS source_hash;
 DEFINE INDEX idx_doc_page_created_at ON TABLE doc_page FIELDS created_at;
@@ -110,6 +113,7 @@ DEFINE FIELD source_hash ON TABLE doc_section TYPE string;
 DEFINE FIELD confidence ON TABLE doc_section TYPE float;
 DEFINE FIELD comment ON TABLE doc_section TYPE string;
 DEFINE FIELD created_at ON TABLE doc_section TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_doc_section_section_id_unique ON TABLE doc_section FIELDS section_id UNIQUE;
 DEFINE INDEX idx_doc_section_page_ref ON TABLE doc_section FIELDS page_ref;
 DEFINE INDEX idx_doc_section_created_at ON TABLE doc_section FIELDS created_at;
 
@@ -128,6 +132,7 @@ DEFINE FIELD source_hash ON TABLE doc_chunk TYPE string;
 DEFINE FIELD confidence ON TABLE doc_chunk TYPE float;
 DEFINE FIELD comment ON TABLE doc_chunk TYPE string;
 DEFINE FIELD created_at ON TABLE doc_chunk TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_doc_chunk_chunk_id_unique ON TABLE doc_chunk FIELDS chunk_id UNIQUE;
 DEFINE INDEX idx_doc_chunk_page_ref ON TABLE doc_chunk FIELDS page_ref;
 DEFINE INDEX idx_doc_chunk_section_ref ON TABLE doc_chunk FIELDS section_ref;
 DEFINE INDEX idx_doc_chunk_content_hash ON TABLE doc_chunk FIELDS content_hash;
@@ -147,6 +152,7 @@ DEFINE FIELD freshness ON TABLE concept TYPE string;
 DEFINE FIELD confidence ON TABLE concept TYPE float;
 DEFINE FIELD comment ON TABLE concept TYPE string;
 DEFINE FIELD created_at ON TABLE concept TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_concept_concept_id_unique ON TABLE concept FIELDS concept_id UNIQUE;
 DEFINE INDEX idx_concept_name ON TABLE concept FIELDS name;
 DEFINE INDEX idx_concept_created_at ON TABLE concept FIELDS created_at;
 
@@ -164,6 +170,7 @@ DEFINE FIELD evidence_level ON TABLE dependency_edge TYPE string;
 DEFINE FIELD inferred ON TABLE dependency_edge TYPE bool;
 DEFINE FIELD comment ON TABLE dependency_edge TYPE string;
 DEFINE FIELD created_at ON TABLE dependency_edge TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_dependency_edge_id_unique ON TABLE dependency_edge FIELDS edge_id UNIQUE;
 DEFINE INDEX idx_dependency_edge_type ON TABLE dependency_edge FIELDS edge_type;
 DEFINE INDEX idx_dependency_edge_from_ref ON TABLE dependency_edge FIELDS from_ref;
 DEFINE INDEX idx_dependency_edge_to_ref ON TABLE dependency_edge FIELDS to_ref;
@@ -189,6 +196,7 @@ DEFINE FIELD related_artifacts ON TABLE evidence_ref TYPE array;
 DEFINE FIELD related_decisions ON TABLE evidence_ref TYPE array;
 DEFINE FIELD comment ON TABLE evidence_ref TYPE string;
 DEFINE FIELD created_at ON TABLE evidence_ref TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_evidence_ref_evidence_id_unique ON TABLE evidence_ref FIELDS evidence_id UNIQUE;
 DEFINE INDEX idx_evidence_ref_source_path ON TABLE evidence_ref FIELDS source_path;
 DEFINE INDEX idx_evidence_ref_source_hash ON TABLE evidence_ref FIELDS source_hash;
 DEFINE INDEX idx_evidence_ref_collected_at ON TABLE evidence_ref FIELDS collected_at;
@@ -208,6 +216,7 @@ DEFINE FIELD source_refs ON TABLE claim TYPE array;
 DEFINE FIELD confidence ON TABLE claim TYPE float;
 DEFINE FIELD comment ON TABLE claim TYPE string;
 DEFINE FIELD created_at ON TABLE claim TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_claim_claim_id_unique ON TABLE claim FIELDS claim_id UNIQUE;
 DEFINE INDEX idx_claim_status ON TABLE claim FIELDS status;
 DEFINE INDEX idx_claim_created_at ON TABLE claim FIELDS created_at;
 
@@ -232,6 +241,7 @@ DEFINE FIELD invalidated_by ON TABLE decision_event TYPE string;
 DEFINE FIELD uncertainty ON TABLE decision_event TYPE string;
 DEFINE FIELD comment ON TABLE decision_event TYPE string;
 DEFINE FIELD created_at ON TABLE decision_event TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_decision_event_decision_id_unique ON TABLE decision_event FIELDS decision_id UNIQUE;
 DEFINE INDEX idx_decision_event_status ON TABLE decision_event FIELDS status;
 DEFINE INDEX idx_decision_event_created_at ON TABLE decision_event FIELDS created_at;
 
@@ -251,6 +261,7 @@ DEFINE FIELD ttl ON TABLE agent_memory TYPE int;
 DEFINE FIELD created_by ON TABLE agent_memory TYPE string;
 DEFINE FIELD comment ON TABLE agent_memory TYPE string;
 DEFINE FIELD created_at ON TABLE agent_memory TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_agent_memory_memory_id_unique ON TABLE agent_memory FIELDS memory_id UNIQUE;
 DEFINE INDEX idx_agent_memory_scope ON TABLE agent_memory FIELDS scope;
 DEFINE INDEX idx_agent_memory_namespace ON TABLE agent_memory FIELDS namespace;
 DEFINE INDEX idx_agent_memory_created_at ON TABLE agent_memory FIELDS created_at;
@@ -269,6 +280,7 @@ DEFINE FIELD observed_by ON TABLE audit_observation TYPE string;
 DEFINE FIELD observed_at ON TABLE audit_observation TYPE datetime;
 DEFINE FIELD comment ON TABLE audit_observation TYPE string;
 DEFINE FIELD created_at ON TABLE audit_observation TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_audit_observation_observation_id_unique ON TABLE audit_observation FIELDS observation_id UNIQUE;
 DEFINE INDEX idx_audit_observation_type ON TABLE audit_observation FIELDS observation_type;
 DEFINE INDEX idx_audit_observation_observed_at ON TABLE audit_observation FIELDS observed_at;
 DEFINE INDEX idx_audit_observation_created_at ON TABLE audit_observation FIELDS created_at;
@@ -291,6 +303,7 @@ DEFINE FIELD status ON TABLE contradiction TYPE string;
 DEFINE FIELD recommended_action ON TABLE contradiction TYPE string;
 DEFINE FIELD comment ON TABLE contradiction TYPE string;
 DEFINE FIELD created_at ON TABLE contradiction TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_contradiction_id_unique ON TABLE contradiction FIELDS contradiction_id UNIQUE;
 DEFINE INDEX idx_contradiction_status ON TABLE contradiction FIELDS status;
 DEFINE INDEX idx_contradiction_detected_at ON TABLE contradiction FIELDS detected_at;
 DEFINE INDEX idx_contradiction_created_at ON TABLE contradiction FIELDS created_at;
@@ -311,6 +324,7 @@ DEFINE FIELD detected_at ON TABLE stale_context TYPE datetime;
 DEFINE FIELD status ON TABLE stale_context TYPE string;
 DEFINE FIELD comment ON TABLE stale_context TYPE string;
 DEFINE FIELD created_at ON TABLE stale_context TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_stale_context_stale_id_unique ON TABLE stale_context FIELDS stale_id UNIQUE;
 DEFINE INDEX idx_stale_context_status ON TABLE stale_context FIELDS status;
 DEFINE INDEX idx_stale_context_detected_at ON TABLE stale_context FIELDS detected_at;
 DEFINE INDEX idx_stale_context_created_at ON TABLE stale_context FIELDS created_at;
@@ -331,6 +345,7 @@ DEFINE FIELD detected_at ON TABLE scope_drift_event TYPE datetime;
 DEFINE FIELD status ON TABLE scope_drift_event TYPE string;
 DEFINE FIELD comment ON TABLE scope_drift_event TYPE string;
 DEFINE FIELD created_at ON TABLE scope_drift_event TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_scope_drift_id_unique ON TABLE scope_drift_event FIELDS drift_id UNIQUE;
 DEFINE INDEX idx_scope_drift_event_type ON TABLE scope_drift_event FIELDS event_type;
 DEFINE INDEX idx_scope_drift_status ON TABLE scope_drift_event FIELDS status;
 DEFINE INDEX idx_scope_drift_created_at ON TABLE scope_drift_event FIELDS created_at;
@@ -349,6 +364,7 @@ DEFINE FIELD computed_by ON TABLE knowledge_quality_score TYPE string;
 DEFINE FIELD computed_at ON TABLE knowledge_quality_score TYPE datetime;
 DEFINE FIELD comment ON TABLE knowledge_quality_score TYPE string;
 DEFINE FIELD created_at ON TABLE knowledge_quality_score TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_knowledge_quality_score_id_unique ON TABLE knowledge_quality_score FIELDS score_id UNIQUE;
 DEFINE INDEX idx_knowledge_quality_subject_ref ON TABLE knowledge_quality_score FIELDS subject_ref;
 DEFINE INDEX idx_knowledge_quality_computed_at ON TABLE knowledge_quality_score FIELDS computed_at;
 DEFINE INDEX idx_knowledge_quality_created_at ON TABLE knowledge_quality_score FIELDS created_at;
