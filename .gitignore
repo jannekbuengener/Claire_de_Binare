@@ -196,3 +196,14 @@ reports/decision_contract/
 # Local nested repo — mock exchange dependency candidate (github.com/didac-crst/mockexchange)
 # Intentionally kept local; must not be staged as gitlink or committed as submodule (#1645)
 tools/test_pack/mock_exchange/
+
+# OpenCode skills quarantine (local bulk/tooling/third-party leftovers)
+# Keep tracked PR #2156 skills untouched; only hide known untracked residues.
+/.opencode/skills/.system/
+/.opencode/skills/Anthropic-Cybersecurity-Skills/
+/.opencode/skills/jMerta/
+/.opencode/skills/skillforge/
+/.opencode/skills/mockexchange/
+/.opencode/skills/cdb-control-intake/assets/
+/.opencode/skills/cdb-control-intake/references/
+/.opencode/skills/cdb-control-intake/scripts/
