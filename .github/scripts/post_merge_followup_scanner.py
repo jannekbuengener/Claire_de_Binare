@@ -273,12 +273,6 @@ def runtime_services_for_trigger_files(
         if service:
             services.append(service)
 
-        if path in RUNTIME_REBUILD_COMPOSE_FILES:
-            for _, line in changed_lines.get(path, []):
-                for dockerfile, mapped_service in RUNTIME_SERVICE_BY_DOCKERFILE.items():
-                    if dockerfile in line:
-                        services.append(mapped_service)
-
     return unique_sorted(services)
 
 
@@ -376,8 +370,11 @@ PR #{pr_number} ({pr_title}) changed service/runtime surfaces {", ".join(trigger
     )
     if runtime_rebuild_files and not runtime_rebuild_change_is_digest_only:
         trigger_files = shortlist(runtime_rebuild_files)
+        has_compose_trigger = any(path in RUNTIME_REBUILD_COMPOSE_FILES for path in runtime_rebuild_files)
         services = runtime_services_for_trigger_files(runtime_rebuild_files, changed_lines)
         service_note = ", ".join(services) if services else "unknown from changed lines"
+        if has_compose_trigger:
+            service_note = "unknown / inspect compose file"
         evidence_lines = [
             f"Runtime trigger files: {', '.join(trigger_files)}",
             f"Affected runtime services: {service_note}",

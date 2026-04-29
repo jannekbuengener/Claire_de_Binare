@@ -59,9 +59,10 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
   - `unclear`
 - `follow_up_issue`
   - erzeugt ein enges dedupe-sicheres GitHub-Issue
-- `docker_runtime_rebuild_followup_required`
-  - wird deterministisch ohne Modellklassifikation als Follow-up-Issue
-    klassifiziert und publiziert
+- Sonderfall `docker_runtime_rebuild_followup_required`:
+  - dies ist keine separate Klassifikation, sondern eine Regel, die die
+    Modellklassifikation ueberspringt und deterministisch als
+    `follow_up_issue` publiziert wird
 - `report_only` oder `unclear`
   - werden dedupe-sicher als Kommentar unter `#1445` festgehalten
 - kein Befund

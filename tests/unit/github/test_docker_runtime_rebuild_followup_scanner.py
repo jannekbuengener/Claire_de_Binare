@@ -103,7 +103,9 @@ def test_blue_compose_build_change_requires_runtime_rebuild_followup() -> None:
 
     assert finding is not None
     assert finding.force_follow_up_issue is True
-    assert "cdb_risk" in " ".join(finding.evidence_lines)
+    assert "unknown / inspect compose file" in " ".join(finding.evidence_lines)
+    assert "cdb_risk" not in " ".join(finding.evidence_lines)
+    assert "cdb_execution" not in " ".join(finding.evidence_lines)
 
 
 def test_digest_only_compose_image_change_does_not_emit_runtime_rebuild_followup() -> None:
