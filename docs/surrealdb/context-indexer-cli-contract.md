@@ -85,5 +85,5 @@ Codex MUSS den Scaffold wie folgt implementieren:
 
 ## 8. Validierung (für #2045)
 - `python tools/surrealdb/context_indexer.py --help`
-- `python tools/surrealdb/context_indexer.py scan --dry-run`
+- `python tools/surrealdb/context_indexer.py scan --scope-config ./ingestion_scope.yaml --dry-run`
 - Prüfung: Werden Secrets korrekt maskiert? (Test-Case mit Fake-Secret).
