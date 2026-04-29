@@ -1,4 +1,4 @@
-# Context Intelligence CLI Contract
+# Context Indexer CLI Contract
 
 **Status**: Draft
 **Authority**: Issue #1989 / Epic #1976
@@ -23,11 +23,17 @@ Der Indexer unterstützt folgende Modi:
 | `snapshot` | Generierung eines Status-Reports | V0 (Prio 2) |
 | `validate` | Validierung der Ingestion-Artefakte gegen Schema | V0 (Prio 2) |
 
+Format-Regeln pro Command:
+- `export-jsonl` produziert immer JSONL (`--format` wird hier ignoriert).
+- `scan` und `validate` liefern strukturierte Console-Resultate (kein Datei-Export).
+- `plan` und `snapshot` dürfen `--format` (`json`, `jsonl`, `markdown`) auswerten.
+
 ---
 
 ## 3. Sicherheitsmodell & Guardrails
 - **Read-only Default**: Alle Befehle sind standardmäßig Read-only.
-- **Dry-run Default**: Aktionen, die Schreibvorgänge (Output-Files) auslösen, erfordern `--dry-run` oder explizite Pfad-Zuweisung.
+- **Dry-run Default**: Schreibfähige Commands (`export-jsonl`, optionale Datei-Ausgaben von `plan`/`snapshot`) laufen standardmäßig im Dry-run.
+- **Write Opt-in**: Dateischreiben ist nur erlaubt, wenn `--apply-writes` UND ein expliziter `--output`-Pfad gesetzt sind.
 - **Keine SurrealDB-Verbindung in V0**: Der Scaffold darf in V0 keine DB-Verbindung aufbauen. SurrealDB-Argumente sind für zukünftige Slices (`import-surrealdb`, `drift`) reserviert.
 - **Output-Pfade**: Writes dürfen NUR in freigegebene `artifacts/` oder `temp/` Pfade erfolgen.
 - **No Secrets**: Der Indexer MUSS jeden Ingest-Kandidaten gegen den Secret-Scanner (`gitleaks`-Regeln) prüfen.
@@ -42,14 +48,16 @@ Der Indexer unterstützt folgende Modi:
 | `--scope-config` | Pfad zur `ingestion_scope.yaml` | Ja |
 | `--output` | Basis-Output-Pfad (Default: `./artifacts`) | Nein |
 | `--dry-run` | Nur Simulation, keine Dateierstellung | Nein |
+| `--apply-writes` | Explizites Opt-in für Dateischreiben | Nein |
 | `--format` | Output-Format (`json`, `jsonl`, `markdown`) | Nein |
 
 ---
 
 ## 5. Idempotenz & Determinismus
 - **Stabile Sortierung**: Alle `scan`-Ergebnisse MÜSSEN über den Dateipfad sortiert sein.
-- **Hashing**: Identität basiert auf `sha256` des normalisierten Inhalts + Pfad + Timestamp.
-- **Deterministische Snapshots**: Snapshots enthalten einen Hash des Gesamtzustands der Ingestion-Welle.
+- **Hashing**: Die deterministische Identität (`content_hash`) basiert auf `sha256` des normalisierten Inhalts + Pfad.
+- **Zeitmetadaten getrennt halten**: Ein optionales Feld wie `observed_at` darf erfasst werden, darf aber NICHT Teil der Identitäts-/Hash-Basis sein.
+- **Deterministische Snapshots**: Snapshots enthalten einen Hash des Gesamtzustands der Ingestion-Welle, abgeleitet aus deterministischen Einzel-Hashes und stabil sortierten Eingaben.
 
 ---
 
@@ -59,7 +67,7 @@ Der Indexer unterstützt folgende Modi:
 |------|-----------|
 | 0 | Erfolg |
 | 1 | Validierungsfehler (Checkliste nicht erfüllt) |
-| 2 | Unsafe Path (Schreibversuch außerhalb `artifacts/`) |
+| 2 | Unsafe Path (Schreibversuch außerhalb `artifacts/` oder `temp/`) |
 | 3 | Input-Datei nicht gefunden |
 | 4 | Unsupported Format |
 | 5 | Interner Fehler / Ingest-Anomalie |
