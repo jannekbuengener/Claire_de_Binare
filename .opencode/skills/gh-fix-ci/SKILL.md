@@ -26,12 +26,12 @@ Use `gh` to locate failing PR checks, fetch GitHub Actions logs for actionable f
    - prefer the current branch PR if present
    - otherwise use the PR the user specified
 4. Inspect failing GitHub Actions checks:
-   - prefer `scripts/inspect_pr_checks.py`
+   - prefer `docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py`
    - fall back to `gh pr checks`, `gh run view`, and log fetches if needed
 5. Separate GitHub Actions failures from external checks and mark external systems as out of scope.
 6. Summarize the failure with the check name, URL, and short log snippet.
-7. Draft a short fix plan in the current thread and wait for approval if the user asked for plan-first behavior.
-8. Implement the fix, run relevant verification, and suggest rechecking PR status.
+7. Draft a short fix plan in the current thread and wait for explicit user approval before implementation.
+8. After explicit approval, implement the fix, run relevant verification, and suggest rechecking PR status.
 
 ## Rules
 - Do not depend on a separate `plan` skill.
@@ -40,4 +40,4 @@ Use `gh` to locate failing PR checks, fetch GitHub Actions logs for actionable f
 - Do not read `#1492` as LR clearance.
 
 ## Bundled resource
-`scripts/inspect_pr_checks.py` fetches failing PR checks, extracts log snippets, and can emit JSON for summarization.
+`docs/skills/gh-fix-ci/scripts/inspect_pr_checks.py` fetches failing PR checks, extracts log snippets, and can emit JSON for summarization.

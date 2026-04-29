@@ -1,5 +1,5 @@
 ---
-name: ci-cd-guard
+name: cdb-ci-cd-guard
 description: CDB CI/CD governance audit and hardening for the working repo. Use when GitHub Actions, rulesets, required checks, secret guards, or fake-green behavior need to be verified or fixed. Derive protected refs, required checks, and enforcement behavior from current repo evidence and GitHub state instead of assuming old branch patterns or legacy docs-hub paths.
 ---
 
@@ -43,4 +43,3 @@ description: CDB CI/CD governance audit and hardening for the working repo. Use 
 - concrete enforcement gaps, grouped by workflow or ruleset
 - mapping table: workflow -> trigger/ref scope -> secret behavior -> merge effect
 - minimal fix plan, or patchset if explicit approval exists
-- use `scripts/skill_pack_drift_lint.py <skills-root>` for package-level canon drift checks when validating the local skill pack itself

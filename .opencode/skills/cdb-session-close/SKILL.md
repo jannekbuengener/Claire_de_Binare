@@ -21,7 +21,7 @@ Close a working session so the repo, git state, and issue thread reflect reality
 
 - Current working tree and session context.
 - Optional issue number, PR, branch context, or prior session goal.
-- Optional prior outputs from `cdb-control-intake`, `cdb-issue-to-session-plan`, or `cdb-shadow-validation`.
+- Optional prior outputs from `cdb-control-intake` or `cdb-issue-to-session-plan`.
 - Access to git status, diffs, staged state, and issue or PR context when relevant.
 
 ## Workflow
