@@ -43,7 +43,12 @@ Agenten MÜSSEN dieses Dokument vor Änderungen an Context-Intelligence-Dokument
 | Issue #2039 | Validation Checklist (dieses Dokument) | IN PROGRESS |
 | `docs/surrealdb/context-intelligence-system.md` | Architektur | Exists |
 | `docs/surrealdb/context-intelligence-roadmap.md` | Roadmap | Exists |
-| `docs/surrealdb/context-ontology-v0.yaml` | Ontologie | Exists |
+| `docs/surrealdb/context-wave21-cross-cutting-hardening.md` | Planung | Exists |
+| `docs/surrealdb/context-wave21-completion-gates.md` | Gates | Exists |
+
+### Phase 5 — Governance Intelligence (Welle 21)
+- Validierung von `docs/surrealdb/context-wave21-cross-cutting-hardening.md` (#2198–#2204)
+- Validierung von `docs/surrealdb/context-wave21-completion-gates.md` (#2205)
 
 ---
 
@@ -179,7 +184,25 @@ Vor Änderungen an `docs/surrealdb/context-ontology-v0.yaml`:
 
 ---
 
-## 9. Evidence-/Trust-Checkliste
+## 9. Wave-21-Checkliste (Cross-cutting Hardening)
+
+Vor Änderungen an `docs/surrealdb/context-wave21-cross-cutting-hardening.md`:
+
+| # | Prüfpunkt | Ja/Nein | Beleg |
+|---|-----------|---------|-------|
+| W21-1 | Vector Search Entscheidung ist dokumentiert (lokal bevorzugt) | | |
+| W21-2 | Fulltext Tuning Design ist dokumentiert (BM25, Tokenizer) | | |
+| W21-3 | Performance Benchmarks sind definiert (Ingestion/Query) | | |
+| W21-4 | Hardening Maßnahmen sind definiert (No-Secrets, Permissions) | | |
+| W21-5 | CI Integration Plan ist definiert (Dry-run Indexer) | | |
+| W21-6 | Backup/Restore Strategie ist definiert (Retention, Export) | | |
+| W21-7 | Governance Cadence ist definiert (Stale Reviews) | | |
+| W21-8 | Keine Trading-Runtime-Änderung beschrieben | | |
+| W21-9 | Keine produktive Aktivierung beschrieben | | |
+
+---
+
+## 10. Evidence-/Trust-Checkliste
 
 Für alle Context-Intelligence-Artefakte:
 

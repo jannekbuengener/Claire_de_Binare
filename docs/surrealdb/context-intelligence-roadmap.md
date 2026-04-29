@@ -44,7 +44,7 @@ Das Projekt ist in drei Hauptphasen unterteilt:
 | :--- | :--- | :--- |
 | **Welle 7** | #2034–#2043 | **Aktueller Fokus.** Landen der Architektur, Roadmap und Validierung im Repo. |
 
-### Phase 3: Implementierung (Wellen 8–14+)
+### Phase 3: Implementierung (Wellen 8–14)
 | Welle | Issue-Range | Fokus |
 | :--- | :--- | :--- |
 | **Welle 8** | #2044–#2054 | Context Indexer Scaffold, Hashing, Export Pipeline. |
@@ -54,6 +54,21 @@ Das Projekt ist in drei Hauptphasen unterteilt:
 | **Welle 12** | #2091–#2102 | MCP Bridge & Context Tools (Read-only). |
 | **Welle 13** | #2103–#2114 | Agent Briefing Engine & Impact Radar v1. |
 | **Welle 14** | #2115–#2128 | Evidence, Decision & Memory Retrieval v1. |
+
+### Phase 4: Agent Intelligence Layer (Wellen 15–16)
+| Welle | Issue-Range | Fokus |
+| :--- | :--- | :--- |
+| **Welle 15** | #2145–#2152 | Contradiction Detection Runtime v1. |
+| **Welle 16** | #2153–#2161 | Stale Knowledge Runtime & Refresh Planning. |
+
+### Phase 5: Governance Intelligence Runtime (Wellen 17–21)
+| Welle | Issue-Range | Fokus |
+| :--- | :--- | :--- |
+| **Welle 17** | #2162–#2169 | Scope Drift Firewall Runtime v1. |
+| **Welle 18** | #2170–#2178 | Knowledge Quality Scoring & Architect Signals. |
+| **Welle 19** | #2179–#2187 | Visual Control Room & Reporting Layer. |
+| **Welle 20** | #2188–#2196 | Self-Explanation & Agent OS Readiness. |
+| **Welle 21** | #2197–#2205 | **Aktueller Fokus.** Cross-cutting Hardening, Search, CI & Operations. |
 
 ## 6. Roadmap-Blöcke (0–20)
 Gemäß Epic #1976 werden folgende Blöcke adressiert:

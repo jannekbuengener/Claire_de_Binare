@@ -56,3 +56,15 @@ Postgres ist der Canon fuer Runtime-Daten; SurrealDB ist eine optionale Mirror-S
   - [docs/surrealdb/rollback-cutover-plan.md](../surrealdb/rollback-cutover-plan.md)
   - [docs/surrealdb/dual-write-mirror-strategy.md](../surrealdb/dual-write-mirror-strategy.md)
   - [docs/surrealdb/data-ownership-matrix.md](../surrealdb/data-ownership-matrix.md)
+
+## Context Intelligence System (CIS)
+
+- Architektur & Roadmap:
+  - [docs/surrealdb/context-intelligence-system.md](../surrealdb/context-intelligence-system.md)
+  - [docs/surrealdb/context-intelligence-roadmap.md](../surrealdb/context-intelligence-roadmap.md)
+- Planung & Governance (Wave 21):
+  - [docs/surrealdb/context-wave21-cross-cutting-hardening.md](../surrealdb/context-wave21-cross-cutting-hardening.md)
+  - [docs/surrealdb/context-wave21-completion-gates.md](../surrealdb/context-wave21-completion-gates.md)
+- Operational & Handoff:
+  - [docs/surrealdb/context-agent-handoff.md](../surrealdb/context-agent-handoff.md)
+  - [docs/surrealdb/context-wave7-completion-gates.md](../surrealdb/context-wave7-completion-gates.md)
