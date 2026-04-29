@@ -234,6 +234,8 @@ except InvalidOperation:
 
 Located in `.codex/cdb_skills/`:
 
+OpenCode Skill-Surface zusaetzlich unter `.opencode/skills/` (gezielt laden, nicht pauschal).
+
 | Skill | Purpose |
 |-------|---------|
 | `cdb-session-start` | Fail-closed session start (verifies Git truth first) |
