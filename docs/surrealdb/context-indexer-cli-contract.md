@@ -63,7 +63,7 @@ Der Indexer unterstützt folgende Modi:
 |------|-----------|
 | 0 | Erfolg |
 | 1 | Validierungsfehler (Checkliste nicht erfüllt) |
-| 2 | Reserviert (ungenutzt in v0) |
+| 2 | CLI Usage / Argument-Parsing-Fehler (z. B. `argparse` bei invaliden/missing Args) |
 | 3 | Input-Datei nicht gefunden |
 | 4 | Unsupported Format |
 | 5 | Write denied (Pfad-Verstoß oder nicht maskierbarer Secret-Treffer) |
