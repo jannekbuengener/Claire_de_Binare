@@ -28,10 +28,10 @@ Gilt für **alle** OpenCode Agents (egal welcher Provider).
 ## OpenCode Skill Routing
 
 - Bootloader immer zuerst: `AGENTS.md` -> `agents/AGENTS.md` -> `agents/OPEN_CODE_AGENTS.md`
-- Fuer CDB-Repo-Arbeit danach `cdb-session-start`
+- Für CDB-Repo-Arbeit danach `cdb-session-start`
 - Danach `cdb-control-intake`
 - Bei Issue-Arbeit danach `cdb-issue-to-session-plan`
 - Danach nur task-spezifische Skills laden
 - Keine pauschale Skill-Massenladung
-- Third-Party-/Cybersecurity-Skills nur bei explizitem Bedarf und nur defensiv/pruefend
+- Third-Party-/Cybersecurity-Skills nur bei explizitem Bedarf und nur defensiv/prüfend
 - Keine Writes ohne Human-GO

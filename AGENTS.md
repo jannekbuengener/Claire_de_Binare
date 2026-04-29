@@ -232,9 +232,9 @@ except InvalidOperation:
 
 ## Selected repo skills (not exhaustive)
 
-Located in `.codex/cdb_skills/`:
+Codex skill surface: `.codex/cdb_skills/`
 
-OpenCode Skill-Surface zusaetzlich unter `.opencode/skills/` (gezielt laden, nicht pauschal).
+OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
 | Skill | Purpose |
 |-------|---------|
