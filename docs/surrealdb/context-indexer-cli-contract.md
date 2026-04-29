@@ -65,7 +65,7 @@ Der Indexer unterstützt folgende Modi:
 |------|-----------|
 | 0 | Erfolg |
 | 1 | Validierungsfehler (Checkliste nicht erfüllt) |
-| 2 | Unsafe Path (Schreibversuch außerhalb zulässiger Pfade) |
+| 2 | Reserviert (ungenutzt in v0) |
 | 3 | Input-Datei nicht gefunden |
 | 4 | Unsupported Format |
 | 5 | Write denied (Secret-Treffer oder Pfad-Verstoß) |
