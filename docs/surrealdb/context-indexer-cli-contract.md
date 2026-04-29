@@ -1,4 +1,4 @@
-# Context Intelligence CLI Contract
+# Context Indexer CLI Contract
 
 **Status**: Draft
 **Authority**: Issue #1989 / Epic #1976
@@ -27,10 +27,11 @@ Der Indexer unterstützt folgende Modi:
 
 ## 3. Sicherheitsmodell & Guardrails
 - **Read-only Default**: Alle Befehle sind standardmäßig Read-only.
-- **Dry-run Default**: Aktionen, die Schreibvorgänge (Output-Files) auslösen, erfordern `--dry-run` oder explizite Pfad-Zuweisung.
+- **Dry-run Default**: Schreibfähige Commands (`export-jsonl`, optionale Datei-Ausgaben von `plan`/`snapshot`) laufen standardmäßig im Dry-run.
+- **Write Opt-in**: Dateischreiben ist nur erlaubt, wenn `--apply-writes` UND ein expliziter `--output`-Pfad gesetzt sind.
 - **Keine SurrealDB-Verbindung in V0**: Der Scaffold darf in V0 keine DB-Verbindung aufbauen. SurrealDB-Argumente sind für zukünftige Slices (`import-surrealdb`, `drift`) reserviert.
-- **Output-Pfade**: Writes dürfen NUR in freigegebene Pfade unter `artifacts/context-indexer/` oder `tmp/context-indexer/` erfolgen. Absolute Pfade oder Pfad-Traversierung (`../`, `/`) sind verboten. Writes außerhalb erlaubter Pfade MÜSSEN mit Exit-Code `5 write denied` stoppen.
-- **No Secrets**: Der Indexer darf keine Secret-Inhalte exportieren. Treffer gegen bekannte Secret-Patterns (basierend auf Projekt-Gitleaks-Regeln) müssen maskiert oder als "blocked"/"omitted" im Artefakt markiert werden. Bestehende CI-Validierungsflächen (wie Gitleaks) dienen als ergänzende Sicherheitsinstanz; der Indexer agiert bei unmaskierbaren Treffern "fail-closed".
+- **Output-Pfade**: Writes dürfen NUR unter `artifacts/` oder `temp/` erfolgen. Verboten sind absolute Pfade (z. B. führendes `/`, Laufwerkspräfixe wie `C:\`, UNC-Pfade) sowie relative Pfade, die nach Normalisierung außerhalb dieser Basispfade aufgelöst würden (Traversal über `..`). Verstöße MÜSSEN mit Exit-Code `5` stoppen.
+- **No Secrets**: Der Indexer MUSS jeden Ingest-Kandidaten gegen den Secret-Scanner (`gitleaks`-Regeln) prüfen. Nicht maskierbare Treffer sind fail-closed zu behandeln (Exit-Code `5`).
 
 ---
 
@@ -40,22 +41,19 @@ Der Indexer unterstützt folgende Modi:
 |----------|--------------|---------------|
 | `--root` | Root-Verzeichnis des Scans (Default: `.`) | Nein |
 | `--scope-config` | Pfad zur `ingestion_scope.yaml` | Ja |
-| `--include` | Zusätzliche Inklusionsmuster (glob) | Nein |
-| `--exclude` | Zusätzliche Exklusionsmuster (glob) | Nein |
-| `--commit` | Git-Commit-Hash zur Referenzierung | Nein |
-| `--output` | Basis-Output-Pfad (Default: `./artifacts/context-indexer`) | Nein |
+| `--output` | Basis-Output-Pfad (Default: `./artifacts`) | Nein |
 | `--dry-run` | Nur Simulation, keine Dateierstellung | Nein |
+| `--apply-writes` | Explizites Opt-in für Dateischreiben | Nein |
 | `--format` | Output-Format (`json`, `jsonl`, `markdown`) | Nein |
-
-*Hinweis: `--scope` wurde nicht implementiert, um Eindeutigkeit zum Scope-Management durch die zentrale `ingestion_scope.yaml` zu wahren.*
 
 ---
 
 ## 5. Deterministische Identität & Hashing
 - **Stabile Sortierung**: Alle `scan`-Ergebnisse MÜSSEN über den Dateipfad sortiert sein.
-- **Artifact Identity**: Identität basiert ausschließlich auf einer stabilen Kombination aus: `repo_rel_path` + `content_sha256` (normalisierter Inhalt) + `schema_version`.
-- **Zeitstempel**: Zeitstempel (`observed_at`) sind Snapshot-/Report-Metadaten und dürfen **nicht** Bestandteil der Identity (Hash) sein.
-- **Normalisierung**: Vor dem Hashing sind Zeilenenden (LF) und Encodings (UTF-8) deterministisch zu normalisieren.
+- **Contract-Konstante**: `schema_version = "context-indexer/v0"` ist eine feste Konstante des Vertrags und darf nicht aus CLI-Args, Environment oder Dateiinhalten abgeleitet werden.
+- **Artifact Identity**: Die deterministische Identität basiert ausschließlich auf `repo_rel_path` + `content_sha256` (normalisierter Inhalt, UTF-8/LF) + `schema_version`.
+- **Zeitmetadaten getrennt halten**: Ein optionales Feld wie `observed_at` darf erfasst werden, darf aber NICHT Teil der Identitäts-/Hash-Basis sein.
+- **Deterministische Snapshots**: Snapshots enthalten einen Hash des Gesamtzustands der Ingestion-Welle, abgeleitet aus deterministischen Einzel-Hashes und stabil sortierten Eingaben.
 
 ---
 
@@ -68,13 +66,13 @@ Der Indexer unterstützt folgende Modi:
 | 2 | Reserviert (ungenutzt in v0) |
 | 3 | Input-Datei nicht gefunden |
 | 4 | Unsupported Format |
-| 5 | Write denied (Secret-Treffer oder Pfad-Verstoß) |
+| 5 | Write denied (Pfad-Verstoß oder nicht maskierbarer Secret-Treffer) |
 | 6 | Interner Fehler / Ingest-Anomalie |
 
 ---
 
-## 7. Acceptance Criteria für spätere Implementierung (#2045)
-Die spätere Implementierung (#2045) muss:
+## 7. Anforderungen für Codex (#2045)
+Codex MUSS den Scaffold wie folgt implementieren:
 - Keine DB-Verbindung hardcoden.
 - `argparse` verwenden.
 - Jede Funktion muss Unit-Tests (in `tests/unit/tools/`) haben.
@@ -85,6 +83,5 @@ Die spätere Implementierung (#2045) muss:
 ## 8. Validierung (für #2045)
 - `python tools/surrealdb/context_indexer.py --help`
 - `python tools/surrealdb/context_indexer.py scan --scope-config ./ingestion_scope.yaml --dry-run`
-- Prüfung: Werden Secrets maskiert? (Test-Case mit Fake-Secret).
-- Prüfung: Determinismus (zweimaliger Scan auf gleichem Commit muss identische Hashes liefern).
-- Prüfung: Abweisung von Pfad-Traversierung in `--output` (Exit-Code 5).
+- Prüfung: Werden Secrets korrekt maskiert? (Test-Case mit Fake-Secret).
+- Prüfung: Abweisung von Pfad-Traversierung in `--output` (Exit-Code `5`).
