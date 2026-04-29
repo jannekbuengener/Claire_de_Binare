@@ -14,7 +14,9 @@
 --   - Each table also carries a stable `*_id` string field for deterministic IDs
 --     and cross-system references (as required by dependency issues).
 -- - Time fields:
---   - `created_at` (datetime) is mandatory on all tables
+--   - `created_at` (datetime) is required by v0 producer/validator contract
+--     (this draft declares field shapes; it does not enforce mandatory presence
+--     via ASSERT/DEFAULT to avoid any productive/runtime semantics)
 --   - Domain-specific: `observed_at`, `collected_at`, `detected_at` where relevant
 --   - Mandatory fields are tagged inline as `REQUIRED(v0-draft)`
 -- - Provenance / evidence:
@@ -25,6 +27,8 @@
 --
 -- Notes:
 -- - This draft intentionally avoids NS/DB statements (CREATE/USE) and PERMISSIONS.
+-- - This draft also avoids enforcement constraints (ASSERT/DEFAULT/UNIQUE); those
+--   are expected to be handled by producer/validator logic until later waves.
 -- - Fields are minimal and designed to be extended in later waves.
 -- =====================================================================
 
