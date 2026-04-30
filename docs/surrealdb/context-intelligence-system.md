@@ -1,8 +1,8 @@
 # CDB Context Intelligence System — Architecture Document (Canonical)
 
-**Status**: Draft (Wave 7)
+**Status**: Canonical (Wave 7 landed)
 **Authority**: Issue #2035 / Epic #1976
-**Guardrail**: trade-capable is NOT a Live-Readiness-Go.
+**Guardrail**: trade-capable is NOT a Live-Readiness-Go; Live-Readiness remains NO-GO.
 
 ## 1. Zweck
 Das CDB Context Intelligence System (CIS) dient als zentraler **Agent Memory & Knowledge Core**. Es transformiert statische Repo-Daten (Code, Dokumentation, Governance) in ein querybares, graph-basiertes Wissensmodell. Ziel ist es, Agenten mit tiefem, belegbarem Kontext zu versorgen, um Entscheidungsqualität und Governance-Compliance zu maximieren.

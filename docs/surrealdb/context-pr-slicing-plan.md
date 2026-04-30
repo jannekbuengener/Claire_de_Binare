@@ -42,12 +42,26 @@ Abhaengigkeiten fuer die Context-Intelligence-Welle 7:
 
 - #2035 (Architektur) — gemergt
 - #2036 (Roadmap) — gemergt
+- #2037 (Schema Draft) — gemergt
 - #2038 (Ontology Seed) — gemergt
-- #2037 (Schema Draft) — **offen** (Dependency-Gate)
-- #2039 (Validation Checklist) — PR #2135 **BLOCKED** (formale Review/Approval)
-- #2040 (Agent Handoff Guide) — PR #2137 **BLOCKED** (formale Review/Approval)
+- #2039 (Validation Checklist) — geschlossen
+- #2040 (Agent Handoff Guide) — geschlossen
+- #2041 (SurrealDB docs index update) — gemergt via PR #2225
+- #2042 (PR Slicing Plan) — geschlossen
+- #2043 (Wave-7 Completion Gates) — geschlossen
 
-Hinweis: `BLOCKED` heisst, GitHub Branch Protection verhindert Merge ohne formale Review.
+Bereits gelandete Reconciliation-PRs:
+
+- PR #2224 — Wave 7-A docs reconciliation — MERGED
+- PR #2225 — Wave 7-B docs index update — MERGED
+- PR #2226 — Wave 7-C closeout docs reconciliation — MERGED
+
+Offen, aber fuer diesen Slice bewusst eingefroren / out of scope:
+
+- PR #2223 — #1986 ingestion scope rebuild — OPEN / FROZEN / OUT OF SCOPE
+- PR #2216 — Wave 8 readiness/readiness — OPEN / FROZEN / OUT OF SCOPE
+
+Hinweis: Live-Status MUSS immer gegen GitHub verifiziert werden; dieses Dokument beschreibt nur den Slice-Plan.
 
 ---
 
@@ -59,18 +73,20 @@ Diese PRs sind docs-first und sollen einzeln landbar sein:
 
 1. #2035: Architektur-Doku (bereits gemergt)
 2. #2036: Roadmap-Doku (bereits gemergt)
-3. #2038: Ontology Seed (bereits gemergt)
-4. #2039: Static Validation Checklist (Docs-only)
-5. #2040: Agent Handoff Guide (Docs-only)
-6. #2041: SurrealDB docs index update (Docs-only)
-7. #2042: PR Slicing Plan (dieses Dokument)
-8. #2043: Wave-7 Completion Gates (Docs-only)
+3. #2037: Schema-Draft (bereits gemergt, Draft only)
+4. #2038: Ontology Seed (bereits gemergt)
+5. #2039: Static Validation Checklist (geschlossen)
+6. #2040: Agent Handoff Guide (geschlossen)
+7. #2041: SurrealDB docs index update (bereits gemergt via PR #2225)
+8. #2042: PR Slicing Plan (dieses Dokument, geschlossen)
+9. #2043: Wave-7 Completion Gates (geschlossen)
 
-### 4.2 Schema Draft (Wave 7)
+### 4.2 Reconciliation-Stand nach Wave 7-A / 7-B
 
-- #2037: Schema-Draft als `.surql` (Draft only)
-
-**STOPP**, wenn #2037 als "fertig" behauptet wird, bevor es gelandet ist.
+- Wave 7-A ist ueber PR #2224 gelandet.
+- Wave 7-B ist ueber PR #2225 gelandet.
+- Wave 7-C ist ueber PR #2226 gelandet und hat die verbleibenden Docs-Issues #2039, #2040, #2042 und #2043 geschlossen.
+- PR #2223 und PR #2216 bleiben separate, eingefrorene Arbeitsstraenge und gehoeren nicht in einen Wave-7-C-Diff.
 
 ---
 
@@ -124,10 +140,11 @@ Regel: Gemini soll keine Implementierung treiben; Implementierungsagenten muesse
 
 ## 8. Dependencies und Stop-Bedingungen (MUSS)
 
-- Wenn eine Dependency offen ist (z. B. #2037), darf ein Slice, der diese Dependency voraussetzt, NICHT finalisiert werden.
-- Wenn PRs `BLOCKED` sind (formale Review), darf nicht umgangen werden.
+- Wenn eine Dependency offen ist, darf ein Slice, der diese Dependency voraussetzt, NICHT finalisiert werden.
+- Wenn GitHub einen PR blockiert, darf nicht umgangen werden.
 - Wenn Checks rot sind und Ursache nicht slice-intern ist: rerun, dann eskalieren.
 - Wenn Diff Scope fremde Dateien enthaelt: STOPP.
+- Live-Readiness bleibt `NO-GO`; kein Slice darf daraus ein Live- oder Echtgeld-Go ableiten.
 
 ---
 
@@ -155,10 +172,9 @@ Docs-only PRs:
 
 ---
 
-## 11. Blocker-Liste (aktuell)
+## 11. Offene Restarbeit (aktuell)
 
-- #2037: Schema-Draft noch offen (Gate)
-- #2039: PR #2135 aktuell `BLOCKED` (formale Review/Approval)
-- #2040: PR #2137 aktuell `BLOCKED` (formale Review/Approval)
+- #2034: minimalen Closeout-/Ledger-Abgleich landen, damit das offene Anchor-Issue ohne Statusdrift geschlossen werden kann
+- PR #2223 und PR #2216 bleiben offen, eingefroren und fuer Wave 7-C out of scope
 
 Dieses Dokument ist kein Ersatz fuer den Live-Status in GitHub.
