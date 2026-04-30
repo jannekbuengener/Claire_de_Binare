@@ -17,6 +17,7 @@ from tools.surrealdb.context_indexer import (
     jsonl_records,
     build_snapshot,
     validate_output_path,
+    resolve_input_path,
 )
 
 
@@ -591,4 +592,83 @@ def test_hashing_normalizes_line_endings_in_fixture_repo(tmp_path: Path) -> None
     assert (
         artifact_map["docs/eol_lf.md"].normalized_sha256
         == artifact_map["docs/eol_crlf.md"].normalized_sha256
+    )
+
+
+_SCOPE_CONFIG_RELATIVE = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
+
+_SCOPE_CONFIG_YAML_TEMPLATE = """\
+schema_version: context-ingestion-scope/v0
+include_paths:
+  - path: {include_path}
+    sensitivity_class: public_context
+conditional_paths: []
+exclude_paths:
+  - path: docs/blocked/
+    reason: blocked_fixture_path
+allowed_file_types:
+  - extension: .md
+    type: markdown
+sensitivity_classes:
+  public_context: {{}}
+  internal_context: {{}}
+  sensitive_metadata: {{}}
+  forbidden: {{}}
+forbidden_patterns: {{}}
+limits:
+  max_file_size_bytes: {max_file_size}
+guardrails: []
+"""
+
+
+def _make_minimal_repo(base: Path, include_path: str, max_file_size: int = 1048576) -> Path:
+    """Create a minimal repo-like directory with a scope config and one doc."""
+    config_path = base / _SCOPE_CONFIG_RELATIVE
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        _SCOPE_CONFIG_YAML_TEMPLATE.format(
+            include_path=include_path, max_file_size=max_file_size
+        ),
+        encoding="utf-8",
+    )
+    doc_dir = base / include_path.rstrip("/")
+    doc_dir.mkdir(parents=True, exist_ok=True)
+    (doc_dir / "readme.md").write_text("# Hello\n\nThis is a test doc.\n", encoding="utf-8")
+    return base
+
+
+@pytest.mark.unit
+def test_resolve_input_path_prefers_root_over_cwd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """P1: relative scope config must resolve against --root, not caller cwd.
+
+    When both the caller cwd repo and the target root repo contain the same
+    relative config path, resolve_input_path must return the path under root.
+    """
+    caller_repo = tmp_path / "caller_repo"
+    target_repo = tmp_path / "target_repo"
+
+    # caller_repo uses docs/ with max_file_size 111111 (distinguishable)
+    _make_minimal_repo(caller_repo, include_path="docs/", max_file_size=111111)
+    # target_repo uses content/ with max_file_size 999999 (distinguishable)
+    _make_minimal_repo(target_repo, include_path="content/", max_file_size=999999)
+
+    # Simulate the caller being cwd — so cwd-first resolution would pick caller_repo config
+    monkeypatch.chdir(caller_repo)
+
+    resolved = resolve_input_path(_SCOPE_CONFIG_RELATIVE, target_repo)
+
+    # Must resolve inside target_repo, not caller_repo
+    assert resolved.is_relative_to(target_repo), (
+        f"Expected path inside target_repo ({target_repo}), got {resolved}"
+    )
+    assert not resolved.is_relative_to(caller_repo), (
+        f"Path must not resolve to caller_repo ({caller_repo}), got {resolved}"
+    )
+
+    # Loading the config proves the target repo policy is active, not caller's
+    scope = load_scope_config(resolved)
+    assert scope.max_file_size_bytes == 999999, (
+        f"Expected target_repo max_file_size_bytes=999999, got {scope.max_file_size_bytes}"
     )

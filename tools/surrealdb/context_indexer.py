@@ -668,10 +668,13 @@ def _resolve_existing_root(path: Path) -> Path:
 def resolve_input_path(path: Path, root: Path) -> Path:
     if path.is_absolute():
         return path
+    root_path = (root / path).resolve(strict=False)
+    if root_path.exists():
+        return root_path
     cwd_path = (Path.cwd() / path).resolve(strict=False)
     if cwd_path.exists():
         return cwd_path
-    return (root / path).resolve(strict=False)
+    return root_path
 
 
 def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None:
