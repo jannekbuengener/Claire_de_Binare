@@ -13,12 +13,12 @@ import json
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime
-from datetime import timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+from core.utils.clock import utcnow as cdb_utcnow
 
 
 SCHEMA_VERSION = "context-indexer/v0"
@@ -652,9 +652,9 @@ def current_git_commit_timestamp(root: Path) -> str | None:
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(
-        "+00:00", "Z"
-    )
+    dt = cdb_utcnow().replace(microsecond=0)
+    iso = dt.isoformat().replace("+00:00", "")
+    return iso if iso.endswith("Z") else iso + "Z"
 
 
 def _resolve_existing_root(path: Path) -> Path:
