@@ -2,7 +2,7 @@
 
 **Status**: Canonical (Wave 7 landed)
 **Authority**: Issue #2036 / Epic #1976
-**Context**: Wave 7 is the current landing foundation and implementation-start anchor (#2034)
+**Context**: Wave 7 is the landing foundation and implementation-start anchor (#2034)
 
 ## 1. Zweck
 Dieses Dokument dient als kanonische Orientierung für den Rollout des CDB SurrealDB Context Intelligence Systems (CIS). Es verbindet die strategischen Roadmap-Blöcke aus Epic #1976 mit den operativen GitHub-Issues und Wellen, um einen konsistenten Handoff zwischen Agenten zu ermöglichen.
@@ -127,4 +127,4 @@ Gemäß Epic #1976 werden folgende Blöcke adressiert:
 - **Epic**: #1976
 - **Parent**: #2034
 - **Foundation**: #2034, #2035, #2036, #2037, #2038
-- **Docs**: `docs/surrealdb/context-intelligence-system.md`
+- **Docs**: `docs/surrealdb/context-intelligence-roadmap.md`
