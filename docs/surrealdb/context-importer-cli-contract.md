@@ -1,9 +1,9 @@
 # Context Importer CLI Contract
 
-**Status**: Draft (Scaffold-Slice)
-**Authority**: Issue #2068 / Wave 10 Parent #2067 / Epic #1976
+**Status**: Draft (Scaffold + Local Config Slice)
+**Authority**: Issue #2068 + #2069 / Wave 10 Parent #2067 / Epic #1976
 **Target**: `tools/surrealdb/context_importer.py`
-**Scope**: CLI scaffold only — no SurrealDB connection, no writes, no JSONL parsing.
+**Scope**: CLI scaffold plus explicit local config validation — no SurrealDB connection, no writes, no JSONL parsing.
 
 ---
 
@@ -11,9 +11,12 @@
 
 Dieser Vertrag beschreibt die CLI-Oberflaeche fuer den zukuenftigen
 Context-Import-Pfad (JSONL-Artefakte aus dem Context Indexer nach SurrealDB).
-In #2068 wird ausschliesslich das Scaffold geliefert: Argument-Parsing,
-Help-Text, Default-Verhalten und Safety-Gates. Jede echte Logik (JSONL-Validation,
-Plan-Berechnung, Apply, Audit, Rollback-Plan) gehoert zu separaten Folge-Slices.
+In #2068 wurde ausschliesslich das Scaffold geliefert: Argument-Parsing,
+Help-Text, Default-Verhalten und Safety-Gates. #2069 ergaenzt eine explizite
+lokale Config-Lade- und Validierungsschicht fuer
+`infrastructure/config/surrealdb/context_import.local.example.yaml`.
+Jede echte Logik (JSONL-Validation, Plan-Berechnung, Apply, Audit,
+Rollback-Plan) gehoert weiterhin zu separaten Folge-Slices.
 
 ---
 
@@ -48,7 +51,15 @@ Folge-Slice (Apply-Implementation) entfernt werden.
   oder `temp/` liegen. Absolute Pfade (`/...`, `C:\...`, UNC) und
   Traversal (`..`) werden mit Exit `5` verworfen. Der Scaffold schreibt
   selbst nichts.
-- **Keine Config-Loader-Logik**: gehoert zu #2069.
+- **Config nur explizit**: `--config` wird nur geladen, wenn der Pfad explizit
+  uebergeben wird. Ohne `--config` laeuft der Scaffold weiter ohne Config.
+- **Config fail-closed**: `allow_apply_default` muss `false` sein; Trading-
+  State-Tabellen und Governance-Mirror-Tabellen duerfen nicht in
+  `allowed_tables` erscheinen und muessen in `forbidden_tables` enthalten sein.
+- **Keine Secrets in Beispiel-Config**:
+  `infrastructure/config/surrealdb/context_import.local.example.yaml` enthaelt
+  nur lokale Platzhalter. Reale Credentials muessen aus `SECRETS_PATH` oder
+  der Laufzeitumgebung kommen, nicht aus dieser YAML.
 - **Keine JSONL-Validation-Logik**: gehoert zu Folge-Slice.
 - **Keine Plan-/Audit-/Rollback-Logik**: jeweils eigene Folge-Slices.
 
@@ -63,10 +74,45 @@ Folge-Slice (Apply-Implementation) entfernt werden.
 | `--namespace` | `None` | nein | nicht verwendet |
 | `--database` | `None` | nein | nicht verwendet |
 | `--run-id` | `None` | nein | nur geparsed |
+| `--config` | `None` | nein | explizite lokale YAML laden und validieren, kein Write |
 | `--report-output` | `None` | nein | Whitelist-Check, kein Write |
 | `--dry-run` | `False` (Default-Verhalten ist dennoch dry-run) | nein | redundant; explizit erlaubt |
 | `--apply` | `False` | nein | `True` ⇒ Exit `5` |
 | `--format` | `json` | nein | `json` / `jsonl` / `markdown` |
+
+---
+
+## 4.1 Lokaler Config-Vertrag (#2069)
+
+Kanonische Beispiel-Datei:
+
+```text
+infrastructure/config/surrealdb/context_import.local.example.yaml
+```
+
+Erwartete Felder:
+
+| Feld | Pflicht? | Vertrag |
+|---|---|---|
+| `schema_version` | ja | muss `context-import-local/v0` sein |
+| `surreal_url` | ja | nicht-leerer String, nur validiert/echoed |
+| `namespace` | ja | nicht-leerer String, nur validiert/echoed |
+| `database` | ja | nicht-leerer String, nur validiert/echoed |
+| `auth_mode` | ja | `none` / `root` / `scope`; Beispiel nutzt `none` |
+| `timeout` | ja | positiver Integer |
+| `allow_apply_default` | ja | muss `false` sein |
+| `allowed_tables` | ja | nicht-leere Liste nur fuer Context-Intelligence-Tabellen |
+| `forbidden_tables` | ja | muss Trading-State- und Governance-Mirror-Tabellen enthalten |
+
+Explizit blockierte Tabellen fuer `allowed_tables`:
+
+```text
+orders, fills, positions, balances, pnl, risk_state, execution_state,
+governance_event, governance_decision, governance_state
+```
+
+Diese Tabellen muessen in `forbidden_tables` stehen. Ueberschneidungen zwischen
+`allowed_tables` und `forbidden_tables` sind ungueltig.
 
 ---
 
@@ -77,7 +123,7 @@ Folge-Slice (Apply-Implementation) entfernt werden.
 | 0 | Erfolg / Scaffold acknowledged |
 | 1 | Validierungsfehler (reserviert; im Scaffold nicht ausgeloest) |
 | 2 | CLI-Usage / argparse-Fehler |
-| 3 | Input-Datei nicht gefunden (reserviert) |
+| 3 | Input-/Config-Datei nicht gefunden |
 | 4 | Unsupported Format (defensiv; argparse faengt das frueher) |
 | 5 | Write denied (Pfad-Verstoss ODER Apply im Scaffold) |
 | 6 | Interner Fehler |
@@ -96,10 +142,16 @@ Erfolgsantwort (Subcommand-Stub):
   "dry_run": true,
   "apply_requested": false,
   "surrealdb_connection": "disabled",
+  "config_loaded": false,
   "implemented": false,
   "note": "scaffold only; ..."
 }
 ```
+
+Wenn `--config` gesetzt ist, wird die Antwort um `config_loaded: true` und ein
+`config`-Objekt mit den validierten lokalen Config-Feldern erweitert. Das
+Objekt ist Audit-/Debug-Ausgabe fuer lokale Entwicklung; es darf keine Secrets
+enthalten.
 
 Fehlerantwort:
 
@@ -128,6 +180,9 @@ weder aus CLI-Args noch aus der Umgebung abgeleitet.
 - Jeder Slice, der eine SurrealDB-Verbindung einfuehrt, muss
   `surrealdb_connection` korrekt setzen und mindestens einen Test
   liefern, der den Connection-Pfad explizit verifiziert.
+- Jeder Slice, der Secrets oder Authentifizierung nutzt, muss die
+  Beispiel-Config secret-frei halten und echte Credentials ausserhalb der
+  versionierten YAML laden.
 
 ---
 

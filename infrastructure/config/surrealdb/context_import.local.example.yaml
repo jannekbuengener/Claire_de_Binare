@@ -1,0 +1,100 @@
+# context_import.local.example.yaml
+#
+# Example / template configuration for the local SurrealDB Context
+# Intelligence importer (tools/surrealdb/context_importer.py).
+#
+# This file is an EXAMPLE ONLY. It MUST NOT contain real secrets,
+# real production URLs, or any trading-state table names. Copy this
+# file to `context_import.local.yaml` (gitignored) and fill in local
+# values for development use.
+#
+# Source authority:
+#   issue:  #2069 (Context Importer: local config loader + example)
+#   parent: #2067
+#   epic:   #1976
+#   depends-on: #1979, #2037
+#
+# Guardrails:
+#   - The Context Intelligence DB is SEPARATE from the Governance Mirror.
+#   - `allow_apply_default` MUST remain false in this example.
+#   - The importer's `apply` subcommand remains hard-blocked
+#     (exit code 5 = WRITE_DENIED) regardless of this config.
+#   - Trading-state tables (orders, fills, positions, balances, pnl,
+#     risk_state, execution_state) MUST NOT appear in `allowed_tables`
+#     and MUST be listed under `forbidden_tables`.
+#   - Live-readiness verdict for this surface: NO-GO.
+
+schema_version: context-import-local/v0
+
+source_document:
+  authority:
+    issue: "#2069"
+    role: "context-importer-local-config-example"
+  issue_refs:
+    epic: "#1976"
+    parent: "#2067"
+    target: "#2069"
+    dependencies:
+      - "#1979"
+      - "#2037"
+    deferred: []
+
+mode:
+  surrealdb_apply: forbidden
+  live_readiness_verdict: NO-GO
+  human_gate_required: true
+
+# ---------------------------------------------------------------------------
+# SurrealDB connection (LOCAL DEV PLACEHOLDERS ONLY)
+# ---------------------------------------------------------------------------
+# Replace with values from your local dev SurrealDB instance.
+# Do NOT point this at a production or shared environment.
+surreal_url: "ws://127.0.0.1:8000/rpc"
+namespace: "cdb_context_local"
+database: "cdb_context_intel"
+
+# Authentication mode for the local importer.
+# Allowed values: "none" | "root" | "scope"
+# For the example/template, we default to "none" because no real
+# credentials may be embedded here. Real credentials must be loaded
+# from SECRETS_PATH at runtime, never from this YAML.
+auth_mode: "none"
+
+# Connection timeout in seconds for the local importer.
+timeout: 10
+
+# ---------------------------------------------------------------------------
+# Apply gating
+# ---------------------------------------------------------------------------
+# MUST remain false in this example. The importer also enforces a
+# hard block on the `apply` subcommand (exit 5) independently of this flag.
+allow_apply_default: false
+
+# ---------------------------------------------------------------------------
+# Table allow/deny lists
+# ---------------------------------------------------------------------------
+# Only Context Intelligence tables may appear under `allowed_tables`.
+# Trading-state tables are explicitly forbidden and listed below so the
+# config loader can fail-closed if they are ever moved into `allowed_tables`.
+
+allowed_tables:
+  - context_document
+  - context_chunk
+  - context_embedding
+  - context_source
+  - context_tag
+  - context_link
+
+forbidden_tables:
+  # Trading-state tables — never allowed in the Context Intelligence DB.
+  - orders
+  - fills
+  - positions
+  - balances
+  - pnl
+  - risk_state
+  - execution_state
+  # Governance Mirror tables — separate surface, not this importer.
+  - governance_event
+  - governance_decision
+  - governance_state
