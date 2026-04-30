@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 
 from tools.surrealdb.context_indexer import (
+    CommandResult,
+    ScopeConfigSummary,
     SCHEMA_VERSION,
     WriteDeniedError,
     load_scope_config,
@@ -128,6 +130,22 @@ def test_apply_writes_allows_approved_output_roots(output: Path) -> None:
 
 
 @pytest.mark.unit
+def test_apply_writes_rejects_symlink_escape(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    try:
+        Path("artifacts").symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink creation unavailable: {exc}")
+
+    with pytest.raises(WriteDeniedError):
+        validate_output_path(Path("artifacts/result.json"), apply_writes=True)
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("output", [Path("artifacts"), Path("temp")])
 def test_apply_writes_rejects_directory_only_output_paths(output: Path) -> None:
     with pytest.raises(WriteDeniedError):
@@ -221,6 +239,51 @@ def test_explicit_dry_run_suppresses_apply_writes(
     assert payload["dry_run"] is True
     assert payload["write_requested"] is True
     assert not (tmp_path / output).exists()
+
+
+@pytest.mark.unit
+def test_write_error_returns_structured_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    output_parent = Path("artifacts/context-indexer")
+    output_parent.parent.mkdir()
+    output_parent.write_text("not a directory", encoding="utf-8")
+    scope_config = ScopeConfigSummary(
+        path="scope.yaml",
+        schema_version="context-ingestion-scope/v0",
+        include_paths=[],
+        conditional_paths=[],
+        exclude_paths=[],
+        sensitivity_classes=[],
+    )
+    result = CommandResult(
+        command="scan",
+        dry_run=False,
+        write_requested=True,
+        output="artifacts/context-indexer/result.json",
+        format="json",
+        scope_config=scope_config,
+    )
+    monkeypatch.setattr(
+        "tools.surrealdb.context_indexer.build_result", lambda args: result
+    )
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            "unused.yaml",
+            "--apply-writes",
+            "--output",
+            result.output,
+        ]
+    )
+
+    assert exit_code == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "output_write_failed"
+    assert "output write failed" in payload["message"]
 
 
 @pytest.mark.unit

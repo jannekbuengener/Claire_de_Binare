@@ -75,6 +75,11 @@ class WriteDeniedError(ContextIndexerError):
     code = "write_denied"
 
 
+class OutputWriteError(ContextIndexerError):
+    exit_code = EXIT_WRITE_DENIED
+    code = "output_write_failed"
+
+
 @dataclass(frozen=True)
 class ScopeConfigSummary:
     path: str
@@ -205,6 +210,16 @@ def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None
         raise WriteDeniedError(f"output must be under one of: {approved}")
     if len(normalized.parts) == 1 or normalized.suffix == "":
         raise WriteDeniedError("output must include a file name under an approved root")
+
+    repo_root = Path.cwd().resolve()
+    approved_root = repo_root / normalized.parts[0]
+    resolved_output = (repo_root / normalized).resolve(strict=False)
+    try:
+        resolved_output.relative_to(approved_root)
+    except ValueError as exc:
+        raise WriteDeniedError(
+            "output path must resolve under its approved repo-local root"
+        ) from exc
     return normalized
 
 
@@ -252,9 +267,14 @@ def write_if_requested(result: CommandResult, rendered: str) -> None:
         return
     if result.output is None:
         raise WriteDeniedError("writes require an explicit --output path")
-    output_path = Path(result.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(rendered + "\n", encoding="utf-8")
+    output_path = validate_output_path(Path(result.output), apply_writes=True)
+    if output_path is None:
+        raise WriteDeniedError("writes require an explicit --output path")
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(rendered + "\n", encoding="utf-8")
+    except OSError as exc:
+        raise OutputWriteError(f"output write failed: {exc}") from exc
 
 
 def build_parser() -> argparse.ArgumentParser:
