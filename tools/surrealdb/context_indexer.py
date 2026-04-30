@@ -203,6 +203,8 @@ def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None
     if not normalized.parts or normalized.parts[0] not in APPROVED_OUTPUT_ROOTS:
         approved = ", ".join(f"{root}/" for root in APPROVED_OUTPUT_ROOTS)
         raise WriteDeniedError(f"output must be under one of: {approved}")
+    if len(normalized.parts) == 1 or normalized.suffix == "":
+        raise WriteDeniedError("output must include a file name under an approved root")
     return normalized
 
 

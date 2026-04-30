@@ -128,6 +128,41 @@ def test_apply_writes_allows_approved_output_roots(output: Path) -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize("output", [Path("artifacts"), Path("temp")])
+def test_apply_writes_rejects_directory_only_output_paths(output: Path) -> None:
+    with pytest.raises(WriteDeniedError):
+        validate_output_path(output, apply_writes=True)
+
+
+@pytest.mark.unit
+def test_apply_writes_directory_output_returns_structured_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = tmp_path / SCOPE_CONFIG
+    scope_config.parent.mkdir(parents=True)
+    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
+    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    Path("artifacts").mkdir()
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--output",
+            "artifacts",
+        ]
+    )
+
+    assert exit_code == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "write_denied"
+    assert "output must include a file name" in payload["message"]
+
+
+@pytest.mark.unit
 def test_apply_writes_reports_not_dry_run_and_writes_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
