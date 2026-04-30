@@ -75,6 +75,10 @@ class WriteDeniedError(ContextIndexerError):
     code = "write_denied"
 
 
+class OutputPathOutsideAllowedRootsError(WriteDeniedError):
+    code = "output_path_outside_allowed_roots"
+
+
 class OutputWriteError(ContextIndexerError):
     exit_code = EXIT_WRITE_DENIED
     code = "output_write_failed"
@@ -213,12 +217,18 @@ def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None
 
     repo_root = Path.cwd().resolve()
     approved_root = repo_root / normalized.parts[0]
+    resolved_approved_root = approved_root.resolve(strict=False)
     resolved_output = (repo_root / normalized).resolve(strict=False)
     try:
-        resolved_output.relative_to(approved_root)
+        if resolved_approved_root != approved_root:
+            raise OutputPathOutsideAllowedRootsError(
+                "approved output root must remain anchored under the repository"
+            )
+        resolved_approved_root.relative_to(repo_root)
+        resolved_output.relative_to(resolved_approved_root)
     except ValueError as exc:
-        raise WriteDeniedError(
-            "output path must resolve under its approved repo-local root"
+        raise OutputPathOutsideAllowedRootsError(
+            "output path must resolve under a repo-local approved root"
         ) from exc
     return normalized
 

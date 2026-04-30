@@ -21,6 +21,14 @@ from tools.surrealdb.context_indexer import (
 SCOPE_CONFIG = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
 
 
+def _copy_scope_config(tmp_path: Path) -> Path:
+    scope_config = tmp_path / SCOPE_CONFIG
+    scope_config.parent.mkdir(parents=True)
+    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
+    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    return scope_config
+
+
 @pytest.mark.unit
 def test_scope_config_loads_canonical_file() -> None:
     summary = load_scope_config(SCOPE_CONFIG)
@@ -157,10 +165,7 @@ def test_apply_writes_directory_output_returns_structured_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    scope_config = tmp_path / SCOPE_CONFIG
-    scope_config.parent.mkdir(parents=True)
-    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
-    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    scope_config = _copy_scope_config(tmp_path)
     Path("artifacts").mkdir()
 
     exit_code = main(
@@ -185,10 +190,7 @@ def test_apply_writes_reports_not_dry_run_and_writes_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    scope_config = tmp_path / SCOPE_CONFIG
-    scope_config.parent.mkdir(parents=True)
-    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
-    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    scope_config = _copy_scope_config(tmp_path)
     output = Path("artifacts/context-indexer/result.json")
 
     exit_code = main(
@@ -216,10 +218,7 @@ def test_explicit_dry_run_suppresses_apply_writes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    scope_config = tmp_path / SCOPE_CONFIG
-    scope_config.parent.mkdir(parents=True)
-    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
-    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    scope_config = _copy_scope_config(tmp_path)
     output = Path("artifacts/context-indexer/result.json")
 
     exit_code = main(
@@ -284,6 +283,106 @@ def test_write_error_returns_structured_error(
     payload = json.loads(capsys.readouterr().out)
     assert payload["error"] == "output_write_failed"
     assert "output write failed" in payload["message"]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("approved_root", ["artifacts", "temp"])
+def test_symlinked_approved_root_returns_structured_containment_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys,
+    approved_root: str,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = _copy_scope_config(tmp_path)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-root"
+    outside.mkdir()
+    try:
+        Path(approved_root).symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink creation unavailable: {exc}")
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--output",
+            f"{approved_root}/context-indexer/result.json",
+        ]
+    )
+
+    assert exit_code == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "output_path_outside_allowed_roots"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("approved_root", ["artifacts", "temp"])
+def test_symlinked_child_returns_structured_containment_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys,
+    approved_root: str,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = _copy_scope_config(tmp_path)
+    outside = tmp_path.parent / f"{tmp_path.name}-outside-child"
+    outside.mkdir()
+    root_dir = tmp_path / approved_root
+    root_dir.mkdir()
+    try:
+        (root_dir / "escape").symlink_to(outside, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink creation unavailable: {exc}")
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--output",
+            f"{approved_root}/escape/result.json",
+        ]
+    )
+
+    assert exit_code == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "output_path_outside_allowed_roots"
+
+
+@pytest.mark.unit
+def test_parent_directory_creation_failure_returns_structured_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = _copy_scope_config(tmp_path)
+    original_mkdir = Path.mkdir
+
+    def failing_mkdir(self: Path, *args: object, **kwargs: object) -> None:
+        if self == Path("artifacts/context-indexer"):
+            raise PermissionError("mkdir blocked for test")
+        original_mkdir(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", failing_mkdir)
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--output",
+            "artifacts/context-indexer/result.json",
+        ]
+    )
+
+    assert exit_code == 5
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "output_write_failed"
+    assert "mkdir blocked for test" in payload["message"]
 
 
 @pytest.mark.unit
