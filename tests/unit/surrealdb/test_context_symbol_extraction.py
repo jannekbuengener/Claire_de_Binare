@@ -524,6 +524,102 @@ def test_derive_dependency_edges_imports_inferred_when_not_resolved() -> None:
     assert import_edges[0].inferred is True
 
 
+# ---------------------------------------------------------------------------
+# Relative import resolution (Codex review fix — #2062 addendum)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_relative_sibling_resolved() -> None:
+    """from . import sibling resolves to pkg/sibling.py when that artifact exists."""
+    src = "from . import sibling\n"
+    src_artifact = _make_artifact("pkg/current.py")
+    sibling_artifact = _make_artifact("pkg/sibling.py", normalized_sha256="c" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, sibling_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].from_id == src_artifact.artifact_id
+    assert import_edges[0].to_id == sibling_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_relative_submodule_resolved() -> None:
+    """from .subpkg import util resolves to pkg/subpkg/util.py when that artifact exists."""
+    src = "from .subpkg import util\n"
+    src_artifact = _make_artifact("pkg/current.py")
+    util_artifact = _make_artifact("pkg/subpkg/util.py", normalized_sha256="d" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, util_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].from_id == src_artifact.artifact_id
+    assert import_edges[0].to_id == util_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_relative_unresolved_is_inferred() -> None:
+    """Relative imports with no matching artifact produce an inferred edge (no crash)."""
+    src = "from . import nonexistent_module\n"
+    src_artifact = _make_artifact("pkg/current.py")
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].inferred is True
+    assert import_edges[0].source_path == "pkg/current.py"
+
+
+@pytest.mark.unit
+def test_extract_import_references_stores_import_level() -> None:
+    """ImportReference.import_level is 0 for absolute, 1+ for relative imports."""
+    src = "import os\nfrom . import sibling\nfrom ..utils import helper\n"
+    artifact = _make_artifact("pkg/mod.py")
+    refs, _ = extract_import_references(artifact, src)
+
+    by_module = {r.module: r for r in refs}
+    assert by_module["os"].import_level == 0
+    assert by_module[""].import_level == 1       # from . import sibling
+    assert by_module["utils"].import_level == 2   # from ..utils import helper
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_double_dot_relative_resolved() -> None:
+    """from ..utils import helper resolves one package level up from source dir."""
+    src = "from ..utils import helper\n"
+    src_artifact = _make_artifact("pkg/sub/mod.py")
+    # level=2 in pkg/sub/mod.py → base is pkg/ → target is pkg/utils/helper.py
+    helper_artifact = _make_artifact("pkg/utils/helper.py", normalized_sha256="e" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, helper_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].to_id == helper_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_relative_package_init_fallback() -> None:
+    """from .subpkg import util falls back to pkg/subpkg/__init__.py when util.py absent."""
+    src = "from .subpkg import util\n"
+    src_artifact = _make_artifact("pkg/current.py")
+    # Only the __init__.py of subpkg exists, not subpkg/util.py
+    init_artifact = _make_artifact("pkg/subpkg/__init__.py", normalized_sha256="f" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, init_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].to_id == init_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
 @pytest.mark.unit
 def test_derive_dependency_edges_documents_resolved() -> None:
     py_artifact = _make_artifact("mymod.py")

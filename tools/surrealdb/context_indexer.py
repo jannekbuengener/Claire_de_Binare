@@ -434,6 +434,7 @@ class ImportReference:
     line_number: int
     confidence: str
     inferred: bool
+    import_level: int = 0  # AST node.level; 0 = absolute, 1+ = relative dots
 
     def to_payload(self, run_id: str) -> dict[str, Any]:
         return {
@@ -450,6 +451,7 @@ class ImportReference:
             "line_number": self.line_number,
             "confidence": self.confidence,
             "inferred": self.inferred,
+            "import_level": self.import_level,
         }
 
 
@@ -1408,6 +1410,7 @@ def extract_import_references(
                         line_number=node.lineno,
                         confidence="high",
                         inferred=False,
+                        import_level=0,
                     )
                 )
         elif isinstance(node, ast.ImportFrom):
@@ -1430,6 +1433,7 @@ def extract_import_references(
                     line_number=node.lineno,
                     confidence="high",
                     inferred=False,
+                    import_level=level,
                 )
             )
 
@@ -1604,12 +1608,50 @@ def derive_dependency_edges(
         )
 
     # "imports": file artifact → imported file artifact or inferred module node
-    def _module_to_path(module: str) -> str | None:
-        parts = module.replace(".", "/")
-        for candidate in (f"{parts}.py", f"{parts}/__init__.py"):
-            if candidate in artifact_by_path:
-                return candidate
-        return None
+    def _module_to_path(
+        module: str, level: int, source_path: str, imported_names: list[str]
+    ) -> str | None:
+        """Resolve a module reference to an artifact source_path.
+
+        Handles both absolute imports (level=0) and relative imports (level>0).
+        For relative imports with module="", tries each name in imported_names
+        as a sibling module (e.g. ``from . import sibling``).
+        Returns the first matching artifact path, or None if unresolvable.
+        """
+        if level > 0:
+            src_parts = Path(source_path).parent.parts
+            n_up = level - 1
+            if n_up > len(src_parts):
+                return None
+            base_parts = src_parts[: len(src_parts) - n_up] if n_up else src_parts
+            base = "/".join(base_parts)
+            if module:
+                mod_rel = module.replace(".", "/")
+                # Try each imported name as a submodule first (most specific)
+                for name in imported_names:
+                    for cand in (
+                        f"{base}/{mod_rel}/{name}.py",
+                        f"{base}/{mod_rel}/{name}/__init__.py",
+                    ):
+                        if cand in artifact_by_path:
+                            return cand
+                # Fall back to the module package itself
+                for cand in (f"{base}/{mod_rel}.py", f"{base}/{mod_rel}/__init__.py"):
+                    if cand in artifact_by_path:
+                        return cand
+            else:
+                # bare relative: ``from . import name`` — each name is a sibling
+                for name in imported_names:
+                    for cand in (f"{base}/{name}.py", f"{base}/{name}/__init__.py"):
+                        if cand in artifact_by_path:
+                            return cand
+            return None
+        else:
+            parts = module.replace(".", "/")
+            for cand in (f"{parts}.py", f"{parts}/__init__.py"):
+                if cand in artifact_by_path:
+                    return cand
+            return None
 
     for imp_ref in import_references:
         if imp_ref.locality != "local":
@@ -1617,7 +1659,12 @@ def derive_dependency_edges(
         src_artifact = artifact_by_path.get(imp_ref.source_path)
         if src_artifact is None:
             continue
-        target_path = _module_to_path(imp_ref.module)
+        target_path = _module_to_path(
+            imp_ref.module,
+            imp_ref.import_level,
+            imp_ref.source_path,
+            imp_ref.imported_names,
+        )
         if target_path is not None:
             target_artifact = artifact_by_path[target_path]
             edges.append(
