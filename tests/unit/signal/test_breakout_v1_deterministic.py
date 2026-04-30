@@ -172,6 +172,45 @@ def test_no_signal_before_warmup():
 
 
 @pytest.mark.unit
+def test_runtime_lookback_is_elapsed_time_not_sample_count_regression():
+    """
+    Regression for #1941: dense observations must not satisfy the warmup span
+    unless the elapsed wall-clock time covers the configured lookback window.
+    """
+    config = _make_config()
+    engine = _make_engine(config)
+    base_ts = 1_700_000_000
+
+    # 180 one-second ticks produce far more observations than the 3-minute
+    # lookback value, but they still span only 179 seconds of wall-clock time.
+    for second_offset in range(180):
+        signal = _tick(
+            engine,
+            ts=base_ts + second_offset,
+            price=100.0,
+            high=100.0,
+            low=99.0,
+        )
+        assert signal is None, (
+            "Dense ticks below the elapsed-time warmup span must not emit a BUY"
+        )
+
+    # The next tick reaches the full 3-minute span and becomes the first
+    # evaluable breakout boundary.
+    signal = _tick(
+        engine,
+        ts=base_ts + 180,
+        price=101.0,
+        high=101.0,
+        low=100.0,
+    )
+
+    assert signal is not None
+    assert signal.side == "BUY"
+    assert signal.reason == "breakout_entry"
+
+
+@pytest.mark.unit
 def test_no_signal_price_at_exactly_highest_high():
     """
     Boundary: close_now == highest_high must NOT fire (strict >, buffer=0.0).

@@ -1,5 +1,9 @@
 """Unit tests for deterministic primary breakout historical bridge."""
 
+from __future__ import annotations
+
+from unittest.mock import patch
+
 import pytest
 
 from core.replay.historical_bridge import (
@@ -7,6 +11,8 @@ from core.replay.historical_bridge import (
     PrimaryBreakoutBridgeConfig,
     build_primary_breakout_historical_bridge,
 )
+from services.signal.config import SignalConfig
+from services.signal.service import SignalEngine
 
 
 def _candles(
@@ -32,6 +38,11 @@ def _candles(
         }
         rows.append(row)
     return rows
+
+
+def _make_runtime_engine(config: SignalConfig) -> SignalEngine:
+    with patch("services.signal.service.config", config):
+        return SignalEngine()
 
 
 @pytest.mark.unit
@@ -131,3 +142,78 @@ def test_bridge_rejects_invalid_trade_side_mode_in_config() -> None:
 
     with pytest.raises(HistoricalBridgeError, match="trade_side_mode must be long_only"):
         build_primary_breakout_historical_bridge(candles, config=config)
+
+
+@pytest.mark.unit
+def test_runtime_and_historical_bridge_align_on_first_evaluable_breakout() -> None:
+    bridge_config = PrimaryBreakoutBridgeConfig(
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=0,
+    )
+    signal_config = SignalConfig(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        min_volume=100.0,
+        entry_lookback_minutes=3,
+        exit_lookback_minutes=2,
+        breakout_buffer=0.0,
+        min_minutes_between_entries=0,
+        trade_side_mode="long_only",
+    )
+    base_ts_ms = 1_700_000_000_000
+    candles = [
+        {
+            "symbol": "BTCUSDT",
+            "ts_ms": base_ts_ms + index * 60_000,
+            "open": 99.5 + index,
+            "high": 100.0 + index,
+            "low": 99.0 + index,
+            "close": 100.0 + index,
+            "volume": 10_000.0 + index,
+            "regime_id": 0,
+            "market_state_fresh": True,
+            "regime_fresh": True,
+        }
+        for index in range(4)
+    ]
+
+    runtime_engine = _make_runtime_engine(signal_config)
+    runtime_signal = None
+    runtime_signal_index = None
+    for index, candle in enumerate(candles):
+        signal = runtime_engine.process_market_data(
+            {
+                "symbol": candle["symbol"],
+                "timestamp": candle["ts_ms"] // 1000,
+                "price": candle["close"],
+                "close": candle["close"],
+                "high": candle["high"],
+                "low": candle["low"],
+                "volume": candle["volume"],
+                "regime_id": candle["regime_id"],
+                "market_state_fresh": candle["market_state_fresh"],
+                "regime_fresh": candle["regime_fresh"],
+            }
+        )
+        if signal is not None:
+            runtime_signal = signal
+            runtime_signal_index = index
+
+    requests = build_primary_breakout_historical_bridge(candles, config=bridge_config)
+
+    assert len(requests) == 1
+    assert runtime_signal is not None
+    assert runtime_signal_index == 3
+    assert runtime_signal.side == "BUY"
+    assert runtime_signal.reason == "breakout_entry"
+
+    first_request = requests[0]
+    assert int(first_request.market_event["ts_ms"]) == candles[runtime_signal_index]["ts_ms"]
+    assert first_request.market_event["market_state"]["close_now"] == runtime_signal.price
+    assert (
+        first_request.market_event["market_state"]["highest_high"]
+        == runtime_signal.metadata["highest_high"]
+        == 102.0
+    )
