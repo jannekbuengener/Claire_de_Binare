@@ -25,7 +25,10 @@ Run `gh` commands with escalated network access when needed.
    - `gh api /repos/{owner}/{repo}/pulls/<PR>/comments`
    - optional: use a repo-provided helper script only if it exists locally
 5. Summarize actionable comments in numbered form.
-6. If the user selected comments to address, implement the changes or draft the replies.
+6. Stop and ask for explicit user GO, separately for:
+   - code changes (repo writes)
+   - GitHub writes (reply, review, resolve threads)
+7. Only after explicit GO: implement the selected code changes and/or draft the selected replies/resolves.
 
 ## Rules
 - Do not assume there is an open PR for the current branch.
@@ -33,3 +36,7 @@ Run `gh` commands with escalated network access when needed.
 - If auth or rate limits fail, ask the user to re-authenticate and retry.
 - Keep code changes scoped to the selected comments.
 - Do not read `#1492` as LR clearance.
+- Default is read-only: first read, then plan, then wait for explicit GO.
+- No code changes without explicit user GO.
+- No GitHub writes without explicit user GO (reply/review/resolve).
+- Never resolve review threads blindly; show the planned replies/resolves first and why.

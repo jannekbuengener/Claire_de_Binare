@@ -18,7 +18,9 @@ description: CDB exchange-adapter work in the current working repo. Use when Cod
 
 ## Non-negotiables
 - No real keys in code.
-- No live endpoints by default; paper or testnet only when explicitly needed.
+- Default-safe scope is paper/mock only.
+- Testnet is allowed only with explicit user GO and an explicit reason.
+- Live endpoints / real keys are never the default; do not derive any live-trading authorization from this skill text.
 - Normalize to the repo's current internal schema instead of inventing a new one.
 - Add tests for happy path plus failure taxonomy.
 - Include one simulated failure case that proves retry or backoff behavior.
