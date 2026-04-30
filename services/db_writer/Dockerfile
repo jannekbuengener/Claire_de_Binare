@@ -1,7 +1,7 @@
 # Dockerfile - DB Writer Service
 # Claire de Binare Trading Bot
 
-FROM python:3.11-slim-trixie@sha256:233de06753d30d120b1a3ce359d8d3be8bda78524cd8f520c99883bfe33964cf
+FROM python:3.11-slim-trixie@sha256:6d85378d88a19cd4d76079817532d62232be95757cb45945a99fec8e8084b9c2
 
 WORKDIR /app
 
