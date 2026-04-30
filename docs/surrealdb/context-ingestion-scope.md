@@ -123,6 +123,7 @@ Die folgenden Dateitypen sind fuer Ingestion zulaessig, sofern sie innerhalb ein
 | JSON | `.json` | strukturierte Contracts, Metadaten, Schemas |
 | Python | `.py` | statische Symbol- und Contract-Extraktion |
 | TOML | `.toml` | Tooling- und Projektkonfiguration |
+| SurrealQL | `.surql` | statische SurrealDB-Schema-Drafts und Query-/Schema-Artefakte, keine produktive Apply-Freigabe |
 | Shell | `.sh` | statische Tooling- und Runbook-Unterstuetzung |
 | PowerShell | `.ps1` | Windows-Tooling und Operator-Helfer |
 | Compose YAML | `compose*.yml`, `compose*.yaml` | Stack-Struktur, keine Runtime-Freigabe |
