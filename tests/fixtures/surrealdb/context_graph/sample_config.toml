@@ -1,0 +1,12 @@
+[database]
+host = "localhost"
+port = 8000
+name = "cdb"
+
+[auth]
+api_key = "sk-test-abc123xyz456"
+username = "admin"
+
+[feature_flags]
+enable_replay = true
+max_retries = 3

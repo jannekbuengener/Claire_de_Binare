@@ -7,12 +7,14 @@ does not mutate runtime, trading, risk, execution, or live-readiness state.
 from __future__ import annotations
 
 import argparse
+import ast
 import fnmatch
 import hashlib
 import json
 import re
 import subprocess
-from dataclasses import dataclass
+import tomllib
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +56,12 @@ EXPORT_FILES = {
     "doc_chunks": "doc_chunks.jsonl",
     "skipped_files": "skipped_files.jsonl",
     "forbidden_files": "forbidden_files.jsonl",
+    "code_symbols": "code_symbols.jsonl",
+    "import_references": "import_references.jsonl",
+    "test_cases": "test_cases.jsonl",
+    "config_references": "config_references.jsonl",
+    "doc_code_links": "doc_code_links.jsonl",
+    "dependency_edges": "dependency_edges.jsonl",
 }
 
 EXIT_VALIDATION_ERROR = 1
@@ -80,6 +88,15 @@ TRADING_STATE_PATH_PARTS = {
     "broker_state",
     "execution_state",
 }
+
+KNOWN_LOCAL_MODULE_PREFIXES: frozenset[str] = frozenset({
+    "core", "services", "tools", "infrastructure", "tests"
+})
+SECRET_CONFIG_KEY_RE = re.compile(
+    r"(?i)(api[_\-]?key|private[_\-]?key|password|passwd|secret|token|credential"
+    r"|auth[_\-]?key|access[_\-]?key|signing[_\-]?key|encryption[_\-]?key)"
+)
+BACKTICK_SYMBOL_RE = re.compile(r"`([A-Za-z_]\w*(?:\.\w+)*)`")
 
 
 class ContextIndexerError(Exception):
@@ -353,6 +370,202 @@ class ValidationFinding:
 
 
 @dataclass(frozen=True)
+class AstParseError:
+    source_path: str
+    error_message: str
+    error_type: str
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "source_path": self.source_path,
+            "error_message": self.error_message,
+            "error_type": self.error_type,
+        }
+
+
+@dataclass(frozen=True)
+class CodeSymbol:
+    symbol_id: str
+    source_path: str
+    source_hash: str
+    symbol_type: str
+    name: str
+    qualified_name: str
+    line_start: int
+    line_end: int
+    decorators: list[str]
+    is_async: bool
+    parent_class: str | None
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "symbol_id": self.symbol_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "symbol_type": self.symbol_type,
+            "name": self.name,
+            "qualified_name": self.qualified_name,
+            "line_start": self.line_start,
+            "line_end": self.line_end,
+            "decorators": self.decorators,
+            "is_async": self.is_async,
+            "parent_class": self.parent_class,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
+class ImportReference:
+    import_id: str
+    source_path: str
+    source_hash: str
+    module: str
+    alias: str | None
+    imported_names: list[str]
+    import_type: str
+    locality: str
+    line_number: int
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "import_id": self.import_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "module": self.module,
+            "alias": self.alias,
+            "imported_names": self.imported_names,
+            "import_type": self.import_type,
+            "locality": self.locality,
+            "line_number": self.line_number,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
+class TestCase:
+    test_id: str
+    source_path: str
+    source_hash: str
+    symbol_id: str
+    name: str
+    qualified_name: str
+    line_start: int
+    line_end: int
+    test_type: str
+    parent_class: str | None
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "test_id": self.test_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "symbol_id": self.symbol_id,
+            "name": self.name,
+            "qualified_name": self.qualified_name,
+            "line_start": self.line_start,
+            "line_end": self.line_end,
+            "test_type": self.test_type,
+            "parent_class": self.parent_class,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
+class ConfigReference:
+    config_ref_id: str
+    source_path: str
+    source_hash: str
+    config_key: str
+    config_value: str
+    sensitive: bool
+    line_number: int
+    config_format: str
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "config_ref_id": self.config_ref_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "config_key": self.config_key,
+            "config_value": self.config_value,
+            "sensitive": self.sensitive,
+            "line_number": self.line_number,
+            "config_format": self.config_format,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
+class DocCodeLink:
+    link_id: str
+    source_path: str
+    source_hash: str
+    target_symbol: str
+    source_chunk_id: str | None
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "link_id": self.link_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "target_symbol": self.target_symbol,
+            "source_chunk_id": self.source_chunk_id,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
+class DependencyEdge:
+    edge_id: str
+    from_id: str
+    to_id: str
+    edge_type: str
+    source_path: str | None
+    confidence: str
+    inferred: bool
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "edge_id": self.edge_id,
+            "from_id": self.from_id,
+            "to_id": self.to_id,
+            "edge_type": self.edge_type,
+            "source_path": self.source_path,
+            "confidence": self.confidence,
+            "inferred": self.inferred,
+        }
+
+
+@dataclass(frozen=True)
 class IndexerResult:
     root: Path
     scope_config: ScopeConfigSummary
@@ -366,6 +579,13 @@ class IndexerResult:
     doc_sections: list[DocSection]
     doc_chunks: list[DocChunk]
     validation_findings: list[ValidationFinding]
+    ast_parse_errors: list[AstParseError] = field(default_factory=list)
+    code_symbols: list[CodeSymbol] = field(default_factory=list)
+    import_references: list[ImportReference] = field(default_factory=list)
+    test_cases: list[TestCase] = field(default_factory=list)
+    config_references: list[ConfigReference] = field(default_factory=list)
+    doc_code_links: list[DocCodeLink] = field(default_factory=list)
+    dependency_edges: list[DependencyEdge] = field(default_factory=list)
 
     @property
     def included_files(self) -> list[FileRecord]:
@@ -1054,6 +1274,432 @@ def build_markdown_records(
     )
 
 
+# ---------------------------------------------------------------------------
+# Wave 9: Static Python AST symbol & dependency extraction
+# ---------------------------------------------------------------------------
+
+
+def _parse_python_ast(
+    source_path: str, text: str
+) -> tuple["ast.Module | None", "AstParseError | None"]:
+    """Parse Python source text into an AST; return error record on failure."""
+    try:
+        tree = ast.parse(text, filename=source_path)
+        return tree, None
+    except SyntaxError as exc:
+        return None, AstParseError(
+            source_path=source_path,
+            error_message=str(exc),
+            error_type="SyntaxError",
+        )
+    except Exception as exc:  # pragma: no cover — unexpected parser errors
+        return None, AstParseError(
+            source_path=source_path,
+            error_message=str(exc),
+            error_type=type(exc).__name__,
+        )
+
+
+def _classify_import_locality(module: str, level: int) -> str:
+    """Return 'local' for relative imports or known in-repo root modules."""
+    if level > 0:
+        return "local"
+    root = module.split(".")[0] if module else ""
+    return "local" if root in KNOWN_LOCAL_MODULE_PREFIXES else "unknown"
+
+
+def extract_code_symbols(
+    artifact: RepoArtifact, text: str
+) -> tuple[list[CodeSymbol], list[AstParseError]]:
+    """Extract top-level functions, classes, and their direct methods from a Python file."""
+    if artifact.file_type != "python":
+        return [], []
+
+    tree, parse_error = _parse_python_ast(artifact.source_path, text)
+    if parse_error is not None:
+        return [], [parse_error]
+
+    symbols: list[CodeSymbol] = []
+
+    def _add_func(
+        node: ast.FunctionDef | ast.AsyncFunctionDef, parent_class: str | None
+    ) -> None:
+        is_async = isinstance(node, ast.AsyncFunctionDef)
+        if parent_class is not None:
+            sym_type = "async_method" if is_async else "method"
+        else:
+            sym_type = "async_function" if is_async else "function"
+        qname = f"{parent_class}.{node.name}" if parent_class else node.name
+        symbols.append(
+            CodeSymbol(
+                symbol_id=stable_id("code_symbol", artifact.source_path, qname),
+                source_path=artifact.source_path,
+                source_hash=artifact.normalized_sha256,
+                symbol_type=sym_type,
+                name=node.name,
+                qualified_name=qname,
+                line_start=node.lineno,
+                line_end=node.end_lineno or node.lineno,
+                decorators=[ast.unparse(d) for d in node.decorator_list],
+                is_async=is_async,
+                parent_class=parent_class,
+                confidence="high",
+                inferred=False,
+            )
+        )
+
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            _add_func(node, None)
+        elif isinstance(node, ast.ClassDef):
+            symbols.append(
+                CodeSymbol(
+                    symbol_id=stable_id("code_symbol", artifact.source_path, node.name),
+                    source_path=artifact.source_path,
+                    source_hash=artifact.normalized_sha256,
+                    symbol_type="class",
+                    name=node.name,
+                    qualified_name=node.name,
+                    line_start=node.lineno,
+                    line_end=node.end_lineno or node.lineno,
+                    decorators=[ast.unparse(d) for d in node.decorator_list],
+                    is_async=False,
+                    parent_class=None,
+                    confidence="high",
+                    inferred=False,
+                )
+            )
+            for child in ast.iter_child_nodes(node):
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    _add_func(child, node.name)
+
+    return sorted(symbols, key=lambda s: s.line_start), []
+
+
+def extract_import_references(
+    artifact: RepoArtifact, text: str
+) -> tuple[list[ImportReference], list[AstParseError]]:
+    """Extract all import statements from a Python file."""
+    if artifact.file_type != "python":
+        return [], []
+
+    tree, parse_error = _parse_python_ast(artifact.source_path, text)
+    if parse_error is not None:
+        return [], [parse_error]
+
+    refs: list[ImportReference] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                module = alias.name
+                locality = _classify_import_locality(module, 0)
+                refs.append(
+                    ImportReference(
+                        import_id=stable_id(
+                            "import_ref", artifact.source_path, node.lineno, module
+                        ),
+                        source_path=artifact.source_path,
+                        source_hash=artifact.normalized_sha256,
+                        module=module,
+                        alias=alias.asname,
+                        imported_names=[],
+                        import_type="import",
+                        locality=locality,
+                        line_number=node.lineno,
+                        confidence="high",
+                        inferred=False,
+                    )
+                )
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            level = node.level or 0
+            locality = _classify_import_locality(module, level)
+            imported_names = [alias.name for alias in node.names]
+            refs.append(
+                ImportReference(
+                    import_id=stable_id(
+                        "import_ref", artifact.source_path, node.lineno, module, level
+                    ),
+                    source_path=artifact.source_path,
+                    source_hash=artifact.normalized_sha256,
+                    module=module,
+                    alias=None,
+                    imported_names=imported_names,
+                    import_type="from_import",
+                    locality=locality,
+                    line_number=node.lineno,
+                    confidence="high",
+                    inferred=False,
+                )
+            )
+
+    return sorted(refs, key=lambda r: r.line_number), []
+
+
+def extract_test_cases(code_symbols: list[CodeSymbol]) -> list[TestCase]:
+    """Derive TestCase records from CodeSymbol records with test naming conventions."""
+    test_cases: list[TestCase] = []
+    for symbol in code_symbols:
+        is_test_func = symbol.name.startswith("test_") and symbol.symbol_type in (
+            "function",
+            "async_function",
+        )
+        is_test_method = symbol.name.startswith("test_") and symbol.symbol_type in (
+            "method",
+            "async_method",
+        ) and symbol.parent_class is not None and symbol.parent_class.startswith("Test")
+        if is_test_func or is_test_method:
+            test_type = "function" if symbol.parent_class is None else "method"
+            test_cases.append(
+                TestCase(
+                    test_id=stable_id(
+                        "test_case", symbol.source_path, symbol.qualified_name
+                    ),
+                    source_path=symbol.source_path,
+                    source_hash=symbol.source_hash,
+                    symbol_id=symbol.symbol_id,
+                    name=symbol.name,
+                    qualified_name=symbol.qualified_name,
+                    line_start=symbol.line_start,
+                    line_end=symbol.line_end,
+                    test_type=test_type,
+                    parent_class=symbol.parent_class,
+                    confidence=symbol.confidence,
+                    inferred=symbol.inferred,
+                )
+            )
+    return test_cases
+
+
+def _flatten_config_dict(data: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    """Flatten a nested dict/list into dotted-key value pairs."""
+    items: list[tuple[str, Any]] = []
+    if isinstance(data, dict):
+        for k, v in data.items():
+            full_key = f"{prefix}.{k}" if prefix else str(k)
+            if isinstance(v, (dict, list)):
+                items.extend(_flatten_config_dict(v, full_key))
+            else:
+                items.append((full_key, v))
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            full_key = f"{prefix}[{i}]"
+            if isinstance(v, (dict, list)):
+                items.extend(_flatten_config_dict(v, full_key))
+            else:
+                items.append((full_key, v))
+    return items
+
+
+def _redact_config_value(key: str, value: Any) -> tuple[str, bool]:
+    """Return (display_value, sensitive). Redact values for sensitive keys."""
+    str_value = str(value) if value is not None else ""
+    if SECRET_CONFIG_KEY_RE.search(key):
+        redacted = f"[REDACTED:sha256={_sha256_text(str_value)[:16]}]"
+        return redacted, True
+    return str_value, False
+
+
+def extract_config_references(
+    artifact: RepoArtifact, text: str
+) -> list[ConfigReference]:
+    """Extract config key-value pairs from TOML, YAML, or JSON files."""
+    fmt = artifact.file_type
+    if fmt not in ("toml", "yaml", "json"):
+        return []
+
+    data: Any = None
+    try:
+        if fmt == "toml":
+            data = tomllib.loads(text)
+        elif fmt == "yaml":
+            data = yaml.safe_load(text)
+        elif fmt == "json":
+            data = json.loads(text)
+    except Exception:
+        return []
+
+    if not isinstance(data, dict):
+        return []
+
+    refs: list[ConfigReference] = []
+    for config_key, raw_value in _flatten_config_dict(data):
+        display_value, sensitive = _redact_config_value(config_key, raw_value)
+        refs.append(
+            ConfigReference(
+                config_ref_id=stable_id("config_ref", artifact.source_path, config_key),
+                source_path=artifact.source_path,
+                source_hash=artifact.normalized_sha256,
+                config_key=config_key,
+                config_value=display_value,
+                sensitive=sensitive,
+                line_number=0,
+                config_format=fmt,
+                confidence="high",
+                inferred=False,
+            )
+        )
+    return refs
+
+
+def extract_doc_code_links(
+    artifacts: list[RepoArtifact],
+    normalized_text_by_path: dict[str, str],
+) -> list[DocCodeLink]:
+    """Extract backtick code references from markdown files."""
+    links: list[DocCodeLink] = []
+    for artifact in artifacts:
+        if artifact.file_type != "markdown":
+            continue
+        text = normalized_text_by_path.get(artifact.source_path, "")
+        seen: set[str] = set()
+        for match in BACKTICK_SYMBOL_RE.finditer(text):
+            symbol = match.group(1)
+            if symbol in seen:
+                continue
+            seen.add(symbol)
+            links.append(
+                DocCodeLink(
+                    link_id=stable_id("doc_code_link", artifact.source_path, symbol),
+                    source_path=artifact.source_path,
+                    source_hash=artifact.normalized_sha256,
+                    target_symbol=symbol,
+                    source_chunk_id=None,
+                    confidence="high",
+                    inferred=False,
+                )
+            )
+    return sorted(links, key=lambda lnk: (lnk.source_path, lnk.target_symbol))
+
+
+def derive_dependency_edges(
+    artifacts: list[RepoArtifact],
+    code_symbols: list[CodeSymbol],
+    import_references: list[ImportReference],
+    doc_code_links: list[DocCodeLink],
+) -> list[DependencyEdge]:
+    """Derive contains/imports/documents/mentions dependency edges."""
+    edges: list[DependencyEdge] = []
+
+    artifact_by_path: dict[str, RepoArtifact] = {a.source_path: a for a in artifacts}
+    symbol_by_qname: dict[str, CodeSymbol] = {s.qualified_name: s for s in code_symbols}
+
+    # "contains": file artifact → code symbol
+    for symbol in code_symbols:
+        artifact = artifact_by_path.get(symbol.source_path)
+        if artifact is None:
+            continue
+        edges.append(
+            DependencyEdge(
+                edge_id=stable_id(
+                    "dep_edge", "contains", artifact.artifact_id, symbol.symbol_id
+                ),
+                from_id=artifact.artifact_id,
+                to_id=symbol.symbol_id,
+                edge_type="contains",
+                source_path=symbol.source_path,
+                confidence="high",
+                inferred=False,
+            )
+        )
+
+    # "imports": file artifact → imported file artifact or inferred module node
+    def _module_to_path(module: str) -> str | None:
+        parts = module.replace(".", "/")
+        for candidate in (f"{parts}.py", f"{parts}/__init__.py"):
+            if candidate in artifact_by_path:
+                return candidate
+        return None
+
+    for imp_ref in import_references:
+        if imp_ref.locality != "local":
+            continue
+        src_artifact = artifact_by_path.get(imp_ref.source_path)
+        if src_artifact is None:
+            continue
+        target_path = _module_to_path(imp_ref.module)
+        if target_path is not None:
+            target_artifact = artifact_by_path[target_path]
+            edges.append(
+                DependencyEdge(
+                    edge_id=stable_id(
+                        "dep_edge",
+                        "imports",
+                        src_artifact.artifact_id,
+                        target_artifact.artifact_id,
+                    ),
+                    from_id=src_artifact.artifact_id,
+                    to_id=target_artifact.artifact_id,
+                    edge_type="imports",
+                    source_path=imp_ref.source_path,
+                    confidence="high",
+                    inferred=False,
+                )
+            )
+        else:
+            module_id = stable_id("module", imp_ref.module)
+            edges.append(
+                DependencyEdge(
+                    edge_id=stable_id(
+                        "dep_edge",
+                        "imports",
+                        src_artifact.artifact_id,
+                        module_id,
+                    ),
+                    from_id=src_artifact.artifact_id,
+                    to_id=module_id,
+                    edge_type="imports",
+                    source_path=imp_ref.source_path,
+                    confidence="high",
+                    inferred=True,
+                )
+            )
+
+    # "documents" / "mentions": doc artifact → code symbol
+    for link in doc_code_links:
+        doc_artifact = artifact_by_path.get(link.source_path)
+        if doc_artifact is None:
+            continue
+        target_symbol = symbol_by_qname.get(link.target_symbol)
+        if target_symbol is not None:
+            edges.append(
+                DependencyEdge(
+                    edge_id=stable_id(
+                        "dep_edge",
+                        "documents",
+                        doc_artifact.artifact_id,
+                        target_symbol.symbol_id,
+                    ),
+                    from_id=doc_artifact.artifact_id,
+                    to_id=target_symbol.symbol_id,
+                    edge_type="documents",
+                    source_path=link.source_path,
+                    confidence="high",
+                    inferred=False,
+                )
+            )
+        else:
+            mention_id = stable_id("symbol_mention", link.target_symbol)
+            edges.append(
+                DependencyEdge(
+                    edge_id=stable_id(
+                        "dep_edge",
+                        "mentions",
+                        doc_artifact.artifact_id,
+                        mention_id,
+                    ),
+                    from_id=doc_artifact.artifact_id,
+                    to_id=mention_id,
+                    edge_type="mentions",
+                    source_path=link.source_path,
+                    confidence="high",
+                    inferred=True,
+                )
+            )
+
+    return sorted(edges, key=lambda e: (e.edge_type, e.from_id, e.to_id))
+
+
 def _markdown_title(sections: list[ParsedSection], source_path: str) -> str:
     for section in sections:
         if section.section_level == 1 and section.heading:
@@ -1126,6 +1772,29 @@ def run_indexer(root: Path, scope_config_path: Path) -> IndexerResult:
     pages, sections, chunks = build_markdown_records(artifacts, normalized_text_by_path)
     state_hash = build_state_hash(files, artifacts, pages, sections, chunks)
     run_id = f"context-indexer-{state_hash[:16]}"
+
+    # Wave 9: static code/config/doc-link extraction
+    ast_errors_all: list[AstParseError] = []
+    code_symbols_all: list[CodeSymbol] = []
+    import_refs_all: list[ImportReference] = []
+    config_refs_all: list[ConfigReference] = []
+    for artifact in artifacts:
+        text = normalized_text_by_path.get(artifact.source_path, "")
+        if artifact.file_type == "python":
+            syms, errs = extract_code_symbols(artifact, text)
+            code_symbols_all.extend(syms)
+            ast_errors_all.extend(errs)
+            imp_refs, errs2 = extract_import_references(artifact, text)
+            import_refs_all.extend(imp_refs)
+            ast_errors_all.extend(errs2)
+        if artifact.file_type in ("toml", "yaml", "json"):
+            config_refs_all.extend(extract_config_references(artifact, text))
+    test_cases_all = extract_test_cases(code_symbols_all)
+    doc_code_links_all = extract_doc_code_links(artifacts, normalized_text_by_path)
+    dep_edges_all = derive_dependency_edges(
+        artifacts, code_symbols_all, import_refs_all, doc_code_links_all
+    )
+
     partial_result = IndexerResult(
         root=resolved_root,
         scope_config=scope,
@@ -1139,6 +1808,13 @@ def run_indexer(root: Path, scope_config_path: Path) -> IndexerResult:
         doc_sections=sections,
         doc_chunks=chunks,
         validation_findings=[],
+        ast_parse_errors=ast_errors_all,
+        code_symbols=code_symbols_all,
+        import_references=import_refs_all,
+        test_cases=test_cases_all,
+        config_references=config_refs_all,
+        doc_code_links=doc_code_links_all,
+        dependency_edges=dep_edges_all,
     )
     findings = validate_indexer_result(partial_result)
     return IndexerResult(
@@ -1154,6 +1830,13 @@ def run_indexer(root: Path, scope_config_path: Path) -> IndexerResult:
         doc_sections=partial_result.doc_sections,
         doc_chunks=partial_result.doc_chunks,
         validation_findings=findings,
+        ast_parse_errors=partial_result.ast_parse_errors,
+        code_symbols=partial_result.code_symbols,
+        import_references=partial_result.import_references,
+        test_cases=partial_result.test_cases,
+        config_references=partial_result.config_references,
+        doc_code_links=partial_result.doc_code_links,
+        dependency_edges=partial_result.dependency_edges,
     )
 
 
@@ -1292,6 +1975,17 @@ def validate_indexer_result(result: IndexerResult) -> list[ValidationFinding]:
                 )
             )
 
+    # Wave 9: emit info findings for AST parse errors
+    for parse_error in result.ast_parse_errors:
+        findings.append(
+            ValidationFinding(
+                severity="info",
+                code="ast_parse_error",
+                message=f"ast parse failed ({parse_error.error_type}): {parse_error.error_message}",
+                source_path=parse_error.source_path,
+            )
+        )
+
     return sorted(findings, key=lambda item: (item.severity, item.code, item.source_path or ""))
 
 
@@ -1315,6 +2009,20 @@ def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
         ],
         "forbidden_files": [
             file_record.to_payload(result.run_id) for file_record in result.forbidden_files
+        ],
+        "code_symbols": [sym.to_payload(result.run_id) for sym in result.code_symbols],
+        "import_references": [
+            ref.to_payload(result.run_id) for ref in result.import_references
+        ],
+        "test_cases": [tc.to_payload(result.run_id) for tc in result.test_cases],
+        "config_references": [
+            cr.to_payload(result.run_id) for cr in result.config_references
+        ],
+        "doc_code_links": [
+            link.to_payload(result.run_id) for link in result.doc_code_links
+        ],
+        "dependency_edges": [
+            edge.to_payload(result.run_id) for edge in result.dependency_edges
         ],
     }
 
@@ -1346,6 +2054,13 @@ def build_snapshot(
         "page_count": len(result.doc_pages),
         "section_count": len(result.doc_sections),
         "chunk_count": len(result.doc_chunks),
+        "code_symbol_count": len(result.code_symbols),
+        "import_ref_count": len(result.import_references),
+        "test_case_count": len(result.test_cases),
+        "config_ref_count": len(result.config_references),
+        "doc_code_link_count": len(result.doc_code_links),
+        "dependency_edge_count": len(result.dependency_edges),
+        "ast_parse_error_count": len(result.ast_parse_errors),
         "validation": {
             "blocking_count": len(result.blocking_findings),
             "finding_count": len(result.validation_findings),
@@ -1437,6 +2152,13 @@ def _counts(result: IndexerResult) -> dict[str, int]:
         "doc_pages": len(result.doc_pages),
         "doc_sections": len(result.doc_sections),
         "doc_chunks": len(result.doc_chunks),
+        "code_symbols": len(result.code_symbols),
+        "import_references": len(result.import_references),
+        "test_cases": len(result.test_cases),
+        "config_references": len(result.config_references),
+        "doc_code_links": len(result.doc_code_links),
+        "dependency_edges": len(result.dependency_edges),
+        "ast_parse_errors": len(result.ast_parse_errors),
         "validation_findings": len(result.validation_findings),
         "blocking_findings": len(result.blocking_findings),
     }
