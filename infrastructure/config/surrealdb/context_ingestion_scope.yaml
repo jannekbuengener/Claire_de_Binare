@@ -1,0 +1,268 @@
+schema_version: context-ingestion-scope/v0
+source_document:
+  path: docs/surrealdb/context-ingestion-scope.md
+  authority:
+    - issue: 1986
+      role: canonical_ingestion_scope
+    - issue: 1976
+      role: master_epic
+  status: machine_readable_scope_config_for_future_indexer
+
+issue_refs:
+  epic: 1976
+  parent: 2044
+  target: 2046
+  dependencies:
+    - 1986
+    - 2037
+    - 2216
+  deferred:
+    - 2045
+
+mode:
+  intent: read_only_context_ingestion_scope
+  config_only: true
+  consumer: future_context_indexer_issue_2045
+  dry_run_first: true
+  surrealdb_activation: forbidden
+  surrealdb_connect: forbidden
+  surrealdb_apply: forbidden
+  runtime_change: forbidden
+  live_readiness_verdict: NO-GO
+
+include_paths:
+  - path: docs/
+    sensitivity_class: public_context
+    purpose: Architecture, runbooks, governance-adjacent documentation, SurrealDB and system documentation.
+    notes:
+      - docs/archive/ remains excluded by default unless explicitly referenced and separately approved.
+  - path: knowledge/
+    sensitivity_class: internal_context
+    purpose: Canonical knowledge, governance, and operating documents.
+    notes:
+      - Must not replace Git, GitHub, CONTROL_REGISTER, or LR audit sources of truth.
+  - path: agents/
+    sensitivity_class: internal_context
+    purpose: Agent registry, roles, boot instructions, and operating boundaries.
+    notes:
+      - Agent rules are context, not live-system controls.
+  - path: infrastructure/surrealdb/
+    sensitivity_class: internal_context
+    purpose: Static schema drafts, mirror docs, and Context Intelligence artifacts.
+    notes:
+      - Static artifacts only; no productive apply or activation data.
+  - path: infrastructure/config/surrealdb/
+    sensitivity_class: sensitive_metadata
+    purpose: SurrealDB-related non-secret configuration artifacts.
+    notes:
+      - Any file containing secrets, credentials, or productive access data is forbidden.
+  - path: tools/surrealdb/
+    sensitivity_class: internal_context
+    purpose: Read-only SurrealDB and Context Intelligence tooling surface.
+    notes:
+      - Tool artifacts with embedded secrets or productive switching effects are forbidden.
+  - path: README.md
+    sensitivity_class: public_context
+    purpose: Repo-level entry context.
+  - path: '**/README.md'
+    sensitivity_class: public_context
+    purpose: Module-level entry context, subject to root and content guardrails.
+
+conditional_paths:
+  - path: core/
+    sensitivity_class: internal_context
+    allowed_when:
+      - Static symbols, interfaces, types, constants, or documenting comments directly support system understanding.
+      - No runtime state, live state, trading state, secrets, credentials, or generated artifacts are present.
+    restrictions:
+      - Static and selective only.
+      - No broad full-text capture without proven context value.
+  - path: services/
+    sensitivity_class: internal_context
+    allowed_when:
+      - Static service structure, contracts, or ownership hints directly support system understanding.
+      - No live service state, broker state, execution state, risk state, secrets, or generated artifacts are present.
+    restrictions:
+      - Static and selective only.
+      - Do not infer runtime truth from code presence.
+  - path: tests/
+    sensitivity_class: internal_context
+    allowed_when:
+      - Tests provide contract evidence, examples, fixtures, or documented verification context.
+      - Fixtures do not contain secrets, live data, trading state, or sensitive runtime captures.
+    restrictions:
+      - Test artifacts are evidence context only, not Live-Readiness proof by themselves.
+  - path: infrastructure/compose/
+    sensitivity_class: sensitive_metadata
+    allowed_when:
+      - Compose files are used only as static stack and architecture context.
+      - No secret values, productive access material, or runtime state are captured.
+    restrictions:
+      - Do not derive Live-Readiness, runtime activation, or operational GO from compose structure.
+
+exclude_paths:
+  - path: .git/
+    reason: Internal Git data is not canonical ingestion scope.
+  - path: .venv/
+    reason: Local build and tool artifacts.
+  - path: .worktrees/
+    reason: Local work surfaces are non-canonical.
+  - path: logs/
+    reason: Potentially sensitive runtime data.
+  - path: artifacts/
+    reason: Generated outputs, not durable canon; output handling is deferred to #2045.
+  - path: docs/archive/
+    reason: Historical fallback only; excluded by default unless explicitly referenced and separately approved.
+  - path: temp/
+    reason: Temporary output/work area; output controls are deferred to #2045.
+  - path: tmp/
+    reason: Temporary output/work area; not an approved ingestion source or output canon.
+  - path: DELIVERY_APPROVED.yaml
+    reason: Human-controlled delivery gate; agents must not modify or ingest as approval state.
+
+allowed_file_types:
+  - extension: .md
+    type: markdown
+    purpose: Preferred documentation input.
+  - extension: .yaml
+    type: yaml
+    purpose: Ontologies, config, and structured specifications.
+  - extension: .yml
+    type: yaml
+    purpose: Ontologies, config, structured specifications, and compose files when otherwise allowed.
+  - extension: .json
+    type: json
+    purpose: Structured contracts, metadata, and schemas.
+  - extension: .py
+    type: python
+    purpose: Static symbol and contract extraction only.
+  - extension: .toml
+    type: toml
+    purpose: Tooling and project configuration.
+  - extension: .surql
+    type: surrealql
+    purpose: Static SurrealDB schema drafts and query/schema artifact input only.
+    restrictions:
+      - Static-only input.
+      - Must not imply productive apply.
+      - Must not imply migration execution.
+      - Must not imply SurrealDB activation or connection.
+  - extension: .sh
+    type: shell
+    purpose: Static tooling and runbook-support context only.
+  - extension: .ps1
+    type: powershell
+    purpose: Static Windows tooling and operator-helper context only.
+  - pattern: compose*.yml
+    type: compose_yaml
+    purpose: Static stack structure only; no runtime permission or Live-Readiness signal.
+  - pattern: compose*.yaml
+    type: compose_yaml
+    purpose: Static stack structure only; no runtime permission or Live-Readiness signal.
+
+sensitivity_classes:
+  public_context:
+    meaning: Publicly shareable repo context without sensitive operating metadata.
+    allowed_use: Normal read-only ingestion.
+  internal_context:
+    meaning: Internal repo or architecture context without secrets, not intended for arbitrary external sharing.
+    allowed_use: Read-only ingestion with internal context binding.
+  sensitive_metadata:
+    meaning: Non-secret metadata whose path, topology, or control meaning requires minimization.
+    allowed_use: Minimized read-only ingestion; capture metadata instead of full text when sufficient.
+  forbidden:
+    meaning: Not ingestible.
+    allowed_use: Never read, hash, chunk, export, or ingest.
+
+forbidden_patterns:
+  secrets:
+    - api_key
+    - private_key
+    - password
+    - passwd
+    - secret
+    - token
+    - credential
+    - broker_credential
+    - wallet_secret
+    - session_secret
+    - SECRETS_PATH values or secret file contents
+  trading_runtime_state:
+    - order state
+    - fill state
+    - position state
+    - balance state
+    - exposure state
+    - live risk state
+    - broker state
+    - execution state
+    - runtime Redis state
+    - runtime Postgres state
+    - productive external service state
+  generated_or_local:
+    - generated logs
+    - database dumps
+    - runtime captures
+    - local worktree data
+    - temporary files
+    - archive material without explicit reference and separate approval
+
+runtime_trading_state_exclusions:
+  forbidden_classes:
+    - orders
+    - positions
+    - fills
+    - balances
+    - exposures
+    - live_risk_state
+    - broker_state
+    - execution_state
+    - trading_runtime_state
+    - productive_operational_state
+  rule: Forbidden trading/runtime state must not be read, hashed, chunked, exported, mirrored, or ingested.
+  ambiguity: Any ambiguous content touching runtime, trading, risk, execution, broker, or secret surfaces must fail closed as forbidden.
+
+limits:
+  max_file_size_bytes: 1048576
+  binary_files: forbidden
+  database_dumps: forbidden
+  media_files: forbidden
+  notebook_outputs: forbidden
+  archive_policy:
+    default: forbidden
+    exception: Explicit canonical reference plus separate approval required before any future ingestion scope expansion.
+  output_roots:
+    approved_by_cli_contract:
+      - artifacts/
+      - temp/
+    notes:
+      - Output and write controls are deferred to #2045.
+      - tmp/context-indexer/ is not an approved output path.
+      - This config does not authorize writing outputs.
+
+guardrails:
+  - No productive SurrealDB enablement.
+  - No productive ingestion.
+  - No SurrealDB connection, apply, import, reconcile, or activation as part of this config.
+  - No runtime, trading, risk, execution, broker, Docker, compose, CI, MCP, or Live-Readiness behavior change.
+  - No secrets in scope.
+  - No orders, positions, fills, live risk state, broker state, execution state, or trading runtime state in scope.
+  - Forbidden files must not be read, hashed, chunked, exported, or ingested.
+  - Ambiguous content must fail closed as forbidden.
+  - Paths are repo-relative.
+  - Scope expansions require explicit issue or canonical governance reference.
+  - Scope config must not soften docs/surrealdb/context-ingestion-scope.md.
+  - Board stage trade-capable is not Live-Readiness GO.
+  - Live-Readiness remains NO-GO.
+
+validation_expectations:
+  - YAML parses successfully.
+  - Required top-level keys exist.
+  - Sensitivity classes are exactly public_context, internal_context, sensitive_metadata, and forbidden.
+  - Forbidden trading, runtime, and secrets surfaces are represented.
+  - .surql is present with static-only and no-apply/no-activation wording.
+  - The canonical config path is infrastructure/config/surrealdb/context_ingestion_scope.yaml.
+  - tmp/context-indexer/ is not approved as an output path.
+  - git diff --check passes.
+  - Conflict-marker grep finds no markers.
+  - Indexer-load proof is deferred to #2045 because tools/surrealdb/context_indexer.py does not exist in this config-only slice.
