@@ -28,11 +28,17 @@ Close a working session so the repo, git state, and issue thread reflect reality
 
 0. Human-GO gate (hard):
    - Default mode is read-only analysis.
-   - Require explicit user GO before any of these actions:
+   - Require explicit user GO before any action that mutates repository, working tree, index, branch, remote, GitHub, or worktree state, including:
      - staging changes (any `git add` / patch staging)
+     - branch switching or checkout/switch operations
+     - pull, merge, rebase, or fast-forward update operations
+     - stash/apply operations
      - creating a commit
      - pushing to any remote
-     - writing to GitHub (issue/PR comment, status update, label/state change)
+     - removing worktrees
+     - deleting local or remote branches
+     - cleanup/delete operations
+     - writing to GitHub (issue/PR comment, review reply/resolve, status update, label/state change)
    - If GO is not granted: stop after producing the close-out summary draft.
 
 1. Determine session scope before touching git:
