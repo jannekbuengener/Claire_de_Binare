@@ -1,50 +1,89 @@
 # Context Indexer Implementation Preconditions
 
-**Status**: Draft
-**Authority**: Issue #2044 / Epic #1976
-**Target**: `tools/surrealdb/context_indexer.py` (Implementierungsslice #2045)
-**Scope**: Read-only, Dry-run-first Indexing
+**Status**: Draft precondition document
+**Authority**: Issue #2044 / Issue #2045 / Epic #1976
+**Target**: `tools/surrealdb/context_indexer.py` (future implementation slice #2045)
+**Scope**: Docs-only readiness guidance; no implementation and no Wave 8 execution GO
 
 ---
 
-## 1. Zweck
-Dieses Dokument dokumentiert die Voraussetzungen und offene Gates für die spätere Implementierung #2045. Es ersetzt kein separates Implementierungs-Go und keinen menschlichen Review.
+## 1. Purpose
+
+This document records the current preconditions and open gates for a future #2045 Context Indexer CLI scaffold.
+
+It is only a readiness/precondition document. It does not implement #2045, authorize #2045 implementation, authorize #2046, authorize SurrealDB import/apply, or authorize Wave 8 execution. A separate human review and implementation GO remain required.
 
 ---
 
-## 2. Gate-Checkliste (Pre-Implementation)
+## 2. Canon Alignment
 
-| # | Anforderung | Validierungs-Methode | Status |
-|---|-------------|----------------------|--------|
-| R1 | CLI-Vertrag (#1989) ist landed | Review `docs/surrealdb/context-indexer-cli-contract.md` | PENDING REVIEW |
-| R2 | Handoff-Guide (#2040) ist landed | Review `docs/surrealdb/context-agent-handoff.md` | LANDED |
-| R3 | Scope-Config-Format definiert | Review `ingestion_scope.yaml` Muster | LANDED |
-| R4 | Keine DB-Runtime-Verbindung | Code-Review-Gate | PENDING |
-| R5 | Read-only/Dry-run-first Default | Code-Review-Gate | PENDING |
-
----
-
-## 3. Implementierungs-Guardrails für #2045
-
-Die spätere Implementierung muss folgende Bedingungen erfüllen:
-1. **Kein DB-Write**: Die Implementierung enthält keine SurrealDB-Schreiblogik (außer explizites Exportieren in JSONL-Files).
-2. **Keine Secrets**: Der Indexer darf keine Secret-Inhalte exportieren. Treffer müssen maskiert oder als "blocked"/"omitted" markiert werden.
-3. **Deterministische Identität**: Hashing basiert auf normalisiertem Inhalt + repo-relativem Pfad + stabiler Schema-/Contract-Version. Timestamp darf nie Input für den Hash sein.
-4. **Output-Struktur**: Writes erfolgen NUR nach `artifacts/context-indexer/` oder `tmp/context-indexer/`. Writes außerhalb führen zu `5 write denied`.
+- #1976 remains the master anchor for the Context Intelligence issue tree and guardrails.
+- GitHub live state and current `main` evidence win over stale issue prose or local notes.
+- `docs/surrealdb/context-indexer-cli-contract.md` is the landed #1989 CLI contract.
+- `docs/surrealdb/context-ingestion-scope.md` is the landed #1986 ingestion-scope canon.
+- Live-Readiness remains `NO-GO`.
+- Board stage `trade-capable` is not a Live-Readiness GO.
 
 ---
 
-## 4. Validierungsplan für #2045
+## 3. Gate Checklist (Pre-Implementation)
 
-Die spätere Implementierung muss folgende Tests erfolgreich bestehen:
+| # | Requirement | Validation method | Status |
+|---|-------------|-------------------|--------|
+| R1 | CLI contract (#1989) is landed | Review `docs/surrealdb/context-indexer-cli-contract.md` | CLOSED / COMPLETED |
+| R2 | Agent handoff guide (#2040) is landed | Review `docs/surrealdb/context-agent-handoff.md` | CLOSED / COMPLETED |
+| R3 | Machine-readable scope config (#2046) exists | Wait for `infrastructure/config/surrealdb/context_ingestion_scope.yaml` to land via #2046 | BLOCKING / PENDING #2046 |
+| R4 | No DB runtime connection in scaffold | Code review gate for #2045 | PENDING #2045 |
+| R5 | Read-only / dry-run-first default | Code review gate for #2045 | PENDING #2045 |
+
+#2045 must not assume a landed machine-readable scope config until #2046 is closed with the tracked config file present on `main`.
+
+---
+
+## 4. Guardrails for Future #2045 Work
+
+Any later #2045 implementation must satisfy these guardrails:
+
+1. **No DB write**: no SurrealDB write, import, apply, or reconcile side effect is allowed in the #2045 scaffold.
+2. **No SurrealDB runtime activation**: the scaffold must not connect to production SurrealDB or enable production ingestion.
+3. **No secrets export**: the indexer must not export secret contents. Findings must fail closed or be represented as blocked/omitted according to the CLI contract.
+4. **Deterministic scan identity**: hashing and artifact identity must follow the landed CLI contract, using repo-relative paths, normalized content, and stable contract/schema semantics. Timestamps must never be part of the identity/hash basis.
+5. **Output path safety**: file writes are allowed only with explicit `--apply-writes` plus explicit `--output`.
+6. **Approved output roots**: output paths must stay under `artifacts/` or `temp/`; `tmp/context-indexer/` is not an approved path in this readiness document.
+7. **Path traversal protection**: absolute paths, drive-prefixed paths, UNC paths, and normalized paths escaping the approved output roots must stop with `5 write denied` as defined by the CLI contract.
+
+---
+
+## 5. Conditional Validation Plan for #2045
+
+These checks are for a future #2045 implementation and are conditional on the relevant prerequisites being landed.
+
+Before #2046 lands, #2045 may only reference the pending scope-config path as a dependency:
+
+- `infrastructure/config/surrealdb/context_ingestion_scope.yaml` (pending #2046)
+
+After #2046 lands and #2045 is separately approved for implementation, the scaffold should pass at least:
 
 1. `python tools/surrealdb/context_indexer.py --help`
-2. `python tools/surrealdb/context_indexer.py scan --scope-config ./ingestion_scope.yaml --dry-run`
-3. **Determinismus-Test**: Zweimaliger Scan auf gleichem Commit muss identische Hashes liefern.
-4. **Sicherheits-Test**: Scan einer Datei mit Secret muss dieses maskieren.
-5. **Path-Traversal-Test**: Scan mit `--output ../../etc/passwd` muss mit Exit-Code `5 write denied` stoppen.
+2. `python tools/surrealdb/context_indexer.py scan --scope-config infrastructure/config/surrealdb/context_ingestion_scope.yaml --dry-run`
+3. **Determinism test**: two scans on the same commit produce identical hashes/artifact identities.
+4. **Security test**: scanning a file containing a fake secret does not export the secret content and fails closed or marks the finding as blocked/omitted.
+5. **Path traversal test**: a write-capable command using `--apply-writes --output ../../etc/passwd` stops with `5 write denied`.
 
 ---
 
-## 5. Handoff
-Dieser Readiness-Check dokumentiert Voraussetzungen und offene Gates für #2045. Er ersetzt kein separates Implementierungs-Go und keinen menschlichen Review.
+## 6. Explicit Non-Goals
+
+- No #2045 implementation is included here.
+- No #2046 implementation is included here.
+- No machine-readable scope config is added here.
+- No CLI scaffold is added here.
+- No SurrealDB import/apply is authorized here.
+- No runtime, trading, risk, execution, or Live-Readiness surface is changed here.
+- No Wave 8 implementation GO is implied here.
+
+---
+
+## 7. Handoff
+
+This readiness check preserves the #2045 precondition checklist and validation plan while keeping open gates explicit. It does not replace separate implementation approval, human review, or the repository write gates.
