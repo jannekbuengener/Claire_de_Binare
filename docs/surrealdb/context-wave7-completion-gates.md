@@ -75,6 +75,7 @@ Minimal:
 
 - fuer jedes Dependency-Issue: Live-Issue-State ist geprueft
 - gelandete Slices sind ueber gemergte PRs belegt (#2224, #2225, #2226)
+- fuer die gemergten PRs #2224, #2225 und #2226 ist geprueft, dass die relevanten Checks nicht failed oder pending waren
 - #2039, #2040, #2042 und #2043 sind als geschlossen sichtbar
 - PR #2223 und PR #2216 bleiben offen, aber ausserhalb der Wave-7-Abschlusskriterien
 
