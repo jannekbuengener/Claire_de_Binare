@@ -525,6 +525,55 @@ def test_derive_dependency_edges_imports_inferred_when_not_resolved() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Absolute import submodule resolution (Codex review fix — #2062 addendum P1)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_absolute_submodule_resolved() -> None:
+    """from core.utils import clock resolves to core/utils/clock.py when that artifact exists."""
+    src = "from core.utils import clock\n"
+    src_artifact = _make_artifact("services/myservice.py")
+    clock_artifact = _make_artifact("core/utils/clock.py", normalized_sha256="b" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, clock_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].to_id == clock_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_absolute_submodule_no_artifact_stays_inferred() -> None:
+    """from core.utils import clock stays inferred when core/utils/clock.py is absent."""
+    src = "from core.utils import clock\n"
+    src_artifact = _make_artifact("services/myservice.py")
+    # core/utils/clock.py is not in the artifact set; neither is core/utils.py
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].inferred is True
+
+
+@pytest.mark.unit
+def test_derive_dependency_edges_absolute_module_self_fallback() -> None:
+    """Backward compat: from core import utils resolves to core/utils.py when submodule absent."""
+    src = "from core import utils\n"
+    src_artifact = _make_artifact("services/myservice.py")
+    utils_artifact = _make_artifact("core/utils.py", normalized_sha256="c" * 64)
+    imp_refs, _ = extract_import_references(src_artifact, src)
+
+    edges = derive_dependency_edges([src_artifact, utils_artifact], [], imp_refs, [])
+    import_edges = [e for e in edges if e.edge_type == "imports"]
+    assert len(import_edges) == 1
+    assert import_edges[0].to_id == utils_artifact.artifact_id
+    assert import_edges[0].inferred is False
+
+
+# ---------------------------------------------------------------------------
 # Relative import resolution (Codex review fix — #2062 addendum)
 # ---------------------------------------------------------------------------
 
@@ -618,6 +667,67 @@ def test_derive_dependency_edges_relative_package_init_fallback() -> None:
     assert len(import_edges) == 1
     assert import_edges[0].to_id == init_artifact.artifact_id
     assert import_edges[0].inferred is False
+
+
+# ---------------------------------------------------------------------------
+# Parse-once dedup (Codex review fix — run_indexer P2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_both_extractors_produce_same_error_for_invalid_python() -> None:
+    """extract_code_symbols and extract_import_references both return the same
+    AstParseError for an invalid Python file — the invariant the P2 dedup relies on."""
+    artifact = _make_artifact("bad.py")
+    bad_text = "def broken(\n"
+
+    syms, errs_sym = extract_code_symbols(artifact, bad_text)
+    imp_refs, errs_imp = extract_import_references(artifact, bad_text)
+
+    assert syms == []
+    assert imp_refs == []
+    assert len(errs_sym) == 1
+    assert len(errs_imp) == 1
+    assert errs_sym[0].source_path == errs_imp[0].source_path
+    assert errs_sym[0].error_type == errs_imp[0].error_type
+
+
+@pytest.mark.unit
+def test_run_indexer_loop_guard_prevents_duplicate_ast_errors() -> None:
+    """Simulate the run_indexer dedup guard: applying ``if not errs`` before
+    extending from the second extractor yields exactly one AstParseError."""
+    artifact = _make_artifact("bad.py")
+    bad_text = "def broken(\n"
+
+    _, errs = extract_code_symbols(artifact, bad_text)
+    _, errs2 = extract_import_references(artifact, bad_text)
+
+    ast_errors: list = []
+    ast_errors.extend(errs)
+    if not errs:  # dedup guard mirroring the run_indexer fix
+        ast_errors.extend(errs2)
+
+    assert len(ast_errors) == 1, "exactly one AstParseError per invalid file, not two"
+
+
+@pytest.mark.unit
+def test_run_indexer_ast_error_paths_are_unique() -> None:
+    """In a full run_indexer pass, each source_path appears at most once
+    in ast_parse_errors (no duplicate entries from the double-parse guard)."""
+    from tools.surrealdb.context_indexer import build_snapshot
+
+    result = run_indexer(Path("."), SCOPE_CONFIG)
+    error_paths = [e.source_path for e in result.ast_parse_errors]
+    assert len(error_paths) == len(set(error_paths)), (
+        f"duplicate AstParseError paths: {[p for p in error_paths if error_paths.count(p) > 1]}"
+    )
+    snapshot = build_snapshot(result)
+    assert snapshot["ast_parse_error_count"] == len(result.ast_parse_errors)
+
+
+# ---------------------------------------------------------------------------
+# Issue #2062: Dependency edge derivation — documents / mentions
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit

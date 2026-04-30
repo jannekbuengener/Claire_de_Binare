@@ -1648,6 +1648,16 @@ def derive_dependency_edges(
             return None
         else:
             parts = module.replace(".", "/")
+            # Try each imported name as a submodule first (e.g.
+            # ``from core.utils import clock`` → core/utils/clock.py)
+            for name in imported_names:
+                for cand in (
+                    f"{parts}/{name}.py",
+                    f"{parts}/{name}/__init__.py",
+                ):
+                    if cand in artifact_by_path:
+                        return cand
+            # Fall back to the module package itself
             for cand in (f"{parts}.py", f"{parts}/__init__.py"):
                 if cand in artifact_by_path:
                     return cand
@@ -1833,7 +1843,11 @@ def run_indexer(root: Path, scope_config_path: Path) -> IndexerResult:
             ast_errors_all.extend(errs)
             imp_refs, errs2 = extract_import_references(artifact, text)
             import_refs_all.extend(imp_refs)
-            ast_errors_all.extend(errs2)
+            # Both extractors call ast.parse; when the file is invalid, both
+            # return the same error. Only extend if the first pass succeeded
+            # to avoid duplicate AstParseError entries for the same file.
+            if not errs:
+                ast_errors_all.extend(errs2)
         if artifact.file_type in ("toml", "yaml", "json"):
             config_refs_all.extend(extract_config_references(artifact, text))
     test_cases_all = extract_test_cases(code_symbols_all)
