@@ -60,9 +60,10 @@ Wave 7 gilt als abgeschlossen, wenn alle Punkte erfuellt sind.
 
 - Wave 7-A Docs-Reconciliation ist ueber PR #2224 gelandet.
 - Wave 7-B Docs-Index-Update ist ueber PR #2225 gelandet.
-- Wave 7-C ist erst abgeschlossen, wenn #2039, #2040, #2042 und #2043 gelandet sind.
+- Wave 7-C Closeout-Doku ist ueber PR #2226 gelandet; #2039, #2040, #2042 und #2043 sind in GitHub geschlossen.
 - PR #2223 (#1986 ingestion scope rebuild) bleibt offen, eingefroren und **kein** Wave-7-Abschlusskriterium.
 - PR #2216 (Wave 8 readiness/readiness) bleibt offen, eingefroren und **kein** Wave-7-Abschlusskriterium.
+- GitHub Live-Status zeigt damit Wave 7 als abgeschlossen; das offene Anchor-Issue #2034 kann nach diesem Docs-Abgleich geschlossen werden.
 
 ---
 
@@ -73,11 +74,11 @@ SSOT ist GitHub. Validierung erfolgt ueber PR-/Issue-Status.
 Minimal:
 
 - fuer jedes Dependency-Issue: Live-Issue-State ist geprueft
-- gelandete Slices sind ueber gemergte PRs belegt (mindestens #2224 und #2225)
-- offene W07-C-Restarbeit (#2039, #2040, #2042, #2043) ist als offen sichtbar
-- Checks fuer den jeweils zu mergeenden W07-C-PR: keine failed/pending
+- gelandete Slices sind ueber gemergte PRs belegt (#2224, #2225, #2226)
+- #2039, #2040, #2042 und #2043 sind als geschlossen sichtbar
+- PR #2223 und PR #2216 bleiben offen, aber ausserhalb der Wave-7-Abschlusskriterien
 
-Wave 7 ist **nicht** abgeschlossen, solange einer der offenen W07-C-Issues (#2039, #2040, #2042, #2043) nicht gelandet ist.
+Wave 7 ist aus GitHub-Sicht abgeschlossen; dieser Docs-Abgleich beseitigt nur statische Repo-Drift vor dem Schliessen von #2034.
 
 ---
 

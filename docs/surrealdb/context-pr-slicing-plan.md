@@ -44,16 +44,17 @@ Abhaengigkeiten fuer die Context-Intelligence-Welle 7:
 - #2036 (Roadmap) — gemergt
 - #2037 (Schema Draft) — gemergt
 - #2038 (Ontology Seed) — gemergt
-- #2039 (Validation Checklist) — offen, W07-C Reconciliation-Slice
-- #2040 (Agent Handoff Guide) — offen, W07-C Reconciliation-Slice
+- #2039 (Validation Checklist) — geschlossen
+- #2040 (Agent Handoff Guide) — geschlossen
 - #2041 (SurrealDB docs index update) — gemergt via PR #2225
-- #2042 (PR Slicing Plan) — offen, W07-C Reconciliation-Slice
-- #2043 (Wave-7 Completion Gates) — offen, W07-C Reconciliation-Slice
+- #2042 (PR Slicing Plan) — geschlossen
+- #2043 (Wave-7 Completion Gates) — geschlossen
 
 Bereits gelandete Reconciliation-PRs:
 
 - PR #2224 — Wave 7-A docs reconciliation — MERGED
 - PR #2225 — Wave 7-B docs index update — MERGED
+- PR #2226 — Wave 7-C closeout docs reconciliation — MERGED
 
 Offen, aber fuer diesen Slice bewusst eingefroren / out of scope:
 
@@ -74,17 +75,17 @@ Diese PRs sind docs-first und sollen einzeln landbar sein:
 2. #2036: Roadmap-Doku (bereits gemergt)
 3. #2037: Schema-Draft (bereits gemergt, Draft only)
 4. #2038: Ontology Seed (bereits gemergt)
-5. #2039: Static Validation Checklist (Docs-only, W07-C)
-6. #2040: Agent Handoff Guide (Docs-only, W07-C)
+5. #2039: Static Validation Checklist (geschlossen)
+6. #2040: Agent Handoff Guide (geschlossen)
 7. #2041: SurrealDB docs index update (bereits gemergt via PR #2225)
-8. #2042: PR Slicing Plan (dieses Dokument, W07-C)
-9. #2043: Wave-7 Completion Gates (Docs-only, W07-C)
+8. #2042: PR Slicing Plan (dieses Dokument, geschlossen)
+9. #2043: Wave-7 Completion Gates (geschlossen)
 
 ### 4.2 Reconciliation-Stand nach Wave 7-A / 7-B
 
 - Wave 7-A ist ueber PR #2224 gelandet.
 - Wave 7-B ist ueber PR #2225 gelandet.
-- Wave 7-C reconciled die verbleibenden Docs-Issues #2039, #2040, #2042 und #2043.
+- Wave 7-C ist ueber PR #2226 gelandet und hat die verbleibenden Docs-Issues #2039, #2040, #2042 und #2043 geschlossen.
 - PR #2223 und PR #2216 bleiben separate, eingefrorene Arbeitsstraenge und gehoeren nicht in einen Wave-7-C-Diff.
 
 ---
@@ -173,10 +174,7 @@ Docs-only PRs:
 
 ## 11. Offene Restarbeit (aktuell)
 
-- #2039: Validation Checklist reconcilen und landen
-- #2040: Agent Handoff Guide als kanonischen Handoff-Pfad bestaetigen und landen
-- #2042: PR Slicing Plan auf aktuellen GitHub-Stand reconcilen und landen
-- #2043: Wave-7 Completion Gates auf aktuellen GitHub-Stand reconcilen und landen
+- #2034: minimalen Closeout-/Ledger-Abgleich landen, damit das offene Anchor-Issue ohne Statusdrift geschlossen werden kann
 - PR #2223 und PR #2216 bleiben offen, eingefroren und fuer Wave 7-C out of scope
 
 Dieses Dokument ist kein Ersatz fuer den Live-Status in GitHub.
