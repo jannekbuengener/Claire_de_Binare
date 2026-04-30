@@ -1,15 +1,20 @@
-"""Context Indexer CLI scaffold for read-only scope-config validation.
+"""Offline Context Indexer for Wave 8 dry-run exports.
 
-This module intentionally does not connect to SurrealDB and does not implement
-the full discovery, hashing, chunking, export, or snapshot pipeline. Those
-behaviors belong to later Context Intelligence slices.
+The indexer is intentionally local-only: it never connects to SurrealDB and it
+does not mutate runtime, trading, risk, execution, or live-readiness state.
 """
 
 from __future__ import annotations
 
 import argparse
+import fnmatch
+import hashlib
 import json
+import re
+import subprocess
 from dataclasses import dataclass
+from datetime import datetime
+from datetime import timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +23,9 @@ import yaml
 
 SCHEMA_VERSION = "context-indexer/v0"
 SCOPE_CONFIG_SCHEMA_VERSION = "context-ingestion-scope/v0"
+DEFAULT_SCOPE_CONFIG = Path(
+    "infrastructure/config/surrealdb/context_ingestion_scope.yaml"
+)
 REQUIRED_SCOPE_KEYS = {
     "schema_version",
     "include_paths",
@@ -25,6 +33,8 @@ REQUIRED_SCOPE_KEYS = {
     "exclude_paths",
     "allowed_file_types",
     "sensitivity_classes",
+    "forbidden_patterns",
+    "limits",
     "guardrails",
 }
 EXPECTED_SENSITIVITY_CLASSES = {
@@ -33,8 +43,18 @@ EXPECTED_SENSITIVITY_CLASSES = {
     "sensitive_metadata",
     "forbidden",
 }
-SUPPORTED_FORMATS = {"json", "markdown", "text"}
+SUPPORTED_FORMATS = {"json", "jsonl", "markdown", "text"}
 APPROVED_OUTPUT_ROOTS = ("artifacts", "temp")
+DEFAULT_MAX_CHUNK_CHARS = 4000
+
+EXPORT_FILES = {
+    "repo_artifacts": "repo_artifacts.jsonl",
+    "doc_pages": "doc_pages.jsonl",
+    "doc_sections": "doc_sections.jsonl",
+    "doc_chunks": "doc_chunks.jsonl",
+    "skipped_files": "skipped_files.jsonl",
+    "forbidden_files": "forbidden_files.jsonl",
+}
 
 EXIT_VALIDATION_ERROR = 1
 EXIT_INPUT_NOT_FOUND = 3
@@ -42,12 +62,30 @@ EXIT_UNSUPPORTED_FORMAT = 4
 EXIT_WRITE_DENIED = 5
 EXIT_INTERNAL_ERROR = 6
 
+HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+HIGH_CONFIDENCE_SECRET_RE = re.compile(
+    r"(?i)\b(api[_-]?key|private[_-]?key|password|passwd|secret|token|credential)"
+    r"\b\s*[:=]\s*[\"']?[A-Za-z0-9_.+/=@:-]{12,}"
+)
+AWS_ACCESS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
+PRIVATE_KEY_RE = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")
+TRADING_STATE_PATH_PARTS = {
+    "orders",
+    "positions",
+    "fills",
+    "balances",
+    "exposures",
+    "live_risk_state",
+    "broker_state",
+    "execution_state",
+}
+
 
 class ContextIndexerError(Exception):
     """Base error that maps to a stable CLI exit code."""
 
     exit_code = EXIT_INTERNAL_ERROR
-
     code = "internal_error"
 
     def __init__(self, message: str) -> None:
@@ -63,6 +101,11 @@ class ScopeConfigNotFoundError(ContextIndexerError):
 class ScopeConfigValidationError(ContextIndexerError):
     exit_code = EXIT_VALIDATION_ERROR
     code = "scope_config_invalid"
+
+
+class RootNotFoundError(ContextIndexerError):
+    exit_code = EXIT_INPUT_NOT_FOUND
+    code = "root_not_found"
 
 
 class UnsupportedFormatError(ContextIndexerError):
@@ -85,6 +128,20 @@ class OutputWriteError(ContextIndexerError):
 
 
 @dataclass(frozen=True)
+class PathRule:
+    path: str
+    sensitivity_class: str | None = None
+    reason: str | None = None
+
+
+@dataclass(frozen=True)
+class FileTypeRule:
+    file_type: str
+    extension: str | None = None
+    pattern: str | None = None
+
+
+@dataclass(frozen=True)
 class ScopeConfigSummary:
     path: str
     schema_version: str
@@ -92,48 +149,239 @@ class ScopeConfigSummary:
     conditional_paths: list[str]
     exclude_paths: list[str]
     sensitivity_classes: list[str]
-
-
-@dataclass(frozen=True)
-class CommandResult:
-    command: str
-    dry_run: bool
-    write_requested: bool
-    output: str | None
-    format: str
-    scope_config: ScopeConfigSummary
-    status: str = "scaffolded"
-    surrealdb_connection: str = "disabled"
-    message: str = "Command scaffold only; deeper indexer behavior is deferred."
+    include_rules: list[PathRule]
+    conditional_rules: list[PathRule]
+    exclude_rules: list[PathRule]
+    file_type_rules: list[FileTypeRule]
+    forbidden_patterns: list[str]
+    max_file_size_bytes: int
 
     def to_payload(self) -> dict[str, Any]:
         return {
-            "schema_version": SCHEMA_VERSION,
-            "command": self.command,
-            "status": self.status,
-            "message": self.message,
-            "dry_run": self.dry_run,
-            "write_requested": self.write_requested,
-            "output": self.output,
-            "format": self.format,
-            "surrealdb_connection": self.surrealdb_connection,
-            "scope_config": {
-                "path": self.scope_config.path,
-                "schema_version": self.scope_config.schema_version,
-                "include_paths": self.scope_config.include_paths,
-                "conditional_paths": self.scope_config.conditional_paths,
-                "exclude_paths": self.scope_config.exclude_paths,
-                "sensitivity_classes": self.scope_config.sensitivity_classes,
-            },
-            "deferred": [
-                "full_file_discovery",
-                "content_hashing",
-                "markdown_chunking",
-                "jsonl_artifact_export",
-                "snapshot_report_generation",
-                "surrealdb_import_apply_reconcile",
-            ],
+            "path": self.path,
+            "schema_version": self.schema_version,
+            "include_paths": self.include_paths,
+            "conditional_paths": self.conditional_paths,
+            "exclude_paths": self.exclude_paths,
+            "sensitivity_classes": self.sensitivity_classes,
+            "max_file_size_bytes": self.max_file_size_bytes,
         }
+
+
+@dataclass(frozen=True)
+class FileRecord:
+    source_path: str
+    file_type: str | None
+    sensitivity: str
+    size_bytes: int
+    status: str
+    reason: str
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "path": self.source_path,
+            "source_path": self.source_path,
+            "file_type": self.file_type,
+            "sensitivity": self.sensitivity,
+            "size_bytes": self.size_bytes,
+            "status": self.status,
+            "reason": self.reason,
+        }
+
+
+@dataclass(frozen=True)
+class RepoArtifact:
+    artifact_id: str
+    source_path: str
+    file_type: str
+    raw_sha256: str
+    normalized_sha256: str
+    size_bytes: int
+    git_commit: str | None
+    observed_at: str
+    sensitivity: str
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "artifact_id": self.artifact_id,
+            "source_path": self.source_path,
+            "file_type": self.file_type,
+            "raw_sha256": self.raw_sha256,
+            "normalized_sha256": self.normalized_sha256,
+            "source_hash": self.normalized_sha256,
+            "integrity_algo": "sha256",
+            "size_bytes": self.size_bytes,
+            "git_commit": self.git_commit,
+            "observed_at": self.observed_at,
+            "sensitivity": self.sensitivity,
+        }
+
+    def to_state_payload(self) -> dict[str, Any]:
+        return {
+            "artifact_id": self.artifact_id,
+            "source_path": self.source_path,
+            "file_type": self.file_type,
+            "raw_sha256": self.raw_sha256,
+            "normalized_sha256": self.normalized_sha256,
+            "size_bytes": self.size_bytes,
+            "sensitivity": self.sensitivity,
+        }
+
+
+@dataclass(frozen=True)
+class DocPage:
+    page_id: str
+    source_path: str
+    source_hash: str
+    title: str
+    doc_format: str
+    git_commit: str | None
+    observed_at: str
+    sensitivity: str
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "page_id": self.page_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "title": self.title,
+            "doc_format": self.doc_format,
+            "git_commit": self.git_commit,
+            "observed_at": self.observed_at,
+            "sensitivity": self.sensitivity,
+        }
+
+
+@dataclass(frozen=True)
+class DocSection:
+    section_id: str
+    page_id: str
+    source_path: str
+    source_hash: str
+    heading: str
+    heading_path: list[str]
+    section_level: int
+    section_index: int
+    span_start_line: int
+    span_end_line: int
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "section_id": self.section_id,
+            "page_id": self.page_id,
+            "page_ref": f"doc_page:{self.page_id}",
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "heading": self.heading,
+            "heading_path": self.heading_path,
+            "section_level": self.section_level,
+            "section_index": self.section_index,
+            "span_start_line": self.span_start_line,
+            "span_end_line": self.span_end_line,
+        }
+
+
+@dataclass(frozen=True)
+class DocChunk:
+    chunk_id: str
+    page_id: str
+    section_id: str
+    source_path: str
+    source_hash: str
+    heading_path: list[str]
+    chunk_index: int
+    content: str
+    content_hash: str
+    previous_chunk_id: str | None
+    next_chunk_id: str | None
+
+    def to_payload(self, run_id: str) -> dict[str, Any]:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "run_id": run_id,
+            "chunk_id": self.chunk_id,
+            "page_id": self.page_id,
+            "page_ref": f"doc_page:{self.page_id}",
+            "section_id": self.section_id,
+            "section_ref": f"doc_section:{self.section_id}",
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "heading_path": self.heading_path,
+            "chunk_index": self.chunk_index,
+            "previous_chunk_id": self.previous_chunk_id,
+            "next_chunk_id": self.next_chunk_id,
+            "content": self.content,
+            "content_hash": self.content_hash,
+            "tokens_estimate": estimate_tokens(self.content),
+        }
+
+    def to_state_payload(self) -> dict[str, Any]:
+        return {
+            "chunk_id": self.chunk_id,
+            "section_id": self.section_id,
+            "source_path": self.source_path,
+            "source_hash": self.source_hash,
+            "content_hash": self.content_hash,
+            "chunk_index": self.chunk_index,
+        }
+
+
+@dataclass(frozen=True)
+class ValidationFinding:
+    severity: str
+    code: str
+    message: str
+    source_path: str | None = None
+
+    def to_payload(self) -> dict[str, Any]:
+        payload = {
+            "severity": self.severity,
+            "code": self.code,
+            "message": self.message,
+        }
+        if self.source_path is not None:
+            payload["source_path"] = self.source_path
+        return payload
+
+
+@dataclass(frozen=True)
+class IndexerResult:
+    root: Path
+    scope_config: ScopeConfigSummary
+    git_commit: str | None
+    generated_at: str
+    run_id: str
+    state_hash: str
+    files: list[FileRecord]
+    repo_artifacts: list[RepoArtifact]
+    doc_pages: list[DocPage]
+    doc_sections: list[DocSection]
+    doc_chunks: list[DocChunk]
+    validation_findings: list[ValidationFinding]
+
+    @property
+    def included_files(self) -> list[FileRecord]:
+        return [item for item in self.files if item.status == "included"]
+
+    @property
+    def skipped_files(self) -> list[FileRecord]:
+        return [item for item in self.files if item.status == "skipped"]
+
+    @property
+    def forbidden_files(self) -> list[FileRecord]:
+        return [item for item in self.files if item.status == "forbidden"]
+
+    @property
+    def blocking_findings(self) -> list[ValidationFinding]:
+        return [item for item in self.validation_findings if item.severity == "blocking"]
 
 
 def _path_entries(value: Any, key: str) -> list[str]:
@@ -143,8 +391,64 @@ def _path_entries(value: Any, key: str) -> list[str]:
     for item in value:
         if not isinstance(item, dict) or not item.get("path"):
             raise ScopeConfigValidationError(f"{key} entries must contain path")
-        paths.append(str(item["path"]))
+        paths.append(_normalize_config_path(str(item["path"])))
     return sorted(paths)
+
+
+def _path_rules(value: Any, key: str) -> list[PathRule]:
+    if not isinstance(value, list):
+        raise ScopeConfigValidationError(f"{key} must be a list")
+    rules: list[PathRule] = []
+    for item in value:
+        if not isinstance(item, dict) or not item.get("path"):
+            raise ScopeConfigValidationError(f"{key} entries must contain path")
+        sensitivity_class = item.get("sensitivity_class")
+        if sensitivity_class is not None and sensitivity_class not in EXPECTED_SENSITIVITY_CLASSES:
+            raise ScopeConfigValidationError(
+                f"{key} entry has unsupported sensitivity_class: {sensitivity_class}"
+            )
+        rules.append(
+            PathRule(
+                path=_normalize_config_path(str(item["path"])),
+                sensitivity_class=str(sensitivity_class) if sensitivity_class else None,
+                reason=str(item.get("reason")) if item.get("reason") else None,
+            )
+        )
+    return sorted(rules, key=lambda rule: rule.path)
+
+
+def _file_type_rules(value: Any) -> list[FileTypeRule]:
+    if not isinstance(value, list):
+        raise ScopeConfigValidationError("allowed_file_types must be a list")
+    rules: list[FileTypeRule] = []
+    for item in value:
+        if not isinstance(item, dict) or not item.get("type"):
+            raise ScopeConfigValidationError("allowed_file_types entries must contain type")
+        extension = item.get("extension")
+        pattern = item.get("pattern")
+        if not extension and not pattern:
+            raise ScopeConfigValidationError(
+                "allowed_file_types entries must contain extension or pattern"
+            )
+        rules.append(
+            FileTypeRule(
+                file_type=str(item["type"]),
+                extension=str(extension).lower() if extension else None,
+                pattern=str(pattern) if pattern else None,
+            )
+        )
+    return sorted(rules, key=lambda rule: (rule.file_type, rule.extension or rule.pattern or ""))
+
+
+def _flatten_forbidden_patterns(value: Any) -> list[str]:
+    if not isinstance(value, dict):
+        raise ScopeConfigValidationError("forbidden_patterns must be a mapping")
+    patterns: list[str] = []
+    for entries in value.values():
+        if not isinstance(entries, list):
+            raise ScopeConfigValidationError("forbidden_patterns values must be lists")
+        patterns.extend(str(entry) for entry in entries)
+    return sorted(patterns)
 
 
 def load_scope_config(path: Path) -> ScopeConfigSummary:
@@ -170,8 +474,6 @@ def load_scope_config(path: Path) -> ScopeConfigSummary:
         )
 
     schema_version = data.get("schema_version")
-    if not schema_version:
-        raise ScopeConfigValidationError("scope config schema_version is required")
     if schema_version != SCOPE_CONFIG_SCHEMA_VERSION:
         raise ScopeConfigValidationError(
             f"unsupported scope config schema_version: {schema_version}"
@@ -188,6 +490,17 @@ def load_scope_config(path: Path) -> ScopeConfigSummary:
             f"sensitivity classes mismatch: expected {expected}; found {found}"
         )
 
+    limits = data.get("limits")
+    if not isinstance(limits, dict):
+        raise ScopeConfigValidationError("limits must be a mapping")
+    max_file_size_bytes = limits.get("max_file_size_bytes")
+    if not isinstance(max_file_size_bytes, int) or max_file_size_bytes <= 0:
+        raise ScopeConfigValidationError("limits.max_file_size_bytes must be positive")
+
+    include_rules = _path_rules(data["include_paths"], "include_paths")
+    conditional_rules = _path_rules(data["conditional_paths"], "conditional_paths")
+    exclude_rules = _path_rules(data["exclude_paths"], "exclude_paths")
+
     return ScopeConfigSummary(
         path=path.as_posix(),
         schema_version=str(schema_version),
@@ -195,12 +508,193 @@ def load_scope_config(path: Path) -> ScopeConfigSummary:
         conditional_paths=_path_entries(data["conditional_paths"], "conditional_paths"),
         exclude_paths=_path_entries(data["exclude_paths"], "exclude_paths"),
         sensitivity_classes=sorted(found_classes),
+        include_rules=include_rules,
+        conditional_rules=conditional_rules,
+        exclude_rules=exclude_rules,
+        file_type_rules=_file_type_rules(data["allowed_file_types"]),
+        forbidden_patterns=_flatten_forbidden_patterns(data["forbidden_patterns"]),
+        max_file_size_bytes=max_file_size_bytes,
     )
+
+
+def _normalize_config_path(value: str) -> str:
+    return value.replace("\\", "/").strip()
+
+
+def _normalize_relative_path(path: Path) -> str:
+    return path.as_posix().lstrip("./")
+
+
+def _has_glob_magic(value: str) -> bool:
+    return any(char in value for char in "*?[")
+
+
+def _matches_rule(rel_path: str, rule_path: str) -> bool:
+    rule = rule_path.strip()
+    normalized_rule = rule.strip("/")
+    normalized_rel = rel_path.strip("/")
+    if _has_glob_magic(rule):
+        return fnmatch.fnmatchcase(normalized_rel, normalized_rule) or fnmatch.fnmatchcase(
+            Path(normalized_rel).name, normalized_rule
+        )
+    return normalized_rel == normalized_rule or normalized_rel.startswith(
+        f"{normalized_rule}/"
+    )
+
+
+def _iter_rule_files(root: Path, rule_path: str) -> list[Path]:
+    rule = rule_path.strip("/")
+    if _has_glob_magic(rule):
+        candidates = root.glob(rule)
+    else:
+        target = root / rule
+        if target.is_file():
+            return [target]
+        if not target.exists() or not target.is_dir():
+            return []
+        candidates = target.rglob("*")
+    return sorted(path for path in candidates if path.is_file())
+
+
+def _safe_relative_to_root(path: Path, root: Path) -> str | None:
+    try:
+        resolved = path.resolve(strict=True)
+        rel = resolved.relative_to(root)
+    except (OSError, ValueError):
+        return None
+    return _normalize_relative_path(rel)
+
+
+def _detect_file_type(rel_path: str, path: Path, scope: ScopeConfigSummary) -> str | None:
+    name = path.name
+    suffix = path.suffix.lower()
+    for rule in scope.file_type_rules:
+        if rule.pattern and (
+            fnmatch.fnmatchcase(name, rule.pattern)
+            or fnmatch.fnmatchcase(rel_path, rule.pattern)
+        ):
+            return rule.file_type
+        if rule.extension and suffix == rule.extension:
+            return rule.file_type
+    return None
+
+
+def _matched_exclude_rule(rel_path: str, scope: ScopeConfigSummary) -> PathRule | None:
+    matches = [rule for rule in scope.exclude_rules if _matches_rule(rel_path, rule.path)]
+    if not matches:
+        return None
+    return max(matches, key=lambda rule: len(rule.path))
+
+
+def _matched_include_rule(rel_path: str, scope: ScopeConfigSummary) -> PathRule | None:
+    rules = scope.include_rules + scope.conditional_rules
+    matches = [rule for rule in rules if _matches_rule(rel_path, rule.path)]
+    if not matches:
+        return None
+    return max(matches, key=lambda rule: len(rule.path))
+
+
+def _contains_high_confidence_secret(text: str) -> bool:
+    return bool(
+        HIGH_CONFIDENCE_SECRET_RE.search(text)
+        or AWS_ACCESS_KEY_RE.search(text)
+        or PRIVATE_KEY_RE.search(text)
+    )
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _stable_json_hash(value: Any) -> str:
+    encoded = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    return _sha256_text(encoded)
+
+
+def stable_id(prefix: str, *parts: Any) -> str:
+    return f"{prefix}:{_stable_json_hash([SCHEMA_VERSION, prefix, *parts])}"
+
+
+def normalize_text(raw: bytes) -> str:
+    text = raw.decode("utf-8-sig")
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def estimate_tokens(content: str) -> int:
+    return max(1, len(content.split())) if content else 0
+
+
+def _git_value(root: Path, args: list[str]) -> str | None:
+    try:
+        completed = subprocess.run(
+            ["git", *args],
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    value = completed.stdout.strip()
+    return value or None
+
+
+def current_git_commit(root: Path) -> str | None:
+    return _git_value(root, ["rev-parse", "HEAD"])
+
+
+def current_git_commit_timestamp(root: Path) -> str | None:
+    return _git_value(root, ["show", "-s", "--format=%cI", "HEAD"])
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(
+        "+00:00", "Z"
+    )
+
+
+def _resolve_existing_root(path: Path) -> Path:
+    if not path.exists():
+        raise RootNotFoundError(f"root not found: {path}")
+    if not path.is_dir():
+        raise RootNotFoundError(f"root is not a directory: {path}")
+    return path.resolve()
+
+
+def resolve_input_path(path: Path, root: Path) -> Path:
+    if path.is_absolute():
+        return path
+    cwd_path = (Path.cwd() / path).resolve(strict=False)
+    if cwd_path.exists():
+        return cwd_path
+    return (root / path).resolve(strict=False)
 
 
 def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None:
     if not apply_writes:
         return output
+    normalized = _validate_repo_output_base(output)
+    if len(normalized.parts) == 1 or normalized.suffix == "":
+        raise WriteDeniedError("output must include a file name under an approved root")
+    return normalized
+
+
+def validate_output_directory(output: Path | None, apply_writes: bool) -> Path | None:
+    if not apply_writes:
+        return output
+    normalized = _validate_repo_output_base(output)
+    if len(normalized.parts) == 1:
+        raise WriteDeniedError("output directory must be below an approved root")
+    if normalized.suffix:
+        raise WriteDeniedError("output directory must not include a file suffix")
+    return normalized
+
+
+def _validate_repo_output_base(output: Path | None) -> Path:
     if output is None:
         raise WriteDeniedError("writes require an explicit --output path")
     if output.is_absolute() or output.drive or str(output).startswith("\\\\"):
@@ -212,8 +706,6 @@ def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None
     if not normalized.parts or normalized.parts[0] not in APPROVED_OUTPUT_ROOTS:
         approved = ", ".join(f"{root}/" for root in APPROVED_OUTPUT_ROOTS)
         raise WriteDeniedError(f"output must be under one of: {approved}")
-    if len(normalized.parts) == 1 or normalized.suffix == "":
-        raise WriteDeniedError("output must include a file name under an approved root")
 
     repo_root = Path.cwd().resolve()
     approved_root = repo_root / normalized.parts[0]
@@ -233,53 +725,766 @@ def validate_output_path(output: Path | None, apply_writes: bool) -> Path | None
     return normalized
 
 
-def build_result(args: argparse.Namespace) -> CommandResult:
-    output = validate_output_path(args.output, args.apply_writes)
-    scope_summary = load_scope_config(args.scope_config)
-    return CommandResult(
-        command=args.command,
-        dry_run=not args.apply_writes or args.dry_run,
-        write_requested=args.apply_writes,
-        output=output.as_posix() if output is not None else None,
-        format=args.format,
-        scope_config=scope_summary,
+def discover_paths(root: Path, scope: ScopeConfigSummary) -> list[Path]:
+    candidates: dict[str, Path] = {}
+    for rule in scope.include_rules + scope.conditional_rules:
+        for path in _iter_rule_files(root, rule.path):
+            rel_path = _safe_relative_to_root(path, root)
+            if rel_path is not None:
+                candidates[rel_path] = path
+    return [candidates[key] for key in sorted(candidates)]
+
+
+def classify_and_hash_files(
+    root: Path,
+    scope: ScopeConfigSummary,
+    git_commit: str | None,
+    observed_at: str,
+) -> tuple[list[FileRecord], list[RepoArtifact], dict[str, str]]:
+    files: list[FileRecord] = []
+    artifacts: list[RepoArtifact] = []
+    normalized_text_by_path: dict[str, str] = {}
+
+    for path in discover_paths(root, scope):
+        rel_path = _safe_relative_to_root(path, root)
+        if rel_path is None:
+            files.append(
+                FileRecord(
+                    source_path=_normalize_relative_path(path),
+                    file_type=None,
+                    sensitivity="forbidden",
+                    size_bytes=0,
+                    status="forbidden",
+                    reason="path_resolves_outside_root",
+                )
+            )
+            continue
+
+        exclude_rule = _matched_exclude_rule(rel_path, scope)
+        if exclude_rule is not None:
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=None,
+                    sensitivity="forbidden",
+                    size_bytes=_safe_file_size(path),
+                    status="forbidden",
+                    reason=exclude_rule.reason or "excluded_by_scope",
+                )
+            )
+            continue
+
+        include_rule = _matched_include_rule(rel_path, scope)
+        if include_rule is None:
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=None,
+                    sensitivity="forbidden",
+                    size_bytes=_safe_file_size(path),
+                    status="forbidden",
+                    reason="not_in_scope",
+                )
+            )
+            continue
+
+        file_type = _detect_file_type(rel_path, path, scope)
+        size_bytes = _safe_file_size(path)
+        sensitivity = include_rule.sensitivity_class or "internal_context"
+
+        if file_type is None:
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=None,
+                    sensitivity=sensitivity,
+                    size_bytes=size_bytes,
+                    status="skipped",
+                    reason="unsupported_file_type",
+                )
+            )
+            continue
+
+        if size_bytes > scope.max_file_size_bytes:
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=file_type,
+                    sensitivity=sensitivity,
+                    size_bytes=size_bytes,
+                    status="skipped",
+                    reason="max_file_size_exceeded",
+                )
+            )
+            continue
+
+        try:
+            raw = path.read_bytes()
+            normalized_text = normalize_text(raw)
+        except (OSError, UnicodeDecodeError):
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=file_type,
+                    sensitivity=sensitivity,
+                    size_bytes=size_bytes,
+                    status="skipped",
+                    reason="non_utf8_or_unreadable",
+                )
+            )
+            continue
+
+        if _contains_high_confidence_secret(normalized_text):
+            files.append(
+                FileRecord(
+                    source_path=rel_path,
+                    file_type=file_type,
+                    sensitivity="forbidden",
+                    size_bytes=size_bytes,
+                    status="forbidden",
+                    reason="content_forbidden_pattern",
+                )
+            )
+            continue
+
+        raw_sha256 = _sha256_bytes(raw)
+        normalized_sha256 = _sha256_text(normalized_text)
+        artifact_id = stable_id("repo_artifact", rel_path, normalized_sha256)
+        files.append(
+            FileRecord(
+                source_path=rel_path,
+                file_type=file_type,
+                sensitivity=sensitivity,
+                size_bytes=size_bytes,
+                status="included",
+                reason="included_by_scope",
+            )
+        )
+        artifacts.append(
+            RepoArtifact(
+                artifact_id=artifact_id,
+                source_path=rel_path,
+                file_type=file_type,
+                raw_sha256=raw_sha256,
+                normalized_sha256=normalized_sha256,
+                size_bytes=size_bytes,
+                git_commit=git_commit,
+                observed_at=observed_at,
+                sensitivity=sensitivity,
+            )
+        )
+        normalized_text_by_path[rel_path] = normalized_text
+
+    return files, sorted(artifacts, key=lambda item: item.source_path), normalized_text_by_path
+
+
+def _safe_file_size(path: Path) -> int:
+    try:
+        return path.stat().st_size
+    except OSError:
+        return 0
+
+
+@dataclass(frozen=True)
+class ParsedSection:
+    heading: str
+    heading_path: list[str]
+    section_level: int
+    section_index: int
+    span_start_line: int
+    span_end_line: int
+    lines: list[str]
+
+
+def _parse_markdown_sections(text: str) -> list[ParsedSection]:
+    lines = text.split("\n")
+    sections: list[ParsedSection] = []
+    current_heading = ""
+    current_heading_path: list[str] = []
+    current_level = 0
+    current_start = 1
+    current_lines: list[str] = []
+    heading_stack: list[str] = []
+    in_fence = False
+
+    def finalize(end_line: int) -> None:
+        if not current_lines:
+            return
+        sections.append(
+            ParsedSection(
+                heading=current_heading,
+                heading_path=list(current_heading_path),
+                section_level=current_level,
+                section_index=len(sections),
+                span_start_line=current_start,
+                span_end_line=end_line,
+                lines=list(current_lines),
+            )
+        )
+
+    for line_number, line in enumerate(lines, start=1):
+        heading_match = None if in_fence else HEADING_RE.match(line)
+        if heading_match is not None:
+            finalize(line_number - 1)
+            level = len(heading_match.group(1))
+            heading = heading_match.group(2).strip()
+            heading_stack = heading_stack[: level - 1]
+            heading_stack.append(heading)
+            current_heading = heading
+            current_heading_path = list(heading_stack)
+            current_level = level
+            current_start = line_number
+            current_lines = [line]
+        else:
+            if not current_lines:
+                current_start = line_number
+            current_lines.append(line)
+
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+
+    finalize(len(lines))
+    return sections
+
+
+def _split_lines_for_chunks(lines: list[str], max_chars: int) -> list[str]:
+    chunks: list[str] = []
+    current: list[str] = []
+    current_len = 0
+    for line in lines:
+        add_len = len(line) + (1 if current else 0)
+        if current and current_len + add_len > max_chars:
+            chunks.append("\n".join(current).strip("\n"))
+            current = [line]
+            current_len = len(line)
+        else:
+            current.append(line)
+            current_len += add_len
+    if current:
+        chunks.append("\n".join(current).strip("\n"))
+    return [chunk for chunk in chunks if chunk]
+
+
+def build_markdown_records(
+    artifacts: list[RepoArtifact],
+    normalized_text_by_path: dict[str, str],
+) -> tuple[list[DocPage], list[DocSection], list[DocChunk]]:
+    pages: list[DocPage] = []
+    sections: list[DocSection] = []
+    chunks_without_links: list[DocChunk] = []
+
+    for artifact in artifacts:
+        if artifact.file_type != "markdown" or artifact.sensitivity == "sensitive_metadata":
+            continue
+        text = normalized_text_by_path.get(artifact.source_path)
+        if text is None:
+            continue
+        parsed_sections = _parse_markdown_sections(text)
+        title = _markdown_title(parsed_sections, artifact.source_path)
+        page_id = stable_id("doc_page", artifact.source_path, artifact.normalized_sha256)
+        pages.append(
+            DocPage(
+                page_id=page_id,
+                source_path=artifact.source_path,
+                source_hash=artifact.normalized_sha256,
+                title=title,
+                doc_format="markdown",
+                git_commit=artifact.git_commit,
+                observed_at=artifact.observed_at,
+                sensitivity=artifact.sensitivity,
+            )
+        )
+
+        for parsed_section in parsed_sections:
+            section_id = stable_id(
+                "doc_section",
+                page_id,
+                parsed_section.section_index,
+                parsed_section.heading_path,
+            )
+            sections.append(
+                DocSection(
+                    section_id=section_id,
+                    page_id=page_id,
+                    source_path=artifact.source_path,
+                    source_hash=artifact.normalized_sha256,
+                    heading=parsed_section.heading,
+                    heading_path=parsed_section.heading_path,
+                    section_level=parsed_section.section_level,
+                    section_index=parsed_section.section_index,
+                    span_start_line=parsed_section.span_start_line,
+                    span_end_line=parsed_section.span_end_line,
+                )
+            )
+
+            section_chunks = _split_lines_for_chunks(
+                parsed_section.lines, DEFAULT_MAX_CHUNK_CHARS
+            )
+            chunk_ids = [
+                stable_id("doc_chunk", section_id, index, _sha256_text(content))
+                for index, content in enumerate(section_chunks)
+            ]
+            for index, content in enumerate(section_chunks):
+                content_hash = _sha256_text(content)
+                chunks_without_links.append(
+                    DocChunk(
+                        chunk_id=chunk_ids[index],
+                        page_id=page_id,
+                        section_id=section_id,
+                        source_path=artifact.source_path,
+                        source_hash=artifact.normalized_sha256,
+                        heading_path=parsed_section.heading_path,
+                        chunk_index=index,
+                        content=content,
+                        content_hash=content_hash,
+                        previous_chunk_id=chunk_ids[index - 1] if index > 0 else None,
+                        next_chunk_id=chunk_ids[index + 1]
+                        if index + 1 < len(chunk_ids)
+                        else None,
+                    )
+                )
+
+    return (
+        sorted(pages, key=lambda item: item.source_path),
+        sorted(sections, key=lambda item: (item.source_path, item.section_index)),
+        sorted(chunks_without_links, key=lambda item: (item.source_path, item.chunk_index)),
     )
+
+
+def _markdown_title(sections: list[ParsedSection], source_path: str) -> str:
+    for section in sections:
+        if section.section_level == 1 and section.heading:
+            return section.heading
+    return Path(source_path).stem
+
+
+def build_state_hash(
+    files: list[FileRecord],
+    artifacts: list[RepoArtifact],
+    pages: list[DocPage],
+    sections: list[DocSection],
+    chunks: list[DocChunk],
+) -> str:
+    return _stable_json_hash(
+        {
+            "files": [
+                {
+                    "source_path": item.source_path,
+                    "file_type": item.file_type,
+                    "sensitivity": item.sensitivity,
+                    "size_bytes": item.size_bytes,
+                    "status": item.status,
+                    "reason": item.reason,
+                }
+                for item in files
+            ],
+            "repo_artifacts": [item.to_state_payload() for item in artifacts],
+            "doc_pages": [
+                {
+                    "page_id": item.page_id,
+                    "source_path": item.source_path,
+                    "source_hash": item.source_hash,
+                    "title": item.title,
+                    "doc_format": item.doc_format,
+                    "sensitivity": item.sensitivity,
+                }
+                for item in pages
+            ],
+            "doc_sections": [
+                {
+                    "section_id": item.section_id,
+                    "page_id": item.page_id,
+                    "source_path": item.source_path,
+                    "source_hash": item.source_hash,
+                    "heading_path": item.heading_path,
+                    "section_index": item.section_index,
+                    "span_start_line": item.span_start_line,
+                    "span_end_line": item.span_end_line,
+                }
+                for item in sections
+            ],
+            "doc_chunks": [item.to_state_payload() for item in chunks],
+        }
+    )
+
+
+def run_indexer(root: Path, scope_config_path: Path) -> IndexerResult:
+    resolved_root = _resolve_existing_root(root)
+    resolved_scope_config = resolve_input_path(scope_config_path, resolved_root)
+    scope = load_scope_config(resolved_scope_config)
+    git_commit = current_git_commit(resolved_root)
+    generated_at = current_git_commit_timestamp(resolved_root) or _utc_now()
+    files, artifacts, normalized_text_by_path = classify_and_hash_files(
+        resolved_root,
+        scope,
+        git_commit,
+        generated_at,
+    )
+    pages, sections, chunks = build_markdown_records(artifacts, normalized_text_by_path)
+    state_hash = build_state_hash(files, artifacts, pages, sections, chunks)
+    run_id = f"context-indexer-{state_hash[:16]}"
+    partial_result = IndexerResult(
+        root=resolved_root,
+        scope_config=scope,
+        git_commit=git_commit,
+        generated_at=generated_at,
+        run_id=run_id,
+        state_hash=state_hash,
+        files=files,
+        repo_artifacts=artifacts,
+        doc_pages=pages,
+        doc_sections=sections,
+        doc_chunks=chunks,
+        validation_findings=[],
+    )
+    findings = validate_indexer_result(partial_result)
+    return IndexerResult(
+        root=partial_result.root,
+        scope_config=partial_result.scope_config,
+        git_commit=partial_result.git_commit,
+        generated_at=partial_result.generated_at,
+        run_id=partial_result.run_id,
+        state_hash=partial_result.state_hash,
+        files=partial_result.files,
+        repo_artifacts=partial_result.repo_artifacts,
+        doc_pages=partial_result.doc_pages,
+        doc_sections=partial_result.doc_sections,
+        doc_chunks=partial_result.doc_chunks,
+        validation_findings=findings,
+    )
+
+
+def validate_indexer_result(result: IndexerResult) -> list[ValidationFinding]:
+    findings: list[ValidationFinding] = []
+    artifact_by_path = {item.source_path: item for item in result.repo_artifacts}
+    artifact_hashes = {item.normalized_sha256 for item in result.repo_artifacts}
+    section_ids = {item.section_id for item in result.doc_sections}
+    page_ids = {item.page_id for item in result.doc_pages}
+
+    for file_record in result.files:
+        if file_record.status == "included":
+            if _matched_exclude_rule(file_record.source_path, result.scope_config) is not None:
+                findings.append(
+                    ValidationFinding(
+                        severity="blocking",
+                        code="forbidden_file_included",
+                        message="included file matches an excluded scope path",
+                        source_path=file_record.source_path,
+                    )
+                )
+            if file_record.source_path not in artifact_by_path:
+                findings.append(
+                    ValidationFinding(
+                        severity="blocking",
+                        code="included_file_missing_artifact",
+                        message="included file has no repo_artifact record",
+                        source_path=file_record.source_path,
+                    )
+                )
+            if _path_contains_trading_state(file_record.source_path):
+                findings.append(
+                    ValidationFinding(
+                        severity="blocking",
+                        code="trading_state_path_included",
+                        message="included path looks like trading/runtime state",
+                        source_path=file_record.source_path,
+                    )
+                )
+        elif file_record.status == "skipped":
+            findings.append(
+                ValidationFinding(
+                    severity="info",
+                    code="file_skipped",
+                    message=file_record.reason,
+                    source_path=file_record.source_path,
+                )
+            )
+        elif file_record.reason == "content_forbidden_pattern":
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="content_forbidden_pattern",
+                    message="high-confidence forbidden content pattern detected and omitted",
+                    source_path=file_record.source_path,
+                )
+            )
+
+    for artifact in result.repo_artifacts:
+        for field_name in (
+            "artifact_id",
+            "source_path",
+            "file_type",
+            "raw_sha256",
+            "normalized_sha256",
+            "size_bytes",
+            "sensitivity",
+        ):
+            if getattr(artifact, field_name) in (None, ""):
+                findings.append(
+                    ValidationFinding(
+                        severity="blocking",
+                        code="repo_artifact_required_field_missing",
+                        message=f"repo_artifact missing required field {field_name}",
+                        source_path=artifact.source_path,
+                    )
+                )
+
+    for page in result.doc_pages:
+        if page.source_hash not in artifact_hashes:
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="doc_page_source_hash_missing",
+                    message="doc_page source_hash does not reference a repo_artifact",
+                    source_path=page.source_path,
+                )
+            )
+
+    for section in result.doc_sections:
+        if section.page_id not in page_ids:
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="doc_section_page_ref_missing",
+                    message="doc_section page_id does not reference a doc_page",
+                    source_path=section.source_path,
+                )
+            )
+        if section.source_hash not in artifact_hashes:
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="doc_section_source_hash_missing",
+                    message="doc_section source_hash does not reference a repo_artifact",
+                    source_path=section.source_path,
+                )
+            )
+
+    for chunk in result.doc_chunks:
+        if chunk.section_id not in section_ids:
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="doc_chunk_section_ref_missing",
+                    message="doc_chunk section_id does not reference a doc_section",
+                    source_path=chunk.source_path,
+                )
+            )
+        if chunk.source_hash not in artifact_hashes:
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="doc_chunk_source_hash_missing",
+                    message="doc_chunk source_hash does not reference a repo_artifact",
+                    source_path=chunk.source_path,
+                )
+            )
+        if _contains_high_confidence_secret(chunk.content):
+            findings.append(
+                ValidationFinding(
+                    severity="blocking",
+                    code="secret_pattern_in_doc_chunk",
+                    message="doc_chunk contains a high-confidence secret pattern",
+                    source_path=chunk.source_path,
+                )
+            )
+
+    return sorted(findings, key=lambda item: (item.severity, item.code, item.source_path or ""))
+
+
+def _path_contains_trading_state(source_path: str) -> bool:
+    parts = {part.lower() for part in source_path.replace("\\", "/").split("/")}
+    return bool(parts & TRADING_STATE_PATH_PARTS)
+
+
+def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "repo_artifacts": [
+            artifact.to_payload(result.run_id) for artifact in result.repo_artifacts
+        ],
+        "doc_pages": [page.to_payload(result.run_id) for page in result.doc_pages],
+        "doc_sections": [
+            section.to_payload(result.run_id) for section in result.doc_sections
+        ],
+        "doc_chunks": [chunk.to_payload(result.run_id) for chunk in result.doc_chunks],
+        "skipped_files": [
+            file_record.to_payload(result.run_id) for file_record in result.skipped_files
+        ],
+        "forbidden_files": [
+            file_record.to_payload(result.run_id) for file_record in result.forbidden_files
+        ],
+    }
+
+
+def build_snapshot(
+    result: IndexerResult, output_dir: Path | None = None
+) -> dict[str, Any]:
+    jsonl_files = {
+        key: (output_dir / filename).as_posix() if output_dir else filename
+        for key, filename in EXPORT_FILES.items()
+    }
+    warnings = [
+        finding.to_payload()
+        for finding in result.validation_findings
+        if finding.severity in {"warning", "info"}
+    ]
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "run_id": result.run_id,
+        "generated_at": result.generated_at,
+        "git_commit": result.git_commit,
+        "scope_config": result.scope_config.path,
+        "scope_config_schema_version": result.scope_config.schema_version,
+        "state_hash": result.state_hash,
+        "included_count": len(result.included_files),
+        "skipped_count": len(result.skipped_files),
+        "forbidden_count": len(result.forbidden_files),
+        "artifact_count": len(result.repo_artifacts),
+        "page_count": len(result.doc_pages),
+        "section_count": len(result.doc_sections),
+        "chunk_count": len(result.doc_chunks),
+        "validation": {
+            "blocking_count": len(result.blocking_findings),
+            "finding_count": len(result.validation_findings),
+        },
+        "warnings": warnings,
+        "jsonl_files": jsonl_files,
+        "surrealdb_connection": "disabled",
+        "live_readiness_verdict": "NO-GO",
+    }
+
+
+def build_validation_report(result: IndexerResult) -> dict[str, Any]:
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "run_id": result.run_id,
+        "status": "blocked" if result.blocking_findings else "passed",
+        "blocking_count": len(result.blocking_findings),
+        "finding_count": len(result.validation_findings),
+        "findings": [finding.to_payload() for finding in result.validation_findings],
+    }
+
+
+def build_command_payload(
+    command: str,
+    result: IndexerResult,
+    dry_run: bool,
+    write_requested: bool,
+    output: Path | None,
+) -> dict[str, Any]:
+    base = {
+        "schema_version": SCHEMA_VERSION,
+        "run_id": result.run_id,
+        "command": command,
+        "dry_run": dry_run,
+        "write_requested": write_requested,
+        "output": output.as_posix() if output is not None else None,
+        "surrealdb_connection": "disabled",
+        "live_readiness_verdict": "NO-GO",
+        "scope_config": result.scope_config.to_payload(),
+    }
+    if command == "scan":
+        base.update(
+            {
+                "status": "completed",
+                "counts": _counts(result),
+                "files": [file_record.to_payload(result.run_id) for file_record in result.files],
+            }
+        )
+        return base
+    if command == "plan":
+        base.update(
+            {
+                "status": "completed",
+                "counts": _counts(result),
+                "planned_outputs": list(EXPORT_FILES.values()),
+                "blocking_findings": [
+                    finding.to_payload() for finding in result.blocking_findings
+                ],
+            }
+        )
+        return base
+    if command == "export-jsonl":
+        base.update(
+            {
+                "status": "blocked" if result.blocking_findings else "completed",
+                "counts": _counts(result),
+                "would_write_files": list(EXPORT_FILES.values()),
+                "validation": build_validation_report(result),
+            }
+        )
+        return base
+    if command == "snapshot":
+        snapshot_output_dir = output if output and not output.suffix else None
+        snapshot = build_snapshot(result, snapshot_output_dir)
+        base.update({"status": "completed", "snapshot": snapshot})
+        return base
+    if command == "validate":
+        base.update(build_validation_report(result))
+        return base
+    raise UnsupportedFormatError(f"unsupported command: {command}")
+
+
+def _counts(result: IndexerResult) -> dict[str, int]:
+    return {
+        "included": len(result.included_files),
+        "skipped": len(result.skipped_files),
+        "forbidden": len(result.forbidden_files),
+        "repo_artifacts": len(result.repo_artifacts),
+        "doc_pages": len(result.doc_pages),
+        "doc_sections": len(result.doc_sections),
+        "doc_chunks": len(result.doc_chunks),
+        "validation_findings": len(result.validation_findings),
+        "blocking_findings": len(result.blocking_findings),
+    }
 
 
 def render_payload(payload: dict[str, Any], output_format: str) -> str:
     if output_format == "json":
-        return json.dumps(payload, sort_keys=True, indent=2)
+        return json.dumps(payload, ensure_ascii=True, indent=2)
+    if output_format == "jsonl":
+        records = payload.get("files") or payload.get("findings") or [payload]
+        return "\n".join(_json_dumps_record(record) for record in records)
     if output_format == "markdown":
-        return "\n".join(
-            [
-                f"# Context Indexer {payload['command']}",
-                "",
-                f"Status: {payload['status']}",
-                f"Schema: {payload['schema_version']}",
-                f"Dry run: {payload['dry_run']}",
-                f"SurrealDB connection: {payload['surrealdb_connection']}",
-                f"Scope config: {payload['scope_config']['path']}",
-                "",
-                payload["message"],
-            ]
-        )
+        return render_markdown_payload(payload)
     if output_format == "text":
+        status = payload.get("status", "completed")
+        counts = payload.get("counts", {})
         return (
-            f"{payload['command']}: {payload['status']} "
+            f"{payload['command']}: {status} "
             f"(dry_run={payload['dry_run']}, "
-            f"surrealdb_connection={payload['surrealdb_connection']})"
+            f"included={counts.get('included', 0)}, "
+            f"blocking={counts.get('blocking_findings', payload.get('blocking_count', 0))}, "
+            "surrealdb_connection=disabled)"
         )
     raise UnsupportedFormatError(f"unsupported format: {output_format}")
 
 
-def write_if_requested(result: CommandResult, rendered: str) -> None:
-    if not result.write_requested or result.dry_run:
-        return
-    if result.output is None:
-        raise WriteDeniedError("writes require an explicit --output path")
-    output_path = validate_output_path(Path(result.output), apply_writes=True)
-    if output_path is None:
-        raise WriteDeniedError("writes require an explicit --output path")
+def render_markdown_payload(payload: dict[str, Any]) -> str:
+    counts = payload.get("counts", {})
+    lines = [
+        f"# Context Indexer {payload['command']}",
+        "",
+        f"Status: {payload.get('status', 'completed')}",
+        f"Schema: {payload['schema_version']}",
+        f"Run ID: {payload['run_id']}",
+        f"Dry run: {payload['dry_run']}",
+        "SurrealDB connection: disabled",
+        "Live-Readiness: NO-GO",
+        "",
+        "## Counts",
+        f"- Included: {counts.get('included', 0)}",
+        f"- Skipped: {counts.get('skipped', 0)}",
+        f"- Forbidden: {counts.get('forbidden', 0)}",
+        f"- Artifacts: {counts.get('repo_artifacts', 0)}",
+        f"- Chunks: {counts.get('doc_chunks', 0)}",
+    ]
+    blocking = counts.get("blocking_findings", payload.get("blocking_count", 0))
+    lines.extend([f"- Blocking findings: {blocking}"])
+    return "\n".join(lines)
+
+
+def write_command_output(output_path: Path, rendered: str) -> None:
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(rendered + "\n", encoding="utf-8")
@@ -287,50 +1492,80 @@ def write_if_requested(result: CommandResult, rendered: str) -> None:
         raise OutputWriteError(f"output write failed: {exc}") from exc
 
 
+def write_jsonl_exports(result: IndexerResult, output_dir: Path) -> None:
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        if not output_dir.is_dir():
+            raise OutputWriteError(f"output path is not a directory: {output_dir}")
+        records = jsonl_records(result)
+        for key, filename in EXPORT_FILES.items():
+            lines = [_json_dumps_record(record) for record in records[key]]
+            (output_dir / filename).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        snapshot = build_snapshot(result, output_dir)
+        (output_dir / "snapshot.json").write_text(
+            json.dumps(snapshot, ensure_ascii=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        validation_report = build_validation_report(result)
+        (output_dir / "validation_report.json").write_text(
+            json.dumps(validation_report, ensure_ascii=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError as exc:
+        raise OutputWriteError(f"output write failed: {exc}") from exc
+
+
+def _json_dumps_record(record: dict[str, Any]) -> str:
+    return json.dumps(record, ensure_ascii=True, separators=(",", ":"))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Context Indexer CLI scaffold (read-only/dry-run by default)."
+        description="Context Indexer CLI (offline, read-only/dry-run by default)."
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     for command in ("scan", "plan", "export-jsonl", "snapshot", "validate"):
         subparser = subparsers.add_parser(
             command,
-            help=f"{command} scaffold; deeper behavior is deferred",
+            help=f"{command} offline context-indexer command",
         )
         subparser.add_argument(
             "--root",
             type=Path,
             default=Path("."),
-            help="Repo root for future scans (currently recorded only).",
+            help="Repo root for scans (default: current directory).",
         )
         subparser.add_argument(
             "--scope-config",
             type=Path,
-            required=True,
+            default=DEFAULT_SCOPE_CONFIG,
             help="Path to context_ingestion_scope.yaml.",
         )
         subparser.add_argument(
             "--output",
             type=Path,
             default=None,
-            help="Explicit output path. Writes require --apply-writes.",
+            help=(
+                "Explicit output path. export-jsonl expects a directory; other "
+                "commands expect a file. Writes require --apply-writes."
+            ),
         )
         subparser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Simulate only. This is the default scaffold behavior.",
+            help="Simulate only. This is the default behavior.",
         )
         subparser.add_argument(
             "--apply-writes",
             action="store_true",
-            help="Opt in to writing an explicit --output under artifacts/ or temp/.",
+            help="Opt in to writing explicit outputs under artifacts/ or temp/.",
         )
         subparser.add_argument(
             "--format",
             choices=sorted(SUPPORTED_FORMATS),
             default="json",
-            help="Render format for scaffold output.",
+            help="Render format for command output.",
         )
     return parser
 
@@ -338,11 +1573,34 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    dry_run = args.dry_run or not args.apply_writes
 
     try:
-        result = build_result(args)
-        rendered = render_payload(result.to_payload(), result.format)
-        write_if_requested(result, rendered)
+        if args.command == "export-jsonl":
+            output = validate_output_directory(args.output, args.apply_writes and not dry_run)
+        else:
+            output = validate_output_path(args.output, args.apply_writes and not dry_run)
+        result = run_indexer(args.root, args.scope_config)
+        payload = build_command_payload(
+            args.command,
+            result,
+            dry_run=dry_run,
+            write_requested=args.apply_writes,
+            output=output,
+        )
+        rendered = render_payload(payload, args.format)
+
+        if result.blocking_findings and args.command in {"export-jsonl", "validate"}:
+            print(rendered)
+            return EXIT_VALIDATION_ERROR
+
+        if args.apply_writes and not dry_run:
+            if output is None:
+                raise WriteDeniedError("writes require an explicit --output path")
+            if args.command == "export-jsonl":
+                write_jsonl_exports(result, output)
+            else:
+                write_command_output(output, rendered)
     except ContextIndexerError as exc:
         print(
             json.dumps(
@@ -352,6 +1610,7 @@ def main(argv: list[str] | None = None) -> int:
                     "error": exc.code,
                     "message": exc.message,
                 },
+                ensure_ascii=True,
                 sort_keys=True,
             )
         )

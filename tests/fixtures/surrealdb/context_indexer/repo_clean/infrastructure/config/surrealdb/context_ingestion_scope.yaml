@@ -1,0 +1,20 @@
+schema_version: context-ingestion-scope/v0
+include_paths:
+  - path: docs/
+    sensitivity_class: public_context
+conditional_paths: []
+exclude_paths:
+  - path: docs/blocked/
+    reason: blocked_fixture_path
+allowed_file_types:
+  - extension: .md
+    type: markdown
+sensitivity_classes:
+  public_context: {}
+  internal_context: {}
+  sensitive_metadata: {}
+  forbidden: {}
+forbidden_patterns: {}
+limits:
+  max_file_size_bytes: 1048576
+guardrails: []

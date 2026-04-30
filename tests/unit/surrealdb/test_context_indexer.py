@@ -4,21 +4,24 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 
 import pytest
 
 from tools.surrealdb.context_indexer import (
-    CommandResult,
-    ScopeConfigSummary,
     SCHEMA_VERSION,
     WriteDeniedError,
+    run_indexer,
     load_scope_config,
     main,
+    jsonl_records,
+    build_snapshot,
     validate_output_path,
 )
 
 
 SCOPE_CONFIG = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
+FIXTURE_ROOT = Path("tests/fixtures/surrealdb/context_indexer")
 
 
 def _copy_scope_config(tmp_path: Path) -> Path:
@@ -52,34 +55,38 @@ def test_scan_defaults_to_dry_run_and_never_connects_to_surrealdb(capsys) -> Non
     payload = json.loads(capsys.readouterr().out)
     assert payload["schema_version"] == SCHEMA_VERSION
     assert payload["command"] == "scan"
-    assert payload["status"] == "scaffolded"
+    assert payload["status"] == "completed"
     assert payload["dry_run"] is True
     assert payload["write_requested"] is False
     assert payload["surrealdb_connection"] == "disabled"
-    assert "full_file_discovery" in payload["deferred"]
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
-    "command", ["scan", "plan", "export-jsonl", "snapshot", "validate"]
+    "command", ["scan", "plan", "snapshot"]
 )
-def test_all_command_stubs_return_scaffold_payload(command: str, capsys) -> None:
+def test_command_payloads_return_offline_results(command: str, capsys) -> None:
     exit_code = main([command, "--scope-config", str(SCOPE_CONFIG), "--dry-run"])
 
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["command"] == command
-    assert payload["status"] == "scaffolded"
+    assert payload["status"] == "completed"
     assert payload["surrealdb_connection"] == "disabled"
 
 
 @pytest.mark.unit
-def test_markdown_format_renders_without_writing(capsys) -> None:
+def test_markdown_format_renders_without_writing(
+    tmp_path: Path, capsys
+) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
     exit_code = main(
         [
             "validate",
+            "--root",
+            str(fixture_root),
             "--scope-config",
-            str(SCOPE_CONFIG),
+            str(fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml"),
             "--format",
             "markdown",
         ]
@@ -96,7 +103,7 @@ def test_help_works_for_top_level_and_command(capsys) -> None:
     with pytest.raises(SystemExit) as top_level:
         main(["--help"])
     assert top_level.value.code == 0
-    assert "Context Indexer CLI scaffold" in capsys.readouterr().out
+    assert "Context Indexer CLI" in capsys.readouterr().out
 
     with pytest.raises(SystemExit) as command_help:
         main(["scan", "--help"])
@@ -245,37 +252,19 @@ def test_write_error_returns_structured_error(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    scope_config = _copy_scope_config(tmp_path)
     output_parent = Path("artifacts/context-indexer")
-    output_parent.parent.mkdir()
+    output_parent.parent.mkdir(parents=True)
     output_parent.write_text("not a directory", encoding="utf-8")
-    scope_config = ScopeConfigSummary(
-        path="scope.yaml",
-        schema_version="context-ingestion-scope/v0",
-        include_paths=[],
-        conditional_paths=[],
-        exclude_paths=[],
-        sensitivity_classes=[],
-    )
-    result = CommandResult(
-        command="scan",
-        dry_run=False,
-        write_requested=True,
-        output="artifacts/context-indexer/result.json",
-        format="json",
-        scope_config=scope_config,
-    )
-    monkeypatch.setattr(
-        "tools.surrealdb.context_indexer.build_result", lambda args: result
-    )
 
     exit_code = main(
         [
             "scan",
             "--scope-config",
-            "unused.yaml",
+            str(scope_config),
             "--apply-writes",
             "--output",
-            result.output,
+            "artifacts/context-indexer/result.json",
         ]
     )
 
@@ -421,6 +410,9 @@ include_paths: []
 conditional_paths: []
 exclude_paths: []
 allowed_file_types: []
+forbidden_patterns: {}
+limits:
+  max_file_size_bytes: 1024
 sensitivity_classes:
   public_context: {}
 guardrails: []
@@ -434,3 +426,169 @@ guardrails: []
     payload = json.loads(capsys.readouterr().out)
     assert payload["error"] == "scope_config_invalid"
     assert "sensitivity classes mismatch" in payload["message"]
+
+
+def _copy_fixture_repo(tmp_path: Path, fixture_name: str) -> Path:
+    source_root = Path(__file__).parents[3] / FIXTURE_ROOT / fixture_name
+    target_root = tmp_path / fixture_name
+    shutil.copytree(source_root, target_root)
+    return target_root
+
+
+@pytest.mark.unit
+def test_discovery_classification_and_hashing_with_fixture_repo(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+
+    assert result.run_id.startswith("context-indexer-")
+    assert len(result.included_files) == 3
+    assert len(result.skipped_files) == 1
+    assert len(result.forbidden_files) == 1
+
+    artifact_map = {artifact.source_path: artifact for artifact in result.repo_artifacts}
+    assert "docs/guide.md" in artifact_map
+    assert "docs/eol_lf.md" in artifact_map
+    assert "docs/eol_crlf.md" in artifact_map
+    assert "docs/blocked/private.md" not in artifact_map
+
+
+@pytest.mark.unit
+def test_markdown_chunking_keeps_heading_context_and_chunk_links(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+
+    guide_sections = [section for section in result.doc_sections if section.source_path == "docs/guide.md"]
+    assert guide_sections
+    assert any(section.heading_path == ["Guide", "Section Alpha"] for section in guide_sections)
+
+    chunks = [chunk for chunk in result.doc_chunks if chunk.source_path == "docs/guide.md"]
+    assert chunks
+    chunk_by_id = {chunk.chunk_id: chunk for chunk in chunks}
+    for section in guide_sections:
+        section_chunks = sorted(
+            [chunk for chunk in chunks if chunk.section_id == section.section_id],
+            key=lambda item: item.chunk_index,
+        )
+        for index, chunk in enumerate(section_chunks):
+            expected_prev = section_chunks[index - 1].chunk_id if index > 0 else None
+            expected_next = (
+                section_chunks[index + 1].chunk_id
+                if index + 1 < len(section_chunks)
+                else None
+            )
+            assert chunk.previous_chunk_id == expected_prev
+            assert chunk.next_chunk_id == expected_next
+            if chunk.previous_chunk_id is not None:
+                assert chunk.previous_chunk_id in chunk_by_id
+            if chunk.next_chunk_id is not None:
+                assert chunk.next_chunk_id in chunk_by_id
+
+
+@pytest.mark.unit
+def test_jsonl_export_snapshot_and_validation_in_fixture_repo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    monkeypatch.chdir(fixture_root)
+    output_dir = Path("artifacts/context-indexer")
+
+    export_exit = main(
+        [
+            "export-jsonl",
+            "--root",
+            ".",
+            "--scope-config",
+            "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+            "--apply-writes",
+            "--output",
+            str(output_dir),
+        ]
+    )
+    assert export_exit == 0
+
+    for filename in (
+        "repo_artifacts.jsonl",
+        "doc_pages.jsonl",
+        "doc_sections.jsonl",
+        "doc_chunks.jsonl",
+        "skipped_files.jsonl",
+        "forbidden_files.jsonl",
+        "snapshot.json",
+        "validation_report.json",
+    ):
+        assert (fixture_root / output_dir / filename).exists()
+
+    lines = (fixture_root / output_dir / "repo_artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+    assert lines
+    first_record = json.loads(lines[0])
+    assert first_record["schema_version"] == SCHEMA_VERSION
+
+    snapshot = json.loads((fixture_root / output_dir / "snapshot.json").read_text(encoding="utf-8"))
+    assert snapshot["schema_version"] == SCHEMA_VERSION
+    assert snapshot["validation"]["blocking_count"] == 0
+
+    validate_exit = main(
+        [
+            "validate",
+            "--root",
+            ".",
+            "--scope-config",
+            "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+            "--format",
+            "json",
+        ]
+    )
+    assert validate_exit == 0
+
+
+@pytest.mark.unit
+def test_validation_blocks_secret_pattern_in_included_content(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_with_secret")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    report = build_snapshot(result)
+    assert report["validation"]["blocking_count"] > 0
+    codes = {finding.code for finding in result.blocking_findings}
+    assert "content_forbidden_pattern" in codes
+
+
+@pytest.mark.unit
+def test_jsonl_records_and_snapshot_are_consistent(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    records = jsonl_records(result)
+    snapshot = build_snapshot(result)
+
+    assert snapshot["artifact_count"] == len(records["repo_artifacts"])
+    assert snapshot["page_count"] == len(records["doc_pages"])
+    assert snapshot["section_count"] == len(records["doc_sections"])
+    assert snapshot["chunk_count"] == len(records["doc_chunks"])
+
+
+@pytest.mark.unit
+def test_hashing_normalizes_line_endings_in_fixture_repo(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    (fixture_root / "docs/eol_lf.md").write_bytes(b"line one\nline two\n")
+    (fixture_root / "docs/eol_crlf.md").write_bytes(b"line one\r\nline two\r\n")
+
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    artifact_map = {artifact.source_path: artifact for artifact in result.repo_artifacts}
+    assert artifact_map["docs/eol_lf.md"].raw_sha256 != artifact_map["docs/eol_crlf.md"].raw_sha256
+    assert (
+        artifact_map["docs/eol_lf.md"].normalized_sha256
+        == artifact_map["docs/eol_crlf.md"].normalized_sha256
+    )
