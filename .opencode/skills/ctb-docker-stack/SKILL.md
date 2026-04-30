@@ -35,7 +35,7 @@ This replaces older gate names. The required approver is the explicit user in th
 - No guessing. Missing runtime facts or target paths require a short clarifying question.
 - No secrets: never print secret values or secret file contents.
 - Use canonical compose files explicitly: `infrastructure/compose/compose.blue.yml` and `infrastructure/compose/compose.red.yml`.
-- Do not use naked `docker compose up -d` or other single-compose shortcuts as default guidance.
+- Do not give single-compose shortcuts as default guidance; prefer `make docker-up` and explicitly reference `infrastructure/compose/compose.blue.yml` + `infrastructure/compose/compose.red.yml`.
 - Treat `SECRETS_PATH` as canonical for local secrets.
 - Never use `docker compose down -v` unless the user explicitly approves a destructive action.
 
