@@ -131,7 +131,7 @@ and changed files:
 | `docs-only` | `docs-only` | `[docs-only]` or `docs-only:` | `docs/**` and `*.md` |
 | `workflows-only` | `workflows-only` | `[workflows-only]` or `workflows-only:` | `.github/workflows/*.yml` and `.github/workflows/*.yaml` plus the fixed companion docs `docs/runbooks/project_board_automation.md`, `docs/runbooks/merge_policy_ci_gate.md`, `docs/runbooks/CONTROL_REGISTER.md` |
 | `infra-only` | `infra-only` | `[infra-only]` or `infra-only:` | `infrastructure/**` and `.github/workflows/**` |
-| `core/service` | none | none | Any other diff; requires `manual-approval` or `allow-core-change` |
+| `core/service` | none | none | Any other diff; no override label required |
 
 > **Auto-inference:** `infra-only` is inferred automatically only when **all** changed files
 > are pure `infrastructure/**` paths. Mixed diffs (e.g. `infrastructure/**` +
@@ -152,16 +152,19 @@ Hard-fails for workflow changes in `.github/workflows/**`:
 - Any workflow missing an explicit `permissions:` section
 - Any workflow containing `write-all`
 
-`manual-approval` and `allow-core-change` are explicit override labels for
-`core/service` PRs. They do not bypass the workflow safety checks above.
+`manual-approval` and `allow-core-change` are optional triage/review labels for
+`core/service` PRs. They are not required for `policy-gate` to pass and they do
+not bypass the workflow safety checks above.
 
 ### Dependabot / Bot PRs
 
 Dependabot-PRs für Python-Abhängigkeiten oder App-Code (z.B. `requirements*.txt`,
-`pyproject.toml`) fallen in `core/service`, weil das `dependencies`-Label **kein Gate-Override**
-ist und diese Dateien nicht unter `docs/**`, `.github/workflows/**` oder `infrastructure/**`
-liegen. Sicherer Operator-Pfad: PR prüfen, dann `manual-approval` oder `allow-core-change`
-setzen. Keine Automatik. Das Gate bleibt fail-closed.
+`pyproject.toml`) fallen in `core/service`, weil das `dependencies`-Label keine
+eigene Kategorie auslöst und diese Dateien nicht unter `docs/**`,
+`.github/workflows/**` oder `infrastructure/**` liegen. Diese PRs brauchen kein
+`manual-approval` oder `allow-core-change`, bleiben aber normale
+Implementierungs-PRs mit Pflicht zu CI und menschlicher Merge-Prüfung. Keine
+Automatik.
 
 Dependabot-PRs, die **ausschließlich** `.github/workflows/**` oder `infrastructure/**` berühren,
 werden als `workflows-only` bzw. `infra-only` auto-inferred und benötigen keinen Override.
@@ -176,6 +179,23 @@ sauber mergebar, wenn die Dependency für aktive Service-Buildpfade nicht runtim
 
 The gate reevaluates on `opened`, `synchronize`, `reopened`, `labeled`,
 `unlabeled`, and `edited` so label removals cannot leave a stale PASS behind.
+
+## Guardrails After This Change
+
+- `policy-gate` bleibt ein erforderlicher PR-Context auf `main`.
+- `policy-gate` klassifiziert PRs weiter nach `docs-only`, `workflows-only`,
+  `infra-only` und `core/service`.
+- `core/service` braucht keine Override-Labels mehr, um `policy-gate` zu
+  bestehen.
+- `manual-approval` und `allow-core-change` bleiben optionale Triage- und
+  Review-Labels; sie sind keine erforderlichen Merge-Gate-Labels mehr.
+- Workflow-Sicherheits-Hard-Fails für `pull_request_target`, fehlendes
+  explizites `permissions:`, `write-all` und unsicheres `workflow_run`-Checkout
+  bleiben unverändert erzwungen.
+- Normale Implementierungs-PRs müssen weiterhin die übrige CI und die
+  menschliche Merge-Prüfung bestehen.
+- Live-Readiness bleibt `NO-GO`; diese Policy-Änderung autorisiert kein
+  Runtime-, Trading- oder Live-Verhalten.
 
 ## Workflow Permissions
 

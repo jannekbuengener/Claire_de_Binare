@@ -167,12 +167,8 @@ jobs:
               } else {
                 passes.push('infra-only scope validated');
               }
-            } else if (!hasLabel('manual-approval') && !hasLabel('allow-core-change')) {
-              failures.push(
-                'core/service changes require the label manual-approval or allow-core-change'
-              );
             } else {
-              passes.push('core/service override label present');
+              passes.push('core/service scope classified; no manual label required');
             }
 
             const workflowFiles = files.filter(

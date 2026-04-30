@@ -85,12 +85,13 @@ Zusätzlich:
 | `testing` | Test-Coverage, E2E |
 | `dependencies` | Dependabot Updates |
 
-> **Hinweis:** `dependencies` ist kein policy-gate Override. Dependabot-PRs, die
-> Python-Abhängigkeiten oder App-Code berühren, fallen in `core/service` und brauchen
-> `manual-approval` oder `allow-core-change`.
+> **Hinweis:** `dependencies` ist kein eigener `policy-gate`-Pfad. Dependabot-PRs,
+> die Python-Abhängigkeiten oder App-Code berühren, fallen in `core/service`, brauchen
+> aber kein `manual-approval` oder `allow-core-change`, um `policy-gate` zu bestehen.
 >
-> `manual-approval` und `allow-core-change` sind **Governance-only Labels** — sie werden
-> außerhalb des synced Label-Sets verwaltet und erscheinen nicht in `labels.json`.
+> `manual-approval` und `allow-core-change` sind **Governance-only Labels** für
+> optionale Triage/Review-Zwecke — sie werden außerhalb des synced Label-Sets
+> verwaltet und erscheinen nicht in `labels.json`.
 
 ---
 
