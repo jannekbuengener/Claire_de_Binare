@@ -18,9 +18,10 @@ Agenten MÜSSEN dieses Dokument vor Änderungen an Context-Intelligence-Dokument
 ### Scope
 - Validierung von `docs/surrealdb/context-intelligence-system.md` (#2035)
 - Validierung von `docs/surrealdb/context-intelligence-roadmap.md` (#2036)
-- Gate-Checkliste für Schema-Draft (#2037 — noch nicht gelandet)
+- Gate-Checkliste für `infrastructure/surrealdb/context_intelligence_v0.surql` (#2037)
 - Validierung von `docs/surrealdb/context-ontology-v0.yaml` (#2038)
-- Validierung künftiger Context-Intelligence-Artefakte
+- Validierung der Wave-7-C-Abschlussdokumente (#2039, #2040, #2042, #2043)
+- Validierung künftiger Context-Intelligence-Artefakte unter denselben Guardrails
 
 ### Nicht-Ziele
 - Kein Schema-Implementations-Ersatz
@@ -38,18 +39,20 @@ Agenten MÜSSEN dieses Dokument vor Änderungen an Context-Intelligence-Dokument
 | Issue #2034 | Wave-7 Landing | OPEN |
 | Issue #2035 | Architecture Doc | MERGED |
 | Issue #2036 | Roadmap Doc | MERGED |
-| Issue #2037 | Schema Draft | **OPEN** |
+| Issue #2037 | Schema Draft | MERGED |
 | Issue #2038 | Ontology Seed | MERGED |
 | Issue #2039 | Validation Checklist (dieses Dokument) | IN PROGRESS |
+| Issue #2040 | Agent Handoff Guide | IN PROGRESS |
+| Issue #2042 | PR Slicing Plan | IN PROGRESS |
+| Issue #2043 | Wave-7 Completion Gates | IN PROGRESS |
 | `docs/surrealdb/context-intelligence-system.md` | Architektur | Exists |
 | `docs/surrealdb/context-intelligence-roadmap.md` | Roadmap | Exists |
+| `infrastructure/surrealdb/context_intelligence_v0.surql` | Schema Draft | Exists |
 | `docs/surrealdb/context-ontology-v0.yaml` | Ontology Seed | Exists |
-| `docs/surrealdb/context-wave21-cross-cutting-hardening.md` | Planung | Exists |
-| `docs/surrealdb/context-wave21-completion-gates.md` | Gates | Exists |
-
-### Phase 5 — Governance Intelligence (Welle 21)
-- Validierung von `docs/surrealdb/context-wave21-cross-cutting-hardening.md` (#2198–#2204)
-- Validierung von `docs/surrealdb/context-wave21-completion-gates.md` (#2205)
+| PR #2224 | Wave 7-A docs reconciliation | MERGED |
+| PR #2225 | Wave 7-B docs index update | MERGED |
+| PR #2223 | #1986 ingestion scope rebuild | OPEN / FROZEN / OUT OF SCOPE |
+| PR #2216 | Wave 8 readiness/readiness | OPEN / FROZEN / OUT OF SCOPE |
 
 ---
 
@@ -121,7 +124,7 @@ Vor Änderungen an `docs/surrealdb/context-intelligence-roadmap.md`:
 
 ## 7. Schema-Draft-Gate für #2037
 
-**WICHTIG: Issue #2037 ist noch NICHT gelandet. Dieses Gate gilt für den künftigen Schema-Draft.**
+**WICHTIG: #2037 ist gelandet, aber dieses Gate bleibt die statische Prüfbasis für spätere Änderungen am Schema-Draft.**
 
 Vor Landung oder Änderung von `infrastructure/surrealdb/context_intelligence_v0.surql` (oder ähnlich):
 
@@ -151,7 +154,6 @@ Vor Landung oder Änderung von `infrastructure/surrealdb/context_intelligence_v0
 | S22 | Kein produktives Apply im Dokument beschrieben | | |
 | S23 | Schema-Draft referenziert #1981, #2000, #2005, #2007, #2009, #2025 | | |
 
-**STOPP**, wenn #2037 noch nicht gelandet ist und ein Artefakt als "fertig" deklariert wird.
 **STOPP**, wenn einer der Prüfpunkte S1–S23 mit "NEIN" beantwortet wird.
 
 ---
@@ -185,25 +187,7 @@ Vor Änderungen an `docs/surrealdb/context-ontology-v0.yaml`:
 
 ---
 
-## 9. Wave-21-Checkliste (Cross-cutting Hardening)
-
-Vor Änderungen an `docs/surrealdb/context-wave21-cross-cutting-hardening.md`:
-
-| # | Prüfpunkt | Ja/Nein | Beleg |
-|---|-----------|---------|-------|
-| W21-1 | Vector Search Entscheidung ist dokumentiert (lokal bevorzugt) | | |
-| W21-2 | Fulltext Tuning Design ist dokumentiert (BM25, Tokenizer) | | |
-| W21-3 | Performance Benchmarks sind definiert (Ingestion/Query) | | |
-| W21-4 | Hardening Maßnahmen sind definiert (No-Secrets, Permissions) | | |
-| W21-5 | CI Integration Plan ist definiert (Dry-run Indexer) | | |
-| W21-6 | Backup/Restore Strategie ist definiert (Retention, Export) | | |
-| W21-7 | Governance Cadence ist definiert (Stale Reviews) | | |
-| W21-8 | Keine Trading-Runtime-Änderung beschrieben | | |
-| W21-9 | Keine produktive Aktivierung beschrieben | | |
-
----
-
-## 11. Evidence-/Trust-Checkliste
+## 9. Evidence-/Trust-Checkliste
 
 Für alle Context-Intelligence-Artefakte:
 
@@ -223,7 +207,7 @@ Für alle Context-Intelligence-Artefakte:
 
 ---
 
-## 12. Human-GO-/Stop-Condition-Checkliste
+## 10. Human-GO-/Stop-Condition-Checkliste
 
 | # | Prüfpunkt | Ja/Nein | Beleg |
 |---|-----------|---------|-------|
@@ -240,7 +224,7 @@ Für alle Context-Intelligence-Artefakte:
 
 ---
 
-## 13. Anti-Kriterien
+## 11. Anti-Kriterien
 
 Artefakte DÜRFEN NICHT enthalten:
 
@@ -257,7 +241,7 @@ Artefakte DÜRFEN NICHT enthalten:
 
 ---
 
-## 14. Agenten-Review-Prozess
+## 12. Agenten-Review-Prozess
 
 Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Prozess durchlaufen:
 
@@ -268,8 +252,8 @@ Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Pr
 4. [ ] Diff-Scope prüfen: Welche Zeilen ändern sich?
 5. [ ] Guardrail-Check gegen Abschnitt 4 (G1-G10)
 6. [ ] Anti-Kriterien-Check gegen Abschnitt 11 (AK1-AK8)
-7. [ ] Evidence/Trust-Check gegen Abschnitt 11 (E1-E9)
-8. [ ] Human-GO/Stop-Check gegen Abschnitt 12 (H1-H8)
+7. [ ] Evidence/Trust-Check gegen Abschnitt 9 (E1-E9)
+8. [ ] Human-GO/Stop-Check gegen Abschnitt 10 (H1-H8)
 9. [ ] Wenn ALLE Checks bestanden: Änderung vornehmen
 10. [ ] Wenn EIN Check fehlschlägt: STOPP, Issue-Kommentar schreiben
 11. [ ] Nach Änderung: Merge-Gate-Check (Abschnitt 13)
@@ -278,7 +262,7 @@ Jeder Agent MUSS vor Änderungen an Context-Intelligence-Artefakten folgenden Pr
 
 ---
 
-## 15. Merge-Gate-Checkliste
+## 13. Merge-Gate-Checkliste
 
 Vor jedem Merge von Context-Intelligence-Artefakten:
 
@@ -303,10 +287,10 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 
 ---
 
-## 16. Restunsicherheiten und spätere Automatisierung
+## 14. Restunsicherheiten und spätere Automatisierung
 
 ### Restunsicherheiten
-- **#2037 Schema-Draft**: Noch nicht gelandet. Schema-Prüfpunkte in Abschnitt 7 sind als Gate formuliert. Sobald #2037 gelandet ist, muss Abschnitt 7 gegen das tatsächliche Schema validiert werden.
+- **Schema-Draft-Änderungen nach #2037**: Abschnitt 7 bleibt ein statisches Gate. Jede spätere Änderung am Draft muss gegen das tatsächliche Schema revalidiert werden.
 - **SurrealQL-Syntax**: Statische Syntax-Prüfung ist begrenzt ohne laufende DB. Spätere Validierung durch SurrealDB-Import-Tests.
 - **Evidence-Integration**: Die Verknüpfung von Claims mit realen Beweisen (Hashes, Logs) ist konzeptionell definiert, aber noch nicht implementiert.
 
@@ -317,7 +301,7 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 
 ---
 
-## 17. Validierungs-Checkliste für dieses Dokument selbst
+## 15. Validierungs-Checkliste für dieses Dokument selbst
 
 | # | Prüfpunkt | Ja/Nein | Beleg |
 |---|-----------|---------|-------|
@@ -327,14 +311,14 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 | V4 | Globale Guardrails (Abschnitt 4) enthalten G1-G10 | | |
 | V5 | Architektur-Checkliste (Abschnitt 5) enthält A1-A13 | | |
 | V6 | Roadmap-Checkliste (Abschnitt 6) enthält R1-R12 | | |
-| V7 | Schema-Draft-Gate (Abschnitt 7) ist als Gate für #2037 formuliert (nicht als erledigt) | | |
+| V7 | Schema-Draft-Gate (Abschnitt 7) ist als Gate für spätere Änderungen an #2037 formuliert | | |
 | V8 | Ontology-Checkliste (Abschnitt 8) enthält O1-O18 | | |
-| V9 | Evidence-Checkliste (Abschnitt 11) enthält E1-E9 | | |
-| V10 | Human-GO-Checkliste (Abschnitt 12) enthält H1-H8 | | |
-| V11 | Anti-Kriterien (Abschnitt 13) enthalten AK1-AK8 | | |
-| V12 | Agenten-Review-Prozess (Abschnitt 14) ist definiert | | |
-| V13 | Merge-Gate-Checkliste (Abschnitt 15) enthält M1-M13 | | |
-| V14 | Restunsicherheiten (Abschnitt 16) erwähnen #2037 als offen | | |
+| V9 | Evidence-Checkliste (Abschnitt 9) enthält E1-E9 | | |
+| V10 | Human-GO-Checkliste (Abschnitt 10) enthält H1-H8 | | |
+| V11 | Anti-Kriterien (Abschnitt 11) enthalten AK1-AK8 | | |
+| V12 | Agenten-Review-Prozess (Abschnitt 12) ist definiert | | |
+| V13 | Merge-Gate-Checkliste (Abschnitt 13) enthält M1-M13 | | |
+| V14 | Restunsicherheiten (Abschnitt 14) behandeln #2037 als gelandete, weiter zu validierende Basis | | |
 | V15 | Dieses Dokument enthält keine Trading-State-Tabellen | | |
 | V16 | Dieses Dokument enthält keine Secrets | | |
 | V17 | Dieses Dokument impliziert kein Live-Go | | |
@@ -350,7 +334,9 @@ Vor jedem Merge von Context-Intelligence-Artefakten:
 
 - **Epic**: #1976
 - **Parent**: #2034
-- **Dependencies**: #2035 (MERGED), #2036 (MERGED), #2037 (OPEN), #2038 (MERGED)
+- **Dependencies**: #2035 (MERGED), #2036 (MERGED), #2037 (MERGED), #2038 (MERGED)
+- **Wave 7 landed PRs**: #2224 (MERGED), #2225 (MERGED)
+- **Frozen / out of scope**: #2223 (OPEN), #2216 (OPEN)
 - **Validation Gates**: #1984, #1993, #2003, #2013, #2023, #2033
 - **Referenz-Dokumente**:
   - `docs/surrealdb/context-intelligence-system.md`

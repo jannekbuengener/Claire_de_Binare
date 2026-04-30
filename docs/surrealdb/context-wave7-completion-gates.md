@@ -54,6 +54,15 @@ Wave 7 gilt als abgeschlossen, wenn alle Punkte erfuellt sind.
 - Agent Handoff Doku existiert im Repo (Issue #2040)
 - SurrealDB Docs Index ist aktualisiert (Issue #2041)
 - PR Slicing Plan existiert im Repo (Issue #2042)
+- Wave-7 Completion Gates sind selbst reconciled und gelandet (Issue #2043)
+
+### 3.4 Reconciliation-Stand
+
+- Wave 7-A Docs-Reconciliation ist ueber PR #2224 gelandet.
+- Wave 7-B Docs-Index-Update ist ueber PR #2225 gelandet.
+- Wave 7-C ist erst abgeschlossen, wenn #2039, #2040, #2042 und #2043 gelandet sind.
+- PR #2223 (#1986 ingestion scope rebuild) bleibt offen, eingefroren und **kein** Wave-7-Abschlusskriterium.
+- PR #2216 (Wave 8 readiness/readiness) bleibt offen, eingefroren und **kein** Wave-7-Abschlusskriterium.
 
 ---
 
@@ -63,13 +72,12 @@ SSOT ist GitHub. Validierung erfolgt ueber PR-/Issue-Status.
 
 Minimal:
 
-- fuer jedes Dependency-Issue: zugehoerigen PR-Link vorhanden
-- PR Checks: keine failed/pending
-- PR Merge-Gate: `mergeStateStatus=CLEAN` oder explizit dokumentiert, warum blockiert
+- fuer jedes Dependency-Issue: Live-Issue-State ist geprueft
+- gelandete Slices sind ueber gemergte PRs belegt (mindestens #2224 und #2225)
+- offene W07-C-Restarbeit (#2039, #2040, #2042, #2043) ist als offen sichtbar
+- Checks fuer den jeweils zu mergeenden W07-C-PR: keine failed/pending
 
-Wenn PRs durch Branch Protection blockiert sind (`mergeStateStatus=BLOCKED`):
-
-- Wave 7 ist **nicht** abgeschlossen, bis die required reviews erfuellt sind und der Merge erfolgt.
+Wave 7 ist **nicht** abgeschlossen, solange einer der offenen W07-C-Issues (#2039, #2040, #2042, #2043) nicht gelandet ist.
 
 ---
 
@@ -79,6 +87,7 @@ Erwartetes Ergebnis:
 
 - Repo hat eine vollstaendige docs-basierte Grundlage (Architektur, Roadmap, Ontology, Schema Draft, Validation, Handoff)
 - spaetere Implementierungswellen koennen auf klaren Guardrails aufbauen
+- Live-Readiness bleibt `NO-GO`; Wave 7 liefert nur die docs-basierte Grundlage und keine Betriebsfreigabe
 
 ---
 
@@ -90,3 +99,5 @@ Wave 8 Fokus (nicht Teil von Wave 7):
 
 - Indexer Scaffold
 - Dry-run Export Pipeline
+
+Wave 8 darf nicht ueber PR #2216 oder irgendeinen Board-Stage-Status als bereits freigegeben angenommen werden.

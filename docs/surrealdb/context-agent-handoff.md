@@ -13,6 +13,8 @@ Es beschreibt Pflichtlektuere, erlaubte/verbote Aktionen, Live-Checks und Stop-C
 
 Guardrail: Dieses Dokument autorisiert **kein Live-Go**, **kein Echtgeld-Go** und **keine** produktive SurrealDB-Aktivierung.
 
+Kanonischer Repo-Pfad fuer dieses Handoff ist `docs/surrealdb/context-agent-handoff.md`.
+
 ---
 
 ## 2. Wann MUSS ein Agent das lesen?
@@ -37,6 +39,7 @@ SSOT-Regel:
 - `CURRENT_STATUS.md` ist Ledger, nicht Live-Status.
 - `docs/runbooks/CONTROL_REGISTER.md` ist Board-/Stage-SSOT.
 - `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` ist LR-Go/No-Go-SSOT.
+- PR #2223 und PR #2216 sind fuer Wave 7-C eingefroren und out of scope.
 
 **DARF NICHT**:
 
