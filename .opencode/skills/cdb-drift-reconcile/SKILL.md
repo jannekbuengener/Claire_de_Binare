@@ -25,7 +25,7 @@ Check known drift vectors against the current canon and return a bounded reconci
 Always check these areas unless the request explicitly narrows scope further:
 
 - Solo-Maintainer-Drift in SOPs
-- Terminologie-Drift: `Risk Service` / `cdb_risk` instead of legacy `BLACK`
+- Terminologie-Drift: use `Risk Service` / `cdb_risk` consistently; avoid stale service terminology
 - Stack-Canon-Drift: `BLUE/RED` instead of legacy single-compose language
 - Secrets-Canon-Drift
 - SSOT-Grenzen between `CURRENT_STATUS.md` and `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`

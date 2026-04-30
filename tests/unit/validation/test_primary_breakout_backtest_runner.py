@@ -615,3 +615,42 @@ def test_primary_breakout_backtest_runner_gate_trace_schema_and_single_pass(tmp_
         record = json.loads(line)
         missing = required_fields - set(record.keys())
         assert not missing, f"Missing fields in trace record: {missing}"
+
+
+@pytest.mark.unit
+def test_gate_trace_shows_fresh_trend_but_not_entry_ready_when_breakout_not_met(
+    tmp_path: Path,
+) -> None:
+    candles = _candles()[:250]
+    for candle in candles:
+        candle["open"] = 99.9
+        candle["high"] = 100.2
+        candle["low"] = 99.8
+        candle["close"] = 100.0
+        candle["market_state_fresh"] = True
+        candle["regime_fresh"] = True
+        candle["regime_id"] = 0
+
+    trace_path = tmp_path / "fresh_trend_no_breakout.jsonl"
+
+    report = run_primary_breakout_backtest(
+        candles,
+        run_config=PrimaryBreakoutBacktestRunConfig(),
+        code_commit="trace-no-breakout-test",
+        gate_trace_path=trace_path,
+    )
+
+    assert report["metrics"]["signals_total"] == 0
+    lines = trace_path.read_text(encoding="utf-8").strip().split("\n")
+    assert lines
+
+    first_record = json.loads(lines[0])
+    assert first_record["market_state_fresh"] is True
+    assert first_record["regime_fresh"] is True
+    assert first_record["regime_id"] == 0
+    assert first_record["has_trend_regime"] is True
+    assert first_record["entry_blocked"] is False
+    assert first_record["entry_cooldown_active"] is False
+    assert first_record["entry_ready"] is False
+    assert first_record["status"] == "no_signal"
+    assert first_record["close_now"] < first_record["breakout_threshold"]
