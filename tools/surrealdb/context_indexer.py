@@ -141,9 +141,13 @@ def _path_entries(value: Any, key: str) -> list[str]:
 def load_scope_config(path: Path) -> ScopeConfigSummary:
     if not path.exists():
         raise ScopeConfigNotFoundError(f"scope config not found: {path}")
+    if not path.is_file():
+        raise ScopeConfigValidationError(f"scope config is not a file: {path}")
 
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ScopeConfigValidationError(f"scope config read failed: {exc}") from exc
     except yaml.YAMLError as exc:
         raise ScopeConfigValidationError(f"scope config YAML parse failed: {exc}") from exc
 
@@ -242,7 +246,7 @@ def render_payload(payload: dict[str, Any], output_format: str) -> str:
 
 
 def write_if_requested(result: CommandResult, rendered: str) -> None:
-    if not result.write_requested:
+    if not result.write_requested or result.dry_run:
         return
     if result.output is None:
         raise WriteDeniedError("writes require an explicit --output path")
@@ -283,7 +287,6 @@ def build_parser() -> argparse.ArgumentParser:
         subparser.add_argument(
             "--dry-run",
             action="store_true",
-            default=True,
             help="Simulate only. This is the default scaffold behavior.",
         )
         subparser.add_argument(

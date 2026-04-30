@@ -128,6 +128,67 @@ def test_apply_writes_allows_approved_output_roots(output: Path) -> None:
 
 
 @pytest.mark.unit
+def test_apply_writes_reports_not_dry_run_and_writes_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = tmp_path / SCOPE_CONFIG
+    scope_config.parent.mkdir(parents=True)
+    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
+    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    output = Path("artifacts/context-indexer/result.json")
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    written_payload = json.loads((tmp_path / output).read_text(encoding="utf-8"))
+    assert payload["dry_run"] is False
+    assert payload["write_requested"] is True
+    assert written_payload["dry_run"] is False
+    assert written_payload["write_requested"] is True
+
+
+@pytest.mark.unit
+def test_explicit_dry_run_suppresses_apply_writes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    scope_config = tmp_path / SCOPE_CONFIG
+    scope_config.parent.mkdir(parents=True)
+    source_config = Path(__file__).parents[3] / SCOPE_CONFIG
+    scope_config.write_text(source_config.read_text(encoding="utf-8"), encoding="utf-8")
+    output = Path("artifacts/context-indexer/result.json")
+
+    exit_code = main(
+        [
+            "scan",
+            "--scope-config",
+            str(scope_config),
+            "--apply-writes",
+            "--dry-run",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["dry_run"] is True
+    assert payload["write_requested"] is True
+    assert not (tmp_path / output).exists()
+
+
+@pytest.mark.unit
 def test_missing_scope_config_returns_input_not_found(capsys) -> None:
     exit_code = main(
         ["scan", "--scope-config", "missing/context_ingestion_scope.yaml"]
@@ -136,6 +197,21 @@ def test_missing_scope_config_returns_input_not_found(capsys) -> None:
     assert exit_code == 3
     payload = json.loads(capsys.readouterr().out)
     assert payload["error"] == "scope_config_not_found"
+
+
+@pytest.mark.unit
+def test_directory_scope_config_returns_structured_validation_error(
+    tmp_path: Path, capsys
+) -> None:
+    config_dir = tmp_path / "scope-dir"
+    config_dir.mkdir()
+
+    exit_code = main(["validate", "--scope-config", str(config_dir)])
+
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["error"] == "scope_config_invalid"
+    assert "scope config is not a file" in payload["message"]
 
 
 @pytest.mark.unit
