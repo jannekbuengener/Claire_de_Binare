@@ -1,8 +1,8 @@
 # CDB Context Intelligence System — Roadmap & Issue Map
 
-**Status**: Draft (Wave 7)
+**Status**: Canonical (Wave 7 landed)
 **Authority**: Issue #2036 / Epic #1976
-**Context**: Part of the Landing Foundation (#2034)
+**Context**: Wave 7 is the landing foundation and implementation-start anchor (#2034)
 
 ## 1. Zweck
 Dieses Dokument dient als kanonische Orientierung für den Rollout des CDB SurrealDB Context Intelligence Systems (CIS). Es verbindet die strategischen Roadmap-Blöcke aus Epic #1976 mit den operativen GitHub-Issues und Wellen, um einen konsistenten Handoff zwischen Agenten zu ermöglichen.
@@ -68,17 +68,31 @@ Das Projekt ist in drei Hauptphasen unterteilt:
 | **Welle 18** | #2170–#2178 | Knowledge Quality Scoring & Architect Signals. |
 | **Welle 19** | #2179–#2187 | Visual Control Room & Reporting Layer. |
 | **Welle 20** | #2188–#2196 | Self-Explanation & Agent OS Readiness. |
-| **Welle 21** | #2197–#2205 | **Aktueller Fokus.** Cross-cutting Hardening, Search, CI & Operations. |
+| **Welle 21** | #2197–#2205 | Cross-cutting Hardening, Search, CI & Operations. |
 
 ## 6. Roadmap-Blöcke (0–20)
 Gemäß Epic #1976 werden folgende Blöcke adressiert:
-0. Projektanker & Grenzen (#1976, #2035)
-1. SurrealDB Fundament
-2. CDB Operating Ontology (#2038)
-3. Kernschema (#2037)
-4. Repo-/Doku-Ingestion (#2047)
-5. Code Symbol Graph (#2057)
-... (fortlaufend bis Block 20: Agent Operating System #2032)
+0. Projektanker & Grenzen (#1976, #2034, #2035)
+1. SurrealDB Fundament / Namespace / Datenbank-Layout (#1979, #1981, #2037)
+2. CDB Operating Ontology & Relation Vocabulary (#1980, #1982, #2038)
+3. Kernschema, Draft-Strukturen und Basiskontrakte (#1981, #1984, #2037)
+4. Repo-/Doku-Ingestion Foundation (#1985–#1993, #2044–#2054)
+5. Code Symbol Graph & Dependency Foundation (#1994–#2003, #2055–#2066)
+6. Evidence Fabric (#2005, #2006, #2116, #2123)
+7. Decision Graph & Supersession (#2007, #2008, #2118, #2119, #2124)
+8. Controlled Memory, Retrieval Trust & scoped Memory Read (#2009, #2010, #2120, #2121, #2125)
+9. Audit Observation & Replay-orientierte Nachvollziehbarkeit (#2011, #2012, #2086, #2119)
+10. Retrieval Strategy & Query CLI (#2015, #2079–#2090)
+11. Context Package & Agent Briefing Contracts (#2016, #2018, #2097, #2104–#2110)
+12. Impact Radar (#2019, #2108, #2111)
+13. Evidence Resolution & Readiness Checks (#2020, #2021, #2098, #2116–#2123)
+14. MCP Bridge & read-only Context Tools (#2022, #2091–#2102)
+15. Contradiction Detection Runtime (#2025, #2145–#2152)
+16. Stale Knowledge Runtime & Refresh Planning (#2026, #2153–#2161)
+17. Scope Drift Firewall Runtime (#2027, #2162–#2169)
+18. Knowledge Quality Scoring & Architect Signals (#2028, #2030, #2170–#2178)
+19. Visual Control Room & Reporting Layer (#2029, #2179–#2187)
+20. Self-Explanation, Agent OS Readiness & Cross-cutting Hardening (#2031, #2032, #2188–#2205)
 
 ## 7. Issue-Mapping (Auszug wichtige Meilensteine)
 | Issue | Titel | Welle | Rolle |
@@ -112,5 +126,5 @@ Gemäß Epic #1976 werden folgende Blöcke adressiert:
 ## Provenance / Quellen
 - **Epic**: #1976
 - **Parent**: #2034
-- **Foundation**: #2035, PR #2130
-- **Docs**: `docs/surrealdb/context-intelligence-system.md`
+- **Foundation**: #2034, #2035, #2036, #2037, #2038
+- **Docs**: `docs/surrealdb/context-intelligence-roadmap.md`

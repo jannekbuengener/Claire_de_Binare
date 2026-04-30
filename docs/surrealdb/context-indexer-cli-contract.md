@@ -23,11 +23,6 @@ Der Indexer unterstützt folgende Modi:
 | `snapshot` | Generierung eines Status-Reports | V0 (Prio 2) |
 | `validate` | Validierung der Ingestion-Artefakte gegen Schema | V0 (Prio 2) |
 
-Format-Regeln pro Command:
-- `export-jsonl` produziert immer JSONL (`--format` wird hier ignoriert).
-- `scan` und `validate` liefern strukturierte Console-Resultate (kein Datei-Export).
-- `plan` und `snapshot` dürfen `--format` (`json`, `jsonl`, `markdown`) auswerten.
-
 ---
 
 ## 3. Sicherheitsmodell & Guardrails
@@ -35,8 +30,8 @@ Format-Regeln pro Command:
 - **Dry-run Default**: Schreibfähige Commands (`export-jsonl`, optionale Datei-Ausgaben von `plan`/`snapshot`) laufen standardmäßig im Dry-run.
 - **Write Opt-in**: Dateischreiben ist nur erlaubt, wenn `--apply-writes` UND ein expliziter `--output`-Pfad gesetzt sind.
 - **Keine SurrealDB-Verbindung in V0**: Der Scaffold darf in V0 keine DB-Verbindung aufbauen. SurrealDB-Argumente sind für zukünftige Slices (`import-surrealdb`, `drift`) reserviert.
-- **Output-Pfade**: Writes dürfen NUR in freigegebene `artifacts/` oder `temp/` Pfade erfolgen.
-- **No Secrets**: Der Indexer MUSS jeden Ingest-Kandidaten gegen den Secret-Scanner (`gitleaks`-Regeln) prüfen.
+- **Output-Pfade**: Writes dürfen NUR unter `artifacts/` oder `temp/` erfolgen. Verboten sind absolute Pfade (z. B. führendes `/`, Laufwerkspräfixe wie `C:\`, UNC-Pfade) sowie relative Pfade, die nach Normalisierung außerhalb dieser Basispfade aufgelöst würden (Traversal über `..`). Verstöße MÜSSEN mit Exit-Code `5` stoppen.
+- **No Secrets**: Der Indexer MUSS jeden Ingest-Kandidaten gegen den Secret-Scanner (`gitleaks`-Regeln) prüfen. Nicht maskierbare Treffer sind fail-closed zu behandeln (Exit-Code `5`).
 
 ---
 
@@ -53,9 +48,10 @@ Format-Regeln pro Command:
 
 ---
 
-## 5. Idempotenz & Determinismus
+## 5. Deterministische Identität & Hashing
 - **Stabile Sortierung**: Alle `scan`-Ergebnisse MÜSSEN über den Dateipfad sortiert sein.
-- **Hashing**: Die deterministische Identität (`content_hash`) basiert auf `sha256` des normalisierten Inhalts + Pfad.
+- **Contract-Konstante**: `schema_version = "context-indexer/v0"` ist eine feste Konstante des Vertrags und darf nicht aus CLI-Args, Environment oder Dateiinhalten abgeleitet werden.
+- **Artifact Identity**: Die deterministische Identität basiert ausschließlich auf `repo_rel_path` + `content_sha256` (normalisierter Inhalt, UTF-8/LF) + `schema_version`.
 - **Zeitmetadaten getrennt halten**: Ein optionales Feld wie `observed_at` darf erfasst werden, darf aber NICHT Teil der Identitäts-/Hash-Basis sein.
 - **Deterministische Snapshots**: Snapshots enthalten einen Hash des Gesamtzustands der Ingestion-Welle, abgeleitet aus deterministischen Einzel-Hashes und stabil sortierten Eingaben.
 
@@ -67,10 +63,11 @@ Format-Regeln pro Command:
 |------|-----------|
 | 0 | Erfolg |
 | 1 | Validierungsfehler (Checkliste nicht erfüllt) |
-| 2 | Unsafe Path (Schreibversuch außerhalb `artifacts/` oder `temp/`) |
+| 2 | CLI Usage / Argument-Parsing-Fehler (z. B. `argparse` bei invaliden/missing Args) |
 | 3 | Input-Datei nicht gefunden |
 | 4 | Unsupported Format |
-| 5 | Interner Fehler / Ingest-Anomalie |
+| 5 | Write denied (Pfad-Verstoß oder nicht maskierbarer Secret-Treffer) |
+| 6 | Interner Fehler / Ingest-Anomalie |
 
 ---
 
@@ -87,3 +84,4 @@ Codex MUSS den Scaffold wie folgt implementieren:
 - `python tools/surrealdb/context_indexer.py --help`
 - `python tools/surrealdb/context_indexer.py scan --scope-config ./ingestion_scope.yaml --dry-run`
 - Prüfung: Werden Secrets korrekt maskiert? (Test-Case mit Fake-Secret).
+- Prüfung: Abweisung von Pfad-Traversierung in `--output` (Exit-Code `5`).
