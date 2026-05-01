@@ -291,6 +291,18 @@ Verhalten:
   Tombstone-Op gegen den Default-Adapter.
 - Der Adapter ueberschreibt das Original-Record nicht; es bleibt erhalten und
   bekommt die Tombstone-Felder dazu.
+- Original-Record-Felder werden auch dann erhalten, wenn das Record nicht
+  ueber einen vorhergehenden `apply_create`/`apply_update` im selben Adapter-
+  Prozess liegt: enthaelt der `--existing-records`-Eintrag ein `payload`-Objekt,
+  wird dieses verbatim (ohne Envelope-Steuerschluessel wie `payload_hash`,
+  `schema_version`, `table`, `record_id`, `id`, `__line`) in die Tombstone-
+  Payload uebernommen und von der Tombstone-Metadata (`tombstoned`,
+  `tombstoned_at`, `tombstone_reason`, `last_seen_run_id`, `superseded_by`)
+  sowie den Identitaetsfeldern (`table`, `record_id`, `run_id`, `payload_hash`)
+  ueberlagert. Liefert der Eintrag nur einen `payload_hash`-String, bleibt die
+  Tombstone-Payload bei der deterministischen Minimalform. Die uebernommenen
+  Felder werden ausschliesslich an den Adapter weitergereicht und nie in
+  Reports oder Result-Detailtexten serialisiert.
 - `tombstoned_at` wird ausschliesslich aus dem injizierten `ClockProvider`
   erzeugt; `datetime.now()`/`datetime.utcnow()` darf im Apply-Pfad nicht
   benutzt werden. `FixedClock` liefert byte-identische Reports.

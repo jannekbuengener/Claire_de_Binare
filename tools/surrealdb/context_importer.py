@@ -52,8 +52,10 @@ Exit codes (aligned with the context-indexer contract):
 from __future__ import annotations
 
 import argparse
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import copy
 import hashlib
 import json
 import logging
@@ -575,6 +577,15 @@ class ExistingRecord:
     record_id: str
     payload_hash: str | None
     schema_version: str | None
+    # Optional verbatim copy of the prior record payload (control keys
+    # like ``__line``/``payload_hash``/``schema_version``/``table``/
+    # ``record_id``/``id`` already stripped). Carried forward so the
+    # tombstone apply path can preserve original record fields per
+    # context-importer-cli-contract.md §5.3 ("Der Adapter ueberschreibt
+    # das Original-Record nicht; es bleibt erhalten und bekommt die
+    # Tombstone-Felder dazu."). Never serialized into reports to avoid
+    # payload leakage; consumed only by the apply pipeline.
+    payload: Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -604,6 +615,13 @@ class ReconcileAction:
     reason: str
     payload_hash: str | None
     existing_payload_hash: str | None
+    # Optional verbatim copy of the prior record payload, only populated
+    # for ``tombstone_candidate`` actions whose existing record carried a
+    # ``payload`` object in the existing-records fixture. Plumbed to the
+    # apply pipeline so tombstones can preserve original record fields.
+    # Intentionally **not** included in :meth:`to_payload` to avoid
+    # leaking record contents into dry-run/apply reports.
+    existing_payload: Mapping[str, Any] | None = None
 
     def to_payload(self) -> dict[str, Any]:
         return {
@@ -782,6 +800,13 @@ class ContextApplyOperation:
     source_ref: str | None
     reason: str
     note: str | None = None
+    # Optional verbatim prior-record payload (control keys stripped),
+    # only populated for tombstone operations whose source ``ExistingRecord``
+    # carried a ``payload`` object. Consumed by ``_build_payload_for_op`` so
+    # tombstones preserve original record fields under the tombstone
+    # metadata. Intentionally **not** included in :meth:`to_payload` to
+    # avoid leaking record contents into apply reports.
+    existing_payload: Mapping[str, Any] | None = None
 
     def to_payload(self) -> dict[str, Any]:
         return {
@@ -1042,17 +1067,32 @@ def _build_payload_for_op(
 
     if op.op == APPLY_OP_TOMBSTONE:
         ts_iso = _isoformat_utc(clock.now())
-        payload = {
-            TOMBSTONE_FIELD_FLAG: True,
-            TOMBSTONE_FIELD_AT: ts_iso,
-            TOMBSTONE_FIELD_REASON: op.reason or TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT,
-            TOMBSTONE_FIELD_LAST_SEEN_RUN_ID: last_seen_run_id,
-            TOMBSTONE_FIELD_SUPERSEDED_BY: None,
-            "table": op.table,
-            "record_id": op.record_id,
-            "run_id": run_id,
-            "payload_hash": op.existing_payload_hash,
-        }
+        # Start from the prior record payload (when available) so the
+        # tombstone preserves all original record fields, then overlay
+        # the tombstone metadata + identity fields. Per
+        # context-importer-cli-contract.md §5.3 the adapter must keep
+        # the original record and only add tombstone fields. When no
+        # prior payload is available (e.g. hash-only existing-records
+        # entry, or no --existing-records fixture), the payload remains
+        # the deterministic minimal shape. Tombstone metadata and
+        # identity keys always win over any colliding prior field.
+        payload: dict[str, Any] = {}
+        if op.existing_payload is not None:
+            payload.update(copy.deepcopy(dict(op.existing_payload)))
+        payload.update(
+            {
+                TOMBSTONE_FIELD_FLAG: True,
+                TOMBSTONE_FIELD_AT: ts_iso,
+                TOMBSTONE_FIELD_REASON: op.reason
+                or TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT,
+                TOMBSTONE_FIELD_LAST_SEEN_RUN_ID: last_seen_run_id,
+                TOMBSTONE_FIELD_SUPERSEDED_BY: None,
+                "table": op.table,
+                "record_id": op.record_id,
+                "run_id": run_id,
+                "payload_hash": op.existing_payload_hash,
+            }
+        )
         return payload, ts_iso
 
     payload = {
@@ -1116,6 +1156,7 @@ def _operations_from_reconcile(
                     existing_payload_hash=action.existing_payload_hash,
                     source_ref=action.source_ref,
                     reason=action.reason or TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT,
+                    existing_payload=action.existing_payload,
                 )
             )
         # ``skip`` is intentionally dropped; nothing to apply.
@@ -1901,11 +1942,34 @@ def _existing_record_from_raw(raw: dict[str, Any]) -> ExistingRecord:
         raise ExistingRecordsValidationError(
             "existing record must provide payload_hash or object payload"
         )
+    # Capture the prior-record payload (when present) so the apply
+    # pipeline can preserve original record fields under tombstone
+    # metadata. Strip control keys that belong to the fixture envelope
+    # rather than the record body, and never carry the line counter.
+    raw_payload = raw.get("payload")
+    preserved_payload: Mapping[str, Any] | None
+    if isinstance(raw_payload, dict):
+        _control_keys = {
+            "__line",
+            "payload_hash",
+            "schema_version",
+            "table",
+            "record_id",
+            "id",
+        }
+        preserved_payload = {
+            key: copy.deepcopy(value)
+            for key, value in raw_payload.items()
+            if key not in _control_keys
+        }
+    else:
+        preserved_payload = None
     return ExistingRecord(
         table=table,
         record_id=record_id,
         payload_hash=payload_hash,
         schema_version=schema_version,
+        payload=preserved_payload,
     )
 
 
@@ -2317,6 +2381,7 @@ def reconcile_import_plan(
                 reason="record_removed_from_snapshot",
                 payload_hash=None,
                 existing_payload_hash=existing.payload_hash,
+                existing_payload=existing.payload,
             )
         )
 
