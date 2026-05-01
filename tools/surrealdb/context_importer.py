@@ -997,13 +997,33 @@ def _validate_local_dev_url(surreal_url: str) -> None:
 def _validate_apply_table_policy(
     table: str, *, allowed: frozenset[str], forbidden: frozenset[str]
 ) -> None:
+    """Fail-closed table policy gate for apply.
+
+    Effective policy:
+        allow_effective  = ALLOWED_CONTEXT_IMPORT_TABLES ∩ allowed
+        forbid_effective = FORBIDDEN_CONTEXT_IMPORT_TABLES ∪ forbidden
+
+    Forbidden trumps allowed. ``allowed`` (operator config
+    ``allowed_tables``) is strictly restrictive: a table that the
+    operator removed from ``config.allowed_tables`` is blocked even
+    when it is in the global allow-list. There is no fallback to the
+    global allow-list when the configured allow-list is narrower.
+
+    Errors only carry the table name and a reason; payloads, hashes,
+    and other record content are never included.
+    """
+
     if table in forbidden or table in FORBIDDEN_CONTEXT_IMPORT_TABLES:
         raise ApplyGateError(
-            f"apply target table is forbidden: {table!r}"
+            f"apply target table is forbidden by table policy: {table!r}"
         )
-    if table not in allowed and table not in ALLOWED_CONTEXT_IMPORT_TABLES:
+    if table not in ALLOWED_CONTEXT_IMPORT_TABLES:
         raise ApplyGateError(
-            f"apply target table is not in the allowed set: {table!r}"
+            f"apply target table is not in the global allow-list: {table!r}"
+        )
+    if table not in allowed:
+        raise ApplyGateError(
+            f"apply target table is not in the configured allow-list: {table!r}"
         )
 
 

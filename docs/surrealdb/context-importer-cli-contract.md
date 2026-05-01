@@ -136,6 +136,31 @@ governance_event, governance_decision, governance_state
 Diese Tabellen muessen in `forbidden_tables` stehen. Ueberschneidungen zwischen
 `allowed_tables` und `forbidden_tables` sind ungueltig.
 
+### Effective Apply-Table-Policy
+
+Beim `apply`-Pfad gilt eine strikt restriktive, fail-closed Tabellen-Policy:
+
+```text
+allow_effective  = ALLOWED_CONTEXT_IMPORT_TABLES ∩ config.allowed_tables
+forbid_effective = FORBIDDEN_CONTEXT_IMPORT_TABLES ∪ config.forbidden_tables
+```
+
+Regeln:
+
+- Eine Tabelle wird nur angewendet, wenn sie in `allow_effective` ist und nicht
+  in `forbid_effective`.
+- `config.allowed_tables` ist restriktiv, niemals dekorativ: eine Tabelle, die
+  global erlaubt waere, der Operator aber bewusst aus `config.allowed_tables`
+  entfernt hat, wird beim Apply blockiert. Es gibt keinen Fallback auf die
+  globale Allow-Liste.
+- `config.allowed_tables` darf die globale Allow-Liste niemals erweitern.
+  Eine Tabelle, die nicht in `ALLOWED_CONTEXT_IMPORT_TABLES` steht, bleibt
+  blockiert, auch wenn der Operator sie in `config.allowed_tables` aufnimmt.
+- Forbidden schlaegt Allowed: jede Quelle (global oder config) reicht aus, um
+  eine Tabelle zu blocken.
+- Block-Findings nennen Tabelle und Grund, leaken aber keine Payload-,
+  Hash- oder Secret-Werte.
+
 ---
 
 ## 5. Exit-Codes

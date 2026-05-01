@@ -43,8 +43,10 @@ from tools.surrealdb.context_importer import (
     SCHEMA_VERSION,
     SUPPORTED_APPLY_MODES,
     ApplyAdapterError,
+    ApplyGateError,
     ContextApplyOperation,
     ContextApplyReport,
+    _validate_apply_table_policy,
     build_import_plan,
     execute_context_apply,
     load_config,
@@ -119,9 +121,14 @@ def _write_local_dev_config(
     surreal_url: str = "ws://127.0.0.1:8000/rpc",
     namespace: str = "cdb_ctx",
     database: str = "context",
+    allowed_tables: list[str] | None = None,
 ) -> Path:
     forbidden = sorted(FORBIDDEN_CONTEXT_IMPORT_TABLES)
-    allowed = sorted(ALLOWED_CONTEXT_IMPORT_TABLES)
+    allowed = (
+        sorted(allowed_tables)
+        if allowed_tables is not None
+        else sorted(ALLOWED_CONTEXT_IMPORT_TABLES)
+    )
     body = (
         "schema_version: context-import-local/v0\n"
         f"surreal_url: {surreal_url}\n"
@@ -635,3 +642,191 @@ def test_unsupported_apply_mode_is_rejected_by_argparse(capsys) -> None:
         main(["apply", "--apply", "--apply-mode", "production"])
     # argparse choices reject before our handler.
     assert excinfo.value.code != 0
+
+
+# ---------------------------------------------------------------------------
+# Apply table-policy gate: configured allow-list is strictly restrictive
+# ---------------------------------------------------------------------------
+#
+# Regression coverage for the P2 review thread on PR #2248
+# (PRRT_kwDOQUkXUM5_DmtG): a table that is globally allowed must still
+# be blocked at apply time when the operator removed it from
+# ``config.allowed_tables``. Forbidden trumps allowed; configured
+# allow-list never widens the global allow-list.
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_global_and_config_allowed_passes() -> None:
+    """global allowed + config allowed -> no raise."""
+
+    table = next(iter(ALLOWED_CONTEXT_IMPORT_TABLES))
+    _validate_apply_table_policy(
+        table,
+        allowed=frozenset(ALLOWED_CONTEXT_IMPORT_TABLES),
+        forbidden=frozenset(FORBIDDEN_CONTEXT_IMPORT_TABLES),
+    )
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_globally_allowed_but_not_in_config_blocks() -> None:
+    """global allowed + config narrower (without table) -> blocked.
+
+    This is the exact regression the P2 review flagged: previously the
+    table slipped through because the global allow-list was used as a
+    fallback. The configured allow-list must be strictly restrictive.
+    """
+
+    globally_allowed = sorted(ALLOWED_CONTEXT_IMPORT_TABLES)
+    assert len(globally_allowed) >= 2, (
+        "test precondition: need at least two globally-allowed tables"
+    )
+    table = globally_allowed[0]
+    narrower = frozenset(globally_allowed[1:])  # explicitly omits `table`
+
+    with pytest.raises(ApplyGateError) as excinfo:
+        _validate_apply_table_policy(
+            table,
+            allowed=narrower,
+            forbidden=frozenset(FORBIDDEN_CONTEXT_IMPORT_TABLES),
+        )
+    msg = str(excinfo.value)
+    assert table in msg
+    assert "configured allow-list" in msg
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_config_forbidden_blocks() -> None:
+    """global allowed + config forbidden contains table -> blocked."""
+
+    table = next(iter(ALLOWED_CONTEXT_IMPORT_TABLES))
+    forbidden = frozenset(FORBIDDEN_CONTEXT_IMPORT_TABLES | {table})
+
+    with pytest.raises(ApplyGateError) as excinfo:
+        _validate_apply_table_policy(
+            table,
+            allowed=frozenset(ALLOWED_CONTEXT_IMPORT_TABLES),
+            forbidden=forbidden,
+        )
+    assert table in str(excinfo.value)
+    assert "forbidden" in str(excinfo.value)
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_global_forbidden_blocks_even_if_config_allows() -> None:
+    """global forbidden trumps config allow-list -> blocked."""
+
+    forbidden_table = next(iter(FORBIDDEN_CONTEXT_IMPORT_TABLES))
+    allowed = frozenset({forbidden_table})  # operator tried to allow it
+
+    with pytest.raises(ApplyGateError) as excinfo:
+        _validate_apply_table_policy(
+            forbidden_table,
+            allowed=allowed,
+            forbidden=frozenset(),
+        )
+    assert forbidden_table in str(excinfo.value)
+    assert "forbidden" in str(excinfo.value)
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_unknown_table_blocked_by_global_allow_list() -> None:
+    """Unknown tables (neither in global allow nor in global forbid) are
+    blocked by the global allow-list check."""
+
+    table = "definitely_not_a_real_context_table"
+    assert table not in ALLOWED_CONTEXT_IMPORT_TABLES
+    assert table not in FORBIDDEN_CONTEXT_IMPORT_TABLES
+
+    with pytest.raises(ApplyGateError) as excinfo:
+        _validate_apply_table_policy(
+            table,
+            allowed=frozenset({table}),  # operator tried to allow it
+            forbidden=frozenset(),
+        )
+    assert table in str(excinfo.value)
+    assert "global allow-list" in str(excinfo.value)
+
+
+@pytest.mark.unit
+def test_validate_apply_table_policy_error_does_not_leak_payload_or_secret() -> None:
+    """Block messages must contain the table and a reason, but no
+    payload-, hash-, or secret-shaped content."""
+
+    table = next(iter(ALLOWED_CONTEXT_IMPORT_TABLES))
+    narrower: frozenset[str] = frozenset()
+
+    with pytest.raises(ApplyGateError) as excinfo:
+        _validate_apply_table_policy(
+            table,
+            allowed=narrower,
+            forbidden=frozenset(FORBIDDEN_CONTEXT_IMPORT_TABLES),
+        )
+    msg = str(excinfo.value)
+    assert table in msg
+    # No payload / record content / secret-shaped substrings.
+    forbidden_substrings = (
+        "payload",
+        "secret",
+        "token",
+        "password",
+        "api_key",
+        "api-key",
+        "record_id",
+        "payload_hash",
+    )
+    lower = msg.lower()
+    for needle in forbidden_substrings:
+        assert needle not in lower, (
+            f"error message must not leak {needle!r}: {msg!r}"
+        )
+
+
+@pytest.mark.unit
+def test_apply_blocks_table_omitted_from_config_allowed_tables(
+    tmp_path: Path,
+) -> None:
+    """End-to-end: a snapshot table that is globally allowed but
+    omitted from ``config.allowed_tables`` must be blocked at apply
+    time and never reach the adapter."""
+
+    _write_valid_artifacts(tmp_path)
+
+    # Operator allows everything globally allowed EXCEPT ``repo_artifact``.
+    narrowed = sorted(set(ALLOWED_CONTEXT_IMPORT_TABLES) - {"repo_artifact"})
+    config_path = _write_local_dev_config(
+        tmp_path / "config.yaml",
+        allowed_tables=narrowed,
+    )
+    config = load_config(config_path)
+    assert "repo_artifact" not in config.allowed_tables
+    assert "repo_artifact" in ALLOWED_CONTEXT_IMPORT_TABLES
+
+    plan = build_import_plan(tmp_path, "run-apply-1")
+    reconcile = reconcile_import_plan(plan, load_existing_records(None))
+
+    adapter = InMemoryContextApplyAdapter()
+    clock = FixedClock(datetime(2026, 1, 1, 12, 0, 0))
+    report = execute_context_apply(
+        reconcile_report=reconcile,
+        config=config,
+        run_id="run-apply-1",
+        apply_mode=APPLY_MODE_LOCAL_DEV,
+        adapter=adapter,
+        clock=clock,
+    )
+
+    assert report.apply_executed is True
+    blocked_results = [r for r in report.results if r.status == "blocked"]
+    assert blocked_results, (
+        "expected at least one blocked operation for repo_artifact"
+    )
+    assert all(r.table == "repo_artifact" for r in blocked_results)
+    # Adapter must never see the blocked table.
+    assert all(
+        op_args[1] != "repo_artifact" for op_args in adapter.operations
+    ), "blocked table reached the adapter"
+    # Block detail mentions the table and the configured allow-list reason.
+    for r in blocked_results:
+        assert r.detail is not None
+        assert "repo_artifact" in r.detail
+        assert "configured allow-list" in r.detail
