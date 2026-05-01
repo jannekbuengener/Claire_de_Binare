@@ -151,6 +151,10 @@ def _write_valid_artifacts(input_dir: Path) -> None:
         _write_jsonl(input_dir, artifact, items)
 
 
+def _read_jsonl_report(path: Path) -> list[dict]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
 @pytest.mark.unit
 def test_validate_jsonl_passes_valid_artifacts(tmp_path: Path, capsys) -> None:
     _write_valid_artifacts(tmp_path)
@@ -382,6 +386,107 @@ def test_validate_jsonl_writes_report_only_when_requested(
     assert report.read_text(encoding="utf-8").startswith(
         "# context_importer: validate-jsonl"
     )
+
+
+@pytest.mark.unit
+def test_validate_jsonl_jsonl_report_pass_contains_summary(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "validate-jsonl",
+            "--input-dir",
+            str(tmp_path),
+            "--run-id",
+            RUN_ID,
+            "--report-output",
+            "artifacts/report.jsonl",
+            "--format",
+            "jsonl",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "passed"
+    records = _read_jsonl_report(tmp_path / "artifacts" / "report.jsonl")
+    assert len(records) == 1
+    summary = records[0]
+    assert summary["record_type"] == "summary"
+    assert summary["status"] == "passed"
+    assert summary["run_id"] == RUN_ID
+    assert summary["artifact_count"] == len(EXPECTED_JSONL_FILES)
+    assert summary["checked_records"] == len(EXPECTED_JSONL_FILES)
+    assert summary["has_blocking"] is False
+
+
+@pytest.mark.unit
+def test_validate_jsonl_jsonl_report_blocks_with_summary_first(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    (tmp_path / EXPECTED_JSONL_FILES["doc_chunks"]).unlink()
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "validate-jsonl",
+            "--input-dir",
+            str(tmp_path),
+            "--report-output",
+            "artifacts/report.jsonl",
+            "--format",
+            "jsonl",
+        ]
+    )
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "blocked"
+    records = _read_jsonl_report(tmp_path / "artifacts" / "report.jsonl")
+    assert records[0]["record_type"] == "summary"
+    assert records[0]["status"] == "blocked"
+    assert records[0]["finding_count"] >= 1
+    assert records[0]["has_blocking"] is True
+    assert all(record["record_type"] == "finding" for record in records[1:])
+    assert any(
+        record["code"] == "jsonl_file_missing"
+        and record["artifact"] == "doc_chunks"
+        for record in records[1:]
+    )
+
+
+@pytest.mark.unit
+def test_validate_jsonl_json_report_shape_remains_unchanged(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "validate-jsonl",
+            "--input-dir",
+            str(tmp_path),
+            "--report-output",
+            "artifacts/report.json",
+            "--format",
+            "json",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+    stdout_payload = json.loads(capsys.readouterr().out)
+    report = json.loads((tmp_path / "artifacts" / "report.json").read_text(encoding="utf-8"))
+    assert stdout_payload["report_output"].replace("\\", "/") == "artifacts/report.json"
+    assert "record_type" not in report
+    assert report["command"] == "validate-jsonl"
+    assert report["findings"] == []
+    assert report["status"] == "passed"
+    assert report["validation"]["blocking_count"] == 0
 
 
 @pytest.mark.unit

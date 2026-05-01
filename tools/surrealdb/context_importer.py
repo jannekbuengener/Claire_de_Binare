@@ -1052,10 +1052,32 @@ def _render_jsonl_report(report: JsonlValidationReport, fmt: str) -> str:
     if fmt == "json":
         return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2)
     if fmt == "jsonl":
-        return "\n".join(
-            json.dumps(finding.to_payload(), ensure_ascii=True, sort_keys=True)
+        artifact_counts = {
+            artifact: len(items) for artifact, items in sorted(report.records.items())
+        }
+        summary = {
+            "record_type": "summary",
+            "schema_version": SCHEMA_VERSION,
+            "command": "validate-jsonl",
+            "status": report.status,
+            "input_dir": str(report.input_dir),
+            "run_id": report.run_id,
+            "artifact_count": len(report.records),
+            "artifact_counts": artifact_counts,
+            "checked_records": sum(artifact_counts.values()),
+            "finding_count": len(report.findings),
+            "has_blocking": report.blocking_count > 0,
+        }
+        lines = [json.dumps(summary, ensure_ascii=True, sort_keys=True)]
+        lines.extend(
+            json.dumps(
+                {"record_type": "finding", **finding.to_payload()},
+                ensure_ascii=True,
+                sort_keys=True,
+            )
             for finding in report.findings
         )
+        return "\n".join(lines)
     if fmt == "markdown":
         lines = ["# context_importer: validate-jsonl"]
         lines.extend(
