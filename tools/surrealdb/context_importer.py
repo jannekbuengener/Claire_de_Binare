@@ -233,6 +233,7 @@ GOVERNANCE_MIRROR_TABLES = frozenset(
 )
 
 FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLES
+ALLOWED_CONTEXT_IMPORT_TABLES = frozenset(TABLE_BY_ARTIFACT.values())
 
 ALLOWED_AUTH_MODES = frozenset({"none", "root", "scope"})
 
@@ -332,6 +333,13 @@ class ConfigValidationError(ContextImporterError):
     """Raised when the local importer config is invalid or unsafe."""
 
     code = "CONFIG_VALIDATION_ERROR"
+    exit_code = EXIT_VALIDATION_ERROR
+
+
+class ExistingRecordsValidationError(ContextImporterError):
+    """Raised when the read-only existing-records fixture is invalid."""
+
+    code = "EXISTING_RECORDS_VALIDATION_ERROR"
     exit_code = EXIT_VALIDATION_ERROR
 
 
@@ -495,6 +503,138 @@ class ImportPlan:
             "has_blocking_validation_findings": self.has_blocking_validation_findings,
             "validation_summary": validation_summary,
             "import_order": list(self.import_order),
+        }
+
+
+@dataclass(frozen=True)
+class ExistingRecord:
+    table: str
+    record_id: str
+    payload_hash: str | None
+    schema_version: str | None
+
+
+@dataclass(frozen=True)
+class ReadOnlyExistingRecords:
+    """Mockable read-only boundary for records already present in SurrealDB."""
+
+    records: tuple[ExistingRecord, ...]
+    source: str
+
+    def by_record_id(self) -> dict[str, ExistingRecord]:
+        return {record.record_id: record for record in self.records}
+
+
+@dataclass(frozen=True)
+class ReconcileAction:
+    action: str
+    table: str
+    record_id: str
+    source_ref: str | None
+    reason: str
+    payload_hash: str | None
+    existing_payload_hash: str | None
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "table": self.table,
+            "record_id": self.record_id,
+            "source_ref": self.source_ref,
+            "reason": self.reason,
+            "payload_hash": self.payload_hash,
+            "existing_payload_hash": self.existing_payload_hash,
+        }
+
+
+@dataclass(frozen=True)
+class ReconcileFinding:
+    severity: str
+    code: str
+    message: str
+    table: str | None = None
+    record_id: str | None = None
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "severity": self.severity,
+            "code": self.code,
+            "message": self.message,
+        }
+        if self.table is not None:
+            payload["table"] = self.table
+        if self.record_id is not None:
+            payload["record_id"] = self.record_id
+        return payload
+
+
+@dataclass(frozen=True)
+class ReconcileReport:
+    schema_version: str
+    run_id: str | None
+    input_dir: Path
+    status: str
+    existing_records_source: str
+    actions: tuple[ReconcileAction, ...]
+    findings: tuple[ReconcileFinding, ...]
+    warnings: tuple[ImportPlanWarning, ...]
+    plan: ImportPlan
+
+    @property
+    def blocking_count(self) -> int:
+        return sum(1 for finding in self.findings if finding.severity == "blocking")
+
+    @property
+    def warning_count(self) -> int:
+        return sum(1 for finding in self.findings if finding.severity == "warning") + len(
+            self.warnings
+        )
+
+    def action_counts(self) -> dict[str, int]:
+        counts = {
+            "creates": 0,
+            "skips": 0,
+            "update_candidates": 0,
+            "tombstone_candidates": 0,
+            "blocking": self.blocking_count,
+            "warnings": self.warning_count,
+        }
+        for action in self.actions:
+            if action.action == "create":
+                counts["creates"] += 1
+            elif action.action == "skip":
+                counts["skips"] += 1
+            elif action.action == "update_candidate":
+                counts["update_candidates"] += 1
+            elif action.action == "tombstone_candidate":
+                counts["tombstone_candidates"] += 1
+        return counts
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "command": "dry-run",
+            "run_id": self.run_id,
+            "input_dir": str(self.input_dir),
+            "status": self.status,
+            "dry_run": True,
+            "apply_requested": False,
+            "surrealdb_connection": "read-only-fixture"
+            if self.existing_records_source != "empty"
+            else "disabled",
+            "surrealdb_writes": "disabled",
+            "implemented": True,
+            "existing_records_source": self.existing_records_source,
+            "actions": [action.to_payload() for action in self.actions],
+            "findings": [finding.to_payload() for finding in self.findings],
+            "warnings": [warning.to_payload() for warning in self.warnings],
+            "counts": self.action_counts(),
+            "plan_summary": {
+                "status": self.plan.status,
+                "actions": len(self.plan.actions),
+                "warnings": len(self.plan.warnings),
+                "has_blocking_validation_findings": self.plan.has_blocking_validation_findings,
+            },
         }
 
 
@@ -1101,6 +1241,91 @@ def _payload_hash(record: dict[str, Any]) -> str:
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
+def _safe_payload_hash(record: dict[str, Any]) -> str | None:
+    value = record.get("payload_hash")
+    if isinstance(value, str) and SHA256_RE.match(value):
+        return value
+    payload = record.get("payload")
+    if isinstance(payload, dict):
+        return _payload_hash(payload)
+    return None
+
+
+def _existing_record_from_raw(raw: dict[str, Any]) -> ExistingRecord:
+    table = raw.get("table")
+    record_id = raw.get("record_id") or raw.get("id")
+    if not isinstance(table, str) or not table.strip():
+        raise ExistingRecordsValidationError("existing record table must be a string")
+    if not isinstance(record_id, str) or not record_id.strip():
+        raise ExistingRecordsValidationError("existing record_id must be a string")
+    schema_version = raw.get("schema_version")
+    if schema_version is not None and not isinstance(schema_version, str):
+        raise ExistingRecordsValidationError("existing record schema_version must be a string")
+    payload_hash = _safe_payload_hash(raw)
+    if payload_hash is None:
+        raise ExistingRecordsValidationError(
+            "existing record must provide payload_hash or object payload"
+        )
+    return ExistingRecord(
+        table=table,
+        record_id=record_id,
+        payload_hash=payload_hash,
+        schema_version=schema_version,
+    )
+
+
+def load_existing_records(path: Path | None) -> ReadOnlyExistingRecords:
+    """Load read-only existing DB state from an explicit local fixture.
+
+    This boundary models records fetched from SurrealDB without opening a client
+    or allowing writes. A future adapter can implement the same shape.
+    """
+
+    if path is None:
+        return ReadOnlyExistingRecords(records=(), source="empty")
+    try:
+        exists = path.exists()
+        is_file = path.is_file() if exists else False
+    except OSError as exc:
+        raise InputNotFoundError(
+            f"cannot stat existing records fixture: {path}: {exc}"
+        ) from exc
+    if not exists:
+        raise InputNotFoundError(f"existing records fixture not found: {path}")
+    if not is_file:
+        raise ExistingRecordsValidationError(
+            f"existing records fixture path is not a file: {path}"
+        )
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ExistingRecordsValidationError(
+            f"invalid existing records JSON: {path}: {exc.msg}"
+        ) from exc
+    except OSError as exc:
+        raise InputNotFoundError(
+            f"cannot read existing records fixture: {path}: {exc}"
+        ) from exc
+
+    if isinstance(raw, dict):
+        items = raw.get("records")
+    else:
+        items = raw
+    if not isinstance(items, list):
+        raise ExistingRecordsValidationError(
+            "existing records fixture must be a list or mapping with records list"
+        )
+    records: list[ExistingRecord] = []
+    for item in items:
+        if not isinstance(item, dict):
+            raise ExistingRecordsValidationError("existing record entries must be objects")
+        records.append(_existing_record_from_raw(item))
+    return ReadOnlyExistingRecords(
+        records=tuple(sorted(records, key=lambda item: (item.table, item.record_id))),
+        source=str(path),
+    )
+
+
 def _source_ref(record: dict[str, Any]) -> str | None:
     for field_name in (
         "source_path",
@@ -1270,6 +1495,182 @@ def build_import_plan(
     )
 
 
+def _blocking_from_plan_warning(warning: ImportPlanWarning) -> ReconcileFinding:
+    return ReconcileFinding(
+        severity="blocking",
+        code=warning.code,
+        message=warning.message,
+        record_id=warning.source_ref,
+    )
+
+
+def _validate_reconcile_table_policy(
+    table: str, record_id: str, findings: list[ReconcileFinding]
+) -> bool:
+    if table in FORBIDDEN_CONTEXT_IMPORT_TABLES:
+        findings.append(
+            ReconcileFinding(
+                severity="blocking",
+                code="forbidden_table",
+                message="table is forbidden for context import reconcile",
+                table=table,
+                record_id=record_id,
+            )
+        )
+        return False
+    if table not in ALLOWED_CONTEXT_IMPORT_TABLES:
+        findings.append(
+            ReconcileFinding(
+                severity="blocking",
+                code="forbidden_table",
+                message="table is not in the context import allow-list",
+                table=table,
+                record_id=record_id,
+            )
+        )
+        return False
+    return True
+
+
+def reconcile_import_plan(
+    plan: ImportPlan,
+    existing_records: ReadOnlyExistingRecords,
+) -> ReconcileReport:
+    findings: list[ReconcileFinding] = []
+    warnings = list(plan.warnings)
+
+    if plan.has_blocking_validation_findings:
+        findings.extend(_blocking_from_plan_warning(warning) for warning in plan.warnings)
+        return ReconcileReport(
+            schema_version=SCHEMA_VERSION,
+            run_id=plan.run_id,
+            input_dir=plan.input_dir,
+            status="blocked",
+            existing_records_source=existing_records.source,
+            actions=(),
+            findings=tuple(findings),
+            warnings=tuple(warnings),
+            plan=plan,
+        )
+
+    existing_by_id = existing_records.by_record_id()
+    planned_ids: set[str] = set()
+    actions: list[ReconcileAction] = []
+
+    for plan_action in plan.actions:
+        planned_ids.add(plan_action.record_id)
+        if not _validate_reconcile_table_policy(
+            plan_action.table, plan_action.record_id, findings
+        ):
+            continue
+        existing = existing_by_id.get(plan_action.record_id)
+        if existing is None:
+            actions.append(
+                ReconcileAction(
+                    action="create",
+                    table=plan_action.table,
+                    record_id=plan_action.record_id,
+                    source_ref=plan_action.source_ref,
+                    reason="record_missing",
+                    payload_hash=plan_action.payload_hash,
+                    existing_payload_hash=None,
+                )
+            )
+            continue
+        if existing.table != plan_action.table or existing.schema_version not in (
+            None,
+            SCHEMA_VERSION,
+        ):
+            findings.append(
+                ReconcileFinding(
+                    severity="blocking",
+                    code="schema_mismatch",
+                    message="existing record table or schema_version differs from import plan",
+                    table=existing.table,
+                    record_id=existing.record_id,
+                )
+            )
+            continue
+        if existing.payload_hash == plan_action.payload_hash:
+            actions.append(
+                ReconcileAction(
+                    action="skip",
+                    table=plan_action.table,
+                    record_id=plan_action.record_id,
+                    source_ref=plan_action.source_ref,
+                    reason="record_same",
+                    payload_hash=plan_action.payload_hash,
+                    existing_payload_hash=existing.payload_hash,
+                )
+            )
+        else:
+            actions.append(
+                ReconcileAction(
+                    action="update_candidate",
+                    table=plan_action.table,
+                    record_id=plan_action.record_id,
+                    source_ref=plan_action.source_ref,
+                    reason="record_changed",
+                    payload_hash=plan_action.payload_hash,
+                    existing_payload_hash=existing.payload_hash,
+                )
+            )
+
+    for existing in existing_records.records:
+        if existing.record_id in planned_ids:
+            continue
+        if not _validate_reconcile_table_policy(existing.table, existing.record_id, findings):
+            continue
+        if existing.schema_version not in (None, SCHEMA_VERSION):
+            findings.append(
+                ReconcileFinding(
+                    severity="blocking",
+                    code="schema_mismatch",
+                    message="existing record schema_version differs from context importer schema",
+                    table=existing.table,
+                    record_id=existing.record_id,
+                )
+            )
+            continue
+        actions.append(
+            ReconcileAction(
+                action="tombstone_candidate",
+                table=existing.table,
+                record_id=existing.record_id,
+                source_ref=None,
+                reason="record_removed_from_snapshot",
+                payload_hash=None,
+                existing_payload_hash=existing.payload_hash,
+            )
+        )
+
+    ordered_actions = tuple(
+        sorted(actions, key=lambda item: (item.table, item.record_id, item.action))
+    )
+    ordered_findings = tuple(
+        sorted(
+            findings,
+            key=lambda item: (
+                item.severity,
+                item.code,
+                item.table or "",
+                item.record_id or "",
+            ),
+        )
+    )
+    return ReconcileReport(
+        schema_version=SCHEMA_VERSION,
+        run_id=plan.run_id,
+        input_dir=plan.input_dir,
+        status="blocked" if ordered_findings else "reconciled",
+        existing_records_source=existing_records.source,
+        actions=ordered_actions,
+        findings=ordered_findings,
+        warnings=tuple(warnings),
+        plan=plan,
+    )
+
+
 def _require_mapping(raw: Any, *, path: Path) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise ConfigValidationError(f"config must be a YAML mapping: {path}")
@@ -1430,6 +1831,43 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
     if fmt == "json":
         return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2)
     if fmt == "jsonl":
+        if payload.get("command") == "dry-run" and payload.get("implemented") is True:
+            lines = [
+                json.dumps(
+                    {
+                        key: value
+                        for key, value in payload.items()
+                        if key not in {"actions", "findings", "warnings"}
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+            ]
+            lines.extend(
+                json.dumps(
+                    {"record_type": "action", **action},
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                for action in payload["actions"]
+            )
+            lines.extend(
+                json.dumps(
+                    {"record_type": "finding", **finding},
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                for finding in payload["findings"]
+            )
+            lines.extend(
+                json.dumps(
+                    {"record_type": "warning", **warning},
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                for warning in payload["warnings"]
+            )
+            return "\n".join(lines)
         if payload.get("command") == "plan" and payload.get("implemented") is True:
             lines = [
                 json.dumps(
@@ -1461,6 +1899,55 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
             return "\n".join(lines)
         return json.dumps(payload, ensure_ascii=True, sort_keys=True)
     if fmt == "markdown":
+        if payload.get("command") == "dry-run" and payload.get("implemented") is True:
+            lines = ["# context_importer: dry-run reconcile"]
+            lines.extend(
+                [
+                    f"- **status**: `{payload['status']}`",
+                    f"- **input_dir**: `{payload['input_dir']}`",
+                    f"- **run_id**: `{payload['run_id']}`",
+                    f"- **existing_records_source**: `{payload['existing_records_source']}`",
+                    f"- **surrealdb_writes**: `{payload['surrealdb_writes']}`",
+                    "",
+                    "## Counts",
+                ]
+            )
+            for key, value in payload["counts"].items():
+                lines.append(f"- `{key}`: `{value}`")
+            lines.extend(["", "## Actions"])
+            if not payload["actions"]:
+                lines.append("- No reconcile actions generated.")
+            for action in payload["actions"]:
+                lines.append(
+                    "- "
+                    f"`{action['action']}` `{action['record_id']}` "
+                    f"({action['table']}, reason: `{action['reason']}`, "
+                    f"payload_hash: `{action['payload_hash']}`, "
+                    f"existing_payload_hash: `{action['existing_payload_hash']}`)"
+                )
+            lines.extend(["", "## Findings"])
+            if not payload["findings"]:
+                lines.append("- No findings.")
+            for finding in payload["findings"]:
+                table = finding.get("table") or "global"
+                record_id = finding.get("record_id") or "none"
+                lines.append(
+                    "- "
+                    f"**{finding['severity']}** `{finding['code']}` "
+                    f"({table}, record_id: `{record_id}`): {finding['message']}"
+                )
+            lines.extend(["", "## Warnings"])
+            if not payload["warnings"]:
+                lines.append("- No warnings.")
+            for warning in payload["warnings"]:
+                artifact = warning.get("artifact") or "global"
+                source_ref = warning.get("source_ref") or "none"
+                lines.append(
+                    "- "
+                    f"**{warning['severity']}** `{warning['code']}` "
+                    f"({artifact}, source_ref: `{source_ref}`): {warning['message']}"
+                )
+            return "\n".join(lines)
         if payload.get("command") == "plan" and payload.get("implemented") is True:
             lines = ["# context_importer: plan"]
             lines.extend(
@@ -1664,6 +2151,15 @@ def build_parser() -> argparse.ArgumentParser:
             ),
         )
         sub.add_argument(
+            "--existing-records",
+            type=Path,
+            default=None,
+            help=(
+                "Optional read-only JSON fixture representing existing SurrealDB "
+                "records for dry-run reconcile. No SurrealDB client is opened."
+            ),
+        )
+        sub.add_argument(
             "--dry-run",
             action="store_true",
             help="Simulate only. This is the default behavior.",
@@ -1735,6 +2231,20 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return payload, (
             EXIT_VALIDATION_ERROR if plan.has_blocking_validation_findings else EXIT_OK
         )
+
+    if command == "dry-run" and args.input_dir is not None:
+        input_dir = _validate_input_dir(args.input_dir)
+        plan = build_import_plan(input_dir, args.run_id)
+        existing_records = load_existing_records(args.existing_records)
+        report = reconcile_import_plan(plan, existing_records)
+        payload = report.to_payload()
+        payload["config_loaded"] = config is not None
+        if config is not None:
+            payload["config"] = config.to_payload()
+        if report_output is not None:
+            _write_report(report_output, _render(payload, args.format))
+            payload["report_output"] = str(report_output)
+        return payload, EXIT_VALIDATION_ERROR if report.blocking_count else EXIT_OK
 
     payload = _build_payload(
         command,

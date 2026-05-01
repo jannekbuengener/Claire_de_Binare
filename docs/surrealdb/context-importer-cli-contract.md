@@ -1,9 +1,9 @@
 # Context Importer CLI Contract
 
-**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan Slice)
-**Authority**: Issue #2068 + #2069 + #2070 + #2071 / Wave 10 Parent #2067 / Epic #1976
+**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan + Dry-run Reconcile Slice)
+**Authority**: Issue #2068 + #2069 + #2070 + #2071 + #2072 / Wave 10 Parent #2067 / Epic #1976
 **Target**: `tools/surrealdb/context_importer.py`
-**Scope**: CLI scaffold plus explicit local config validation, read-only JSONL validation, and deterministic import plan generation — no SurrealDB connection, no SurrealDB writes.
+**Scope**: CLI scaffold plus explicit local config validation, read-only JSONL validation, deterministic import plan generation, and dry-run reconcile against explicit read-only existing-record fixtures — no default SurrealDB connection, no SurrealDB writes.
 
 ---
 
@@ -17,8 +17,10 @@ lokale Config-Lade- und Validierungsschicht fuer
 `infrastructure/config/surrealdb/context_import.local.example.yaml`.
 Die JSONL-Validation fuer `validate-jsonl` ist in #2070 read-only implementiert.
 #2071 ergaenzt `plan --input-dir`: validierte JSONL-Artefakte werden zu einem
-deterministischen, DB-unabhaengigen Importplan geroutet. Dry-run-Reconcile,
-Apply, Audit und Rollback-Plan gehoeren weiterhin zu separaten Folge-Slices.
+  deterministischen, DB-unabhaengigen Importplan geroutet. #2072 ergaenzt
+  `dry-run --input-dir`: der Plan wird gegen einen expliziten read-only
+  Existing-Records-Zustand reconciled. Apply, Audit und Rollback-Plan gehoeren
+  weiterhin zu separaten Folge-Slices.
 
 ---
 
@@ -28,7 +30,7 @@ Apply, Audit und Rollback-Plan gehoeren weiterhin zu separaten Folge-Slices.
 |---|---|---|
 | `validate-jsonl` | JSONL-Artefakte gegen Schema pruefen | Read-only Validation, Exit `0` ohne Blocking Findings, Exit `1` mit Blocking Findings |
 | `plan` | Importplan aus JSONL-Artefakten berechnen | Mit `--input-dir`: deterministic candidate import plan, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
-| `dry-run` | End-to-End-Lauf ohne Schreiben | Stub: `scaffold-ack`, Exit `0` |
+| `dry-run` | End-to-End-Lauf ohne Schreiben | Mit `--input-dir`: dry-run reconcile gegen leeren oder expliziten Existing-Records-Zustand, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
 | `apply` | Schreiben nach SurrealDB | Hart geblockt: Exit `5` (`WRITE_DENIED`) |
 | `audit` | Audit-Trail-Export | Stub: `scaffold-ack`, Exit `0` |
 | `rollback-plan` | Rollback-Plan generieren | Stub: `scaffold-ack`, Exit `0` |
@@ -48,9 +50,10 @@ Folge-Slice (Apply-Implementation) entfernt werden.
   nutzt dieselbe Validation und erzeugt nur lokale Plan-Ausgabe.
 - **Dry-run Default**: Ohne explizites `--apply` ist `dry_run = true`.
 - **Apply hart geblockt**: `--apply` und `apply` exit `5` (`WRITE_DENIED`).
-- **Keine SurrealDB-Verbindung**: `--surreal-url`, `--namespace`,
-  `--database` werden geparsed, aber nie verwendet. Die Antwort enthaelt
-  immer `surrealdb_connection: "disabled"`.
+- **Keine Default-SurrealDB-Verbindung**: `--surreal-url`, `--namespace`,
+  `--database` werden geparsed, aber nie fuer Netzwerkzugriff verwendet.
+  `dry-run --input-dir` nutzt ausschliesslich `--existing-records` als lokale
+  read-only Boundary oder einen leeren Existing-State.
 - **Output-Pfad-Whitelist**: `--report-output` muss unter `artifacts/`
   oder `temp/` liegen. Absolute Pfade (`/...`, `C:\...`, UNC) und
   Traversal (`..`) werden mit Exit `5` verworfen. `validate-jsonl` schreibt
@@ -67,7 +70,8 @@ Folge-Slice (Apply-Implementation) entfernt werden.
   der Laufzeitumgebung kommen, nicht aus dieser YAML.
 - **Secret-Redaction**: Findings melden secret-like Inhalte nur mit Code und
   Pfad/Zeile; erkannte Werte werden nicht in Reports oder stdout echoed.
-- **Keine Reconcile-/Apply-/Audit-/Rollback-Logik**: jeweils eigene Folge-Slices.
+- **Kein Apply-/Audit-/Rollback-Verhalten**: jeweils eigene Folge-Slices.
+  Reconcile in #2072 bleibt dry-run-only und erzeugt nur Reports.
 
 ---
 
@@ -82,6 +86,7 @@ Folge-Slice (Apply-Implementation) entfernt werden.
 | `--run-id` | `None` | nein | `validate-jsonl` prueft optional auf einheitlichen Run; andere Subcommands parsen nur |
 | `--config` | `None` | nein | explizite lokale YAML laden und validieren, kein Write |
 | `--report-output` | `None` | nein | Whitelist-Check; `validate-jsonl` und `plan --input-dir` schreiben Report nur wenn explizit gesetzt |
+| `--existing-records` | `None` | nein | nur fuer `dry-run --input-dir`; lokale JSON-Datei mit Existing-Records-Fixture, kein DB-Client |
 | `--dry-run` | `False` (Default-Verhalten ist dennoch dry-run) | nein | redundant; explizit erlaubt |
 | `--apply` | `False` | nein | `True` ⇒ Exit `5` |
 | `--format` | `json` | nein | `json` / `jsonl` / `markdown` |
@@ -133,6 +138,40 @@ Diese Tabellen muessen in `forbidden_tables` stehen. Ueberschneidungen zwischen
 | 4 | Unsupported Format (defensiv; argparse faengt das frueher) |
 | 5 | Write denied (Pfad-Verstoss ODER Apply im Scaffold) |
 | 6 | Interner Fehler |
+
+---
+
+## 5.1 Existing-Records-Fixture-Vertrag (#2072)
+
+`dry-run --input-dir` kann optional einen vorhandenen DB-Zustand als lokale
+JSON-Fixture lesen:
+
+```json
+{
+  "records": [
+    {
+      "table": "doc_page",
+      "record_id": "doc_page:page-id",
+      "payload_hash": "lowercase-sha256-hex",
+      "schema_version": "context-importer/v0"
+    }
+  ]
+}
+```
+
+Alternativ darf die Datei direkt eine Liste solcher Records enthalten. Statt
+`payload_hash` kann ein objektfoermiges `payload` angegeben werden; der Importer
+berechnet dann denselben deterministischen SHA-256-Hash wie beim Importplan.
+
+Guardrails:
+
+- Die Fixture ist eine mockbare read-only Boundary; kein SurrealDB-Client wird
+  geoeffnet.
+- Tabellen muessen in der Context-Importer-Allowlist liegen und duerfen nicht in
+  `orders`, `fills`, `positions`, `balances`, `pnl`, `risk_state`,
+  `execution_state` oder Governance-Mirror-Tabellen liegen.
+- `schema_version` darf fehlen oder `context-importer/v0` sein. Andere Werte
+  erzeugen `schema_mismatch` als Blocking Finding.
 
 ---
 
@@ -244,6 +283,42 @@ Plan-Vertrag:
 - `--format json` gibt das vollstaendige Plan-Objekt aus. `--format markdown`
   ist diff-freundlich fuer Review. `--format jsonl` gibt eine Summary-Zeile plus
   je eine Zeile pro Action/Warning aus.
+
+`dry-run --input-dir`-Antwort (#2072):
+
+```json
+{
+  "schema_version": "context-importer/v0",
+  "command": "dry-run",
+  "status": "reconciled",
+  "dry_run": true,
+  "apply_requested": false,
+  "surrealdb_writes": "disabled",
+  "existing_records_source": "empty",
+  "counts": {
+    "creates": 1,
+    "skips": 0,
+    "update_candidates": 0,
+    "tombstone_candidates": 0,
+    "blocking": 0,
+    "warnings": 0
+  },
+  "actions": [],
+  "findings": []
+}
+```
+
+Reconcile-Vertrag:
+
+- `record_missing` wird als `create` berichtet.
+- `record_same` wird als `skip` berichtet.
+- `record_changed` wird als `update_candidate` berichtet.
+- `record_removed_from_snapshot` wird als `tombstone_candidate` berichtet.
+- `schema_mismatch` wird als Blocking Finding berichtet.
+- `forbidden_table` wird als Blocking Finding berichtet.
+- Tombstones bleiben Kandidaten; kein Hard Delete und kein Apply-Verhalten.
+- Blocking JSONL-/Plan-Findings blockieren auch den Reconcile-Report fail-closed
+  mit Exit-Code `1`.
 
 Artifact-zu-Table-Routing in #2071:
 
