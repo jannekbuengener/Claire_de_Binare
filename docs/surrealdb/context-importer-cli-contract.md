@@ -1,7 +1,7 @@
 # Context Importer CLI Contract
 
-**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan + Dry-run Reconcile + Gated Local-Dev Apply + Tombstones Slice)
-**Authority**: Issue #2068 + #2069 + #2070 + #2071 + #2072 + #2073 + #2074 / Wave 10 Parent #2067 / Epic #1976
+**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan + Dry-run Reconcile + Gated Local-Dev Apply + Tombstones + Audit/Test Hardening Slice)
+**Authority**: Issue #2068 + #2069 + #2070 + #2071 + #2072 + #2073 + #2074 + #2075 + #2076 / Wave 10 Parent #2067 / Epic #1976
 **Target**: `tools/surrealdb/context_importer.py`
 **Scope**: CLI scaffold plus explicit local config validation, read-only JSONL validation, deterministic import plan generation, dry-run reconcile against explicit read-only existing-record fixtures, and a **gated local-dev apply pipeline with a mockable adapter boundary** (default in-memory adapter, no production SurrealDB activation, no default network) that performs tombstone-only deletions via an injectable clock. The real SurrealDB adapter is **explicitly out-of-scope** in this slice.
 
@@ -17,10 +17,11 @@ lokale Config-Lade- und Validierungsschicht fuer
 `infrastructure/config/surrealdb/context_import.local.example.yaml`.
 Die JSONL-Validation fuer `validate-jsonl` ist in #2070 read-only implementiert.
 #2071 ergaenzt `plan --input-dir`: validierte JSONL-Artefakte werden zu einem
-  deterministischen, DB-unabhaengigen Importplan geroutet. #2072 ergaenzt
-  `dry-run --input-dir`: der Plan wird gegen einen expliziten read-only
-  Existing-Records-Zustand reconciled. Apply, Audit und Rollback-Plan gehoeren
-  weiterhin zu separaten Folge-Slices.
+deterministischen, DB-unabhaengigen Importplan geroutet. #2072 ergaenzt
+`dry-run --input-dir`: der Plan wird gegen einen expliziten read-only
+Existing-Records-Zustand reconciled. #2073/#2074 ergaenzen den gegateten
+Local-Dev-Apply-Pfad und Tombstones. #2075/#2076 ergaenzen Audit-Reports
+und kleine deterministische Fixtures/Tests. Rollback-Plan bleibt Folgescope.
 
 ---
 
@@ -32,7 +33,7 @@ Die JSONL-Validation fuer `validate-jsonl` ist in #2070 read-only implementiert.
 | `plan` | Importplan aus JSONL-Artefakten berechnen | Mit `--input-dir`: deterministic candidate import plan, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
 | `dry-run` | End-to-End-Lauf ohne Schreiben | Mit `--input-dir`: dry-run reconcile gegen leeren oder expliziten Existing-Records-Zustand, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
 | `apply` | Schreiben nach SurrealDB | Gated local-dev only: erfordert `--apply` + `--apply-mode local-dev` + `--config` + `--input-dir` + `--run-id`. Default-Adapter ist in-memory ohne Netz. Real-SurrealDB-Adapter ist explizit out-of-scope. Ohne vollstaendige Gates Exit `5` (`WRITE_DENIED`). |
-| `audit` | Audit-Trail-Export | Stub: `scaffold-ack`, Exit `0` |
+| `audit` | Audit-Trail-Export | Mit `--input-dir`: erzeugt Audit-Report fuer `--audit-mode plan|dry-run`; ohne `--input-dir`: Scaffold-Stub. Apply-Audit entsteht ueber `apply ... --audit-output`, nicht als separater Write-Entrypoint. |
 | `rollback-plan` | Rollback-Plan generieren | Stub: `scaffold-ack`, Exit `0` |
 
 `apply` existiert als Subcommand und auch als globales Flag `--apply`. Auf
@@ -96,6 +97,11 @@ implementiert und nicht ueber die CLI selektierbar.
 | `--run-id` | `None` | nein | `validate-jsonl` prueft optional auf einheitlichen Run; andere Subcommands parsen nur |
 | `--config` | `None` | nein | explizite lokale YAML laden und validieren, kein Write |
 | `--report-output` | `None` | nein | Whitelist-Check; `validate-jsonl` und `plan --input-dir` schreiben Report nur wenn explizit gesetzt |
+| `--audit-output` | `None` | nein | Whitelist-Check; schreibt Audit-JSON und Markdown-Summary fuer `plan`, `dry-run`, `apply` oder `audit --input-dir` |
+| `--audit-mode` | `None` | nur fuer `audit --input-dir` relevant | `plan` oder `dry-run`; `apply` wird als eigener Write-Entrypoint geblockt, Apply-Audit entsteht ueber `apply ... --audit-output` |
+| `--git-commit` | `unknown` | nein | Audit-Metadaten, test-/CI-injizierbar |
+| `--audit-generated-at` | SystemClock | nein | ISO8601-Zeitinjektion fuer deterministische Audit-Tests; ohne Flag injizierbarer `SystemClock` |
+| `--audit-duration-ms` | `0` | nein | Nicht-negative Laufzeit-Metadaten fuer deterministische Audit-Tests |
 | `--existing-records` | `None` | nein | nur fuer `dry-run --input-dir`; lokale JSON-Datei mit Existing-Records-Fixture, kein DB-Client |
 | `--dry-run` | `False` (Default-Verhalten ist dennoch dry-run) | nein | redundant; explizit erlaubt |
 | `--apply` | `False` | nein | Notwendig, aber nicht hinreichend fuer `apply`; auf jedem anderen Subcommand ⇒ Exit `5` |
@@ -312,6 +318,83 @@ Verhalten:
 
 Per-Tabelle gilt das fuer alle in §6 gerouteten Tabellen, getestet
 explizit fuer `doc_page`, `doc_chunk`, `code_symbol` und `dependency_edge`.
+
+---
+
+## 5.4 Audit-Report-Semantik (#2075/#2076)
+
+Audit-Reports sind Evidence-faehige, payload-sichere Metadaten-Reports fuer
+relevante Context-Importer-Laeufe.
+
+Erzeugung:
+
+- `plan --input-dir ... --audit-output artifacts/.../audit.json`
+- `dry-run --input-dir ... --audit-output artifacts/.../audit.json`
+- `apply --apply --apply-mode local-dev ... --audit-output artifacts/.../audit.json`
+- `audit --input-dir ... --audit-mode plan|dry-run`
+
+`--audit-output` schreibt immer zwei Artefakte:
+
+- JSON am angegebenen Pfad.
+- Markdown-Summary daneben mit `.md`-Suffix.
+
+Beide Pfade muessen real unter `artifacts/` oder `temp/` aufloesen; die
+bestehende Symlink-/Traversal-/Absolutpfad-Guard bleibt aktiv.
+
+Audit-Payload:
+
+```json
+{
+  "schema_version": "context-import-audit/v0",
+  "command": "audit",
+  "status": "reconciled",
+  "run_id": "fixture-run-1",
+  "input_dir": "artifacts/context-index/run",
+  "git_commit": "012345...",
+  "namespace": "cdb_ctx",
+  "database": "context",
+  "mode": "dry-run",
+  "artifact_counts": {"doc_pages": 1},
+  "planned_counts": {"creates": 1, "updates": 0, "skips": 0, "tombstones": 0},
+  "actual_counts": {"creates": 0, "updates": 0, "skips": 0, "tombstones": 0},
+  "warnings": [],
+  "blocking_findings": [],
+  "duration_ms": 0,
+  "generated_at": "2026-05-02T10:11:12Z",
+  "operator_tool_version": "context-importer/v0",
+  "report_source": "dry-run-reconcile",
+  "payload_policy": "metadata-only; no record payloads serialized"
+}
+```
+
+Feldregeln:
+
+- `mode` ist `plan`, `dry-run` oder `apply`.
+- `planned_counts` normalisiert create/update/skip/tombstone-Kandidaten auf
+  `creates`, `updates`, `skips`, `tombstones`.
+- `actual_counts` bleibt fuer `plan`/`dry-run` null; bei `apply` zaehlt es nur
+  tatsaechlich angewendete In-Memory-Adapter-Ergebnisse. Reconcile-Skips werden
+  als `actual_counts.skips` uebernommen, weil sie explizite No-op-Ergebnisse des
+  Apply-Laufs sind.
+- `warnings` und `blocking_findings` enthalten nur sichere Finding-Metadaten
+  (Code, Severity, Artifact/Table/Record-ID soweit vorhanden), keine
+  Record-Payloads und keine Secret-Werte.
+- `generated_at` nutzt eine injizierbare Clock (`--audit-generated-at` fuer CLI-
+  Tests; intern `ClockProvider`). Es gibt keine direkte `datetime.now()`-Nutzung
+  im Audit-Pfad.
+- `duration_ms` und `git_commit` sind injizierbar, damit gleicher Input + gleiche
+  Clock/Git-Metadaten byte-stabile Reports erzeugen koennen.
+- `operator_tool_version` ist die aktuelle Importer-Vertragsversion
+  (`context-importer/v0`).
+
+Fixtures fuer #2076 liegen klein und deterministisch unter:
+
+```text
+tests/fixtures/surrealdb/context_importer/
+```
+
+Diese Fixtures enthalten keine Secrets, keinen Runtime-State und benoetigen
+weder Docker noch produktive SurrealDB.
 
 ---
 
@@ -557,14 +640,15 @@ weder aus CLI-Args noch aus der Umgebung abgeleitet.
 #2071 aendert diese Nicht-Ziele nur fuer `plan --input-dir`. #2073/#2074
 aendern sie nur fuer `apply` im gated local-dev Modus mit der mockable
 adapter boundary; ein realer SurrealDB-Adapter ist explizit out-of-scope.
-Audit und Rollback-Plan bleiben Nicht-Ziele.
+#2075/#2076 heben Audit aus den Nicht-Zielen heraus, aber Rollback-Plan bleibt
+Nicht-Ziel.
 
 - Keine produktive SurrealDB-Verbindung (`real_surrealdb_adapter_available = false`).
 - Kein Default-Netzwerk-Connect; in-memory adapter ist Default.
 - Kein Hard Delete; nur Tombstones.
 - Kein Apply ausserhalb von `--apply-mode local-dev` mit lokalem Host.
 - Kein Schreiben in Trading-, Risk-, Execution- oder Governance-Mirror-Tabellen.
-- Keine Audit-/Rollback-Logik.
+- Keine Rollback-Logik.
 - Keine Aenderung an Trading-, Risk-, Execution-, Secrets- oder
   Live-Readiness-Pfaden.
 - Kein Echtgeld-/Live-Enable.

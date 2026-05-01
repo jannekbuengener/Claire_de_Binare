@@ -1,0 +1,1 @@
+{"config_key":"safe_key","config_ref_id":"config-safe","config_value":"safe-value","run_id":"fixture-run-1","schema_version":"context-indexer/v0","sensitive":false,"source_hash":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","source_path":"infrastructure/config/example.yaml"}

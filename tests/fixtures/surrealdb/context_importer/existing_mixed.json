@@ -1,0 +1,1 @@
+{"records":[{"payload_hash":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","record_id":"doc_page:page-example","schema_version":"context-importer/v0","table":"doc_page"},{"payload":{"legacy_field":"preserve-me","title":"Old page"},"record_id":"doc_chunk:stale","schema_version":"context-importer/v0","table":"doc_chunk"}]}

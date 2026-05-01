@@ -72,6 +72,8 @@ logger = logging.getLogger(__name__)
 
 
 SCHEMA_VERSION = "context-importer/v0"
+AUDIT_SCHEMA_VERSION = "context-import-audit/v0"
+TOOL_VERSION = SCHEMA_VERSION
 
 SUPPORTED_COMMANDS = (
     "validate-jsonl",
@@ -83,6 +85,13 @@ SUPPORTED_COMMANDS = (
 )
 
 SUPPORTED_FORMATS = frozenset({"json", "jsonl", "markdown"})
+
+AUDIT_MODE_PLAN = "plan"
+AUDIT_MODE_DRY_RUN = "dry-run"
+AUDIT_MODE_APPLY = "apply"
+SUPPORTED_AUDIT_MODES = frozenset(
+    {AUDIT_MODE_PLAN, AUDIT_MODE_DRY_RUN, AUDIT_MODE_APPLY}
+)
 
 ALLOWED_OUTPUT_PREFIXES = ("artifacts", "temp")
 
@@ -405,6 +414,13 @@ class ExistingRecordsValidationError(ContextImporterError):
     """Raised when the read-only existing-records fixture is invalid."""
 
     code = "EXISTING_RECORDS_VALIDATION_ERROR"
+    exit_code = EXIT_VALIDATION_ERROR
+
+
+class AuditReportError(ContextImporterError):
+    """Raised when an audit report cannot be generated safely."""
+
+    code = "AUDIT_REPORT_ERROR"
     exit_code = EXIT_VALIDATION_ERROR
 
 
@@ -921,6 +937,59 @@ class ContextApplyReport:
         }
 
 
+@dataclass(frozen=True)
+class ContextImportAuditReport:
+    """Payload-safe audit envelope for plan, dry-run, and apply runs."""
+
+    run_id: str | None
+    input_dir: Path
+    git_commit: str
+    namespace: str | None
+    database: str | None
+    mode: str
+    artifact_counts: Mapping[str, int]
+    planned_counts: Mapping[str, int]
+    actual_counts: Mapping[str, int]
+    warnings: tuple[dict[str, Any], ...]
+    blocking_findings: tuple[dict[str, Any], ...]
+    duration_ms: int
+    generated_at: str
+    operator_tool_version: str
+    status: str
+    report_source: str
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "schema_version": AUDIT_SCHEMA_VERSION,
+            "command": "audit",
+            "status": self.status,
+            "run_id": self.run_id,
+            "input_dir": str(self.input_dir),
+            "git_commit": self.git_commit,
+            "namespace": self.namespace,
+            "database": self.database,
+            "mode": self.mode,
+            "artifact_counts": dict(sorted(self.artifact_counts.items())),
+            "planned_counts": dict(sorted(self.planned_counts.items())),
+            "actual_counts": dict(sorted(self.actual_counts.items())),
+            "warnings": list(self.warnings),
+            "blocking_findings": list(self.blocking_findings),
+            "duration_ms": self.duration_ms,
+            "generated_at": self.generated_at,
+            "operator_tool_version": self.operator_tool_version,
+            "report_source": self.report_source,
+            "payload_policy": "metadata-only; no record payloads serialized",
+        }
+
+
+@dataclass(frozen=True)
+class _FixedAuditClock:
+    value: datetime
+
+    def now(self) -> datetime:
+        return self.value
+
+
 class ContextApplyAdapter(Protocol):
     """Mockable apply boundary.
 
@@ -1005,6 +1074,211 @@ def _isoformat_utc(dt: datetime) -> str:
     # Drop tzinfo in formatting and append explicit Z to keep the contract
     # stable across Python versions.
     return aware.replace(tzinfo=None).isoformat() + "Z"
+
+
+def _git_commit_value(value: str | None) -> str:
+    if value is None or not value.strip():
+        return "unknown"
+    return value.strip()
+
+
+def _duration_ms_value(value: int | None) -> int:
+    if value is None:
+        return 0
+    if value < 0:
+        raise AuditReportError("audit duration_ms must be non-negative")
+    return value
+
+
+def _parse_audit_generated_at(value: str | None) -> datetime | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        raise AuditReportError("audit generated_at must be a non-empty ISO8601 value")
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise AuditReportError(
+            f"audit generated_at must be ISO8601-compatible: {value!r}"
+        ) from exc
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _safe_warning_payload(warning: ImportPlanWarning) -> dict[str, Any]:
+    return warning.to_payload()
+
+
+def _safe_validation_finding_payload(finding: JsonlValidationFinding) -> dict[str, Any]:
+    return finding.to_payload()
+
+
+def _safe_reconcile_finding_payload(finding: ReconcileFinding) -> dict[str, Any]:
+    return finding.to_payload()
+
+
+def _planned_counts_from_reconcile(report: ReconcileReport) -> dict[str, int]:
+    counts = report.action_counts()
+    return {
+        "creates": counts["creates"],
+        "updates": counts["update_candidates"],
+        "skips": counts["skips"],
+        "tombstones": counts["tombstone_candidates"],
+    }
+
+
+def _actual_counts_from_apply(report: ContextApplyReport) -> dict[str, int]:
+    counts = {"creates": 0, "updates": 0, "skips": 0, "tombstones": 0}
+    for result in report.results:
+        if result.status != "applied":
+            continue
+        if result.op == APPLY_OP_CREATE:
+            counts["creates"] += 1
+        elif result.op == APPLY_OP_UPDATE:
+            counts["updates"] += 1
+        elif result.op == APPLY_OP_TOMBSTONE:
+            counts["tombstones"] += 1
+    return counts
+
+
+def _audit_status(blocking_findings: tuple[dict[str, Any], ...], status: str) -> str:
+    if blocking_findings:
+        return "blocked"
+    return status
+
+
+def build_audit_report(
+    *,
+    mode: str,
+    input_dir: Path,
+    run_id: str | None,
+    git_commit: str | None = None,
+    namespace: str | None = None,
+    database: str | None = None,
+    clock: ClockProvider | None = None,
+    duration_ms: int | None = None,
+    plan: ImportPlan | None = None,
+    reconcile_report: ReconcileReport | None = None,
+    apply_report: ContextApplyReport | None = None,
+) -> ContextImportAuditReport:
+    """Build a deterministic, payload-safe audit report.
+
+    Callers inject ``clock``, ``duration_ms`` and ``git_commit`` in tests or
+    evidence-producing runs. The report deliberately serializes only counts,
+    finding metadata, IDs and hashes already present in command summaries; it
+    never serializes record payloads from JSONL or existing-record fixtures.
+    """
+
+    if mode not in SUPPORTED_AUDIT_MODES:
+        raise AuditReportError(
+            f"unsupported audit mode: {mode!r}; allowed: {sorted(SUPPORTED_AUDIT_MODES)}"
+        )
+    if mode == AUDIT_MODE_PLAN and plan is None:
+        raise AuditReportError("plan audit requires an ImportPlan")
+    if mode == AUDIT_MODE_DRY_RUN and reconcile_report is None:
+        raise AuditReportError("dry-run audit requires a ReconcileReport")
+    if mode == AUDIT_MODE_APPLY and (reconcile_report is None or apply_report is None):
+        raise AuditReportError("apply audit requires ReconcileReport and ContextApplyReport")
+
+    used_clock: ClockProvider = clock or SystemClock()
+    generated_at = _isoformat_utc(used_clock.now())
+    duration = _duration_ms_value(duration_ms)
+
+    source_plan = plan or (reconcile_report.plan if reconcile_report is not None else None)
+    artifact_counts = (
+        {
+            artifact: len(items)
+            for artifact, items in sorted(source_plan.validation_report.records.items())
+        }
+        if source_plan is not None
+        else {}
+    )
+
+    if mode == AUDIT_MODE_PLAN:
+        assert plan is not None  # narrowed by guard above
+        planned_counts = {
+            "creates": plan.action_counts.get("create", 0),
+            "updates": plan.action_counts.get("update", 0),
+            "skips": plan.action_counts.get("skip", 0),
+            "tombstones": plan.action_counts.get("tombstone", 0),
+        }
+        actual_counts = {"creates": 0, "updates": 0, "skips": 0, "tombstones": 0}
+        warnings = tuple(_safe_warning_payload(warning) for warning in plan.warnings)
+        blocking_findings = tuple(
+            _safe_validation_finding_payload(finding)
+            for finding in plan.validation_report.findings
+            if finding.severity == "blocking"
+        )
+        status = _audit_status(blocking_findings, plan.status)
+        report_source = "import-plan"
+    elif mode == AUDIT_MODE_DRY_RUN:
+        assert reconcile_report is not None
+        planned_counts = _planned_counts_from_reconcile(reconcile_report)
+        actual_counts = {"creates": 0, "updates": 0, "skips": 0, "tombstones": 0}
+        warnings = tuple(
+            _safe_warning_payload(warning) for warning in reconcile_report.warnings
+        ) + tuple(
+            _safe_reconcile_finding_payload(finding)
+            for finding in reconcile_report.findings
+            if finding.severity == "warning"
+        )
+        blocking_findings = tuple(
+            _safe_reconcile_finding_payload(finding)
+            for finding in reconcile_report.findings
+            if finding.severity == "blocking"
+        )
+        status = _audit_status(blocking_findings, reconcile_report.status)
+        report_source = "dry-run-reconcile"
+    else:
+        assert reconcile_report is not None and apply_report is not None
+        planned_counts = _planned_counts_from_reconcile(reconcile_report)
+        actual_counts = _actual_counts_from_apply(apply_report)
+        actual_counts["skips"] = reconcile_report.action_counts()["skips"]
+        warnings = tuple(
+            _safe_warning_payload(warning) for warning in reconcile_report.warnings
+        ) + tuple(
+            _safe_reconcile_finding_payload(finding)
+            for finding in reconcile_report.findings
+            if finding.severity == "warning"
+        )
+        blocking_findings = tuple(
+            _safe_reconcile_finding_payload(finding)
+            for finding in reconcile_report.findings
+            if finding.severity == "blocking"
+        )
+        blocking_findings += tuple(
+            {
+                "severity": "blocking",
+                "code": code,
+                "message": "apply blocked by reconcile finding",
+            }
+            for code in apply_report.blocking_finding_codes
+        )
+        status = _audit_status(blocking_findings, apply_report.status)
+        report_source = "local-dev-apply"
+
+    return ContextImportAuditReport(
+        run_id=run_id,
+        input_dir=input_dir,
+        git_commit=_git_commit_value(git_commit),
+        namespace=namespace,
+        database=database,
+        mode=mode,
+        artifact_counts=artifact_counts,
+        planned_counts=planned_counts,
+        actual_counts=actual_counts,
+        warnings=warnings,
+        blocking_findings=blocking_findings,
+        duration_ms=duration,
+        generated_at=generated_at,
+        operator_tool_version=TOOL_VERSION,
+        status=status,
+        report_source=report_source,
+    )
 
 
 def _validate_local_dev_url(surreal_url: str) -> None:
@@ -2572,6 +2846,8 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
     if fmt == "json":
         return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2)
     if fmt == "jsonl":
+        if payload.get("command") == "audit":
+            return json.dumps(payload, ensure_ascii=True, sort_keys=True)
         if payload.get("command") == "dry-run" and payload.get("implemented") is True:
             lines = [
                 json.dumps(
@@ -2640,6 +2916,51 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
             return "\n".join(lines)
         return json.dumps(payload, ensure_ascii=True, sort_keys=True)
     if fmt == "markdown":
+        if payload.get("command") == "audit":
+            lines = [f"# context_importer audit: {payload['mode']}"]
+            lines.extend(
+                [
+                    f"- **status**: `{payload['status']}`",
+                    f"- **run_id**: `{payload['run_id']}`",
+                    f"- **input_dir**: `{payload['input_dir']}`",
+                    f"- **git_commit**: `{payload['git_commit']}`",
+                    f"- **namespace**: `{payload['namespace']}`",
+                    f"- **database**: `{payload['database']}`",
+                    f"- **generated_at**: `{payload['generated_at']}`",
+                    f"- **duration_ms**: `{payload['duration_ms']}`",
+                    f"- **operator_tool_version**: `{payload['operator_tool_version']}`",
+                    f"- **payload_policy**: `{payload['payload_policy']}`",
+                    "",
+                    "## Artifact Counts",
+                ]
+            )
+            if payload["artifact_counts"]:
+                for artifact, count in payload["artifact_counts"].items():
+                    lines.append(f"- `{artifact}`: `{count}`")
+            else:
+                lines.append("- No artifacts counted.")
+            lines.extend(["", "## Planned Counts"])
+            for key, value in payload["planned_counts"].items():
+                lines.append(f"- `{key}`: `{value}`")
+            lines.extend(["", "## Actual Counts"])
+            for key, value in payload["actual_counts"].items():
+                lines.append(f"- `{key}`: `{value}`")
+            lines.extend(["", "## Warnings"])
+            if not payload["warnings"]:
+                lines.append("- No warnings.")
+            for warning in payload["warnings"]:
+                code = warning.get("code", "unknown")
+                severity = warning.get("severity", "warning")
+                location = warning.get("artifact") or warning.get("table") or "global"
+                lines.append(f"- **{severity}** `{code}` ({location})")
+            lines.extend(["", "## Blocking Findings"])
+            if not payload["blocking_findings"]:
+                lines.append("- No blocking findings.")
+            for finding in payload["blocking_findings"]:
+                code = finding.get("code", "unknown")
+                location = finding.get("artifact") or finding.get("table") or "global"
+                lines.append(f"- **blocking** `{code}` ({location})")
+            return "\n".join(lines)
         if payload.get("command") == "dry-run" and payload.get("implemented") is True:
             lines = ["# context_importer: dry-run reconcile"]
             lines.extend(
@@ -2742,6 +3063,21 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
             lines.append(f"- **{key}**: `{payload[key]}`")
         return "\n".join(lines)
     raise UnsupportedFormatError(f"unsupported format: {fmt!r}")
+
+
+def _render_audit_report(report: ContextImportAuditReport, fmt: str) -> str:
+    return _render(report.to_payload(), fmt)
+
+
+def _audit_markdown_path(path: Path) -> Path:
+    if path.suffix:
+        return path.with_suffix(".md")
+    return path.with_name(path.name + ".md")
+
+
+def _write_audit_outputs(path: Path, report: ContextImportAuditReport) -> None:
+    _write_report(path, _render_audit_report(report, "json"))
+    _write_report(_audit_markdown_path(path), _render_audit_report(report, "markdown"))
 
 
 def _render_jsonl_report(report: JsonlValidationReport, fmt: str) -> str:
@@ -2892,6 +3228,47 @@ def build_parser() -> argparse.ArgumentParser:
             ),
         )
         sub.add_argument(
+            "--audit-output",
+            type=Path,
+            default=None,
+            help=(
+                "Optional audit JSON output path for plan, dry-run, apply, or audit. "
+                "Must live under artifacts/ or temp/. A Markdown summary is written "
+                "next to it with .md suffix."
+            ),
+        )
+        sub.add_argument(
+            "--audit-mode",
+            choices=sorted(SUPPORTED_AUDIT_MODES),
+            default=None,
+            help=(
+                "Mode for the audit subcommand. Defaults to dry-run when omitted. "
+                "plan/dry-run are read-only; apply runs only through the existing "
+                "local-dev apply gate."
+            ),
+        )
+        sub.add_argument(
+            "--git-commit",
+            type=str,
+            default=None,
+            help="Git commit to embed in audit reports; defaults to 'unknown'.",
+        )
+        sub.add_argument(
+            "--audit-generated-at",
+            type=str,
+            default=None,
+            help=(
+                "Optional ISO8601 timestamp injection for deterministic audit tests. "
+                "When omitted, the injectable clock defaults to SystemClock."
+            ),
+        )
+        sub.add_argument(
+            "--audit-duration-ms",
+            type=int,
+            default=None,
+            help="Optional non-negative duration in milliseconds for audit reports.",
+        )
+        sub.add_argument(
             "--existing-records",
             type=Path,
             default=None,
@@ -2949,6 +3326,11 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     command: str = args.command
     apply_requested: bool = bool(args.apply)
     apply_mode: str | None = getattr(args, "apply_mode", None)
+    audit_clock_input = _parse_audit_generated_at(args.audit_generated_at)
+    audit_clock: ClockProvider | None = (
+        _FixedAuditClock(audit_clock_input) if audit_clock_input is not None else None
+    )
+    audit_duration_ms = _duration_ms_value(args.audit_duration_ms)
     # Default is dry-run; --apply is the only opt-in surface.
     dry_run: bool = not apply_requested or bool(args.dry_run)
 
@@ -2991,6 +3373,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
 
         _validate_format(args.format)
         report_output = _validate_output_path(args.report_output)
+        audit_output = _validate_output_path(args.audit_output)
         config = load_config(args.config)
         input_dir = _validate_input_dir(args.input_dir)
         plan = build_import_plan(input_dir, args.run_id)
@@ -3004,6 +3387,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             config=config,
             run_id=args.run_id,
             apply_mode=apply_mode,
+            clock=audit_clock,
         )
         payload = apply_report.to_payload()
         payload["config_loaded"] = True
@@ -3017,6 +3401,22 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         if report_output is not None:
             _write_report(report_output, _render(payload, args.format))
             payload["report_output"] = str(report_output)
+        if audit_output is not None:
+            audit_report = build_audit_report(
+                mode=AUDIT_MODE_APPLY,
+                input_dir=input_dir,
+                run_id=args.run_id,
+                git_commit=args.git_commit,
+                namespace=config.namespace,
+                database=config.database,
+                clock=audit_clock,
+                duration_ms=audit_duration_ms,
+                reconcile_report=reconcile_report,
+                apply_report=apply_report,
+            )
+            _write_audit_outputs(audit_output, audit_report)
+            payload["audit_output"] = str(audit_output)
+            payload["audit_markdown_output"] = str(_audit_markdown_path(audit_output))
 
         if apply_report.blocking_findings_present:
             return payload, EXIT_VALIDATION_ERROR
@@ -3030,6 +3430,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     # write. This makes the safety contract verifiable from tests.
     _validate_format(args.format)
     report_output = _validate_output_path(args.report_output)
+    audit_output = _validate_output_path(args.audit_output)
     config = load_config(args.config) if args.config is not None else None
 
     if command == "validate-jsonl":
@@ -3054,6 +3455,21 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         if report_output is not None:
             _write_report(report_output, _render(payload, args.format))
             payload["report_output"] = str(report_output)
+        if audit_output is not None:
+            audit_report = build_audit_report(
+                mode=AUDIT_MODE_PLAN,
+                input_dir=input_dir,
+                run_id=plan.run_id,
+                git_commit=args.git_commit,
+                namespace=args.namespace or (config.namespace if config is not None else None),
+                database=args.database or (config.database if config is not None else None),
+                clock=audit_clock,
+                duration_ms=audit_duration_ms,
+                plan=plan,
+            )
+            _write_audit_outputs(audit_output, audit_report)
+            payload["audit_output"] = str(audit_output)
+            payload["audit_markdown_output"] = str(_audit_markdown_path(audit_output))
         return payload, (
             EXIT_VALIDATION_ERROR if plan.has_blocking_validation_findings else EXIT_OK
         )
@@ -3072,7 +3488,80 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         if report_output is not None:
             _write_report(report_output, _render(payload, args.format))
             payload["report_output"] = str(report_output)
+        if audit_output is not None:
+            audit_report = build_audit_report(
+                mode=AUDIT_MODE_DRY_RUN,
+                input_dir=input_dir,
+                run_id=report.run_id,
+                git_commit=args.git_commit,
+                namespace=args.namespace or (config.namespace if config is not None else None),
+                database=args.database or (config.database if config is not None else None),
+                clock=audit_clock,
+                duration_ms=audit_duration_ms,
+                reconcile_report=report,
+            )
+            _write_audit_outputs(audit_output, audit_report)
+            payload["audit_output"] = str(audit_output)
+            payload["audit_markdown_output"] = str(_audit_markdown_path(audit_output))
         return payload, EXIT_VALIDATION_ERROR if report.blocking_count else EXIT_OK
+
+    if command == "audit":
+        if args.input_dir is None:
+            payload = _build_payload(
+                command,
+                dry_run=dry_run,
+                apply_requested=apply_requested,
+                config=config,
+                status="scaffold-ack",
+                note="audit requires --input-dir for implemented audit report generation.",
+            )
+            return payload, EXIT_OK
+        input_dir = _validate_input_dir(args.input_dir)
+        audit_mode = args.audit_mode or AUDIT_MODE_DRY_RUN
+        namespace = args.namespace or (config.namespace if config is not None else None)
+        database = args.database or (config.database if config is not None else None)
+        if audit_mode == AUDIT_MODE_PLAN:
+            plan = build_import_plan(input_dir, args.run_id)
+            audit_report = build_audit_report(
+                mode=AUDIT_MODE_PLAN,
+                input_dir=input_dir,
+                run_id=plan.run_id,
+                git_commit=args.git_commit,
+                namespace=namespace,
+                database=database,
+                clock=audit_clock,
+                duration_ms=audit_duration_ms,
+                plan=plan,
+            )
+        elif audit_mode == AUDIT_MODE_DRY_RUN:
+            plan = build_import_plan(input_dir, args.run_id)
+            existing_records = load_existing_records(
+                None if plan.has_blocking_validation_findings else args.existing_records
+            )
+            reconcile_report = reconcile_import_plan(plan, existing_records)
+            audit_report = build_audit_report(
+                mode=AUDIT_MODE_DRY_RUN,
+                input_dir=input_dir,
+                run_id=reconcile_report.run_id,
+                git_commit=args.git_commit,
+                namespace=namespace,
+                database=database,
+                clock=audit_clock,
+                duration_ms=audit_duration_ms,
+                reconcile_report=reconcile_report,
+            )
+        else:
+            raise WriteDeniedError(
+                "audit --audit-mode apply is not a write entrypoint; "
+                "use `apply --apply --apply-mode local-dev ... --audit-output <path>`"
+            )
+        if audit_output is not None:
+            _write_audit_outputs(audit_output, audit_report)
+        payload = audit_report.to_payload()
+        if audit_output is not None:
+            payload["audit_output"] = str(audit_output)
+            payload["audit_markdown_output"] = str(_audit_markdown_path(audit_output))
+        return payload, EXIT_VALIDATION_ERROR if payload["blocking_findings"] else EXIT_OK
 
     payload = _build_payload(
         command,
