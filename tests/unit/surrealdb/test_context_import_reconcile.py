@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import socket
 from pathlib import Path
@@ -14,7 +15,10 @@ from tools.surrealdb.context_importer import (
     EXIT_WRITE_DENIED,
     EXPECTED_JSONL_FILES,
     INDEXER_SCHEMA_VERSION,
+    ReadOnlyExistingRecords,
+    build_import_plan,
     main,
+    reconcile_import_plan,
 )
 
 HASH = "c" * 64
@@ -382,8 +386,45 @@ def test_dry_run_warning_count_excludes_blocking_plan_warnings(
 
 @pytest.mark.unit
 def test_dry_run_preserves_import_plan_skip_actions(tmp_path: Path, capsys) -> None:
+    _write_valid_artifacts(tmp_path)
+    plan = build_import_plan(tmp_path)
+    skipped_action = replace(
+        plan.actions[0],
+        action="skip",
+        reason="duplicate record_id in validated input; first occurrence wins",
+    )
+    report = reconcile_import_plan(
+        replace(plan, actions=(skipped_action,)),
+        ReadOnlyExistingRecords(records=(), source="empty"),
+    )
+    payload = report.to_payload()
+
+    assert payload["status"] == "reconciled"
+    assert payload["actions"] == [
+        {
+            "action": "skip",
+            "table": "repo_artifact",
+            "record_id": "repo_artifact:artifact-doc",
+            "source_ref": "docs/example.md",
+            "reason": "duplicate record_id in validated input; first occurrence wins",
+            "payload_hash": skipped_action.payload_hash,
+            "existing_payload_hash": None,
+        }
+    ]
+    assert payload["actions"][0]["reason"] == (
+        "duplicate record_id in validated input; first occurrence wins"
+    )
+    assert payload["counts"]["creates"] == 0
+    assert payload["counts"]["skips"] == 1
+    assert payload["counts"]["update_candidates"] == 0
+
+
+@pytest.mark.unit
+def test_dry_run_duplicate_plan_skip_does_not_emit_second_candidate(
+    tmp_path: Path, capsys
+) -> None:
     records = _valid_records()
-    records["repo_artifacts"] = records["repo_artifacts"] * 2
+    records["doc_pages"] = records["doc_pages"] * 2
     for artifact, items in records.items():
         _write_jsonl(tmp_path, artifact, items)
 
@@ -391,15 +432,13 @@ def test_dry_run_preserves_import_plan_skip_actions(tmp_path: Path, capsys) -> N
 
     assert exit_code == EXIT_OK
     payload = _read_json(capsys)
-    repo_actions = [
-        action for action in payload["actions"] if action["table"] == "repo_artifact"
+    page_actions = [
+        action for action in payload["actions"] if action["record_id"] == "doc_page:page-example"
     ]
-    assert [action["action"] for action in repo_actions] == ["create", "skip"]
-    assert repo_actions[1]["reason"] == (
-        "duplicate record_id in validated input; first occurrence wins"
-    )
+    assert len(page_actions) == 1
+    assert page_actions[0]["action"] == "create"
     assert payload["counts"]["creates"] == 10
-    assert payload["counts"]["skips"] == 1
+    assert payload["counts"]["skips"] == 0
     assert payload["counts"]["update_candidates"] == 0
 
 

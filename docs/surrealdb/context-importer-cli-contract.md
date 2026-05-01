@@ -321,6 +321,9 @@ Reconcile-Vertrag:
 - `forbidden_table` wird als Blocking Finding berichtet.
 - Importplan-Actions mit `action: skip` bleiben im Reconcile `skip`, sofern
   keine Table-Policy- oder Schema-Safety-Blockade fuer denselben Record vorliegt.
+- Wenn ein Plan fuer dieselbe `record_id` bereits eine fruehere Action enthaelt,
+  erzeugen nachfolgende Plan-`skip`-Duplikate keine zweite Reconcile-Action und
+  keine kuenstlichen create/update-Candidates.
 - Plan-Warnings behalten beim Mapping in Reconcile-Findings ihre urspruengliche
   Severity; `warning` bleibt `warning`, `blocking` bleibt `blocking`.
 - In blocked-plan Reconcile-Reports werden Plan-Warnings als Reconcile-Findings

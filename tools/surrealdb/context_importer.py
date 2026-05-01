@@ -1573,6 +1573,7 @@ def reconcile_import_plan(
 
     existing_by_id = existing_records.by_record_id()
     planned_ids: set[str] = set()
+    reconciled_ids: set[str] = set()
     actions: list[ReconcileAction] = []
 
     for plan_action in plan.actions:
@@ -1581,6 +1582,9 @@ def reconcile_import_plan(
             plan_action.table, plan_action.record_id, findings
         ):
             continue
+        if plan_action.record_id in reconciled_ids:
+            continue
+        reconciled_ids.add(plan_action.record_id)
         if plan_action.action == "skip":
             existing = existing_by_id.get(plan_action.record_id)
             if existing is not None and (
