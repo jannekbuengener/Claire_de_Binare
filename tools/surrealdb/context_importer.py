@@ -2292,7 +2292,9 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     if command == "dry-run" and args.input_dir is not None:
         input_dir = _validate_input_dir(args.input_dir)
         plan = build_import_plan(input_dir, args.run_id)
-        existing_records = load_existing_records(args.existing_records)
+        existing_records = load_existing_records(
+            None if plan.has_blocking_validation_findings else args.existing_records
+        )
         report = reconcile_import_plan(plan, existing_records)
         payload = report.to_payload()
         payload["config_loaded"] = config is not None

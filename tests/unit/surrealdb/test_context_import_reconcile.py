@@ -564,6 +564,37 @@ def test_dry_run_preserves_plan_warning_severity_and_counts(
 
 
 @pytest.mark.unit
+def test_dry_run_blocked_plan_does_not_load_existing_records(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    records = _valid_records()["doc_pages"]
+    records[0]["source_path"] = "../secrets.md"
+    _write_jsonl(tmp_path, "doc_pages", records)
+    missing_existing = tmp_path / "missing-existing.json"
+
+    exit_code = main(
+        [
+            "dry-run",
+            "--input-dir",
+            str(tmp_path),
+            "--existing-records",
+            str(missing_existing),
+        ]
+    )
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["status"] == "blocked"
+    assert payload["existing_records_source"] == "empty"
+    assert any(
+        finding["code"] == "forbidden_source_path"
+        for finding in payload["findings"]
+    )
+    assert "existing records fixture not found" not in json.dumps(payload)
+
+
+@pytest.mark.unit
 def test_dry_run_makes_no_writes_and_opens_no_socket(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
