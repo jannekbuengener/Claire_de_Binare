@@ -366,6 +366,74 @@ def test_dry_run_rejects_duplicate_existing_record_ids(
 
 
 @pytest.mark.unit
+def test_dry_run_accepts_existing_record_id_with_matching_table(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    existing = tmp_path / "existing.json"
+    _write_existing(
+        existing,
+        [
+            {
+                "table": "doc_page",
+                "record_id": "doc_page:page-example",
+                "payload_hash": "a" * 64,
+                "schema_version": "context-importer/v0",
+            }
+        ],
+    )
+
+    exit_code = main(
+        ["dry-run", "--input-dir", str(tmp_path), "--existing-records", str(existing)]
+    )
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "reconciled"
+    assert any(action["action"] == "update_candidate" for action in payload["actions"])
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("record_id", "expected_message"),
+    [
+        ("code_symbol:page-example", "matching table"),
+        ("page-example", "matching table"),
+        ("doc_page:", "matching table"),
+        (123, "existing record_id must be a string"),
+        (None, "existing record_id must be a string"),
+    ],
+)
+def test_dry_run_rejects_existing_record_id_without_matching_table(
+    tmp_path: Path, capsys, record_id, expected_message: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    existing = tmp_path / "existing.json"
+    secret_payload = "secret-token-value-1234567890"
+    raw_existing = {
+        "table": "doc_page",
+        "payload_hash": "a" * 64,
+        "payload": {"secret": secret_payload},
+        "schema_version": "context-importer/v0",
+    }
+    if record_id is not None:
+        raw_existing["record_id"] = record_id
+    _write_existing(existing, [raw_existing])
+
+    exit_code = main(
+        ["dry-run", "--input-dir", str(tmp_path), "--existing-records", str(existing)]
+    )
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["status"] == "error"
+    assert payload["error"] == "EXISTING_RECORDS_VALIDATION_ERROR"
+    assert expected_message in payload["message"]
+    assert secret_payload not in json.dumps(payload)
+    assert "aaaaaaaa" not in json.dumps(payload)
+
+
+@pytest.mark.unit
 def test_dry_run_warning_count_excludes_blocking_plan_warnings(
     tmp_path: Path, capsys
 ) -> None:
@@ -455,10 +523,10 @@ def test_dry_run_plan_skip_still_blocks_on_schema_mismatch(
         existing,
         [
             {
-                "table": "doc_page",
+                "table": "repo_artifact",
                 "record_id": "repo_artifact:artifact-doc",
                 "payload_hash": "a" * 64,
-                "schema_version": "context-importer/v0",
+                "schema_version": "other/v0",
             }
         ],
     )

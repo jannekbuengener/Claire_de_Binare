@@ -1269,6 +1269,11 @@ def _existing_record_from_raw(raw: dict[str, Any]) -> ExistingRecord:
         raise ExistingRecordsValidationError("existing record table must be a string")
     if not isinstance(record_id, str) or not record_id.strip():
         raise ExistingRecordsValidationError("existing record_id must be a string")
+    record_table, _, raw_id = record_id.partition(":")
+    if not record_table or not raw_id or record_table != table:
+        raise ExistingRecordsValidationError(
+            "existing record_id must be prefixed with matching table"
+        )
     schema_version = raw.get("schema_version")
     if schema_version is not None and not isinstance(schema_version, str):
         raise ExistingRecordsValidationError("existing record schema_version must be a string")
