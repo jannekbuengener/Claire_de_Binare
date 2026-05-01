@@ -175,9 +175,35 @@ FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLE
 ALLOWED_AUTH_MODES = frozenset({"none", "root", "scope"})
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-SECRET_KEY_RE = re.compile(
-    r"(?i)(api[_\-]?key|private[_\-]?key|password|passwd|secret|token|credential"
-    r"|auth[_\-]?key|access[_\-]?key|signing[_\-]?key|encryption[_\-]?key)"
+SECRET_LIKE_KEYS = frozenset(
+    {
+        "token",
+        "access_token",
+        "refresh_token",
+        "auth_token",
+        "bearer_token",
+        "secret_token",
+        "api_key",
+        "private_key",
+        "password",
+        "passwd",
+        "secret",
+        "credential",
+        "auth_key",
+        "access_key",
+        "signing_key",
+        "encryption_key",
+    }
+)
+BENIGN_TOKEN_KEYS = frozenset(
+    {
+        "tokens_estimate",
+        "token_count",
+        "max_tokens",
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+    }
 )
 SECRET_VALUE_RE = re.compile(
     r"(?i)\b(api[_-]?key|private[_-]?key|password|passwd|secret|token|credential)"
@@ -412,10 +438,15 @@ def _contains_secret_like_value(value: Any) -> bool:
         return any(_contains_secret_like_value(item) for item in value)
     if isinstance(value, dict):
         return any(
-            SECRET_KEY_RE.search(str(key)) or _contains_secret_like_value(item)
+            _is_secret_like_key(str(key)) or _contains_secret_like_value(item)
             for key, item in value.items()
         )
     return False
+
+
+def _is_secret_like_key(key: str) -> bool:
+    normalized = key.strip().lower().replace("-", "_")
+    return normalized in SECRET_LIKE_KEYS and normalized not in BENIGN_TOKEN_KEYS
 
 
 def _record_source_path(record: dict[str, Any]) -> str | None:

@@ -167,6 +167,41 @@ def test_validate_jsonl_passes_valid_artifacts(tmp_path: Path, capsys) -> None:
 
 
 @pytest.mark.unit
+def test_validate_jsonl_allows_doc_chunk_tokens_estimate(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "doc_chunks",
+        [
+            _base_record(
+                chunk_id="chunk:1",
+                page_id="page:1",
+                section_id="section:1",
+                source_path="docs/example.md",
+                source_hash=HASH,
+                heading_path=["Example"],
+                chunk_index=0,
+                content="safe context",
+                content_hash=HASH,
+                tokens_estimate=42,
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "passed"
+    assert not any(
+        finding["code"] == "secret_like_value_in_jsonl"
+        for finding in payload["findings"]
+    )
+
+
+@pytest.mark.unit
 def test_validate_jsonl_blocks_missing_required_file(tmp_path: Path, capsys) -> None:
     _write_valid_artifacts(tmp_path)
     (tmp_path / EXPECTED_JSONL_FILES["doc_chunks"]).unlink()
@@ -212,29 +247,33 @@ def test_validate_jsonl_blocks_bad_schema_and_missing_ref(
 
 
 @pytest.mark.unit
-def test_validate_jsonl_redacts_secret_like_values(tmp_path: Path, capsys) -> None:
+@pytest.mark.parametrize(
+    ("secret_key", "secret_value"),
+    (
+        ("access_token", "access-token-value-1234567890"),
+        ("api_key", "api-key-value-1234567890"),
+    ),
+)
+def test_validate_jsonl_blocks_secret_like_keys_without_leaking_values(
+    tmp_path: Path, capsys, secret_key: str, secret_value: str
+) -> None:
     _write_valid_artifacts(tmp_path)
-    _write_jsonl(
-        tmp_path,
-        "doc_chunks",
-        [
-            _base_record(
-                chunk_id="chunk:1",
-                page_id="page:1",
-                section_id="section:1",
-                source_path="docs/example.md",
-                source_hash=HASH,
-                content="api_key=abcdefghijklmnopqrstuvwxyz",
-                content_hash=HASH,
-            )
-        ],
+    config_record = _base_record(
+        config_ref_id="config:1",
+        source_path="infrastructure/config/example.yaml",
+        source_hash=HASH,
+        config_key="safe_key",
+        config_value="safe-value",
+        sensitive=False,
     )
+    config_record[secret_key] = secret_value
+    _write_jsonl(tmp_path, "config_references", [config_record])
 
     exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
 
     assert exit_code == EXIT_VALIDATION_ERROR
     out = capsys.readouterr().out
-    assert "abcdefghijklmnopqrstuvwxyz" not in out
+    assert secret_value not in out
     payload = json.loads(out)
     assert any(
         finding["code"] == "secret_like_value_in_jsonl"
