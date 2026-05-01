@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+import hashlib
 import json
 import logging
 from pathlib import Path
@@ -76,6 +77,45 @@ EXPECTED_JSONL_FILES = {
     "config_references": "config_references.jsonl",
     "doc_code_links": "doc_code_links.jsonl",
     "dependency_edges": "dependency_edges.jsonl",
+}
+
+IMPORT_ORDER = (
+    "repo_artifacts",
+    "doc_pages",
+    "doc_sections",
+    "doc_chunks",
+    "code_symbols",
+    "import_references",
+    "test_cases",
+    "config_references",
+    "doc_code_links",
+    "dependency_edges",
+)
+
+TABLE_BY_ARTIFACT = {
+    "repo_artifacts": "repo_artifact",
+    "doc_pages": "doc_page",
+    "doc_sections": "doc_section",
+    "doc_chunks": "doc_chunk",
+    "code_symbols": "code_symbol",
+    "import_references": "import_reference",
+    "test_cases": "test_case",
+    "config_references": "config_reference",
+    "doc_code_links": "doc_code_link",
+    "dependency_edges": "dependency_edge",
+}
+
+ID_FIELD_BY_ARTIFACT = {
+    "repo_artifacts": "artifact_id",
+    "doc_pages": "page_id",
+    "doc_sections": "section_id",
+    "doc_chunks": "chunk_id",
+    "code_symbols": "symbol_id",
+    "import_references": "import_id",
+    "test_cases": "test_id",
+    "config_references": "config_ref_id",
+    "doc_code_links": "link_id",
+    "dependency_edges": "edge_id",
 }
 
 REQUIRED_JSONL_FIELDS: dict[str, frozenset[str]] = {
@@ -126,10 +166,25 @@ REQUIRED_JSONL_FIELDS: dict[str, frozenset[str]] = {
         {"schema_version", "run_id", "symbol_id", "source_path", "source_hash", "name"}
     ),
     "import_references": frozenset(
-        {"schema_version", "run_id", "import_id", "source_path", "source_hash", "module"}
+        {
+            "schema_version",
+            "run_id",
+            "import_id",
+            "source_path",
+            "source_hash",
+            "module",
+        }
     ),
     "test_cases": frozenset(
-        {"schema_version", "run_id", "test_id", "source_path", "source_hash", "symbol_id", "name"}
+        {
+            "schema_version",
+            "run_id",
+            "test_id",
+            "source_path",
+            "source_hash",
+            "symbol_id",
+            "name",
+        }
     ),
     "config_references": frozenset(
         {
@@ -143,7 +198,14 @@ REQUIRED_JSONL_FIELDS: dict[str, frozenset[str]] = {
         }
     ),
     "doc_code_links": frozenset(
-        {"schema_version", "run_id", "link_id", "source_path", "source_hash", "target_symbol"}
+        {
+            "schema_version",
+            "run_id",
+            "link_id",
+            "source_path",
+            "source_hash",
+            "target_symbol",
+        }
     ),
     "dependency_edges": frozenset(
         {"schema_version", "run_id", "edge_id", "from_id", "to_id", "edge_type"}
@@ -345,6 +407,98 @@ class JsonlValidationReport:
 
 
 @dataclass(frozen=True)
+class ImportPlanAction:
+    action: str
+    table: str
+    record_id: str
+    artifact: str
+    source_ref: str | None
+    depends_on: tuple[str, ...]
+    reason: str
+    payload_hash: str
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "action": self.action,
+            "table": self.table,
+            "record_id": self.record_id,
+            "artifact": self.artifact,
+            "source_ref": self.source_ref,
+            "depends_on": list(self.depends_on),
+            "reason": self.reason,
+            "payload_hash": self.payload_hash,
+        }
+
+
+@dataclass(frozen=True)
+class ImportPlanWarning:
+    code: str
+    message: str
+    artifact: str | None = None
+    source_ref: str | None = None
+    severity: str = "warning"
+
+    def to_payload(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "code": self.code,
+            "message": self.message,
+            "severity": self.severity,
+        }
+        if self.artifact is not None:
+            payload["artifact"] = self.artifact
+        if self.source_ref is not None:
+            payload["source_ref"] = self.source_ref
+        return payload
+
+
+@dataclass(frozen=True)
+class ImportPlan:
+    schema_version: str
+    run_id: str | None
+    input_dir: Path
+    status: str
+    actions: tuple[ImportPlanAction, ...]
+    warnings: tuple[ImportPlanWarning, ...]
+    table_counts: dict[str, int]
+    action_counts: dict[str, int]
+    has_blocking_validation_findings: bool
+    validation_report: JsonlValidationReport
+    import_order: tuple[str, ...]
+
+    def to_payload(self) -> dict[str, Any]:
+        validation_summary = {
+            "blocking_count": self.validation_report.blocking_count,
+            "warning_count": self.validation_report.warning_count,
+            "info_count": self.validation_report.info_count,
+            "finding_count": len(self.validation_report.findings),
+        }
+        return {
+            "schema_version": self.schema_version,
+            "command": "plan",
+            "run_id": self.run_id,
+            "input_dir": str(self.input_dir),
+            "status": self.status,
+            "dry_run": True,
+            "apply_requested": False,
+            "surrealdb_connection": "disabled",
+            "implemented": True,
+            "actions": [action.to_payload() for action in self.actions],
+            "warnings": [warning.to_payload() for warning in self.warnings],
+            "counts": {
+                "actions": len(self.actions),
+                "warnings": len(self.warnings),
+                "tables": len(self.table_counts),
+                "validation_findings": len(self.validation_report.findings),
+            },
+            "table_counts": dict(sorted(self.table_counts.items())),
+            "action_counts": dict(sorted(self.action_counts.items())),
+            "has_blocking_validation_findings": self.has_blocking_validation_findings,
+            "validation_summary": validation_summary,
+            "import_order": list(self.import_order),
+        }
+
+
+@dataclass(frozen=True)
 class ContextImportConfig:
     """Validated local config for the context importer."""
 
@@ -392,19 +546,14 @@ def _validate_output_path(output: Path | None) -> Path | None:
     if output is None:
         return None
     if output.is_absolute():
-        raise WriteDeniedError(
-            f"absolute output paths are forbidden: {output}"
-        )
+        raise WriteDeniedError(f"absolute output paths are forbidden: {output}")
     parts = output.parts
     if not parts or parts[0] not in ALLOWED_OUTPUT_PREFIXES:
         raise WriteDeniedError(
-            "output path must live under "
-            f"{ALLOWED_OUTPUT_PREFIXES}, got: {output}"
+            "output path must live under " f"{ALLOWED_OUTPUT_PREFIXES}, got: {output}"
         )
     if ".." in parts:
-        raise WriteDeniedError(
-            f"output path may not traverse with '..': {output}"
-        )
+        raise WriteDeniedError(f"output path may not traverse with '..': {output}")
     return output
 
 
@@ -415,7 +564,9 @@ def _validate_input_dir(input_dir: Path | None) -> Path:
         exists = input_dir.exists()
         is_dir = input_dir.is_dir() if exists else False
     except OSError as exc:
-        raise InputNotFoundError(f"cannot stat input directory: {input_dir}: {exc}") from exc
+        raise InputNotFoundError(
+            f"cannot stat input directory: {input_dir}: {exc}"
+        ) from exc
     if not exists:
         raise InputNotFoundError(f"input directory not found: {input_dir}")
     if not is_dir:
@@ -696,9 +847,16 @@ def _validate_record_fields(
                 )
             )
 
-    for hash_field in ("source_hash", "raw_sha256", "normalized_sha256", "content_hash"):
+    for hash_field in (
+        "source_hash",
+        "raw_sha256",
+        "normalized_sha256",
+        "content_hash",
+    ):
         value = record.get(hash_field)
-        if value is not None and (not isinstance(value, str) or not SHA256_RE.match(value)):
+        if value is not None and (
+            not isinstance(value, str) or not SHA256_RE.match(value)
+        ):
             findings.append(
                 _finding(
                     "blocking",
@@ -759,7 +917,9 @@ def _validate_cross_references(
         if isinstance(item.get("normalized_sha256"), str)
     }
     page_ids = {
-        item.get("page_id") for item in records["doc_pages"] if isinstance(item.get("page_id"), str)
+        item.get("page_id")
+        for item in records["doc_pages"]
+        if isinstance(item.get("page_id"), str)
     }
     section_ids = {
         item.get("section_id")
@@ -876,7 +1036,9 @@ def _validate_cross_references(
             )
 
 
-def validate_jsonl(input_dir: Path, expected_run_id: str | None = None) -> JsonlValidationReport:
+def validate_jsonl(
+    input_dir: Path, expected_run_id: str | None = None
+) -> JsonlValidationReport:
     findings: list[JsonlValidationFinding] = []
     records = {
         artifact: _read_jsonl_file(input_dir, artifact, filename, findings)
@@ -886,7 +1048,9 @@ def validate_jsonl(input_dir: Path, expected_run_id: str | None = None) -> Jsonl
     observed_run_ids: set[str] = set()
     for artifact, items in records.items():
         for record in items:
-            run_id = _validate_record_fields(artifact, record, findings, expected_run_id)
+            run_id = _validate_record_fields(
+                artifact, record, findings, expected_run_id
+            )
             if run_id is not None:
                 observed_run_ids.add(run_id)
 
@@ -905,7 +1069,9 @@ def validate_jsonl(input_dir: Path, expected_run_id: str | None = None) -> Jsonl
         for record in items:
             record.pop("__line", None)
 
-    run_id = expected_run_id or (next(iter(observed_run_ids)) if len(observed_run_ids) == 1 else None)
+    run_id = expected_run_id or (
+        next(iter(observed_run_ids)) if len(observed_run_ids) == 1 else None
+    )
     ordered_findings = tuple(
         sorted(
             findings,
@@ -918,7 +1084,190 @@ def validate_jsonl(input_dir: Path, expected_run_id: str | None = None) -> Jsonl
             ),
         )
     )
-    return JsonlValidationReport(input_dir=input_dir, run_id=run_id, records=records, findings=ordered_findings)
+    return JsonlValidationReport(
+        input_dir=input_dir, run_id=run_id, records=records, findings=ordered_findings
+    )
+
+
+def _record_id(table: str, raw_id: str) -> str:
+    return f"{table}:{raw_id}"
+
+
+def _payload_hash(record: dict[str, Any]) -> str:
+    payload = {key: value for key, value in record.items() if key != "__line"}
+    encoded = json.dumps(
+        payload, ensure_ascii=True, sort_keys=True, separators=(",", ":")
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _source_ref(record: dict[str, Any]) -> str | None:
+    for field_name in (
+        "source_path",
+        "source_chunk_id",
+        "from_id",
+    ):
+        value = record.get(field_name)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def _dependency_record_id(artifact: str, value: Any) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    table = TABLE_BY_ARTIFACT[artifact]
+    return _record_id(table, value)
+
+
+def _action_dependencies(artifact: str, record: dict[str, Any]) -> tuple[str, ...]:
+    dependencies: list[str] = []
+    if artifact == "doc_sections":
+        dependency = _dependency_record_id("doc_pages", record.get("page_id"))
+        if dependency is not None:
+            dependencies.append(dependency)
+    elif artifact == "doc_chunks":
+        for dependency_artifact, field_name in (
+            ("doc_pages", "page_id"),
+            ("doc_sections", "section_id"),
+            ("doc_chunks", "previous_chunk_id"),
+        ):
+            dependency = _dependency_record_id(
+                dependency_artifact, record.get(field_name)
+            )
+            if dependency is not None:
+                dependencies.append(dependency)
+    elif artifact == "test_cases":
+        dependency = _dependency_record_id("code_symbols", record.get("symbol_id"))
+        if dependency is not None:
+            dependencies.append(dependency)
+    elif artifact == "doc_code_links":
+        dependency = _dependency_record_id("doc_chunks", record.get("source_chunk_id"))
+        if dependency is not None:
+            dependencies.append(dependency)
+    elif artifact == "dependency_edges":
+        for field_name in ("from_id", "to_id"):
+            value = record.get(field_name)
+            if isinstance(value, str) and value.strip():
+                dependencies.append(value)
+    return tuple(sorted(dict.fromkeys(dependencies)))
+
+
+def build_import_plan(
+    input_dir: Path, expected_run_id: str | None = None
+) -> ImportPlan:
+    report = validate_jsonl(input_dir, expected_run_id)
+    if report.blocking_count:
+        warnings = tuple(
+            ImportPlanWarning(
+                code=finding.code,
+                message=finding.message,
+                artifact=finding.artifact,
+                source_ref=finding.source_path,
+                severity=finding.severity,
+            )
+            for finding in report.findings
+        )
+        return ImportPlan(
+            schema_version=SCHEMA_VERSION,
+            run_id=report.run_id,
+            input_dir=input_dir,
+            status="blocked",
+            actions=(),
+            warnings=warnings,
+            table_counts={},
+            action_counts={},
+            has_blocking_validation_findings=True,
+            validation_report=report,
+            import_order=tuple(
+                TABLE_BY_ARTIFACT[artifact] for artifact in IMPORT_ORDER
+            ),
+        )
+
+    actions: list[ImportPlanAction] = []
+    warnings: list[ImportPlanWarning] = []
+    seen_record_ids: set[str] = set()
+
+    for artifact in IMPORT_ORDER:
+        table = TABLE_BY_ARTIFACT[artifact]
+        id_field = ID_FIELD_BY_ARTIFACT[artifact]
+        records = sorted(
+            report.records[artifact],
+            key=lambda item: str(item.get(id_field, "")),
+        )
+        for record in records:
+            raw_id = record.get(id_field)
+            if not isinstance(raw_id, str) or not raw_id.strip():
+                warnings.append(
+                    ImportPlanWarning(
+                        code="missing_record_id",
+                        message=f"record missing deterministic id field: {id_field}",
+                        artifact=artifact,
+                        source_ref=_source_ref(record),
+                        severity="blocking",
+                    )
+                )
+                continue
+            record_id = _record_id(table, raw_id)
+            if record_id in seen_record_ids:
+                action = "skip"
+                reason = "duplicate record_id in validated input; first occurrence wins"
+            else:
+                action = "create"
+                reason = "validated JSONL record; DB-independent candidate create"
+                seen_record_ids.add(record_id)
+            actions.append(
+                ImportPlanAction(
+                    action=action,
+                    table=table,
+                    record_id=record_id,
+                    artifact=artifact,
+                    source_ref=_source_ref(record),
+                    depends_on=_action_dependencies(artifact, record),
+                    reason=reason,
+                    payload_hash=_payload_hash(record),
+                )
+            )
+
+    table_counts: dict[str, int] = {}
+    action_counts: dict[str, int] = {}
+    for action in actions:
+        table_counts[action.table] = table_counts.get(action.table, 0) + 1
+        action_counts[action.action] = action_counts.get(action.action, 0) + 1
+
+    return ImportPlan(
+        schema_version=SCHEMA_VERSION,
+        run_id=report.run_id,
+        input_dir=input_dir,
+        status="planned",
+        actions=tuple(
+            sorted(
+                actions,
+                key=lambda item: (
+                    IMPORT_ORDER.index(item.artifact),
+                    item.table,
+                    item.record_id,
+                    item.action,
+                ),
+            )
+        ),
+        warnings=tuple(
+            sorted(
+                warnings,
+                key=lambda item: (
+                    item.severity,
+                    item.code,
+                    item.artifact or "",
+                    item.source_ref or "",
+                ),
+            )
+        ),
+        table_counts=table_counts,
+        action_counts=action_counts,
+        has_blocking_validation_findings=False,
+        validation_report=report,
+        import_order=tuple(TABLE_BY_ARTIFACT[artifact] for artifact in IMPORT_ORDER),
+    )
 
 
 def _require_mapping(raw: Any, *, path: Path) -> dict[str, Any]:
@@ -1022,7 +1371,9 @@ def load_config(path: Path) -> ContextImportConfig:
             f"{forbidden_in_allowed}"
         )
 
-    missing_forbidden = sorted(FORBIDDEN_CONTEXT_IMPORT_TABLES.difference(forbidden_tables))
+    missing_forbidden = sorted(
+        FORBIDDEN_CONTEXT_IMPORT_TABLES.difference(forbidden_tables)
+    )
     if missing_forbidden:
         raise ConfigValidationError(
             "forbidden_tables must explicitly include all blocked "
@@ -1079,8 +1430,85 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
     if fmt == "json":
         return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2)
     if fmt == "jsonl":
+        if payload.get("command") == "plan" and payload.get("implemented") is True:
+            lines = [
+                json.dumps(
+                    {
+                        key: value
+                        for key, value in payload.items()
+                        if key not in {"actions", "warnings"}
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+            ]
+            lines.extend(
+                json.dumps(
+                    {"record_type": "action", **action},
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                for action in payload["actions"]
+            )
+            lines.extend(
+                json.dumps(
+                    {"record_type": "warning", **warning},
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+                for warning in payload["warnings"]
+            )
+            return "\n".join(lines)
         return json.dumps(payload, ensure_ascii=True, sort_keys=True)
     if fmt == "markdown":
+        if payload.get("command") == "plan" and payload.get("implemented") is True:
+            lines = ["# context_importer: plan"]
+            lines.extend(
+                [
+                    f"- **status**: `{payload['status']}`",
+                    f"- **input_dir**: `{payload['input_dir']}`",
+                    f"- **run_id**: `{payload['run_id']}`",
+                    f"- **has_blocking_validation_findings**: `{payload['has_blocking_validation_findings']}`",
+                    f"- **actions**: `{payload['counts']['actions']}`",
+                    f"- **warnings**: `{payload['counts']['warnings']}`",
+                    "",
+                    "## Import Order",
+                ]
+            )
+            for table in payload["import_order"]:
+                lines.append(f"- `{table}`")
+            lines.extend(["", "## Table Counts"])
+            for table, count in payload["table_counts"].items():
+                lines.append(f"- `{table}`: `{count}`")
+            lines.extend(["", "## Action Counts"])
+            if payload["action_counts"]:
+                for action, count in payload["action_counts"].items():
+                    lines.append(f"- `{action}`: `{count}`")
+            else:
+                lines.append("- No write-ready actions.")
+            lines.extend(["", "## Actions"])
+            if not payload["actions"]:
+                lines.append("- No actions generated.")
+            for action in payload["actions"]:
+                depends_on = ", ".join(action["depends_on"]) or "none"
+                lines.append(
+                    "- "
+                    f"`{action['action']}` `{action['record_id']}` "
+                    f"({action['artifact']}, depends_on: `{depends_on}`, "
+                    f"payload_hash: `{action['payload_hash']}`)"
+                )
+            lines.extend(["", "## Warnings"])
+            if not payload["warnings"]:
+                lines.append("- No warnings.")
+            for warning in payload["warnings"]:
+                artifact = warning.get("artifact") or "global"
+                source_ref = warning.get("source_ref") or "none"
+                lines.append(
+                    "- "
+                    f"**{warning['severity']}** `{warning['code']}` "
+                    f"({artifact}, source_ref: `{source_ref}`): {warning['message']}"
+                )
+            return "\n".join(lines)
         lines = [f"# context_importer: {payload['command']}"]
         for key in sorted(payload.keys()):
             lines.append(f"- **{key}**: `{payload[key]}`")
@@ -1293,6 +1721,20 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             _write_report(report_output, _render_jsonl_report(report, args.format))
             payload["report_output"] = str(report_output)
         return payload, EXIT_VALIDATION_ERROR if report.blocking_count else EXIT_OK
+
+    if command == "plan" and args.input_dir is not None:
+        input_dir = _validate_input_dir(args.input_dir)
+        plan = build_import_plan(input_dir, args.run_id)
+        payload = plan.to_payload()
+        payload["config_loaded"] = config is not None
+        if config is not None:
+            payload["config"] = config.to_payload()
+        if report_output is not None:
+            _write_report(report_output, _render(payload, args.format))
+            payload["report_output"] = str(report_output)
+        return payload, (
+            EXIT_VALIDATION_ERROR if plan.has_blocking_validation_findings else EXIT_OK
+        )
 
     payload = _build_payload(
         command,
