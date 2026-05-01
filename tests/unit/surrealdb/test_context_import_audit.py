@@ -320,3 +320,153 @@ def test_fixture_paths_cover_plan_reconcile_tombstone_without_docker(
     assert plan.status == "planned"
     assert reconcile.action_counts()["tombstone_candidates"] == 1
     assert config.namespace == "cdb_ctx"
+
+
+@pytest.mark.unit
+def test_apply_audit_clock_does_not_affect_tombstone_at(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regression: ``--audit-generated-at`` must only drive the audit report's
+    ``generated_at`` and must never propagate into apply payload timestamps
+    such as ``tombstoned_at``. Wiring the audit clock into
+    ``execute_context_apply`` would let an operator backdate or forward-date
+    applied tombstone data, turning an audit-only determinism flag into a
+    data-mutation control. PR #2249 review feedback.
+    """
+
+    input_dir = _copy_valid_fixture(tmp_path)
+    config = _write_local_dev_config(tmp_path / "config.yaml")
+    existing = tmp_path / "existing.json"
+    existing.write_text(
+        json.dumps(
+            {
+                "records": [
+                    {
+                        "payload": {"legacy_field": "preserve-me", "title": "Old page"},
+                        "record_id": "doc_chunk:stale",
+                        "schema_version": "context-importer/v0",
+                        "table": "doc_chunk",
+                    }
+                ]
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    # Backdated audit clock: if the bug regresses, applied tombstones would
+    # be timestamped to 1990 instead of "now".
+    backdated_audit_at = "1990-01-01T00:00:00Z"
+
+    exit_code = main(
+        [
+            "apply",
+            "--apply",
+            "--apply-mode",
+            "local-dev",
+            "--config",
+            str(config),
+            "--input-dir",
+            str(input_dir),
+            "--existing-records",
+            str(existing),
+            "--run-id",
+            "fixture-run-1",
+            "--report-output",
+            "artifacts/apply/report.json",
+            "--audit-output",
+            "artifacts/audit/apply.json",
+            "--git-commit",
+            FIXED_COMMIT,
+            "--audit-generated-at",
+            backdated_audit_at,
+            "--audit-duration-ms",
+            "12",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+
+    # 1) Audit report uses the injected audit clock for ``generated_at``.
+    audit_payload = json.loads(
+        (tmp_path / "artifacts" / "audit" / "apply.json").read_text(encoding="utf-8")
+    )
+    assert audit_payload["generated_at"] == backdated_audit_at
+    assert audit_payload["mode"] == "apply"
+
+    # 2) The apply report must NOT carry that backdated timestamp on any
+    #    tombstone payload. ``tombstoned_at`` must be a real, non-injected
+    #    ISO8601 UTC value (runtime SystemClock).
+    apply_payload = json.loads(
+        (tmp_path / "artifacts" / "apply" / "report.json").read_text(encoding="utf-8")
+    )
+    tombstones = [
+        result
+        for result in apply_payload["results"]
+        if result["op"] == "tombstone"
+    ]
+    assert tombstones, "expected at least one applied tombstone result"
+    for result in tombstones:
+        assert result["status"] == "applied"
+        ts = result["tombstoned_at"]
+        assert ts is not None
+        assert ts != backdated_audit_at, (
+            "audit clock must not propagate into applied tombstone payload"
+        )
+        # Must still be a parseable ISO8601 UTC timestamp (microseconds optional).
+        assert ts.endswith("Z"), ts
+        parsed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        assert parsed.tzinfo is not None
+
+
+@pytest.mark.unit
+def test_audit_output_with_md_suffix_keeps_json_artifact_distinct(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Regression: when ``--audit-output`` already ends in ``.md`` the JSON
+    artifact must not be silently overwritten by the markdown render. The
+    markdown sibling path must always be distinct from the JSON path so that
+    downstream consumers expecting machine-readable audit output keep
+    receiving valid JSON. PR #2249 review feedback.
+    """
+
+    input_dir = _copy_valid_fixture(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "dry-run",
+            "--input-dir",
+            str(input_dir),
+            "--run-id",
+            "fixture-run-1",
+            "--namespace",
+            "cdb_ctx",
+            "--database",
+            "context",
+            "--audit-output",
+            "artifacts/audit/context-import.md",
+            "--git-commit",
+            FIXED_COMMIT,
+            "--audit-generated-at",
+            FIXED_AT,
+            "--audit-duration-ms",
+            "5",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+    json_path = tmp_path / "artifacts" / "audit" / "context-import.md"
+    md_path = tmp_path / "artifacts" / "audit" / "context-import.md.md"
+    assert json_path.exists(), "JSON audit artifact missing"
+    assert md_path.exists(), "Markdown audit artifact missing or collapsed onto JSON path"
+    # JSON artifact must be machine-readable JSON, not Markdown.
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["mode"] == "dry-run"
+    assert payload["generated_at"] == FIXED_AT
+    # Markdown artifact must be human-readable Markdown, not JSON.
+    md_text = md_path.read_text(encoding="utf-8")
+    assert md_text.startswith("# context_importer audit:")
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(md_text)

@@ -3070,6 +3070,13 @@ def _render_audit_report(report: ContextImportAuditReport, fmt: str) -> str:
 
 
 def _audit_markdown_path(path: Path) -> Path:
+    # When the JSON output already ends in ``.md`` we must not collapse the
+    # markdown sibling onto the same path, otherwise ``_write_audit_outputs``
+    # would silently overwrite the JSON artifact with the markdown render.
+    # Append ``.md`` instead of replacing the suffix in that case so the two
+    # outputs stay distinct (e.g. ``foo.md`` -> ``foo.md.md``).
+    if path.suffix == ".md":
+        return path.with_name(path.name + ".md")
     if path.suffix:
         return path.with_suffix(".md")
     return path.with_name(path.name + ".md")
@@ -3387,7 +3394,15 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             config=config,
             run_id=args.run_id,
             apply_mode=apply_mode,
-            clock=audit_clock,
+            # NOTE: Do not forward the audit clock here. ``audit_clock`` is the
+            # injectable ``--audit-generated-at`` flag and must only influence
+            # the audit report's ``generated_at`` field. Forwarding it into
+            # ``execute_context_apply`` would let an operator backdate or
+            # forward-date applied tombstone payload timestamps
+            # (``tombstoned_at``), turning an audit-determinism control into a
+            # data-mutation control. Apply payload timestamps stay on the
+            # default runtime clock (``SystemClock``) inside
+            # ``execute_context_apply``.
         )
         payload = apply_report.to_payload()
         payload["config_loaded"] = True

@@ -338,8 +338,18 @@ Erzeugung:
 - JSON am angegebenen Pfad.
 - Markdown-Summary daneben mit `.md`-Suffix.
 
+Endet `--audit-output` selbst bereits auf `.md`, wird der Markdown-Pfad zu
+`<pfad>.md` (also z.B. `report.md` -> Markdown unter `report.md.md`), damit
+das JSON-Artefakt nicht stillschweigend ueberschrieben wird.
+
 Beide Pfade muessen real unter `artifacts/` oder `temp/` aufloesen; die
 bestehende Symlink-/Traversal-/Absolutpfad-Guard bleibt aktiv.
+
+`--audit-generated-at` und `--audit-duration-ms` wirken ausschliesslich auf
+die Audit-Report-Felder `generated_at` und `duration_ms`. Sie beeinflussen
+keine in der Apply-Pipeline geschriebenen Daten, insbesondere nicht
+`tombstoned_at` in Tombstone-Payloads. Apply-Payload-Zeitstempel laufen
+weiter auf der Runtime-Clock (`SystemClock`).
 
 Audit-Payload:
 
