@@ -202,6 +202,81 @@ def test_validate_jsonl_allows_doc_chunk_tokens_estimate(
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "source_path",
+    (
+        "/etc/passwd",
+        "../secrets.md",
+        "docs/../secrets.md",
+        r"C:\repo\file.md",
+        "C:/repo/file.md",
+        r"\\server\share\file.md",
+        "//server/share/file.md",
+        r"..\secrets.md",
+        r"docs\..\secrets.md",
+        r"C:..\secrets.md",
+    ),
+)
+def test_validate_jsonl_blocks_forbidden_source_paths(
+    tmp_path: Path, capsys, source_path: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "doc_pages",
+        [
+            _base_record(
+                page_id="page:1",
+                source_path=source_path,
+                source_hash=HASH,
+                title="Example",
+                doc_format="markdown",
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert any(
+        finding["code"] == "forbidden_source_path"
+        and finding["source_path"] == source_path
+        for finding in payload["findings"]
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("source_path", ("docs/foo.md", r"docs\foo.md"))
+def test_validate_jsonl_allows_safe_relative_source_paths(
+    tmp_path: Path, capsys, source_path: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "doc_pages",
+        [
+            _base_record(
+                page_id="page:1",
+                source_path=source_path,
+                source_hash=HASH,
+                title="Example",
+                doc_format="markdown",
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert not any(
+        finding["code"] == "forbidden_source_path"
+        for finding in payload["findings"]
+    )
+
+
+@pytest.mark.unit
 def test_validate_jsonl_blocks_missing_required_file(tmp_path: Path, capsys) -> None:
     _write_valid_artifacts(tmp_path)
     (tmp_path / EXPECTED_JSONL_FILES["doc_chunks"]).unlink()

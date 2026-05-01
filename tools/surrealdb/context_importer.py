@@ -175,6 +175,7 @@ FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLE
 ALLOWED_AUTH_MODES = frozenset({"none", "root", "scope"})
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+WINDOWS_DRIVE_PREFIX_RE = re.compile(r"^[A-Za-z]:")
 SECRET_LIKE_KEYS = frozenset(
     {
         "token",
@@ -427,6 +428,17 @@ def _path_contains_trading_state(source_path: str) -> bool:
     return bool(parts & TRADING_STATE_PATH_PARTS)
 
 
+def _is_forbidden_source_path(source_path: str) -> bool:
+    normalized = source_path.strip().replace("\\", "/")
+    if not normalized:
+        return True
+    if normalized.startswith("//") or normalized.startswith("/"):
+        return True
+    if WINDOWS_DRIVE_PREFIX_RE.match(normalized):
+        return True
+    return any(part == ".." for part in normalized.split("/"))
+
+
 def _contains_secret_like_value(value: Any) -> bool:
     if isinstance(value, str):
         return bool(
@@ -620,7 +632,7 @@ def _validate_record_fields(
 
     source_path = _record_source_path(record)
     if source_path is not None:
-        if Path(source_path).is_absolute() or ".." in Path(source_path).parts:
+        if _is_forbidden_source_path(source_path):
             findings.append(
                 _finding(
                     "blocking",
