@@ -325,6 +325,62 @@ def test_dry_run_schema_mismatch_blocks(tmp_path: Path, capsys) -> None:
 
 
 @pytest.mark.unit
+def test_dry_run_rejects_duplicate_existing_record_ids(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    existing = tmp_path / "existing.json"
+    _write_existing(
+        existing,
+        [
+            {
+                "table": "doc_page",
+                "record_id": "doc_page:page-example",
+                "payload_hash": "a" * 64,
+                "schema_version": "context-importer/v0",
+            },
+            {
+                "table": "doc_page",
+                "record_id": "doc_page:page-example",
+                "payload_hash": "b" * 64,
+                "schema_version": "context-importer/v0",
+            },
+        ],
+    )
+
+    exit_code = main(
+        ["dry-run", "--input-dir", str(tmp_path), "--existing-records", str(existing)]
+    )
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["status"] == "error"
+    assert payload["error"] == "EXISTING_RECORDS_VALIDATION_ERROR"
+    assert "duplicate existing record_id" in payload["message"]
+    assert "aaaaaaaa" not in payload["message"]
+    assert "bbbbbbbb" not in payload["message"]
+
+
+@pytest.mark.unit
+def test_dry_run_warning_count_excludes_blocking_plan_warnings(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    records = _valid_records()["doc_pages"]
+    records[0]["source_path"] = "../secrets.md"
+    _write_jsonl(tmp_path, "doc_pages", records)
+
+    exit_code = main(["dry-run", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["status"] == "blocked"
+    assert payload["counts"]["blocking"] > 0
+    assert payload["counts"]["warnings"] == 0
+    assert any(warning["severity"] == "blocking" for warning in payload["warnings"])
+
+
+@pytest.mark.unit
 def test_dry_run_makes_no_writes_and_opens_no_socket(
     tmp_path: Path, monkeypatch, capsys
 ) -> None:

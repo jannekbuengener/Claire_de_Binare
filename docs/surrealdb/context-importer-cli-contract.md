@@ -167,6 +167,9 @@ Guardrails:
 
 - Die Fixture ist eine mockbare read-only Boundary; kein SurrealDB-Client wird
   geoeffnet.
+- Doppelte `record_id`-Werte in Existing-Records-Fixtures sind ungueltig und
+  werden fail-closed als deterministischer Input-Error abgelehnt. Es gibt keine
+  stille Ueberschreibung und keine Last-one-wins-Semantik.
 - Tabellen muessen in der Context-Importer-Allowlist liegen und duerfen nicht in
   `orders`, `fills`, `positions`, `balances`, `pnl`, `risk_state`,
   `execution_state` oder Governance-Mirror-Tabellen liegen.
@@ -316,6 +319,8 @@ Reconcile-Vertrag:
 - `record_removed_from_snapshot` wird als `tombstone_candidate` berichtet.
 - `schema_mismatch` wird als Blocking Finding berichtet.
 - `forbidden_table` wird als Blocking Finding berichtet.
+- `counts.blocking` und `counts.warnings` bleiben getrennt: Blocking Findings
+  oder blocking Plan-Warnings erhoehen nicht `counts.warnings`.
 - Tombstones bleiben Kandidaten; kein Hard Delete und kein Apply-Verhalten.
 - Blocking JSONL-/Plan-Findings blockieren auch den Reconcile-Report fail-closed
   mit Exit-Code `1`.

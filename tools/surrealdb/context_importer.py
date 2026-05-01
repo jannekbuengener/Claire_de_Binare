@@ -522,7 +522,14 @@ class ReadOnlyExistingRecords:
     source: str
 
     def by_record_id(self) -> dict[str, ExistingRecord]:
-        return {record.record_id: record for record in self.records}
+        records_by_id: dict[str, ExistingRecord] = {}
+        for record in self.records:
+            if record.record_id in records_by_id:
+                raise ExistingRecordsValidationError(
+                    "duplicate existing record_id in existing records fixture"
+                )
+            records_by_id[record.record_id] = record
+        return records_by_id
 
 
 @dataclass(frozen=True)
@@ -586,9 +593,13 @@ class ReconcileReport:
 
     @property
     def warning_count(self) -> int:
-        return sum(1 for finding in self.findings if finding.severity == "warning") + len(
-            self.warnings
+        finding_warnings = sum(
+            1 for finding in self.findings if finding.severity == "warning"
         )
+        plan_warnings = sum(
+            1 for warning in self.warnings if warning.severity == "warning"
+        )
+        return finding_warnings + plan_warnings
 
     def action_counts(self) -> dict[str, int]:
         counts = {
@@ -1316,10 +1327,17 @@ def load_existing_records(path: Path | None) -> ReadOnlyExistingRecords:
             "existing records fixture must be a list or mapping with records list"
         )
     records: list[ExistingRecord] = []
+    seen_record_ids: set[str] = set()
     for item in items:
         if not isinstance(item, dict):
             raise ExistingRecordsValidationError("existing record entries must be objects")
-        records.append(_existing_record_from_raw(item))
+        record = _existing_record_from_raw(item)
+        if record.record_id in seen_record_ids:
+            raise ExistingRecordsValidationError(
+                "duplicate existing record_id in existing records fixture"
+            )
+        seen_record_ids.add(record.record_id)
+        records.append(record)
     return ReadOnlyExistingRecords(
         records=tuple(sorted(records, key=lambda item: (item.table, item.record_id))),
         source=str(path),
