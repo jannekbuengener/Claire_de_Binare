@@ -251,9 +251,15 @@ def load_config(path: Path) -> ContextImportConfig:
     never opens a SurrealDB connection in this scaffold.
     """
 
-    if not path.exists():
+    try:
+        exists = path.exists()
+        is_file = path.is_file() if exists else False
+    except OSError as exc:
+        raise InputNotFoundError(f"cannot stat config file: {path}: {exc}") from exc
+
+    if not exists:
         raise InputNotFoundError(f"config file not found: {path}")
-    if not path.is_file():
+    if not is_file:
         raise ConfigValidationError(f"config path is not a file: {path}")
 
     try:

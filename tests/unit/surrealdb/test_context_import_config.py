@@ -87,6 +87,29 @@ def test_apply_paths_short_circuit_before_config_is_read(capsys) -> None:
 
 
 @pytest.mark.unit
+def test_config_stat_permission_error_is_user_input_error(
+    monkeypatch, capsys
+) -> None:
+    def _raise_permission_error(self) -> bool:
+        raise PermissionError("stat denied")
+
+    monkeypatch.setattr(Path, "exists", _raise_permission_error)
+
+    exit_code = main(["plan", "--config", "blocked.yaml"])
+
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["status"] == "error"
+    assert payload["error"] == "INPUT_NOT_FOUND"
+    assert payload["error"] != "INTERNAL"
+
+    exit_code = main(["plan", "--apply", "--config", "blocked.yaml"])
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+
+
+@pytest.mark.unit
 def test_config_rejects_apply_default_true(tmp_path: Path, capsys) -> None:
     path = _write_config(
         tmp_path,
