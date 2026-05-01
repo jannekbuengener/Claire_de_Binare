@@ -74,6 +74,19 @@ def test_missing_explicit_config_returns_input_not_found(capsys) -> None:
 
 
 @pytest.mark.unit
+def test_apply_paths_short_circuit_before_config_is_read(capsys) -> None:
+    exit_code = main(["apply", "--config", "missing.yaml"])
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+
+    exit_code = main(["plan", "--apply", "--config", "missing.yaml"])
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+
+
+@pytest.mark.unit
 def test_config_rejects_apply_default_true(tmp_path: Path, capsys) -> None:
     path = _write_config(
         tmp_path,

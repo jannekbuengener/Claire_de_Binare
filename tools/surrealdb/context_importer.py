@@ -464,17 +464,17 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     # Default is dry-run; --apply is the only opt-in surface.
     dry_run: bool = not apply_requested or bool(args.dry_run)
 
-    # Validate format and output path defensively even though we do not
-    # write. This makes the safety contract verifiable from tests.
-    _validate_format(args.format)
-    _validate_output_path(args.report_output)
-    config = load_config(args.config) if args.config is not None else None
-
     if command == "apply" or apply_requested:
         raise WriteDeniedError(
             "apply path is not implemented in scaffold (#2068); "
             "writes will land in a follow-up slice."
         )
+
+    # Validate format and output path defensively even though we do not
+    # write. This makes the safety contract verifiable from tests.
+    _validate_format(args.format)
+    _validate_output_path(args.report_output)
+    config = load_config(args.config) if args.config is not None else None
 
     payload = _build_payload(
         command,
