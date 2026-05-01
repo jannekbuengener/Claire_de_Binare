@@ -1,9 +1,9 @@
 # Context Importer CLI Contract
 
-**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan + Dry-run Reconcile Slice)
-**Authority**: Issue #2068 + #2069 + #2070 + #2071 + #2072 / Wave 10 Parent #2067 / Epic #1976
+**Status**: Draft (Scaffold + Local Config + JSONL Validation + Import Plan + Dry-run Reconcile + Gated Local-Dev Apply + Tombstones Slice)
+**Authority**: Issue #2068 + #2069 + #2070 + #2071 + #2072 + #2073 + #2074 / Wave 10 Parent #2067 / Epic #1976
 **Target**: `tools/surrealdb/context_importer.py`
-**Scope**: CLI scaffold plus explicit local config validation, read-only JSONL validation, deterministic import plan generation, and dry-run reconcile against explicit read-only existing-record fixtures — no default SurrealDB connection, no SurrealDB writes.
+**Scope**: CLI scaffold plus explicit local config validation, read-only JSONL validation, deterministic import plan generation, dry-run reconcile against explicit read-only existing-record fixtures, and a **gated local-dev apply pipeline with a mockable adapter boundary** (default in-memory adapter, no production SurrealDB activation, no default network) that performs tombstone-only deletions via an injectable clock. The real SurrealDB adapter is **explicitly out-of-scope** in this slice.
 
 ---
 
@@ -31,14 +31,17 @@ Die JSONL-Validation fuer `validate-jsonl` ist in #2070 read-only implementiert.
 | `validate-jsonl` | JSONL-Artefakte gegen Schema pruefen | Read-only Validation, Exit `0` ohne Blocking Findings, Exit `1` mit Blocking Findings |
 | `plan` | Importplan aus JSONL-Artefakten berechnen | Mit `--input-dir`: deterministic candidate import plan, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
 | `dry-run` | End-to-End-Lauf ohne Schreiben | Mit `--input-dir`: dry-run reconcile gegen leeren oder expliziten Existing-Records-Zustand, Exit `0` oder `1`; ohne `--input-dir`: Scaffold-Stub |
-| `apply` | Schreiben nach SurrealDB | Hart geblockt: Exit `5` (`WRITE_DENIED`) |
+| `apply` | Schreiben nach SurrealDB | Gated local-dev only: erfordert `--apply` + `--apply-mode local-dev` + `--config` + `--input-dir` + `--run-id`. Default-Adapter ist in-memory ohne Netz. Real-SurrealDB-Adapter ist explizit out-of-scope. Ohne vollstaendige Gates Exit `5` (`WRITE_DENIED`). |
 | `audit` | Audit-Trail-Export | Stub: `scaffold-ack`, Exit `0` |
 | `rollback-plan` | Rollback-Plan generieren | Stub: `scaffold-ack`, Exit `0` |
 
-`apply` existiert als Subcommand und auch als globales Flag `--apply`. Beide
-Pfade fuehren in #2068 zu Exit-Code `5`. Die Tests bestaetigen das als
-hartes Sicherheitsnetz; das Verhalten darf erst durch einen expliziten
-Folge-Slice (Apply-Implementation) entfernt werden.
+`apply` existiert als Subcommand und auch als globales Flag `--apply`. Auf
+allen Nicht-`apply`-Subcommands fuehrt `--apply` weiterhin zu Exit `5`. Auf
+dem `apply`-Subcommand ist `--apply` notwendig, aber nicht hinreichend; ohne
+`--apply-mode local-dev`, ohne `--config`, ohne `--input-dir` oder ohne
+`--run-id` wird Exit `5` zurueckgegeben. Der Default-Adapter ist eine
+mockbare in-memory Boundary; ein realer SurrealDB-Adapter ist nicht
+implementiert und nicht ueber die CLI selektierbar.
 
 ---
 
@@ -70,8 +73,15 @@ Folge-Slice (Apply-Implementation) entfernt werden.
   der Laufzeitumgebung kommen, nicht aus dieser YAML.
 - **Secret-Redaction**: Findings melden secret-like Inhalte nur mit Code und
   Pfad/Zeile; erkannte Werte werden nicht in Reports oder stdout echoed.
-- **Kein Apply-/Audit-/Rollback-Verhalten**: jeweils eigene Folge-Slices.
-  Reconcile in #2072 bleibt dry-run-only und erzeugt nur Reports.
+- **Kein Apply-/Audit-/Rollback-Verhalten**: Audit und Rollback bleiben
+  Folge-Slices. Reconcile in #2072 bleibt dry-run-only. Apply in #2073/#2074
+  ist auf `--apply-mode local-dev` mit dem in-memory Adapter beschraenkt; es
+  oeffnet keinen produktiven SurrealDB-Pfad und schreibt keine Trading- oder
+  Governance-Tabellen.
+- **No production SurrealDB activation**: Es existiert kein realer SurrealDB-
+  Adapter in diesem Slice (`real_surrealdb_adapter_available = false`).
+- **Tombstone-only deletions**: Es gibt keinen Hard-Delete; der Default-Adapter
+  exponiert keine `delete`/`apply_delete`-API.
 
 ---
 
@@ -88,7 +98,8 @@ Folge-Slice (Apply-Implementation) entfernt werden.
 | `--report-output` | `None` | nein | Whitelist-Check; `validate-jsonl` und `plan --input-dir` schreiben Report nur wenn explizit gesetzt |
 | `--existing-records` | `None` | nein | nur fuer `dry-run --input-dir`; lokale JSON-Datei mit Existing-Records-Fixture, kein DB-Client |
 | `--dry-run` | `False` (Default-Verhalten ist dennoch dry-run) | nein | redundant; explizit erlaubt |
-| `--apply` | `False` | nein | `True` ⇒ Exit `5` |
+| `--apply` | `False` | nein | Notwendig, aber nicht hinreichend fuer `apply`; auf jedem anderen Subcommand ⇒ Exit `5` |
+| `--apply-mode` | `None` | fuer `apply` ja | Nur `local-dev` ist erlaubt; argparse rejects andere Werte. Ohne diesen Mode bleibt `apply` Exit `5` |
 | `--format` | `json` | nein | `json` / `jsonl` / `markdown` |
 
 ---
@@ -178,7 +189,96 @@ Guardrails:
 
 ---
 
-## 6. Antwort-Schema
+## 5.2 Gated Local-Dev Apply (#2073)
+
+`apply --apply --apply-mode local-dev --config <yaml> --input-dir <dir> --run-id <id>`
+fuehrt eine **gated local-dev apply pipeline** gegen eine **mockable adapter
+boundary** aus. Default ist der `InMemoryContextApplyAdapter`; **no production
+SurrealDB activation**, kein Default-Netzwerk-Connect.
+
+Gates (alle muessen erfuellt sein, sonst Exit `5`):
+
+- `--apply` gesetzt.
+- `--apply-mode local-dev` gesetzt (argparse erlaubt nur `local-dev`).
+- `--config <yaml>` zeigt auf eine valide lokale Config (siehe §4.1).
+- `--input-dir <dir>` enthaelt validierbare JSONL-Artefakte (siehe §4).
+- `--run-id <id>` ist gesetzt.
+- Config-`surreal_url` host ist `127.0.0.1`, `::1` oder `localhost`.
+- Reconcile-Report enthaelt keine Blocking Findings (sonst Exit `1`).
+
+Adapter-Vertrag:
+
+| Property | Vertrag |
+|---|---|
+| Default-Adapter | `InMemoryContextApplyAdapter`; `adapter_kind = "in-memory"` |
+| Netzwerk | nie geoeffnet; `surrealdb_connection = "in-memory-no-network"` |
+| `apply_create(table, record_id, payload)` | Pflicht |
+| `apply_update(table, record_id, payload)` | Pflicht |
+| `apply_tombstone(table, record_id, payload)` | Pflicht; payload muss `TOMBSTONE_REQUIRED_FIELDS` enthalten |
+| `delete` / `apply_delete` / `hard_delete` | **darf nicht existieren** |
+| Reale SurrealDB-Verbindung | nicht implementiert; `real_surrealdb_adapter_available = false` |
+
+Reconcile-zu-Apply-Mapping:
+
+| Reconcile-Action | Apply-Op |
+|---|---|
+| `create` | `create` |
+| `update_candidate` | `update` |
+| `tombstone_candidate` | `tombstone` |
+| `skip` | dropped (no apply op) |
+
+Per-Op-Fehler des Adapters werden als `failed`-Result gesammelt und brechen
+die Pipeline nicht ab. Die CLI mappt:
+
+- Blocking Findings ⇒ Exit `1`.
+- Mindestens ein `failed` ⇒ Exit `6`.
+- Mindestens ein `blocked` (Table-Policy zur Apply-Zeit) ⇒ Exit `5`.
+- Sonst Exit `0`.
+
+Determinismus:
+
+- Operationen sind nach `(op_kind, table, record_id)` deterministisch sortiert.
+- Bei identischer Eingabe und identischem `ClockProvider` ist der gesamte
+  Apply-Report byte-identisch.
+- Es werden keine Payload-Werte oder Secrets in den Report geleakt; nur
+  `payload_hash` (sha256), Tabelle und Record-ID.
+
+---
+
+## 5.3 Tombstone-Semantik (#2074)
+
+Tombstones sind die **einzige** Form der Loeschung in dieser Pipeline. Es gibt
+keinen Hard Delete und keine Adapter-Delete-API.
+
+Pflichtfelder im Tombstone-Payload (`TOMBSTONE_REQUIRED_FIELDS`):
+
+| Feld | Vertrag |
+|---|---|
+| `tombstoned` | `true` (`false` wird vom Adapter als `ApplyAdapterError` abgelehnt) |
+| `tombstoned_at` | reales ISO8601-UTC mit trailing `Z`, erzeugt aus dem injizierbaren `ClockProvider` (`core.utils.clock`); kein Sentinel-Marker, kein `<run-derived>` |
+| `tombstone_reason` | Default `record_removed_from_snapshot` |
+| `last_seen_run_id` | Run-ID des letzten Sees-Snapshots oder `null` |
+| `superseded_by` | reserviert; in v0 immer `null` |
+
+Verhalten:
+
+- `tombstone_candidate` aus `dry-run` reconcile wird in `apply` zu einer
+  Tombstone-Op gegen den Default-Adapter.
+- Der Adapter ueberschreibt das Original-Record nicht; es bleibt erhalten und
+  bekommt die Tombstone-Felder dazu.
+- `tombstoned_at` wird ausschliesslich aus dem injizierten `ClockProvider`
+  erzeugt; `datetime.now()`/`datetime.utcnow()` darf im Apply-Pfad nicht
+  benutzt werden. `FixedClock` liefert byte-identische Reports.
+- Re-Emergenz (Record taucht nach Tombstone wieder im Snapshot auf) wird in
+  v0 nur informativ als `note: re-emerged_after_tombstone` markiert; es gibt
+  keine Untombstone-Semantik.
+
+Per-Tabelle gilt das fuer alle in §6 gerouteten Tabellen, getestet
+explizit fuer `doc_page`, `doc_chunk`, `code_symbol` und `dependency_edge`.
+
+---
+
+
 
 Erfolgsantwort (Subcommand-Stub):
 
@@ -400,9 +500,12 @@ weder aus CLI-Args noch aus der Umgebung abgeleitet.
 - Folge-Slices duerfen das `validate-jsonl`-Antwort-Schema erweitern, aber
   `schema_version`, `command`, `status`, `dry_run`, `apply_requested`,
   `surrealdb_connection`, `validation` und `findings` muessen erhalten bleiben.
-- Die Apply-Implementierung muss den Hard-Block ersetzen, NICHT lediglich
-  umgehen, und muss zwingend einen Two-Step-Gate (`--apply`
-  + zusaetzliche explizite Bestaetigung) bewahren.
+- Die Apply-Implementierung in #2073/#2074 ersetzt den frueheren Hard-Block
+  fuer das `apply`-Subcommand durch einen mehrstufigen Gate
+  (`--apply` + `--apply-mode local-dev` + `--config` + `--input-dir`
+  + `--run-id` + lokaler Host + Reconcile ohne Blocking Findings). Auf allen
+  Nicht-`apply`-Subcommands bleibt `--apply` ⇒ Exit `5`. Ein zukuenftiger
+  realer SurrealDB-Adapter darf diesen Gate nicht aufweichen.
 - Jeder Slice, der eine SurrealDB-Verbindung einfuehrt, muss
   `surrealdb_connection` korrekt setzen und mindestens einen Test
   liefern, der den Connection-Pfad explizit verifiziert.
@@ -414,14 +517,17 @@ weder aus CLI-Args noch aus der Umgebung abgeleitet.
 
 ## 8. Nicht-Ziele
 
-#2071 aendert diese Nicht-Ziele nur fuer `plan --input-dir`: Die
-Plan-Berechnung ist implementiert, bleibt aber read-only und DB-unabhaengig.
-Dry-run-Reconcile, Apply, Audit und Rollback-Plan bleiben Nicht-Ziele.
+#2071 aendert diese Nicht-Ziele nur fuer `plan --input-dir`. #2073/#2074
+aendern sie nur fuer `apply` im gated local-dev Modus mit der mockable
+adapter boundary; ein realer SurrealDB-Adapter ist explizit out-of-scope.
+Audit und Rollback-Plan bleiben Nicht-Ziele.
 
-- Keine SurrealDB-Verbindung.
-- Kein SurrealDB-Write.
-- Kein Apply-Verhalten aus validierten JSONL-Artefakten.
-- Keine Dry-run-Reconcile-/Apply-/Audit-/Rollback-Logik.
+- Keine produktive SurrealDB-Verbindung (`real_surrealdb_adapter_available = false`).
+- Kein Default-Netzwerk-Connect; in-memory adapter ist Default.
+- Kein Hard Delete; nur Tombstones.
+- Kein Apply ausserhalb von `--apply-mode local-dev` mit lokalem Host.
+- Kein Schreiben in Trading-, Risk-, Execution- oder Governance-Mirror-Tabellen.
+- Keine Audit-/Rollback-Logik.
 - Keine Aenderung an Trading-, Risk-, Execution-, Secrets- oder
   Live-Readiness-Pfaden.
 - Kein Echtgeld-/Live-Enable.

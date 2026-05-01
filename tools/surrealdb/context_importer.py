@@ -1,49 +1,70 @@
-"""SurrealDB context importer CLI scaffold (offline, dry-run by default).
+"""SurrealDB context importer CLI (offline by default; gated local apply).
 
-Issue: #2068 (Wave 10, Slice 1)
+Issues:
+    #2068 - scaffold (Wave 10, Slice 1)
+    #2069 - config loader
+    #2070 - JSONL validation
+    #2071 - plan
+    #2072 - reconcile (dry-run)
+    #2073 - explicit local apply mode (this slice)
+    #2074 - tombstone handling   (this slice)
 Parent: #2067 / Epic #1976
 
-This module implements the offline CLI scaffold for the future
-context-import pipeline plus the read-only JSONL validation slice.
-It is hard-blocked from performing any SurrealDB operation.
+This module implements the offline CLI plus a strictly gated
+local-dev apply pipeline with a mockable adapter boundary.
 
 Design rules enforced here:
 
 * Default behavior is dry-run / no-write.
-* The ``apply`` subcommand and the global ``--apply`` flag exist
-  so that downstream slices can wire real behavior, but in this
-  scaffold any apply attempt is hard-blocked with exit code 5
-  (``WRITE_DENIED``) and a deterministic error payload.
-* No SurrealDB connection is opened. ``--surreal-url``,
-  ``--namespace``, and ``--database`` are parsed but never used.
-* No config loader is invoked (that belongs to #2069).
-* No real plan / audit / rollback-plan logic exists.
+* The ``apply`` subcommand requires the explicit combination
+  ``--apply --apply-mode local-dev --config <path> --input-dir <dir>
+  --run-id <str>``; any other invocation of apply (subcommand without
+  ``--apply``, or ``--apply`` on a non-apply subcommand) is hard-blocked
+  with exit code 5 (``WRITE_DENIED``).
+* The default apply adapter is the in-memory, no-network
+  ``InMemoryContextApplyAdapter``. A real SurrealDB adapter is
+  explicitly OUT-OF-SCOPE in this slice and is not wired into the CLI.
+* The local-dev apply gate additionally requires the loaded config's
+  ``surreal_url`` host to be in ``LOCAL_DEV_ALLOWED_HOSTS``.
+* Tombstone handling is field-only (``tombstoned``, ``tombstoned_at``,
+  ``tombstone_reason``, ``last_seen_run_id``, ``superseded_by``). There
+  is no hard-delete API on the apply adapter.
+* ``tombstoned_at`` is produced via an injected
+  :class:`core.utils.clock.ClockProvider` (default: ``SystemClock``)
+  and serialized as ISO8601 UTC; tests inject a ``FixedClock`` for
+  determinism.
+* No SurrealDB connection is opened by the in-memory adapter.
 
-Subcommands implemented as scaffold stubs (per #2068 spec):
+Subcommands:
     validate-jsonl, plan, dry-run, apply, audit, rollback-plan
 
 Exit codes (aligned with the context-indexer contract):
-    0 = success / scaffold acknowledged
-    1 = validation failure (reserved; not raised in scaffold)
+    0 = success
+    1 = validation failure (incl. blocking reconcile findings on apply)
     2 = argparse usage error (raised by argparse itself)
-    3 = input-not-found (reserved; not raised in scaffold)
+    3 = input-not-found
     4 = unsupported format
-    5 = write denied (path violation OR apply attempt in scaffold)
-    6 = internal error / scaffold anomaly
+    5 = write denied (path violation, apply gate violation,
+        forbidden table at apply boundary)
+    6 = internal error
 """
 
 from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import hashlib
 import json
 import logging
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, Protocol
+from urllib.parse import urlparse
 
 import yaml
+
+from core.utils.clock import ClockProvider, SystemClock
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +257,48 @@ FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLE
 ALLOWED_CONTEXT_IMPORT_TABLES = frozenset(TABLE_BY_ARTIFACT.values())
 
 ALLOWED_AUTH_MODES = frozenset({"none", "root", "scope"})
+
+# Apply mode constants (#2073). The CLI only exposes ``local-dev``;
+# any other apply mode is rejected at the gate.
+APPLY_MODE_LOCAL_DEV = "local-dev"
+SUPPORTED_APPLY_MODES = frozenset({APPLY_MODE_LOCAL_DEV})
+
+# Local-dev gate: the loaded config's ``surreal_url`` host must resolve
+# to one of these hosts. This is a defense-in-depth check; the
+# in-memory adapter never opens any socket regardless.
+LOCAL_DEV_ALLOWED_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+# Apply operation kinds (#2073/#2074). ``delete`` is intentionally not
+# part of this enum: there is no hard-delete API.
+APPLY_OP_CREATE = "create"
+APPLY_OP_UPDATE = "update"
+APPLY_OP_TOMBSTONE = "tombstone"
+APPLY_OP_KINDS = frozenset({APPLY_OP_CREATE, APPLY_OP_UPDATE, APPLY_OP_TOMBSTONE})
+
+# Tombstone field names (#2074). Adapter callers are required to set
+# these on the tombstone payload; the in-memory adapter validates the
+# shape so regressions are caught at unit-test time.
+TOMBSTONE_FIELD_FLAG = "tombstoned"
+TOMBSTONE_FIELD_AT = "tombstoned_at"
+TOMBSTONE_FIELD_REASON = "tombstone_reason"
+TOMBSTONE_FIELD_LAST_SEEN_RUN_ID = "last_seen_run_id"
+TOMBSTONE_FIELD_SUPERSEDED_BY = "superseded_by"
+TOMBSTONE_REQUIRED_FIELDS = frozenset(
+    {
+        TOMBSTONE_FIELD_FLAG,
+        TOMBSTONE_FIELD_AT,
+        TOMBSTONE_FIELD_REASON,
+        TOMBSTONE_FIELD_LAST_SEEN_RUN_ID,
+        TOMBSTONE_FIELD_SUPERSEDED_BY,
+    }
+)
+TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT = "record_removed_from_snapshot"
+
+# A real SurrealDB adapter is intentionally not implemented in this
+# slice. The CLI never selects anything other than the in-memory
+# adapter; this constant is exported for documentation / regression.
+REAL_SURREALDB_ADAPTER_AVAILABLE = False
+ADAPTER_KIND_IN_MEMORY = "in-memory"
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 WINDOWS_DRIVE_PREFIX_RE = re.compile(r"^[A-Za-z]:")
@@ -677,6 +740,542 @@ class ContextImportConfig:
             "allowed_tables": list(self.allowed_tables),
             "forbidden_tables": list(self.forbidden_tables),
         }
+
+
+# ---------------------------------------------------------------------------
+# Apply pipeline (#2073/#2074)
+#
+# The apply pipeline is a strictly gated local-dev path. The default
+# adapter is the in-memory :class:`InMemoryContextApplyAdapter`; it
+# never opens a network socket. A real SurrealDB adapter is OUT-OF-SCOPE
+# in this slice (``REAL_SURREALDB_ADAPTER_AVAILABLE == False``).
+# ---------------------------------------------------------------------------
+
+
+class ApplyGateError(ContextImporterError):
+    """Raised when the local-dev apply gate is not satisfied."""
+
+    code = "APPLY_GATE_DENIED"
+    exit_code = EXIT_WRITE_DENIED
+
+
+class ApplyAdapterError(ContextImporterError):
+    """Raised by an adapter to report a per-operation failure.
+
+    Caught by the executor and surfaced as a ``failed`` apply result;
+    it does not propagate out of :func:`execute_context_apply`.
+    """
+
+    code = "APPLY_ADAPTER_ERROR"
+    exit_code = EXIT_INTERNAL
+
+
+@dataclass(frozen=True)
+class ContextApplyOperation:
+    """Single normalized apply operation derived from a reconcile action."""
+
+    op: str
+    table: str
+    record_id: str
+    payload_hash: str | None
+    existing_payload_hash: str | None
+    source_ref: str | None
+    reason: str
+    note: str | None = None
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "op": self.op,
+            "table": self.table,
+            "record_id": self.record_id,
+            "payload_hash": self.payload_hash,
+            "existing_payload_hash": self.existing_payload_hash,
+            "source_ref": self.source_ref,
+            "reason": self.reason,
+            "note": self.note,
+        }
+
+
+@dataclass(frozen=True)
+class ContextApplyResult:
+    """Outcome of a single :class:`ContextApplyOperation`."""
+
+    op: str
+    table: str
+    record_id: str
+    status: str  # one of: applied | skipped | failed
+    detail: str | None = None
+    tombstoned_at: str | None = None
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "op": self.op,
+            "table": self.table,
+            "record_id": self.record_id,
+            "status": self.status,
+            "detail": self.detail,
+            "tombstoned_at": self.tombstoned_at,
+        }
+
+
+@dataclass(frozen=True)
+class ContextApplyReport:
+    """Deterministic, render-friendly apply report."""
+
+    schema_version: str
+    run_id: str
+    input_dir: Path
+    apply_mode: str
+    adapter: str
+    config_path: Path
+    surreal_url: str
+    namespace: str
+    database: str
+    operations: tuple[ContextApplyOperation, ...]
+    results: tuple[ContextApplyResult, ...]
+    blocking_findings_present: bool
+    blocking_finding_codes: tuple[str, ...]
+    apply_executed: bool
+    status: str
+    note: str
+
+    def counts(self) -> dict[str, int]:
+        c = {
+            "creates": 0,
+            "updates": 0,
+            "tombstones": 0,
+            "applied": 0,
+            "skipped": 0,
+            "failed": 0,
+            "blocked": 0,
+        }
+        for op in self.operations:
+            if op.op == APPLY_OP_CREATE:
+                c["creates"] += 1
+            elif op.op == APPLY_OP_UPDATE:
+                c["updates"] += 1
+            elif op.op == APPLY_OP_TOMBSTONE:
+                c["tombstones"] += 1
+        for res in self.results:
+            if res.status == "applied":
+                c["applied"] += 1
+            elif res.status == "skipped":
+                c["skipped"] += 1
+            elif res.status == "failed":
+                c["failed"] += 1
+            elif res.status == "blocked":
+                c["blocked"] += 1
+        return c
+
+    def to_payload(self) -> dict[str, Any]:
+        return {
+            "schema_version": self.schema_version,
+            "command": "apply",
+            "run_id": self.run_id,
+            "input_dir": str(self.input_dir),
+            "apply_mode": self.apply_mode,
+            "adapter": self.adapter,
+            "config_path": str(self.config_path),
+            "surreal_url": self.surreal_url,
+            "namespace": self.namespace,
+            "database": self.database,
+            "dry_run": False,
+            "apply_requested": True,
+            "apply_executed": self.apply_executed,
+            "surrealdb_connection": "in-memory-no-network",
+            "surrealdb_writes": "in-memory-only",
+            "real_surrealdb_adapter_available": REAL_SURREALDB_ADAPTER_AVAILABLE,
+            "implemented": True,
+            "status": self.status,
+            "note": self.note,
+            "operations": [op.to_payload() for op in self.operations],
+            "results": [res.to_payload() for res in self.results],
+            "counts": self.counts(),
+            "blocking_findings_present": self.blocking_findings_present,
+            "blocking_finding_codes": list(self.blocking_finding_codes),
+        }
+
+
+class ContextApplyAdapter(Protocol):
+    """Mockable apply boundary.
+
+    Implementations must perform no network I/O unless the caller
+    explicitly opts in. The default :class:`InMemoryContextApplyAdapter`
+    keeps everything in-process.
+    """
+
+    kind: str
+
+    def apply_create(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None: ...
+
+    def apply_update(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None: ...
+
+    def apply_tombstone(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None: ...
+
+
+class InMemoryContextApplyAdapter:
+    """Default in-memory, no-network apply adapter for tests and local dev.
+
+    Records every operation in :attr:`operations` so tests can assert
+    against the exact sequence. Has no ``delete`` API by design (#2074).
+    """
+
+    kind: str = ADAPTER_KIND_IN_MEMORY
+
+    def __init__(self) -> None:
+        self.operations: list[tuple[str, str, str, dict[str, Any]]] = []
+        self.records: dict[str, dict[str, Any]] = {}
+
+    # No `delete` method exists. This is intentional and is asserted by
+    # tests in tests/unit/surrealdb/test_context_import_tombstones.py.
+
+    def apply_create(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None:
+        self.operations.append((APPLY_OP_CREATE, table, record_id, dict(payload)))
+        self.records[record_id] = dict(payload)
+
+    def apply_update(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None:
+        self.operations.append((APPLY_OP_UPDATE, table, record_id, dict(payload)))
+        self.records[record_id] = dict(payload)
+
+    def apply_tombstone(
+        self, table: str, record_id: str, payload: dict[str, Any]
+    ) -> None:
+        missing = TOMBSTONE_REQUIRED_FIELDS - set(payload.keys())
+        if missing:
+            raise ApplyAdapterError(
+                f"tombstone payload missing required fields: {sorted(missing)}"
+            )
+        if payload.get(TOMBSTONE_FIELD_FLAG) is not True:
+            raise ApplyAdapterError(
+                f"tombstone payload must set {TOMBSTONE_FIELD_FLAG!r} to True"
+            )
+        self.operations.append((APPLY_OP_TOMBSTONE, table, record_id, dict(payload)))
+        # Tombstone updates the record in place; no hard delete.
+        existing = self.records.get(record_id, {})
+        existing.update(payload)
+        self.records[record_id] = existing
+
+
+def _isoformat_utc(dt: datetime) -> str:
+    """Serialize a datetime to ISO8601 UTC with a trailing ``Z``.
+
+    Accepts naive datetimes (treated as UTC) or aware datetimes (converted
+    to UTC). Returns deterministic output for a fixed input.
+    """
+
+    if dt.tzinfo is None:
+        aware = dt.replace(tzinfo=timezone.utc)
+    else:
+        aware = dt.astimezone(timezone.utc)
+    # Drop tzinfo in formatting and append explicit Z to keep the contract
+    # stable across Python versions.
+    return aware.replace(tzinfo=None).isoformat() + "Z"
+
+
+def _validate_local_dev_url(surreal_url: str) -> None:
+    """Reject any non-local-dev SurrealDB URL when the local-dev gate is active."""
+
+    parsed = urlparse(surreal_url)
+    host = (parsed.hostname or "").lower()
+    if host not in LOCAL_DEV_ALLOWED_HOSTS:
+        raise ApplyGateError(
+            "local-dev apply requires a localhost surreal_url; "
+            f"got host={host!r}, allowed={sorted(LOCAL_DEV_ALLOWED_HOSTS)}"
+        )
+
+
+def _validate_apply_table_policy(
+    table: str, *, allowed: frozenset[str], forbidden: frozenset[str]
+) -> None:
+    if table in forbidden or table in FORBIDDEN_CONTEXT_IMPORT_TABLES:
+        raise ApplyGateError(
+            f"apply target table is forbidden: {table!r}"
+        )
+    if table not in allowed and table not in ALLOWED_CONTEXT_IMPORT_TABLES:
+        raise ApplyGateError(
+            f"apply target table is not in the allowed set: {table!r}"
+        )
+
+
+def _build_payload_for_op(
+    op: ContextApplyOperation,
+    *,
+    run_id: str,
+    clock: ClockProvider,
+    last_seen_run_id: str | None,
+) -> tuple[dict[str, Any], str | None]:
+    """Build the adapter payload for a single operation.
+
+    Returns ``(payload, tombstoned_at_iso)``. ``tombstoned_at_iso`` is
+    only set for tombstone operations.
+    """
+
+    if op.op == APPLY_OP_TOMBSTONE:
+        ts_iso = _isoformat_utc(clock.now())
+        payload = {
+            TOMBSTONE_FIELD_FLAG: True,
+            TOMBSTONE_FIELD_AT: ts_iso,
+            TOMBSTONE_FIELD_REASON: op.reason or TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT,
+            TOMBSTONE_FIELD_LAST_SEEN_RUN_ID: last_seen_run_id,
+            TOMBSTONE_FIELD_SUPERSEDED_BY: None,
+            "table": op.table,
+            "record_id": op.record_id,
+            "run_id": run_id,
+            "payload_hash": op.existing_payload_hash,
+        }
+        return payload, ts_iso
+
+    payload = {
+        "table": op.table,
+        "record_id": op.record_id,
+        "run_id": run_id,
+        "payload_hash": op.payload_hash,
+    }
+    return payload, None
+
+
+def _operations_from_reconcile(
+    report: ReconcileReport,
+) -> tuple[ContextApplyOperation, ...]:
+    """Map reconcile actions to apply operations.
+
+    ``skip`` actions are dropped (they would do nothing and we surface
+    the count via the reconcile report counts already).
+    """
+
+    ops: list[ContextApplyOperation] = []
+    # Track previously-tombstoned records (best-effort heuristic on
+    # existing_payload_hash being equal to a sentinel later; for now
+    # we surface re-emergence as a note when reason hints at it).
+    for action in report.actions:
+        if action.action == "create":
+            ops.append(
+                ContextApplyOperation(
+                    op=APPLY_OP_CREATE,
+                    table=action.table,
+                    record_id=action.record_id,
+                    payload_hash=action.payload_hash,
+                    existing_payload_hash=action.existing_payload_hash,
+                    source_ref=action.source_ref,
+                    reason=action.reason,
+                )
+            )
+        elif action.action == "update_candidate":
+            note: str | None = None
+            if action.reason == "record_changed_after_tombstone":
+                note = "re-emerged_after_tombstone"
+            ops.append(
+                ContextApplyOperation(
+                    op=APPLY_OP_UPDATE,
+                    table=action.table,
+                    record_id=action.record_id,
+                    payload_hash=action.payload_hash,
+                    existing_payload_hash=action.existing_payload_hash,
+                    source_ref=action.source_ref,
+                    reason=action.reason,
+                    note=note,
+                )
+            )
+        elif action.action == "tombstone_candidate":
+            ops.append(
+                ContextApplyOperation(
+                    op=APPLY_OP_TOMBSTONE,
+                    table=action.table,
+                    record_id=action.record_id,
+                    payload_hash=None,
+                    existing_payload_hash=action.existing_payload_hash,
+                    source_ref=action.source_ref,
+                    reason=action.reason or TOMBSTONE_REASON_REMOVED_FROM_SNAPSHOT,
+                )
+            )
+        # ``skip`` is intentionally dropped; nothing to apply.
+    # Deterministic ordering: by (op kind order, table, record_id).
+    op_order = {APPLY_OP_CREATE: 0, APPLY_OP_UPDATE: 1, APPLY_OP_TOMBSTONE: 2}
+    ops.sort(key=lambda o: (op_order[o.op], o.table, o.record_id))
+    return tuple(ops)
+
+
+def execute_context_apply(
+    *,
+    reconcile_report: ReconcileReport,
+    config: ContextImportConfig,
+    run_id: str,
+    apply_mode: str,
+    adapter: ContextApplyAdapter | None = None,
+    clock: ClockProvider | None = None,
+) -> ContextApplyReport:
+    """Execute the gated local-dev apply pipeline.
+
+    The gate caller is responsible for verifying CLI flags. This function
+    additionally enforces:
+
+    * apply mode is supported,
+    * ``config.surreal_url`` host is local-dev,
+    * ``config.allow_apply_default`` is False (defense-in-depth; the
+      config loader already rejects ``True``),
+    * no blocking reconcile findings,
+    * each operation's table is in the allowed set and not forbidden.
+
+    On any blocking-findings condition the function returns a report
+    with ``apply_executed=False`` and ``status="blocked"``; no adapter
+    method is called.
+    """
+
+    if apply_mode not in SUPPORTED_APPLY_MODES:
+        raise ApplyGateError(
+            f"unsupported apply_mode: {apply_mode!r}; "
+            f"allowed: {sorted(SUPPORTED_APPLY_MODES)}"
+        )
+    if config.allow_apply_default:
+        # Defense in depth; load_config already rejects True.
+        raise ApplyGateError(
+            "config.allow_apply_default must be False for context apply"
+        )
+    _validate_local_dev_url(config.surreal_url)
+
+    used_adapter: ContextApplyAdapter = adapter or InMemoryContextApplyAdapter()
+    used_clock: ClockProvider = clock or SystemClock()
+
+    blocking_codes = tuple(
+        sorted({f.code for f in reconcile_report.findings if f.severity == "blocking"})
+    )
+    if blocking_codes:
+        return ContextApplyReport(
+            schema_version=SCHEMA_VERSION,
+            run_id=run_id,
+            input_dir=reconcile_report.input_dir,
+            apply_mode=apply_mode,
+            adapter=used_adapter.kind,
+            config_path=config.path,
+            surreal_url=config.surreal_url,
+            namespace=config.namespace,
+            database=config.database,
+            operations=(),
+            results=(),
+            blocking_findings_present=True,
+            blocking_finding_codes=blocking_codes,
+            apply_executed=False,
+            status="blocked",
+            note=(
+                "apply blocked by reconcile blocking findings; "
+                "no adapter operation was performed"
+            ),
+        )
+
+    operations = _operations_from_reconcile(reconcile_report)
+
+    allowed_tables = frozenset(config.allowed_tables)
+    forbidden_tables = frozenset(config.forbidden_tables)
+
+    results: list[ContextApplyResult] = []
+    for op in operations:
+        try:
+            _validate_apply_table_policy(
+                op.table, allowed=allowed_tables, forbidden=forbidden_tables
+            )
+        except ApplyGateError as exc:
+            results.append(
+                ContextApplyResult(
+                    op=op.op,
+                    table=op.table,
+                    record_id=op.record_id,
+                    status="blocked",
+                    detail=exc.message,
+                )
+            )
+            continue
+
+        payload, tombstoned_at = _build_payload_for_op(
+            op,
+            run_id=run_id,
+            clock=used_clock,
+            last_seen_run_id=None,
+        )
+        try:
+            if op.op == APPLY_OP_CREATE:
+                used_adapter.apply_create(op.table, op.record_id, payload)
+            elif op.op == APPLY_OP_UPDATE:
+                used_adapter.apply_update(op.table, op.record_id, payload)
+            elif op.op == APPLY_OP_TOMBSTONE:
+                used_adapter.apply_tombstone(op.table, op.record_id, payload)
+            else:  # pragma: no cover - defensive; enum-bounded above
+                raise ApplyAdapterError(f"unknown apply op: {op.op!r}")
+        except ApplyAdapterError as exc:
+            results.append(
+                ContextApplyResult(
+                    op=op.op,
+                    table=op.table,
+                    record_id=op.record_id,
+                    status="failed",
+                    detail=exc.message,
+                    tombstoned_at=tombstoned_at,
+                )
+            )
+            continue
+        except Exception as exc:  # noqa: BLE001 - adapter contract surface
+            results.append(
+                ContextApplyResult(
+                    op=op.op,
+                    table=op.table,
+                    record_id=op.record_id,
+                    status="failed",
+                    detail=f"adapter raised: {exc.__class__.__name__}: {exc}",
+                    tombstoned_at=tombstoned_at,
+                )
+            )
+            continue
+
+        results.append(
+            ContextApplyResult(
+                op=op.op,
+                table=op.table,
+                record_id=op.record_id,
+                status="applied",
+                detail=op.note,
+                tombstoned_at=tombstoned_at,
+            )
+        )
+
+    any_failed = any(r.status == "failed" for r in results)
+    any_blocked = any(r.status == "blocked" for r in results)
+    if any_failed or any_blocked:
+        status = "partial"
+    elif not operations:
+        status = "noop"
+    else:
+        status = "applied"
+
+    return ContextApplyReport(
+        schema_version=SCHEMA_VERSION,
+        run_id=run_id,
+        input_dir=reconcile_report.input_dir,
+        apply_mode=apply_mode,
+        adapter=used_adapter.kind,
+        config_path=config.path,
+        surreal_url=config.surreal_url,
+        namespace=config.namespace,
+        database=config.database,
+        operations=operations,
+        results=tuple(results),
+        blocking_findings_present=False,
+        blocking_finding_codes=(),
+        apply_executed=True,
+        status=status,
+        note=(
+            "local-dev apply executed against in-memory adapter; "
+            "no production SurrealDB activation, no default write"
+        ),
+    )
 
 
 def _validate_format(fmt: str) -> str:
@@ -2225,8 +2824,23 @@ def build_parser() -> argparse.ArgumentParser:
             "--apply",
             action="store_true",
             help=(
-                "Opt in to write/apply. HARD-BLOCKED in #2068; any use of "
-                "this flag exits with code 5 (WRITE_DENIED)."
+                "Opt in to write/apply. Required (together with "
+                "--apply-mode local-dev, --config, --input-dir, --run-id) "
+                "to enter the gated local-dev apply pipeline on the "
+                "`apply` subcommand. Any use of --apply on a non-apply "
+                "subcommand exits with code 5 (WRITE_DENIED)."
+            ),
+        )
+        sub.add_argument(
+            "--apply-mode",
+            choices=sorted(SUPPORTED_APPLY_MODES),
+            default=None,
+            help=(
+                "Apply mode gate. Only meaningful on the `apply` "
+                "subcommand combined with --apply. Use 'local-dev' to "
+                "enter the gated local-dev apply pipeline against the "
+                "default in-memory adapter. No production SurrealDB "
+                "activation, no default write."
             ),
         )
         sub.add_argument(
@@ -2240,22 +2854,92 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
-    """Resolve command behavior for the scaffold.
+    """Resolve command behavior.
 
-    Returns ``(payload, exit_code)``. The scaffold never performs the
-    real action; it only acknowledges the call or refuses it.
+    Returns ``(payload, exit_code)``. Most subcommands are dry-run; the
+    only command that may execute writes is ``apply`` and only under
+    the strict local-dev gate (#2073).
     """
 
     command: str = args.command
     apply_requested: bool = bool(args.apply)
+    apply_mode: str | None = getattr(args, "apply_mode", None)
     # Default is dry-run; --apply is the only opt-in surface.
     dry_run: bool = not apply_requested or bool(args.dry_run)
 
-    if command == "apply" or apply_requested:
+    # Gate 1: --apply on any non-apply subcommand stays hard-blocked.
+    if command != "apply" and apply_requested:
         raise WriteDeniedError(
-            "apply path is not implemented in scaffold (#2068); "
-            "writes will land in a follow-up slice."
+            "the --apply flag is only valid on the `apply` subcommand; "
+            "use of --apply on other subcommands is hard-blocked"
         )
+
+    # Gate 2: `apply` subcommand requires the explicit local-dev gate.
+    if command == "apply":
+        if not apply_requested:
+            raise WriteDeniedError(
+                "apply subcommand requires --apply to opt in to writes; "
+                "no default-write path exists"
+            )
+        if apply_mode is None:
+            raise WriteDeniedError(
+                "apply requires --apply-mode local-dev; "
+                "no default apply mode is provided"
+            )
+        if apply_mode not in SUPPORTED_APPLY_MODES:
+            raise WriteDeniedError(
+                f"unsupported --apply-mode: {apply_mode!r}; "
+                f"allowed: {sorted(SUPPORTED_APPLY_MODES)}"
+            )
+        if args.config is None:
+            raise WriteDeniedError(
+                "apply requires --config <path> (explicit local config)"
+            )
+        if args.input_dir is None:
+            raise WriteDeniedError(
+                "apply requires --input-dir <dir>"
+            )
+        if not args.run_id:
+            raise WriteDeniedError(
+                "apply requires --run-id <str> for deterministic auditability"
+            )
+
+        _validate_format(args.format)
+        report_output = _validate_output_path(args.report_output)
+        config = load_config(args.config)
+        input_dir = _validate_input_dir(args.input_dir)
+        plan = build_import_plan(input_dir, args.run_id)
+        existing_records = load_existing_records(
+            None if plan.has_blocking_validation_findings else args.existing_records
+        )
+        reconcile_report = reconcile_import_plan(plan, existing_records)
+
+        apply_report = execute_context_apply(
+            reconcile_report=reconcile_report,
+            config=config,
+            run_id=args.run_id,
+            apply_mode=apply_mode,
+        )
+        payload = apply_report.to_payload()
+        payload["config_loaded"] = True
+        payload["config"] = config.to_payload()
+        payload["reconcile_summary"] = {
+            "status": reconcile_report.status,
+            "blocking_count": reconcile_report.blocking_count,
+            "warning_count": reconcile_report.warning_count,
+            "actions": len(reconcile_report.actions),
+        }
+        if report_output is not None:
+            _write_report(report_output, _render(payload, args.format))
+            payload["report_output"] = str(report_output)
+
+        if apply_report.blocking_findings_present:
+            return payload, EXIT_VALIDATION_ERROR
+        if any(r.status == "failed" for r in apply_report.results):
+            return payload, EXIT_INTERNAL
+        if any(r.status == "blocked" for r in apply_report.results):
+            return payload, EXIT_WRITE_DENIED
+        return payload, EXIT_OK
 
     # Validate format and output path defensively even though we do not
     # write. This makes the safety contract verifiable from tests.
