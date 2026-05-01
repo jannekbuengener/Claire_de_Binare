@@ -251,6 +251,73 @@ def test_validate_jsonl_blocks_forbidden_source_paths(
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "source_path",
+    (123, ["docs/foo.md"], {"path": "docs/foo.md"}),
+)
+def test_validate_jsonl_blocks_invalid_source_path_types(
+    tmp_path: Path, capsys, source_path
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "doc_pages",
+        [
+            _base_record(
+                page_id="page:1",
+                source_path=source_path,
+                source_hash=HASH,
+                title="Example",
+                doc_format="markdown",
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    out = capsys.readouterr().out
+    assert "docs/foo.md" not in out
+    payload = json.loads(out)
+    assert any(
+        finding["code"] == "source_path_invalid_type"
+        and "source_path" not in finding
+        for finding in payload["findings"]
+    )
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("source_path", ("", "   "))
+def test_validate_jsonl_blocks_blank_required_source_paths(
+    tmp_path: Path, capsys, source_path: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "doc_pages",
+        [
+            _base_record(
+                page_id="page:1",
+                source_path=source_path,
+                source_hash=HASH,
+                title="Example",
+                doc_format="markdown",
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    expected_code = "required_field_missing" if source_path == "" else "source_path_blank"
+    assert any(
+        finding["code"] == expected_code and finding["artifact"] == "doc_pages"
+        for finding in payload["findings"]
+    )
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("source_path", ("docs/foo.md", r"docs\foo.md"))
 def test_validate_jsonl_allows_safe_relative_source_paths(
     tmp_path: Path, capsys, source_path: str

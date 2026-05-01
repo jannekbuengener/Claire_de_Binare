@@ -466,6 +466,47 @@ def _record_source_path(record: dict[str, Any]) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _validated_source_path(
+    artifact: str,
+    record: dict[str, Any],
+    findings: list[JsonlValidationFinding],
+    line: int | None,
+) -> str | None:
+    source_path_required = "source_path" in REQUIRED_JSONL_FIELDS[artifact]
+    if "source_path" not in record:
+        return None
+    value = record["source_path"]
+    if value is None and source_path_required:
+        return None
+    if not isinstance(value, str):
+        findings.append(
+            _finding(
+                "blocking",
+                "source_path_invalid_type",
+                "source_path must be a non-empty string",
+                artifact=artifact,
+                line=line,
+                record=record,
+            )
+        )
+        return None
+    if value == "" and source_path_required:
+        return None
+    if not value.strip():
+        findings.append(
+            _finding(
+                "blocking",
+                "source_path_blank",
+                "source_path must be a non-empty string",
+                artifact=artifact,
+                line=line,
+                record=record,
+            )
+        )
+        return None
+    return value
+
+
 def _finding(
     severity: str,
     code: str,
@@ -630,7 +671,7 @@ def _validate_record_fields(
             )
         )
 
-    source_path = _record_source_path(record)
+    source_path = _validated_source_path(artifact, record, findings, line)
     if source_path is not None:
         if _is_forbidden_source_path(source_path):
             findings.append(
