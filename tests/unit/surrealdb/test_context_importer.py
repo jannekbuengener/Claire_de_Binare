@@ -22,7 +22,9 @@ from tools.surrealdb.context_importer import (
 )
 
 
-SCAFFOLD_COMMANDS_WITHOUT_APPLY = tuple(c for c in SUPPORTED_COMMANDS if c != "apply")
+SCAFFOLD_COMMANDS_WITHOUT_APPLY = tuple(
+    c for c in SUPPORTED_COMMANDS if c not in {"apply", "validate-jsonl"}
+)
 
 
 def _read_json(capsys) -> dict:
