@@ -1153,7 +1153,17 @@ def _render_jsonl_report(report: JsonlValidationReport, fmt: str) -> str:
 def _write_report(path: Path, rendered: str) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
+        target = path.resolve(strict=False)
+        cwd = Path.cwd().resolve()
+        allowed_roots = tuple(cwd / prefix for prefix in ALLOWED_OUTPUT_PREFIXES)
+        if not any(target.is_relative_to(root) for root in allowed_roots):
+            raise WriteDeniedError(
+                "report output must resolve under "
+                f"{ALLOWED_OUTPUT_PREFIXES}, got: {path}"
+            )
         path.write_text(rendered + "\n", encoding="utf-8")
+    except WriteDeniedError:
+        raise
     except OSError as exc:
         raise WriteDeniedError(f"cannot write report output: {path}: {exc}") from exc
 

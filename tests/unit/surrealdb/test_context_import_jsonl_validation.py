@@ -572,6 +572,44 @@ def test_validate_jsonl_rejects_report_output_outside_whitelist(
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("link_path", "report_output"),
+    (
+        (Path("artifacts"), "artifacts/report.json"),
+        (Path("artifacts/linked"), "artifacts/linked/report.json"),
+    ),
+)
+def test_validate_jsonl_rejects_report_output_symlink_escape(
+    tmp_path: Path, monkeypatch, capsys, link_path: Path, report_output: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    outside_dir = tmp_path / "outside"
+    outside_dir.mkdir()
+    artifacts_link = tmp_path / link_path
+    artifacts_link.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        artifacts_link.symlink_to(outside_dir, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"symlink unavailable on this platform: {exc}")
+    monkeypatch.chdir(tmp_path)
+
+    exit_code = main(
+        [
+            "validate-jsonl",
+            "--input-dir",
+            str(tmp_path),
+            "--report-output",
+            report_output,
+        ]
+    )
+
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+    assert not (outside_dir / "report.json").exists()
+
+
+@pytest.mark.unit
 def test_validate_jsonl_requires_input_dir(capsys) -> None:
     exit_code = main(["validate-jsonl"])
 
