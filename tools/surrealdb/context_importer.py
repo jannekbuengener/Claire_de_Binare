@@ -1513,9 +1513,9 @@ def build_import_plan(
     )
 
 
-def _blocking_from_plan_warning(warning: ImportPlanWarning) -> ReconcileFinding:
+def _finding_from_plan_warning(warning: ImportPlanWarning) -> ReconcileFinding:
     return ReconcileFinding(
-        severity="blocking",
+        severity=warning.severity,
         code=warning.code,
         message=warning.message,
         record_id=warning.source_ref,
@@ -1558,7 +1558,7 @@ def reconcile_import_plan(
     warnings = list(plan.warnings)
 
     if plan.has_blocking_validation_findings:
-        findings.extend(_blocking_from_plan_warning(warning) for warning in plan.warnings)
+        findings.extend(_finding_from_plan_warning(warning) for warning in plan.warnings)
         return ReconcileReport(
             schema_version=SCHEMA_VERSION,
             run_id=plan.run_id,
@@ -1567,7 +1567,7 @@ def reconcile_import_plan(
             existing_records_source=existing_records.source,
             actions=(),
             findings=tuple(findings),
-            warnings=tuple(warnings),
+            warnings=(),
             plan=plan,
         )
 
@@ -1580,6 +1580,36 @@ def reconcile_import_plan(
         if not _validate_reconcile_table_policy(
             plan_action.table, plan_action.record_id, findings
         ):
+            continue
+        if plan_action.action == "skip":
+            existing = existing_by_id.get(plan_action.record_id)
+            if existing is not None and (
+                existing.table != plan_action.table
+                or existing.schema_version not in (None, SCHEMA_VERSION)
+            ):
+                findings.append(
+                    ReconcileFinding(
+                        severity="blocking",
+                        code="schema_mismatch",
+                        message="existing record table or schema_version differs from import plan",
+                        table=existing.table,
+                        record_id=existing.record_id,
+                    )
+                )
+                continue
+            actions.append(
+                ReconcileAction(
+                    action="skip",
+                    table=plan_action.table,
+                    record_id=plan_action.record_id,
+                    source_ref=plan_action.source_ref,
+                    reason=plan_action.reason,
+                    payload_hash=plan_action.payload_hash,
+                    existing_payload_hash=existing.payload_hash
+                    if existing is not None
+                    else None,
+                )
+            )
             continue
         existing = existing_by_id.get(plan_action.record_id)
         if existing is None:

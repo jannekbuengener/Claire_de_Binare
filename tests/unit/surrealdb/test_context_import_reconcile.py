@@ -377,7 +377,83 @@ def test_dry_run_warning_count_excludes_blocking_plan_warnings(
     assert payload["status"] == "blocked"
     assert payload["counts"]["blocking"] > 0
     assert payload["counts"]["warnings"] == 0
-    assert any(warning["severity"] == "blocking" for warning in payload["warnings"])
+    assert any(finding["severity"] == "blocking" for finding in payload["findings"])
+
+
+@pytest.mark.unit
+def test_dry_run_preserves_import_plan_skip_actions(tmp_path: Path, capsys) -> None:
+    records = _valid_records()
+    records["repo_artifacts"] = records["repo_artifacts"] * 2
+    for artifact, items in records.items():
+        _write_jsonl(tmp_path, artifact, items)
+
+    exit_code = main(["dry-run", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    repo_actions = [
+        action for action in payload["actions"] if action["table"] == "repo_artifact"
+    ]
+    assert [action["action"] for action in repo_actions] == ["create", "skip"]
+    assert repo_actions[1]["reason"] == (
+        "duplicate record_id in validated input; first occurrence wins"
+    )
+    assert payload["counts"]["creates"] == 10
+    assert payload["counts"]["skips"] == 1
+    assert payload["counts"]["update_candidates"] == 0
+
+
+@pytest.mark.unit
+def test_dry_run_plan_skip_still_blocks_on_schema_mismatch(
+    tmp_path: Path, capsys
+) -> None:
+    records = _valid_records()
+    records["repo_artifacts"] = records["repo_artifacts"] * 2
+    for artifact, items in records.items():
+        _write_jsonl(tmp_path, artifact, items)
+    existing = tmp_path / "existing.json"
+    _write_existing(
+        existing,
+        [
+            {
+                "table": "doc_page",
+                "record_id": "repo_artifact:artifact-doc",
+                "payload_hash": "a" * 64,
+                "schema_version": "context-importer/v0",
+            }
+        ],
+    )
+
+    exit_code = main(
+        ["dry-run", "--input-dir", str(tmp_path), "--existing-records", str(existing)]
+    )
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert any(finding["code"] == "schema_mismatch" for finding in payload["findings"])
+
+
+@pytest.mark.unit
+def test_dry_run_preserves_plan_warning_severity_and_counts(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    doc_chunks = tmp_path / EXPECTED_JSONL_FILES["doc_chunks"]
+    doc_chunks.write_text(doc_chunks.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    records = _valid_records()["doc_pages"]
+    records[0]["source_path"] = "../secrets.md"
+    _write_jsonl(tmp_path, "doc_pages", records)
+
+    exit_code = main(["dry-run", "--input-dir", str(tmp_path)])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    finding_severities = {finding["code"]: finding["severity"] for finding in payload["findings"]}
+    assert finding_severities["forbidden_source_path"] == "blocking"
+    assert finding_severities["jsonl_blank_line"] == "warning"
+    assert payload["counts"]["blocking"] >= 1
+    assert payload["counts"]["warnings"] == 1
+    assert "secret-token-value" not in json.dumps(payload)
 
 
 @pytest.mark.unit

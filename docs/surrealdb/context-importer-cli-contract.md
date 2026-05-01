@@ -319,6 +319,12 @@ Reconcile-Vertrag:
 - `record_removed_from_snapshot` wird als `tombstone_candidate` berichtet.
 - `schema_mismatch` wird als Blocking Finding berichtet.
 - `forbidden_table` wird als Blocking Finding berichtet.
+- Importplan-Actions mit `action: skip` bleiben im Reconcile `skip`, sofern
+  keine Table-Policy- oder Schema-Safety-Blockade fuer denselben Record vorliegt.
+- Plan-Warnings behalten beim Mapping in Reconcile-Findings ihre urspruengliche
+  Severity; `warning` bleibt `warning`, `blocking` bleibt `blocking`.
+- In blocked-plan Reconcile-Reports werden Plan-Warnings als Reconcile-Findings
+  gespiegelt und nicht zusaetzlich als `warnings` doppelt gezaehlt.
 - `counts.blocking` und `counts.warnings` bleiben getrennt: Blocking Findings
   oder blocking Plan-Warnings erhoehen nicht `counts.warnings`.
 - Tombstones bleiben Kandidaten; kein Hard Delete und kein Apply-Verhalten.
