@@ -35,10 +35,12 @@ def test_read_only_statements_are_allowed(statement: str, operation: str) -> Non
     [
         "SELECT * FROM orders",
         "SELECT * FROM governance_event",
+        "SELECT * FROM unknown_sensitive_table",
         "INFO FOR TABLE orders",
+        "INFO FOR TABLE unknown_sensitive_table",
     ],
 )
-def test_forbidden_tables_are_blocked_with_config(statement: str) -> None:
+def test_forbidden_or_unknown_tables_are_blocked_with_config(statement: str) -> None:
     config = load_config(EXAMPLE_CONFIG)
 
     with pytest.raises(WriteDeniedError):
@@ -53,6 +55,10 @@ def test_allowed_table_remains_allowed_with_config() -> None:
 
     assert result.allowed is True
     assert result.operation == "SELECT"
+
+    info_result = classify_statement("INFO FOR TABLE doc_chunk", config=config)
+    assert info_result.allowed is True
+    assert info_result.operation == "INFO FOR TABLE"
 
 
 @pytest.mark.unit

@@ -158,9 +158,15 @@ def test_mode_surrealdb_apply_must_be_forbidden(tmp_path: Path) -> None:
         "secret",
         "credential",
         "db_password",
+        "db-password",
+        "client.secret",
         "access_token",
+        "accessToken",
         "client_secret",
+        "clientSecret",
         "credential_file",
+        "credentialFile",
+        "apiKey",
     ],
 )
 def test_secret_fields_are_rejected(tmp_path: Path, field: str) -> None:

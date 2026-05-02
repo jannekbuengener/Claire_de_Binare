@@ -73,6 +73,7 @@ GOVERNANCE_MIRROR_TABLES = frozenset(
 FORBIDDEN_CONTEXT_QUERY_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLES
 
 SECRET_FIELD_NAMES = frozenset({"password", "token", "api_key", "secret", "credential"})
+SECRET_FIELD_SEGMENTS = frozenset({"password", "token", "api", "key", "secret", "credential"})
 
 DENIED_KEYWORDS = frozenset(
     {
@@ -256,10 +257,8 @@ def _find_secret_fields(value: Any, *, prefix: str = "") -> list[str]:
         for raw_key, raw_item in value.items():
             key = str(raw_key)
             path = f"{prefix}.{key}" if prefix else key
-            key_segments = {segment for segment in key.lower().split("_") if segment}
-            if key.lower() in SECRET_FIELD_NAMES or key_segments.intersection(
-                SECRET_FIELD_NAMES
-            ):
+            key_segments = _secret_key_segments(key)
+            if key.lower() in SECRET_FIELD_NAMES or key_segments.intersection(SECRET_FIELD_SEGMENTS):
                 findings.append(path)
             findings.extend(_find_secret_fields(raw_item, prefix=path))
     elif isinstance(value, list):
@@ -376,25 +375,46 @@ def _normalize_statement(statement: str) -> str:
     return re.sub(r"\s+", " ", statement.strip()).upper()
 
 
+def _secret_key_segments(key: str) -> set[str]:
+    separated = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+    return {segment for segment in re.split(r"[_\-.]+", separated.lower()) if segment}
+
+
 def _statement_tokens(normalized: str) -> set[str]:
     return set(re.findall(r"[A-Z_][A-Z0-9_]*", normalized))
 
 
-def _enforce_forbidden_table_tokens(
-    normalized: str, config: ContextQueryConfig | None
-) -> None:
+def _extract_direct_table_references(normalized: str) -> set[str]:
+    refs: set[str] = set()
+    refs.update(re.findall(r"\bFROM\s+([A-Z_][A-Z0-9_]*)\b", normalized))
+    refs.update(re.findall(r"\bINFO\s+FOR\s+TABLE\s+([A-Z_][A-Z0-9_]*)\b", normalized))
+    return refs
+
+
+def _enforce_table_policy_tokens(normalized: str, config: ContextQueryConfig | None) -> None:
     if config is None:
         return
 
     # v0 uses conservative token-based forbidden table detection; this is not
     # a SurrealQL parser and intentionally fails closed for direct table tokens.
-    tokens = _statement_tokens(normalized)
+    table_refs = _extract_direct_table_references(normalized)
+    if not table_refs:
+        table_refs = _statement_tokens(normalized)
+    allowed_tables = {table.upper() for table in config.allowed_tables}
+    forbidden_tables = {table.upper() for table in config.forbidden_tables}
     forbidden_hits = sorted(
-        table for table in config.forbidden_tables if table.upper() in tokens
+        table for table in config.forbidden_tables if table.upper() in table_refs
     )
     if forbidden_hits:
         raise WriteDeniedError(
             "statement references forbidden table(s): " f"{forbidden_hits}"
+        )
+    unknown_hits = sorted(
+        table for table in table_refs if table not in allowed_tables and table not in forbidden_tables
+    )
+    if unknown_hits:
+        raise WriteDeniedError(
+            "statement references table(s) outside allowed_tables: " f"{unknown_hits}"
         )
 
 
@@ -423,7 +443,7 @@ def classify_statement(
 
     for prefix in ALLOWED_PREFIXES:
         if normalized == prefix or normalized.startswith(f"{prefix} "):
-            _enforce_forbidden_table_tokens(normalized, config)
+            _enforce_table_policy_tokens(normalized, config)
             return StatementClassification(
                 statement=statement,
                 normalized=normalized,
