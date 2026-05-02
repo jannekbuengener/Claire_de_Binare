@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from tools.surrealdb.context_query import WriteDeniedError, classify_statement
+from tools.surrealdb.context_query import WriteDeniedError, classify_statement, load_config
+
+
+EXAMPLE_CONFIG = Path("infrastructure/config/surrealdb/context_query.local.example.yaml")
 
 
 @pytest.mark.unit
@@ -22,6 +27,32 @@ def test_read_only_statements_are_allowed(statement: str, operation: str) -> Non
 
     assert result.allowed is True
     assert result.operation == operation
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "SELECT * FROM orders",
+        "SELECT * FROM governance_event",
+        "INFO FOR TABLE orders",
+    ],
+)
+def test_forbidden_tables_are_blocked_with_config(statement: str) -> None:
+    config = load_config(EXAMPLE_CONFIG)
+
+    with pytest.raises(WriteDeniedError):
+        classify_statement(statement, config=config)
+
+
+@pytest.mark.unit
+def test_allowed_table_remains_allowed_with_config() -> None:
+    config = load_config(EXAMPLE_CONFIG)
+
+    result = classify_statement("SELECT * FROM doc_chunk", config=config)
+
+    assert result.allowed is True
+    assert result.operation == "SELECT"
 
 
 @pytest.mark.unit

@@ -63,6 +63,24 @@ def test_classify_select_exits_zero(capsys) -> None:
 
 
 @pytest.mark.unit
+def test_classify_forbidden_table_exits_write_denied(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "classify",
+            "--statement",
+            "SELECT * FROM orders",
+        ]
+    )
+
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+    assert "forbidden table" in payload["message"]
+
+
+@pytest.mark.unit
 def test_classify_delete_exits_write_denied(capsys) -> None:
     exit_code = main(
         [

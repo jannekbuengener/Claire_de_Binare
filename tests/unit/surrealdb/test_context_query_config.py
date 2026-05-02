@@ -149,7 +149,20 @@ def test_mode_surrealdb_apply_must_be_forbidden(tmp_path: Path) -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("field", ["password", "token", "api_key", "secret", "credential"])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "password",
+        "token",
+        "api_key",
+        "secret",
+        "credential",
+        "db_password",
+        "access_token",
+        "client_secret",
+        "credential_file",
+    ],
+)
 def test_secret_fields_are_rejected(tmp_path: Path, field: str) -> None:
     path = _write_config(tmp_path, _valid_config(extra=f"{field}: nope\n"))
 

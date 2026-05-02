@@ -208,8 +208,11 @@ class NoopQueryAdapter:
 
     status = "noop-no-network"
 
+    def __init__(self, config: ContextQueryConfig | None = None) -> None:
+        self.config = config
+
     def classify(self, statement: str) -> StatementClassification:
-        return classify_statement(statement)
+        return classify_statement(statement, config=self.config)
 
 
 def _require_mapping(value: Any, *, path: Path | None = None) -> Mapping[str, Any]:
@@ -253,7 +256,10 @@ def _find_secret_fields(value: Any, *, prefix: str = "") -> list[str]:
         for raw_key, raw_item in value.items():
             key = str(raw_key)
             path = f"{prefix}.{key}" if prefix else key
-            if key.lower() in SECRET_FIELD_NAMES:
+            key_segments = {segment for segment in key.lower().split("_") if segment}
+            if key.lower() in SECRET_FIELD_NAMES or key_segments.intersection(
+                SECRET_FIELD_NAMES
+            ):
                 findings.append(path)
             findings.extend(_find_secret_fields(raw_item, prefix=path))
     elif isinstance(value, list):
@@ -370,7 +376,31 @@ def _normalize_statement(statement: str) -> str:
     return re.sub(r"\s+", " ", statement.strip()).upper()
 
 
-def classify_statement(statement: str) -> StatementClassification:
+def _statement_tokens(normalized: str) -> set[str]:
+    return set(re.findall(r"[A-Z_][A-Z0-9_]*", normalized))
+
+
+def _enforce_forbidden_table_tokens(
+    normalized: str, config: ContextQueryConfig | None
+) -> None:
+    if config is None:
+        return
+
+    # v0 uses conservative token-based forbidden table detection; this is not
+    # a SurrealQL parser and intentionally fails closed for direct table tokens.
+    tokens = _statement_tokens(normalized)
+    forbidden_hits = sorted(
+        table for table in config.forbidden_tables if table.upper() in tokens
+    )
+    if forbidden_hits:
+        raise WriteDeniedError(
+            "statement references forbidden table(s): " f"{forbidden_hits}"
+        )
+
+
+def classify_statement(
+    statement: str, config: ContextQueryConfig | None = None
+) -> StatementClassification:
     """Classify a SurrealQL statement as allowed read-only or denied."""
 
     normalized = _normalize_statement(statement)
@@ -393,6 +423,7 @@ def classify_statement(statement: str) -> StatementClassification:
 
     for prefix in ALLOWED_PREFIXES:
         if normalized == prefix or normalized.startswith(f"{prefix} "):
+            _enforce_forbidden_table_tokens(normalized, config)
             return StatementClassification(
                 statement=statement,
                 normalized=normalized,
@@ -498,7 +529,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     if config is not None and args.limit is not None and args.limit > config.max_limit_hard:
         raise ConfigValidationError("--limit may not exceed max_limit_hard from config")
 
-    adapter = NoopQueryAdapter()
+    adapter = NoopQueryAdapter(config=config)
     classification = adapter.classify(args.statement)
     return (
         {
