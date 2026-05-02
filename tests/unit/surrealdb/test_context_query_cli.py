@@ -1,0 +1,109 @@
+"""CLI smoke tests for Context Query scaffold (#2080)."""
+
+from __future__ import annotations
+
+import json
+import socket
+
+import pytest
+
+from tools.surrealdb.context_query import (
+    EXIT_INPUT_NOT_FOUND,
+    EXIT_OK,
+    EXIT_USAGE_ERROR,
+    EXIT_WRITE_DENIED,
+    main,
+)
+
+
+EXAMPLE_CONFIG = "infrastructure/config/surrealdb/context_query.local.example.yaml"
+
+
+def _read_json(capsys) -> dict:
+    out = capsys.readouterr().out.strip()
+    return json.loads(out)
+
+
+@pytest.mark.unit
+def test_help_exits_zero(capsys) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--help"])
+
+    assert excinfo.value.code == 0
+    assert "context_query" in capsys.readouterr().out
+
+
+@pytest.mark.unit
+def test_classify_requires_config(capsys) -> None:
+    exit_code = main(["classify", "--statement", "SELECT * FROM doc_chunk"])
+
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+    assert "--config is required" in payload["message"]
+
+
+@pytest.mark.unit
+def test_classify_select_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "classify",
+            "--statement",
+            "SELECT * FROM doc_chunk",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["surrealdb_connection"] == "noop-no-network"
+    assert payload["classification"]["operation"] == "SELECT"
+
+
+@pytest.mark.unit
+def test_classify_delete_exits_write_denied(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "classify",
+            "--statement",
+            "DELETE doc_chunk",
+        ]
+    )
+
+    assert exit_code == EXIT_WRITE_DENIED
+    payload = _read_json(capsys)
+    assert payload["error"] == "WRITE_DENIED"
+
+
+@pytest.mark.unit
+def test_unsupported_format_exits_argparse_usage_error() -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--format", "xml", "classify", "--statement", "SELECT * FROM doc_chunk"])
+
+    assert excinfo.value.code == EXIT_USAGE_ERROR
+
+
+@pytest.mark.unit
+def test_no_network_socket_is_used(monkeypatch, capsys) -> None:
+    def _boom(*args, **kwargs):  # pragma: no cover - safety net
+        raise AssertionError("context_query must not open network sockets")
+
+    monkeypatch.setattr(socket.socket, "connect", _boom)
+    monkeypatch.setattr(socket.socket, "connect_ex", _boom)
+
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "classify",
+            "--statement",
+            "INFO FOR TABLE doc_chunk",
+        ]
+    )
+
+    assert exit_code == EXIT_OK
+    assert _read_json(capsys)["surrealdb_connection"] == "noop-no-network"
