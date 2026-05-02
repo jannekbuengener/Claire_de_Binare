@@ -1,0 +1,153 @@
+# context_query.local.example.yaml
+#
+# Example / template configuration for the local SurrealDB Context
+# Intelligence read-only query layer (tools/surrealdb/context_query.py,
+# issue #2080).
+#
+# This file is an EXAMPLE ONLY. It MUST NOT contain real secrets,
+# real production URLs, or any trading-state or governance-mirror table
+# names under `allowed_tables`. Such tables may appear only under
+# `forbidden_tables` as explicit fail-closed guardrails.
+# Copy this file to `context_query.local.yaml` (gitignored) and
+# fill in local values for development use.
+#
+# Source authority:
+#   issue:      #2081 (Context Query: read-only connection config)
+#   parent:     #2079
+#   epic:       #1976
+#   depends-on: #2069
+#
+# Guardrails:
+#   - This file is an EXAMPLE / TEMPLATE. No real credentials, no
+#     production SurrealDB URLs, no trading-state data.
+#   - The Context Intelligence DB is SEPARATE from the Governance Mirror.
+#     Governance Mirror tables (governance_event, governance_decision,
+#     governance_state) MUST NOT appear in `allowed_tables` and MUST be
+#     listed under `forbidden_tables`.
+#   - Trading-state tables (orders, fills, positions, balances, pnl,
+#     risk_state, execution_state) MUST NOT appear in `allowed_tables`
+#     and MUST be listed under `forbidden_tables`.
+#   - `read_only` MUST remain true. This is not an override-able flag;
+#     the query layer enforces read-only at the statement-classifier level
+#     independently of this config.
+#   - Live-readiness verdict for this surface: NO-GO.
+#   - Board stage trade-capable is orthogonal to LR and does NOT authorize
+#     any live-capital or Echtgeld operation via this surface.
+
+schema_version: context-query-local/v0
+
+source_document:
+  authority:
+    issue: "#2081"
+    role: "context-query-local-config-example"
+  issue_refs:
+    epic: "#1976"
+    parent: "#2079"
+    target: "#2081"
+    dependencies:
+      - "#2069"
+    deferred: []
+
+mode:
+  surrealdb_apply: forbidden
+  surrealdb_write: forbidden
+  live_readiness_verdict: NO-GO
+  human_gate_required: true
+  read_only: true
+
+# ---------------------------------------------------------------------------
+# SurrealDB connection (LOCAL DEV PLACEHOLDERS ONLY)
+# ---------------------------------------------------------------------------
+# Replace with values from your local dev SurrealDB instance.
+# Do NOT point this at a production or shared environment.
+surreal_url: "ws://127.0.0.1:8000/rpc"
+namespace: "cdb_context_local"
+database: "cdb_context_intel"
+
+# Authentication mode for the local query layer.
+# Allowed values: "none" | "root" | "scope"
+# For the example/template, we default to "none" because no real
+# credentials may be embedded here. Real credentials must be loaded
+# from SECRETS_PATH at runtime, never from this YAML.
+auth_mode: "none"
+
+# Connection timeout in seconds.
+timeout: 10
+
+# ---------------------------------------------------------------------------
+# Read-only enforcement
+# ---------------------------------------------------------------------------
+# MUST remain true. The query CLI also enforces this at the statement-
+# classifier boundary independently of this flag.
+read_only: true
+
+# ---------------------------------------------------------------------------
+# Query limits
+# ---------------------------------------------------------------------------
+# max_limit_default: applied to queries that do not specify LIMIT explicitly.
+# max_limit_hard:    ceiling that the CLI refuses to exceed regardless of
+#                    caller-supplied --limit values.
+max_limit_default: 100
+max_limit_hard: 1000
+
+# ---------------------------------------------------------------------------
+# Table allow/deny lists
+# ---------------------------------------------------------------------------
+# Only Context Intelligence tables may appear under `allowed_tables`.
+# Trading-state tables and Governance Mirror tables are explicitly forbidden
+# and listed under `forbidden_tables` so the config loader can fail-closed
+# if they are ever accidentally moved into `allowed_tables`.
+#
+# Table names match TABLE_BY_ARTIFACT in tools/surrealdb/context_importer.py.
+
+allowed_tables:
+  - repo_artifact
+  - doc_page
+  - doc_section
+  - doc_chunk
+  - code_symbol
+  - import_reference
+  - test_case
+  - config_reference
+  - doc_code_link
+  - dependency_edge
+
+forbidden_tables:
+  # Trading-state tables -- never allowed in the Context Intelligence DB.
+  - orders
+  - fills
+  - positions
+  - balances
+  - pnl
+  - risk_state
+  - execution_state
+  # Governance Mirror tables -- separate surface, not this query layer.
+  - governance_event
+  - governance_decision
+  - governance_state
+
+# ---------------------------------------------------------------------------
+# Statement allow / deny contract (read-only boundary)
+# ---------------------------------------------------------------------------
+# This section is documentation-only for v0. The query CLI enforces these
+# rules at the statement-classifier level; this config documents the
+# intended contract for human reviewers and future loader validation.
+#
+# ALLOWED (read-only):
+#   SELECT             -- core retrieval operation
+#   INFO FOR DB        -- database metadata inspection
+#   INFO FOR TABLE     -- table metadata inspection
+#   INFO FOR NS        -- namespace metadata inspection (controlled)
+#
+# DENIED (all write, schema-modify, live, and control-flow operations):
+#   CREATE, INSERT, UPDATE, UPSERT, DELETE, RELATE, MERGE, PATCH
+#   DEFINE, REMOVE, ALTER
+#   LIVE, KILL
+#   USE, BEGIN, COMMIT, CANCEL
+#   EXPLAIN                   -- deferred to v1 after explicit SurrealQL review
+#   SHOW CHANGES              -- deferred to v1
+#   INFO FOR ROOT             -- deferred to v1
+#   raw multi-statement       -- semicolon-separated batches, transaction blocks
+#   transaction/migration/apply flows
+#   repo/GitHub/runtime side effects
+#   Memory-Write
