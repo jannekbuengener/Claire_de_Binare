@@ -3,7 +3,7 @@
 **Issue**: #2032
 **Epic**: #1976
 **Wave**: 20 (#2188–#2196)
-**Status**: Canonical (Kriterienkatalog gelandet)
+**Status**: Proposed criteria catalog / pending PR merge
 **Guardrail**: Agent OS Ready != Live Readiness; LR bleibt NO-GO.
 
 ---
@@ -266,6 +266,11 @@ Human-GO ist eine **explizite, dokumentierte Entscheidung**, keine implizite Ann
 - ❌ #2188 OPEN: Wave-20 Anchor
 - ❌ #2196 OPEN: Completion Gates
 
+**Issue-Status-Hinweis**: Dieses Dokument definiert den Kriterienkatalog für #2032.
+#2032 bleibt bis zum Merge und anschließendem Reconciliation/Close offen. Nach Merge
+dieses PR kann #2032 reconciled und geschlossen werden. #2191 (Evaluator) bleibt
+separater Scope und wird durch diesen Kriterienkatalog nicht abgeschlossen.
+
 **Ergebnis**: Nicht `agent_os_ready`. Die fundamentalen Implementierungswellen 8–14
 sind noch nicht gelandet. Self-Explanation ist der einzige Teilbereich von Wave 20,
 der bereits geschlossen ist.
@@ -331,8 +336,9 @@ Diese Abgrenzung ist **kategorisch** und darf nicht aufgeweicht werden:
 |-----------|---------------|----------------|
 | **Zuständigkeit** | Context Intelligence System | Trading Runtime |
 | **SSOT** | Dieses Dokument + Evaluator #2191 | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` |
-| **Autorisiert** | Agent-Kontextzugriff (read-only) | Echtgeld-Trading (mit Human Gate) |
-| **Autorisiert nicht** | Live-Trading, Echtgeld, Risiko-Freigabe | — |
+| **Signalisiert** | Technische Kontext-/Agentenfähigkeit des CIS (read-only) | — |
+| **Autorisiert** | Keine Aktion. Kein Write, kein Runtime-Mutate, kein DB-Mutate. | — |
+| **Echtgeld-Freigabe** | Wird **nicht** erteilt. Bleibt separaten LR- und Human-Gate-Prozessen vorbehalten. | Wird **nicht allein** durch Live Readiness erteilt. Erfordert zusätzlich explizites Human-GO. |
 | **Aktueller Status** | Nicht erreicht (Kriterien definiert) | NO-GO |
 | **Board-Stage** | Orthogonal | Orthogonal |
 
