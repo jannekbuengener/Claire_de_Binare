@@ -73,3 +73,5 @@ Postgres ist der Canon fuer Runtime-Daten; SurrealDB ist eine optionale Mirror-S
 - Operational & Handoff:
   - [docs/surrealdb/context-agent-handoff.md](../surrealdb/context-agent-handoff.md)
   - [docs/surrealdb/context-wave7-completion-gates.md](../surrealdb/context-wave7-completion-gates.md)
+  - [docs/runbooks/surrealdb_context_import.md](../runbooks/surrealdb_context_import.md)
+  - [docs/runbooks/surrealdb_context_query.md](../runbooks/surrealdb_context_query.md)
