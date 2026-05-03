@@ -19,6 +19,79 @@ from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 logger = logging.getLogger(__name__)
 
 
+def context_search_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.search tool.
+
+    Uses mocked NoopQueryAdapter (no live DB/network).
+    Fails closed on invalid inputs.
+    """
+    # Validate required query
+    query = kwargs.get("query")
+    if not query or not isinstance(query, str) or not query.strip():
+        return {
+            "tool": "context.search",
+            "status": "error",
+            "error": {
+                "code": "invalid_query",
+                "message": "query is required and must be a non-empty string",
+            },
+        }
+
+    # Validate limit
+    limit = kwargs.get("limit", 10)
+    if not isinstance(limit, int) or limit <= 0:
+        limit = 10
+
+    # Validate filters
+    filters = kwargs.get("filters", {})
+    if not isinstance(filters, dict):
+        filters = {}
+
+    # Use mocked NoopQueryAdapter (no live DB/network)
+    from tools.surrealdb.context_query import NoopQueryAdapter
+
+    adapter = NoopQueryAdapter()
+    # Mocked execution: returns empty results (override in tests)
+    try:
+        raw_results = adapter.execute(query)
+    except Exception as e:
+        logger.error(f"Search query failed: {e}")
+        return {
+            "tool": "context.search",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+    # Format results to match contract
+    results = []
+    for item in raw_results[:limit]:
+        results.append(
+            {
+                "id": item.get("id", ""),
+                "type": item.get("type", "unknown"),
+                "title": item.get("title", ""),
+                "summary": item.get("summary", ""),
+                "source_ref": item.get("source_ref", ""),
+                "confidence": item.get("confidence", 0.0),
+                "warnings": item.get("warnings", []),
+            }
+        )
+
+    return {
+        "tool": "context.search",
+        "status": "ok",
+        "results": results,
+        "metadata": {
+            "query_time_ms": 0,
+            "total_hits": len(results),
+        },
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -38,6 +111,18 @@ class ContextBridge:
 
     def __init__(self) -> None:
         self._registry = ContextToolRegistry
+        # Replace scaffold handler with real implementation
+        old_tool = self._registry.get_tool("context.search")
+        if old_tool:
+            new_tool = ToolDefinition(
+                name=old_tool.name,
+                description=old_tool.description,
+                input_schema=old_tool.input_schema,
+                output_schema=old_tool.output_schema,
+                read_only=old_tool.read_only,
+                handler=context_search_handler,
+            )
+            self._registry._tools["context.search"] = new_tool
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )

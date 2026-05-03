@@ -39,6 +39,52 @@ class TestContextToolRegistry:
         assert tool.name == "context.search"
         assert "query" in tool.input_schema.get("properties", {})
 
+
+class TestContextSearchHandler:
+    """Tests for context.search tool handler."""
+
+    def test_missing_query_returns_error(self) -> None:
+        """Empty/missing query fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_query"
+
+    def test_empty_query_returns_error(self) -> None:
+        """Empty string query fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", {"query": ""})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_query"
+
+    def test_valid_query_returns_ok(self) -> None:
+        """Valid query returns ok status with empty results (mocked)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", {"query": "test"})
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.search"
+        assert "results" in result
+        assert "metadata" in result
+
+    def test_limit_is_respected(self) -> None:
+        """Limit parameter is accepted (mocked adapter returns empty)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", {"query": "test", "limit": 5})
+        assert result["status"] == "ok"
+        assert result["metadata"]["total_hits"] == 0
+
+    def test_filters_are_accepted(self) -> None:
+        """Filters parameter is accepted without error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.search",
+            {
+                "query": "test",
+                "filters": {"source_types": ["decision"], "date_from": "2026-01-01"},
+            },
+        )
+        assert result["status"] == "ok"
+
     def test_unknown_tool_returns_none(self) -> None:
         """Verify unknown tool returns None."""
         tool = ContextToolRegistry.get_tool("context.nonexistent")
@@ -78,7 +124,7 @@ class TestContextBridge:
     def test_execute_not_implemented_tool(self) -> None:
         """Verify executing stub tool returns not_implemented error."""
         bridge = ContextBridge()
-        result = bridge.execute_tool("context.search", {"query": "test"})
+        result = bridge.execute_tool("context.trace", {"target_id": "test"})
         assert result["status"] == "error"
         assert result["error"]["code"] == "not_implemented"
 
