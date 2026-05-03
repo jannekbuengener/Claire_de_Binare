@@ -239,6 +239,69 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("context.readiness"),
     ),
+    ToolDefinition(
+        name="context.self_explain",
+        description="Generate a structured self-explanation for governance-relevant conditions. Read-only, no action authorization, no Live-Go, no Echtgeld-Go.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": "The question or condition to explain.",
+                },
+                "explanation_type": {
+                    "type": "string",
+                    "enum": [
+                        "why_blocked",
+                        "why_risky",
+                        "why_stale",
+                        "why_decision_current",
+                        "why_decision_superseded",
+                        "why_scope_blocked",
+                        "why_evidence_weak",
+                        "why_agent_needs_go",
+                        "why_doc_untrusted",
+                    ],
+                },
+                "scope": {"type": "string"},
+                "evidence_refs": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 1,
+                },
+                "reasons": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+                "confidence": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                },
+                "recommended_next_reads": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                },
+            },
+            "required": ["question", "explanation_type", "evidence_refs"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "explanation": {"type": "object"},
+                "source_refs": {"type": "array"},
+                "evidence_refs": {"type": "array"},
+                "graph_path": {"type": "array"},
+                "confidence": {"type": "number"},
+                "recommended_next_reads": {"type": "array"},
+                "guardrails": {"type": "array"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("context.self_explain"),
+    ),
 ]
 
 

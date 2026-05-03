@@ -23,6 +23,7 @@ class TestContextToolRegistry:
             "context.show_audit",
             "context.package",
             "context.readiness",
+            "context.self_explain",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not registered"
@@ -223,10 +224,11 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        assert len(tools) == 7
+        assert len(tools) == 8
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
+        assert "context.self_explain" in tool_names
 
     def test_get_tool_schema(self) -> None:
         """Verify get_tool_schema returns schema."""
@@ -255,7 +257,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 7
+        assert len(status["read_only_tools"]) == 8
 
 
 class TestDefensiveSchemaCopies:
@@ -316,3 +318,233 @@ class TestDefensiveSchemaCopies:
         assert "new_field" not in schema_after["inputSchema"].get(
             "properties", {}
         ), "Registry schema should not be mutated by caller"
+
+
+class TestContextSelfExplainHandler:
+    """Tests for context.self_explain tool handler (#2190)."""
+
+    def test_tool_in_list_tools(self) -> None:
+        """Tool is visible in list_tools()."""
+        bridge = create_bridge()
+        tool_names = [t["name"] for t in bridge.list_tools()]
+        assert "context.self_explain" in tool_names
+
+    def test_tool_is_read_only(self) -> None:
+        """Tool is read-only."""
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("context.self_explain")
+        assert schema is not None
+        assert schema["readOnly"] is True
+
+    def test_schema_contains_required_fields(self) -> None:
+        """Input schema contains required fields."""
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("context.self_explain")
+        required = schema["inputSchema"]["required"]
+        assert "question" in required
+        assert "explanation_type" in required
+        assert "evidence_refs" in required
+
+    def test_valid_call_returns_ok(self) -> None:
+        """Valid call returns status ok with expected output fields."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Why is PR #1234 blocked?",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#1234", "#1235"],
+                "scope": "pr-merge",
+                "reasons": ["CI checks pending", "Review required"],
+                "confidence": 0.8,
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.self_explain"
+        assert "explanation" in result
+        assert "guardrails" in result
+        assert "evidence_refs" in result
+        assert result["explanation"]["explanation_type"] == "why_blocked"
+
+    def test_output_contains_guardrails(self) -> None:
+        """Output contains guardrail text from the builder."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test question",
+                "explanation_type": "why_risky",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "ok"
+        guardrails = result["guardrails"]
+        assert len(guardrails) >= 1
+        assert any("Handlungserlaubnis" in g for g in guardrails) or any(
+            "Freigabe" in g for g in guardrails
+        )
+
+    def test_output_contains_evidence_refs(self) -> None:
+        """Output contains evidence refs from input."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_stale",
+                "evidence_refs": ["#ev1", "#ev2"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert len(result["evidence_refs"]) == 2
+
+    def test_invalid_explanation_type_fail_closed(self) -> None:
+        """Invalid explanation_type fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "not_a_valid_type",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_explanation_type"
+
+    def test_empty_question_fail_closed(self) -> None:
+        """Empty question fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_question"
+
+    def test_missing_question_fail_closed(self) -> None:
+        """Missing question fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_question"
+
+    def test_empty_evidence_refs_fail_closed(self) -> None:
+        """Empty evidence_refs fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": [],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_evidence_refs"
+
+    def test_missing_evidence_refs_fail_closed(self) -> None:
+        """Missing evidence_refs fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_evidence_refs"
+
+    def test_confidence_range_ok(self) -> None:
+        """Confidence 0.0-1.0 is accepted."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_scope_blocked",
+                "evidence_refs": ["#test"],
+                "confidence": 0.95,
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["confidence"] == 0.95
+
+    def test_output_graph_path_present(self) -> None:
+        """Output contains graph_path field."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_decision_current",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert "graph_path" in result
+
+    def test_output_source_refs_present(self) -> None:
+        """Output contains source_refs field."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_evidence_weak",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert "source_refs" in result
+
+    def test_recommended_next_reads_present(self) -> None:
+        """Output contains recommended_next_reads from input."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_agent_needs_go",
+                "evidence_refs": ["#test"],
+                "recommended_next_reads": ["doc_a.md", "doc_b.md"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["recommended_next_reads"] == ["doc_a.md", "doc_b.md"]
+
+    def test_all_nine_explanation_types_accepted(self) -> None:
+        """All nine supported explanation types yield ok."""
+        bridge = create_bridge()
+        types = [
+            "why_blocked",
+            "why_risky",
+            "why_stale",
+            "why_decision_current",
+            "why_decision_superseded",
+            "why_scope_blocked",
+            "why_evidence_weak",
+            "why_agent_needs_go",
+            "why_doc_untrusted",
+        ]
+        for expl_type in types:
+            result = bridge.execute_tool(
+                "context.self_explain",
+                {
+                    "question": f"Test for {expl_type}",
+                    "explanation_type": expl_type,
+                    "evidence_refs": ["#test"],
+                },
+            )
+            assert result["status"] == "ok", f"Failed for type: {expl_type}"

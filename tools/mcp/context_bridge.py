@@ -331,6 +331,155 @@ def context_package_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_self_explain_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.self_explain tool.
+
+    Generates a structured self-explanation for governance-relevant conditions
+    using the Self-Explanation Builder (#2189). No DB access, no network,
+    no MCP live write, no secrets.
+
+    Input:
+        question: str (required) — the question or condition to explain
+        explanation_type: str (required) — one of 9 supported types
+        scope: str (optional) — scope context identifier
+        evidence_refs: list[str] (required) — at least one non-empty reference
+        reasons: list[str] (optional) — derived from question if empty
+        confidence: float (optional) — 0.0–1.0
+        recommended_next_reads: list[str] (optional)
+
+    Output conforms to the context.self_explain contract:
+        tool, status, explanation, source_refs, evidence_refs,
+        graph_path, confidence, recommended_next_reads, guardrails
+    """
+    from tools.surrealdb.context_self_explanation import (
+        SelfExplanationError,
+        SelfExplanationInput,
+        build_self_explanation,
+        supported_explanation_types,
+    )
+
+    question = kwargs.get("question")
+    if not question or not isinstance(question, str) or not question.strip():
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": "invalid_question",
+                "message": "question is required and must be a non-empty string",
+            },
+        }
+
+    explanation_type = kwargs.get("explanation_type")
+    valid_types = supported_explanation_types()
+    if explanation_type not in valid_types:
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": "invalid_explanation_type",
+                "message": (
+                    f"explanation_type must be one of {sorted(valid_types)}, "
+                    f"got {explanation_type!r}"
+                ),
+            },
+        }
+
+    evidence_refs = kwargs.get("evidence_refs", [])
+    if (
+        not isinstance(evidence_refs, list)
+        or not evidence_refs
+        or not any(isinstance(r, str) and r.strip() for r in evidence_refs)
+    ):
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": "invalid_evidence_refs",
+                "message": (
+                    "evidence_refs is required and must be a non-empty list "
+                    "of non-empty strings"
+                ),
+            },
+        }
+
+    evidence_refs_clean = [r for r in evidence_refs if isinstance(r, str) and r.strip()]
+
+    scope = kwargs.get("scope")
+    scope_clean = scope.strip() if isinstance(scope, str) and scope.strip() else None
+    if scope_clean:
+        summary = f"[{scope_clean}] {question.strip()}"
+    else:
+        summary = question.strip()
+
+    reasons_raw = kwargs.get("reasons", [])
+    if not isinstance(reasons_raw, list) or not reasons_raw:
+        reasons_raw = [f"Selbsterklaerung angefordert fuer: {question.strip()}"]
+    reasons = tuple(
+        r if isinstance(r, str) and r.strip() else str(r)
+        for r in reasons_raw
+    )
+
+    confidence = kwargs.get("confidence")
+    if confidence is not None and not isinstance(confidence, (int, float)):
+        confidence = None
+    if confidence is not None and not (0.0 <= float(confidence) <= 1.0):
+        confidence = None
+    confidence_float = float(confidence) if confidence is not None else None
+
+    recommended_next_reads = kwargs.get("recommended_next_reads", [])
+    if not isinstance(recommended_next_reads, list):
+        recommended_next_reads = []
+
+    required_next_step = (
+        "Pruefe Kontext gegen aktuelle Canon-Evidenz und Governance-Regeln."
+    )
+
+    try:
+        inp = SelfExplanationInput(
+            explanation_type=explanation_type,
+            summary=summary,
+            reasons=reasons,
+            evidence_refs=tuple(evidence_refs_clean),
+            required_next_step=required_next_step,
+            confidence=confidence_float,
+            scope_context=scope_clean,
+        )
+        output = build_self_explanation(inp)
+        payload = output.to_payload()
+
+        return {
+            "tool": "context.self_explain",
+            "status": "ok",
+            "explanation": payload,
+            "source_refs": [],
+            "evidence_refs": list(output.evidence_refs),
+            "graph_path": [],
+            "confidence": output.confidence,
+            "recommended_next_reads": recommended_next_reads,
+            "guardrails": list(output.guardrails),
+        }
+    except SelfExplanationError as e:
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": e.code,
+                "message": e.message,
+            },
+        }
+    except Exception as e:
+        logger.exception("Self-explanation handler failed")
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -395,6 +544,17 @@ class ContextBridge:
                 handler=context_package_handler,
             )
             self._registry._tools["context.package"] = new_package
+        old_self_explain = self._registry.get_tool("context.self_explain")
+        if old_self_explain:
+            new_self_explain = ToolDefinition(
+                name=old_self_explain.name,
+                description=old_self_explain.description,
+                input_schema=old_self_explain.input_schema,
+                output_schema=old_self_explain.output_schema,
+                read_only=old_self_explain.read_only,
+                handler=context_self_explain_handler,
+            )
+            self._registry._tools["context.self_explain"] = new_self_explain
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
