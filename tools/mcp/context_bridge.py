@@ -155,6 +155,70 @@ def context_trace_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_explain_source_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.explain_source tool.
+
+    Explains provenance of a context source/evidence item.
+    Uses mocked responses (no live DB/network).
+    Fails closed on invalid inputs.
+    """
+    # Validate required source_ref
+    source_ref = kwargs.get("source_ref")
+    if not source_ref or not isinstance(source_ref, str) or not source_ref.strip():
+        return {
+            "tool": "context.explain_source",
+            "status": "error",
+            "error": {
+                "code": "invalid_source_ref",
+                "message": "source_ref is required and must be a non-empty string",
+            },
+        }
+
+    # Validate include_chain
+    include_chain = kwargs.get("include_chain", True)
+    if not isinstance(include_chain, bool):
+        include_chain = True
+
+    # Mocked explain result (no live DB/network)
+    mocked_explanation = {
+        "source_ref": source_ref,
+        "source_type": "evidence",
+        "provenance": {
+            "source_path": f"/mock/path/{source_ref}",
+            "hash": "mock_hash_123",
+            "commit": "mock_commit_456",
+            "run_id": "mock_run_789",
+            "import_audit_ref": "mock_audit_012",
+            "evidence_refs": ["mock_ev_1", "mock_ev_2"],
+        },
+        "source_refs": [
+            {"ref": "mock_audit_012", "type": "import_audit"},
+            {"ref": "mock_ev_1", "type": "evidence"},
+        ],
+        "confidence": 0.9,
+        "warnings": [],
+        "stale": False,
+        "tombstone": False,
+    }
+
+    if include_chain:
+        mocked_explanation["provenance"]["chain"] = [
+            {"level": 1, "ref": "mock_parent_1", "type": "derived"},
+            {"level": 2, "ref": "mock_parent_2", "type": "source"},
+        ]
+
+    return {
+        "tool": "context.explain_source",
+        "status": "ok",
+        "explanation": mocked_explanation,
+        "metadata": {
+            "explained_at": "2026-05-03T12:00:00Z",
+            "include_chain": include_chain,
+        },
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -197,6 +261,17 @@ class ContextBridge:
                 handler=context_trace_handler,
             )
             self._registry._tools["context.trace"] = new_trace
+        old_explain = self._registry.get_tool("context.explain_source")
+        if old_explain:
+            new_explain = ToolDefinition(
+                name=old_explain.name,
+                description=old_explain.description,
+                input_schema=old_explain.input_schema,
+                output_schema=old_explain.output_schema,
+                read_only=old_explain.read_only,
+                handler=context_explain_source_handler,
+            )
+            self._registry._tools["context.explain_source"] = new_explain
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )

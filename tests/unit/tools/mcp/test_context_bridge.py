@@ -139,6 +139,73 @@ class TestContextTraceHandler:
         assert result["trace"]["root"]["id"] == "evt_test"
 
 
+class TestContextExplainSourceHandler:
+    """Tests for context.explain_source tool handler."""
+
+    def test_missing_source_ref_returns_error(self) -> None:
+        """Empty/missing source_ref fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.explain_source", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_source_ref"
+
+    def test_empty_source_ref_returns_error(self) -> None:
+        """Empty string source_ref fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.explain_source", {"source_ref": ""})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_source_ref"
+
+    def test_valid_source_ref_returns_ok(self) -> None:
+        """Valid source_ref returns ok status with explanation (mocked)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "src_abc123"}
+        )
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.explain_source"
+        assert "explanation" in result
+        assert result["explanation"]["source_ref"] == "src_abc123"
+
+    def test_include_chain_default_true(self) -> None:
+        """include_chain defaults to True."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "src_abc123"}
+        )
+        assert result["status"] == "ok"
+        assert result["metadata"]["include_chain"] is True
+        assert "chain" in result["explanation"]["provenance"]
+
+    def test_include_chain_false(self) -> None:
+        """include_chain=False excludes chain."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "src_abc123", "include_chain": False},
+        )
+        assert result["status"] == "ok"
+        assert result["metadata"]["include_chain"] is False
+        assert "chain" not in result["explanation"]["provenance"]
+
+    def test_explanation_contains_required_fields(self) -> None:
+        """Explanation has all required fields per #2096."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "src_abc123"}
+        )
+        assert result["status"] == "ok"
+        expl = result["explanation"]
+        assert "source_ref" in expl
+        assert "source_type" in expl
+        assert "provenance" in expl
+        assert "source_refs" in expl
+        assert "confidence" in expl
+        assert "warnings" in expl
+        assert "stale" in expl
+        assert "tombstone" in expl
+
+
 class TestContextBridge:
     """Tests for the Context Bridge."""
 
@@ -172,7 +239,7 @@ class TestContextBridge:
     def test_execute_not_implemented_tool(self) -> None:
         """Verify executing stub tool returns not_implemented error."""
         bridge = ContextBridge()
-        result = bridge.execute_tool("context.explain_source", {"source_ref": "test"})
+        result = bridge.execute_tool("context.package", {"artifacts": []})
         assert result["status"] == "error"
         assert result["error"]["code"] == "not_implemented"
 
