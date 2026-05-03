@@ -362,14 +362,21 @@ When evidence is incomplete or unavailable:
 
 ## Source Attribution Requirements
 
-All package contents **must** include:
+Every content item must be attributable through the fields modeled for its content type. The specific attribution fields vary by content type:
 
-1. `source_ref` - Internal reference for audit trail
-2. `confidence` - From retrieval strategy
-3. `freshness` - Timestamp-based
-4. For memory: `trust_score` explicitly
+| Content Type | source_ref | confidence | freshness | Other |
+|--------------|:----------:|:----------:|:---------:|-------|
+| `artifacts` | Required | Required | Required | - |
+| `document_chunks` | Required | - | - | - |
+| `symbols` | - | - | - | `file_path` |
+| `graph_paths` | - | - | - | `path_id`, `nodes` |
+| `evidence_refs` | Required | - | - | `strength` |
+| `decisions` | - | - | - | `timestamp`, `agent` |
+| `memory_refs` | - | - | - | `trust_score` (Required) |
 
-No content may be included without attributable source.
+Aggregate confidence and freshness are represented by `confidence_summary` and `freshness_summary` at package level. If a content type does not model item-level confidence/freshness, validators must not require those fields at item level.
+
+**Important**: `dependency_paths` is a top-level package field and **MUST NOT** be nested under `contents`.
 
 ---
 
@@ -394,7 +401,7 @@ The Context Package builds on the Hybrid Retrieval Strategy:
 |-----------------|---------------|
 | Result objects | `contents.artifacts`, `contents.document_chunks` |
 | Ranking factors | `confidence_summary` calculation |
-| Graph paths | `contents.graph_paths` |
+| Graph paths | Top-level `dependency_paths` |
 | Evidence refs | `contents.evidence_refs` |
 | Decision history | `contents.decisions` |
 | Memory lookup | `contents.memory_refs` |
@@ -532,11 +539,11 @@ The tool contracts (#2017) define tools that USE packages.
   },
   "contents": {
     "artifacts": [...],
-    "dependency_paths": [
-      { "from": "signal", "to": "risk", "relationship": "affects" }
-    ],
     "evidence_refs": [...]
   },
+  "dependency_paths": [
+    { "from": "signal", "to": "risk", "relationship": "affects" }
+  ],
   "confidence_summary": { "overall": 0.78 }
 }
 ```
