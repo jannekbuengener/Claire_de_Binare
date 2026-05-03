@@ -423,12 +423,30 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
         summary = question.strip()
 
     reasons_raw = kwargs.get("reasons", [])
-    if not isinstance(reasons_raw, list) or not reasons_raw:
+    if reasons_raw and not isinstance(reasons_raw, list):
+        return {
+            "tool": "context.self_explain",
+            "status": "error",
+            "error": {
+                "code": "invalid_reasons",
+                "message": "reasons must be a list of non-empty strings",
+            },
+        }
+    if not reasons_raw:
         reasons_raw = [f"Selbsterklaerung angefordert fuer: {question.strip()}"]
-    reasons = tuple(
-        r if isinstance(r, str) and r.strip() else str(r)
-        for r in reasons_raw
-    )
+    reasons_clean: list[str] = []
+    for r in reasons_raw:
+        if not isinstance(r, str) or not r.strip():
+            return {
+                "tool": "context.self_explain",
+                "status": "error",
+                "error": {
+                    "code": "invalid_reasons",
+                    "message": "reasons must be a list of non-empty strings",
+                },
+            }
+        reasons_clean.append(r)
+    reasons = tuple(reasons_clean)
 
     confidence = kwargs.get("confidence")
     if confidence is not None:

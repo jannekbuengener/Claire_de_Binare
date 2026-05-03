@@ -651,3 +651,62 @@ class TestContextSelfExplainHandler:
         )
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_confidence"
+
+    def test_reasons_non_string_fail_closed(self) -> None:
+        """reasons containing non-string element fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "reasons": [42],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_reasons"
+
+    def test_reasons_whitespace_element_fail_closed(self) -> None:
+        """reasons containing whitespace-only string fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "reasons": ["valid", "   "],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_reasons"
+
+    def test_reasons_not_list_fail_closed(self) -> None:
+        """reasons as non-list fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "reasons": "not-list",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_reasons"
+
+    def test_reasons_missing_is_ok(self) -> None:
+        """Missing reasons is ok — default reason derived from question."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test with default reason",
+                "explanation_type": "why_stale",
+                "evidence_refs": ["#test"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert len(result["explanation"]["reasons"]) >= 1
