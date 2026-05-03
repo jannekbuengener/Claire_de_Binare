@@ -294,7 +294,7 @@ TOOLS_V0 = [
                 "source_refs": {"type": "array"},
                 "evidence_refs": {"type": "array"},
                 "graph_path": {"type": "array"},
-                "confidence": {"type": "number"},
+                "confidence": {"type": ["number", "null"]},
                 "recommended_next_reads": {"type": "array"},
                 "guardrails": {"type": "array"},
             },

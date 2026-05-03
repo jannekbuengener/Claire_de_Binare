@@ -386,11 +386,7 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
         }
 
     evidence_refs = kwargs.get("evidence_refs", [])
-    if (
-        not isinstance(evidence_refs, list)
-        or not evidence_refs
-        or not any(isinstance(r, str) and r.strip() for r in evidence_refs)
-    ):
+    if not isinstance(evidence_refs, list) or not evidence_refs:
         return {
             "tool": "context.self_explain",
             "status": "error",
@@ -403,7 +399,21 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
             },
         }
 
-    evidence_refs_clean = [r for r in evidence_refs if isinstance(r, str) and r.strip()]
+    evidence_refs_clean: list[str] = []
+    for r in evidence_refs:
+        if not isinstance(r, str) or not r.strip():
+            return {
+                "tool": "context.self_explain",
+                "status": "error",
+                "error": {
+                    "code": "invalid_evidence_refs",
+                    "message": (
+                        "evidence_refs is required and must be a non-empty list "
+                        "of non-empty strings"
+                    ),
+                },
+            }
+        evidence_refs_clean.append(r)
 
     scope = kwargs.get("scope")
     scope_clean = scope.strip() if isinstance(scope, str) and scope.strip() else None
@@ -421,11 +431,33 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
     )
 
     confidence = kwargs.get("confidence")
-    if confidence is not None and not isinstance(confidence, (int, float)):
-        confidence = None
-    if confidence is not None and not (0.0 <= float(confidence) <= 1.0):
-        confidence = None
-    confidence_float = float(confidence) if confidence is not None else None
+    if confidence is not None:
+        if not isinstance(confidence, (int, float)):
+            return {
+                "tool": "context.self_explain",
+                "status": "error",
+                "error": {
+                    "code": "invalid_confidence",
+                    "message": (
+                        "confidence must be a number between 0.0 and 1.0, "
+                        f"got {type(confidence).__name__}: {confidence!r}"
+                    ),
+                },
+            }
+        if not (0.0 <= float(confidence) <= 1.0):
+            return {
+                "tool": "context.self_explain",
+                "status": "error",
+                "error": {
+                    "code": "invalid_confidence",
+                    "message": (
+                        f"confidence must be between 0.0 and 1.0, got {confidence}"
+                    ),
+                },
+            }
+        confidence_float = float(confidence)
+    else:
+        confidence_float = None
 
     recommended_next_reads = kwargs.get("recommended_next_reads", [])
     if not isinstance(recommended_next_reads, list):

@@ -548,3 +548,76 @@ class TestContextSelfExplainHandler:
                 },
             )
             assert result["status"] == "ok", f"Failed for type: {expl_type}"
+
+    def test_evidence_refs_whitespace_element_fail_closed(self) -> None:
+        """evidence_refs containing whitespace-only string fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#ok", "   "],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_evidence_refs"
+
+    def test_evidence_refs_non_string_element_fail_closed(self) -> None:
+        """evidence_refs containing non-string element fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#ok", 123],
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_evidence_refs"
+
+    def test_confidence_string_fail_closed(self) -> None:
+        """Confidence as string fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "confidence": "0.9",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_confidence"
+
+    def test_confidence_out_of_range_fail_closed(self) -> None:
+        """Confidence > 1.0 fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "confidence": 1.5,
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_confidence"
+
+    def test_confidence_none_is_ok(self) -> None:
+        """Confidence=None yields ok with confidence: None in output."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_doc_untrusted",
+                "evidence_refs": ["#test"],
+                "confidence": None,
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["confidence"] is None
