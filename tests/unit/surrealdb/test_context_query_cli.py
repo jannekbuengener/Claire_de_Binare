@@ -11,6 +11,7 @@ from tools.surrealdb.context_query import (
     EXIT_INPUT_NOT_FOUND,
     EXIT_OK,
     EXIT_USAGE_ERROR,
+    EXIT_VALIDATION_ERROR,
     EXIT_WRITE_DENIED,
     main,
 )
@@ -405,3 +406,134 @@ def test_trace_text_format(capsys) -> None:
     out = capsys.readouterr().out
     assert "status: ok" in out
     assert "dependency_edge" in out
+
+
+@pytest.mark.unit
+def test_explain_source_requires_config(capsys) -> None:
+    exit_code = main(["explain-source", "--artifact-id", "test-artifact"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_explain_source_requires_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+        ]
+    )
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["error"] == "CONFIG_VALIDATION_ERROR"
+
+
+@pytest.mark.unit
+def test_explain_source_with_artifact_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+            "--artifact-id",
+            "artifact-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "explain-source"
+    assert "query" in payload
+    assert "repo_artifact" in payload["query"]
+
+
+@pytest.mark.unit
+def test_explain_source_with_chunk_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+            "--chunk-id",
+            "chunk-456",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "explain-source"
+
+
+@pytest.mark.unit
+def test_explain_source_with_symbol_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+            "--symbol-id",
+            "symbol-789",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "explain-source"
+
+
+@pytest.mark.unit
+def test_explain_source_multiple_ids_error(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+            "--artifact-id",
+            "artifact-123",
+            "--chunk-id",
+            "chunk-456",
+        ]
+    )
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert payload["error"] == "CONFIG_VALIDATION_ERROR"
+
+
+@pytest.mark.unit
+def test_explain_source_with_source_path(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "explain-source",
+            "--artifact-id",
+            "artifact-123",
+            "--source-path",
+            "src/",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "source_path" in payload["query"]
+
+
+@pytest.mark.unit
+def test_explain_source_text_format(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "--format",
+            "text",
+            "explain-source",
+            "--artifact-id",
+            "artifact-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "status: ok" in out
+    assert "repo_artifact" in out

@@ -644,6 +644,75 @@ def build_trace_query(
     return f"SELECT * FROM dependency_edge{where}{limit_str}"
 
 
+def build_explain_source_query(
+    artifact_id: str | None = None,
+    chunk_id: str | None = None,
+    symbol_id: str | None = None,
+    edge_id: str | None = None,
+    evidence_id: str | None = None,
+    decision_id: str | None = None,
+    source_path: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query to explain source/evidence for a context artifact.
+
+    This query traces the provenance of a context record by looking up its
+    source information from repo_artifact, doc_chunk, or code_symbol tables.
+
+    Only one of the ID parameters should be provided to identify the target.
+    """
+    id_conditions: list[str] = []
+    if artifact_id:
+        id_conditions.append(f"artifact_id = '{artifact_id}'")
+    if chunk_id:
+        id_conditions.append(f"chunk_id = '{chunk_id}'")
+    if symbol_id:
+        id_conditions.append(f"symbol_id = '{symbol_id}'")
+    if edge_id:
+        id_conditions.append(f"edge_id = '{edge_id}'")
+    if evidence_id:
+        id_conditions.append(f"evidence_id = '{evidence_id}'")
+    if decision_id:
+        id_conditions.append(f"decision_id = '{decision_id}'")
+
+    if (
+        len(
+            [
+                c
+                for c in [
+                    artifact_id,
+                    chunk_id,
+                    symbol_id,
+                    edge_id,
+                    evidence_id,
+                    decision_id,
+                ]
+                if c
+            ]
+        )
+        > 1
+    ):
+        raise ConfigValidationError(
+            "only one of artifact_id, chunk_id, symbol_id, edge_id, evidence_id, "
+            "or decision_id may be provided"
+        )
+
+    conditions: list[str] = []
+    if id_conditions:
+        id_clause = " OR ".join(id_conditions)
+        conditions.append(f"({id_clause})")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+
+    return f"SELECT artifact_id, chunk_id, symbol_id, edge_id, source_path, source_hash, source_commit, run_id, import_audit_ref, tombstoned FROM repo_artifact{where}{limit_str}"
+
+
 def _error_payload(exc: ContextQueryError) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -902,6 +971,78 @@ def handle_trace(
     }, EXIT_OK
 
 
+def handle_explain_source(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``explain-source`` subcommand."""
+    id_params = [
+        args.artifact_id,
+        args.chunk_id,
+        args.symbol_id,
+        args.edge_id,
+        args.evidence_id,
+        args.decision_id,
+    ]
+    provided_ids = [p for p in id_params if p]
+
+    if len(provided_ids) > 1:
+        raise ConfigValidationError(
+            "only one of --artifact-id, --chunk-id, --symbol-id, --edge-id, "
+            "--evidence-id, or --decision-id may be provided"
+        )
+    if not any(id_params):
+        raise ConfigValidationError(
+            "one of --artifact-id, --chunk-id, --symbol-id, --edge-id, "
+            "--evidence-id, or --decision-id is required"
+        )
+
+    query = build_explain_source_query(
+        artifact_id=args.artifact_id or None,
+        chunk_id=args.chunk_id or None,
+        symbol_id=args.symbol_id or None,
+        edge_id=args.edge_id or None,
+        evidence_id=args.evidence_id or None,
+        decision_id=args.decision_id or None,
+        source_path=args.source_path or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+
+    warnings: list[str] = []
+    if not results:
+        warnings.append("no source information found for the given identifier")
+    else:
+        for row in results:
+            if row.get("tombstoned"):
+                warnings.append(
+                    f"record is tombstoned: {row.get('artifact_id', row.get('chunk_id', row.get('symbol_id', 'unknown')))}"
+                )
+            if not row.get("source_hash"):
+                warnings.append(
+                    f"source_hash missing for: {row.get('artifact_id', 'unknown')}"
+                )
+            if not row.get("source_commit"):
+                warnings.append(
+                    f"source_commit missing for: {row.get('artifact_id', 'unknown')}"
+                )
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "explain-source",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+        "warnings": warnings if warnings else None,
+    }, EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="context_query",
@@ -1088,6 +1229,50 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include tombstoned records in results (default: hidden).",
     )
 
+    explain_source = subparsers.add_parser(
+        "explain-source",
+        help="Explain source/evidence for a context artifact (provenance trace).",
+    )
+    explain_source.add_argument(
+        "--artifact-id",
+        default=None,
+        help="Artifact ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--chunk-id",
+        default=None,
+        help="Chunk ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--symbol-id",
+        default=None,
+        help="Symbol ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--edge-id",
+        default=None,
+        help="Edge ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--evidence-id",
+        default=None,
+        help="Evidence ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--decision-id",
+        default=None,
+        help="Decision ID to explain source for.",
+    )
+    explain_source.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    explain_source.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
     return parser
 
 
@@ -1107,6 +1292,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "find-imports",
             "show-imports-for-artifact",
             "trace",
+            "explain-source",
         }
         and config is None
     ):
@@ -1151,6 +1337,8 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return handle_show_imports_for_artifact(args, config, adapter)
     if args.command == "trace":
         return handle_trace(args, config, adapter)
+    if args.command == "explain-source":
+        return handle_explain_source(args, config, adapter)
 
     raise ConfigValidationError(f"unknown command: {args.command}")
 
