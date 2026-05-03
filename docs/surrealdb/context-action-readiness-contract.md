@@ -1,7 +1,7 @@
 # Context Intelligence — Agent Action Readiness Contract
 
 **Issue**: [#2021](https://github.com/jannekbuengener/Claire_de_Binare/issues/2021)
-**Status**: Canonical
+**Status**: Proposed contract / pending PR merge
 **Date**: 2026-05-04
 **Epic**: [#1976](https://github.com/jannekbuengener/Claire_de_Binare/issues/1976)
 **Parent**: [#2014](https://github.com/jannekbuengener/Claire_de_Binare/issues/2014)
@@ -334,7 +334,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
 - `required_reads`: ["AGENTS.md", "agents/AGENTS.md", "services/ws/ws_client.py", "infrastructure/compose/compose.blue.yml"]
 - `evidence_refs`: ["#2042 (issue body)", "#2040 (evidence)"]
 - `impact_refs`: ["services/ws/", "infrastructure/compose/"]
-- `stop_conditions`: ["S3: ws_client.py not readable", "S7: trading impact detected"]
+- `stop_conditions`: ["S3: ws_client.py not readable"]
 - `uncertainties`: ["Timeout root cause not yet confirmed"]
 
 **Output:**
@@ -344,7 +344,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
   "reasons": ["Context Package present, required reads available, dry-run mode permits planning."],
   "required_next_reads": ["services/ws/ws_client.py", "infrastructure/compose/compose.blue.yml"],
   "human_go_required": false,
-  "stop_conditions": ["S3: ws_client.py not readable", "S7: trading impact detected"],
+  "stop_conditions": ["S3: ws_client.py not readable"],
   "missing_context": [],
   "missing_evidence": [],
   "scope_drift_findings": [],
@@ -395,7 +395,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
 - `evidence_refs`: []
 - `impact_refs`: ["services/signal/", "services/execution/", "infrastructure/compose/"]
 - `stop_conditions`: ["S8: LR claims"]
-- `uncertainties": ["Pipeline test coverage unknown"]
+- `uncertainties`: ["Pipeline test coverage unknown"]
 
 **Output:**
 ```json
@@ -424,8 +424,8 @@ Human-GO is scoped: approval for one action does not authorize any other action.
 - `required_reads`: ["AGENTS.md", "services/execution/order_handler.py", "tests/unit/execution/test_order_handler.py", "knowledge/contracts/TRACE_CONTRACT_V1.md"]
 - `evidence_refs`: ["#1983 (issue with reproduction steps)", "test run artifact run-12345"]
 - `impact_refs`: ["services/execution/order_handler.py", "services/risk/", "core/utils/"]
-- `stop_conditions": ["S7: execution scope touched", "S10: STOP in control surfaces"]
-- `uncertainties": ["Decimal rounding edge case under negative quantities"]
+- `stop_conditions`: ["S7: execution scope touched", "S10: STOP in control surfaces"]
+- `uncertainties`: ["Decimal rounding edge case under negative quantities"]
 
 **Output:**
 ```json
@@ -472,6 +472,7 @@ Contract self-consistency check:
 - Eight Human-GO rules defined ✓
 - Five example assessments provided ✓
 - Explicit boundary drawn: Readiness != Authorization ✓
+- #2021 remains open until this PR is merged and reconciled. ✓
 
 ---
 
@@ -508,7 +509,7 @@ Contract self-consistency check:
 | Board Stage | `docs/runbooks/CONTROL_REGISTER.md` | References; does not modify. |
 | Repo/Engineering Status | `CURRENT_STATUS.md` | References; does not modify. |
 | Live-Readiness | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` | References; does not modify. |
-| Action Readiness | This document (`docs/surrealdb/context-action-readiness-contract.md`) | **SSOT for agent action readiness.** |
+| Action Readiness | This document (`docs/surrealdb/context-action-readiness-contract.md`) | Proposed SSOT for agent action readiness after PR merge and #2021 close. |
 
 ---
 
