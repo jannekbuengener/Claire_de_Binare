@@ -73,7 +73,9 @@ GOVERNANCE_MIRROR_TABLES = frozenset(
 FORBIDDEN_CONTEXT_QUERY_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLES
 
 SECRET_FIELD_NAMES = frozenset({"password", "token", "api_key", "secret", "credential"})
-SECRET_FIELD_SEGMENTS = frozenset({"password", "token", "api", "key", "secret", "credential"})
+SECRET_FIELD_SEGMENTS = frozenset(
+    {"password", "token", "api", "key", "secret", "credential"}
+)
 
 DENIED_KEYWORDS = frozenset(
     {
@@ -141,7 +143,6 @@ class WriteDeniedError(ContextQueryError):
     exit_code = EXIT_WRITE_DENIED
 
 
-
 @dataclass(frozen=True)
 class ContextQueryConfig:
     """Validated local config for context query classification."""
@@ -204,16 +205,35 @@ class StatementClassification:
         }
 
 
-class NoopQueryAdapter:
-    """No-network query adapter placeholder for this scaffold."""
+class QueryAdapter:
+    """Base class for read-only SurrealDB query adapters.
 
-    status = "noop-no-network"
+    Subclasses must implement ``execute()`` to perform queries
+    and must never open write paths.
+    """
+
+    status = "adapter-base"
 
     def __init__(self, config: ContextQueryConfig | None = None) -> None:
         self.config = config
 
+    def execute(self, query: str) -> list[dict[str, Any]]:
+        """Execute a read-only SELECT query and return results."""
+        raise NotImplementedError
+
     def classify(self, statement: str) -> StatementClassification:
+        """Classify a statement through the v0 read-only guardrail."""
         return classify_statement(statement, config=self.config)
+
+
+class NoopQueryAdapter(QueryAdapter):
+    """No-network query adapter placeholder for this scaffold."""
+
+    status = "noop-no-network"
+
+    def execute(self, query: str) -> list[dict[str, Any]]:
+        """Return empty results; this adapter never contacts a database."""
+        return []
 
 
 def _require_mapping(value: Any, *, path: Path | None = None) -> Mapping[str, Any]:
@@ -258,7 +278,9 @@ def _find_secret_fields(value: Any, *, prefix: str = "") -> list[str]:
             key = str(raw_key)
             path = f"{prefix}.{key}" if prefix else key
             key_segments = _secret_key_segments(key)
-            if key.lower() in SECRET_FIELD_NAMES or key_segments.intersection(SECRET_FIELD_SEGMENTS):
+            if key.lower() in SECRET_FIELD_NAMES or key_segments.intersection(
+                SECRET_FIELD_SEGMENTS
+            ):
                 findings.append(path)
             findings.extend(_find_secret_fields(raw_item, prefix=path))
     elif isinstance(value, list):
@@ -391,7 +413,9 @@ def _extract_direct_table_references(normalized: str) -> set[str]:
     return refs
 
 
-def _enforce_table_policy_tokens(normalized: str, config: ContextQueryConfig | None) -> None:
+def _enforce_table_policy_tokens(
+    normalized: str, config: ContextQueryConfig | None
+) -> None:
     if config is None:
         return
 
@@ -410,7 +434,9 @@ def _enforce_table_policy_tokens(normalized: str, config: ContextQueryConfig | N
             "statement references forbidden table(s): " f"{forbidden_hits}"
         )
     unknown_hits = sorted(
-        table for table in table_refs if table not in allowed_tables and table not in forbidden_tables
+        table
+        for table in table_refs
+        if table not in allowed_tables and table not in forbidden_tables
     )
     if unknown_hits:
         raise WriteDeniedError(
@@ -455,6 +481,59 @@ def classify_statement(
     raise WriteDeniedError("statement is not in the v0 read-only allowlist")
 
 
+def build_artifact_query(
+    source_path: str | None = None,
+    file_type: str | None = None,
+    hash_value: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for the ``repo_artifact`` table.
+
+    All parameters are optional filters.  The query is built as a
+    ``SELECT * FROM repo_artifact WHERE ... LIMIT ...`` statement.
+    """
+    conditions: list[str] = []
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if file_type:
+        conditions.append(f"file_type = '{file_type}'")
+    if hash_value:
+        conditions.append(f"normalized_sha256 = '{hash_value}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM repo_artifact{where}{limit_str}"
+
+
+def build_doc_query(
+    query_text: str | None = None,
+    source_path: str | None = None,
+    heading: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for the ``doc_chunk`` table.
+
+    All parameters are optional filters.  The query is built as a
+    ``SELECT * FROM doc_chunk WHERE ... LIMIT ...`` statement.
+    """
+    conditions: list[str] = []
+    if query_text:
+        conditions.append(f"content CONTAINS '{query_text}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if heading:
+        # heading_path is an array; check if it contains the heading
+        conditions.append(f"heading_path CONTAINS '{heading}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM doc_chunk{where}{limit_str}"
+
+
 def _error_payload(exc: ContextQueryError) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -473,13 +552,24 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
             classification = payload["classification"]
             lines.append(f"operation: {classification['operation']}")
             lines.append(f"allowed: {classification['allowed']}")
+        if "query" in payload:
+            lines.append(f"query: {payload['query']}")
+        if "count" in payload:
+            lines.append(f"count: {payload['count']}")
+        if "results" in payload:
+            lines.append("results:")
+            for row in payload["results"][:20]:  # limit displayed results
+                lines.append(f"  - {row}")
         if "error" in payload:
             lines.append(f"error: {payload['error']}")
             lines.append(f"message: {payload.get('message', '')}")
-        lines.append(f"surrealdb_connection: {payload.get('surrealdb_connection', 'n/a')}")
+        lines.append(
+            f"surrealdb_connection: {payload.get('surrealdb_connection', 'n/a')}"
+        )
         return "\n".join(lines)
     if fmt == "markdown":
-        lines = ["# context_query: classify", f"- **status**: `{payload.get('status')}`"]
+        cmd = payload.get("command", "classify")
+        lines = [f"# context_query: {cmd}", f"- **status**: `{payload.get('status')}`"]
         if "classification" in payload:
             classification = payload["classification"]
             lines.extend(
@@ -489,6 +579,14 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
                     f"- **surrealdb_connection**: `{payload.get('surrealdb_connection')}`",
                 ]
             )
+        if "query" in payload:
+            lines.append(f"- **query**: `{payload['query']}`")
+        if "count" in payload:
+            lines.append(f"- **count**: `{payload['count']}`")
+        if "results" in payload:
+            lines.append("**results**:")
+            for row in payload["results"][:20]:
+                lines.append(f"  - `{row}`")
         if "error" in payload:
             lines.extend(
                 [
@@ -500,12 +598,66 @@ def _render(payload: dict[str, Any], fmt: str) -> str:
     raise UnsupportedFormatError(f"unsupported format: {fmt!r}")
 
 
+def handle_find_artifact(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``find-artifact`` subcommand."""
+    query = build_artifact_query(
+        source_path=args.source_path or None,
+        file_type=args.file_type or None,
+        hash_value=args.hash or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "find-artifact",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
+def handle_find_doc(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``find-doc`` subcommand."""
+    query = build_doc_query(
+        query_text=args.query or None,
+        source_path=args.source_path or None,
+        heading=args.heading or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "find-doc",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="context_query",
         description=(
-            "Context Query CLI scaffold (#2080). Read-only statement "
-            "classification only; no SurrealDB connection, no writes."
+            "Context Query CLI (#2080+). Read-only artifact/doc search "
+            "with statement classification guardrails."
         ),
     )
     parser.add_argument(
@@ -527,6 +679,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional query limit; validated against config hard limit when config is loaded.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+
     classify = subparsers.add_parser(
         "classify",
         help="Classify a SurrealQL statement without connecting to SurrealDB.",
@@ -536,34 +689,85 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Single SurrealQL statement to classify. Semicolons are denied in v0.",
     )
+
+    find_artifact = subparsers.add_parser(
+        "find-artifact",
+        help="Search repo_artifact table with read-only filters.",
+    )
+    find_artifact.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    find_artifact.add_argument("--file-type", default=None, help="Filter by file type.")
+    find_artifact.add_argument(
+        "--hash", default=None, help="Filter by normalized SHA-256 hash."
+    )
+    find_artifact.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    find_doc = subparsers.add_parser(
+        "find-doc",
+        help="Search doc_chunk table with read-only filters.",
+    )
+    find_doc.add_argument("--query", default=None, help="Filter by content substring.")
+    find_doc.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    find_doc.add_argument(
+        "--heading", default=None, help="Filter by heading path element."
+    )
+    find_doc.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
     return parser
 
 
 def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
-    if args.command == "classify" and args.config is None:
-        raise InputNotFoundError("--config is required for classify; no default config is searched")
+    config: ContextQueryConfig | None = None
+    if args.config is not None:
+        config = load_config(args.config)
 
-    config = load_config(args.config) if args.config is not None else None
-    if args.limit is not None and args.limit < 1:
-        raise ConfigValidationError("--limit must be >= 1")
-    if config is not None and args.limit is not None and args.limit > config.max_limit_hard:
-        raise ConfigValidationError("--limit may not exceed max_limit_hard from config")
+    if args.command in {"classify", "find-artifact", "find-doc"} and config is None:
+        raise InputNotFoundError(f"--config is required for {args.command}")
 
-    adapter = NoopQueryAdapter(config=config)
-    classification = adapter.classify(args.statement)
-    return (
-        {
-            "schema_version": SCHEMA_VERSION,
-            "command": args.command,
-            "status": "ok",
-            "surrealdb_connection": adapter.status,
-            "config_loaded": config is not None,
-            "config": config.to_payload() if config is not None else None,
-            "limit": args.limit,
-            "classification": classification.to_payload(),
-        },
-        EXIT_OK,
-    )
+    if config is not None:
+        if args.limit is not None and args.limit < 1:
+            raise ConfigValidationError("--limit must be >= 1")
+        if args.limit is not None and args.limit > config.max_limit_hard:
+            raise ConfigValidationError(
+                "--limit may not exceed max_limit_hard from config"
+            )
+
+    adapter: QueryAdapter = NoopQueryAdapter(config=config)
+
+    if args.command == "classify":
+        classification = adapter.classify(args.statement)
+        return (
+            {
+                "schema_version": SCHEMA_VERSION,
+                "command": args.command,
+                "status": "ok",
+                "surrealdb_connection": adapter.status,
+                "config_loaded": config is not None,
+                "config": config.to_payload() if config is not None else None,
+                "limit": args.limit,
+                "classification": classification.to_payload(),
+            },
+            EXIT_OK,
+        )
+    if args.command == "find-artifact":
+        return handle_find_artifact(args, config, adapter)
+    if args.command == "find-doc":
+        return handle_find_doc(args, config, adapter)
+
+    raise ConfigValidationError(f"unknown command: {args.command}")
 
 
 def main(argv: list[str] | None = None) -> int:
