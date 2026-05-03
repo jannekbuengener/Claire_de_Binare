@@ -240,3 +240,168 @@ def test_show_imports_for_artifact_exits_zero(capsys) -> None:
     payload = _read_json(capsys)
     assert payload["status"] == "ok"
     assert payload["command"] == "show-imports-for-artifact"
+
+
+@pytest.mark.unit
+def test_trace_requires_config(capsys) -> None:
+    exit_code = main(["trace", "--target-ref", "example"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_trace_exits_zero_with_target_ref(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "trace"
+    assert "query" in payload
+    assert "dependency_edge" in payload["query"]
+    assert payload["depth"] == 3
+
+
+@pytest.mark.unit
+def test_trace_with_depth_arg(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+            "--depth",
+            "5",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["depth"] == 5
+
+
+@pytest.mark.unit
+def test_trace_with_direction_upstream(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+            "--direction",
+            "upstream",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "depends_on" in payload["query"]
+
+
+@pytest.mark.unit
+def test_trace_with_direction_downstream(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+            "--direction",
+            "downstream",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "used_by" in payload["query"]
+
+
+@pytest.mark.unit
+def test_trace_with_filters(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+            "--source-path",
+            "src/",
+            "--symbol",
+            "MyClass",
+            "--edge-type",
+            "import",
+            "--confidence",
+            "high",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["count"] == 0
+
+
+@pytest.mark.unit
+def test_trace_with_limit(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "--limit",
+            "50",
+            "trace",
+            "--target-ref",
+            "example_module",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "LIMIT 50" in payload["query"]
+
+
+@pytest.mark.unit
+def test_trace_depth_validation_error(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "trace",
+            "--target-ref",
+            "example_module",
+            "--depth",
+            "15",
+        ]
+    )
+    assert exit_code == 1
+    payload = _read_json(capsys)
+    assert payload["error"] == "CONFIG_VALIDATION_ERROR"
+
+
+@pytest.mark.unit
+def test_trace_text_format(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "--format",
+            "text",
+            "trace",
+            "--target-ref",
+            "example_module",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "status: ok" in out
+    assert "dependency_edge" in out

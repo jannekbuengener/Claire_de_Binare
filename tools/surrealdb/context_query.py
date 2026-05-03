@@ -595,6 +595,55 @@ def build_import_query(
     return f"SELECT * FROM import_reference{where}{limit_str}"
 
 
+DEFAULT_TRACE_DEPTH = 3
+MAX_TRACE_DEPTH = 10
+
+
+def build_trace_query(
+    target_ref: str | None = None,
+    source_path: str | None = None,
+    symbol_name: str | None = None,
+    direction: str | None = None,
+    edge_type: str | None = None,
+    confidence: str | None = None,
+    depth: int | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for the ``dependency_edge`` table.
+
+    All parameters are optional filters. The query traces dependency edges
+    from a starting reference (artifact, symbol, or import).
+
+    Direction is one-way v0: if not specified, returns all edges from target.
+    If specified, filters to 'upstream' (dependencies) or 'downstream' (dependents).
+
+    Note: depth validation is performed in handle_trace; this builder focuses
+    on query construction only.
+    """
+    conditions: list[str] = []
+    if target_ref:
+        conditions.append(f"source_ref CONTAINS '{target_ref}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if symbol_name:
+        conditions.append(f"symbol_name CONTAINS '{symbol_name}'")
+    if direction == "upstream":
+        conditions.append("edge_type = 'depends_on'")
+    elif direction == "downstream":
+        conditions.append("edge_type = 'used_by'")
+    elif edge_type:
+        conditions.append(f"edge_type = '{edge_type}'")
+    if confidence:
+        conditions.append(f"confidence = '{confidence}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM dependency_edge{where}{limit_str}"
+
+
 def _error_payload(exc: ContextQueryError) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -817,6 +866,42 @@ def handle_show_imports_for_artifact(
     }, EXIT_OK
 
 
+def handle_trace(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``trace`` subcommand."""
+    if args.depth is not None and (args.depth < 1 or args.depth > MAX_TRACE_DEPTH):
+        raise ConfigValidationError(f"--depth must be between 1 and {MAX_TRACE_DEPTH}")
+    effective_depth = args.depth if args.depth is not None else DEFAULT_TRACE_DEPTH
+
+    query = build_trace_query(
+        target_ref=args.target_ref or None,
+        source_path=args.source_path or None,
+        symbol_name=args.symbol or None,
+        direction=args.direction or None,
+        edge_type=args.edge_type or None,
+        confidence=args.confidence or None,
+        depth=effective_depth,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "trace",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "depth": effective_depth,
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="context_query",
@@ -961,6 +1046,48 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include tombstoned records in results (default: hidden).",
     )
 
+    trace = subparsers.add_parser(
+        "trace",
+        help="Trace dependency edges from a starting reference (artifact/symbol/import).",
+    )
+    trace.add_argument(
+        "--target-ref",
+        default=None,
+        help="Starting reference (artifact, symbol, or import identifier).",
+    )
+    trace.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    trace.add_argument(
+        "--symbol",
+        default=None,
+        help="Filter by symbol name substring.",
+    )
+    trace.add_argument(
+        "--direction",
+        choices=["upstream", "downstream"],
+        default=None,
+        help="Trace direction: upstream (dependencies) or downstream (dependents).",
+    )
+    trace.add_argument("--edge-type", default=None, help="Filter by edge type.")
+    trace.add_argument(
+        "--confidence",
+        default=None,
+        help="Filter by confidence level (high, medium, low).",
+    )
+    trace.add_argument(
+        "--depth",
+        type=int,
+        default=None,
+        help=f"Trace depth (default: {DEFAULT_TRACE_DEPTH}, max: {MAX_TRACE_DEPTH}).",
+    )
+    trace.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
     return parser
 
 
@@ -979,6 +1106,7 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "show-symbol",
             "find-imports",
             "show-imports-for-artifact",
+            "trace",
         }
         and config is None
     ):
@@ -1021,6 +1149,8 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return handle_find_imports(args, config, adapter)
     if args.command == "show-imports-for-artifact":
         return handle_show_imports_for_artifact(args, config, adapter)
+    if args.command == "trace":
+        return handle_trace(args, config, adapter)
 
     raise ConfigValidationError(f"unknown command: {args.command}")
 
