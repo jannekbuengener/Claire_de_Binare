@@ -24,6 +24,67 @@ Ermöglichung semantischer Ähnlichkeitssuche ergänzend zu Graph- und Fulltext-
 - **Risiko**: Hoher Speicherbedarf und CPU-Last bei Index-Rebuilds.
 - **Validierung**: Benchmark der Vektorisierungszeit für das gesamte Repo.
 
+### Drift- und Rebuild-Strategie
+
+Embeddings sind driftanfällig: sowohl das Embedding-Modell als auch die Quelltexte
+können sich ändern. Ohne explizite Drift-Strategie kollidieren Vektoren aus
+verschiedenen Modellversionen im selben Index und verschlechtern die
+Retrieval-Qualität.
+
+**Modellversionierung:**
+- Jedes Embedding-Modell erhält eine kanonische `model_id` und wird in der
+  Embedding-Tabelle persistiert.
+- Bei Modellwechsel: **Full-Rebuild** des Vector-Index, keine inkrementelle
+  Mischmigration.
+- Embeddings bleiben **optional** und sind keine Voraussetzung für das
+  Kern-Retrieval (Graph + Fulltext).
+
+**Rebuild-Auslöser:**
+1. **Modellwechsel**: Neues Embedding-Modell als Standard gesetzt.
+2. **Index-Parameter-Änderung**: HNSW-Parameter (`m`, `ef_construction`) geändert.
+3. **Korpus-Änderung**: >20 % der Quelltexte via Hash-Vergleich geändert.
+
+**Rebuild-Prozedur (offline / manuell):**
+1. Neues Modell wird als `model_id` registriert.
+2. Alte Embeddings behalten ihre `model_id` und bleiben zunächst referenzierbar.
+3. Neuer HNSW-Index wird **parallel** neben dem alten Index aufgebaut
+   (gestaffelt, um CPU-/Storage-Spitzen zu vermeiden).
+4. Nach erfolgreichem Rebuild und Validierungs-Pass wird der alte Index
+   deaktiviert, aber nicht gelöscht.
+5. Nach einer Haltefrist von 30 Tagen wird der alte Index physisch gelöscht.
+
+**Rollback:**
+- Vollständiger Rollback durch Rücksetzen des aktiven `model_id`-Filters auf
+  das vorherige Modell möglich, solange der alte Index nicht gelöscht wurde.
+- Entscheidung zum Rollback ist manuell (Human Gate).
+- **Kein automatisches produktives Enable.**
+
+### Datenschutz- und Kosten-Leitplanken für optionalen externen Modus
+
+Der externe Embedding-Modus ist **optional** und erfordert ein separates
+Human-GO. Standardmäßig ist der lokale Modus aktiv.
+
+**Datenverbleib:**
+- Nur Chunk-Text (ohne Pfade, ohne Secrets, ohne PII) wird externalisiert.
+- Chunk-Text muss vor Versand die No-Secrets-Guard-Pipeline (§5) durchlaufen.
+- Keine Metadaten (Dateipfade, Issue-Nummern, Autor-Namen) verlassen den
+  lokalen Kontext.
+- Bei Provider-Ausfall greift ausschließlich Graph + Fulltext; kein
+  Degraded-Mode mit unvollständigen Vektoren.
+
+**Provider-Grenzen:**
+- Erlaubt nur mit separater Provider-Entscheidung und dokumentierter
+  Datenschutz-/Retention-Regelung.
+- **Nicht erlaubt:** Provider ohne explizite Zero-Retention-Garantie; Provider,
+  die Embeddings für Modell-Training wiederverwenden.
+- **Kein Provider-Zwang.**
+
+**Kostenkontrolle:**
+- Festes monatliches Kostenlimit (Policy-Platzhalter; konkrete Werte per
+  separater Entscheidung).
+- Bei Überschreitung: Stop + Alert, kein automatisches Budget-Upgrade.
+- Kosten-Monitoring via Provider-Dashboard; kein CDB-internes Billing-System.
+
 ---
 
 ## 3. #2199 — SurrealDB Fulltext Search Tuning
