@@ -48,7 +48,7 @@ Jede Stufe setzt die vorherige voraus.
 | 4 | `evidence_ready` | Evidence Fabric verknüpft Claims mit Quellen; Source-Hashes und Provenance-Trails sind vorhanden. |
 | 5 | `briefing_ready` | Agent Briefing Engine erzeugt aufgabenspezifische Context Packages mit Source-Refs und Warnings. |
 | 6 | `governance_intelligence_ready` | Contradiction Detection, Scope Drift Firewall und Stale Knowledge Runtime sind aktiv; Governance Gates werden respektiert. |
-| 7 | `agent_os_ready` | Alle Stufen erfüllt; Agent OS kann Scope verstehen, Context Packages abrufen, Briefings lesen, Abhängigkeiten tracen, Evidence prüfen, Impact erkennen, Scope Drift erkennen, Stop Conditions respektieren, Memory lesen/schreiben nach Regeln, Entscheidungen replayen, Erklärungen abrufen und Unsicherheiten melden. |
+| 7 | `agent_os_ready` | Alle Stufen erfüllt; Agent OS kann Scope verstehen, Context Packages abrufen, Briefings lesen, Abhängigkeiten tracen, Evidence prüfen, Impact erkennen, Scope Drift erkennen, Stop Conditions respektieren, Memory read-only lesen nach Regeln, Entscheidungen replayen, Erklärungen abrufen und Unsicherheiten melden. |
 
 ## 5. Stage Criteria Matrix
 
@@ -131,7 +131,7 @@ Jede Stufe setzt die vorherige voraus.
 | AO-07 Impact erkennbar | Agent kann Impact Radar für Änderungsfolgenabschätzung nutzen | Radar-Endpoint funktioniert |
 | AO-08 Scope Drift erkennbar | Agent erkennt Abweichungen vom kanonischen Mission-Scope | Drift-Warnung sichtbar |
 | AO-09 Stop Conditions respektierbar | Agent stoppt bei Gate-Verstoß oder Blocking-Finding | Stop bei Block |
-| AO-10 Memory lesbar/schreibbar nach Regeln | Agent kann Memory lesen und schreiben, nur gemäß Scope-Regeln | Memory-Endpoints antworten |
+| AO-10 Memory/Context lesbar nach Regeln | Agent kann erlaubte Memory-/Context-Informationen read-only abrufen; schreibender Memory-Zugriff ist kein v0-Kriterium und bleibt separater Human-GO-Scope | Read-only Memory-/Context-Lookup antwortet; keine Write-Capability erforderlich |
 | AO-11 Entscheidungen replaybar | Agent kann Entscheidungen über Decision Graph nachvollziehen | Decision-Trace funktioniert |
 | AO-12 Erklärungen abrufbar | Agent kann Selbst-Erklärungen des Systems einsehen | Self-Explanation-Endpoint antwortet |
 | AO-13 Unsicherheiten meldbar | Agent kann Warnings und Confidence-Defizite ausgeben | Warnings sichtbar |
@@ -160,7 +160,7 @@ aber notwendige Runtime-Komponenten der jeweiligen Stufe.
 | `context_foundation_ready` | Canon-Pfade vollständig; keine fehlenden SSOT-Referenzen |
 | `ingestion_ready` | Deterministische Hashes; Schema-valider Export |
 | `graph_ready` | Knoten- und Kanten-Count > 0; Trace-Endpoint liefert Lineage |
-| `evidence_ready` | Source-Hashes für alle Evidence-Einträge; Confidence > 0 |
+| `evidence_ready` | Source-Hashes für alle Evidence-Einträge; minimum confidence threshold >= 0.5 |
 | `briefing_ready` | Package mit Source-Refs und Warnings; deterministische Package-ID |
 | `governance_intelligence_ready` | Contradiction Detection liefert Findings; Scope Drift Firewall aktiv; Stale-Flags gesetzt |
 | `agent_os_ready` | Alle AO-01 bis AO-14 Kriterien PASS |
@@ -221,7 +221,7 @@ Folgende Operationen erfordern ein explizites Human-GO, **unabhängig vom Agent-
 | MCP Live Write | Jede MCP-Operation mit Write-Intent |
 | Trading/Risk/Execution Impact | Jede Operation, die Trading-, Risk- oder Execution-Verhalten berührt |
 | Live-Readiness/Echtgeld Claims | Jede Aussage über LR-Go, Echtgeld-Freigabe, Live-Kapital |
-| Cross-Agent Memory Handoff | Memory-Schreiboperationen über Agent-Grenzen hinaus |
+| Cross-Agent Memory Handoff | Memory-Schreiboperationen über Agent-Grenzen hinaus (write-capable / beyond-read-only Future-Scope; nicht Teil der v0 Agent-OS-Readiness-Kriterien) |
 
 Human-GO muss **vor** der Operation eingeholt werden, nicht nachträglich.
 Human-GO ist eine **explizite, dokumentierte Entscheidung**, keine implizite Annahme.
@@ -325,8 +325,11 @@ Die Validierung dieses Kriterienkatalogs erfolgt durch:
    gegeben, aber nicht durch Implementierung bestätigt.
 
 5. **Cross-Agent Memory Handoff**: Die Regeln für Memory-Schreiboperationen über
-   Agent-Grenzen hinweg sind in der Ontologie v0 als Konzept angelegt, aber die
-   konkreten Contracts sind noch nicht spezifiziert.
+    Agent-Grenzen hinweg sind in der Ontologie v0 als Konzept angelegt, aber die
+    konkreten Contracts sind noch nicht spezifiziert. Write-capable Memory Contracts
+    sind nicht Teil dieses read-only Kriterienkatalogs und müssen separat
+    spezifiziert werden, bevor sie in eine künftige Agent-OS-Readiness-Stufe
+    aufgenommen werden können.
 
 ## 15. Boundary: Agent OS Ready != Live Readiness
 
