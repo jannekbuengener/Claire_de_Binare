@@ -621,3 +621,33 @@ class TestContextSelfExplainHandler:
         )
         assert result["status"] == "ok"
         assert result["confidence"] is None
+
+    def test_confidence_true_fail_closed(self) -> None:
+        """Confidence=True fails closed (bool is not a valid number)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "confidence": True,
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_confidence"
+
+    def test_confidence_false_fail_closed(self) -> None:
+        """Confidence=False fails closed (bool is not a valid number)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.self_explain",
+            {
+                "question": "Test",
+                "explanation_type": "why_blocked",
+                "evidence_refs": ["#test"],
+                "confidence": False,
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_confidence"

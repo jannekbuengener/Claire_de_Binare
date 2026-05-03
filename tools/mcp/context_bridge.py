@@ -432,6 +432,18 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
 
     confidence = kwargs.get("confidence")
     if confidence is not None:
+        if isinstance(confidence, bool):
+            return {
+                "tool": "context.self_explain",
+                "status": "error",
+                "error": {
+                    "code": "invalid_confidence",
+                    "message": (
+                        "confidence must be a number between 0.0 and 1.0, "
+                        f"got bool: {confidence!r}"
+                    ),
+                },
+            }
         if not isinstance(confidence, (int, float)):
             return {
                 "tool": "context.self_explain",

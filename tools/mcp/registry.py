@@ -274,7 +274,7 @@ TOOLS_V0 = [
                     "items": {"type": "string"},
                 },
                 "confidence": {
-                    "type": "number",
+                    "type": ["number", "null"],
                     "minimum": 0.0,
                     "maximum": 1.0,
                 },
