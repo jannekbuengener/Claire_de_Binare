@@ -713,6 +713,91 @@ def build_explain_source_query(
     return f"SELECT artifact_id, chunk_id, symbol_id, edge_id, source_path, source_hash, source_commit, run_id, import_audit_ref, tombstoned FROM repo_artifact{where}{limit_str}"
 
 
+def build_snapshot_query(
+    snapshot_id: str | None = None,
+    run_id: str | None = None,
+    source_path: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for snapshot information.
+
+    Queries repo_artifact table to retrieve snapshot data filtered by
+    snapshot_id, run_id, or source_path.
+    """
+    conditions: list[str] = []
+    if snapshot_id:
+        conditions.append(f"snapshot_id = '{snapshot_id}'")
+    if run_id:
+        conditions.append(f"run_id = '{run_id}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM repo_artifact{where}{limit_str}"
+
+
+def build_drift_query(
+    artifact_id: str | None = None,
+    source_path: str | None = None,
+    status: str | None = None,
+    kind: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for drift information.
+
+    Queries dependency_edge table to retrieve drift/changes data.
+    Filters by artifact, source path, status (blocking/warning/info),
+    and kind.
+    """
+    conditions: list[str] = []
+    if artifact_id:
+        conditions.append(f"source_ref CONTAINS '{artifact_id}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if status:
+        conditions.append(f"status = '{status}'")
+    if kind:
+        conditions.append(f"edge_type = '{kind}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM dependency_edge{where}{limit_str}"
+
+
+def build_audit_query(
+    audit_id: str | None = None,
+    run_id: str | None = None,
+    source_path: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for audit information.
+
+    Queries import_reference table to retrieve import audit data
+    filtered by audit_id, run_id, or source_path.
+    """
+    conditions: list[str] = []
+    if audit_id:
+        conditions.append(f"import_id = '{audit_id}'")
+    if run_id:
+        conditions.append(f"run_id = '{run_id}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM import_reference{where}{limit_str}"
+
+
 def _error_payload(exc: ContextQueryError) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -1043,6 +1128,117 @@ def handle_explain_source(
     }, EXIT_OK
 
 
+def handle_show_snapshot(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``show-snapshot`` subcommand."""
+    query = build_snapshot_query(
+        snapshot_id=args.snapshot_id or None,
+        run_id=args.run_id or None,
+        source_path=args.source_path or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "show-snapshot",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
+def handle_show_drift(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``show-drift`` subcommand."""
+    query = build_drift_query(
+        artifact_id=args.artifact_id or None,
+        source_path=args.source_path or None,
+        status=args.status or None,
+        kind=args.kind or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    findings: list[dict[str, str]] = []
+    for row in results:
+        status = row.get("status", "unknown")
+        if status == "blocking":
+            findings.append(
+                {
+                    "severity": "blocking",
+                    "artifact": row.get("source_ref", "unknown"),
+                    "detail": "requires attention",
+                }
+            )
+        elif status == "warning":
+            findings.append(
+                {
+                    "severity": "warning",
+                    "artifact": row.get("source_ref", "unknown"),
+                    "detail": "review recommended",
+                }
+            )
+        elif status == "info":
+            findings.append(
+                {
+                    "severity": "info",
+                    "artifact": row.get("source_ref", "unknown"),
+                    "detail": "informational",
+                }
+            )
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "show-drift",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+        "findings": findings if findings else None,
+    }, EXIT_OK
+
+
+def handle_show_audit(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``show-audit`` subcommand."""
+    query = build_audit_query(
+        audit_id=args.audit_id or None,
+        run_id=args.run_id or None,
+        source_path=args.source_path or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "show-audit",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="context_query",
@@ -1273,6 +1469,84 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include tombstoned records in results (default: hidden).",
     )
 
+    show_snapshot = subparsers.add_parser(
+        "show-snapshot",
+        help="Show snapshot information from context data.",
+    )
+    show_snapshot.add_argument(
+        "--snapshot-id",
+        default=None,
+        help="Filter by snapshot ID.",
+    )
+    show_snapshot.add_argument(
+        "--run-id",
+        default=None,
+        help="Filter by run ID.",
+    )
+    show_snapshot.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    show_snapshot.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    show_drift = subparsers.add_parser(
+        "show-drift",
+        help="Show drift/changes information from dependency edges.",
+    )
+    show_drift.add_argument(
+        "--artifact-id",
+        default=None,
+        help="Filter by artifact ID or reference.",
+    )
+    show_drift.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    show_drift.add_argument(
+        "--status",
+        choices=["blocking", "warning", "info"],
+        default=None,
+        help="Filter by finding severity/status.",
+    )
+    show_drift.add_argument(
+        "--kind",
+        default=None,
+        help="Filter by drift kind/edge type.",
+    )
+    show_drift.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    show_audit = subparsers.add_parser(
+        "show-audit",
+        help="Show import audit information.",
+    )
+    show_audit.add_argument(
+        "--audit-id",
+        default=None,
+        help="Filter by audit/import ID.",
+    )
+    show_audit.add_argument(
+        "--run-id",
+        default=None,
+        help="Filter by run ID.",
+    )
+    show_audit.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    show_audit.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
     return parser
 
 
@@ -1293,6 +1567,9 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
             "show-imports-for-artifact",
             "trace",
             "explain-source",
+            "show-snapshot",
+            "show-drift",
+            "show-audit",
         }
         and config is None
     ):
@@ -1339,6 +1616,12 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return handle_trace(args, config, adapter)
     if args.command == "explain-source":
         return handle_explain_source(args, config, adapter)
+    if args.command == "show-snapshot":
+        return handle_show_snapshot(args, config, adapter)
+    if args.command == "show-drift":
+        return handle_show_drift(args, config, adapter)
+    if args.command == "show-audit":
+        return handle_show_audit(args, config, adapter)
 
     raise ConfigValidationError(f"unknown command: {args.command}")
 

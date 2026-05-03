@@ -537,3 +537,194 @@ def test_explain_source_text_format(capsys) -> None:
     out = capsys.readouterr().out
     assert "status: ok" in out
     assert "repo_artifact" in out
+
+
+@pytest.mark.unit
+def test_show_snapshot_requires_config(capsys) -> None:
+    exit_code = main(["show-snapshot", "--run-id", "test-run"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_show_snapshot_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-snapshot",
+            "--run-id",
+            "run-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-snapshot"
+    assert "query" in payload
+    assert "repo_artifact" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_snapshot_with_snapshot_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-snapshot",
+            "--snapshot-id",
+            "snap-456",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-snapshot"
+
+
+@pytest.mark.unit
+def test_show_snapshot_with_source_path(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-snapshot",
+            "--run-id",
+            "run-123",
+            "--source-path",
+            "src/",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "source_path" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_drift_requires_config(capsys) -> None:
+    exit_code = main(["show-drift", "--artifact-id", "test-artifact"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_show_drift_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-drift",
+            "--artifact-id",
+            "artifact-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-drift"
+    assert "query" in payload
+    assert "dependency_edge" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_drift_with_status_filter(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-drift",
+            "--artifact-id",
+            "artifact-123",
+            "--status",
+            "blocking",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "status" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_drift_with_kind_filter(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-drift",
+            "--artifact-id",
+            "artifact-123",
+            "--kind",
+            "depends_on",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert "edge_type" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_audit_requires_config(capsys) -> None:
+    exit_code = main(["show-audit", "--run-id", "test-run"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_show_audit_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-audit",
+            "--run-id",
+            "run-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-audit"
+    assert "query" in payload
+    assert "import_reference" in payload["query"]
+
+
+@pytest.mark.unit
+def test_show_audit_with_audit_id(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-audit",
+            "--audit-id",
+            "audit-456",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-audit"
+
+
+@pytest.mark.unit
+def test_show_audit_text_format(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "--format",
+            "text",
+            "show-audit",
+            "--run-id",
+            "run-123",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "status: ok" in out
+    assert "import_reference" in out
