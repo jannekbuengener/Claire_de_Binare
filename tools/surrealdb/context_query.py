@@ -910,12 +910,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filter by symbol type (function, class, etc.).",
     )
     find_symbol.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Optional query limit; validated against config hard limit.",
-    )
-    find_symbol.add_argument(
         "--include-tombstoned",
         action="store_true",
         default=False,
@@ -945,12 +939,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--source-path", default=None, help="Filter by source path substring."
     )
     find_imports.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Optional query limit; validated against config hard limit.",
-    )
-    find_imports.add_argument(
         "--include-tombstoned",
         action="store_true",
         default=False,
@@ -965,12 +953,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--source-hash",
         required=True,
         help="Source hash of the artifact to look up imports for.",
-    )
-    show_imports_for_artifact.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Optional query limit; validated against config hard limit.",
     )
     show_imports_for_artifact.add_argument(
         "--include-tombstoned",
