@@ -219,6 +219,112 @@ def context_explain_source_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_package_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.package tool.
+
+    Packages context artifacts for handoff between agents or sessions.
+    Uses mocked responses (no live DB/network).
+    Fails closed on invalid inputs.
+    """
+    # Validate required artifacts
+    artifacts = kwargs.get("artifacts")
+    if not artifacts or not isinstance(artifacts, list):
+        return {
+            "tool": "context.package",
+            "status": "error",
+            "error": {
+                "code": "invalid_artifacts",
+                "message": "artifacts is required and must be a non-empty list",
+            },
+        }
+
+    # Validate format
+    format_opt = kwargs.get("format", "json")
+    if format_opt not in ("json", "markdown"):
+        return {
+            "tool": "context.package",
+            "status": "error",
+            "error": {
+                "code": "format_unsupported",
+                "message": "format must be 'json' or 'markdown'",
+            },
+        }
+
+    # Validate include_metadata
+    include_metadata = kwargs.get("include_metadata", True)
+    if not isinstance(include_metadata, bool):
+        include_metadata = True
+
+    # Mocked package result (no live DB/network)
+    # Follows #2097 requirements: bounded package, SourceRefs, confidence/freshness/warnings, stop_conditions
+    package_items = []
+    for artifact_id in artifacts[:10]:  # Limit to 10 items
+        package_items.append(
+            {
+                "id": artifact_id,
+                "type": "evidence",
+                "summary": f"Mock summary for {artifact_id}",
+                "source_refs": [f"src_{artifact_id}_1", f"src_{artifact_id}_2"],
+                "confidence": 0.85,
+                "freshness": "2026-05-03T00:00:00Z",
+            }
+        )
+
+    warnings = []
+    if len(artifacts) > 10:
+        warnings.append("artifacts_limit_exceeded_truncated")
+    if len(package_items) == 0:
+        warnings.append("empty_package")
+
+    missing_context = []
+    if len(artifacts) == 0:
+        missing_context.append("no_artifacts_provided")
+
+    package = {
+        "request_scope": kwargs.get("scope", "default"),
+        "query_summary": f"Package request for {len(artifacts)} artifacts",
+        "top_artifacts": package_items[:5],
+        "top_docs": [],
+        "top_symbols": [],
+        "graph_paths": [],
+        "source_refs": [
+            item
+            for sub in [a.get("source_refs", []) for a in package_items]
+            for item in sub
+        ],
+        "confidence_summary": {"average": 0.85, "lowest": 0.8, "highest": 0.9},
+        "warnings": warnings,
+        "stale_flags": [],
+        "missing_context": missing_context,
+        "recommended_next_queries": [],
+        "stop_conditions": [
+            "no_live_go",
+            "no_echtgeld_authorization",
+            "no_risk_approval",
+        ],
+    }
+
+    return {
+        "tool": "context.package",
+        "status": "ok",
+        "package": {
+            "format": format_opt,
+            "items": package_items,
+            "created_at": "2026-05-03T12:00:00Z",
+            "package_id": f"pkg_{hash(str(artifacts)) & 0xFFFFFFFF}",
+            "metadata": (
+                {
+                    "include_metadata": include_metadata,
+                    "scope": package["request_scope"],
+                }
+                if include_metadata
+                else {}
+            ),
+        },
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -272,6 +378,17 @@ class ContextBridge:
                 handler=context_explain_source_handler,
             )
             self._registry._tools["context.explain_source"] = new_explain
+        old_package = self._registry.get_tool("context.package")
+        if old_package:
+            new_package = ToolDefinition(
+                name=old_package.name,
+                description=old_package.description,
+                input_schema=old_package.input_schema,
+                output_schema=old_package.output_schema,
+                read_only=old_package.read_only,
+                handler=context_package_handler,
+            )
+            self._registry._tools["context.package"] = new_package
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
