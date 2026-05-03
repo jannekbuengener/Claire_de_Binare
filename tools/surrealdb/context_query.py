@@ -534,6 +534,67 @@ def build_doc_query(
     return f"SELECT * FROM doc_chunk{where}{limit_str}"
 
 
+def build_symbol_query(
+    name: str | None = None,
+    qualified_name: str | None = None,
+    source_path: str | None = None,
+    symbol_type: str | None = None,
+    symbol_id: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for the ``code_symbol`` table.
+
+    All parameters are optional filters. The query is built as a
+    ``SELECT * FROM code_symbol WHERE ... LIMIT ...`` statement.
+    """
+    conditions: list[str] = []
+    if name:
+        conditions.append(f"name CONTAINS '{name}'")
+    if qualified_name:
+        conditions.append(f"qualified_name CONTAINS '{qualified_name}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if symbol_type:
+        conditions.append(f"symbol_type = '{symbol_type}'")
+    if symbol_id:
+        conditions.append(f"symbol_id = '{symbol_id}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM code_symbol{where}{limit_str}"
+
+
+def build_import_query(
+    module: str | None = None,
+    source_path: str | None = None,
+    source_hash: str | None = None,
+    import_id: str | None = None,
+    limit: int | None = None,
+    include_tombstoned: bool = False,
+) -> str:
+    """Build a read-only SELECT query for the ``import_reference`` table.
+
+    All parameters are optional filters. The query is built as a
+    ``SELECT * FROM import_reference WHERE ... LIMIT ...`` statement.
+    """
+    conditions: list[str] = []
+    if module:
+        conditions.append(f"module CONTAINS '{module}'")
+    if source_path:
+        conditions.append(f"source_path CONTAINS '{source_path}'")
+    if source_hash:
+        conditions.append(f"source_hash = '{source_hash}'")
+    if import_id:
+        conditions.append(f"import_id = '{import_id}'")
+    if not include_tombstoned:
+        conditions.append("tombstoned = false")
+    where = " WHERE " + " AND ".join(conditions) if conditions else ""
+    limit_str = f" LIMIT {limit}" if limit else ""
+    return f"SELECT * FROM import_reference{where}{limit_str}"
+
+
 def _error_payload(exc: ContextQueryError) -> dict[str, Any]:
     return {
         "schema_version": SCHEMA_VERSION,
@@ -652,6 +713,110 @@ def handle_find_doc(
     }, EXIT_OK
 
 
+def handle_find_symbol(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``find-symbol`` subcommand."""
+    query = build_symbol_query(
+        name=args.name or None,
+        qualified_name=args.qualified_name or None,
+        source_path=args.source_path or None,
+        symbol_type=args.symbol_type or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "find-symbol",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
+def handle_show_symbol(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``show-symbol`` subcommand."""
+    query = build_symbol_query(
+        symbol_id=args.symbol_id,
+        limit=1,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "show-symbol",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
+def handle_find_imports(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``find-imports`` subcommand."""
+    query = build_import_query(
+        module=args.module or None,
+        source_path=args.source_path or None,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "find-imports",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
+def handle_show_imports_for_artifact(
+    args: argparse.Namespace, config: ContextQueryConfig, adapter: QueryAdapter
+) -> tuple[dict[str, Any], int]:
+    """Handle the ``show-imports-for-artifact`` subcommand."""
+    query = build_import_query(
+        source_hash=args.source_hash,
+        limit=args.limit or config.max_limit_default,
+        include_tombstoned=args.include_tombstoned,
+    )
+    classification = adapter.classify(query)
+    if not classification.allowed:
+        raise WriteDeniedError(f"query not allowed: {classification.reason}")
+
+    results = adapter.execute(query)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "command": "show-imports-for-artifact",
+        "status": "ok",
+        "query": query,
+        "classification": classification.to_payload(),
+        "count": len(results),
+        "results": results,
+    }, EXIT_OK
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="context_query",
@@ -726,6 +891,94 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include tombstoned records in results (default: hidden).",
     )
 
+    find_symbol = subparsers.add_parser(
+        "find-symbol",
+        help="Search code_symbol table with read-only filters.",
+    )
+    find_symbol.add_argument(
+        "--name", default=None, help="Filter by symbol name substring."
+    )
+    find_symbol.add_argument(
+        "--qualified-name", default=None, help="Filter by qualified name substring."
+    )
+    find_symbol.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    find_symbol.add_argument(
+        "--symbol-type",
+        default=None,
+        help="Filter by symbol type (function, class, etc.).",
+    )
+    find_symbol.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Optional query limit; validated against config hard limit.",
+    )
+    find_symbol.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    show_symbol = subparsers.add_parser(
+        "show-symbol",
+        help="Show a single code symbol by symbol_id.",
+    )
+    show_symbol.add_argument("--symbol-id", required=True, help="Symbol ID to look up.")
+    show_symbol.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    find_imports = subparsers.add_parser(
+        "find-imports",
+        help="Search import_reference table with read-only filters.",
+    )
+    find_imports.add_argument(
+        "--module", default=None, help="Filter by module name substring."
+    )
+    find_imports.add_argument(
+        "--source-path", default=None, help="Filter by source path substring."
+    )
+    find_imports.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Optional query limit; validated against config hard limit.",
+    )
+    find_imports.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
+    show_imports_for_artifact = subparsers.add_parser(
+        "show-imports-for-artifact",
+        help="Show import references for a specific artifact by source hash.",
+    )
+    show_imports_for_artifact.add_argument(
+        "--source-hash",
+        required=True,
+        help="Source hash of the artifact to look up imports for.",
+    )
+    show_imports_for_artifact.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Optional query limit; validated against config hard limit.",
+    )
+    show_imports_for_artifact.add_argument(
+        "--include-tombstoned",
+        action="store_true",
+        default=False,
+        help="Include tombstoned records in results (default: hidden).",
+    )
+
     return parser
 
 
@@ -734,7 +987,19 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     if args.config is not None:
         config = load_config(args.config)
 
-    if args.command in {"classify", "find-artifact", "find-doc"} and config is None:
+    if (
+        args.command
+        in {
+            "classify",
+            "find-artifact",
+            "find-doc",
+            "find-symbol",
+            "show-symbol",
+            "find-imports",
+            "show-imports-for-artifact",
+        }
+        and config is None
+    ):
         raise InputNotFoundError(f"--config is required for {args.command}")
 
     if config is not None:
@@ -766,6 +1031,14 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
         return handle_find_artifact(args, config, adapter)
     if args.command == "find-doc":
         return handle_find_doc(args, config, adapter)
+    if args.command == "find-symbol":
+        return handle_find_symbol(args, config, adapter)
+    if args.command == "show-symbol":
+        return handle_show_symbol(args, config, adapter)
+    if args.command == "find-imports":
+        return handle_find_imports(args, config, adapter)
+    if args.command == "show-imports-for-artifact":
+        return handle_show_imports_for_artifact(args, config, adapter)
 
     raise ConfigValidationError(f"unknown command: {args.command}")
 

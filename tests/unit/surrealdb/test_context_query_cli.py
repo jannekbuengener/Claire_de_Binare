@@ -15,7 +15,6 @@ from tools.surrealdb.context_query import (
     main,
 )
 
-
 EXAMPLE_CONFIG = "infrastructure/config/surrealdb/context_query.local.example.yaml"
 
 
@@ -143,3 +142,101 @@ def test_no_network_socket_is_used(monkeypatch, capsys) -> None:
 
     assert exit_code == EXIT_OK
     assert _read_json(capsys)["surrealdb_connection"] == "noop-no-network"
+
+
+@pytest.mark.unit
+def test_find_symbol_requires_config(capsys) -> None:
+    exit_code = main(["find-symbol", "--name", "example"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_find_symbol_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "find-symbol",
+            "--name",
+            "example",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "find-symbol"
+
+
+@pytest.mark.unit
+def test_show_symbol_requires_symbol_id(capsys) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--config", EXAMPLE_CONFIG, "show-symbol"])
+    assert excinfo.value.code == EXIT_USAGE_ERROR
+
+
+@pytest.mark.unit
+def test_show_symbol_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-symbol",
+            "--symbol-id",
+            "symbol-example",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-symbol"
+
+
+@pytest.mark.unit
+def test_find_imports_requires_config(capsys) -> None:
+    exit_code = main(["find-imports", "--module", "json"])
+    assert exit_code == EXIT_INPUT_NOT_FOUND
+    payload = _read_json(capsys)
+    assert payload["error"] == "INPUT_NOT_FOUND"
+
+
+@pytest.mark.unit
+def test_find_imports_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "find-imports",
+            "--module",
+            "json",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "find-imports"
+
+
+@pytest.mark.unit
+def test_show_imports_for_artifact_requires_source_hash(capsys) -> None:
+    with pytest.raises(SystemExit) as excinfo:
+        main(["--config", EXAMPLE_CONFIG, "show-imports-for-artifact"])
+    assert excinfo.value.code == EXIT_USAGE_ERROR
+
+
+@pytest.mark.unit
+def test_show_imports_for_artifact_exits_zero(capsys) -> None:
+    exit_code = main(
+        [
+            "--config",
+            EXAMPLE_CONFIG,
+            "show-imports-for-artifact",
+            "--source-hash",
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        ]
+    )
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "ok"
+    assert payload["command"] == "show-imports-for-artifact"
