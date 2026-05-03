@@ -95,3 +95,63 @@ class TestContextBridge:
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
         assert len(status["read_only_tools"]) == 7
+
+
+class TestDefensiveSchemaCopies:
+    """Tests verifying that returned schemas are defensive copies."""
+
+    def test_list_tools_returns_defensive_copies(self) -> None:
+        """Verify list_tools returns defensive copies that caller can mutate."""
+        bridge = ContextBridge()
+        tools = bridge.list_tools()
+
+        caller_schema = tools[0]["inputSchema"]
+        original_properties = caller_schema.get("properties", {}).copy()
+
+        caller_schema["properties"]["caller_added_field"] = {"type": "string"}
+
+        tools_after = bridge.list_tools()
+        returned_schema = tools_after[0]["inputSchema"]
+
+        assert "caller_added_field" not in returned_schema.get(
+            "properties", {}
+        ), "Caller mutation should not affect returned schemas"
+
+    def test_get_tool_schema_returns_defensive_copy(self) -> None:
+        """Verify get_tool_schema returns defensive copy that caller can mutate."""
+        bridge = ContextBridge()
+        schema = bridge.get_tool_schema("context.search")
+
+        caller_input = schema["inputSchema"]
+        original_type = caller_input.get("type")
+
+        caller_input["type"] = "mutated_by_caller"
+
+        schema_after = bridge.get_tool_schema("context.search")
+        assert (
+            schema_after["inputSchema"]["type"] == original_type
+        ), "Caller mutation should not affect returned schema"
+
+    def test_mutation_of_returned_list_tools_does_not_affect_registry(self) -> None:
+        """Verify mutating returned list_tools does not affect registry."""
+        bridge = ContextBridge()
+
+        tools = bridge.list_tools()
+        tools[0]["name"] = "mutated_name"
+
+        tools_after = bridge.list_tools()
+        assert (
+            tools_after[0]["name"] != "mutated_name"
+        ), "Registry should not be affected by caller mutation"
+
+    def test_mutation_of_returned_schema_does_not_affect_registry(self) -> None:
+        """Verify mutating returned schema does not affect registry."""
+        bridge = ContextBridge()
+
+        schema = bridge.get_tool_schema("context.search")
+        schema["inputSchema"]["properties"]["new_field"] = {"type": "string"}
+
+        schema_after = bridge.get_tool_schema("context.search")
+        assert "new_field" not in schema_after["inputSchema"].get(
+            "properties", {}
+        ), "Registry schema should not be mutated by caller"

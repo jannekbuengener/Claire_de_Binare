@@ -11,6 +11,7 @@ Reference:
 """
 
 import logging
+from copy import deepcopy
 from typing import Any, Optional
 
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
@@ -42,30 +43,38 @@ class ContextBridge:
         )
 
     def list_tools(self) -> list[dict[str, Any]]:
-        """List all available tools with their definitions."""
+        """List all available tools with their definitions.
+
+        Returns defensive copies of schema dictionaries to prevent
+        caller mutations from affecting registry definitions.
+        """
         tools = []
         for tool in self._registry.list_tools():
             tools.append(
                 {
                     "name": tool.name,
                     "description": tool.description,
-                    "inputSchema": tool.input_schema,
-                    "outputSchema": tool.output_schema,
+                    "inputSchema": deepcopy(tool.input_schema),
+                    "outputSchema": deepcopy(tool.output_schema),
                     "readOnly": tool.read_only,
                 }
             )
         return tools
 
     def get_tool_schema(self, tool_name: str) -> Optional[dict[str, Any]]:
-        """Get the schema for a specific tool."""
+        """Get the schema for a specific tool.
+
+        Returns defensive copies of schema dictionaries to prevent
+        caller mutations from affecting registry definitions.
+        """
         tool = self._registry.get_tool(tool_name)
         if tool is None:
             return None
         return {
             "name": tool.name,
             "description": tool.description,
-            "inputSchema": tool.input_schema,
-            "outputSchema": tool.output_schema,
+            "inputSchema": deepcopy(tool.input_schema),
+            "outputSchema": deepcopy(tool.output_schema),
             "readOnly": tool.read_only,
         }
 
