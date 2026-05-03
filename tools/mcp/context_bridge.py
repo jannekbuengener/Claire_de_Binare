@@ -310,13 +310,19 @@ def context_package_handler(**kwargs) -> dict[str, Any]:
         "status": "ok",
         "package": {
             "format": format_opt,
-            "items": package_items,
+            "items": package_items[:10],
             "created_at": "2026-05-03T12:00:00Z",
-            "package_id": f"pkg_{hash(str(artifacts)) & 0xFFFFFFFF}",
+            "package_id": f"pkg_{'-'.join(str(a) for a in sorted(artifacts[:10]))}",
+            "warnings": warnings,
+            "stale_flags": package.get("stale_flags", []),
+            "missing_context": missing_context,
+            "stop_conditions": package["stop_conditions"],
             "metadata": (
                 {
                     "include_metadata": include_metadata,
                     "scope": package["request_scope"],
+                    "truncated": len(artifacts) > 10,
+                    "total_requested": len(artifacts),
                 }
                 if include_metadata
                 else {}
