@@ -258,7 +258,7 @@ The following conditions MUST cause the agent to stop immediately, regardless of
 | S3 | One or more minimum `required_reads` (see [Section 6.3](#63-required-reads-available)) are unavailable. |
 | S4 | Core assumptions lack evidence (`evidence_refs` empty or untraceable). |
 | S5 | Scope Drift detected: the task diverges from `task_scope` or from the target issue. |
-| S6 | `operation_mode` implies Runtime, DB, or MCP write without an impact report and Human-GO. |
+| S6 | `operation_mode` is any write-capable mode (`write (code/docs)`, `write (config/infra)`, `write (DB/migration)`, `write (MCP live)`) without an impact report and Human-GO. |
 | S7 | The task touches Trading, Risk, or Execution scope without explicit governance approval. |
 | S8 | The task makes or implies Live-Readiness or Echtgeld claims outside of `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`. |
 | S9 | A material uncertainty exists in Governance scope (Constitution, Policy, Invariant). |
@@ -301,7 +301,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
 - `target_paths`: ["services/execution/"]
 - `operation_mode`: "read_only"
 - `context_package_ref`: null
-- `required_reads`: ["AGENTS.md", "agents/AGENTS.md", "docs/runbooks/CONTROL_REGISTER.md", "CURRENT_STATUS.md", "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md"]
+- `required_reads`: ["AGENTS.md", "agents/AGENTS.md", "agents/OPEN_CODE_AGENTS.md", "docs/runbooks/CONTROL_REGISTER.md", "CURRENT_STATUS.md", "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md"]
 - `evidence_refs`: []
 - `impact_refs`: []
 - `stop_conditions`: ["S1: scope ambiguous", "S3: required reads unavailable"]
@@ -311,7 +311,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
 ```json
 {
   "status": "ready_for_read_only",
-  "reasons": ["Read-only scope, no writes required, no evidence needed for exploration."],
+  "reasons": ["Read-only scope, no writes required. No substantive conclusions beyond cited source reads; any findings from research still require evidence refs before action."],
   "required_next_reads": ["services/execution/executor.py", "knowledge/contracts/TRACE_CONTRACT_V1.md"],
   "human_go_required": false,
   "stop_conditions": ["S1: scope ambiguous", "S3: required reads unavailable"],
@@ -375,7 +375,7 @@ Human-GO is scoped: approval for one action does not authorize any other action.
   "required_next_reads": ["AGENTS.md", "agents/AGENTS.md", "docs/runbooks/CONTROL_REGISTER.md"],
   "human_go_required": true,
   "stop_conditions": ["S2: no Context Package and no required reads", "S3: minimum reads missing", "S6: write without impact report"],
-  "missing_context": ["context_package_ref", "required_reads", "impact_refs", "stop_conditions"],
+  "missing_context": ["required_reads", "impact_refs", "stop_conditions"],
   "missing_evidence": ["No evidence for refactor necessity or scope"],
   "scope_drift_findings": [],
   "uncertainties": ["Scope undefined. Risk engine contract unknown."],
