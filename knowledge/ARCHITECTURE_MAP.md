@@ -56,7 +56,7 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
 | WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
-| Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback) |
+| Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback); audit metadata: `config_snapshot` (runtime params) + deterministic `config_hash` (SHA-256); SIGNAL_BOT_ID wired via compose.red.yml (PR #2129) for experiment identity; reserved metadata keys protected against override; used by Paper Reference Exporter (PR #2133) for signal-anchored bot_id/config_hash filtering in replay-vs-paper comparisons |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
 | Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |

@@ -39,10 +39,10 @@
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
 | **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
-| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze) |
+| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze); audit metadata: `config_snapshot` (deterministic runtime params snapshot) + `config_hash` (full SHA-256); `SIGNAL_BOT_ID` environment variable wired via compose.red.yml (PR #2129) für Experiment-Identity; reserved metadata keys (strategy_id, bot_id, config_snapshot, config_hash, signal_reason, signal_inputs) sind immutable und können nicht durch Candidate-Signal-Metadata überschrieben werden |
 | **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
 
-Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.py` bei `8001`; im kanonischen RED-Runtime-Pfad wird fuer `cdb_signal` in `infrastructure/compose/compose.red.yml` explizit `SIGNAL_PORT=8005` gesetzt.
+Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.py` bei `8001`; im kanonischen RED-Runtime-Pfad wird fuer `cdb_signal` in `infrastructure/compose/compose.red.yml` explizit `SIGNAL_PORT=8005` gesetzt. Ebenso wird `SIGNAL_BOT_ID` (audit identity) explizit via `environment:` durchgereicht (PR #2129).
 
 ---
 
@@ -77,7 +77,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | **Compare CLI Runner** | `services/validation/replay_vs_paper_compare_runner.py` | **AKTIV** (PR #1914) | Operator-facing CLI (`--replay-report FILE --paper-reference FILE --output-dir DIR`). Produces shadow_comparison artifacts. Exit codes: 0 aligned / 1 usage error / 2 parse/unusable. |
 | **Calibration Report CLI** | `services/validation/simulator_calibration_report_runner.py` | **AKTIV** (PR #1916) | Operator-facing CLI (`--comparison shadow_comparison.json --output-dir DIR`). Produces simulator_calibration_report.json + simulator_calibration_summary.md. Exit codes: 0 aligned / 1 usage error / 2 parse/unusable. |
 | **Regime Scorecard CLI** | `services/validation/arvp_regime_scorecard_runner.py` | **AKTIV** (PR #1918) | Operator-facing CLI (`--run-id ID --replay-trace FILE --comparison FILE --output-dir DIR`). Optional inputs; fail-closed on invalid JSON. Produces arvp_regime_scorecard.json + arvp_regime_scorecard_summary.md. Exit codes: 0 ok / 1 usage / 2 parse error. |
-| **Paper Reference Window CLI** | `services/validation/paper_reference_window_runner.py` | **AKTIV** (PR #1920) | Operator-facing CLI (`--strategy-id ID --symbol SYM --start-ts-ms TS --end-ts-ms TS --output FILE`). Reads correlation_ledger from Postgres; produces arvp_paper_reference_window.v1 JSON. Exit codes: 0 success / 1 usage / 2 DB/contract error. |
+| **Paper Reference Window CLI** | `services/validation/paper_reference_window_runner.py` | **AKTIV** (PR #1920, PR #2133) | Operator-facing CLI (`--strategy-id ID --symbol SYM --start-ts-ms TS --end-ts-ms TS --output FILE`). Reads correlation_ledger from Postgres; produces arvp_paper_reference_window.v1 JSON. Fail-closed validation: requires ≥1 ORDER + ≥1 FILL mit paper_-prefix. Signal audit context (`bot_id`, `config_hash`) wird durch PR #2133 Exporter Guards zur Chain-Validierung herangezogen. Exit codes: 0 success / 1 usage / 2 DB/contract error. |
 
 **Interne Abhängigkeiten:** Nutzen `core/replay/canonical_json.py` (deterministic serialization), `core/replay/envelopes.py` (envelope tracking).
 
