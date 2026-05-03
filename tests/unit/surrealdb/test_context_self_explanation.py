@@ -251,6 +251,34 @@ def test_empty_reasons_raises() -> None:
 
 
 @pytest.mark.unit
+def test_empty_evidence_refs_raises() -> None:
+    with pytest.raises(
+        InvalidInputError, match="evidence_refs must contain at least one reference"
+    ):
+        SelfExplanationInput(
+            explanation_type="why_blocked",
+            summary="S",
+            reasons=("R1",),
+            evidence_refs=(),
+            required_next_step="N/A",
+        )
+
+
+@pytest.mark.unit
+def test_empty_evidence_ref_value_raises() -> None:
+    with pytest.raises(
+        InvalidInputError, match="each evidence_ref must be non-empty"
+    ):
+        SelfExplanationInput(
+            explanation_type="why_blocked",
+            summary="S",
+            reasons=("R1",),
+            evidence_refs=("#x", "   "),
+            required_next_step="N/A",
+        )
+
+
+@pytest.mark.unit
 def test_empty_required_next_step_raises() -> None:
     with pytest.raises(InvalidInputError, match="required_next_step must be non-empty"):
         SelfExplanationInput(

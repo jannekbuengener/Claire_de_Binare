@@ -107,6 +107,10 @@ class SelfExplanationInput:
             raise InvalidInputError("reasons must contain at least one reason")
         if any(not r.strip() for r in self.reasons):
             raise InvalidInputError("each reason must be non-empty")
+        if not self.evidence_refs:
+            raise InvalidInputError("evidence_refs must contain at least one reference")
+        if any(not e.strip() for e in self.evidence_refs):
+            raise InvalidInputError("each evidence_ref must be non-empty")
         if not self.required_next_step.strip():
             raise InvalidInputError("required_next_step must be non-empty")
         if self.confidence is not None and not (0.0 <= self.confidence <= 1.0):
