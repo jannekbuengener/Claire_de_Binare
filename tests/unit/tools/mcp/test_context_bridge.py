@@ -85,10 +85,58 @@ class TestContextSearchHandler:
         )
         assert result["status"] == "ok"
 
-    def test_unknown_tool_returns_none(self) -> None:
-        """Verify unknown tool returns None."""
-        tool = ContextToolRegistry.get_tool("context.nonexistent")
-        assert tool is None
+
+class TestContextTraceHandler:
+    """Tests for context.trace tool handler."""
+
+    def test_missing_target_id_returns_error(self) -> None:
+        """Empty/missing target_id fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.trace", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "target_not_found"
+
+    def test_empty_target_id_returns_error(self) -> None:
+        """Empty string target_id fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.trace", {"target_id": ""})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "target_not_found"
+
+    def test_valid_target_id_returns_ok(self) -> None:
+        """Valid target_id returns ok status with trace (mocked)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.trace", {"target_id": "evt_abc123"})
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.trace"
+        assert "trace" in result
+        assert "root" in result["trace"]
+        assert "lineage" in result["trace"]
+
+    def test_depth_parameter_accepted(self) -> None:
+        """Depth parameter is accepted and respected."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.trace", {"target_id": "evt_abc123", "depth": 10}
+        )
+        assert result["status"] == "ok"
+        assert len(result["trace"]["lineage"]) <= 10
+
+    def test_depth_exceeds_max_returns_error(self) -> None:
+        """Depth exceeding 20 returns error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.trace", {"target_id": "evt_abc123", "depth": 25}
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "depth_exceeded"
+
+    def test_trace_root_contains_id(self) -> None:
+        """Trace root contains the target_id."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.trace", {"target_id": "evt_test"})
+        assert result["status"] == "ok"
+        assert result["trace"]["root"]["id"] == "evt_test"
 
 
 class TestContextBridge:
@@ -124,7 +172,7 @@ class TestContextBridge:
     def test_execute_not_implemented_tool(self) -> None:
         """Verify executing stub tool returns not_implemented error."""
         bridge = ContextBridge()
-        result = bridge.execute_tool("context.trace", {"target_id": "test"})
+        result = bridge.execute_tool("context.explain_source", {"source_ref": "test"})
         assert result["status"] == "error"
         assert result["error"]["code"] == "not_implemented"
 

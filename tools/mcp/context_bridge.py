@@ -92,6 +92,69 @@ def context_search_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_trace_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.trace tool.
+
+    Traces decision or event lineage through the Context Intelligence system.
+    Uses mocked adapter (no live DB/network).
+    Fails closed on invalid inputs.
+    """
+    # Validate required target_id
+    target_id = kwargs.get("target_id")
+    if not target_id or not isinstance(target_id, str) or not target_id.strip():
+        return {
+            "tool": "context.trace",
+            "status": "error",
+            "error": {
+                "code": "target_not_found",
+                "message": "target_id is required and must be a non-empty string",
+            },
+        }
+
+    # Validate depth
+    depth = kwargs.get("depth", 5)
+    if not isinstance(depth, int) or depth <= 0:
+        depth = 5
+    if depth > 20:
+        return {
+            "tool": "context.trace",
+            "status": "error",
+            "error": {
+                "code": "depth_exceeded",
+                "message": f"depth {depth} exceeds maximum of 20",
+            },
+        }
+
+    # Mocked trace results (no live DB/network)
+    # In production, this would query the context graph
+    root = {
+        "id": target_id,
+        "type": "unknown",
+        "title": f"Mock trace target: {target_id}",
+    }
+
+    lineage = []
+    for i in range(min(depth, 3)):  # Mock up to 3 levels
+        lineage.append(
+            {
+                "id": f"mock_related_{i}",
+                "type": "derived",
+                "relationship": "related_to",
+                "depth": i + 1,
+            }
+        )
+
+    return {
+        "tool": "context.trace",
+        "status": "ok",
+        "trace": {
+            "root": root,
+            "lineage": lineage,
+        },
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -111,18 +174,29 @@ class ContextBridge:
 
     def __init__(self) -> None:
         self._registry = ContextToolRegistry
-        # Replace scaffold handler with real implementation
-        old_tool = self._registry.get_tool("context.search")
-        if old_tool:
-            new_tool = ToolDefinition(
-                name=old_tool.name,
-                description=old_tool.description,
-                input_schema=old_tool.input_schema,
-                output_schema=old_tool.output_schema,
-                read_only=old_tool.read_only,
+        # Replace scaffold handlers with real implementations
+        old_search = self._registry.get_tool("context.search")
+        if old_search:
+            new_search = ToolDefinition(
+                name=old_search.name,
+                description=old_search.description,
+                input_schema=old_search.input_schema,
+                output_schema=old_search.output_schema,
+                read_only=old_search.read_only,
                 handler=context_search_handler,
             )
-            self._registry._tools["context.search"] = new_tool
+            self._registry._tools["context.search"] = new_search
+        old_trace = self._registry.get_tool("context.trace")
+        if old_trace:
+            new_trace = ToolDefinition(
+                name=old_trace.name,
+                description=old_trace.description,
+                input_schema=old_trace.input_schema,
+                output_schema=old_trace.output_schema,
+                read_only=old_trace.read_only,
+                handler=context_trace_handler,
+            )
+            self._registry._tools["context.trace"] = new_trace
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
