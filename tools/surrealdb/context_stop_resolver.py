@@ -19,6 +19,8 @@ Design intent:
 
 from __future__ import annotations
 
+import re
+
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -47,13 +49,26 @@ _HUMAN_GO_MAP: dict[str, tuple[str, str]] = {
 }
 
 _SECRETS_KEYWORDS = (
-    "secrets", "tresor", "token", "key", "private-key",
+    "secrets", "tresor", "token", "private-key",
     "secret", "credential", "password",
 )
 
+_SECRETS_BOUNDARY_PATTERNS = (
+    r"\bapi[_\s]?key\b",
+    r"\bsecret[_\s]?key\b",
+    r"\baccess[_\s]?key\b",
+    r"\bauth[_\s]?key\b",
+    r"\bprivate[_\s]key\b",
+    r"\bcrypto[_\s]?key\b",
+)
+
 _LIVE_KEYWORDS = (
-    "live", "echtgeld", "production deploy", "go-live",
+    "echtgeld", "production deploy", "go-live",
     "live readiness", "lr-go", "live trading authorization",
+)
+
+_LIVE_BOUNDARY_PATTERNS = (
+    r"\blive\b",
 )
 
 _VALID_TYPES = frozenset({
@@ -161,19 +176,35 @@ def _parse_rule_ref(raw: str) -> str | None:
 
 
 def _check_secrets_keyword(text: str) -> bool:
-    """Check if the text contains a secrets-related keyword."""
+    """Check if the text contains a secrets-related keyword.
+
+    Uses substring matching for unambiguous keywords and word-boundary
+    regex for ambiguous tokens like 'key' (to avoid false positives
+    on 'monkeypatch', 'keyboard', 'key_result', etc.).
+    """
     lower = text.lower()
     for kw in _SECRETS_KEYWORDS:
         if kw in lower:
+            return True
+    for pattern in _SECRETS_BOUNDARY_PATTERNS:
+        if re.search(pattern, lower):
             return True
     return False
 
 
 def _check_live_keyword(text: str) -> bool:
-    """Check if the text contains a live/echtgeld keyword."""
+    """Check if the text contains a live/echtgeld keyword.
+
+    Multi-word phrases match as substrings. The bare 'live' token uses
+    word-boundary matching to avoid false positives on words like
+    'deliverable', 'relative', 'liveable'.
+    """
     lower = text.lower()
     for kw in _LIVE_KEYWORDS:
         if kw in lower:
+            return True
+    for pattern in _LIVE_BOUNDARY_PATTERNS:
+        if re.search(pattern, lower):
             return True
     return False
 

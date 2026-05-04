@@ -2028,3 +2028,49 @@ class TestContextStopResolverHandler:
         assert "stop condition resolver failed" in unresolved_text, (
             f"unresolved_questions should surface resolver failure, got: {b['unresolved_questions']}"
         )
+
+    def test_live_substring_no_false_positive_deliverable(self) -> None:
+        """'deliverable' does NOT trigger forbidden_path (word-boundary fix)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["deliverable pending review"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] != "forbidden_path", (
+            f"deliverable should not trigger forbidden_path, got {r['type']}"
+        )
+
+    def test_key_substring_no_false_positive_monkeypatch(self) -> None:
+        """'monkeypatch' etc. does NOT trigger secrets_risk (word-boundary fix)."""
+        from tools.surrealdb.context_stop_resolver import resolve_stop_conditions
+
+        for text in ("monkeypatch", "keyboard", "key result", "turkey"):
+            result = resolve_stop_conditions(stop_conditions=[text])
+            for r in result:
+                assert r["type"] != "secrets_risk", (
+                    f"{text!r} should not trigger secrets_risk, got {r['type']}"
+                )
+
+    def test_standalone_live_still_triggers_forbidden_path(self) -> None:
+        """Standalone word 'live' still triggers forbidden_path."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["live deployment requested"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "forbidden_path"
+
+    def test_api_key_still_triggers_secrets_risk(self) -> None:
+        """'api_key' still triggers secrets_risk."""
+        from tools.surrealdb.context_stop_resolver import resolve_stop_conditions
+
+        for text in ("api_key found", "private key exposed", "secret_key leaked"):
+            result = resolve_stop_conditions(stop_conditions=[text])
+            assert len(result) >= 1
+            assert result[0]["type"] == "secrets_risk", (
+                f"{text!r} should trigger secrets_risk"
+            )
