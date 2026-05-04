@@ -31,7 +31,7 @@ domains:
       - agents_scoped
     readers:
       - agents
-    notes: "Scoped by namespace + TTL."
+    notes: "Cross-agent scoped memory for interchange. Scoped by namespace + TTL. Lighter, shorter-lived persistence. Distinct from agent_memory (per-agent, audit-trailed, source-hash-backed). No trading state. No secrets. No direct governance/runtime writes."
   observability_metrics:
     canonical: prometheus_grafana
     surrealdb: none
@@ -40,6 +40,61 @@ domains:
     readers:
       - ops_dashboards
     notes: "Metrics stay in Prometheus/Grafana."
+  context_intelligence:
+    canonical: git_working_repo
+    surrealdb: mirror_read_only
+    writers:
+      - context_indexer
+    readers:
+      - agents
+      - cdb_mcp
+    notes: "Umbrella domain for CIS. Metadata, knowledge graph edges, computed knowledge. Derives from repo + docs + governance mirrors. No orders. No positions. No fills. No risk-state-runtime data. No secrets. No live-/echtgeld-go authorisation. Hash-backed references only."
+  repo_knowledge:
+    canonical: git_working_repo
+    surrealdb: mirror_read_only
+    writers:
+      - context_indexer
+    readers:
+      - agents
+      - cdb_mcp
+    notes: "Static code symbols, interfaces, types, dependency edges from core/services. Source-hash per artifact required. Conditional ingestion only (no runtime state, no generated artifacts). No trading state. No secrets."
+  doc_knowledge:
+    canonical: git_working_repo
+    surrealdb: mirror_read_only
+    writers:
+      - context_indexer
+    readers:
+      - agents
+      - cdb_mcp
+    notes: "Markdown docs, governance, runbooks, agents from docs/knowledge/agents. Source-hash per chunk required. Stale document references (hash mismatch vs. current working repo) are drift. No trading state. No secrets."
+  agent_memory:
+    canonical: surrealdb
+    surrealdb: primary_scoped
+    writers:
+      - agents
+    readers:
+      - agents
+    notes: "Per-agent memory scoped by agent_id + namespace + TTL. Source-hash-backed evidence refs and audit-trailed reads/writes required. Distinct from shared_memory (cross-agent, lighter, shorter-lived). No trading state. No secrets. No live-/echtgeld-go authorisation."
+  evidence_fabric:
+    canonical: surrealdb
+    surrealdb: primary_scoped
+    writers:
+      - context_indexer
+      - agents
+    readers:
+      - agents
+      - cdb_mcp
+      - audit_analytics
+    notes: "Queryable evidence graph. Claims linked to source hashes. Evidence bundles with provenance trail. Appended, never edited. No trading-performance proofs. No live-PnL. No orders. No positions. No fills."
+  decision_context:
+    canonical: git_ledger
+    surrealdb: append_only_mirror
+    writers:
+      - agents_via_ledger
+    readers:
+      - agents
+      - audit_analytics
+    notes: "Decision events with rationale, evidence bundle refs, and audit trail. References decision ledger source + event_id. Ingest only; no edits. No automatic trade execution. No trading state. No secrets."
 drift_rules:
   - id: doc_hash_missing
     description: "SurrealDB doc nodes must include Git hash reference."
@@ -47,3 +102,13 @@ drift_rules:
     description: "SurrealDB decision events must reference ledger source + event id."
   - id: trading_state_in_surrealdb
     description: "Any trading-state record in SurrealDB is invalid."
+  - id: missing_source_hash
+    description: "Context intelligence records (repo_knowledge, doc_knowledge, evidence_fabric) MUST reference a source hash (git commit + path). Records without source hash are drift."
+  - id: missing_evidence_ref
+    description: "Claims in evidence_fabric and decision_context entries MUST reference ledger source + event_id. Evidence fabric nodes without provenance reference are drift."
+  - id: stale_doc_reference
+    description: "Doc references in doc_knowledge MUST match current working-repo Git hash. Stale references (hash mismatch) are drift."
+  - id: trading_state_leak
+    description: "Any trading-state record (orders, positions, fills, balances, risk-state) in ANY SurrealDB domain is invalid. Extends trading_state_in_surrealdb to all domains including context_intelligence, repo_knowledge, doc_knowledge, agent_memory, evidence_fabric, decision_context, shared_memory."
+  - id: unscoped_memory
+    description: "Agent memory writes outside scoped namespace (agent_id + namespace) are invalid. No cross-agent memory bypass via direct writes. No unscoped memory access."
