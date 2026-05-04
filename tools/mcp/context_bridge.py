@@ -542,6 +542,260 @@ def context_self_explain_handler(**kwargs) -> dict[str, Any]:
         }
 
 
+def context_readiness_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.readiness tool.
+
+    Implements Agent Action Readiness Check v0 per #2098.
+    Consumes the readiness contract from #2021:
+    docs/surrealdb/context-action-readiness-contract.md
+
+    Pure in-process evaluation. No DB/network. Fail-closed.
+    """
+    # --- Input extraction ---
+    task_scope = kwargs.get("task_scope")
+    target_issue = kwargs.get("target_issue")
+    target_paths = kwargs.get("target_paths", [])
+    operation_mode = kwargs.get("operation_mode", "")
+    context_package_ref = kwargs.get("context_package_ref")
+    required_reads = kwargs.get("required_reads", [])
+    evidence_refs = kwargs.get("evidence_refs", [])
+    impact_refs = kwargs.get("impact_refs", [])
+    stop_conditions_in = kwargs.get("stop_conditions", [])
+    uncertainties_in = kwargs.get("uncertainties")
+
+    # --- Normalize ---
+    if not isinstance(target_issue, str):
+        target_issue = None
+    if not isinstance(context_package_ref, str):
+        context_package_ref = None
+    if not isinstance(target_paths, list):
+        target_paths = []
+    if not isinstance(required_reads, list):
+        required_reads = []
+    if not isinstance(evidence_refs, list):
+        evidence_refs = []
+    if not isinstance(impact_refs, list):
+        impact_refs = []
+    if not isinstance(stop_conditions_in, list):
+        stop_conditions_in = []
+    if uncertainties_in is None:
+        uncertainties = []
+    elif not isinstance(uncertainties_in, list):
+        uncertainties = []
+    else:
+        uncertainties = [
+            u for u in uncertainties_in if isinstance(u, str) and u.strip()
+        ]
+
+    # --- Validate operation_mode against contract enum ---
+    VALID_OPERATION_MODES = frozenset({
+        "read_only",
+        "dry_run",
+        "write (code/docs)",
+        "write (config/infra)",
+        "write (DB/migration)",
+        "write (MCP live)",
+    })
+    if not isinstance(operation_mode, str) or operation_mode not in VALID_OPERATION_MODES:
+        return {
+            "tool": "context.readiness",
+            "status": "ok",
+            "readiness": {
+                "status": "blocked_missing_context",
+                "reasons": ["Invalid or missing operation_mode"],
+                "required_next_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "human_go_required": False,
+                "stop_conditions": [
+                    "S1: invalid operation_mode — must be one of: "
+                    + ", ".join(sorted(VALID_OPERATION_MODES)),
+                ],
+                "missing_context": [
+                    "invalid operation_mode: "
+                    + repr(operation_mode)
+                    + " — expected one of: "
+                    + ", ".join(sorted(VALID_OPERATION_MODES)),
+                ],
+                "missing_evidence": [],
+                "scope_drift_findings": [],
+                "uncertainties": [],
+                "guardrails": [
+                    "Do not proceed. Resolve missing context first.",
+                    "Readiness is not authorization. LR remains NO-GO. "
+                    "Board stage (trade-capable) is orthogonal.",
+                ],
+            },
+        }
+
+    # --- Accumulators ---
+    blocked_context: list[str] = []
+    blocked_evidence: list[str] = []
+    scope_drift_findings: list[str] = []
+    reasons: list[str] = []
+    required_next_reads: list[str] = []
+    guardrails: list[str] = []
+    output_stop_conditions: list[str] = []
+
+    MINIMUM_READS = [
+        "AGENTS.md",
+        "agents/AGENTS.md",
+        "agents/OPEN_CODE_AGENTS.md",
+        "docs/runbooks/CONTROL_REGISTER.md",
+        "CURRENT_STATUS.md",
+        "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+    ]
+
+    # --- Derive characteristics ---
+    is_write = isinstance(operation_mode, str) and operation_mode.startswith("write")
+    task_lower = task_scope.lower() if isinstance(task_scope, str) else ""
+    paths_lower = " ".join(target_paths).lower()
+
+    triggers = ["trading", "risk", "execution", "strategy"]
+    touches_trading_risk = any(
+        t in task_lower or t in paths_lower for t in triggers
+    )
+
+    live_kw = [
+        "live", "echtgeld", "production deploy", "go-live",
+        "live readiness", "lr-go", "live trading authorization",
+    ]
+    has_live_claim = any(kw in task_lower for kw in live_kw)
+
+    # --- Check 1: Scope defined ---
+    if not task_scope or not isinstance(task_scope, str) or not task_scope.strip():
+        blocked_context.append("scope not defined")
+
+    # --- Check 3: Required Reads (minimum baseline) ---
+    missing_reads = [r for r in MINIMUM_READS if r not in required_reads]
+    if missing_reads:
+        blocked_context.append(
+            f"minimum required reads missing: {', '.join(missing_reads)}"
+        )
+
+    # --- Check 2: Context Package or Required Reads ---
+    if not context_package_ref and not required_reads:
+        blocked_context.append("no context package and no required reads")
+
+    # --- Check 5: Impact Report for write operations ---
+    if is_write and not impact_refs:
+        blocked_context.append("write operation without impact report")
+
+    # --- Check 6: Stop Conditions ---
+    if not stop_conditions_in:
+        blocked_context.append("no stop conditions defined")
+
+    # --- Check 4: Evidence for core assumptions ---
+    if is_write and not evidence_refs:
+        blocked_evidence.append("write operation without evidence refs")
+
+    # --- Check 7: Human-GO required ---
+    # Human-GO is required for any write operation_mode (H1-H5),
+    # but read-only/dry-run inspections of trading/risk/execution
+    # scope do NOT require Human-GO (per contract Example 11.1).
+    human_go_required = is_write
+
+    # --- Check 8: Uncertainties ---
+    # uncertainties=[] is OK. For v0, detecting suppressed material
+    # uncertainties (governance/LR/Echtgeld) is deferred to Check 9;
+    # this check is informational-only at this stage.
+
+    # --- Check 9: No Live/Trading Derivation ---
+    if has_live_claim:
+        scope_drift_findings.append(
+            "task scope contains live/echtgeld/production claim — "
+            "readiness assessment must not derive or imply any Live-Readiness, "
+            "Echtgeld, or Trading authorization"
+        )
+
+    # --- Build output stop conditions from detected issues ---
+    if missing_reads:
+        for r in missing_reads:
+            output_stop_conditions.append(f"S3: minimum read unavailable: {r}")
+    if not context_package_ref and not required_reads:
+        output_stop_conditions.append(
+            "S2: no context package and no required reads"
+        )
+    if is_write and not impact_refs:
+        output_stop_conditions.append("S6: write without impact report")
+    if not stop_conditions_in:
+        output_stop_conditions.append("S1: no stop conditions — task_scope ambiguous")
+    if is_write and not evidence_refs:
+        output_stop_conditions.append("S4: core assumptions lack evidence")
+    if has_live_claim:
+        output_stop_conditions.append(
+            "S8: live/echtgeld claims outside LR SSOT"
+        )
+    if touches_trading_risk and is_write:
+        output_stop_conditions.append("S7: trading/risk/execution scope touched")
+
+    # Accumulate user-provided stop conditions
+    for sc in stop_conditions_in:
+        if sc not in output_stop_conditions:
+            output_stop_conditions.append(sc)
+
+    # --- Status derivation (deterministic, fail-closed) ---
+    if blocked_context:
+        status = "blocked_missing_context"
+        reasons.append("Missing required context")
+        required_next_reads = list(MINIMUM_READS)
+        guardrails.append("Do not proceed. Resolve missing context first.")
+    elif blocked_evidence:
+        status = "blocked_missing_evidence"
+        reasons.append("Missing evidence for core assumptions")
+        guardrails.append("Do not proceed. Evidence is missing.")
+    elif scope_drift_findings:
+        status = "blocked_scope_drift"
+        reasons.append("Scope drift detected")
+        guardrails.append("Do not proceed. Scope is not stable.")
+    elif human_go_required:
+        status = "ready_for_human_go"
+        reasons.append(
+            "Context sufficient. Write operation or trading/risk scope "
+            "requires Human-GO."
+        )
+        guardrails.append(
+            "Stop. Request Human-GO. Do not write until approved."
+        )
+    elif operation_mode == "dry_run":
+        status = "ready_for_dry_run"
+        reasons.append("Dry-run mode. Plan and preview, but do not execute.")
+        guardrails.append("Plan and diff only. No writes without Human-GO.")
+    else:
+        status = "ready_for_read_only"
+        reasons.append("Read-only scope, no writes required.")
+        guardrails.append("No writes. No issue comments. No PR creation.")
+
+    # Boundary guardrail — always present
+    guardrails.append(
+        "Readiness is not authorization. LR remains NO-GO. "
+        "Board stage (trade-capable) is orthogonal."
+    )
+
+    return {
+        "tool": "context.readiness",
+        "status": "ok",
+        "readiness": {
+            "status": status,
+            "reasons": reasons,
+            "required_next_reads": required_next_reads,
+            "human_go_required": human_go_required,
+            "stop_conditions": output_stop_conditions,
+            "missing_context": blocked_context if blocked_context else [],
+            "missing_evidence": blocked_evidence if blocked_evidence else [],
+            "scope_drift_findings": scope_drift_findings,
+            "uncertainties": uncertainties,
+            "guardrails": guardrails,
+        },
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -617,6 +871,17 @@ class ContextBridge:
                 handler=context_self_explain_handler,
             )
             self._registry._tools["context.self_explain"] = new_self_explain
+        old_readiness = self._registry.get_tool("context.readiness")
+        if old_readiness:
+            new_readiness = ToolDefinition(
+                name=old_readiness.name,
+                description=old_readiness.description,
+                input_schema=old_readiness.input_schema,
+                output_schema=old_readiness.output_schema,
+                read_only=old_readiness.read_only,
+                handler=context_readiness_handler,
+            )
+            self._registry._tools["context.readiness"] = new_readiness
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )

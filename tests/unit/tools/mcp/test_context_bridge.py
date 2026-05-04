@@ -710,3 +710,438 @@ class TestContextSelfExplainHandler:
         )
         assert result["status"] == "ok"
         assert len(result["explanation"]["reasons"]) >= 1
+
+
+class TestContextReadinessHandler:
+    """Tests for context.readiness tool handler (#2098)."""
+
+    # --- Blocked: missing_context ---
+
+    def test_missing_task_scope_returns_blocked_missing_context(self) -> None:
+        """Missing task_scope fails closed with blocked_missing_context."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert "scope not defined" in result["readiness"]["missing_context"]
+
+    def test_empty_task_scope_whitespace_returns_blocked_missing_context(self) -> None:
+        """Whitespace-only task_scope fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "   ",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+
+    def test_invalid_operation_mode_returns_blocked_missing_context(self) -> None:
+        """Unknown operation_mode fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Test invalid mode.",
+                "operation_mode": "full_send",
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert any(
+            "invalid operation_mode" in m
+            for m in result["readiness"]["missing_context"]
+        )
+
+    def test_missing_operation_mode_returns_blocked_missing_context(self) -> None:
+        """Missing operation_mode from kwargs fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Test missing mode.",
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert any(
+            "invalid operation_mode" in m
+            for m in result["readiness"]["missing_context"]
+        )
+
+    def test_missing_required_reads_returns_blocked_missing_context(self) -> None:
+        """Missing minimum required reads blocks."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Inspect the risk engine.",
+                "operation_mode": "read_only",
+                "required_reads": ["AGENTS.md"],
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        missing = result["readiness"]["missing_context"]
+        assert any("minimum required reads missing" in m for m in missing)
+
+    def test_no_context_package_and_no_reads_blocks(self) -> None:
+        """No context package and no required reads blocks."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Refactor something.",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert any(
+            "no context package and no required reads" in m
+            for m in result["readiness"]["missing_context"]
+        )
+
+    def test_write_without_impact_report_returns_blocked_missing_context(self) -> None:
+        """Write operation without impact report blocks."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Fix a bug.",
+                "operation_mode": "write (code/docs)",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "evidence_refs": ["#1234"],
+                "stop_conditions": ["S3: required reads unavailable"],
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert any(
+            "write operation without impact report" in m
+            for m in result["readiness"]["missing_context"]
+        )
+
+    def test_no_stop_conditions_blocks(self) -> None:
+        """No stop conditions blocks."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Inspect logs.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_context"
+        assert any(
+            "no stop conditions" in m
+            for m in result["readiness"]["missing_context"]
+        )
+
+    # --- Blocked: missing_evidence ---
+
+    def test_write_without_evidence_returns_blocked_missing_evidence(self) -> None:
+        """Write operation without evidence refs blocks on missing evidence."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Fix a bug in the ws service.",
+                "operation_mode": "write (code/docs)",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "impact_refs": ["services/ws/"],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_missing_evidence"
+        assert any(
+            "write operation without evidence" in e
+            for e in result["readiness"]["missing_evidence"]
+        )
+
+    # --- Blocked: scope_drift ---
+
+    def test_live_claim_in_scope_returns_blocked_scope_drift(self) -> None:
+        """Task scope containing live/echtgeld claim is detected as scope drift."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Deploy system to production for go-live.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["status"] == "blocked_scope_drift"
+        assert len(result["readiness"]["scope_drift_findings"]) >= 1
+
+    # --- Ready states ---
+
+    def test_read_only_with_minimum_inputs_returns_ready_for_read_only(self) -> None:
+        """Full minimum inputs for read-only returns ready_for_read_only."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Inspect how the execution service handles fills.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["status"] == "ready_for_read_only"
+        assert result["readiness"]["human_go_required"] is False
+
+    def test_dry_run_returns_ready_for_dry_run(self) -> None:
+        """Dry-run mode returns ready_for_dry_run."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Plan a fix for reconnect timeout.",
+                "operation_mode": "dry_run",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["status"] == "ready_for_dry_run"
+
+    def test_write_mode_with_context_returns_ready_for_human_go(self) -> None:
+        """Write mode with full context returns ready_for_human_go."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Fix decimal precision bug.",
+                "operation_mode": "write (code/docs)",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "evidence_refs": ["#1983"],
+                "impact_refs": ["services/execution/"],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["status"] == "ready_for_human_go"
+        assert result["readiness"]["human_go_required"] is True
+
+    # --- human_go_required flag ---
+
+    def test_human_go_required_true_for_write(self) -> None:
+        """human_go_required is True for any write operation_mode."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Update config.",
+                "operation_mode": "write (config/infra)",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "evidence_refs": ["#1234"],
+                "impact_refs": ["infrastructure/"],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["human_go_required"] is True
+
+    def test_human_go_required_false_for_read_only(self) -> None:
+        """human_go_required is False for pure read-only non-trading scope."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Read documentation.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        assert result["readiness"]["human_go_required"] is False
+
+    # --- Uncertainties ---
+
+    def test_empty_uncertainties_is_ok(self) -> None:
+        """uncertainties=[] is not a blocker (per correction)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Inspect log output.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+                "uncertainties": [],
+            },
+        )
+        assert result["readiness"]["status"] == "ready_for_read_only"
+
+    # --- Output contract compliance ---
+
+    def test_output_contains_all_contract_fields(self) -> None:
+        """Output contains all 10 contract fields."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Test output contract.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        r = result["readiness"]
+        expected_fields = [
+            "status", "reasons", "required_next_reads",
+            "human_go_required", "stop_conditions",
+            "missing_context", "missing_evidence",
+            "scope_drift_findings", "uncertainties", "guardrails",
+        ]
+        for field in expected_fields:
+            assert field in r, f"Missing output field: {field}"
+
+    def test_guardrails_contain_boundary_text(self) -> None:
+        """Guardrails always contain the readiness-is-not-authorization boundary."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Any task.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        guardrails = result["readiness"]["guardrails"]
+        assert len(guardrails) >= 2
+        assert any("not authorization" in g.lower() for g in guardrails)
+        assert any("lr remains no-go" in g.lower() for g in guardrails)
+
+    def test_readiness_not_authorization_explicit(self) -> None:
+        """Readiness status is not an authorization signal."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.readiness",
+            {
+                "task_scope": "Test authorization boundary.",
+                "operation_mode": "read_only",
+                "required_reads": [
+                    "AGENTS.md",
+                    "agents/AGENTS.md",
+                    "agents/OPEN_CODE_AGENTS.md",
+                    "docs/runbooks/CONTROL_REGISTER.md",
+                    "CURRENT_STATUS.md",
+                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+                ],
+                "stop_conditions": ["S1: scope ambiguous"],
+            },
+        )
+        r = result["readiness"]
+        assert r["status"] != "ready_for_human_go"  # read_only => ready_for_read_only
+
+    # --- Status determinism ---
+
+    def test_same_inputs_same_output(self) -> None:
+        """Same inputs produce identical readiness output."""
+        bridge = create_bridge()
+        inputs = {
+            "task_scope": "Verify determinism.",
+            "operation_mode": "read_only",
+            "required_reads": [
+                "AGENTS.md",
+                "agents/AGENTS.md",
+                "agents/OPEN_CODE_AGENTS.md",
+                "docs/runbooks/CONTROL_REGISTER.md",
+                "CURRENT_STATUS.md",
+                "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+            ],
+            "stop_conditions": ["S1: scope ambiguous"],
+            "uncertainties": [],
+        }
+        r1 = bridge.execute_tool("context.readiness", inputs)
+        r2 = bridge.execute_tool("context.readiness", inputs)
+        assert r1 == r2

@@ -219,21 +219,121 @@ TOOLS_V0 = [
     ),
     ToolDefinition(
         name="context.readiness",
-        description="Show read-only readiness evaluation metadata (NOT Live Readiness).",
+        description="Assess agent action readiness for a given task scope. Read-only, fails closed. Requires task_scope and operation_mode.",
         input_schema={
             "type": "object",
             "properties": {
-                "component": {"type": "string"},
-                "include_details": {"type": "boolean", "default": False},
+                "task_scope": {
+                    "type": "string",
+                    "description": "What the agent is asked to do (one concise sentence).",
+                },
+                "target_issue": {
+                    "type": ["string", "null"],
+                    "description": "GitHub issue driving the task, or null for exploratory.",
+                },
+                "target_paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "File paths or glob patterns in scope.",
+                },
+                "operation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "read_only",
+                        "dry_run",
+                        "write (code/docs)",
+                        "write (config/infra)",
+                        "write (DB/migration)",
+                        "write (MCP live)",
+                    ],
+                    "description": "Operational mode for the task.",
+                },
+                "context_package_ref": {
+                    "type": ["string", "null"],
+                    "description": "Reference to an assembled Context Package.",
+                },
+                "required_reads": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Canonical files the agent must read before acting.",
+                },
+                "evidence_refs": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "References to evidence sources backing core assumptions.",
+                },
+                "impact_refs": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Issues/PRs/paths impacted by the proposed action.",
+                },
+                "stop_conditions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Known stop conditions that would abort the task.",
+                },
+                "uncertainties": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Explicitly acknowledged unknowns or assumptions.",
+                },
             },
-            "required": ["component"],
+            "required": ["task_scope", "operation_mode"],
         },
         output_schema={
             "type": "object",
             "properties": {
                 "tool": {"type": "string"},
                 "status": {"type": "string"},
-                "readiness": {"type": "object"},
+                "readiness": {
+                    "type": "object",
+                    "properties": {
+                        "status": {
+                            "type": "string",
+                            "enum": [
+                                "ready_for_read_only",
+                                "ready_for_dry_run",
+                                "ready_for_human_go",
+                                "blocked_missing_context",
+                                "blocked_missing_evidence",
+                                "blocked_scope_drift",
+                            ],
+                        },
+                        "reasons": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "required_next_reads": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "human_go_required": {"type": "boolean"},
+                        "stop_conditions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "missing_context": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "missing_evidence": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "scope_drift_findings": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "uncertainties": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                        "guardrails": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
             },
         },
         read_only=True,
