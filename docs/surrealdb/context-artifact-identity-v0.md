@@ -88,7 +88,8 @@ Same `source_hash` + different path + same commit = **duplicate**, not rename
 (see Section 7.1). Cross-commit boundary distinguishes rename tracking from
 duplicate detection.
 
-A `related_to` relationship (per #1982 vocabulary) can link the old and new records.
+The old and new records are linked via `supersedes` / `superseded_by` (per
+#1982 vocabulary), matching Section 7.2.
 
 ---
 
