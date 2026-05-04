@@ -24,6 +24,7 @@ class TestContextToolRegistry:
             "context.package",
             "context.readiness",
             "context.self_explain",
+            "context.briefing",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not registered"
@@ -224,7 +225,7 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        assert len(tools) == 8
+        assert len(tools) == 9
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
@@ -257,7 +258,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 8
+        assert len(status["read_only_tools"]) == 9
 
 
 class TestDefensiveSchemaCopies:
@@ -1145,3 +1146,444 @@ class TestContextReadinessHandler:
         r1 = bridge.execute_tool("context.readiness", inputs)
         r2 = bridge.execute_tool("context.readiness", inputs)
         assert r1 == r2
+
+
+class TestContextBriefingHandler:
+    """Tests for context.briefing tool handler (#2105)."""
+
+    def test_tool_in_list_tools(self) -> None:
+        """Tool is visible in list_tools()."""
+        bridge = create_bridge()
+        tool_names = [t["name"] for t in bridge.list_tools()]
+        assert "context.briefing" in tool_names
+
+    def test_tool_is_read_only(self) -> None:
+        """Tool is read-only."""
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("context.briefing")
+        assert schema is not None
+        assert schema["readOnly"] is True
+
+    def test_missing_task_id_fails_closed(self) -> None:
+        """Missing task_id fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_task_id"
+
+    def test_missing_task_scope_fails_closed(self) -> None:
+        """Missing task_scope fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_task_scope"
+
+    def test_invalid_depth_fails_closed(self) -> None:
+        """Invalid requested_depth fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "requested_depth": "invalid",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_depth"
+
+    def test_invalid_operation_mode_fails_closed(self) -> None:
+        """Invalid operation_mode fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "invalid_mode",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_operation_mode"
+
+    def test_minimum_valid_request_returns_ok(self) -> None:
+        """Minimum valid request returns ok with briefing."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-2104-land-schema",
+                "task_scope": "Define the agent briefing schema v1.",
+                "target_issue": "#2104",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.briefing"
+        assert "briefing" in result
+        b = result["briefing"]
+        assert b["briefing_id"] != ""
+        assert len(b["briefing_id"]) == 16
+
+    def test_output_contains_all_16_contract_fields(self) -> None:
+        """Output contains all 16 briefing contract fields per #2104 schema."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Validate output contract.",
+                "target_issue": "#2104",
+                "requested_depth": "standard",
+                "operation_mode": "read_only",
+                "target_paths": ["docs/surrealdb/"],
+                "target_symbols": ["context_briefing_handler"],
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        expected_fields = [
+            "briefing_id",
+            "scope_summary",
+            "context_package_ref",
+            "required_reads",
+            "relevant_artifacts",
+            "relevant_symbols",
+            "relevant_docs",
+            "relevant_decisions",
+            "relevant_evidence",
+            "dependency_paths",
+            "known_risks",
+            "guardrails",
+            "stop_conditions",
+            "validation_plan",
+            "unresolved_questions",
+            "human_go_required",
+        ]
+        for field in expected_fields:
+            assert field in b, f"Missing briefing field: {field}"
+
+    def test_depth_quick_returns_minimal(self) -> None:
+        """Quick depth returns minimal briefing (no package artifacts)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-quick",
+                "task_scope": "Quick briefing test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert "quick — summary only" in b["scope_summary"].lower()
+        assert b["context_package_ref"] is None
+        assert b["relevant_artifacts"] == []
+        assert b["relevant_symbols"] == []
+
+    def test_depth_standard_returns_artifacts(self) -> None:
+        """Standard depth returns relevant artifacts/symbols/docs."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-standard",
+                "task_scope": "Standard briefing test.",
+                "target_issue": "#2105",
+                "requested_depth": "standard",
+                "operation_mode": "read_only",
+                "target_paths": ["tools/mcp/context_bridge.py"],
+                "target_symbols": ["context_briefing_handler"],
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert "standard" in b["scope_summary"].lower()
+        assert b["context_package_ref"] is not None  # mocked package ref
+        assert len(b["relevant_artifacts"]) >= 1
+        assert len(b["relevant_symbols"]) >= 1
+        assert len(b["relevant_docs"]) >= 1
+
+    def test_depth_deep_flags_mock_uncertainty(self) -> None:
+        """Deep depth flags v0/mock/full-package uncertainty."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-deep",
+                "task_scope": "Deep briefing test.",
+                "target_issue": "#2105",
+                "requested_depth": "deep",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert "deep" in b["scope_summary"].lower()
+        assert any(
+            "mocked/synthetic" in q.lower() or "mock" in q.lower()
+            for q in b["unresolved_questions"]
+        ), "Deep depth should flag v0 mock/synthetic uncertainty"
+
+    def test_write_mode_sets_human_go_required_true(self) -> None:
+        """Write operation_mode sets human_go_required to True."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-write",
+                "task_scope": "Fix a bug in the execution service.",
+                "target_issue": "#1983",
+                "requested_depth": "standard",
+                "operation_mode": "write (code/docs)",
+                "target_paths": ["services/execution/"],
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert b["human_go_required"] is True
+
+    def test_read_only_sets_human_go_required_false(self) -> None:
+        """read_only operation_mode sets human_go_required to False."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-read",
+                "task_scope": "Inspect the execution service.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert b["human_go_required"] is False
+
+    def test_deterministic_briefing_id(self) -> None:
+        """Same request produces same briefing_id."""
+        bridge = create_bridge()
+        inputs = {
+            "task_id": "cdb-briefing-det-001",
+            "task_scope": "Determinism test.",
+            "target_issue": "#2105",
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+        r1 = bridge.execute_tool("context.briefing", inputs)
+        r2 = bridge.execute_tool("context.briefing", inputs)
+        assert r1["briefing"]["briefing_id"] == r2["briefing"]["briefing_id"]
+
+    def test_guardrails_contain_boundary_text_and_no_go(self) -> None:
+        """Guardrails contain boundary text and NO-GO."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-guard",
+                "task_scope": "Guardrail test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        guardrails = result["briefing"]["guardrails"]
+        assert len(guardrails) >= 7
+        assert any("not authorisation" in g.lower() for g in guardrails)
+        assert any("no-g" in g.lower() for g in guardrails)
+
+    def test_readiness_blocker_reflected(self) -> None:
+        """Readiness blocker is reflected in stop_conditions and unresolved_questions."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-blocked",
+                "task_scope": "Deploy to production for go-live.",
+                "target_issue": "#9999",
+                "requested_depth": "standard",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        # Readiness should detect scope drift (live claim)
+        stop_conditions = b["stop_conditions"]
+        all_text = " ".join(stop_conditions + b["unresolved_questions"])
+        assert (
+            "blocked" in all_text.lower()
+            or "scope" in all_text.lower()
+        ), "Readiness blocker should be reflected in output"
+
+    def test_known_risks_contains_mock_note(self) -> None:
+        """Known risks contains note about v0 synthetic/mock inputs."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-risks",
+                "task_scope": "Risk note test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert any(
+            "synthetic" in r.lower() or "mock" in r.lower()
+            for r in b["known_risks"]
+        ), "Known risks must surface v0 mock note"
+
+    def test_validation_plan_present_for_all_modes(self) -> None:
+        """Validation plan is present for all operation modes."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-val",
+                "task_scope": "Validation plan test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        vp = result["briefing"]["validation_plan"]
+        assert len(vp) >= 2
+        for step in vp:
+            assert "step" in step
+            assert "method" in step
+
+    def test_missing_target_issue_returns_error(self) -> None:
+        """Missing target_issue key fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Test scope.",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_target_issue"
+
+    def test_target_issue_null_is_ok(self) -> None:
+        """target_issue: null (None) is explicitly allowed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-null",
+                "task_scope": "Exploratory research.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+
+    def test_missing_requested_depth_returns_error(self) -> None:
+        """Missing requested_depth key fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_depth"
+
+    def test_missing_operation_mode_returns_error(self) -> None:
+        """Missing operation_mode key fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-test",
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "requested_depth": "quick",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_operation_mode"
+
+    def test_valid_read_only_readiness_not_blocked(self) -> None:
+        """Valid read_only request does not get artificial missing-reads blocker."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-valid",
+                "task_scope": "Inspect the execution service.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert b["human_go_required"] is False
+        assert len(b["required_reads"]) >= 6
+        # Must not contain blocked scope or artificial missing reads
+        assert "blocked" not in b["scope_summary"].lower().split("readiness status: ")[-1].split(".")[0]
+
+    def test_different_target_paths_produce_different_briefing_id(self) -> None:
+        """Different target_paths produce different briefing_id."""
+        bridge = create_bridge()
+        r1 = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-paths",
+                "task_scope": "Path test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "target_paths": ["docs/surrealdb/"],
+            },
+        )
+        r2 = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-paths",
+                "task_scope": "Path test.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "target_paths": ["tools/mcp/"],
+            },
+        )
+        assert r1["status"] == "ok"
+        assert r2["status"] == "ok"
+        assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]

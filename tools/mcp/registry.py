@@ -402,6 +402,99 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("context.self_explain"),
     ),
+    ToolDefinition(
+        name="context.briefing",
+        description="Generate a task-specific Agent Briefing v1 from Briefing Request schema (docs/surrealdb/context-agent-briefing-schema-v1.md). Delegates to context.readiness and context.package for context assembly. Read-only, no authorization, no Live/Echtgeld Go.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "string",
+                    "description": "Unique task identifier. Convention: cdb-briefing-<issue>-<short-slug>.",
+                },
+                "target_issue": {
+                    "type": ["string", "null"],
+                    "description": "GitHub issue number driving the task, or null for exploratory.",
+                },
+                "task_scope": {
+                    "type": "string",
+                    "description": "What the agent is asked to do (one concise sentence).",
+                },
+                "target_paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "File paths or glob patterns in scope.",
+                },
+                "target_symbols": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Code symbols relevant to the task.",
+                },
+                "target_concepts": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Domain concepts from the CIS ontology relevant to the task.",
+                },
+                "requested_depth": {
+                    "type": "string",
+                    "enum": ["quick", "standard", "deep"],
+                    "description": "Briefing depth.",
+                },
+                "operation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "read_only",
+                        "dry_run",
+                        "write (code/docs)",
+                        "write (config/infra)",
+                        "write (DB/migration)",
+                        "write (MCP live)",
+                    ],
+                    "description": "Intended agent operation mode.",
+                },
+                "agent_type": {
+                    "type": "string",
+                    "description": "Agent identifier (e.g. OPENCODE/codex, GEMINI, CLAUDE).",
+                },
+                "risk_level": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"],
+                    "description": "Pre-assessed risk level of the task.",
+                },
+            },
+            "required": ["task_id", "task_scope", "target_issue", "requested_depth", "operation_mode"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "briefing": {
+                    "type": "object",
+                    "properties": {
+                        "briefing_id": {"type": "string"},
+                        "scope_summary": {"type": "string"},
+                        "context_package_ref": {"type": ["string", "null"]},
+                        "required_reads": {"type": "array", "items": {"type": "string"}},
+                        "relevant_artifacts": {"type": "array"},
+                        "relevant_symbols": {"type": "array"},
+                        "relevant_docs": {"type": "array"},
+                        "relevant_decisions": {"type": "array"},
+                        "relevant_evidence": {"type": "array"},
+                        "dependency_paths": {"type": "array"},
+                        "known_risks": {"type": "array", "items": {"type": "string"}},
+                        "guardrails": {"type": "array", "items": {"type": "string"}},
+                        "stop_conditions": {"type": "array", "items": {"type": "string"}},
+                        "validation_plan": {"type": "array"},
+                        "unresolved_questions": {"type": "array", "items": {"type": "string"}},
+                        "human_go_required": {"type": "boolean"},
+                    },
+                },
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("context.briefing"),
+    ),
 ]
 
 

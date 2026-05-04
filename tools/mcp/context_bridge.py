@@ -796,6 +796,387 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_briefing_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.briefing tool.
+
+    Implements Agent Briefing Builder v1 per #2105.
+    Consumes the Briefing Schema v1 from #2104:
+    docs/surrealdb/context-agent-briefing-schema-v1.md
+
+    Delegates to context.readiness and context.package for context assembly.
+    Pure in-process evaluation. No DB/network. Fail-closed.
+    Generates deterministic briefing_id from request fields.
+
+    Guardrails: Briefing is context, not authorisation.
+    No Live/Echtgeld Go. LR remains NO-GO.
+    """
+    import hashlib
+    import json
+
+    _MISSING = object()
+
+    # --- Input extraction (no defaults for required fields) ---
+    task_id = kwargs.get("task_id")
+    task_scope = kwargs.get("task_scope")
+    target_issue = kwargs.get("target_issue", _MISSING)
+    requested_depth = kwargs.get("requested_depth", _MISSING)
+    operation_mode = kwargs.get("operation_mode", _MISSING)
+    target_paths = kwargs.get("target_paths", [])
+    target_symbols = kwargs.get("target_symbols", [])
+    target_concepts = kwargs.get("target_concepts", [])
+    agent_type = kwargs.get("agent_type", "")
+    risk_level = kwargs.get("risk_level", "medium")
+
+    # --- Validate required fields (fail-closed, sentinel for missing keys) ---
+    if not task_id or not isinstance(task_id, str) or not task_id.strip():
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_task_id",
+                "message": "task_id is required and must be a non-empty string",
+            },
+        }
+
+    if not task_scope or not isinstance(task_scope, str) or not task_scope.strip():
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_task_scope",
+                "message": "task_scope is required and must be a non-empty string",
+            },
+        }
+
+    if target_issue is _MISSING:
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_target_issue",
+                "message": "target_issue is required (must be a string or null)",
+            },
+        }
+
+    if target_issue is not None and not isinstance(target_issue, str):
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_target_issue",
+                "message": "target_issue must be a string or null",
+            },
+        }
+
+    if requested_depth is _MISSING:
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_depth",
+                "message": "requested_depth is required",
+            },
+        }
+
+    valid_depths = frozenset({"quick", "standard", "deep"})
+    if not isinstance(requested_depth, str) or requested_depth not in valid_depths:
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_depth",
+                "message": (
+                    f"requested_depth must be one of {sorted(valid_depths)}, "
+                    f"got {requested_depth!r}"
+                ),
+            },
+        }
+
+    if operation_mode is _MISSING:
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_operation_mode",
+                "message": "operation_mode is required",
+            },
+        }
+
+    valid_modes = frozenset({
+        "read_only",
+        "dry_run",
+        "write (code/docs)",
+        "write (config/infra)",
+        "write (DB/migration)",
+        "write (MCP live)",
+    })
+    if not isinstance(operation_mode, str) or operation_mode not in valid_modes:
+        return {
+            "tool": "context.briefing",
+            "status": "error",
+            "error": {
+                "code": "invalid_operation_mode",
+                "message": (
+                    f"operation_mode must be one of {sorted(valid_modes)}, "
+                    f"got {operation_mode!r}"
+                ),
+            },
+        }
+
+    if risk_level not in frozenset({"low", "medium", "high"}):
+        risk_level = "medium"
+
+    # --- Normalize arrays ---
+    if not isinstance(target_paths, list):
+        target_paths = []
+    if not isinstance(target_symbols, list):
+        target_symbols = []
+    if not isinstance(target_concepts, list):
+        target_concepts = []
+
+    # --- Generate deterministic briefing_id from all request fields ---
+    target_paths_norm = [str(p) for p in target_paths if isinstance(p, str)]
+    target_symbols_norm = [str(s) for s in target_symbols if isinstance(s, str)]
+    target_concepts_norm = [str(c) for c in target_concepts if isinstance(c, str)]
+    agent_type_norm = agent_type.strip() if isinstance(agent_type, str) else ""
+    risk_level_norm = risk_level if risk_level in frozenset({"low", "medium", "high"}) else "medium"
+
+    request_for_hash: dict[str, Any] = {
+        "task_id": task_id.strip(),
+        "target_issue": target_issue if target_issue is not None else None,
+        "task_scope": task_scope.strip(),
+        "target_paths": target_paths_norm,
+        "target_symbols": target_symbols_norm,
+        "target_concepts": target_concepts_norm,
+        "requested_depth": requested_depth,
+        "operation_mode": operation_mode,
+        "agent_type": agent_type_norm,
+        "risk_level": risk_level_norm,
+    }
+    briefing_id = hashlib.sha256(
+        json.dumps(request_for_hash, sort_keys=True).encode()
+    ).hexdigest()[:16]
+
+    # --- Delegate to context.readiness with minimum reads ---
+    MINIMUM_READS = [
+        "AGENTS.md",
+        "agents/AGENTS.md",
+        "agents/OPEN_CODE_AGENTS.md",
+        "docs/runbooks/CONTROL_REGISTER.md",
+        "CURRENT_STATUS.md",
+        "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+    ]
+    readiness_result = context_readiness_handler(
+        task_scope=task_scope,
+        target_issue=target_issue,
+        target_paths=target_paths,
+        operation_mode=operation_mode,
+        required_reads=MINIMUM_READS,
+        stop_conditions=[
+            "S1: briefing scope ambiguous",
+            "S3: required canon reads unavailable",
+        ],
+    )
+    readiness = readiness_result.get("readiness", {})
+    human_go_required = readiness.get("human_go_required", False)
+    readiness_status = readiness.get("status", "ready_for_read_only")
+
+    # --- Derive stop conditions ---
+    stop_conditions = list(readiness.get("stop_conditions", []))
+    if human_go_required:
+        stop_conditions.append("H1: write action requires explicit Human-GO")
+    stop_conditions.append("S10: STOP if LR/Stage/Live claims surface")
+
+    # --- Guardrails (always present) ---
+    guardrails = [
+        "Briefing is context, not authorisation.",
+        "No Runtime write.",
+        "No MCP live action.",
+        "No DB/migration write.",
+        "No Trading/Risk/Execution decision.",
+        "No Live/Echtgeld Go.",
+        "LR remains NO-GO (SSOT: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).",
+    ]
+
+    # --- Required reads (from readiness, minimum baseline always present) ---
+    required_reads = readiness.get("required_next_reads", MINIMUM_READS) or MINIMUM_READS
+
+    # --- Delegate to context.package for standard/deep depth ---
+    package_artifacts: list[dict[str, Any]] = []
+    package_symbols: list[dict[str, Any]] = []
+    package_docs: list[dict[str, Any]] = []
+    dependency_paths: list[dict[str, Any]] = []
+    known_risks: list[str] = []
+    unresolved_questions: list[str] = []
+    context_package_ref: Optional[str] = None
+
+    if requested_depth in ("standard", "deep"):
+        package_result = context_package_handler(
+            artifacts=["briefing_artifact_001", "briefing_artifact_002"],
+            format="json",
+        )
+        pkg = package_result.get("package", {})
+        context_package_ref = pkg.get("package_id")
+
+        # Map package items to briefing fields
+        for item in pkg.get("items", []):
+            package_artifacts.append(
+                {
+                    "id": item.get("id", ""),
+                    "type": item.get("type", "doc"),
+                    "title": f"Artifact: {item.get('id', '')}",
+                    "source_ref": (
+                        item.get("source_refs", [""])[0]
+                        if item.get("source_refs")
+                        else ""
+                    ),
+                    "confidence": item.get("confidence", 0.5),
+                }
+            )
+
+        if target_symbols:
+            for sym in target_symbols[:10]:
+                package_symbols.append(
+                    {
+                        "symbol_name": sym,
+                        "symbol_type": "function",
+                        "file_path": f"<mocked>/path/to/{sym}",
+                        "dependents": [],
+                    }
+                )
+
+        if target_paths:
+            for path in target_paths[:5]:
+                package_docs.append(
+                    {
+                        "doc_id": f"doc_{hashlib.md5(path.encode()).hexdigest()[:8]}",
+                        "title": path,
+                        "path": path,
+                        "summary": f"Mocked documentation for {path}.",
+                    }
+                )
+
+        if target_paths and len(target_paths) > 1:
+            dependency_paths.append(
+                {
+                    "from": target_paths[0],
+                    "to": target_paths[1],
+                    "relationship": "references",
+                }
+            )
+
+    # --- Agent attribution for scope summary ---
+    agent_label = f" [{agent_type.strip()}]" if agent_type and agent_type.strip() else ""
+
+    # --- Depth-dependent content ---
+    if requested_depth == "quick":
+        scope_summary = (
+            f"Task {task_id}: {task_scope.strip()}{agent_label}. "
+            f"Depth: quick — summary only. "
+            f"Readiness status: {readiness_status}. "
+            f"Human-GO required: {human_go_required}."
+        )
+    elif requested_depth == "standard":
+        scope_summary = (
+            f"Task {task_id}: {task_scope.strip()}{agent_label}. "
+            f"Depth: standard — key artifacts + stop conditions. "
+            f"Readiness status: {readiness_status}. "
+            f"Context package: {context_package_ref or 'mocked-v0'}. "
+            f"Human-GO required: {human_go_required}."
+        )
+    else:  # deep
+        scope_summary = (
+            f"Task {task_id}: {task_scope.strip()}{agent_label}. "
+            f"Depth: deep — full context package requested. "
+            f"Readiness status: {readiness_status}. "
+            f"Context package: {context_package_ref or 'mocked-v0'}. "
+            f"Human-GO required: {human_go_required}. "
+            f"Note: deep depth requires full SurrealDB Context Package — "
+            f"mocked/synthetic in v0."
+        )
+        unresolved_questions.append(
+            "deep depth requires full Context Package from SurrealDB; "
+            "v0 uses synthetic/mock package inputs"
+        )
+
+    # --- Known risks ---
+    known_risks.append("v0 briefing builder uses synthetic/mock package inputs")
+    if readiness_status.startswith("blocked"):
+        known_risks.append(
+            f"Readiness check blocked: {readiness_status}; "
+            f"briefing may be incomplete"
+        )
+    if not target_paths and not target_symbols:
+        known_risks.append(
+            "no target_paths or target_symbols specified; "
+            "context may be minimal"
+        )
+
+    # --- Readiness blocker surfaced ---
+    if readiness_status.startswith("blocked"):
+        unresolved_questions.append(
+            f"readiness check returned {readiness_status}: "
+            f"{'; '.join(readiness.get('reasons', ['unknown']))}"
+        )
+        stop_conditions.append(
+            f"S2/S3: readiness blocked ({readiness_status}) — "
+            f"resolve missing context/evidence before proceeding"
+        )
+
+    # --- Validation plan ---
+    is_write = operation_mode.startswith("write")
+    validation_plan = []
+    if is_write:
+        validation_plan.append(
+            {
+                "step": "Verify Human-GO received",
+                "method": "Check that explicit GO was given for this specific action",
+                "evidence_required": "Human-GO confirmation (issue comment or explicit GO message)",
+            }
+        )
+    validation_plan.append(
+        {
+            "step": "Re-read required canon files",
+            "method": "Read AGENTS.md chain + CONTROL_REGISTER + CURRENT_STATUS + LR-AUDIT-STATUS",
+            "evidence_required": "Self-attestation that all required reads were completed",
+        }
+    )
+    validation_plan.append(
+        {
+            "step": "Verify all guardrails acknowledged",
+            "method": "Review guardrails list in this briefing",
+            "evidence_required": "Explicit acknowledgement in session log",
+        }
+    )
+
+    # --- Assemble briefing result ---
+    briefing: dict[str, Any] = {
+        "briefing_id": briefing_id,
+        "scope_summary": scope_summary,
+        "context_package_ref": context_package_ref,
+        "required_reads": required_reads,
+        "relevant_artifacts": package_artifacts[:10],
+        "relevant_symbols": package_symbols[:10],
+        "relevant_docs": package_docs[:5],
+        "relevant_decisions": [],
+        "relevant_evidence": [],
+        "dependency_paths": dependency_paths,
+        "known_risks": known_risks,
+        "guardrails": guardrails,
+        "stop_conditions": stop_conditions,
+        "validation_plan": validation_plan,
+        "unresolved_questions": unresolved_questions,
+        "human_go_required": human_go_required,
+    }
+
+    return {
+        "tool": "context.briefing",
+        "status": "ok",
+        "briefing": briefing,
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -882,6 +1263,17 @@ class ContextBridge:
                 handler=context_readiness_handler,
             )
             self._registry._tools["context.readiness"] = new_readiness
+        old_briefing = self._registry.get_tool("context.briefing")
+        if old_briefing:
+            new_briefing = ToolDefinition(
+                name=old_briefing.name,
+                description=old_briefing.description,
+                input_schema=old_briefing.input_schema,
+                output_schema=old_briefing.output_schema,
+                read_only=old_briefing.read_only,
+                handler=context_briefing_handler,
+            )
+            self._registry._tools["context.briefing"] = new_briefing
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
