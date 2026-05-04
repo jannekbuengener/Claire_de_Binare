@@ -1600,7 +1600,21 @@ class ContextBridge:
                 },
             }
 
-        parameters = parameters or {}
+        if parameters is None:
+            parameters = {}
+        elif not isinstance(parameters, dict):
+            return {
+                "tool": tool_name,
+                "status": "error",
+                "error": {
+                    "code": "invalid_parameters",
+                    "message": (
+                        f"Tool {tool_name} called with non-dict parameters: "
+                        f"got {type(parameters).__name__}. "
+                        "Parameters must be a dict."
+                    ),
+                },
+            }
 
         # Input Gate (#2099): scan parameters for forbidden patterns
         input_violations = PermissionGuard.check_tool_inputs(

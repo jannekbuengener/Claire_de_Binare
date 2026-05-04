@@ -1009,3 +1009,49 @@ class TestNoneParametersRegression:
         results = PermissionGuard.check_tool_inputs("context.search", {})
         assert isinstance(results, list)
         assert len(results) == 0
+
+
+# ---------------------------------------------------------------------------
+# 16. Regression: Non-dict parameters returns structured error
+# ---------------------------------------------------------------------------
+
+
+class TestNonDictParametersRegression:
+    """Calling execute_tool with non-dict parameters must not crash.
+
+    Regression test for #2099 Codex review P1: list/string parameters
+    would cause AttributeError inside _walk_parameters because .items()
+    is called on non-dict values before the try/except block.
+    """
+
+    def test_execute_tool_list_parameters_returns_error(self) -> None:
+        """execute_tool with parameters=['bad'] returns structured error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.show_snapshot", ["bad"])  # type: ignore[arg-type]
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_parameters"
+
+    def test_execute_tool_string_parameters_returns_error(self) -> None:
+        """execute_tool with parameters='x' returns structured error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", "x")  # type: ignore[arg-type]
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_parameters"
+
+    def test_execute_tool_int_parameters_returns_error(self) -> None:
+        """execute_tool with parameters=42 returns structured error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.trace", 42)  # type: ignore[arg-type]
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_parameters"
+
+    def test_execute_tool_empty_dict_parameters_passes(self) -> None:
+        """execute_tool with parameters={} returns structured error (not crash)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.search", {})
+        assert isinstance(result, dict)
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_query"
