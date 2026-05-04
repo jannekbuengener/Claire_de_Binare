@@ -14,6 +14,7 @@ import logging
 from copy import deepcopy
 from typing import Any, Optional
 
+from tools.mcp.permission_guard import PermissionGuard
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 
 logger = logging.getLogger(__name__)
@@ -1521,6 +1522,7 @@ class ContextBridge:
                 handler=context_required_reads_handler,
             )
             self._registry._tools["context.required_reads"] = new_required_reads
+        self._registry.assert_read_only_consistency()
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
@@ -1599,6 +1601,26 @@ class ContextBridge:
             }
 
         parameters = parameters or {}
+
+        # Input Gate (#2099): scan parameters for forbidden patterns
+        input_violations = PermissionGuard.check_tool_inputs(
+            tool_name, parameters
+        )
+        if input_violations:
+            first = input_violations[0]
+            return {
+                "tool": tool_name,
+                "status": "error",
+                "error": {
+                    "code": first.code,
+                    "message": first.message,
+                    "details": first.details,
+                    "all_violations": [
+                        {"code": v.code, "message": v.message, "details": v.details}
+                        for v in input_violations
+                    ],
+                },
+            }
         try:
             result = tool.handler(**parameters)
             return result

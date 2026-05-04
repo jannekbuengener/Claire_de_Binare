@@ -27,6 +27,12 @@ class ContextToolRegistry:
 
     All tools are read-only by default.
     Write tools are not registered.
+
+    Defense in depth (#2099):
+    - register() blocks non-read-only tools at registration time.
+    - assert_read_only_consistency() verifies post-init integrity
+      after handler replacements, catching any bypass that sets
+      read_only=False on an existing tool.
     """
 
     _tools: dict[str, ToolDefinition] = {}
@@ -48,6 +54,25 @@ class ContextToolRegistry:
     @classmethod
     def list_tool_names(cls) -> list[str]:
         return list(cls._tools.keys())
+
+    @classmethod
+    def assert_read_only_consistency(cls) -> None:
+        """Post-init guard: verify all tools in the registry are read-only.
+
+        Called after ContextBridge.__init__() handler replacements to
+        catch any unexpected read_only=False that bypassed register().
+
+        Raises ValueError if any tool is not read-only.
+        """
+        non_read_only = [
+            name for name, tool in cls._tools.items()
+            if not tool.read_only
+        ]
+        if non_read_only:
+            raise ValueError(
+                f"Registry consistency violation: non-read-only tools found: "
+                f"{non_read_only}. All Context MCP tools must be read-only."
+            )
 
 
 def create_not_implemented_handler(tool_name: str) -> Callable:
