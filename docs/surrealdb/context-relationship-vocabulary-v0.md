@@ -343,7 +343,7 @@ Trace-level causal linkage. The source (effect) was caused by the target
 | Source types | `claim`, `decision_event`, `audit_observation`, `evidence_ref` |
 | Target types | `decision_event`, `claim`, `code_symbol`, `scope_drift_event` |
 | Cardinality | N:M |
-| Inferred | No (explicit cause attribution) |
+| Inferred | No (explicit attribution) / Yes (heuristic linkage) |
 | Confidence | 1.0 (explicit attribution) / 0.7 (heuristic linkage) |
 | Example | `claim` "Scope drift detected" caused_by `scope_drift_event` "module boundary change" |
 
@@ -354,7 +354,7 @@ This is the canonical reverse-edge type for downstream trace traversal.
 
 | Property | Value |
 |---|---|
-| Direction | source (dependency) ← target (consumer) |
+| Direction | source (dependency) → target (consumer) |
 | Source types | any table type |
 | Target types | any table type |
 | Cardinality | N:M |
