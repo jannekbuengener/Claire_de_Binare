@@ -50,8 +50,8 @@ Relation names use descriptive present-tense verbs:
 ## 4. Allowed Source/Target Types
 
 The following types participate in relationships. Types are schema tables from
-`infrastructure/surrealdb/context_intelligence_v0.surql` plus ontology
-concepts from `docs/surrealdb/context-ontology-v0.yaml`.
+`infrastructure/surrealdb/context_intelligence_v0.surql` plus endpoint
+reference types defined below (Section 4.2).
 
 ### 4.1 Table Types
 
@@ -73,9 +73,14 @@ concepts from `docs/surrealdb/context-ontology-v0.yaml`.
 | `scope_drift_event` | Scope deviation event |
 | `knowledge_quality_score` | Quality assessment |
 
-### 4.2 Ontology Concept Types
+### 4.2 Endpoint Reference Types
 
-| Concept | Description |
+These are GitHub/repo-level endpoint identifiers used as relationship
+endpoints. They are **not** declared as `canonical_name` entries in
+`docs/surrealdb/context-ontology-v0.yaml`; they represent resolvable
+identities from the repo environment (GitHub API, ownership.yaml).
+
+| Type | Description |
 |---|---|
 | `agent` | Agent identity (OPENCODE/<name>, etc.) |
 | `issue` | GitHub issue (referenced by number) |
@@ -273,20 +278,31 @@ The source was generated, extracted, or computed from the target.
 
 Ownership attribution per `ownership.yaml` domains.
 
+The endpoint reference type `agent` and `artifact_owner` are identity
+aliases resolved at ingestion time. Persisted graph edges MUST store
+the resolved target as a record-link-capable reference (`from_ref` /
+`to_ref` convention per Section 9). Implementations MUST NOT persist
+loose identity strings as edge targets directly.
+
 | Property | Value |
 |---|---|
 | Direction | source → target |
 | Source types | `repo_artifact`, `code_symbol`, `doc_page` |
-| Target types | `agent` (identity string), `artifact_owner` (domain) |
+| Target types | `agent` (resolved to `agent_memory` record), `artifact_owner` (resolved record reference from ownership.yaml) |
 | Cardinality | N:1 |
 | Inferred | No (explicit ownership assignment) |
 | Confidence | 1.0 (canonical) |
-| Example | `repo_artifact` "risk/service.py" owned_by `agent` "trading_services" |
+| Example | `repo_artifact` "risk/service.py" owned_by `agent_memory` record for "trading_services" |
 
 ### 5.15 `mentions`
 
 Weak, informational reference. The source textually references the target but
 no stronger relation is asserted.
+
+Relations with lower extraction confidence (< 0.5) may exist in the
+extraction pipeline but MUST NOT be persisted as graph edges. Such
+low-confidence signals may be captured as `audit_observation` entries
+flagged for human review.
 
 | Property | Value |
 |---|---|
@@ -295,13 +311,16 @@ no stronger relation is asserted.
 | Target types | any table type |
 | Cardinality | N:M |
 | Inferred | Yes (text extraction) |
-| Confidence | 0.3 (extraction) / 0.7 (explicit annotation) |
+| Confidence | 0.5 (extraction) / 0.7 (explicit annotation) |
 | Example | `doc_chunk` mentions `code_symbol` "generate_uuid" |
 
 ### 5.16 `related_to`
 
 General-purpose bidirectional relation when no stronger type applies. Use
 sparingly; prefer specific relation types.
+
+Weak associations below confidence 0.5 MUST NOT be persisted as graph
+edges and may be captured as `audit_observation` entries instead.
 
 | Property | Value |
 |---|---|
@@ -310,8 +329,38 @@ sparingly; prefer specific relation types.
 | Target types | any table type |
 | Cardinality | N:M |
 | Inferred | Yes (weak association) |
-| Confidence | 0.3 (fallback) |
+| Confidence | 0.5 (fallback) |
 | Example | `concept` "Risk Service" related_to `concept` "Execution Service" |
+
+### 5.17 `caused_by`
+
+Trace-level causal linkage. The source (effect) was caused by the target
+(cause). This is a directional trace relation used in lineage records.
+
+| Property | Value |
+|---|---|
+| Direction | source (effect) → target (cause) |
+| Source types | `claim`, `decision_event`, `audit_observation`, `evidence_ref` |
+| Target types | `decision_event`, `claim`, `code_symbol`, `scope_drift_event` |
+| Cardinality | N:M |
+| Inferred | No (explicit cause attribution) |
+| Confidence | 1.0 (explicit attribution) / 0.7 (heuristic linkage) |
+| Example | `claim` "Scope drift detected" caused_by `scope_drift_event` "module boundary change" |
+
+### 5.18 `used_by`
+
+Inverse of `depends_on`. The source is used (depended upon) by the target.
+This is the canonical reverse-edge type for downstream trace traversal.
+
+| Property | Value |
+|---|---|
+| Direction | source (dependency) ← target (consumer) |
+| Source types | any table type |
+| Target types | any table type |
+| Cardinality | N:M |
+| Inferred | Yes (derived from `depends_on` edges) |
+| Confidence | 0.6 (inferred from depends_on) / 0.9 (explicit) |
+| Example | `code_symbol` "RiskService" used_by `code_symbol` "ExecutionService" |
 
 ---
 
@@ -329,13 +378,20 @@ sparingly; prefer specific relation types.
 
 ### 6.2 Source Reference Requirement
 
-Every relation MUST carry a `source_ref` field recording provenance:
+Canonical graph relation records SHOULD carry `source_ref` and `source_type`
+fields for provenance:
 
 | Field | Required | Description |
 |---|---|---|
-| `source_ref` | Yes | Reference to the artifact, tool, or agent that established the relation |
-| `source_type` | Yes | `parser`, `heuristic`, `human`, `agent:<id>`, `inferred` |
+| `source_ref` | Target-state | Reference to the artifact, tool, or agent that established the relation |
+| `source_type` | Target-state | `parser`, `heuristic`, `human`, `agent:<id>`, `inferred` |
 | `evidence_refs` | No | Array of evidence_id references backing the relation |
+
+`source_ref` and `source_type` are a **target-state contract** for
+canonical graph relation records. Existing `dependency_edges` produced by
+the current indexer/importer (#2000 tooling) are not retroactively
+required to carry these fields. The indexer and importer gap is tracked
+separately (see Section 9) and is not part of this vocabulary specification.
 
 ### 6.3 Inference Rules
 
@@ -370,8 +426,10 @@ Store as an `audit_observation` flagged for human review instead.
 | `requires_evidence` | claim, decision_event | evidence_ref | No | 1.0 |
 | `derived_from` | doc_chunk, concept, knowledge_quality_score, audit_observation | doc_page, code_symbol, repo_artifact, evidence_ref | No | 1.0 |
 | `owned_by` | repo_artifact, code_symbol, doc_page | agent, artifact_owner | No | 1.0 |
-| `mentions` | any | any | Yes | 0.3 |
-| `related_to` | any | any | Yes | 0.3 |
+| `mentions` | any | any | Yes | 0.5 |
+| `related_to` | any | any | Yes | 0.5 |
+| `caused_by` | claim, decision_event, audit_observation, evidence_ref | decision_event, claim, code_symbol, scope_drift_event | No | 0.7 |
+| `used_by` | any | any | Yes | 0.6 |
 
 ---
 
@@ -383,7 +441,7 @@ Store as an `audit_observation` flagged for human review instead.
 - No relation substitutes for explicit Human-GO.
 - Inferred relations MUST NOT gate automated decisions.
 - Relations with confidence < 0.5 MUST NOT be stored as graph edges.
-- Every relation MUST carry `source_ref` for provenance.
+- Canonical graph relation records SHOULD carry `source_ref` and `source_type` for provenance (target-state contract per Section 6.2).
 - `trade-capable` is never modeled as a Live-Readiness-Go via any relation.
 - All relation targets that reference schema tables must exist in `context_intelligence_v0.surql`.
 
@@ -395,11 +453,19 @@ This vocabulary defines the **semantic types** of relations. The Dependency Edge
 Model (#2000) will:
 
 - Define the SurrealDB edge table structure for `dependency_edge`
-- Specify graph traversal patterns
+- Specify graph traversal patterns (including inverse types `used_by`
+  as the downstream counterpart to `depends_on`)
 - Define `from_ref` / `to_ref` record link conventions
+  (used by `owned_by` to resolve endpoint reference types to records)
 
 This vocabulary is upstream of #2000 and constrains which relation types are valid
 in the dependency edge table. #2000 MUST NOT introduce relation types not defined here.
+
+**Indexer / Importer Gap (separate tracking):** The current `context_indexer.py`
+(`DependencyEdge.to_payload`) does not yet emit `source_ref` / `source_type`
+fields. The importer validation does not yet enforce them. These gaps are tracked
+as implementation slices under #2000 / #2001 and are **not** in scope of this
+vocabulary specification (#1982).
 
 ---
 
@@ -409,6 +475,8 @@ in the dependency edge table. #2000 MUST NOT introduce relation types not define
 |---|---|---|
 | Dependency Edge Model | #2000 | Edge table structure constrained by vocabulary |
 | Graph Import | #2001 | Import logic uses vocabulary types |
+| Trace Context | context.trace (tool-contracts) | Lineage trace uses `caused_by`, `derived_from`, `related_to` |
+| Graph Query | context_query.py | Traversal uses `depends_on`, `used_by` (downstream inverse) |
 | Impact Radar | #2108 | Impact analysis uses `depends_on`, `blocks`, `contains` |
 | Agent OS Briefing | #2105 | Briefing context uses `documents`, `validates`, `derived_from` |
 
@@ -416,10 +484,10 @@ in the dependency edge table. #2000 MUST NOT introduce relation types not define
 
 ## 11. Validation Checklist
 
-- [ ] All 16 relation types are defined with semantics, direction, and cardinality
-- [ ] Source/target types reference only existing schema tables and ontology concepts
-- [ ] Confidence rules are defined per type
-- [ ] Source reference requirement is specified (Section 6.2)
+- [ ] All 18 relation types are defined with semantics, direction, and cardinality
+- [ ] Source/target types reference only existing schema tables and endpoint reference types
+- [ ] Confidence rules are defined per type (minimum confidence ≥ 0.5 for graph edge persistence)
+- [ ] Source reference requirement is specified as target-state contract (Section 6.2)
 - [ ] Inference rules are specified (Section 6.3)
 - [ ] Guardrails Section 8 is present
 - [ ] No trading-state references
