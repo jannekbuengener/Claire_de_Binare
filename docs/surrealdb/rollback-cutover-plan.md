@@ -72,6 +72,41 @@ or set `surrealdb_enabled: false` in the config file.
 - `manifest.json` with `Evidence.SurrealDB`
 - Restore console log showing destructive clear + post-restore verification
 
+## Context Intelligence (CIS) Target Layout (Issue #1979)
+
+The Context Intelligence System (CIS) will use a separate namespace and database,
+independent of the Governance Mirror:
+
+| Element | Value | Status |
+|---------|-------|--------|
+| Namespace | `cdb` | Target layout (not applied) |
+| Database | `context_intelligence` | Target layout (not applied) |
+
+### Rollback / Rebuild (conceptual, not applied by #1979)
+
+CIS is a mirror of Git data. All primary data lives in the Working Repo Canon;
+SurrealDB is a read-only mirror. The namespace/database is defined as a target
+contract only — no bootstrap, no Apply, no runtime change.
+
+- **Rollback**: `REMOVE DATABASE context_intelligence` under namespace `cdb`.
+  No effect on `governance`/`governance_mirror`.
+- **Rebuild**: `CREATE DATABASE context_intelligence` + re-apply
+  `context_intelligence_v0.surql` + re-ingest from Git (deterministic via
+  `source_hash`).
+
+CIS shares the same `surrealdb_enabled: false` master switch as the Governance
+Mirror. No separate feature flag is introduced.
+
+### Separation Guarantee
+
+- No namespace/database reuse between `governance`/`governance_mirror` and
+  `cdb`/`context_intelligence`.
+- No cross-NS queries as default.
+- No data migration between the two.
+- No effect on Governance Mirror setup (`setup.surql` unchanged).
+
+Full layout specification: `docs/surrealdb/context-intelligence-namespace-layout.md`.
+
 ## Machine-Readable Config
 
 - `infrastructure/config/surrealdb/feature-flags.yaml`

@@ -22,6 +22,10 @@ Das CDB Context Intelligence System (CIS) dient als zentraler **Agent Memory & K
 ## 4. SurrealDB-Rolle
 SurrealDB fungiert als **Multi-Model Intelligence Database**. Sie speichert den Knowledge Graph (Nodes & Edges) sowie Metadaten für das Retrieval. Sie ist ein **read-only Mirror** der Repo-Wahrheit und dient nicht als Source of Truth für den Systemzustand oder Trading-Daten.
 
+Target namespace/database layout: `cdb` / `context_intelligence` (Issue #1979).
+Vollständige Layout-Spezifikation in
+[`docs/surrealdb/context-intelligence-namespace-layout.md`](context-intelligence-namespace-layout.md).
+
 ## 5. CDB-MCP-Rolle
 Die CDB-MCP-Bridge ist das operative Interface für Agenten. Sie stellt Tools bereit, um den Knowledge Graph abzufragen und Evidence zu validieren. Die Bridge erzwingt die Einhaltung der Read-only-Constraints und stellt sicher, dass Context-Antworten source- und evidence-fähig sind.
 
@@ -88,4 +92,5 @@ Dieses Dokument bildet das Fundament für die Wellen 1–6:
   - `docs/surrealdb/data-ownership-matrix.md`
   - `docs/surrealdb/dual-write-mirror-strategy.md`
   - `docs/surrealdb/ledger-importer.md`
+  - `docs/surrealdb/context-intelligence-namespace-layout.md`
   - `docs/surrealdb/rollback-cutover-plan.md`
