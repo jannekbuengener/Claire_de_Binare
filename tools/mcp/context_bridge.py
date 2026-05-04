@@ -1275,6 +1275,133 @@ def context_stop_resolver_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_required_reads_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.required_reads tool.
+
+    Resolves prioritized required reads from task scope, target issue,
+    target paths, target symbols, and operation mode (per #2106).
+
+    Delegates to tools.surrealdb.context_required_reads.resolve_required_reads.
+    Pure in-process evaluation. No DB/network/GitHub. Fail-closed.
+
+    Input:
+        task_scope: str (required) — what the agent is asked to do
+        target_issue: str | null (required) — GitHub issue or None
+        target_paths: list[str] (optional)
+        target_symbols: list[str] (optional)
+        target_concepts: list[str] (optional)
+        operation_mode: str (required) — valid enum value
+
+    Output:
+        tool, status, resolved_reads (list of structured RequiredRead dicts)
+    """
+    from tools.surrealdb.context_required_reads import (
+        VALID_OPERATION_MODES,
+        resolve_required_reads,
+    )
+
+    _MISSING = object()
+
+    task_scope = kwargs.get("task_scope")
+    target_issue = kwargs.get("target_issue", _MISSING)
+    operation_mode = kwargs.get("operation_mode", _MISSING)
+    target_paths = kwargs.get("target_paths", [])
+    target_symbols = kwargs.get("target_symbols", [])
+    target_concepts = kwargs.get("target_concepts", [])
+
+    # --- Validate task_scope ---
+    if not task_scope or not isinstance(task_scope, str) or not task_scope.strip():
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "invalid_task_scope",
+                "message": "task_scope is required and must be a non-empty string",
+            },
+        }
+
+    # --- Validate target_issue ---
+    if target_issue is _MISSING:
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "invalid_target_issue",
+                "message": "target_issue is required (must be a string or null)",
+            },
+        }
+
+    if target_issue is not None and not isinstance(target_issue, str):
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "invalid_target_issue",
+                "message": "target_issue must be a string or null",
+            },
+        }
+
+    # --- Validate operation_mode ---
+    if operation_mode is _MISSING:
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "invalid_operation_mode",
+                "message": "operation_mode is required",
+            },
+        }
+
+    if not isinstance(operation_mode, str) or operation_mode not in VALID_OPERATION_MODES:
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "invalid_operation_mode",
+                "message": (
+                    f"operation_mode must be one of {sorted(VALID_OPERATION_MODES)}, "
+                    f"got {operation_mode!r}"
+                ),
+            },
+        }
+
+    # --- Normalize arrays ---
+    if not isinstance(target_paths, list):
+        target_paths = []
+    if not isinstance(target_symbols, list):
+        target_symbols = []
+    if not isinstance(target_concepts, list):
+        target_concepts = []
+
+    # --- Resolve ---
+    try:
+        resolved = resolve_required_reads(
+            task_scope=task_scope.strip(),
+            target_issue=target_issue,
+            target_paths=target_paths,
+            target_symbols=target_symbols,
+            operation_mode=operation_mode,
+            target_concepts=target_concepts,
+        )
+    except Exception as e:
+        logger.exception("Required reads resolver failed")
+        return {
+            "tool": "context.required_reads",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+    return {
+        "tool": "context.required_reads",
+        "status": "ok",
+        "resolved_reads": resolved,
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -1383,6 +1510,17 @@ class ContextBridge:
                 handler=context_stop_resolver_handler,
             )
             self._registry._tools["context.stop_resolver"] = new_stop_resolver
+        old_required_reads = self._registry.get_tool("context.required_reads")
+        if old_required_reads:
+            new_required_reads = ToolDefinition(
+                name=old_required_reads.name,
+                description=old_required_reads.description,
+                input_schema=old_required_reads.input_schema,
+                output_schema=old_required_reads.output_schema,
+                read_only=old_required_reads.read_only,
+                handler=context_required_reads_handler,
+            )
+            self._registry._tools["context.required_reads"] = new_required_reads
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )

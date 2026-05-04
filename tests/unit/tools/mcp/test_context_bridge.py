@@ -26,6 +26,7 @@ class TestContextToolRegistry:
             "context.self_explain",
             "context.briefing",
             "context.stop_resolver",
+            "context.required_reads",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not registered"
@@ -226,7 +227,7 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        assert len(tools) == 10
+        assert len(tools) == 11
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
@@ -259,7 +260,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 10
+        assert len(status["read_only_tools"]) == 11
 
 
 class TestDefensiveSchemaCopies:
@@ -2073,4 +2074,409 @@ class TestContextStopResolverHandler:
             assert len(result) >= 1
             assert result[0]["type"] == "secrets_risk", (
                 f"{text!r} should trigger secrets_risk"
+            )
+
+
+class TestContextRequiredReadsHandler:
+    """Tests for context.required_reads tool handler."""
+
+    # --- Failure tests ---
+
+    def test_missing_task_scope_fails_closed(self) -> None:
+        """Missing task_scope fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.required_reads", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_task_scope"
+
+    def test_empty_task_scope_fails_closed(self) -> None:
+        """Empty string task_scope fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "", "target_issue": None, "operation_mode": "read_only"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_task_scope"
+
+    def test_missing_target_issue_fails_closed(self) -> None:
+        """Missing target_issue key fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "operation_mode": "read_only"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_target_issue"
+
+    def test_target_issue_null_allowed(self) -> None:
+        """target_issue=null is explicitly allowed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+        )
+        assert result["status"] == "ok"
+
+    def test_target_issue_invalid_type_fails_closed(self) -> None:
+        """target_issue with invalid type (int) fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": 123, "operation_mode": "read_only"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_target_issue"
+
+    def test_missing_operation_mode_fails_closed(self) -> None:
+        """Missing operation_mode fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": None},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_operation_mode"
+
+    def test_invalid_operation_mode_fails_closed(self) -> None:
+        """Invalid operation_mode fails closed."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "invalid_mode",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_operation_mode"
+
+    # --- Minimum inputs ---
+
+    def test_minimum_inputs_return_ok(self) -> None:
+        """Minimum valid inputs return ok with resolved reads."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+        )
+        assert result["status"] == "ok"
+        assert result["tool"] == "context.required_reads"
+        assert "resolved_reads" in result
+        assert isinstance(result["resolved_reads"], list)
+        assert len(result["resolved_reads"]) >= 6
+
+    def test_baseline_reads_are_must_read(self) -> None:
+        """All 6 baseline reads are must_read."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+        )
+        baseline_paths = {
+            "AGENTS.md",
+            "agents/AGENTS.md",
+            "agents/OPEN_CODE_AGENTS.md",
+            "docs/runbooks/CONTROL_REGISTER.md",
+            "CURRENT_STATUS.md",
+            "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+        }
+        must_reads = [
+            r for r in result["resolved_reads"] if r["priority"] == "must_read"
+        ]
+        baseline_found = {r["path"] for r in must_reads if r["path"] in baseline_paths}
+        for bp in baseline_paths:
+            assert bp in baseline_found, f"Baseline read {bp} not found in must_reads"
+
+    # --- Availability ---
+
+    def test_existing_file_available_true(self) -> None:
+        """Existing file returns available=true, warning=None."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+        )
+        for read in result["resolved_reads"]:
+            if read["path"] == "AGENTS.md":
+                assert read["available"] is True, f"AGENTS.md should be available"
+                assert read["warning"] is None, f"AGENTS.md should have no warning"
+                return
+        pytest.fail("AGENTS.md not found in resolved reads")
+
+    def test_missing_file_available_false_with_warning(self) -> None:
+        """Missing file returns available=false with a warning string."""
+        from tools.surrealdb.context_required_reads import _build_read_entry
+        from pathlib import Path
+
+        entry = _build_read_entry(
+            path="nonexistent/file_that_does_not_exist.md",
+            priority="optional",
+            reason="Test missing file.",
+            source_ref="#test",
+            repo_root=Path(__file__).resolve().parent.parent.parent.parent,
+        )
+        assert entry["available"] is False
+        assert entry["warning"] is not None
+        assert isinstance(entry["warning"], str)
+
+    # --- Unsafe paths ---
+
+    def test_absolute_path_blocked(self) -> None:
+        """Absolute path is marked available=false with unsafe warning."""
+        from tools.surrealdb.context_required_reads import _check_availability
+
+        available, warning = _check_availability("C:\\Windows\\System32")
+        assert available is False
+        assert warning is not None
+        assert "blocked" in warning.lower()
+
+    def test_path_traversal_blocked(self) -> None:
+        """Path with .. traversal is marked available=false with unsafe warning."""
+        from tools.surrealdb.context_required_reads import _check_availability
+
+        available, warning = _check_availability("../etc/passwd")
+        assert available is False
+        assert warning is not None
+        assert "blocked" in warning.lower() or "unsafe" in warning.lower()
+
+    def test_repo_root_override_affects_availability(self) -> None:
+        """repo_root parameter is actually used for availability checks."""
+        from tools.surrealdb.context_required_reads import _check_availability
+        from pathlib import Path
+
+        real_root = Path(__file__).resolve().parent.parent.parent.parent.parent
+        # AGENTS.md should be found under the real repo root
+        available, warning = _check_availability("AGENTS.md", repo_root=real_root)
+        assert available is True, (
+            f"AGENTS.md should exist under real root, got available={available}, "
+            f"warning={warning}"
+        )
+
+        # Same path under a non-existent root should fail
+        fake_root = Path("/nonexistent/repo/root")
+        available, warning = _check_availability("AGENTS.md", repo_root=fake_root)
+        assert available is False, (
+            f"AGENTS.md should NOT exist under fake root, got available={available}"
+        )
+        assert warning is not None
+
+    # --- Write mode ---
+
+    def test_write_mode_adds_governance_reads(self) -> None:
+        """Write operation_mode adds governance/Human-GO relevant reads."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Fix a bug.",
+                "target_issue": None,
+                "operation_mode": "write (code/docs)",
+            },
+        )
+        assert result["status"] == "ok"
+        paths = {r["path"] for r in result["resolved_reads"]}
+        # Write mode should add governance-related reads
+        assert "knowledge/governance/CDB_AGENT_POLICY.md" in paths or len(
+            [r for r in result["resolved_reads"] if r["priority"] == "must_read"]
+        ) > 6, "Write mode should add extra must_read entries"
+
+    def test_read_only_mode_does_not_add_write_reads(self) -> None:
+        """read_only mode doesn't add write-mode governance reads."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {"task_scope": "Inspect code.", "target_issue": None, "operation_mode": "read_only"},
+        )
+        paths = {r["path"] for r in result["resolved_reads"]}
+        # DELIVERY_APPROVED.yaml is only added for write modes
+        delivery_entries = [
+            r for r in result["resolved_reads"]
+            if r["path"] == "knowledge/governance/DELIVERY_APPROVED.yaml"
+            and r["priority"] == "must_read"
+        ]
+        assert len(delivery_entries) == 0, (
+            "DELIVERY_APPROVED.yaml must_read should not appear in read_only mode"
+        )
+
+    # --- Domain scope ---
+
+    def test_surrealdb_scope_adds_context_docs(self) -> None:
+        """SurrealDB scope/path adds context docs."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Implement SurrealDB context intelligence feature.",
+                "target_issue": "#2106",
+                "operation_mode": "read_only",
+                "target_paths": ["tools/surrealdb/context_required_reads.py"],
+            },
+        )
+        assert result["status"] == "ok"
+        paths = {r["path"] for r in result["resolved_reads"]}
+        assert "docs/surrealdb/context-package-model-v1.md" in paths, (
+            "SurrealDB scope should add context package model doc"
+        )
+
+    def test_ci_domain_reads_point_to_files(self) -> None:
+        """CI domain reads resolve to concrete files, not directories."""
+        from tools.surrealdb.context_required_reads import (
+            DOMAIN_READS,
+            _check_availability,
+        )
+
+        ci_reads = DOMAIN_READS.get("ci", [])
+        assert len(ci_reads) > 0, "CI domain must have reads"
+        for read in ci_reads:
+            path = read["path"]
+            assert not path.endswith("/"), (
+                f"CI read path must be a file, not directory: {path!r}"
+            )
+            available, warning = _check_availability(path)
+            assert available is True, (
+                f"CI read {path!r} should be available, got warning={warning!r}"
+            )
+
+    # --- Symbols do not invent file paths ---
+
+    def test_target_symbols_do_not_invent_file_paths(self) -> None:
+        """Target symbols produce entry with available=false, not fake paths."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Refactor handler.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+                "target_symbols": ["context_briefing_handler", "resolve_required_reads"],
+            },
+        )
+        assert result["status"] == "ok"
+        for read in result["resolved_reads"]:
+            if read["source_ref"] == "target_symbols":
+                assert read["available"] is False, (
+                    f"Symbol entry should have available=false: {read}"
+                )
+                assert read["warning"] is not None, (
+                    f"Symbol entry should have warning: {read}"
+                )
+                return
+        pytest.fail("No target_symbols entry found in resolved reads")
+
+    # --- Determinism ---
+
+    def test_deterministic_same_input_same_output(self) -> None:
+        """Same inputs produce identical outputs."""
+        bridge = create_bridge()
+        inputs = {
+            "task_scope": "Test determinism.",
+            "target_issue": "#2106",
+            "operation_mode": "read_only",
+            "target_paths": ["tools/surrealdb/"],
+            "target_symbols": ["resolve_required_reads"],
+        }
+        r1 = bridge.execute_tool("context.required_reads", inputs)
+        r2 = bridge.execute_tool("context.required_reads", inputs)
+        assert r1 == r2, "Same inputs should produce identical outputs"
+
+    # --- Contract fields ---
+
+    def test_all_reads_have_required_fields(self) -> None:
+        """Every resolved read has all 6 required fields."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Test contract fields.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
+        )
+        required_fields = {"path", "priority", "reason", "source_ref", "available", "warning"}
+        for read in result["resolved_reads"]:
+            for field in required_fields:
+                assert field in read, f"Read missing field {field}: {read}"
+
+    def test_priority_values_are_valid(self) -> None:
+        """All priorities are valid enum values."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.required_reads",
+            {
+                "task_scope": "Test priorities.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
+        )
+        valid_priorities = {"must_read", "should_read", "optional"}
+        for read in result["resolved_reads"]:
+            assert read["priority"] in valid_priorities, (
+                f"Invalid priority {read['priority']!r} in {read['path']}"
+            )
+
+    # --- Schema compatibility ---
+
+    def test_briefing_required_reads_stay_string_list(self) -> None:
+        """Briefing output required_reads remains string[] (schema-compatible)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-schema-test",
+                "task_scope": "Test schema compatibility.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert "required_reads" in b
+        assert isinstance(b["required_reads"], list)
+        for item in b["required_reads"]:
+            assert isinstance(item, str), (
+                f"required_reads must remain string[], got {type(item).__name__}: {item!r}"
+            )
+
+    # --- Tool registration ---
+
+    def test_tool_appears_in_list_tools(self) -> None:
+        """context.required_reads appears in list_tools output."""
+        bridge = create_bridge()
+        tools = bridge.list_tools()
+        tool_names = [t["name"] for t in tools]
+        assert "context.required_reads" in tool_names
+
+    def test_tool_is_read_only(self) -> None:
+        """context.required_reads is marked readOnly."""
+        bridge = create_bridge()
+        tools = bridge.list_tools()
+        for t in tools:
+            if t["name"] == "context.required_reads":
+                assert t["readOnly"] is True
+                return
+        pytest.fail("context.required_reads not found in tool list")
+
+    # --- Operation modes ---
+
+    def test_all_valid_operation_modes_accepted(self) -> None:
+        """All 6 valid operation_mode values are accepted."""
+        bridge = create_bridge()
+        valid_modes = [
+            "read_only",
+            "dry_run",
+            "write (code/docs)",
+            "write (config/infra)",
+            "write (DB/migration)",
+            "write (MCP live)",
+        ]
+        for mode in valid_modes:
+            result = bridge.execute_tool(
+                "context.required_reads",
+                {"task_scope": "Test.", "target_issue": None, "operation_mode": mode},
+            )
+            assert result["status"] == "ok", (
+                f"Valid mode {mode!r} should be accepted, got {result}"
             )

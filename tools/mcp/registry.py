@@ -571,6 +571,85 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("context.stop_resolver"),
     ),
+    ToolDefinition(
+        name="context.required_reads",
+        description="Resolve prioritized required reads from task scope, target issue, target paths, target symbols, and operation mode. Read-only, deterministic, fail-closed. No DB/network/GitHub access.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "task_scope": {
+                    "type": "string",
+                    "description": "What the agent is asked to do (one concise sentence). Required.",
+                },
+                "target_issue": {
+                    "type": ["string", "null"],
+                    "description": "GitHub issue number driving the task, or null for exploratory.",
+                },
+                "target_paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "File paths or glob patterns in scope.",
+                },
+                "target_symbols": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Code symbols relevant to the task.",
+                },
+                "operation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "read_only",
+                        "dry_run",
+                        "write (code/docs)",
+                        "write (config/infra)",
+                        "write (DB/migration)",
+                        "write (MCP live)",
+                    ],
+                    "description": "Intended agent operation mode. Required.",
+                },
+                "target_concepts": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Domain concepts from the CIS ontology relevant to the task.",
+                },
+            },
+            "required": ["task_scope", "target_issue", "operation_mode"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "resolved_reads": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "path": {"type": "string"},
+                            "priority": {
+                                "type": "string",
+                                "enum": ["must_read", "should_read", "optional"],
+                            },
+                            "reason": {"type": "string"},
+                            "source_ref": {"type": "string"},
+                            "available": {"type": "boolean"},
+                            "warning": {"type": ["string", "null"]},
+                        },
+                        "required": [
+                            "path",
+                            "priority",
+                            "reason",
+                            "source_ref",
+                            "available",
+                            "warning",
+                        ],
+                    },
+                },
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("context.required_reads"),
+    ),
 ]
 
 
