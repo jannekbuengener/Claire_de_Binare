@@ -39,7 +39,7 @@ Each `repo_artifact` record carries two identity layers:
 | Layer | Field | Format | Example |
 |---|---|---|---|
 | SurrealDB Record ID | implicit | `repo_artifact:<id>` | `repo_artifact:abc123` |
-| Stable ID | `artifact_id` | `sha256(source_path + "@" + source_commit)` | `a1b2c3...` |
+| Stable ID | `artifact_id` | `sha256(normalize(source_path) + "@" + source_commit)` | `a1b2c3...` |
 
 The `artifact_id` is computed as:
 
@@ -52,6 +52,16 @@ This ensures:
 - Different file or different commit = different `artifact_id`
 - Path changes (rename/move) = different `artifact_id` (tracked via cross-reference)
 
+`normalize(source_path)` MUST:
+
+- use repo-root-relative path
+- use forward slashes (`/`)
+- preserve case as-is
+- strip leading `./`
+- strip trailing `/`
+- reject path traversal segments (`..`)
+- reject platform-specific backslashes
+
 ### 3.2 Identity Stability Guarantees
 
 | Operation | Behavior |
@@ -60,7 +70,7 @@ This ensures:
 | Content change (new commit) | New `artifact_id` (new source_commit in hash) |
 | Path rename (same content, same commit) | New `artifact_id` (path changed) |
 | Path rename (new commit, no content change) | New `artifact_id`, `source_hash` unchanged |
-| Content deleted from repo | No new record; existing record persists with `freshness: stale` |
+| Content deleted from repo | No new record; existing record persists with `freshness: deleted` |
 
 ### 3.3 Cross-Reference for Renames
 
@@ -68,8 +78,15 @@ When a file is renamed, the old `artifact_id` and new `artifact_id` share the
 same `source_hash` but differ in `source_path`. Detection:
 
 ```
-rename_detected = (old.source_hash == new.source_hash) AND (old.source_path != new.source_path)
+rename_detected =
+    (old.source_hash == new.source_hash)
+    AND (old.source_path != new.source_path)
+    AND (old.source_commit != new.source_commit)
 ```
+
+Same `source_hash` + different path + same commit = **duplicate**, not rename
+(see Section 7.1). Cross-commit boundary distinguishes rename tracking from
+duplicate detection.
 
 A `related_to` relationship (per #1982 vocabulary) can link the old and new records.
 
@@ -146,7 +163,7 @@ trailing whitespace) that don't affect content meaning.
 | UTF-8 BOM | Strip BOM, treat as UTF-8 |
 | UTF-16 LE/BE | Convert to UTF-8 |
 | Latin-1 / Windows-1252 | Convert to UTF-8 |
-| Unknown / binary | Skip hashing; mark `mime_type` accordingly |
+| Unknown / binary | Compute `source_hash` from raw git blob bytes; mark `mime_type` accordingly; skip `normalized_hash` and `content_hash` |
 
 ### 5.3 Frontmatter Handling
 
