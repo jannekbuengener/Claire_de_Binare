@@ -62,6 +62,11 @@ This ensures:
 - reject path traversal segments (`..`)
 - reject platform-specific backslashes
 
+`source_commit` MUST be the full lowercase 40-character Git SHA-1 commit
+hash, equivalent to `git rev-parse HEAD` without `--short`. Abbreviated
+SHA values (e.g. `abc123` in examples) are display-only and MUST NOT be
+used in `artifact_id` computation.
+
 ### 3.2 Identity Stability Guarantees
 
 | Operation | Behavior |
@@ -216,10 +221,24 @@ downstream processing.
 
 ### 6.2 Classification Rules
 
-1. Match by file extension first (`.py` → `source_code`)
-2. Override by path prefix (`.github/` → `governance`, `tests/` → `test`)
-3. Override by content heuristics (shebang → `script`)
-4. Fallback to `other` when uncertain
+Priority order (path-prefix beats extension when both match):
+
+1. Path-prefix overrides:
+   - `tests/` or `test/` → `test`
+   - `.github/` or `knowledge/governance/` → `governance`
+   - `docs/runbooks/` → `runbook`
+   - `docs/contracts/` → `contract`
+   - `docs/surrealdb/` with `.yaml` / `.yml` (ontology) → `ontology`
+   - `infrastructure/surrealdb/` with `.surql` → `schema`
+   - `infrastructure/` with `.yml` / `.yaml` / `.json` / `.toml` → `configuration`
+2. Extension / content fallback:
+   - `.py` → `source_code`
+   - `.md` → `documentation`
+   - `.yml` / `.yaml` / `.json` / `.toml` → `configuration`
+   - `.surql` → `schema`
+   - shebang or `.ps1` / `.sh` / `.bash` → `script`
+3. Final fallback:
+   - Uncertain → `other`
 
 Classification is deterministic and replayable. No probabilistic classification
 in v0.
@@ -243,16 +262,21 @@ The relationship is noted via `related_to`.
 
 ### 7.2 Rename Tracking
 
-A rename is detected across commits:
+A rename is confirmed when a file moves from one path to another across
+commits with unchanged content, AND the old path no longer exists in the
+newer commit tree (delete evidence). If the old path still exists with the
+same hash, the event is a **copy** (duplicate lineage), not a rename.
 
 ```
 artifact_v1.source_path != artifact_v2.source_path
 AND artifact_v1.source_hash == artifact_v2.source_hash
 AND artifact_v1.source_commit != artifact_v2.source_commit
+AND NOT exists_in_commit(artifact_v1.source_path, artifact_v2.source_commit)
 ```
 
 The old record is not deleted. Both records persist, linked via `supersedes` /
-`superseded_by` (per #1982 vocabulary).
+`superseded_by` (per #1982 vocabulary). Cross-commit copies with an existing
+original path create `related_to` links, not `supersedes`.
 
 ### 7.3 Deletion Detection
 
