@@ -25,6 +25,7 @@ class TestContextToolRegistry:
             "context.readiness",
             "context.self_explain",
             "context.briefing",
+            "context.stop_resolver",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not registered"
@@ -225,7 +226,7 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        assert len(tools) == 9
+        assert len(tools) == 10
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
@@ -258,7 +259,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 9
+        assert len(status["read_only_tools"]) == 10
 
 
 class TestDefensiveSchemaCopies:
@@ -1587,3 +1588,443 @@ class TestContextBriefingHandler:
         assert r1["status"] == "ok"
         assert r2["status"] == "ok"
         assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+
+class TestContextStopResolverHandler:
+    """Tests for context.stop_resolver tool handler (#2107)."""
+
+    def test_tool_in_list_tools(self) -> None:
+        """Tool is visible in list_tools()."""
+        bridge = create_bridge()
+        tool_names = [t["name"] for t in bridge.list_tools()]
+        assert "context.stop_resolver" in tool_names
+
+    def test_tool_is_read_only(self) -> None:
+        """Tool is read-only."""
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("context.stop_resolver")
+        assert schema is not None
+        assert schema["readOnly"] is True
+
+    def test_missing_stop_conditions_returns_empty(self) -> None:
+        """Missing stop_conditions returns empty resolved list."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.stop_resolver", {})
+        assert result["status"] == "ok"
+        assert result["resolved"] == []
+
+    def test_empty_stop_conditions_returns_empty(self) -> None:
+        """Empty stop_conditions returns empty resolved list."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver", {"stop_conditions": []}
+        )
+        assert result["status"] == "ok"
+        assert result["resolved"] == []
+
+    def test_s1_maps_to_scope_drift_risk_blocking(self) -> None:
+        """S1 maps to scope_drift_risk with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S1: scope ambiguous"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "scope_drift_risk"
+        assert r["severity"] == "blocking"
+        assert r["human_go_required"] is True
+
+    def test_s2_maps_to_missing_context_blocking(self) -> None:
+        """S2 maps to missing_context with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S2: no context package and no required reads"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "missing_context"
+        assert r["severity"] == "blocking"
+
+    def test_s3_maps_to_missing_context_blocking(self) -> None:
+        """S3 maps to missing_context with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S3: minimum read unavailable: AGENTS.md"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "missing_context"
+        assert r["severity"] == "blocking"
+
+    def test_s4_maps_to_missing_evidence_blocking(self) -> None:
+        """S4 maps to missing_evidence with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S4: core assumptions lack evidence"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "missing_evidence"
+        assert r["severity"] == "blocking"
+
+    def test_s5_maps_to_scope_drift_risk_blocking(self) -> None:
+        """S5 maps to scope_drift_risk with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S5: scope drift detected"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "scope_drift_risk"
+        assert r["severity"] == "blocking"
+
+    def test_s6_maps_to_write_requires_human_go_blocking(self) -> None:
+        """S6 maps to write_requires_human_go with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S6: write without impact report"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        r = result["resolved"][0]
+        assert r["type"] == "write_requires_human_go"
+        assert r["severity"] == "blocking"
+
+    def test_s7_trading_blocking_for_write(self) -> None:
+        """S7 is blocking for write operation_mode."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {
+                "stop_conditions": ["S7: trading/risk/execution scope touched"],
+                "operation_mode": "write (code/docs)",
+            },
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "trading_surface_touched"
+        assert r["severity"] == "blocking"
+
+    def test_s7_trading_warning_for_read_only(self) -> None:
+        """S7 is warning for read_only operation_mode."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {
+                "stop_conditions": ["S7: trading/risk/execution scope touched"],
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "trading_surface_touched"
+        assert r["severity"] == "warning"
+
+    def test_s8_maps_to_forbidden_path_blocking(self) -> None:
+        """S8 maps to forbidden_path with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S8: live/echtgeld claims outside LR SSOT"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "forbidden_path"
+        assert r["severity"] == "blocking"
+        assert r["human_go_required"] is True
+
+    def test_s9_maps_to_contradiction_risk_warning(self) -> None:
+        """S9 maps to contradiction_risk with warning severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S9: material governance uncertainty"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "contradiction_risk"
+        assert r["severity"] == "warning"
+
+    def test_s10_maps_to_stale_context_warning(self) -> None:
+        """S10 maps to stale_context with warning severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S10: STOP in control surfaces"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "stale_context"
+        assert r["severity"] == "warning"
+
+    def test_h1_maps_to_write_requires_human_go_blocking(self) -> None:
+        """H1 maps to write_requires_human_go with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["H1: write action requires explicit Human-GO"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "write_requires_human_go"
+        assert r["severity"] == "blocking"
+        assert r["human_go_required"] is True
+
+    def test_h2_maps_to_runtime_surface_touched_blocking(self) -> None:
+        """H2 maps to runtime_surface_touched with blocking severity."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["H2: runtime or DB mutation requires Human-GO"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "runtime_surface_touched"
+        assert r["severity"] == "blocking"
+
+    def test_secrets_keyword_maps_to_secrets_risk_blocking(self) -> None:
+        """Condition containing secrets keyword maps to secrets_risk."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["tresor-zone access detected"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "secrets_risk"
+        assert r["severity"] == "blocking"
+        assert r["human_go_required"] is True
+
+    def test_token_keyword_maps_to_secrets_risk_blocking(self) -> None:
+        """Condition containing token keyword maps to secrets_risk."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["GITHUB_TOKEN exposed in logs"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "secrets_risk"
+        assert r["severity"] == "blocking"
+
+    def test_live_keyword_maps_to_forbidden_path_blocking(self) -> None:
+        """Condition containing live keyword without rule-ref maps to forbidden_path."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["go-live authorization missing"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "forbidden_path"
+        assert r["severity"] == "blocking"
+
+    def test_unknown_condition_maps_to_scope_drift_risk_warning(self) -> None:
+        """Unknown/unmapped condition maps to scope_drift_risk with warning."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["some unexpected condition"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "scope_drift_risk"
+        assert r["severity"] == "warning"
+
+    def test_runtime_keyword_maps_to_runtime_surface_touched(self) -> None:
+        """Condition containing runtime keyword without rule-ref maps correctly."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["docker compose service detected"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        assert r["type"] == "runtime_surface_touched"
+        assert r["severity"] == "warning"
+
+    def test_non_string_stop_conditions_filtered(self) -> None:
+        """Non-string stop conditions are filtered without crash."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": [42, None, "S1: scope ambiguous", True]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+        assert result["resolved"][0]["type"] == "scope_drift_risk"
+
+    def test_output_contains_all_required_fields(self) -> None:
+        """Output dicts contain all five required fields."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["S1: scope ambiguous"]},
+        )
+        assert result["status"] == "ok"
+        r = result["resolved"][0]
+        for field in ("type", "severity", "reason", "required_action", "human_go_required"):
+            assert field in r, f"Missing field: {field}"
+        assert r["type"] in {
+            "missing_context", "missing_evidence", "scope_drift_risk",
+            "runtime_surface_touched", "trading_surface_touched",
+            "write_requires_human_go", "stale_context",
+            "contradiction_risk", "forbidden_path", "secrets_risk",
+        }
+        assert r["severity"] in {"info", "warning", "blocking"}
+        assert isinstance(r["human_go_required"], bool)
+
+    def test_deterministic_same_input_same_output(self) -> None:
+        """Same inputs produce identical resolved output."""
+        bridge = create_bridge()
+        inputs = {
+            "stop_conditions": ["S1: scope ambiguous", "S4: no evidence"],
+            "operation_mode": "write (code/docs)",
+        }
+        r1 = bridge.execute_tool("context.stop_resolver", inputs)
+        r2 = bridge.execute_tool("context.stop_resolver", inputs)
+        assert r1 == r2
+
+    def test_multiple_conditions_all_resolved(self) -> None:
+        """Multiple conditions are all resolved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {
+                "stop_conditions": [
+                    "S1: scope ambiguous",
+                    "S3: minimum read unavailable: CONTROL_REGISTER.md",
+                    "S4: core assumptions lack evidence",
+                    "S10: STOP in control surfaces",
+                ],
+            },
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 4
+        types = [r["type"] for r in result["resolved"]]
+        assert "scope_drift_risk" in types
+        assert "missing_context" in types
+        assert "missing_evidence" in types
+        assert "stale_context" in types
+
+    def test_whitespace_only_stop_conditions_filtered(self) -> None:
+        """Whitespace-only strings in stop_conditions are filtered."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {"stop_conditions": ["   ", "\t", "S1: scope ambiguous"]},
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+
+    def test_warnings_input_accepted(self) -> None:
+        """Warnings parameter is accepted without error."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {
+                "stop_conditions": ["S1: scope ambiguous"],
+                "warnings": ["artifacts_limit_exceeded", "low confidence"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert len(result["resolved"]) == 1
+
+    def test_readiness_result_input_accepted(self) -> None:
+        """readiness_result parameter is accepted and conditions extracted."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.stop_resolver",
+            {
+                "stop_conditions": ["S1: scope ambiguous"],
+                "readiness_result": {
+                    "stop_conditions": [
+                        "S7: trading/risk/execution scope touched",
+                    ],
+                },
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        # S1 + S7 from readiness = 2 resolved
+        assert len(result["resolved"]) == 2
+
+    def test_briefing_stop_conditions_remain_string_array(self) -> None:
+        """Briefing result stop_conditions is still a flat string[]."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-2107-test",
+                "task_scope": "Test briefing stop conditions schema compliance.",
+                "target_issue": "#2107",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert "stop_conditions" in b
+        assert isinstance(b["stop_conditions"], list)
+        for sc in b["stop_conditions"]:
+            assert isinstance(sc, str), (
+                f"stop_conditions must remain string[], got {type(sc).__name__}: {sc!r}"
+            )
+
+    def test_resolver_does_not_mutate_input_list(self) -> None:
+        """Input stop_conditions list is not mutated by resolve_stop_conditions."""
+        from tools.surrealdb.context_stop_resolver import resolve_stop_conditions
+
+        original = ["S1: scope ambiguous", "S4: no evidence"]
+        before = list(original)
+        _result = resolve_stop_conditions(stop_conditions=original)
+        assert original == before, (
+            f"Input list was mutated: {before} -> {original}"
+        )
+
+    def test_briefing_surfaces_resolver_failure(self) -> None:
+        """When the resolver raises, briefing surfaces it in known_risks
+        and unresolved_questions."""
+        from unittest.mock import patch
+
+        bridge = create_bridge()
+        params = {
+            "task_id": "cdb-briefing-err-test",
+            "task_scope": "Test resolver failure surfacing.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+
+        with patch(
+            "tools.surrealdb.context_stop_resolver.resolve_stop_conditions",
+            side_effect=RuntimeError("mock resolver crash"),
+        ):
+            result = bridge.execute_tool("context.briefing", params)
+
+        assert result["status"] == "ok"
+        b = result["briefing"]
+        assert isinstance(b["stop_conditions"], list)
+        for sc in b["stop_conditions"]:
+            assert isinstance(sc, str), (
+                f"stop_conditions must remain string[] on failure"
+            )
+        risk_text = " ".join(b["known_risks"]).lower()
+        assert "resolver unavailable" in risk_text, (
+            f"known_risks should surface resolver failure, got: {b['known_risks']}"
+        )
+        unresolved_text = " ".join(b["unresolved_questions"]).lower()
+        assert "stop condition resolver failed" in unresolved_text, (
+            f"unresolved_questions should surface resolver failure, got: {b['unresolved_questions']}"
+        )

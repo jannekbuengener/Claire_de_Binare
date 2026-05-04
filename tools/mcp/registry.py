@@ -495,6 +495,82 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("context.briefing"),
     ),
+    ToolDefinition(
+        name="context.stop_resolver",
+        description="Resolve flat stop-condition strings to typed stop condition objects. Read-only, deterministic, fail-closed. No DB/network/GitHub access.",
+        input_schema={
+            "type": "object",
+            "properties": {
+                "stop_conditions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Flat stop condition strings to resolve (S1-S10, H1-H8 patterns).",
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional warning strings to scan for secrets/live/runtime keywords.",
+                },
+                "readiness_result": {
+                    "type": "object",
+                    "description": "Optional readiness result from context.readiness for additional stop conditions.",
+                },
+                "operation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "read_only",
+                        "dry_run",
+                        "write (code/docs)",
+                        "write (config/infra)",
+                        "write (DB/migration)",
+                        "write (MCP live)",
+                    ],
+                    "description": "Operation mode affecting severity of some conditions.",
+                    "default": "read_only",
+                },
+            },
+            "required": [],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "resolved": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "missing_context",
+                                    "missing_evidence",
+                                    "scope_drift_risk",
+                                    "runtime_surface_touched",
+                                    "trading_surface_touched",
+                                    "write_requires_human_go",
+                                    "stale_context",
+                                    "contradiction_risk",
+                                    "forbidden_path",
+                                    "secrets_risk",
+                                ],
+                            },
+                            "severity": {
+                                "type": "string",
+                                "enum": ["info", "warning", "blocking"],
+                            },
+                            "reason": {"type": "string"},
+                            "required_action": {"type": "string"},
+                            "human_go_required": {"type": "boolean"},
+                        },
+                    },
+                },
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("context.stop_resolver"),
+    ),
 ]
 
 

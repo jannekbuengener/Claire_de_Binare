@@ -988,6 +988,28 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         stop_conditions.append("H1: write action requires explicit Human-GO")
     stop_conditions.append("S10: STOP if LR/Stage/Live claims surface")
 
+    # --- Internal resolver usage: enrich stop conditions without new fields ---
+    resolver_error: Optional[str] = None
+    try:
+        from tools.surrealdb.context_stop_resolver import resolve_stop_conditions
+
+        resolved = resolve_stop_conditions(
+            stop_conditions=stop_conditions,
+            operation_mode=operation_mode,
+        )
+        for rc in resolved:
+            sc_type = rc.get("type", "")
+            sc_text = (
+                f"{rc.get('severity', 'warning')}: {sc_type} — "
+                f"{rc.get('reason', '')}"
+            )
+            if sc_text not in stop_conditions:
+                stop_conditions.append(sc_text)
+    except Exception as e:
+        resolver_error = (
+            f"stop resolver unavailable: {type(e).__name__}: {e}"
+        )
+
     # --- Guardrails (always present) ---
     guardrails = [
         "Briefing is context, not authorisation.",
@@ -1113,6 +1135,13 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             "context may be minimal"
         )
 
+    # --- Surface resolver failure ---
+    if resolver_error:
+        known_risks.append(resolver_error)
+        unresolved_questions.append(
+            "stop condition resolver failed; flat stop_conditions preserved"
+        )
+
     # --- Readiness blocker surfaced ---
     if readiness_status.startswith("blocked"):
         unresolved_questions.append(
@@ -1174,6 +1203,75 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "tool": "context.briefing",
         "status": "ok",
         "briefing": briefing,
+    }
+
+
+def context_stop_resolver_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.stop_resolver tool.
+
+    Resolves flat stop-condition strings to typed stop condition objects.
+    Delegates to tools.surrealdb.context_stop_resolver.resolve_stop_conditions.
+    Pure in-process evaluation. No DB/network. Fail-closed.
+
+    Input:
+        stop_conditions: list[str] — flat stop condition strings
+        warnings: list[str] (optional) — warning strings to scan
+        readiness_result: dict (optional) — readiness result for additional inputs
+        operation_mode: str (optional, default "read_only")
+
+    Output:
+        tool, status, resolved (list of typed conditions)
+    """
+    from tools.surrealdb.context_stop_resolver import resolve_stop_conditions
+
+    stop_conditions_in = kwargs.get("stop_conditions", [])
+    warnings_in = kwargs.get("warnings")
+    readiness_result_in = kwargs.get("readiness_result")
+    operation_mode = kwargs.get("operation_mode", "read_only")
+
+    if not isinstance(stop_conditions_in, list):
+        stop_conditions_in = []
+
+    if warnings_in is not None and not isinstance(warnings_in, list):
+        warnings_in = []
+
+    if readiness_result_in is not None and not isinstance(readiness_result_in, dict):
+        readiness_result_in = None
+
+    valid_modes = frozenset({
+        "read_only",
+        "dry_run",
+        "write (code/docs)",
+        "write (config/infra)",
+        "write (DB/migration)",
+        "write (MCP live)",
+    })
+    if not isinstance(operation_mode, str) or operation_mode not in valid_modes:
+        operation_mode = "read_only"
+
+    try:
+        resolved = resolve_stop_conditions(
+            stop_conditions=stop_conditions_in,
+            warnings=warnings_in,
+            readiness_result=readiness_result_in,
+            operation_mode=operation_mode,
+        )
+    except Exception as e:
+        logger.exception("Stop condition resolver failed")
+        return {
+            "tool": "context.stop_resolver",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+    return {
+        "tool": "context.stop_resolver",
+        "status": "ok",
+        "resolved": resolved,
     }
 
 
@@ -1274,6 +1372,17 @@ class ContextBridge:
                 handler=context_briefing_handler,
             )
             self._registry._tools["context.briefing"] = new_briefing
+        old_stop_resolver = self._registry.get_tool("context.stop_resolver")
+        if old_stop_resolver:
+            new_stop_resolver = ToolDefinition(
+                name=old_stop_resolver.name,
+                description=old_stop_resolver.description,
+                input_schema=old_stop_resolver.input_schema,
+                output_schema=old_stop_resolver.output_schema,
+                read_only=old_stop_resolver.read_only,
+                handler=context_stop_resolver_handler,
+            )
+            self._registry._tools["context.stop_resolver"] = new_stop_resolver
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"
         )
