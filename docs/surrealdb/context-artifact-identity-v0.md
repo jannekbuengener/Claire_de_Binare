@@ -359,6 +359,51 @@ content_hash    = sha256("Content line\n")        → "m1n2o3..."
 Same `source_hash`, different path → rename detected. Link old and new via
 `supersedes` relationship.
 
+### 11.4 YAML File
+
+**File**: `infrastructure/compose/compose.blue.yml` at commit `abc123`
+
+```
+artifact_id   = sha256("infrastructure/compose/compose.blue.yml@abc123")  → "f7a8b9..."
+source_path   = "infrastructure/compose/compose.blue.yml"
+source_commit = "abc123"
+source_hash   = sha256(git blob bytes)                                     → "c3d4e5..."
+integrity_algo = "sha256"
+artifact_type = "configuration"
+size_bytes    = 2847
+mime_type     = "application/x-yaml"
+```
+
+### 11.5 Python File
+
+**File**: `services/risk/service.py` at commit `abc123`
+
+```
+artifact_id   = sha256("services/risk/service.py@abc123")  → "b2c3d4..."
+source_path   = "services/risk/service.py"
+source_commit = "abc123"
+source_hash   = sha256(git blob bytes)                      → "e5f6a7..."
+integrity_algo = "sha256"
+artifact_type = "source_code"
+size_bytes    = 6412
+mime_type     = "text/x-python"
+```
+
+### 11.6 JSON File
+
+**File**: `docs/contracts/market_data.schema.json` at commit `abc123`
+
+```
+artifact_id   = sha256("docs/contracts/market_data.schema.json@abc123")  → "a9b0c1..."
+source_path   = "docs/contracts/market_data.schema.json"
+source_commit = "abc123"
+source_hash   = sha256(git blob bytes)                                    → "d2e3f4..."
+integrity_algo = "sha256"
+artifact_type = "contract"
+size_bytes    = 1533
+mime_type     = "application/json"
+```
+
 ---
 
 ## 12. Validation Checklist
