@@ -441,4 +441,5 @@ in the dependency edge table. #2000 MUST NOT introduce relation types not define
   - `docs/surrealdb/context-intelligence-system.md`
   - `docs/surrealdb/context-intelligence-namespace-layout.md`
   - `docs/surrealdb/context-intelligence-validation.md`
-  - `infrastructure/config/surrealdb/ownership.yaml`
+   - `infrastructure/config/surrealdb/ownership.yaml`
+
