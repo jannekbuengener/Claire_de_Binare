@@ -1,6 +1,7 @@
 -- =====================================================================
 -- Context Intelligence v0 — SurrealQL Schema Draft (read-only draft)
 -- Issue: #2037  (Parent: #2034, Epic: #1976)
+-- Core schema objects per #1981; gap-closed via schema-draft extension
 --
 -- Non-goals / Guardrails (hard):
 -- - Schema draft only: no productive apply, no migration, no bootstrap (NS/DB)
@@ -236,6 +237,7 @@ DEFINE FIELD claim_refs ON TABLE decision_event TYPE array;
 DEFINE FIELD affected_artifacts ON TABLE decision_event TYPE array;
 DEFINE FIELD agent ON TABLE decision_event TYPE string;
 DEFINE FIELD human_go ON TABLE decision_event TYPE bool;
+DEFINE FIELD confidence ON TABLE decision_event TYPE float;
 DEFINE FIELD superseded_by ON TABLE decision_event TYPE string;
 DEFINE FIELD invalidated_by ON TABLE decision_event TYPE string;
 DEFINE FIELD uncertainty ON TABLE decision_event TYPE string;
@@ -258,6 +260,9 @@ DEFINE FIELD source_refs ON TABLE agent_memory TYPE array;
 DEFINE FIELD evidence_refs ON TABLE agent_memory TYPE array;
 DEFINE FIELD confidence ON TABLE agent_memory TYPE float;
 DEFINE FIELD ttl ON TABLE agent_memory TYPE int;
+DEFINE FIELD expires_at ON TABLE agent_memory TYPE datetime;
+DEFINE FIELD stale_after ON TABLE agent_memory TYPE int;
+DEFINE FIELD superseded_by ON TABLE agent_memory TYPE string;
 DEFINE FIELD created_by ON TABLE agent_memory TYPE string;
 DEFINE FIELD comment ON TABLE agent_memory TYPE string;
 DEFINE FIELD created_at ON TABLE agent_memory TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
@@ -265,6 +270,21 @@ DEFINE INDEX idx_agent_memory_memory_id_unique ON TABLE agent_memory FIELDS memo
 DEFINE INDEX idx_agent_memory_scope ON TABLE agent_memory FIELDS scope;
 DEFINE INDEX idx_agent_memory_namespace ON TABLE agent_memory FIELDS namespace;
 DEFINE INDEX idx_agent_memory_created_at ON TABLE agent_memory FIELDS created_at;
+
+-- -------------------------
+-- context_query (Issue #1981)
+-- -------------------------
+DEFINE TABLE context_query SCHEMAFULL;
+DEFINE FIELD query_id ON TABLE context_query TYPE string; -- REQUIRED(v0-draft)
+DEFINE FIELD query_type ON TABLE context_query TYPE string;
+DEFINE FIELD query_text ON TABLE context_query TYPE string;
+DEFINE FIELD context_refs ON TABLE context_query TYPE array;
+DEFINE FIELD confidence ON TABLE context_query TYPE float;
+DEFINE FIELD comment ON TABLE context_query TYPE string;
+DEFINE FIELD created_at ON TABLE context_query TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_context_query_query_id_unique ON TABLE context_query FIELDS query_id UNIQUE;
+DEFINE INDEX idx_context_query_query_type ON TABLE context_query FIELDS query_type;
+DEFINE INDEX idx_context_query_created_at ON TABLE context_query FIELDS created_at;
 
 -- -------------------------
 -- audit_observation (v0)
