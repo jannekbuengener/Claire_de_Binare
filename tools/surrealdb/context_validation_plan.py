@@ -25,6 +25,7 @@ Design intent:
 from __future__ import annotations
 
 import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -69,7 +70,7 @@ class ValidationPlan:
     blocking_preconditions: tuple[str, ...]
     success_criteria: tuple[str, ...]
     stop_conditions: tuple[dict[str, Any], ...] = field(
-        hash=False, compare=False
+        hash=False
     )
     schema_version: str = SCHEMA_VERSION
 
@@ -85,7 +86,7 @@ class ValidationPlan:
             "manual_review_needed": self.manual_review_needed,
             "blocking_preconditions": list(self.blocking_preconditions),
             "success_criteria": list(self.success_criteria),
-            "stop_conditions": list(self.stop_conditions),
+            "stop_conditions": [dict(stop) for stop in self.stop_conditions],
         }
 
 
@@ -95,6 +96,16 @@ class ValidationPlan:
 def _stable_id(*parts: str) -> str:
     joined = "|".join(parts)
     return hashlib.sha256(joined.encode()).hexdigest()[:16]
+
+
+def _stable_id_from_plan_content(content: dict[str, Any]) -> str:
+    payload = json.dumps(
+        content,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    )
+    return _stable_id("plan", payload)
 
 
 def _resolve_payload(input_data: ValidationPlanInput) -> dict[str, Any]:
@@ -118,6 +129,36 @@ def _get_required_validation(payload: dict[str, Any]) -> dict[str, Any]:
     if isinstance(rv, dict):
         return rv
     return {}
+
+
+def _copy_stop_conditions(
+    stop_conditions: list[dict[str, Any]],
+) -> tuple[dict[str, Any], ...]:
+    copied: list[dict[str, Any]] = []
+    for stop_condition in stop_conditions:
+        if isinstance(stop_condition, dict):
+            copied.append(dict(stop_condition))
+    return tuple(copied)
+
+
+def _derive_manual_review_needed(
+    required_validation: dict[str, Any],
+    impact_level: str,
+    gate_risks: list[str],
+    blocking_preconditions: tuple[str, ...],
+    stop_conditions: tuple[dict[str, Any], ...],
+) -> bool:
+    explicit_flag = bool(required_validation.get("manual_review_needed", False))
+    blocking_stop_present = any(
+        stop.get("severity") == "blocking" for stop in stop_conditions
+    )
+    fail_closed_signals = (
+        impact_level in {"high", "blocking"}
+        or bool(gate_risks)
+        or bool(blocking_preconditions)
+        or blocking_stop_present
+    )
+    return explicit_flag or fail_closed_signals
 
 
 def _derive_required_checks(
@@ -289,7 +330,9 @@ def build_validation_plan(input_data: ValidationPlanInput) -> ValidationPlan:
     impact_id = payload.get("impact_id", "unknown")
     confidence = payload.get("confidence", "low")
     gate_risks: list[str] = payload.get("gate_risks", [])
-    stop_conditions: list[dict[str, Any]] = payload.get("stop_conditions", [])
+    raw_stop_conditions: list[dict[str, Any]] = payload.get(
+        "stop_conditions", []
+    )
 
     rv = _get_required_validation(payload)
 
@@ -301,9 +344,16 @@ def build_validation_plan(input_data: ValidationPlanInput) -> ValidationPlan:
     commands_to_consider: tuple[str, ...] = tuple(
         rv.get("commands_to_consider", [])
     )
-    manual_review_needed: bool = bool(rv.get("manual_review_needed", False))
     blocking_preconditions: tuple[str, ...] = tuple(
         rv.get("blocking_preconditions", [])
+    )
+    stop_conditions = _copy_stop_conditions(raw_stop_conditions)
+    manual_review_needed = _derive_manual_review_needed(
+        required_validation=rv,
+        impact_level=impact_level,
+        gate_risks=gate_risks,
+        blocking_preconditions=blocking_preconditions,
+        stop_conditions=stop_conditions,
     )
 
     has_artifacts = bool(payload.get("affected_artifacts", []))
@@ -316,7 +366,7 @@ def build_validation_plan(input_data: ValidationPlanInput) -> ValidationPlan:
         impact_level=impact_level,
         gate_risks=gate_risks,
         blocking_preconditions=list(blocking_preconditions),
-        stop_conditions=stop_conditions,
+        stop_conditions=list(stop_conditions),
     )
 
     success_criteria = _derive_success_criteria(
@@ -330,7 +380,22 @@ def build_validation_plan(input_data: ValidationPlanInput) -> ValidationPlan:
         has_stop_conditions=has_stop_conditions,
     )
 
-    plan_id = _stable_id("plan", impact_id, impact_level, confidence)
+    plan_id = _stable_id_from_plan_content(
+        {
+            "impact_id": impact_id,
+            "impact_level": impact_level,
+            "confidence": confidence,
+            "required_checks": required_checks,
+            "suggested_tests": suggested_tests,
+            "docs_to_review": docs_to_review,
+            "evidence_to_collect": evidence_to_collect,
+            "commands_to_consider": commands_to_consider,
+            "manual_review_needed": manual_review_needed,
+            "blocking_preconditions": blocking_preconditions,
+            "success_criteria": success_criteria,
+            "stop_conditions": stop_conditions,
+        }
+    )
 
     return ValidationPlan(
         plan_id=plan_id,
@@ -342,5 +407,5 @@ def build_validation_plan(input_data: ValidationPlanInput) -> ValidationPlan:
         manual_review_needed=manual_review_needed,
         blocking_preconditions=blocking_preconditions,
         success_criteria=tuple(success_criteria),
-        stop_conditions=tuple(stop_conditions),
+        stop_conditions=stop_conditions,
     )

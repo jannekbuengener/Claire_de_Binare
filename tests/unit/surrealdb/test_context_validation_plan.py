@@ -10,7 +10,6 @@ from tools.surrealdb.context_impact_radar import (
 )
 from tools.surrealdb.context_validation_plan import (
     SCHEMA_VERSION,
-    ValidationPlan,
     ValidationPlanInput,
     build_validation_plan,
 )
@@ -741,6 +740,29 @@ def test_missing_required_validation_defaults() -> None:
 
 
 @pytest.mark.unit
+def test_missing_required_validation_derives_manual_review_for_blocking() -> None:
+    payload = {
+        "impact_id": "test-blocking-default-review",
+        "impact_level": "blocking",
+        "confidence": "high",
+        "gate_risks": ["governance_touched"],
+        "stop_conditions": [
+            {
+                "type": "scope_drift_risk",
+                "severity": "blocking",
+                "reason": "S5: blocking impact detected",
+                "required_action": "Seek Human-GO",
+                "human_go_required": True,
+            }
+        ],
+    }
+
+    plan = build_validation_plan(ValidationPlanInput(payload=payload))
+
+    assert plan.manual_review_needed is True
+
+
+@pytest.mark.unit
 def test_payload_with_nested_impact_report_dict() -> None:
     report_payload = {
         "impact_id": "nested-123",
@@ -795,6 +817,112 @@ def test_blocking_preconditions_become_checks() -> None:
     assert any(
         "credential" in c.lower() for c in plan.required_checks
     )
+
+
+@pytest.mark.unit
+def test_stop_conditions_participate_in_equality() -> None:
+    payload = {
+        "impact_id": "test-equality",
+        "impact_level": "blocking",
+        "confidence": "high",
+        "stop_conditions": [
+            {
+                "type": "scope_drift_risk",
+                "severity": "blocking",
+                "reason": "S5: blocking impact detected",
+            }
+        ],
+    }
+
+    plan_a = build_validation_plan(ValidationPlanInput(payload=payload))
+    changed_payload = {
+        **payload,
+        "stop_conditions": [
+            {
+                "type": "scope_drift_risk",
+                "severity": "blocking",
+                "reason": "S8: forbidden path touched",
+            }
+        ],
+    }
+    plan_b = build_validation_plan(
+        ValidationPlanInput(payload=changed_payload)
+    )
+
+    assert plan_a != plan_b
+
+
+@pytest.mark.unit
+def test_plan_id_changes_when_stop_conditions_change() -> None:
+    base_payload = {
+        "impact_id": "test-plan-id",
+        "impact_level": "blocking",
+        "confidence": "high",
+        "gate_risks": [],
+        "stop_conditions": [
+            {
+                "type": "scope_drift_risk",
+                "severity": "blocking",
+                "reason": "S5: blocking impact detected",
+            }
+        ],
+    }
+
+    plan_a = build_validation_plan(ValidationPlanInput(payload=base_payload))
+    plan_b = build_validation_plan(
+        ValidationPlanInput(
+            payload={
+                **base_payload,
+                "gate_risks": ["secrets_surface_touched"],
+            }
+        )
+    )
+
+    assert plan_a.plan_id != plan_b.plan_id
+
+
+@pytest.mark.unit
+def test_stop_conditions_are_copied_on_plan_creation() -> None:
+    stop_conditions = [
+        {
+            "type": "scope_drift_risk",
+            "severity": "blocking",
+            "reason": "S5: blocking impact detected",
+        }
+    ]
+    payload = {
+        "impact_id": "test-copy-in",
+        "impact_level": "blocking",
+        "confidence": "high",
+        "stop_conditions": stop_conditions,
+    }
+
+    plan = build_validation_plan(ValidationPlanInput(payload=payload))
+    stop_conditions[0]["severity"] = "warning"
+
+    assert plan.stop_conditions[0]["severity"] == "blocking"
+
+
+@pytest.mark.unit
+def test_to_payload_copies_stop_condition_dicts() -> None:
+    payload = {
+        "impact_id": "test-copy-out",
+        "impact_level": "blocking",
+        "confidence": "high",
+        "stop_conditions": [
+            {
+                "type": "scope_drift_risk",
+                "severity": "blocking",
+                "reason": "S5: blocking impact detected",
+            }
+        ],
+    }
+
+    plan = build_validation_plan(ValidationPlanInput(payload=payload))
+    exported = plan.to_payload()
+    exported["stop_conditions"][0]["severity"] = "warning"
+
+    assert plan.stop_conditions[0]["severity"] == "blocking"
 
 
 # ── Full impact-radar-to-plan pipeline ──────────────────────────────────────
