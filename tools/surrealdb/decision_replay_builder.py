@@ -23,9 +23,9 @@ Guardrails:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+from core.utils.clock import utcnow
 from tools.surrealdb.decision_history_query import (
     DecisionHistoryQueryRequest,
     query_decision_history_v1,
@@ -63,7 +63,7 @@ class DecisionReplayRequest:
 
 
 def _utc_now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
+    return utcnow().isoformat()
 
 
 def _validate_request(req: DecisionReplayRequest) -> None:
