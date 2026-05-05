@@ -13,7 +13,7 @@
 | **Trivy FS** | `trivy.yml` | Push (services/, infrastructure/), weekly | Ja |
 | **Trivy Image** | `security-scan.yml` | Push, weekly Monday | Ja |
 | **Gitleaks** | `gitleaks.yml` | Push main, weekly Sunday | Ja |
-| **CodeQL** | GitHub native | Push main, weekly | Ja (auto) |
+| **CodeQL** | `codeql-python.yml` (custom) | Push main, PR, weekly | Ja (auto) |
 
 ---
 

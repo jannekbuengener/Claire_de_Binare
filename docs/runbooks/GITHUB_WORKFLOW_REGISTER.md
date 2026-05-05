@@ -2,7 +2,7 @@
 
 **Repo:** Claire de Binare
 **Canon date:** 2026-05 (generated for #1640 from #1633 audit + live trigger scan)
-**Total workflow definitions:** 65 YAML files
+**Total workflow definitions:** 66 YAML files
 **Non-workflow file in `/workflows/`:** `labels.json` (label spec — consumed by `sync-labels.yml`)
 
 **Related docs:**
@@ -298,6 +298,7 @@ Secret scanning, vulnerability detection, and security audit.
 | `gitleaks.yml` | aktiv | push, sched, dispatch | Scan for secrets and credentials in commits | — | Gitleaks report; fail on secrets found | **C** | Fix secrets before merge |
 | `trivy.yml` | aktiv | push, sched, dispatch | Container/dependency vulnerability scan (Trivy) | — | Trivy vulnerability report | O | Review CVEs |
 | `security-scan.yml` | aktiv | sched, push, dispatch | Combined security scan: gitleaks + ruff + bandit | — | Security scan report | O | Weekly security review |
+| `codeql-python.yml` | aktiv | push, PR, sched, dispatch | CodeQL Python SAST: `security-and-quality` Queries | — | SARIF-Upload (`security-events: write`) | O | Alert-Review via Security Tab |
 
 ---
 
@@ -331,12 +332,12 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv | 54 |
+| aktiv | 55 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
 | parked | 4 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **65** (aktiv 54 + manual 4 + parked 4 + historisch 2 + frozen 1 = 65... see note below) |
+| **Total** | **66** (aktiv 55 + manual 4 + parked 4 + historisch 2 + frozen 1 = 66... see note below) |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
 > Of the 54 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
@@ -344,15 +345,15 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv (independently triggered) | 51 |
+| aktiv (independently triggered) | 52 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
 | parked | 4 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **65** |
+| **Total** | **66** |
 
-> **Methodology note:** The current repo has 65 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
+> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
 
 ---
 
