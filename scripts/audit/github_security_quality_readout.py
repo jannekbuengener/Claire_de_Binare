@@ -89,7 +89,7 @@ class SurfaceFetchResult:
     def to_dict(self) -> dict[str, Any]:
         if self.alert_count is not None:
             alert_count: int | None = self.alert_count
-        elif self.source == "secret_scanning" and self.status == "readable":
+        elif self.source == "secret_scanning":
             alert_count = None
         else:
             alert_count = len(self.alerts)
@@ -100,10 +100,8 @@ class SurfaceFetchResult:
             "alert_count": alert_count,
             "artifact_detail_status": (
                 "redacted"
-                if self.source == "secret_scanning" and self.status == "readable"
-                else "full"
-                if self.status == "readable"
-                else "none"
+                if self.source == "secret_scanning"
+                else "full" if self.status == "readable" else "none"
             ),
         }
         if self.note is not None:
@@ -181,10 +179,25 @@ def fetch_surface(
     source: str,
     repo: str,
     gh_executable: str = DEFAULT_GH_EXECUTABLE,
-    runner: Callable[[list[str]], subprocess.CompletedProcess[str]] = _completed_process_runner,
+    runner: Callable[
+        [list[str]], subprocess.CompletedProcess[str]
+    ] = _completed_process_runner,
 ) -> SurfaceFetchResult:
     if source not in SURFACE_ENDPOINTS:
         raise SecurityQualityReadoutError(f"Unsupported source: {source}")
+
+    if source == "secret_scanning":
+        return SurfaceFetchResult(
+            source="secret_scanning",
+            endpoint=SURFACE_ENDPOINTS[source].format(repo=repo),
+            status="redacted",
+            alerts=(),
+            alert_count=None,
+            note=(
+                "not-fetched: secret-scanning alert payloads are intentionally "
+                "not requested or persisted"
+            ),
+        )
 
     endpoint = SURFACE_ENDPOINTS[source].format(repo=repo)
     command = [gh_executable, "api", "--paginate", "--slurp", endpoint]
@@ -252,18 +265,6 @@ def fetch_surface(
                 )
             alerts.append(item)
 
-    if source == "secret_scanning":
-        return SurfaceFetchResult(
-            source=source,
-            endpoint=endpoint,
-            status="readable",
-            alerts=(),
-            note=(
-                "payload-redacted: alert details and counts are intentionally "
-                "excluded from persisted artifacts"
-            ),
-        )
-
     return SurfaceFetchResult(
         source=source,
         endpoint=endpoint,
@@ -288,14 +289,16 @@ def normalize_code_scanning_alert(
         else {}
     )
     path = location.get("path") if isinstance(location.get("path"), str) else None
-    created_at = raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
-    updated_at = raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    created_at = (
+        raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
+    )
+    updated_at = (
+        raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    )
     subject = (
         rule.get("id")
         if isinstance(rule.get("id"), str) and rule.get("id")
-        else rule.get("name")
-        if isinstance(rule.get("name"), str)
-        else "unknown"
+        else rule.get("name") if isinstance(rule.get("name"), str) else "unknown"
     )
     tool = raw.get("tool", {}) if isinstance(raw.get("tool"), dict) else {}
     return {
@@ -328,17 +331,29 @@ def normalize_code_scanning_alert(
 def normalize_dependabot_alert(
     raw: dict[str, Any], *, reference_now: datetime
 ) -> dict[str, Any]:
-    dependency = raw.get("dependency", {}) if isinstance(raw.get("dependency"), dict) else {}
-    package = dependency.get("package", {}) if isinstance(dependency.get("package"), dict) else {}
+    dependency = (
+        raw.get("dependency", {}) if isinstance(raw.get("dependency"), dict) else {}
+    )
+    package = (
+        dependency.get("package", {})
+        if isinstance(dependency.get("package"), dict)
+        else {}
+    )
     advisory = (
         raw.get("security_advisory", {})
         if isinstance(raw.get("security_advisory"), dict)
         else {}
     )
     package_name = package.get("name") if isinstance(package.get("name"), str) else None
-    ghsa_id = advisory.get("ghsa_id") if isinstance(advisory.get("ghsa_id"), str) else None
-    created_at = raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
-    updated_at = raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    ghsa_id = (
+        advisory.get("ghsa_id") if isinstance(advisory.get("ghsa_id"), str) else None
+    )
+    created_at = (
+        raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
+    )
+    updated_at = (
+        raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    )
     return {
         "source": "dependabot",
         "number": raw.get("number"),
@@ -365,8 +380,12 @@ def normalize_dependabot_alert(
 def normalize_secret_scanning_alert(
     raw: dict[str, Any], *, reference_now: datetime
 ) -> dict[str, Any]:
-    created_at = raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
-    updated_at = raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    created_at = (
+        raw.get("created_at") if isinstance(raw.get("created_at"), str) else None
+    )
+    updated_at = (
+        raw.get("updated_at") if isinstance(raw.get("updated_at"), str) else None
+    )
     return {
         "source": "secret_scanning",
         "number": raw.get("number"),
@@ -404,13 +423,19 @@ def normalize_alert(
     raise SecurityQualityReadoutError(f"Unsupported source: {source}")
 
 
-def _counter_items(counter: Counter[str], preferred_order: tuple[str, ...] = ()) -> list[dict[str, Any]]:
+def _counter_items(
+    counter: Counter[str], preferred_order: tuple[str, ...] = ()
+) -> list[dict[str, Any]]:
     order_map = {value: index for index, value in enumerate(preferred_order)}
     return [
         {"value": key, "count": count}
         for key, count in sorted(
             counter.items(),
-            key=lambda item: (-item[1], order_map.get(item[0], len(order_map)), item[0]),
+            key=lambda item: (
+                -item[1],
+                order_map.get(item[0], len(order_map)),
+                item[0],
+            ),
         )
     ]
 
@@ -429,13 +454,12 @@ def build_summary(
     top_components = Counter(
         (
             alert.get("affected_path")
-            if isinstance(alert.get("affected_path"), str) and alert.get("affected_path")
+            if isinstance(alert.get("affected_path"), str)
+            and alert.get("affected_path")
             else alert.get("affected_component")
         )
         for alert in alerts
-        if (
-            isinstance(alert.get("affected_path"), str) and alert.get("affected_path")
-        )
+        if (isinstance(alert.get("affected_path"), str) and alert.get("affected_path"))
         or (
             isinstance(alert.get("affected_component"), str)
             and alert.get("affected_component")
@@ -490,7 +514,9 @@ def build_markdown_report(readout: dict[str, Any]) -> str:
     add_counter_section("Top Components or Paths", summary["top_components"])
 
     unavailable = [
-        surface for surface in readout["surfaces"] if surface["status"] != "readable"
+        surface
+        for surface in readout["surfaces"]
+        if surface["status"] not in ("readable", "redacted")
     ]
     redacted = [
         surface
@@ -543,12 +569,14 @@ def build_readout(
     readable_surfaces = 0
     readable_surface_counts: Counter[str] = Counter()
     for surface in fetched_surfaces:
-        if surface.status == "readable":
+        if surface.status in ("readable", "redacted"):
             readable_surfaces += 1
             if surface.source == "secret_scanning":
                 continue
             surface_alert_count = (
-                surface.alert_count if surface.alert_count is not None else len(surface.alerts)
+                surface.alert_count
+                if surface.alert_count is not None
+                else len(surface.alerts)
             )
             if surface_alert_count:
                 readable_surface_counts[surface.source] += surface_alert_count
@@ -669,7 +697,9 @@ def build_exportable_readout(readout: dict[str, Any]) -> dict[str, Any]:
                 ),
                 "age_bucket": str(alert["age_bucket"]),
                 "url": str(alert["url"]) if isinstance(alert.get("url"), str) else None,
-                "tool": str(alert["tool"]) if isinstance(alert.get("tool"), str) else None,
+                "tool": (
+                    str(alert["tool"]) if isinstance(alert.get("tool"), str) else None
+                ),
             }
         )
 
@@ -698,84 +728,96 @@ def build_exportable_readout(readout: dict[str, Any]) -> dict[str, Any]:
 def build_persistable_readout(readout: dict[str, Any]) -> dict[str, Any]:
     """
     Build a readout structure safe for persistence (JSON/Markdown export).
-    
+
     Excludes secret_scanning alerts entirely and replaces their summary
     entries with coverage-only markers to avoid taint tracking of secret
     payloads through to file I/O sinks.
-    
+
     Only code_scanning and dependabot alerts are included in the
     persisted output.
     """
     persistable_surfaces: list[dict[str, Any]] = []
     for surface in readout["surfaces"]:
         if surface["source"] == "secret_scanning":
-            persistable_surfaces.append({
-                "source": "secret_scanning",
-                "endpoint": str(surface["endpoint"]),
-                "status": str(surface["status"]),
-                "alert_count": None,
-                "artifact_detail_status": "redacted",
-                "note": "payload-redacted: secret scanning details excluded from artifacts",
-            })
+            persistable_surfaces.append(
+                {
+                    "source": "secret_scanning",
+                    "endpoint": str(surface["endpoint"]),
+                    "status": str(surface["status"]),
+                    "alert_count": None,
+                    "artifact_detail_status": "redacted",
+                    "note": "payload-redacted: secret scanning details excluded from artifacts",
+                }
+            )
         else:
-            persistable_surfaces.append({
-                "source": str(surface["source"]),
-                "endpoint": str(surface["endpoint"]),
-                "status": str(surface["status"]),
-                "alert_count": (
-                    int(surface["alert_count"])
-                    if surface["alert_count"] is not None
-                    else None
-                ),
-                "artifact_detail_status": str(surface["artifact_detail_status"]),
-            })
+            persistable_surfaces.append(
+                {
+                    "source": str(surface["source"]),
+                    "endpoint": str(surface["endpoint"]),
+                    "status": str(surface["status"]),
+                    "alert_count": (
+                        int(surface["alert_count"])
+                        if surface["alert_count"] is not None
+                        else None
+                    ),
+                    "artifact_detail_status": str(surface["artifact_detail_status"]),
+                }
+            )
             if isinstance(surface.get("note"), str):
                 persistable_surfaces[-1]["note"] = surface["note"]
 
     persistable_alerts: list[dict[str, Any]] = []
     for alert in readout["alerts"]:
         if alert["source"] != "secret_scanning":
-            persistable_alerts.append({
-                "source": str(alert["source"]),
-                "number": alert.get("number"),
-                "state": str(alert["state"]),
-                "severity": str(alert["severity"]),
-                "subject": str(alert["subject"]),
-                "rule_or_advisory": (
-                    str(alert["rule_or_advisory"])
-                    if isinstance(alert.get("rule_or_advisory"), str)
-                    else None
-                ),
-                "package": (
-                    str(alert["package"])
-                    if isinstance(alert.get("package"), str)
-                    else None
-                ),
-                "affected_path": (
-                    str(alert["affected_path"])
-                    if isinstance(alert.get("affected_path"), str)
-                    else None
-                ),
-                "affected_component": (
-                    str(alert["affected_component"])
-                    if isinstance(alert.get("affected_component"), str)
-                    else None
-                ),
-                "branch": str(alert["branch"]),
-                "created_at": (
-                    str(alert["created_at"])
-                    if isinstance(alert.get("created_at"), str)
-                    else None
-                ),
-                "updated_at": (
-                    str(alert["updated_at"])
-                    if isinstance(alert.get("updated_at"), str)
-                    else None
-                ),
-                "age_bucket": str(alert["age_bucket"]),
-                "url": str(alert["url"]) if isinstance(alert.get("url"), str) else None,
-                "tool": str(alert["tool"]) if isinstance(alert.get("tool"), str) else None,
-            })
+            persistable_alerts.append(
+                {
+                    "source": str(alert["source"]),
+                    "number": alert.get("number"),
+                    "state": str(alert["state"]),
+                    "severity": str(alert["severity"]),
+                    "subject": str(alert["subject"]),
+                    "rule_or_advisory": (
+                        str(alert["rule_or_advisory"])
+                        if isinstance(alert.get("rule_or_advisory"), str)
+                        else None
+                    ),
+                    "package": (
+                        str(alert["package"])
+                        if isinstance(alert.get("package"), str)
+                        else None
+                    ),
+                    "affected_path": (
+                        str(alert["affected_path"])
+                        if isinstance(alert.get("affected_path"), str)
+                        else None
+                    ),
+                    "affected_component": (
+                        str(alert["affected_component"])
+                        if isinstance(alert.get("affected_component"), str)
+                        else None
+                    ),
+                    "branch": str(alert["branch"]),
+                    "created_at": (
+                        str(alert["created_at"])
+                        if isinstance(alert.get("created_at"), str)
+                        else None
+                    ),
+                    "updated_at": (
+                        str(alert["updated_at"])
+                        if isinstance(alert.get("updated_at"), str)
+                        else None
+                    ),
+                    "age_bucket": str(alert["age_bucket"]),
+                    "url": (
+                        str(alert["url"]) if isinstance(alert.get("url"), str) else None
+                    ),
+                    "tool": (
+                        str(alert["tool"])
+                        if isinstance(alert.get("tool"), str)
+                        else None
+                    ),
+                }
+            )
 
     summary = readout["summary"]
     persistable_summary = {
@@ -799,9 +841,7 @@ def build_persistable_readout(readout: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def write_report_artifacts(
-    persistable_readout: dict[str, Any], out_dir: Path
-) -> None:
+def write_report_artifacts(persistable_readout: dict[str, Any], out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / JSON_FILENAME
     markdown_path = out_dir / MARKDOWN_FILENAME
@@ -821,7 +861,9 @@ def generate_readout(
     out_dir: Path,
     reference_now_utc: str | None = None,
     gh_executable: str = DEFAULT_GH_EXECUTABLE,
-    runner: Callable[[list[str]], subprocess.CompletedProcess[str]] = _completed_process_runner,
+    runner: Callable[
+        [list[str]], subprocess.CompletedProcess[str]
+    ] = _completed_process_runner,
 ) -> dict[str, Any]:
     if reference_now_utc is None:
         reference_now_utc = _utc_now_iso()

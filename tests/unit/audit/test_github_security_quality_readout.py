@@ -151,9 +151,11 @@ class TestFetchSurface:
 
     def test_fetch_surface_marks_invalid_page_shape_unavailable(self):
         result = fetch_surface(
-            source="secret_scanning",
+            source="code_scanning",
             repo="octo/example",
-            runner=lambda command: _completed_process(stdout=json.dumps([{"bad": "shape"}])),
+            runner=lambda command: _completed_process(
+                stdout=json.dumps([{"bad": "shape"}])
+            ),
         )
 
         assert result.status == "unavailable"
@@ -175,28 +177,19 @@ class TestFetchSurface:
         assert result.note == "gh api returned no stdout payload"
 
     def test_fetch_surface_redacts_secret_scanning_payload_before_persistence(self):
+        def _runner_must_not_be_called(*_args, **_kwargs):
+            raise AssertionError("runner must not be called for secret_scanning")
+
         result = fetch_surface(
             source="secret_scanning",
             repo="octo/example",
-            runner=lambda command: _completed_process(
-                stdout=json.dumps(
-                    [[
-                        {
-                            "number": 9,
-                            "state": "resolved",
-                            "secret_type": "generic_api_key",
-                            "secret_type_display_name": "Generic API Key",
-                            "first_location_detected": {"path": ".env"},
-                        }
-                    ]]
-                )
-            ),
+            runner=_runner_must_not_be_called,
         )
 
-        assert result.status == "readable"
+        assert result.status == "redacted"
         assert result.alert_count is None
         assert result.alerts == ()
-        assert "payload-redacted" in (result.note or "")
+        assert "not-fetched" in (result.note or "")
 
 
 class TestReadoutGeneration:
@@ -215,7 +208,10 @@ class TestReadoutGeneration:
                             "state": "open",
                             "created_at": "2026-04-22T00:00:00Z",
                             "updated_at": "2026-04-22T00:00:00Z",
-                            "rule": {"id": "py/sql-injection", "security_severity_level": "critical"},
+                            "rule": {
+                                "id": "py/sql-injection",
+                                "security_severity_level": "critical",
+                            },
                             "most_recent_instance": {
                                 "ref": "refs/heads/main",
                                 "location": {"path": "app/db.py"},
@@ -271,18 +267,8 @@ class TestReadoutGeneration:
                 SurfaceFetchResult(
                     source="secret_scanning",
                     endpoint="repos/octo/example/secret-scanning/alerts?per_page=100",
-                    status="readable",
-                    alerts=(
-                        {
-                            "number": 3,
-                            "state": "resolved",
-                            "created_at": "2026-04-01T00:00:00Z",
-                            "updated_at": "2026-04-02T00:00:00Z",
-                            "secret_type": "generic_api_key",
-                            "secret_type_display_name": "Generic API Key",
-                            "first_location_detected": {"path": ".env"},
-                        },
-                    ),
+                    status="redacted",
+                    alerts=(),
                 ),
             ],
         )
@@ -294,12 +280,12 @@ class TestReadoutGeneration:
         assert readout["alerts"] == []
 
         markdown = build_markdown_report(readout)
+        assert "Secret-Scanning bleibt in der Surface-Coverage sichtbar" in markdown
         assert (
-            "Secret-Scanning bleibt in der Surface-Coverage sichtbar"
+            "Secret-Scanning-Detailfelder werden im Artefakt absichtlich redigiert"
             in markdown
         )
-        assert "Secret-Scanning-Detailfelder werden im Artefakt absichtlich redigiert" in markdown
-        assert "| `secret_scanning` | readable | redacted |" in markdown
+        assert "| `secret_scanning` | redacted | redacted |" in markdown
 
     def test_generate_readout_writes_deterministic_artifacts(self, tmp_path):
         pages_by_source = {
@@ -338,24 +324,21 @@ class TestReadoutGeneration:
                     },
                 }
             ],
-            "secret_scanning": [
-                {
-                    "number": 12,
-                    "state": "resolved",
-                    "created_at": "2026-04-01T00:00:00Z",
-                    "updated_at": "2026-04-02T00:00:00Z",
-                    "html_url": "https://example.invalid/secret/12",
-                    "secret_type": "generic_api_key",
-                    "secret_type_display_name": "Generic API Key",
-                    "first_location_detected": {"path": ".env"},
-                }
-            ],
         }
+
+        _secret_scanning_calls = []
 
         def runner(command: list[str]) -> subprocess.CompletedProcess[str]:
             endpoint = command[-1]
+            if "secret-scanning" in endpoint:
+                _secret_scanning_calls.append(command)
+                raise AssertionError("secret_scanning must not call runner")
             for source, page in pages_by_source.items():
-                if f"/{source.replace('_', '-')}/" in endpoint or source == "code_scanning" and "/code-scanning/" in endpoint:
+                if (
+                    f"/{source.replace('_', '-')}/" in endpoint
+                    or source == "code_scanning"
+                    and "/code-scanning/" in endpoint
+                ):
                     return _completed_process(stdout=json.dumps([page]))
             raise AssertionError(f"Unexpected command endpoint: {endpoint}")
 
@@ -379,21 +362,22 @@ class TestReadoutGeneration:
         assert first == second
         assert first["status"] == "PASS"
         assert first["summary"]["total_alerts"] == 2
+        assert not _secret_scanning_calls
         assert len(first["alerts"]) == 2
         assert first["summary"]["counts_by_source"] == [
             {"value": "code_scanning", "count": 1},
             {"value": "dependabot", "count": 1},
         ]
-        assert first["summary"]["counts_by_state"] == [
-            {"value": "open", "count": 2}
-        ]
+        assert first["summary"]["counts_by_state"] == [{"value": "open", "count": 2}]
         assert first["summary"]["counts_by_severity"] == [
             {"value": "high", "count": 1},
             {"value": "medium", "count": 1},
         ]
         exported = json.loads((out_dir_a / JSON_FILENAME).read_text(encoding="utf-8"))
         secret_surface = next(
-            surface for surface in exported["surfaces"] if surface["source"] == "secret_scanning"
+            surface
+            for surface in exported["surfaces"]
+            if surface["source"] == "secret_scanning"
         )
         assert secret_surface["alert_count"] is None
         assert (out_dir_a / JSON_FILENAME).read_text(encoding="utf-8") == (
