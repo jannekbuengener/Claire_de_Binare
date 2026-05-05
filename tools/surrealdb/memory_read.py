@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 SCHEMA_VERSION = "memory-read/v1"
 
 SUPPORTED_MODES = frozenset(
@@ -139,7 +141,7 @@ def _is_stale_by_ttl(memory: Mapping[str, Any]) -> bool:
     created_at: datetime | None = memory.get("_created_at_dt")
     if created_at is None:
         return False
-    age_days = (datetime.now(tz=timezone.utc) - created_at).days
+    age_days = (cdb_utcnow().replace(tzinfo=timezone.utc) - created_at).days
     return age_days > ttl_days
 
 
@@ -241,7 +243,7 @@ def _match(memory: Mapping[str, Any], req: MemoryReadRequest) -> bool:
         dt: datetime | None = memory.get("_created_at_dt")
         if dt is None:
             return False
-        age_days = (datetime.now(tz=timezone.utc) - dt).days
+        age_days = (cdb_utcnow().replace(tzinfo=timezone.utc) - dt).days
         return age_days <= req.freshness_days
     if req.mode == "by_memory_type":
         return str(memory.get("memory_type", "")).strip().lower() == (req.memory_type or "").strip().lower()

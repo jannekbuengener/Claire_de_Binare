@@ -22,6 +22,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 SCHEMA_VERSION = "evidence-lookup/v1"
 
 SUPPORTED_MODES = frozenset(
@@ -219,7 +221,7 @@ def _match(evidence: Mapping[str, Any], req: EvidenceLookupRequest) -> bool:
         dt: datetime | None = evidence.get("_created_at_dt")
         if dt is None:
             return False
-        now = datetime.now(tz=timezone.utc)
+        now = cdb_utcnow().replace(tzinfo=timezone.utc)
         age_days = (now - dt).days
         return age_days <= req.freshness_days
     if req.mode == "by_confidence":
