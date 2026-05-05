@@ -1,0 +1,10 @@
+{
+    "target_paths": ["core/utils/clock.py"],
+    "target_symbols": ["utcnow"],
+    "target_issue": "#2108",
+    "target_concepts": ["impact", "radar"],
+    "operation_mode": "read_only",
+    "dependency_edges": [],
+    "code_symbols": [],
+    "artifacts": []
+}
