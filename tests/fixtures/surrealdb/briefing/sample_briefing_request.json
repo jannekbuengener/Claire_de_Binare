@@ -1,0 +1,12 @@
+{
+    "task_id": "cdb-briefing-2112-test",
+    "task_scope": "Add tests and fixtures for briefing and impact radar",
+    "target_issue": "#2112",
+    "target_paths": ["tests/unit/surrealdb/"],
+    "target_symbols": [],
+    "target_concepts": ["briefing", "impact radar"],
+    "requested_depth": "standard",
+    "operation_mode": "read_only",
+    "agent_type": "OPENCODE/codex",
+    "risk_level": "medium"
+}
