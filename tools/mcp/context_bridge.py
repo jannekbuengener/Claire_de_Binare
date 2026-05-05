@@ -1183,17 +1183,50 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         }
     )
 
+    # --- Enrichment (Minimal Slice #2122) ---
+    # Honest partial enrichment while #2020 and #2121 are unresolved.
+    enrichment_id = hashlib.sha256(
+        (briefing_id + requested_depth).encode()
+    ).hexdigest()[:16]
+
+    enriched_decisions = []
+    enriched_evidence = []
+    enriched_memory = []
+    stale_evidence_notice = []
+    contradictory_evidence_notice = []
+    missing_evidence_notice = ["evidence", "decisions"]
+
+    trust_summary = (
+        "0 evidence items, 0 decisions. "
+        "Enrichment in partial mode: missing evidence resolution (#2020) "
+        "and decision history lookup."
+    )
+
+    stop_conditions.append(
+        "S5: missing evidence resolution — resolve core assumptions before proceeding"
+    )
+
     # --- Assemble briefing result ---
     briefing: dict[str, Any] = {
         "briefing_id": briefing_id,
+        "enrichment_id": f"cdb-enrich-{enrichment_id}",
+        "enriched_briefing_id": briefing_id,
         "scope_summary": scope_summary,
+        "trust_summary": trust_summary,
         "context_package_ref": context_package_ref,
         "required_reads": required_reads,
         "relevant_artifacts": package_artifacts[:10],
         "relevant_symbols": package_symbols[:10],
         "relevant_docs": package_docs[:5],
-        "relevant_decisions": [],
-        "relevant_evidence": [],
+        "relevant_decisions": enriched_decisions,
+        "relevant_evidence": enriched_evidence,
+        "enriched_decisions": enriched_decisions,
+        "enriched_evidence": enriched_evidence,
+        "enriched_memory": enriched_memory,
+        "enriched_stop_conditions": stop_conditions,
+        "stale_evidence_notice": stale_evidence_notice,
+        "contradictory_evidence_notice": contradictory_evidence_notice,
+        "missing_evidence_notice": missing_evidence_notice,
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
         "guardrails": guardrails,
