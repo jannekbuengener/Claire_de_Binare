@@ -29,6 +29,7 @@ class TestContextToolRegistry:
             "context.briefing",
             "context.stop_resolver",
             "context.required_reads",
+            "cdb_context_impact",
         ]
         for expected in expected_tools:
             assert expected in tool_names, f"Tool {expected} not registered"
@@ -229,8 +230,8 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        # v0 tool set (11) + #2110 alias (cdb_context_briefing)
-        assert len(tools) == 12
+        # v0 tool set (11) + #2110 alias (cdb_context_briefing) + #2111 impact tool
+        assert len(tools) == 13
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
@@ -264,7 +265,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 12
+        assert len(status["read_only_tools"]) == 13
 
 
 class TestDefensiveSchemaCopies:
@@ -2557,3 +2558,237 @@ class TestContextRequiredReadsHandler:
             assert result["status"] == "ok", (
                 f"Valid mode {mode!r} should be accepted, got {result}"
             )
+
+
+class TestCdbContextImpactHandler:
+    """Tests for cdb_context_impact tool handler (#2111)."""
+
+    def test_tool_in_list_tools(self) -> None:
+        bridge = create_bridge()
+        tool_names = [t["name"] for t in bridge.list_tools()]
+        assert "cdb_context_impact" in tool_names
+
+    def test_tool_is_read_only(self) -> None:
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("cdb_context_impact")
+        assert schema is not None
+        assert schema["readOnly"] is True
+
+    def test_schema_has_required_fields(self) -> None:
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("cdb_context_impact")
+        props = schema["inputSchema"]["properties"]
+        assert "target_paths" in props
+        assert "target_symbols" in props
+        assert "target_issue" in props
+        assert "operation_mode" in props
+
+    def test_empty_call_returns_ok(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_impact", {})
+        assert result["status"] == "ok"
+        assert result["tool"] == "cdb_context_impact"
+        assert "impact" in result
+
+    def test_output_contains_all_required_impact_fields(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["docs/surrealdb/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        impact = result["impact"]
+        required_fields = [
+            "impact_id",
+            "impact_level",
+            "impact_type",
+            "gate_risks",
+            "stop_conditions",
+            "required_validation",
+        ]
+        for field in required_fields:
+            assert field in impact, f"Missing impact field: {field}"
+
+    def test_output_contains_guardrails(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_impact", {})
+        assert result["status"] == "ok"
+        guardrails = result["guardrails"]
+        assert len(guardrails) >= 1
+        assert any("not authorization" in g.lower() for g in guardrails)
+        assert any("no-g" in g.lower() for g in guardrails)
+
+    def test_low_impact_case(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["docs/readme.md"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        assert result["impact"]["impact_level"] == "low"
+
+    def test_medium_impact_case(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["tools/mcp/context_bridge.py"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        assert result["impact"]["impact_level"] == "medium"
+
+    def test_high_impact_case(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["infrastructure/compose/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        assert result["impact"]["impact_level"] == "high"
+
+    def test_blocking_impact_case(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["knowledge/governance/CDB_CONSTITUTION.md"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        assert result["impact"]["impact_level"] == "blocking"
+
+    def test_gate_risks_visible_for_blocking(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["knowledge/governance/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        gate_risks = result["impact"]["gate_risks"]
+        assert isinstance(gate_risks, list)
+        assert len(gate_risks) >= 1
+        assert "governance_touched" in gate_risks
+
+    def test_gate_risks_visible_for_risk_surface(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["services/risk/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        gate_risks = result["impact"]["gate_risks"]
+        assert "risk_surface_touched" in gate_risks
+
+    def test_stop_conditions_visible(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["knowledge/governance/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        stop_conditions = result["impact"]["stop_conditions"]
+        assert isinstance(stop_conditions, list)
+        assert len(stop_conditions) >= 1
+
+    def test_required_validation_visible(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["tools/mcp/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        rv = result["impact"]["required_validation"]
+        assert isinstance(rv, dict)
+        assert "docs_to_review" in rv
+        assert "suggested_tests" in rv
+        assert "commands_to_consider" in rv
+
+    def test_graph_paths_present(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["tools/mcp/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        assert "graph_paths" in result["impact"]
+        assert isinstance(result["impact"]["graph_paths"], list)
+
+    def test_no_authorization_given(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["docs/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        impact = result["impact"]
+        assert "approved" not in impact
+        assert "authorized" not in str(impact).lower()
+        guardrails = result["guardrails"]
+        assert any("no live" in g.lower() or "no-g" in g.lower() for g in guardrails)
+
+    def test_write_mode_triggers_write_stop_condition(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {
+                "target_paths": ["docs/"],
+                "target_issue": "#2111",
+                "operation_mode": "write (code/docs)",
+            },
+        )
+        assert result["status"] == "ok"
+        stop_text = " ".join(str(sc) for sc in result["impact"]["stop_conditions"])
+        assert "write" in stop_text.lower() or "human-go" in stop_text.lower()
+
+    def test_deterministic_same_input_same_output(self) -> None:
+        bridge = create_bridge()
+        inputs = {
+            "target_paths": ["tools/mcp/"],
+            "target_issue": "#2111",
+            "operation_mode": "read_only",
+        }
+        r1 = bridge.execute_tool("cdb_context_impact", inputs)
+        r2 = bridge.execute_tool("cdb_context_impact", inputs)
+        assert r1 == r2
+
+    def test_schema_version_present(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_impact", {})
+        assert result["status"] == "ok"
+        assert result["impact"]["schema_version"] == "1.0.0"
+
+    def test_impact_id_is_deterministic_string(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["docs/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        impact_id = result["impact"]["impact_id"]
+        assert isinstance(impact_id, str)
+        assert len(impact_id) == 16
+
+    def test_confidence_is_valid_enum(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_impact", {})
+        assert result["status"] == "ok"
+        assert result["impact"]["confidence"] in ("low", "medium", "high")
+
+    def test_impact_type_is_valid_enum(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_impact", {})
+        assert result["status"] == "ok"
+        assert result["impact"]["impact_type"] in ("HARD", "SOFT")
+
+    def test_affected_lists_are_arrays(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["tools/mcp/"], "target_issue": "#2111"},
+        )
+        assert result["status"] == "ok"
+        impact = result["impact"]
+        assert isinstance(impact["affected_artifacts"], list)
+        assert isinstance(impact["affected_symbols"], list)
+        assert isinstance(impact["affected_tests"], list)
+        assert isinstance(impact["affected_docs"], list)
+        assert isinstance(impact["affected_decisions"], list)
+        assert isinstance(impact["affected_evidence"], list)
+        assert isinstance(impact["affected_memory_refs_read_only"], list)

@@ -12,7 +12,7 @@ context.show_snapshot, context.show_audit) whose free-text parameters could
 contain SQL/SurrealQL injection or command vectors.
 
 Structural tools (context.readiness, context.briefing, context.self_explain,
-context.stop_resolver, context.required_reads) are exempt from input scanning
+context.stop_resolver, context.required_reads, cdb_context_impact) are exempt from input scanning
 because their handlers already validate inputs with operation_mode enums,
 stop_conditions, and structural field checks. Task descriptions like
 "Deploy system" or "Update config" are legitimate scope descriptions
@@ -128,6 +128,7 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     "context.self_explain",
     "context.stop_resolver",
     "context.required_reads",
+    "cdb_context_impact",
 })
 
 

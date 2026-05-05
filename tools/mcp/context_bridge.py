@@ -1466,6 +1466,94 @@ def context_required_reads_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def cdb_context_impact_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for cdb_context_impact tool.
+
+    Delegates to tools.surrealdb.context_impact_radar.compute_impact.
+    Pure in-process evaluation. No DB/network/GitHub. Fail-closed.
+
+    Input:
+        target_paths: list[str] (optional)
+        target_symbols: list[str] (optional)
+        target_issue: str | null (optional)
+        target_concepts: list[str] (optional)
+        operation_mode: str (optional, default "read_only")
+
+    Output:
+        tool, status, impact (full ImpactReport payload), guardrails
+    """
+    from tools.surrealdb.context_impact_radar import (
+        ImpactRadarInput,
+        compute_impact,
+    )
+
+    target_paths = kwargs.get("target_paths", [])
+    target_symbols = kwargs.get("target_symbols", [])
+    target_issue = kwargs.get("target_issue")
+    target_concepts = kwargs.get("target_concepts", [])
+    operation_mode = kwargs.get("operation_mode", "read_only")
+
+    if not isinstance(target_paths, list):
+        target_paths = []
+    if not isinstance(target_symbols, list):
+        target_symbols = []
+    if not isinstance(target_concepts, list):
+        target_concepts = []
+    if target_issue is not None and not isinstance(target_issue, str):
+        target_issue = None
+
+    valid_modes = frozenset({
+        "read_only",
+        "dry_run",
+        "write (code/docs)",
+        "write (config/infra)",
+        "write (DB/migration)",
+        "write (MCP live)",
+    })
+    if not isinstance(operation_mode, str) or operation_mode not in valid_modes:
+        operation_mode = "read_only"
+
+    target_paths_clean = [p for p in target_paths if isinstance(p, str) and p.strip()]
+    target_symbols_clean = [s for s in target_symbols if isinstance(s, str) and s.strip()]
+    target_concepts_clean = [c for c in target_concepts if isinstance(c, str) and c.strip()]
+
+    try:
+        inp = ImpactRadarInput(
+            target_paths=tuple(target_paths_clean),
+            target_symbols=tuple(target_symbols_clean),
+            target_issue=target_issue,
+            target_concepts=tuple(target_concepts_clean),
+            operation_mode=operation_mode,
+        )
+        report = compute_impact(inp)
+        impact_payload = report.to_payload()
+    except Exception as e:
+        logger.exception("Impact radar computation failed")
+        return {
+            "tool": "cdb_context_impact",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+    guardrails = [
+        "Impact is analysis, not authorization.",
+        "No Live-Go, no Echtgeld-Go, no risk approval.",
+        "LR remains NO-GO (SSOT: docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md).",
+        "Board stage (trade-capable) is orthogonal to live readiness.",
+    ]
+
+    return {
+        "tool": "cdb_context_impact",
+        "status": "ok",
+        "impact": impact_payload,
+        "guardrails": guardrails,
+    }
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -1596,6 +1684,17 @@ class ContextBridge:
                 handler=context_required_reads_handler,
             )
             self._registry._tools["context.required_reads"] = new_required_reads
+        old_impact = self._registry.get_tool("cdb_context_impact")
+        if old_impact:
+            new_impact = ToolDefinition(
+                name=old_impact.name,
+                description=old_impact.description,
+                input_schema=old_impact.input_schema,
+                output_schema=old_impact.output_schema,
+                read_only=old_impact.read_only,
+                handler=cdb_context_impact_handler,
+            )
+            self._registry._tools["cdb_context_impact"] = new_impact
         self._registry.assert_read_only_consistency()
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"

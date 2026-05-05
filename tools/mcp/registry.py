@@ -676,6 +676,102 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("context.required_reads"),
     ),
+    ToolDefinition(
+        name="cdb_context_impact",
+        description=(
+            "Impact Radar v1 MCP tool. Analyses downstream effects of a planned change "
+            "across the CDB system. Returns affected items, graph paths, gate risks, "
+            "required validation, and stop conditions. Read-only, deterministic, fail-closed. "
+            "No DB/network/GitHub access. Does not authorize any action, Live-Go, or Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "target_paths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "File paths or glob patterns targeted by the planned change.",
+                },
+                "target_symbols": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Code symbols targeted by the planned change.",
+                },
+                "target_issue": {
+                    "type": ["string", "null"],
+                    "description": "GitHub issue driving the planned change, or null.",
+                },
+                "target_concepts": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Domain concepts from the CIS ontology relevant to the change.",
+                },
+                "operation_mode": {
+                    "type": "string",
+                    "enum": [
+                        "read_only",
+                        "dry_run",
+                        "write (code/docs)",
+                        "write (config/infra)",
+                        "write (DB/migration)",
+                        "write (MCP live)",
+                    ],
+                    "description": "Intended agent operation mode for the change.",
+                    "default": "read_only",
+                },
+            },
+            "required": [],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "impact": {
+                    "type": "object",
+                    "properties": {
+                        "impact_id": {"type": "string"},
+                        "target_refs": {"type": "array", "items": {"type": "string"}},
+                        "impact_level": {
+                            "type": "string",
+                            "enum": ["low", "medium", "high", "blocking"],
+                        },
+                        "impact_type": {
+                            "type": "string",
+                            "enum": ["HARD", "SOFT"],
+                        },
+                        "affected_artifacts": {"type": "array"},
+                        "affected_symbols": {"type": "array"},
+                        "affected_tests": {"type": "array"},
+                        "affected_docs": {"type": "array"},
+                        "affected_decisions": {"type": "array", "items": {"type": "string"}},
+                        "affected_evidence": {"type": "array", "items": {"type": "string"}},
+                        "affected_memory_refs_read_only": {"type": "array", "items": {"type": "string"}},
+                        "graph_paths": {"type": "array"},
+                        "gate_risks": {"type": "array", "items": {"type": "string"}},
+                        "confidence": {
+                            "type": "string",
+                            "enum": ["low", "medium", "high"],
+                        },
+                        "required_validation": {"type": "object"},
+                        "stop_conditions": {"type": "array"},
+                        "schema_version": {"type": "string"},
+                    },
+                    "required": [
+                        "impact_id",
+                        "impact_level",
+                        "impact_type",
+                        "gate_risks",
+                        "stop_conditions",
+                        "required_validation",
+                    ],
+                },
+                "guardrails": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_impact"),
+    ),
 ]
 
 
