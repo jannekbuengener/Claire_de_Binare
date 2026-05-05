@@ -160,6 +160,8 @@ Spezifisches Error-Modell Für #2022:
    - Registry Gate: Schreibende Tools werden registration blockiert
    - Execute Gate: `read_only` + Input Gate vor Handler-Dispatch
    - Input Gate: Mutation-Keywords in Parametern blockiert
+     - Exemption: Structural read-only context tools that must carry governance or readiness terms as data are exempt from mutation-keyword scanning per `permission_guard.py`, currently: `context.readiness`, `context.briefing`, `cdb_context_briefing`, `cdb_context_impact`.
+     - Die Exemption gewährt NICHT write authority; diese Tools bleiben read-only und durchlaufen weiterhin Allowlist und Handler-Grenze.
 3. **Keine GitHub-Writes**: CDB-MCP bleibt Gatekeeper Für Repo/GitHub
 4. **Keine SurrealDB-Writes**: Tools nutzen `NoopQueryAdapter` (in-memory) oder read-only SurrealDB-Adapter
 5. **Namespace-Isolation**: Memory-Tools sind auf `agent_id` + Namespace beschränkt
