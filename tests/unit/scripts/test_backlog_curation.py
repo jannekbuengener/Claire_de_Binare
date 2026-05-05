@@ -311,9 +311,7 @@ def test_extract_explicit_repo_paths_rejects_urls_and_windows_drives() -> None:
         "Check https://github.com/jannekbuengener/Claire_de_Binare/blob/main/docs/file.md, "
         "`C:\\Windows\\System32\\config.txt` and `docs/runbooks/CONTROL_REGISTER.md`."
     )
-    assert "docs/runbooks/CONTROL_REGISTER.md" in result
-    assert not any("github.com" in path for path in result)
-    assert not any("Windows" in path for path in result)
+    assert result == ["docs/runbooks/CONTROL_REGISTER.md"]
 
 
 def test_normalize_path_rejects_path_traversal_and_prefixed_windows_drives() -> None:

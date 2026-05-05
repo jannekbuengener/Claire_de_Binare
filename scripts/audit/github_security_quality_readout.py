@@ -799,17 +799,17 @@ def build_persistable_readout(readout: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def write_report_artifacts(readout: dict[str, Any], out_dir: Path) -> None:
+def write_report_artifacts(
+    persistable_readout: dict[str, Any], out_dir: Path
+) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     json_path = out_dir / JSON_FILENAME
     markdown_path = out_dir / MARKDOWN_FILENAME
-    persistable_readout = build_persistable_readout(readout)
-    # noqa: E501 S105 - build_persistable_readout filters secret_scanning payloads; output is safe
-    json_path.write_text(  # nosec
+    json_path.write_text(
         json.dumps(persistable_readout, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    markdown_path.write_text(  # nosec
+    markdown_path.write_text(
         build_markdown_report(persistable_readout),
         encoding="utf-8",
     )
@@ -841,7 +841,8 @@ def generate_readout(
         reference_now_utc=reference_now_utc,
         fetched_surfaces=surfaces,
     )
-    write_report_artifacts(readout, out_dir)
+    persistable_readout = build_persistable_readout(readout)
+    write_report_artifacts(persistable_readout, out_dir)
     return readout
 
 
