@@ -71,8 +71,12 @@ def test_generic_task_without_issue_scoped_signals_fails_closed() -> None:
     assert artifact["safe_for_implementation_start"] is False
 
 
-def test_issue_scoped_keywords_produce_ready_v2_handoff_without_explicit_paths() -> None:
-    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+def test_issue_scoped_keywords_produce_ready_v2_handoff_without_explicit_paths() -> (
+    None
+):
+    artifact = backlog_curation.curate_issue_payload(
+        _issue_1827_like_payload(), repo_root=REPO_ROOT
+    )
 
     assert artifact is not None
     assert artifact["schema_version"] == "v2"
@@ -83,7 +87,9 @@ def test_issue_scoped_keywords_produce_ready_v2_handoff_without_explicit_paths()
         ".github/scripts/backlog_curation.py",
         ".github/workflows/cdb-backlog-curation.yml",
     ]
-    assert [item["path"] for item in artifact["handoff"]["implementation_targets"][:2]] == [
+    assert [
+        item["path"] for item in artifact["handoff"]["implementation_targets"][:2]
+    ] == [
         ".github/scripts/backlog_curation.py",
         ".github/workflows/cdb-backlog-curation.yml",
     ]
@@ -151,16 +157,16 @@ def test_explicit_repo_paths_are_prioritized_into_must_read() -> None:
     artifact = backlog_curation.curate_issue_payload(payload, repo_root=REPO_ROOT)
 
     assert artifact is not None
-    assert {
-        item["path"] for item in artifact["handoff"]["must_read"][:2]
-    } == {
+    assert {item["path"] for item in artifact["handoff"]["must_read"][:2]} == {
         ".github/scripts/backlog_curation.py",
         ".github/workflows/cdb-backlog-curation.yml",
     }
 
 
 def test_artifact_contract_contains_required_v2_schema_fields() -> None:
-    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+    artifact = backlog_curation.curate_issue_payload(
+        _issue_1827_like_payload(), repo_root=REPO_ROOT
+    )
 
     assert artifact is not None
     assert set(artifact.keys()) == {
@@ -180,7 +186,13 @@ def test_artifact_contract_contains_required_v2_schema_fields() -> None:
         "receipt",
         "anomalies",
     }
-    assert set(artifact["issue"].keys()) == {"number", "title", "url", "labels", "milestone"}
+    assert set(artifact["issue"].keys()) == {
+        "number",
+        "title",
+        "url",
+        "labels",
+        "milestone",
+    }
     assert set(artifact["trigger"].keys()) == {"event_name", "matched_rules"}
     assert set(artifact["curation_status"].keys()) == {"state", "confidence", "summary"}
     assert set(artifact["handoff"].keys()) == {
@@ -214,17 +226,23 @@ def test_artifact_contract_contains_required_v2_schema_fields() -> None:
         "strategy",
     }
     assert all(
-        set(source.keys()) >= {"path", "priority", "role", "score", "reason", "section_hint", "snippet"}
+        set(source.keys())
+        >= {"path", "priority", "role", "score", "reason", "section_hint", "snippet"}
         for source in artifact["sources"]
     )
 
 
 def test_receipt_marker_uses_fingerprint_and_short_body() -> None:
-    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+    artifact = backlog_curation.curate_issue_payload(
+        _issue_1827_like_payload(), repo_root=REPO_ROOT
+    )
 
     assert artifact is not None
     receipt = artifact["receipt"]
-    assert receipt["marker"] == f"<!-- cdb-backlog-curation-receipt:{artifact['fingerprint']} -->"
+    assert (
+        receipt["marker"]
+        == f"<!-- cdb-backlog-curation-receipt:{artifact['fingerprint']} -->"
+    )
     assert receipt["status"] == "curation ready"
     assert "Top-Quellen" in receipt["body"]
     assert "Handoff" in receipt["body"]
@@ -232,12 +250,23 @@ def test_receipt_marker_uses_fingerprint_and_short_body() -> None:
 
 
 def test_read_budget_caps_handoff_lists_and_estimated_tokens() -> None:
-    artifact = backlog_curation.curate_issue_payload(_issue_1827_like_payload(), repo_root=REPO_ROOT)
+    artifact = backlog_curation.curate_issue_payload(
+        _issue_1827_like_payload(), repo_root=REPO_ROOT
+    )
 
     assert artifact is not None
-    assert len(artifact["handoff"]["must_read"]) <= artifact["read_budget"]["must_read_max"]
-    assert len(artifact["handoff"]["supporting"]) <= artifact["read_budget"]["supporting_max"]
-    assert len(artifact["handoff"]["background"]) <= artifact["read_budget"]["background_max"]
+    assert (
+        len(artifact["handoff"]["must_read"])
+        <= artifact["read_budget"]["must_read_max"]
+    )
+    assert (
+        len(artifact["handoff"]["supporting"])
+        <= artifact["read_budget"]["supporting_max"]
+    )
+    assert (
+        len(artifact["handoff"]["background"])
+        <= artifact["read_budget"]["background_max"]
+    )
     assert artifact["read_budget"]["estimated_tokens"] > 0
 
 
@@ -276,11 +305,14 @@ def test_sensitive_context_blocks_public_issue_hints() -> None:
     assert artifact["anomalies"]["contains_sensitive_signals"] is True
     assert artifact["anomalies"]["sensitivity_reasons"]
     assert all(
-        finding["public_issue_allowed"] is False for finding in artifact["anomalies"]["findings"]
+        finding["public_issue_allowed"] is False
+        for finding in artifact["anomalies"]["findings"]
     )
 
 
-def test_write_artifact_for_event_sets_receipt_artifact_name_and_coerces_issue_number(tmp_path: Path) -> None:
+def test_write_artifact_for_event_sets_receipt_artifact_name_and_coerces_issue_number(
+    tmp_path: Path,
+) -> None:
     payload = _payload(
         event_label="task",
         labels=["task"],
@@ -303,7 +335,10 @@ def test_write_artifact_for_event_sets_receipt_artifact_name_and_coerces_issue_n
     written = json.loads(artifact_path.read_text(encoding="utf-8"))
     assert written["issue"]["number"] == 2005
     assert written["receipt"]["artifact_name"] == "backlog-curation-issue-2005"
-    assert written["receipt"]["artifact_ref"] == "artifacts/backlog-curation/issue-2005.json"
+    assert (
+        written["receipt"]["artifact_ref"]
+        == "artifacts/backlog-curation/issue-2005.json"
+    )
 
 
 def test_extract_explicit_repo_paths_rejects_urls_and_windows_drives() -> None:
