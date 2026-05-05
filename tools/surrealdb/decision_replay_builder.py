@@ -391,11 +391,6 @@ def build_decision_replay_v1(
         known_claim_ids=known_claim_ids,
     )
 
-    visible_ids = {
-        decision.get("decision_id")
-        for decision in _sanitize_decisions(history_result.get("matched_decisions", []))
-        if isinstance(decision.get("decision_id"), str)
-    }
     all_visible_ids = {
         str(raw.get("decision_id"))
         for raw in filtered_events
