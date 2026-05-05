@@ -19,28 +19,54 @@ Dieser Vertrag definiert die MCP-Bridge Für den SurrealDB Context Layer. Agente
 
 ## MCP-Tool-Grenze
 
-Tools verwenden das Prefix `cdb_context_*` (gemäß #2022):
+### Registry-Truth (origin/main)
 
-| Tool Name | Zweck | Implementierung |
-|-----------|-------|----------------|
-| `cdb_context_search` | Kontext-Wissensbasis durchsuchen | `context.search` Handler |
-| `cdb_context_package` | Kontext-Artefakte Für Handoff verpacken | `context.package` Handler |
-| `cdb_context_trace` | Entscheidungs-/Event-Lineage verfolgen | `context.trace` Handler |
-| `cdb_context_evidence_resolve` | Evidence-Referenzen auflösen | `context.evidence.resolve` Handler |
-| `cdb_context_decision_history` | Historische Entscheidungen abrufen | `context.decision.history` Handler |
-| `cdb_context_memory_get` | Agent Memory State abrufen | `context.memory.get` Handler |
-| `cdb_context_impact` | Auswirkungen einer Entscheidung bewerten | `context.impact` Handler |
-| `cdb_context_briefing` | Strukturiertes Briefing generieren | `context.briefing` Handler |
+**Source of Truth** dafür, welche Tool-IDs aktuell *dispatchbar/exposed* sind, ist `origin/main` (insb. `tools/mcp/registry.py` und `tools/mcp/context_bridge.py`).
 
-Die `cdb_context_*` Namen sind die MCP-exponierten Tool-IDs. Intern verweisen sie auf die `context.*` Handler in `tools/mcp/context_bridge.py`.
+Dieses Dokument ist ein **docs-only Contract**: es definiert Ziel-/Konventionsnamen und Guardrails, aber es behauptet **nicht**, dass nicht-registrierte Aliase heute schon aufrufbar sind.
+
+Aktuell auf `origin/main` exposed Tool-IDs:
+
+- `context.search`
+- `context.package`
+- `context.trace`
+- `context.explain_source`
+- `context.show_snapshot`
+- `context.show_audit`
+- `context.readiness`
+- `context.self_explain`
+- `context.briefing`
+- `context.stop_resolver`
+- `context.required_reads`
+- `cdb_context_briefing` (Alias für `context.briefing`)
+- `cdb_context_impact`
+
+### Ziel-Aliase (`cdb_context_*`) für #2022
+
+Die folgenden `cdb_context_*` Namen sind die **Ziel-/Contract-Aliase** gemäß #2022.
+
+**Wichtig:** Nur Aliase, die oben als *aktuell exposed* gelistet sind, sind heute dispatchbar. Alle anderen Einträge sind **target/future** und erst nach Registry-/Bridge-Wiring erreichbar.
+
+| Target Alias | Zweck | Internes Ziel (Handler/Tool-ID) | Status auf `origin/main` |
+|---|---|---|---|
+| `cdb_context_search` | Kontext-Wissensbasis durchsuchen | `context.search` | target/future (not yet exposed as alias) |
+| `cdb_context_package` | Kontext-Artefakte für Handoff verpacken | `context.package` | target/future (not yet exposed as alias) |
+| `cdb_context_trace` | Entscheidungs-/Event-Lineage verfolgen | `context.trace` | target/future (not yet exposed as alias) |
+| `cdb_context_evidence_resolve` | Evidence-Referenzen auflösen | (vorgesehen) `context.evidence_resolve` | target/future (handler not present on `origin/main`) |
+| `cdb_context_decision_history` | Historische Entscheidungen abrufen | (follow-up) `cdb_context_decision_history` | target/future (not in `origin/main` context bridge) |
+| `cdb_context_memory_get` | Agent Memory State abrufen | (follow-up) `context.memory_get` | target/future (handler not present on `origin/main`) |
+| `cdb_context_impact` | Auswirkungen einer Entscheidung bewerten | `cdb_context_impact` | currently exposed |
+| `cdb_context_briefing` | Strukturiertes Briefing generieren | `cdb_context_briefing` (Alias für `context.briefing`) | currently exposed |
+
+Hinweis zu `cdb_context_decision_replay`: nicht Teil des Pflichtumfangs von #2022; ggf. Follow-up-Scope (z. B. #2124), aber nicht Bestandteil dieses PR.
 
 ## Request-Modell
 
-Alle Tools akzeptieren ein JSON-Objekt:
+Alle Tools akzeptieren ein JSON-Objekt. Das Feld `tool` ist dabei **eine aktuell exposed Tool-ID** (siehe oben) oder ein **target/future Alias**, sofern/ sobald dieser registriert ist.
 
 ```json
 {
-  "tool": "cdb_context_<name>",
+  "tool": "<tool-id>",
   "parameters": {
     // tool-spezifische Parameter (siehe v1 Contracts)
   }
@@ -51,7 +77,7 @@ Alle Tools akzeptieren ein JSON-Objekt:
 
 ```json
 {
-  "tool": "cdb_context_<name>",
+  "tool": "<tool-id>",
   "status": "ok | error",
   "result": {
     // tool-spezifische Ergebnisse
