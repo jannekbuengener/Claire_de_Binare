@@ -132,12 +132,24 @@ def _get_required_validation(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _copy_stop_conditions(
-    stop_conditions: list[dict[str, Any]],
+    stop_conditions: list[Any],
 ) -> tuple[dict[str, Any], ...]:
     copied: list[dict[str, Any]] = []
     for stop_condition in stop_conditions:
         if isinstance(stop_condition, dict):
             copied.append(dict(stop_condition))
+            continue
+        copied.append(
+            {
+                "type": "invalid_stop_condition_payload",
+                "severity": "blocking",
+                "reason": str(stop_condition),
+                "required_action": (
+                    "Normalize stop_conditions to dict payload before proceed"
+                ),
+                "human_go_required": True,
+            }
+        )
     return tuple(copied)
 
 

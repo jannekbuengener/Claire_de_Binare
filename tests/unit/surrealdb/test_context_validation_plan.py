@@ -925,6 +925,24 @@ def test_to_payload_copies_stop_condition_dicts() -> None:
     assert plan.stop_conditions[0]["severity"] == "blocking"
 
 
+@pytest.mark.unit
+def test_non_dict_stop_conditions_fail_closed_in_payload_mode() -> None:
+    payload = {
+        "impact_id": "test-invalid-stop-condition",
+        "impact_level": "low",
+        "confidence": "high",
+        "stop_conditions": ["S8: forbidden path touched"],
+    }
+
+    plan = build_validation_plan(ValidationPlanInput(payload=payload))
+
+    assert plan.manual_review_needed is True
+    assert len(plan.stop_conditions) == 1
+    assert plan.stop_conditions[0]["type"] == "invalid_stop_condition_payload"
+    assert plan.stop_conditions[0]["severity"] == "blocking"
+    assert "S8" in plan.stop_conditions[0]["reason"]
+
+
 # ── Full impact-radar-to-plan pipeline ──────────────────────────────────────
 
 
