@@ -11,6 +11,7 @@ Reference:
 """
 
 import logging
+import json
 from copy import deepcopy
 from typing import Any, Optional
 
@@ -18,6 +19,8 @@ from tools.mcp.permission_guard import PermissionGuard
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 
 logger = logging.getLogger(__name__)
+
+CDB_CONTEXT_BRIEFING_MAX_RESPONSE_BYTES = 200_000
 
 
 def context_search_handler(**kwargs) -> dict[str, Any]:
@@ -1207,6 +1210,66 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def cdb_context_briefing_handler(**kwargs) -> dict[str, Any]:
+    """Alias wrapper for context.briefing (#2110).
+
+    - Delegates to context_briefing_handler(**kwargs)
+    - Rewrites tool name to cdb_context_briefing
+    - Enforces a deterministic byte-size limit fail-closed
+    """
+    result = context_briefing_handler(**kwargs)
+    if not isinstance(result, dict):
+        return {
+            "tool": "cdb_context_briefing",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": "context_briefing_handler returned non-dict result",
+            },
+        }
+
+    result["tool"] = "cdb_context_briefing"
+
+    try:
+        response_bytes = len(
+            json.dumps(
+                result,
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=True,
+            ).encode("utf-8")
+        )
+    except Exception as e:
+        logger.exception("Failed to measure cdb_context_briefing payload size")
+        return {
+            "tool": "cdb_context_briefing",
+            "status": "error",
+            "error": {
+                "code": "execution_error",
+                "message": str(e),
+            },
+        }
+
+    if response_bytes > CDB_CONTEXT_BRIEFING_MAX_RESPONSE_BYTES:
+        return {
+            "tool": "cdb_context_briefing",
+            "status": "error",
+            "error": {
+                "code": "payload_too_large",
+                "message": (
+                    "cdb_context_briefing response exceeds byte limit; "
+                    "reduce requested_depth or narrow scope."
+                ),
+                "details": {
+                    "max_bytes": CDB_CONTEXT_BRIEFING_MAX_RESPONSE_BYTES,
+                    "actual_bytes": response_bytes,
+                },
+            },
+        }
+
+    return result
+
+
 def context_stop_resolver_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.stop_resolver tool.
@@ -1500,6 +1563,17 @@ class ContextBridge:
                 handler=context_briefing_handler,
             )
             self._registry._tools["context.briefing"] = new_briefing
+        old_cdb_briefing = self._registry.get_tool("cdb_context_briefing")
+        if old_cdb_briefing:
+            new_cdb_briefing = ToolDefinition(
+                name=old_cdb_briefing.name,
+                description=old_cdb_briefing.description,
+                input_schema=old_cdb_briefing.input_schema,
+                output_schema=old_cdb_briefing.output_schema,
+                read_only=old_cdb_briefing.read_only,
+                handler=cdb_context_briefing_handler,
+            )
+            self._registry._tools["cdb_context_briefing"] = new_cdb_briefing
         old_stop_resolver = self._registry.get_tool("context.stop_resolver")
         if old_stop_resolver:
             new_stop_resolver = ToolDefinition(

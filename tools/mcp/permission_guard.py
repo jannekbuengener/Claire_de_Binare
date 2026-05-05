@@ -124,6 +124,7 @@ INPUT_SCAN_TOOLS: frozenset[str] = frozenset({
 INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     "context.readiness",
     "context.briefing",
+    "cdb_context_briefing",
     "context.self_explain",
     "context.stop_resolver",
     "context.required_reads",

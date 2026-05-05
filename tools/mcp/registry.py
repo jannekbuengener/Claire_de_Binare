@@ -7,6 +7,7 @@ Each tool is mapped to its contract and handler placeholder.
 Reference: docs/surrealdb/context-tool-contracts-v0.md
 """
 
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Callable, Optional
 
@@ -682,6 +683,26 @@ def register_all_tools() -> None:
     """Register all v0 tools with the registry."""
     for tool in TOOLS_V0:
         ContextToolRegistry.register(tool)
+
+    # #2110: Provide a stable alias for the briefing tool without renaming it.
+    # The alias schema is deep-copied from context.briefing to prevent drift.
+    base = ContextToolRegistry.get_tool("context.briefing")
+    if base is not None and ContextToolRegistry.get_tool("cdb_context_briefing") is None:
+        ContextToolRegistry.register(
+            ToolDefinition(
+                name="cdb_context_briefing",
+                description=(
+                    "Alias for context.briefing. Generate a task-specific Agent "
+                    "Briefing v1 from Briefing Request schema "
+                    "(docs/surrealdb/context-agent-briefing-schema-v1.md). "
+                    "Read-only, no authorization, no Live/Echtgeld Go."
+                ),
+                input_schema=deepcopy(base.input_schema),
+                output_schema=deepcopy(base.output_schema),
+                read_only=True,
+                handler=create_not_implemented_handler("cdb_context_briefing"),
+            )
+        )
 
 
 register_all_tools()

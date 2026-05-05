@@ -29,6 +29,8 @@ from tools.mcp.permission_guard import (
 )
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 
+pytestmark = pytest.mark.unit
+
 
 # ---------------------------------------------------------------------------
 # 1. Registry Gate
@@ -238,6 +240,7 @@ class TestInputGateToolClassification:
         """Structural tools are in INPUT_SCAN_EXEMPT_TOOLS."""
         assert "context.readiness" in INPUT_SCAN_EXEMPT_TOOLS
         assert "context.briefing" in INPUT_SCAN_EXEMPT_TOOLS
+        assert "cdb_context_briefing" in INPUT_SCAN_EXEMPT_TOOLS
         assert "context.self_explain" in INPUT_SCAN_EXEMPT_TOOLS
         assert "context.stop_resolver" in INPUT_SCAN_EXEMPT_TOOLS
         assert "context.required_reads" in INPUT_SCAN_EXEMPT_TOOLS
@@ -260,6 +263,19 @@ class TestInputGateToolClassification:
         results = PermissionGuard.check_tool_inputs(
             "context.briefing",
             {"task_scope": "Update config infrastructure"},
+        )
+        assert len(results) == 0
+
+    def test_cdb_context_briefing_exempt_tool_returns_empty_violations(self) -> None:
+        """cdb_context_briefing is exempt from input scanning (alias)."""
+        results = PermissionGuard.check_tool_inputs(
+            "cdb_context_briefing",
+            {
+                "task_scope": (
+                    "Plan: write (code/docs) only with Human-GO; "
+                    "no docker compose up; no DB writes."
+                )
+            },
         )
         assert len(results) == 0
 

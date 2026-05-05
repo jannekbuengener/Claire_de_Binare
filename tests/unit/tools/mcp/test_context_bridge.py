@@ -8,6 +8,8 @@ import pytest
 from tools.mcp.context_bridge import ContextBridge, create_bridge
 from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 
+pytestmark = pytest.mark.unit
+
 
 class TestContextToolRegistry:
     """Tests for the Context Tool Registry."""
@@ -227,11 +229,13 @@ class TestContextBridge:
         """Verify list_tools returns all v0 tools."""
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        assert len(tools) == 11
+        # v0 tool set (11) + #2110 alias (cdb_context_briefing)
+        assert len(tools) == 12
         tool_names = [t["name"] for t in tools]
         assert "context.search" in tool_names
         assert "context.package" in tool_names
         assert "context.self_explain" in tool_names
+        assert "cdb_context_briefing" in tool_names
 
     def test_get_tool_schema(self) -> None:
         """Verify get_tool_schema returns schema."""
@@ -260,7 +264,7 @@ class TestContextBridge:
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 11
+        assert len(status["read_only_tools"]) == 12
 
 
 class TestDefensiveSchemaCopies:
@@ -1589,6 +1593,79 @@ class TestContextBriefingHandler:
         assert r1["status"] == "ok"
         assert r2["status"] == "ok"
         assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+
+class TestCdbContextBriefingAlias:
+    """Tests for cdb_context_briefing alias tool handler (#2110)."""
+
+    def test_alias_tool_in_list_tools(self) -> None:
+        bridge = create_bridge()
+        tool_names = [t["name"] for t in bridge.list_tools()]
+        assert "cdb_context_briefing" in tool_names
+
+    def test_alias_schema_is_present_and_read_only(self) -> None:
+        bridge = create_bridge()
+        schema = bridge.get_tool_schema("cdb_context_briefing")
+        assert schema is not None
+        assert schema["readOnly"] is True
+
+    def test_quick_standard_deep_execute_via_alias(self) -> None:
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-2110-alias",
+            "task_scope": "Implement context briefing MCP tool alias wrapper.",
+            "target_issue": "#2110",
+            "operation_mode": "read_only",
+        }
+        for depth in ("quick", "standard", "deep"):
+            result = bridge.execute_tool(
+                "cdb_context_briefing",
+                {**base, "requested_depth": depth},
+            )
+            assert result["status"] == "ok"
+            assert result["tool"] == "cdb_context_briefing"
+            briefing = result["briefing"]
+            assert "stop_conditions" in briefing
+            assert "guardrails" in briefing
+            assert "human_go_required" in briefing
+
+    def test_alias_preserves_stop_conditions_guardrails_human_go_visibility(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_briefing",
+            {
+                "task_id": "cdb-briefing-2110-visibility",
+                "task_scope": "Scope: read-only; stop if Human-GO required.",
+                "target_issue": "#2110",
+                "requested_depth": "standard",
+                "operation_mode": "write (MCP live)",
+                "target_paths": ["tools/mcp/context_bridge.py"],
+                "target_symbols": ["cdb_context_briefing_handler"],
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["tool"] == "cdb_context_briefing"
+        briefing = result["briefing"]
+        assert isinstance(briefing["guardrails"], list) and briefing["guardrails"]
+        assert isinstance(briefing["stop_conditions"], list)
+        assert isinstance(briefing["known_risks"], list)
+        assert isinstance(briefing["human_go_required"], bool)
+
+    def test_alias_payload_limit_fails_closed(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_briefing",
+            {
+                "task_id": "cdb-briefing-2110-too-large",
+                "task_scope": "x" * 250_000,
+                "target_issue": "#2110",
+                "requested_depth": "deep",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "error"
+        assert result["tool"] == "cdb_context_briefing"
+        assert result["error"]["code"] == "payload_too_large"
 
 
 class TestContextStopResolverHandler:

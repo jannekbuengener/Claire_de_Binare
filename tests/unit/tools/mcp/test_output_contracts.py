@@ -10,6 +10,8 @@ implemented v0 structure.
 import pytest
 from tools.mcp.context_bridge import create_bridge
 
+pytestmark = pytest.mark.unit
+
 
 COMMON_OK_FIELDS = {"tool", "status"}
 
@@ -296,6 +298,43 @@ class TestBriefingOutputContract:
                 "operation_mode": "read_only",
             },
         )
+        assert "guardrails" in result["briefing"]
+        assert isinstance(result["briefing"]["guardrails"], list)
+        assert len(result["briefing"]["guardrails"]) > 0
+
+
+class TestCdbContextBriefingAliasOutputContract:
+    """Verify cdb_context_briefing alias output matches briefing contract."""
+
+    def test_ok_output_has_briefing_id_and_alias_tool_name(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_briefing",
+            {
+                "task_id": "task_alias_001",
+                "target_issue": None,
+                "task_scope": "review docs",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["tool"] == "cdb_context_briefing"
+        assert "briefing" in result
+        assert "briefing_id" in result["briefing"]
+
+    def test_alias_briefing_has_guardrails(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_briefing",
+            {
+                "task_id": "task_alias_002",
+                "target_issue": None,
+                "task_scope": "check status",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["tool"] == "cdb_context_briefing"
         assert "guardrails" in result["briefing"]
         assert isinstance(result["briefing"]["guardrails"], list)
         assert len(result["briefing"]["guardrails"]) > 0
