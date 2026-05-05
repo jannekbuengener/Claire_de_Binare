@@ -11,6 +11,7 @@ CRITICAL SAFETY:
 
 import os
 import logging
+import re
 from pathlib import Path
 from typing import Optional, Tuple
 from enum import Enum
@@ -18,6 +19,17 @@ from enum import Enum
 from core.utils.clock import utcnow
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_log(value: str) -> str:
+    """Neutralize CR, LF, and control characters for safe log output.
+
+    Replaces \\r and \\n with escaped literal sequences and strips
+    other control characters (0x00-0x08, 0x0b, 0x0c, 0x0e-0x1f)
+    to prevent log injection attacks.
+    """
+    value = value.replace("\r", "\\r").replace("\n", "\\n")
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", "", value)
 
 
 class KillSwitchState(Enum):
@@ -146,7 +158,7 @@ class KillSwitch:
             logger.critical(f"CRITICAL: Failed to write kill-switch state: {e}")
             # If we can't write state, log loudly
             logger.critical(
-                f"Intended state: {state.value}, reason: {reason}, message: {message}"
+                f"Intended state: {state.value}, reason: {reason}, message: {_sanitize_for_log(message)}"
             )
 
     def is_active(self) -> bool:
@@ -239,7 +251,7 @@ class KillSwitch:
         logger.warning("=" * 80)
         logger.warning("🚨 KILL-SWITCH ACTIVATED - ALL TRADING STOPPED 🚨")
         logger.warning(f"Reason: {reason.value}")
-        logger.warning(f"Message: {full_message}")
+        logger.warning(f"Message: {_sanitize_for_log(full_message)}")
         logger.warning(f"Activated at: {activated_at}")
         logger.warning("=" * 80)
 
@@ -280,8 +292,8 @@ class KillSwitch:
 
         logger.warning("=" * 80)
         logger.warning("✅ KILL-SWITCH DEACTIVATED - TRADING RESUMED")
-        logger.warning(f"Operator: {operator}")
-        logger.warning(f"Justification: {justification}")
+        logger.warning(f"Operator: {_sanitize_for_log(operator)}")
+        logger.warning(f"Justification: {_sanitize_for_log(justification)}")
         logger.warning("=" * 80)
 
         return True
