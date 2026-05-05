@@ -23,6 +23,7 @@ Guardrails:
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
 from core.utils.clock import utcnow
@@ -64,6 +65,171 @@ class DecisionReplayRequest:
 
 def _utc_now_iso() -> str:
     return utcnow().isoformat()
+
+
+def _parse_datetime(raw: Any) -> datetime | None:
+    if raw is None:
+        return None
+    if isinstance(raw, datetime):
+        return raw.astimezone(timezone.utc) if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+    if not isinstance(raw, str):
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+
+
+def _normalize_date_range(date_range: dict[str, Any] | None) -> dict[str, datetime] | None:
+    if date_range is None:
+        return None
+
+    if not date_range:
+        return {}
+
+    at_raw = date_range.get("at")
+    from_raw = date_range.get("from")
+    to_raw = date_range.get("to")
+
+    if at_raw is not None and (from_raw is not None or to_raw is not None):
+        raise DecisionReplayError("date_range.at is mutually exclusive with date_range.from/to")
+
+    normalized: dict[str, datetime] = {}
+    if at_raw is not None:
+        at_dt = _parse_datetime(at_raw)
+        if at_dt is None:
+            raise DecisionReplayError("date_range.at must be a valid ISO8601 timestamp")
+        normalized["to"] = at_dt
+        return normalized
+
+    if from_raw is not None:
+        from_dt = _parse_datetime(from_raw)
+        if from_dt is None:
+            raise DecisionReplayError("date_range.from must be a valid ISO8601 timestamp")
+        normalized["from"] = from_dt
+    if to_raw is not None:
+        to_dt = _parse_datetime(to_raw)
+        if to_dt is None:
+            raise DecisionReplayError("date_range.to must be a valid ISO8601 timestamp")
+        normalized["to"] = to_dt
+    if "from" in normalized and "to" in normalized and normalized["from"] > normalized["to"]:
+        raise DecisionReplayError("date_range.from must be <= date_range.to")
+    return normalized
+
+
+def _filter_events_by_date_range(
+    decision_events: Iterable[Mapping[str, Any]],
+    date_range: dict[str, datetime] | None,
+) -> list[Mapping[str, Any]]:
+    events = list(decision_events)
+    if date_range is None:
+        return events
+
+    start = date_range.get("from")
+    end = date_range.get("to")
+    filtered: list[Mapping[str, Any]] = []
+    for raw in events:
+        created_at = _parse_datetime(raw.get("created_at"))
+        if start is not None and (created_at is None or created_at < start):
+            continue
+        if end is not None and (created_at is None or created_at > end):
+            continue
+        filtered.append(raw)
+    return filtered
+
+
+def _sanitize_decision(decision: Mapping[str, Any]) -> dict[str, Any]:
+    return {str(key): value for key, value in decision.items() if not str(key).startswith("_")}
+
+
+def _sanitize_decisions(decisions: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    return [_sanitize_decision(decision) for decision in decisions]
+
+
+def _effective_bucket(decision: Mapping[str, Any], visible_ids: set[str]) -> str:
+    status = str(decision.get("status") or "").strip().lower()
+    invalidated_by = decision.get("invalidated_by")
+    superseded_by = decision.get("superseded_by")
+
+    if isinstance(invalidated_by, str) and invalidated_by:
+        return "invalidated" if invalidated_by in visible_ids else "current"
+    if isinstance(superseded_by, str) and superseded_by:
+        return "superseded" if superseded_by in visible_ids else "current"
+    if status == "invalidated":
+        return "invalidated"
+    if status == "superseded":
+        return "superseded"
+    return "current"
+
+
+def _rebucket_decisions(
+    decisions: Iterable[Mapping[str, Any]], visible_ids: set[str]
+) -> dict[str, list[dict[str, Any]]]:
+    buckets: dict[str, list[dict[str, Any]]] = {"current": [], "superseded": [], "invalidated": []}
+    for decision in decisions:
+        sanitized = _sanitize_decision(decision)
+        buckets[_effective_bucket(sanitized, visible_ids)].append(sanitized)
+    return buckets
+
+
+def _decision_event_meta(decision_events: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    meta: list[dict[str, Any]] = []
+    for raw in decision_events:
+        if not isinstance(raw, Mapping):
+            continue
+        decision_id = raw.get("decision_id")
+        if not isinstance(decision_id, str) or not decision_id.strip():
+            continue
+        topics = raw.get("topics")
+        topic_values: list[str] = []
+        if isinstance(topics, list):
+            topic_values.extend(str(topic).strip() for topic in topics if isinstance(topic, str) and topic.strip())
+        topic_single = raw.get("topic")
+        if isinstance(topic_single, str) and topic_single.strip():
+            topic_values.append(topic_single.strip())
+        meta.append(
+            {
+                "decision_id": decision_id.strip(),
+                "topics": sorted(set(topic_values)),
+                "superseded_by": raw.get("superseded_by") if isinstance(raw.get("superseded_by"), str) else None,
+                "created_at": _parse_datetime(raw.get("created_at")),
+            }
+        )
+    return meta
+
+
+def _warnings_for_supersession(
+    full_events: Iterable[Mapping[str, Any]],
+    filtered_events: Iterable[Mapping[str, Any]],
+    topics: Iterable[str],
+) -> list[str]:
+    relevant_topics = {topic.strip() for topic in topics if isinstance(topic, str) and topic.strip()}
+    if not relevant_topics:
+        return []
+
+    full_meta = _decision_event_meta(full_events)
+    filtered_meta = _decision_event_meta(filtered_events)
+    full_relevant = [item for item in full_meta if relevant_topics.intersection(item.get("topics", []))]
+    filtered_relevant = [item for item in filtered_meta if relevant_topics.intersection(item.get("topics", []))]
+    full_ids = {item["decision_id"] for item in full_relevant}
+    filtered_ids = {item["decision_id"] for item in filtered_relevant}
+
+    warnings: list[str] = []
+    for item in filtered_relevant:
+        target = item.get("superseded_by")
+        if not isinstance(target, str) or not target:
+            continue
+        if target not in full_ids:
+            warnings.append("broken_supersession_chain")
+        elif target not in filtered_ids:
+            warnings.extend(["broken_supersession_chain", "date_range_out_of_history"])
+    return warnings
 
 
 def _validate_request(req: DecisionReplayRequest) -> None:
@@ -191,6 +357,9 @@ def build_decision_replay_v1(
     _validate_request(request)
 
     warnings: list[str] = []
+    normalized_date_range = _normalize_date_range(request.date_range)
+    full_events = list(decision_events)
+    filtered_events = _filter_events_by_date_range(full_events, normalized_date_range)
 
     history_mode_map: dict[str, str] = {
         "replay_by_decision_id": "by_decision_id",
@@ -201,6 +370,8 @@ def build_decision_replay_v1(
         "replay_by_status": "by_status",
     }
     history_mode = history_mode_map[request.mode]
+    if normalized_date_range and history_mode in {"current_for_topic", "superseded_for_topic"}:
+        history_mode = "by_topic"
 
     history_request = DecisionHistoryQueryRequest(
         mode=history_mode,
@@ -214,22 +385,35 @@ def build_decision_replay_v1(
     )
 
     history_result = query_decision_history_v1(
-        decision_events,
+        filtered_events,
         history_request,
         known_evidence_ids=known_evidence_ids,
         known_claim_ids=known_claim_ids,
     )
+
+    visible_ids = {
+        decision.get("decision_id")
+        for decision in _sanitize_decisions(history_result.get("matched_decisions", []))
+        if isinstance(decision.get("decision_id"), str)
+    }
+    all_visible_ids = {
+        str(raw.get("decision_id"))
+        for raw in filtered_events
+        if isinstance(raw, Mapping) and isinstance(raw.get("decision_id"), str)
+    }
+
+    rebucketed_matched = _rebucket_decisions(history_result.get("matched_decisions", []), all_visible_ids)
 
     # Identify primary decision target
     primary_decision_id: str | None = None
     if request.mode == "replay_by_decision_id":
         primary_decision_id = request.decision_id
     elif request.mode == "replay_current_for_topic":
-        current = history_result.get("current_decisions", [])
+        current = rebucketed_matched.get("current", [])
         if current:
             primary_decision_id = current[-1].get("decision_id")
     elif request.mode == "replay_superseded_for_topic":
-        superseded = history_result.get("superseded_decisions", [])
+        superseded = rebucketed_matched.get("superseded", [])
         if superseded:
             primary_decision_id = superseded[-1].get("decision_id")
 
@@ -239,16 +423,21 @@ def build_decision_replay_v1(
 
     decision_summary = _decision_summary(primary_decision)
 
+    relevant_topics: list[str] = []
+    if isinstance(request.topic, str) and request.topic.strip():
+        relevant_topics = [request.topic.strip()]
+    elif primary_decision is not None:
+        relevant_topics = [topic for topic in primary_decision.get("topics", []) if isinstance(topic, str) and topic.strip()]
+
     # Current status per contract
     bucket = (
-        _bucket_for_decision_id(history_result, primary_decision_id)
+        _effective_bucket(primary_decision, all_visible_ids) if primary_decision is not None else _bucket_for_decision_id(history_result, primary_decision_id)
         if primary_decision_id
         else "unknown"
     )
     current_for_topic_id: str | None = None
     if request.topic:
-        # For topic queries, take the last current decision deterministically.
-        current = history_result.get("current_decisions", [])
+        current = rebucketed_matched.get("current", [])
         if current:
             current_for_topic_id = current[-1].get("decision_id")
 
@@ -275,6 +464,8 @@ def build_decision_replay_v1(
 
     if request.topic and not decision_chain:
         warnings.append("broken_supersession_chain")
+
+    warnings.extend(_warnings_for_supersession(full_events, filtered_events, relevant_topics))
 
     supersession_chain = _supersession_chain_from_decision_chain(decision_chain)
 
@@ -323,10 +514,10 @@ def build_decision_replay_v1(
         },
         "decision_summary": decision_summary,
         "current_status": current_status,
-        "old_decisions": list(history_result.get("superseded_decisions", [])),
-        "current_decisions": list(history_result.get("current_decisions", [])),
-        "superseded_decisions": list(history_result.get("superseded_decisions", [])),
-        "invalidated_decisions": list(history_result.get("invalidated_decisions", [])),
+        "old_decisions": list(rebucketed_matched.get("superseded", [])),
+        "current_decisions": list(rebucketed_matched.get("current", [])),
+        "superseded_decisions": list(rebucketed_matched.get("superseded", [])),
+        "invalidated_decisions": list(rebucketed_matched.get("invalidated", [])),
         "decision_chain": decision_chain,
         "evidence_chain": evidence_chain,
         "claim_chain": claim_chain,

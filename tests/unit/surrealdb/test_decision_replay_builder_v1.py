@@ -59,6 +59,22 @@ def test_replay_superseded_for_topic_uses_history_basis() -> None:
 
 
 @pytest.mark.unit
+def test_replay_current_for_topic_honors_date_range_at() -> None:
+    fixture = _load_fixture()
+    req = DecisionReplayRequest(
+        mode="replay_current_for_topic",
+        topic="topic:a",
+        date_range={"at": "2026-05-01T12:00:00Z"},
+        limit=50,
+    )
+    result = build_decision_replay_v1(fixture["decisions"], req)
+    assert [d["decision_id"] for d in result["current_decisions"]] == ["dec-001"]
+    assert result["current_status"]["current_decision_id"] == "dec-001"
+    assert "date_range_out_of_history" in result["warnings"]
+    assert "broken_supersession_chain" in result["warnings"]
+
+
+@pytest.mark.unit
 def test_missing_refs_visible_as_unresolved() -> None:
     fixture = _load_fixture()
     req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
@@ -72,6 +88,26 @@ def test_missing_refs_visible_as_unresolved() -> None:
     assert result["claim_chain"]["unresolved"] == ["cl-missing-001"]
     assert "unresolved_evidence_refs_present" in result["warnings"]
     assert "unresolved_claim_refs_present" in result["warnings"]
+
+
+@pytest.mark.unit
+def test_missing_supersession_target_emits_broken_chain_warning() -> None:
+    fixture = _load_fixture()
+    fixture["decisions"][0]["superseded_by"] = "dec-missing-target"
+    req = DecisionReplayRequest(mode="replay_current_for_topic", topic="topic:a", limit=50)
+    result = build_decision_replay_v1(fixture["decisions"], req)
+    assert "broken_supersession_chain" in result["warnings"]
+
+
+@pytest.mark.unit
+def test_replay_output_strips_internal_datetime_helpers() -> None:
+    fixture = _load_fixture()
+    req = DecisionReplayRequest(mode="replay_current_for_topic", topic="topic:a", limit=50)
+    result = build_decision_replay_v1(fixture["decisions"], req)
+    for bucket in ("current_decisions", "superseded_decisions", "invalidated_decisions", "old_decisions"):
+        for decision in result[bucket]:
+            assert "_created_at_dt" not in decision
+    json.dumps(result)
 
 
 @pytest.mark.unit
