@@ -1,0 +1,67 @@
+{
+  "known_evidence_ids": ["ev-001", "ev-002", "ev-003"],
+  "known_claim_ids": ["cl-001", "cl-002"],
+  "evidence_summaries": {
+    "ev-002": { "type": "log", "strength": "weak", "note": "mock summary" }
+  },
+  "claim_summaries": {
+    "cl-001": { "status": "supported", "note": "mock summary" }
+  },
+  "stop_conditions": [
+    {
+      "type": "missing_evidence",
+      "severity": "blocking",
+      "reason": "mock stop condition",
+      "required_action": "mock",
+      "human_go_required": false
+    }
+  ],
+  "request": { "mode": "replay_by_decision_id", "decision_id": "dec-002", "limit": 50 },
+  "decisions": [
+    {
+      "decision_id": "dec-001",
+      "title": "Topic A initial decision",
+      "question": "Should we do A?",
+      "answer": "Yes, with constraints.",
+      "decision_type": "implementation",
+      "status": "accepted",
+      "scope": "context_intelligence/topic_a",
+      "topics": ["topic:a"],
+      "issue_refs": ["#2118"],
+      "evidence_refs": ["ev-001"],
+      "claim_refs": ["cl-001"],
+      "affected_artifacts": ["tools/surrealdb/decision_history_query.py"],
+      "agent": "OPENCODE/codex",
+      "human_go": false,
+      "human_go_note": null,
+      "superseded_by": "dec-002",
+      "invalidated_by": null,
+      "uncertainty": null,
+      "created_at": "2026-05-01T10:00:00+00:00"
+    },
+    {
+      "decision_id": "dec-002",
+      "title": "Topic A updated decision",
+      "question": "Should we still do A?",
+      "answer": "Yes, adjust ordering.",
+      "decision_type": "implementation",
+      "status": "accepted",
+      "scope": "context_intelligence/topic_a",
+      "topics": ["topic:a"],
+      "issue_refs": ["#2118", "#2119"],
+      "evidence_refs": ["ev-002", "ev-missing-001"],
+      "claim_refs": ["cl-001", "cl-missing-001"],
+      "affected_artifacts": [
+        "tools/surrealdb/decision_history_query.py",
+        "tests/unit/surrealdb/test_decision_history_query_v1.py"
+      ],
+      "agent": "OPENCODE/codex",
+      "human_go": true,
+      "human_go_note": "Human gate visible (data only), not an authorization here.",
+      "superseded_by": null,
+      "invalidated_by": null,
+      "uncertainty": "evidence lookup (#2116) not implemented; refs unresolved",
+      "created_at": "2026-05-02T10:00:00+00:00"
+    }
+  ]
+}
