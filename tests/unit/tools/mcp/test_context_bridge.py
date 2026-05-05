@@ -2792,3 +2792,13 @@ class TestCdbContextImpactHandler:
         assert isinstance(impact["affected_decisions"], list)
         assert isinstance(impact["affected_evidence"], list)
         assert isinstance(impact["affected_memory_refs_read_only"], list)
+
+    def test_invalid_operation_mode_fails_closed(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_impact",
+            {"target_paths": ["docs/"], "operation_mode": "write"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_operation_mode"
+        assert "write" in result["error"]["message"]

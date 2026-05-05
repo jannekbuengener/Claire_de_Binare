@@ -1512,7 +1512,17 @@ def cdb_context_impact_handler(**kwargs) -> dict[str, Any]:
         "write (MCP live)",
     })
     if not isinstance(operation_mode, str) or operation_mode not in valid_modes:
-        operation_mode = "read_only"
+        return {
+            "tool": "cdb_context_impact",
+            "status": "error",
+            "error": {
+                "code": "invalid_operation_mode",
+                "message": (
+                    f"operation_mode must be one of "
+                    f"{sorted(valid_modes)}, got {operation_mode!r}"
+                ),
+            },
+        }
 
     target_paths_clean = [p for p in target_paths if isinstance(p, str) and p.strip()]
     target_symbols_clean = [s for s in target_symbols if isinstance(s, str) and s.strip()]
