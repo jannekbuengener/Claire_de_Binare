@@ -3,15 +3,15 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-04-19
+**Last Updated**: 2026-05-05
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-04-19)
+## Repo / Engineering Status (2026-05-05)
 
 - **main**: green
-- **Active GitHub focus (manual, non-exhaustive)**: keine
+- **Active GitHub focus (manual, non-exhaustive)**: #2115 (Wave-14 Anchor — offen, Closure pending GO GITHUB LIVE)
 - **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
 
 ---
@@ -87,6 +87,7 @@
 - **Session 2026-04-24**: #1900/#1905 E2E Analysis + Governance Anchoring. Track 1 (E2E #1905 Clarity): Analyzed issue #1905 ("Close highest-value execution realism gaps revealed by calibration"). Finding: Infrastructure (#1901–#1904) merged and tested; actual gap closure not started, #1905 parked/evidence-blocked until calibration evidence run executed. Root cause: #1900 status update conflated infrastructure-ready with feature-delivered. Actions: Clarified #1905 status in issue comment (link: https://github.com/modus-mono/Claire_de_Binare/issues/1905#issuecomment-4313646962); Updated labels (removed triage:offen, added status:parked). Track 2 (Governance Anchoring): Created repo-backed governance doc `knowledge/governance/ARVP_PRODUCT_INTENT.md` recording explicit product intent, anti-drift rules, child-slice status, and blocking conditions for #1905. Updated `knowledge/governance/README.md` with link. PR #1926 (`3078d89f`, branch docs/arvp-product-intent-anchor) open for review. Posted clarification comment to #1900 (#4313691659) with explicit correction: #1905 infrastructure delivered, feature delivery not started, blocking conditions documented.
 - **Session 2026-04-26 (#1932 Task 2/3)**: First ARVP Compare→Calibration pilot evidence documented repo-backed in `docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md`. Pilot run `replay-ae0be21cc75e-0001` identified pessimistic simulator drift: Paper `1 Order / 1 Fill`, Replay `0 Orders / 0 Fills`, order/fill deltas `-1/-1`. Source artifacts remain local under `artifacts/calibration_run_001/`; no LR-/Live-/Echtgeld implication. #1905 is no longer evidence-empty but remains a separate governance/status follow-up.
 - **Queued (2026-04-20)**: Non-blocking infrastructure PRs in backlog: PR #1811 (redis_exporter healthcheck: wget → nc), PR #1812 (backlog_curation regex ReDoS hardening).
+- **Session 2026-05-05 (Wave-13/14 Context-Intelligence Epic #1976)**: Wave-13 Gates-Doc + Wave-14 Evidence/Claim/Memory/Trust Services implementiert und gemergt. PR #2342 (`014edb5d`) — docs(surrealdb): define wave-13 completion gates. Closes #2103/#2114. PR #2343 (`4db9892a`) — feat(wave14): evidence_lookup.py, claim_resolver.py, memory_read.py, trust_summary.py, context_evidence_memory_tools.py (4 MCP-Handler), 53 Unit-Tests, Fixture wave14_v1.json. Closes #2116/#2117/#2120/#2121/#2123/#2125/#2126. CI-Fix (datetime.now → cdb_utcnow): commit `430c49c`. Wave-14 Anchor #2115 noch offen (Closure pending GO GITHUB LIVE). Operator-Rule-Update: Gate-Trennung GO ADMIN MERGE / GO MERGE / GO REVIEW THREAD RESOLVE / GO GITHUB LIVE / GO COMMIT / GO PUSH ab sofort eingehalten.
 
 ---
 
