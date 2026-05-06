@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
 
+from tools.surrealdb.scope_drift_blocking import build_blocking_output
 from tools.surrealdb.scope_drift_firewall import (
     DRIFT_TYPES,
     GUARDRAILS,
@@ -281,4 +282,5 @@ def handle_cdb_context_scope_drift(request: Mapping[str, Any]) -> dict[str, Any]
         "scan_status": scan_result.status,
         "scanned_at": scan_result.scanned_at,
         "metadata": _metadata(),
+        "blocking_output": build_blocking_output(scan_result) if scan_result.blocking_count > 0 else None,
     }

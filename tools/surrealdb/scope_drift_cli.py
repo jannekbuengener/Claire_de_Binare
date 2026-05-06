@@ -33,6 +33,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from tools.surrealdb.scope_drift_blocking import build_blocking_output, render_blocking_markdown
 from tools.surrealdb.scope_drift_firewall import (
     DRIFT_TYPES,
     GUARDRAILS,
@@ -260,6 +261,11 @@ def _render_markdown(payload: dict[str, Any]) -> str:
             lines.append(f"- {r}")
         lines.append("")
 
+    # Blocking output section (Wave 17-D — report command only)
+    blocking_output = payload.get("blocking_output")
+    if blocking_output:
+        lines.append(render_blocking_markdown(blocking_output))
+
     # Guardrails — always present
     guardrails = payload.get("guardrails", list(GUARDRAILS))
     lines += ["## Guardrails", ""]
@@ -360,6 +366,8 @@ def handle_report_scope_drift(
         "recommended_next_reads": agg_reads,
         "guardrails": list(result.guardrails),
     }
+    if result.blocking_count > 0:
+        payload["blocking_output"] = build_blocking_output(result)
     return payload, EXIT_OK
 
 
