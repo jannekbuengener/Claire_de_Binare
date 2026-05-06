@@ -470,6 +470,36 @@ def test_scope_decision_returns_only_decision_findings() -> None:
         assert finding["stale_type"] == "decision_superseded"
 
 
+@pytest.mark.unit
+def test_scope_evidence_returns_only_evidence_findings() -> None:
+    """scope=evidence must return only evidence_expired findings."""
+    bundle = {**_bundle_multi_stale(), **_bundle_with_expired_evidence()}
+    result = handle_cdb_context_stale(
+        _request(bundle, scope="evidence")
+    )
+    assert result["status"] == "ok"
+    assert len(result["findings"]) >= 1
+    for finding in result["findings"]:
+        assert finding["stale_type"] == "evidence_expired"
+
+
+@pytest.mark.unit
+def test_scope_evidence_excludes_non_evidence_types() -> None:
+    """scope=evidence must exclude source_hash_changed, source_deleted, etc."""
+    bundle = {**_bundle_multi_stale(), **_bundle_with_expired_evidence()}
+    result = handle_cdb_context_stale(
+        _request(bundle, scope="evidence")
+    )
+    assert result["status"] == "ok"
+    for finding in result["findings"]:
+        assert finding["stale_type"] not in {
+            "source_hash_changed",
+            "source_deleted",
+            "decision_superseded",
+            "memory_ttl_expired",
+        }
+
+
 # ── Summary integrity ─────────────────────────────────────────────────────────
 
 

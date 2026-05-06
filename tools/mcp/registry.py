@@ -1117,6 +1117,7 @@ TOOLS_V0 = [
                         "all",
                         "artifact",
                         "decision",
+                        "evidence",
                         "memory",
                         "edge",
                         "package",

@@ -42,6 +42,7 @@ _SCOPE_TO_STALE_TYPES: dict[str, frozenset[str]] = {
     "all": frozenset(STALE_TYPES),
     "artifact": frozenset({"source_hash_changed", "source_deleted"}),
     "decision": frozenset({"decision_superseded"}),
+    "evidence": frozenset({"evidence_expired"}),
     "memory": frozenset({"memory_ttl_expired"}),
     "edge": frozenset({"dependency_edge_no_longer_observed"}),
     "package": frozenset({"stale_context_package"}),
