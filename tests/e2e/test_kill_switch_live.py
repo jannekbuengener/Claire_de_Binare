@@ -40,6 +40,7 @@ def redis_client():
     Redis client — same connection strategy as test_paper_trading_p0.
     Reads password from Docker secret mount; falls back to localhost.
     """
+    password = ""
     try:
         with open("/run/secrets/redis_password", "r") as f:
             password = f.read().strip()
