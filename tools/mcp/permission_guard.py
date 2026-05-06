@@ -129,6 +129,17 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     "context.stop_resolver",
     "context.required_reads",
     "cdb_context_impact",
+    # Wave-14 read-only record context tools (#2122).
+    # These tools process evidence/claim/memory/decision records whose titles
+    # and content legitimately contain words like "Create", "Update", "Delete",
+    # "migration", "runbook" — blocking them via mutation scan would make the
+    # tools unusable for normal context records.
+    "cdb_context_evidence_resolve",
+    "cdb_context_claim_resolve",
+    "cdb_context_memory_get",
+    "cdb_context_trust_summary",
+    "cdb_context_decision_history",
+    "cdb_context_decision_replay",
 })
 
 

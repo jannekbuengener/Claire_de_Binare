@@ -287,6 +287,73 @@ class TestInputGateToolClassification:
         assert len(results) >= 1
 
 
+_WAVE14_EXEMPT_TOOLS = [
+    "cdb_context_evidence_resolve",
+    "cdb_context_claim_resolve",
+    "cdb_context_memory_get",
+    "cdb_context_trust_summary",
+    "cdb_context_decision_history",
+    "cdb_context_decision_replay",
+]
+
+
+class TestInputGateWave14Exemption:
+    """Wave-14 record context tools are exempt from mutation keyword scanning."""
+
+    def test_all_wave14_tools_in_exempt_set(self) -> None:
+        """All 6 Wave-14 tool names are in INPUT_SCAN_EXEMPT_TOOLS."""
+        missing = [t for t in _WAVE14_EXEMPT_TOOLS if t not in INPUT_SCAN_EXEMPT_TOOLS]
+        assert not missing, f"Wave-14 tools missing from exempt set: {missing}"
+
+    def test_wave14_tools_not_in_scan_set(self) -> None:
+        """No Wave-14 tool is in INPUT_SCAN_TOOLS (disjoint check)."""
+        overlap = [t for t in _WAVE14_EXEMPT_TOOLS if t in INPUT_SCAN_TOOLS]
+        assert not overlap, f"Wave-14 tools must not be in INPUT_SCAN_TOOLS: {overlap}"
+
+    @pytest.mark.parametrize("tool_name", _WAVE14_EXEMPT_TOOLS)
+    def test_wave14_tool_allows_mutation_keywords_in_title(
+        self, tool_name: str
+    ) -> None:
+        """Wave-14 tools must not be blocked when record titles contain create/update/delete."""
+        results = PermissionGuard.check_tool_inputs(
+            tool_name,
+            {
+                "evidence_records": [
+                    {"evidence_id": "ev-1", "title": "Create migration evidence"},
+                    {"evidence_id": "ev-2", "title": "Update runbook decision"},
+                    {"evidence_id": "ev-3", "title": "Delete branch warning in historical note"},
+                ]
+            },
+        )
+        assert len(results) == 0, (
+            f"Tool {tool_name} must not block records with mutation keywords in titles, "
+            f"got violations: {results}"
+        )
+
+    def test_wave14_evidence_resolve_mutation_claim_passes(self) -> None:
+        """cdb_context_evidence_resolve passes claims containing decision keywords."""
+        results = PermissionGuard.check_tool_inputs(
+            "cdb_context_evidence_resolve",
+            {"claim": "Drop deprecated migration schema", "mode": "by_claim"},
+        )
+        assert len(results) == 0
+
+    def test_wave14_decision_history_mutation_scope_passes(self) -> None:
+        """cdb_context_decision_history passes scope strings with mutation words."""
+        results = PermissionGuard.check_tool_inputs(
+            "cdb_context_decision_history",
+            {"scope": "create-or-update-runbook", "mode": "by_scope"},
+        )
+        assert len(results) == 0
+
+    def test_non_exempt_tool_still_blocked(self) -> None:
+        """context.search (non-exempt) is still blocked by mutation keywords."""
+        results = PermissionGuard.check_tool_inputs(
+            "context.search", {"query": "DROP TABLE evidence"}
+        )
+        assert len(results) >= 1
+
+
 # ---------------------------------------------------------------------------
 # 4. Input Gate — Forbidden Keywords
 # ---------------------------------------------------------------------------
