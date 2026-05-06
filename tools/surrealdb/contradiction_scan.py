@@ -670,10 +670,13 @@ def _rule_memory_vs_source(
                     ref_type="memory",
                     description=f"Memory '{mid}' updated at {mem_updated_at}",
                 )
+                # Append ':stale_timestamp' to disambiguate from the explicit-contradiction
+                # path which uses ref_id=src_id — both would otherwise produce the same
+                # contradiction_id (same ctype + same ref_a + same ref_b).
                 src_b = SourceRef(
-                    ref_id=src_id,
+                    ref_id=f"{src_id}:stale_timestamp",
                     ref_type="source",
-                    description=f"Source '{src_id}' updated at {src_updated_at} (newer)",
+                    description=f"Source '{src_id}' updated at {src_updated_at} (newer than memory)",
                 )
                 findings.append(
                     _make_finding(
