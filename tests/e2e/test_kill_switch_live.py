@@ -26,7 +26,6 @@ import pytest
 import redis
 import requests
 
-
 pytestmark = pytest.mark.skipif(
     os.getenv("E2E_RUN") != "1", reason="E2E tests only run when E2E_RUN=1 is set"
 )
@@ -120,9 +119,9 @@ def _send_order_and_wait(redis_client, order_id, timeout_s=10):
     }
 
     subs = redis_client.publish("orders", json.dumps(order_payload))
-    assert subs >= 1, (
-        "No subscribers on 'orders' channel — Execution service not running?"
-    )
+    assert (
+        subs >= 1
+    ), "No subscribers on 'orders' channel — Execution service not running?"
 
     result = None
     for _ in range(timeout_s * 2):  # 0.5s per attempt
@@ -155,9 +154,9 @@ def test_kill_switch_shared_volume_blocks_execution(redis_client, unique_order_i
     """
     # 1. Risk must be reachable and kill-switch must be inactive
     status_resp = requests.get(f"{RISK_BASE_URL}/kill-switch", timeout=5)
-    assert status_resp.status_code == 200, (
-        f"Risk /kill-switch endpoint unreachable: HTTP {status_resp.status_code}"
-    )
+    assert (
+        status_resp.status_code == 200
+    ), f"Risk /kill-switch endpoint unreachable: HTTP {status_resp.status_code}"
     assert status_resp.json().get("active") is False, (
         "Kill-switch already active at test start — "
         "clean stack state required (run deactivate manually or restart stack)"
@@ -165,13 +164,13 @@ def test_kill_switch_shared_volume_blocks_execution(redis_client, unique_order_i
 
     # 2. Baseline: order without active kill-switch must NOT be kill-switch-blocked
     baseline_result = _send_order_and_wait(redis_client, f"{unique_order_id}-baseline")
-    assert baseline_result is not None, (
-        "No result for baseline order (timeout 10s) — Execution not processing orders"
-    )
+    assert (
+        baseline_result is not None
+    ), "No result for baseline order (timeout 10s) — Execution not processing orders"
     error_msg_baseline = (baseline_result.get("error_message") or "").lower()
-    assert "kill-switch" not in error_msg_baseline, (
-        f"Baseline order unexpectedly blocked by kill-switch: {baseline_result}"
-    )
+    assert (
+        "kill-switch" not in error_msg_baseline
+    ), f"Baseline order unexpectedly blocked by kill-switch: {baseline_result}"
 
     # 3. Activate kill-switch via Risk HTTP endpoint
     activate_resp = requests.post(
@@ -187,9 +186,9 @@ def test_kill_switch_shared_volume_blocks_execution(redis_client, unique_order_i
         f"Kill-switch activate failed: HTTP {activate_resp.status_code} — "
         f"{activate_resp.text}"
     )
-    assert activate_resp.json().get("active") is True, (
-        f"activate response did not confirm active=True: {activate_resp.json()}"
-    )
+    assert (
+        activate_resp.json().get("active") is True
+    ), f"activate response did not confirm active=True: {activate_resp.json()}"
 
     # Allow shared volume write to be visible in Execution container's FS layer
     time.sleep(0.5)
