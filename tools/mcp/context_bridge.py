@@ -1987,6 +1987,21 @@ def cdb_context_stale_handler(**kwargs) -> dict[str, Any]:
     return handle_cdb_context_stale(kwargs)
 
 
+# ── Wave-17-C MCP Tool Handlers (#2165 Scope Drift MCP) ──────────────────────
+
+
+def cdb_context_scope_drift_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_scope_drift.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-17-C adapter.
+    Fail-closed. No DB/network/write. Bundle-driven. Detection is signal, not
+    action permission. No live-go. No Echtgeld-Go.
+    """
+    from tools.mcp.scope_drift_tools import handle_cdb_context_scope_drift
+
+    return handle_cdb_context_scope_drift(kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -2168,6 +2183,21 @@ class ContextBridge:
             "cdb_context_stale": cdb_context_stale_handler,
         }
         for _tool_name, _handler_fn in _wave16c_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
+        # Wave-17-C handlers (#2165 Scope Drift MCP)
+        _wave17c_handler_map = {
+            "cdb_context_scope_drift": cdb_context_scope_drift_handler,
+        }
+        for _tool_name, _handler_fn in _wave17c_handler_map.items():
             _old = self._registry.get_tool(_tool_name)
             if _old:
                 self._registry._tools[_tool_name] = ToolDefinition(

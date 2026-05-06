@@ -152,6 +152,13 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     # "migration", "runbook". The tool is read-only, bundle-driven, and
     # fail-closed; the scan service enforces no-write, no-network, no-auto-fix.
     "cdb_context_stale",
+    # Wave-17-C scope drift MCP tool (#2165).
+    # Processes scan bundles including generated_findings.content whose
+    # legitimate values are exactly the write-intent strings the firewall
+    # scans for (e.g. "commit", "push", "create file", "git push").
+    # The tool is read-only, bundle-driven, and fail-closed; the scope drift
+    # firewall service enforces no-write, no-network, no-auto-fix guardrails.
+    "cdb_context_scope_drift",
 })
 
 

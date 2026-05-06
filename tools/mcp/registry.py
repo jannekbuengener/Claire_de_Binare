@@ -1197,6 +1197,102 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_stale"),
     ),
+    # ── Wave-17-C Tools (#2165 Scope Drift MCP) ──────────────────────────────
+    ToolDefinition(
+        name="cdb_context_scope_drift",
+        description=(
+            "Wave-17-C scope drift MCP tool. Detects scope drift findings "
+            "from an in-memory input bundle using the Wave-17-A firewall service. "
+            "Supports filters for severity, scope_type (drift type), target_ref, "
+            "and blocking state. Supports deterministic limit/truncation. "
+            "Bundle-driven: no DB/network/filesystem read. Read-only, fail-closed. "
+            "Detection is signal, not authorization. No Live-Go, no Echtgeld-Go, "
+            "no auto-fix, no write."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": (
+                        "In-memory scan input bundle with domain keys "
+                        "(declared_scope, touched_artifacts, issue_refs, "
+                        "generated_findings, forbidden_surfaces). Required."
+                    ),
+                },
+                "severity": {
+                    "type": "string",
+                    "enum": ["info", "warning", "blocking"],
+                    "description": "Severity level to filter findings by.",
+                },
+                "scope_type": {
+                    "type": "string",
+                    "description": (
+                        "Exact drift_type to filter findings by. "
+                        "Must be one of the 9 canonical drift types."
+                    ),
+                },
+                "target_ref": {
+                    "type": "string",
+                    "description": (
+                        "Filter to findings whose affected_artifacts contains "
+                        "this reference string."
+                    ),
+                },
+                "blocking": {
+                    "type": "boolean",
+                    "description": (
+                        "true: return only blocking findings (human_go_required=true). "
+                        "false: return only non-blocking findings."
+                    ),
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 100,
+                    "maximum": 500,
+                    "description": (
+                        "Maximum number of findings to return. "
+                        "Summary counts are always pre-limit. "
+                        "summary.truncated=true when findings are capped."
+                    ),
+                },
+                "as_of": {
+                    "type": "string",
+                    "description": (
+                        "Optional ISO-8601 UTC reference time. "
+                        "Also read from bundle['meta']['as_of']. "
+                        "If absent, scan service uses cdb_utcnow()."
+                    ),
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "summary": {
+                    "type": "object",
+                    "properties": {
+                        "total_count": {"type": "integer"},
+                        "blocking_count": {"type": "integer"},
+                        "truncated": {"type": "boolean"},
+                        "severity_summary": {"type": "object"},
+                        "drift_type_summary": {"type": "object"},
+                        "filters_applied": {"type": "object"},
+                    },
+                },
+                "findings": {"type": "array"},
+                "guardrails": {"type": "array"},
+                "scan_status": {"type": "string"},
+                "scanned_at": {"type": "string"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_scope_drift"),
+    ),
 ]
 
 
