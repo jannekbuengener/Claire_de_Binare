@@ -295,9 +295,11 @@ def handle_cdb_context_stale(request: Mapping[str, Any]) -> dict[str, Any]:
     truncated = len(filtered) > limit
     findings_page = filtered[:limit]
 
-    # ── Collect cross-cutting fields from paged findings ─────────────────────
-    recommended_refresh = _collect_recommended_refresh(filtered)
-    source_refs = _collect_source_refs(filtered)
+    # ── Collect cross-cutting fields from paged findings only ────────────────
+    # Metadata is derived from findings_page so callers receive refs only for
+    # the items they actually see — not for items filtered out by limit.
+    recommended_refresh = _collect_recommended_refresh(findings_page)
+    source_refs = _collect_source_refs(findings_page)
 
     # ── Build response ────────────────────────────────────────────────────────
     response: dict[str, Any] = {

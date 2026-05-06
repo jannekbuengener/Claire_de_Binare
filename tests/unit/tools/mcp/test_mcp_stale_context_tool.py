@@ -20,7 +20,7 @@ from typing import Any
 import pytest
 
 from tools.mcp.context_bridge import ContextBridge
-from tools.mcp.permission_guard import INPUT_SCAN_EXEMPT_TOOLS, PermissionGuard
+from tools.mcp.permission_guard import INPUT_SCAN_EXEMPT_TOOLS
 from tools.mcp.registry import ContextToolRegistry
 from tools.mcp.stale_context_tools import (
     SCHEMA_VERSION,
@@ -33,7 +33,6 @@ from tools.surrealdb.stale_knowledge_scan import GUARDRAILS, STALE_TYPES
 
 _AS_OF = "2026-05-06T12:00:00+00:00"
 _PAST = "2026-01-01T00:00:00+00:00"
-_FUTURE = "2027-01-01T00:00:00+00:00"
 
 
 # ── Inline fixtures ───────────────────────────────────────────────────────────
@@ -408,9 +407,8 @@ def test_read_only_safety_no_writes_in_result() -> None:
 
     result = handle_cdb_context_stale(_request(original_bundle))
     assert result["status"] == "ok"
-    # Input bundle must not be mutated (meta pop is allowed but bundle itself unchanged)
-    # We check the domain keys are still present
-    assert "sources" in original_bundle
+    # Input bundle must not be mutated: domain keys must be identical to the deep copy.
+    assert original_bundle == bundle_copy
 
 
 @pytest.mark.unit
