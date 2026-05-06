@@ -39,7 +39,6 @@ from typing import Any, Mapping, Optional, Union
 
 from core.utils.clock import utcnow as cdb_utcnow
 from tools.surrealdb.stale_knowledge_scan import (
-    STALE_TYPES,
     StaleFinding,
     StaleKnowledgeScanError,
     StaleKnowledgeScanResult,
@@ -412,9 +411,18 @@ def _resolve_scan_input(
                 recommended_refresh=tuple(scan_input.get("recommended_refresh") or []),
                 guardrails=SCAN_GUARDRAILS,
             )
-        # Raw bundle path
+        # Raw bundle path — honour deterministic as_of from bundle meta when
+        # the caller did not supply an explicit as_of override.  This avoids
+        # falling back to wall-clock time for time-based stale rules.
+        effective_as_of = as_of
+        if effective_as_of is None:
+            meta = scan_input.get("meta") if isinstance(scan_input, Mapping) else None
+            if isinstance(meta, Mapping):
+                bundle_ts = meta.get("as_of")
+                if bundle_ts and isinstance(bundle_ts, str):
+                    effective_as_of = bundle_ts
         try:
-            return scan_stale_knowledge_v1(scan_input, as_of=as_of)
+            return scan_stale_knowledge_v1(scan_input, as_of=effective_as_of)
         except StaleKnowledgeScanError:
             raise
 

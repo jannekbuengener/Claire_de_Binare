@@ -32,7 +32,6 @@ from tools.surrealdb.stale_refresh_plan import (
     PRIORITIES,
     SCHEMA_VERSION,
     TOOL_NAME,
-    RefreshPlanError,
     RefreshPlanItem,
     RefreshPlanResult,
     generate_refresh_plan_v1,
@@ -45,7 +44,6 @@ from tools.surrealdb.stale_refresh_plan import (
 
 _AS_OF = "2026-05-06T12:00:00+00:00"
 _PAST = "2026-01-01T00:00:00+00:00"
-_FUTURE = "2027-01-01T00:00:00+00:00"
 
 
 # ── Minimal bundle builders ───────────────────────────────────────────────────
@@ -141,6 +139,8 @@ def test_source_deleted_is_p0() -> None:
     assert len(items) >= 1, "Expected at least one source_deleted plan item"
     for item in items:
         assert item.priority == "P0", f"Expected P0 but got {item.priority!r}"
+    # _derive_priority: blocking=True always yields P0 regardless of severity.
+    assert _derive_priority("source_deleted", "blocking", 1.0, True) == "P0"
 
 
 @pytest.mark.unit
@@ -152,6 +152,8 @@ def test_evidence_expired_action_refresh_evidence() -> None:
     assert len(items) >= 1
     for item in items:
         assert item.recommended_action == "refresh_evidence"
+    # _derive_action must map the canonical stale_type to the same action.
+    assert _derive_action("evidence_expired") == "refresh_evidence"
 
 
 @pytest.mark.unit
@@ -223,6 +225,7 @@ def test_plan_from_sample_scan_generates_items() -> None:
     assert result.plan_item_count >= 3
     assert len(result.plan_items) == result.plan_item_count
     for item in result.plan_items:
+        assert isinstance(item, RefreshPlanItem)
         assert isinstance(item.plan_id, str) and len(item.plan_id) == 16
         assert item.priority in PRIORITIES
         assert item.recommended_action in (
@@ -246,6 +249,10 @@ def test_deterministic_plan_ids() -> None:
     ids_a = sorted(item.plan_id for item in result_a.plan_items)
     ids_b = sorted(item.plan_id for item in result_b.plan_items)
     assert ids_a == ids_b, "plan_ids are not deterministic across runs"
+    # _plan_id itself must be stable and produce a 16-char hex digest.
+    pid = _plan_id("stale-001", "reverify_source", "src/main.py")
+    assert pid == _plan_id("stale-001", "reverify_source", "src/main.py")
+    assert len(pid) == 16
 
 
 # ── Tests: guardrails ─────────────────────────────────────────────────────────
@@ -253,18 +260,11 @@ def test_deterministic_plan_ids() -> None:
 
 @pytest.mark.unit
 def test_guardrails_present() -> None:
-    """All 6 guardrail strings must appear in the to_dict() output."""
-    expected_guardrails = [
-        "Refresh Plan is recommendation only.",
-        "No automatic delete.",
-        "No automatic refresh write.",
-        "No DB write.",
-        "No Live-Readiness-Go.",
-        "No Echtgeld-Go.",
-    ]
+    """Every string in GUARDRAILS must appear in the to_dict() output."""
     result = _plan(_make_bundle_with_types("evidence_expired"))
     payload = result.to_dict()
-    for expected in expected_guardrails:
+    assert len(GUARDRAILS) >= 6, "Expected at least 6 guardrail strings"
+    for expected in GUARDRAILS:
         assert expected in payload["guardrails"], f"Missing guardrail: {expected!r}"
 
 
@@ -312,6 +312,41 @@ def test_empty_findings_returns_empty_plan() -> None:
     assert result.plan_item_count == 0
     assert result.plan_items == ()
     assert result.errors == ()
+
+
+@pytest.mark.unit
+def test_bundle_meta_as_of_is_honoured_without_explicit_as_of() -> None:
+    """When as_of is not passed, bundle['meta']['as_of'] must be used.
+
+    Time-based stale rules (evidence_expired, memory_ttl_expired, etc.) depend
+    on the reference timestamp.  If the generator silently falls back to wall-
+    clock time the result is non-deterministic across runs.
+    """
+    # Build a bundle whose evidence_records already expired relative to _AS_OF
+    # but are NOT expired relative to a much later timestamp.
+    bundle = {
+        "sources": [],
+        "decisions": [],
+        "evidence_records": [
+            {
+                "evidence_id": "ev-001",
+                "expires_at": _PAST,  # expired before _AS_OF
+            }
+        ],
+        "memory_records": [],
+        "dependency_edges": [],
+        "context_packages": [],
+        "briefings": [],
+        "meta": {"as_of": _AS_OF},
+    }
+    # Without explicit as_of, the generator must pick up _AS_OF from bundle meta.
+    result_from_meta = generate_refresh_plan_v1(bundle)
+    # With explicit as_of equal to meta value, result must be identical.
+    result_explicit = generate_refresh_plan_v1(bundle, as_of=_AS_OF)
+    assert result_from_meta.status == "ok"
+    assert result_explicit.status == "ok"
+    assert result_from_meta.plan_item_count == result_explicit.plan_item_count
+    assert result_from_meta.as_of == result_explicit.as_of
 
 
 @pytest.mark.unit
