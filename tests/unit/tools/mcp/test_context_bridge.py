@@ -227,16 +227,34 @@ class TestContextBridge:
         assert isinstance(bridge, ContextBridge)
 
     def test_list_tools_returns_v0_tools(self) -> None:
-        """Verify list_tools returns all v0 tools."""
+        """Verify list_tools returns all registered tools.
+
+        Original count was 13 (v0 base 11 + #2110 alias + #2111 impact).
+        Wave-14 (#2122) added 6 more tools; count is now derived from registry
+        so this test stays correct across future additions.
+        """
         bridge = ContextBridge()
         tools = bridge.list_tools()
-        # v0 tool set (11) + #2110 alias (cdb_context_briefing) + #2111 impact tool
-        assert len(tools) == 13
+        # Count must match the registry exactly (no hidden tools, no extras)
+        expected_count = len(ContextToolRegistry.list_tool_names())
+        assert len(tools) == expected_count
         tool_names = [t["name"] for t in tools]
+        # Base tools (v0 set + aliases)
         assert "context.search" in tool_names
         assert "context.package" in tool_names
         assert "context.self_explain" in tool_names
         assert "cdb_context_briefing" in tool_names
+        # Wave-14 tools (#2122)
+        wave14_tools = [
+            "cdb_context_evidence_resolve",
+            "cdb_context_claim_resolve",
+            "cdb_context_memory_get",
+            "cdb_context_trust_summary",
+            "cdb_context_decision_history",
+            "cdb_context_decision_replay",
+        ]
+        for name in wave14_tools:
+            assert name in tool_names, f"Wave-14 tool missing: {name}"
 
     def test_get_tool_schema(self) -> None:
         """Verify get_tool_schema returns schema."""
@@ -261,11 +279,17 @@ class TestContextBridge:
         assert result["error"]["code"] == "unknown_tool"
 
     def test_read_only_status(self) -> None:
-        """Verify read-only status is enforced."""
+        """Verify read-only status is enforced for all registered tools.
+
+        Count is derived from registry so it stays correct when new tools
+        are added (Wave-14 brought this from 13 to 19 via #2122).
+        """
         bridge = ContextBridge()
         status = bridge.get_read_only_status()
         assert status["enforced"] is True
-        assert len(status["read_only_tools"]) == 13
+        # All registered tools must be read-only — no hardcoded magic number
+        expected_count = len(ContextToolRegistry.list_tool_names())
+        assert len(status["read_only_tools"]) == expected_count
 
 
 class TestDefensiveSchemaCopies:
