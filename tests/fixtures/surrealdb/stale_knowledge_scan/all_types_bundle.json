@@ -1,0 +1,66 @@
+{
+  "_comment": "Deterministic all-types fixture for Wave 16-E (#2159). Triggers exactly all 8 stale_types — one finding per type. as_of is advisory; pass it explicitly to scan_stale_knowledge_v1 for determinism. No secrets, no absolute host paths, no real data. Synthetic docs/memory identifiers only.",
+  "meta": {
+    "as_of": "2026-05-06T12:00:00+00:00",
+    "description": "Wave 16-E all-types bundle — deterministic, no live data"
+  },
+  "sources": [
+    {
+      "source_id": "fixture-src-hash-001",
+      "path": "docs/test/hash-test.md",
+      "current_hash": "c0ffee01deadbeef",
+      "last_verified_hash": "00000000aaaabbbb",
+      "exists": true
+    },
+    {
+      "source_id": "fixture-src-deleted-001",
+      "path": "docs/deprecated/removed-runbook.md",
+      "exists": false,
+      "deleted_at": "2026-04-01T12:00:00+00:00"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "fixture-dec-superseded-001",
+      "superseded_by": "fixture-dec-active-002",
+      "status": "superseded",
+      "topic": "Old architecture decision (fixture)"
+    }
+  ],
+  "evidence_records": [
+    {
+      "evidence_id": "fixture-ev-expired-001",
+      "expires_at": "2026-01-01T00:00:00+00:00",
+      "topic": "Canary run expired evidence (fixture)"
+    }
+  ],
+  "memory_records": [
+    {
+      "memory_id": "fixture-mem-expired-001",
+      "expires_at": "2026-01-01T00:00:00+00:00",
+      "scope": "cdb"
+    }
+  ],
+  "dependency_edges": [
+    {
+      "edge_id": "fixture-edge-unobserved-001",
+      "from_ref": "memory/context-a",
+      "to_ref": "memory/context-b",
+      "observed": false
+    }
+  ],
+  "context_packages": [
+    {
+      "package_id": "fixture-ctx-pkg-001",
+      "source_snapshot_id": "snap-fixture-old-001",
+      "current_snapshot_id": "snap-fixture-new-001"
+    }
+  ],
+  "briefings": [
+    {
+      "briefing_id": "fixture-briefing-stale-001",
+      "source_snapshot_id": "snap-fixture-briefing-old",
+      "current_snapshot_id": "snap-fixture-briefing-new"
+    }
+  ]
+}
