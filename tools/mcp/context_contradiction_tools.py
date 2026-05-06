@@ -281,18 +281,19 @@ def handle_cdb_context_contradictions(request: Mapping[str, Any]) -> dict[str, A
     if not include_non_blocking:
         findings = [f for f in findings if f.blocking]
 
-    # Compute blocking_count from the full filtered set BEFORE applying limit so
-    # that callers always get the true scan result even when output is capped.
+    # Compute blocking_count and recommended_next_reads from the full filtered
+    # set BEFORE applying limit so that callers always get the true scan result
+    # even when output is capped.
     blocking_count = sum(1 for f in findings if f.blocking)
     total_findings_before_limit = len(findings)
+    # Derive recommended_next_reads from all filtered findings (pre-limit) so
+    # that blocking paths are never dropped from the read list by a cap.
+    recommended_next_reads = _derive_recommended_next_reads(findings)
 
     truncated = False
     if findings_limit is not None:
         truncated = len(findings) > findings_limit
         findings = findings[:findings_limit]
-
-    # Derive recommended_next_reads deterministically from filtered findings
-    recommended_next_reads = _derive_recommended_next_reads(findings)
 
     guardrails = [
         "Detection is signal, not action permission.",
