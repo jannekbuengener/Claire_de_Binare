@@ -183,7 +183,7 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     if "summary" in payload:
         summary = payload["summary"]
         lines += ["## Summary", ""]
-        for sev in ("blocking", "warning", "info"):
+        for sev in ("blocking", "overridden", "warning", "info"):
             items = summary.get(sev, [])
             lines.append(f"- **{sev}**: {len(items)}")
         lines.append("")
@@ -193,6 +193,14 @@ def _render_markdown(payload: dict[str, Any]) -> str:
                 lines.append(
                     f"- `{f['contradiction_id']}` `{f['contradiction_type']}` — "
                     f"{f['recommended_action']}"
+                )
+            lines.append("")
+        if summary.get("overridden"):
+            lines += ["### Overridden (false_positive / accepted_risk)", ""]
+            for f in summary["overridden"]:
+                lines.append(
+                    f"- `{f['contradiction_id']}` `{f['contradiction_type']}` "
+                    f"(severity: blocking, override applied)"
                 )
             lines.append("")
     elif findings:
