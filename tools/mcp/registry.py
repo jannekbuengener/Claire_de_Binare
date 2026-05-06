@@ -1088,6 +1088,114 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_contradictions"),
     ),
+    # ── Wave-16-C Tools (#2157 Stale Context MCP) ────────────────────────────
+    ToolDefinition(
+        name="cdb_context_stale",
+        description=(
+            "Wave-16-C stale context MCP tool. Detects stale knowledge findings "
+            "from an in-memory input bundle. Surfaces stale_type, severity, "
+            "confidence, recommended_refresh, and source_refs for each finding. "
+            "Supports scope/stale_type/severity/target_ref filters and limit. "
+            "Bundle-driven: no DB/network/filesystem read. Read-only, fail-closed. "
+            "Detection is signal, not authorization. No Live-Go, no Echtgeld-Go, "
+            "no auto-fix, no auto-delete, no write."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": (
+                        "In-memory scan input bundle with domain keys "
+                        "(sources, decisions, evidence_records, memory_records, "
+                        "dependency_edges, context_packages, briefings). Required."
+                    ),
+                },
+                "scope": {
+                    "type": "string",
+                    "enum": [
+                        "all",
+                        "artifact",
+                        "decision",
+                        "memory",
+                        "edge",
+                        "package",
+                        "briefing",
+                    ],
+                    "default": "all",
+                    "description": (
+                        "Restrict scan to a subset of stale_types. "
+                        "'all' returns all types (default)."
+                    ),
+                },
+                "target_ref": {
+                    "type": "string",
+                    "description": "Exact target_ref to filter findings by.",
+                },
+                "stale_type": {
+                    "type": "string",
+                    "description": (
+                        "Exact stale_type to filter findings by. "
+                        "Must be one of the 8 canonical stale types."
+                    ),
+                },
+                "severity": {
+                    "type": "string",
+                    "enum": ["info", "warning", "blocking"],
+                    "description": "Severity level to filter findings by.",
+                },
+                "include_guardrails": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "Include guardrail strings in output.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 100,
+                    "maximum": 500,
+                    "description": (
+                        "Maximum number of findings to return. "
+                        "Summary counts are always pre-limit. "
+                        "summary.truncated=true when findings are capped."
+                    ),
+                },
+                "as_of": {
+                    "type": "string",
+                    "description": (
+                        "Optional ISO-8601 UTC reference time for TTL/expiry "
+                        "comparisons. Also read from bundle['meta']['as_of']. "
+                        "If absent, scan service uses cdb_utcnow()."
+                    ),
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "summary": {
+                    "type": "object",
+                    "properties": {
+                        "total_count": {"type": "integer"},
+                        "blocking_count": {"type": "integer"},
+                        "truncated": {"type": "boolean"},
+                        "severity_summary": {"type": "object"},
+                        "stale_type_summary": {"type": "object"},
+                    },
+                },
+                "findings": {"type": "array"},
+                "recommended_refresh": {"type": "array"},
+                "source_refs": {"type": "array"},
+                "guardrails": {"type": "array"},
+                "as_of": {"type": "string"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_stale"),
+    ),
 ]
 
 

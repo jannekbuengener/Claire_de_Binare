@@ -146,6 +146,12 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     # The tool is read-only and fail-closed; the scan service itself enforces
     # no-write, no-network, no-auto-fix guardrails.
     "cdb_context_contradictions",
+    # Wave-16-C stale context MCP tool (#2157).
+    # Processes scan bundles whose source paths, reasons, and recommended_refresh
+    # strings legitimately contain words like "Create", "Update", "Delete",
+    # "migration", "runbook". The tool is read-only, bundle-driven, and
+    # fail-closed; the scan service enforces no-write, no-network, no-auto-fix.
+    "cdb_context_stale",
 })
 
 
