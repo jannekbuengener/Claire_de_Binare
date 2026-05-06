@@ -281,10 +281,15 @@ def handle_cdb_context_contradictions(request: Mapping[str, Any]) -> dict[str, A
     if not include_non_blocking:
         findings = [f for f in findings if f.blocking]
 
-    if findings_limit is not None:
-        findings = findings[:findings_limit]
-
+    # Compute blocking_count from the full filtered set BEFORE applying limit so
+    # that callers always get the true scan result even when output is capped.
     blocking_count = sum(1 for f in findings if f.blocking)
+    total_findings_before_limit = len(findings)
+
+    truncated = False
+    if findings_limit is not None:
+        truncated = len(findings) > findings_limit
+        findings = findings[:findings_limit]
 
     # Derive recommended_next_reads deterministically from filtered findings
     recommended_next_reads = _derive_recommended_next_reads(findings)
@@ -308,8 +313,10 @@ def handle_cdb_context_contradictions(request: Mapping[str, Any]) -> dict[str, A
         "artifact": artifact,
         "decision": decision,
         "claim": claim,
-        "total_findings": len(findings),
+        "total_findings": total_findings_before_limit,
+        "returned_findings": len(findings),
         "blocking_count": blocking_count,
+        "truncated": truncated,
         "findings": [_finding_to_dict(f) for f in findings],
         "recommended_next_reads": recommended_next_reads,
         "guardrails": guardrails,

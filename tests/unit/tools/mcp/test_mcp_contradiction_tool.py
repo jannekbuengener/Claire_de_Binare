@@ -25,7 +25,6 @@ from tools.mcp.context_contradiction_tools import (
     TOOL_CDB_CONTEXT_CONTRADICTIONS,
     handle_cdb_context_contradictions,
     _derive_recommended_next_reads,
-    _finding_to_dict,
 )
 from tools.mcp.permission_guard import INPUT_SCAN_EXEMPT_TOOLS, PermissionGuard
 from tools.mcp.registry import ContextToolRegistry
@@ -161,7 +160,7 @@ def test_handler_calls_scan_service_and_returns_findings() -> None:
     assert result["status"] == "ok"
     assert result["total_findings"] >= 1
     assert isinstance(result["findings"], list)
-    assert len(result["findings"]) == result["total_findings"]
+    assert len(result["findings"]) == result["returned_findings"]
 
 
 # ── 5. SourceRefs ─────────────────────────────────────────────────────────────
@@ -445,13 +444,26 @@ def test_types_filter_empty_list_treated_as_no_filter() -> None:
 
 @pytest.mark.unit
 def test_limit_truncates_findings() -> None:
-    """limit param must restrict the number of returned findings."""
-    # Use records that produce at least 1 finding and set limit=1
-    result = handle_cdb_context_contradictions(
+    """limit param caps returned findings but blocking_count reflects full scan."""
+    full = handle_cdb_context_contradictions(
+        _base_request(_doc_vs_code_records())
+    )
+    assert full["status"] == "ok"
+    assert full["blocking_count"] >= 1
+
+    limited = handle_cdb_context_contradictions(
         _base_request(_doc_vs_code_records(), limit=1)
     )
-    assert result["status"] == "ok"
-    assert len(result["findings"]) <= 1
+    assert limited["status"] == "ok"
+    # returned count capped
+    assert len(limited["findings"]) <= 1
+    assert limited["returned_findings"] <= 1
+    # total_findings and blocking_count reflect the FULL scan, not the truncated set
+    assert limited["total_findings"] == full["total_findings"]
+    assert limited["blocking_count"] == full["blocking_count"]
+    # truncated flag set when findings were capped
+    if full["total_findings"] > 1:
+        assert limited["truncated"] is True
 
 
 # ── 19. recommended_next_reads derivation ────────────────────────────────────
