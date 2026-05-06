@@ -119,7 +119,13 @@ Handlers:
 |-------|------|----------|-------------|
 | `claim_records` | list | Yes | In-memory claim records |
 | `mode` | str | Yes | One of the 7 resolve modes |
+| `claim_id` | str | mode-dependent | Required for `by_claim_id` |
+| `topic` | str | mode-dependent | Required for `by_topic` |
+| `scope` | str | mode-dependent | Required for `by_scope` |
 | `status` | str | mode-dependent | Required for `by_status` |
+| `artifact` | str | mode-dependent | Required for `by_artifact` |
+| `evidence_ref` | str | mode-dependent | Required for `by_evidence_ref` |
+| `decision_ref` | str | mode-dependent | Required for `by_decision_ref` |
 | `known_evidence_ids` | list[str] | No | Cross-validates evidence backing |
 
 ### `cdb_context_decision_history`
@@ -140,7 +146,11 @@ Handlers:
 | `decision_events` | list | Yes | In-memory decision events |
 | `mode` | str | Yes | One of: `replay_by_decision_id`, `replay_current_for_topic`, `replay_superseded_for_topic`, `replay_by_scope`, `replay_by_artifact`, `replay_by_status` |
 | `decision_id` | str | mode-dependent | Required for `replay_by_decision_id` |
-| `max_depth` | int | No | Chain depth limit |
+| `topic` | str | mode-dependent | Required for `replay_current_for_topic`, `replay_superseded_for_topic` |
+| `scope` | str | mode-dependent | Required for `replay_by_scope` |
+| `artifact` | str | mode-dependent | Required for `replay_by_artifact` |
+| `status` | str | mode-dependent | Required for `replay_by_status` |
+| `limit` | int | No | Max decisions to return (default 50, max 500) |
 
 ### `cdb_context_memory_get`
 
@@ -224,7 +234,7 @@ Handlers:
   "decision_events": [...],
   "mode": "replay_by_decision_id",
   "decision_id": "dec-001",
-  "max_depth": 5
+  "limit": 50
 }
 ```
 
@@ -245,9 +255,10 @@ Handlers:
 {
   "tool": "cdb_context_trust_summary",
   "scope": "wave14",
-  "evidence_result": {"items": [...], "summary": {...}},
-  "claim_result": {"items": [...], "summary": {...}},
-  "memory_result": {"items": [...], "summary": {...}}
+  "evidence_result": "<output of cdb_context_evidence_resolve>",
+  "claim_result": "<output of cdb_context_claim_resolve>",
+  "decision_result": "<output of cdb_context_decision_history>",
+  "memory_result": "<output of cdb_context_memory_get>"
 }
 ```
 
