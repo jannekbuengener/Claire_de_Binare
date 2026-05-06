@@ -405,6 +405,81 @@ class TestBriefingEnrichmentWithRecords:
         assert result["status"] == "ok"
         assert result["briefing"]["approval_semantics"]["no_echtgeld_go"] is True
 
+    def test_trust_summary_blocking_findings_key_surfaced(self) -> None:
+        """Trust summary blocking findings must appear in briefing blocking_trust_findings.
+
+        build_trust_summary_v1 returns results under 'blocking_trust_findings'.
+        The bridge must read that key (not the non-existent 'blocking_findings')
+        so that S6 stop condition fires and blocking count appears in trust_summary.
+        """
+        # ev-004 in fixture has blocking_missing=True → trust summary sets
+        # blocking_trust_findings: ["blocking_missing_evidence"].
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-ts-blocking-key",
+                evidence_records=fx["evidence_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        # S6 stop condition must fire when trust summary has blocking findings
+        assert any("S6" in sc for sc in briefing["stop_conditions"]), (
+            f"S6 stop condition missing; stop_conditions={briefing['stop_conditions']}"
+        )
+        # trust_summary string must mention blocking count
+        ts = briefing["trust_summary"]
+        assert "Blocking findings:" in ts, (
+            f"Expected 'Blocking findings:' in trust_summary, got: {ts}"
+        )
+
+    def test_evidence_scope_filter_excludes_other_scopes(self) -> None:
+        """Evidence records outside enrichment_scope must not appear in enriched_evidence.
+
+        by_freshness returns all dated records regardless of scope. The bridge
+        must post-filter to _enrichment_scope so that out-of-scope records
+        (e.g. wave13 evidence) do not pollute the scoped briefing.
+        """
+        mixed_scope_records = [
+            {
+                "evidence_id": "ev-in-scope",
+                "title": "In-scope Evidence",
+                "confidence": 0.9,
+                "created_at": "2025-01-01T00:00:00Z",
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave14",
+            },
+            {
+                "evidence_id": "ev-out-of-scope",
+                "title": "Out-of-scope Evidence",
+                "confidence": 0.9,
+                "created_at": "2025-01-01T00:00:00Z",
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave13",  # different scope
+            },
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-scope-filter",
+                evidence_records=mixed_scope_records,
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        enriched = result["briefing"]["enriched_evidence"]
+        ev_ids = [ev.get("evidence_id") for ev in enriched]
+        assert "ev-in-scope" in ev_ids, (
+            f"In-scope evidence missing from enriched_evidence: {ev_ids}"
+        )
+        assert "ev-out-of-scope" not in ev_ids, (
+            f"Out-of-scope evidence must not appear in enriched_evidence: {ev_ids}"
+        )
+
 
 class TestBriefingEnrichmentGuardrails:
     """Tests for guardrail enforcement in briefing enrichment."""

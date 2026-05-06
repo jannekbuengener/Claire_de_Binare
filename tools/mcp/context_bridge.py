@@ -1274,6 +1274,12 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                     _evidence_records_raw, _ev_req
                 )
                 _matched_ev = _evidence_service_result.get("matched_evidence", [])
+                # Filter matched evidence to requested scope — by_freshness does not
+                # filter by scope, unlike claim/decision/memory enrichers.
+                _matched_ev = [
+                    ev for ev in _matched_ev
+                    if ev.get("scope") == _enrichment_scope
+                ]
                 enriched_evidence = [
                     {
                         "evidence_id": _ev.get("evidence_id"),
@@ -1296,6 +1302,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                     if isinstance(rec, dict)
                     and not rec.get("created_at")
                     and rec.get("evidence_id") not in _matched_ev_ids
+                    and rec.get("scope") == _enrichment_scope
                 ]
                 _malformed_count = sum(
                     1 for rec in _evidence_records_raw if not isinstance(rec, dict)
@@ -1433,7 +1440,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             )
             _trust_level = _ts_result.get("trust_level", "blocked")
             _composite_score = _ts_result.get("composite_score", 0.0)
-            _ts_blocking = _ts_result.get("blocking_findings", [])
+            _ts_blocking = _ts_result.get("blocking_trust_findings", [])
             if _ts_blocking:
                 blocking_trust_findings.extend(
                     [str(_f) for _f in _ts_blocking]
