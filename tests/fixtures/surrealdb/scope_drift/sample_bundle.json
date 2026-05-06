@@ -1,0 +1,43 @@
+{
+  "_comment": "Sample input bundle for scope_drift_firewall tests and integration use. Triggers exactly 3 drift types: path_out_of_scope (path outside declared target_paths), runtime_surface_touched (surface_type=runtime), and missing_human_go (operation_mode=write, no human_go_token). The meta.as_of field is advisory only — the service accepts as_of as a direct parameter.",
+  "meta": {
+    "as_of": "2026-05-06T00:00:00+00:00",
+    "session_id": "wave17-sample-session-001",
+    "operation_mode": "write",
+    "human_go_token": null,
+    "description": "Wave 17-A sample bundle — deterministic, no live data"
+  },
+  "declared_scope": {
+    "task_scope": "Implement scope drift firewall service for Wave 17-A",
+    "target_issue": "2163",
+    "target_paths": [
+      "tools/surrealdb/",
+      "tests/unit/surrealdb/",
+      "tests/fixtures/surrealdb/scope_drift/"
+    ]
+  },
+  "touched_artifacts": [
+    {
+      "path": "tools/surrealdb/scope_drift_firewall.py",
+      "surface_type": "tools"
+    },
+    {
+      "path": "services/cdb_market/service.py",
+      "surface_type": "runtime"
+    }
+  ],
+  "issue_refs": [
+    {
+      "issue_id": "2163",
+      "state": "OPEN",
+      "label": "Wave-17"
+    },
+    {
+      "issue_id": "2162",
+      "state": "OPEN",
+      "label": "Wave-17-anchor"
+    }
+  ],
+  "generated_findings": [],
+  "forbidden_surfaces": []
+}
