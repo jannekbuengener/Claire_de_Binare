@@ -95,24 +95,6 @@ _BLOCKING_BUNDLE: dict[str, Any] = {
     "forbidden_surfaces": [],
 }
 
-# Triggers domain_out_of_scope (warning only) — non-blocking:
-_WARNING_BUNDLE: dict[str, Any] = {
-    "meta": {"as_of": _AS_OF},
-    "declared_scope": {
-        "target_issue": "2166",
-        "allowed_domains": ["tools"],
-    },
-    "touched_artifacts": [
-        {
-            "path": "docs/some/file.md",
-            "surface_type": "docs",
-        },
-    ],
-    "issue_refs": [],
-    "generated_findings": [],
-    "forbidden_surfaces": [],
-}
-
 # Triggers no findings at all — clean bundle:
 _CLEAN_BUNDLE: dict[str, Any] = {
     "meta": {"as_of": _AS_OF},
