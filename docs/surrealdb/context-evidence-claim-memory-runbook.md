@@ -110,8 +110,8 @@ Handlers:
 | `source_path` | str | mode-dependent | Required for `by_source_path` |
 | `run_id` | str | mode-dependent | Required for `by_run_id` |
 | `evidence_type` | str | mode-dependent | Required for `by_evidence_type` |
-| `min_confidence` | float | No | 0.0 default |
-| `freshness_days` | int | No | None (no freshness filter) |
+| `min_confidence` | float | mode-dependent | Required for `by_confidence`; threshold in [0.0, 1.0] |
+| `freshness_days` | int | mode-dependent | Required for `by_freshness`; filter window in days |
 
 ### `cdb_context_claim_resolve`
 
