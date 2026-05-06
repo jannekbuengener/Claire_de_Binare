@@ -105,13 +105,13 @@ Handlers:
 | `evidence_records` | list | Yes | In-memory evidence records |
 | `mode` | str | Yes | One of the 8 lookup modes |
 | `artifact` | str | mode-dependent | Required for `by_artifact` |
-| `claim_id` | str | mode-dependent | Required for `by_claim` |
-| `decision_id` | str | mode-dependent | Required for `by_decision` |
+| `claim` | str | mode-dependent | Required for `by_claim` |
+| `decision` | str | mode-dependent | Required for `by_decision` |
 | `source_path` | str | mode-dependent | Required for `by_source_path` |
 | `run_id` | str | mode-dependent | Required for `by_run_id` |
 | `evidence_type` | str | mode-dependent | Required for `by_evidence_type` |
 | `min_confidence` | float | No | 0.0 default |
-| `max_age_days` | int | No | None (no freshness filter) |
+| `freshness_days` | int | No | None (no freshness filter) |
 
 ### `cdb_context_claim_resolve`
 
@@ -257,10 +257,10 @@ Handlers:
 
 | Trust Level | Score Range | Interpretation |
 |-------------|-------------|----------------|
-| `blocked` | < 0.25 | Do not proceed. Missing or contradicted evidence. Stop condition. |
-| `weak` | 0.25–0.50 | Proceed with explicit human approval. Flag all gaps. |
-| `acceptable` | 0.50–0.75 | Proceed with caution. Verify key evidence before action. |
-| `strong` | > 0.75 | Evidence is solid. Proceed normally; document evidence trail. |
+| `blocked` | < 0.30 | Do not proceed. Missing or contradicted evidence. Stop condition. |
+| `weak` | 0.30–0.54 | Proceed with explicit human approval. Flag all gaps. |
+| `acceptable` | 0.55–0.79 | Proceed with caution. Verify key evidence before action. |
+| `strong` | ≥ 0.80 | Evidence is solid. Proceed normally; document evidence trail. |
 
 **Guardrails:**
 - Trust level is derived from in-memory records only — it is a **hint**, not a certification.
@@ -287,7 +287,7 @@ Required: evidence for <artifact_id> before proceeding.
 
 ### Stale Evidence
 
-- Evidence with `created_at` older than the configured `max_age_days` threshold
+- Evidence with `created_at` older than the configured `freshness_days` threshold
   is returned with `stale: true`.
 - Stale evidence contributes negatively to the trust score.
 - Operator must review and re-verify before treating stale evidence as current.
