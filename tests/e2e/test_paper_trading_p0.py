@@ -310,6 +310,7 @@ def test_stream_persistence(redis_client, unique_order_id):
     time.sleep(3)
 
     # Check stream length increased
+    final_entries = -1
     try:
         final_entries = redis_client.xlen(stream_name)
     except redis.ResponseError:
@@ -408,6 +409,7 @@ def test_replay_determinism(redis_client, unique_order_id, tmp_path):
 
     # Verify stream has data
     stream_name = "stream.fills"
+    stream_length = -1
     try:
         stream_length = redis_client.xlen(stream_name)
     except redis.ResponseError:
@@ -885,6 +887,7 @@ def test_tc_p0_005_data_persistence_check(redis_client, unique_order_id):
     time.sleep(3)
 
     # Verify stream length increased
+    final_length = -1
     try:
         final_length = redis_client.xlen(stream_name)
     except redis.ResponseError:

@@ -666,7 +666,7 @@ def main() -> None:
 
     # --- Publish ---
     publish_payload = signal_payload if inject_via == "signals" else order_payload
-    probe_label = signal_id if inject_via == "signals" else order_id  # type: ignore[possibly-undefined]
+    probe_label = filter_value
     print(f"Publishing probe {probe_label!r} to '{inject_channel}'...")
     subscribers = client.publish(inject_channel, json.dumps(publish_payload))
     print(f"  -> {subscribers} subscriber(s) on '{inject_channel}'")

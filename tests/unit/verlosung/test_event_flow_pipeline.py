@@ -43,6 +43,7 @@ def postgres_conn():
     pg_password = os.getenv("POSTGRES_PASSWORD", "claire_db_secret_2024")
     pg_db = os.getenv("POSTGRES_DB", "claire_de_binare")
 
+    conn = None
     try:
         conn = psycopg2.connect(
             host="localhost",
@@ -54,6 +55,7 @@ def postgres_conn():
     except psycopg2.OperationalError as e:
         pytest.skip(f"PostgreSQL nicht erreichbar: {e}")
 
+    assert conn is not None
     yield conn
     conn.close()
 

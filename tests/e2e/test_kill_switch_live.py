@@ -52,6 +52,7 @@ def redis_client():
     if not password:
         pytest.fail("Redis password file is empty.")
 
+    client = None
     for host in ("cdb_redis", "localhost"):
         try:
             client = redis.Redis(
@@ -68,6 +69,7 @@ def redis_client():
             continue
 
     pytest.fail("Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)")
+    assert client is not None
 
 
 @pytest.fixture(autouse=True)
