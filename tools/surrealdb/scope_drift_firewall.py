@@ -278,11 +278,16 @@ def _make_finding(
 
 
 def _path_is_within_scope(path: str, target_paths: list[str]) -> bool:
-    """Return True if path starts with any of the declared target_paths."""
+    """Return True if path starts with any of the declared target_paths.
+
+    Requires a directory-boundary match to avoid sibling-prefix false negatives:
+    e.g. 'tools/surrealdb_extra/f.py' must NOT match target 'tools/surrealdb'.
+    """
     if not target_paths:
         return True  # no constraint declared → not a violation
     for prefix in target_paths:
-        if path == prefix or path.startswith(prefix.rstrip("/") + "/") or path.startswith(prefix):
+        norm = prefix.rstrip("/")
+        if path == norm or path.startswith(norm + "/"):
             return True
     return False
 
@@ -766,7 +771,10 @@ def _rule_missing_human_go(
     operation_mode = _as_str(meta.get("operation_mode")) or ""
     human_go_token = _as_str(meta.get("human_go_token"))
 
-    if operation_mode.lower() not in _WRITE_LIKE_MODES:
+    _mode = operation_mode.lower()
+    if _mode not in _WRITE_LIKE_MODES and not any(
+        _mode.startswith(w) for w in _WRITE_LIKE_MODES
+    ):
         return findings
 
     if bool(human_go_token):

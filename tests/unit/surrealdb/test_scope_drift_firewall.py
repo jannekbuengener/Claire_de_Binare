@@ -790,3 +790,77 @@ def test_recommended_next_reads_always_contains_agents_md() -> None:
     assert len(result.findings) > 0
     for f in result.findings:
         assert "AGENTS.md" in f.recommended_next_reads
+
+
+# ── P1 hardening: prefixed write modes ───────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_missing_human_go_triggers_write_prefixed_mode() -> None:
+    """Prefixed write modes like 'write_code', 'write_docs' must trigger without GO."""
+    for mode in ("write_code", "write_docs", "write_authorized", "commit_staged"):
+        bundle = {"meta": {"operation_mode": mode, "human_go_token": None}}
+        result = _scan(bundle, as_of=_AS_OF)
+        types = {f.drift_type for f in result.findings}
+        assert "missing_human_go" in types, f"Expected finding for mode={mode!r}"
+
+
+@pytest.mark.unit
+def test_missing_human_go_no_trigger_for_non_write_prefixed_mode() -> None:
+    """Non-write prefixed modes like 'readonly', 'analyze', 'inspect' must not trigger."""
+    for mode in ("readonly", "analyze", "inspect"):
+        bundle = {"meta": {"operation_mode": mode, "human_go_token": None}}
+        result = _scan(bundle, as_of=_AS_OF)
+        types = {f.drift_type for f in result.findings}
+        assert "missing_human_go" not in types, f"Unexpected finding for mode={mode!r}"
+
+
+# ── P2 hardening: sibling-prefix path boundary ───────────────────────────────
+
+
+@pytest.mark.unit
+def test_path_out_of_scope_sibling_prefix_detected() -> None:
+    """Sibling paths sharing only a non-slash prefix must be out of scope."""
+    bundle = {
+        "declared_scope": {"target_paths": ["tools/surrealdb"]},
+        "touched_artifacts": [
+            {"path": "tools/surrealdb_extra/file.py", "surface_type": "tools"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "path_out_of_scope" in types, (
+        "tools/surrealdb_extra/ must be out of scope for target 'tools/surrealdb'"
+    )
+
+
+@pytest.mark.unit
+def test_path_out_of_scope_exact_file_sibling_detected() -> None:
+    """A .bak extension file must not match the original file as scope."""
+    bundle = {
+        "declared_scope": {"target_paths": ["core/utils/clock.py"]},
+        "touched_artifacts": [
+            {"path": "core/utils/clock.py.bak", "surface_type": "tools"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "path_out_of_scope" in types, (
+        "core/utils/clock.py.bak must be out of scope for target 'core/utils/clock.py'"
+    )
+
+
+@pytest.mark.unit
+def test_path_in_scope_with_no_trailing_slash_target() -> None:
+    """A real subpath must still be in scope for a non-slash-terminated target."""
+    bundle = {
+        "declared_scope": {"target_paths": ["tools/surrealdb"]},
+        "touched_artifacts": [
+            {"path": "tools/surrealdb/scope_drift_firewall.py", "surface_type": "tools"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "path_out_of_scope" not in types, (
+        "tools/surrealdb/scope_drift_firewall.py must be in scope for target 'tools/surrealdb'"
+    )
