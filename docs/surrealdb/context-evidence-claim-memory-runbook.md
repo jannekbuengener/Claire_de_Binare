@@ -149,7 +149,7 @@ Handlers:
 | `memory_records` | list | Yes | In-memory memory records |
 | `mode` | str | Yes | One of the 7 read modes |
 | `scope` | str | mode-dependent | Required for `by_scope` |
-| `max_age_hours` | int | No | TTL filter for freshness |
+| `freshness_days` | int | No | Required for `by_freshness`; filter window in days |
 
 ### `cdb_context_trust_summary`
 
@@ -193,11 +193,11 @@ Handlers:
   "tool": "cdb_context_claim_resolve",
   "claim_records": [
     {
-      "id": "claim-004",
+      "claim_id": "claim-004",
       "status": "disputed",
       "description": "Kill-switch is always active",
-      "evidence_ids": ["ev-003"],
-      "artifact_id": "kill_switch.py"
+      "evidence_refs": ["ev-003"],
+      "artifact_refs": ["kill_switch.py"]
     }
   ],
   "mode": "by_status",
@@ -287,8 +287,10 @@ Required: evidence for <artifact_id> before proceeding.
 
 ### Stale Evidence
 
-- Evidence with `created_at` older than the configured `freshness_days` threshold
-  is returned with `stale: true`.
+- `by_freshness` mode returns only records with `created_at` within the `freshness_days`
+  window; older records are excluded, not marked `stale: true`.
+- The `stale: true` flag is read from the record itself — `lookup_evidence_v1` does not
+  compute staleness from age.
 - Stale evidence contributes negatively to the trust score.
 - Operator must review and re-verify before treating stale evidence as current.
 
