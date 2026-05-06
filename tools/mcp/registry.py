@@ -1006,6 +1006,88 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_decision_replay"),
     ),
+    # ── Wave-15 Tools (#2148 Contradiction MCP) ─────────────────────────────
+    ToolDefinition(
+        name="cdb_context_contradictions",
+        description=(
+            "Wave-15 contradiction scan MCP tool. Detects contradictions between "
+            "doc/code/decisions/evidence/claims/memory over in-memory records. "
+            "Surfaces SourceRefs, EvidenceRefs, severity, confidence, and "
+            "recommended_next_reads. Read-only, fail-closed, no DB/network/write. "
+            "No Live-Go, no Echtgeld-Go. Detection is signal, not action permission."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "records": {
+                            "type": "object",
+                            "description": (
+                                "In-memory input bundles keyed by domain "
+                                "(e.g. doc_claims, code_symbols, decisions, claims, "
+                                "evidence_records, etc.). Required."
+                            ),
+                        },
+                        "scope": {"type": "string"},
+                        "artifact": {"type": "string"},
+                        "decision": {"type": "string"},
+                        "claim": {"type": "string"},
+                        "overrides": {
+                            "type": "object",
+                            "description": (
+                                "Optional dict[contradiction_id → "
+                                "'false_positive'|'accepted_risk'] to mark known "
+                                "overrides. Findings are retained but set non-blocking."
+                            ),
+                        },
+                        "include_non_blocking": {
+                            "type": "boolean",
+                            "default": True,
+                        },
+                        "types": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Filter to these contradiction_type values.",
+                        },
+                        "limit": {
+                            "type": "integer",
+                            "description": "Max number of findings to return.",
+                        },
+                        "format": {
+                            "type": "string",
+                            "enum": ["json"],
+                            "description": "Output format. Reserved; always returns dict.",
+                        },
+                    },
+                    "required": ["records"],
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "scope": {"type": ["string", "null"]},
+                "artifact": {"type": ["string", "null"]},
+                "decision": {"type": ["string", "null"]},
+                "claim": {"type": ["string", "null"]},
+                "total_findings": {"type": "integer"},
+                "blocking_count": {"type": "integer"},
+                "findings": {"type": "array"},
+                "recommended_next_reads": {"type": "array"},
+                "guardrails": {"type": "array"},
+                "no_live_go": {"type": "boolean"},
+                "no_write": {"type": "boolean"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_contradictions"),
+    ),
 ]
 
 

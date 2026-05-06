@@ -1958,6 +1958,20 @@ def cdb_context_decision_replay_handler(**kwargs) -> dict[str, Any]:
     return handle_cdb_context_decision_replay(kwargs)
 
 
+# ── Wave-15 MCP Tool Handlers (#2148 Contradiction MCP) ──────────────────────
+
+
+def cdb_context_contradictions_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_contradictions.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-15 adapter.
+    Fail-closed. No DB/network/write. Detection is signal, not action permission.
+    """
+    from tools.mcp.context_contradiction_tools import handle_cdb_context_contradictions
+
+    return handle_cdb_context_contradictions(kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -2109,6 +2123,21 @@ class ContextBridge:
             "cdb_context_decision_replay": cdb_context_decision_replay_handler,
         }
         for _tool_name, _handler_fn in _wave14_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
+        # Wave-15 handlers (#2148 Contradiction MCP)
+        _wave15_handler_map = {
+            "cdb_context_contradictions": cdb_context_contradictions_handler,
+        }
+        for _tool_name, _handler_fn in _wave15_handler_map.items():
             _old = self._registry.get_tool(_tool_name)
             if _old:
                 self._registry._tools[_tool_name] = ToolDefinition(

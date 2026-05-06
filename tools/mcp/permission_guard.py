@@ -140,6 +140,12 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     "cdb_context_trust_summary",
     "cdb_context_decision_history",
     "cdb_context_decision_replay",
+    # Wave-15 contradiction scan MCP tool (#2148).
+    # Processes doc/code/decision/claim/evidence records whose content legitimately
+    # contains words like "Create", "Update", "Delete", "migration", "runbook".
+    # The tool is read-only and fail-closed; the scan service itself enforces
+    # no-write, no-network, no-auto-fix guardrails.
+    "cdb_context_contradictions",
 })
 
 
