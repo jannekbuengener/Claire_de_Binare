@@ -27,7 +27,7 @@ from tools.mcp.scope_drift_tools import (
     TOOL_CDB_CONTEXT_SCOPE_DRIFT,
     handle_cdb_context_scope_drift,
 )
-from tools.surrealdb.scope_drift_firewall import DRIFT_TYPES, GUARDRAILS
+from tools.surrealdb.scope_drift_firewall import GUARDRAILS
 
 # ── Fixed reference timestamps for determinism ────────────────────────────────
 
