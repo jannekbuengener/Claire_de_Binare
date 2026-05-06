@@ -85,7 +85,7 @@ def _load_bundle(path: Path) -> tuple[dict[str, Any], str | None]:
 
     The ``as_of`` string is passed to ``scan_stale_knowledge_v1`` so that
     time-based rules use a deterministic reference time from the bundle rather
-    than wall-clock ``datetime.now()``.
+    than direct wall-clock time.
 
     Raises:
         StaleCLIError: if the file is missing, unreadable, not valid JSON, or
