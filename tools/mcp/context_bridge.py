@@ -1286,6 +1286,32 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                     }
                     for _ev in _matched_ev[:20]
                 ]
+                # by_freshness silently excludes records with no created_at.
+                # Detect and preserve those records so they are never invisible.
+                _matched_ev_ids = {_ev.get("evidence_id") for _ev in _matched_ev}
+                _undated_recs = [
+                    rec for rec in _evidence_records_raw
+                    if not rec.get("created_at")
+                    and rec.get("evidence_id") not in _matched_ev_ids
+                ]
+                if _undated_recs:
+                    for _urec in _undated_recs[:20]:
+                        enriched_evidence.append({
+                            "evidence_id": _urec.get("evidence_id"),
+                            "title": _urec.get("title"),
+                            "confidence": _urec.get("confidence"),
+                            "stale": _urec.get("stale"),
+                            "blocking_missing": _urec.get("blocking_missing"),
+                            "evidence_type": _urec.get("evidence_type"),
+                            "scope": _urec.get("scope"),
+                        })
+                    _undated_ids = [r.get("evidence_id") for r in _undated_recs]
+                    blocking_trust_findings.append(
+                        f"undated_evidence_missing_created_at: {_undated_ids}"
+                    )
+                    recommended_next_reads_enrichment.append(
+                        "Add created_at to undated evidence records for freshness tracking"
+                    )
                 _stale_ev_ids = _evidence_service_result.get("stale_evidence_ids", [])
                 if _stale_ev_ids:
                     stale_evidence_notice.append(

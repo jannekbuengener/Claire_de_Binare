@@ -287,6 +287,73 @@ class TestBriefingEnrichmentWithRecords:
         # No claim/memory records match a nonexistent scope
         assert result["briefing"]["enriched_memory"] == []
 
+    def test_undated_evidence_not_silently_dropped(self) -> None:
+        """Evidence records without created_at must not be silently excluded.
+
+        by_freshness excludes records where _created_at_dt is None. The bridge
+        must detect and preserve undated records rather than reporting 0 evidence.
+        They must appear in enriched_evidence and be flagged in blocking_trust_findings.
+        """
+        undated_records = [
+            {
+                "evidence_id": "ev-undated-001",
+                "title": "Undated Evidence Record",
+                "confidence": 0.75,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave14",
+                # No created_at — would be silently dropped by by_freshness alone
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-undated-ev",
+                evidence_records=undated_records,
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        assert briefing["approval_semantics"]["no_echtgeld_go"] is True
+
+        enriched = briefing["enriched_evidence"]
+        trust_findings = briefing.get("blocking_trust_findings", [])
+
+        undated_in_enriched = any(
+            ev.get("evidence_id") == "ev-undated-001" for ev in enriched
+        )
+        undated_in_findings = any(
+            "undated" in str(f) or "ev-undated-001" in str(f)
+            for f in trust_findings
+        )
+        assert undated_in_enriched or undated_in_findings, (
+            "Undated evidence must appear in enriched_evidence or blocking_trust_findings, "
+            f"got enriched={enriched}, findings={trust_findings}"
+        )
+
+    def test_undated_evidence_visible_in_blocking_findings(self) -> None:
+        """Undated records must be explicitly flagged in blocking_trust_findings."""
+        undated_records = [
+            {
+                "evidence_id": "ev-nodatestamp",
+                "title": "No Timestamp Evidence",
+                "confidence": 0.6,
+                "scope": "wave14",
+                # No created_at
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-undated-findings",
+                evidence_records=undated_records,
+            )
+        )
+        assert result["status"] == "ok"
+        findings = result["briefing"].get("blocking_trust_findings", [])
+        assert any("undated" in str(f) for f in findings), (
+            f"Expected undated_evidence finding, got: {findings}"
+        )
+
 
 class TestBriefingEnrichmentGuardrails:
     """Tests for guardrail enforcement in briefing enrichment."""
