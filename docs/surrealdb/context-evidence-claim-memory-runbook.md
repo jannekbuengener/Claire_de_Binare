@@ -35,7 +35,7 @@ No runtime, trading, or live-capital implication.
 ### `tools/surrealdb/decision_history_query.py` — Decision History v1 (#2118)
 
 - **Contract:** `docs/surrealdb/decision_replay_query_contract.md`
-- **Read-only.** Filters decision events by symbol, scope, date window, or status.
+- **Read-only.** Filters decision events by decision ID, topic, scope, artifact, issue, or status.
 - **MCP adapter:** `cdb_context_decision_history`
 
 ### `tools/surrealdb/decision_replay_builder.py` — Decision Replay v1 (#2119)
@@ -133,11 +133,14 @@ Handlers:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `decision_events` | list | Yes | In-memory decision events |
-| `mode` | str | Yes | One of: `by_topic`, `by_scope`, `by_artifact`, `by_status`, `current_for_topic`, `superseded_for_topic` |
+| `mode` | str | Yes | One of: `by_decision_id`, `by_topic`, `by_scope`, `by_artifact`, `by_issue`, `by_status`, `current_for_topic`, `superseded_for_topic` |
+| `decision_id` | str | mode-dependent | Required for `by_decision_id` |
 | `topic` | str | mode-dependent | Required for `by_topic`, `current_for_topic`, `superseded_for_topic` |
 | `scope` | str | mode-dependent | Required for `by_scope` |
 | `artifact` | str | mode-dependent | Required for `by_artifact` |
+| `issue` | str | mode-dependent | Required for `by_issue` |
 | `status` | str | mode-dependent | Required for `by_status` |
+| `limit` | int | No | Max decisions to return (default 200) |
 
 ### `cdb_context_decision_replay`
 
@@ -157,9 +160,15 @@ Handlers:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `memory_records` | list | Yes | In-memory memory records |
-| `mode` | str | Yes | One of the 7 read modes |
+| `mode` | str | Yes | One of: `by_scope`, `by_topic`, `by_artifact`, `by_decision`, `by_agent`, `by_freshness`, `by_memory_type` |
 | `scope` | str | mode-dependent | Required for `by_scope` |
-| `freshness_days` | int | No | Required for `by_freshness`; filter window in days |
+| `topic` | str | mode-dependent | Required for `by_topic` |
+| `artifact` | str | mode-dependent | Required for `by_artifact` |
+| `decision` | str | mode-dependent | Required for `by_decision` |
+| `agent` | str | mode-dependent | Required for `by_agent` |
+| `memory_type` | str | mode-dependent | Required for `by_memory_type` |
+| `freshness_days` | int | mode-dependent | Required for `by_freshness`; filter window in days |
+| `limit` | int | No | Max records to return (default 200) |
 
 ### `cdb_context_trust_summary`
 
