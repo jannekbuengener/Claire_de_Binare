@@ -434,6 +434,129 @@ class TestBriefingEnrichmentWithRecords:
             f"Expected 'Blocking findings:' in trust_summary, got: {ts}"
         )
 
+    def test_local_blocking_findings_trigger_s6_and_trust_summary(self) -> None:
+        """Local blocking findings (undated evidence) must trigger S6 and blocking count.
+
+        Thread PRRT_kwDOQUkXUM5_1I9X: only _ts_blocking from build_trust_summary_v1
+        drove S6 and the trust_summary blocking count. Locally detected findings
+        (undated records, malformed items) were in blocking_trust_findings but
+        never surfaced in the stop conditions or trust_summary string.
+        Fix: S6 and blocking count use blocking_trust_findings (which includes
+        both local and ts findings) after the trust summary call.
+        """
+        # An undated wave14 record has no created_at → by_freshness drops it →
+        # bridge adds it to blocking_trust_findings as undated_evidence_missing_created_at.
+        # build_trust_summary_v1 has no evidence_result blocking items (empty service
+        # result since by_freshness matched nothing), so _ts_blocking is [].
+        # The fix ensures S6 still fires from the local finding.
+        undated_scoped = [
+            {
+                "evidence_id": "ev-local-blocking",
+                "title": "Undated Scoped Record",
+                "confidence": 0.7,
+                "stale": False,
+                "blocking_missing": False,
+                "evidence_type": "test_run",
+                "scope": "wave14",
+                # No created_at → by_freshness misses it, bridge flags it locally
+            }
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-local-blocking-s6",
+                evidence_records=undated_scoped,
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        assert briefing["approval_semantics"]["no_echtgeld_go"] is True
+        # S6 must fire because local blocking_trust_findings has undated entry
+        assert any("S6" in sc for sc in briefing["stop_conditions"]), (
+            f"S6 missing from stop_conditions: {briefing['stop_conditions']}"
+        )
+        # trust_summary must mention blocking count
+        ts = briefing["trust_summary"]
+        assert "Blocking findings:" in ts, (
+            f"Expected 'Blocking findings:' in trust_summary, got: {ts}"
+        )
+
+    def test_claims_exact_scope_filter_excludes_prefix_match(self) -> None:
+        """Claims with scope='wave14' must not appear when enrichment_scope='wave1'.
+
+        Thread PRRT_kwDOQUkXUM5_1I9Z: ClaimResolver.by_scope uses substring
+        matching — 'wave1' in 'wave14' is True. A scoped briefing for 'wave1'
+        would include wave14 claims. Fix: pre-filter claim records to exact scope
+        before calling the service.
+        """
+        claim_records = [
+            {
+                "claim_id": "cl-wave14-001",
+                "title": "Wave14 Claim",
+                "scope": "wave14",        # must NOT match scope='wave1'
+                "status": "disputed",
+                "created_at": "2025-01-01T00:00:00Z",
+            },
+            {
+                "claim_id": "cl-wave1-001",
+                "title": "Wave1 Claim",
+                "scope": "wave1",         # must match scope='wave1'
+                "status": "supported",
+                "created_at": "2025-01-01T00:00:00Z",
+            },
+        ]
+        result_wave1 = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-claim-scope-exact",
+                claim_records=claim_records,
+                enrichment_scope="wave1",
+            )
+        )
+        assert result_wave1["status"] == "ok"
+        # wave14 claim is disputed — if it leaked in, contradictory_evidence_notice
+        # would contain it. With exact-scope filter it must NOT appear.
+        notice = result_wave1["briefing"]["contradictory_evidence_notice"]
+        assert not any("cl-wave14-001" in str(n) for n in notice), (
+            f"wave14 claim must not appear in wave1 briefing: {notice}"
+        )
+
+    def test_decisions_exact_scope_filter_excludes_prefix_match(self) -> None:
+        """Decisions with scope='wave14' must not appear when enrichment_scope='wave1'.
+
+        Thread PRRT_kwDOQUkXUM5_1I9b: DecisionHistoryQuery.by_scope uses
+        substring matching. Fix: pre-filter decision events to exact scope
+        before calling the service, and post-filter matched_decisions.
+        """
+        decision_events = [
+            {
+                "decision_id": "dec-wave14-001",
+                "title": "Wave14 Decision",
+                "scope": "wave14",        # must NOT appear under scope='wave1'
+                "status": "current",
+                "created_at": "2025-01-01T00:00:00Z",
+            },
+            {
+                "decision_id": "dec-wave1-001",
+                "title": "Wave1 Decision",
+                "scope": "wave1",         # must appear under scope='wave1'
+                "status": "current",
+                "created_at": "2025-01-01T00:00:00Z",
+            },
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-decision-scope-exact",
+                decision_events=decision_events,
+                enrichment_scope="wave1",
+            )
+        )
+        assert result["status"] == "ok"
+        enriched = result["briefing"]["enriched_decisions"]
+        ids = [d.get("decision_id") for d in enriched]
+        assert "dec-wave14-001" not in ids, (
+            f"wave14 decision must not appear in wave1 briefing: {ids}"
+        )
+
     def test_evidence_scope_filter_excludes_other_scopes(self) -> None:
         """Evidence records outside enrichment_scope must not appear in enriched_evidence.
 

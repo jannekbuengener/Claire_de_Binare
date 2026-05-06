@@ -1352,42 +1352,61 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 known_risks.append(f"evidence_lookup_error: {_e}")
                 missing_evidence_notice.append("evidence_lookup_failed")
 
-        # Claim resolution: by_scope with enrichment_scope
+        # Claim resolution: by_scope with enrichment_scope.
+        # Pre-filter to exact scope — ClaimResolver.by_scope uses substring
+        # matching, so scope='wave1' would match records scoped to 'wave14'.
         if isinstance(_claim_records_raw, list) and _claim_records_raw:
             try:
+                _scoped_claims = [
+                    r for r in _claim_records_raw
+                    if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+                ]
                 _cl_req = ClaimResolveRequest(
                     mode="by_scope",
                     scope=_enrichment_scope,
                 )
-                _claim_service_result = resolve_claims_v1(_claim_records_raw, _cl_req)
-                _disputed = _claim_service_result.get("disputed_claim_ids", [])
-                if _disputed:
-                    contradictory_evidence_notice.append(
-                        f"disputed_claims: {_disputed}"
-                    )
+                if _scoped_claims:
+                    _claim_service_result = resolve_claims_v1(_scoped_claims, _cl_req)
+                    _disputed = _claim_service_result.get("disputed_claim_ids", [])
+                    if _disputed:
+                        contradictory_evidence_notice.append(
+                            f"disputed_claims: {_disputed}"
+                        )
             except ClaimResolverError as _e:
                 known_risks.append(f"claim_resolve_error: {_e}")
 
-        # Decision history: by_scope with enrichment_scope
+        # Decision history: by_scope with enrichment_scope.
+        # Pre-filter to exact scope — DecisionHistoryQuery.by_scope uses
+        # substring matching, so scope='wave1' would match 'wave14' events.
         if isinstance(_decision_events_raw, list) and _decision_events_raw:
             try:
+                _scoped_decisions = [
+                    r for r in _decision_events_raw
+                    if isinstance(r, dict) and r.get("scope") == _enrichment_scope
+                ]
                 _dec_req = DecisionHistoryQueryRequest(
                     mode="by_scope",
                     scope=_enrichment_scope,
                 )
-                _decision_service_result = query_decision_history_v1(
-                    _decision_events_raw, _dec_req
-                )
-                _matched_dec = _decision_service_result.get("matched_decisions", [])
-                enriched_decisions = [
-                    {
-                        "decision_id": _d.get("decision_id"),
-                        "title": _d.get("title"),
-                        "status": _d.get("status"),
-                        "scope": _d.get("scope"),
-                    }
-                    for _d in _matched_dec[:20]
-                ]
+                if _scoped_decisions:
+                    _decision_service_result = query_decision_history_v1(
+                        _scoped_decisions, _dec_req
+                    )
+                    _matched_dec = _decision_service_result.get("matched_decisions", [])
+                    # Post-filter to exact scope as defence-in-depth.
+                    _matched_dec = [
+                        d for d in _matched_dec
+                        if d.get("scope") == _enrichment_scope
+                    ]
+                    enriched_decisions = [
+                        {
+                            "decision_id": _d.get("decision_id"),
+                            "title": _d.get("title"),
+                            "status": _d.get("status"),
+                            "scope": _d.get("scope"),
+                        }
+                        for _d in _matched_dec[:20]
+                    ]
             except DecisionHistoryQueryError as _e:
                 known_risks.append(f"decision_history_error: {_e}")
 
@@ -1459,15 +1478,19 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 f"Scope: {_enrichment_scope}. "
                 f"no_echtgeld_go: true."
             )
-            if _ts_blocking:
+            # S6 fires on ALL blocking findings — trust-service findings AND
+            # locally detected findings (undated records, malformed items).
+            # blocking_trust_findings already contains both at this point.
+            if blocking_trust_findings:
                 trust_summary += (
-                    f" Blocking findings: {len(_ts_blocking)}. "
+                    f" Blocking findings: {len(blocking_trust_findings)}. "
                     "Review before proceeding."
                 )
-                stop_conditions.append(
-                    "S6: blocking trust findings present — "
-                    "review evidence before proceeding"
-                )
+                if not any("S6" in sc for sc in stop_conditions):
+                    stop_conditions.append(
+                        "S6: blocking trust findings present — "
+                        "review evidence before proceeding"
+                    )
         except TrustSummaryError as _e:
             trust_summary = f"Trust summary unavailable: {_e}. no_echtgeld_go: true."
             known_risks.append(f"trust_summary_error: {_e}")
