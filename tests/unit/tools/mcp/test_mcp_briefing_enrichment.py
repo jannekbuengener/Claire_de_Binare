@@ -354,6 +354,57 @@ class TestBriefingEnrichmentWithRecords:
             f"Expected undated_evidence finding, got: {findings}"
         )
 
+    def test_malformed_evidence_records_do_not_crash(self) -> None:
+        """Non-dict items in evidence_records must not raise AttributeError.
+
+        A malformed MCP payload may include strings, None, or ints in the
+        evidence_records list. The undated-record pass must skip them safely
+        and return a controlled result, never propagate AttributeError.
+        """
+        mixed_records = [
+            {
+                "evidence_id": "ev-valid-001",
+                "title": "Valid Record",
+                "confidence": 0.8,
+                "created_at": "2025-01-01T00:00:00Z",
+                "scope": "wave14",
+            },
+            "bad-record-string",  # non-dict
+            None,                 # non-dict
+            42,                   # non-dict
+        ]
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-malformed-ev",
+                evidence_records=mixed_records,
+            )
+        )
+        # Must not crash
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        assert briefing["approval_semantics"]["no_echtgeld_go"] is True
+        # Valid record must be visible in enriched_evidence
+        enriched = briefing["enriched_evidence"]
+        assert any(ev.get("evidence_id") == "ev-valid-001" for ev in enriched), (
+            f"Valid evidence record missing from enriched_evidence: {enriched}"
+        )
+        # Malformed records must be flagged, not silently treated as evidence
+        findings = briefing.get("blocking_trust_findings", [])
+        assert any("malformed" in str(f) for f in findings), (
+            f"Expected malformed_evidence_records finding, got: {findings}"
+        )
+
+    def test_all_malformed_evidence_records_do_not_crash(self) -> None:
+        """evidence_records containing only non-dict items is controlled-empty."""
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-all-malformed-ev",
+                evidence_records=["bad", None, 0],
+            )
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["approval_semantics"]["no_echtgeld_go"] is True
+
 
 class TestBriefingEnrichmentGuardrails:
     """Tests for guardrail enforcement in briefing enrichment."""

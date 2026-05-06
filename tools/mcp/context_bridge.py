@@ -1288,12 +1288,22 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 ]
                 # by_freshness silently excludes records with no created_at.
                 # Detect and preserve those records so they are never invisible.
+                # Filter to Mapping instances first — non-dict items (strings,
+                # None, ints) must not reach .get() or they raise AttributeError.
                 _matched_ev_ids = {_ev.get("evidence_id") for _ev in _matched_ev}
                 _undated_recs = [
                     rec for rec in _evidence_records_raw
-                    if not rec.get("created_at")
+                    if isinstance(rec, dict)
+                    and not rec.get("created_at")
                     and rec.get("evidence_id") not in _matched_ev_ids
                 ]
+                _malformed_count = sum(
+                    1 for rec in _evidence_records_raw if not isinstance(rec, dict)
+                )
+                if _malformed_count:
+                    blocking_trust_findings.append(
+                        f"malformed_evidence_records_skipped: {_malformed_count}"
+                    )
                 if _undated_recs:
                     for _urec in _undated_recs[:20]:
                         enriched_evidence.append({
