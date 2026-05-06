@@ -27,7 +27,7 @@ Guardrails:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 
 from core.utils.clock import utcnow as cdb_utcnow
@@ -530,7 +530,7 @@ def _rule_claim_vs_evidence(
 
         severity = "blocking" if status in _blocking_statuses else "warning"
         ev_refs = _as_list(claim.get("evidence_refs"))
-        evidence_refs_out = [
+        evidence_refs_out: list[EvidenceRef] = [
             EvidenceRef(
                 evidence_id=eid,
                 evidence_type="claim_evidence_ref",
@@ -540,6 +540,17 @@ def _rule_claim_vs_evidence(
             for eid in [_as_str(r) for r in ev_refs]
             if eid
         ]
+        if not evidence_refs_out:
+            # No evidence refs provided — emit an explicit absence EvidenceRef so
+            # downstream consumers can distinguish "no evidence" from malformed output.
+            evidence_refs_out = [
+                EvidenceRef(
+                    evidence_id=f"missing:claim:{claim_id}",
+                    evidence_type="claim_evidence_absence",
+                    strength="blocking_missing",
+                    description=f"No evidence refs for claim '{claim_id}' (status: {status})",
+                )
+            ]
 
         src_a = SourceRef(
             ref_id=claim_id,
