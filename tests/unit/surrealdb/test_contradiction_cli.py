@@ -56,14 +56,6 @@ _BLOCKING_BUNDLE: dict = {
 # A bundle with no records → 0 findings, 0 blocking
 _CLEAN_BUNDLE: dict = {}
 
-# A bundle with only a warning finding (claim stale)
-_WARNING_ONLY_BUNDLE: dict = {
-    "claims": [
-        {"claim_id": "c-002", "status": "stale", "topic": "stale-topic", "evidence_refs": ["ev-001"]}
-    ]
-}
-
-
 def _write_bundle(tmp_path: Path, bundle: dict) -> str:
     p = tmp_path / "bundle.json"
     p.write_text(json.dumps(bundle), encoding="utf-8")
@@ -251,6 +243,7 @@ def test_report_contradictions_json(tmp_path: Path, capsys) -> None:
     assert payload["command"] == "report-contradictions"
     assert "summary" in payload
     assert "blocking" in payload["summary"]
+    assert "overridden" in payload["summary"]
     assert "warning" in payload["summary"]
     assert "info" in payload["summary"]
     assert "guardrail" in payload
@@ -285,7 +278,10 @@ def test_report_contradictions_summary_counts_match(tmp_path: Path, capsys) -> N
 
     summary = payload["summary"]
     total_from_summary = (
-        len(summary["blocking"]) + len(summary["warning"]) + len(summary["info"])
+        len(summary["blocking"])
+        + len(summary["overridden"])
+        + len(summary["warning"])
+        + len(summary["info"])
     )
     assert total_from_summary == payload["total_findings"]
 

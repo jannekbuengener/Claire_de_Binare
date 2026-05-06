@@ -303,6 +303,11 @@ def handle_report_contradictions(
     result: ContradictionScanResult = scan_contradictions_v1(records, overrides)
 
     blocking = [_finding_to_dict(f) for f in result.findings if f.blocking]
+    overridden = [
+        _finding_to_dict(f)
+        for f in result.findings
+        if f.severity == "blocking" and not f.blocking
+    ]
     warning = [
         _finding_to_dict(f)
         for f in result.findings
@@ -319,6 +324,7 @@ def handle_report_contradictions(
         "blocking_count": result.blocking_count,
         "summary": {
             "blocking": blocking,
+            "overridden": overridden,
             "warning": warning,
             "info": info,
         },
