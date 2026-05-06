@@ -104,7 +104,7 @@ Handlers:
 |-------|------|----------|-------------|
 | `evidence_records` | list | Yes | In-memory evidence records |
 | `mode` | str | Yes | One of the 8 lookup modes |
-| `artifact_id` | str | mode-dependent | Required for `by_artifact` |
+| `artifact` | str | mode-dependent | Required for `by_artifact` |
 | `claim_id` | str | mode-dependent | Required for `by_claim` |
 | `decision_id` | str | mode-dependent | Required for `by_decision` |
 | `source_path` | str | mode-dependent | Required for `by_source_path` |
@@ -127,11 +127,11 @@ Handlers:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `decision_events` | list | Yes | In-memory decision events |
-| `symbol` | str | No | Filter by target symbol |
-| `scope` | str | No | Filter by scope |
-| `from_date` | str | No | ISO-8601 start date |
-| `to_date` | str | No | ISO-8601 end date |
-| `status` | str | No | Filter by decision status |
+| `mode` | str | Yes | One of: `by_topic`, `by_scope`, `by_artifact`, `by_status`, `current_for_topic`, `superseded_for_topic` |
+| `topic` | str | mode-dependent | Required for `by_topic`, `current_for_topic`, `superseded_for_topic` |
+| `scope` | str | mode-dependent | Required for `by_scope` |
+| `artifact` | str | mode-dependent | Required for `by_artifact` |
+| `status` | str | mode-dependent | Required for `by_status` |
 
 ### `cdb_context_decision_replay`
 
@@ -182,7 +182,7 @@ Handlers:
     }
   ],
   "mode": "by_artifact",
-  "artifact_id": "risk_service.py"
+  "artifact": "risk_service.py"
 }
 ```
 
@@ -205,15 +205,14 @@ Handlers:
 }
 ```
 
-### Decision History — by symbol + date range
+### Decision History — by_topic
 
 ```json
 {
   "tool": "cdb_context_decision_history",
   "decision_events": [...],
-  "symbol": "RiskManager",
-  "from_date": "2026-04-01",
-  "to_date": "2026-05-06"
+  "mode": "by_topic",
+  "topic": "RiskManager"
 }
 ```
 
