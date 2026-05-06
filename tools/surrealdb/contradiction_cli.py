@@ -138,6 +138,69 @@ def _render_json(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=True, sort_keys=True, indent=2)
 
 
+def _derive_report_recommended_reads(
+    findings: tuple,
+    limit: int = 20,
+) -> list[str]:
+    """Derive recommended next reads from contradiction findings.
+
+    Blocking findings are prioritised; within each group the order is:
+    source_a_ref.path, source_b_ref.path, claim_refs, evidence_ref evidence_ids.
+    Deduplicates and caps at *limit* entries.
+    """
+    seen: set[str] = set()
+    result: list[str] = []
+
+    def _add(value: str) -> None:
+        v = value.strip() if value else ""
+        if v and v not in seen and len(result) < limit:
+            seen.add(v)
+            result.append(v)
+
+    for blocking_first in (True, False):
+        for f in findings:
+            if f.blocking != blocking_first:
+                continue
+            if f.source_a_ref and f.source_a_ref.path:
+                _add(f.source_a_ref.path)
+            if f.source_b_ref and f.source_b_ref.path:
+                _add(f.source_b_ref.path)
+            for cref in (f.claim_refs or ()):
+                _add(cref)
+            for eref in (f.evidence_refs or ()):
+                if eref.evidence_id:
+                    _add(eref.evidence_id)
+
+    return result
+
+
+def _collect_affected_artifacts(findings: tuple) -> list[str]:
+    """Collect all affected artifact paths and IDs across all findings.
+
+    Includes source_a/source_b paths, claim_refs, and evidence_ref evidence_ids.
+    Returns a deduplicated, sorted list.
+    """
+    seen: set[str] = set()
+
+    def _add(value: str) -> None:
+        v = value.strip() if value else ""
+        if v:
+            seen.add(v)
+
+    for f in findings:
+        if f.source_a_ref and f.source_a_ref.path:
+            _add(f.source_a_ref.path)
+        if f.source_b_ref and f.source_b_ref.path:
+            _add(f.source_b_ref.path)
+        for cref in (f.claim_refs or ()):
+            _add(cref)
+        for eref in (f.evidence_refs or ()):
+            if eref.evidence_id:
+                _add(eref.evidence_id)
+
+    return sorted(seen)
+
+
 def _render_markdown(payload: dict[str, Any]) -> str:
     """Render a CLI result payload as a human-readable Markdown report."""
     command = payload.get("command", "unknown")
@@ -183,9 +246,15 @@ def _render_markdown(payload: dict[str, Any]) -> str:
     if "summary" in payload:
         summary = payload["summary"]
         lines += ["## Summary", ""]
-        for sev in ("blocking", "overridden", "warning", "info"):
-            items = summary.get(sev, [])
-            lines.append(f"- **{sev}**: {len(items)}")
+        for key, label in (
+            ("blocking", "blocking"),
+            ("false_positives", "false_positives"),
+            ("accepted_risks", "accepted_risks"),
+            ("warning", "warning"),
+            ("info", "info"),
+        ):
+            items = summary.get(key, [])
+            lines.append(f"- **{label}**: {len(items)}")
         lines.append("")
         if summary.get("blocking"):
             lines += ["### Blocking", ""]
@@ -195,13 +264,33 @@ def _render_markdown(payload: dict[str, Any]) -> str:
                     f"{f['recommended_action']}"
                 )
             lines.append("")
-        if summary.get("overridden"):
-            lines += ["### Overridden (false_positive / accepted_risk)", ""]
-            for f in summary["overridden"]:
+        if summary.get("false_positives"):
+            lines += ["### False Positives", ""]
+            for f in summary["false_positives"]:
                 lines.append(
                     f"- `{f['contradiction_id']}` `{f['contradiction_type']}` "
-                    f"(severity: blocking, override applied)"
+                    f"(override: false_positive)"
                 )
+            lines.append("")
+        if summary.get("accepted_risks"):
+            lines += ["### Accepted Risks", ""]
+            for f in summary["accepted_risks"]:
+                lines.append(
+                    f"- `{f['contradiction_id']}` `{f['contradiction_type']}` "
+                    f"(override: accepted_risk)"
+                )
+            lines.append("")
+        recs = payload.get("recommended_next_reads", [])
+        if recs:
+            lines += ["## Recommended Next Reads", ""]
+            for r in recs:
+                lines.append(f"- `{r}`")
+            lines.append("")
+        affected = payload.get("affected_artifacts", [])
+        if affected:
+            lines += ["## Affected Artifacts", ""]
+            for a in affected:
+                lines.append(f"- `{a}`")
             lines.append("")
     elif findings:
         # Full findings table
@@ -311,17 +400,26 @@ def handle_report_contradictions(
     result: ContradictionScanResult = scan_contradictions_v1(records, overrides)
 
     blocking = [_finding_to_dict(f) for f in result.findings if f.blocking]
-    overridden = [
+    false_positives = [
         _finding_to_dict(f)
         for f in result.findings
-        if f.severity == "blocking" and not f.blocking
+        if f.status == "false_positive"
+    ]
+    accepted_risks = [
+        _finding_to_dict(f)
+        for f in result.findings
+        if f.status == "accepted_risk"
     ]
     warning = [
         _finding_to_dict(f)
         for f in result.findings
-        if f.severity == "warning" and not f.blocking
+        if f.severity == "warning" and f.status not in ("false_positive", "accepted_risk")
     ]
-    info = [_finding_to_dict(f) for f in result.findings if f.severity == "info"]
+    info = [
+        _finding_to_dict(f)
+        for f in result.findings
+        if f.severity == "info" and f.status not in ("false_positive", "accepted_risk")
+    ]
 
     payload: dict[str, Any] = {
         "schema_version": result.schema_version,
@@ -332,10 +430,13 @@ def handle_report_contradictions(
         "blocking_count": result.blocking_count,
         "summary": {
             "blocking": blocking,
-            "overridden": overridden,
+            "false_positives": false_positives,
+            "accepted_risks": accepted_risks,
             "warning": warning,
             "info": info,
         },
+        "recommended_next_reads": _derive_report_recommended_reads(result.findings),
+        "affected_artifacts": _collect_affected_artifacts(result.findings),
         "guardrail": _GUARDRAIL_NOTE,
     }
     return payload, EXIT_OK

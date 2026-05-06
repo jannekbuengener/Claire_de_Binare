@@ -1,0 +1,14 @@
+{
+  "_comment": "False-positive fixture: invalidated claim with override marking it as false_positive. Triggers claim_vs_evidence (blocking) for c-fp-001 then suppresses it via override. Used by test_report_contradictions_false_positives_bucket.",
+  "claims": [
+    {
+      "claim_id": "c-fp-001",
+      "status": "invalidated",
+      "topic": "Widget API contract v1",
+      "evidence_refs": []
+    }
+  ],
+  "overrides": {
+    "3b2934916b81f1b9": "false_positive"
+  }
+}

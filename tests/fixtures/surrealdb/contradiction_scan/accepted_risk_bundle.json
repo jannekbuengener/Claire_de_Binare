@@ -1,0 +1,14 @@
+{
+  "_comment": "Accepted-risk fixture: stale claim with override marking it as accepted_risk. Triggers claim_vs_evidence (warning) for c-ar-001 then suppresses it via override. Used by test_report_contradictions_accepted_risk_bucket.",
+  "claims": [
+    {
+      "claim_id": "c-ar-001",
+      "status": "stale",
+      "topic": "Deployment SOP v2",
+      "evidence_refs": ["ev-ar-001"]
+    }
+  ],
+  "overrides": {
+    "0f2d6efaccf5d50e": "accepted_risk"
+  }
+}

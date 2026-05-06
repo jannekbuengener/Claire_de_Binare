@@ -243,12 +243,15 @@ def test_report_contradictions_json(tmp_path: Path, capsys) -> None:
     assert payload["command"] == "report-contradictions"
     assert "summary" in payload
     assert "blocking" in payload["summary"]
-    assert "overridden" in payload["summary"]
+    assert "false_positives" in payload["summary"]
+    assert "accepted_risks" in payload["summary"]
     assert "warning" in payload["summary"]
     assert "info" in payload["summary"]
     assert "guardrail" in payload
     assert "blocking_count" in payload
     assert "total_findings" in payload
+    assert "recommended_next_reads" in payload
+    assert "affected_artifacts" in payload
 
 
 @pytest.mark.unit
@@ -260,12 +263,13 @@ def test_report_contradictions_markdown(tmp_path: Path, capsys) -> None:
     assert exit_code == EXIT_OK
     assert "# Contradiction Scan" in out
     assert "report-contradictions" in out
+    assert "## Summary" in out
     assert "Guardrail" in out
 
 
 @pytest.mark.unit
 def test_report_contradictions_summary_counts_match(tmp_path: Path, capsys) -> None:
-    """Summary counts must match: sum(blocking+warning+info) == total_findings."""
+    """Summary counts must match: sum(all buckets) == total_findings."""
     bundle = {
         "claims": [
             {"claim_id": "c-001", "status": "invalidated", "evidence_refs": []},
@@ -279,11 +283,102 @@ def test_report_contradictions_summary_counts_match(tmp_path: Path, capsys) -> N
     summary = payload["summary"]
     total_from_summary = (
         len(summary["blocking"])
-        + len(summary["overridden"])
+        + len(summary["false_positives"])
+        + len(summary["accepted_risks"])
         + len(summary["warning"])
         + len(summary["info"])
     )
     assert total_from_summary == payload["total_findings"]
+
+
+@pytest.mark.unit
+def test_report_contradictions_false_positives_bucket(tmp_path: Path, capsys) -> None:
+    """A bundle with an invalidated claim overridden as false_positive produces
+    a non-empty false_positives bucket and zero blocking count."""
+    # Discover the contradiction_id dynamically from the records
+    records = {
+        "claims": [
+            {"claim_id": "c-fp-001", "status": "invalidated", "topic": "Widget API contract v1", "evidence_refs": []}
+        ]
+    }
+    bundle_path = _write_bundle(tmp_path, records)
+    main(["scan-contradictions", "--input", bundle_path])
+    scan_payload = _read_json(capsys)
+    blocking = [f for f in scan_payload["findings"] if f["blocking"]]
+    assert blocking, "test precondition: need a blocking finding to override"
+    cid = blocking[0]["contradiction_id"]
+
+    bundle_with_override = {**records, "overrides": {cid: "false_positive"}}
+    sub = tmp_path / "sub_fp"
+    sub.mkdir(exist_ok=True)
+    (sub / "bundle.json").write_text(json.dumps(bundle_with_override), encoding="utf-8")
+
+    main(["report-contradictions", "--input", str(sub / "bundle.json")])
+    payload = _read_json(capsys)
+
+    assert payload["blocking_count"] == 0
+    assert len(payload["summary"]["false_positives"]) == 1
+    assert payload["summary"]["false_positives"][0]["contradiction_id"] == cid
+    assert len(payload["summary"]["accepted_risks"]) == 0
+
+
+@pytest.mark.unit
+def test_report_contradictions_accepted_risk_bucket(tmp_path: Path, capsys) -> None:
+    """A bundle with a stale claim overridden as accepted_risk produces
+    a non-empty accepted_risks bucket."""
+    records = {
+        "claims": [
+            {"claim_id": "c-ar-001", "status": "stale", "topic": "Deployment SOP v2", "evidence_refs": ["ev-ar-001"]}
+        ]
+    }
+    bundle_path = _write_bundle(tmp_path, records)
+    main(["scan-contradictions", "--input", bundle_path])
+    scan_payload = _read_json(capsys)
+    all_findings = scan_payload["findings"]
+    assert all_findings, "test precondition: need at least one finding to override"
+    cid = all_findings[0]["contradiction_id"]
+
+    bundle_with_override = {**records, "overrides": {cid: "accepted_risk"}}
+    sub = tmp_path / "sub_ar"
+    sub.mkdir(exist_ok=True)
+    (sub / "bundle.json").write_text(json.dumps(bundle_with_override), encoding="utf-8")
+
+    main(["report-contradictions", "--input", str(sub / "bundle.json")])
+    payload = _read_json(capsys)
+
+    assert len(payload["summary"]["accepted_risks"]) == 1
+    assert payload["summary"]["accepted_risks"][0]["contradiction_id"] == cid
+    assert len(payload["summary"]["false_positives"]) == 0
+
+
+@pytest.mark.unit
+def test_report_contradictions_recommended_next_reads_present(tmp_path: Path, capsys) -> None:
+    """A bundle with blocking findings yields a non-empty recommended_next_reads list."""
+    bundle_path = _write_bundle(tmp_path, _BLOCKING_BUNDLE)
+    main(["report-contradictions", "--input", bundle_path])
+    payload = _read_json(capsys)
+
+    assert payload["blocking_count"] >= 1
+    assert isinstance(payload["recommended_next_reads"], list)
+    assert len(payload["recommended_next_reads"]) >= 1
+    for entry in payload["recommended_next_reads"]:
+        assert isinstance(entry, str)
+        assert entry.strip() != ""
+
+
+@pytest.mark.unit
+def test_report_contradictions_affected_artifacts_present(tmp_path: Path, capsys) -> None:
+    """A bundle with findings yields a non-empty affected_artifacts list."""
+    bundle_path = _write_bundle(tmp_path, _BLOCKING_BUNDLE)
+    main(["report-contradictions", "--input", bundle_path])
+    payload = _read_json(capsys)
+
+    assert payload["total_findings"] >= 1
+    assert isinstance(payload["affected_artifacts"], list)
+    assert len(payload["affected_artifacts"]) >= 1
+    for entry in payload["affected_artifacts"]:
+        assert isinstance(entry, str)
+        assert entry.strip() != ""
 
 
 # ── Invalid input ─────────────────────────────────────────────────────────────
