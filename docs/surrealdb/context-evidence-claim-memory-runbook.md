@@ -26,8 +26,8 @@ No runtime, trading, or live-capital implication.
 ### `tools/surrealdb/claim_resolver.py` — Claim Resolution v1 (#2117)
 
 - **Schema version:** `claim-resolver/v1`
-- **Modes:** `by_claim_id`, `by_status`, `by_artifact`, `by_decision`, `by_run_id`,
-  `by_evidence_id`, `all`
+- **Modes:** `by_claim_id`, `by_topic`, `by_scope`, `by_status`, `by_artifact`,
+  `by_evidence_ref`, `by_decision_ref`
 - **Claim statuses:** `proposed`, `supported`, `weakly_supported`, `disputed`,
   `superseded`, `stale`, `invalidated`
 - **MCP adapter:** `cdb_context_claim_resolve`
@@ -47,8 +47,8 @@ No runtime, trading, or live-capital implication.
 ### `tools/surrealdb/memory_read.py` — Scoped Memory Read v1 (#2120)
 
 - **Schema version:** `memory-read/v1`
-- **Modes:** `by_scope`, `by_key`, `by_tag`, `by_source`, `by_freshness`,
-  `by_confidence`, `all`
+- **Modes:** `by_scope`, `by_topic`, `by_artifact`, `by_decision`, `by_agent`,
+  `by_freshness`, `by_memory_type`
 - **TTL-aware:** stale records are flagged, not silently returned.
 - **Memory is a hint, not ground truth.**
 - **MCP adapter:** `cdb_context_memory_get`
@@ -138,7 +138,8 @@ Handlers:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `decision_events` | list | Yes | In-memory decision events |
-| `decision_id` | str | Yes | Root decision to replay from |
+| `mode` | str | Yes | One of: `replay_by_decision_id`, `replay_current_for_topic`, `replay_superseded_for_topic`, `replay_by_scope`, `replay_by_artifact`, `replay_by_status` |
+| `decision_id` | str | mode-dependent | Required for `replay_by_decision_id` |
 | `max_depth` | int | No | Chain depth limit |
 
 ### `cdb_context_memory_get`
@@ -148,7 +149,6 @@ Handlers:
 | `memory_records` | list | Yes | In-memory memory records |
 | `mode` | str | Yes | One of the 7 read modes |
 | `scope` | str | mode-dependent | Required for `by_scope` |
-| `key` | str | mode-dependent | Required for `by_key` |
 | `max_age_hours` | int | No | TTL filter for freshness |
 
 ### `cdb_context_trust_summary`
@@ -172,13 +172,13 @@ Handlers:
   "tool": "cdb_context_evidence_resolve",
   "evidence_records": [
     {
-      "id": "ev-001",
-      "artifact_id": "risk_service.py",
+      "evidence_id": "ev-001",
+      "artifact_refs": ["risk_service.py"],
       "evidence_type": "test_pass",
       "confidence": 0.95,
       "created_at": "2026-05-01T10:00:00Z",
-      "source_path": "tests/unit/risk/test_risk_service.py",
-      "claim_ids": ["claim-001"]
+      "source_refs": ["tests/unit/risk/test_risk_service.py"],
+      "claim_refs": ["claim-001"]
     }
   ],
   "mode": "by_artifact",
@@ -222,6 +222,7 @@ Handlers:
 {
   "tool": "cdb_context_decision_replay",
   "decision_events": [...],
+  "mode": "replay_by_decision_id",
   "decision_id": "dec-001",
   "max_depth": 5
 }
