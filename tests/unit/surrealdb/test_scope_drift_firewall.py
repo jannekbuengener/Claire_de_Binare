@@ -30,12 +30,11 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import sys
 
 import pytest
 
-import tools.surrealdb.scope_drift_firewall as _mod
 from tools.surrealdb.scope_drift_firewall import (
-    DETECTED_BY,
     DRIFT_TYPES,
     GUARDRAILS,
     REQUIRED_ACTIONS,
@@ -49,6 +48,9 @@ from tools.surrealdb.scope_drift_firewall import (
     _make_drift_id,
     scan_scope_drift_v1,
 )
+
+# Module reference for inspect.getsource in guardrail tests
+_mod = sys.modules["tools.surrealdb.scope_drift_firewall"]
 
 # Fixed reference timestamp used across all tests for determinism
 _AS_OF = "2026-05-06T12:00:00+00:00"

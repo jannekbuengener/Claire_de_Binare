@@ -614,8 +614,7 @@ def _rule_trading_surface_touched(
                     affected_artifacts=[artifact_ref],
                     required_action="stop",
                     stop_conditions=[
-                        "Trading surface touched. LR status is NO-GO. "
-                        "No changes to trading surfaces (risk, execution) without Human-GO.",
+                        "Trading surface touched. LR status is NO-GO. No changes to trading surfaces (risk, execution) without Human-GO.",
                         "Board stage 'trade-capable' is NOT a live-go.",
                     ],
                     recommended_next_reads=[
