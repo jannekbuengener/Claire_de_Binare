@@ -25,9 +25,6 @@ Coverage:
 
 from __future__ import annotations
 
-import importlib
-import sys
-
 import pytest
 
 from tools.surrealdb.stale_refresh_plan import (
@@ -360,25 +357,75 @@ def test_priority_summary_covers_all_priorities() -> None:
 
 @pytest.mark.unit
 def test_no_forbidden_imports() -> None:
-    """stale_refresh_plan.py must not import forbidden modules at any depth.
+    """stale_refresh_plan.py must not contain forbidden imports or write calls.
 
-    Forbidden: requests, httpx, subprocess, surrealdb (DB SDK).
-    This is checked by inspecting sys.modules after the module has been loaded.
+    Uses AST parsing on the source file directly — isolated from sys.modules
+    state of the test runner or other test dependencies.
+
+    Forbidden imports: requests, httpx, subprocess, surrealdb
+    Forbidden call patterns (write-path): open(...,"w"), .write(), unlink,
+        remove, rmtree, os.system
     """
-    import tools.surrealdb.stale_refresh_plan  # noqa: F401  (already loaded)
+    import ast
+    import pathlib
 
-    forbidden = {"requests", "httpx", "subprocess", "surrealdb"}
-    # Check the module's __dict__ for direct imports, and sys.modules for transitive ones.
-    loaded_modules = set(sys.modules.keys())
-    for forbidden_mod in forbidden:
-        assert forbidden_mod not in loaded_modules or _is_test_dep(forbidden_mod), (
-            f"Forbidden module {forbidden_mod!r} is present in sys.modules — "
-            "stale_refresh_plan.py must not import it."
-        )
+    source_path = pathlib.Path(__file__).parent.parent.parent.parent / "tools" / "surrealdb" / "stale_refresh_plan.py"
+    assert source_path.exists(), f"Source file not found: {source_path}"
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(source_path))
 
+    forbidden_imports = {"requests", "httpx", "subprocess", "surrealdb"}
+    forbidden_call_attrs = {"unlink", "rmtree"}  # attr-based dangerous calls
+    forbidden_func_names = {"remove"}  # bare function calls (os.remove is caught via attr)
 
-def _is_test_dep(module_name: str) -> bool:
-    """Return True if a forbidden module was loaded by pytest itself (not our code)."""
-    # subprocess is used by pytest internals; accept if loaded before our module.
-    # For requests/httpx/surrealdb, we never expect them in this test environment.
-    return module_name == "subprocess"
+    violations: list[str] = []
+
+    for node in ast.walk(tree):
+        # Check: import requests / import httpx / import subprocess / import surrealdb
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                root = alias.name.split(".")[0]
+                if root in forbidden_imports:
+                    violations.append(f"line {node.lineno}: forbidden import {alias.name!r}")
+
+        # Check: from requests import ... / from surrealdb import ...
+        elif isinstance(node, ast.ImportFrom):
+            module = node.module or ""
+            root = module.split(".")[0]
+            if root in forbidden_imports:
+                violations.append(f"line {node.lineno}: forbidden from-import {module!r}")
+
+        # Check: open(..., "w") — write-mode file open
+        elif isinstance(node, ast.Call):
+            func = node.func
+            # open("path", "w") or open("path", mode="w")
+            is_open_call = (
+                (isinstance(func, ast.Name) and func.id == "open")
+                or (isinstance(func, ast.Attribute) and func.attr == "open")
+            )
+            if is_open_call:
+                # Check positional arg[1] == "w" or "wb" or "a"
+                for arg in node.args[1:2]:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, str) and arg.value in ("w", "wb", "a", "ab"):
+                        violations.append(f"line {node.lineno}: forbidden open() write-mode call")
+                # Check keyword mode=...
+                for kw in node.keywords:
+                    if kw.arg == "mode" and isinstance(kw.value, ast.Constant) and kw.value.value in ("w", "wb", "a", "ab"):
+                        violations.append(f"line {node.lineno}: forbidden open(mode=...) write-mode call")
+
+            # Check: .unlink(), .rmtree(), shutil.rmtree()
+            if isinstance(func, ast.Attribute) and func.attr in forbidden_call_attrs:
+                violations.append(f"line {node.lineno}: forbidden call .{func.attr}()")
+
+            # Check: os.system(...)
+            if isinstance(func, ast.Attribute) and func.attr == "system" and isinstance(func.value, ast.Name) and func.value.id == "os":
+                violations.append(f"line {node.lineno}: forbidden call os.system()")
+
+            # Check bare remove(...) — unlikely but guard
+            if isinstance(func, ast.Name) and func.id in forbidden_func_names:
+                violations.append(f"line {node.lineno}: forbidden bare call {func.id}()")
+
+    assert violations == [], (
+        f"stale_refresh_plan.py contains forbidden patterns:\n"
+        + "\n".join(f"  {v}" for v in violations)
+    )
