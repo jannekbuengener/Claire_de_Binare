@@ -864,3 +864,59 @@ def test_path_in_scope_with_no_trailing_slash_target() -> None:
     assert "path_out_of_scope" not in types, (
         "tools/surrealdb/scope_drift_firewall.py must be in scope for target 'tools/surrealdb'"
     )
+
+
+# ── Thread A hardening: glob pattern target_paths ────────────────────────────
+
+
+@pytest.mark.unit
+def test_path_in_scope_glob_pattern() -> None:
+    """Schema documents target_paths as glob patterns; fnmatch must apply."""
+    bundle = {
+        "declared_scope": {"target_paths": ["tools/surrealdb/*.py"]},
+        "touched_artifacts": [
+            {"path": "tools/surrealdb/scope_drift_firewall.py", "surface_type": "tools"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "path_out_of_scope" not in types, (
+        "tools/surrealdb/scope_drift_firewall.py must match glob 'tools/surrealdb/*.py'"
+    )
+
+
+@pytest.mark.unit
+def test_path_out_of_scope_glob_no_match() -> None:
+    """Paths outside the glob scope must be flagged."""
+    bundle = {
+        "declared_scope": {"target_paths": ["tools/surrealdb/*.py"]},
+        "touched_artifacts": [
+            {"path": "services/risk/other.py", "surface_type": "service"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "path_out_of_scope" in types, (
+        "services/risk/other.py must not match glob 'tools/surrealdb/*.py'"
+    )
+
+
+# ── Thread B hardening: parked surface sibling-prefix boundary ───────────────
+
+
+@pytest.mark.unit
+def test_parked_topic_activated_sibling_prefix_not_flagged() -> None:
+    """Sibling paths that only share a prefix must NOT trigger parked_topic_activated."""
+    bundle = {
+        "forbidden_surfaces": [
+            {"surface": "docs/runbooks", "reason": "production runbooks"}
+        ],
+        "touched_artifacts": [
+            {"path": "docs/runbooks_old/a.md", "surface_type": "docs"},
+        ],
+    }
+    result = _scan(bundle, as_of=_AS_OF)
+    types = {f.drift_type for f in result.findings}
+    assert "parked_topic_activated" not in types, (
+        "docs/runbooks_old/a.md must NOT be flagged for forbidden surface 'docs/runbooks'"
+    )

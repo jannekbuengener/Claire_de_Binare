@@ -28,6 +28,7 @@ Guardrails:
 
 from __future__ import annotations
 
+import fnmatch
 import hashlib
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
@@ -282,6 +283,9 @@ def _path_is_within_scope(path: str, target_paths: list[str]) -> bool:
 
     Requires a directory-boundary match to avoid sibling-prefix false negatives:
     e.g. 'tools/surrealdb_extra/f.py' must NOT match target 'tools/surrealdb'.
+
+    Supports glob patterns (schema: target_paths accepts "glob patterns"):
+    e.g. 'tools/surrealdb/*.py' matches 'tools/surrealdb/scope_drift_firewall.py'.
     """
     if not target_paths:
         return True  # no constraint declared → not a violation
@@ -289,6 +293,10 @@ def _path_is_within_scope(path: str, target_paths: list[str]) -> bool:
         norm = prefix.rstrip("/")
         if path == norm or path.startswith(norm + "/"):
             return True
+        # Glob pattern support (schema documents target_paths as "glob patterns")
+        if any(c in prefix for c in ("*", "?", "[")):
+            if fnmatch.fnmatch(path, prefix):
+                return True
     return False
 
 
@@ -504,7 +512,7 @@ def _rule_parked_topic_activated(
 
         # Check bundle-declared forbidden surfaces
         for surface, reason in bundle_forbidden:
-            if path == surface or path.startswith(surface.rstrip("/") + "/") or path.startswith(surface):
+            if path == surface or path.startswith(surface.rstrip("/") + "/"):
                 # Avoid duplicate if already flagged by hardcoded pattern
                 already = any(
                     f.drift_type == "parked_topic_activated"
