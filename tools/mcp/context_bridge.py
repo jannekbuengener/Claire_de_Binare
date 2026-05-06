@@ -832,6 +832,17 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     agent_type = kwargs.get("agent_type", "")
     risk_level = kwargs.get("risk_level", "medium")
 
+    # --- Wave-14 enrichment record inputs (all optional, fail-closed if absent) ---
+    _evidence_records_raw = kwargs.get("evidence_records")
+    _claim_records_raw = kwargs.get("claim_records")
+    _decision_events_raw = kwargs.get("decision_events")
+    _memory_records_raw = kwargs.get("memory_records")
+    _enrichment_scope = kwargs.get("enrichment_scope", "wave14")
+    if not isinstance(_enrichment_scope, str) or not _enrichment_scope.strip():
+        _enrichment_scope = "wave14"
+    else:
+        _enrichment_scope = _enrichment_scope.strip()
+
     # --- Validate required fields (fail-closed, sentinel for missing keys) ---
     if not task_id or not isinstance(task_id, str) or not task_id.strip():
         return {
@@ -1183,28 +1194,240 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         }
     )
 
-    # --- Enrichment (Minimal Slice #2122) ---
-    # Honest partial enrichment while #2020 and #2121 are unresolved.
+    # --- Enrichment (#2122) ---
     enrichment_id = hashlib.sha256(
         (briefing_id + requested_depth).encode()
     ).hexdigest()[:16]
 
-    enriched_decisions = []
-    enriched_evidence = []
-    enriched_memory = []
-    stale_evidence_notice = []
-    contradictory_evidence_notice = []
-    missing_evidence_notice = ["evidence", "decisions"]
+    enriched_decisions: list[Any] = []
+    enriched_evidence: list[Any] = []
+    enriched_memory: list[Any] = []
+    stale_evidence_notice: list[str] = []
+    contradictory_evidence_notice: list[str] = []
+    missing_evidence_notice: list[str] = []
+    blocking_trust_findings: list[str] = []
+    recommended_next_reads_enrichment: list[str] = []
 
-    trust_summary = (
-        "0 evidence items, 0 decisions. "
-        "Enrichment in partial mode: missing evidence resolution (#2020) "
-        "and decision history lookup."
-    )
+    _has_records = any([
+        isinstance(_evidence_records_raw, list) and bool(_evidence_records_raw),
+        isinstance(_claim_records_raw, list) and bool(_claim_records_raw),
+        isinstance(_decision_events_raw, list) and bool(_decision_events_raw),
+        isinstance(_memory_records_raw, list) and bool(_memory_records_raw),
+    ])
 
-    stop_conditions.append(
-        "S5: missing evidence resolution — resolve core assumptions before proceeding"
-    )
+    if not _has_records:
+        # Fail-closed: no records provided — controlled-empty enrichment
+        missing_evidence_notice = [
+            "no_evidence_records_provided",
+            "no_decision_events_provided",
+        ]
+        trust_summary = (
+            "Enrichment skipped: no evidence_records, claim_records, decision_events, "
+            "or memory_records provided. Supply records to enable evidence/decision enrichment."
+        )
+        stop_conditions.append(
+            "S5: no enrichment records provided — supply evidence_records, claim_records, "
+            "decision_events, or memory_records to enable enrichment"
+        )
+    else:
+        # Real enrichment using Wave-14 services (#2122)
+        # Read-only, fail-closed, no DB/network/write.
+        from tools.surrealdb.evidence_lookup import (
+            EvidenceLookupError,
+            EvidenceLookupRequest,
+            lookup_evidence_v1,
+        )
+        from tools.surrealdb.claim_resolver import (
+            ClaimResolverError,
+            ClaimResolveRequest,
+            resolve_claims_v1,
+        )
+        from tools.surrealdb.memory_read import (
+            MemoryReadError,
+            MemoryReadRequest,
+            read_memory_v1,
+        )
+        from tools.surrealdb.trust_summary import (
+            TrustSummaryError,
+            TrustSummaryRequest,
+            build_trust_summary_v1,
+        )
+        from tools.surrealdb.decision_history_query import (
+            DecisionHistoryQueryError,
+            DecisionHistoryQueryRequest,
+            query_decision_history_v1,
+        )
+
+        _evidence_service_result: Optional[dict[str, Any]] = None
+        _claim_service_result: Optional[dict[str, Any]] = None
+        _decision_service_result: Optional[dict[str, Any]] = None
+        _memory_service_result: Optional[dict[str, Any]] = None
+
+        # Evidence lookup: by_freshness to capture all records incl. null-confidence
+        if isinstance(_evidence_records_raw, list) and _evidence_records_raw:
+            try:
+                _ev_req = EvidenceLookupRequest(
+                    mode="by_freshness",
+                    freshness_days=36500,  # 100 years — match all dated records
+                )
+                _evidence_service_result = lookup_evidence_v1(
+                    _evidence_records_raw, _ev_req
+                )
+                _matched_ev = _evidence_service_result.get("matched_evidence", [])
+                enriched_evidence = [
+                    {
+                        "evidence_id": _ev.get("evidence_id"),
+                        "title": _ev.get("title"),
+                        "confidence": _ev.get("confidence"),
+                        "stale": _ev.get("stale"),
+                        "blocking_missing": _ev.get("blocking_missing"),
+                        "evidence_type": _ev.get("evidence_type"),
+                        "scope": _ev.get("scope"),
+                    }
+                    for _ev in _matched_ev[:20]
+                ]
+                _stale_ev_ids = _evidence_service_result.get("stale_evidence_ids", [])
+                if _stale_ev_ids:
+                    stale_evidence_notice.append(
+                        f"stale_evidence: {_stale_ev_ids}"
+                    )
+                    recommended_next_reads_enrichment.append(
+                        "Review stale evidence before proceeding"
+                    )
+                _blocking_ids = _evidence_service_result.get("blocking_missing_ids", [])
+                if _blocking_ids:
+                    blocking_trust_findings.append(
+                        f"blocking_missing_evidence: {_blocking_ids}"
+                    )
+                    missing_evidence_notice.append(
+                        f"blocking_missing_evidence: {_blocking_ids}"
+                    )
+                    recommended_next_reads_enrichment.append(
+                        "Resolve blocking missing evidence before proceeding"
+                    )
+            except EvidenceLookupError as _e:
+                known_risks.append(f"evidence_lookup_error: {_e}")
+                missing_evidence_notice.append("evidence_lookup_failed")
+
+        # Claim resolution: by_scope with enrichment_scope
+        if isinstance(_claim_records_raw, list) and _claim_records_raw:
+            try:
+                _cl_req = ClaimResolveRequest(
+                    mode="by_scope",
+                    scope=_enrichment_scope,
+                )
+                _claim_service_result = resolve_claims_v1(_claim_records_raw, _cl_req)
+                _disputed = _claim_service_result.get("disputed_claim_ids", [])
+                if _disputed:
+                    contradictory_evidence_notice.append(
+                        f"disputed_claims: {_disputed}"
+                    )
+            except ClaimResolverError as _e:
+                known_risks.append(f"claim_resolve_error: {_e}")
+
+        # Decision history: by_scope with enrichment_scope
+        if isinstance(_decision_events_raw, list) and _decision_events_raw:
+            try:
+                _dec_req = DecisionHistoryQueryRequest(
+                    mode="by_scope",
+                    scope=_enrichment_scope,
+                )
+                _decision_service_result = query_decision_history_v1(
+                    _decision_events_raw, _dec_req
+                )
+                _matched_dec = _decision_service_result.get("matched_decisions", [])
+                enriched_decisions = [
+                    {
+                        "decision_id": _d.get("decision_id"),
+                        "title": _d.get("title"),
+                        "status": _d.get("status"),
+                        "scope": _d.get("scope"),
+                    }
+                    for _d in _matched_dec[:20]
+                ]
+            except DecisionHistoryQueryError as _e:
+                known_risks.append(f"decision_history_error: {_e}")
+
+        # Memory read: by_scope with enrichment_scope
+        if isinstance(_memory_records_raw, list) and _memory_records_raw:
+            try:
+                _mem_req = MemoryReadRequest(
+                    mode="by_scope",
+                    scope=_enrichment_scope,
+                )
+                _memory_service_result = read_memory_v1(
+                    _memory_records_raw, _mem_req
+                )
+                _matched_mem = _memory_service_result.get("matched_memory", [])
+                enriched_memory = [
+                    {
+                        "memory_id": _m.get("memory_id"),
+                        "title": _m.get("title"),
+                        "memory_type": _m.get("memory_type"),
+                        "stale": _m.get("stale"),
+                        "scope": _m.get("scope"),
+                        "evidence_backed": _m.get("evidence_backed"),
+                    }
+                    for _m in _matched_mem[:20]
+                ]
+                _stale_mem_ids = _memory_service_result.get("stale_memory_ids", [])
+                if _stale_mem_ids:
+                    stale_evidence_notice.append(
+                        f"stale_memory: {_stale_mem_ids}"
+                    )
+            except MemoryReadError as _e:
+                known_risks.append(f"memory_read_error: {_e}")
+
+        # Trust summary from all service results
+        try:
+            _ts_req = TrustSummaryRequest(
+                scope=_enrichment_scope,
+                topic=(
+                    target_concepts_norm[0]
+                    if target_concepts_norm
+                    else None
+                ),
+            )
+            _ts_result = build_trust_summary_v1(
+                _ts_req,
+                evidence_result=_evidence_service_result,
+                claim_result=_claim_service_result,
+                decision_result=_decision_service_result,
+                memory_result=_memory_service_result,
+            )
+            _trust_level = _ts_result.get("trust_level", "blocked")
+            _composite_score = _ts_result.get("composite_score", 0.0)
+            _ts_blocking = _ts_result.get("blocking_findings", [])
+            if _ts_blocking:
+                blocking_trust_findings.extend(
+                    [str(_f) for _f in _ts_blocking]
+                )
+            _stale_ts_flags = _ts_result.get("stale_flags", [])
+            if _stale_ts_flags:
+                stale_evidence_notice.extend(
+                    [str(_f) for _f in _stale_ts_flags]
+                )
+            trust_summary = (
+                f"Trust level: {_trust_level}. "
+                f"Composite score: {_composite_score:.2f}. "
+                f"Evidence items: {len(enriched_evidence)}. "
+                f"Decisions: {len(enriched_decisions)}. "
+                f"Memory items: {len(enriched_memory)}. "
+                f"Scope: {_enrichment_scope}. "
+                f"no_echtgeld_go: true."
+            )
+            if _ts_blocking:
+                trust_summary += (
+                    f" Blocking findings: {len(_ts_blocking)}. "
+                    "Review before proceeding."
+                )
+                stop_conditions.append(
+                    "S6: blocking trust findings present — "
+                    "review evidence before proceeding"
+                )
+        except TrustSummaryError as _e:
+            trust_summary = f"Trust summary unavailable: {_e}. no_echtgeld_go: true."
+            known_risks.append(f"trust_summary_error: {_e}")
 
     # --- Assemble briefing result ---
     briefing: dict[str, Any] = {
@@ -1227,6 +1450,9 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "stale_evidence_notice": stale_evidence_notice,
         "contradictory_evidence_notice": contradictory_evidence_notice,
         "missing_evidence_notice": missing_evidence_notice,
+        "blocking_trust_findings": blocking_trust_findings,
+        "recommended_next_reads": recommended_next_reads_enrichment,
+        "approval_semantics": {"no_echtgeld_go": True},
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
         "guardrails": guardrails,
@@ -1597,6 +1823,75 @@ def cdb_context_impact_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+# ── Wave-14 MCP Tool Handlers (#2122 Registry/Bridge Completeness) ─────────────
+
+
+def cdb_context_evidence_resolve_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_evidence_resolve.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_evidence_memory_tools import handle_cdb_context_evidence_resolve
+
+    return handle_cdb_context_evidence_resolve(kwargs)
+
+
+def cdb_context_claim_resolve_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_claim_resolve.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_evidence_memory_tools import handle_cdb_context_claim_resolve
+
+    return handle_cdb_context_claim_resolve(kwargs)
+
+
+def cdb_context_memory_get_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_memory_get.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_evidence_memory_tools import handle_cdb_context_memory_get
+
+    return handle_cdb_context_memory_get(kwargs)
+
+
+def cdb_context_trust_summary_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_trust_summary.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_evidence_memory_tools import handle_cdb_context_trust_summary
+
+    return handle_cdb_context_trust_summary(kwargs)
+
+
+def cdb_context_decision_history_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_decision_history.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_decision_tools import handle_cdb_context_decision_history
+
+    return handle_cdb_context_decision_history(kwargs)
+
+
+def cdb_context_decision_replay_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_decision_replay.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-14 adapter.
+    Fail-closed. No DB/network/write.
+    """
+    from tools.mcp.context_decision_tools import handle_cdb_context_decision_replay
+
+    return handle_cdb_context_decision_replay(kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -1738,6 +2033,26 @@ class ContextBridge:
                 handler=cdb_context_impact_handler,
             )
             self._registry._tools["cdb_context_impact"] = new_impact
+        # Wave-14 handlers (#2122 Registry/Bridge completeness)
+        _wave14_handler_map = {
+            "cdb_context_evidence_resolve": cdb_context_evidence_resolve_handler,
+            "cdb_context_claim_resolve": cdb_context_claim_resolve_handler,
+            "cdb_context_memory_get": cdb_context_memory_get_handler,
+            "cdb_context_trust_summary": cdb_context_trust_summary_handler,
+            "cdb_context_decision_history": cdb_context_decision_history_handler,
+            "cdb_context_decision_replay": cdb_context_decision_replay_handler,
+        }
+        for _tool_name, _handler_fn in _wave14_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
         self._registry.assert_read_only_consistency()
         logger.info(
             f"ContextBridge initialized with tools: {self._registry.list_tool_names()}"

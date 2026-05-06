@@ -1,9 +1,19 @@
 """
 Unit tests for MCP Briefing Enrichment (#2122).
 
-Tests the honest partial enrichment logic in context_briefing_handler 
+Tests the briefing enrichment logic in context_briefing_handler
 from tools.mcp.context_bridge.
+
+Covers:
+- Fail-closed (no records) → controlled-empty enrichment
+- Real enrichment with Wave-14 fixture records
+- Stale/missing/blocking evidence surfaces correctly
+- Registry/Bridge completeness for Wave-14 tools
+- Guardrails: no_echtgeld_go, no Live-Go
 """
+
+import json
+from pathlib import Path
 
 import pytest
 from tools.mcp.context_bridge import context_briefing_handler
@@ -11,18 +21,31 @@ from tools.mcp.context_bridge import context_briefing_handler
 pytestmark = pytest.mark.unit
 
 
-class TestBriefingEnrichment:
-    """Tests for briefing enrichment fields and honest runtime behavior."""
+FIXTURE_PATH = Path("tests/fixtures/surrealdb/wave14/wave14_v1.json")
+
+
+def _load_fixture() -> dict:
+    return json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+
+
+def _minimal_kwargs(**extra) -> dict:
+    base = dict(
+        task_id="test-enrich",
+        task_scope="test enrichment",
+        target_issue=None,
+        requested_depth="quick",
+        operation_mode="read_only",
+    )
+    base.update(extra)
+    return base
+
+
+class TestBriefingEnrichmentFailClosed:
+    """Tests for fail-closed (no records) enrichment behavior."""
 
     def test_enrichment_id_present(self) -> None:
         """Briefing result includes enrichment_id."""
-        result = context_briefing_handler(
-            task_id="test-enrich-1",
-            task_scope="test",
-            target_issue=None,
-            requested_depth="quick",
-            operation_mode="read_only",
-        )
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-1"))
         assert result["status"] == "ok"
         briefing = result["briefing"]
         assert "enrichment_id" in briefing
@@ -30,71 +53,360 @@ class TestBriefingEnrichment:
         assert "enriched_briefing_id" in briefing
         assert briefing["enriched_briefing_id"] == briefing["briefing_id"]
 
-    def test_trust_summary_reports_partial_mode(self) -> None:
-        """Trust summary indicates partial enrichment/missing resolvers."""
-        result = context_briefing_handler(
-            task_id="test-enrich-2",
-            task_scope="test",
-            target_issue=None,
-            requested_depth="quick",
-            operation_mode="read_only",
-        )
+    def test_trust_summary_reports_no_records_provided(self) -> None:
+        """Trust summary indicates enrichment was skipped (no records)."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-2"))
         assert result["status"] == "ok"
         summary = result["briefing"]["trust_summary"]
-        assert "partial mode" in summary.lower()
-        assert "#2020" in summary  # Refers to missing evidence resolve issue
+        assert "Enrichment skipped" in summary
+        assert "no evidence_records" in summary.lower() or "supply records" in summary.lower()
 
-    def test_no_fabricated_data_for_issue_2122(self) -> None:
-        """Production code must not fabricate data even for issue #2122."""
-        result = context_briefing_handler(
-            task_id="test-enrich-3",
-            task_scope="test",
-            target_issue="#2122",
-            requested_depth="standard",
-            operation_mode="read_only",
-        )
+    def test_no_records_returns_empty_enriched_fields(self) -> None:
+        """No records provided → enriched fields are empty (fail-closed)."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-3"))
         assert result["status"] == "ok"
         briefing = result["briefing"]
-        
-        # Must be empty as resolvers #2020 and #2121 are missing
         assert briefing["enriched_decisions"] == []
         assert briefing["enriched_evidence"] == []
         assert briefing["enriched_memory"] == []
 
-    def test_missing_evidence_notice_and_stop_condition(self) -> None:
-        """Missing resolver triggers notices and S5 stop condition."""
-        result = context_briefing_handler(
-            task_id="test-enrich-4",
-            task_scope="test",
-            target_issue=None,
-            requested_depth="quick",
-            operation_mode="read_only",
-        )
+    def test_no_records_missing_evidence_notice(self) -> None:
+        """No records provided → missing_evidence_notice indicates missing inputs."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-4"))
         assert result["status"] == "ok"
-        briefing = result["briefing"]
-        
-        assert "evidence" in briefing["missing_evidence_notice"]
-        assert "decisions" in briefing["missing_evidence_notice"]
-        
-        # Check for S5 stop condition
-        assert any("S5: missing evidence resolution" in sc for sc in briefing["stop_conditions"])
+        notice = result["briefing"]["missing_evidence_notice"]
+        assert any("no_evidence_records_provided" in n for n in notice)
+        assert any("no_decision_events_provided" in n for n in notice)
+
+    def test_no_records_stop_condition_s5(self) -> None:
+        """No records → S5 stop condition about missing enrichment records."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-5"))
+        assert result["status"] == "ok"
+        assert any("S5" in sc for sc in result["briefing"]["stop_conditions"])
 
     def test_enriched_fields_completeness(self) -> None:
         """All required enrichment fields are present in the output."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-6"))
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        required_fields = {
+            "enrichment_id",
+            "enriched_briefing_id",
+            "trust_summary",
+            "enriched_decisions",
+            "enriched_evidence",
+            "enriched_memory",
+            "enriched_stop_conditions",
+            "stale_evidence_notice",
+            "contradictory_evidence_notice",
+            "missing_evidence_notice",
+            "blocking_trust_findings",
+            "recommended_next_reads",
+            "approval_semantics",
+        }
+        for field in required_fields:
+            assert field in briefing, f"Missing enrichment field: {field}"
+
+    def test_approval_semantics_no_echtgeld_go(self) -> None:
+        """approval_semantics.no_echtgeld_go is always True (no records)."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-enrich-7"))
+        assert result["status"] == "ok"
+        sem = result["briefing"]["approval_semantics"]
+        assert sem["no_echtgeld_go"] is True
+
+
+class TestBriefingEnrichmentWithRecords:
+    """Tests for real enrichment when Wave-14 records are provided."""
+
+    def test_enrichment_with_evidence_records(self) -> None:
+        """Briefing with evidence_records → enriched_evidence populated from service."""
+        fx = _load_fixture()
         result = context_briefing_handler(
-            task_id="test-enrich-5",
-            task_scope="test",
-            target_issue=None,
-            requested_depth="quick",
-            operation_mode="read_only",
+            **_minimal_kwargs(
+                task_id="test-enrich-ev-1",
+                evidence_records=fx["evidence_records"],
+                enrichment_scope="wave14",
+            )
         )
         assert result["status"] == "ok"
         briefing = result["briefing"]
-        fields = {
-            "enrichment_id", "enriched_briefing_id", "trust_summary",
-            "enriched_decisions", "enriched_evidence", "enriched_memory",
-            "enriched_stop_conditions", "stale_evidence_notice",
-            "contradictory_evidence_notice", "missing_evidence_notice"
+        # Real enrichment: evidence comes from service, not stub
+        assert len(briefing["enriched_evidence"]) > 0
+        ids = {e["evidence_id"] for e in briefing["enriched_evidence"]}
+        assert "ev-001" in ids  # present in fixture
+
+    def test_enrichment_with_memory_records(self) -> None:
+        """Briefing with memory_records → enriched_memory populated from service."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-mem-1",
+                memory_records=fx["memory_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        assert len(briefing["enriched_memory"]) > 0
+        ids = {m["memory_id"] for m in briefing["enriched_memory"]}
+        # mem-001 and mem-002 are wave14 scope
+        assert "mem-001" in ids or "mem-002" in ids
+
+    def test_enrichment_with_all_records(self) -> None:
+        """Briefing with all record types → all enriched fields populated from services."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            task_id="test-enrich-all",
+            task_scope="wave14 full enrichment test",
+            target_issue="#2122",
+            requested_depth="standard",
+            operation_mode="read_only",
+            evidence_records=fx["evidence_records"],
+            claim_records=fx["claim_records"],
+            memory_records=fx["memory_records"],
+            enrichment_scope="wave14",
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        # Evidence: from service (not empty stub)
+        assert len(briefing["enriched_evidence"]) > 0
+        # Memory: from service (not empty stub)
+        assert len(briefing["enriched_memory"]) > 0
+        # Trust summary: from real trust_summary_v1 service
+        ts = briefing["trust_summary"]
+        assert "Trust level:" in ts
+        assert "Composite score:" in ts
+        assert "no_echtgeld_go: true" in ts
+
+    def test_enrichment_trust_summary_includes_trust_level(self) -> None:
+        """Trust summary from real service includes trust_level."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-ts",
+                evidence_records=fx["evidence_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        ts = result["briefing"]["trust_summary"]
+        # Must include trust level from real service output
+        assert any(level in ts for level in ("blocked", "weak", "acceptable", "strong"))
+
+    def test_enrichment_blocking_missing_evidence_visible(self) -> None:
+        """Blocking missing evidence (ev-004 in fixture) surfaces in blocking_trust_findings."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-blocking",
+                evidence_records=fx["evidence_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        # ev-004 has blocking_missing=true → must surface
+        blocking = briefing["blocking_trust_findings"]
+        assert any("ev-004" in str(b) for b in blocking), (
+            f"Expected ev-004 in blocking_trust_findings, got: {blocking}"
+        )
+
+    def test_enrichment_stale_evidence_visible(self) -> None:
+        """Stale evidence (ev-005 in fixture) surfaces in stale_evidence_notice."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-stale",
+                evidence_records=fx["evidence_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+        briefing = result["briefing"]
+        # ev-005 has stale=true → must surface
+        stale = briefing["stale_evidence_notice"]
+        assert any("ev-005" in str(s) for s in stale), (
+            f"Expected ev-005 in stale_evidence_notice, got: {stale}"
+        )
+
+    def test_enrichment_approval_semantics_no_echtgeld_go_with_records(self) -> None:
+        """approval_semantics.no_echtgeld_go is True even when records are provided."""
+        fx = _load_fixture()
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-sem",
+                evidence_records=fx["evidence_records"],
+            )
+        )
+        assert result["status"] == "ok"
+        sem = result["briefing"]["approval_semantics"]
+        assert sem["no_echtgeld_go"] is True
+
+    def test_enrichment_no_crash_on_empty_lists(self) -> None:
+        """Empty lists for records → fail-closed, no crash."""
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-empty",
+                evidence_records=[],
+                claim_records=[],
+                decision_events=[],
+                memory_records=[],
+            )
+        )
+        assert result["status"] == "ok"
+        assert result["briefing"]["enriched_evidence"] == []
+        assert result["briefing"]["enriched_memory"] == []
+
+    def test_enrichment_no_db_no_network(self) -> None:
+        """Enrichment with records must NOT require DB or network (pure in-memory)."""
+        fx = _load_fixture()
+        # If this runs without network/DB, the test passes — services are in-memory
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-no-db",
+                evidence_records=fx["evidence_records"],
+                memory_records=fx["memory_records"],
+                enrichment_scope="wave14",
+            )
+        )
+        assert result["status"] == "ok"
+
+    def test_enrichment_custom_scope(self) -> None:
+        """enrichment_scope kwarg controls which records are retrieved."""
+        fx = _load_fixture()
+        # Using a non-existent scope → no matching claims/memory
+        result = context_briefing_handler(
+            **_minimal_kwargs(
+                task_id="test-enrich-scope",
+                claim_records=fx["claim_records"],
+                memory_records=fx["memory_records"],
+                enrichment_scope="nonexistent_scope_xyz",
+            )
+        )
+        assert result["status"] == "ok"
+        # No claim/memory records match a nonexistent scope
+        assert result["briefing"]["enriched_memory"] == []
+
+
+class TestBriefingEnrichmentGuardrails:
+    """Tests for guardrail enforcement in briefing enrichment."""
+
+    def test_guardrails_always_present(self) -> None:
+        """Guardrails list is always present and contains no-write/no-live entries."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-guard-1"))
+        assert result["status"] == "ok"
+        guards = result["briefing"]["guardrails"]
+        assert any("No" in g for g in guards)
+        assert any("Live" in g or "Echtgeld" in g for g in guards)
+
+    def test_no_live_go_in_stop_conditions(self) -> None:
+        """Stop conditions always include no-live-go/no-echtgeld entries."""
+        result = context_briefing_handler(**_minimal_kwargs(task_id="test-guard-2"))
+        assert result["status"] == "ok"
+        stop = result["briefing"]["stop_conditions"]
+        # At minimum, LR/stage stop condition should be present
+        assert any("LR" in sc or "S10" in sc or "S5" in sc for sc in stop)
+
+
+class TestRegistryWave14Completeness:
+    """Tests for Wave-14 tool registry/bridge completeness (#2122)."""
+
+    def test_all_wave14_tools_registered(self) -> None:
+        """All 6 Wave-14 tool names are registered in the registry."""
+        from tools.mcp.registry import ContextToolRegistry
+
+        required_names = {
+            "cdb_context_evidence_resolve",
+            "cdb_context_claim_resolve",
+            "cdb_context_memory_get",
+            "cdb_context_trust_summary",
+            "cdb_context_decision_history",
+            "cdb_context_decision_replay",
         }
-        for field in fields:
-            assert field in briefing, f"Missing enrichment field: {field}"
+        registered = set(ContextToolRegistry.list_tool_names())
+        missing = required_names - registered
+        assert not missing, f"Wave-14 tools missing from registry: {missing}"
+
+    def test_wave14_tools_are_read_only(self) -> None:
+        """All Wave-14 tools in registry have read_only=True."""
+        from tools.mcp.registry import ContextToolRegistry
+
+        wave14_names = [
+            "cdb_context_evidence_resolve",
+            "cdb_context_claim_resolve",
+            "cdb_context_memory_get",
+            "cdb_context_trust_summary",
+            "cdb_context_decision_history",
+            "cdb_context_decision_replay",
+        ]
+        for name in wave14_names:
+            tool = ContextToolRegistry.get_tool(name)
+            assert tool is not None, f"Tool {name} not found in registry"
+            assert tool.read_only is True, f"Tool {name} is not read_only"
+
+    def test_wave14_handlers_wired_in_bridge(self) -> None:
+        """Wave-14 tools have real handlers (not just not_implemented stubs) in bridge."""
+        from tools.mcp.context_bridge import create_bridge
+
+        bridge = create_bridge()
+        wave14_names = [
+            "cdb_context_evidence_resolve",
+            "cdb_context_claim_resolve",
+            "cdb_context_memory_get",
+            "cdb_context_trust_summary",
+            "cdb_context_decision_history",
+            "cdb_context_decision_replay",
+        ]
+        for name in wave14_names:
+            tool = bridge._registry.get_tool(name)
+            assert tool is not None, f"Tool {name} not found in bridge registry"
+            # Handler must be a real function, not the not_implemented placeholder
+            fn_name = tool.handler.__name__
+            assert "not_implemented" not in fn_name, (
+                f"Tool {name} still uses not_implemented handler: {fn_name}"
+            )
+
+    def test_bridge_execute_evidence_resolve(self) -> None:
+        """Bridge can execute cdb_context_evidence_resolve via execute_tool."""
+        from tools.mcp.context_bridge import create_bridge
+
+        fx = _load_fixture()
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_evidence_resolve",
+            {
+                "mode": "by_confidence",
+                "min_confidence": 0.0,
+                "evidence_records": fx["evidence_records"],
+            },
+        )
+        assert result["status"] == "ok", f"Expected ok, got: {result}"
+        assert result["tool"] == "cdb_context_evidence_resolve"
+
+    def test_bridge_execute_memory_get(self) -> None:
+        """Bridge can execute cdb_context_memory_get via execute_tool."""
+        from tools.mcp.context_bridge import create_bridge
+
+        fx = _load_fixture()
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_memory_get",
+            {
+                "mode": "by_scope",
+                "scope": "wave14",
+                "memory_records": fx["memory_records"],
+            },
+        )
+        assert result["status"] == "ok", f"Expected ok, got: {result}"
+
+    def test_bridge_execute_trust_summary(self) -> None:
+        """Bridge can execute cdb_context_trust_summary via execute_tool."""
+        from tools.mcp.context_bridge import create_bridge
+
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_trust_summary",
+            {"scope": "wave14"},
+        )
+        assert result["status"] == "ok", f"Expected ok, got: {result}"
+        assert result["result"]["approval_semantics"]["no_echtgeld_go"] is True

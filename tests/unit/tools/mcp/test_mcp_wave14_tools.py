@@ -268,3 +268,151 @@ def test_mcp_trust_summary_no_echtgeld_go() -> None:
     })
     assert result["status"] == "ok"
     assert result["result"]["approval_semantics"]["no_echtgeld_go"] is True
+
+
+# ── Registry Completeness Tests (#2122) ────────────────────────────────────────
+
+
+WAVE14_TOOL_NAMES = [
+    "cdb_context_evidence_resolve",
+    "cdb_context_claim_resolve",
+    "cdb_context_memory_get",
+    "cdb_context_trust_summary",
+    "cdb_context_decision_history",
+    "cdb_context_decision_replay",
+]
+
+
+@pytest.mark.unit
+def test_registry_all_wave14_tools_present() -> None:
+    """All 6 Wave-14 tool names are registered in ContextToolRegistry."""
+    from tools.mcp.registry import ContextToolRegistry
+
+    registered = set(ContextToolRegistry.list_tool_names())
+    missing = set(WAVE14_TOOL_NAMES) - registered
+    assert not missing, f"Wave-14 tools missing from registry: {missing}"
+
+
+@pytest.mark.unit
+def test_registry_wave14_tools_read_only() -> None:
+    """All Wave-14 tools in the registry have read_only=True."""
+    from tools.mcp.registry import ContextToolRegistry
+
+    for name in WAVE14_TOOL_NAMES:
+        tool = ContextToolRegistry.get_tool(name)
+        assert tool is not None, f"Tool not found: {name}"
+        assert tool.read_only is True, f"Tool {name} is not read_only"
+
+
+@pytest.mark.unit
+def test_bridge_wave14_handlers_not_stubs() -> None:
+    """Wave-14 tools in bridge have real handlers (not not_implemented placeholders)."""
+    from tools.mcp.context_bridge import create_bridge
+
+    bridge = create_bridge()
+    for name in WAVE14_TOOL_NAMES:
+        tool = bridge._registry.get_tool(name)
+        assert tool is not None, f"Tool {name} missing in bridge registry"
+        fn_name = tool.handler.__name__
+        assert "not_implemented" not in fn_name, (
+            f"Tool {name} still uses not_implemented handler: {fn_name}"
+        )
+
+
+@pytest.mark.unit
+def test_bridge_execute_cdb_context_evidence_resolve() -> None:
+    """Bridge.execute_tool routes cdb_context_evidence_resolve to real handler."""
+    from tools.mcp.context_bridge import create_bridge
+
+    fx = _load_fixture()
+    bridge = create_bridge()
+    result = bridge.execute_tool(
+        "cdb_context_evidence_resolve",
+        {
+            "mode": "by_confidence",
+            "min_confidence": 0.0,
+            "evidence_records": fx["evidence_records"],
+        },
+    )
+    assert result["status"] == "ok", f"Expected ok, got: {result}"
+    assert result["tool"] == "cdb_context_evidence_resolve"
+    assert result["metadata"]["read_only"] is True
+
+
+@pytest.mark.unit
+def test_bridge_execute_cdb_context_claim_resolve() -> None:
+    """Bridge.execute_tool routes cdb_context_claim_resolve to real handler."""
+    from tools.mcp.context_bridge import create_bridge
+
+    fx = _load_fixture()
+    bridge = create_bridge()
+    result = bridge.execute_tool(
+        "cdb_context_claim_resolve",
+        {
+            "mode": "by_scope",
+            "scope": "wave14",
+            "claim_records": fx["claim_records"],
+        },
+    )
+    assert result["status"] == "ok", f"Expected ok, got: {result}"
+    assert result["metadata"]["read_only"] is True
+
+
+@pytest.mark.unit
+def test_bridge_execute_cdb_context_memory_get() -> None:
+    """Bridge.execute_tool routes cdb_context_memory_get to real handler."""
+    from tools.mcp.context_bridge import create_bridge
+
+    fx = _load_fixture()
+    bridge = create_bridge()
+    result = bridge.execute_tool(
+        "cdb_context_memory_get",
+        {
+            "mode": "by_scope",
+            "scope": "wave14",
+            "memory_records": fx["memory_records"],
+        },
+    )
+    assert result["status"] == "ok", f"Expected ok, got: {result}"
+    assert result["metadata"]["read_only"] is True
+
+
+@pytest.mark.unit
+def test_bridge_execute_cdb_context_trust_summary() -> None:
+    """Bridge.execute_tool routes cdb_context_trust_summary to real handler."""
+    from tools.mcp.context_bridge import create_bridge
+
+    bridge = create_bridge()
+    result = bridge.execute_tool(
+        "cdb_context_trust_summary",
+        {"scope": "wave14"},
+    )
+    assert result["status"] == "ok", f"Expected ok, got: {result}"
+    assert result["result"]["approval_semantics"]["no_echtgeld_go"] is True
+
+
+@pytest.mark.unit
+def test_bridge_wave14_no_echtgeld_go_guardrail() -> None:
+    """All Wave-14 tool results via bridge carry no_echtgeld_go semantics."""
+    from tools.mcp.context_bridge import create_bridge
+
+    fx = _load_fixture()
+    bridge = create_bridge()
+
+    # evidence_resolve
+    r = bridge.execute_tool(
+        "cdb_context_evidence_resolve",
+        {
+            "mode": "by_confidence",
+            "min_confidence": 0.8,
+            "evidence_records": fx["evidence_records"],
+        },
+    )
+    assert r["status"] == "ok"
+    assert r["result"]["approval_semantics"]["no_echtgeld_go"] is True
+
+    # trust_summary
+    r2 = bridge.execute_tool("cdb_context_trust_summary", {"scope": "wave14"})
+    assert r2["status"] == "ok"
+    assert r2["result"]["approval_semantics"]["no_echtgeld_go"] is True
+

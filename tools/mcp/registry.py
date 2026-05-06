@@ -782,6 +782,230 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_impact"),
     ),
+    # ── Wave-14 Tools (#2122 Registry/Bridge Completeness) ─────────────────
+    ToolDefinition(
+        name="cdb_context_evidence_resolve",
+        description=(
+            "Wave-14 evidence resolve MCP tool. Resolves evidence for artifacts, "
+            "claims, and decisions over in-memory records. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string"},
+                        "artifact": {"type": "string"},
+                        "claim": {"type": "string"},
+                        "run_id": {"type": "string"},
+                        "evidence_type": {"type": "string"},
+                        "freshness_days": {"type": "integer"},
+                        "min_confidence": {"type": "number"},
+                        "evidence_records": {"type": "array"},
+                        "limit": {"type": "integer"},
+                    },
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_evidence_resolve"),
+    ),
+    ToolDefinition(
+        name="cdb_context_claim_resolve",
+        description=(
+            "Wave-14 claim resolve MCP tool. Resolves claims over in-memory records. "
+            "Surfaces disputed/stale/weakly-supported claims. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string"},
+                        "topic": {"type": "string"},
+                        "scope": {"type": "string"},
+                        "status": {"type": "string"},
+                        "artifact": {"type": "string"},
+                        "claim_records": {"type": "array"},
+                        "limit": {"type": "integer"},
+                    },
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_claim_resolve"),
+    ),
+    ToolDefinition(
+        name="cdb_context_memory_get",
+        description=(
+            "Wave-14 scoped memory read MCP tool. Reads agent memory records "
+            "by scope, topic, or agent. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string"},
+                        "scope": {"type": "string"},
+                        "topic": {"type": "string"},
+                        "agent": {"type": "string"},
+                        "memory_records": {"type": "array"},
+                        "limit": {"type": "integer"},
+                    },
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_memory_get"),
+    ),
+    ToolDefinition(
+        name="cdb_context_trust_summary",
+        description=(
+            "Wave-14 trust summary MCP tool. Builds a trust assessment from "
+            "evidence, claim, decision, and memory results. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "scope": {"type": "string"},
+                        "topic": {"type": "string"},
+                        "artifact": {"type": "string"},
+                        "evidence_result": {"type": "object"},
+                        "claim_result": {"type": "object"},
+                        "decision_result": {"type": "object"},
+                        "memory_result": {"type": "object"},
+                    },
+                    "required": ["scope"],
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_trust_summary"),
+    ),
+    ToolDefinition(
+        name="cdb_context_decision_history",
+        description=(
+            "Wave-14 decision history MCP tool. Queries decision history over "
+            "in-memory decision event records. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string"},
+                        "topic": {"type": "string"},
+                        "scope": {"type": "string"},
+                        "decision_id": {"type": "string"},
+                        "issue": {"type": "string"},
+                        "status": {"type": "string"},
+                        "decision_events": {"type": "array"},
+                        "limit": {"type": "integer"},
+                    },
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_decision_history"),
+    ),
+    ToolDefinition(
+        name="cdb_context_decision_replay",
+        description=(
+            "Wave-14 decision replay MCP tool. Builds a decision replay "
+            "from decision event records. Read-only, fail-closed, "
+            "no DB/network/write. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "mode": {"type": "string"},
+                        "decision_id": {"type": "string"},
+                        "topic": {"type": "string"},
+                        "decision_events": {"type": "array"},
+                        "limit": {"type": "integer"},
+                    },
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_decision_replay"),
+    ),
 ]
 
 
