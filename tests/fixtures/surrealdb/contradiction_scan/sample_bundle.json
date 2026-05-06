@@ -1,0 +1,27 @@
+{
+  "_comment": "Sample input bundle for contradiction_cli tests. Triggers a blocking finding via claim_vs_evidence (status: invalidated) and a warning via doc_vs_code (missing symbol).",
+  "claims": [
+    {
+      "claim_id": "c-001",
+      "status": "invalidated",
+      "topic": "MyService API contract",
+      "evidence_refs": []
+    },
+    {
+      "claim_id": "c-002",
+      "status": "stale",
+      "topic": "Deployment SOP v1",
+      "evidence_refs": ["ev-stale-001"]
+    }
+  ],
+  "doc_claims": [
+    {
+      "claim_id": "d-001",
+      "path": "docs/api.md",
+      "symbol": "NonexistentSymbol",
+      "exists": true,
+      "blocking": false
+    }
+  ],
+  "code_symbols": []
+}
