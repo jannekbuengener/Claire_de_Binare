@@ -246,13 +246,15 @@ Enforcement erfolgt in Producer-/Validator-Logik in späteren Wellen.
 | Feld | Typ | Pflicht | Beschreibung |
 |---|---|---|---|
 | `decision_id` | `string` | ✅ | Stabile externe ID |
+| `ledger_source` | `string` | ✅ | Ledger-Quellpfad (Git-Pfad + Commit-SHA). Pflicht per `ownership.yaml` Drift-Regel `ledger_link_missing`. |
+| `event_id` | `string` | ✅ | Eindeutige Ledger-Event-ID. Pflicht per `ownership.yaml` Drift-Regel `ledger_link_missing`. |
 | `title` | `string` | | Entscheidungstitel |
 | `question` | `string` | | Entscheidungsfrage |
 | `answer` | `string` | | Entscheidung |
 | `decision_type` | `string` | | Typ (z. B. `architecture`, `governance`, `policy`) |
 | `status` | `string` | | Status (z. B. `active`, `superseded`, `invalidated`) |
 | `scope` | `string` | | Geltungsbereich |
-| `evidence_refs` | `array` | | Evidenzreferenzen |
+| `evidence_refs` | `array` | ✅ | Evidenzreferenzen mit Ledger-Provenance. Pflicht per `ownership.yaml` Drift-Regel `missing_evidence_ref`. |
 | `claim_refs` | `array` | | Verknüpfte Claims |
 | `affected_artifacts` | `array` | | Betroffene Artefakte |
 | `agent` | `string` | | Erstellender Agent |

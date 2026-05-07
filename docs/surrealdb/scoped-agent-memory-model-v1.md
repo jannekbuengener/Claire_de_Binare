@@ -148,8 +148,8 @@ Jeder `agent_memory`-Eintrag MUSS folgende Felder enthalten:
 | `scope` | `string` | Pflicht. Vollständiger Agent-Scope-Identifier (z. B. `agent:OPENCODE/copilot`). Kein unscoped write. |
 | `memory_type` | `string` | Pflicht. Einer der 6 kanonischen Typen (siehe Abschnitt 3). |
 | `content` | `string` | Pflicht. Memory-Inhalt. Kein leerer String. |
-| `source_refs` | `array` | Pflicht. Mind. eine Quellreferenz (Git-Pfad, Issue-URL, PR-URL). Kein Memory ohne Quelle. |
-| `evidence_refs` | `array` | Pflicht bei Confidence > 0.5. Evidenzreferenzen (Evidence-IDs, Commit-Hashes, CI-Run-URLs). |
+| `source_refs` | `array` | Pflicht. Mind. eine Quellreferenz. Git-Pfade müssen als content-adressierbarer Hash (`file_path@commit_sha`) angegeben werden wenn verfügbar; Issue/PR-URLs sind zulässig als sekundäre Referenz, aber nicht als alleiniger Nachweis. |
+| `evidence_refs` | `array` | Pflicht. Mind. eine Evidenzreferenz (Evidence-ID, Commit-Hash oder CI-Run-URL). Kein Memory ohne provenance-backed Evidence. Entspricht `missing_source_hash`-Drift-Regel in `ownership.yaml`. |
 | `confidence` | `float` | Pflicht. [0.0–1.0]. Unvollständige oder unverified Memory → niedrig (< 0.5). |
 | `ttl` | `int` | Pflicht. Time-to-Live in Sekunden. 0 = kein automatisches Expire (nur mit Human-GO). |
 | `created_by` | `string` | Pflicht. Agent ID des Erstellers. |
@@ -267,7 +267,7 @@ Memory wird als **stale** behandelt, wenn einer der folgenden Fälle eintritt:
 | Scope `global` oder `*` | Globaler unscoped Write | Verboten; kein Default-Global-Namespace |
 | Cross-Scope-Write | Agent schreibt in fremden Scope | Ablehnen ohne Human-GO |
 | Memory ohne `source_refs` | Kein Quellennachweis | Ablehnen; ungültig |
-| Memory ohne `evidence_refs` bei confidence > 0.5 | Keine Evidenz für hohe Confidence | Confidence auf 0.4 deckeln oder ablehnen |
+| Memory ohne `evidence_refs` | Kein provenance-backed Nachweis | Ablehnen; ungültig (ownership.yaml: `missing_source_hash`) |
 
 ---
 
