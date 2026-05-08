@@ -2002,6 +2002,30 @@ def cdb_context_scope_drift_handler(**kwargs) -> dict[str, Any]:
     return handle_cdb_context_scope_drift(kwargs)
 
 
+def cdb_context_quality_score_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_quality_score.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-18-B adapter.
+    Fail-closed. No DB/network/write. Bundle-driven. Scoring is signal, not
+    action permission. No live-go. No Echtgeld-Go.
+    """
+    from tools.mcp.quality_scoring_tools import handle_quality_score
+
+    return handle_quality_score(**kwargs)
+
+
+def cdb_context_architect_signals_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_architect_signals.
+
+    Thin adapter: passes **kwargs as the request mapping to the Wave-18-D adapter.
+    Fail-closed. No DB/network/write. Bundle-driven. Signals are recommendations,
+    not action permissions. No automatic issue creation. No live-go. No Echtgeld-Go.
+    """
+    from tools.mcp.architect_signal_tools import handle_architect_signals
+
+    return handle_architect_signals(**kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -2198,6 +2222,22 @@ class ContextBridge:
             "cdb_context_scope_drift": cdb_context_scope_drift_handler,
         }
         for _tool_name, _handler_fn in _wave17c_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
+        # Wave-18 handlers (#2173 Quality Score MCP, #2175 Architect Signals MCP)
+        _wave18_handler_map = {
+            "cdb_context_quality_score": cdb_context_quality_score_handler,
+            "cdb_context_architect_signals": cdb_context_architect_signals_handler,
+        }
+        for _tool_name, _handler_fn in _wave18_handler_map.items():
             _old = self._registry.get_tool(_tool_name)
             if _old:
                 self._registry._tools[_tool_name] = ToolDefinition(

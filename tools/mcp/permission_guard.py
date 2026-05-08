@@ -159,6 +159,19 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     # The tool is read-only, bundle-driven, and fail-closed; the scope drift
     # firewall service enforces no-write, no-network, no-auto-fix guardrails.
     "cdb_context_scope_drift",
+    # Wave-18-B quality score MCP tool (#2173).
+    # Processes quality bundles whose source paths, decision descriptions, and
+    # evidence content legitimately contain words like "Create", "Update",
+    # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
+    # and fail-closed; the quality scoring service enforces no-write, no-network,
+    # no-auto-fix guardrails.
+    "cdb_context_quality_score",
+    # Wave-18-D architect signals MCP tool (#2175).
+    # Processes signal bundles whose findings and explanations legitimately
+    # contain write-intent strings. The tool is read-only, bundle-driven, and
+    # fail-closed; the architect signal service enforces no-write, no-network,
+    # no-auto-fix guardrails.
+    "cdb_context_architect_signals",
 })
 
 

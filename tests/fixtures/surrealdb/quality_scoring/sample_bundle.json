@@ -1,0 +1,117 @@
+{
+  "_comment": "Sample quality scoring bundle for Wave-18 tests. Represents a mixed-quality system context with some good and some weak dimensions.",
+  "meta": {
+    "scope_id": "sample-quality-001",
+    "level": "system",
+    "description": "Sample system context bundle for quality scoring tests"
+  },
+  "sources": [
+    {
+      "source_path": "core/domain/models.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "status": "current",
+      "file_type": "python",
+      "owner": "trading-core"
+    },
+    {
+      "source_path": "core/risk/service.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "status": "current",
+      "file_type": "python",
+      "owner": "risk-team"
+    },
+    {
+      "source_path": "services/execution/service.py",
+      "has_documentation": false,
+      "has_tests": true,
+      "status": "current",
+      "file_type": "python"
+    },
+    {
+      "source_path": "docs/operations/runbook.md",
+      "has_documentation": true,
+      "has_tests": false,
+      "status": "current",
+      "file_type": "markdown"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "dec-risk-gate-001",
+      "status": "current",
+      "evidence_refs": ["ev-001", "ev-002"]
+    },
+    {
+      "decision_id": "dec-old-execution-v1",
+      "status": "superseded",
+      "evidence_refs": []
+    },
+    {
+      "decision_id": "dec-candle-aggregation-001",
+      "status": "current",
+      "evidence_refs": ["ev-003"]
+    }
+  ],
+  "evidence_items": [
+    {
+      "evidence_id": "ev-001",
+      "strength": "strong",
+      "expired": false
+    },
+    {
+      "evidence_id": "ev-002",
+      "strength": "moderate",
+      "expired": false
+    },
+    {
+      "evidence_id": "ev-003",
+      "strength": "weak",
+      "expired": false
+    },
+    {
+      "evidence_id": "ev-004",
+      "strength": "strong",
+      "expired": true
+    }
+  ],
+  "contradiction_findings": [
+    {
+      "contradiction_id": "c-001",
+      "severity": "warning",
+      "status": "open",
+      "source_path": "docs/operations/runbook.md",
+      "description": "Runbook describes old retry policy"
+    }
+  ],
+  "stale_findings": [
+    {
+      "stale_id": "s-001",
+      "status": "stale",
+      "source_path": "docs/operations/runbook.md",
+      "reason": "Document has not been reviewed in 60+ days"
+    }
+  ],
+  "dependency_edges": [
+    {"edge_id": "edge-001", "confidence": "high", "source": "core/risk", "target": "core/domain"},
+    {"edge_id": "edge-002", "confidence": "high", "source": "services/execution", "target": "core/risk"},
+    {"edge_id": "edge-003", "confidence": "medium", "source": "services/execution", "target": "core/domain"},
+    {"edge_id": "edge-004", "confidence": "low", "source": "docs/operations", "target": "services/execution"}
+  ],
+  "memory_items": [
+    {
+      "memory_id": "mem-risk-policy-001",
+      "trust_level": "strong"
+    },
+    {
+      "memory_id": "mem-execution-mode-001",
+      "trust_level": "acceptable"
+    },
+    {
+      "memory_id": "mem-candle-interval-001",
+      "trust_level": "weak"
+    }
+  ],
+  "scope_drift_findings": []
+}

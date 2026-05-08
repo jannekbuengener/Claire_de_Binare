@@ -1293,6 +1293,129 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_scope_drift"),
     ),
+    # Wave-18: Knowledge Quality Scoring MCP tool (#2173)
+    ToolDefinition(
+        name="cdb_context_quality_score",
+        description=(
+            "Score the quality of a knowledge context bundle across 8 dimensions "
+            "(coverage, freshness, evidence, contradiction, dependency confidence, "
+            "memory trust, decision validity, scope risk). Returns overall grade "
+            "(blocking/watch/weak/good) and per-dimension scores. "
+            "Read-only, bundle-driven, fail-closed. No DB/network/writes."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": "Quality scoring bundle containing sources, decisions, evidence, findings.",
+                },
+                "dimension": {
+                    "type": ["string", "null"],
+                    "description": "Return only a single score dimension.",
+                },
+                "min_grade": {
+                    "type": ["string", "null"],
+                    "enum": ["blocking", "watch", "weak", "good", None],
+                    "description": "Return only dimensions at or below this grade.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 1,
+                    "maximum": 500,
+                    "description": "Maximum number of dimensions to return.",
+                },
+                "as_of": {
+                    "type": ["string", "null"],
+                    "description": "Advisory ISO-8601 UTC timestamp for the scoring run.",
+                },
+            },
+            "required": ["bundle"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "scope_id": {"type": "string"},
+                "level": {"type": "string"},
+                "scored_at": {"type": "string"},
+                "overall_score": {"type": "number"},
+                "overall_grade": {"type": "string"},
+                "blocking_dimensions": {"type": "array"},
+                "watch_dimensions": {"type": "array"},
+                "recommended_next_reads": {"type": "array"},
+                "dimensions": {"type": "array"},
+                "guardrails": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_quality_score"),
+    ),
+    # Wave-18: Architect Signals MCP tool (#2175)
+    ToolDefinition(
+        name="cdb_context_architect_signals",
+        description=(
+            "Detect proactive architect signals from a context bundle. "
+            "Generates 11 signal types: stale_area, weakly_evidenced_decision, "
+            "underdocumented_surface, undertested_surface, high_dependency_risk, "
+            "contradiction_hotspot, scope_drift_hotspot, repeated_agent_confusion, "
+            "redundant_docs, missing_owner, fragile_context_path. "
+            "Read-only, bundle-driven, fail-closed. No DB/network/writes. "
+            "No automatic issue creation. Human-GO required for blocking signals."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": "Context bundle containing sources, decisions, evidence, findings.",
+                },
+                "signal_type": {
+                    "type": ["string", "null"],
+                    "description": "Return only signals of this type.",
+                },
+                "min_severity": {
+                    "type": ["string", "null"],
+                    "enum": ["info", "watch", "blocking", None],
+                    "description": "Return only signals at or above this severity.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 100,
+                    "minimum": 1,
+                    "maximum": 500,
+                    "description": "Maximum number of signals to return.",
+                },
+                "as_of": {
+                    "type": ["string", "null"],
+                    "description": "Advisory ISO-8601 UTC timestamp for the scan.",
+                },
+            },
+            "required": ["bundle"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "scope_id": {"type": "string"},
+                "scanned_at": {"type": "string"},
+                "total_signals": {"type": "integer"},
+                "blocking_count": {"type": "integer"},
+                "watch_count": {"type": "integer"},
+                "signals": {"type": "array"},
+                "guardrails": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_architect_signals"),
+    ),
 ]
 
 
