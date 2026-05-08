@@ -35,7 +35,7 @@ Guardrails:
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 from core.utils.clock import utcnow as cdb_utcnow
@@ -623,6 +623,11 @@ def scan_architect_signals_v1(
     dependency_edges = _as_list(bundle.get("dependency_edges"))
     scope_drift_findings = _as_list(bundle.get("scope_drift_findings"))
 
+    # Compute one deterministic timestamp for the entire scan so that
+    # scanned_at and every signal's detected_at are identical when as_of
+    # is provided (fixes non-deterministic output on repeated calls).
+    effective_ts: str = as_of or cdb_utcnow().isoformat()
+
     all_signals: list[ArchitectSignal] = []
     all_signals.extend(_detect_stale_area(stale_findings))
     all_signals.extend(_detect_weakly_evidenced_decision(decisions, evidence_items))
@@ -641,6 +646,9 @@ def scan_architect_signals_v1(
     )
     all_signals.extend(_detect_redundant_docs(sources))
 
+    # Stamp all signals with the effective scan timestamp.
+    all_signals = [replace(s, detected_at=effective_ts) for s in all_signals]
+
     blocking_count = sum(1 for s in all_signals if s.severity == "blocking")
     watch_count = sum(1 for s in all_signals if s.severity == "watch")
 
@@ -654,5 +662,5 @@ def scan_architect_signals_v1(
         blocking_count=blocking_count,
         watch_count=watch_count,
         signals=tuple(sorted_signals),
-        scanned_at=(as_of or cdb_utcnow().isoformat()),
+        scanned_at=effective_ts,
     )

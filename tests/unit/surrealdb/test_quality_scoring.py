@@ -833,3 +833,82 @@ def test_high_dependency_risk_source_path_key_fallback_still_works() -> None:
     assert dep_signals
     paths = dep_signals[0].affected_paths
     assert len(paths) > 0, f"Expected non-empty affected_paths for source_path key, got {paths}"
+
+
+# ── architect signal tests: as_of / detected_at determinism (T12) ─────────────
+
+
+def _signal_bundle_with_low_conf_edges() -> dict:
+    """Bundle that reliably produces a high_dependency_risk signal."""
+    return {
+        "meta": {"scope_id": "det-ts-test", "level": "system"},
+        "sources": [],
+        "decisions": [],
+        "evidence_items": [],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [
+            {"edge_id": "e1", "confidence": "low", "source": "core/a.py", "target": "core/b.py"},
+            {"edge_id": "e2", "confidence": "low", "source": "core/c.py", "target": "core/d.py"},
+        ],
+        "memory_items": [],
+        "scope_drift_findings": [],
+    }
+
+
+@pytest.mark.unit
+def test_as_of_sets_signal_detected_at() -> None:
+    """When as_of is provided, every signal's detected_at equals the as_of value."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    as_of = "2026-05-08T00:00:00"
+    result = scan_architect_signals_v1(_signal_bundle_with_low_conf_edges(), as_of=as_of)
+    assert result.signals, "Expected at least one signal from low-confidence edges"
+    for sig in result.signals:
+        assert sig.detected_at == as_of, (
+            f"Signal {sig.signal_type}.detected_at={sig.detected_at!r} != as_of={as_of!r}"
+        )
+
+
+@pytest.mark.unit
+def test_as_of_detected_at_matches_scanned_at() -> None:
+    """scanned_at and all signal detected_at values are identical when as_of is supplied."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    as_of = "2026-05-08T12:34:56"
+    result = scan_architect_signals_v1(_signal_bundle_with_low_conf_edges(), as_of=as_of)
+    assert result.scanned_at == as_of
+    for sig in result.signals:
+        assert sig.detected_at == result.scanned_at, (
+            f"Signal {sig.signal_type}.detected_at={sig.detected_at!r} != "
+            f"scanned_at={result.scanned_at!r}"
+        )
+
+
+@pytest.mark.unit
+def test_repeated_as_of_scan_is_identical() -> None:
+    """Same bundle + same as_of produces identical to_dict() output on two calls."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    bundle = _signal_bundle_with_low_conf_edges()
+    as_of = "2026-05-08T00:00:00"
+    result1 = scan_architect_signals_v1(bundle, as_of=as_of)
+    result2 = scan_architect_signals_v1(bundle, as_of=as_of)
+    assert result1.to_dict() == result2.to_dict(), (
+        "Expected identical to_dict() for same bundle+as_of on two calls"
+    )
+
+
+@pytest.mark.unit
+def test_without_as_of_signals_still_generated() -> None:
+    """When as_of is omitted, signals are still generated (wall-clock path not broken)."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    result = scan_architect_signals_v1(_signal_bundle_with_low_conf_edges())
+    assert result.signals, "Expected signals even without as_of"
+    # scanned_at and detected_at should still be consistent with each other
+    for sig in result.signals:
+        assert sig.detected_at == result.scanned_at, (
+            f"Even without as_of, detected_at should equal scanned_at; "
+            f"got detected_at={sig.detected_at!r} scanned_at={result.scanned_at!r}"
+        )
