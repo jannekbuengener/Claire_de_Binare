@@ -215,10 +215,22 @@ def _score_coverage(sources: list[Any]) -> DimensionScore:
     )
 
 
-def _score_freshness(sources: list[Any], decisions: list[Any]) -> DimensionScore:
-    """Freshness: fraction of sources + decisions that are current (not stale/superseded)."""
+def _score_freshness(
+    sources: list[Any],
+    decisions: list[Any],
+    stale_findings: list[Any] | None = None,
+) -> DimensionScore:
+    """Freshness: fraction of sources + decisions that are current.
+
+    Bundle-level ``stale_findings`` are each counted as an additional
+    non-fresh item so that a bundle with all-current sources but open
+    stale findings cannot score perfect 1.0 freshness.
+    """
+    stale_findings = stale_findings or []
     items: list[Any] = list(sources) + list(decisions)
-    if not items:
+    # stale_findings always count as non-fresh entries in the total
+    extra_stale = len(stale_findings)
+    if not items and extra_stale == 0:
         return DimensionScore(
             dimension="freshness_score",
             score=0.5,
@@ -226,7 +238,7 @@ def _score_freshness(sources: list[Any], decisions: list[Any]) -> DimensionScore
             explanation="No sources or decisions provided — freshness defaulted to 0.5 (watch).",
             inputs_used=0,
         )
-    total = len(items)
+    total = len(items) + extra_stale
     fresh = 0
     for item in items:
         if not isinstance(item, Mapping):
@@ -239,14 +251,17 @@ def _score_freshness(sources: list[Any], decisions: list[Any]) -> DimensionScore
         ):
             fresh += 1
     score = fresh / total
+    explanation = (
+        f"{fresh}/{total} sources/decisions are current "
+        f"(not stale, superseded, or deleted)."
+    )
+    if extra_stale:
+        explanation += f" {extra_stale} bundle-level stale finding(s) counted against freshness."
     return DimensionScore(
         dimension="freshness_score",
         score=score,
         grade=_grade(score),
-        explanation=(
-            f"{fresh}/{total} sources/decisions are current "
-            f"(not stale, superseded, or deleted)."
-        ),
+        explanation=explanation,
         inputs_used=total,
     )
 
@@ -524,13 +539,14 @@ def score_knowledge_quality_v1(
     decisions = _as_list(bundle.get("decisions"))
     evidence_items = _as_list(bundle.get("evidence_items"))
     contradiction_findings = _as_list(bundle.get("contradiction_findings"))
+    stale_findings = _as_list(bundle.get("stale_findings"))
     dependency_edges = _as_list(bundle.get("dependency_edges"))
     memory_items = _as_list(bundle.get("memory_items"))
     scope_drift_findings = _as_list(bundle.get("scope_drift_findings"))
 
     dims = (
         _score_coverage(sources),
-        _score_freshness(sources, decisions),
+        _score_freshness(sources, decisions, stale_findings),
         _score_evidence(evidence_items),
         _score_contradiction(contradiction_findings),
         _score_dependency_confidence(dependency_edges),

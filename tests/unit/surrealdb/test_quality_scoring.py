@@ -628,3 +628,80 @@ def test_cli_score_knowledge_format_markdown_as_subcommand_arg(tmp_path: Any) ->
         ["score-knowledge", "--input", str(bundle_file), "--format", "markdown"]
     )
     assert exit_code == EXIT_OK
+
+
+# ── stale_findings freshness tests ───────────────────────────────────────────
+
+
+def _all_current_bundle_with_stale_findings(count: int = 1) -> dict[str, Any]:
+    """Bundle where all sources are current but stale_findings is non-empty."""
+    return {
+        "meta": {"scope_id": "stale-findings-test", "level": "system"},
+        "sources": [
+            {
+                "source_path": "core/a.py",
+                "has_documentation": True,
+                "has_tests": True,
+                "status": "current",
+                "file_type": "python",
+            },
+            {
+                "source_path": "core/b.py",
+                "has_documentation": True,
+                "has_tests": True,
+                "status": "current",
+                "file_type": "python",
+            },
+        ],
+        "decisions": [
+            {"decision_id": "d1", "status": "current", "evidence_refs": ["e1"]},
+        ],
+        "evidence_items": [
+            {"evidence_id": "e1", "strength": "strong", "expired": False},
+        ],
+        "contradiction_findings": [],
+        "stale_findings": [
+            {"stale_id": f"s-{i:03d}", "status": "stale", "source_path": f"docs/old-{i}.md"}
+            for i in range(count)
+        ],
+        "dependency_edges": [
+            {"edge_id": "edge-1", "confidence": "high"},
+        ],
+        "memory_items": [
+            {"memory_id": "mem-1", "trust_level": "high"},
+        ],
+        "scope_drift_findings": [],
+    }
+
+
+@pytest.mark.unit
+def test_stale_findings_lower_freshness_below_perfect() -> None:
+    """A bundle with all-current sources but 1 stale_finding must score < 1.0 freshness."""
+    result = _score(_all_current_bundle_with_stale_findings(count=1))
+    freshness_dim = next(d for d in result.dimensions if d.dimension == "freshness_score")
+    assert freshness_dim.score < 1.0, (
+        f"Expected freshness < 1.0 with 1 stale finding, got {freshness_dim.score}"
+    )
+
+
+@pytest.mark.unit
+def test_stale_findings_freshness_score_decreases_with_more_findings() -> None:
+    """More stale findings produce lower freshness than fewer stale findings."""
+    result_few = _score(_all_current_bundle_with_stale_findings(count=1))
+    result_many = _score(_all_current_bundle_with_stale_findings(count=5))
+    fresh_few = next(d.score for d in result_few.dimensions if d.dimension == "freshness_score")
+    fresh_many = next(d.score for d in result_many.dimensions if d.dimension == "freshness_score")
+    assert fresh_many < fresh_few, (
+        f"Expected freshness to decrease with more stale findings: {fresh_many} >= {fresh_few}"
+    )
+
+
+@pytest.mark.unit
+def test_empty_stale_findings_preserves_perfect_freshness() -> None:
+    """A bundle with no stale_findings and all-current sources scores 1.0 freshness."""
+    bundle = _all_current_bundle_with_stale_findings(count=0)
+    result = _score(bundle)
+    freshness_dim = next(d for d in result.dimensions if d.dimension == "freshness_score")
+    assert freshness_dim.score == 1.0, (
+        f"Expected freshness 1.0 with no stale findings, got {freshness_dim.score}"
+    )
