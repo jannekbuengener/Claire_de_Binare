@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "scope_id": "wave20-agent-os-readiness-sample",
+    "level": "domain"
+  },
+  "sources": [
+    {
+      "path": "tools/surrealdb/agent_os_readiness.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "owner": "cdb-core"
+    },
+    {
+      "path": "tools/mcp/agent_os_readiness_tools.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "owner": "cdb-mcp"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "D-W20-001",
+      "title": "Agent OS readiness uses fail-closed evaluation pattern",
+      "status": "active",
+      "evidence_refs": ["E-W20-001"]
+    }
+  ],
+  "evidence_items": [
+    {
+      "evidence_id": "E-W20-001",
+      "strength": "strong",
+      "expires_at": "2027-05-08T00:00:00+00:00",
+      "description": "Wave-20 evaluator design validated by unit tests"
+    }
+  ],
+  "contradiction_findings": [],
+  "stale_findings": [],
+  "scope_drift_findings": [],
+  "memory_items": [],
+  "dependency_edges": [
+    {
+      "source": "tools/mcp/agent_os_readiness_tools.py",
+      "target": "tools/surrealdb/agent_os_readiness.py",
+      "confidence": "high",
+      "observed": true
+    }
+  ]
+}

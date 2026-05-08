@@ -1475,6 +1475,59 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_control_room_view"),
     ),
+    # ── Wave-20 Tools (#2191/#2192 Agent OS Readiness Runtime v1) ───────────
+    ToolDefinition(
+        name="cdb_agent_os_readiness",
+        description=(
+            "Wave-20 Agent OS Readiness Evaluator v1. Evaluates the health and "
+            "readiness of the Agent OS context intelligence system itself by "
+            "aggregating signals from quality scoring, architect signals, scope "
+            "drift, contradiction scan, and stale knowledge modules. Returns a "
+            "readiness level (blocked/weak/acceptable/strong), blocking findings, "
+            "weak findings, missing inputs, confidence, and an optional Markdown "
+            "report. Read-only, deterministic, fail-closed. No DB/network/write. "
+            "No Live-Go. No Echtgeld-Go. No runtime control. Signal surface only."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": (
+                        "In-memory context bundle (required). Must be a mapping "
+                        "with at least a 'meta' key containing a 'scope_id' string."
+                    ),
+                },
+                "as_of": {
+                    "type": ["string", "null"],
+                    "description": "Optional ISO-8601 UTC timestamp for deterministic output.",
+                },
+                "include_report": {
+                    "type": "boolean",
+                    "description": (
+                        "If true, include a 'report_markdown' field with the full "
+                        "Markdown readiness report in the response."
+                    ),
+                },
+            },
+            "required": ["bundle"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "readiness_level": {"type": "string"},
+                "result": {"type": "object"},
+                "report_markdown": {"type": "string"},
+                "guardrails": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_agent_os_readiness"),
+    ),
 ]
 
 

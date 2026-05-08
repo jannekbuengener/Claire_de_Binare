@@ -2039,6 +2039,19 @@ def cdb_control_room_view_handler(**kwargs) -> dict[str, Any]:
     return handle_control_room_view(**kwargs)
 
 
+def cdb_agent_os_readiness_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_agent_os_readiness (Wave-20).
+
+    Thin adapter: delegates to the Wave-20 Agent OS Readiness Evaluator.
+    Fail-closed. No DB/network/write. Bundle-driven. Read-only signal surface only.
+    No runtime control. No Live-Go. No Echtgeld-Go.
+    Issues: #2191, #2192 (Wave-20 anchor: #2188).
+    """
+    from tools.mcp.agent_os_readiness_tools import handle_agent_os_readiness
+
+    return handle_agent_os_readiness(**kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -2266,6 +2279,21 @@ class ContextBridge:
             "cdb_control_room_view": cdb_control_room_view_handler,
         }
         for _tool_name, _handler_fn in _wave19_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
+        # Wave-20 handlers (#2191/#2192 Agent OS Readiness Runtime v1)
+        _wave20_handler_map = {
+            "cdb_agent_os_readiness": cdb_agent_os_readiness_handler,
+        }
+        for _tool_name, _handler_fn in _wave20_handler_map.items():
             _old = self._registry.get_tool(_tool_name)
             if _old:
                 self._registry._tools[_tool_name] = ToolDefinition(

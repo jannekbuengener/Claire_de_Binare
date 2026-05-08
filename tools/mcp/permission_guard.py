@@ -179,6 +179,13 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     # and fail-closed; the control room view builder enforces no-write,
     # no-network, no-auto-fix guardrails.
     "cdb_control_room_view",
+    # Wave-20 Agent OS readiness MCP tool (#2192).
+    # Processes context bundles aggregating quality, scope-drift, contradiction,
+    # stale, and architect-signal findings whose content legitimately contains
+    # words like "Create", "Update", "Delete", "migration", "runbook".
+    # The tool is read-only, bundle-driven, and fail-closed; the evaluator
+    # enforces no-write, no-network, no-auto-fix, no-live-go guardrails.
+    "cdb_agent_os_readiness",
 })
 
 
