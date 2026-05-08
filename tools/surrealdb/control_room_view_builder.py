@@ -425,11 +425,23 @@ def _build_evidence_map(
         if ev.get("expired"):
             expired_count += 1
 
+    # Build index of valid evidence IDs — dangling/mistyped refs must not count
+    # as covered.  A decision is covered only if at least one of its refs resolves
+    # to an actual evidence item in the bundle.  (#2384 correctness fix)
+    valid_evidence_ids: frozenset[str] = frozenset(
+        _as_str(ev.get("evidence_id") or ev.get("id") or "")
+        for ev in evidence_items
+        if isinstance(ev, Mapping) and (ev.get("evidence_id") or ev.get("id"))
+    )
+
     for dec in decisions:
         if not isinstance(dec, Mapping):
             continue
         ev_refs = _as_list(dec.get("evidence_refs"))
-        if ev_refs:
+        # Covered only when at least one ref resolves to a real evidence item.
+        if ev_refs and any(
+            isinstance(ref, str) and ref in valid_evidence_ids for ref in ev_refs
+        ):
             covered_decisions += 1
         else:
             uncovered_decisions += 1

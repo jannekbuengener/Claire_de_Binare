@@ -482,6 +482,45 @@ class TestEvidenceMapView:
         view = build_control_room_view_v1("evidence_map", _clean_bundle(), as_of=_AS_OF)
         assert any("expired" in w.lower() for w in view.warnings)
 
+    def test_dangling_evidence_refs_counted_as_uncovered(self) -> None:
+        """Decision whose evidence_refs point to non-existent IDs must be uncovered."""
+        bundle = {
+            "meta": {"scope_id": "dangling-test", "level": "system"},
+            "decisions": [
+                {
+                    "decision_id": "dec-dangling",
+                    "status": "current",
+                    "evidence_refs": ["ev-dangling-999"],  # does not exist in evidence_items
+                },
+            ],
+            "evidence_items": [
+                {"evidence_id": "ev-001", "strength": "strong", "expired": False},
+            ],
+        }
+        view = build_control_room_view_v1("evidence_map", bundle, as_of=_AS_OF)
+        assert view.payload["covered_decisions"] == 0
+        assert view.payload["uncovered_decisions"] == 1
+        assert any("decision" in w.lower() for w in view.warnings)
+
+    def test_mixed_valid_and_dangling_refs_covered(self) -> None:
+        """Decision with at least one valid ref among dangling ones is still covered."""
+        bundle = {
+            "meta": {"scope_id": "mixed-test", "level": "system"},
+            "decisions": [
+                {
+                    "decision_id": "dec-mixed",
+                    "status": "current",
+                    "evidence_refs": ["ev-dangling-999", "ev-001"],  # one valid ref
+                },
+            ],
+            "evidence_items": [
+                {"evidence_id": "ev-001", "strength": "strong", "expired": False},
+            ],
+        }
+        view = build_control_room_view_v1("evidence_map", bundle, as_of=_AS_OF)
+        assert view.payload["covered_decisions"] == 1
+        assert view.payload["uncovered_decisions"] == 0
+
 
 @pytest.mark.unit
 class TestRiskSurfaceReport:
