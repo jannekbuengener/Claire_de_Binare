@@ -200,3 +200,79 @@ class TestGuardrailsSafety:
         result = handle_control_room_view(bundle=_minimal_bundle(), as_of=_AS_OF)
         guardrail_text = " ".join(result["guardrails"]).lower()
         assert "read-only" in guardrail_text or "no mutations" in guardrail_text
+
+
+# ── ContextBridge registry + wiring ──────────────────────────────────────────
+
+
+@pytest.mark.unit
+class TestContextBridgeRegistration:
+    """Prove cdb_control_room_view is reachable through ContextBridge."""
+
+    def _bridge(self):
+        from tools.mcp.context_bridge import ContextBridge
+        return ContextBridge()
+
+    def test_tool_in_list_tools(self) -> None:
+        bridge = self._bridge()
+        names = [t["name"] for t in bridge.list_tools()]
+        assert TOOL_CDB_CONTROL_ROOM_VIEW in names
+
+    def test_tool_is_read_only(self) -> None:
+        from tools.mcp.registry import ContextToolRegistry
+        tool = ContextToolRegistry.get_tool(TOOL_CDB_CONTROL_ROOM_VIEW)
+        assert tool is not None
+        assert tool.read_only is True
+
+    def test_execute_tool_returns_ok(self) -> None:
+        bridge = self._bridge()
+        result = bridge.execute_tool(
+            TOOL_CDB_CONTROL_ROOM_VIEW,
+            {"bundle": _minimal_bundle(), "as_of": _AS_OF},
+        )
+        assert isinstance(result, dict)
+        assert result["status"] == "ok"
+
+    def test_execute_tool_single_view_type(self) -> None:
+        bridge = self._bridge()
+        result = bridge.execute_tool(
+            TOOL_CDB_CONTROL_ROOM_VIEW,
+            {
+                "bundle": _minimal_bundle(),
+                "view_type": "knowledge_graph_view",
+                "as_of": _AS_OF,
+            },
+        )
+        assert result["status"] == "ok"
+        assert result["view_type"] == "knowledge_graph_view"
+        assert "view" in result
+
+    def test_execute_tool_missing_bundle_fail_closed(self) -> None:
+        bridge = self._bridge()
+        result = bridge.execute_tool(
+            TOOL_CDB_CONTROL_ROOM_VIEW,
+            {"as_of": _AS_OF},
+        )
+        assert result["status"] == "error"
+
+    def test_execute_tool_unknown_view_type_fail_closed(self) -> None:
+        bridge = self._bridge()
+        result = bridge.execute_tool(
+            TOOL_CDB_CONTROL_ROOM_VIEW,
+            {"bundle": _minimal_bundle(), "view_type": "no_such_view", "as_of": _AS_OF},
+        )
+        assert result["status"] == "error"
+
+    def test_no_write_semantics_in_tool_description(self) -> None:
+        from tools.mcp.registry import ContextToolRegistry
+        tool = ContextToolRegistry.get_tool(TOOL_CDB_CONTROL_ROOM_VIEW)
+        assert tool is not None
+        desc_lower = tool.description.lower()
+        assert "no db" in desc_lower or "read-only" in desc_lower
+
+    def test_no_live_go_in_tool_description(self) -> None:
+        from tools.mcp.registry import ContextToolRegistry
+        tool = ContextToolRegistry.get_tool(TOOL_CDB_CONTROL_ROOM_VIEW)
+        assert tool is not None
+        desc_lower = tool.description.lower()
+        assert "no live-go" in desc_lower or "no live" in desc_lower

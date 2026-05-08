@@ -2026,6 +2026,19 @@ def cdb_context_architect_signals_handler(**kwargs) -> dict[str, Any]:
     return handle_architect_signals(**kwargs)
 
 
+def cdb_control_room_view_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_control_room_view (Wave-19).
+
+    Thin adapter: delegates to the Wave-19 Visual Control Room View Builder.
+    Fail-closed. No DB/network/write. Bundle-driven. Read-only signal surface only.
+    No runtime control. No Live-Go. No Echtgeld-Go.
+    Issues: #2180, #2181 (Wave-19 anchor: #2179).
+    """
+    from tools.mcp.control_room_tools import handle_control_room_view
+
+    return handle_control_room_view(**kwargs)
+
+
 class ContextBridge:
     """
     MCP Bridge for Context Intelligence System.
@@ -2238,6 +2251,21 @@ class ContextBridge:
             "cdb_context_architect_signals": cdb_context_architect_signals_handler,
         }
         for _tool_name, _handler_fn in _wave18_handler_map.items():
+            _old = self._registry.get_tool(_tool_name)
+            if _old:
+                self._registry._tools[_tool_name] = ToolDefinition(
+                    name=_old.name,
+                    description=_old.description,
+                    input_schema=_old.input_schema,
+                    output_schema=_old.output_schema,
+                    read_only=_old.read_only,
+                    handler=_handler_fn,
+                )
+        # Wave-19 handlers (#2180/#2181 Visual Control Room & Reporting Layer)
+        _wave19_handler_map = {
+            "cdb_control_room_view": cdb_control_room_view_handler,
+        }
+        for _tool_name, _handler_fn in _wave19_handler_map.items():
             _old = self._registry.get_tool(_tool_name)
             if _old:
                 self._registry._tools[_tool_name] = ToolDefinition(

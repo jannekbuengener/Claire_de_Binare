@@ -1416,6 +1416,65 @@ TOOLS_V0 = [
         read_only=True,
         handler=create_not_implemented_handler("cdb_context_architect_signals"),
     ),
+    # ── Wave-19 Tools (#2180/#2181 Visual Control Room & Reporting Layer) ───
+    ToolDefinition(
+        name="cdb_control_room_view",
+        description=(
+            "Wave-19 Visual Control Room View Builder v1. Builds one or all 9 "
+            "read-only visual views (knowledge graph, architecture map, decision "
+            "chain, evidence map, risk surface, stale knowledge, scope drift, "
+            "agent memory, quality score dashboard) from an in-memory bundle. "
+            "Read-only, deterministic, fail-closed. No DB/network/write. "
+            "No Live-Go. No Echtgeld-Go. No runtime control. Signal surface only."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "bundle": {
+                    "type": "object",
+                    "description": (
+                        "In-memory context bundle (required). Must be a mapping "
+                        "with at least a 'meta' key."
+                    ),
+                },
+                "view_type": {
+                    "type": ["string", "null"],
+                    "description": (
+                        "One of: knowledge_graph_view, architecture_map, "
+                        "decision_chain_view, evidence_map, risk_surface_report, "
+                        "stale_knowledge_view, scope_drift_events, "
+                        "agent_memory_view, quality_score_dashboard. "
+                        "Omit to build all 9 views."
+                    ),
+                },
+                "filters": {
+                    "type": "object",
+                    "description": "Optional filter map (key → value) passed to the view builder.",
+                },
+                "as_of": {
+                    "type": ["string", "null"],
+                    "description": "Optional ISO-8601 UTC timestamp for deterministic output.",
+                },
+            },
+            "required": ["bundle"],
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "schema_version": {"type": "string"},
+                "status": {"type": "string"},
+                "view_type": {"type": "string"},
+                "view": {"type": "object"},
+                "views": {"type": "array"},
+                "view_count": {"type": "integer"},
+                "guardrails": {"type": "array"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_control_room_view"),
+    ),
 ]
 
 
