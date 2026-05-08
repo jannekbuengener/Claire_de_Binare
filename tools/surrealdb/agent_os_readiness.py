@@ -191,8 +191,11 @@ class AgentOsReadinessResult:
 def _as_list(value: Any) -> list[Any]:
     if value is None:
         return []
-    if isinstance(value, list):
-        return value
+    if isinstance(value, (list, tuple)):
+        return list(value)
+    if isinstance(value, Mapping):
+        # Wrap a lone mapping in a list instead of iterating its keys.
+        return [value]
     return list(value)
 
 
