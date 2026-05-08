@@ -389,3 +389,28 @@ DEFINE INDEX idx_knowledge_quality_subject_ref ON TABLE knowledge_quality_score 
 DEFINE INDEX idx_knowledge_quality_computed_at ON TABLE knowledge_quality_score FIELDS computed_at;
 DEFINE INDEX idx_knowledge_quality_created_at ON TABLE knowledge_quality_score FIELDS created_at;
 
+-- -------------------------
+-- visual_control_view (v0; information model for Wave-19 control room — #2029)
+-- -------------------------
+DEFINE TABLE visual_control_view SCHEMAFULL;
+DEFINE FIELD view_id ON TABLE visual_control_view TYPE string; -- REQUIRED(v0-draft); deterministic SHA256-based
+DEFINE FIELD view_type ON TABLE visual_control_view TYPE string; -- one of VIEW_TYPES (see docs/surrealdb/visual-control-room-model-v0.md)
+DEFINE FIELD view_label ON TABLE visual_control_view TYPE string;
+DEFINE FIELD target_scope ON TABLE visual_control_view TYPE string;
+DEFINE FIELD data_sources ON TABLE visual_control_view TYPE array;
+DEFINE FIELD filters ON TABLE visual_control_view TYPE record;
+DEFINE FIELD required_queries ON TABLE visual_control_view TYPE array;
+DEFINE FIELD display_entities ON TABLE visual_control_view TYPE array;
+DEFINE FIELD display_edges ON TABLE visual_control_view TYPE array;
+DEFINE FIELD warnings ON TABLE visual_control_view TYPE array;
+DEFINE FIELD generated_at ON TABLE visual_control_view TYPE datetime;
+DEFINE FIELD generated_by ON TABLE visual_control_view TYPE string;
+DEFINE FIELD export_formats ON TABLE visual_control_view TYPE array;
+DEFINE FIELD guardrails ON TABLE visual_control_view TYPE array;
+DEFINE FIELD created_at ON TABLE visual_control_view TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
+DEFINE INDEX idx_visual_control_view_id_unique ON TABLE visual_control_view FIELDS view_id UNIQUE;
+DEFINE INDEX idx_visual_control_view_type ON TABLE visual_control_view FIELDS view_type;
+DEFINE INDEX idx_visual_control_view_scope ON TABLE visual_control_view FIELDS target_scope;
+DEFINE INDEX idx_visual_control_view_generated_at ON TABLE visual_control_view FIELDS generated_at;
+DEFINE INDEX idx_visual_control_view_created_at ON TABLE visual_control_view FIELDS created_at;
+
