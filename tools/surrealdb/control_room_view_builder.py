@@ -217,8 +217,21 @@ def _build_knowledge_graph_view(
             {
                 "edge_id": _as_str(dep.get("edge_id") or ""),
                 "edge_type": "dependency_edge",
-                "from": _as_str(dep.get("from_source") or dep.get("source_path") or ""),
-                "to": _as_str(dep.get("to_source") or dep.get("target_path") or ""),
+                # Canonical indexer rows use from_id/to_id; fall back to
+                # from_source/to_source and source_path/target_path for other
+                # bundle shapes.
+                "from": _as_str(
+                    dep.get("from_source")
+                    or dep.get("from_id")
+                    or dep.get("source_path")
+                    or ""
+                ),
+                "to": _as_str(
+                    dep.get("to_source")
+                    or dep.get("to_id")
+                    or dep.get("target_path")
+                    or ""
+                ),
                 "confidence": _as_str(dep.get("confidence") or "unknown"),
             }
         )
