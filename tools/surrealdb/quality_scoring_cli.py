@@ -63,7 +63,7 @@ def _load_bundle(path: Path) -> dict[str, Any]:
     """Load a JSON input bundle from *path*."""
     if not path.exists():
         raise QualityScoringCLIError(
-            f"bundle not found: {path}", exit_code=EXIT_ERROR
+            f"bundle not found: {path}", exit_code=EXIT_NOT_FOUND
         )
     if not path.is_file():
         raise QualityScoringCLIError(
@@ -316,11 +316,12 @@ def build_parser() -> argparse.ArgumentParser:
     score.add_argument(
         "--format",
         choices=sorted(SUPPORTED_FORMATS),
-        default="json",
-        help="Output format (default: json).",
+        default=argparse.SUPPRESS,
+        help="Output format (default: json). Overrides global --format when specified.",
     )
     score.add_argument(
         "--fail-on-weak",
+
         action="store_true",
         default=False,
         help="Exit 1 if overall grade is blocking, watch, or weak.",
@@ -339,8 +340,8 @@ def build_parser() -> argparse.ArgumentParser:
     show.add_argument(
         "--format",
         choices=sorted(SUPPORTED_FORMATS),
-        default="json",
-        help="Output format (default: json).",
+        default=argparse.SUPPRESS,
+        help="Output format (default: json). Overrides global --format when specified.",
     )
     show.add_argument(
         "--dimension",
@@ -362,11 +363,12 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument(
         "--format",
         choices=sorted(SUPPORTED_FORMATS),
-        default="json",
-        help="Output format (default: json).",
+        default=argparse.SUPPRESS,
+        help="Output format (default: json). Overrides global --format when specified.",
     )
     report.add_argument(
         "--fail-on-weak",
+
         action="store_true",
         default=False,
         help="Exit 1 if overall grade is blocking, watch, or weak.",

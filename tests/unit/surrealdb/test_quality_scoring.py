@@ -912,3 +912,82 @@ def test_without_as_of_signals_still_generated() -> None:
             f"Even without as_of, detected_at should equal scanned_at; "
             f"got detected_at={sig.detected_at!r} scanned_at={result.scanned_at!r}"
         )
+
+
+# ── CLI contract tests: --format global vs subcommand (T13) + EXIT_NOT_FOUND (T14) ─
+
+
+def _good_bundle_file(tmp_path: Any) -> Any:
+    """Write a minimal valid bundle JSON to tmp_path and return the path."""
+    bundle = {
+        "meta": {"scope_id": "cli-contract-test", "level": "system"},
+        "sources": [{"source_id": "s1", "status": "current", "trust_score": 0.9}],
+        "decisions": [],
+        "evidence_items": [{"evidence_id": "e1", "strength": "strong", "expired": False}],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [],
+        "memory_items": [],
+        "scope_drift_findings": [],
+    }
+    p = tmp_path / "bundle.json"
+    import json as _json
+    p.write_text(_json.dumps(bundle), encoding="utf-8")
+    return p
+
+
+@pytest.mark.unit
+def test_cli_global_format_markdown_not_overwritten_by_subparser(tmp_path: Any, capsys: Any) -> None:
+    """Global --format markdown before subcommand must produce Markdown, not JSON (T13)."""
+    from tools.surrealdb.quality_scoring_cli import EXIT_OK, main
+
+    bundle_file = _good_bundle_file(tmp_path)
+    exit_code = main(["--format", "markdown", "report-quality", "--input", str(bundle_file)])
+    captured = capsys.readouterr()
+
+    assert exit_code == EXIT_OK
+    assert captured.out.startswith("# "), (
+        f"Expected Markdown output (starting with '# ') for global --format markdown; "
+        f"got: {captured.out[:120]!r}"
+    )
+
+
+@pytest.mark.unit
+def test_cli_subcommand_format_markdown_overrides_global_json(tmp_path: Any, capsys: Any) -> None:
+    """Subcommand-level --format markdown overrides the global default of json (T13 precedence)."""
+    from tools.surrealdb.quality_scoring_cli import EXIT_OK, main
+
+    bundle_file = _good_bundle_file(tmp_path)
+    # global default = json; subcommand explicitly sets markdown → markdown must win
+    exit_code = main(["report-quality", "--input", str(bundle_file), "--format", "markdown"])
+    captured = capsys.readouterr()
+
+    assert exit_code == EXIT_OK
+    assert captured.out.startswith("# "), (
+        f"Expected Markdown output when subcommand specifies --format markdown; "
+        f"got: {captured.out[:120]!r}"
+    )
+
+
+@pytest.mark.unit
+def test_cli_missing_bundle_exits_not_found(tmp_path: Any) -> None:
+    """Missing input bundle path must return EXIT_NOT_FOUND = 3, not EXIT_ERROR = 2 (T14)."""
+    from tools.surrealdb.quality_scoring_cli import EXIT_NOT_FOUND, main
+
+    missing = tmp_path / "nonexistent.json"
+    exit_code = main(["report-quality", "--input", str(missing)])
+    assert exit_code == EXIT_NOT_FOUND, (
+        f"Expected EXIT_NOT_FOUND (3) for missing bundle, got {exit_code}"
+    )
+
+
+@pytest.mark.unit
+def test_cli_missing_bundle_score_knowledge_exits_not_found(tmp_path: Any) -> None:
+    """Missing bundle on score-knowledge also returns EXIT_NOT_FOUND = 3 (T14)."""
+    from tools.surrealdb.quality_scoring_cli import EXIT_NOT_FOUND, main
+
+    missing = tmp_path / "nonexistent.json"
+    exit_code = main(["score-knowledge", "--input", str(missing)])
+    assert exit_code == EXIT_NOT_FOUND, (
+        f"Expected EXIT_NOT_FOUND (3) for missing bundle on score-knowledge, got {exit_code}"
+    )
