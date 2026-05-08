@@ -630,7 +630,7 @@ def test_cli_score_knowledge_format_markdown_as_subcommand_arg(tmp_path: Any) ->
     assert exit_code == EXIT_OK
 
 
-# ── stale_findings freshness tests ───────────────────────────────────────────
+# ── stale_findings freshness tests (active vs. terminal statuses) ─────────────
 
 
 def _all_current_bundle_with_stale_findings(count: int = 1) -> dict[str, Any]:
@@ -705,3 +705,131 @@ def test_empty_stale_findings_preserves_perfect_freshness() -> None:
     assert freshness_dim.score == 1.0, (
         f"Expected freshness 1.0 with no stale findings, got {freshness_dim.score}"
     )
+
+
+@pytest.mark.unit
+def test_terminal_stale_findings_do_not_lower_freshness() -> None:
+    """refreshed / accepted_risk / false_positive stale findings must not penalise freshness."""
+    terminal_statuses = ["refreshed", "accepted_risk", "false_positive"]
+    for status in terminal_statuses:
+        bundle = {
+            **_all_current_bundle_with_stale_findings(count=0),
+            "stale_findings": [
+                {"stale_id": "s-001", "status": status, "source_path": "docs/old.md"},
+                {"stale_id": "s-002", "status": status, "source_path": "docs/older.md"},
+            ],
+        }
+        result = _score(bundle)
+        freshness_dim = next(d for d in result.dimensions if d.dimension == "freshness_score")
+        assert freshness_dim.score == 1.0, (
+            f"status={status!r}: expected freshness 1.0 (exempt), got {freshness_dim.score}"
+        )
+
+
+@pytest.mark.unit
+def test_mixed_stale_findings_only_active_penalise() -> None:
+    """Only active stale findings lower freshness; terminal ones are exempt."""
+    bundle = {
+        **_all_current_bundle_with_stale_findings(count=0),
+        "sources": [
+            {"source_path": "core/a.py", "has_documentation": True, "has_tests": True, "status": "current", "file_type": "python"},
+            {"source_path": "core/b.py", "has_documentation": True, "has_tests": True, "status": "current", "file_type": "python"},
+        ],
+        "decisions": [{"decision_id": "d1", "status": "current", "evidence_refs": ["e1"]}],
+        "stale_findings": [
+            {"stale_id": "s-active", "status": "stale", "source_path": "docs/active.md"},
+            {"stale_id": "s-exempt1", "status": "refreshed", "source_path": "docs/done1.md"},
+            {"stale_id": "s-exempt2", "status": "accepted_risk", "source_path": "docs/done2.md"},
+        ],
+    }
+    result = _score(bundle)
+    freshness_dim = next(d for d in result.dimensions if d.dimension == "freshness_score")
+    # 3 items (2 sources + 1 decision) are current; 1 active stale adds to total → 3/4 = 0.75
+    expected = 3 / 4
+    assert abs(freshness_dim.score - expected) < 1e-9, (
+        f"Expected freshness {expected} (3 current / 4 total including 1 active stale), "
+        f"got {freshness_dim.score}"
+    )
+
+
+# ── architect signal tests: dependency edge paths ─────────────────────────────
+
+
+@pytest.mark.unit
+def test_high_dependency_risk_source_target_edges_have_non_empty_affected_paths() -> None:
+    """Dependency edges with source/target schema must produce non-empty affected_paths."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    bundle = {
+        "meta": {"scope_id": "dep-path-test", "level": "system"},
+        "sources": [],
+        "decisions": [],
+        "evidence_items": [],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [
+            {"edge_id": "e1", "confidence": "low", "source": "core/risk.py", "target": "core/execution.py"},
+            {"edge_id": "e2", "confidence": "low", "source": "core/signal.py", "target": "core/regime.py"},
+        ],
+        "memory_items": [],
+        "scope_drift_findings": [],
+    }
+    result = scan_architect_signals_v1(bundle)
+    dep_signals = [s for s in result.signals if s.signal_type == "high_dependency_risk"]
+    assert dep_signals, "Expected at least one high_dependency_risk signal"
+    sig = dep_signals[0]
+    assert len(sig.affected_paths) > 0, (
+        f"Expected non-empty affected_paths for source/target edge schema, got {sig.affected_paths}"
+    )
+
+
+@pytest.mark.unit
+def test_high_dependency_risk_affected_paths_include_both_endpoints() -> None:
+    """Both source and target endpoints must appear in affected_paths."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    bundle = {
+        "meta": {"scope_id": "dep-endpoints-test", "level": "system"},
+        "sources": [],
+        "decisions": [],
+        "evidence_items": [],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [
+            {"edge_id": "e1", "confidence": "low", "source": "core/risk.py", "target": "core/execution.py"},
+        ],
+        "memory_items": [],
+        "scope_drift_findings": [],
+    }
+    result = scan_architect_signals_v1(bundle)
+    dep_signals = [s for s in result.signals if s.signal_type == "high_dependency_risk"]
+    assert dep_signals
+    paths = dep_signals[0].affected_paths
+    assert "core/risk.py" in paths, f"Expected 'core/risk.py' in affected_paths: {paths}"
+    assert "core/execution.py" in paths, f"Expected 'core/execution.py' in affected_paths: {paths}"
+
+
+@pytest.mark.unit
+def test_high_dependency_risk_source_path_key_fallback_still_works() -> None:
+    """Edges using the source_path key (not source/target) still produce affected_paths."""
+    from tools.surrealdb.architect_signals import scan_architect_signals_v1
+
+    bundle = {
+        "meta": {"scope_id": "dep-path-fallback-test", "level": "system"},
+        "sources": [],
+        "decisions": [],
+        "evidence_items": [],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [
+            {"edge_id": "e1", "confidence": "low", "source_path": "core/legacy.py"},
+            {"edge_id": "e2", "confidence": "low", "source_path": "core/old.py"},
+        ],
+        "memory_items": [],
+        "scope_drift_findings": [],
+    }
+    result = scan_architect_signals_v1(bundle)
+    dep_signals = [s for s in result.signals if s.signal_type == "high_dependency_risk"]
+    assert dep_signals
+    paths = dep_signals[0].affected_paths
+    assert len(paths) > 0, f"Expected non-empty affected_paths for source_path key, got {paths}"

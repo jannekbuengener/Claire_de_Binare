@@ -182,7 +182,7 @@ def _is_open(item: Mapping[str, Any]) -> bool:
 def _path_of(item: Any) -> str:
     if not isinstance(item, Mapping):
         return ""
-    for key in ("source_path", "target_path", "target_ref", "affected_path", "artifact_ref"):
+    for key in ("source_path", "target_path", "target_ref", "affected_path", "artifact_ref", "source", "target"):
         val = _as_str(item.get(key, ""))
         if val:
             return val
@@ -323,7 +323,23 @@ def _detect_high_dependency_risk(dependency_edges: list[Any]) -> list[ArchitectS
     fraction = len(low_conf_edges) / len(dependency_edges)
     if fraction < _LOW_CONFIDENCE_FRACTION:
         return []
-    paths = list({_path_of(e) for e in low_conf_edges if _path_of(e)})[:20]
+    # Collect both source and target endpoints for dependency edges; fall back
+    # to _path_of for edges that use other path-key conventions.
+    paths_set: set[str] = set()
+    for e in low_conf_edges:
+        if not isinstance(e, Mapping):
+            continue
+        src = _as_str(e.get("source", ""))
+        tgt = _as_str(e.get("target", ""))
+        if src:
+            paths_set.add(src)
+        if tgt:
+            paths_set.add(tgt)
+        if not src and not tgt:
+            p = _path_of(e)
+            if p:
+                paths_set.add(p)
+    paths = sorted(paths_set)[:20]
     edge_ids = [_as_str(e.get("edge_id", "")) for e in low_conf_edges[:10]]
     return [
         ArchitectSignal(

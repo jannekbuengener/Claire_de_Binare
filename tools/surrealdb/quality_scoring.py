@@ -73,6 +73,13 @@ GUARDRAILS: tuple[str, ...] = (
     "Human-GO required for any action after blocking quality score.",
 )
 
+# Stale finding statuses that are terminal/remediated and should not penalise
+# freshness. Mirrors the non-penalised sets used in contradiction and scope-risk
+# scoring.
+_STALE_EXEMPT_STATUSES: frozenset[str] = frozenset(
+    {"refreshed", "accepted_risk", "false_positive"}
+)
+
 
 class QualityScoringError(ValueError):
     """Raised when quality scoring inputs are invalid or unsafe."""
@@ -228,8 +235,16 @@ def _score_freshness(
     """
     stale_findings = stale_findings or []
     items: list[Any] = list(sources) + list(decisions)
-    # stale_findings always count as non-fresh entries in the total
-    extra_stale = len(stale_findings)
+    # Only count active (non-exempt) stale findings against freshness.
+    # Terminal/remediated statuses (refreshed, accepted_risk, false_positive)
+    # are excluded to mirror the behaviour of contradiction and scope-risk
+    # scoring which skip their own non-penalised statuses.
+    active_stale = [
+        f for f in stale_findings
+        if not isinstance(f, Mapping)
+        or _as_str(f.get("status", "open")).lower() not in _STALE_EXEMPT_STATUSES
+    ]
+    extra_stale = len(active_stale)
     if not items and extra_stale == 0:
         return DimensionScore(
             dimension="freshness_score",
@@ -256,7 +271,7 @@ def _score_freshness(
         f"(not stale, superseded, or deleted)."
     )
     if extra_stale:
-        explanation += f" {extra_stale} bundle-level stale finding(s) counted against freshness."
+        explanation += f" {extra_stale} active stale finding(s) counted against freshness."
     return DimensionScore(
         dimension="freshness_score",
         score=score,
