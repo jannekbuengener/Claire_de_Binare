@@ -13,7 +13,7 @@ Commands:
 
 Exit codes:
     0 = success (or weak/blocking findings without --fail-on-weak)
-    1 = blocking or watch-grade overall and --fail-on-weak set
+    1 = blocking, watch, or weak-grade overall and --fail-on-weak set
     2 = CLI / input / validation error
     3 = show-score: dimension not found
 
@@ -33,7 +33,6 @@ from pathlib import Path
 from typing import Any
 
 from tools.surrealdb.quality_scoring import (
-    GRADES,
     GUARDRAILS,
     SCORE_DIMENSIONS,
     QualityScoringError,
@@ -49,12 +48,6 @@ EXIT_ERROR = 2
 EXIT_NOT_FOUND = 3
 
 SUPPORTED_FORMATS = frozenset({"json", "markdown"})
-
-_GUARDRAIL_NOTE = (
-    "Score is signal, not authorization. "
-    "No auto-fix. No live-go. No real-money scope. "
-    "LR status remains NO-GO for live trading."
-)
 
 
 class QualityScoringCLIError(Exception):
@@ -234,7 +227,7 @@ def handle_score_knowledge(
 
     fail_on_weak = getattr(args, "fail_on_weak", False)
     exit_code = EXIT_OK
-    if fail_on_weak and result.overall_grade in ("blocking", "watch"):
+    if fail_on_weak and result.overall_grade in ("blocking", "watch", "weak"):
         exit_code = EXIT_WEAK
     return output, exit_code
 
@@ -285,7 +278,7 @@ def handle_report_quality(
         raise QualityScoringCLIError(f"unsupported format: {fmt}", exit_code=EXIT_ERROR)
 
     exit_code = EXIT_OK
-    if fail_on_weak and result.overall_grade in ("blocking", "watch"):
+    if fail_on_weak and result.overall_grade in ("blocking", "watch", "weak"):
         exit_code = EXIT_WEAK
     return output, exit_code
 
@@ -321,10 +314,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to JSON input bundle.",
     )
     score.add_argument(
+        "--format",
+        choices=sorted(SUPPORTED_FORMATS),
+        default="json",
+        help="Output format (default: json).",
+    )
+    score.add_argument(
         "--fail-on-weak",
         action="store_true",
         default=False,
-        help="Exit 1 if overall grade is blocking or watch.",
+        help="Exit 1 if overall grade is blocking, watch, or weak.",
     )
 
     show = subs.add_parser(
@@ -336,6 +335,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         required=True,
         help="Path to JSON input bundle.",
+    )
+    show.add_argument(
+        "--format",
+        choices=sorted(SUPPORTED_FORMATS),
+        default="json",
+        help="Output format (default: json).",
     )
     show.add_argument(
         "--dimension",
@@ -355,10 +360,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to JSON input bundle.",
     )
     report.add_argument(
+        "--format",
+        choices=sorted(SUPPORTED_FORMATS),
+        default="json",
+        help="Output format (default: json).",
+    )
+    report.add_argument(
         "--fail-on-weak",
         action="store_true",
         default=False,
-        help="Exit 1 if overall grade is blocking or watch.",
+        help="Exit 1 if overall grade is blocking, watch, or weak.",
     )
 
     return parser

@@ -36,7 +36,7 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from core.utils.clock import utcnow as cdb_utcnow
 
@@ -84,7 +84,6 @@ GUARDRAILS: tuple[str, ...] = (
 _STALE_AREA_THRESHOLD = 2          # ≥ N open stale findings → stale_area
 _CONTRADICTION_HOTSPOT_THRESHOLD = 2  # ≥ N open contradictions → hotspot
 _SCOPE_DRIFT_HOTSPOT_THRESHOLD = 2 # ≥ N open scope drifts → hotspot
-_FRAGILE_PATH_THRESHOLD = 2        # ≥ N combined findings on same path → fragile
 _LOW_CONFIDENCE_FRACTION = 0.50    # fraction of low-confidence edges → high_dependency_risk
 
 

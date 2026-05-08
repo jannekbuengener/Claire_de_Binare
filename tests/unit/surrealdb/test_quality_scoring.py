@@ -38,7 +38,6 @@ from tools.surrealdb.quality_scoring import (
     GUARDRAILS,
     SCHEMA_VERSION,
     SCORE_DIMENSIONS,
-    DimensionScore,
     QualityScoreResult,
     QualityScoringError,
     _grade,
@@ -501,3 +500,131 @@ def test_same_input_same_dimension_scores() -> None:
     scores1 = {d.dimension: d.score for d in r1.dimensions}
     scores2 = {d.dimension: d.score for d in r2.dimensions}
     assert scores1 == scores2
+
+
+# ── CLI behaviour tests ───────────────────────────────────────────────────────
+
+
+def _weak_bundle() -> dict[str, Any]:
+    """Bundle that produces overall_grade=='weak' with no blocking dimensions."""
+    return {
+        "meta": {"scope_id": "weak-grade-test", "level": "system"},
+        "sources": [
+            {
+                "source_path": "core/a.py",
+                "has_documentation": True,
+                "has_tests": True,
+                "status": "current",
+                "file_type": "python",
+            },
+            {
+                "source_path": "core/b.py",
+                "has_documentation": True,
+                "has_tests": True,
+                "status": "current",
+                "file_type": "python",
+            },
+            {
+                "source_path": "core/c.py",
+                "has_documentation": False,
+                "has_tests": False,
+                "status": "current",
+                "file_type": "python",
+            },
+            {
+                "source_path": "core/d.py",
+                "has_documentation": False,
+                "has_tests": False,
+                "status": "stale",
+                "stale": True,
+                "file_type": "python",
+            },
+        ],
+        "decisions": [
+            {"decision_id": "d1", "status": "current", "evidence_refs": ["e1"]},
+            {"decision_id": "d2", "status": "superseded", "evidence_refs": []},
+        ],
+        "evidence_items": [
+            {"evidence_id": "e1", "strength": "moderate", "expired": False},
+            {"evidence_id": "e2", "strength": "moderate", "expired": False},
+        ],
+        "contradiction_findings": [],
+        "stale_findings": [],
+        "dependency_edges": [
+            {"edge_id": "edge-1", "confidence": "medium"},
+            {"edge_id": "edge-2", "confidence": "medium"},
+        ],
+        "memory_items": [
+            {"memory_id": "mem-1", "trust_level": "weak"},
+            {"memory_id": "mem-2", "trust_level": "weak"},
+        ],
+        "scope_drift_findings": [],
+    }
+
+
+@pytest.mark.unit
+def test_weak_bundle_produces_weak_grade() -> None:
+    """_weak_bundle() must produce overall_grade=='weak' with no blocking dims."""
+    result = _score(_weak_bundle())
+    assert result.overall_grade == GRADE_WEAK
+    assert result.blocking_dimensions == ()
+
+
+@pytest.mark.unit
+def test_cli_fail_on_weak_exits_1_for_weak_grade(tmp_path: Any) -> None:
+    """--fail-on-weak must exit EXIT_WEAK (1) when overall grade is 'weak'."""
+    import json
+
+    from tools.surrealdb.quality_scoring_cli import EXIT_WEAK, main
+
+    bundle_file = tmp_path / "weak_bundle.json"
+    bundle_file.write_text(json.dumps(_weak_bundle()))
+    exit_code = main(
+        ["score-knowledge", "--input", str(bundle_file), "--fail-on-weak"]
+    )
+    assert exit_code == EXIT_WEAK
+
+
+@pytest.mark.unit
+def test_cli_fail_on_weak_exits_0_for_good_grade(tmp_path: Any) -> None:
+    """--fail-on-weak must exit 0 when overall grade is 'good'."""
+    import json
+
+    from tools.surrealdb.quality_scoring_cli import EXIT_OK, main
+
+    bundle_file = tmp_path / "good_bundle.json"
+    bundle_file.write_text(json.dumps(_clean_bundle()))
+    exit_code = main(
+        ["score-knowledge", "--input", str(bundle_file), "--fail-on-weak"]
+    )
+    assert exit_code == EXIT_OK
+
+
+@pytest.mark.unit
+def test_cli_report_quality_format_markdown_as_subcommand_arg(tmp_path: Any) -> None:
+    """report-quality --format markdown must not raise unrecognized arguments."""
+    import json
+
+    from tools.surrealdb.quality_scoring_cli import EXIT_OK, main
+
+    bundle_file = tmp_path / "bundle.json"
+    bundle_file.write_text(json.dumps(_clean_bundle()))
+    exit_code = main(
+        ["report-quality", "--input", str(bundle_file), "--format", "markdown"]
+    )
+    assert exit_code == EXIT_OK
+
+
+@pytest.mark.unit
+def test_cli_score_knowledge_format_markdown_as_subcommand_arg(tmp_path: Any) -> None:
+    """score-knowledge --format markdown must not raise unrecognized arguments."""
+    import json
+
+    from tools.surrealdb.quality_scoring_cli import EXIT_OK, main
+
+    bundle_file = tmp_path / "bundle.json"
+    bundle_file.write_text(json.dumps(_clean_bundle()))
+    exit_code = main(
+        ["score-knowledge", "--input", str(bundle_file), "--format", "markdown"]
+    )
+    assert exit_code == EXIT_OK

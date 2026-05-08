@@ -25,7 +25,6 @@ from tools.surrealdb.quality_scoring import (
     GUARDRAILS,
     SCORE_DIMENSIONS,
     QualityScoringError,
-    QualityScoreResult,
     score_knowledge_quality_v1,
 )
 
