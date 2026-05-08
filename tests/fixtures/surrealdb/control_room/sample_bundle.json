@@ -1,0 +1,85 @@
+{
+  "_comment": "Minimal valid bundle for Wave-19 Visual Control Room unit/integration tests.",
+  "_schema": "control-room-fixture/v1",
+  "meta": {
+    "scope_id": "wave19-fixture-scope",
+    "level": "system"
+  },
+  "sources": [
+    {
+      "source_path": "core/risk/service.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "status": "current",
+      "owner": "risk-team"
+    },
+    {
+      "source_path": "services/execution/service.py",
+      "has_documentation": true,
+      "has_tests": true,
+      "status": "current",
+      "owner": "execution-team"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "dec-001",
+      "status": "current",
+      "evidence_refs": ["ev-001"]
+    },
+    {
+      "decision_id": "dec-002",
+      "status": "open",
+      "evidence_refs": []
+    },
+    {
+      "decision_id": "dec-003",
+      "status": "superseded",
+      "superseded_by": "dec-001",
+      "evidence_refs": ["ev-001"]
+    }
+  ],
+  "evidence_items": [
+    {"evidence_id": "ev-001", "strength": "strong", "expired": false},
+    {"evidence_id": "ev-002", "strength": "moderate", "expired": true}
+  ],
+  "dependency_edges": [
+    {
+      "edge_id": "edge-001",
+      "from_source": "core/risk/service.py",
+      "to_source": "services/execution/service.py",
+      "confidence": "high"
+    }
+  ],
+  "contradiction_findings": [
+    {"contradiction_id": "c-001", "severity": "watch", "status": "open"}
+  ],
+  "stale_findings": [
+    {"finding_id": "sf-001", "stale_type": "documentation", "status": "open"},
+    {"finding_id": "sf-002", "stale_type": "evidence", "status": "refreshed"}
+  ],
+  "scope_drift_findings": [
+    {
+      "finding_id": "sdf-001",
+      "drift_type": "path_drift",
+      "severity": "watch",
+      "status": "open",
+      "required_action": "review",
+      "human_go_required": true
+    }
+  ],
+  "memory_items": [
+    {"memory_id": "m-001", "trust_level": "strong", "ttl_expired": false},
+    {"memory_id": "m-002", "trust_level": "weak", "ttl_expired": true}
+  ],
+  "quality_scores": [
+    {
+      "scope_id": "wave19-fixture-scope",
+      "overall_grade": "watch",
+      "overall_score": 0.45,
+      "blocking_dimensions": [],
+      "watch_dimensions": ["freshness_score"],
+      "scored_at": "2026-05-08T10:00:00+00:00"
+    }
+  ]
+}
