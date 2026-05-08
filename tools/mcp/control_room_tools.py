@@ -32,8 +32,6 @@ from tools.surrealdb.control_room_view_builder import (
 TOOL_CDB_CONTROL_ROOM_VIEW = "cdb_control_room_view"
 SCHEMA_VERSION = "control-room-view-mcp/v1"
 
-_MAX_VIEWS = 9
-
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 

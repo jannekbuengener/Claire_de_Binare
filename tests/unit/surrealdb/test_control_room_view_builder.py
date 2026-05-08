@@ -42,7 +42,6 @@ from typing import Any
 import pytest
 
 from tools.surrealdb.control_room_view_builder import (
-    EXPORT_FORMATS,
     GUARDRAILS,
     SCHEMA_VERSION,
     VIEW_TYPES,
