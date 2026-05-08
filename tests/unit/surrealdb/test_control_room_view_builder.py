@@ -341,7 +341,8 @@ class TestToDictStructure:
         assert isinstance(d["data_sources"], list)
         for ds in d["data_sources"]:
             assert isinstance(ds, dict)
-            assert "table" in ds
+            assert ds.get("source_type") == "surrealdb_table"
+            assert "source_ref" in ds
             assert "query_hint" in ds
             assert "write_allowed" in ds
 

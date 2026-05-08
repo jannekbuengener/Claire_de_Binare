@@ -93,7 +93,9 @@ class DataSourceRef:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "table": self.table,
+            # Canonical DataSourceRef fields per visual-control-room-model-v0.md §7.
+            "source_type": "surrealdb_table",
+            "source_ref": self.table,
             "query_hint": self.query_hint,
             "write_allowed": False,  # hard-coded; never allow write
         }
