@@ -287,8 +287,14 @@ def _build_architecture_map(
         dep_edges.append(
             {
                 "edge_id": _as_str(dep.get("edge_id") or ""),
-                "from": _as_str(dep.get("from_source") or ""),
-                "to": _as_str(dep.get("to_source") or ""),
+                # Canonical indexer rows use from_id/to_id; fall back to
+                # from_source/to_source for bundles that use the display names.
+                "from": _as_str(
+                    dep.get("from_source") or dep.get("from_id") or dep.get("from") or ""
+                ),
+                "to": _as_str(
+                    dep.get("to_source") or dep.get("to_id") or dep.get("to") or ""
+                ),
                 "confidence": _as_str(dep.get("confidence") or "unknown"),
             }
         )

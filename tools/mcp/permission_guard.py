@@ -172,6 +172,13 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
     # fail-closed; the architect signal service enforces no-write, no-network,
     # no-auto-fix guardrails.
     "cdb_context_architect_signals",
+    # Wave-19 visual control room MCP tool (#2181).
+    # Processes context bundles whose evidence content, decision descriptions,
+    # and source paths legitimately contain words like "Create", "Update",
+    # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
+    # and fail-closed; the control room view builder enforces no-write,
+    # no-network, no-auto-fix guardrails.
+    "cdb_control_room_view",
 })
 
 
