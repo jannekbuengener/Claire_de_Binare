@@ -514,7 +514,7 @@ verifizieren — die Guard-Logik ist in `Makefile` und `context-env-check` nachw
 |---|---|---|---|
 | Vollständige Pipeline | `make context-smoke` | Orchestrierungs-Pfad läuft durch (`[OK]`); **kein Container-/Runtime-Nachweis** — `context-schema-check` gibt `[SKIP]` + Exit 0 wenn Container offline, `context-import-local` nutzt `InMemoryContextApplyAdapter`, `context-query-smoke` maskiert mit `[NOTE]` | nein (Pfad-Smoke only) |
 | Repo-Scan | `make context-scan` | `scan-report.json` in `artifacts/context-intelligence/latest/` | ja |
-| Import Dry-Run | `make context-import-dry-run` | Import-Plan berechnet, kein DB-Write | ja |
+| Import Dry-Run | `make context-import-dry-run` | Importer-Pfad läuft durch (`[OK]`); **kein Blocking-Kriterium** — Fehler (kein JSONL-Input) werden mit `[NOTE]` maskiert, `[OK]` wird bedingungslos gedruckt (Makefile Zeile 337-338) | nein (Pfad-Smoke only) |
 | Lokaler Import | `make context-import-local` | Import-Pfad läuft durch (`InMemoryContextApplyAdapter`); kein echter SurrealDB-DB-Write in diesem Slice — `REAL_SURREALDB_ADAPTER_AVAILABLE = False` | ja (Pfad-Smoke) |
 | Query Smoke | `make context-query-smoke` | Mindestens `show-snapshot`, `show-drift`, `find-artifact` liefern Ergebnisse oder `[NOTE]` | nein (graceful) |
 
