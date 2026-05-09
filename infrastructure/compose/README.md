@@ -42,11 +42,27 @@ docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test
 ```
 
 ### SurrealDB Sidecar (Standalone)
+
+Kanonischer Operator-Weg (bevorzugt):
+
+```bash
+make context-env-check   # Env/Secrets-Guard pruefen (kein Secret-Leak)
+make context-up          # Sidecar starten (BLUE/RED unangetastet)
+make context-status      # Container/Volume/Port-Status
+make context-logs        # cdb_surrealdb Logs (letzte 50 Zeilen)
+make context-down        # Sidecar stoppen (BLUE/RED unangetastet)
+```
+
+Direkter Docker-Compose-Aufruf (Fallback, wenn Make nicht verfuegbar):
+
 ```bash
 docker compose -f infrastructure/compose/surrealdb.yml -f infrastructure/compose/surrealdb-dev.yml up -d
 ```
 
 Mit `surrealdb-dev.yml` liegt SurrealDB lokal auf `127.0.0.1:8010`, damit es nicht mit `cdb_ws` auf `127.0.0.1:8000` kollidiert.
+
+**Scope:** Context Infrastructure only — kein Trading-Scope, kein BLUE/RED-Touch, kein LR-Go.
+Vertrag: `docs/surrealdb/local-context-runtime-contract.md`
 
 ## Governance-Compliance
 

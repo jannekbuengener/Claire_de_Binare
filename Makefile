@@ -27,7 +27,7 @@ REPLAY_ADAPTER_ID ?= primary_breakout_runner_v1
 REPLAY_DRY_RUN ?= 0
 REPLAY_DETERMINISTIC_VERIFY ?= 1
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -73,6 +73,14 @@ help:
 	@echo "  make rollback MR=<number>    - Rollback eines Merge Requests"
 	@echo "  make cleanup                 - Aufräumen merged Branches (DRY-RUN)"
 	@echo "  make cleanup-live            - Aufräumen merged Branches (LIVE)"
+	@echo ""
+	@echo "Context (SurrealDB Local Runtime — kein Trading-Scope):"
+	@echo "  make context-env-check       - Env/Secrets-Guard pruefen (kein Secret-Leak)"
+	@echo "  make context-up              - SurrealDB Sidecar starten (BLUE/RED unangetastet)"
+	@echo "  make context-down            - SurrealDB Sidecar stoppen (BLUE/RED unangetastet)"
+	@echo "  make context-status          - Container/Volume/Port-Status (kein Secret-Leak)"
+	@echo "  make context-logs            - cdb_surrealdb Logs anzeigen (letzte 50 Zeilen)"
+	@echo "  make context-restart         - Sidecar neu starten (context-down + context-up)"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -188,8 +196,105 @@ docker-health:
 	@echo "--- RED ---"
 	@docker compose -f infrastructure/compose/compose.red.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null | grep cdb_ || true
 
+# ============================================================================# Context (SurrealDB Local Runtime) — #2393 / #2394
+# Context Infrastructure only. No Trading-Runtime. No BLUE/RED touch.
+# No schema apply. No import. No query smoke.
 # ============================================================================
-# Paper Trading (14-Tage Test)
+
+ifeq ($(OS),Windows_NT)
+context-env-check:
+	@pwsh -NoProfile -Command "\
+	$$sp = if ($$env:SECRETS_PATH) { $$env:SECRETS_PATH } else { Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; \
+	$$f = Join-Path $$sp 'SURREALDB_ENV'; \
+	if (-not (Test-Path $$f)) { \
+	  Write-Error ('Missing local SurrealDB env file. Create it from infrastructure/config/surrealdb/SURREALDB_ENV.example and store the real file outside git. Expected: ' + $$f); \
+	  exit 1 \
+	}; \
+	$$content = Get-Content -Raw $$f; \
+	if ($$content -notmatch '(?m)^SURREAL_USER=') { Write-Error 'SURREALDB_ENV: missing field SURREAL_USER'; exit 1 }; \
+	if ($$content -notmatch '(?m)^SURREAL_PASS=') { Write-Error 'SURREALDB_ENV: missing field SURREAL_PASS'; exit 1 }; \
+	Write-Host '[OK] SurrealDB env file found.'; \
+	Write-Host '     SURREAL_USER=[REDACTED]'; \
+	Write-Host '     SURREAL_PASS=[REDACTED]'"
+else
+context-env-check:
+	@SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}; \
+	 ENV_FILE="$$SECRETS_PATH/SURREALDB_ENV"; \
+	 if [ ! -f "$$ENV_FILE" ]; then \
+	   echo "ERROR: Missing local SurrealDB env file. Create it from infrastructure/config/surrealdb/SURREALDB_ENV.example and store the real file outside git."; \
+	   echo "       Expected: $$ENV_FILE"; \
+	   exit 1; \
+	 fi; \
+	 if ! grep -qE '^SURREAL_USER=' "$$ENV_FILE"; then \
+	   echo "ERROR: SURREALDB_ENV: missing field SURREAL_USER"; exit 1; \
+	 fi; \
+	 if ! grep -qE '^SURREAL_PASS=' "$$ENV_FILE"; then \
+	   echo "ERROR: SURREALDB_ENV: missing field SURREAL_PASS"; exit 1; \
+	 fi; \
+	 echo "[OK] SurrealDB env file found."; \
+	 echo "     SURREAL_USER=[REDACTED]"; \
+	 echo "     SURREAL_PASS=[REDACTED]"
+endif
+
+ifeq ($(OS),Windows_NT)
+context-up: context-env-check
+	@echo "Starting SurrealDB context sidecar..."
+	@pwsh -NoProfile -Command "docker network create cdb_network 2>&1 | Out-Null; Write-Host '[OK] cdb_network ready'"
+	@pwsh -NoProfile -Command "\
+	$$sp = if ($$env:SECRETS_PATH) { $$env:SECRETS_PATH } else { Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; \
+	$$env:SECRETS_PATH = $$sp; \
+	docker compose -f 'infrastructure/compose/surrealdb.yml' -f 'infrastructure/compose/surrealdb-dev.yml' up -d"
+	@echo "[OK] cdb_surrealdb started. Port: 127.0.0.1:8010"
+else
+context-up: context-env-check
+	@echo "Starting SurrealDB context sidecar..."
+	@docker network create cdb_network 2>/dev/null || true
+	@echo "[OK] cdb_network ready"
+	@export SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}; \
+	 docker compose \
+	   -f infrastructure/compose/surrealdb.yml \
+	   -f infrastructure/compose/surrealdb-dev.yml \
+	   up -d
+	@echo "[OK] cdb_surrealdb started. Port: 127.0.0.1:8010"
+endif
+
+context-down:
+	@echo "Stopping SurrealDB context sidecar (BLUE/RED untouched)..."
+	@docker compose \
+	  -f infrastructure/compose/surrealdb.yml \
+	  -f infrastructure/compose/surrealdb-dev.yml \
+	  down 2>/dev/null || true
+	@echo "[OK] cdb_surrealdb stopped."
+
+context-status:
+	@echo "=== SurrealDB Local Context Runtime — Status ==="
+	@echo ""
+	@echo "--- Container ---"
+	@if docker inspect cdb_surrealdb > /dev/null 2>&1; then \
+	  STATUS=$$(docker inspect --format '{{.State.Status}}' cdb_surrealdb 2>/dev/null); \
+	  HEALTH=$$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' cdb_surrealdb 2>/dev/null); \
+	  PORTS=$$(docker port cdb_surrealdb 2>/dev/null || echo "none"); \
+	  echo "  cdb_surrealdb: $$STATUS (health: $$HEALTH)"; \
+	  echo "  Ports: $$PORTS"; \
+	else \
+	  echo "  cdb_surrealdb: not found (container does not exist)"; \
+	fi
+	@echo ""
+	@echo "--- Volume ---"
+	@if docker volume inspect surrealdb_data > /dev/null 2>&1; then \
+	  echo "  surrealdb_data: exists"; \
+	else \
+	  echo "  surrealdb_data: not found"; \
+	fi
+	@echo ""
+	@echo "NOTE: This is Context Infrastructure only — not a Live/Trading Go."
+
+context-logs:
+	@docker logs cdb_surrealdb --tail 50 2>/dev/null || echo "cdb_surrealdb is not running or not found."
+
+context-restart: context-down context-up
+
+# ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================
 
 pre-close:

@@ -1,0 +1,22 @@
+# SurrealDB Local Runtime — Env Template
+#
+# PURPOSE: Template only. Contains REDACTED placeholders — no real credentials.
+#
+# USAGE:
+#   1. Copy this file to ${SECRETS_PATH}/SURREALDB_ENV (outside the repository).
+#   2. Replace the REDACTED values with your actual local credentials.
+#   3. Never commit the real file to git.
+#
+# DEFAULT SECRETS_PATH:
+#   Linux / Mac:  ~/Documents/.secrets/.cdb/
+#   Windows:      %USERPROFILE%\Documents\.secrets\.cdb\
+#
+# VERIFY your env file is correct (without leaking values):
+#   make context-env-check
+#
+# NOTE: This file is for local development only.
+# The SurrealDB local runtime is Context Infrastructure — not a Live/Trading Go.
+# It has no effect on LR-status, real-money trading, or the BLUE/RED runtime.
+
+SURREAL_USER=REDACTED_LOCAL_USER
+SURREAL_PASS=REDACTED_LOCAL_PASSWORD
