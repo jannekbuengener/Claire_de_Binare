@@ -474,6 +474,44 @@ def test_why_evidence_weak_explicit_uncertainties_not_overridden() -> None:
 
 
 @pytest.mark.unit
+def test_blank_uncertainties_treated_as_empty_and_inference_fires() -> None:
+    """Blank/whitespace-only uncertainty strings are normalized out; inference then fires."""
+    inp = SelfExplanationInput(
+        explanation_type="why_evidence_weak",
+        summary="Evidence is weak.",
+        reasons=("No repo artefact.",),
+        evidence_refs=("#1234",),
+        required_next_step="Add evidence.",
+        uncertainties=("   ",),
+    )
+    result = build_self_explanation(inp)
+
+    # blank entry must be stripped; inference must have fired
+    assert len(result.uncertainties) >= 1
+    assert all(u.strip() for u in result.uncertainties)
+    assert any("unvollstaendig" in u.lower() or "evidence" in u.lower() for u in result.uncertainties)
+
+
+@pytest.mark.unit
+def test_empty_string_uncertainty_treated_as_absent_for_low_confidence() -> None:
+    """Empty-string uncertainty on low-confidence case is normalized; inference fires."""
+    inp = SelfExplanationInput(
+        explanation_type="why_stale",
+        summary="Possibly stale.",
+        reasons=("Not updated.",),
+        evidence_refs=("docs/some.md",),
+        required_next_step="Review.",
+        confidence=0.2,
+        uncertainties=("",),
+    )
+    result = build_self_explanation(inp)
+
+    # blank entry stripped; inference should have added a low-confidence warning
+    assert len(result.uncertainties) >= 1
+    assert all(u.strip() for u in result.uncertainties)
+
+
+@pytest.mark.unit
 def test_low_confidence_infers_uncertainty() -> None:
     """Confidence < 0.5 without explicit uncertainties triggers inference."""
     inp = SelfExplanationInput(

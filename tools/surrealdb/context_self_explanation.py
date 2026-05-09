@@ -260,7 +260,7 @@ def build_self_explanation(inp: SelfExplanationInput) -> SelfExplanationOutput:
     Raises:
         InvalidInputError: If the input fails post-initialization validation.
     """
-    uncertainties = list(inp.uncertainties)
+    uncertainties = [u for u in inp.uncertainties if u.strip()]
     if not uncertainties:
         if inp.explanation_type == "why_evidence_weak":
             uncertainties.append("Evidence moeglicherweise unvollstaendig.")
