@@ -515,7 +515,7 @@ verifizieren — die Guard-Logik ist in `Makefile` und `context-env-check` nachw
 | Vollständige Pipeline | `make context-smoke` | `[OK] context-smoke: vollstaendige Pipeline abgeschlossen` | ja |
 | Repo-Scan | `make context-scan` | `scan-report.json` in `artifacts/context-intelligence/latest/` | ja |
 | Import Dry-Run | `make context-import-dry-run` | Import-Plan berechnet, kein DB-Write | ja |
-| Lokaler Import | `make context-import-local` | Daten in `cdb_context_local/cdb_context_intel` importiert | ja |
+| Lokaler Import | `make context-import-local` | Import-Pfad läuft durch (`InMemoryContextApplyAdapter`); kein echter SurrealDB-DB-Write in diesem Slice — `REAL_SURREALDB_ADAPTER_AVAILABLE = False` | ja (Pfad-Smoke) |
 | Query Smoke | `make context-query-smoke` | Mindestens `show-snapshot`, `show-drift`, `find-artifact` liefern Ergebnisse oder `[NOTE]` | nein (graceful) |
 
 **Hinweise zu `context-smoke`** (Pipeline-Reihenfolge):
@@ -532,14 +532,20 @@ context-schema-check → context-scan → context-import-dry-run
   Exit-Code** — das Target liefert immer Exit 0. Der Operator liest die Ausgabe;
   für automatisierbare fail-closed Gates ist der vollständige Smoke-Pfad oder ein
   eigener Skript-Check nötig.
-- `make context-smoke` — **vollständiger Pfad**: valider Betriebsnachweis,
-  wenn Docker, Env und Schema verfügbar sind.
+- `make context-smoke` — **vollständiger Orchestrierungs-Pfad**: beweist, dass
+  alle Pipeline-Schritte ohne Fehler durchlaufen. **Kein Persistenznachweis für
+  echte SurrealDB-Records**, solange `context-import-local` nur den
+  `InMemoryContextApplyAdapter` nutzt (`REAL_SURREALDB_ADAPTER_AVAILABLE = False`).
+  Echter DB-backed Durchstich erfordert einen separaten SurrealDB Apply Adapter
+  (eigenes Issue/PR/Gate).
 - `make context-query-smoke` — **read-only Komfortcheck**: maskiert Fehler mit
   graceful `|| echo "[NOTE]..."` und kann `[OK]` ausgeben, auch wenn
   `cdb_surrealdb` offline ist. **Kein alleiniger Proof-of-Life.**
 
 **Restunsicherheit:** Vollständiger Pipeline-Durchstich setzt laufenden Container
 voraus. `context-scan` und `context-import-dry-run` laufen ohne Container.
+Echte Persistenz in `cdb_context_local/cdb_context_intel` ist erst mit einem
+realen SurrealDB Apply Adapter nachweisbar (nicht Teil dieses Gates).
 
 ---
 
