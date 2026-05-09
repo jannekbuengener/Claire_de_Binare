@@ -512,7 +512,7 @@ verifizieren — die Guard-Logik ist in `Makefile` und `context-env-check` nachw
 
 | Kriterium | Befehl | Erwartetes Ergebnis | Blockiert Abschluss |
 |---|---|---|---|
-| Vollständige Pipeline | `make context-smoke` | `[OK] context-smoke: vollstaendige Pipeline abgeschlossen` | ja |
+| Vollständige Pipeline | `make context-smoke` | Orchestrierungs-Pfad läuft durch (`[OK]`); **kein Container-/Runtime-Nachweis** — `context-schema-check` gibt `[SKIP]` + Exit 0 wenn Container offline, `context-import-local` nutzt `InMemoryContextApplyAdapter`, `context-query-smoke` maskiert mit `[NOTE]` | nein (Pfad-Smoke only) |
 | Repo-Scan | `make context-scan` | `scan-report.json` in `artifacts/context-intelligence/latest/` | ja |
 | Import Dry-Run | `make context-import-dry-run` | Import-Plan berechnet, kein DB-Write | ja |
 | Lokaler Import | `make context-import-local` | Import-Pfad läuft durch (`InMemoryContextApplyAdapter`); kein echter SurrealDB-DB-Write in diesem Slice — `REAL_SURREALDB_ADAPTER_AVAILABLE = False` | ja (Pfad-Smoke) |
@@ -533,11 +533,14 @@ context-schema-check → context-scan → context-import-dry-run
   für automatisierbare fail-closed Gates ist der vollständige Smoke-Pfad oder ein
   eigener Skript-Check nötig.
 - `make context-smoke` — **vollständiger Orchestrierungs-Pfad**: beweist, dass
-  alle Pipeline-Schritte ohne Fehler durchlaufen. **Kein Persistenznachweis für
-  echte SurrealDB-Records**, solange `context-import-local` nur den
-  `InMemoryContextApplyAdapter` nutzt (`REAL_SURREALDB_ADAPTER_AVAILABLE = False`).
-  Echter DB-backed Durchstich erfordert einen separaten SurrealDB Apply Adapter
-  (eigenes Issue/PR/Gate).
+  alle Pipeline-Schritte ohne Fehler *laufen*, **nicht** dass `cdb_surrealdb`
+  online ist. `context-schema-check` gibt `[SKIP]` + Exit 0 wenn Container offline
+  (`local_schema_check.py` Zeile 165-166); `context-import-local` nutzt nur
+  `InMemoryContextApplyAdapter` (kein echter DB-Write,
+  `REAL_SURREALDB_ADAPTER_AVAILABLE = False`); `context-query-smoke` maskiert
+  Fehler mit `[NOTE]`. **Der finale `[OK]` ist kein Container- oder
+  Persistenznachweis.** Echter DB-backed Durchstich erfordert einen separaten
+  SurrealDB Apply Adapter (eigenes Issue/PR/Gate).
 - `make context-query-smoke` — **read-only Komfortcheck**: maskiert Fehler mit
   graceful `|| echo "[NOTE]..."` und kann `[OK]` ausgeben, auch wenn
   `cdb_surrealdb` offline ist. **Kein alleiniger Proof-of-Life.**
