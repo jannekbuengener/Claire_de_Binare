@@ -400,7 +400,10 @@ eigenen `cdb_context_mcp`-Service. Docker Desktop muss für diesen Stack ausschl
 
 - Weniger Container → weniger Fehlerquellen.
 - `cdb_surrealdb` ist der einzige erforderliche Dauercontainer für den lokalen Context-DB-Stack.
-- CLI-Smoke (`context-query-smoke`) reicht als Betriebsnachweis.
+- Harter lokaler Betriebsnachweis ist `make context-status` (Containerstatus/Health) und,
+  wenn Docker/Env/Schema verfügbar sind, der vollständige `make context-smoke`.
+  `context-query-smoke` ist ein read-only Komfortcheck mit graceful Notes und kein
+  verlässlicher Proof-of-Life — er kann `[OK]` melden, auch wenn `cdb_surrealdb` offline ist.
 - MCP kann Operator-Befehle orchestrieren, ist aber **nicht Voraussetzung** für lokalen Betrieb.
 - Ein MCP-Service kann später separat ergänzt werden, wenn der CLI-Betrieb stabil ist.
 
