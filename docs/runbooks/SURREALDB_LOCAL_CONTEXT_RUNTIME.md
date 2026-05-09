@@ -464,8 +464,11 @@ Rahmen für Issue #2399.
 **Hinweise:**
 - `cdb_surrealdb` ist der einzige erwartete persistente lokale Dauercontainer für
   diesen Stack.
-- `make context-status` ist der **harte Container-/Health-Nachweis** — er schlägt
-  fehl, wenn der Container nicht läuft oder nicht gesund ist.
+- `make context-status` ist der **visuelle/operatorische Container-/Health-Nachweis** —
+  der Operator prüft anhand der Ausgabe, ob `cdb_surrealdb` existiert, Status `running`
+  und Health `healthy` meldet sowie Port und Volume passen. Das Target ist **nicht
+  fail-closed über den Exit-Code**: es gibt immer Exit 0 zurück und druckt nur
+  Status-Text. Der Exit-Code allein darf nicht als bestandenes Gate interpretiert werden.
 - `make context-up` setzt `context-env-check` voraus (Guard bei fehlender Env).
 - **Restunsicherheit:** Wenn Docker Desktop lokal nicht verfügbar ist, kann dieser
   Gate-Punkt nicht lokal nachgewiesen werden. Repo-Artefakte (Compose, Makefile)
@@ -524,8 +527,11 @@ context-schema-check → context-scan → context-import-dry-run
 
 **Kritische Unterscheidung:**
 
-- `make context-status` — **harter Betriebsnachweis**: schlägt fehl, wenn
-  Container nicht läuft oder nicht gesund ist.
+- `make context-status` — **visueller/operatorischer Betriebsnachweis**: gibt
+  Container-/Health-/Port-/Volume-Status als Text aus. **Nicht fail-closed über den
+  Exit-Code** — das Target liefert immer Exit 0. Der Operator liest die Ausgabe;
+  für automatisierbare fail-closed Gates ist der vollständige Smoke-Pfad oder ein
+  eigener Skript-Check nötig.
 - `make context-smoke` — **vollständiger Pfad**: valider Betriebsnachweis,
   wenn Docker, Env und Schema verfügbar sind.
 - `make context-query-smoke` — **read-only Komfortcheck**: maskiert Fehler mit
