@@ -100,7 +100,7 @@ Direkter Compose-Befehl (falls Make nicht verfügbar):
 
 ```bash
 docker compose \
-  -f infrastructure/compose/compose.blue.yml \
+  -f infrastructure/compose/surrealdb.yml \
   -f infrastructure/compose/surrealdb-dev.yml \
   up -d cdb_surrealdb
 ```
