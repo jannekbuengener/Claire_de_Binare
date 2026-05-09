@@ -8,6 +8,7 @@ from tools.surrealdb.context_self_explanation import (
     InvalidExplanationTypeError,
     InvalidInputError,
     SelfExplanationInput,
+    SelfExplanationOutput,
     build_self_explanation,
     supported_explanation_types,
 )
@@ -334,3 +335,309 @@ def test_to_payload_outputs_all_fields() -> None:
     assert "guardrails" in payload
     assert payload["confidence"] == 0.5
     assert payload["scope_context"] == "test-scope"
+    # AC #2031: graph_path and uncertainties always present in payload
+    assert "graph_path" in payload
+    assert "uncertainties" in payload
+    assert isinstance(payload["graph_path"], list)
+    assert isinstance(payload["uncertainties"], list)
+
+
+# ---------------------------------------------------------------------------
+# AC #2031 — Explanations contain graph-path and evidence
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_output_contains_graph_path_field_default_empty() -> None:
+    """graph_path is always present on output, defaults to empty tuple."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="No graph path provided.",
+        reasons=("Reason.",),
+        evidence_refs=("#ref",),
+        required_next_step="Check.",
+    )
+    result = build_self_explanation(inp)
+
+    assert hasattr(result, "graph_path")
+    assert result.graph_path == ()
+    assert result.to_payload()["graph_path"] == []
+
+
+@pytest.mark.unit
+def test_output_graph_path_passes_through_from_input() -> None:
+    """graph_path provided in input is preserved in output."""
+    inp = SelfExplanationInput(
+        explanation_type="why_stale",
+        summary="Stale docs in context graph.",
+        reasons=("Last updated 2024.",),
+        evidence_refs=("docs/old.md",),
+        required_next_step="Refresh docs.",
+        graph_path=("context", "docs", "docs/old.md"),
+    )
+    result = build_self_explanation(inp)
+
+    assert result.graph_path == ("context", "docs", "docs/old.md")
+    assert result.to_payload()["graph_path"] == ["context", "docs", "docs/old.md"]
+
+
+@pytest.mark.unit
+def test_output_graph_path_included_in_payload_when_nonempty() -> None:
+    """graph_path appears in to_payload even when non-empty."""
+    inp = SelfExplanationInput(
+        explanation_type="why_decision_current",
+        summary="Decision is current.",
+        reasons=("Ratified via #1492.",),
+        evidence_refs=("#1492",),
+        required_next_step="None needed.",
+        graph_path=("governance", "decisions", "#1492"),
+    )
+    result = build_self_explanation(inp)
+    payload = result.to_payload()
+
+    assert payload["graph_path"] == ["governance", "decisions", "#1492"]
+
+
+# ---------------------------------------------------------------------------
+# AC #2031 — Uncertainties are visible
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_output_contains_uncertainties_field_default_empty() -> None:
+    """uncertainties is always present on output, defaults to empty tuple."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="No uncertainties.",
+        reasons=("Reason.",),
+        evidence_refs=("#ref",),
+        required_next_step="Check.",
+        confidence=0.95,
+    )
+    result = build_self_explanation(inp)
+
+    assert hasattr(result, "uncertainties")
+    assert result.uncertainties == ()
+    assert result.to_payload()["uncertainties"] == []
+
+
+@pytest.mark.unit
+def test_explicit_uncertainties_pass_through() -> None:
+    """Caller-supplied uncertainties are preserved as-is."""
+    inp = SelfExplanationInput(
+        explanation_type="why_risky",
+        summary="Risk assessment.",
+        reasons=("High blast radius.",),
+        evidence_refs=("core/risk/service.py",),
+        required_next_step="Add tests.",
+        uncertainties=("Blast radius not fully mapped.", "No rollback plan."),
+    )
+    result = build_self_explanation(inp)
+
+    assert result.uncertainties == ("Blast radius not fully mapped.", "No rollback plan.")
+    assert result.to_payload()["uncertainties"] == [
+        "Blast radius not fully mapped.",
+        "No rollback plan.",
+    ]
+
+
+@pytest.mark.unit
+def test_why_evidence_weak_infers_uncertainty_when_none_given() -> None:
+    """why_evidence_weak type auto-populates uncertainty when caller omits it."""
+    inp = SelfExplanationInput(
+        explanation_type="why_evidence_weak",
+        summary="Evidence is weak.",
+        reasons=("Only an issue comment, no repo artefact.",),
+        evidence_refs=("#1234",),
+        required_next_step="Add evidence commit.",
+    )
+    result = build_self_explanation(inp)
+
+    assert len(result.uncertainties) >= 1
+    assert any("unvollstaendig" in u.lower() or "evidence" in u.lower() for u in result.uncertainties)
+
+
+@pytest.mark.unit
+def test_why_evidence_weak_explicit_uncertainties_not_overridden() -> None:
+    """Explicit uncertainties on why_evidence_weak are not replaced by inference."""
+    inp = SelfExplanationInput(
+        explanation_type="why_evidence_weak",
+        summary="Evidence is weak.",
+        reasons=("No repo artefact.",),
+        evidence_refs=("#1234",),
+        required_next_step="Add evidence.",
+        uncertainties=("My custom uncertainty.",),
+    )
+    result = build_self_explanation(inp)
+
+    assert result.uncertainties == ("My custom uncertainty.",)
+
+
+@pytest.mark.unit
+def test_low_confidence_infers_uncertainty() -> None:
+    """Confidence < 0.5 without explicit uncertainties triggers inference."""
+    inp = SelfExplanationInput(
+        explanation_type="why_stale",
+        summary="Possibly stale.",
+        reasons=("Not recently updated.",),
+        evidence_refs=("docs/some.md",),
+        required_next_step="Review.",
+        confidence=0.3,
+    )
+    result = build_self_explanation(inp)
+
+    assert len(result.uncertainties) >= 1
+    uncertainty_text = " ".join(result.uncertainties)
+    assert "0.30" in uncertainty_text or "Konfidenz" in uncertainty_text
+
+
+@pytest.mark.unit
+def test_high_confidence_no_inferred_uncertainty() -> None:
+    """Confidence >= 0.5 without explicit uncertainties: no inference."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="Clearly blocked.",
+        reasons=("CI failing.",),
+        evidence_refs=("#ci-check",),
+        required_next_step="Fix CI.",
+        confidence=0.8,
+    )
+    result = build_self_explanation(inp)
+
+    assert result.uncertainties == ()
+
+
+@pytest.mark.unit
+def test_no_confidence_no_inferred_uncertainty_for_non_weak_type() -> None:
+    """Missing confidence on a non-why_evidence_weak type: no inference."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="Blocked.",
+        reasons=("Policy gate.",),
+        evidence_refs=("#policy",),
+        required_next_step="Request approval.",
+    )
+    result = build_self_explanation(inp)
+
+    assert result.uncertainties == ()
+
+
+# ---------------------------------------------------------------------------
+# AC #2031 — Explanation gives no live/Echtgeld-Go (explicit guardrail check)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_guardrail_no_live_readiness_go() -> None:
+    """Output guardrails explicitly prohibit Live-Readiness-Go."""
+    inp = SelfExplanationInput(
+        explanation_type="why_agent_needs_go",
+        summary="Agent needs GO for merge.",
+        reasons=("Governance gate active.",),
+        evidence_refs=("#2279",),
+        required_next_step="Human GO required.",
+    )
+    result = build_self_explanation(inp)
+
+    guardrail_text = " ".join(result.guardrails)
+    assert "Live-Readiness-Go" in guardrail_text
+    assert "Echtgeld-Go" in guardrail_text
+    assert "Handlungserlaubnis" in guardrail_text
+
+
+# ---------------------------------------------------------------------------
+# AC #2031 — Optional spec fields pass through
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_optional_spec_fields_pass_through() -> None:
+    """decision_refs, claim_refs, memory_refs, contradictions, stale_context,
+    recommended_next_reads all pass through input → output."""
+    inp = SelfExplanationInput(
+        explanation_type="why_decision_current",
+        summary="Decision still current.",
+        reasons=("Ratified 2026-04-08.",),
+        evidence_refs=("#1492",),
+        required_next_step="No action needed.",
+        decision_refs=("#1492", "#2033"),
+        claim_refs=("claim:trade-capable-stage",),
+        memory_refs=("knowledge/ACTIVE_ROADMAP.md",),
+        contradictions=("old-decision:stage-blocked",),
+        stale_context=("docs/archive/old-stage.md",),
+        recommended_next_reads=(
+            "docs/runbooks/CONTROL_REGISTER.md",
+            "knowledge/governance/CDB_CONSTITUTION.md",
+        ),
+    )
+    result = build_self_explanation(inp)
+
+    assert result.decision_refs == ("#1492", "#2033")
+    assert result.claim_refs == ("claim:trade-capable-stage",)
+    assert result.memory_refs == ("knowledge/ACTIVE_ROADMAP.md",)
+    assert result.contradictions == ("old-decision:stage-blocked",)
+    assert result.stale_context == ("docs/archive/old-stage.md",)
+    assert result.recommended_next_reads == (
+        "docs/runbooks/CONTROL_REGISTER.md",
+        "knowledge/governance/CDB_CONSTITUTION.md",
+    )
+
+
+@pytest.mark.unit
+def test_optional_spec_fields_in_payload_when_nonempty() -> None:
+    """Non-empty optional fields appear in to_payload()."""
+    inp = SelfExplanationInput(
+        explanation_type="why_stale",
+        summary="Doc is stale.",
+        reasons=("Not updated.",),
+        evidence_refs=("docs/old.md",),
+        required_next_step="Update.",
+        decision_refs=("#999",),
+        recommended_next_reads=("docs/new.md",),
+    )
+    result = build_self_explanation(inp)
+    payload = result.to_payload()
+
+    assert "decision_refs" in payload
+    assert payload["decision_refs"] == ["#999"]
+    assert "recommended_next_reads" in payload
+    assert payload["recommended_next_reads"] == ["docs/new.md"]
+
+
+@pytest.mark.unit
+def test_optional_spec_fields_absent_from_payload_when_empty() -> None:
+    """Empty optional fields are omitted from to_payload()."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="Blocked.",
+        reasons=("Gate.",),
+        evidence_refs=("#ref",),
+        required_next_step="Approve.",
+    )
+    result = build_self_explanation(inp)
+    payload = result.to_payload()
+
+    for optional_key in (
+        "decision_refs",
+        "claim_refs",
+        "memory_refs",
+        "contradictions",
+        "stale_context",
+        "recommended_next_reads",
+    ):
+        assert optional_key not in payload, f"{optional_key} should be absent when empty"
+
+
+@pytest.mark.unit
+def test_output_is_selfexplanationoutput_instance() -> None:
+    """build_self_explanation always returns a SelfExplanationOutput."""
+    inp = SelfExplanationInput(
+        explanation_type="why_blocked",
+        summary="Blocked.",
+        reasons=("Reason.",),
+        evidence_refs=("#ref",),
+        required_next_step="Step.",
+    )
+    result = build_self_explanation(inp)
+
+    assert isinstance(result, SelfExplanationOutput)

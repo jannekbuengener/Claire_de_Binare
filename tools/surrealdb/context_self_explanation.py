@@ -85,6 +85,17 @@ class SelfExplanationInput:
         required_next_step: The next action needed (plain text, not a command).
         confidence: Optional self-assessed confidence (0.0–1.0).
         scope_context: Optional scope identifier for which this applies.
+        graph_path: Ordered sequence of context-graph node references leading
+            to this explanation (e.g. topic → sub-topic → claim).
+        uncertainties: Known unknowns or weaknesses in this explanation.
+            Inferred by the builder when confidence is low or evidence is weak.
+        decision_refs: References to governance decisions relevant to this
+            explanation.
+        claim_refs: References to specific claims supporting the explanation.
+        memory_refs: References to memory/knowledge items consulted.
+        contradictions: Identifiers of contradicting evidence or claims.
+        stale_context: Context items known to be potentially outdated.
+        recommended_next_reads: Paths or IDs of documents to consult next.
     """
 
     explanation_type: str
@@ -94,6 +105,14 @@ class SelfExplanationInput:
     required_next_step: str
     confidence: float | None = None
     scope_context: str | None = None
+    graph_path: tuple[str, ...] = ()
+    uncertainties: tuple[str, ...] = ()
+    decision_refs: tuple[str, ...] = ()
+    claim_refs: tuple[str, ...] = ()
+    memory_refs: tuple[str, ...] = ()
+    contradictions: tuple[str, ...] = ()
+    stale_context: tuple[str, ...] = ()
+    recommended_next_reads: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.explanation_type not in _EXPLANATION_TYPES:
@@ -125,11 +144,25 @@ class SelfExplanationInput:
             "reasons": list(self.reasons),
             "evidence_refs": list(self.evidence_refs),
             "required_next_step": self.required_next_step,
+            "graph_path": list(self.graph_path),
+            "uncertainties": list(self.uncertainties),
         }
         if self.confidence is not None:
             payload["confidence"] = self.confidence
         if self.scope_context is not None:
             payload["scope_context"] = self.scope_context
+        if self.decision_refs:
+            payload["decision_refs"] = list(self.decision_refs)
+        if self.claim_refs:
+            payload["claim_refs"] = list(self.claim_refs)
+        if self.memory_refs:
+            payload["memory_refs"] = list(self.memory_refs)
+        if self.contradictions:
+            payload["contradictions"] = list(self.contradictions)
+        if self.stale_context:
+            payload["stale_context"] = list(self.stale_context)
+        if self.recommended_next_reads:
+            payload["recommended_next_reads"] = list(self.recommended_next_reads)
         return payload
 
 
@@ -147,6 +180,16 @@ class SelfExplanationOutput:
         guardrails: Mandatory guardrail text (always present).
         confidence: Optional confidence level.
         scope_context: Optional scope context.
+        graph_path: Ordered context-graph node references leading to this
+            explanation. Always present (may be empty).
+        uncertainties: Known unknowns or weaknesses. Always present; inferred
+            by the builder when evidence is weak or confidence is low.
+        decision_refs: Governance decisions referenced by this explanation.
+        claim_refs: Specific claims referenced.
+        memory_refs: Memory/knowledge items consulted.
+        contradictions: Contradicting evidence or claim identifiers.
+        stale_context: Context items known to be potentially outdated.
+        recommended_next_reads: Documents to consult for further context.
     """
 
     schema_version: str = _SCHEMA_VERSION
@@ -158,6 +201,14 @@ class SelfExplanationOutput:
     guardrails: tuple[str, ...] = ()
     confidence: float | None = None
     scope_context: str | None = None
+    graph_path: tuple[str, ...] = ()
+    uncertainties: tuple[str, ...] = ()
+    decision_refs: tuple[str, ...] = ()
+    claim_refs: tuple[str, ...] = ()
+    memory_refs: tuple[str, ...] = ()
+    contradictions: tuple[str, ...] = ()
+    stale_context: tuple[str, ...] = ()
+    recommended_next_reads: tuple[str, ...] = ()
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -168,11 +219,25 @@ class SelfExplanationOutput:
             "evidence_refs": list(self.evidence_refs),
             "required_next_step": self.required_next_step,
             "guardrails": list(self.guardrails),
+            "graph_path": list(self.graph_path),
+            "uncertainties": list(self.uncertainties),
         }
         if self.confidence is not None:
             payload["confidence"] = self.confidence
         if self.scope_context is not None:
             payload["scope_context"] = self.scope_context
+        if self.decision_refs:
+            payload["decision_refs"] = list(self.decision_refs)
+        if self.claim_refs:
+            payload["claim_refs"] = list(self.claim_refs)
+        if self.memory_refs:
+            payload["memory_refs"] = list(self.memory_refs)
+        if self.contradictions:
+            payload["contradictions"] = list(self.contradictions)
+        if self.stale_context:
+            payload["stale_context"] = list(self.stale_context)
+        if self.recommended_next_reads:
+            payload["recommended_next_reads"] = list(self.recommended_next_reads)
         return payload
 
 
@@ -180,17 +245,31 @@ def build_self_explanation(inp: SelfExplanationInput) -> SelfExplanationOutput:
     """Build a structured self-explanation from validated input.
 
     This is a pure function: no DB access, no MCP, no network, no secrets.
-    The output always includes mandatory guardrail text.
+    The output always includes mandatory guardrail text, ``graph_path``, and
+    ``uncertainties``. Uncertainties are inferred when ``confidence < 0.5`` or
+    when the explanation type is ``why_evidence_weak`` and no uncertainties
+    were provided by the caller.
 
     Args:
         inp: Validated SelfExplanationInput.
 
     Returns:
-        SelfExplanationOutput with the explanation and guardrails.
+        SelfExplanationOutput with the explanation, guardrails, graph_path,
+        and uncertainties.
 
     Raises:
         InvalidInputError: If the input fails post-initialization validation.
     """
+    uncertainties = list(inp.uncertainties)
+    if not uncertainties:
+        if inp.explanation_type == "why_evidence_weak":
+            uncertainties.append("Evidence moeglicherweise unvollstaendig.")
+        elif inp.confidence is not None and inp.confidence < 0.5:
+            uncertainties.append(
+                f"Niedrige Konfidenz ({inp.confidence:.2f}):"
+                " Ausgabe mit Vorsicht interpretieren."
+            )
+
     return SelfExplanationOutput(
         schema_version=_SCHEMA_VERSION,
         explanation_type=inp.explanation_type,
@@ -201,6 +280,14 @@ def build_self_explanation(inp: SelfExplanationInput) -> SelfExplanationOutput:
         guardrails=_GUARDRAILS,
         confidence=inp.confidence,
         scope_context=inp.scope_context,
+        graph_path=inp.graph_path,
+        uncertainties=tuple(uncertainties),
+        decision_refs=inp.decision_refs,
+        claim_refs=inp.claim_refs,
+        memory_refs=inp.memory_refs,
+        contradictions=inp.contradictions,
+        stale_context=inp.stale_context,
+        recommended_next_reads=inp.recommended_next_reads,
     )
 
 
