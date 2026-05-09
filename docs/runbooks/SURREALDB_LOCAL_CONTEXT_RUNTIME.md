@@ -386,6 +386,53 @@ make context-import-dry-run
 
 ---
 
+## MCP-Posture (v1)
+
+### Entscheidung
+
+**Kein separater Context-MCP-Dauercontainer in v1.**
+
+Der lokale Mindestbetrieb für SurrealDB Context Intelligence erfordert in v1 keinen
+eigenen `cdb_context_mcp`-Service. Docker Desktop muss für diesen Stack ausschließlich
+`cdb_surrealdb` zeigen — keinen weiteren dauerhaft laufenden Container.
+
+### Begründung
+
+- Weniger Container → weniger Fehlerquellen.
+- `cdb_surrealdb` ist der einzige erforderliche Dauercontainer für den lokalen Context-DB-Stack.
+- CLI-Smoke (`context-query-smoke`) reicht als Betriebsnachweis.
+- MCP kann Operator-Befehle orchestrieren, ist aber **nicht Voraussetzung** für lokalen Betrieb.
+- Ein MCP-Service kann später separat ergänzt werden, wenn der CLI-Betrieb stabil ist.
+
+### Was MCP nicht nötig ist
+
+- `cdb_surrealdb` starten → kein MCP nötig.
+- Schema anwenden → kein MCP nötig.
+- Scan/Import/Query ausführen → kein MCP nötig.
+- Smoke-Test bestehen → kein MCP nötig.
+
+CDB-MCP / OpenCode kann vorhandene Makefile-Targets orchestrieren, gehört aber
+nicht zur lokalen Runtime-Pflicht.
+
+### Optionale Zukunftsoption
+
+Ein späterer read-only `cdb_context_mcp`-Service ist denkbar, aber:
+
+| Bedingung | Wert |
+|---|---|
+| Eigenes Issue/PR/Gate | erforderlich |
+| Read-only | zwingend, kein DB-Apply, kein Reset |
+| Kein Trading-Scope | keine Verbindung zu Risk/Execution |
+| Kein Write-fähiger MCP | Schema-/Daten-Writes immer nur via CLI-Jobs |
+| Kein Remote-MCP | nur `127.0.0.1`/`localhost` als lokaler Betriebsweg |
+| Kein Live-Go | kein LR-Effekt durch MCP-Einführung |
+| Kein Echtgeld-Go | kein Auto-Trading via MCP |
+
+Dieser Entscheid gilt für v1 und wird in einem separaten Issue/PR geändert, falls
+eine spätere Implementierung gewünscht wird.
+
+---
+
 ## Sicherheitsgrenzen
 
 | Grenze | Regel |
@@ -417,4 +464,4 @@ make context-import-dry-run
 
 ---
 
-*Issue: #2397 | Epic: #2391 | Ledger: #1976 | LR: NO-GO*
+*Issue: #2397 #2398 | Epic: #2391 | Ledger: #1976 | LR: NO-GO*
