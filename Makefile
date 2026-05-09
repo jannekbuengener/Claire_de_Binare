@@ -260,7 +260,8 @@ endif
 
 context-down:
 	@echo "Stopping SurrealDB context sidecar (BLUE/RED untouched)..."
-	@docker compose \
+	@SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb} \
+	 docker compose \
 	  -f infrastructure/compose/surrealdb.yml \
 	  -f infrastructure/compose/surrealdb-dev.yml \
 	  down 2>/dev/null || true
@@ -281,11 +282,12 @@ context-status:
 	fi
 	@echo ""
 	@echo "--- Volume ---"
-	@if docker volume inspect surrealdb_data > /dev/null 2>&1; then \
-	  echo "  surrealdb_data: exists"; \
-	else \
-	  echo "  surrealdb_data: not found"; \
-	fi
+	@VOLUME_NAME="$${STACK_NAME:-cdb_database}_surrealdb_data"; \
+	 if docker volume inspect "$$VOLUME_NAME" > /dev/null 2>&1; then \
+	   echo "  $$VOLUME_NAME: exists"; \
+	 else \
+	   echo "  $$VOLUME_NAME: not found"; \
+	 fi
 	@echo ""
 	@echo "NOTE: This is Context Infrastructure only — not a Live/Trading Go."
 
