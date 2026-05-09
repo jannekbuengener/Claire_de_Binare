@@ -27,7 +27,9 @@ REPLAY_ADAPTER_ID ?= primary_breakout_runner_v1
 REPLAY_DRY_RUN ?= 0
 REPLAY_DETERMINISTIC_VERIFY ?= 1
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local
+CONTEXT_SNAP_DIR ?= artifacts/context-intelligence/latest
+
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -84,7 +86,11 @@ help:
 	@echo "  make context-schema-apply    - Schema context_intelligence_v0 lokal anwenden"
 	@echo "  make context-schema-check    - Schema-Tabellen pruefen (graceful fail)"
 	@echo "  make context-reset-local     - DESTRUKTIV: Context-Daten lokal loeschen"
-
+	@echo "  make context-scan            - Repo scannen, Bericht nach artifacts/ (kein DB-Write)"
+	@echo "  make context-import-dry-run  - Import planen, kein DB-Write"
+	@echo "  make context-import-local    - Context-Daten in lokale SurrealDB importieren"
+	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
+	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
 # ============================================================================
@@ -319,6 +325,45 @@ context-reset-local:
 		exit 2; \
 	fi
 	@python3 tools/surrealdb/local_reset.py --confirm --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+
+context-scan:
+	@echo "=== Context Scan: Repo-Artefakte und Doc-Chunks (kein DB-Write) ==="
+	@mkdir -p $(CONTEXT_SNAP_DIR)
+	@python3 -m tools.surrealdb.context_indexer scan --apply-writes --output $(CONTEXT_SNAP_DIR)/scan-report.json
+	@echo "[OK] Scan complete: $(CONTEXT_SNAP_DIR)/scan-report.json"
+
+context-import-dry-run:
+	@echo "=== Context Import Dry-Run: geplante Aktionen, kein DB-Write ==="
+	@python3 -m tools.surrealdb.context_importer dry-run --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel || echo "[NOTE] Import dry-run: kein JSONL-Input — zuerst context-scan ausfuehren"
+	@echo "[OK] Import dry-run abgeschlossen (keine DB-Writes)"
+
+context-import-local:
+	@echo "=== Context Local Import: Schreiben in lokale SurrealDB ==="
+	@python3 tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@python3 -m tools.surrealdb.context_importer apply --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $$(date +%Y%m%d%H%M%S)
+
+context-query-smoke:
+	@echo "=== Context Query Smoke (read-only, graceful fail wenn kein Container) ==="
+	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-snapshot 2>&1 || echo "[NOTE] show-snapshot: Container nicht laufend oder keine Daten"
+	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-drift 2>&1 || echo "[NOTE] show-drift: Container nicht laufend oder keine Daten"
+	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml find-artifact 2>&1 || echo "[NOTE] find-artifact: Container nicht laufend oder keine Daten"
+	@echo "[OK] Context query smoke abgeschlossen"
+
+context-smoke:
+	@echo "=== Context Smoke: vollstaendige lokale Pipeline ==="
+	@echo "NOTE: Nur lokaler Scope. LR: NO-GO. Kein echtes Kapital. Keine echten Trades."
+	@echo "--- Schritt 1: Schema-Check ---"
+	$(MAKE) context-schema-check
+	@echo "--- Schritt 2: Scan ---"
+	$(MAKE) context-scan
+	@echo "--- Schritt 3: Import Dry-Run ---"
+	$(MAKE) context-import-dry-run
+	@echo "--- Schritt 4: Lokaler Import ---"
+	$(MAKE) context-import-local
+	@echo "--- Schritt 5: Query Smoke ---"
+	$(MAKE) context-query-smoke
+	@echo "[OK] context-smoke: vollstaendige Pipeline abgeschlossen"
+	@echo "Ziel: lokale SurrealDB (127.0.0.1:8010). LR-Verdict: NO-GO"
 
 # ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================
