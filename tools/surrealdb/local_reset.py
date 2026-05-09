@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import json
 import os
 import sys
 import urllib.error
@@ -74,6 +75,64 @@ FORBIDDEN_TABLES: frozenset[str] = frozenset(
         "governance_state",
     }
 )
+
+
+def _check_delete_result(table: str, body: bytes) -> None:
+    """Parse SurrealDB /sql response for a single DELETE statement.
+
+    SurrealDB returns HTTP 200 even when the statement fails (e.g. table not
+    defined, permission denied, incompatible version). Requires every result
+    item to carry ``status == "OK"``; any ``"ERR"`` or missing/unexpected
+    field is treated as a fatal failure for that table.
+
+    Raises ValueError with an operator-friendly message on any failure.
+    """
+    try:
+        raw = body.decode("utf-8", errors="replace")
+    except Exception as exc:
+        raise ValueError(f"response body not decodable: {exc}") from exc
+
+    if not raw.strip():
+        raise ValueError(
+            "response body is empty — expected JSON array from SurrealDB /sql"
+        )
+
+    try:
+        results = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"response body is not valid JSON: {exc} "
+            f"(first 400 chars: {raw[:400]!r})"
+        ) from exc
+
+    if not isinstance(results, list):
+        raise ValueError(
+            f"expected JSON array from /sql, got {type(results).__name__}: "
+            f"{raw[:400]!r}"
+        )
+
+    stmt_errors: list[str] = []
+    for idx, item in enumerate(results):
+        if not isinstance(item, dict):
+            stmt_errors.append(
+                f"statement {idx}: expected object, got {type(item).__name__}"
+            )
+            continue
+        stmt_status = item.get("status")
+        if stmt_status is None:
+            stmt_errors.append(
+                f"statement {idx}: missing 'status' field ({str(item)[:120]})"
+            )
+        elif stmt_status != "OK":
+            detail = item.get("detail") or item.get("result") or ""
+            stmt_errors.append(
+                f"statement {idx}: status={stmt_status!r} — {str(detail)[:200]}"
+            )
+
+    if stmt_errors:
+        raise ValueError(
+            f"DELETE {table} failed:\n" + "\n".join(f"  {e}" for e in stmt_errors)
+        )
 
 
 def _resolve_env_file(secrets_path: str | None = None) -> Path:
@@ -235,11 +294,18 @@ def main() -> None:
             print(f"  [GUARD] Skipping forbidden table: {table}", file=sys.stderr)
             continue
         sql = f"DELETE {table};"
-        status, _ = _sql_request(args.url, sql, user, password, args.ns, args.db)
-        if status in (200, 204):
+        status, body = _sql_request(args.url, sql, user, password, args.ns, args.db)
+        if status not in (200, 204):
+            print(f"  [WARN] {table}: unexpected HTTP status={status}", file=sys.stderr)
+            errors.append(table)
+            continue
+        # HTTP 200 is not sufficient — SurrealDB returns 200 even when the
+        # statement fails. Parse each result and require status == "OK".
+        try:
+            _check_delete_result(table, body)
             print(f"  [OK] {table}: cleared")
-        else:
-            print(f"  [WARN] {table}: unexpected status={status}", file=sys.stderr)
+        except ValueError as exc:
+            print(f"  [WARN] {table}: {exc}", file=sys.stderr)
             errors.append(table)
 
     print("")
