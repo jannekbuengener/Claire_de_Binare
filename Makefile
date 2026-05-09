@@ -314,6 +314,10 @@ context-reset-local:
 	@echo "Trading/Live/Risk/Governance-Tabellen werden NICHT angefasst."
 	@echo "Schema-Definitionen bleiben erhalten."
 	@echo ""
+	@if [ "$(CONFIRM)" != "1" ]; then \
+		echo "ERROR: Explicit confirmation required. Run: make context-reset-local CONFIRM=1"; \
+		exit 2; \
+	fi
 	@python3 tools/surrealdb/local_reset.py --confirm --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 # ============================================================================# Paper Trading (14-Tage Test)
