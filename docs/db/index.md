@@ -65,6 +65,9 @@ Postgres ist der Canon fuer Runtime-Daten; SurrealDB ist eine optionale Mirror-S
 - Ontology & Schema:
   - [docs/surrealdb/context-ontology-v0.yaml](../surrealdb/context-ontology-v0.yaml)
   - [`infrastructure/surrealdb/context_intelligence_v0.surql`](../../infrastructure/surrealdb/context_intelligence_v0.surql)
+- Contract & Model Docs:
+  - [docs/surrealdb/scoped-agent-memory-model-v1.md](../surrealdb/scoped-agent-memory-model-v1.md)
+  - [docs/surrealdb/audit-observation-model-v1.md](../surrealdb/audit-observation-model-v1.md)
 - Validation & Gates:
   - [docs/surrealdb/context-intelligence-validation.md](../surrealdb/context-intelligence-validation.md)
 - Planung & Governance (Wave 21):

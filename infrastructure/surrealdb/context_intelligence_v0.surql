@@ -299,11 +299,18 @@ DEFINE FIELD confidence ON TABLE audit_observation TYPE float;
 DEFINE FIELD observed_by ON TABLE audit_observation TYPE string;
 DEFINE FIELD observed_at ON TABLE audit_observation TYPE datetime;
 DEFINE FIELD comment ON TABLE audit_observation TYPE string;
+DEFINE FIELD severity ON TABLE audit_observation TYPE string;          -- REQUIRED(v0-draft): one of info, warning, blocking
+DEFINE FIELD related_claims ON TABLE audit_observation TYPE array;
+DEFINE FIELD related_decisions ON TABLE audit_observation TYPE array;
+DEFINE FIELD related_memory ON TABLE audit_observation TYPE array;
+DEFINE FIELD status ON TABLE audit_observation TYPE string;            -- REQUIRED(v0-draft): one of open, accepted_risk, resolved, superseded
 DEFINE FIELD created_at ON TABLE audit_observation TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)
 DEFINE INDEX idx_audit_observation_observation_id_unique ON TABLE audit_observation FIELDS observation_id UNIQUE;
 DEFINE INDEX idx_audit_observation_type ON TABLE audit_observation FIELDS observation_type;
 DEFINE INDEX idx_audit_observation_observed_at ON TABLE audit_observation FIELDS observed_at;
 DEFINE INDEX idx_audit_observation_created_at ON TABLE audit_observation FIELDS created_at;
+DEFINE INDEX idx_audit_observation_severity ON TABLE audit_observation FIELDS severity;
+DEFINE INDEX idx_audit_observation_status ON TABLE audit_observation FIELDS status;
 
 -- ------------------------------------------
 -- contradiction (Issue #2025)
