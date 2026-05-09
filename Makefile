@@ -27,7 +27,7 @@ REPLAY_ADAPTER_ID ?= primary_breakout_runner_v1
 REPLAY_DRY_RUN ?= 0
 REPLAY_DETERMINISTIC_VERIFY ?= 1
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -81,6 +81,9 @@ help:
 	@echo "  make context-status          - Container/Volume/Port-Status (kein Secret-Leak)"
 	@echo "  make context-logs            - cdb_surrealdb Logs anzeigen (letzte 50 Zeilen)"
 	@echo "  make context-restart         - Sidecar neu starten (context-down + context-up)"
+	@echo "  make context-schema-apply    - Schema context_intelligence_v0 lokal anwenden"
+	@echo "  make context-schema-check    - Schema-Tabellen pruefen (graceful fail)"
+	@echo "  make context-reset-local     - DESTRUKTIV: Context-Daten lokal loeschen"
 
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -295,6 +298,23 @@ context-logs:
 	@docker logs cdb_surrealdb --tail 50 2>/dev/null || echo "cdb_surrealdb is not running or not found."
 
 context-restart: context-down context-up
+
+
+context-schema-apply:
+	@echo "=== SurrealDB Schema Apply: context_intelligence_v0 ==="
+	@python3 tools/surrealdb/local_schema_apply.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+
+context-schema-check:
+	@echo "=== SurrealDB Schema Check: context_intelligence_v0 ==="
+	@python3 tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+
+context-reset-local:
+	@echo "=== SurrealDB Local Reset (DESTRUKTIV - nur Context-Intelligence-Daten) ==="
+	@echo "DESTRUKTIV: Alle Datensaetze in Context-Intelligence-Tabellen werden geloescht."
+	@echo "Trading/Live/Risk/Governance-Tabellen werden NICHT angefasst."
+	@echo "Schema-Definitionen bleiben erhalten."
+	@echo ""
+	@python3 tools/surrealdb/local_reset.py --confirm --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 # ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================

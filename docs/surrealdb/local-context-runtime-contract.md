@@ -123,13 +123,49 @@ Use `make context-env-check` to verify the env file without exposing any values.
 ## 9. Operator Commands
 
 ```bash
-make context-env-check   # Verify env/secrets guard (no secret output)
-make context-up          # Start cdb_surrealdb sidecar (runs env-check first)
-make context-status      # Container/volume/port status (no secret output)
-make context-logs        # Tail cdb_surrealdb logs (last 50 lines)
-make context-down        # Stop cdb_surrealdb sidecar (BLUE/RED untouched)
-make context-restart     # context-down then context-up
+make context-env-check      # Verify env/secrets guard (no secret output)
+make context-up             # Start cdb_surrealdb sidecar (runs env-check first)
+make context-status         # Container/volume/port status (no secret output)
+make context-logs           # Tail cdb_surrealdb logs (last 50 lines)
+make context-down           # Stop cdb_surrealdb sidecar (BLUE/RED untouched)
+make context-restart        # context-down then context-up
 ```
+
+### Schema Workflow (Issue #2395)
+
+```bash
+make context-schema-apply   # Apply context_intelligence_v0.surql to local DB
+make context-schema-check   # Verify all v0 tables exist (graceful fail if offline)
+make context-reset-local    # DESTRUCTIVE: clear all context-intelligence data
+```
+
+**Schema apply** (`context-schema-apply`):
+
+- Reads `infrastructure/surrealdb/context_intelligence_v0.surql`
+- Connects to `http://127.0.0.1:8010` (local dev port — hard-guarded)
+- Target namespace/database: `cdb_context_local` / `cdb_context_intel`
+- Runs `DEFINE TABLE ...` statements (idempotent — safe to re-apply)
+- Requires `cdb_surrealdb` running (`make context-up` first)
+- No trading/live tables are touched
+
+**Schema check** (`context-schema-check`):
+
+- Queries `INFO FOR DB` and compares against the 18 expected v0 tables
+- Exits 0 if all tables present or if container is offline (graceful)
+- Exits 1 if tables are missing — prints which ones
+- No secret output
+
+**Local reset** (`context-reset-local`):
+
+- **DESTRUCTIVE**: clears all record data in context-intelligence tables
+- Schema definitions (`DEFINE TABLE`) are preserved — only records are deleted
+- Hard guard: only executes against `127.0.0.1` / `localhost`
+- Hard guard: `--confirm` flag required (prevents accidental execution)
+- Trading/live/risk/governance tables (`orders`, `fills`, `positions`, etc.) are
+  explicitly forbidden and never touched
+- LR-Go remains NO-GO; this operation has no effect on live-readiness
+
+Scripts: `tools/surrealdb/local_schema_apply.py`, `local_schema_check.py`, `local_reset.py`
 
 ---
 
@@ -162,13 +198,16 @@ The following are explicitly **outside** the SurrealDB local context stack:
 | #2392 | This contract document | Closed via PR |
 | #2393 | One-command startup (Makefile targets) | Closed via PR |
 | #2394 | Env/secrets guard | Closed via PR |
+| #2395 | Local schema apply and reset workflow | Closed via PR |
 
 ---
 
 ## 12. Invariants
 
 - `cdb_surrealdb` is the only permanent container in this stack.
-- No secrets or credential values are ever printed by any `make context-*` target.
+- No secrets or credential values are ever printed by any `make context-*` target or helper script.
 - `context-down` never stops BLUE or RED runtime containers.
 - `context-up` always runs `context-env-check` first.
+- `context-schema-apply` and `context-schema-check` only connect to `127.0.0.1:8010` (local-dev port).
+- `context-reset-local` requires `--confirm` and never touches trading/live/risk/governance tables.
 - This runtime has no effect on live-readiness verdict.
