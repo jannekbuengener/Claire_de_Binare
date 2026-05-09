@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import json
 import os
 import sys
 import urllib.error
@@ -136,6 +137,61 @@ def _sql_request(
         return exc.code, exc.read()
 
 
+def _check_statement_results(body: bytes) -> list[dict]:
+    """Parse SurrealDB /sql response and fail on any non-OK statement.
+
+    SurrealDB returns HTTP 200 even when individual statements fail.
+    Each result item must have ``status: "OK"``; any ``"ERR"`` (or missing
+    status, malformed JSON, empty body) is treated as a fatal apply failure.
+
+    Returns the parsed results list on full success.
+    Raises ValueError with an operator-friendly message on any failure.
+    """
+    try:
+        raw = body.decode("utf-8", errors="replace")
+    except Exception as exc:
+        raise ValueError(f"Response body not decodable: {exc}") from exc
+
+    if not raw.strip():
+        raise ValueError("Response body is empty — expected JSON array from SurrealDB /sql")
+
+    try:
+        results = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        truncated = raw[:400]
+        raise ValueError(
+            f"Response body is not valid JSON: {exc}\n  Body (first 400 chars): {truncated}"
+        ) from exc
+
+    if not isinstance(results, list):
+        raise ValueError(
+            f"Expected JSON array from /sql, got {type(results).__name__}: {raw[:400]}"
+        )
+
+    errors: list[str] = []
+    for idx, item in enumerate(results):
+        if not isinstance(item, dict):
+            errors.append(f"  Statement {idx}: expected object, got {type(item).__name__}")
+            continue
+        stmt_status = item.get("status")
+        if stmt_status is None:
+            errors.append(
+                f"  Statement {idx}: missing 'status' field (item: {str(item)[:120]})"
+            )
+        elif stmt_status != "OK":
+            detail = item.get("detail") or item.get("result") or ""
+            errors.append(
+                f"  Statement {idx}: status={stmt_status!r} — {str(detail)[:200]}"
+            )
+
+    if errors:
+        raise ValueError(
+            "One or more schema statements failed:\n" + "\n".join(errors)
+        )
+
+    return results
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Apply context_intelligence_v0 schema to local SurrealDB (local-only)."
@@ -206,7 +262,15 @@ def main() -> None:
         print(f"       Response: {body_text}", file=sys.stderr)
         sys.exit(5)
 
-    print("[OK] Schema applied successfully.")
+    # HTTP 200 is not sufficient — SurrealDB returns 200 even when statements fail.
+    # Parse each statement result and fail if any status != "OK".
+    try:
+        results = _check_statement_results(body)
+    except ValueError as exc:
+        print(f"ERROR: Schema apply failed — {exc}", file=sys.stderr)
+        sys.exit(5)
+
+    print(f"[OK] Schema applied successfully ({len(results)} statement(s) — all OK).")
     print(f"     NS={args.ns}  DB={args.db}")
     print("NOTE: This is local context infrastructure only — not a Live/Trading Go.")
 
