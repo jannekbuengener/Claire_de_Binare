@@ -28,7 +28,6 @@ import json
 import logging
 import subprocess
 import sys
-from datetime import timezone
 
 from core.utils.clock import utcnow
 
