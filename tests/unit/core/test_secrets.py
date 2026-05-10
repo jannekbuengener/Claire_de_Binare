@@ -3,10 +3,7 @@ Unit tests for core.secrets module
 Tests secret loading from Docker secrets, env vars, and file paths.
 """
 
-import os
-import tempfile
 from pathlib import Path
-import pytest
 from core.secrets import read_secret, read_secret_file, validate_secrets
 
 

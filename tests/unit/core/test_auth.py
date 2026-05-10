@@ -3,7 +3,6 @@ Unit tests for core.auth module
 Tests Redis and Postgres auth validation to prevent restart loops.
 """
 
-import pytest
 from unittest.mock import Mock, patch
 import redis
 import psycopg2

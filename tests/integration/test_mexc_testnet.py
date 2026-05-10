@@ -21,8 +21,6 @@ import pytest
 requests_mock = pytest.importorskip("requests_mock", reason="test requires requests-mock")
 import logging
 from urllib.parse import urlparse, parse_qsl
-from typing import Any, Dict
-
 # Add services to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "services", "execution"))
 

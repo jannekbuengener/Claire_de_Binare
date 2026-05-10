@@ -3,9 +3,6 @@ Unit tests for core.safety.kill_switch module
 Tests emergency stop mechanism with persistent state.
 """
 
-import os
-import tempfile
-import pytest
 from pathlib import Path
 from core.safety.kill_switch import (
     KillSwitch,
@@ -452,7 +449,6 @@ class TestLogInjectionSanitization:
         handler logs message content which must be sanitized.
         """
         import logging
-        import shutil
 
         nested_dir = tmp_path / "nonexistent_sub"
         state_file = nested_dir / "kill.state"

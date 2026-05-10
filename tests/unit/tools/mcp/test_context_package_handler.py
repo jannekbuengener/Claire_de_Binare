@@ -6,7 +6,6 @@ truncation, format handling, and contract compliance.
 #2100
 """
 
-import pytest
 from tools.mcp.context_bridge import create_bridge
 
 

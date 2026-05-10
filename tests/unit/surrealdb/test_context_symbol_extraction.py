@@ -7,22 +7,13 @@ SurrealDB connections, no live-readiness changes.
 
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 
 import pytest
 
 from tools.surrealdb.context_indexer import (
-    SCHEMA_VERSION,
     AstParseError,
-    CodeSymbol,
-    ConfigReference,
-    DependencyEdge,
-    DocCodeLink,
-    ImportReference,
-    IndexerResult,
     RepoArtifact,
-    TestCase,
     _classify_import_locality,
     _flatten_config_dict,
     _parse_python_ast,

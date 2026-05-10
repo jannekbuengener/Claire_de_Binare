@@ -18,7 +18,6 @@ from dual_write_evidence_gate import (
     CANDLES_PREFIX,
     RETURN_TOL,
     SHADOW_PREFIX,
-    TICK_TS_TOL_MS,
     compare_symbol,
     run_gate,
 )

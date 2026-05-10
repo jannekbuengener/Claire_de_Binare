@@ -527,11 +527,11 @@ def test_wave14_tools_still_importable() -> None:
     """Wave-14 handler modules must still be importable after Wave-15 changes."""
     from tools.mcp.context_evidence_memory_tools import (
         TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
-        handle_cdb_context_evidence_resolve,
+        handle_cdb_context_evidence_resolve,  # noqa: F401
     )
     from tools.mcp.context_decision_tools import (
         TOOL_CDB_CONTEXT_DECISION_HISTORY,
-        handle_cdb_context_decision_history,
+        handle_cdb_context_decision_history,  # noqa: F401
     )
 
     assert TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE == "cdb_context_evidence_resolve"

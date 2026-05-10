@@ -3,8 +3,6 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from scripts.alert_to_issue import (
     build_comment_body,
     build_issue_body,

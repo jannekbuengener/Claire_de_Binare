@@ -21,7 +21,6 @@ import logging
 import redis
 import psycopg2
 import json
-from datetime import datetime, UTC
 
 
 def run_docker_compose(args, timeout=30):

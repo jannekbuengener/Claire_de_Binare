@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor
 from core.utils.rate_limiter import (
     RateLimiter,
     MexcRateLimiters,
-    RateLimitException,
 )
 
 

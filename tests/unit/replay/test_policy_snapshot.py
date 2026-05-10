@@ -103,7 +103,7 @@ class TestBuildPolicySnapshot:
         assert isinstance(ea, str)
         assert "+00:00" in ea or ea.endswith("Z")
         # Must be parseable
-        from datetime import datetime, timezone
+        from datetime import datetime
         dt = datetime.fromisoformat(ea)
         assert dt.tzinfo is not None
 

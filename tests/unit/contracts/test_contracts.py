@@ -6,7 +6,7 @@ Tests für Canonical Message Contracts (market_data, signal)
 import json
 import pytest
 from pathlib import Path
-from jsonschema import validate, ValidationError, Draft7Validator
+from jsonschema import Draft7Validator
 
 # Contract paths
 CONTRACTS_DIR = Path(__file__).parent.parent.parent.parent / "docs" / "contracts"

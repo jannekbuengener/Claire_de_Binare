@@ -5,7 +5,6 @@ Governance: CDB_AGENT_POLICY.md, CDB_RL_SAFETY_POLICY.md
 """
 
 import pytest
-import os
 import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
@@ -18,7 +17,7 @@ if str(services_path) not in sys.path:
 # Import from signal service package
 from service import SignalEngine, _build_config_hash, _build_runtime_config_snapshot
 from config import SignalConfig
-from models import MarketData, Signal
+from models import MarketData
 from core.contracts.external_adapter_contracts import (
     StrategyAdapterResponse,
     StrategySignalCandidate,

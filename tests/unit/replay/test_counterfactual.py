@@ -16,7 +16,6 @@ import pytest
 from core.replay.counterfactual import (
     CounterfactualBaseWindow,
     CounterfactualError,
-    CounterfactualResult,
     PerturbationSpec,
     apply_perturbations,
     build_perturbation_summary,

@@ -6,9 +6,7 @@ Tests CI-Guard rules for core duplicates and secrets.py files.
 import subprocess
 import sys
 from pathlib import Path
-import pytest
 import tempfile
-import shutil
 
 
 def run_check_duplicates(test_dir: Path) -> tuple[int, str, str]:

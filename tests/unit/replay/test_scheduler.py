@@ -10,7 +10,6 @@ from core.replay.scheduler import (
     ReplayScheduler,
     SchedulerConfig,
     SchedulerError,
-    SchedulerResult,
     _PROFILE_SPEEDUP,
     _VALID_PROFILES,
 )

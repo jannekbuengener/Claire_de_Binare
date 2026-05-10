@@ -5,7 +5,6 @@ Testet alle Indikatoren mit bekannten Werten.
 """
 
 import pytest
-import math
 
 from core.indicators import EMA, SMA, RSI, MACD, BollingerBands, ATR
 

@@ -17,8 +17,8 @@ import os
 import time
 import statistics
 from datetime import datetime
-from typing import List, Dict, Any
-from unittest.mock import Mock, patch, MagicMock
+from typing import Dict
+from unittest.mock import patch, MagicMock
 
 import pytest
 

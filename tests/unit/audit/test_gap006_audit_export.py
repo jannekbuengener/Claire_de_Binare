@@ -11,8 +11,6 @@ import os
 import sys
 from pathlib import Path
 
-import pytest
-
 # scripts/ is not a Python package (no __init__.py), so add repo root.
 repo_root = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(repo_root / "scripts"))
@@ -20,7 +18,6 @@ sys.path.insert(0, str(repo_root))
 
 from audit.gap006_audit_export import (  # noqa: E402
     audit_export,
-    build_manifest,
     build_sha256sum,
     build_verification_md,
     file_sha256,

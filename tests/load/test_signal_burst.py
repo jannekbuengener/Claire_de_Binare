@@ -9,12 +9,11 @@ Tests signal engine stability under sustained high load (50-200 tps).
 import os
 import sys
 import time
-import json
 import redis
 import pytest
 import requests
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 if os.getenv("LOAD_TESTS") != "1":
     pytest.skip(

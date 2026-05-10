@@ -8,12 +8,10 @@ Scope:
 """
 
 import pytest
-from core.replay.canonical_json import canonical_hash, canonical_json_dumps
+from core.replay.canonical_json import canonical_hash
 from core.replay.replay_contracts import (
     ReplayRunSpec,
-    ReplayExecutionRequest,
     ReplayExecutionResult,
-    ReplayEventLoopState,
     ReplayIntegrity,
     EnvelopeSummary,
     ReplayReportArtifactManifest,

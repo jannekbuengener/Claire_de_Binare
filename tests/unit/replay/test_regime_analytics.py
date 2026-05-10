@@ -23,7 +23,6 @@ from core.replay.regime_analytics import (
     RegimeAnalyticsError,
     RegimeKPIRecord,
     RegimeScorecard,
-    RegimeSegmentStats,
     compute_regime_scorecard,
     write_regime_scorecard_artifact,
 )

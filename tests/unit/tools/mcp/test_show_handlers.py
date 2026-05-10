@@ -6,7 +6,6 @@ and have correct schema definitions in the registry.
 #2100
 """
 
-import pytest
 from tools.mcp.context_bridge import create_bridge
 from tools.mcp.registry import ContextToolRegistry
 

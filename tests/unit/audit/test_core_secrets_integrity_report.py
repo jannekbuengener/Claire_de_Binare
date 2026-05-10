@@ -18,7 +18,6 @@ from audit.core_secrets_integrity_report import (  # noqa: E402
 )
 from core.utils.governance_integrity import (  # noqa: E402
     CORE_SECRETS_INTEGRITY_KEY_ENV,
-    REASON_HASH_MISMATCH,
     REASON_KEY_MISSING,
     REASON_VALIDATION_SKIPPED,
     compute_integrity_hash,

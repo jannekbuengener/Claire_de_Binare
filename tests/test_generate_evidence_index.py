@@ -15,7 +15,6 @@ from generate_evidence_index import (
     detect_fetch_failure,
     generate_index,
     parse_prometheus_metric,
-    scan_fetch_failures,
 )
 
 # ---------------------------------------------------------------------------

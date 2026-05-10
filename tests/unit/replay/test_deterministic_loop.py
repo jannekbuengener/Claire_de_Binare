@@ -16,7 +16,7 @@ Covers:
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import pytest
 
@@ -28,7 +28,6 @@ from core.contracts.external_adapter_contracts import (
 from core.replay.canonical_json import canonical_hash
 from core.replay.deterministic_loop import (
     DeterministicReplayEventLoop,
-    EvaluatorCallbackT,
     ReplayLoopResult,
     _compute_signature,
     _extract_freshness_flags,

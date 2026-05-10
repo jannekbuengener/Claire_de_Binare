@@ -6,7 +6,7 @@ Tests the scaffold structure without requiring live SurrealDB or network.
 
 import pytest
 from tools.mcp.context_bridge import ContextBridge, create_bridge
-from tools.mcp.registry import ContextToolRegistry, ToolDefinition
+from tools.mcp.registry import ContextToolRegistry
 
 pytestmark = pytest.mark.unit
 

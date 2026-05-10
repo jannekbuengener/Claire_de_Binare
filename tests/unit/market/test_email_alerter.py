@@ -1,6 +1,5 @@
 """Unit tests for services.market.email_alerter"""
 
-import time
 from unittest.mock import MagicMock, patch
 
 import pytest

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from argparse import Namespace
@@ -12,8 +11,6 @@ import pytest
 
 from tools.surrealdb.context_query import (
     EXIT_OK,
-    EXIT_INPUT_NOT_FOUND,
-    EXIT_WRITE_DENIED,
     ContextQueryConfig,
     QueryAdapter,
     build_artifact_query,
@@ -21,7 +18,6 @@ from tools.surrealdb.context_query import (
     handle_find_artifact,
     handle_find_doc,
     load_config,
-    NoopQueryAdapter,
 )
 
 EXAMPLE_CONFIG = "infrastructure/config/surrealdb/context_query.local.example.yaml"

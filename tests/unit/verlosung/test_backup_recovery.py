@@ -16,8 +16,6 @@ import pytest
 import subprocess
 import psycopg2
 import time
-import os
-from pathlib import Path
 from datetime import datetime
 
 

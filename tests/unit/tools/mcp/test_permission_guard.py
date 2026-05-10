@@ -19,7 +19,6 @@ import pytest
 
 from tools.mcp.context_bridge import ContextBridge, create_bridge
 from tools.mcp.permission_guard import (
-    FORBIDDEN_QUERY_PATTERNS,
     FORBIDDEN_RUNTIME_OPERATIONS,
     FORBIDDEN_SQL_KEYWORDS,
     INPUT_SCAN_EXEMPT_TOOLS,

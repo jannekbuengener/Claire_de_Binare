@@ -11,7 +11,7 @@ Tests verify that services/market/service.py:
 
 import json
 import time
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 

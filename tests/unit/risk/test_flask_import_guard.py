@@ -182,7 +182,7 @@ class TestFlaskImportGuard:
 
             # Pruefen ob Flask wirklich importierbar ist
             try:
-                import flask
+                import flask  # noqa: F401
                 flask_actually_available = True
             except ModuleNotFoundError:
                 flask_actually_available = False

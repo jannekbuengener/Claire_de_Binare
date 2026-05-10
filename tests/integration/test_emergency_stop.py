@@ -4,13 +4,11 @@ Tests kill-switch integration with trading services.
 """
 
 import pytest
-import tempfile
 from pathlib import Path
 from core.safety.kill_switch import (
     KillSwitch,
     KillSwitchReason,
     KillSwitchState,
-    get_kill_switch_state,
 )
 
 

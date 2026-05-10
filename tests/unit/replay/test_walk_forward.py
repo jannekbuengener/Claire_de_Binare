@@ -10,7 +10,6 @@ import pytest
 
 from core.replay.walk_forward import (
     WalkForwardError,
-    WalkForwardManifest,
     WalkForwardSpec,
     WalkForwardWindowResult,
     WalkForwardWindowSpec,

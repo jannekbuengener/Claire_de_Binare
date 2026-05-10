@@ -3,9 +3,7 @@ Unit tests for core.config.trading_mode module
 Tests trading mode configuration, safety checks, and defaults.
 """
 
-import os
 import pytest
-from unittest.mock import patch
 from core.config.trading_mode import (
     TradingMode,
     get_trading_mode,

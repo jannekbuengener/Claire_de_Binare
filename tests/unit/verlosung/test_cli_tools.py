@@ -15,7 +15,6 @@ Ausführung:
 import pytest
 import subprocess
 import os
-import json
 from pathlib import Path
 
 

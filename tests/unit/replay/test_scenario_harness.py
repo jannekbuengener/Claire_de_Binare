@@ -9,7 +9,6 @@ from typing import Any
 import pytest
 
 from core.replay.scenario_harness import (
-    ScenarioGroupManifest,
     ScenarioHarnessError,
     ScenarioRunResult,
     ScenarioSpec,

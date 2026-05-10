@@ -12,8 +12,6 @@ Scope:
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from core.contracts.external_adapter_contracts import StrategySignalCandidate

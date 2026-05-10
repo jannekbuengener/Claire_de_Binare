@@ -15,7 +15,6 @@ Coverage:
 from __future__ import annotations
 
 import json
-import pathlib
 from decimal import Decimal
 
 import pytest
@@ -27,7 +26,6 @@ from core.replay.shadow_compare import (
     ShadowComparisonResult,
     build_calibration_summary,
     compare_windows,
-    compare_windows_or_unusable,
     write_shadow_comparison_artifact,
 )
 
