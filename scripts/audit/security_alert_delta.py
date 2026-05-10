@@ -11,7 +11,7 @@ current) and emits a structured delta report identifying:
 - secret_scanning delta: surface-status change only (no payload comparison)
 
 Design invariants:
-- Read-only: reads JSON files, writes delta JSON/Markdown to ``--out-dir``.
+- Read-only: reads JSON files, writes delta JSON to ``--out-dir``.
 - No GitHub API calls.
 - secret_scanning: only surface-status comparison, never payload fields.
 - Fail-closed: missing or malformed input JSON is an explicit error.
@@ -564,103 +564,6 @@ def build_safe_report_json_text(report: Mapping[str, Any]) -> str:
     return json.dumps(safe_output, indent=2, sort_keys=True) + "\n"
 
 
-def build_safe_summary_text_from_delta(
-    *,
-    delta: DeltaResult,
-    prev_safe: SafeReadout,
-    current_safe: SafeReadout,
-) -> str:
-    """Build Markdown/stdout summary text from safe primitives only."""
-    safe_escalations: list[dict[str, Any]] = []
-    for alert in delta.escalation_alerts:
-        if isinstance(alert, Mapping):
-            safe_escalations.append(
-                {
-                    "source": _safe_token(alert.get("source", ""), _SOURCE_SAFE),
-                    "number": _safe_int(alert.get("number", 0)),
-                    "severity": _safe_token(
-                        alert.get("severity", ""), _SEVERITY_SAFE
-                    ),
-                    "subject": _safe_text(alert.get("subject", "")),
-                    "branch": _safe_text(alert.get("branch", "")),
-                }
-            )
-
-    safe_new_groups = [
-        {
-            "source": _safe_token(group.source, _SOURCE_SAFE),
-            "subject": _safe_text(group.subject),
-            "branch": _safe_text(group.branch),
-        }
-        for group in delta.new_groups
-    ]
-
-    prev_reference_now_utc = _safe_timestamp(prev_safe.reference_now_utc)
-    current_reference_now_utc = _safe_timestamp(current_safe.reference_now_utc)
-    prev_status = _safe_token(prev_safe.status, _STATUS_SAFE)
-    current_status = _safe_token(current_safe.status, _STATUS_SAFE)
-    prev_total_alerts = _safe_int(prev_safe.total_alerts)
-    current_total_alerts = _safe_int(current_safe.total_alerts)
-    new_alert_count = _safe_int(len(delta.new_alerts))
-    resolved_alert_count = _safe_int(len(delta.resolved_keys))
-    new_group_count = _safe_int(len(delta.new_groups))
-    secret_change = _safe_text(delta.secret_scanning_status_change or "")
-
-    lines: list[str] = [
-        "## Security Alert Delta",
-        "",
-        f"- **Prev:** `{prev_reference_now_utc}` "
-        f"- {prev_total_alerts} total alerts ({prev_status})",
-        f"- **Current:** `{current_reference_now_utc}` "
-        f"- {current_total_alerts} total alerts ({current_status})",
-        "",
-    ]
-
-    if delta.escalation_needed:
-        lines += [
-            "### :rotating_light: ESCALATION - New Critical/High Open Alerts",
-            "",
-            "| Source | # | Severity | Subject | Branch |",
-            "|--------|---|----------|---------|--------|",
-        ]
-        for alert in safe_escalations:
-            lines.append(
-                f"| {alert['source']} | {alert['number']} | **{alert['severity']}** "
-                f"| `{alert['subject']}` | {alert['branch']} |"
-            )
-        lines.append("")
-    else:
-        lines += [
-            "### :white_check_mark: No new Critical/High alerts",
-            "",
-        ]
-
-    lines += [
-        f"- New alerts detected: **{new_alert_count}**",
-        f"- Resolved since prev: **{resolved_alert_count}**",
-        f"- New alert groups: **{new_group_count}**",
-    ]
-
-    if secret_change:
-        lines.append(f"- Secret scanning surface change: `{secret_change}`")
-
-    if safe_new_groups:
-        lines += [
-            "",
-            "### New Alert Groups",
-            "",
-            "| Source | Subject | Branch |",
-            "|--------|---------|--------|",
-        ]
-        for group in safe_new_groups:
-            lines.append(
-                f"| {group['source']} | `{group['subject']}` | {group['branch']} |"
-            )
-
-    lines.append("")
-    return "\n".join(lines)
-
-
 def build_markdown_summary(delta_report: dict[str, Any]) -> str:
     """Build a human-readable Markdown summary of the delta report."""
     prev = delta_report["prev_readout"]
@@ -732,17 +635,16 @@ def generate_delta(
     prev_path: Path,
     current_path: Path,
     out_dir: Path | None = None,
-) -> tuple[dict[str, Any], str]:
+) -> dict[str, Any]:
     """Load two readout files, compute delta, optionally write artifacts.
 
     Args:
         prev_path: Path to the previous readout JSON.
         current_path: Path to the current readout JSON.
-        out_dir: If given, write ``security_alert_delta.json`` and
-            ``security_alert_delta.md`` here.
+        out_dir: If given, write ``security_alert_delta.json`` here.
 
     Returns:
-        The delta report dict and the sink-safe summary text.
+        The delta report dict.
 
     Raises:
         SecurityAlertDeltaError: If either readout cannot be loaded.
@@ -759,11 +661,6 @@ def generate_delta(
         current_safe=current_safe,
     )
     safe_json_text = build_safe_report_json_text(report)
-    summary_text = build_safe_summary_text_from_delta(
-        delta=delta,
-        prev_safe=prev_safe,
-        current_safe=current_safe,
-    )
 
     if out_dir is not None:
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -771,12 +668,8 @@ def generate_delta(
             safe_json_text,
             encoding="utf-8",
         )
-        (out_dir / "security_alert_delta.md").write_text(
-            summary_text,
-            encoding="utf-8",
-        )
 
-    return report, summary_text
+    return report
 
 
 def _build_arg_parser() -> argparse.ArgumentParser:
@@ -801,7 +694,7 @@ def _build_arg_parser() -> argparse.ArgumentParser:
         "--out-dir",
         default=None,
         metavar="DIR",
-        help="Optional directory for delta JSON and Markdown output.",
+        help="Optional directory for delta JSON output.",
     )
     return parser
 
@@ -817,7 +710,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_arg_parser().parse_args(argv)
 
     try:
-        report, summary_text = generate_delta(
+        report = generate_delta(
             prev_path=Path(args.prev_readout),
             current_path=Path(args.current_readout),
             out_dir=Path(args.out_dir) if args.out_dir else None,
@@ -826,7 +719,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(summary_text)
+    print("security alert delta json artifact generated")
 
     if report["escalation_needed"]:
         print("EXIT: escalation_needed=true", file=sys.stderr)

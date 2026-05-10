@@ -200,8 +200,10 @@ docs/security/readouts/YYYY-MM-DD/
 
 artifacts/security-alert-readout/delta/
   security_alert_delta.json              # delta schema (security_alert_delta.v1)
-  security_alert_delta.md                # Markdown-Zusammenfassung
 ```
+
+Die Delta-Ausgabe ist absichtlich JSON-only. Keine Markdown-Zusammenfassung und
+keine stdout-Summary aus dem Delta-Skript.
 
 Im `dry_run`-Modus nur als GitHub-Actions-Artifact (30 Tage Retention), nicht committed.
 

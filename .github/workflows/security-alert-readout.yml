@@ -167,10 +167,11 @@ jobs:
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # Delta summary (if available)
-          delta_md="${delta_dir}/security_alert_delta.md"
-          if [[ -f "$delta_md" ]]; then
-            cat "$delta_md" >> "$GITHUB_STEP_SUMMARY"
+          # Delta artifact (JSON only by design)
+          delta_json="${delta_dir}/security_alert_delta.json"
+          if [[ -f "$delta_json" ]]; then
+            echo "> **Delta artifact:** JSON only by design. See \`artifacts/security-alert-readout/delta/security_alert_delta.json\` in the uploaded artifacts." \
+              >> "$GITHUB_STEP_SUMMARY"
           elif [[ -f "${delta_dir}/no_prev_readout.txt" ]]; then
             echo "> **Note:** No previous readout found — delta skipped (first run)." \
               >> "$GITHUB_STEP_SUMMARY"
