@@ -29,14 +29,14 @@ class TestReadSecret:
             return original_path(path_str)
 
         # Test
-        import core.secrets
-        original_path_cls = core.secrets.Path
-        core.secrets.Path = mock_path
+        from core import secrets as _mod
+        original_path_cls = _mod.Path
+        _mod.Path = mock_path
         try:
             result = read_secret("test_secret", "TEST_ENV")
             assert result == "secret_value_from_docker"
         finally:
-            core.secrets.Path = original_path_cls
+            _mod.Path = original_path_cls
 
     def test_fallback_to_env_var(self, monkeypatch):
         """Test fallback to environment variable when Docker secret not found"""
@@ -56,19 +56,19 @@ class TestReadSecret:
         secret_file = secret_dir / "test_secret"
         secret_file.write_text("  secret_with_whitespace  \n")
 
-        import core.secrets
-        original_path_cls = core.secrets.Path
+        from core import secrets as _mod
+        original_path_cls = _mod.Path
         def mock_path(path_str):
             if "/run/secrets/test_secret" in path_str:
                 return secret_file
             return Path(path_str)
 
-        core.secrets.Path = mock_path
+        _mod.Path = mock_path
         try:
             result = read_secret("test_secret")
             assert result == "secret_with_whitespace"
         finally:
-            core.secrets.Path = original_path_cls
+            _mod.Path = original_path_cls
 
     def test_prevents_directory_error(self, tmp_path):
         """Test prevents IsADirectoryError when secret path is a directory"""
@@ -76,20 +76,20 @@ class TestReadSecret:
         secret_dir = tmp_path / "run" / "secrets" / "test_secret"
         secret_dir.mkdir(parents=True)
 
-        import core.secrets
-        original_path_cls = core.secrets.Path
+        from core import secrets as _mod
+        original_path_cls = _mod.Path
         def mock_path(path_str):
             if "/run/secrets/test_secret" in path_str:
                 return secret_dir
             return Path(path_str)
 
-        core.secrets.Path = mock_path
+        _mod.Path = mock_path
         try:
             # Should not raise IsADirectoryError
             result = read_secret("test_secret", "FALLBACK_ENV")
             assert result == ""  # Returns empty (no fallback set)
         finally:
-            core.secrets.Path = original_path_cls
+            _mod.Path = original_path_cls
 
 
 class TestReadSecretFile:
@@ -164,19 +164,19 @@ class TestIntegration:
 
         monkeypatch.setenv("PRIORITY_TEST_ENV", "env_value")
 
-        import core.secrets
-        original_path_cls = core.secrets.Path
+        from core import secrets as _mod
+        original_path_cls = _mod.Path
         def mock_path(path_str):
             if "/run/secrets/priority_test" in path_str:
                 return secret_file
             return Path(path_str)
 
-        core.secrets.Path = mock_path
+        _mod.Path = mock_path
         try:
             result = read_secret("priority_test", "PRIORITY_TEST_ENV")
             assert result == "docker_value"  # Docker secret wins
         finally:
-            core.secrets.Path = original_path_cls
+            _mod.Path = original_path_cls
 
     def test_empty_env_var_treated_as_missing(self, monkeypatch):
         """Test empty env var is treated as missing"""

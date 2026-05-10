@@ -219,9 +219,9 @@ class TestGlobalFunctions:
         state_file = tmp_path / "global_test.state"
 
         # Reset global singleton
-        import core.safety.kill_switch
+        from core.safety import kill_switch as _ks_mod
 
-        core.safety.kill_switch._global_kill_switch = None
+        _ks_mod._global_kill_switch = None
 
         # Monkeypatch Path.cwd() to use tmp_path
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
@@ -234,9 +234,9 @@ class TestGlobalFunctions:
         state_file = tmp_path / "global_test.state"
 
         # Reset global singleton
-        import core.safety.kill_switch
+        from core.safety import kill_switch as _ks_mod
 
-        core.safety.kill_switch._global_kill_switch = None
+        _ks_mod._global_kill_switch = None
 
         monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
 

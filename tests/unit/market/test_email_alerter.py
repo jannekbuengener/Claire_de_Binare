@@ -141,7 +141,7 @@ class TestSendMarketAlert:
 
 class TestGlobalInstance:
     def test_get_alerter_returns_instance(self):
-        import services.market.email_alerter as mod
+        from services.market import email_alerter as mod
 
         mod._alerter = None
         with patch("services.market.email_alerter._read_secret", return_value=None):

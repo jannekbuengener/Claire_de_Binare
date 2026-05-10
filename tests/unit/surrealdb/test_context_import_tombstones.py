@@ -429,7 +429,7 @@ def test_apply_pipeline_uses_injected_clock_not_datetime_now(
 
     # If anything in the apply path called datetime.now()/utcnow(), this
     # would explode. The injected FixedClock produces all timestamps.
-    import tools.surrealdb.context_importer as ci
+    from tools.surrealdb import context_importer as ci
 
     class _ExplodingDatetime:
         @classmethod

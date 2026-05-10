@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft7Validator
 
-import services.validation.strategy_backtest_runner as backtest_runner
+from services.validation import strategy_backtest_runner as backtest_runner
 from core.contracts.external_adapter_contracts import (
     StrategyAdapterRequest,
     StrategyAdapterResponse,
