@@ -17,6 +17,7 @@ from audit.security_alert_delta import (  # noqa: E402
     AlertGroupKey,
     AlertKey,
     SecurityAlertDeltaError,
+    build_safe_summary_text_from_delta,
     build_delta_report,
     build_markdown_summary,
     compute_delta,
@@ -692,6 +693,45 @@ class TestBuildMarkdownSummary:
 
 
 # ---------------------------------------------------------------------------
+# Tests: build_safe_summary_text_from_delta
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestBuildSafeSummaryTextFromDelta:
+    def test_excludes_secret_scanning_payload_details(self):
+        prev = normalize_readout_for_delta(
+            _make_readout(alerts=[], secret_scanning_surface_status="ok")
+        )
+        current = normalize_readout_for_delta(
+            _make_readout(
+                alerts=[
+                    {
+                        "source": "secret_scanning",
+                        "number": 5,
+                        "state": "open",
+                        "secret_type": "github_pat",
+                        "secret": "ghp_SENSITIVE",
+                        "locations_url": "https://api.github.com/...",
+                    }
+                ],
+                secret_scanning_surface_status="redacted",
+            )
+        )
+        delta = compute_delta(prev_safe=prev, current_safe=current)
+
+        summary = build_safe_summary_text_from_delta(
+            delta=delta,
+            prev_safe=prev,
+            current_safe=current,
+        )
+
+        assert "ghp_SENSITIVE" not in summary
+        assert "locations_url" not in summary
+        assert "Secret scanning surface change" in summary
+
+
+# ---------------------------------------------------------------------------
 # Tests: generate_delta (integration, uses tmp_path)
 # ---------------------------------------------------------------------------
 
@@ -708,13 +748,14 @@ class TestGenerateDelta:
             tmp_path / "current.json", _make_readout(alerts=[_cs_alert(1)])
         )
         out_dir = tmp_path / "output"
-        report = generate_delta(
+        report, summary_text = generate_delta(
             prev_path=prev_path, current_path=current_path, out_dir=out_dir
         )
 
         assert (out_dir / "security_alert_delta.json").exists()
         assert (out_dir / "security_alert_delta.md").exists()
         assert report["new_alert_count"] == 1
+        assert summary_text == (out_dir / "security_alert_delta.md").read_text()
 
     def test_json_output_is_valid_schema_version(self, tmp_path: Path):
         prev_path = self._write_readout(tmp_path / "prev.json", _make_readout(alerts=[]))
@@ -733,10 +774,11 @@ class TestGenerateDelta:
             tmp_path / "current.json",
             _make_readout(alerts=[_cs_alert(99, severity="critical")]),
         )
-        report = generate_delta(
+        report, summary_text = generate_delta(
             prev_path=prev_path, current_path=current_path, out_dir=None
         )
         assert report["escalation_needed"] is True
+        assert "ESCALATION" in summary_text
 
     def test_raises_on_missing_prev(self, tmp_path: Path):
         current_path = self._write_readout(
@@ -752,9 +794,13 @@ class TestGenerateDelta:
         current_path = self._write_readout(
             tmp_path / "current.json", _make_readout(alerts=[])
         )
-        generate_delta(prev_path=prev_path, current_path=current_path, out_dir=None)
+        report, summary_text = generate_delta(
+            prev_path=prev_path, current_path=current_path, out_dir=None
+        )
         # No unexpected files written
         assert not (tmp_path / "security_alert_delta.json").exists()
+        assert report["schema_version"] == SCHEMA_VERSION
+        assert "Security Alert Delta" in summary_text
 
 
 # ---------------------------------------------------------------------------
