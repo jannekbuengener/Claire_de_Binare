@@ -481,6 +481,153 @@ def build_delta_report(
     }
 
 
+def _build_safe_output_payload(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Rebuild a sink-safe output payload from allowlisted, fresh primitives."""
+    prev_raw = report.get("prev_readout")
+    current_raw = report.get("current_readout")
+    prev = prev_raw if isinstance(prev_raw, Mapping) else {}
+    current = current_raw if isinstance(current_raw, Mapping) else {}
+
+    safe_new_groups: list[dict[str, Any]] = []
+    raw_new_groups = report.get("new_groups", [])
+    if isinstance(raw_new_groups, list):
+        for group in raw_new_groups:
+            if isinstance(group, Mapping):
+                safe_new_groups.append(
+                    {
+                        "source": _safe_token(group.get("source", ""), _SOURCE_SAFE),
+                        "subject": _safe_text(group.get("subject", "")),
+                        "branch": _safe_text(group.get("branch", "")),
+                    }
+                )
+
+    safe_escalations: list[dict[str, Any]] = []
+    raw_escalations = report.get("escalation_alerts", [])
+    if isinstance(raw_escalations, list):
+        for alert in raw_escalations:
+            if isinstance(alert, Mapping):
+                safe_escalations.append(
+                    {
+                        "source": _safe_token(alert.get("source", ""), _SOURCE_SAFE),
+                        "number": _safe_int(alert.get("number", 0)),
+                        "severity": _safe_token(
+                            alert.get("severity", ""), _SEVERITY_SAFE
+                        ),
+                        "subject": _safe_text(alert.get("subject", "")),
+                        "branch": _safe_text(alert.get("branch", "")),
+                    }
+                )
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "status": {
+            "prev": _safe_token(prev.get("status", "unknown"), _STATUS_SAFE),
+            "current": _safe_token(
+                current.get("status", "unknown"), _STATUS_SAFE
+            ),
+        },
+        "sources": {
+            "prev_reference_now_utc": _safe_timestamp(
+                prev.get("reference_now_utc", "")
+            ),
+            "current_reference_now_utc": _safe_timestamp(
+                current.get("reference_now_utc", "")
+            ),
+        },
+        "total_alerts": {
+            "prev": _safe_int(prev.get("total_alerts", 0)),
+            "current": _safe_int(current.get("total_alerts", 0)),
+        },
+        "counts": {
+            "new_alerts": _safe_int(report.get("new_alert_count", 0)),
+            "resolved_alerts": _safe_int(report.get("resolved_alert_count", 0)),
+            "new_groups": _safe_int(report.get("new_group_count", 0)),
+            "escalation_alerts": _safe_int(
+                report.get("escalation_alert_count", 0)
+            ),
+        },
+        "escalation_needed": bool(report.get("escalation_needed", False)),
+        "new_groups": safe_new_groups,
+        "escalations": safe_escalations,
+        "surface_status": {
+            "secret_scanning_change": _safe_text(
+                report.get("secret_scanning_status_change") or ""
+            )
+        },
+    }
+
+
+def build_safe_report_json_text(report: Mapping[str, Any]) -> str:
+    """Build the JSON artifact text from a sink-safe payload only."""
+    safe_output = _build_safe_output_payload(report)
+    return json.dumps(safe_output, indent=2, sort_keys=True) + "\n"
+
+
+def build_safe_summary_text(report: Mapping[str, Any]) -> str:
+    """Build the Markdown/stdout summary from a sink-safe payload only."""
+    safe_output = _build_safe_output_payload(report)
+    sources = safe_output["sources"]
+    totals = safe_output["total_alerts"]
+    status = safe_output["status"]
+    counts = safe_output["counts"]
+
+    lines: list[str] = [
+        "## Security Alert Delta",
+        "",
+        f"- **Prev:** `{sources['prev_reference_now_utc']}` "
+        f"- {totals['prev']} total alerts ({status['prev']})",
+        f"- **Current:** `{sources['current_reference_now_utc']}` "
+        f"- {totals['current']} total alerts ({status['current']})",
+        "",
+    ]
+
+    if safe_output["escalation_needed"]:
+        lines += [
+            "### :rotating_light: ESCALATION - New Critical/High Open Alerts",
+            "",
+            "| Source | # | Severity | Subject | Branch |",
+            "|--------|---|----------|---------|--------|",
+        ]
+        for alert in safe_output["escalations"]:
+            lines.append(
+                f"| {alert['source']} | {alert['number']} | **{alert['severity']}** "
+                f"| `{alert['subject']}` | {alert['branch']} |"
+            )
+        lines.append("")
+    else:
+        lines += [
+            "### :white_check_mark: No new Critical/High alerts",
+            "",
+        ]
+
+    lines += [
+        f"- New alerts detected: **{counts['new_alerts']}**",
+        f"- Resolved since prev: **{counts['resolved_alerts']}**",
+        f"- New alert groups: **{counts['new_groups']}**",
+    ]
+
+    secret_change = safe_output["surface_status"]["secret_scanning_change"]
+    if secret_change:
+        lines.append(f"- Secret scanning surface change: `{secret_change}`")
+
+    if safe_output["new_groups"]:
+        lines += [
+            "",
+            "### New Alert Groups",
+            "",
+            "| Source | Subject | Branch |",
+            "|--------|---------|--------|",
+        ]
+        for group in safe_output["new_groups"]:
+            lines.append(
+                f"| {group['source']} | `{group['subject']}` | {group['branch']} |"
+            )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build_markdown_summary(delta_report: dict[str, Any]) -> str:
     """Build a human-readable Markdown summary of the delta report."""
     prev = delta_report["prev_readout"]
@@ -578,15 +725,17 @@ def generate_delta(
         prev_safe=prev_safe,
         current_safe=current_safe,
     )
+    safe_json_text = build_safe_report_json_text(report)
+    safe_summary_text = build_safe_summary_text(report)
 
     if out_dir is not None:
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "security_alert_delta.json").write_text(
-            json.dumps(report, indent=2, sort_keys=True) + "\n",
+            safe_json_text,
             encoding="utf-8",
         )
         (out_dir / "security_alert_delta.md").write_text(
-            build_markdown_summary(report),
+            safe_summary_text,
             encoding="utf-8",
         )
 
@@ -640,7 +789,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(build_markdown_summary(report))
+    print(build_safe_summary_text(report))
 
     if report["escalation_needed"]:
         print("EXIT: escalation_needed=true", file=sys.stderr)
