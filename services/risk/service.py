@@ -70,7 +70,6 @@ from core.safety.kill_switch import (
     KillSwitch,
     KillSwitchReason,
 )
-from core.auth import validate_all_auth
 from core.domain.models import Signal
 
 try:

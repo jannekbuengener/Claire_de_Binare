@@ -19,7 +19,6 @@ import time
 import logging
 from collections import deque
 from threading import Lock
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

@@ -46,7 +46,6 @@ import jsonschema
 
 from core.replay.canonical_json import canonical_json_dumps
 from core.replay.determinism import (
-    compute_replay_report_hash,
     verify_replay_execution_result,
     verify_replay_integrity_result,
     ReplayDeterminismError,

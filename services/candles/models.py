@@ -3,7 +3,6 @@ Candle Aggregator - Models and logic
 """
 
 import time
-from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
 

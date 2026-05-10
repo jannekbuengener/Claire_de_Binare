@@ -22,7 +22,6 @@ Market State V1 (Issue #1201 Delta 1 — shadow mode):
 import json
 import logging
 import os
-import sys
 import threading
 import time
 

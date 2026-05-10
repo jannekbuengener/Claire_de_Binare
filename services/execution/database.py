@@ -5,7 +5,6 @@ Claire de Binare Trading Bot
 
 import json
 import logging
-import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Optional
