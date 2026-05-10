@@ -4,6 +4,14 @@ name: Security Alert Readout
 # dependabot, secret_scanning) and computes a delta against the most recent
 # previous readout.  Runs Mon/Wed/Fri; always available for manual dispatch.
 #
+# Artifacts-only mode: readout and delta are uploaded as GitHub Actions
+# artifacts (retention: 30 days).  No direct commit to main is attempted.
+# Repository persistence requires a separate PR-based follow-up slice.
+#
+# Background: the direct-push publish path was removed after run 25632071704
+# failed with GH006 (protected branch — changes must be made via PR).  See
+# fix/security-readout-disable-direct-publish-2289 for details.
+#
 # Refs: #2289 (security alert monitoring epic)
 # Related scripts:
 #   scripts/audit/github_security_quality_readout.py  (read-only fetcher)
@@ -17,16 +25,15 @@ on:
   workflow_dispatch:
     inputs:
       publish_mode:
-        description: "dry_run: artifact only | publish: commit readout to repo"
-        required: true
+        description: "artifacts-only (dry_run); repo persistence requires a separate PR-based slice"
+        required: false
         default: dry_run
         type: choice
         options:
           - dry_run
-          - publish
 
 permissions:
-  contents: write          # needed for git commit in publish mode
+  contents: read           # no repo writes; read-only checkout
   security-events: read    # code_scanning alert API
 
 concurrency:
@@ -58,13 +65,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            publish_mode="${{ inputs.publish_mode }}"
-          else
-            # Scheduled runs produce artifact + step summary only.
-            # To persist readouts to the repo, use workflow_dispatch → publish.
-            publish_mode="dry_run"
-          fi
+          # Publish mode is always dry_run (artifacts-only).
+          # Direct push to main is not compatible with branch protection.
+          # Repository persistence requires a separate PR-based follow-up slice.
+          publish_mode="dry_run"
 
           date_dir="docs/security/readouts/$(date -u +%Y-%m-%d)"
 
@@ -203,26 +207,6 @@ jobs:
               >> "$GITHUB_STEP_SUMMARY"
             echo "::warning::Security Alert Readout: escalation_needed=true — new Critical/High open alerts found."
           fi
-
-      - name: Commit readout to repository
-        if: steps.resolve.outputs.publish_mode == 'publish'
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          date_dir="${{ steps.resolve.outputs.date_dir }}"
-
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add "$date_dir"
-          if git diff --cached --quiet; then
-            echo "No changes to commit (readout unchanged)."
-            exit 0
-          fi
-
-          git commit -m "chore(security): readout $(date -u +%Y-%m-%d) [skip ci]"
-          git push
 
       - name: Upload readout artifact
         if: always()

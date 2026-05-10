@@ -170,12 +170,24 @@ Es kombiniert zwei Read-only-Skripte:
 | `scripts/audit/github_security_quality_readout.py` | Fetcht Code Scanning, Dependabot, Secret Scanning (aggregiert) via `gh api`; schreibt JSON + Markdown nach `docs/security/readouts/YYYY-MM-DD/`. |
 | `scripts/audit/security_alert_delta.py` | Vergleicht das aktuelle Readout-JSON mit dem letzten vorhandenen; emittiert Delta-JSON + Markdown. |
 
-### Publish-Modi
+### Publish-Modus (artifacts-only)
+
+Der Workflow operiert ausschließlich im **Artifacts-only-Modus** (`dry_run`).
+Kein direkter Commit, kein Push in `main`.
 
 | Modus | Wann | Wirkung |
 |-------|------|---------|
-| `dry_run` | Schedule (Standard) + manuell wählbar | Artifact + Job-Summary; kein Commit, kein Push. |
-| `publish` | Manuell via `workflow_dispatch` | Git-Commit des Readout-Verzeichnisses nach `main` (`[skip ci]`). |
+| `dry_run` | Schedule (Standard) + einzige manuell wählbare Option | Artifact + Job-Summary; kein Commit, kein Push. |
+| ~~`publish`~~ | ~~Manuell via `workflow_dispatch`~~ | **Entfernt** — Direct-Push auf `main` ist nicht governance-kompatibel (GH006: Branch Protection). Repository-Persistierung erfordert einen separaten PR-basierten Slice. |
+
+**Hintergrund:** Manueller Run `25632071704` (2026-05-10) scheiterte bei Schritt
+`Commit readout to repository` mit GH006 — geschützter Branch verlangt PR-Weg.
+Der Direct-Push-Pfad wurde in `fix/security-readout-disable-direct-publish-2289`
+entfernt.
+
+**Validierter Dry-Run:** Run `25632038888` (2026-05-10, `main@f227aa42`) —
+erfolgreich; 3 Artefakte, Schema `security_alert_delta.v1`, PARTIAL korrekt
+behandelt, kein Secret-Payload, kein Repo-Write, 6 High-Eskalationen.
 
 ### Eskalationslogik
 
@@ -205,7 +217,8 @@ artifacts/security-alert-readout/delta/
 Die Delta-Ausgabe ist absichtlich JSON-only. Keine Markdown-Zusammenfassung und
 keine stdout-Summary aus dem Delta-Skript.
 
-Im `dry_run`-Modus nur als GitHub-Actions-Artifact (30 Tage Retention), nicht committed.
+Alle Artefakte werden als GitHub-Actions-Artifacts hochgeladen (30 Tage Retention).
+Kein direkter Commit in das Repository (artifacts-only-Modus, siehe Publish-Modus-Tabelle oben).
 
 ### Interpretation eines Readout-Reports
 
