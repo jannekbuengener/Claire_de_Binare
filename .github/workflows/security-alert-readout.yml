@@ -1,0 +1,217 @@
+name: Security Alert Readout
+
+# Generates a machine-readable GitHub security alert readout (code_scanning,
+# dependabot, secret_scanning) and computes a delta against the most recent
+# previous readout.  Runs Mon/Wed/Fri; always available for manual dispatch.
+#
+# Refs: #2289 (security alert monitoring epic)
+# Related scripts:
+#   scripts/audit/github_security_quality_readout.py  (read-only fetcher)
+#   scripts/audit/security_alert_delta.py             (delta comparator)
+
+on:
+  schedule:
+    - cron: "15 6 * * 1"  # Monday   06:15 UTC
+    - cron: "15 6 * * 3"  # Wednesday 06:15 UTC
+    - cron: "15 6 * * 5"  # Friday   06:15 UTC
+  workflow_dispatch:
+    inputs:
+      publish_mode:
+        description: "dry_run: artifact only | publish: commit readout to repo"
+        required: true
+        default: dry_run
+        type: choice
+        options:
+          - dry_run
+          - publish
+
+permissions:
+  contents: write          # needed for git commit in publish mode
+  security-events: read    # code_scanning alert API
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security-readout:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install --quiet -r requirements.txt
+
+      - name: Resolve publish mode and readout paths
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            publish_mode="${{ inputs.publish_mode }}"
+          else
+            # Scheduled runs produce artifact + step summary only.
+            # To persist readouts to the repo, use workflow_dispatch → publish.
+            publish_mode="dry_run"
+          fi
+
+          date_dir="docs/security/readouts/$(date -u +%Y-%m-%d)"
+
+          # Find the most recent previous readout JSON (exclude today's dir).
+          prev_json=""
+          while IFS= read -r dir; do
+            candidate="${dir}/github_security_quality_readout.json"
+            if [[ "$dir" != "$date_dir" && -f "$candidate" ]]; then
+              prev_json="$candidate"
+              break
+            fi
+          done < <(find docs/security/readouts -mindepth 1 -maxdepth 1 -type d \
+                    | sort -r)
+
+          {
+            echo "publish_mode=$publish_mode"
+            echo "date_dir=$date_dir"
+            echo "current_json=${date_dir}/github_security_quality_readout.json"
+            echo "prev_json=$prev_json"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run security alert readout
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          date_dir="${{ steps.resolve.outputs.date_dir }}"
+          mkdir -p "$date_dir"
+
+          python3 scripts/audit/github_security_quality_readout.py \
+            --repo "${GITHUB_REPOSITORY}" \
+            --out-dir "$date_dir"
+
+          echo "Readout written to $date_dir"
+          ls -lh "$date_dir"
+
+      - name: Run alert delta comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          current_json="${{ steps.resolve.outputs.current_json }}"
+          prev_json="${{ steps.resolve.outputs.prev_json }}"
+          delta_dir="artifacts/security-alert-readout/delta"
+          mkdir -p "$delta_dir"
+
+          if [[ -z "$prev_json" ]]; then
+            echo "No previous readout found — first run; skipping delta." \
+              | tee -a "$delta_dir/no_prev_readout.txt"
+            echo "DELTA_STATUS=first_run" >> "$GITHUB_ENV"
+            exit 0
+          fi
+
+          echo "Comparing: prev=$prev_json  current=$current_json"
+
+          # Exit code 0 = ok, 1 = error, 2 = escalation_needed
+          set +e
+          python3 scripts/audit/security_alert_delta.py \
+            --prev-readout  "$prev_json" \
+            --current-readout "$current_json" \
+            --out-dir "$delta_dir"
+          DELTA_EXIT=$?
+          set -e
+
+          if [[ $DELTA_EXIT -eq 1 ]]; then
+            echo "::error::Delta script failed (input error). See logs above."
+            exit 1
+          fi
+
+          if [[ $DELTA_EXIT -eq 2 ]]; then
+            echo "DELTA_STATUS=escalation_needed" >> "$GITHUB_ENV"
+          else
+            echo "DELTA_STATUS=ok" >> "$GITHUB_ENV"
+          fi
+
+      - name: Write step summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          date_dir="${{ steps.resolve.outputs.date_dir }}"
+          delta_dir="artifacts/security-alert-readout/delta"
+
+          {
+            echo "## Security Alert Readout — $(date -u +%Y-%m-%d)"
+            echo ""
+            echo "**Repo:** \`${GITHUB_REPOSITORY}\`"
+            echo "**Publish mode:** \`${{ steps.resolve.outputs.publish_mode }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Readout summary
+          summary_md="${date_dir}/github_security_quality_summary.md"
+          if [[ -f "$summary_md" ]]; then
+            cat "$summary_md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Delta summary (if available)
+          delta_md="${delta_dir}/security_alert_delta.md"
+          if [[ -f "$delta_md" ]]; then
+            cat "$delta_md" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -f "${delta_dir}/no_prev_readout.txt" ]]; then
+            echo "> **Note:** No previous readout found — delta skipped (first run)." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Escalation annotation
+          if [[ "${DELTA_STATUS:-ok}" == "escalation_needed" ]]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "---" >> "$GITHUB_STEP_SUMMARY"
+            echo ":rotating_light: **New Critical/High open alerts detected — manual triage required.**" \
+              >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Security Alert Readout: escalation_needed=true — new Critical/High open alerts found."
+          fi
+
+      - name: Commit readout to repository
+        if: steps.resolve.outputs.publish_mode == 'publish'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          date_dir="${{ steps.resolve.outputs.date_dir }}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "$date_dir"
+          if git diff --cached --quiet; then
+            echo "No changes to commit (readout unchanged)."
+            exit 0
+          fi
+
+          git commit -m "chore(security): readout $(date -u +%Y-%m-%d) [skip ci]"
+          git push
+
+      - name: Upload readout artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: security-alert-readout-${{ github.run_number }}
+          path: |
+            ${{ steps.resolve.outputs.date_dir }}/
+            artifacts/security-alert-readout/
+          if-no-files-found: warn
+          retention-days: 30

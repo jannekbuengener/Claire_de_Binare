@@ -157,6 +157,65 @@ Gruppierung nach:
 
 ---
 
+## 9. Automated Readout Workflow (#2289)
+
+### Zweck
+
+Das Workflow `.github/workflows/security-alert-readout.yml` läuft automatisch
+**Mo / Mi / Fr um 06:15 UTC** und kann jederzeit manuell ausgelöst werden.  
+Es kombiniert zwei Read-only-Skripte:
+
+| Skript | Zweck |
+|--------|-------|
+| `scripts/audit/github_security_quality_readout.py` | Fetcht Code Scanning, Dependabot, Secret Scanning (aggregiert) via `gh api`; schreibt JSON + Markdown nach `docs/security/readouts/YYYY-MM-DD/`. |
+| `scripts/audit/security_alert_delta.py` | Vergleicht das aktuelle Readout-JSON mit dem letzten vorhandenen; emittiert Delta-JSON + Markdown. |
+
+### Publish-Modi
+
+| Modus | Wann | Wirkung |
+|-------|------|---------|
+| `dry_run` | Schedule (Standard) + manuell wählbar | Artifact + Job-Summary; kein Commit, kein Push. |
+| `publish` | Manuell via `workflow_dispatch` | Git-Commit des Readout-Verzeichnisses nach `main` (`[skip ci]`). |
+
+### Eskalationslogik
+
+- `security_alert_delta.py` gibt **Exit-Code 2** zurück, wenn neue offene Alerts mit Severity `critical`, `high` oder `error` (CodeQL) gefunden werden.
+- Der Workflow setzt dann eine `::warning::`-Annotation und dokumentiert die Eskalation im Job-Summary.
+- Aktuell kein automatisches Issue-Öffnen (DRY-RUN-Slice; Issue-Automation folgt in einem separaten PR).
+
+### Secret Scanning
+
+- Die Readout-Skripte rufen die Secret-Scanning-API **absichtlich nicht** auf.  
+  Surface-Status in JSON ist immer `"status": "redacted"`.
+- Das Delta-Skript vergleicht ausschließlich den Surface-Status (ok/redacted), niemals Payload-Felder.
+
+### Artefakte
+
+Nach jedem Run werden hochgeladen:
+
+```
+docs/security/readouts/YYYY-MM-DD/
+  github_security_quality_readout.json   # machine-readable readout (schema v1)
+  github_security_quality_summary.md     # human-readable Markdown
+
+artifacts/security-alert-readout/delta/
+  security_alert_delta.json              # delta schema (security_alert_delta.v1)
+  security_alert_delta.md                # Markdown-Zusammenfassung
+```
+
+Im `dry_run`-Modus nur als GitHub-Actions-Artifact (30 Tage Retention), nicht committed.
+
+### Interpretation eines Readout-Reports
+
+1. **Status** `PASS` — alle drei Surfaces gelesen (Secret Scanning: nur Status).
+2. **Status** `PARTIAL` — mindestens eine Surface nicht lesbar (Permission/API-Fehler).
+3. **`escalation_needed: true`** im Delta → neuen High/Critical-Alert innerhalb des
+   nächsten Sprints triagen (§3).
+4. **`new_groups`** im Delta → neue Regel-/Advisory-Cluster; ggf. Dismiss-Kommentar
+   nach §4 vorbereiten oder Batch-Fix planen.
+
+---
+
 ## Verknüpfte Issues
 
 - #1649 — [EPIC] Code-Scanning konsolidieren
@@ -165,3 +224,4 @@ Gruppierung nach:
 - #1652 — CodeQL Klartext-Log-Fix
 - #1653 — Gitleaks Secret-Scanning schärfen
 - #1654 — Dieses Runbook
+- #2289 — [EPIC] Security Alert Monitoring (Automated Readout)
