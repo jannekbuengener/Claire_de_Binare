@@ -5,7 +5,7 @@ Datenklassen für Market-Data (signal_engine specific)
 
 import time
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 
 def normalize_ts_ms(ts: int | float | None) -> int:

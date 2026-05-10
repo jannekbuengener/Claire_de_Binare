@@ -40,7 +40,7 @@ from __future__ import annotations
 import pathlib
 from dataclasses import dataclass
 from datetime import timezone
-from typing import Any, Callable, Literal, Sequence
+from typing import Any, Callable, Literal
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 from core.utils.clock import utcnow

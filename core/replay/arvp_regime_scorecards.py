@@ -22,7 +22,7 @@ import json
 import pathlib
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 

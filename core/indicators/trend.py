@@ -6,7 +6,6 @@ Trend Indicators (Issue #204)
 """
 
 from typing import Optional
-from collections import deque
 
 from core.indicators.base import Indicator
 
