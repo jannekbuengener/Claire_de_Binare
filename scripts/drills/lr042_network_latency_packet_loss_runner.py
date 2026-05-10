@@ -288,9 +288,7 @@ def _queue_length(stream_name: str = "stream.orders") -> int:
 
 def _normalize_runtime_mode(raw_mode: Any) -> str:
     mode = str(raw_mode or "").strip().lower()
-    if mode == "staged":
-        mode = "shadow"
-    if mode == "mock":
+    if mode in {"staged", "mock"}:
         mode = "shadow"
     if mode in {"shadow", "paper", "replay", "live"}:
         return mode
@@ -304,12 +302,11 @@ def _collect_snapshot() -> dict[str, Any]:
         except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
             return "unresolved", "unresolved"
 
-        raw_mode = status_payload.get("runtime_mode")
-        runtime_mode_source = "runtime_mode"
-        if raw_mode in (None, ""):
-            raw_mode = status_payload.get("mode")
-            runtime_mode_source = "mode"
-        return _normalize_runtime_mode(raw_mode), runtime_mode_source
+        primary = status_payload.get("runtime_mode")
+        if primary not in (None, ""):
+            return _normalize_runtime_mode(primary), "runtime_mode"
+        fallback = status_payload.get("mode")
+        return _normalize_runtime_mode(fallback), "mode"
 
     def _read_metrics(url: str) -> dict[str, float]:
         try:
@@ -456,12 +453,25 @@ def _wait_for_recovery(
     start = time.monotonic()
     while time.monotonic() - start < timeout_seconds:
         netem_is_cleared = not _netem_active(target_container, target_interface)
-        risk_ok, _, _ = _probe_http("http://localhost:8002/status", timeout=3.0)
-        exec_ok, _, _ = _probe_http("http://localhost:8003/status", timeout=3.0)
+        risk_ok, _risk_ms, _risk_err = _probe_http("http://localhost:8002/status", timeout=3.0)
+        exec_ok, _exec_ms, _exec_err = _probe_http("http://localhost:8003/status", timeout=3.0)
         if netem_is_cleared and risk_ok and exec_ok:
             return time.monotonic() - start
         time.sleep(1)
     return -1.0
+
+
+def _derive_comparison_status(
+    overall: str, failing_checks: list[str]
+) -> tuple[str, str]:
+    """Return (status, reason) from shadow comparison overall result."""
+    if overall == "FAIL":
+        if any(check_id in HARD_COMPARISON_FAIL_IDS for check_id in failing_checks):
+            return "FAIL", "hard_shadow_invariant_failed"
+        return "WARN", "comparison_fail_during_chaos_window_treated_as_warn"
+    if overall == "WARN":
+        return "WARN", "comparison_warn"
+    return "PASS", "comparison_pass"
 
 
 def _run_shadow_comparison(
@@ -519,19 +529,7 @@ def _run_shadow_comparison(
         if str(check.get("status", "")).upper() == "FAIL"
     ]
 
-    if overall == "FAIL":
-        if any(check_id in HARD_COMPARISON_FAIL_IDS for check_id in failing_checks):
-            status = "FAIL"
-            reason = "hard_shadow_invariant_failed"
-        else:
-            status = "WARN"
-            reason = "comparison_fail_during_chaos_window_treated_as_warn"
-    elif overall == "WARN":
-        status = "WARN"
-        reason = "comparison_warn"
-    else:
-        status = "PASS"
-        reason = "comparison_pass"
+    status, reason = _derive_comparison_status(overall, failing_checks)
 
     return {
         "status": status,

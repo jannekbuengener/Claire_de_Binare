@@ -42,9 +42,7 @@ def decode_message(raw: bytes):
         symbol = getattr(w, "symbol", "")
 
         # Some schemas use a oneof; we do a tolerant approach:
-        publicdeals = getattr(w, "publicdeals", None)
-        if publicdeals is None:
-            publicdeals = getattr(w, "publicDeals", None)
+        publicdeals = getattr(w, "publicdeals", None) or getattr(w, "publicDeals", None)
 
         if publicdeals:
             deals_list = _pick_list_field(publicdeals, ["dealsList", "deals_list"])
@@ -65,6 +63,14 @@ def decode_message(raw: bytes):
     return {"kind": "deals_direct", "eventtype": eventtype, "deals": deals_list if deals_list is not None else []}
 
 
+def _tradetype_to_side(tradetype: int) -> str:
+    if tradetype == 1:
+        return "buy"
+    if tradetype == 2:
+        return "sell"
+    return "unknown"
+
+
 def normalize_deal(symbol: str, deal):
     # docs: price, quantity, tradetype (1 buy, 2 sell), time (ms)
     price = str(getattr(deal, "price", ""))
@@ -72,31 +78,34 @@ def normalize_deal(symbol: str, deal):
     t = int(getattr(deal, "tradetype", 0) or getattr(deal, "tradeType", 0) or 0)
     ts = int(getattr(deal, "time", 0) or getattr(deal, "ts", 0) or 0)
 
-    side = "unknown"
-    if t == 1:
-        side = "buy"
-    elif t == 2:
-        side = "sell"
-
     return {
         "source": "mexc",
         "symbol": symbol,
         "ts_ms": ts,
         "price": price,
         "qty": qty,
-        "side": side,
+        "side": _tradetype_to_side(t),
     }
+
+
+def _parse_str_msg(raw: str) -> dict:
+    """Parse a WebSocket string control message; returns {raw: msg} on decode failure."""
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"raw": raw}
 
 
 async def run(symbol="BTCUSDT", interval="100ms", duration_s=600):
     # MEXC requires uppercase symbol
     symbol = symbol.upper()
 
-    decoded = 0
-    decode_errors = 0
-    last_ts = 0
-    connected = 0
-    last_sample_log = 0
+    ws_metrics = {
+        "decoded": 0,
+        "decode_errors": 0,
+        "last_ts": 0,
+        "last_sample_log": 0.0,
+    }
 
     sub = {
         "method": "SUBSCRIPTION",
@@ -105,7 +114,6 @@ async def run(symbol="BTCUSDT", interval="100ms", duration_s=600):
     ping = {"method": "PING"}
 
     async with websockets.connect(WS_URL) as ws:
-        connected = 1
         print(f"[ws] connected url={WS_URL}")
 
         await ws.send(json.dumps(sub))
@@ -125,40 +133,41 @@ async def run(symbol="BTCUSDT", interval="100ms", duration_s=600):
 
                 if isinstance(msg, str):
                     # ACK / PONG / errors
-                    try:
-                        data = json.loads(msg)
-                    except Exception:
-                        data = {"raw": msg}
-                    if data.get("msg") == "PONG":
+                    ctrl = _parse_str_msg(msg)
+                    if ctrl.get("msg") == "PONG":
                         continue
-                    if "code" in data or "msg" in data:
-                        print(f"[ws] ctrl -> {data}")
+                    if "code" in ctrl or "msg" in ctrl:
+                        print(f"[ws] ctrl -> {ctrl}")
                     continue
 
                 # binary protobuf push
                 try:
                     decoded_obj = decode_message(msg)
-                    decoded += 1
-                    last_ts = int(time.time() * 1000)
+                    ws_metrics["decoded"] += 1
+                    ws_metrics["last_ts"] = int(time.time() * 1000)
 
                     deals = decoded_obj.get("deals") or []
                     if deals:
                         # log one sample event every ~30s
                         now = time.time()
-                        if now - last_sample_log >= 30:
+                        if now - ws_metrics["last_sample_log"] >= 30:
                             ev = normalize_deal(symbol, deals[0])
                             print(f"[sample] {ev}")
-                            last_sample_log = now
+                            ws_metrics["last_sample_log"] = now
                 except Exception as e:
-                    decode_errors += 1
+                    ws_metrics["decode_errors"] += 1
                     print(f"[decode_error] {e}")
 
             print("[done] duration reached")
         finally:
             ping_task.cancel()
 
-    connected = 0
-    print(f"[metrics] ws_connected={connected} decoded_messages_total={decoded} decode_errors_total={decode_errors} last_message_ts_ms={last_ts}")
+    print(
+        f"[metrics] ws_connected=0"
+        f" decoded_messages_total={ws_metrics['decoded']}"
+        f" decode_errors_total={ws_metrics['decode_errors']}"
+        f" last_message_ts_ms={ws_metrics['last_ts']}"
+    )
 
 
 if __name__ == "__main__":

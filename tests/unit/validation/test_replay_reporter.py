@@ -455,8 +455,6 @@ class TestWriteBundle:
         reporter = ReplayReporter()
         dir1 = tmp_path / "run1"
         dir2 = tmp_path / "run2"
-        ri1 = _make_valid_report_input(run_spec=_make_run_spec(replay_run_id="replay-same"))
-        ri2 = _make_valid_report_input(run_spec=_make_run_spec(replay_run_id="replay-same"))
         # Need matching run_ids across sub-contracts too
         ri1 = _make_valid_report_input(
             run_spec=_make_run_spec(replay_run_id="replay-same"),

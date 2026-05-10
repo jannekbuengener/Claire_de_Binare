@@ -199,9 +199,7 @@ def _probe_http(url: str, timeout: float = 3.0) -> tuple[bool, Optional[float], 
 
 def _normalize_runtime_mode(raw_mode: Any) -> str:
     mode = str(raw_mode or "").strip().lower()
-    if mode == "staged":
-        mode = "shadow"
-    if mode == "mock":
+    if mode in {"staged", "mock"}:
         mode = "shadow"
     if mode in {"shadow", "paper", "replay", "live"}:
         return mode
@@ -245,12 +243,11 @@ def _collect_snapshot() -> dict[str, Any]:
         except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
             return "unresolved", "unresolved"
 
-        raw_mode = status_payload.get("runtime_mode")
-        runtime_mode_source = "runtime_mode"
-        if raw_mode in (None, ""):
-            raw_mode = status_payload.get("mode")
-            runtime_mode_source = "mode"
-        return _normalize_runtime_mode(raw_mode), runtime_mode_source
+        primary = status_payload.get("runtime_mode")
+        if primary not in (None, ""):
+            return _normalize_runtime_mode(primary), "runtime_mode"
+        fallback = status_payload.get("mode")
+        return _normalize_runtime_mode(fallback), "mode"
 
     runtime_mode, runtime_mode_source = _read_runtime_mode()
 
@@ -339,8 +336,8 @@ def _wait_for_service_recovery(
     """Poll until both risk and execution health endpoints respond. Returns elapsed seconds or -1."""
     start = time.monotonic()
     while time.monotonic() - start < timeout_seconds:
-        risk_ok, _, _ = _probe_http("http://localhost:8002/status", timeout=3.0)
-        exec_ok, _, _ = _probe_http("http://localhost:8003/status", timeout=3.0)
+        risk_ok, _risk_ms, _risk_err = _probe_http("http://localhost:8002/status", timeout=3.0)
+        exec_ok, _exec_ms, _exec_err = _probe_http("http://localhost:8003/status", timeout=3.0)
         if risk_ok and exec_ok:
             return time.monotonic() - start
         time.sleep(1)
@@ -680,11 +677,7 @@ def run_lr041_drill(
             )
 
     scenario_statuses = [row["status"] for row in scenario_results]
-    overall = "PASS"
-    if "FAIL" in scenario_statuses:
-        overall = "FAIL"
-    if not all(checks.values()):
-        overall = "FAIL"
+    overall = "FAIL" if ("FAIL" in scenario_statuses or not all(checks.values())) else "PASS"
 
     summary_payload: dict[str, Any] = {
         "drill_id": DRILL_ID,
