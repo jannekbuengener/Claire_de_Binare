@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict
@@ -53,12 +54,12 @@ def coerce_payload_types(payload: Dict[str, Any], schema: Dict[str, Any]) -> Dic
             try:
                 payload[key] = int(value)
             except ValueError:
-                pass
+                logging.getLogger(__name__).debug("Could not coerce to int, keeping original", exc_info=True)
         elif "number" in expected_types:
             try:
                 payload[key] = float(value)
             except ValueError:
-                pass
+                logging.getLogger(__name__).debug("Could not coerce to float, keeping original", exc_info=True)
     return payload
 
 

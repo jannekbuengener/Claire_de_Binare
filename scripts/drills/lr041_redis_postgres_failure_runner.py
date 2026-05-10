@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import logging
 import subprocess
 import sys
 import time
@@ -258,13 +259,13 @@ def _collect_snapshot() -> dict[str, Any]:
             _http_get_text("http://localhost:8003/metrics")
         )
     except (urllib.error.URLError, TimeoutError):
-        pass
+        logging.getLogger(__name__).debug("Execution service metrics not reachable (ignored)")
     try:
         risk_metrics = _parse_prometheus_text(
             _http_get_text("http://localhost:8002/metrics")
         )
     except (urllib.error.URLError, TimeoutError):
-        pass
+        logging.getLogger(__name__).debug("Risk service metrics not reachable (ignored)")
 
     return {
         "captured_at_utc": _utc_now(),

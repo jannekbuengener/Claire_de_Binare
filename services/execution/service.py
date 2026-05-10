@@ -720,7 +720,7 @@ def process_order(order_data: object):
                     policy_snapshot=getattr(order, "policy_snapshot", None),
                 )
             except Exception:
-                pass  # Guardrail: never break execution path
+                logger.debug("Contract emission skipped (execution path guardrail)", exc_info=True)
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)

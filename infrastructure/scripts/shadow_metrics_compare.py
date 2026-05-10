@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -230,7 +231,7 @@ def _error_report(evidence_dir: Path, message: str) -> None:
     try:
         _write_artefacts(evidence_dir, report, md)
     except OSError:
-        pass  # best-effort; do not mask the original error
+        logging.getLogger(__name__).debug("Failed to write error artefacts (best-effort, ignored)", exc_info=True)
 
 
 def main() -> None:

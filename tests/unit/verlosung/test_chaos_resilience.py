@@ -17,6 +17,7 @@ Ausführung:
 import pytest
 import subprocess
 import time
+import logging
 import redis
 import psycopg2
 import json
@@ -50,7 +51,7 @@ def is_service_healthy(service_name):
                 return "healthy" in status.lower() or service.get("Health") == "healthy"
 
         except json.JSONDecodeError:
-            pass
+            logging.getLogger(__name__).debug("JSON decode error for docker service line (ignored)")
 
     return False
 

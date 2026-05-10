@@ -16,6 +16,7 @@ shadow-soak profile. Canonical runtime-mode remains execution_status.mode.
 """
 
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -221,7 +222,7 @@ def generate_index(evidence_dir: Path) -> dict:
             active = prom_targets.get("data", {}).get("activeTargets", [])
             prometheus_targets_up = sum(1 for t in active if t.get("health") == "up")
         except (AttributeError, TypeError):
-            pass
+            logging.getLogger(__name__).debug("Unexpected Prometheus targets structure (ignored)", exc_info=True)
 
     # --- Fetch failures ---
     fetch_failures = scan_fetch_failures(evidence_dir)

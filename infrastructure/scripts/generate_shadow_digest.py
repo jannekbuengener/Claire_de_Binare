@@ -13,6 +13,7 @@ Options:
 
 import argparse
 import json
+import logging
 import subprocess
 import sys
 from datetime import datetime, timezone, timedelta
@@ -46,7 +47,7 @@ def prometheus_query(query: str) -> Optional[float]:
         if data["status"] == "success" and data["data"]["result"]:
             return float(data["data"]["result"][0]["value"][1])
     except (json.JSONDecodeError, KeyError, IndexError, ValueError):
-        pass
+        logging.getLogger(__name__).debug("Prometheus query result parse failed, returning None", exc_info=True)
     return None
 
 
@@ -91,7 +92,7 @@ def get_active_alerts() -> List[Dict]:
         if data["status"] == "success":
             return data["data"]["alerts"]
     except (json.JSONDecodeError, KeyError):
-        pass
+        logging.getLogger(__name__).debug("Prometheus alerts parse failed, returning empty list", exc_info=True)
     return []
 
 

@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import pathlib
 from typing import Any, Dict, List, Optional
 
@@ -307,7 +308,7 @@ class ReplayReporter:
                 try:
                     f.unlink(missing_ok=True)
                 except OSError:
-                    pass
+                    logging.getLogger(__name__).debug("Cleanup unlink failed (ignored)", exc_info=True)
             raise ReplayReporterError(
                 f"Failed to write artifact bundle to {bundle_dir}: {exc}"
             ) from exc

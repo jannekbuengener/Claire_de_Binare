@@ -24,6 +24,7 @@ Supports: #258 (Deterministic Replay)
 import argparse
 import hashlib
 import json
+import logging
 import os
 import sys
 from typing import Optional
@@ -162,7 +163,7 @@ class ReplayRunner:
             print(f"✅ Connected to Redis (cdb_redis:6379)")
             return
         except (redis.ConnectionError, redis.TimeoutError):
-            pass
+            logging.getLogger(__name__).debug("Redis primary host not reachable, trying fallback host")
 
         # Fallback to configured host
         try:

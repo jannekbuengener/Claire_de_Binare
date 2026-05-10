@@ -16,6 +16,7 @@ Exit Codes:
 
 import argparse
 import json
+import logging
 import subprocess
 import sys
 import time
@@ -215,7 +216,7 @@ class PRCheckInspector:
             print("Current auth status:", file=sys.stderr)
             print(result.stderr, file=sys.stderr)
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("Could not get auth status (ignored)", exc_info=True)
 
         print(file=sys.stderr)
         print("Remediation:", file=sys.stderr)

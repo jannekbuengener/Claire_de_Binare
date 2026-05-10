@@ -12,6 +12,8 @@ All tools are read-only, fail-closed, and carry explicit no-echtgeld-go semantic
 
 from __future__ import annotations
 
+import logging
+
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
@@ -162,7 +164,7 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         try:
             freshness_days = int(freshness_raw)
         except (TypeError, ValueError):
-            pass
+            logging.getLogger(__name__).debug("Invalid freshness_days value, ignoring", exc_info=True)
 
     min_confidence_raw = params.get("min_confidence")
     min_confidence: float | None = None
@@ -170,7 +172,7 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         try:
             min_confidence = float(min_confidence_raw)
         except (TypeError, ValueError):
-            pass
+            logging.getLogger(__name__).debug("Invalid min_confidence value, ignoring", exc_info=True)
 
     try:
         ev_request = EvidenceLookupRequest(
@@ -294,7 +296,7 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
         try:
             freshness_days = int(freshness_raw)
         except (TypeError, ValueError):
-            pass
+            logging.getLogger(__name__).debug("Invalid freshness_days param, ignoring", exc_info=True)
 
     try:
         mem_request = MemoryReadRequest(

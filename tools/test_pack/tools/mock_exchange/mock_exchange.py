@@ -13,6 +13,7 @@ when you want realistic order-lifecycle tests without the real exchange.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 import time
 from dataclasses import dataclass, asdict
@@ -141,7 +142,7 @@ def main() -> int:
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        pass
+        logging.getLogger(__name__).debug("MockExchange shutdown via KeyboardInterrupt")
     return 0
 
 if __name__ == "__main__":

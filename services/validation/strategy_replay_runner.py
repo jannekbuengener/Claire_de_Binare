@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import re
 import subprocess
@@ -505,7 +506,7 @@ def _get_code_commit() -> str:
             if _CODE_COMMIT_RE.match(commit):
                 return commit
     except Exception:
-        pass
+        logging.getLogger(__name__).debug("Could not read code commit from git, using fallback", exc_info=True)
     return _FALLBACK_CODE_COMMIT
 
 
@@ -611,7 +612,7 @@ def _load_dataset_result(
             try:
                 conn.close()
             except Exception:
-                pass
+                logging.getLogger(__name__).debug("conn.close() raised in finally block (ignored)", exc_info=True)
 
     raise ReplayRunnerError(f"unsupported dataset_source: {config.dataset_source!r}")
 

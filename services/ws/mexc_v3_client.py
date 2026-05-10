@@ -262,7 +262,7 @@ class MexcV3Client:
                 try:
                     await ping_task
                 except asyncio.CancelledError:
-                    pass
+                    logger.debug("Ping task cancellation acknowledged")
 
             except Exception as e:
                 logger.error(f"[ws] connection error: {e}")

@@ -19,6 +19,7 @@ Teardown:
 """
 
 import json
+import logging
 import os
 import time
 
@@ -89,7 +90,7 @@ def deactivate_kill_switch_after():
             timeout=5,
         )
     except Exception:
-        pass  # teardown must not mask real test failures
+        logging.debug("Kill-switch teardown error (ignored; must not mask test failures)", exc_info=True)
 
 
 @pytest.fixture

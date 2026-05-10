@@ -25,6 +25,7 @@ E2E_RUN=1 pytest tests/e2e/test_paper_trading_p0.py -v
 """
 
 import json
+import logging
 import os
 import time
 from datetime import datetime
@@ -555,7 +556,7 @@ def test_tc_p0_001_happy_path_market_to_trade(redis_client, unique_order_id):
             _recv_oid = _rp.get("order_id", "")
             _recv_st = _rp.get("status", "")
         except Exception:
-            pass
+            logging.debug("Optional message JSON parse failed (ignored)", exc_info=True)
 
     try:
         # Assertions

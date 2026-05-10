@@ -14,6 +14,7 @@ COPILOT SMART STARTUP ORCHESTRATOR — LEGACY / NICHT KANONISCH
     Operator-Ablauf.
 """
 
+import logging
 import subprocess
 import time
 import sys
@@ -53,7 +54,7 @@ def wait_for_service(name, url, max_attempts=12, delay=10):
                 print(f"✅ {name} is healthy!")
                 return True
         except requests.RequestException:
-            pass
+            logging.getLogger(__name__).debug("Service not ready, retrying", exc_info=True)
 
         wait_time = min(delay * (1.5**attempt), 60)  # Exponential backoff, max 60s
         print(f"   Attempt {attempt + 1}/{max_attempts}, waiting {wait_time:.1f}s...")

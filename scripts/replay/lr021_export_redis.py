@@ -94,7 +94,7 @@ def parse_stream_entry(entry_id: str, fields: Dict[str, str]) -> Optional[dict]:
                 if isinstance(obj, dict) and "schema_version" in obj:
                     return obj
             except (json.JSONDecodeError, TypeError):
-                pass
+                logger.debug("Redis value is not valid JSON, skipping", exc_info=True)
 
     # Strategy (c): flat fields
     if "schema_version" in fields and "event_type" in fields:
