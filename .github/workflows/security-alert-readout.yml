@@ -4,9 +4,10 @@ name: Security Alert Readout
 # dependabot, secret_scanning) and computes a delta against the most recent
 # previous readout.  Runs Mon/Wed/Fri; always available for manual dispatch.
 #
-# Artifacts-only mode: readout and delta are uploaded as GitHub Actions
+# Artifacts-only mode (default): readout and delta are uploaded as GitHub Actions
 # artifacts (retention: 30 days).  No direct commit to main is attempted.
-# Repository persistence requires a separate PR-based follow-up slice.
+# Optional: trigger workflow_dispatch with persist_via_pr=true to create a branch
+# + PR that persists the readout to the repo.  No auto-merge.  No direct push.
 #
 # Background: the direct-push publish path was removed after run 25632071704
 # failed with GH006 (protected branch — changes must be made via PR).  See
@@ -25,12 +26,17 @@ on:
   workflow_dispatch:
     inputs:
       publish_mode:
-        description: "artifacts-only (dry_run); repo persistence requires a separate PR-based slice"
+        description: "artifacts-only (dry_run); see persist_via_pr for repo persistence"
         required: false
         default: dry_run
         type: choice
         options:
           - dry_run
+      persist_via_pr:
+        description: "Create a branch + PR to persist the readout to the repo (no auto-merge, no direct push to main)"
+        required: false
+        default: "false"
+        type: boolean
 
 permissions:
   contents: read           # no repo writes; read-only checkout
@@ -43,6 +49,10 @@ concurrency:
 jobs:
   security-readout:
     runs-on: ubuntu-latest
+    outputs:
+      date_dir:       ${{ steps.resolve.outputs.date_dir }}
+      readout_status: ${{ steps.status.outputs.readout_status }}
+      delta_status:   ${{ steps.status.outputs.delta_status }}
 
     steps:
       - name: Checkout
@@ -218,3 +228,131 @@ jobs:
             artifacts/security-alert-readout/
           if-no-files-found: warn
           retention-days: 30
+
+      - name: Expose job outputs
+        id: status
+        if: always()
+        shell: bash
+        run: |
+          echo "readout_status=${READOUT_STATUS:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "delta_status=${DELTA_STATUS:-unknown}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload readout for persist handoff
+        if: inputs.persist_via_pr == true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: readout-persist-${{ github.run_id }}
+          path: ${{ steps.resolve.outputs.date_dir }}/
+          if-no-files-found: error
+          retention-days: 1
+
+  persist-via-pr:
+    runs-on: ubuntu-latest
+    needs: security-readout
+    if: github.event_name == 'workflow_dispatch' && inputs.persist_via_pr == true
+    permissions:
+      contents: write      # create branch + commit
+      pull-requests: write # open PR
+    env:
+      DATE_DIR:        ${{ needs.security-readout.outputs.date_dir }}
+      READOUT_STATUS:  ${{ needs.security-readout.outputs.readout_status }}
+      DELTA_STATUS:    ${{ needs.security-readout.outputs.delta_status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+
+      - name: Download readout artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: readout-persist-${{ github.run_id }}
+          path: /tmp/security-readout-handoff
+
+      - name: Create branch, commit, push and open PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DATE="${DATE_DIR##*/}"
+          if [[ ! "$DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+            echo "::error::Invalid DATE derived from DATE_DIR: DATE_DIR=${DATE_DIR} DATE=${DATE}"
+            exit 1
+          fi
+          BRANCH_NAME="chore/security-readout/${DATE}"
+          PR_TITLE="chore(security): persist alert readout ${DATE}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Check for an open PR for this date branch.
+          EXISTING_PR=$(gh pr list \
+            --head "${BRANCH_NAME}" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [[ -n "${EXISTING_PR}" ]]; then
+            # Open PR exists: check out its branch and update with new readout files.
+            echo "Open PR #${EXISTING_PR} found for ${BRANCH_NAME} — updating instead of skipping."
+            if git ls-remote --exit-code --heads origin "${BRANCH_NAME}" > /dev/null 2>&1; then
+              git fetch origin "${BRANCH_NAME}"
+              git checkout -b "${BRANCH_NAME}" "origin/${BRANCH_NAME}"
+            else
+              # Remote branch gone but PR still open — fail closed, manual cleanup needed.
+              echo "::error::Remote branch ${BRANCH_NAME} not found but PR #${EXISTING_PR} is open. Manual cleanup required."
+              exit 1
+            fi
+          else
+            # No open PR. Guard against orphaned remote branch (closed PR, branch not deleted).
+            if git ls-remote --exit-code --heads origin "${BRANCH_NAME}" > /dev/null 2>&1; then
+              echo "::error::Remote branch ${BRANCH_NAME} exists but no open PR found. Manual cleanup required before retrying."
+              exit 1
+            fi
+            git checkout -b "${BRANCH_NAME}"
+          fi
+
+          # Copy readout files from temp handoff into the worktree now that the correct branch is checked out.
+          HANDOFF_DIR="/tmp/security-readout-handoff"
+          if [[ ! -d "${HANDOFF_DIR}" ]] || [[ -z "$(ls -A "${HANDOFF_DIR}")" ]]; then
+            echo "::error::Handoff directory ${HANDOFF_DIR} is missing or empty. Cannot persist readout."
+            exit 1
+          fi
+          mkdir -p "${DATE_DIR}"
+          cp "${HANDOFF_DIR}/"* "${DATE_DIR}/"
+
+          git add "${DATE_DIR}"
+          if git diff --cached --quiet; then
+            echo "No new readout files staged — readout for ${DATE} is already up to date."
+            exit 0
+          fi
+
+          git commit -m "${PR_TITLE} [skip ci]"
+
+          PR_BODY=$(printf '%s\n' \
+            "Automated security alert readout persistence." \
+            "" \
+            "- Readout date: ${DATE}" \
+            "- Run ID: \`${GITHUB_RUN_ID}\`" \
+            "- Readout status: \`${READOUT_STATUS}\`" \
+            "- Delta status: \`${DELTA_STATUS}\`" \
+            "" \
+            "Refs #2289." \
+            "" \
+            "> [!NOTE]" \
+            "> Do not merge automatically. Human review required before merging.")
+
+          if [[ -n "${EXISTING_PR}" ]]; then
+            git push origin "${BRANCH_NAME}"
+            echo "Updated existing readout PR #${EXISTING_PR} with new readout for ${DATE}."
+          else
+            git push origin "${BRANCH_NAME}"
+            gh pr create \
+              --head "${BRANCH_NAME}" \
+              --base "main" \
+              --title "${PR_TITLE}" \
+              --body "${PR_BODY}"
+          fi

@@ -170,15 +170,19 @@ Es kombiniert zwei Read-only-Skripte:
 | `scripts/audit/github_security_quality_readout.py` | Fetcht Code Scanning, Dependabot, Secret Scanning (aggregiert) via `gh api`; schreibt JSON + Markdown nach `docs/security/readouts/YYYY-MM-DD/`. |
 | `scripts/audit/security_alert_delta.py` | Vergleicht das aktuelle Readout-JSON mit dem letzten vorhandenen; emittiert Delta-JSON + Markdown. |
 
-### Publish-Modus (artifacts-only)
+### Publish-Modus (artifacts-only + optionale PR-Persistenz)
 
-Der Workflow operiert ausschließlich im **Artifacts-only-Modus** (`dry_run`).
+Der Workflow operiert standardmäßig im **Artifacts-only-Modus** (`dry_run`).
 Kein direkter Commit, kein Push in `main`.
+
+Optional kann via `workflow_dispatch` mit `persist_via_pr=true` ein Branch + PR erstellt werden,
+der den Readout in den Repo persistiert. Kein Auto-Merge. Kein Direct Push auf `main`.
 
 | Modus | Wann | Wirkung |
 |-------|------|---------|
-| `dry_run` | Schedule (Standard) + einzige manuell wählbare Option | Artifact + Job-Summary; kein Commit, kein Push. |
-| ~~`publish`~~ | ~~Manuell via `workflow_dispatch`~~ | **Entfernt** — Direct-Push auf `main` ist nicht governance-kompatibel (GH006: Branch Protection). Repository-Persistierung erfordert einen separaten PR-basierten Slice. |
+| `dry_run` | Schedule (Standard) + manuell wählbar | Artifact + Job-Summary; kein Commit, kein Push. |
+| ~~`publish`~~ | ~~Manuell via `workflow_dispatch`~~ | **Entfernt** — Direct-Push auf `main` ist nicht governance-kompatibel (GH006: Branch Protection). |
+| `persist_via_pr=true` | Manuell via `workflow_dispatch` | Branch `chore/security-readout/YYYY-MM-DD` + PR gegen `main`; kein Auto-Merge; Human-Review erforderlich. |
 
 **Hintergrund:** Manueller Run `25632071704` (2026-05-10) scheiterte bei Schritt
 `Commit readout to repository` mit GH006 — geschützter Branch verlangt PR-Weg.
@@ -188,6 +192,39 @@ entfernt.
 **Validierter Dry-Run:** Run `25632038888` (2026-05-10, `main@f227aa42`) —
 erfolgreich; 3 Artefakte, Schema `security_alert_delta.v1`, PARTIAL korrekt
 behandelt, kein Secret-Payload, kein Repo-Write, 6 High-Eskalationen.
+
+### PR-basierter Persistenzpfad (`persist_via_pr`)
+
+Auslösung:
+
+```
+workflow_dispatch → persist_via_pr = true
+```
+
+Ablauf:
+
+1. `security-readout`-Job läuft vollständig (Readout + Delta + Artifacts).
+2. `persist-via-pr`-Job (job-level `contents: write, pull-requests: write`) startet danach.
+3. Dedupe-Check: Falls ein offener PR für `chore/security-readout/YYYY-MM-DD` bereits
+   existiert, wird übersprungen (kein PR-Spam).
+4. Branch `chore/security-readout/YYYY-MM-DD` wird von `main` abgezweigt.
+5. Readout-JSON + Markdown werden committed (`[skip ci]`).
+6. Branch wird gepusht; PR wird via `gh pr create` eröffnet.
+
+PR-Eigenschaften:
+
+| Eigenschaft | Wert |
+|---|---|
+| Branch | `chore/security-readout/YYYY-MM-DD` |
+| Titel | `chore(security): persist alert readout YYYY-MM-DD` |
+| Base | `main` |
+| Auto-Merge | nein |
+| Direct Push | nein |
+| Issue-Close | nein |
+| Alert-Dismissal | nein |
+
+Permissions sind nur job-scoped und nur aktiv, wenn `persist_via_pr=true` gesetzt ist.
+Der `security-readout`-Job bleibt unverändert `contents: read`.
 
 ### Eskalationslogik
 
