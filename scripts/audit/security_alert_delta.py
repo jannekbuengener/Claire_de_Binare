@@ -38,6 +38,8 @@ OPEN_STATES: frozenset[str] = frozenset({"open"})
 
 # Sources with numbered alerts that can be delta-compared.
 NUMBERED_SOURCES: frozenset[str] = frozenset({"code_scanning", "dependabot"})
+COMPARABLE_SURFACE_STATUSES: frozenset[str] = frozenset({"readable", "ok"})
+COMPARISON_SKIPPED_REASON = "comparison_skipped"
 
 # ---------------------------------------------------------------------------
 # Safe primitive extractors — break the taint chain from json.loads()
@@ -55,6 +57,7 @@ _STATE_SAFE: dict[str, str] = {
     "open": "open",
     "dismissed": "dismissed",
     "fixed": "fixed",
+    "resolved": "resolved",
     "auto_dismissed": "auto_dismissed",
 }
 _SEVERITY_SAFE: dict[str, str] = {
@@ -74,6 +77,11 @@ _STATUS_SAFE: dict[str, str] = {
     "error": "error",
     "unknown": "unknown",
     "redacted": "redacted",
+    "readable": "readable",
+    "unavailable": "unavailable",
+}
+_DELTA_REASON_SAFE: dict[str, str] = {
+    COMPARISON_SKIPPED_REASON: COMPARISON_SKIPPED_REASON,
 }
 
 
@@ -162,9 +170,12 @@ class DeltaResult:
 
     new_alerts: list[dict[str, Any]] = field(default_factory=list)
     resolved_keys: list[AlertKey] = field(default_factory=list)
+    resolved_alerts: list[dict[str, Any]] = field(default_factory=list)
+    reopened_alerts: list[dict[str, Any]] = field(default_factory=list)
     new_groups: list[AlertGroupKey] = field(default_factory=list)
     escalation_needed: bool = False
     escalation_alerts: list[dict[str, Any]] = field(default_factory=list)
+    comparison_skipped_sources: list[dict[str, str]] = field(default_factory=list)
     secret_scanning_status_change: str | None = None
     prev_reference_now_utc: str = ""
     current_reference_now_utc: str = ""
@@ -200,6 +211,7 @@ class SafeReadout:
     total_alerts: int
     alerts: tuple[SafeAlert, ...]
     secret_scanning_status: str
+    surface_statuses: dict[str, str]
 
 
 # ---------------------------------------------------------------------------
@@ -262,6 +274,28 @@ def _normalize_alert(raw: Mapping[str, Any]) -> SafeAlert | None:
     )
 
 
+def _normalize_surface_statuses(raw: Mapping[str, Any]) -> dict[str, str]:
+    """Normalize per-surface availability status for delta comparability."""
+    statuses = {
+        "code_scanning": "unknown",
+        "dependabot": "unknown",
+        "secret_scanning": "unknown",
+    }
+    surfaces = raw.get("surfaces", [])
+    if not isinstance(surfaces, list):
+        return statuses
+    for surface in surfaces:
+        if not isinstance(surface, dict):
+            continue
+        source = _safe_token(surface.get("source", ""), _SOURCE_SAFE, fallback="")
+        if source in statuses:
+            statuses[source] = _safe_token(
+                surface.get("status", "unknown"),
+                _STATUS_SAFE,
+            )
+    return statuses
+
+
 def normalize_readout_for_delta(raw: Mapping[str, Any]) -> SafeReadout:
     """Normalize a raw readout dict into a SafeReadout with only safe fields.
 
@@ -287,20 +321,14 @@ def normalize_readout_for_delta(raw: Mapping[str, Any]) -> SafeReadout:
                 alert = _normalize_alert(item)
                 if alert is not None:
                     safe_alerts.append(alert)
-    # secret_scanning: surface status only — from _STATUS_SAFE allowlist.
-    ss_status = "unknown"
-    surfaces = raw.get("surfaces", [])
-    if isinstance(surfaces, list):
-        for surface in surfaces:
-            if isinstance(surface, dict) and surface.get("source") == "secret_scanning":
-                ss_status = _safe_token(surface.get("status", "unknown"), _STATUS_SAFE)
-                break
+    source_statuses = _normalize_surface_statuses(raw)
     return SafeReadout(
         reference_now_utc=_safe_timestamp(raw.get("reference_now_utc", "")),
         status=_safe_token(raw.get("status", "unknown"), _STATUS_SAFE),
         total_alerts=total,
         alerts=tuple(safe_alerts),
-        secret_scanning_status=ss_status,
+        secret_scanning_status=source_statuses["secret_scanning"],
+        surface_statuses=source_statuses,
     )
 
 
@@ -314,6 +342,44 @@ def _group_key(alert: SafeAlert) -> AlertGroupKey:
         subject=alert.subject or "unknown",
         branch=alert.branch or "not_provided",
     )
+
+
+def _alert_identity(alert: SafeAlert, *, state: str | None = None) -> dict[str, Any]:
+    return {
+        "source": _safe_token(alert.source, _SOURCE_SAFE),
+        "number": _safe_int(alert.number),
+        "state": _safe_token(state or alert.state, _STATE_SAFE),
+        "severity": _safe_token(alert.severity, _SEVERITY_SAFE),
+        "subject": _safe_text(alert.subject),
+        "branch": _safe_text(alert.branch),
+        "affected_component": _safe_text(alert.affected_component),
+    }
+
+
+def _resolved_alert_identity(
+    prev_alert: SafeAlert,
+    current_alert: SafeAlert | None,
+) -> dict[str, Any]:
+    if current_alert is not None:
+        return _alert_identity(current_alert)
+    return _alert_identity(prev_alert, state="resolved")
+
+
+def _comparison_skipped_source(
+    source: str,
+    prev_status: str,
+    current_status: str,
+) -> dict[str, str]:
+    return {
+        "source": _safe_token(source, _SOURCE_SAFE),
+        "prev_status": _safe_token(prev_status, _STATUS_SAFE),
+        "current_status": _safe_token(current_status, _STATUS_SAFE),
+        "reason": _safe_token(
+            COMPARISON_SKIPPED_REASON,
+            _DELTA_REASON_SAFE,
+            fallback=COMPARISON_SKIPPED_REASON,
+        ),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -340,10 +406,32 @@ def compute_delta(
         current_reference_now_utc=current_safe.reference_now_utc,
     )
 
-    prev_alerts = prev_safe.alerts
-    current_alerts = current_safe.alerts
+    comparable_sources: set[str] = set()
+    for source in sorted(NUMBERED_SOURCES):
+        prev_status = prev_safe.surface_statuses.get(source, "unknown")
+        current_status = current_safe.surface_statuses.get(source, "unknown")
+        if (
+            prev_status in COMPARABLE_SURFACE_STATUSES
+            and current_status in COMPARABLE_SURFACE_STATUSES
+        ):
+            comparable_sources.add(source)
+        else:
+            result.comparison_skipped_sources.append(
+                _comparison_skipped_source(source, prev_status, current_status)
+            )
+
+    prev_alerts = tuple(
+        alert for alert in prev_safe.alerts if alert.source in comparable_sources
+    )
+    current_alerts = tuple(
+        alert for alert in current_safe.alerts if alert.source in comparable_sources
+    )
 
     # Key sets
+    prev_by_key: dict[AlertKey, SafeAlert] = {_alert_key(a): a for a in prev_alerts}
+    current_by_key: dict[AlertKey, SafeAlert] = {
+        _alert_key(a): a for a in current_alerts
+    }
     prev_keys: set[AlertKey] = {_alert_key(a) for a in prev_alerts}
     current_keys: set[AlertKey] = {_alert_key(a) for a in current_alerts}
 
@@ -356,22 +444,19 @@ def compute_delta(
 
     # New alerts: in current but not in previous
     new_keys = current_keys - prev_keys
-    current_by_key: dict[AlertKey, SafeAlert] = {
-        _alert_key(a): a for a in current_alerts
-    }
     result.new_alerts = sorted(
-        (
-            {
-                "source": a.source,
-                "number": a.number,
-                "state": a.state,
-                "severity": a.severity,
-                "subject": a.subject,
-                "branch": a.branch,
-                "affected_component": a.affected_component,
-            }
-            for a in (current_by_key[k] for k in new_keys)
-        ),
+        (_alert_identity(current_by_key[k]) for k in new_keys),
+        key=lambda a: (a["source"], a["number"]),
+    )
+
+    reopened_keys = {
+        key
+        for key in (prev_keys & current_keys)
+        if prev_by_key[key].state not in OPEN_STATES
+        and current_by_key[key].state in OPEN_STATES
+    }
+    result.reopened_alerts = sorted(
+        (_alert_identity(current_by_key[k]) for k in reopened_keys),
         key=lambda a: (a["source"], a["number"]),
     )
 
@@ -379,6 +464,13 @@ def compute_delta(
     resolved_keys = prev_open_keys - current_open_keys
     result.resolved_keys = sorted(
         resolved_keys, key=lambda k: (k.source, k.number)
+    )
+    result.resolved_alerts = sorted(
+        (
+            _resolved_alert_identity(prev_by_key[k], current_by_key.get(k))
+            for k in resolved_keys
+        ),
+        key=lambda a: (a["source"], a["number"]),
     )
 
     # New alert groups: (source, subject, branch) tuples new in current
@@ -389,15 +481,18 @@ def compute_delta(
         new_group_keys, key=lambda g: (g.source, g.subject, g.branch)
     )
 
-    # Escalation: new alerts that are open AND severity is Critical/High
+    # Escalation: newly-open alerts that are open AND severity is Critical/High.
     escalation_alerts = [
-        a
-        for a in result.new_alerts
-        if a["state"] in OPEN_STATES
-        and a["severity"] in ESCALATION_SEVERITIES
+        alert
+        for alert in (result.new_alerts + result.reopened_alerts)
+        if alert["state"] in OPEN_STATES
+        and alert["severity"] in ESCALATION_SEVERITIES
     ]
     result.escalation_needed = bool(escalation_alerts)
-    result.escalation_alerts = escalation_alerts
+    result.escalation_alerts = sorted(
+        escalation_alerts,
+        key=lambda a: (a["source"], a["number"]),
+    )
 
     # Secret-scanning: surface-status comparison only (never payload)
     if prev_safe.secret_scanning_status != current_safe.secret_scanning_status:
@@ -457,8 +552,29 @@ def build_delta_report(
         ],
         "resolved_alert_count": len(delta.resolved_keys),
         "resolved_alerts": [
-            {"source": k.source, "number": k.number}
-            for k in delta.resolved_keys
+            {
+                "source": a["source"],
+                "number": a["number"],
+                "state": a["state"],
+                "severity": a["severity"],
+                "subject": a["subject"],
+                "branch": a["branch"],
+                "affected_component": a["affected_component"],
+            }
+            for a in delta.resolved_alerts
+        ],
+        "reopened_alert_count": len(delta.reopened_alerts),
+        "reopened_alerts": [
+            {
+                "source": a["source"],
+                "number": a["number"],
+                "state": a["state"],
+                "severity": a["severity"],
+                "subject": a["subject"],
+                "branch": a["branch"],
+                "affected_component": a["affected_component"],
+            }
+            for a in delta.reopened_alerts
         ],
         "new_group_count": len(delta.new_groups),
         "new_groups": [
@@ -477,8 +593,71 @@ def build_delta_report(
             }
             for a in delta.escalation_alerts
         ],
+        "comparison_skipped_sources": [
+            {
+                "source": s["source"],
+                "prev_status": s["prev_status"],
+                "current_status": s["current_status"],
+                "reason": s["reason"],
+            }
+            for s in delta.comparison_skipped_sources
+        ],
         "secret_scanning_status_change": delta.secret_scanning_status_change,
     }
+
+
+def _safe_report_alert_identities(alerts_raw: object) -> list[dict[str, Any]]:
+    safe_alerts: list[dict[str, Any]] = []
+    if not isinstance(alerts_raw, list):
+        return safe_alerts
+    for alert in alerts_raw:
+        if not isinstance(alert, Mapping):
+            continue
+        safe_alerts.append(
+            {
+                "source": _safe_token(alert.get("source", ""), _SOURCE_SAFE),
+                "number": _safe_int(alert.get("number", 0)),
+                "state": _safe_token(alert.get("state", "unknown"), _STATE_SAFE),
+                "severity": _safe_token(
+                    alert.get("severity", "unknown"),
+                    _SEVERITY_SAFE,
+                ),
+                "subject": _safe_text(alert.get("subject", "")),
+                "branch": _safe_text(alert.get("branch", "")),
+                "affected_component": _safe_text(
+                    alert.get("affected_component", "")
+                ),
+            }
+        )
+    return safe_alerts
+
+
+def _safe_comparison_skipped_sources(records_raw: object) -> list[dict[str, str]]:
+    safe_records: list[dict[str, str]] = []
+    if not isinstance(records_raw, list):
+        return safe_records
+    for record in records_raw:
+        if not isinstance(record, Mapping):
+            continue
+        safe_records.append(
+            {
+                "source": _safe_token(record.get("source", ""), _SOURCE_SAFE),
+                "prev_status": _safe_token(
+                    record.get("prev_status", "unknown"),
+                    _STATUS_SAFE,
+                ),
+                "current_status": _safe_token(
+                    record.get("current_status", "unknown"),
+                    _STATUS_SAFE,
+                ),
+                "reason": _safe_token(
+                    record.get("reason", COMPARISON_SKIPPED_REASON),
+                    _DELTA_REASON_SAFE,
+                    fallback=COMPARISON_SKIPPED_REASON,
+                ),
+            }
+        )
+    return safe_records
 
 
 def _build_safe_output_payload(report: Mapping[str, Any]) -> dict[str, Any]:
@@ -487,6 +666,16 @@ def _build_safe_output_payload(report: Mapping[str, Any]) -> dict[str, Any]:
     current_raw = report.get("current_readout")
     prev = prev_raw if isinstance(prev_raw, Mapping) else {}
     current = current_raw if isinstance(current_raw, Mapping) else {}
+    safe_new_alerts = _safe_report_alert_identities(report.get("new_alerts", []))
+    safe_resolved_alerts = _safe_report_alert_identities(
+        report.get("resolved_alerts", [])
+    )
+    safe_reopened_alerts = _safe_report_alert_identities(
+        report.get("reopened_alerts", [])
+    )
+    safe_skipped_sources = _safe_comparison_skipped_sources(
+        report.get("comparison_skipped_sources", [])
+    )
 
     safe_new_groups: list[dict[str, Any]] = []
     raw_new_groups = report.get("new_groups", [])
@@ -542,18 +731,24 @@ def _build_safe_output_payload(report: Mapping[str, Any]) -> dict[str, Any]:
         "counts": {
             "new_alerts": _safe_int(report.get("new_alert_count", 0)),
             "resolved_alerts": _safe_int(report.get("resolved_alert_count", 0)),
+            "reopened_alerts": _safe_int(report.get("reopened_alert_count", 0)),
             "new_groups": _safe_int(report.get("new_group_count", 0)),
             "escalation_alerts": _safe_int(
                 report.get("escalation_alert_count", 0)
             ),
+            "comparison_skipped_sources": _safe_int(len(safe_skipped_sources)),
         },
         "escalation_needed": bool(report.get("escalation_needed", False)),
+        "new_alerts": safe_new_alerts,
+        "resolved_alerts": safe_resolved_alerts,
+        "reopened_alerts": safe_reopened_alerts,
         "new_groups": safe_new_groups,
         "escalations": safe_escalations,
         "surface_status": {
             "secret_scanning_change": _safe_text(
                 report.get("secret_scanning_status_change") or ""
-            )
+            ),
+            "comparison_skipped_sources": safe_skipped_sources,
         },
     }
 

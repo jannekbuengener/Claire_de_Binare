@@ -88,7 +88,7 @@ jobs:
 
       - name: Run security alert readout
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.CDB_GH_ALERTS_TOKEN != '' && secrets.CDB_GH_ALERTS_TOKEN || github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -96,9 +96,27 @@ jobs:
           date_dir="${{ steps.resolve.outputs.date_dir }}"
           mkdir -p "$date_dir"
 
+          set +e
           python3 scripts/audit/github_security_quality_readout.py \
             --repo "${GITHUB_REPOSITORY}" \
             --out-dir "$date_dir"
+          READOUT_EXIT=$?
+          set -e
+
+          if [[ $READOUT_EXIT -eq 1 ]]; then
+            echo "::error::Readout script failed; no readable alert surfaces were available."
+            exit 1
+          fi
+
+          if [[ $READOUT_EXIT -eq 2 ]]; then
+            echo "READOUT_STATUS=partial" >> "$GITHUB_ENV"
+            echo "::warning::Security Alert Readout: PARTIAL readout written; unavailable surfaces will be compared fail-closed."
+          elif [[ $READOUT_EXIT -ne 0 ]]; then
+            echo "::error::Readout script failed with unexpected exit code $READOUT_EXIT."
+            exit 1
+          else
+            echo "READOUT_STATUS=ok" >> "$GITHUB_ENV"
+          fi
 
           echo "Readout written to $date_dir"
           ls -lh "$date_dir"

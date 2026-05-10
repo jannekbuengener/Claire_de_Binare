@@ -37,6 +37,8 @@ def _make_readout(
     status: str = "PASS",
     total_alerts: int = 0,
     alerts: list[dict] | None = None,
+    code_scanning_surface_status: str = "readable",
+    dependabot_surface_status: str = "readable",
     secret_scanning_surface_status: str = "redacted",
 ) -> dict:
     """Build a minimal github_security_quality_readout.v1 dict for testing."""
@@ -48,8 +50,8 @@ def _make_readout(
         "summary": {"total_alerts": total_alerts},
         "alerts": alerts or [],
         "surfaces": [
-            {"source": "code_scanning", "status": "ok"},
-            {"source": "dependabot", "status": "ok"},
+            {"source": "code_scanning", "status": code_scanning_surface_status},
+            {"source": "dependabot", "status": dependabot_surface_status},
             {"source": "secret_scanning", "status": secret_scanning_surface_status},
         ],
     }
@@ -276,6 +278,50 @@ class TestComputeDeltaResolvedAlerts:
         assert any(k.number == 1 for k in delta.resolved_keys)
 
 
+@pytest.mark.unit
+class TestComputeDeltaUnavailableSurfaces:
+    def test_current_unavailable_surface_not_counted_as_resolved(self):
+        prev = _make_readout(
+            status="PARTIAL",
+            alerts=[_cs_alert(1)],
+            code_scanning_surface_status="readable",
+        )
+        current = _make_readout(
+            status="PARTIAL",
+            alerts=[],
+            code_scanning_surface_status="unavailable",
+        )
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
+        assert delta.resolved_keys == []
+        assert any(
+            source["source"] == "code_scanning"
+            for source in delta.comparison_skipped_sources
+        )
+
+    def test_previous_unavailable_surface_not_counted_as_new(self):
+        prev = _make_readout(
+            status="PARTIAL",
+            alerts=[],
+            dependabot_surface_status="unavailable",
+        )
+        current = _make_readout(
+            alerts=[_dep_alert(7)],
+            dependabot_surface_status="readable",
+        )
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
+        assert delta.new_alerts == []
+        assert any(
+            source["source"] == "dependabot"
+            for source in delta.comparison_skipped_sources
+        )
+
+
 # ---------------------------------------------------------------------------
 # Tests: compute_delta — escalation
 # ---------------------------------------------------------------------------
@@ -354,6 +400,21 @@ class TestComputeDeltaEscalation:
             current_safe=normalize_readout_for_delta(current),
         )
         assert delta.escalation_needed is False
+
+    def test_reopened_high_alert_triggers_escalation(self):
+        prev = _make_readout(
+            alerts=[_cs_alert(1, state="dismissed", severity="high")]
+        )
+        current = _make_readout(
+            alerts=[_cs_alert(1, state="open", severity="high")]
+        )
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
+        assert delta.escalation_needed is True
+        assert len(delta.reopened_alerts) == 1
+        assert delta.reopened_alerts[0]["number"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -726,6 +787,50 @@ class TestGenerateDelta:
 
         loaded = json.loads((out_dir / "security_alert_delta.json").read_text())
         assert loaded["schema_version"] == SCHEMA_VERSION
+
+    def test_json_output_preserves_safe_alert_identities(self, tmp_path: Path):
+        prev_readout = _make_readout(
+            status="PARTIAL",
+            alerts=[
+                _cs_alert(1, state="open", severity="medium"),
+                _cs_alert(2, state="dismissed", severity="high"),
+            ],
+            dependabot_surface_status="unavailable",
+        )
+        current_readout = _make_readout(
+            status="PASS",
+            alerts=[
+                _cs_alert(2, state="open", severity="high"),
+                _cs_alert(3, state="open", severity="medium"),
+                _dep_alert(4, severity="low"),
+                {
+                    "source": "secret_scanning",
+                    "number": 8,
+                    "state": "open",
+                    "secret": "ghp_SENSITIVE",
+                    "locations_url": "https://api.github.com/...",
+                },
+            ],
+            dependabot_surface_status="readable",
+            secret_scanning_surface_status="redacted",
+        )
+        prev_path = self._write_readout(tmp_path / "prev.json", prev_readout)
+        current_path = self._write_readout(tmp_path / "current.json", current_readout)
+        out_dir = tmp_path / "output"
+
+        generate_delta(prev_path=prev_path, current_path=current_path, out_dir=out_dir)
+
+        json_text = (out_dir / "security_alert_delta.json").read_text()
+        loaded = json.loads(json_text)
+        assert any(alert["number"] == 3 for alert in loaded["new_alerts"])
+        assert any(alert["number"] == 1 for alert in loaded["resolved_alerts"])
+        assert any(alert["number"] == 2 for alert in loaded["reopened_alerts"])
+        assert any(
+            source["source"] == "dependabot"
+            for source in loaded["surface_status"]["comparison_skipped_sources"]
+        )
+        assert "ghp_SENSITIVE" not in json_text
+        assert "locations_url" not in json_text
 
     def test_escalation_reflected_in_report(self, tmp_path: Path):
         prev_path = self._write_readout(tmp_path / "prev.json", _make_readout(alerts=[]))
