@@ -13,8 +13,6 @@
 - **main**: green (HEAD `2fbeebafeaaa`, PR #2424 gemergt)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2289 (Security Alert Readout Epic — offen, persist-via-pr Slice geliefert via PR #2424; offener Scope: Issue-Automation, #2290 upstream-blocked)
-  - #2423 (Reconcile control docs nach PR #2422 — agent:codex)
-  - #2408/#2410/#2412/#2414 (Architecture docs reconcile nach PRs #2407/#2409/#2411/#2413 — agent:codex)
 - **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
 
 ---
