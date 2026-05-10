@@ -3,15 +3,18 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-05
+**Last Updated**: 2026-05-10
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-05-05)
+## Repo / Engineering Status (2026-05-10)
 
-- **main**: green
-- **Active GitHub focus (manual, non-exhaustive)**: #2115 (Wave-14 Anchor — offen, Closure pending GO GITHUB LIVE)
+- **main**: green (HEAD `2fbeebafeaaa`, PR #2424 gemergt)
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #2289 (Security Alert Readout Epic — offen, persist-via-pr Slice geliefert via PR #2424; offener Scope: Issue-Automation, #2290 upstream-blocked)
+  - #2423 (Reconcile control docs nach PR #2422 — agent:codex)
+  - #2408/#2410/#2412/#2414 (Architecture docs reconcile nach PRs #2407/#2409/#2411/#2413 — agent:codex)
 - **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
 
 ---
@@ -88,7 +91,10 @@
 - **Session 2026-04-26 (#1932 Task 2/3)**: First ARVP Compare→Calibration pilot evidence documented repo-backed in `docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md`. Pilot run `replay-ae0be21cc75e-0001` identified pessimistic simulator drift: Paper `1 Order / 1 Fill`, Replay `0 Orders / 0 Fills`, order/fill deltas `-1/-1`. Source artifacts remain local under `artifacts/calibration_run_001/`; no LR-/Live-/Echtgeld implication. #1905 is no longer evidence-empty but remains a separate governance/status follow-up.
 - **Queued (2026-04-20)**: Non-blocking infrastructure PRs in backlog: PR #1811 (redis_exporter healthcheck: wget → nc), PR #1812 (backlog_curation regex ReDoS hardening).
 - **Session 2026-05-05 (Wave-13/14 Context-Intelligence Epic #1976)**: Wave-13 Gates-Doc + Wave-14 Evidence/Claim/Memory/Trust Services implementiert und gemergt. PR #2342 (`014edb5d`) — docs(surrealdb): define wave-13 completion gates. Closes #2103/#2114. PR #2343 (`4db9892a`) — feat(wave14): evidence_lookup.py, claim_resolver.py, memory_read.py, trust_summary.py, context_evidence_memory_tools.py (4 MCP-Handler), 53 Unit-Tests, Fixture wave14_v1.json. Closes #2116/#2117/#2120/#2121/#2123/#2125/#2126. CI-Fix (datetime.now → cdb_utcnow): commit `430c49c`. Wave-14 Anchor #2115 noch offen (Closure pending GO GITHUB LIVE). Operator-Rule-Update: Gate-Trennung GO ADMIN MERGE / GO MERGE / GO REVIEW THREAD RESOLVE / GO GITHUB LIVE / GO COMMIT / GO PUSH ab sofort eingehalten.
-- **Merged (2026-05-06, Wave-15 #2147)**: PR #2348 (`b092e64`) — feat(wave15): add contradiction scan CLI. Closes #2147. Implements `scan-contradictions`, `show-contradiction`, `report-contradictions` subcommands (argparse, stdlib only); exit codes 0/1/2; `--format json|markdown`; `overridden` bucket for false_positive/accepted_risk findings. 3 new files: `tools/surrealdb/contradiction_cli.py`, `tests/unit/surrealdb/test_contradiction_cli.py` (21 tests), `tests/fixtures/surrealdb/contradiction_scan/sample_bundle.json`. #2147 auto-closed post-merge. #2145 (Wave-15 anchor) remains OPEN.
+- **Merged (2026-05-06, Wave-15 #2147)**: PR #2348 (`b092e64`) — feat(wave15): add contradiction scan CLI. Closes #2147. Implements `scan-contradictions`, `show-contradiction`, `report-contradictions` subcommands (argparse, stdlib only); exit codes 0/1/2; `--format json|markdown`; `overridden` bucket for false_positive/accepted_risk findings. 3 new files: `tools/surrealdb/contradiction_cli.py`, `tests/unit/surrealdb/test_contradiction_cli.py` (21 tests), `tests/fixtures/surrealdb/contradiction_scan/sample_bundle.json`. #2147 auto-closed post-merge. #2145 (Wave-15 anchor) CLOSED (jannekbuengener, 2026-05-06).
+- **Closed (2026-05-06, Wave-14 Anchor)**: #2115 geschlossen von jannekbuengener. Alle Kind-Deliverables #2116–#2128 CLOSED. Abschluss-Kommentar vom Maintainer gepostet. CURRENT_STATUS.md-Fokus-Block entsprechend aktualisiert.
+- **Merged (2026-05-10, Security Alert Readout #2289 — fix-Slice)**: PR #2422 (`3c6ea6b6`) — fix(security): disable direct publish in alert readout workflow. Direktes Issue-Publish aus Normalbetrieb entfernt; Workflow produziert nur noch Step-Summary + Artefakt. TRIAGE_RUNBOOK.md §9 Publish-Mode-Tabelle aktualisiert. CONTROL_REGISTER.md Workflow-Control-Note hinzugefuegt.
+- **Merged (2026-05-10, Security Alert Readout #2289 — persist-via-pr Slice)**: PR #2424 (`2fbeeba`) — feat(security): add persist_via_pr mode to alert readout workflow. Zweiter Job `persist-via-pr` ergaenzt: Branch `chore/security-readout/YYYY-MM-DD`, `[skip ci]`-Commit, Push, `gh pr create --base main`, kein Auto-Merge; Dedupe-Guard; DATE-Validation fail-closed. Permissions job-scoped (`contents: write` + `pull-requests: write` nur fuer diesen Job). TRIAGE_RUNBOOK.md §9 nachgezogen. #2289 Progress-Update-Kommentar gepostet. CONTROL_REGISTER.md Workflow-Control-Note hinzugefuegt.
 
 ---
 
