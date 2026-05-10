@@ -91,7 +91,7 @@ def _resolve_password(args: argparse.Namespace) -> str:
         if pw:
             return pw
 
-    sys.exit(
+    raise SystemExit(
         "ERROR: Redis password not found.\n"
         "Set REDIS_PASSWORD env var, use --redis-password-file, or place the\n"
         f"password in: {_DEFAULT_SECRETS_FILE}"

@@ -290,6 +290,7 @@ def _init_with_retry(
             if attempt == retries:
                 raise
             time.sleep(delay)
+    raise RuntimeError(f"{name}: exhausted all {retries} retries without success")
 
 
 def init_services():

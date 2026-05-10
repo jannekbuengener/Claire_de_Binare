@@ -499,13 +499,14 @@ Examples:
     try:
         if args.check:
             return guard.validate_all(task_id_filter=args.task_id)
-        elif args.report:
+        if args.report:
             return guard.generate_report()
     except Exception as e:
         print(f"[LR-004] FATAL ERROR: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         return 2
+    return 2
 
 
 if __name__ == "__main__":
