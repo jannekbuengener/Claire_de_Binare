@@ -556,7 +556,6 @@ def test_db_backed_missing_required_field_raises() -> None:
     # Drop 'close' (index 4) from row 5 by returning only 6 columns
     bad_row = rows[5][:4] + rows[5][5:]  # skip index 4 (close)
     rows = rows[:5] + [bad_row] + rows[6:]
-    conn = _make_mock_conn(rows)
     spec = _make_db_spec()
     # The mapping in load() uses positional indices, so missing column causes IndexError
     # which is caught by the try/except around cursor.execute/fetchall —

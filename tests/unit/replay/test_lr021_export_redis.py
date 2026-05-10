@@ -378,7 +378,7 @@ class TestExportEnvelopesWithHashes:
         entries = [_stream_entry_json_blob("1-0", env)]
         output = io.StringIO()
 
-        summary = export_envelopes(
+        export_envelopes(
             iter(entries), output,
             include_hashes=False, compute_chain=True,
         )

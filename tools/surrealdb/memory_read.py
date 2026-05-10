@@ -38,12 +38,6 @@ SUPPORTED_MODES = frozenset(
     }
 )
 
-# Memory trust levels (ascending)
-MEMORY_TRUST_LEVELS = ("stale", "superseded", "weak", "evidence_backed", "source_backed")
-
-# Modes that REQUIRE scope for safety
-_SCOPE_REQUIRED_MODES = frozenset({"by_scope"})
-
 
 class MemoryReadError(ValueError):
     """Raised when memory read inputs are invalid or unsafe."""

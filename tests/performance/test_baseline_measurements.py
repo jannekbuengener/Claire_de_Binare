@@ -133,7 +133,6 @@ class TestLatencyBaselines:
         require_perf_run()
 
         def approve_signal():
-            signal = {"type": "BUY", "symbol": "BTCUSDT", "quantity": 0.01}
             # Simulate risk checks
             checks = {
                 "position_limit": True,
@@ -182,9 +181,6 @@ class TestLatencyBaselines:
         def full_pipeline():
             # Step 1: Market data
             market_data = {"symbol": "BTCUSDT", "price": 50000.0}
-
-            # Step 2: Signal generation
-            signal = {"type": "BUY", "symbol": market_data["symbol"]}
 
             # Step 3: Risk approval
             approved = True
@@ -266,7 +262,6 @@ class TestThroughputBaselines:
         require_perf_run()
 
         def process_order():
-            order = {"symbol": "BTCUSDT", "side": "BUY", "qty": 0.01}
             result = {"order_id": "test", "status": "FILLED"}
             return result
 

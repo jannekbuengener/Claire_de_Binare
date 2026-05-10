@@ -49,11 +49,6 @@ CLAIM_STATUSES = frozenset(
     }
 )
 
-# Statuses that indicate a claim needs human attention
-_ATTENTION_STATUSES = frozenset({"disputed", "stale", "invalidated"})
-# Statuses that indicate a claim is weak
-_WEAK_STATUSES = frozenset({"proposed", "weakly_supported"})
-
 
 class ClaimResolverError(ValueError):
     """Raised when claim resolution inputs are invalid or unsafe."""

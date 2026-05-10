@@ -79,8 +79,6 @@ class TestEMA:
         for price in [10, 20, 30]:
             ema.update(price)
 
-        prev_ema = ema.value  # 20.0
-
         ema.update(40)
         # EMA = 40 * 0.5 + 20 * 0.5 = 30
         assert ema.value == 30.0
@@ -199,7 +197,7 @@ class TestMACD:
             macd.update(price)
 
         for price in rising:
-            result = macd.update(price)
+            macd.update(price)
             if macd.is_bullish_crossover:
                 break
         else:

@@ -543,7 +543,7 @@ class TestRunWalkForwardManifestArtifact:
 
     def test_manifest_written_with_failed_windows(self, tmp_path: Path) -> None:
         spec = _spec(windows=(_window("w1", 0, 1000),))
-        manifest = run_walk_forward(spec, run_fn=_failure_fn, output_dir=tmp_path)
+        run_walk_forward(spec, run_fn=_failure_fn, output_dir=tmp_path)
         manifest_path = tmp_path / spec.walk_forward_id / "walk_forward_manifest.json"
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
         assert data["failed_count"] == 1

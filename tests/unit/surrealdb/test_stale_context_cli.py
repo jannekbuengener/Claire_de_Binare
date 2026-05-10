@@ -47,7 +47,6 @@ from tools.surrealdb.stale_knowledge_scan import StaleKnowledgeScanResult
 # ── Fixed timestamps for determinism ─────────────────────────────────────────
 
 _AS_OF = "2026-05-06T12:00:00+00:00"
-_PAST = "2026-01-01T00:00:00+00:00"
 
 # ── Inline fixtures ───────────────────────────────────────────────────────────
 
