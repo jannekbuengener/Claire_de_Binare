@@ -17,14 +17,12 @@ from audit.security_alert_delta import (  # noqa: E402
     AlertGroupKey,
     AlertKey,
     SecurityAlertDeltaError,
-    _extract_numbered_alerts,
-    _extract_surface_status,
-    _safe_readout_meta,
     build_delta_report,
     build_markdown_summary,
     compute_delta,
     generate_delta,
     main,
+    normalize_readout_for_delta,
 )
 
 
@@ -115,22 +113,22 @@ def _dep_alert(
 
 
 # ---------------------------------------------------------------------------
-# Tests: _extract_numbered_alerts
+# Tests: normalize_readout_for_delta
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.unit
-class TestExtractNumberedAlerts:
-    def test_excludes_secret_scanning(self):
+class TestNormalizeReadout:
+    def test_excludes_secret_scanning_alerts(self):
         readout = _make_readout(
             alerts=[
                 _cs_alert(1),
                 {"source": "secret_scanning", "number": 99, "state": "open"},
             ]
         )
-        result = _extract_numbered_alerts(readout)
-        assert len(result) == 1
-        assert result[0]["source"] == "code_scanning"
+        safe = normalize_readout_for_delta(readout)
+        assert len(safe.alerts) == 1
+        assert safe.alerts[0].source == "code_scanning"
 
     def test_excludes_alerts_without_integer_number(self):
         readout = _make_readout(
@@ -139,41 +137,39 @@ class TestExtractNumberedAlerts:
                 _dep_alert(2),
             ]
         )
-        result = _extract_numbered_alerts(readout)
-        assert len(result) == 1
-        assert result[0]["number"] == 2
+        safe = normalize_readout_for_delta(readout)
+        assert len(safe.alerts) == 1
+        assert safe.alerts[0].number == 2
 
-    def test_returns_empty_for_missing_alerts_key(self):
+    def test_returns_empty_alerts_for_missing_key(self):
         readout = {
             "schema_version": "github_security_quality_readout.v1",
             "reference_now_utc": "2026-05-01T00:00:00Z",
         }
-        assert _extract_numbered_alerts(readout) == []
+        safe = normalize_readout_for_delta(readout)
+        assert safe.alerts == ()
 
-    def test_returns_empty_for_non_list_alerts(self):
+    def test_returns_empty_alerts_for_non_list_alerts(self):
         readout = _make_readout()
         readout["alerts"] = "not-a-list"
-        assert _extract_numbered_alerts(readout) == []
+        safe = normalize_readout_for_delta(readout)
+        assert safe.alerts == ()
 
-
-# ---------------------------------------------------------------------------
-# Tests: _extract_surface_status
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.unit
-class TestExtractSurfaceStatus:
-    def test_returns_status_for_known_source(self):
+    def test_secret_scanning_surface_status_extracted(self):
         readout = _make_readout(secret_scanning_surface_status="redacted")
-        assert _extract_surface_status(readout, "secret_scanning") == "redacted"
+        safe = normalize_readout_for_delta(readout)
+        assert safe.secret_scanning_status == "redacted"
 
-    def test_returns_none_for_unknown_source(self):
+    def test_unknown_surface_status_falls_back(self):
         readout = _make_readout()
-        assert _extract_surface_status(readout, "nonexistent") is None
+        readout["surfaces"] = []
+        safe = normalize_readout_for_delta(readout)
+        assert safe.secret_scanning_status == "unknown"
 
-    def test_returns_none_for_missing_surfaces(self):
-        readout = {"schema_version": "github_security_quality_readout.v1"}
-        assert _extract_surface_status(readout, "code_scanning") is None
+    def test_status_extracted_safely(self):
+        readout = _make_readout(status="PASS")
+        safe = normalize_readout_for_delta(readout)
+        assert safe.status == "PASS"
 
 
 # ---------------------------------------------------------------------------
@@ -186,20 +182,29 @@ class TestComputeDeltaNewAlerts:
     def test_empty_prev_all_current_are_new(self):
         prev = _make_readout(alerts=[])
         current = _make_readout(alerts=[_cs_alert(1), _cs_alert(2)])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.new_alerts) == 2
 
     def test_same_alerts_no_new_alerts(self):
         alerts = [_cs_alert(1), _dep_alert(2)]
         prev = _make_readout(alerts=alerts)
         current = _make_readout(alerts=alerts)
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.new_alerts == []
 
     def test_new_alert_by_number(self):
         prev = _make_readout(alerts=[_cs_alert(1)])
         current = _make_readout(alerts=[_cs_alert(1), _cs_alert(2)])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.new_alerts) == 1
         assert delta.new_alerts[0]["number"] == 2
 
@@ -208,7 +213,10 @@ class TestComputeDeltaNewAlerts:
         current = _make_readout(
             alerts=[_dep_alert(10), _cs_alert(5), _cs_alert(3)]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         numbers = [(a["source"], a["number"]) for a in delta.new_alerts]
         assert numbers == [("code_scanning", 3), ("code_scanning", 5), ("dependabot", 10)]
 
@@ -220,7 +228,10 @@ class TestComputeDeltaNewAlerts:
                 _cs_alert(1),
             ]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.new_alerts) == 1
         assert delta.new_alerts[0]["source"] == "code_scanning"
 
@@ -236,7 +247,10 @@ class TestComputeDeltaResolvedAlerts:
         alerts = [_cs_alert(1), _cs_alert(2)]
         prev = _make_readout(alerts=alerts)
         current = _make_readout(alerts=alerts)
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.resolved_keys == []
 
     def test_resolved_when_open_alert_disappears_from_current(self):
@@ -245,14 +259,20 @@ class TestComputeDeltaResolvedAlerts:
         current = _make_readout(
             alerts=[_cs_alert(1, state="dismissed"), _cs_alert(2)]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.resolved_keys) == 1
         assert delta.resolved_keys[0] == AlertKey(source="code_scanning", number=1)
 
     def test_alert_missing_from_current_counts_as_resolved(self):
         prev = _make_readout(alerts=[_cs_alert(1)])
         current = _make_readout(alerts=[])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert any(k.number == 1 for k in delta.resolved_keys)
 
 
@@ -268,34 +288,49 @@ class TestComputeDeltaEscalation:
         current = _make_readout(
             alerts=[_cs_alert(1, severity="critical")]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is True
         assert len(delta.escalation_alerts) == 1
 
     def test_new_high_open_alert_triggers_escalation(self):
         prev = _make_readout(alerts=[])
         current = _make_readout(alerts=[_cs_alert(1, severity="high")])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is True
 
     def test_codeql_error_severity_triggers_escalation(self):
         # CodeQL uses "error" as its highest severity — maps to escalation.
         prev = _make_readout(alerts=[])
         current = _make_readout(alerts=[_cs_alert(1, severity="error")])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is True
 
     def test_new_medium_alert_does_not_escalate(self):
         prev = _make_readout(alerts=[])
         current = _make_readout(alerts=[_cs_alert(1, severity="medium")])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is False
         assert delta.escalation_alerts == []
 
     def test_new_low_alert_does_not_escalate(self):
         prev = _make_readout(alerts=[])
         current = _make_readout(alerts=[_dep_alert(1, severity="low")])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is False
 
     def test_dismissed_high_alert_does_not_escalate(self):
@@ -304,14 +339,20 @@ class TestComputeDeltaEscalation:
         current = _make_readout(
             alerts=[_cs_alert(1, severity="high", state="dismissed")]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is False
 
     def test_pre_existing_high_alert_does_not_escalate(self):
         alert = _cs_alert(1, severity="high")
         prev = _make_readout(alerts=[alert])
         current = _make_readout(alerts=[alert])
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.escalation_needed is False
 
 
@@ -327,7 +368,10 @@ class TestComputeDeltaNewGroups:
         current = _make_readout(
             alerts=[_cs_alert(1, subject="py/rule-a"), _cs_alert(2, subject="py/rule-b")]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.new_groups) == 1
         assert delta.new_groups[0] == AlertGroupKey(
             source="code_scanning", subject="py/rule-b", branch="main"
@@ -337,7 +381,10 @@ class TestComputeDeltaNewGroups:
         alerts = [_cs_alert(1, subject="py/rule-a")]
         prev = _make_readout(alerts=alerts)
         current = _make_readout(alerts=alerts)
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.new_groups == []
 
     def test_same_subject_different_branch_is_new_group(self):
@@ -350,7 +397,10 @@ class TestComputeDeltaNewGroups:
                 _cs_alert(2, subject="py/rule-a", branch="feature/x"),
             ]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert len(delta.new_groups) == 1
         assert delta.new_groups[0].branch == "feature/x"
 
@@ -365,13 +415,19 @@ class TestComputeDeltaSecretScanning:
     def test_no_change_in_secret_scanning_status(self):
         prev = _make_readout(secret_scanning_surface_status="redacted")
         current = _make_readout(secret_scanning_surface_status="redacted")
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.secret_scanning_status_change is None
 
     def test_secret_scanning_status_change_detected(self):
         prev = _make_readout(secret_scanning_surface_status="ok")
         current = _make_readout(secret_scanning_surface_status="redacted")
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.secret_scanning_status_change is not None
         assert "ok" in delta.secret_scanning_status_change
         assert "redacted" in delta.secret_scanning_status_change
@@ -391,7 +447,10 @@ class TestComputeDeltaSecretScanning:
                 }
             ]
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         # secret_scanning alerts are excluded from new_alerts entirely
         assert delta.new_alerts == []
         assert delta.escalation_needed is False
@@ -399,7 +458,10 @@ class TestComputeDeltaSecretScanning:
     def test_reference_timestamps_captured(self):
         prev = _make_readout(reference_now_utc="2026-05-01T00:00:00Z")
         current = _make_readout(reference_now_utc="2026-05-08T00:00:00Z")
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        delta = compute_delta(
+            prev_safe=normalize_readout_for_delta(prev),
+            current_safe=normalize_readout_for_delta(current),
+        )
         assert delta.prev_reference_now_utc == "2026-05-01T00:00:00Z"
         assert delta.current_reference_now_utc == "2026-05-08T00:00:00Z"
 
@@ -477,13 +539,15 @@ class TestBuildDeltaReport:
             alerts=current_alerts,
             total_alerts=len(current_alerts),
         )
-        delta = compute_delta(prev_readout=prev, current_readout=current)
+        prev_safe = normalize_readout_for_delta(prev)
+        current_safe = normalize_readout_for_delta(current)
+        delta = compute_delta(prev_safe=prev_safe, current_safe=current_safe)
         return build_delta_report(
             prev_path=Path("/prev.json"),
             current_path=Path("/current.json"),
             delta=delta,
-            prev_meta=_safe_readout_meta(prev),
-            current_meta=_safe_readout_meta(current),
+            prev_safe=prev_safe,
+            current_safe=current_safe,
         )
 
     def test_schema_version(self):
