@@ -63,7 +63,7 @@ class DatasetResult:
 class DatasetProvider(Protocol):
     """Protocol for all ARVP dataset providers."""
 
-    def load(self, spec: DatasetSpec) -> DatasetResult: ...
+    def load(self, spec: DatasetSpec) -> DatasetResult: pass
 
 
 def _validate_candle_series(candles: list[dict], source_label: str) -> None:

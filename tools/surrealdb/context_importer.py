@@ -1002,15 +1002,15 @@ class ContextApplyAdapter(Protocol):
 
     def apply_create(
         self, table: str, record_id: str, payload: dict[str, Any]
-    ) -> None: ...
+    ) -> None: pass
 
     def apply_update(
         self, table: str, record_id: str, payload: dict[str, Any]
-    ) -> None: ...
+    ) -> None: pass
 
     def apply_tombstone(
         self, table: str, record_id: str, payload: dict[str, Any]
-    ) -> None: ...
+    ) -> None: pass
 
 
 class InMemoryContextApplyAdapter:

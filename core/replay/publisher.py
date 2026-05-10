@@ -4,9 +4,9 @@ from typing import Protocol
 
 
 class _RedisPublisher(Protocol):
-    def publish(self, channel: str, message: str) -> None: ...
+    def publish(self, channel: str, message: str) -> None: pass
 
-    def xadd(self, stream: str, values: dict[str, str], maxlen: int) -> None: ...
+    def xadd(self, stream: str, values: dict[str, str], maxlen: int) -> None: pass
 
 
 class EnvelopePublisher:

@@ -45,11 +45,11 @@ class ClockContextProtocol(Protocol):
 
     def now_ts_ms(self) -> int:
         """Return current time as milliseconds since Unix epoch."""
-        ...
+        pass
 
     def now_iso(self) -> str:
         """Return current time as UTC ISO-8601 string with millisecond precision."""
-        ...
+        pass
 
 
 @dataclass(frozen=True, slots=True)
