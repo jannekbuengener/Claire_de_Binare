@@ -13,14 +13,13 @@ sys.path.insert(0, str(repo_root / "scripts"))
 sys.path.insert(0, str(repo_root))
 
 from audit.security_alert_delta import (  # noqa: E402
-    ESCALATION_SEVERITIES,
     SCHEMA_VERSION,
     AlertGroupKey,
     AlertKey,
-    DeltaResult,
     SecurityAlertDeltaError,
     _extract_numbered_alerts,
     _extract_surface_status,
+    _safe_readout_meta,
     build_delta_report,
     build_markdown_summary,
     compute_delta,
@@ -483,8 +482,8 @@ class TestBuildDeltaReport:
             prev_path=Path("/prev.json"),
             current_path=Path("/current.json"),
             delta=delta,
-            prev_readout=prev,
-            current_readout=current,
+            prev_meta=_safe_readout_meta(prev),
+            current_meta=_safe_readout_meta(current),
         )
 
     def test_schema_version(self):

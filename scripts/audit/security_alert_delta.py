@@ -141,6 +141,24 @@ def _group_key(alert: dict[str, Any]) -> AlertGroupKey:
     )
 
 
+def _sanitize_alert(alert: dict[str, Any]) -> dict[str, Any]:
+    """Return a sanitized dict containing only safe, non-sensitive alert fields.
+
+    Strips all payload, URL, and raw-content fields from the alert object.
+    Only code_scanning and dependabot alerts (never secret_scanning) are
+    passed here, enforced by the NUMBERED_SOURCES filter upstream.
+    """
+    return {
+        "source": str(alert.get("source", "")),
+        "number": int(alert["number"]),
+        "state": str(alert.get("state", "")),
+        "severity": str(alert.get("severity", "")),
+        "subject": str(alert.get("subject") or alert.get("rule_or_advisory") or ""),
+        "branch": str(alert.get("branch") or ""),
+        "affected_component": str(alert.get("affected_component") or ""),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Core delta computation
 # ---------------------------------------------------------------------------
@@ -185,8 +203,8 @@ def compute_delta(
         _alert_key(a): a for a in current_alerts
     }
     result.new_alerts = sorted(
-        (current_by_key[k] for k in new_keys),
-        key=lambda a: (str(a.get("source", "")), int(a.get("number", 0))),
+        (_sanitize_alert(current_by_key[k]) for k in new_keys),
+        key=lambda a: (a["source"], a["number"]),
     )
 
     # Resolved: previously open but no longer open in current
@@ -207,8 +225,8 @@ def compute_delta(
     escalation_alerts = [
         a
         for a in result.new_alerts
-        if a.get("state") in OPEN_STATES
-        and str(a.get("severity", "")).lower() in ESCALATION_SEVERITIES
+        if a["state"] in OPEN_STATES
+        and a["severity"].lower() in ESCALATION_SEVERITIES
     ]
     result.escalation_needed = bool(escalation_alerts)
     result.escalation_alerts = escalation_alerts
@@ -231,45 +249,59 @@ def compute_delta(
 # ---------------------------------------------------------------------------
 
 
+def _safe_readout_meta(readout: dict[str, Any]) -> dict[str, Any]:
+    """Extract only non-sensitive scalar metadata from a raw readout dict.
+
+    Never returns alert payloads or any potentially sensitive field.
+    Use this to break the taint chain from raw readout data before passing
+    information to reporting or storage functions.
+    """
+    summary = readout.get("summary")
+    total = 0
+    if isinstance(summary, dict):
+        try:
+            total = int(summary.get("total_alerts", 0))
+        except (TypeError, ValueError):
+            total = 0
+    return {
+        "status": str(readout.get("status", "unknown")),
+        "total_alerts": total,
+    }
+
+
 def build_delta_report(
     *,
     prev_path: Path,
     current_path: Path,
     delta: DeltaResult,
-    prev_readout: dict[str, Any],
-    current_readout: dict[str, Any],
+    prev_meta: dict[str, Any],
+    current_meta: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the persistable delta report dict (schema_version = security_alert_delta.v1)."""
-    prev_summary: dict[str, Any] = (
-        prev_readout.get("summary") or {}  # type: ignore[assignment]
-    )
-    current_summary: dict[str, Any] = (
-        current_readout.get("summary") or {}  # type: ignore[assignment]
-    )
     return {
         "schema_version": SCHEMA_VERSION,
         "prev_readout": {
             "path": str(prev_path),
             "reference_now_utc": delta.prev_reference_now_utc,
-            "status": str(prev_readout.get("status", "unknown")),
-            "total_alerts": int(prev_summary.get("total_alerts", 0)),
+            "status": prev_meta["status"],
+            "total_alerts": prev_meta["total_alerts"],
         },
         "current_readout": {
             "path": str(current_path),
             "reference_now_utc": delta.current_reference_now_utc,
-            "status": str(current_readout.get("status", "unknown")),
-            "total_alerts": int(current_summary.get("total_alerts", 0)),
+            "status": current_meta["status"],
+            "total_alerts": current_meta["total_alerts"],
         },
         "new_alert_count": len(delta.new_alerts),
         "new_alerts": [
             {
-                "source": str(a.get("source", "")),
-                "number": a.get("number"),
-                "state": str(a.get("state", "")),
-                "severity": str(a.get("severity", "")),
-                "subject": str(a.get("subject") or ""),
-                "branch": str(a.get("branch") or ""),
-                "affected_component": str(a.get("affected_component") or ""),
+                "source": a["source"],
+                "number": a["number"],
+                "state": a["state"],
+                "severity": a["severity"],
+                "subject": a["subject"],
+                "branch": a["branch"],
+                "affected_component": a["affected_component"],
             }
             for a in delta.new_alerts
         ],
@@ -287,11 +319,11 @@ def build_delta_report(
         "escalation_alert_count": len(delta.escalation_alerts),
         "escalation_alerts": [
             {
-                "source": str(a.get("source", "")),
-                "number": a.get("number"),
-                "severity": str(a.get("severity", "")),
-                "subject": str(a.get("subject") or ""),
-                "branch": str(a.get("branch") or ""),
+                "source": a["source"],
+                "number": a["number"],
+                "severity": a["severity"],
+                "subject": a["subject"],
+                "branch": a["branch"],
             }
             for a in delta.escalation_alerts
         ],
@@ -392,8 +424,8 @@ def generate_delta(
         prev_path=prev_path,
         current_path=current_path,
         delta=delta,
-        prev_readout=prev_readout,
-        current_readout=current_readout,
+        prev_meta=_safe_readout_meta(prev_readout),
+        current_meta=_safe_readout_meta(current_readout),
     )
 
     if out_dir is not None:
