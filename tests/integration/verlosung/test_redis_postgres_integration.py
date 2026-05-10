@@ -55,7 +55,8 @@ def postgres_conn():
     except psycopg2.OperationalError as e:
         pytest.skip(f"PostgreSQL nicht erreichbar: {e}. Starte: docker compose up -d")
 
-    assert conn is not None
+    if conn is None:
+        pytest.fail("PostgreSQL connection was not initialized")
     yield conn
     conn.close()
 

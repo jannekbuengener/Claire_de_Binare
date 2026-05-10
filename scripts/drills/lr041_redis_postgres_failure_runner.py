@@ -239,19 +239,20 @@ def _queue_length(stream_name: str = "stream.orders") -> int:
 
 
 def _collect_snapshot() -> dict[str, Any]:
-    runtime_mode = "unresolved"
-    runtime_mode_source = "unresolved"
-    try:
-        status_payload = _http_get_json("http://localhost:8003/status")
+    def _read_runtime_mode() -> tuple[str, str]:
+        try:
+            status_payload = _http_get_json("http://localhost:8003/status")
+        except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
+            return "unresolved", "unresolved"
+
         raw_mode = status_payload.get("runtime_mode")
         runtime_mode_source = "runtime_mode"
         if raw_mode in (None, ""):
             raw_mode = status_payload.get("mode")
             runtime_mode_source = "mode"
-        runtime_mode = _normalize_runtime_mode(raw_mode)
-    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
-        runtime_mode = "unresolved"
-        runtime_mode_source = "unresolved"
+        return _normalize_runtime_mode(raw_mode), runtime_mode_source
+
+    runtime_mode, runtime_mode_source = _read_runtime_mode()
 
     execution_metrics: dict[str, float] = {}
     risk_metrics: dict[str, float] = {}
@@ -482,31 +483,25 @@ def _run_scenario(
         if svc != config.target_container and delta > 0
     }
 
-    # Determine overall scenario status
-    status = "PASS"
     reasons: list[str] = []
 
     if container_recovery < 0:
-        status = "FAIL"
         reasons.append("container_did_not_recover")
     elif container_recovery_class == "FAIL":
-        status = "FAIL"
         reasons.append("container_recovery_too_slow")
 
     if service_recovery < 0:
-        status = "FAIL"
         reasons.append("services_did_not_recover")
-    elif service_recovery_class == "FAIL" and status != "FAIL":
-        status = "FAIL"
+    elif service_recovery_class == "FAIL":
         reasons.append("service_recovery_too_slow")
 
     if runtime_mode_after != "shadow":
-        status = "FAIL"
         reasons.append("runtime_mode_not_shadow_after_recovery")
 
     if filled_delta != 0.0:
-        status = "FAIL"
         reasons.append("lr030_zero_execution_breach")
+
+    status = "FAIL" if reasons else "PASS"
 
     timeline.append(
         {

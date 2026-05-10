@@ -298,34 +298,28 @@ def _normalize_runtime_mode(raw_mode: Any) -> str:
 
 
 def _collect_snapshot() -> dict[str, Any]:
-    runtime_mode = "unresolved"
-    runtime_mode_source = "unresolved"
-    try:
-        status_payload = _http_get_json("http://localhost:8003/status")
+    def _read_runtime_mode() -> tuple[str, str]:
+        try:
+            status_payload = _http_get_json("http://localhost:8003/status")
+        except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
+            return "unresolved", "unresolved"
+
         raw_mode = status_payload.get("runtime_mode")
         runtime_mode_source = "runtime_mode"
         if raw_mode in (None, ""):
             raw_mode = status_payload.get("mode")
             runtime_mode_source = "mode"
-        runtime_mode = _normalize_runtime_mode(raw_mode)
-    except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError):
-        runtime_mode = "unresolved"
-        runtime_mode_source = "unresolved"
+        return _normalize_runtime_mode(raw_mode), runtime_mode_source
 
-    execution_metrics: dict[str, float] = {}
-    risk_metrics: dict[str, float] = {}
-    try:
-        execution_metrics = _parse_prometheus_text(
-            _http_get_text("http://localhost:8003/metrics")
-        )
-    except (urllib.error.URLError, TimeoutError):
-        execution_metrics = {}
-    try:
-        risk_metrics = _parse_prometheus_text(
-            _http_get_text("http://localhost:8002/metrics")
-        )
-    except (urllib.error.URLError, TimeoutError):
-        risk_metrics = {}
+    def _read_metrics(url: str) -> dict[str, float]:
+        try:
+            return _parse_prometheus_text(_http_get_text(url))
+        except (urllib.error.URLError, TimeoutError):
+            return {}
+
+    runtime_mode, runtime_mode_source = _read_runtime_mode()
+    execution_metrics = _read_metrics("http://localhost:8003/metrics")
+    risk_metrics = _read_metrics("http://localhost:8002/metrics")
 
     return {
         "captured_at_utc": _utc_now(),

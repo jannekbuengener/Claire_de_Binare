@@ -602,6 +602,14 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
         "write (MCP live)",
     })
     if not isinstance(operation_mode, str) or operation_mode not in VALID_OPERATION_MODES:
+        valid_operation_modes = ", ".join(sorted(VALID_OPERATION_MODES))
+        invalid_mode_stop = (
+            f"S1: invalid operation_mode — must be one of: {valid_operation_modes}"
+        )
+        invalid_mode_context = (
+            f"invalid operation_mode: {operation_mode!r} — expected one of: "
+            f"{valid_operation_modes}"
+        )
         return {
             "tool": "context.readiness",
             "status": "ok",
@@ -617,16 +625,8 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
                     "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
                 ],
                 "human_go_required": False,
-                "stop_conditions": [
-                    "S1: invalid operation_mode — must be one of: "
-                    + ", ".join(sorted(VALID_OPERATION_MODES)),
-                ],
-                "missing_context": [
-                    "invalid operation_mode: "
-                    + repr(operation_mode)
-                    + " — expected one of: "
-                    + ", ".join(sorted(VALID_OPERATION_MODES)),
-                ],
+                "stop_conditions": [invalid_mode_stop],
+                "missing_context": [invalid_mode_context],
                 "missing_evidence": [],
                 "scope_drift_findings": [],
                 "uncertainties": [],
@@ -816,7 +816,6 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     No Live/Echtgeld Go. LR remains NO-GO.
     """
     import hashlib
-    import json
 
     _MISSING = object()
 

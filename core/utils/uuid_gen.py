@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import uuid
 from typing import Any, Optional
 
@@ -90,7 +91,7 @@ DECISION_HASH_FIELDS = (
 def _sanitize_float(value: Any) -> Any:
     """Sanitize float values for deterministic JSON serialization."""
     if isinstance(value, float):
-        if value != value or value == float("inf") or value == float("-inf"):
+        if math.isnan(value) or math.isinf(value):
             return None
         return round(value, 10)
     if isinstance(value, dict):

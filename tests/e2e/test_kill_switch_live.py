@@ -69,7 +69,6 @@ def redis_client():
             continue
 
     pytest.fail("Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)")
-    assert client is not None
 
 
 @pytest.fixture(autouse=True)

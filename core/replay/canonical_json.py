@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from typing import Any
 
 
@@ -40,7 +41,7 @@ def _sanitize_float(value: Any) -> Any:
     - Recurses into dicts and lists.
     """
     if isinstance(value, float):
-        if value != value or value == float("inf") or value == float("-inf"):
+        if math.isnan(value) or math.isinf(value):
             return None
         rounded = round(value, 10)
         # Normalize -0.0 -> 0.0 (equal in Python but different JSON strings)

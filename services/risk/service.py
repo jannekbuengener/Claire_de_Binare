@@ -28,7 +28,7 @@ import importlib.util
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
 except ModuleNotFoundError as e:
-    if e.name == "flask" or (e.name and e.name.startswith("flask.")):
+    if e.name and (e.name == "flask" or e.name.startswith("flask.")):
         _FLASK_AVAILABLE = False
     else:
         raise

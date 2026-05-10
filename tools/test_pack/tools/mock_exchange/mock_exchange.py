@@ -64,10 +64,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/health":
-            return _json(self, 200, {"ok": True, "uptime_s": round(time.time() - STATE["started_ts"], 3)})
+            _json(self, 200, {"ok": True, "uptime_s": round(time.time() - STATE["started_ts"], 3)})
+            return
         if self.path == "/state":
-            return _json(self, 200, {"orders": len(STATE["orders"]), "fills": len(STATE["fills"])})
-        return _json(self, 404, {"ok": False, "error": "not_found"})
+            _json(self, 200, {"orders": len(STATE["orders"]), "fills": len(STATE["fills"])})
+            return
+        _json(self, 404, {"ok": False, "error": "not_found"})
+        return
 
     def do_POST(self) -> None:  # noqa: N802
         length = int(self.headers.get("Content-Length", "0") or "0")
@@ -75,7 +78,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             body = json.loads(raw.decode("utf-8") or "{}")
         except Exception:
-            return _json(self, 400, {"ok": False, "error": "invalid_json"})
+            _json(self, 400, {"ok": False, "error": "invalid_json"})
+            return
 
         if self.path == "/order":
             # expected: {symbol, side, qty, price?}
@@ -88,7 +92,8 @@ class Handler(BaseHTTPRequestHandler):
                 if side not in {"BUY", "SELL"} or qty <= 0:
                     raise ValueError("bad_order")
             except Exception:
-                return _json(self, 400, {"ok": False, "error": "bad_order_payload"})
+                _json(self, 400, {"ok": False, "error": "bad_order_payload"})
+                return
 
             oid = _generate_uuid()
             order = Order(order_id=oid, symbol=symbol, side=side, qty=qty, price=price, status="NEW", ts=time.time())
@@ -99,24 +104,30 @@ class Handler(BaseHTTPRequestHandler):
                 STATE["orders"][oid]["status"] = "FILLED"
                 STATE["fills"].append({"order_id": oid, "qty": qty, "price": price, "ts": time.time()})
 
-            return _json(self, 200, {"ok": True, "order": STATE["orders"][oid]})
+            _json(self, 200, {"ok": True, "order": STATE["orders"][oid]})
+            return
 
         if self.path == "/cancel":
             try:
                 oid = str(body["order_id"])
             except Exception:
-                return _json(self, 400, {"ok": False, "error": "bad_cancel_payload"})
+                _json(self, 400, {"ok": False, "error": "bad_cancel_payload"})
+                return
 
             order = STATE["orders"].get(oid)
             if not order:
-                return _json(self, 404, {"ok": False, "error": "unknown_order"})
+                _json(self, 404, {"ok": False, "error": "unknown_order"})
+                return
             if order["status"] in {"FILLED", "CANCELED"}:
-                return _json(self, 200, {"ok": True, "order": order})
+                _json(self, 200, {"ok": True, "order": order})
+                return
 
             order["status"] = "CANCELED"
-            return _json(self, 200, {"ok": True, "order": order})
+            _json(self, 200, {"ok": True, "order": order})
+            return
 
-        return _json(self, 404, {"ok": False, "error": "not_found"})
+        _json(self, 404, {"ok": False, "error": "not_found"})
+        return
 
 def main() -> int:
     import argparse

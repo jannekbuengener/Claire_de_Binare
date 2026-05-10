@@ -63,52 +63,25 @@ def redis_client():
     if not password:
         pytest.fail("Password file is empty. Check Docker volume mount.")
 
-    # Try internal docker network first
-    try:
-        client = redis.Redis(
-            host="cdb_redis",
-            port=6379,
-            password=password,
-            decode_responses=True,
-            socket_timeout=5,
-        )
-        client.ping()
-        yield client
-        return
-    except (redis.ConnectionError, redis.TimeoutError):
-        pass
+    client = None
+    for host in ("cdb_redis", "localhost"):
+        try:
+            client = redis.Redis(
+                host=host,
+                port=6379,
+                password=password,
+                decode_responses=True,
+                socket_timeout=5,
+            )
+            client.ping()
+            yield client
+            return
+        except (redis.ConnectionError, redis.TimeoutError):
+            continue
 
-    # Fallback to localhost (if port mapped)
-    try:
-        client = redis.Redis(
-            host="localhost",
-            port=6379,
-            password=password,
-            decode_responses=True,
-            socket_timeout=5,
-        )
-        client.ping()
-        yield client
-        return
-    except (redis.ConnectionError, redis.TimeoutError):
-        pass
-
-    # Fallback to localhost
-    try:
-        client = redis.Redis(
-            host="localhost",
-            port=6379,
-            password=password,
-            decode_responses=True,
-            socket_timeout=5,
-        )
-        client.ping()
-        yield client
-        return
-    except (redis.ConnectionError, redis.TimeoutError):
-        pytest.fail(
-            "Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)"
-        )
+    pytest.fail(
+        "Could not connect to Redis (tried cdb_redis:6379 and localhost:6379)"
+    )
 
 
 @pytest.fixture
