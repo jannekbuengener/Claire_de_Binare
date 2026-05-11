@@ -187,6 +187,106 @@ def test_new_groups_creates_candidate() -> None:
     assert candidates[0]["subject"] == "jinja2"
 
 
+def test_new_group_and_escalation_share_resolved_component_no_duplicates() -> None:
+    delta = _base_delta()
+    delta["escalation_needed"] = True
+    delta["new_groups"] = [
+        {
+            "source": "code_scanning",
+            "subject": "cve-2026-9999",
+            "branch": "main",
+        }
+    ]
+    delta["new_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 88,
+            "affected_component": "library/cdb_signal",
+        }
+    ]
+    delta["escalations"] = [
+        {
+            "source": "code_scanning",
+            "number": 88,
+            "severity": "high",
+            "subject": "cve-2026-9999",
+            "branch": "main",
+        }
+    ]
+
+    candidates = mod.build_candidates(delta)
+    assert len(candidates) == 1
+    candidate = candidates[0]
+    assert candidate["affected_component"] == "library/cdb_signal"
+    assert candidate["fingerprint"] == mod.build_fingerprint(
+        source="code_scanning",
+        severity_band="high",
+        subject="cve-2026-9999",
+        affected_component="library/cdb_signal",
+        branch="main",
+    )
+
+
+def test_new_group_and_escalation_references_and_labels_remain_consistent() -> None:
+    delta = _base_delta()
+    delta["escalation_needed"] = True
+    delta["new_groups"] = [
+        {
+            "source": "code_scanning",
+            "subject": "cve-2026-4545",
+            "branch": "main",
+        },
+        {
+            "source": "code_scanning",
+            "subject": "cve-2026-3030",
+            "branch": "main",
+        },
+    ]
+    delta["new_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 12,
+            "affected_component": "library/cdb_signal",
+        },
+        {
+            "source": "code_scanning",
+            "number": 11,
+            "affected_component": "library/grafana-curl-layer",
+        },
+    ]
+    delta["escalations"] = [
+        {
+            "source": "code_scanning",
+            "number": 12,
+            "severity": "high",
+            "subject": "cve-2026-4545",
+            "branch": "main",
+        },
+        {
+            "source": "code_scanning",
+            "number": 11,
+            "severity": "high",
+            "subject": "cve-2026-3030",
+            "branch": "main",
+        },
+    ]
+    candidates = mod.build_candidates(delta)
+    assert len(candidates) == 2
+
+    by_subject = {c["subject"]: c for c in candidates}
+    py_candidate = by_subject["cve-2026-4545"]
+    grafana_candidate = by_subject["cve-2026-3030"]
+
+    assert "Refs #2290" in py_candidate["references"]
+    assert "status:blocked" in py_candidate["suggested_labels"]
+    assert all(not ref.lower().startswith("closes ") for ref in py_candidate["references"])
+
+    assert "Refs #2292" in grafana_candidate["references"]
+    assert all(
+        not ref.lower().startswith("closes ") for ref in grafana_candidate["references"]
+    )
+
+
 def test_trivy_grafana_candidate_may_reference_2292_without_closing() -> None:
     delta = _base_delta()
     delta["escalation_needed"] = True

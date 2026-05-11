@@ -123,6 +123,22 @@ def _build_component_index(delta: dict[str, Any]) -> dict[tuple[str, int], str]:
     return component_index
 
 
+def _resolve_escalation_component(
+    *,
+    escalation: dict[str, Any],
+    source: str,
+    component_index: dict[tuple[str, int], str],
+) -> str:
+    component = _safe_component_from_mapping(escalation)
+    if component != "unknown":
+        return component
+
+    number_raw = escalation.get("number")
+    if isinstance(number_raw, int):
+        return component_index.get((source, number_raw), "unknown")
+    return "unknown"
+
+
 def build_fingerprint(
     *,
     source: str,
@@ -260,6 +276,7 @@ def _candidate_from_group(
     *,
     group: dict[str, Any],
     related_escalations: list[dict[str, Any]],
+    component_index: dict[tuple[str, int], str],
     counts: dict[str, int],
     current_reference_now_utc: str,
 ) -> dict[str, Any] | None:
@@ -273,9 +290,11 @@ def _candidate_from_group(
     affected_component = "unknown"
     if related_escalations:
         severity = related_escalations[0].get("severity", "not_provided")
-        first_component = related_escalations[0].get("affected_component")
-        if isinstance(first_component, str):
-            affected_component = first_component
+        affected_component = _resolve_escalation_component(
+            escalation=related_escalations[0],
+            source=source,
+            component_index=component_index,
+        )
 
     return _base_candidate(
         source=source,
@@ -298,11 +317,11 @@ def _candidate_from_escalation(
     source = canonicalize(escalation.get("source"))
     if source not in ALLOWED_SOURCES:
         return None
-    affected_component = _safe_component_from_mapping(escalation)
-    if affected_component == "unknown":
-        number_raw = escalation.get("number")
-        if isinstance(number_raw, int):
-            affected_component = component_index.get((source, number_raw), "unknown")
+    affected_component = _resolve_escalation_component(
+        escalation=escalation,
+        source=source,
+        component_index=component_index,
+    )
     return _base_candidate(
         source=source,
         severity=canonicalize(escalation.get("severity"), fallback="not_provided"),
@@ -371,6 +390,7 @@ def build_candidates(delta: dict[str, Any]) -> list[dict[str, Any]]:
         candidate = _candidate_from_group(
             group=group,
             related_escalations=related_escalations,
+            component_index=component_index,
             counts=counts,
             current_reference_now_utc=current_reference,
         )
