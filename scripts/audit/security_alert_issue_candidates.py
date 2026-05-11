@@ -25,6 +25,16 @@ REF_2290 = "Refs #2290"
 REF_2292 = "Refs #2292"
 
 _CVE_RE = re.compile(r"^cve-\d{4}-\d+$")
+_COMPONENT_KEYS = (
+    "affected_component",
+    "component",
+    "package",
+    "package_name",
+    "dependency",
+    "image",
+    "artifact",
+    "container_image",
+)
 
 
 class SecurityAlertIssueCandidatesError(ValueError):
@@ -82,6 +92,35 @@ def _looks_like_trivy_wave(source: str, subject: str, component: str) -> bool:
 def _looks_like_grafana_curl(component: str, subject: str) -> bool:
     joined = f"{component} {subject}"
     return "grafana" in joined or "curl" in joined or "libcurl" in joined
+
+
+def _safe_component_from_mapping(record: dict[str, Any]) -> str:
+    for key in _COMPONENT_KEYS:
+        raw_value = record.get(key)
+        if not isinstance(raw_value, str):
+            continue
+        candidate = canonicalize(raw_value, fallback="unknown", max_len=180)
+        if candidate == "unknown":
+            continue
+        if "://" in candidate:
+            continue
+        return candidate
+    return "unknown"
+
+
+def _build_component_index(delta: dict[str, Any]) -> dict[tuple[str, int], str]:
+    component_index: dict[tuple[str, int], str] = {}
+    for key in ("new_alerts", "reopened_alerts"):
+        for alert in _safe_list_dict(delta.get(key, [])):
+            source = canonicalize(alert.get("source"))
+            number_raw = alert.get("number")
+            if not isinstance(number_raw, int):
+                continue
+            component = _safe_component_from_mapping(alert)
+            if component == "unknown":
+                continue
+            component_index[(source, number_raw)] = component
+    return component_index
 
 
 def build_fingerprint(
@@ -252,19 +291,23 @@ def _candidate_from_group(
 def _candidate_from_escalation(
     *,
     escalation: dict[str, Any],
+    component_index: dict[tuple[str, int], str],
     counts: dict[str, int],
     current_reference_now_utc: str,
 ) -> dict[str, Any] | None:
     source = canonicalize(escalation.get("source"))
     if source not in ALLOWED_SOURCES:
         return None
+    affected_component = _safe_component_from_mapping(escalation)
+    if affected_component == "unknown":
+        number_raw = escalation.get("number")
+        if isinstance(number_raw, int):
+            affected_component = component_index.get((source, number_raw), "unknown")
     return _base_candidate(
         source=source,
         severity=canonicalize(escalation.get("severity"), fallback="not_provided"),
         subject=canonicalize(escalation.get("subject")),
-        affected_component=canonicalize(
-            escalation.get("affected_component"), fallback="unknown"
-        ),
+        affected_component=affected_component,
         branch=canonicalize(escalation.get("branch"), fallback="not_provided"),
         counts=counts,
         current_reference_now_utc=current_reference_now_utc,
@@ -310,6 +353,7 @@ def build_candidates(delta: dict[str, Any]) -> list[dict[str, Any]]:
     current_reference = _extract_current_reference(delta)
     new_groups = _safe_list_dict(delta.get("new_groups", []))
     escalations = _safe_list_dict(delta.get("escalations", []))
+    component_index = _build_component_index(delta)
 
     by_fingerprint: dict[str, dict[str, Any]] = {}
 
@@ -338,6 +382,7 @@ def build_candidates(delta: dict[str, Any]) -> list[dict[str, Any]]:
         for escalation in escalations:
             candidate = _candidate_from_escalation(
                 escalation=escalation,
+                component_index=component_index,
                 counts=counts,
                 current_reference_now_utc=current_reference,
             )

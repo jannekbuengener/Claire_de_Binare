@@ -149,18 +149,26 @@ def test_no_candidate_from_secret_scanning_payload() -> None:
 def test_reopened_high_critical_creates_candidate() -> None:
     delta = _base_delta()
     delta["escalation_needed"] = True
+    delta["reopened_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 77,
+            "affected_component": "library/cdb_market",
+        }
+    ]
     delta["escalations"] = [
         {
             "source": "code_scanning",
+            "number": 77,
             "severity": "critical",
             "subject": "cve-2026-1111",
-            "affected_component": "library/cdb_market",
             "branch": "main",
         }
     ]
     candidates = mod.build_candidates(delta)
     assert len(candidates) == 1
     assert candidates[0]["severity"] == "critical"
+    assert candidates[0]["affected_component"] == "library/cdb_market"
     assert "Refs #2289" in candidates[0]["references"]
 
 
@@ -182,12 +190,19 @@ def test_new_groups_creates_candidate() -> None:
 def test_trivy_grafana_candidate_may_reference_2292_without_closing() -> None:
     delta = _base_delta()
     delta["escalation_needed"] = True
+    delta["new_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 11,
+            "affected_component": "library/grafana-curl-layer",
+        }
+    ]
     delta["escalations"] = [
         {
             "source": "code_scanning",
+            "number": 11,
             "severity": "high",
             "subject": "cve-2026-3030",
-            "affected_component": "library/grafana-curl-layer",
             "branch": "main",
         }
     ]
@@ -199,12 +214,19 @@ def test_trivy_grafana_candidate_may_reference_2292_without_closing() -> None:
 def test_python_base_image_trivy_candidate_may_reference_2290_without_closing() -> None:
     delta = _base_delta()
     delta["escalation_needed"] = True
+    delta["new_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 12,
+            "affected_component": "library/cdb_signal",
+        }
+    ]
     delta["escalations"] = [
         {
             "source": "code_scanning",
+            "number": 12,
             "severity": "high",
             "subject": "cve-2026-4545",
-            "affected_component": "library/cdb_signal",
             "branch": "main",
         }
     ]
@@ -232,6 +254,75 @@ def test_title_body_are_bounded_and_do_not_embed_raw_objects() -> None:
     assert len(candidate["suggested_title"]) <= 220
     assert isinstance(candidate["body_safe_fields"], dict)
     assert "raw" not in candidate["body_safe_fields"]
+
+
+def test_escalation_component_uses_package_name_or_image_when_safe() -> None:
+    delta = _base_delta()
+    delta["escalation_needed"] = True
+    delta["escalations"] = [
+        {
+            "source": "code_scanning",
+            "number": 1,
+            "severity": "high",
+            "subject": "urllib3-vuln",
+            "package_name": "urllib3",
+            "branch": "main",
+        },
+        {
+            "source": "dependabot",
+            "number": 2,
+            "severity": "high",
+            "subject": "base-image-vuln",
+            "image": "ghcr.io/acme/base:3.12",
+            "branch": "main",
+        },
+    ]
+    candidates = mod.build_candidates(delta)
+    components = {c["subject"]: c["affected_component"] for c in candidates}
+    assert components["urllib3-vuln"] == "urllib3"
+    assert components["base-image-vuln"] == "ghcr.io/acme/base:3.12"
+
+
+def test_escalation_component_stays_unknown_without_safe_source() -> None:
+    delta = _base_delta()
+    delta["escalation_needed"] = True
+    delta["escalations"] = [
+        {
+            "source": "dependabot",
+            "number": 9,
+            "severity": "high",
+            "subject": "jinja2",
+            "branch": "main",
+        }
+    ]
+    candidate = mod.build_candidates(delta)[0]
+    assert candidate["affected_component"] == "unknown"
+
+
+def test_component_mapping_rejects_location_and_raw_fields() -> None:
+    delta = _base_delta()
+    delta["escalation_needed"] = True
+    delta["new_alerts"] = [
+        {
+            "source": "code_scanning",
+            "number": 500,
+            "affected_component": "library/cdb_execution",
+        }
+    ]
+    delta["escalations"] = [
+        {
+            "source": "code_scanning",
+            "number": 500,
+            "severity": "high",
+            "subject": "cve-2026-5050",
+            "locations_url": "https://example.invalid/location/500",
+            "raw": {"affected_component": "sensitive"},
+            "branch": "main",
+        }
+    ]
+    candidate = mod.build_candidates(delta)[0]
+    assert candidate["affected_component"] == "library/cdb_execution"
+    assert "https://example.invalid/location/500" not in json.dumps(candidate)
 
 
 def test_cli_writes_output(tmp_path: Path) -> None:
