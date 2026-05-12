@@ -356,3 +356,113 @@ jobs:
               --title "${PR_TITLE}" \
               --body "${PR_BODY}"
           fi
+
+  comment-epic:
+    runs-on: ubuntu-latest
+    needs: security-readout
+    if: always()
+    permissions:
+      contents: read
+      issues: write
+    env:
+      DATE_DIR:       ${{ needs.security-readout.outputs.date_dir }}
+      READOUT_STATUS: ${{ needs.security-readout.outputs.readout_status || 'unknown/failed' }}
+      DELTA_STATUS:   ${{ needs.security-readout.outputs.delta_status || 'unknown/failed' }}
+    steps:
+      - name: Post compact ledger comment to epic #2289
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OWNER="${GITHUB_REPOSITORY%/*}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          ISSUE_NUMBER="2289"
+
+          RUN_ID="${GITHUB_RUN_ID}"
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}"
+          EVENT_NAME="${GITHUB_EVENT_NAME}"
+          REF_NAME="${GITHUB_REF_NAME}"
+          SHA_SHORT="${GITHUB_SHA:0:7}"
+
+          # Prefer DATE derived from DATE_DIR when available (keeps it stable vs. clock skew).
+          if [[ -n "${DATE_DIR:-}" ]]; then
+            DATE="${DATE_DIR##*/}"
+          else
+            DATE="$(date -u +%Y-%m-%d)"
+          fi
+
+          marker="<!-- cdb-security-alert-readout-run:${RUN_ID} -->"
+
+          # Dedupe: avoid posting multiple comments for the same workflow run id.
+          existing_marker_count="$(gh api graphql \
+            -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){comments(last:50){nodes{body}}}}}' \
+            -F owner="${OWNER}" \
+            -F name="${REPO}" \
+            -F number="${ISSUE_NUMBER}" \
+            --jq '.data.repository.issue.comments.nodes[].body' \
+            | grep -F "${marker}" -c || true)"
+
+          if [[ "${existing_marker_count}" != "0" ]]; then
+            echo "Epic issue already contains marker for run ${RUN_ID}; skipping comment."
+            exit 0
+          fi
+
+          # Normalize statuses to explicit compact enums.
+          readout_status="${READOUT_STATUS:-unknown/failed}"
+          delta_status="${DELTA_STATUS:-unknown/failed}"
+
+          readout_result="unknown/failed"
+          if [[ "${readout_status}" == "ok" ]]; then
+            readout_result="ok"
+          elif [[ "${readout_status}" == "partial" ]]; then
+            readout_result="partial"
+          fi
+
+          delta_result="unknown/failed"
+          if [[ "${delta_status}" == "ok" ]]; then
+            delta_result="ok"
+          elif [[ "${delta_status}" == "first_run" ]]; then
+            delta_result="first_run"
+          elif [[ "${delta_status}" == "escalation_needed" ]]; then
+            delta_result="escalation_needed"
+          fi
+
+          escalation_note=""
+          if [[ "${delta_result}" == "escalation_needed" ]]; then
+            escalation_note="manual triage required"
+          fi
+
+          comment_file="$(mktemp)"
+          cat > "${comment_file}" <<EOF
+          ${marker}
+          ## Security Alert Readout — ${DATE}
+
+          **Run**
+          - Run-ID: \`${RUN_ID}\`
+          - Run-URL: ${RUN_URL}
+          - Trigger: \`${EVENT_NAME}\`
+          - Ref: \`${REF_NAME}\`
+          - SHA: \`${SHA_SHORT}\`
+
+          **Status**
+          - readout_status: \`${readout_status}\` (result: \`${readout_result}\`)
+          - delta_status: \`${delta_status}\` (result: \`${delta_result}\`)${escalation_note:+ — ${escalation_note}}
+
+          **Artifact hints**
+          - \`docs/security/readouts/${DATE}/github_security_quality_readout.json\`
+          - \`docs/security/readouts/${DATE}/github_security_quality_summary.md\`
+          - \`artifacts/security-alert-readout/delta/security_alert_delta.json\`
+
+          **Security boundaries**
+          - no new issues created
+          - no alert dismissals
+          - no auto-merge
+          - secret scanning remains redacted/status-only
+          - no LR-/Live-/Echtgeld-Ableitung
+          EOF
+
+          gh issue comment "${ISSUE_NUMBER}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --body-file "${comment_file}"

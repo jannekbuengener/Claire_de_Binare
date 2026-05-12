@@ -226,6 +226,24 @@ PR-Eigenschaften:
 Permissions sind nur job-scoped und nur aktiv, wenn `persist_via_pr=true` gesetzt ist.
 Der `security-readout`-Job bleibt unverändert `contents: read`.
 
+### Epic-Ledger-Kommentar auf #2289 (Status/Audit, kein Remediation-Automatismus)
+
+Nach **jedem** Workflow-Run (Schedule + manuell) wird ein kompakter Ergebnis-Kommentar
+auf GitHub Issue **#2289** gepostet.
+
+- Zweck: Audit-/Ledger-Signal (Run-Metadaten + Status + Artefaktpfade), nicht Remediation.
+- Dedupe-Marker pro Run: `<!-- cdb-security-alert-readout-run:${{ github.run_id }} -->`
+- Sicherheitsgrenzen:
+  - keine neuen Issues
+  - keine Alert-Dismissals
+  - kein Auto-Merge
+  - Secret Scanning bleibt redacted/status-only
+  - keine LR-/Live-/Echtgeld-Ableitung
+
+Permissions:
+- Top-Level bleibt read-only (`contents: read`, `security-events: read`).
+- `issues: write` wird **nur** im separaten Job `comment-epic` verwendet.
+
 ### Eskalationslogik
 
 - `security_alert_delta.py` gibt **Exit-Code 2** zurück, wenn neue offene Alerts mit Severity `critical`, `high` oder `error` (CodeQL) gefunden werden.
