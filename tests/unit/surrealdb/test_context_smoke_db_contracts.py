@@ -122,9 +122,7 @@ def test_context_query_min_count_exits_nonzero_if_below_threshold(
     mock_opener = MagicMock()
     mock_opener.open.return_value = mock_resp
 
-    with patch(
-        "urllib.request.build_opener", return_value=mock_opener
-    ):
+    with patch("urllib.request.build_opener", return_value=mock_opener):
         exit_code = main(
             [
                 "--config",
@@ -140,7 +138,9 @@ def test_context_query_min_count_exits_nonzero_if_below_threshold(
             ]
         )
 
-    assert exit_code != 0, f"Expected non-zero exit when count=0 and --min-count=1, got {exit_code}"
+    assert (
+        exit_code != 0
+    ), f"Expected non-zero exit when count=0 and --min-count=1, got {exit_code}"
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +169,9 @@ def test_context_query_min_count_default_zero_no_effect(
             ]
         )
 
-    assert exit_code == 0, f"Expected exit 0 with empty results and default --min-count, got {exit_code}"
+    assert (
+        exit_code == 0
+    ), f"Expected exit 0 with empty results and default --min-count, got {exit_code}"
 
 
 # ---------------------------------------------------------------------------
@@ -199,9 +201,9 @@ def test_context_query_min_count_satisfied_exits_zero(
             ]
         )
 
-    assert exit_code == 0, (
-        f"Expected exit 0 when count=1 >= --min-count=1, got {exit_code}"
-    )
+    assert (
+        exit_code == 0
+    ), f"Expected exit 0 when count=1 >= --min-count=1, got {exit_code}"
 
 
 # ---------------------------------------------------------------------------
@@ -216,9 +218,9 @@ def test_makefile_context_smoke_db_in_phony() -> None:
     phony_lines = [line for line in content.splitlines() if line.startswith(".PHONY:")]
     assert phony_lines, ".PHONY line not found in Makefile"
     phony_text = " ".join(phony_lines)
-    assert "context-smoke-db" in phony_text, (
-        "context-smoke-db not found in .PHONY line(s)"
-    )
+    assert (
+        "context-smoke-db" in phony_text
+    ), "context-smoke-db not found in .PHONY line(s)"
 
 
 # ---------------------------------------------------------------------------
@@ -233,12 +235,12 @@ def test_makefile_context_smoke_db_uses_hard_mode_schema_check() -> None:
     recipe = _lines_for_target(content, "context-smoke-db")
     assert recipe, "context-smoke-db target has no recipe lines"
     recipe_text = "\n".join(recipe)
-    assert "local_schema_check.py" in recipe_text, (
-        "local_schema_check.py not found in context-smoke-db recipe"
-    )
-    assert "--hard-mode" in recipe_text, (
-        "--hard-mode not found in context-smoke-db recipe (schema check step)"
-    )
+    assert (
+        "local_schema_check.py" in recipe_text
+    ), "local_schema_check.py not found in context-smoke-db recipe"
+    assert (
+        "--hard-mode" in recipe_text
+    ), "--hard-mode not found in context-smoke-db recipe (schema check step)"
 
 
 # ---------------------------------------------------------------------------
@@ -252,9 +254,9 @@ def test_makefile_context_smoke_db_uses_surrealdb_local_adapter() -> None:
     content = _read_makefile()
     recipe = _lines_for_target(content, "context-smoke-db")
     recipe_text = "\n".join(recipe)
-    assert "--adapter surrealdb-local" in recipe_text, (
-        "--adapter surrealdb-local not found in context-smoke-db recipe (import step)"
-    )
+    assert (
+        "--adapter surrealdb-local" in recipe_text
+    ), "--adapter surrealdb-local not found in context-smoke-db recipe (import step)"
 
 
 # ---------------------------------------------------------------------------
@@ -268,15 +270,15 @@ def test_makefile_context_smoke_db_uses_hard_mode_query() -> None:
     content = _read_makefile()
     recipe = _lines_for_target(content, "context-smoke-db")
     recipe_text = "\n".join(recipe)
-    assert "context_query" in recipe_text, (
-        "context_query invocation not found in context-smoke-db recipe"
-    )
+    assert (
+        "context_query" in recipe_text
+    ), "context_query invocation not found in context-smoke-db recipe"
     # Count --hard-mode occurrences: must appear at least twice
     # (once for schema check, once for query)
     occurrences = recipe_text.count("--hard-mode")
-    assert occurrences >= 2, (
-        f"Expected --hard-mode at least twice in context-smoke-db recipe, found {occurrences}"
-    )
+    assert (
+        occurrences >= 2
+    ), f"Expected --hard-mode at least twice in context-smoke-db recipe, found {occurrences}"
 
 
 # ---------------------------------------------------------------------------
@@ -290,6 +292,6 @@ def test_makefile_context_smoke_db_uses_min_count() -> None:
     content = _read_makefile()
     recipe = _lines_for_target(content, "context-smoke-db")
     recipe_text = "\n".join(recipe)
-    assert "--min-count" in recipe_text, (
-        "--min-count not found in context-smoke-db recipe (query step)"
-    )
+    assert (
+        "--min-count" in recipe_text
+    ), "--min-count not found in context-smoke-db recipe (query step)"
