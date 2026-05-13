@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 from pathlib import Path
 import re
 import sys
@@ -193,3 +194,22 @@ def test_counter_reset_lower_value_does_not_crash_or_negative_increment() -> Non
     assert second_errors == first_errors
     assert third_decoded == second_decoded + 1
     assert third_errors == second_errors
+
+
+@pytest.mark.unit
+def test_load_mexc_client_class_raises_runtime_error_when_dependency_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_import = builtins.__import__
+
+    def _blocked_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if name == "mexc_v3_client":
+            raise ModuleNotFoundError("No module named 'websockets'")
+        return original_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.setattr(builtins, "__import__", _blocked_import)
+
+    with pytest.raises(
+        RuntimeError, match="MEXC WS client dependencies are required for WS_SOURCE=mexc_pb"
+    ):
+        svc._load_mexc_client_class()

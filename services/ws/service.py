@@ -15,11 +15,11 @@ import logging
 import os
 import sys
 import threading
+from typing import Any
 from flask import Flask, jsonify, Response
 from prometheus_client import Counter, Gauge, generate_latest, CONTENT_TYPE_LATEST
 import redis
 
-from mexc_v3_client import MexcV3Client
 from core.utils.redis_payload import sanitize_market_data
 
 # Basic logging setup
@@ -79,6 +79,22 @@ def _advance_counter_from_absolute(counter: Counter, counter_name: str, raw_valu
         counter.inc(delta)
 
     _last_client_counter_values[counter_name] = current_value
+
+
+def _load_mexc_client_class() -> Any:
+    """
+    Load the MEXC client only for WS_SOURCE=mexc_pb execution paths.
+
+    This keeps /health and /metrics importable in environments that do not
+    install websocket-specific runtime dependencies.
+    """
+    try:
+        from mexc_v3_client import MexcV3Client
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "MEXC WS client dependencies are required for WS_SOURCE=mexc_pb"
+        ) from exc
+    return MexcV3Client
 
 
 @app.route("/health", methods=["GET"])
@@ -189,6 +205,7 @@ async def run_mexc_client():
         else:
             logger.warning(f"[redis] not connected, dropping trade: {event}")
 
+    MexcV3Client = _load_mexc_client_class()
     ws_client = MexcV3Client(
         symbol=symbol,
         interval=interval,
