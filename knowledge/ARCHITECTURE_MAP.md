@@ -55,11 +55,11 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
-| WebSocket | cdb_ws | 8000 | MEXC Market Data Stream |
+| WebSocket | cdb_ws | 8000 | MEXC Market Data Stream; `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen, sodass `/health` und `/metrics` auch ohne websocket-spezifische Runtime-Dependencies importierbar bleiben; Client-Absolute werden per Delta-Logik in Prometheus Counter ueberfuehrt (`decoded_messages_total`, `decode_errors_total`) |
 | Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback); audit metadata: `config_snapshot` (runtime params) + deterministic `config_hash` (SHA-256); SIGNAL_BOT_ID wired via compose.red.yml (PR #2129) for experiment identity; reserved metadata keys protected against override; used by Paper Reference Exporter (PR #2133) for signal-anchored bot_id/config_hash filtering in replay-vs-paper comparisons |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
-| Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics |
+| Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
 | Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 | Reports | cdb_reports | — | Daily Order Summary |
@@ -247,3 +247,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-22 | PR #1859 Nachzug: `core/replay/scheduler.py` und minimaler Replay-CLI-Scheduler-Pfad (`speedup_profile`, `dataset_summary["scheduler"]`) ergänzt (Issue #1860) | Codex |
 | 2026-04-23 | PR #1891 Nachzug: ARVP Operator-Facing Dataset Layer finalisiert (file\|db modes, db_dataset_window format, source-aware paths, legacy naming entfernt). CLI-Naming: run_accelerated_shadow_replay → run_arvp_replay (Issue #1892) | Codex |
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |
+| 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |

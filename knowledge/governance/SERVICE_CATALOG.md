@@ -38,7 +38,7 @@
 
 | Service | Container | Port | Code | Status | Funktion |
 |---------|-----------|------|------|--------|----------|
-| **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf) |
+| **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf); `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen (Health-/Metrics-Surface bleibt importierbar ohne websocket-spezifische Dependency); `decoded_messages_total` und `decode_errors_total` werden via Delta-Logik aus absoluten Client-Werten als Prometheus Counter fortgeschrieben |
 | **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze); audit metadata: `config_snapshot` (deterministic runtime params snapshot) + `config_hash` (full SHA-256); `SIGNAL_BOT_ID` environment variable wired via compose.red.yml (PR #2129) für Experiment-Identity; reserved metadata keys (strategy_id, bot_id, config_snapshot, config_hash, signal_reason, signal_inputs) sind immutable und können nicht durch Candidate-Signal-Metadata überschrieben werden |
 | **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
 
@@ -102,7 +102,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 |---------|-----------|-------|------|--------|----------|
 | **Prometheus** | cdb_prometheus | prom/prometheus:v3.11.2 | 19090→9090 | **AKTIV** | Metrics Collection |
 | **Grafana** | cdb_grafana | grafana/grafana:11.6.14-ubuntu@sha256:d39d4352 | 3000 | **AKTIV** | Dashboards |
-| **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics |
+| **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics; DSN-Wiring ueber `postgres_password` Secret + `PGPASSWORD`, `DATA_SOURCE_NAME` wird zur Laufzeit aus `POSTGRES_USER`/`POSTGRES_DB` und Host/Port zusammengesetzt |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
 | **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |
 
@@ -202,3 +202,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-23 | PR #1891 Nachzug: ARVP Finalization – Dataset Layer (file\|db operator-facing front-door, db_dataset_window format, source-aware paths), CLI naming (run_arvp_replay canonical), legacy code removed, fail-closed validation finalized. DatasetSpec/DatasetProvider erweiterte Beschreibungen (Issue #1892) | Codex |
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, ARVP gate, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation und Audit-Komponenten, keine Runtime-Services im BLUE/RED-Stack. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-04-26 | PRs #1944/#1947 Nachzug: `primary_breakout_v1` nutzt zeitbasierte Lookback-Semantik (SignalEngine). `strategy_backtest_runner` implementiert opt-in Gate-Trace (JSONL); ARVP Replay CLI exponiert/forwarded `--gate-trace-path`. (Issues #1945/#1948) | Codex |
+| 2026-05-13 | PR #2453/#2455 Nachzug: WS-Service (Delta-Counter + lazy `mexc_pb`-Import) und Postgres-Exporter-DSN/Secret-Wiring im RED-Stack nachgezogen (Issues #2454/#2456) | Codex |
