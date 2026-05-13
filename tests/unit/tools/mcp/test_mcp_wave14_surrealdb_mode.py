@@ -85,6 +85,21 @@ _DECISION_RECORD: dict[str, Any] = {
     "decision_type": "architectural",
 }
 
+# Record using SurrealDB schema field names (validates, related_artifacts, etc.)
+# instead of the lookup-contract names (claim_refs, artifact_refs, etc.).
+_EVIDENCE_SCHEMA_RECORD: dict[str, Any] = {
+    "evidence_id": "ev-schema-001",
+    "evidence_type": "test_run",
+    "confidence": 0.9,
+    "validates": ["claim-db-001"],
+    "invalidates": [],
+    "related_artifacts": ["tools/surrealdb/evidence_lookup.py"],
+    "related_decisions": ["dec-db-001"],
+    "source_path": "tests/unit/test_foo.py",
+    "comment": "Schema-format evidence record for normalization tests",
+    "freshness": "fresh",
+}
+
 
 def _make_mock_adapter(
     records: list[dict[str, Any]], status: str = "surrealdb-local"
@@ -498,3 +513,144 @@ def test_evidence_handler_queries_evidence_ref_not_evidence(monkeypatch) -> None
     assert "FROM evidence " not in call_arg and not call_arg.endswith(
         "FROM evidence"
     ), f"Handler must not query bare 'evidence' table, got: {call_arg!r}"
+
+
+# ---------------------------------------------------------------------------
+# P1: Field normalization — schema rows must match lookup contract
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_evidence_resolve_normalizes_schema_fields(monkeypatch) -> None:
+    """P1: adapter returns a row with schema field names (validates, related_artifacts,
+    related_decisions, source_path) instead of the contract names; the handler must
+    normalise them so lookup_evidence_v1 can match.
+    """
+    mock_adapter = _make_mock_adapter([_EVIDENCE_SCHEMA_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_evidence_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_artifact",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    matched = result["result"]["matched_evidence"]
+    assert (
+        len(matched) == 1
+    ), f"Expected 1 match after schema-field normalisation, got {len(matched)}: {matched}"
+    ev = matched[0]
+    assert ev["evidence_id"] == "ev-schema-001"
+    # Verify normalization produced the contract field names
+    assert "artifact_refs" in ev
+    assert "tools/surrealdb/evidence_lookup.py" in ev["artifact_refs"]
+    assert "claim_refs" in ev
+    assert "claim-db-001" in ev["claim_refs"]
+    assert "decision_refs" in ev
+    assert "dec-db-001" in ev["decision_refs"]
+
+
+# ---------------------------------------------------------------------------
+# P2: Filter pushdown — WHERE clause must be present in the SurrealQL query
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_evidence_resolve_filter_pushdown_by_artifact(monkeypatch) -> None:
+    """P2: by_artifact mode must push a WHERE clause into the SurrealQL query
+    so that records are filtered at DB level, not only in RAM.
+    """
+    mock_adapter = _make_mock_adapter([_EVIDENCE_SCHEMA_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_evidence_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_artifact",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert "WHERE" in call_arg.upper(), f"Expected WHERE clause, got: {call_arg!r}"
+    assert (
+        "related_artifacts" in call_arg
+    ), f"Expected 'related_artifacts' in WHERE clause, got: {call_arg!r}"
+    assert (
+        "CONTAINS" in call_arg.upper()
+    ), f"Expected CONTAINS in WHERE clause, got: {call_arg!r}"
+
+
+@pytest.mark.unit
+def test_memory_get_filter_pushdown_by_scope(monkeypatch) -> None:
+    """P2: by_scope mode on agent_memory must push a WHERE scope = '...' clause."""
+    mock_adapter = _make_mock_adapter([_MEMORY_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_memory_get(
+        {
+            "tool": TOOL_CDB_CONTEXT_MEMORY_GET,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_scope",
+                "scope": "wave14",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert "WHERE" in call_arg.upper(), f"Expected WHERE clause, got: {call_arg!r}"
+    assert "scope" in call_arg, f"Expected 'scope' in WHERE clause, got: {call_arg!r}"
+    assert (
+        "wave14" in call_arg
+    ), f"Expected scope value in WHERE clause, got: {call_arg!r}"
+
+
+@pytest.mark.unit
+def test_decision_history_filter_pushdown_by_scope(monkeypatch) -> None:
+    """P2: by_scope mode on decision_event must push a WHERE scope = '...' clause."""
+    mock_adapter = _make_mock_adapter([_DECISION_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_decision_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_decision_history(
+        {
+            "tool": TOOL_CDB_CONTEXT_DECISION_HISTORY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_scope",
+                "scope": "wave14",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert "WHERE" in call_arg.upper(), f"Expected WHERE clause, got: {call_arg!r}"
+    assert "scope" in call_arg, f"Expected 'scope' in WHERE clause, got: {call_arg!r}"
+    assert (
+        "wave14" in call_arg
+    ), f"Expected scope value in WHERE clause, got: {call_arg!r}"

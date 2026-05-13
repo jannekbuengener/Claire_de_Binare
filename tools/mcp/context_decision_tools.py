@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
@@ -21,6 +22,44 @@ from tools.mcp.surrealdb_adapter_factory import (
 
 TOOL_CDB_CONTEXT_DECISION_HISTORY = "cdb_context_decision_history"
 TOOL_CDB_CONTEXT_DECISION_REPLAY = "cdb_context_decision_replay"
+
+# ── DB query helpers (Issue #2461: filter-pushdown) ────────────────────────────
+
+_SURQL_SAFE_RE = re.compile(r"^[a-zA-Z0-9/_.@:#+ \-]+$")
+
+
+def _safe_surql_str(value: str | None) -> str | None:
+    """Return *value* if safe for SurrealQL string embedding, else None."""
+    if not value:
+        return None
+    text = value.strip()
+    return text if (text and _SURQL_SAFE_RE.match(text)) else None
+
+
+def _build_decision_event_where(params: Mapping[str, Any]) -> str:
+    """Build a SurrealQL WHERE clause for the decision_event table."""
+
+    def _opt(key: str) -> str | None:
+        v = params.get(key)
+        if v is None:
+            return None
+        return _safe_surql_str(str(v).strip() or None)
+
+    mode_raw = params.get("mode")
+    mode = str(mode_raw).strip() if mode_raw is not None else ""
+    if mode == "by_scope":
+        val = _opt("scope")
+        if val:
+            return f"WHERE scope = '{val}'"
+    elif mode == "by_status":
+        val = _opt("status")
+        if val:
+            return f"WHERE status = '{val}'"
+    elif mode == "by_decision_id":
+        val = _opt("decision_id")
+        if val:
+            return f"WHERE decision_id = '{val}'"
+    return ""
 
 
 @dataclass(frozen=True)
@@ -132,9 +171,11 @@ def handle_cdb_context_decision_history(request: Mapping[str, Any]) -> dict[str,
         _limit = min(
             int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
         )
+        _where = _build_decision_event_where(params)
+        _suffix = f" {_where}" if _where else ""
         try:
             decision_events: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM decision_event LIMIT {_limit}"
+                f"SELECT * FROM decision_event{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(
@@ -253,9 +294,11 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
         _limit = min(
             int(params.get("limit", 50)), _config.max_limit_hard if _config else 50
         )
+        _where = _build_decision_event_where(params)
+        _suffix = f" {_where}" if _where else ""
         try:
             decision_events: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM decision_event LIMIT {_limit}"
+                f"SELECT * FROM decision_event{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(

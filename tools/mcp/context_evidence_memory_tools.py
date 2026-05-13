@@ -13,6 +13,7 @@ All tools are read-only, fail-closed, and carry explicit no-echtgeld-go semantic
 from __future__ import annotations
 
 import logging
+import re
 
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
@@ -151,6 +152,123 @@ def _extract_records(
     return records
 
 
+# ── DB query helpers (Issue #2461: filter-pushdown + schema normalisation) ───
+
+# Strict allow-list for values embedded in SurrealQL WHERE clauses.
+# Fail-closed: values with characters outside this set → filter is omitted
+# and the full page is returned for in-memory filtering.
+_SURQL_SAFE_RE = re.compile(r"^[a-zA-Z0-9/_.@:#+ \-]+$")
+
+
+def _safe_surql_str(value: str | None) -> str | None:
+    """Return *value* if safe for SurrealQL string embedding, else None."""
+    if not value:
+        return None
+    text = value.strip()
+    return text if (text and _SURQL_SAFE_RE.match(text)) else None
+
+
+def _normalize_evidence_ref_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Project SurrealDB evidence_ref schema fields to the lookup-contract names.
+
+    SurrealDB schema  → Wave-14 lookup contract
+    ─────────────────────────────────────────────
+    validates         → claim_refs
+    related_artifacts → artifact_refs
+    related_decisions → decision_refs
+    source_path (str) → source_refs (list)
+
+    Contract fields already present in the row are preserved as-is so that
+    in-memory fixtures with pre-mapped field names pass through unchanged.
+    """
+    result = dict(row)
+    if "claim_refs" not in result:
+        result["claim_refs"] = list(result.get("validates") or [])
+    if "artifact_refs" not in result:
+        result["artifact_refs"] = list(result.get("related_artifacts") or [])
+    if "decision_refs" not in result:
+        result["decision_refs"] = list(result.get("related_decisions") or [])
+    if "source_refs" not in result and result.get("source_path"):
+        result["source_refs"] = [result["source_path"]]
+    return result
+
+
+def _build_evidence_ref_where(params: Mapping[str, Any]) -> str:
+    """Build a SurrealQL WHERE clause for the evidence_ref table.
+
+    Maps lookup-contract mode names to the SurrealDB schema field names.
+    Returns an empty string when no safe filter can be constructed;
+    the caller falls back to fetching the full page for in-memory filtering.
+    """
+    mode = _as_str_or_none(params.get("mode")) or "by_artifact"
+    if mode == "by_artifact":
+        val = _safe_surql_str(_as_str_or_none(params.get("artifact")))
+        if val:
+            return f"WHERE related_artifacts CONTAINS '{val}'"
+    elif mode == "by_claim":
+        val = _safe_surql_str(_as_str_or_none(params.get("claim")))
+        if val:
+            return f"WHERE validates CONTAINS '{val}'"
+    elif mode == "by_decision":
+        val = _safe_surql_str(_as_str_or_none(params.get("decision")))
+        if val:
+            return f"WHERE related_decisions CONTAINS '{val}'"
+    elif mode == "by_source_path":
+        val = _safe_surql_str(_as_str_or_none(params.get("source_path")))
+        if val:
+            return f"WHERE string::contains(source_path, '{val}')"
+    elif mode == "by_evidence_type":
+        val = _safe_surql_str(_as_str_or_none(params.get("evidence_type")))
+        if val:
+            return f"WHERE evidence_type = '{val}'"
+    elif mode == "by_confidence":
+        raw = params.get("min_confidence")
+        if raw is not None:
+            try:
+                conf = float(raw)
+                if 0.0 <= conf <= 1.0:
+                    return f"WHERE confidence >= {conf}"
+            except (TypeError, ValueError):
+                pass
+    return ""
+
+
+def _build_claim_where(params: Mapping[str, Any]) -> str:
+    """Build a SurrealQL WHERE clause for the claim table."""
+    mode = _as_str_or_none(params.get("mode")) or "by_topic"
+    if mode == "by_scope":
+        val = _safe_surql_str(_as_str_or_none(params.get("scope")))
+        if val:
+            return f"WHERE scope = '{val}'"
+    elif mode == "by_status":
+        val = _safe_surql_str(_as_str_or_none(params.get("status")))
+        if val:
+            return f"WHERE status = '{val}'"
+    elif mode == "by_claim_id":
+        val = _safe_surql_str(_as_str_or_none(params.get("claim_id")))
+        if val:
+            return f"WHERE claim_id = '{val}'"
+    elif mode == "by_evidence_ref":
+        val = _safe_surql_str(_as_str_or_none(params.get("evidence_ref")))
+        if val:
+            return f"WHERE evidence_refs CONTAINS '{val}'"
+    return ""
+
+
+def _build_memory_where(params: Mapping[str, Any]) -> str:
+    """Build a SurrealQL WHERE clause for the agent_memory table."""
+    mode = _as_str_or_none(params.get("mode")) or "by_scope"
+    if mode == "by_scope":
+        val = _safe_surql_str(_as_str_or_none(params.get("scope")))
+        if val:
+            return f"WHERE scope = '{val}'"
+    elif mode == "by_memory_type":
+        val = _safe_surql_str(_as_str_or_none(params.get("memory_type")))
+        if val:
+            return f"WHERE memory_type = '{val}'"
+    return ""
+
+
 # ── Evidence Resolve ─────────────────────────────────────────────────────────
 
 
@@ -179,9 +297,11 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         _limit = min(
             int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
         )
+        _where = _build_evidence_ref_where(params)
+        _suffix = f" {_where}" if _where else ""
         try:
-            evidence_records: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM evidence_ref LIMIT {_limit}"
+            _raw_rows: list[Mapping[str, Any]] = _adapter.execute(
+                f"SELECT * FROM evidence_ref{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(
@@ -189,6 +309,9 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
                 code="adapter_query_error",
                 message=str(exc),
             )
+        evidence_records: list[Mapping[str, Any]] = [
+            _normalize_evidence_ref_row(row) for row in _raw_rows
+        ]
         _source = adapter_source(_adapter)
     else:
         evidence_records = _extract_records(
@@ -284,9 +407,11 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
         _limit = min(
             int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
         )
+        _where = _build_claim_where(params)
+        _suffix = f" {_where}" if _where else ""
         try:
             claim_records: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM claim LIMIT {_limit}"
+                f"SELECT * FROM claim{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(
@@ -373,9 +498,11 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
         _limit = min(
             int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
         )
+        _where = _build_memory_where(params)
+        _suffix = f" {_where}" if _where else ""
         try:
             memory_records: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM agent_memory LIMIT {_limit}"
+                f"SELECT * FROM agent_memory{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(
@@ -493,7 +620,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         decision_result_raw: dict[str, Any] | None = None
         try:
             evidence_result_raw = lookup_evidence_v1(
-                _ev_raw,
+                [_normalize_evidence_ref_row(r) for r in _ev_raw],
                 EvidenceLookupRequest(
                     mode="by_artifact", artifact=_artifact, limit=_limit
                 ),
