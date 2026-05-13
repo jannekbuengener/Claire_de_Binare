@@ -1,22 +1,29 @@
 """Local SurrealDB schema check — verifies context_intelligence_v0 tables exist.
 
 Local-only guard enforced. No credential output. Exits 0 if all expected tables
-are present, exits 1 if tables are missing. Exits 0 gracefully if container is
-offline (container absence is not an error condition during development).
+are present, exits 1 if tables are missing.
+
+Default (no --hard-mode): Exits 0 gracefully if container is offline (container
+absence is not an error condition during development).
+
+With --hard-mode: Exits 1 if container is offline. This is the authoritative
+fail-closed path used by ``make context-smoke-db`` (#2460).
 
 Issues:
     #2395 - Local schema apply and reset workflow
+    #2460 - fail-closed DB-backed context smoke (--hard-mode)
     Parent: #2391
     Epic: #1976
 
 Usage:
     python tools/surrealdb/local_schema_check.py
     python tools/surrealdb/local_schema_check.py --url http://127.0.0.1:8010
+    python tools/surrealdb/local_schema_check.py --hard-mode
 
 Guardrails:
     - Only connects to 127.0.0.1 or localhost
     - No credential values are ever printed
-    - Graceful exit when container is not running
+    - Graceful exit when container is not running (unless --hard-mode)
     - LR-Go remains NO-GO; this script has no effect on live-readiness
 """
 from __future__ import annotations
@@ -154,12 +161,29 @@ def main() -> None:
     parser.add_argument("--ns", default=DEFAULT_NS)
     parser.add_argument("--db", default=DEFAULT_DB)
     parser.add_argument("--secrets-path", default=None)
+    parser.add_argument(
+        "--hard-mode",
+        action="store_true",
+        default=False,
+        dest="hard_mode",
+        help=(
+            "Fail-closed mode: exit 1 if container is unreachable (default: graceful "
+            "exit 0). Used by 'make context-smoke-db' (#2460) to prove real DB presence."
+        ),
+    )
     args = parser.parse_args()
 
     _guard_local(args.url)
 
     print(f"[INFO] Checking container at {args.url}/health...")
     if not _health_check(args.url):
+        if args.hard_mode:
+            print(
+                "ERROR: cdb_surrealdb not reachable (--hard-mode). "
+                "Run 'make context-up' first.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         print("[WARN] cdb_surrealdb not reachable. Container may not be running.")
         print("       Run 'make context-up' to start the container.")
         print("[SKIP] Schema check skipped (container offline).")

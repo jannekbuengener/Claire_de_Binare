@@ -1559,6 +1559,17 @@ def build_parser() -> argparse.ArgumentParser:
         dest="hard_mode",
         help="Non-zero exit if DB is unreachable (default: soft mode, returns empty results).",
     )
+    parser.add_argument(
+        "--min-count",
+        type=int,
+        default=0,
+        dest="min_count",
+        help=(
+            "Minimum number of records the query must return; exit 1 if count is below "
+            "this threshold (default: 0, no enforcement). Used by 'make context-smoke-db' "
+            "(#2460) to prove real DB records were written."
+        ),
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     classify = subparsers.add_parser(
@@ -1975,6 +1986,28 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_INTERNAL
 
     print(rendered)
+
+    min_count = getattr(args, "min_count", 0)
+    if exit_code == EXIT_OK and min_count > 0:
+        actual_count = payload.get("count", 0) if isinstance(payload, dict) else 0
+        if actual_count < min_count:
+            print(
+                json.dumps(
+                    {
+                        "schema_version": SCHEMA_VERSION,
+                        "status": "error",
+                        "error": "MIN_COUNT_NOT_MET",
+                        "message": (
+                            f"query returned {actual_count} record(s); "
+                            f"--min-count requires at least {min_count}"
+                        ),
+                    },
+                    ensure_ascii=True,
+                    sort_keys=True,
+                )
+            )
+            return EXIT_VALIDATION_ERROR
+
     return exit_code
 
 

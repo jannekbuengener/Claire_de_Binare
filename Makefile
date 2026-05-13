@@ -29,7 +29,7 @@ REPLAY_DETERMINISTIC_VERIFY ?= 1
 
 CONTEXT_SNAP_DIR ?= artifacts/context-intelligence/latest
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -91,6 +91,7 @@ help:
 	@echo "  make context-import-local    - Context-Daten in lokale SurrealDB importieren"
 	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
 	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
+	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
 # ============================================================================
@@ -364,6 +365,35 @@ context-smoke:
 	$(MAKE) context-query-smoke
 	@echo "[OK] context-smoke: vollstaendige Pipeline abgeschlossen"
 	@echo "Ziel: lokale SurrealDB (127.0.0.1:8010). LR-Verdict: NO-GO"
+
+context-smoke-db: context-env-check
+	@echo "=== Hard DB-backed Context Smoke (fail-closed) #2460 ==="
+	@echo "NOTE: Lokaler Scope nur. LR: NO-GO. Kein Echtgeld. Kein Trading-Start."
+	@echo "--- Schritt 1: Hard Schema-Check (Container + Schema, fail-closed) ---"
+	@python3 tools/surrealdb/local_schema_check.py --hard-mode \
+		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@echo "--- Schritt 2: Scan (Snapshot + JSONL erzeugen) ---"
+	$(MAKE) context-scan
+	@echo "--- Schritt 3: Import (echter SurrealDB-Adapter, fail-closed) ---"
+	@python3 -m tools.surrealdb.context_importer apply \
+		--input-dir $(CONTEXT_SNAP_DIR) \
+		--surreal-url http://127.0.0.1:8010 \
+		--namespace cdb_context_local \
+		--database cdb_context_intel \
+		--apply --apply-mode local-dev \
+		--config infrastructure/config/surrealdb/context_import.local.example.yaml \
+		--run-id $$(date +%Y%m%d%H%M%S) \
+		--adapter surrealdb-local \
+		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@echo "--- Schritt 4: Query-Smoke (hard, >= 1 Record, fail-closed) ---"
+	@python3 -m tools.surrealdb.context_query \
+		--adapter surrealdb-local \
+		--hard-mode \
+		--min-count 1 \
+		--config infrastructure/config/surrealdb/context_query.local.example.yaml \
+		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb} \
+		show-snapshot
+	@echo "[OK] context-smoke-db: fail-closed DB-backed smoke complete (LR: NO-GO)"
 
 # ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================

@@ -261,6 +261,49 @@ CONTEXT_SNAP_DIR=/anderer/pfad make context-scan         # Override
 
 **Graceful fail:** `context-query-smoke` gibt `[NOTE]`-Meldungen aus wenn kein Container läuft — das ist kein Fehler, solange `context-scan` und `context-import-dry-run` grün waren.
 
+**Wichtiger Hinweis:** `make context-smoke` ist ein **Pfad-Smoke-only**. Der finale
+`[OK]` beweist nicht, dass `cdb_surrealdb` online ist oder Daten tatsächlich
+geschrieben wurden. Für echten DB-backed Nachweis → `make context-smoke-db`.
+
+---
+
+## Hard DB-backed Smoke (`context-smoke-db`)
+
+**Issue:** #2460 — fail-closed DB-backed context smoke.
+
+Beweist, dass der echte SurrealDB-Container läuft, das Schema vollständig ist,
+Daten importiert wurden und mindestens 1 Record lesbar ist. Schlägt fehl (Exit 1)
+wenn eine Bedingung nicht erfüllt ist.
+
+```bash
+make context-smoke-db
+```
+
+Voraussetzung: `cdb_surrealdb` muss laufen (`make context-up`).
+
+**Schritte:**
+
+| Schritt | Befehl / Flag | Fail-closed |
+|---|---|---|
+| 1 | `local_schema_check.py --hard-mode` | Exit 1 wenn Container offline oder Schema fehlt |
+| 2 | `make context-scan` | Scan + JSONL in `artifacts/context-intelligence/latest/` |
+| 3 | `context_importer apply --adapter surrealdb-local` | Exit 1 wenn DB-Write fehlschlägt |
+| 4 | `context_query --adapter surrealdb-local --hard-mode --min-count 1` | Exit 1 wenn DB offline oder 0 Records |
+
+**Unterschied zu `context-smoke`:**
+
+| Eigenschaft | `context-smoke` | `context-smoke-db` |
+|---|---|---|
+| Container erforderlich | nein (graceful skip) | **ja** (Exit 1 wenn offline) |
+| Echter DB-Write | nein (InMemory-Adapter) | **ja** (`surrealdb-local`-Adapter) |
+| Query-Ergebnis enforced | nein (`[NOTE]` graceful) | **ja** (`--min-count 1`, Exit 1 wenn 0 Records) |
+| CI-geeignet | ja (ohne Container) | nur mit laufendem `cdb_surrealdb` |
+
+**Erfolg:** `[OK] context-smoke-db: fail-closed DB-backed smoke complete (LR: NO-GO)`
+
+**LR-Hinweis:** Dieser Nachweis ist lokale Context-Infrastruktur. LR-Go bleibt
+**NO-GO**. Kein Trading-Start. Kein Echtgeld.
+
 ---
 
 ## Häufige Fehler
