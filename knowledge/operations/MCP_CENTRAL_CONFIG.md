@@ -142,14 +142,19 @@ readonly identity. Postgres MCP must use a dedicated readonly login, preferably
 Minimum checks before any later `#1905` DB discovery:
 
 ```sql
-SELECT current_database(), current_user;
+SELECT current_database(), current_user, session_user;
 ```
 
 Expected:
 
-- `current_user = cdb_readonly`, or an explicitly approved equivalent readonly login
+- `session_user = cdb_readonly`, or an explicitly approved equivalent readonly login
+- `current_user = session_user` for the discovery session, unless an explicitly documented readonly role-switch pattern is approved
 - effective `SELECT` on `public.correlation_ledger`
 - no effective `INSERT`, `UPDATE`, or `DELETE` on `public.correlation_ledger`
+
+`current_user` alone is not sufficient for Agent/MCP discovery acceptance,
+because role switching can change it inside a session. The login identity must
+also be readonly via `session_user`.
 
 If any of these checks fail, the discovery path is **fail-closed** and no DB
 discovery should proceed.
