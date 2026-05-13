@@ -47,6 +47,38 @@ ws_connected = Gauge("ws_connected", "WS connection status (0/1)")
 last_message_ts_ms = Gauge("last_message_ts_ms", "Last message timestamp (ms)")
 redis_publish_total = Counter("redis_publish_total", "Total Redis publishes")
 redis_publish_errors_total = Counter("redis_publish_errors_total", "Redis publish errors")
+_last_client_counter_values = {
+    "decoded_messages_total": None,
+    "decode_errors_total": None,
+}
+
+
+def _advance_counter_from_absolute(counter: Counter, counter_name: str, raw_value) -> None:
+    """
+    Advance a Prometheus Counter from an absolute client value using delta logic.
+
+    Prometheus Counters are monotonic and cannot be set directly. We keep the last
+    observed absolute value and only increment by positive deltas. On resets or
+    lower values we update the baseline without emitting negative increments.
+    """
+    try:
+        current_value = float(raw_value)
+    except (TypeError, ValueError):
+        return
+
+    if current_value < 0:
+        return
+
+    previous_value = _last_client_counter_values.get(counter_name)
+    if previous_value is None:
+        _last_client_counter_values[counter_name] = current_value
+        return
+
+    delta = current_value - previous_value
+    if delta > 0:
+        counter.inc(delta)
+
+    _last_client_counter_values[counter_name] = current_value
 
 
 @app.route("/health", methods=["GET"])
@@ -90,8 +122,16 @@ def metrics():
     client = ws_client  # Local copy, reduces race risk
     if client is not None:
         m = client.get_metrics()
-        decoded_messages_total.set(m.get("decoded_messages_total", 0))
-        decode_errors_total.set(m.get("decode_errors_total", 0))
+        _advance_counter_from_absolute(
+            decoded_messages_total,
+            "decoded_messages_total",
+            m.get("decoded_messages_total", 0),
+        )
+        _advance_counter_from_absolute(
+            decode_errors_total,
+            "decode_errors_total",
+            m.get("decode_errors_total", 0),
+        )
         ws_connected.set(m.get("ws_connected", 0))
         last_message_ts_ms.set(m.get("last_message_ts_ms", 0))
     return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
