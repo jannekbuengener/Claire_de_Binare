@@ -75,6 +75,32 @@ Sekundäre Einheit (optional, abgeleitet):
 
 ---
 
+### A1. Identity vs Queryability Canon
+
+**Heutiger repo-backed Identity-Canon:**
+- `correlation_id` ist die **first-class Chain-Root-Identität** für die durchgehende SIGNAL→DECISION→ORDER→FILL-Kette.
+- `signal_id`, `decision_id`, `order_id`, `fill_id` sind **first-class Event-Anker** innerhalb dieser Kette.
+
+**Heutiger repo-backed Queryability-/Audit-Kontext:**
+- `bot_id`, `config_hash` und `config_snapshot` sind heute **SIGNAL-anchor-/payload-abgeleitete** Audit- und Experiment-Kontextdaten.
+- Diese Felder sind aktuell **keine** eigene first-class Ledger-Identität im `correlation_ledger`, sondern werden aus `payload` bzw. `payload.metadata.*` aufgelöst.
+- Daraus abgeleitete Export-/CLI-Filter sind zulässig, aendern aber den heutigen Identity-Canon nicht.
+
+**Nicht produktiv-kanonisch heute:**
+- `experiment_id` ist aktuell **nicht** als first-class Feld, Ledger-ID oder kanonische Vergleichseinheit eingefuehrt.
+- `capture_id` ist aktuell **nicht** als first-class Feld, Ledger-ID oder kanonische Vergleichseinheit eingefuehrt.
+- Es gibt heute bewusst **keine** repo-backed Paper-Run-ID / Session-ID, die den `paper_reference_window`-Canon ersetzt.
+
+**Guardrail fuer kuenftige First-Class-Promotion:**
+- Eine Promotion von `experiment_id`, `capture_id` oder alternativen first-class Query-Surfaces ist nur zulaessig, wenn gleichzeitig belegt sind:
+  - konkreter Query-/Audit-Bedarf, der mit den bestehenden SIGNAL-anchor-/payload-Surfaces nicht sauber abgedeckt ist
+  - stabile Producer-Ownership fuer das neue Feld ueber die relevanten Write-Pfade
+  - expliziter Migrationsplan fuer Schema/Writer/Reader
+  - expliziter Backfill-/Compatibility-Plan fuer bestehende Ledger-Daten und Exporter
+  - keine implizite LR-, Live-, Echtgeld- oder `#1905`-Ableitung aus der neuen Surface
+
+---
+
 ### B. Pflichtfelder (comparison-grade)
 
 Ein `paper_reference_window` ist **comparison-grade**, wenn *alle* folgenden Bedingungen erfüllt sind:
