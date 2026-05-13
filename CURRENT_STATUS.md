@@ -3,16 +3,19 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-10
+**Last Updated**: 2026-05-13
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-05-10)
+## Repo / Engineering Status (2026-05-13)
 
-- **main**: green (HEAD `2fbeebafeaaa`, PR #2424 gemergt)
+- **main**: green (HEAD `e1382919f32f`, PR #2451 gemergt; Merge-Commit `e1382919f32fd5d694aa5bdd8b235ebb849c6419`)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #2289 (Security Alert Readout Epic — offen, persist-via-pr Slice geliefert via PR #2424; offener Scope: Issue-Automation, #2290 upstream-blocked)
+  - #2448 (CURRENT_STATUS focus reconcile — aktueller Hygiene-Slice)
+  - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
+  - #2289 (Security Alert Readout Epic — OPEN)
+  - #2290 (Python/Base-Image Alert-Welle — OPEN, `status:blocked` / upstream-blocked)
 - **Boundary**: Nur aktuell relevante offene PRs gehoeren in den Fokusblock oben. Merged, closed oder rein historische Hinweise gehoeren in den Session-Ledger darunter.
 
 ---

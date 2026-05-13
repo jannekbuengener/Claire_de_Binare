@@ -157,10 +157,13 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: cdb_postgres_exporter
     restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-claire_user}
+      POSTGRES_DB: ${POSTGRES_DB:-claire_de_binare}
     secrets:
-      - postgres_password_dsn
+      - postgres_password
     entrypoint: ["/bin/sh", "-c"]
-    command: ["DATA_SOURCE_NAME=$$(cat /run/secrets/postgres_password_dsn) exec /bin/postgres_exporter"]
+    command: ["export PGPASSWORD=\"$$(cat /run/secrets/postgres_password | tr -d '\\n')\" && DATA_SOURCE_NAME=\"host=cdb_postgres port=5432 user=$${POSTGRES_USER} dbname=$${POSTGRES_DB} sslmode=disable\" exec /bin/postgres_exporter"]
     healthcheck:
       test: ["CMD-SHELL", "nc -z localhost 9187 || exit 1"]
       interval: 30s
