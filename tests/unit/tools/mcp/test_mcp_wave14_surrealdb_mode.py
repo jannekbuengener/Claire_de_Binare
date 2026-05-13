@@ -34,7 +34,6 @@ from tools.mcp.context_decision_tools import (
 )
 from tools.surrealdb.context_query import (
     QueryAdapter,
-    ContextQueryError,
     WriteDeniedError,
 )
 

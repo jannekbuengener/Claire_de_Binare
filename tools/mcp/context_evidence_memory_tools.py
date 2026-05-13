@@ -499,28 +499,28 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
                 ),
             )
         except EvidenceLookupError:
-            pass
+            pass  # soft: trust summary builds from available sub-results only
         try:
             claim_result_raw = resolve_claims_v1(
                 _cl_raw,
                 ClaimResolveRequest(mode="by_topic", topic=_topic, limit=_limit),
             )
         except ClaimResolverError:
-            pass
+            pass  # soft: trust summary builds from available sub-results only
         try:
             memory_result_raw = read_memory_v1(
                 _mem_raw,
                 MemoryReadRequest(mode="by_scope", scope=scope, limit=_limit),
             )
         except MemoryReadError:
-            pass
+            pass  # soft: trust summary builds from available sub-results only
         try:
             decision_result_raw = query_decision_history_v1(
                 _dec_raw,
                 DecisionHistoryQueryRequest(mode="by_scope", scope=scope, limit=_limit),
             )
         except DecisionHistoryQueryError:
-            pass
+            pass  # soft: trust summary builds from available sub-results only
     else:
         _source = "in_memory"
         evidence_result_raw = _as_mapping(params.get("evidence_result"))
