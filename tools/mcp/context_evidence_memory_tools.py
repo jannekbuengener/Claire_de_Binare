@@ -37,6 +37,16 @@ from tools.surrealdb.trust_summary import (
     TrustSummaryRequest,
     build_trust_summary_v1,
 )
+from tools.surrealdb.decision_history_query import (
+    DecisionHistoryQueryError,
+    DecisionHistoryQueryRequest,
+    query_decision_history_v1,
+)
+from tools.surrealdb.context_query import ContextQueryError
+from tools.mcp.surrealdb_adapter_factory import (
+    adapter_source,
+    build_adapter_from_params,
+)
 
 TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE = "cdb_context_evidence_resolve"
 TOOL_CDB_CONTEXT_CLAIM_RESOLVE = "cdb_context_claim_resolve"
@@ -82,7 +92,9 @@ def _metadata(*, source: str = "in_memory", query_time_ms: int = 0) -> dict[str,
     }
 
 
-def _error_response(tool: str, *, code: str, message: str, details: Mapping[str, Any] | None = None) -> dict[str, Any]:
+def _error_response(
+    tool: str, *, code: str, message: str, details: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
     payload: dict[str, Any] = {
         "tool": tool,
         "status": "error",
@@ -94,7 +106,9 @@ def _error_response(tool: str, *, code: str, message: str, details: Mapping[str,
     return payload
 
 
-def _ok_response(tool: str, *, result: Mapping[str, Any], source: str = "in_memory") -> dict[str, Any]:
+def _ok_response(
+    tool: str, *, result: Mapping[str, Any], source: str = "in_memory"
+) -> dict[str, Any]:
     return {
         "tool": tool,
         "status": "ok",
@@ -146,15 +160,43 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
     Tool: cdb_context_evidence_resolve
     Read-only, fail-closed, no writes.
     """
-    parsed = _parse_tool_request(request, expected_tool=TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE)
+    parsed = _parse_tool_request(
+        request, expected_tool=TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE
+    )
     if isinstance(parsed, dict):
         return parsed
 
     params = parsed.parameters
 
-    evidence_records = _extract_records(params, "evidence_records", TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE)
-    if isinstance(evidence_records, dict):
-        return evidence_records
+    # Adapter opt-in (Issue #2461): DB-backed mode when adapter_config_path is set.
+    if params.get("adapter_config_path") is not None:
+        _adapter_result = build_adapter_from_params(
+            params, TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE
+        )
+        if isinstance(_adapter_result, dict):
+            return _adapter_result
+        _adapter, _config = _adapter_result
+        _limit = min(
+            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
+        )
+        try:
+            evidence_records: list[Mapping[str, Any]] = _adapter.execute(
+                f"SELECT * FROM evidence LIMIT {_limit}"
+            )
+        except ContextQueryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
+                code="adapter_query_error",
+                message=str(exc),
+            )
+        _source = adapter_source(_adapter)
+    else:
+        evidence_records = _extract_records(
+            params, "evidence_records", TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE
+        )
+        if isinstance(evidence_records, dict):
+            return evidence_records
+        _source = "in_memory"
 
     mode = _as_str_or_none(params.get("mode")) or "by_artifact"
 
@@ -164,7 +206,9 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         try:
             freshness_days = int(freshness_raw)
         except (TypeError, ValueError):
-            logging.getLogger(__name__).debug("Invalid freshness_days value, ignoring", exc_info=True)
+            logging.getLogger(__name__).debug(
+                "Invalid freshness_days value, ignoring", exc_info=True
+            )
 
     min_confidence_raw = params.get("min_confidence")
     min_confidence: float | None = None
@@ -172,7 +216,9 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         try:
             min_confidence = float(min_confidence_raw)
         except (TypeError, ValueError):
-            logging.getLogger(__name__).debug("Invalid min_confidence value, ignoring", exc_info=True)
+            logging.getLogger(__name__).debug(
+                "Invalid min_confidence value, ignoring", exc_info=True
+            )
 
     try:
         ev_request = EvidenceLookupRequest(
@@ -207,7 +253,9 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
 
-    return _ok_response(TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE, result=result)
+    return _ok_response(
+        TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE, result=result, source=_source
+    )
 
 
 # ── Claim Resolve ────────────────────────────────────────────────────────────
@@ -225,9 +273,35 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
 
     params = parsed.parameters
 
-    claim_records = _extract_records(params, "claim_records", TOOL_CDB_CONTEXT_CLAIM_RESOLVE)
-    if isinstance(claim_records, dict):
-        return claim_records
+    # Adapter opt-in (Issue #2461)
+    if params.get("adapter_config_path") is not None:
+        _adapter_result = build_adapter_from_params(
+            params, TOOL_CDB_CONTEXT_CLAIM_RESOLVE
+        )
+        if isinstance(_adapter_result, dict):
+            return _adapter_result
+        _adapter, _config = _adapter_result
+        _limit = min(
+            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
+        )
+        try:
+            claim_records: list[Mapping[str, Any]] = _adapter.execute(
+                f"SELECT * FROM claim LIMIT {_limit}"
+            )
+        except ContextQueryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_CLAIM_RESOLVE,
+                code="adapter_query_error",
+                message=str(exc),
+            )
+        _source = adapter_source(_adapter)
+    else:
+        claim_records = _extract_records(
+            params, "claim_records", TOOL_CDB_CONTEXT_CLAIM_RESOLVE
+        )
+        if isinstance(claim_records, dict):
+            return claim_records
+        _source = "in_memory"
 
     mode = _as_str_or_none(params.get("mode")) or "by_topic"
 
@@ -251,10 +325,16 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
         )
 
     known_evidence_ids_raw = params.get("known_evidence_ids")
-    known_evidence_ids = set(known_evidence_ids_raw) if isinstance(known_evidence_ids_raw, list) else None
+    known_evidence_ids = (
+        set(known_evidence_ids_raw)
+        if isinstance(known_evidence_ids_raw, list)
+        else None
+    )
 
     try:
-        result = resolve_claims_v1(claim_records, claim_request, known_evidence_ids=known_evidence_ids)
+        result = resolve_claims_v1(
+            claim_records, claim_request, known_evidence_ids=known_evidence_ids
+        )
     except ClaimResolverError as exc:
         return _error_response(
             TOOL_CDB_CONTEXT_CLAIM_RESOLVE,
@@ -266,7 +346,7 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
 
-    return _ok_response(TOOL_CDB_CONTEXT_CLAIM_RESOLVE, result=result)
+    return _ok_response(TOOL_CDB_CONTEXT_CLAIM_RESOLVE, result=result, source=_source)
 
 
 # ── Memory Get ───────────────────────────────────────────────────────────────
@@ -284,9 +364,33 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
 
     params = parsed.parameters
 
-    memory_records = _extract_records(params, "memory_records", TOOL_CDB_CONTEXT_MEMORY_GET)
-    if isinstance(memory_records, dict):
-        return memory_records
+    # Adapter opt-in (Issue #2461)
+    if params.get("adapter_config_path") is not None:
+        _adapter_result = build_adapter_from_params(params, TOOL_CDB_CONTEXT_MEMORY_GET)
+        if isinstance(_adapter_result, dict):
+            return _adapter_result
+        _adapter, _config = _adapter_result
+        _limit = min(
+            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
+        )
+        try:
+            memory_records: list[Mapping[str, Any]] = _adapter.execute(
+                f"SELECT * FROM agent_memory LIMIT {_limit}"
+            )
+        except ContextQueryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_MEMORY_GET,
+                code="adapter_query_error",
+                message=str(exc),
+            )
+        _source = adapter_source(_adapter)
+    else:
+        memory_records = _extract_records(
+            params, "memory_records", TOOL_CDB_CONTEXT_MEMORY_GET
+        )
+        if isinstance(memory_records, dict):
+            return memory_records
+        _source = "in_memory"
 
     mode = _as_str_or_none(params.get("mode")) or "by_scope"
 
@@ -296,7 +400,9 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
         try:
             freshness_days = int(freshness_raw)
         except (TypeError, ValueError):
-            logging.getLogger(__name__).debug("Invalid freshness_days param, ignoring", exc_info=True)
+            logging.getLogger(__name__).debug(
+                "Invalid freshness_days param, ignoring", exc_info=True
+            )
 
     try:
         mem_request = MemoryReadRequest(
@@ -330,7 +436,7 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
 
-    return _ok_response(TOOL_CDB_CONTEXT_MEMORY_GET, result=result)
+    return _ok_response(TOOL_CDB_CONTEXT_MEMORY_GET, result=result, source=_source)
 
 
 # ── Trust Summary ─────────────────────────────────────────────────────────────
@@ -356,10 +462,71 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             message="scope is required for trust summary",
         )
 
-    evidence_result_raw = _as_mapping(params.get("evidence_result"))
-    claim_result_raw = _as_mapping(params.get("claim_result"))
-    decision_result_raw = _as_mapping(params.get("decision_result"))
-    memory_result_raw = _as_mapping(params.get("memory_result"))
+    # Adapter opt-in (Issue #2461): fetch all sub-data from local SurrealDB.
+    if params.get("adapter_config_path") is not None:
+        _adapter_result = build_adapter_from_params(
+            params, TOOL_CDB_CONTEXT_TRUST_SUMMARY
+        )
+        if isinstance(_adapter_result, dict):
+            return _adapter_result
+        _adapter, _config = _adapter_result
+        _limit = min(
+            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
+        )
+        try:
+            _ev_raw = _adapter.execute(f"SELECT * FROM evidence LIMIT {_limit}")
+            _cl_raw = _adapter.execute(f"SELECT * FROM claim LIMIT {_limit}")
+            _mem_raw = _adapter.execute(f"SELECT * FROM agent_memory LIMIT {_limit}")
+            _dec_raw = _adapter.execute(f"SELECT * FROM decision_event LIMIT {_limit}")
+        except ContextQueryError as exc:
+            return _error_response(
+                TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+                code="adapter_query_error",
+                message=str(exc),
+            )
+        _source = adapter_source(_adapter)
+        _topic = _as_str_or_none(params.get("topic"))
+        _artifact = _as_str_or_none(params.get("artifact"))
+        evidence_result_raw: dict[str, Any] | None = None
+        claim_result_raw: dict[str, Any] | None = None
+        memory_result_raw: dict[str, Any] | None = None
+        decision_result_raw: dict[str, Any] | None = None
+        try:
+            evidence_result_raw = lookup_evidence_v1(
+                _ev_raw,
+                EvidenceLookupRequest(
+                    mode="by_artifact", artifact=_artifact, limit=_limit
+                ),
+            )
+        except EvidenceLookupError:
+            pass
+        try:
+            claim_result_raw = resolve_claims_v1(
+                _cl_raw,
+                ClaimResolveRequest(mode="by_topic", topic=_topic, limit=_limit),
+            )
+        except ClaimResolverError:
+            pass
+        try:
+            memory_result_raw = read_memory_v1(
+                _mem_raw,
+                MemoryReadRequest(mode="by_scope", scope=scope, limit=_limit),
+            )
+        except MemoryReadError:
+            pass
+        try:
+            decision_result_raw = query_decision_history_v1(
+                _dec_raw,
+                DecisionHistoryQueryRequest(mode="by_scope", scope=scope, limit=_limit),
+            )
+        except DecisionHistoryQueryError:
+            pass
+    else:
+        _source = "in_memory"
+        evidence_result_raw = _as_mapping(params.get("evidence_result"))
+        claim_result_raw = _as_mapping(params.get("claim_result"))
+        decision_result_raw = _as_mapping(params.get("decision_result"))
+        memory_result_raw = _as_mapping(params.get("memory_result"))
 
     try:
         trust_request = TrustSummaryRequest(
@@ -393,4 +560,4 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
 
-    return _ok_response(TOOL_CDB_CONTEXT_TRUST_SUMMARY, result=result)
+    return _ok_response(TOOL_CDB_CONTEXT_TRUST_SUMMARY, result=result, source=_source)
