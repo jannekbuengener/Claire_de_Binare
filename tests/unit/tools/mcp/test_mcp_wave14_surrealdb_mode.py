@@ -139,7 +139,7 @@ def test_evidence_resolve_db_mode_ok(monkeypatch) -> None:
     assert result["result"]["approval_semantics"]["no_echtgeld_go"] is True
     mock_adapter.execute.assert_called_once()
     call_arg = mock_adapter.execute.call_args[0][0]
-    assert "evidence" in call_arg.lower()
+    assert "evidence_ref" in call_arg.lower()
     assert "SELECT" in call_arg.upper()
 
 
@@ -433,3 +433,68 @@ def test_evidence_resolve_adapter_query_error_propagates(monkeypatch) -> None:
     assert result["status"] == "error"
     assert result["error"]["code"] == "adapter_query_error"
     assert "denied" in result["error"]["message"].lower()
+
+
+# ---------------------------------------------------------------------------
+# Config alignment: allowed_tables covers all Wave-14 handler tables
+# ---------------------------------------------------------------------------
+
+_WAVE14_HANDLER_TABLES = {
+    "evidence_ref",
+    "claim",
+    "agent_memory",
+    "decision_event",
+}
+
+_EXAMPLE_CONFIG_PATH = (
+    "infrastructure/config/surrealdb/context_query.local.example.yaml"
+)
+
+
+@pytest.mark.unit
+def test_example_config_allows_all_wave14_tables() -> None:
+    """All tables queried by the DB-backed Wave-14 handlers must be in
+    the documented example config's allowed_tables list (Issue #2461).
+    """
+    import yaml  # stdlib-bundled via PyYAML; already a project dependency
+
+    with open(_EXAMPLE_CONFIG_PATH) as fh:
+        cfg = yaml.safe_load(fh)
+
+    allowed: set[str] = set(cfg.get("allowed_tables", []))
+    missing = _WAVE14_HANDLER_TABLES - allowed
+    assert missing == set(), (
+        f"Wave-14 tables missing from allowed_tables in {_EXAMPLE_CONFIG_PATH}: "
+        f"{sorted(missing)}"
+    )
+
+
+@pytest.mark.unit
+def test_evidence_handler_queries_evidence_ref_not_evidence(monkeypatch) -> None:
+    """evidence_resolve DB mode must query 'evidence_ref' (schema table name),
+    not 'evidence' (incorrect alias rejected by statement classifier).
+    """
+    mock_adapter = _make_mock_adapter([_EVIDENCE_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_evidence_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "all",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert (
+        "evidence_ref" in call_arg
+    ), f"Handler must query 'evidence_ref', got: {call_arg!r}"
+    assert "FROM evidence " not in call_arg and not call_arg.endswith(
+        "FROM evidence"
+    ), f"Handler must not query bare 'evidence' table, got: {call_arg!r}"

@@ -181,7 +181,7 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         )
         try:
             evidence_records: list[Mapping[str, Any]] = _adapter.execute(
-                f"SELECT * FROM evidence LIMIT {_limit}"
+                f"SELECT * FROM evidence_ref LIMIT {_limit}"
             )
         except ContextQueryError as exc:
             return _error_response(
@@ -474,7 +474,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
         )
         try:
-            _ev_raw = _adapter.execute(f"SELECT * FROM evidence LIMIT {_limit}")
+            _ev_raw = _adapter.execute(f"SELECT * FROM evidence_ref LIMIT {_limit}")
             _cl_raw = _adapter.execute(f"SELECT * FROM claim LIMIT {_limit}")
             _mem_raw = _adapter.execute(f"SELECT * FROM agent_memory LIMIT {_limit}")
             _dec_raw = _adapter.execute(f"SELECT * FROM decision_event LIMIT {_limit}")

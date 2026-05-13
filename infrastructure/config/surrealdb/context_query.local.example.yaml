@@ -112,6 +112,11 @@ allowed_tables:
   - config_reference
   - doc_code_link
   - dependency_edge
+  # Wave-14 MCP context tables (Issue #2461)
+  - evidence_ref
+  - claim
+  - decision_event
+  - agent_memory
 
 forbidden_tables:
   # Trading-state tables -- never allowed in the Context Intelligence DB.
