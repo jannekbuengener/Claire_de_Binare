@@ -111,6 +111,19 @@ _CLAIM_SCHEMA_RECORD: dict[str, Any] = {
     "confidence": 0.9,
 }
 
+# Record matching SurrealDB agent_memory schema: uses created_by (not agent),
+# ttl (not ttl_days), and omits topic/topics/artifact_refs/decision_refs.
+_MEMORY_SCHEMA_RECORD: dict[str, Any] = {
+    "memory_id": "mem-schema-001",
+    "scope": "wave14",
+    "namespace": "session",
+    "memory_type": "constraint",
+    "content": "All MCP tools are read-only",
+    "created_by": "agent-test-001",
+    "ttl": 7,
+    "source_refs": ["docs/AGENTS.md"],
+}
+
 
 def _make_mock_adapter(
     records: list[dict[str, Any]], status: str = "surrealdb-local"
@@ -766,3 +779,96 @@ def test_decision_replay_filter_pushdown_by_scope(monkeypatch) -> None:
     assert (
         "wave14" in call_arg
     ), f"Expected scope value in WHERE clause, got: {call_arg!r}"
+
+
+# ---------------------------------------------------------------------------
+# Bu_hB: invalid limit returns structured MCP error (not bare ValueError)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_evidence_resolve_db_limit_invalid_returns_error(monkeypatch) -> None:
+    """Bu_hB: limit='bad' must return invalid_parameters error, not raise ValueError."""
+    mock_adapter = _make_mock_adapter([_EVIDENCE_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_evidence_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_artifact",
+                "artifact": "some/path",
+                "limit": "bad",
+            },
+        }
+    )
+
+    assert result["status"] == "error", result
+    assert result["error"]["code"] == "invalid_parameters"
+    mock_adapter.execute.assert_not_called()
+
+
+@pytest.mark.unit
+def test_memory_get_db_limit_invalid_returns_error(monkeypatch) -> None:
+    """Bu_hB: limit=None (non-integer) in memory handler returns invalid_parameters."""
+    mock_adapter = _make_mock_adapter([_MEMORY_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_memory_get(
+        {
+            "tool": TOOL_CDB_CONTEXT_MEMORY_GET,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_scope",
+                "scope": "wave14",
+                "limit": "not-a-number",
+            },
+        }
+    )
+
+    assert result["status"] == "error", result
+    assert result["error"]["code"] == "invalid_parameters"
+    mock_adapter.execute.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Bu_hE: _normalize_memory_row maps created_by → agent and ttl → ttl_days
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_memory_get_normalizes_schema_row(monkeypatch) -> None:
+    """Bu_hE: created_by maps to agent; by_agent mode returns schema-format record."""
+    mock_adapter = _make_mock_adapter([_MEMORY_SCHEMA_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_memory_get(
+        {
+            "tool": TOOL_CDB_CONTEXT_MEMORY_GET,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_agent",
+                "agent": "agent-test-001",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    matched = result["result"]["matched_memory"]
+    assert (
+        len(matched) == 1
+    ), f"Expected 1 match after schema normalisation, got {matched}"
+    assert matched[0]["memory_id"] == "mem-schema-001"

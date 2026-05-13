@@ -215,6 +215,58 @@ def _normalize_claim_row(row: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _normalize_memory_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Project SurrealDB agent_memory schema fields to the memory-reader contract.
+
+    SurrealDB agent_memory schema  → memory reader contract
+    ─────────────────────────────────────────────────────────
+    created_by (str)  → agent    (str)
+    ttl        (int)  → ttl_days (int)   [unit assumed days; only int field present]
+    scope      (str)  → agent fallback if created_by is absent
+
+    Resolver-only fields absent from the schema receive empty defaults so that
+    ``read_memory_v1`` can operate without KeyErrors.  Modes ``by_topic``,
+    ``by_artifact``, and ``by_decision`` will return empty results for rows
+    loaded from a local DB that does not populate those fields.
+    """
+    result = dict(row)
+    if "agent" not in result:
+        result["agent"] = result.get("created_by") or result.get("scope") or ""
+    if "ttl_days" not in result and "ttl" in result:
+        result["ttl_days"] = result["ttl"]
+    if "topic" not in result:
+        result["topic"] = None
+    if "topics" not in result:
+        result["topics"] = []
+    if "artifact_refs" not in result:
+        result["artifact_refs"] = []
+    if "decision_refs" not in result:
+        result["decision_refs"] = []
+    return result
+
+
+def _parse_db_limit(
+    params: Mapping[str, Any], tool: str, *, default: int = 200
+) -> int | dict[str, Any]:
+    """Parse the *limit* parameter, returning a structured error on invalid input.
+
+    The DB-backed handlers compute ``_limit`` before the main ``try`` block, so
+    a raw ``int()`` call would raise ``ValueError`` for malformed client input
+    instead of returning the fail-closed MCP error payload.  This helper catches
+    the conversion error and returns the same ``invalid_parameters`` response
+    used by the rest of the MCP surface.
+    """
+    raw = params.get("limit", default)
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return _error_response(
+            tool,
+            code="invalid_parameters",
+            message=f"limit must be an integer, got {raw!r}",
+        )
+
+
 def _build_evidence_ref_where(params: Mapping[str, Any]) -> str:
     """Build a SurrealQL WHERE clause for the evidence_ref table.
 
@@ -316,9 +368,10 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         if isinstance(_adapter_result, dict):
             return _adapter_result
         _adapter, _config = _adapter_result
-        _limit = min(
-            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
-        )
+        _limit_raw = _parse_db_limit(params, TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE)
+        if isinstance(_limit_raw, dict):
+            return _limit_raw
+        _limit = min(_limit_raw, _config.max_limit_hard if _config else 200)
         _where = _build_evidence_ref_where(params)
         _suffix = f" {_where}" if _where else ""
         try:
@@ -426,9 +479,10 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
         if isinstance(_adapter_result, dict):
             return _adapter_result
         _adapter, _config = _adapter_result
-        _limit = min(
-            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
-        )
+        _limit_raw = _parse_db_limit(params, TOOL_CDB_CONTEXT_CLAIM_RESOLVE)
+        if isinstance(_limit_raw, dict):
+            return _limit_raw
+        _limit = min(_limit_raw, _config.max_limit_hard if _config else 200)
         _where = _build_claim_where(params)
         _suffix = f" {_where}" if _where else ""
         try:
@@ -520,9 +574,10 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
         if isinstance(_adapter_result, dict):
             return _adapter_result
         _adapter, _config = _adapter_result
-        _limit = min(
-            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
-        )
+        _limit_raw = _parse_db_limit(params, TOOL_CDB_CONTEXT_MEMORY_GET)
+        if isinstance(_limit_raw, dict):
+            return _limit_raw
+        _limit = min(_limit_raw, _config.max_limit_hard if _config else 200)
         _where = _build_memory_where(params)
         _suffix = f" {_where}" if _where else ""
         try:
@@ -535,6 +590,7 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
                 code="adapter_query_error",
                 message=str(exc),
             )
+        memory_records = [_normalize_memory_row(r) for r in memory_records]
         _source = adapter_source(_adapter)
     else:
         memory_records = _extract_records(
@@ -622,9 +678,10 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         if isinstance(_adapter_result, dict):
             return _adapter_result
         _adapter, _config = _adapter_result
-        _limit = min(
-            int(params.get("limit", 200)), _config.max_limit_hard if _config else 200
-        )
+        _limit_raw = _parse_db_limit(params, TOOL_CDB_CONTEXT_TRUST_SUMMARY)
+        if isinstance(_limit_raw, dict):
+            return _limit_raw
+        _limit = min(_limit_raw, _config.max_limit_hard if _config else 200)
         try:
             _ev_raw = _adapter.execute(f"SELECT * FROM evidence_ref LIMIT {_limit}")
             _cl_raw = _adapter.execute(f"SELECT * FROM claim LIMIT {_limit}")
@@ -665,7 +722,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             )  # soft: available sub-results used
         try:
             memory_result_raw = read_memory_v1(
-                _mem_raw,
+                [_normalize_memory_row(r) for r in _mem_raw],
                 MemoryReadRequest(mode="by_scope", scope=scope, limit=_limit),
             )
         except MemoryReadError as _exc:
