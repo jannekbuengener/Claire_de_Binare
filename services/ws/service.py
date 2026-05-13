@@ -71,6 +71,8 @@ def _advance_counter_from_absolute(counter: Counter, counter_name: str, raw_valu
 
     previous_value = _last_client_counter_values.get(counter_name)
     if previous_value is None:
+        if current_value > 0:
+            counter.inc(current_value)
         _last_client_counter_values[counter_name] = current_value
         return
 

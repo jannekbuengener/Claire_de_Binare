@@ -197,6 +197,26 @@ def test_counter_reset_lower_value_does_not_crash_or_negative_increment() -> Non
 
 
 @pytest.mark.unit
+def test_first_scrape_seeds_counter_from_absolute_client_value() -> None:
+    client = svc.app.test_client()
+    baseline = _metric_value(client.get("/metrics").data.decode(), "decoded_messages_total")
+
+    svc.ws_client = _DummyClient(
+        [
+            {
+                "decoded_messages_total": 12,
+                "decode_errors_total": 0,
+                "ws_connected": 1,
+                "last_message_ts_ms": 1700000000001,
+            }
+        ]
+    )
+
+    seeded = _metric_value(client.get("/metrics").data.decode(), "decoded_messages_total")
+    assert seeded == baseline + 12
+
+
+@pytest.mark.unit
 def test_load_mexc_client_class_raises_runtime_error_when_dependency_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
