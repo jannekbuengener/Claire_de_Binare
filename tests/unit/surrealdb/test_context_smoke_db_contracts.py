@@ -32,7 +32,6 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _MAKEFILE = Path(__file__).parents[3] / "Makefile"
-_LOCAL_SCHEMA_CHECK = Path(__file__).parents[3] / "tools" / "surrealdb" / "local_schema_check.py"
 _EXAMPLE_QUERY_CONFIG = Path(
     "infrastructure/config/surrealdb/context_query.local.example.yaml"
 )

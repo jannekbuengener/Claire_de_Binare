@@ -1985,8 +1985,6 @@ def main(argv: list[str] | None = None) -> int:
         )
         return EXIT_INTERNAL
 
-    print(rendered)
-
     min_count = getattr(args, "min_count", 0)
     if exit_code == EXIT_OK and min_count > 0:
         actual_count = payload.get("count", 0) if isinstance(payload, dict) else 0
@@ -2008,6 +2006,7 @@ def main(argv: list[str] | None = None) -> int:
             )
             return EXIT_VALIDATION_ERROR
 
+    print(rendered)
     return exit_code
 
 
