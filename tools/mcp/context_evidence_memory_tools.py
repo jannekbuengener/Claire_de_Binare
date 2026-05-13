@@ -193,6 +193,28 @@ def _normalize_evidence_ref_row(row: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
+def _normalize_claim_row(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Ensure claim rows have the fields the resolver contract expects.
+
+    The SurrealDB claim table (context_intelligence_v0.surql) does not define
+    ``topic``, ``topics``, ``artifact_refs``, or ``decision_refs``.  This
+    function adds empty defaults so the resolver never KeyErrors on absent
+    fields.  DB-backed lookups should use ``by_scope``, ``by_claim_id``, or
+    ``by_status``; ``by_topic``/``by_artifact``/``by_decision_ref`` modes will
+    return empty results for rows loaded from the local DB.
+    """
+    result = dict(row)
+    if "topics" not in result:
+        result["topics"] = []
+    if "topic" not in result:
+        result["topic"] = None
+    if "artifact_refs" not in result:
+        result["artifact_refs"] = []
+    if "decision_refs" not in result:
+        result["decision_refs"] = []
+    return result
+
+
 def _build_evidence_ref_where(params: Mapping[str, Any]) -> str:
     """Build a SurrealQL WHERE clause for the evidence_ref table.
 
@@ -410,7 +432,7 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
         _where = _build_claim_where(params)
         _suffix = f" {_where}" if _where else ""
         try:
-            claim_records: list[Mapping[str, Any]] = _adapter.execute(
+            _raw_claim_rows: list[Mapping[str, Any]] = _adapter.execute(
                 f"SELECT * FROM claim{_suffix} LIMIT {_limit}"
             )
         except ContextQueryError as exc:
@@ -419,6 +441,9 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
                 code="adapter_query_error",
                 message=str(exc),
             )
+        claim_records: list[Mapping[str, Any]] = [
+            _normalize_claim_row(row) for row in _raw_claim_rows
+        ]
         _source = adapter_source(_adapter)
     else:
         claim_records = _extract_records(
@@ -625,29 +650,37 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
                     mode="by_artifact", artifact=_artifact, limit=_limit
                 ),
             )
-        except EvidenceLookupError:
-            pass  # soft: trust summary builds from available sub-results only
+        except EvidenceLookupError as _exc:
+            logging.getLogger(__name__).debug(
+                "trust_summary: evidence lookup skipped (%s)", _exc
+            )  # soft: available sub-results used
         try:
             claim_result_raw = resolve_claims_v1(
-                _cl_raw,
+                [_normalize_claim_row(r) for r in _cl_raw],
                 ClaimResolveRequest(mode="by_topic", topic=_topic, limit=_limit),
             )
-        except ClaimResolverError:
-            pass  # soft: trust summary builds from available sub-results only
+        except ClaimResolverError as _exc:
+            logging.getLogger(__name__).debug(
+                "trust_summary: claim lookup skipped (%s)", _exc
+            )  # soft: available sub-results used
         try:
             memory_result_raw = read_memory_v1(
                 _mem_raw,
                 MemoryReadRequest(mode="by_scope", scope=scope, limit=_limit),
             )
-        except MemoryReadError:
-            pass  # soft: trust summary builds from available sub-results only
+        except MemoryReadError as _exc:
+            logging.getLogger(__name__).debug(
+                "trust_summary: memory lookup skipped (%s)", _exc
+            )  # soft: available sub-results used
         try:
             decision_result_raw = query_decision_history_v1(
                 _dec_raw,
                 DecisionHistoryQueryRequest(mode="by_scope", scope=scope, limit=_limit),
             )
-        except DecisionHistoryQueryError:
-            pass  # soft: trust summary builds from available sub-results only
+        except DecisionHistoryQueryError as _exc:
+            logging.getLogger(__name__).debug(
+                "trust_summary: decision lookup skipped (%s)", _exc
+            )  # soft: available sub-results used
     else:
         _source = "in_memory"
         evidence_result_raw = _as_mapping(params.get("evidence_result"))

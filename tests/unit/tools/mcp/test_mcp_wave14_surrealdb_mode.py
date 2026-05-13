@@ -100,6 +100,17 @@ _EVIDENCE_SCHEMA_RECORD: dict[str, Any] = {
     "freshness": "fresh",
 }
 
+# Record matching SurrealDB claim schema: no topic/topics/artifact_refs/decision_refs.
+_CLAIM_SCHEMA_RECORD: dict[str, Any] = {
+    "claim_id": "claim-schema-001",
+    "title": "Schema-format claim",
+    "statement": "evidence_lookup is read-only",
+    "scope": "wave14",
+    "status": "supported",
+    "evidence_refs": ["ev-db-001"],
+    "confidence": 0.9,
+}
+
 
 def _make_mock_adapter(
     records: list[dict[str, Any]], status: str = "surrealdb-local"
@@ -643,6 +654,107 @@ def test_decision_history_filter_pushdown_by_scope(monkeypatch) -> None:
             "parameters": {
                 "adapter_config_path": _FAKE_CONFIG_PATH,
                 "mode": "by_scope",
+                "scope": "wave14",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert "WHERE" in call_arg.upper(), f"Expected WHERE clause, got: {call_arg!r}"
+    assert "scope" in call_arg, f"Expected 'scope' in WHERE clause, got: {call_arg!r}"
+    assert (
+        "wave14" in call_arg
+    ), f"Expected scope value in WHERE clause, got: {call_arg!r}"
+
+
+# ---------------------------------------------------------------------------
+# P2 (BuwCW): Claim schema projection
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_claim_resolve_normalizes_schema_row(monkeypatch) -> None:
+    """DB rows without topic/artifact_refs/decision_refs must not crash the resolver.
+
+    The SurrealDB claim schema does not define those fields; _normalize_claim_row
+    must add empty defaults so resolve_claims_v1 can operate on them.
+    """
+    mock_adapter = _make_mock_adapter([_CLAIM_SCHEMA_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_claim_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_CLAIM_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_scope",
+                "scope": "wave14",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    matched = result["result"]["matched_claims"]
+    assert (
+        len(matched) == 1
+    ), f"Expected 1 match after schema normalisation, got {matched}"
+    assert matched[0]["claim_id"] == "claim-schema-001"
+
+
+@pytest.mark.unit
+def test_claim_resolve_filter_pushdown_by_scope(monkeypatch) -> None:
+    """P2: by_scope mode on claim must push a WHERE scope = '...' clause."""
+    mock_adapter = _make_mock_adapter([_CLAIM_SCHEMA_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_claim_resolve(
+        {
+            "tool": TOOL_CDB_CONTEXT_CLAIM_RESOLVE,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "by_scope",
+                "scope": "wave14",
+            },
+        }
+    )
+
+    call_arg = mock_adapter.execute.call_args[0][0]
+    assert "WHERE" in call_arg.upper(), f"Expected WHERE clause, got: {call_arg!r}"
+    assert "scope" in call_arg, f"Expected 'scope' in WHERE clause, got: {call_arg!r}"
+    assert (
+        "wave14" in call_arg
+    ), f"Expected scope value in WHERE clause, got: {call_arg!r}"
+
+
+# ---------------------------------------------------------------------------
+# P2 (BuwCZ): Replay filter pushdown using replay_* mode names
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_decision_replay_filter_pushdown_by_scope(monkeypatch) -> None:
+    """P2: replay_by_scope mode must push a WHERE scope = '...' clause."""
+    mock_adapter = _make_mock_adapter([_DECISION_RECORD])
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_decision_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    handle_cdb_context_decision_replay(
+        {
+            "tool": TOOL_CDB_CONTEXT_DECISION_REPLAY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "mode": "replay_by_scope",
                 "scope": "wave14",
             },
         }

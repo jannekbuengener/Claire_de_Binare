@@ -59,6 +59,26 @@ def _build_decision_event_where(params: Mapping[str, Any]) -> str:
         val = _opt("decision_id")
         if val:
             return f"WHERE decision_id = '{val}'"
+    # Replay mode aliases: decision_replay sends replay_* prefixed mode names.
+    elif mode == "replay_by_scope":
+        val = _opt("scope")
+        if val:
+            return f"WHERE scope = '{val}'"
+    elif mode == "replay_by_status":
+        val = _opt("status")
+        if val:
+            return f"WHERE status = '{val}'"
+    elif mode == "replay_by_decision_id":
+        val = _opt("decision_id")
+        if val:
+            return f"WHERE decision_id = '{val}'"
+    elif mode == "replay_by_artifact":
+        # decision_event schema uses affected_artifacts for artifact references
+        val = _opt("artifact")
+        if val:
+            return f"WHERE affected_artifacts CONTAINS '{val}'"
+    # replay_current_for_topic / replay_superseded_for_topic: no direct topic
+    # field in the decision_event DB schema; in-memory filter handles them.
     return ""
 
 
