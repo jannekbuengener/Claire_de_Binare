@@ -50,9 +50,42 @@ All scripts are in `infrastructure/database/`:
 | Script | Purpose | Run as |
 |--------|---------|--------|
 | `roles_and_grants.sql` | Create roles + explicit grants (idempotent) | superuser |
+| `operator_create_readonly_login.sql` | Create optional operator-managed readonly login `cdb_readonly` | superuser |
 | `enforce_least_privilege.sql` | Revoke ALL from `claire_user`, assign `cdb_writer` | superuser |
 | `rollback_least_privilege.sql` | Restore `claire_user` ALL PRIVILEGES | superuser |
 | `verify_privileges.sql` | Show effective grants, memberships, ownership | superuser |
+
+## Optional readonly login canon (`cdb_readonly`)
+
+`cdb_reader` remains the canonical `NOLOGIN` read-grant foundation. A dedicated
+readonly login such as `cdb_readonly` is an **optional, operator-managed**
+follow-up for read-only discovery and MCP access.
+
+Guardrails:
+
+- `cdb_readonly` is **not** created by `roles_and_grants.sql`.
+- `cdb_readonly` must inherit read access **only** via `GRANT cdb_reader TO cdb_readonly`.
+- `cdb_readonly` must **not** be a member of `cdb_writer` or `cdb_admin`.
+- `cdb_readonly` must keep these flags: `NOSUPERUSER`, `NOCREATEDB`,
+  `NOCREATEROLE`, `NOREPLICATION`, `NOBYPASSRLS`.
+- The password / DSN must be managed outside the repo via the canonical secret
+  workflow. Do not commit or paste real credentials.
+- `claire_user` is a runtime credential and is **not acceptable** as a
+  readonly Agent-/MCP-discovery login.
+
+Operator entrypoint:
+
+- `infrastructure/database/operator_create_readonly_login.sql`
+
+Before any later `#1905` DB discovery, the operator path must prove a dedicated
+readonly session identity:
+
+```sql
+SELECT current_user, session_user;
+```
+
+Expected: `current_user` must show a dedicated readonly login, preferably
+`cdb_readonly`, or an explicitly approved equivalent readonly principal.
 
 ## Secret Policy
 
@@ -127,16 +160,36 @@ docker exec cdb_postgres psql -U postgres -d claire_de_binare \
 
 This is safe to run at any time. It does not revoke anything from `claire_user`.
 
-### Step 2: Verify roles exist
+### Step 2: Optionally create dedicated readonly login
+
+```bash
+docker exec cdb_postgres psql -U postgres -d claire_de_binare \
+  -v CDB_READONLY_PASSWORD="$CDB_READONLY_PASSWORD" \
+  -f /path/to/operator_create_readonly_login.sql
+```
+
+This is an operator-only step for a dedicated readonly login. It is separate
+from the additive role/grant foundation and must stay secret-free in the repo.
+Load `CDB_READONLY_PASSWORD` from the canonical secret store before invoking
+`psql`; never commit, paste, or log the real value.
+
+### Step 3: Verify roles exist
 
 ```bash
 docker exec cdb_postgres psql -U postgres -d claire_de_binare \
   -f /path/to/verify_privileges.sql
 ```
 
-Check output sections 1-4. Roles should exist, grants should be listed.
+Check output sections 1-8. The readonly verification must confirm:
 
-### Step 3: Enforce (deliberate operator step)
+- `cdb_readonly` has `rolcanlogin = true`
+- no superuser / createdb / createrole / replication / bypassrls flags
+- membership in `cdb_reader`
+- no membership in `cdb_writer` or `cdb_admin`
+- effective `SELECT` on `public.correlation_ledger`
+- no effective `INSERT`, `UPDATE`, or `DELETE` on `public.correlation_ledger`
+
+### Step 4: Enforce (deliberate operator step)
 
 ```bash
 docker exec cdb_postgres psql -U postgres -d claire_de_binare \
@@ -145,9 +198,9 @@ docker exec cdb_postgres psql -U postgres -d claire_de_binare \
 
 After this, `claire_user` can only do what `cdb_writer` allows.
 
-### Step 4: Verify enforcement
+### Step 5: Verify enforcement
 
-Run `verify_privileges.sql` again. Section 5 ("claire_user direct") should
+Run `verify_privileges.sql` again. Section 8 ("claire_user direct") should
 now be empty — all privileges come via `cdb_writer` inheritance.
 
 ## Verify: Denied Operations
@@ -172,6 +225,15 @@ UPDATE orders SET status = 'cancelled' WHERE id = 1;
 UPDATE positions SET current_price = 100.0 WHERE symbol = 'BTCUSDT';
 -- Expected: UPDATE 0 (or UPDATE 1 if row exists) — no permission error
 ```
+
+For readonly discovery, verify session identity separately:
+
+```sql
+SELECT current_database(), current_user, session_user;
+```
+
+Expected: the discovery session shows a dedicated readonly login, preferably
+`cdb_readonly`; `claire_user` is not acceptable for Agent-/MCP-discovery.
 
 ## Rollback
 

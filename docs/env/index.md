@@ -44,6 +44,23 @@ Canon-Pointer:
 - Self-hosted Runner Env:
   - [`infrastructure/actions-runner/.env.runner.example`](../../infrastructure/actions-runner/.env.runner.example)
 
+## Read-only DB discovery secrets
+
+For later Agent-/MCP-readonly discovery, prefer a dedicated DSN secret name:
+
+- `POSTGRES_READONLY_PASSWORD_DSN` - preferred DSN name for a dedicated readonly
+  login such as `cdb_readonly`
+- `POSTGRES_READONLY_PASSWORD` - optional raw password secret if the operator
+  path keeps password and DSN separately
+
+Guardrails:
+
+- Secret values stay outside the repo in the canonical secret store.
+- Runtime-service credentials such as `claire_user` / `POSTGRES_PASSWORD` are
+  not acceptable for Agent-/MCP-discovery.
+- The canonical readonly-login boundary is documented in
+  [`docs/runbooks/postgres_least_privilege_rls.md`](../runbooks/postgres_least_privilege_rls.md).
+
 ## Wenn du etwas nachschlagen willst
 
 - Defaults und Validierung fuer lokale Laufzeit: [`infrastructure/scripts/check_env.ps1`](../../infrastructure/scripts/check_env.ps1)
