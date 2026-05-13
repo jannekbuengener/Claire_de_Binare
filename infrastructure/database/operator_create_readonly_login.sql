@@ -22,10 +22,28 @@
 \quit 3
 \endif
 
+SELECT CASE
+    WHEN length(btrim(:'CDB_READONLY_PASSWORD')) > 0 THEN 'true'
+    ELSE 'false'
+END AS cdb_readonly_password_non_empty
+\gset
+
+\if :cdb_readonly_password_non_empty
+\else
+\echo 'ERROR: CDB_READONLY_PASSWORD must not be empty or whitespace-only.'
+\quit 3
+\endif
+
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdb_reader') THEN
         RAISE EXCEPTION 'cdb_reader role does not exist. Run roles_and_grants.sql first.';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdb_writer') THEN
+        RAISE EXCEPTION 'cdb_writer role does not exist. Run roles_and_grants.sql first.';
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'cdb_admin') THEN
+        RAISE EXCEPTION 'cdb_admin role does not exist. Run roles_and_grants.sql first.';
     END IF;
 END $$;
 
@@ -50,11 +68,26 @@ ALTER ROLE cdb_readonly
 ALTER ROLE cdb_readonly
     PASSWORD :'CDB_READONLY_PASSWORD';
 
+REVOKE cdb_writer FROM cdb_readonly;
+REVOKE cdb_admin FROM cdb_readonly;
+
 -- Existing role password is rotated by the ALTER ROLE statement above.
 GRANT cdb_reader TO cdb_readonly;
 
 DO $$
 BEGIN
+    IF pg_has_role('cdb_readonly', 'cdb_writer', 'MEMBER') THEN
+        RAISE EXCEPTION 'cdb_readonly must not be a member of cdb_writer';
+    END IF;
+
+    IF pg_has_role('cdb_readonly', 'cdb_admin', 'MEMBER') THEN
+        RAISE EXCEPTION 'cdb_readonly must not be a member of cdb_admin';
+    END IF;
+
+    IF NOT pg_has_role('cdb_readonly', 'cdb_reader', 'MEMBER') THEN
+        RAISE EXCEPTION 'cdb_readonly must be a member of cdb_reader';
+    END IF;
+
     RAISE NOTICE '---------------------------------------------';
     RAISE NOTICE 'operator_create_readonly_login.sql applied';
     RAISE NOTICE 'cdb_readonly remains operator-managed';
