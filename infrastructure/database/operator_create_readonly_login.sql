@@ -68,6 +68,12 @@ ALTER ROLE cdb_readonly
 ALTER ROLE cdb_readonly
     PASSWORD :'CDB_READONLY_PASSWORD';
 
+-- Remove stale direct object grants. cdb_readonly must inherit read access only
+-- via cdb_reader.
+REVOKE ALL PRIVILEGES ON SCHEMA public FROM cdb_readonly;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM cdb_readonly;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM cdb_readonly;
+
 REVOKE cdb_writer FROM cdb_readonly;
 REVOKE cdb_admin FROM cdb_readonly;
 
@@ -86,6 +92,20 @@ BEGIN
 
     IF NOT pg_has_role('cdb_readonly', 'cdb_reader', 'MEMBER') THEN
         RAISE EXCEPTION 'cdb_readonly must be a member of cdb_reader';
+    END IF;
+
+    IF to_regclass('public.correlation_ledger') IS NULL THEN
+        RAISE EXCEPTION 'public.correlation_ledger must exist before readonly discovery verification';
+    END IF;
+
+    IF NOT has_table_privilege('cdb_readonly', 'public.correlation_ledger', 'SELECT') THEN
+        RAISE EXCEPTION 'cdb_readonly must have SELECT on public.correlation_ledger via cdb_reader';
+    END IF;
+
+    IF has_table_privilege('cdb_readonly', 'public.correlation_ledger', 'INSERT')
+       OR has_table_privilege('cdb_readonly', 'public.correlation_ledger', 'UPDATE')
+       OR has_table_privilege('cdb_readonly', 'public.correlation_ledger', 'DELETE') THEN
+        RAISE EXCEPTION 'cdb_readonly must not have write privileges on public.correlation_ledger';
     END IF;
 
     RAISE NOTICE '---------------------------------------------';
