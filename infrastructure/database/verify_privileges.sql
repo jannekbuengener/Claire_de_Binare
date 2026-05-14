@@ -142,12 +142,12 @@ ORDER BY table_name, privilege_type;
 -- 4. Sequence privileges for cdb_writer
 -- ----------------------------------------------------------------------------
 \echo '=== 9. Sequence privileges (cdb_writer) ==='
-SELECT sequence_name, privilege_type
+SELECT object_name AS sequence_name, privilege_type
 FROM information_schema.usage_privileges
 WHERE grantee = 'cdb_writer'
   AND object_schema = 'public'
   AND object_type = 'SEQUENCE'
-ORDER BY sequence_name;
+ORDER BY object_name;
 
 -- ----------------------------------------------------------------------------
 -- 5. Table ownership (informational)
