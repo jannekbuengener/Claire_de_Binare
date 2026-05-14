@@ -21,7 +21,21 @@ param(
     [string]$Action,
 
     [Parameter(Mandatory=$false)]
-    [ValidateSet("mexc_api_key", "mexc_api_secret", "redis_password", "postgres_password", "grafana_password")]
+    [ValidateSet(
+        "mexc_api_key",
+        "mexc_api_secret",
+        "redis_password",
+        "postgres_password",
+        "grafana_password",
+        "REDIS_PASSWORD",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_PASSWORD_DSN",
+        "GRAFANA_PASSWORD",
+        "MEXC_API_KEY.txt",
+        "MEXC_API_SECRET.txt",
+        "POSTGRES_READONLY_PASSWORD",
+        "POSTGRES_READONLY_PASSWORD_DSN"
+    )]
     [string]$SecretName,
 
     [Parameter(Mandatory=$false)]
@@ -32,6 +46,30 @@ $ErrorActionPreference = "Stop"
 
 # Canonical secrets directory (matches SECRETS_PATH in compose.blue.yml / compose.red.yml)
 $secretDir = Join-Path $env:USERPROFILE "Documents\.secrets\.cdb"
+
+function Resolve-SecretFileName {
+    param([string]$Name)
+
+    switch ($Name) {
+        "redis_password" { return "REDIS_PASSWORD" }
+        "REDIS_PASSWORD" { return "REDIS_PASSWORD" }
+        "postgres_password" { return "POSTGRES_PASSWORD" }
+        "POSTGRES_PASSWORD" { return "POSTGRES_PASSWORD" }
+        "postgres_password_dsn" { return "POSTGRES_PASSWORD_DSN" }
+        "POSTGRES_PASSWORD_DSN" { return "POSTGRES_PASSWORD_DSN" }
+        "grafana_password" { return "GRAFANA_PASSWORD" }
+        "GRAFANA_PASSWORD" { return "GRAFANA_PASSWORD" }
+        "mexc_api_key" { return "MEXC_API_KEY.txt" }
+        "MEXC_API_KEY" { return "MEXC_API_KEY.txt" }
+        "MEXC_API_KEY.txt" { return "MEXC_API_KEY.txt" }
+        "mexc_api_secret" { return "MEXC_API_SECRET.txt" }
+        "MEXC_API_SECRET" { return "MEXC_API_SECRET.txt" }
+        "MEXC_API_SECRET.txt" { return "MEXC_API_SECRET.txt" }
+        "POSTGRES_READONLY_PASSWORD" { return "POSTGRES_READONLY_PASSWORD" }
+        "POSTGRES_READONLY_PASSWORD_DSN" { return "POSTGRES_READONLY_PASSWORD_DSN" }
+        default { return $Name }
+    }
+}
 
 function Initialize-SecretDirectory {
     if (-not (Test-Path $secretDir)) {
@@ -57,7 +95,8 @@ function Set-Secret {
         [string]$SecretValue
     )
 
-    $secretPath = Join-Path $secretDir $Name
+    $secretFileName = Resolve-SecretFileName $Name
+    $secretPath = Join-Path $secretDir $secretFileName
 
     if (Test-Path $secretPath) {
         $backup = "${secretPath}.bak.$(Get-Date -Format 'yyyyMMdd_HHmmss')"
@@ -77,17 +116,58 @@ function Set-Secret {
     $acl.AddAccessRule($accessRule)
     Set-Acl $secretPath $acl
 
-    Write-Host "✅ Secret '$Name' saved securely" -ForegroundColor Green
+    Write-Host "✅ Secret '$secretFileName' saved securely" -ForegroundColor Green
 }
 
 function Get-SecretValue {
     param([string]$Name)
 
-    $secretPath = Join-Path $secretDir $Name
+    $secretFileName = Resolve-SecretFileName $Name
+    $secretPath = Join-Path $secretDir $secretFileName
     if (Test-Path $secretPath) {
         return Get-Content $secretPath -Raw
     }
     return $null
+}
+
+function Test-SecretPresence {
+    param(
+        [string]$Name,
+        [bool]$Required = $true
+    )
+
+    $secretFileName = Resolve-SecretFileName $Name
+    $secretPath = Join-Path $secretDir $secretFileName
+    $exists = Test-Path $secretPath
+
+    if ($exists) {
+        $content = Get-Content $secretPath -Raw
+        $isEmpty = [string]::IsNullOrWhiteSpace($content)
+
+        if ($isEmpty) {
+            if ($Required) {
+                Write-Host "  ❌ $secretFileName : EMPTY" -ForegroundColor Red
+            } else {
+                Write-Host "  ⚠️  $secretFileName : OPTIONAL / EMPTY" -ForegroundColor Yellow
+            }
+            return $false
+        }
+
+        $length = $content.Trim().Length
+        if ($Required) {
+            Write-Host "  ✅ $secretFileName : SET ($length chars)" -ForegroundColor Green
+        } else {
+            Write-Host "  ℹ️  $secretFileName : OPTIONAL / SET ($length chars)" -ForegroundColor Cyan
+        }
+        return $true
+    }
+
+    if ($Required) {
+        Write-Host "  ⚠️  $secretFileName : NOT FOUND" -ForegroundColor Yellow
+    } else {
+        Write-Host "  ℹ️  $secretFileName : OPTIONAL / ABSENT" -ForegroundColor Cyan
+    }
+    return $false
 }
 
 function Test-Secrets {
@@ -95,33 +175,32 @@ function Test-Secrets {
     Write-Host "=" * 60
 
     $requiredSecrets = @(
-        "redis_password",
-        "postgres_password",
-        "grafana_password",
-        "mexc_api_key",
-        "mexc_api_secret"
+        "REDIS_PASSWORD",
+        "POSTGRES_PASSWORD",
+        "GRAFANA_PASSWORD",
+        "MEXC_API_KEY.txt",
+        "MEXC_API_SECRET.txt"
+    )
+    $optionalSecrets = @(
+        "POSTGRES_PASSWORD_DSN",
+        "POSTGRES_READONLY_PASSWORD",
+        "POSTGRES_READONLY_PASSWORD_DSN"
     )
 
     $allValid = $true
 
     foreach ($secret in $requiredSecrets) {
-        $secretPath = Join-Path $secretDir $secret
-        $exists = Test-Path $secretPath
-
-        if ($exists) {
-            $content = Get-Content $secretPath -Raw
-            $isEmpty = [string]::IsNullOrWhiteSpace($content)
-
-            if ($isEmpty) {
-                Write-Host "  ❌ $secret : EMPTY" -ForegroundColor Red
-                $allValid = $false
-            } else {
-                $length = $content.Trim().Length
-                Write-Host "  ✅ $secret : SET ($length chars)" -ForegroundColor Green
-            }
-        } else {
-            Write-Host "  ⚠️  $secret : NOT FOUND" -ForegroundColor Yellow
+        if (-not (Test-SecretPresence -Name $secret -Required $true)) {
             $allValid = $false
+        }
+    }
+
+    if ($optionalSecrets.Count -gt 0) {
+        Write-Host ""
+        Write-Host "Optional secrets" -ForegroundColor Cyan
+        Write-Host "-" * 60
+        foreach ($secret in $optionalSecrets) {
+            Test-SecretPresence -Name $secret -Required $false | Out-Null
         }
     }
 
@@ -145,64 +224,64 @@ switch ($Action) {
         Initialize-SecretDirectory
 
         # Redis password
-        if (-not (Get-SecretValue "redis_password")) {
+        if (-not (Get-SecretValue "REDIS_PASSWORD")) {
             $redis_pw = Read-Host "Enter Redis password (or press Enter to generate)"
             if ([string]::IsNullOrWhiteSpace($redis_pw)) {
                 $redis_pw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | ForEach-Object {[char]$_})
             }
-            Set-Secret "redis_password" $redis_pw
+            Set-Secret "REDIS_PASSWORD" $redis_pw
         } else {
-            Write-Host "  ℹ️  redis_password already exists" -ForegroundColor Cyan
+            Write-Host "  ℹ️  REDIS_PASSWORD already exists" -ForegroundColor Cyan
         }
 
         # PostgreSQL password
-        if (-not (Get-SecretValue "postgres_password")) {
+        if (-not (Get-SecretValue "POSTGRES_PASSWORD")) {
             $pg_pw = Read-Host "Enter PostgreSQL password (or press Enter to generate)"
             if ([string]::IsNullOrWhiteSpace($pg_pw)) {
                 $pg_pw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 32 | ForEach-Object {[char]$_})
             }
-            Set-Secret "postgres_password" $pg_pw
+            Set-Secret "POSTGRES_PASSWORD" $pg_pw
         } else {
-            Write-Host "  ℹ️  postgres_password already exists" -ForegroundColor Cyan
+            Write-Host "  ℹ️  POSTGRES_PASSWORD already exists" -ForegroundColor Cyan
         }
 
         # Grafana password
-        if (-not (Get-SecretValue "grafana_password")) {
+        if (-not (Get-SecretValue "GRAFANA_PASSWORD")) {
             $grafana_pw = Read-Host "Enter Grafana password (or press Enter to generate)"
             if ([string]::IsNullOrWhiteSpace($grafana_pw)) {
                 $grafana_pw = -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 24 | ForEach-Object {[char]$_})
             }
-            Set-Secret "grafana_password" $grafana_pw
+            Set-Secret "GRAFANA_PASSWORD" $grafana_pw
         } else {
-            Write-Host "  ℹ️  grafana_password already exists" -ForegroundColor Cyan
+            Write-Host "  ℹ️  GRAFANA_PASSWORD already exists" -ForegroundColor Cyan
         }
 
         # MEXC API credentials
         Write-Host "`n🔑 MEXC API Credentials" -ForegroundColor Yellow
         Write-Host "   Get from: https://testnet.mexc.com/ (testnet) or https://www.mexc.com/ (live)" -ForegroundColor White
 
-        if (-not (Get-SecretValue "mexc_api_key")) {
+        if (-not (Get-SecretValue "MEXC_API_KEY.txt")) {
             $mexc_key = Read-Host "Enter MEXC API Key (or leave empty for now)"
             if (-not [string]::IsNullOrWhiteSpace($mexc_key)) {
-                Set-Secret "mexc_api_key" $mexc_key.Trim()
+                Set-Secret "MEXC_API_KEY.txt" $mexc_key.Trim()
             } else {
-                "" | Out-File -FilePath (Join-Path $secretDir "mexc_api_key") -NoNewline
-                Write-Host "  ⚠️  mexc_api_key left empty - configure before production!" -ForegroundColor Yellow
+                "" | Out-File -FilePath (Join-Path $secretDir "MEXC_API_KEY.txt") -NoNewline
+                Write-Host "  ⚠️  MEXC_API_KEY.txt left empty - configure before production!" -ForegroundColor Yellow
             }
         } else {
-            Write-Host "  ℹ️  mexc_api_key already exists" -ForegroundColor Cyan
+            Write-Host "  ℹ️  MEXC_API_KEY.txt already exists" -ForegroundColor Cyan
         }
 
-        if (-not (Get-SecretValue "mexc_api_secret")) {
+        if (-not (Get-SecretValue "MEXC_API_SECRET.txt")) {
             $mexc_secret = Read-Host "Enter MEXC API Secret (or leave empty for now)"
             if (-not [string]::IsNullOrWhiteSpace($mexc_secret)) {
-                Set-Secret "mexc_api_secret" $mexc_secret.Trim()
+                Set-Secret "MEXC_API_SECRET.txt" $mexc_secret.Trim()
             } else {
-                "" | Out-File -FilePath (Join-Path $secretDir "mexc_api_secret") -NoNewline
-                Write-Host "  ⚠️  mexc_api_secret left empty - configure before production!" -ForegroundColor Yellow
+                "" | Out-File -FilePath (Join-Path $secretDir "MEXC_API_SECRET.txt") -NoNewline
+                Write-Host "  ⚠️  MEXC_API_SECRET.txt left empty - configure before production!" -ForegroundColor Yellow
             }
         } else {
-            Write-Host "  ℹ️  mexc_api_secret already exists" -ForegroundColor Cyan
+            Write-Host "  ℹ️  MEXC_API_SECRET.txt already exists" -ForegroundColor Cyan
         }
 
         Write-Host "`n✅ Setup complete!" -ForegroundColor Green

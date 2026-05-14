@@ -92,6 +92,11 @@ Expected: `current_user` must show a dedicated readonly login, preferably
 - Canonical Secret Store: `C:\Users\janne\Documents\.secrets\.cdb`
 - Rotation / changes: rotator-only via `infrastructure/scripts/manage_secrets.ps1`; do not hand-edit secret files and do not create alternate secret copies inside the repo.
 - Connection env: export or load `POSTGRES_DSN`, `DATABASE_URL`, and related connection material via the rotator workflow before running these commands. Do not paste credentials directly into shells, docs, or committed config.
+- Dedicated readonly operator secrets:
+  - `POSTGRES_READONLY_PASSWORD` - canonical raw password file for the
+    operator-only `cdb_readonly` login step
+  - `POSTGRES_READONLY_PASSWORD_DSN` - optional dedicated DSN file for later
+    readonly discovery flows; not required for the login-creation SQL itself
 
 ## Rotator Proof of Use
 
@@ -103,14 +108,18 @@ non-mutating `list` and `validate` actions as proof-of-use commands.
 ```powershell
 pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action list
 pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action validate
-pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action rotate -SecretName <secret-name>
+pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action rotate -SecretName POSTGRES_READONLY_PASSWORD
+pwsh -File infrastructure/scripts/manage_secrets.ps1 -Action rotate -SecretName POSTGRES_READONLY_PASSWORD_DSN
 ```
 
 - `list`: confirms that the rotator can see the managed secret files without
   printing secret values.
 - `validate`: confirms that the required secret set is present and non-empty.
 - `rotate`: use only when an approved rotation is required; provide the secret
-  value through the rotator workflow, not by hand-editing files.
+  value through the rotator workflow, not by hand-editing files. For the
+  `cdb_readonly` login step, rotate `POSTGRES_READONLY_PASSWORD` in the secret
+  store and bridge it into the temporary shell variable
+  `CDB_READONLY_PASSWORD` only for the `psql -v` invocation.
 - Proof-of-use evidence should capture only timestamp, operator, command name,
   and outcome summary. Do not capture or paste secret values.
 
@@ -170,8 +179,21 @@ docker exec cdb_postgres psql -U postgres -d claire_de_binare \
 
 This is an operator-only step for a dedicated readonly login. It is separate
 from the additive role/grant foundation and must stay secret-free in the repo.
-Load `CDB_READONLY_PASSWORD` from the canonical secret store before invoking
-`psql`; never commit, paste, or log the real value.
+Load the canonical secret-store file `POSTGRES_READONLY_PASSWORD`, then bridge
+it into the temporary operator-shell variable `CDB_READONLY_PASSWORD` before
+invoking `psql`; never commit, paste, or log the real value.
+
+PowerShell example:
+
+```powershell
+$env:CDB_READONLY_PASSWORD = Get-Content `
+  (Join-Path $env:USERPROFILE 'Documents\.secrets\.cdb\POSTGRES_READONLY_PASSWORD') `
+  -Raw
+docker exec cdb_postgres psql -U postgres -d claire_de_binare `
+  -v CDB_READONLY_PASSWORD="$env:CDB_READONLY_PASSWORD" `
+  -f /path/to/operator_create_readonly_login.sql
+Remove-Item Env:CDB_READONLY_PASSWORD
+```
 
 ### Step 3: Verify roles exist
 

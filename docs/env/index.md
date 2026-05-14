@@ -53,11 +53,20 @@ For later Agent-/MCP-readonly discovery, prefer a dedicated DSN secret name:
 - `POSTGRES_READONLY_PASSWORD` - optional raw password secret if the operator
   path keeps password and DSN separately
 
+Canonical operator bridge for the login-creation step:
+
+- secret store file: `POSTGRES_READONLY_PASSWORD`
+- temporary operator-shell variable: `CDB_READONLY_PASSWORD`
+- consumer: `psql -v CDB_READONLY_PASSWORD=...` for
+  `infrastructure/database/operator_create_readonly_login.sql`
+
 Guardrails:
 
 - Secret values stay outside the repo in the canonical secret store.
 - Runtime-service credentials such as `claire_user` / `POSTGRES_PASSWORD` are
   not acceptable for Agent-/MCP-discovery.
+- `CDB_READONLY_PASSWORD` is only a temporary operator bridge variable. The
+  canonical stored secret remains `POSTGRES_READONLY_PASSWORD`.
 - The canonical readonly-login boundary is documented in
   [`docs/runbooks/postgres_least_privilege_rls.md`](../runbooks/postgres_least_privilege_rls.md).
 
