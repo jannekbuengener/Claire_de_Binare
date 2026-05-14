@@ -31,6 +31,13 @@ from core.replay.paper_reference_window_export import (
 _READONLY_DSN_ENV = "POSTGRES_READONLY_PASSWORD_DSN"
 _EXPECTED_READONLY_LOGIN = "cdb_readonly"
 _IDENTITY_PROBE_SQL = "SELECT current_database(), current_user, session_user;"
+_READONLY_PRIVILEGE_PROBE_SQL = """
+SELECT
+  has_table_privilege(current_user, 'public.correlation_ledger', 'SELECT'),
+  has_table_privilege(current_user, 'public.correlation_ledger', 'INSERT'),
+  has_table_privilege(current_user, 'public.correlation_ledger', 'UPDATE'),
+  has_table_privilege(current_user, 'public.correlation_ledger', 'DELETE')
+"""
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -108,6 +115,28 @@ def _verify_readonly_identity(conn) -> tuple[str, str, str]:
     return str(current_database), str(current_user), str(session_user)
 
 
+def _verify_readonly_privileges(conn) -> None:
+    with conn.cursor() as cursor:
+        cursor.execute(_READONLY_PRIVILEGE_PROBE_SQL)
+        privilege_row = cursor.fetchone()
+
+    if privilege_row is None or len(privilege_row) != 4:
+        raise RuntimeError(
+            "Readonly privilege probe did not return SELECT/INSERT/UPDATE/DELETE flags"
+        )
+
+    can_select, can_insert, can_update, can_delete = privilege_row
+    if not can_select:
+        raise RuntimeError(
+            "Readonly privilege probe failed: missing SELECT on public.correlation_ledger"
+        )
+    if can_insert or can_update or can_delete:
+        raise RuntimeError(
+            "Readonly privilege probe failed: write privileges detected on "
+            "public.correlation_ledger"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     try:
@@ -135,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         conn = _create_readonly_connection()
         try:
             readonly_identity = _verify_readonly_identity(conn)
+            _verify_readonly_privileges(conn)
             with conn.cursor() as cursor:
                 cursor.execute(
                     """

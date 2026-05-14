@@ -31,6 +31,32 @@ def test_verify_readonly_identity_rejects_runtime_login():
 
 
 @pytest.mark.unit
+def test_verify_readonly_privileges_rejects_write_access():
+    conn = MagicMock()
+    cursor = MagicMock()
+    cursor.fetchone.return_value = (True, False, True, False)
+    conn.cursor.return_value.__enter__.return_value = cursor
+
+    with pytest.raises(
+        RuntimeError, match="Readonly privilege probe failed: write privileges detected"
+    ):
+        runner._verify_readonly_privileges(conn)
+
+
+@pytest.mark.unit
+def test_verify_readonly_privileges_requires_select():
+    conn = MagicMock()
+    cursor = MagicMock()
+    cursor.fetchone.return_value = (False, False, False, False)
+    conn.cursor.return_value.__enter__.return_value = cursor
+
+    with pytest.raises(
+        RuntimeError, match="Readonly privilege probe failed: missing SELECT"
+    ):
+        runner._verify_readonly_privileges(conn)
+
+
+@pytest.mark.unit
 def test_create_readonly_connection_uses_required_dsn(monkeypatch):
     connect_mock = MagicMock(return_value=MagicMock())
     monkeypatch.setenv(
@@ -73,6 +99,7 @@ def test_main_exports_with_verified_readonly_identity(
         "_verify_readonly_identity",
         lambda conn: ("claire_de_binare", "cdb_readonly", "cdb_readonly"),
     )
+    monkeypatch.setattr(runner, "_verify_readonly_privileges", lambda conn: None)
     monkeypatch.setattr(
         runner,
         "export_paper_reference_window",
