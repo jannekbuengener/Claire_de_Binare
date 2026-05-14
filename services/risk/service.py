@@ -622,10 +622,8 @@ class RiskManager:
             account_state_snapshot.get("daily_drawdown_pct")
         )
         if daily_drawdown_pct is None:
-            daily_drawdown_pct = (
-                max(0.0, -float(risk_state.daily_pnl) / balance_usdt * 100.0)
-                if balance_usdt > 0
-                else 0.0
+            daily_drawdown_pct = max(
+                0.0, -float(risk_state.daily_pnl) / balance_usdt * 100.0
             )
 
         total_exposure_usdt = float(risk_state.total_exposure) + float(

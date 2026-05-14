@@ -29,7 +29,7 @@ from core.contracts.decision_contract_v1 import (
     DecisionContractError,
     build_decision_contract_v1_bundle,
 )
-from services.risk.models import Order
+from services.risk.models import Order, RiskState
 
 
 def _make_valid_contract_input(
@@ -419,3 +419,39 @@ def test_contract_quantity_halfeven_midpoint_accepted():
     # Must NOT raise – both sides resolve to 0.00000002 with ROUND_HALF_EVEN.
     result = manager._ensure_decision_contract_for_order(order, source="test")
     assert result is not None
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CodeQL Alert #4286: daily_drawdown_pct computed from balance_usdt
+# (py/redundant-comparison regression — Issue #2289 Slice 2)
+# ─────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_build_contract_computes_daily_drawdown_from_pnl_when_not_in_snapshot():
+    """Regression: _build_decision_contract_input computes daily_drawdown_pct
+    from risk_state.daily_pnl / balance_usdt when absent from account_state_snapshot.
+
+    balance_usdt=1000.0, daily_pnl=-25.0
+    Expected: max(0.0, 25.0 / 1000.0 * 100.0) = 2.5
+
+    Pins the computed-drawdown path after the dead-code ternary
+    `if balance_usdt > 0 else 0.0` was removed (Issue #2289 Slice 2 / Alert #4286).
+    """
+    manager = _make_manager()
+    order = _make_order()  # price=50000.0, symbol="BTCUSDT"
+
+    mock_state = RiskState()
+    mock_state.daily_pnl = -25.0
+    mock_state.last_prices = {"BTCUSDT": 50000.0}
+
+    with patch.object(risk_service, "risk_state", mock_state):
+        result = manager._build_decision_contract_input(
+            order,
+            source="test",
+            account_state_snapshot={"balance_usdt": "1000"},  # no daily_drawdown_pct
+        )
+
+    assert result["account_state"]["daily_drawdown_pct"] == "2.5", (
+        f"Expected '2.5', got {result['account_state']['daily_drawdown_pct']!r}"
+    )
