@@ -3,14 +3,14 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-13
+**Last Updated**: 2026-05-14
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-05-13)
+## Repo / Engineering Status (2026-05-14)
 
-- **main**: green (HEAD `e1382919f32f`, PR #2451 gemergt; Merge-Commit `e1382919f32fd5d694aa5bdd8b235ebb849c6419`)
+- **main**: green (HEAD `0ac94adf`, PR #2482 gemergt; Merge-Commit `0ac94adfa641b9cf0da9b93901ca845a95fb995c`)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — aktueller Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -96,6 +96,7 @@
 - **Closed (2026-05-06, Wave-14 Anchor)**: #2115 geschlossen von jannekbuengener. Alle Kind-Deliverables #2116–#2128 CLOSED. Abschluss-Kommentar vom Maintainer gepostet. CURRENT_STATUS.md-Fokus-Block entsprechend aktualisiert.
 - **Merged (2026-05-10, Security Alert Readout #2289 — fix-Slice)**: PR #2422 (`3c6ea6b6`) — fix(security): disable direct publish in alert readout workflow. Direktes Issue-Publish aus Normalbetrieb entfernt; Workflow produziert nur noch Step-Summary + Artefakt. TRIAGE_RUNBOOK.md §9 Publish-Mode-Tabelle aktualisiert. CONTROL_REGISTER.md Workflow-Control-Note hinzugefuegt.
 - **Merged (2026-05-10, Security Alert Readout #2289 — persist-via-pr Slice)**: PR #2424 (`2fbeeba`) — feat(security): add persist_via_pr mode to alert readout workflow. Zweiter Job `persist-via-pr` ergaenzt: Branch `chore/security-readout/YYYY-MM-DD`, `[skip ci]`-Commit, Push, `gh pr create --base main`, kein Auto-Merge; Dedupe-Guard; DATE-Validation fail-closed. Permissions job-scoped (`contents: write` + `pull-requests: write` nur fuer diesen Job). TRIAGE_RUNBOOK.md §9 nachgezogen. #2289 Progress-Update-Kommentar gepostet. CONTROL_REGISTER.md Workflow-Control-Note hinzugefuegt.
+- **Merged (2026-05-14)**: PR #2482 (`0ac94adf`) — docs(arvp): reconcile calibration pilot status. `knowledge/governance/ARVP_PRODUCT_INTENT.md` mit repo-backed narrow pilot evidence aus `docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md` reconciled. Guardrails unveraendert: #1900 bleibt OPEN als North-Star-/Control-Anchor; #1905 bleibt OPEN + `status:parked`; kein Unpark, kein Implementierungsstart, keine DB-Discovery, keine LR-/Live-/Echtgeld-Implikation.
 
 ---
 
