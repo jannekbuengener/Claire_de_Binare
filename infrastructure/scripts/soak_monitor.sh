@@ -9,6 +9,7 @@
 #
 # Run intent (SOAK_RUN_INTENT env var):
 #   lr040      (default) — canonical 72h soak for LR-040 evidence
+#   lr030                — local raw/operator continuity path for LR-030 reruns
 #   validation           — short verification run for monitor mechanics
 #
 # Example:
@@ -40,29 +41,36 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Run intent: lr040 (default) or validation (Issue #1278)
+# Run intent: lr040 (default), lr030, or validation
 #
 # lr040      — canonical 72h soak run for LR-040 evidence
+# lr030      — local raw/operator continuity support for LR-030 reruns
 # validation — short verification run to test monitor mechanics
 #
 # Each intent uses its own artifact prefix and active-run pointer file so
-# validation runs can never be confused with canonical LR-040 evidence.
-# The gate evaluator refuses to produce a PASS verdict for validation runs.
+# lr030/validation runs can never be confused with canonical LR-040 evidence.
+# The LR-040 gate evaluator refuses to produce a PASS verdict for non-lr040 runs.
 # ---------------------------------------------------------------------------
 SOAK_RUN_INTENT="${SOAK_RUN_INTENT:-lr040}"
 case "$SOAK_RUN_INTENT" in
-  lr040|validation) ;;
+  lr040|lr030|validation) ;;
   *)
-    echo "ERROR: SOAK_RUN_INTENT must be 'lr040' or 'validation', got '$SOAK_RUN_INTENT'" >&2
+    echo "ERROR: SOAK_RUN_INTENT must be 'lr040', 'lr030', or 'validation', got '$SOAK_RUN_INTENT'" >&2
     exit 1
     ;;
 esac
 
-if [ "$SOAK_RUN_INTENT" = "validation" ]; then
-  ARTIFACT_PREFIX="soak_validation"
-else
-  ARTIFACT_PREFIX="soak_test"
-fi
+case "$SOAK_RUN_INTENT" in
+  lr040)
+    ARTIFACT_PREFIX="soak_test"
+    ;;
+  lr030)
+    ARTIFACT_PREFIX="soak_lr030"
+    ;;
+  validation)
+    ARTIFACT_PREFIX="soak_validation"
+    ;;
+esac
 
 # Intent-specific pointer file (Issue #1278): lr040 and validation runs
 # each have their own pointer so they never cross-contaminate.
@@ -90,6 +98,24 @@ _write_active_run_path() {
   if [ "$SOAK_RUN_INTENT" = "lr040" ]; then
     printf '%s\n' "$artifact_path" > "$ARTIFACT_ROOT/soak_active_run_path.txt"
   fi
+}
+
+_validate_existing_run_intent() {
+  local artifact_path="$1"
+  local run_intent_file="$artifact_path/run_intent.txt"
+  local existing_intent=""
+
+  if [ ! -f "$run_intent_file" ]; then
+    return 0
+  fi
+
+  existing_intent=$(head -n 1 "$run_intent_file" | tr -d '[:space:]')
+  if [ -z "$existing_intent" ] || [ "$existing_intent" = "$SOAK_RUN_INTENT" ]; then
+    return 0
+  fi
+
+  echo "ERROR: Refusing to reuse artifact dir '$artifact_path': run_intent.txt='$existing_intent' expected '$SOAK_RUN_INTENT'" >&2
+  return 1
 }
 
 _find_latest_artifact_dir() {
@@ -132,15 +158,20 @@ _resolve_artifact_path() {
 
 ARTIFACT_PATH=$(_resolve_artifact_path)
 mkdir -p "$ARTIFACT_PATH"
-_write_active_run_path "$ARTIFACT_PATH"
 
 if [ -z "$ARTIFACT_PATH" ] || [ ! -d "$ARTIFACT_PATH" ]; then
   echo "ERROR: artifact directory not available — aborting soak monitor" >&2
   exit 1
 fi
 
-# Write run intent marker (Issue #1278). Written once at directory creation;
-# subsequent invocations preserve the existing marker to prevent mid-run changes.
+if ! _validate_existing_run_intent "$ARTIFACT_PATH"; then
+  exit 1
+fi
+_write_active_run_path "$ARTIFACT_PATH"
+
+# Write run intent marker (Issue #1278). For existing directories, the
+# fail-closed check above guarantees the marker already matches the requested
+# intent before any pointer is updated.
 RUN_INTENT_FILE="$ARTIFACT_PATH/run_intent.txt"
 if [ ! -f "$RUN_INTENT_FILE" ]; then
   printf '%s\n' "$SOAK_RUN_INTENT" > "$RUN_INTENT_FILE"
@@ -164,7 +195,7 @@ fi
 RUN_START_FILE="$ARTIFACT_PATH/run_start.txt"
 if [ ! -f "$RUN_START_FILE" ]; then
   # Preferred source: parse UTC epoch from the artifact directory name.
-  # soak_test_YYYYMMDD_HHMMSS encodes the exact start time set by the operator
+  # <intent-prefix>_YYYYMMDD_HHMMSS encodes the exact start time set by the operator
   # at soak launch — more accurate than the first cron invocation, which may
   # arrive up to ~60 s late due to scheduling jitter or a delayed manual start.
   _ARTIFACT_NAME=$(basename "$ARTIFACT_PATH")
@@ -207,7 +238,7 @@ fi
 # Auto-stop guard: skip all checks after the monitoring window closes.
 # Prevents post-window Docker/host restarts from tainting a valid run.
 # SOAK_TARGET_HOURS defaults to 72 (LR-040 requirement).
-# Validation runs skip this guard (no fixed target duration).
+# lr030 and validation runs skip this guard (no fixed target duration here).
 # Issue #1419.
 # ---------------------------------------------------------------------------
 SOAK_TARGET_HOURS_RAW="${SOAK_TARGET_HOURS:-72}"
@@ -261,11 +292,17 @@ NC='\033[0m' # No Color
 SUT_SERVICES="cdb_postgres cdb_redis cdb_market cdb_candles cdb_regime cdb_allocation cdb_risk cdb_execution cdb_db_writer cdb_paper_runner cdb_ws cdb_signal"
 EXPECTED_SERVICES=12
 
-if [ "$SOAK_RUN_INTENT" = "validation" ]; then
-  _RUN_LABEL="VALIDATION Run"
-else
-  _RUN_LABEL="LR-040 Soak Test"
-fi
+case "$SOAK_RUN_INTENT" in
+  validation)
+    _RUN_LABEL="VALIDATION Run"
+    ;;
+  lr030)
+    _RUN_LABEL="LR-030 Shadow/Soak Run"
+    ;;
+  *)
+    _RUN_LABEL="LR-040 Soak Test"
+    ;;
+esac
 echo "========================================="
 echo "$_RUN_LABEL Monitoring - Checkpoint $ELAPSED_HOURS (elapsed hours)"
 echo "Run Intent: $SOAK_RUN_INTENT"

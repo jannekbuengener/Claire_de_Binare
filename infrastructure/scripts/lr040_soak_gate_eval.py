@@ -107,23 +107,23 @@ def _read_run_intent(artifact_dir: Path) -> str | None:
 def evaluate_lr040_soak(artifact_dir: Path) -> dict:
     """Evaluate soak artifacts against LR-040 criteria. Fail-closed."""
 
-    # --- Run intent gate (Issue #1278) ---
-    # Validation runs must never produce an LR-040 PASS verdict.
+    # --- Run intent gate (Issue #1278 / #2440) ---
+    # Non-lr040 runs must never produce an LR-040 PASS verdict.
     # Return NOT_APPLICABLE immediately so the caller cannot mistake a
-    # validation run for canonical LR-040 evidence. exit 1 (fail-closed).
+    # non-lr040 run for canonical LR-040 evidence. exit 1 (fail-closed).
     run_intent = _read_run_intent(artifact_dir)
-    if run_intent == "validation":
+    if run_intent and run_intent != "lr040":
         return {
             "schema_version": "1.1",
             "control": "LR-040",
             "issue": "#786",
             "verdict": "NOT_APPLICABLE",
-            "reason": "Validation run — not canonical LR-040 evidence (Issue #1278)",
+            "reason": f"Run intent '{run_intent}' is not canonical LR-040 evidence",
             "run_intent": run_intent,
             "checks": {},
             "failures": [],
             "metrics": {},
-            "artifacts": {"run_intent": "validation"},
+            "artifacts": {"run_intent": run_intent},
         }
 
     hourly_log = artifact_dir / "hourly_checks.log"

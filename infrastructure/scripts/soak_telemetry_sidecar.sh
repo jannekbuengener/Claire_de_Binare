@@ -11,6 +11,7 @@
 #   bash infrastructure/scripts/soak_telemetry_sidecar.sh
 #   bash infrastructure/scripts/soak_telemetry_sidecar.sh soak_test_20260401_114850
 #   SOAK_RUN_ID=soak_test_20260401_114850 bash infrastructure/scripts/soak_telemetry_sidecar.sh
+#   SOAK_RUN_INTENT=lr030 bash infrastructure/scripts/soak_telemetry_sidecar.sh
 #
 # Scheduling (Windows Task Scheduler):
 #   Use artifacts/run_soak_sidecar.cmd as launcher, schedule every 15 minutes.
@@ -18,9 +19,29 @@
 set -euo pipefail
 
 ARTIFACT_ROOT="${ARTIFACT_ROOT:-artifacts}"
+SOAK_RUN_INTENT="${SOAK_RUN_INTENT:-lr040}"
 TIMESTAMP_FILE=$(date -u +"%Y%m%d_%H%M%S")
 TIMESTAMP_HUMAN=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 HOSTNAME_VAL=$(hostname 2>/dev/null || echo "unknown")
+
+case "$SOAK_RUN_INTENT" in
+    lr040)
+        SIDECAR_ARTIFACT_PREFIX="soak_test"
+        SIDECAR_POINTER_FILE="${ARTIFACT_ROOT}/soak_active_run_path_lr040.txt"
+        ;;
+    lr030)
+        SIDECAR_ARTIFACT_PREFIX="soak_lr030"
+        SIDECAR_POINTER_FILE="${ARTIFACT_ROOT}/soak_active_run_path_lr030.txt"
+        ;;
+    validation)
+        SIDECAR_ARTIFACT_PREFIX="soak_validation"
+        SIDECAR_POINTER_FILE="${ARTIFACT_ROOT}/soak_active_run_path_validation.txt"
+        ;;
+    *)
+        echo "ERROR: SOAK_RUN_INTENT must be lr040, lr030, or validation (got '${SOAK_RUN_INTENT}')." >&2
+        exit 1
+        ;;
+esac
 
 # ── Resolve repo root and Windows drive ──────────────────────────────────────
 
@@ -55,25 +76,28 @@ resolve_soak_run_id() {
         return 0
     fi
 
-    local pointer_file="${ARTIFACT_ROOT}/soak_active_run_path_lr040.txt"
+    local pointer_file="${SIDECAR_POINTER_FILE}"
     if [ -f "$pointer_file" ]; then
         local pointer_content
         pointer_content=$(cat "$pointer_file" | tr -d '[:space:]')
-        SOAK_RUN_ID=$(basename "$pointer_content")
-        RESOLVE_METHOD="pointer file ($pointer_file)"
-        return 0
+        if echo "$(basename "$pointer_content")" | grep -q "^${SIDECAR_ARTIFACT_PREFIX}_"; then
+            SOAK_RUN_ID=$(basename "$pointer_content")
+            RESOLVE_METHOD="pointer file ($pointer_file)"
+            return 0
+        fi
+        echo "WARNING: Ignoring pointer file '$pointer_file' with mismatched path '$pointer_content' for intent '${SOAK_RUN_INTENT}'." >&2
     fi
 
-    # Auto-detect: latest soak_test_* directory
+    # Auto-detect: latest intent-matching artifact directory
     local latest
-    latest=$(ls -1d "${ARTIFACT_ROOT}"/soak_test_* 2>/dev/null | sort | tail -1)
+    latest=$(ls -1d "${ARTIFACT_ROOT}"/${SIDECAR_ARTIFACT_PREFIX}_* 2>/dev/null | sort | tail -1)
     if [ -n "$latest" ]; then
         SOAK_RUN_ID=$(basename "$latest")
         RESOLVE_METHOD="auto-detect (latest)"
         return 0
     fi
 
-    echo "ERROR: Cannot resolve soak run ID. No argument, env var, pointer file, or soak_test_* directory found." >&2
+    echo "ERROR: Cannot resolve soak run ID. No argument, env var, intent-matching pointer file, or ${SIDECAR_ARTIFACT_PREFIX}_* directory found." >&2
     exit 1
 }
 

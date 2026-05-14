@@ -249,13 +249,14 @@ SOAK_RUN_INTENT=validation ./infrastructure/scripts/soak_monitor.sh
 
 **Key differences from an LR-040 run:**
 
-| Aspect | LR-040 (`lr040`) | Validation (`validation`) |
-|---|---|---|
-| Artifact prefix | `artifacts/soak_test_*` | `artifacts/soak_validation_*` |
-| Active-run pointer | `soak_active_run_path_lr040.txt` (+ `soak_active_run_path.txt` synced, Issue #1283) | `soak_active_run_path_validation.txt` |
-| Intent marker | `run_intent.txt` = `lr040` | `run_intent.txt` = `validation` |
-| Gate evaluator verdict | PASS / FAIL / INCONCLUSIVE | NOT_APPLICABLE (exit 1) |
-| Monitor mechanics | identical | identical |
+| Aspect | LR-040 (`lr040`) | LR-030 local continuity (`lr030`) | Validation (`validation`) |
+|---|---|---|---|
+| Artifact prefix | `artifacts/soak_test_*` | `artifacts/soak_lr030_*` | `artifacts/soak_validation_*` |
+| Active-run pointer | `soak_active_run_path_lr040.txt` (+ `soak_active_run_path.txt` synced, Issue #1283) | `soak_active_run_path_lr030.txt` | `soak_active_run_path_validation.txt` |
+| Intent marker | `run_intent.txt` = `lr040` | `run_intent.txt` = `lr030` | `run_intent.txt` = `validation` |
+| Generic pointer sync | yes | no | no |
+| LR-040 gate evaluator verdict | PASS / FAIL / INCONCLUSIVE | NOT_APPLICABLE (exit 1) | NOT_APPLICABLE (exit 1) |
+| Monitor mechanics | canonical 72h soak | raw/operator continuity support only | identical mechanics, non-canonical |
 
 **Running the gate evaluator on a validation run:**
 
@@ -267,6 +268,24 @@ python infrastructure/scripts/lr040_soak_gate_eval.py artifacts/soak_validation_
 The gate evaluator reads `run_intent.txt` and refuses to produce a PASS
 for validation runs. This is intentional — validation artifacts are not
 canonical LR-040 evidence.
+
+## LR-030 Local Continuity Mode (#2440 prep slice)
+
+For a future local LR-030 shadow/soak rerun, the monitor can be invoked with:
+
+```bash
+SOAK_RUN_INTENT=lr030 ./infrastructure/scripts/soak_monitor.sh
+```
+
+Boundary:
+
+- This writes only to `artifacts/soak_lr030_*`.
+- It updates only `soak_active_run_path_lr030.txt`.
+- It must not reuse LR-040 generic pointer state or `soak_test_*` artifacts.
+- It is **raw/operator continuity support only** for the local rerun path.
+- The normative LR-030 evidence/package chain remains the existing
+  `.github/workflows/shadow-soak-evidence.yml` flow plus
+  `docs/evidence/SHADOW_SOAK_RUN_INDEX.md`.
 
 **Default behavior:** Without `SOAK_RUN_INTENT`, the monitor defaults to
 `lr040` (backwards-compatible with all existing runs).

@@ -288,6 +288,16 @@ class TestLR040SoakGateRunIntent:
         result = evaluate_lr040_soak(artifact_dir)
         assert result["verdict"] == "NOT_APPLICABLE"
 
+    def test_lr030_intent_returns_not_applicable(self, tmp_path: Path) -> None:
+        """run_intent.txt = lr030 -> NOT_APPLICABLE for LR-040 gate eval."""
+        artifact_dir = _write_passing_artifacts(tmp_path)
+        (artifact_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+        result = evaluate_lr040_soak(artifact_dir)
+        assert result["verdict"] == "NOT_APPLICABLE"
+        assert result["run_intent"] == "lr030"
+        assert result["checks"] == {}
+        assert result["failures"] == []
+
 
 class TestLR040SoakGateEdgeCases:
     def test_exactly_72h_passes(self, tmp_path: Path) -> None:

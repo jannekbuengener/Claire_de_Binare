@@ -52,6 +52,18 @@ docker ps --filter name=cdb_ --format '{{.Names}}: {{.Status}}'
 #   soak_test_FAILED.txt — only if Zero Restart violated
 ```
 
+For the isolated LR-030 local monitor path:
+
+```bash
+SOAK_RUN_INTENT=lr030 ./infrastructure/scripts/soak_monitor.sh
+```
+
+- Artifacts land under `artifacts/soak_lr030_*`.
+- Only `soak_active_run_path_lr030.txt` is updated.
+- The generic pointer `soak_active_run_path.txt` stays LR-040-only.
+- This path is raw/operator continuity support only and does not replace the
+  workflow-backed LR-030 evidence chain.
+
 ## Cron Installation (Linux)
 
 ```bash

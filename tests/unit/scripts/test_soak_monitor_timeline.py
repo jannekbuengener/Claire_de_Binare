@@ -23,6 +23,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(
     0, str(Path(__file__).resolve().parents[3] / "infrastructure" / "scripts")
 )
@@ -61,16 +63,21 @@ def build_artifact_path(dt: datetime, intent: str = "lr040") -> str:
 
     Since Issue #1278, the prefix depends on SOAK_RUN_INTENT:
       lr040      -> artifacts/soak_test_YYYYMMDD_HHMMSS
+      lr030      -> artifacts/soak_lr030_YYYYMMDD_HHMMSS
       validation -> artifacts/soak_validation_YYYYMMDD_HHMMSS
     """
     dt = dt.astimezone(timezone.utc)
-    prefix = "soak_validation" if intent == "validation" else "soak_test"
+    prefix = _artifact_prefix_for_intent(intent)
     return f"artifacts/{prefix}_{dt:%Y%m%d_%H%M%S}"
 
 
 def _artifact_prefix_for_intent(intent: str) -> str:
     """Return the artifact directory prefix for a given run intent."""
-    return "soak_validation" if intent == "validation" else "soak_test"
+    if intent == "validation":
+        return "soak_validation"
+    if intent == "lr030":
+        return "soak_lr030"
+    return "soak_test"
 
 
 def resolve_active_artifact_path_with_intent(
@@ -288,6 +295,10 @@ class TestIntentAwareArtifactPath:
         path = build_artifact_path(self.NOW, intent="lr040")
         assert path == "artifacts/soak_test_20260325_100000"
 
+    def test_lr030_creates_soak_lr030_prefix(self) -> None:
+        path = build_artifact_path(self.NOW, intent="lr030")
+        assert path == "artifacts/soak_lr030_20260325_100000"
+
     def test_default_intent_is_lr040(self) -> None:
         path = build_artifact_path(self.NOW)
         assert "soak_test_" in path
@@ -316,6 +327,30 @@ class TestIntentAwareArtifactPath:
         assert resolved.startswith("artifacts/soak_test_")
         assert resolved not in existing
 
+    def test_lr030_ignores_soak_test_dirs(self) -> None:
+        """lr030 intent must never reuse a soak_test_* directory."""
+        existing = [
+            "artifacts/soak_test_20260324_220000",
+            "artifacts/soak_test_20260325_080000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="lr030"
+        )
+        assert resolved.startswith("artifacts/soak_lr030_")
+        assert resolved not in existing
+
+    def test_lr030_ignores_soak_validation_dirs(self) -> None:
+        """lr030 intent must never reuse a soak_validation_* directory."""
+        existing = [
+            "artifacts/soak_validation_20260324_220000",
+            "artifacts/soak_validation_20260325_080000",
+        ]
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=None, intent="lr030"
+        )
+        assert resolved.startswith("artifacts/soak_lr030_")
+        assert resolved not in existing
+
     def test_validation_pointer_to_soak_test_dir_rejected(self) -> None:
         """Active-run pointer pointing at soak_test_* must be ignored when intent=validation."""
         existing = [
@@ -339,6 +374,18 @@ class TestIntentAwareArtifactPath:
             self.NOW, existing, active_run_path=cross_pointer, intent="lr040"
         )
         assert resolved == "artifacts/soak_test_20260324_220000"
+
+    def test_lr030_pointer_to_soak_test_dir_rejected(self) -> None:
+        """Active-run pointer pointing at soak_test_* must be ignored when intent=lr030."""
+        existing = [
+            "artifacts/soak_test_20260324_220000",
+            "artifacts/soak_lr030_20260325_090000",
+        ]
+        cross_pointer = "artifacts/soak_test_20260324_220000"
+        resolved = resolve_active_artifact_path_with_intent(
+            self.NOW, existing, active_run_path=cross_pointer, intent="lr030"
+        )
+        assert resolved == "artifacts/soak_lr030_20260325_090000"
 
     def test_same_intent_pointer_accepted(self) -> None:
         """Pointer matching the intent prefix is accepted normally."""
@@ -380,6 +427,7 @@ class TestIntentAwareArtifactPath:
         """Empty directory list → new directory with intent-correct prefix."""
         for intent, expected_prefix in [
             ("lr040", "soak_test_"),
+            ("lr030", "soak_lr030_"),
             ("validation", "soak_validation_"),
         ]:
             resolved = resolve_active_artifact_path_with_intent(
@@ -439,6 +487,15 @@ class TestGenericPointerSync:
         ).read_text().strip() == artifact
         assert not (tmp_path / "soak_active_run_path.txt").exists()
 
+    def test_lr030_writes_only_intent_pointer(self, tmp_path: Path) -> None:
+        """lr030: only soak_active_run_path_lr030.txt; generic pointer not created."""
+        artifact = str(tmp_path / "soak_lr030_20260326_120000")
+        _simulate_write_active_run_path(artifact, tmp_path, "lr030")
+        assert (
+            tmp_path / "soak_active_run_path_lr030.txt"
+        ).read_text().strip() == artifact
+        assert not (tmp_path / "soak_active_run_path.txt").exists()
+
     def test_unknown_intent_does_not_write_generic_pointer(
         self, tmp_path: Path
     ) -> None:
@@ -461,6 +518,11 @@ class TestRunIntentMarker:
         intent_file.write_text("validation\n", encoding="utf-8")
         assert intent_file.read_text(encoding="utf-8").strip() == "validation"
 
+    def test_intent_file_content_lr030(self, tmp_path: Path) -> None:
+        intent_file = tmp_path / "run_intent.txt"
+        intent_file.write_text("lr030\n", encoding="utf-8")
+        assert intent_file.read_text(encoding="utf-8").strip() == "lr030"
+
     def test_intent_file_not_overwritten_on_rerun(self, tmp_path: Path) -> None:
         """Mirrors soak_monitor.sh: if run_intent.txt exists, don't overwrite."""
         intent_file = tmp_path / "run_intent.txt"
@@ -469,6 +531,99 @@ class TestRunIntentMarker:
         if not intent_file.exists():
             intent_file.write_text("lr040\n", encoding="utf-8")
         assert intent_file.read_text(encoding="utf-8").strip() == "validation"
+
+
+def validate_existing_run_intent(
+    existing_intent: str | None,
+    requested_intent: str,
+) -> bool:
+    """Mirror the fail-closed reuse guard in soak_monitor.sh."""
+    if existing_intent is None:
+        return True
+    return existing_intent == requested_intent
+
+
+class TestRunIntentReuseGuard:
+    def test_missing_run_intent_allows_new_directory(self) -> None:
+        assert validate_existing_run_intent(None, "lr030") is True
+
+    def test_matching_run_intent_allows_reuse(self) -> None:
+        assert validate_existing_run_intent("lr030", "lr030") is True
+
+    def test_lr030_rejects_lr040_directory(self) -> None:
+        assert validate_existing_run_intent("lr040", "lr030") is False
+
+    def test_lr040_rejects_lr030_directory(self) -> None:
+        assert validate_existing_run_intent("lr030", "lr040") is False
+
+    def test_guard_present_in_soak_monitor_sh(self) -> None:
+        content = _read_soak_monitor()
+        assert (
+            "Refusing to reuse artifact dir" in content
+        ), "run_intent mismatch guard missing from soak_monitor.sh"
+
+
+def _sidecar_pointer_file_for_intent(intent: str) -> str:
+    if intent == "validation":
+        return "artifacts/soak_active_run_path_validation.txt"
+    if intent == "lr030":
+        return "artifacts/soak_active_run_path_lr030.txt"
+    return "artifacts/soak_active_run_path_lr040.txt"
+
+
+def resolve_sidecar_run_id(
+    existing_dirs: list[str],
+    intent: str = "lr040",
+    arg_run_id: str | None = None,
+    env_run_id: str | None = None,
+    pointer_path: str | None = None,
+) -> str:
+    """Mirror sidecar run-id resolution for the intent-aware pointer path."""
+    if arg_run_id:
+        return arg_run_id
+    if env_run_id:
+        return env_run_id
+
+    prefix = f"artifacts/{_artifact_prefix_for_intent(intent)}_"
+    if pointer_path:
+        normalized = pointer_path.strip()
+        if normalized in existing_dirs and normalized.startswith(prefix):
+            return Path(normalized).name
+
+    matching = sorted(path for path in existing_dirs if path.startswith(prefix))
+    if matching:
+        return Path(matching[-1]).name
+
+    raise ValueError("no intent-matching sidecar run id could be resolved")
+
+
+class TestTelemetrySidecarResolution:
+    NOW = datetime(2026, 3, 25, 10, 0, 0, tzinfo=timezone.utc)
+
+    def test_sidecar_uses_lr030_pointer_name(self) -> None:
+        assert (
+            _sidecar_pointer_file_for_intent("lr030")
+            == "artifacts/soak_active_run_path_lr030.txt"
+        )
+
+    def test_sidecar_lr030_rejects_lr040_pointer(self) -> None:
+        existing = [
+            "artifacts/soak_test_20260325_080000",
+            "artifacts/soak_lr030_20260325_090000",
+        ]
+        resolved = resolve_sidecar_run_id(
+            existing,
+            intent="lr030",
+            pointer_path="artifacts/soak_test_20260325_080000",
+        )
+        assert resolved == "soak_lr030_20260325_090000"
+
+    def test_sidecar_lr030_requires_explicit_or_matching_artifact(self) -> None:
+        with pytest.raises(ValueError):
+            resolve_sidecar_run_id(
+                existing_dirs=["artifacts/soak_test_20260325_080000"],
+                intent="lr030",
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -1584,10 +1739,12 @@ class TestDiskCheckFallback:
     def test_bash_check5_contains_docker_df_valid_and_fallback_messages(self) -> None:
         """Semantic anchors that must survive in soak_monitor.sh Check 5."""
         content = _read_soak_monitor()
-        assert "DOCKER_DF_VALID" in content, "DOCKER_DF_VALID variable missing from Check 5"
-        assert "Host filesystem unavailable" in content, (
-            "Fallback console message missing — path B wording changed"
-        )
-        assert "Docker disk evidence also unavailable" in content, (
-            "Fail-closed message missing — path C wording changed"
-        )
+        assert (
+            "DOCKER_DF_VALID" in content
+        ), "DOCKER_DF_VALID variable missing from Check 5"
+        assert (
+            "Host filesystem unavailable" in content
+        ), "Fallback console message missing — path B wording changed"
+        assert (
+            "Docker disk evidence also unavailable" in content
+        ), "Fail-closed message missing — path C wording changed"
