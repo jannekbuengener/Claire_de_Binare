@@ -20,8 +20,8 @@ Guardrails:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any, Mapping
 
 SCHEMA_VERSION = "trust-summary/v1"
 
