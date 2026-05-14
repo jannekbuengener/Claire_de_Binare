@@ -71,19 +71,45 @@ function Resolve-SecretFileName {
     }
 }
 
+function Get-CurrentWindowsIdentityName {
+    $currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    if ($null -eq $currentIdentity) {
+        throw "Failed to resolve the current Windows identity for ACL assignment."
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($currentIdentity.Name)) {
+        return $currentIdentity.Name
+    }
+
+    if ($null -ne $currentIdentity.User) {
+        try {
+            return $currentIdentity.User.Translate([System.Security.Principal.NTAccount]).Value
+        } catch {
+            throw "Failed to translate the current Windows identity for ACL assignment: $($_.Exception.Message)"
+        }
+    }
+
+    throw "Failed to resolve the current Windows identity for ACL assignment."
+}
+
 function Initialize-SecretDirectory {
     if (-not (Test-Path $secretDir)) {
         Write-Host "📁 Creating secrets directory: $secretDir" -ForegroundColor Cyan
         New-Item -ItemType Directory -Path $secretDir -Force | Out-Null
 
         # Set restrictive permissions (Windows)
-        $acl = Get-Acl $secretDir
-        $acl.SetAccessRuleProtection($true, $false)  # Disable inheritance
-        $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $env:USERNAME, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
-        )
-        $acl.AddAccessRule($accessRule)
-        Set-Acl $secretDir $acl
+        $currentIdentity = Get-CurrentWindowsIdentityName
+        try {
+            $acl = Get-Acl $secretDir
+            $acl.SetAccessRuleProtection($true, $false)  # Disable inheritance
+            $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                $currentIdentity, "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
+            )
+            $acl.AddAccessRule($accessRule)
+            Set-Acl $secretDir $acl
+        } catch {
+            throw "Failed to set restrictive permissions on secrets directory '$secretDir' for identity '$currentIdentity': $($_.Exception.Message)"
+        }
 
         Write-Host "✅ Secrets directory created with restricted permissions" -ForegroundColor Green
     }
@@ -108,13 +134,18 @@ function Set-Secret {
     $SecretValue | Out-File -FilePath $secretPath -NoNewline -Encoding utf8
 
     # Set restrictive permissions
-    $acl = Get-Acl $secretPath
-    $acl.SetAccessRuleProtection($true, $false)
-    $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-        $env:USERNAME, "FullControl", "None", "None", "Allow"
-    )
-    $acl.AddAccessRule($accessRule)
-    Set-Acl $secretPath $acl
+    $currentIdentity = Get-CurrentWindowsIdentityName
+    try {
+        $acl = Get-Acl $secretPath
+        $acl.SetAccessRuleProtection($true, $false)
+        $accessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $currentIdentity, "FullControl", "None", "None", "Allow"
+        )
+        $acl.AddAccessRule($accessRule)
+        Set-Acl $secretPath $acl
+    } catch {
+        throw "Failed to set restrictive permissions on secret '$secretFileName' for identity '$currentIdentity': $($_.Exception.Message)"
+    }
 
     Write-Host "✅ Secret '$secretFileName' saved securely" -ForegroundColor Green
 }
