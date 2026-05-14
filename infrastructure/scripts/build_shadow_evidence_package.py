@@ -8,6 +8,7 @@ anchored in execution_status.mode and evidence_index trading_mode.
 
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 import sys
@@ -218,12 +219,20 @@ def validate_shadow_evidence_package(package_root: Path) -> dict:
     }
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <evidence-directory>", file=sys.stderr)
-        sys.exit(2)
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Build and validate a canonical shadow-soak evidence package."
+    )
+    parser.add_argument(
+        "evidence_directory",
+        help="Path to the evidence directory containing the required shadow-soak artifacts.",
+    )
+    return parser
 
-    evidence_dir = Path(sys.argv[1])
+
+def main() -> None:
+    args = _build_parser().parse_args()
+    evidence_dir = Path(args.evidence_directory)
     if not evidence_dir.is_dir():
         print(f"ERROR: not a directory: {evidence_dir}", file=sys.stderr)
         sys.exit(1)

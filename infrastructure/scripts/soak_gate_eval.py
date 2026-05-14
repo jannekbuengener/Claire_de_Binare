@@ -7,6 +7,7 @@ field ``mode``. Shadow probe semantics and soak-profile labels are separate.
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -125,12 +126,20 @@ def evaluate_shadow_soak_evidence(evidence_dir: Path) -> dict:
     }
 
 
-def main() -> None:
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <evidence-directory>", file=sys.stderr)
-        sys.exit(2)
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Evaluate shadow-soak evidence with hard LR-030/LR-031 gate criteria."
+    )
+    parser.add_argument(
+        "evidence_directory",
+        help="Path to the evidence directory containing the required shadow-soak artifacts.",
+    )
+    return parser
 
-    evidence_dir = Path(sys.argv[1])
+
+def main() -> None:
+    args = _build_parser().parse_args()
+    evidence_dir = Path(args.evidence_directory)
     if not evidence_dir.is_dir():
         print(f"ERROR: not a directory: {evidence_dir}", file=sys.stderr)
         sys.exit(1)
