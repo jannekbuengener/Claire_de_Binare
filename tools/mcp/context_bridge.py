@@ -632,8 +632,7 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
                 "uncertainties": [],
                 "guardrails": [
                     "Do not proceed. Resolve missing context first.",
-                    "Readiness is not authorization. LR remains NO-GO. "
-                    "Board stage (trade-capable) is orthogonal.",
+                    "Readiness is not authorization. LR remains NO-GO. Board stage (trade-capable) is orthogonal.",
                 ],
             },
         }
@@ -778,8 +777,7 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
 
     # Boundary guardrail — always present
     guardrails.append(
-        "Readiness is not authorization. LR remains NO-GO. "
-        "Board stage (trade-capable) is orthogonal."
+        "Readiness is not authorization. LR remains NO-GO. Board stage (trade-capable) is orthogonal."
     )
 
     return {
