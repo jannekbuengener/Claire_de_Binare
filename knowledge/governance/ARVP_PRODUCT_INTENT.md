@@ -105,7 +105,7 @@ Examples of likely drift unless strongly justified:
 | Replay-vs-Paper Comparison | #1902 (PR #1914) | ✓ DONE | `core/replay/replay_vs_paper_compare.py` |
 | Simulator Calibration Report | #1903 (PR #1916) | ✓ DONE | `core/replay/simulator_calibration_report.py` |
 | Regime Scorecards | #1904 (PR #1918) | ✓ DONE | `core/replay/arvp_regime_scorecards.py` |
-| **Execution-Realism Gaps** | **#1905** | **⏸ PARKED** | **Evidence-blocked; no calibration run yet** |
+| **Execution-Realism Gaps** | **#1905** | **⏸ PARKED** | **Evidence-blocked; narrow pilot exists, but no comparison-grade calibration set yet** |
 
 ### What's Landed
 
@@ -117,7 +117,7 @@ Examples of likely drift unless strongly justified:
 
 ### What's Missing
 
-✗ First end-to-end calibration evidence run (no actual replay↔paper deltas measured yet)
+✗ Comparison-grade calibration evidence remains missing (only a narrow pilot exists; no 1h/2h/4h window, no committed JSON artifacts)
 ✗ Execution-realism gap prioritization (candidate categories, no data-driven ranking)
 ✗ Execution-realism improvements tied to calibration findings (deferred pending evidence)
 
@@ -125,12 +125,20 @@ Examples of likely drift unless strongly justified:
 
 **#1905 is parked, not delivered.**
 
-#1905 was designed as a downstream consumer of calibration findings. Calibration infrastructure just landed. No calibration evidence run has been executed yet. Without actual replay↔paper delta measurements, there are no "highest-value execution-realism gaps"—only theoretical candidates.
+#1905 was designed as a downstream consumer of calibration findings. A narrow pilot evidence anchor now exists via `docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md`, but it is not comparison-grade evidence. Without broader replay↔paper delta measurements, there are still no material-ranked "highest-value execution-realism gaps"—only a narrow pessimistic missed-order / missed-fill case.
 
 **#1905 cannot proceed responsibly until:**
-1. First calibration evidence run produces actual gap measurements
+1. Broader comparison-grade calibration evidence produces reproducible gap measurements
 2. Gaps are ranked by operationally material impact
 3. A narrow, testable improvement is scoped (not a generic "add all realism features" bucket)
+
+Narrow pilot scope so far:
+- BTCUSDT / `primary_breakout_v1`
+- 2026-04-24T00:42:00Z to 2026-04-24T00:43:00Z
+- Paper: 1 ORDER / 1 FILL
+- Replay: 0 ORDER / 0 FILL
+- Classification: pessimistic missed-order / missed-fill narrow case
+- No LR-/Live-/Echtgeld implication
 
 This is not a failure. This is a prerequisite clarification.
 
