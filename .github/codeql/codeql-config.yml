@@ -1,0 +1,4 @@
+name: "Claire de Binare CodeQL config"
+
+paths-ignore:
+  - services/ws/mexc_proto_gen/**
