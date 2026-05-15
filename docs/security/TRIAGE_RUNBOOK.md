@@ -256,6 +256,78 @@ Permissions:
   Surface-Status in JSON ist immer `"status": "redacted"`.
 - Das Delta-Skript vergleicht ausschließlich den Surface-Status (ok/redacted), niemals Payload-Felder.
 
+### Token-Anforderungen: `CDB_GH_ALERTS_TOKEN`
+
+#### Warum `github.token` nicht ausreicht
+
+Der Workflow-Step `Run security alert readout` nutzt die folgende Fallback-Logik:
+
+```yaml
+GH_TOKEN: ${{ secrets.CDB_GH_ALERTS_TOKEN != '' && secrets.CDB_GH_ALERTS_TOKEN || github.token }}
+```
+
+Solange `CDB_GH_ALERTS_TOKEN` im Repository-Secret nicht gesetzt ist, fällt der Workflow
+auf `github.token` (GITHUB_TOKEN) zurück.  Das GITHUB_TOKEN hat in GitHub Actions
+**keinen Zugriff auf die Dependabot-Alerts-API** (`/repos/{repo}/dependabot/alerts`) —
+auch wenn `security-events: read` im Workflow deklariert ist.  Die Dependabot-API
+erfordert einen separaten Personal Access Token.
+
+Folge: Die `dependabot`-Surface gibt `status: unavailable` zurück → `readout_status: PARTIAL`.
+
+#### Minimaler Token-Scope
+
+| Token-Typ | Erforderlicher Scope / Berechtigung |
+|-----------|--------------------------------------|
+| **Klassischer PAT** | `security_events` (Lesen aller Security-Alerts inkl. Dependabot) |
+| **Fine-grained PAT** | `Dependabot alerts: Read-only` |
+
+Der Token braucht **keinen** Schreib-Zugriff auf das Repository.
+Kein `repo`-Full-Access, kein `admin:*`-Scope, kein `workflow`-Scope.
+
+#### Wo setzen
+
+Repository-Secret in GitHub:
+
+```
+Settings > Secrets and variables > Actions > New repository secret
+Name:  CDB_GH_ALERTS_TOKEN
+Value: <PAT-Wert>
+```
+
+Der PAT-Inhaber muss mindestens **Read-Zugriff** auf das Repository haben und Dependabot-Alerts dürfen
+für ihn sichtbar sein (typischerweise: Repository-Inhaber oder Kollaborator mit Admin/Write-Zugriff).
+
+#### Validierung nach Secret-Setzung
+
+1. Manuellen `workflow_dispatch` auf `main` auslösen:
+   - `publish_mode`: `dry_run`
+   - `persist_via_pr`: `false`
+   - `issue_automation_live`: `false`
+
+2. Im Job-Log des `security-readout`-Steps prüfen:
+   - `READOUT_STATUS=ok` (war zuvor `partial`)
+   - Keine `::warning::Security Alert Readout: PARTIAL`-Annotation
+
+3. Im Job-Summary und Ledger-Kommentar auf #2289 prüfen:
+   - `readout_status: ok`
+   - `dependabot`-Surface zeigt `status: readable`
+
+4. **Erwartetes Ergebnis bei korrektem Token:**
+   - `readout_status`: `partial` → `ok`, sofern nur der Dependabot-Scope fehlte
+   - `delta_status`: bleibt auswertbar
+   - keine Issues erstellt (Dry-run)
+   - keine Alert-Dismissals
+   - Secret-Werte erscheinen nicht in Logs oder Artefakten
+
+#### Sicherheitsgrenzen
+
+- PAT ausschliesslich mit minimalem Scope (`security_events` bei klassischem PAT).
+- Kein `repo`-Full-Access, kein `admin:*`-Scope.
+- Secret Scanning bleibt `redacted/status-only` — auch nach Token-Fix.
+- Kein Auto-Close, keine Alert-Dismissals, keine LR-/Live-/Echtgeld-Ableitung.
+
+---
+
 ### Artefakte
 
 Nach jedem Run werden hochgeladen:
