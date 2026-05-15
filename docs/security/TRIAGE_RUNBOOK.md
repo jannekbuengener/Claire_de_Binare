@@ -248,7 +248,7 @@ Permissions:
 
 - `security_alert_delta.py` gibt **Exit-Code 2** zurück, wenn neue offene Alerts mit Severity `critical`, `high` oder `error` (CodeQL) gefunden werden.
 - Der Workflow setzt dann eine `::warning::`-Annotation und dokumentiert die Eskalation im Job-Summary.
-- Aktuell kein automatisches Issue-Öffnen (DRY-RUN-Slice; Issue-Automation folgt in einem separaten PR).
+- Issue-Automation ist implementiert (PR #2495); neue hochgradige Alert-Gruppen erzeugen automatisiert GitHub-Issues (dry-run by default). Siehe §10.
 
 ### Secret Scanning
 
@@ -279,6 +279,11 @@ Kein direkter Commit in das Repository (artifacts-only-Modus, siehe Publish-Modu
 
 1. **Status** `PASS` — alle drei Surfaces gelesen (Secret Scanning: nur Status).
 2. **Status** `PARTIAL` — mindestens eine Surface nicht lesbar (Permission/API-Fehler).
+   Häufigste Ursache: Dependabot-Surface nicht lesbar, weil `CDB_GH_ALERTS_TOKEN` nicht
+   gesetzt ist. Der Workflow fällt dann auf `github.token` zurück, das keinen
+   Dependabot-Alert-Lesezugriff hat. `comparison_skipped`-Quellen werden im
+   Automation-Layer gefiltert — kein Issue-Spam trotz PARTIAL. Fix: GitHub-Secret
+   `CDB_GH_ALERTS_TOKEN` mit `security_events: read`-Scope (Dependabot) anlegen.
 3. **`escalation_needed: true`** im Delta → neuen High/Critical-Alert innerhalb des
    nächsten Sprints triagen (§3).
 4. **`new_groups`** im Delta → neue Regel-/Advisory-Cluster; ggf. Dismiss-Kommentar
