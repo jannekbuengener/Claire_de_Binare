@@ -276,10 +276,17 @@ Folge: Die `dependabot`-Surface gibt `status: unavailable` zurück → `readout_
 
 #### Minimaler Token-Scope
 
-| Token-Typ | Erforderlicher Scope / Berechtigung |
-|-----------|--------------------------------------|
-| **Klassischer PAT** | `security_events` (Lesen aller Security-Alerts inkl. Dependabot) |
-| **Fine-grained PAT** | `Dependabot alerts: Read-only` |
+| Token-Typ | Scope / Berechtigung | Empfehlung |
+|-----------|----------------------|------------|
+| **Fine-grained PAT** | `Dependabot alerts: Read-only` | ✅ **Bevorzugt** — strikt read-only |
+| **Klassischer PAT** | `security_events` | ⚠️ Technisch möglich — **nicht strikt read-only** (siehe unten) |
+
+> **Warnung — klassischer PAT:** Der `security_events`-Scope ermöglicht neben dem Lesen auch
+> Schreiboperationen auf Dependabot-Alerts (dismiss/reopen via PATCH).  Ein klassischer PAT mit
+> diesem Scope ist damit **nicht strikt read-only** für Dependabot.  Ein kompromittierter oder
+> wiederverwendeter Token könnte Alerts dismissen.  **Fine-grained PAT mit
+> `Dependabot alerts: Read-only` ist die sicherere Wahl.**  Klassischen PAT nur verwenden,
+> wenn Fine-grained PATs in der Ziel-Org nicht unterstützt werden.
 
 Der Token braucht **keinen** Schreib-Zugriff auf das Repository.
 Kein `repo`-Full-Access, kein `admin:*`-Scope, kein `workflow`-Scope.
@@ -321,7 +328,8 @@ für ihn sichtbar sein (typischerweise: Repository-Inhaber oder Kollaborator mit
 
 #### Sicherheitsgrenzen
 
-- PAT ausschliesslich mit minimalem Scope (`security_events` bei klassischem PAT).
+- **Fine-grained PAT mit `Dependabot alerts: Read-only` bevorzugen** — strikt read-only, kein Dismiss/Reopen möglich.
+- Klassischen PAT mit `security_events` nur verwenden, wenn Fine-grained PATs nicht unterstützt werden; dieser Scope trägt Dependabot-Write-Capability.
 - Kein `repo`-Full-Access, kein `admin:*`-Scope.
 - Secret Scanning bleibt `redacted/status-only` — auch nach Token-Fix.
 - Kein Auto-Close, keine Alert-Dismissals, keine LR-/Live-/Echtgeld-Ableitung.
