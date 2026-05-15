@@ -361,12 +361,48 @@ def _safe_list_dict(value: object) -> list[dict[str, Any]]:
     return [item for item in value if isinstance(item, dict)]
 
 
+def _normalize_delta_keys(raw: dict[str, Any]) -> dict[str, Any]:
+    """Bridge the real security_alert_delta.v1 JSON shape to the keys this module reads.
+
+    The delta module emits ``escalation_alerts`` (not ``escalations``) and flat
+    ``*_count`` integer fields (not a ``counts`` dict).  This normalizer adds the
+    expected keys when they are absent, leaving existing keys untouched so that
+    test fixtures that already use the canonical names are unaffected.
+    """
+    normalized = dict(raw)
+
+    # escalation_alerts (delta module) → escalations (this module)
+    if "escalation_alerts" in raw and "escalations" not in raw:
+        normalized["escalations"] = raw["escalation_alerts"]
+
+    # flat *_count ints → counts dict
+    if "counts" not in raw and any(
+        k in raw for k in ("new_alert_count", "new_group_count", "escalation_alert_count")
+    ):
+        normalized["counts"] = {
+            "new_alerts": int(raw.get("new_alert_count", 0)),
+            "reopened_alerts": int(raw.get("reopened_alert_count", 0)),
+            "new_groups": int(raw.get("new_group_count", 0)),
+            "escalation_alerts": int(raw.get("escalation_alert_count", 0)),
+        }
+
+    # current_readout.reference_now_utc → sources.current_reference_now_utc
+    if "sources" not in raw and isinstance(raw.get("current_readout"), dict):
+        normalized["sources"] = {
+            "current_reference_now_utc": raw["current_readout"].get("reference_now_utc", "")
+        }
+
+    return normalized
+
+
 def build_candidates(delta: dict[str, Any]) -> list[dict[str, Any]]:
     schema = str(delta.get("schema_version", ""))
     if not schema.startswith("security_alert_delta"):
         raise SecurityAlertIssueCandidatesError(
             "Invalid input schema; expected security_alert_delta.*"
         )
+
+    delta = _normalize_delta_keys(delta)
 
     counts = _safe_counts(delta)
     current_reference = _extract_current_reference(delta)

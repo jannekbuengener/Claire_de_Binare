@@ -37,6 +37,11 @@ on:
         required: false
         default: "false"
         type: boolean
+      issue_automation_live:
+        description: "Enable live mode for issue-automation job (creates real GitHub issues). Defaults to false (dry-run). Scheduled runs always use dry-run."
+        required: false
+        default: "false"
+        type: boolean
 
 permissions:
   contents: read           # no repo writes; read-only checkout
@@ -466,3 +471,84 @@ jobs:
           gh issue comment "${ISSUE_NUMBER}" \
             --repo "${GITHUB_REPOSITORY}" \
             --body-file "${comment_file}"
+
+  issue-automation:
+    # Create GitHub issues for new high-severity alert groups detected in the
+    # delta JSON.  Dry-run by default; pass issue_automation_live=true via
+    # workflow_dispatch to enable live issue creation.
+    #
+    # Invariants:
+    # - Scheduled runs: always dry-run (no issue spam).
+    # - No auto-close, no alert dismissals, no LR derivation.
+    # - Dedupe is fail-closed: a lookup failure skips creation (exit 2).
+    # - Secret scanning candidates are excluded at the script layer.
+    # - comparison_skipped sources are excluded at the script layer.
+    runs-on: ubuntu-latest
+    needs: security-readout
+    if: always() && needs.security-readout.result != 'cancelled'
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+
+    env:
+      DATE_DIR:       ${{ needs.security-readout.outputs.date_dir }}
+      READOUT_STATUS: ${{ needs.security-readout.outputs.readout_status || 'unknown/failed' }}
+      DELTA_STATUS:   ${{ needs.security-readout.outputs.delta_status || 'unknown/failed' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependencies
+        shell: bash
+        run: pip install --quiet -r requirements.txt
+
+      - name: Download security-alert-readout artifact
+        uses: actions/download-artifact@96a0b611a25419df80fce7e0ddf2b97cd4efdf6e # v4.1.8
+        with:
+          name: security-alert-readout-${{ github.run_number }}
+          path: /tmp/security-readout-artifact
+
+      - name: Run issue automation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DELTA_JSON="/tmp/security-readout-artifact/artifacts/security-alert-readout/delta/security_alert_delta.json"
+
+          if [[ ! -f "${DELTA_JSON}" ]]; then
+            echo "Delta JSON not found at ${DELTA_JSON}; skipping issue automation."
+            echo "This is expected when security-readout failed or produced no delta."
+            exit 0
+          fi
+
+          # Scheduled runs are always dry-run to prevent uncontrolled issue spam.
+          # Live mode requires explicit workflow_dispatch with issue_automation_live=true.
+          LIVE_MODE="false"
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            LIVE_MODE="${{ inputs.issue_automation_live || 'false' }}"
+          fi
+
+          LIVE_FLAG=""
+          if [[ "${LIVE_MODE}" == "true" ]]; then
+            LIVE_FLAG="--live-mode"
+            echo "Issue automation: LIVE mode (will create real issues)"
+          else
+            echo "Issue automation: DRY-RUN mode (no GitHub writes)"
+          fi
+
+          python3 scripts/audit/security_issue_automation.py \
+            --delta-json "${DELTA_JSON}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            ${LIVE_FLAG}
+
+          echo "issue_automation_exit=$?" >> "${GITHUB_OUTPUT}" || true
+

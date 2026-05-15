@@ -286,6 +286,97 @@ Kein direkter Commit in das Repository (artifacts-only-Modus, siehe Publish-Modu
 
 ---
 
+## 10. Issue Automation — Neue Alert-Gruppen (#2289)
+
+### Zweck
+
+Der `issue-automation`-Job in `.github/workflows/security-alert-readout.yml` liest
+`security_alert_delta.json` und erstellt pro neuer, eskalationsrelevanter Alert-Gruppe
+genau ein GitHub-Issue.  Er läuft nach dem `security-readout`-Job und ist fail-closed:
+ein Fehler beim Dedupe-Check verhindert die Erstellung (kein stillen Fehlern).
+
+### Invarianten
+
+- **Kein Auto-Close.** Einmal erstellte Issues werden nur durch menschliche Triage
+  geschlossen.
+- **Keine Alert-Dismissals** durch den Automation-Layer.
+- **Keine LR-/Live-/Echtgeld-Ableitung.**
+- **Secret-Scanning** wird im `security_alert_issue_candidates.py`-Layer gefiltert
+  und nie automatisiert als Issue angelegt.
+- **`comparison_skipped`-Quellen** (z. B. Dependabot ohne Token) werden im
+  Automation-Layer gefiltert — keine Issue-Erstellung für PARTIAL-Sources.
+
+### Eskalationsschwelle
+
+Nur Kandidaten mit `severity_band == "high"` (deckt `critical`, `high`, `error` ab)
+werden zu Issue-Kandidaten.  `medium`, `low`, `note`, `unknown` werden übersprungen.
+
+### Dedupe-Mechanismus
+
+Jedes Issue enthält einen HTML-Kommentar als Dedupe-Marker:
+
+```
+<!-- cdb-security-alert-group:<fingerprint> -->
+```
+
+Der Fingerprint ist ein SHA-256[:16] der kanonisierten Felder
+`source|severity_band|subject|affected_component|branch`.
+
+Vor jeder Issue-Erstellung prüft das Skript per GitHub-GraphQL-Suche, ob ein
+Issue mit diesem Marker bereits existiert.  Bei Lookup-Fehler: fail-closed (kein
+Create, Exit 2).
+
+**Hinweis:** GitHub-Suche ist eventually consistent (Indexierungs-Lag möglich).
+Der Marker ist primäre Dedupe-Wahrheit; die Suche ist ein Best-Effort-Guard.
+
+### Dry-run vs. Live-Modus
+
+| Trigger | Modus |
+|---------|-------|
+| `schedule` | immer dry-run — kein Issue-Spam auf geplanten Runs |
+| `workflow_dispatch` ohne `issue_automation_live=true` | dry-run |
+| `workflow_dispatch` mit `issue_automation_live=true` | live — erstellt echte Issues |
+
+Im Dry-run werden alle Candidates geloggt (`DRY-RUN: would create issue: …`),
+aber keine GitHub-Writes durchgeführt.
+
+### CLI-Referenz
+
+```bash
+# Dry-run (default)
+python3 scripts/audit/security_issue_automation.py \
+  --delta-json artifacts/security-alert-readout/delta/security_alert_delta.json \
+  --repo owner/repo
+
+# Live-Modus (nur bewusst aktivieren)
+python3 scripts/audit/security_issue_automation.py \
+  --delta-json artifacts/security-alert-readout/delta/security_alert_delta.json \
+  --repo owner/repo \
+  --live-mode
+```
+
+### Exit-Codes
+
+| Code | Bedeutung |
+|------|-----------|
+| `0` | ok — alle Candidates verarbeitet (erstellt oder übersprungen) |
+| `1` | Input-Fehler — Delta-JSON fehlt oder ungültig |
+| `2` | Partial-Failure — mindestens eine Issue-Erstellung oder ein Dedupe-Lookup fehlgeschlagen |
+
+### Verknüpfte Skripte
+
+- `scripts/audit/security_issue_automation.py` — CLI, Automation-Loop, GitHub-Writes
+- `scripts/audit/security_alert_issue_candidates.py` — Kandidatengenerierung (kein GitHub-API)
+
+### Stop-Regeln für manuellen Betrieb
+
+- Bei `exit 2`: Logs prüfen, betroffene Fingerprints identifizieren, manuell nacharbeiten.
+- Nie `--live-mode` auf geplanten Runs aktivieren — Workflow-Guard verhindert das, aber
+  auch manuell nicht umgehen.
+- Kein Commit der Ausgaben; das Skript schreibt keine Dateien.
+
+---
+
 ## Verknüpfte Issues
 
 - #1649 — [EPIC] Code-Scanning konsolidieren
