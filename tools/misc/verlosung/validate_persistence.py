@@ -6,7 +6,6 @@ Validates that test events were correctly persisted to PostgreSQL
 
 import os
 import sys
-from datetime import datetime
 
 import psycopg2
 
