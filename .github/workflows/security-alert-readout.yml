@@ -364,15 +364,17 @@ jobs:
 
   comment-epic:
     runs-on: ubuntu-latest
-    needs: security-readout
+    needs: [security-readout, issue-automation]
     if: always()
     permissions:
       contents: read
       issues: write
     env:
-      DATE_DIR:       ${{ needs.security-readout.outputs.date_dir }}
-      READOUT_STATUS: ${{ needs.security-readout.outputs.readout_status || 'unknown/failed' }}
-      DELTA_STATUS:   ${{ needs.security-readout.outputs.delta_status || 'unknown/failed' }}
+      DATE_DIR:         ${{ needs.security-readout.outputs.date_dir }}
+      READOUT_STATUS:   ${{ needs.security-readout.outputs.readout_status || 'unknown/failed' }}
+      DELTA_STATUS:     ${{ needs.security-readout.outputs.delta_status || 'unknown/failed' }}
+      AUTOMATION_MODE:  ${{ needs.issue-automation.outputs.automation_mode || 'skipped' }}
+      AUTOMATION_EXIT:  ${{ needs.issue-automation.outputs.automation_exit || 'skipped' }}
     steps:
       - name: Post compact ledger comment to epic #2289
         env:
@@ -439,6 +441,17 @@ jobs:
             escalation_note="manual triage required"
           fi
 
+          # Derive automation boundary line from the issue-automation job outputs.
+          automation_mode="${AUTOMATION_MODE:-skipped}"
+          automation_exit="${AUTOMATION_EXIT:-skipped}"
+          if [[ "${automation_mode}" == "live" ]]; then
+            automation_note="issue-automation: LIVE (exit: ${automation_exit}) — check run log for created/skipped/failed counts"
+          elif [[ "${automation_mode}" == "dry-run" ]]; then
+            automation_note="issue-automation: dry-run (exit: ${automation_exit}) — no GitHub writes"
+          else
+            automation_note="issue-automation: skipped/not-run"
+          fi
+
           comment_file="$(mktemp)"
           cat > "${comment_file}" <<EOF
           ${marker}
@@ -461,7 +474,7 @@ jobs:
           - \`artifacts/security-alert-readout/delta/security_alert_delta.json\`
 
           **Security boundaries**
-          - no new issues created
+          - ${automation_note}
           - no alert dismissals
           - no auto-merge
           - secret scanning remains redacted/status-only
@@ -490,6 +503,9 @@ jobs:
       contents: read
       actions: read
       issues: write
+    outputs:
+      automation_mode: ${{ steps.run-automation.outputs.automation_mode }}
+      automation_exit: ${{ steps.run-automation.outputs.automation_exit }}
 
     env:
       DATE_DIR:       ${{ needs.security-readout.outputs.date_dir }}
@@ -516,6 +532,7 @@ jobs:
           path: /tmp/security-readout-artifact
 
       - name: Run issue automation
+        id: run-automation
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
@@ -527,6 +544,8 @@ jobs:
           if [[ ! -f "${DELTA_JSON}" ]]; then
             echo "Delta JSON not found at ${DELTA_JSON}; skipping issue automation."
             echo "This is expected when security-readout failed or produced no delta."
+            echo "automation_mode=skipped" >> "${GITHUB_OUTPUT}"
+            echo "automation_exit=skipped" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
@@ -538,17 +557,24 @@ jobs:
           fi
 
           LIVE_FLAG=""
+          AUTOMATION_MODE="dry-run"
           if [[ "${LIVE_MODE}" == "true" ]]; then
             LIVE_FLAG="--live-mode"
+            AUTOMATION_MODE="live"
             echo "Issue automation: LIVE mode (will create real issues)"
           else
             echo "Issue automation: DRY-RUN mode (no GitHub writes)"
           fi
 
+          set +e
           python3 scripts/audit/security_issue_automation.py \
             --delta-json "${DELTA_JSON}" \
             --repo "${GITHUB_REPOSITORY}" \
             ${LIVE_FLAG}
+          SCRIPT_EXIT=$?
+          set -e
 
-          echo "issue_automation_exit=$?" >> "${GITHUB_OUTPUT}" || true
+          echo "automation_mode=${AUTOMATION_MODE}" >> "${GITHUB_OUTPUT}"
+          echo "automation_exit=${SCRIPT_EXIT}" >> "${GITHUB_OUTPUT}"
+          exit ${SCRIPT_EXIT}
 
