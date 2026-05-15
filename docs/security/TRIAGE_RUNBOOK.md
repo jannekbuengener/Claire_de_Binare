@@ -301,8 +301,9 @@ Name:  CDB_GH_ALERTS_TOKEN
 Value: <PAT-Wert>
 ```
 
-Der PAT-Inhaber muss mindestens **Read-Zugriff** auf das Repository haben und Dependabot-Alerts dürfen
-für ihn sichtbar sein (typischerweise: Repository-Inhaber oder Kollaborator mit Admin/Write-Zugriff).
+Der PAT-Inhaber muss mindestens **Write**-, Maintain- oder Admin-Zugriff auf das Repository haben
+(oder Repository-/Org-Inhaber sein), damit Dependabot-Alerts für ihn sichtbar sind.
+Reiner Read-Zugriff reicht laut GitHub nicht aus.
 
 #### Validierung nach Secret-Setzung
 
