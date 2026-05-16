@@ -590,17 +590,16 @@ def test_malformed_shadow_probe_is_invalid_not_crash(
 
 
 def test_fresh_stack_baseline_log_is_running_valid(tmp_path: Path) -> None:
-    """FRESH_RESTART: + FRESH_STACK_BASELINE: in log, no verdict markers => RUNNING_VALID.
+    """FRESH_RESTART: + FRESH_STACK_BASELINE: in fresh_stack_baseline.log => RUNNING_VALID.
 
-    After a fresh-stack first-pass, soak_monitor.sh writes only FRESH_RESTART:
-    per-container tags and a single FRESH_STACK_BASELINE: summary entry into
-    restart_alerts.log.  Neither pattern matches _RAW_RESTART_RE ("RESTART DETECTED")
-    nor _ENV_INTERRUPTION_RE ("ENVIRONMENT_INTERRUPTION"), so the supervisor must
-    report RUNNING_VALID (within the hourly deadline grace period).
+    After a fresh-stack first-pass, soak_monitor.sh writes FRESH_RESTART: per-container
+    tags and a FRESH_STACK_BASELINE: summary entry into fresh_stack_baseline.log (NOT
+    restart_alerts.log).  restart_alerts.log is absent.  Supervisor must report
+    RUNNING_VALID (within the hourly deadline grace period).
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
-    # Simulate 12 per-container FRESH_RESTART: lines + summary
+    # Simulate 12 per-container FRESH_RESTART: lines + summary in dedicated file
     fresh_lines = "".join(
         f"2026-05-16 19:24:10 UTC - FRESH_RESTART: cdb_svc_{i} (Up 5 minutes)\n"
         for i in range(12)
@@ -610,13 +609,11 @@ def test_fresh_stack_baseline_log_is_running_valid(tmp_path: Path) -> None:
         "all 12/12 SUT services share fresh startup uptime (spread=0s, "
         "uptime_min=300s, run_elapsed=305s); classified as initial-start baseline, "
         "not environment interruption\n"
-    )
-    (run_dir / "restart_alerts.log").write_text(fresh_lines, encoding="utf-8")
-    (run_dir / "fresh_stack_baseline.txt").write_text(
         "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: first-pass on freshly "
-        "started stack; all SUT services healthy; not an environment interruption\n",
-        encoding="utf-8",
+        "started stack; all SUT services healthy; not an environment interruption\n"
     )
+    (run_dir / "fresh_stack_baseline.log").write_text(fresh_lines, encoding="utf-8")
+    # restart_alerts.log must be absent — that is the P1 fix
 
     # Within 75-min deadline: no hourly_checks.log required yet
     result = evaluate(run_dir, _as_of(30), hourly_deadline_minutes=75)
@@ -629,14 +626,15 @@ def test_fresh_stack_baseline_log_is_running_valid(tmp_path: Path) -> None:
 
 
 def test_fresh_stack_baseline_with_hourly_log_is_running_valid(tmp_path: Path) -> None:
-    """FRESH_RESTART: log + hourly_checks.log Hour 0 + no markers => RUNNING_VALID.
+    """FRESH_RESTART: in fresh_stack_baseline.log + hourly_checks.log Hour 0 => RUNNING_VALID.
 
     After the fresh-stack baseline pass writes the hour-0 checkpoint, subsequent
     supervisor evaluations past the hourly deadline must still return RUNNING_VALID.
+    restart_alerts.log is absent — baseline evidence is only in fresh_stack_baseline.log.
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
-    (run_dir / "restart_alerts.log").write_text(
+    (run_dir / "fresh_stack_baseline.log").write_text(
         "2026-05-16 19:24:10 UTC - FRESH_RESTART: cdb_ws (Up 5 minutes)\n"
         "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: first monitor pass; "
         "all 12/12 SUT services share fresh startup uptime\n",
@@ -651,15 +649,16 @@ def test_fresh_stack_baseline_with_hourly_log_is_running_valid(tmp_path: Path) -
 
 
 def test_fresh_restart_tag_alone_does_not_fail(tmp_path: Path) -> None:
-    """FRESH_RESTART: tag must not match _RAW_RESTART_RE ('RESTART DETECTED').
+    """FRESH_RESTART: tag in fresh_stack_baseline.log must not cause supervisor failure.
 
-    Regression guard: ensures the literal string "FRESH_RESTART:" is not caught
-    by the supervisor's hard-restart pattern which matches "RESTART DETECTED".
+    Regression guard: ensures FRESH_RESTART: evidence in fresh_stack_baseline.log
+    does not trip any supervisor check.  restart_alerts.log is absent (P1 fix:
+    fresh-stack baseline writes only to fresh_stack_baseline.log).
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
     _write_valid_hourly_log(run_dir)
-    (run_dir / "restart_alerts.log").write_text(
+    (run_dir / "fresh_stack_baseline.log").write_text(
         "2026-05-16 19:24:10 UTC - FRESH_RESTART: cdb_risk (Up 3 minutes)\n",
         encoding="utf-8",
     )
@@ -674,15 +673,16 @@ def test_fresh_restart_tag_alone_does_not_fail(tmp_path: Path) -> None:
 def test_fresh_stack_baseline_tag_does_not_trigger_env_interruption(
     tmp_path: Path,
 ) -> None:
-    """FRESH_STACK_BASELINE: must not match _ENV_INTERRUPTION_RE ('ENVIRONMENT_INTERRUPTION').
+    """FRESH_STACK_BASELINE: in fresh_stack_baseline.log must not cause env-interruption failure.
 
-    Regression guard: ensures FRESH_STACK_BASELINE: in restart_alerts.log is not
-    mistakenly classified as an environment interruption.
+    Regression guard: ensures FRESH_STACK_BASELINE: evidence in fresh_stack_baseline.log
+    does not match _ENV_INTERRUPTION_RE ('ENVIRONMENT_INTERRUPTION').  restart_alerts.log
+    is absent (P1 fix: fresh-stack baseline writes only to fresh_stack_baseline.log).
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
     _write_valid_hourly_log(run_dir)
-    (run_dir / "restart_alerts.log").write_text(
+    (run_dir / "fresh_stack_baseline.log").write_text(
         "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: first monitor pass; "
         "all 12/12 SUT services; not an environment interruption\n",
         encoding="utf-8",
@@ -701,16 +701,22 @@ def test_environment_interruption_after_fresh_stack_baseline_is_inconclusive(
     """Real ENVIRONMENT_INTERRUPTION after first baseline => INCONCLUSIVE_EARLY.
 
     After the fresh-stack baseline is established, a real Docker-daemon restart
-    later in the run must still produce INCONCLUSIVE_EARLY. The FRESH_RESTART:
-    tags from the first pass must not suppress the ENVIRONMENT_INTERRUPTION verdict.
+    later in the run must still produce INCONCLUSIVE_EARLY.
+
+    P1 fix layout: baseline evidence is in fresh_stack_baseline.log; only the
+    real ENVIRONMENT_INTERRUPTION appears in restart_alerts.log.
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
     _write_valid_hourly_log(run_dir, hours=[0, 1, 2])
-    # Fresh-stack baseline from hour 0, real interruption at hour 3
-    (run_dir / "restart_alerts.log").write_text(
+    # Fresh-stack baseline from hour 0 — in dedicated file only
+    (run_dir / "fresh_stack_baseline.log").write_text(
         "2026-05-16 19:24:10 UTC - FRESH_RESTART: cdb_ws (Up 5 minutes)\n"
-        "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: initial-start baseline\n"
+        "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: initial-start baseline\n",
+        encoding="utf-8",
+    )
+    # Real environment interruption at hour 3 — in restart_alerts.log
+    (run_dir / "restart_alerts.log").write_text(
         "2026-05-16 22:30:00 UTC - ENVIRONMENT_INTERRUPTION: 12/12 host reboot\n",
         encoding="utf-8",
     )
@@ -724,4 +730,30 @@ def test_environment_interruption_after_fresh_stack_baseline_is_inconclusive(
     assert result["status"] == INCONCLUSIVE_EARLY
     failed_checks = {f["check"] for f in result["failures"]}
     assert "no_env_interruption_patterns" in failed_checks
+
+
+def test_fresh_stack_baseline_does_not_populate_restart_alerts(tmp_path: Path) -> None:
+    """LR-040 regression guard: fresh-stack baseline must leave restart_alerts.log absent.
+
+    P1 fix: soak_monitor.sh no longer writes FRESH_RESTART: or FRESH_STACK_BASELINE:
+    to restart_alerts.log.  Only fresh_stack_baseline.log is created on a fresh first
+    pass.  If restart_alerts.log is absent, the LR-040 gate (lr040_soak_gate_eval.py)
+    sees no_restart_alerts=true and does not fail a healthy run on benign baseline noise.
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    # Only fresh_stack_baseline.log — restart_alerts.log intentionally absent
+    (run_dir / "fresh_stack_baseline.log").write_text(
+        "2026-05-16 19:24:10 UTC - FRESH_RESTART: cdb_ws (Up 5 minutes)\n"
+        "2026-05-16 19:24:10 UTC - FRESH_STACK_BASELINE: first-pass baseline\n",
+        encoding="utf-8",
+    )
+
+    result = evaluate(run_dir, _as_of(30), hourly_deadline_minutes=75)
+
+    assert result["status"] == RUNNING_VALID
+    assert not (run_dir / "restart_alerts.log").exists(), (
+        "restart_alerts.log must not exist after a fresh-stack first pass — "
+        "it would cause lr040_soak_gate_eval.py to report no_restart_alerts=false"
+    )
 

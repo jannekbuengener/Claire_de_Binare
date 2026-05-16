@@ -1873,3 +1873,61 @@ class TestFreshStackFirstPassDetection:
             "Uptime-compatibility guard (stat -c %%Y run_intent.txt or RUN_START_EPOCH) "
             "missing from soak_monitor.sh — the mid-run restart ambiguity fix is absent"
         )
+
+    def test_lr030_soak_monitor_bash_writes_fresh_tags_to_fresh_stack_baseline_log(
+        self,
+    ) -> None:
+        """P1 fix guard: fresh-stack evidence must target fresh_stack_baseline.log.
+
+        soak_monitor.sh must write FRESH_RESTART: and FRESH_STACK_BASELINE: entries
+        to fresh_stack_baseline.log, NOT to restart_alerts.log.  Writing baseline
+        notices to restart_alerts.log would cause lr040_soak_gate_eval.py to report
+        no_restart_alerts=false and fail a healthy LR-040 run.
+        """
+        content = _read_soak_monitor()
+        assert "fresh_stack_baseline.log" in content, (
+            "fresh_stack_baseline.log missing from soak_monitor.sh — "
+            "fresh-stack baseline evidence has no dedicated output file (P1 fix absent)"
+        )
+
+    def test_lr030_soak_monitor_bash_fresh_restart_not_in_restart_alerts(
+        self,
+    ) -> None:
+        """P1 fix guard: FRESH_RESTART: must NOT be written to restart_alerts.log.
+
+        Any FRESH_RESTART: line that appends to restart_alerts.log would make
+        that file non-empty after a clean fresh first pass, breaking the LR-040
+        no_restart_alerts gate.
+        """
+        content = _read_soak_monitor()
+        import re
+
+        # Find all lines that both contain FRESH_RESTART: and restart_alerts.log
+        bad_lines = [
+            line
+            for line in content.splitlines()
+            if "FRESH_RESTART:" in line and "restart_alerts.log" in line
+        ]
+        assert bad_lines == [], (
+            f"FRESH_RESTART: must not target restart_alerts.log — found:\n"
+            + "\n".join(bad_lines)
+        )
+
+    def test_lr030_soak_monitor_bash_fresh_stack_baseline_not_in_restart_alerts(
+        self,
+    ) -> None:
+        """P1 fix guard: FRESH_STACK_BASELINE: must NOT be written to restart_alerts.log.
+
+        Same rationale as above: any FRESH_STACK_BASELINE: in restart_alerts.log
+        makes the file non-empty, breaking the LR-040 gate.
+        """
+        content = _read_soak_monitor()
+        bad_lines = [
+            line
+            for line in content.splitlines()
+            if "FRESH_STACK_BASELINE:" in line and "restart_alerts.log" in line
+        ]
+        assert bad_lines == [], (
+            f"FRESH_STACK_BASELINE: must not target restart_alerts.log — found:\n"
+            + "\n".join(bad_lines)
+        )

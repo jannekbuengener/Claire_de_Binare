@@ -391,7 +391,7 @@ for _svc in $SUT_SERVICES; do
       echo "  Container: $_svc"
       echo "  Status: $_SVC_STATUS (initial startup uptime)"
       echo "  Detected At: $TIMESTAMP"
-      echo "$TIMESTAMP - FRESH_RESTART: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+      echo "$TIMESTAMP - FRESH_RESTART: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/fresh_stack_baseline.log"
     else
       echo -e "${RED}ALERT: SUT container restart detected!${NC}"
       echo "  Container: $_svc"
@@ -512,9 +512,9 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
     # Fresh-stack baseline: all SUT services share initial startup uptime.
     # Write baseline evidence only — no verdict marker files.
     echo "$TIMESTAMP - FRESH_STACK_BASELINE: first monitor pass; all ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services share fresh startup uptime (spread=${UPTIME_SPREAD}s, uptime_min=${UPTIME_MIN}s, run_elapsed=${_RUN_ELAPSED_S}s); classified as initial-start baseline, not environment interruption" \
-      >> "$ARTIFACT_PATH/restart_alerts.log"
+      >> "$ARTIFACT_PATH/fresh_stack_baseline.log"
     printf '%s\n' "$TIMESTAMP - FRESH_STACK_BASELINE: first-pass on freshly started stack; all SUT services healthy; not an environment interruption" \
-      > "$ARTIFACT_PATH/fresh_stack_baseline.txt"
+      >> "$ARTIFACT_PATH/fresh_stack_baseline.log"
     echo -e "${YELLOW}INFO: Fresh-stack first-pass baseline — not an environment interruption${NC}"
     echo "  All ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services share initial startup uptime (spread=${UPTIME_SPREAD}s)."
     echo "  This is expected after 'make docker-up'. Run continues."
