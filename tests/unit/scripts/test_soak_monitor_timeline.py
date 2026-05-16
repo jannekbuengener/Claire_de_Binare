@@ -1748,3 +1748,128 @@ class TestDiskCheckFallback:
         assert (
             "Docker disk evidence also unavailable" in content
         ), "Fail-closed message missing — path C wording changed"
+
+
+# ---------------------------------------------------------------------------
+# Fresh-stack first-pass detection (Issue #2440 re-run fix)
+#
+# Root cause: soak_monitor.sh classified a freshly started, 100% healthy stack
+# as ENVIRONMENT_INTERRUPTION / INCONCLUSIVE on the very first monitor pass,
+# because all 12/12 SUT containers shared the same uptime (spread=0s, fresh
+# Docker launch).
+#
+# Fix: _FRESH_PASS_CANDIDATE + uptime-compatibility guard.  Grace is only applied
+# when elapsed_hours==0, last_checkpoint==-1, no existing markers, and uptime is
+# compatible with the run start timestamp derived from run_intent.txt mtime.
+# ---------------------------------------------------------------------------
+
+
+def is_fresh_stack_first_pass(
+    elapsed_hours: int,
+    last_checkpoint: int,
+    inconclusive_exists: bool,
+    failed_exists: bool,
+) -> bool:
+    """Mirror _FRESH_PASS_CANDIDATE detection in soak_monitor.sh (pre-uptime-compat check).
+
+    Returns True only when all four conditions hold:
+    - elapsed_hours == 0 (within the first hour)
+    - last_checkpoint == -1 (no checkpoint has been written yet)
+    - no soak_test_INCONCLUSIVE.txt present
+    - no soak_test_FAILED.txt present
+
+    This mirrors the bash _FRESH_PASS_CANDIDATE=1 logic before the uptime-compatibility
+    guard is evaluated.  The uptime guard (_FRESH_PASS vs _FRESH_PASS_CANDIDATE) requires
+    live container uptime data and is validated separately via soak_monitor.sh smoke guards.
+    """
+    return (
+        elapsed_hours == 0
+        and last_checkpoint == -1
+        and not inconclusive_exists
+        and not failed_exists
+    )
+
+
+class TestFreshStackFirstPassDetection:
+    """Issue #2440: first-pass candidate detection logic mirrors soak_monitor.sh.
+
+    These tests validate the Python model of the bash _FRESH_PASS_CANDIDATE guard.
+    They are paired with TestRestartDetectionScope for the scope-aware SUT counting.
+    """
+
+    def test_clean_first_pass_is_candidate(self) -> None:
+        """All four conditions met → True (fresh-stack grace candidate)."""
+        assert is_fresh_stack_first_pass(0, -1, False, False) is True
+
+    def test_beyond_first_hour_no_grace(self) -> None:
+        """elapsed_hours >= 1 → not a fresh-stack candidate, regardless of checkpoint."""
+        assert is_fresh_stack_first_pass(1, -1, False, False) is False
+        assert is_fresh_stack_first_pass(2, -1, False, False) is False
+        assert is_fresh_stack_first_pass(24, -1, False, False) is False
+
+    def test_checkpoint_already_written_no_grace(self) -> None:
+        """last_checkpoint >= 0 means a prior pass completed → not first pass."""
+        assert is_fresh_stack_first_pass(0, 0, False, False) is False
+        assert is_fresh_stack_first_pass(0, 5, False, False) is False
+
+    def test_inconclusive_marker_blocks_grace(self) -> None:
+        """soak_test_INCONCLUSIVE.txt present → grace blocked (fail-closed)."""
+        assert is_fresh_stack_first_pass(0, -1, True, False) is False
+
+    def test_failed_marker_blocks_grace(self) -> None:
+        """soak_test_FAILED.txt present → grace blocked (fail-closed)."""
+        assert is_fresh_stack_first_pass(0, -1, False, True) is False
+
+    def test_both_markers_block_grace(self) -> None:
+        """Both markers present → still blocked."""
+        assert is_fresh_stack_first_pass(0, -1, True, True) is False
+
+    def test_partial_12_of_12_sut_fresh_stack_is_candidate(self) -> None:
+        """Candidate check is independent of SUT count; full 12/12 is required at
+        a higher layer (the bash body checks RESTART_COUNT == EXPECTED_SERVICES == 12).
+        This test confirms the Python gate does not short-circuit on counts."""
+        assert is_fresh_stack_first_pass(0, -1, False, False) is True
+
+    def test_lr030_soak_monitor_bash_contains_fresh_pass_candidate_variable(
+        self,
+    ) -> None:
+        """Regression anchor: _FRESH_PASS_CANDIDATE must remain in soak_monitor.sh."""
+        content = _read_soak_monitor()
+        assert "_FRESH_PASS_CANDIDATE" in content, (
+            "_FRESH_PASS_CANDIDATE variable missing from soak_monitor.sh — "
+            "the fresh-stack first-pass grace guard has been removed or renamed"
+        )
+
+    def test_lr030_soak_monitor_bash_contains_fresh_stack_baseline_tag(self) -> None:
+        """Regression anchor: FRESH_STACK_BASELINE: log tag must remain in soak_monitor.sh."""
+        content = _read_soak_monitor()
+        assert "FRESH_STACK_BASELINE:" in content, (
+            "FRESH_STACK_BASELINE: log tag missing from soak_monitor.sh — "
+            "the benign fresh-stack classification path has been removed"
+        )
+
+    def test_lr030_soak_monitor_bash_contains_fresh_restart_tag(self) -> None:
+        """Regression anchor: FRESH_RESTART: log tag must remain in soak_monitor.sh."""
+        content = _read_soak_monitor()
+        assert "FRESH_RESTART:" in content, (
+            "FRESH_RESTART: log tag missing from soak_monitor.sh — "
+            "the per-container fresh-stack logging has been removed"
+        )
+
+    def test_lr030_soak_monitor_bash_uses_run_intent_mtime_for_uptime_compat(
+        self,
+    ) -> None:
+        """Regression anchor: uptime-compat guard must read run_intent.txt mtime.
+
+        This is the critical fix from the rubber-duck review: ELAPSED_HOURS==0 &&
+        LAST_CHECKPOINT==-1 alone cannot distinguish T+0 from a real Docker-daemon
+        restart at T+30min (before the first hourly checkpoint).  The mtime of
+        run_intent.txt gives a concrete run-start epoch for comparison.
+        """
+        content = _read_soak_monitor()
+        assert "run_intent.txt" in content, "run_intent.txt must appear in soak_monitor.sh"
+        # stat -c %Y provides the mtime epoch used for uptime-compat comparison
+        assert "stat -c %Y" in content or "RUN_START_EPOCH" in content, (
+            "Uptime-compatibility guard (stat -c %%Y run_intent.txt or RUN_START_EPOCH) "
+            "missing from soak_monitor.sh — the mid-run restart ambiguity fix is absent"
+        )

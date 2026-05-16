@@ -235,6 +235,23 @@ if [ -f "$LAST_CHECKPOINT_FILE" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Fresh-stack first-pass candidate detection (Issue #2440 re-run fix).
+# Set when the basic conditions suggest this is the very first monitor pass
+# on a freshly started stack. Final confirmation requires uptime-compatibility
+# with the run start, evaluated in the classification block after UPTIME_MIN
+# is known (guards against a real mid-run restart at < 60 min looking the
+# same as a fresh stack from the elapsed-hours perspective).
+# ---------------------------------------------------------------------------
+_FRESH_PASS_CANDIDATE=0
+if [ "$ELAPSED_HOURS" -eq 0 ] \
+   && [ "$LAST_CHECKPOINT" -eq -1 ] \
+   && [ ! -f "$ARTIFACT_PATH/soak_test_INCONCLUSIVE.txt" ] \
+   && [ ! -f "$ARTIFACT_PATH/soak_test_FAILED.txt" ]; then
+  _FRESH_PASS_CANDIDATE=1
+fi
+FRESH_STACK_BASELINE_APPLIED=0
+
+# ---------------------------------------------------------------------------
 # Auto-stop guard: skip all checks after the monitoring window closes.
 # Prevents post-window Docker/host restarts from tainting a valid run.
 # SOAK_TARGET_HOURS defaults to 72 (LR-040 requirement).
@@ -369,12 +386,19 @@ for _svc in $SUT_SERVICES; do
     [ "$UPTIME_S" -lt "$UPTIME_MIN" ] && UPTIME_MIN=$UPTIME_S
     [ "$UPTIME_S" -gt "$UPTIME_MAX" ] && UPTIME_MAX=$UPTIME_S
 
-    echo -e "${RED}ALERT: SUT container restart detected!${NC}"
-    echo "  Container: $_svc"
-    echo "  Status: $_SVC_STATUS"
-    echo "  Detected At: $TIMESTAMP"
-
-    echo "$TIMESTAMP - RESTART DETECTED: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+    if [ "$_FRESH_PASS_CANDIDATE" -eq 1 ]; then
+      echo -e "${YELLOW}INFO: Fresh-start uptime on first pass: $_svc${NC}"
+      echo "  Container: $_svc"
+      echo "  Status: $_SVC_STATUS (initial startup uptime)"
+      echo "  Detected At: $TIMESTAMP"
+      echo "$TIMESTAMP - FRESH_RESTART: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+    else
+      echo -e "${RED}ALERT: SUT container restart detected!${NC}"
+      echo "  Container: $_svc"
+      echo "  Status: $_SVC_STATUS"
+      echo "  Detected At: $TIMESTAMP"
+      echo "$TIMESTAMP - RESTART DETECTED: $_svc ($_SVC_STATUS)" >> "$ARTIFACT_PATH/restart_alerts.log"
+    fi
     RESTART_COUNT=$((RESTART_COUNT + 1))
     RESTART_DETECTED=1
   fi
@@ -397,10 +421,31 @@ done <<< "$_ALL_STATUS"
 # SUT filter above. If the monitor itself was restarted, that is the strongest
 # signal for an environment-level (Docker-daemon or host) restart.
 MONITOR_FRESH=0
-MONITOR_STATUS=$(docker ps --filter "name=lr040_soak_monitor" --format "{{.Status}}" 2>/dev/null | head -1)
+# Use intent-aware container name so lr030 runs check lr030_soak_monitor and
+# lr040 runs check lr040_soak_monitor. Exact name match avoids false positives
+# from substring-matching a differently-prefixed container.
+_MONITOR_CONTAINER_NAME="${SOAK_RUN_INTENT}_soak_monitor"
+MONITOR_STATUS=$(docker ps --format "{{.Names}} {{.Status}}" 2>/dev/null \
+  | awk -v n="$_MONITOR_CONTAINER_NAME" '$1 == n {print $0; exit}')
 if [ -n "$MONITOR_STATUS" ] && echo "$MONITOR_STATUS" | grep -qiE " second| minute"; then
   MONITOR_FRESH=1
 fi
+
+# ---------------------------------------------------------------------------
+# _checkpoint_write: write the hourly checkpoint entry (idempotent).
+# Defined here so it is available in both the "no restarts" path and the
+# fresh-stack baseline path (issue #2440 re-run fix).
+# ---------------------------------------------------------------------------
+_checkpoint_write() {
+  _CK=-1
+  [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
+  if [ "$ELAPSED_HOURS" -le "$_CK" ]; then
+    echo "Checkpoint $ELAPSED_HOURS already written (last=$_CK) — skipping duplicate"
+  else
+    echo "$TIMESTAMP - Hour $ELAPSED_HOURS: No restarts" >> "$ARTIFACT_PATH/hourly_checks.log"
+    echo "$ELAPSED_HOURS" > "$LAST_CHECKPOINT_FILE"
+  fi
+}
 
 if [ "$RESTART_DETECTED" -eq 1 ]; then
   UPTIME_SPREAD=$((UPTIME_MAX - UPTIME_MIN))
@@ -434,7 +479,47 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
   [ "$TOTAL_CONTAINERS" -gt 0 ] && [ "$((RESTART_COUNT * 2))" -ge "$TOTAL_CONTAINERS" ] && FRACTION_MET=1
   [ "$RESTART_COUNT" -gt 0 ] && [ "$UPTIME_SPREAD" -le 30 ] && TIGHT_SPREAD_MET=1
 
-  if [ "$FRACTION_MET" -eq 1 ] && ( [ "$TIGHT_SPREAD_MET" -eq 1 ] || [ "$MONITOR_FRESH" -eq 1 ] ); then
+  # ---------------------------------------------------------------------------
+  # Fresh-stack baseline check (Issue #2440 re-run fix).
+  # Evaluated BEFORE spread-based classification so that a freshly started
+  # stack (all containers share startup uptime, spread≈0) is not misclassified
+  # as an environment interruption.
+  #
+  # Confirmation requires ALL of:
+  #   1. _FRESH_PASS_CANDIDATE=1 (first pass, no prior checkpoint, no markers)
+  #   2. Full SUT inventory (RESTART_COUNT == EXPECTED_SERVICES == TOTAL_CONTAINERS)
+  #   3. Uptime compatibility: UPTIME_MIN >= RUN_ELAPSED_SECONDS - 120
+  #      (containers started within 120 s of the run; a real mid-run restart
+  #      shows UPTIME_MIN << RUN_ELAPSED_SECONDS and will NOT qualify).
+  #
+  # If this check does NOT pass, fall through to the standard spread-based
+  # classification (environment_interruption or sut_restart).
+  # ---------------------------------------------------------------------------
+  _FRESH_PASS=0
+  if [ "$_FRESH_PASS_CANDIDATE" -eq 1 ] \
+     && [ "$RESTART_COUNT" -eq "$EXPECTED_SERVICES" ] \
+     && [ "$TOTAL_CONTAINERS" -eq "$EXPECTED_SERVICES" ]; then
+    _NOW_EPOCH=$(date +%s)
+    _RUN_START_EPOCH=$(stat -c %Y "$ARTIFACT_PATH/run_intent.txt" 2>/dev/null || echo 0)
+    _RUN_ELAPSED_S=$((_NOW_EPOCH - _RUN_START_EPOCH))
+    _COMPAT_THRESHOLD=$((_RUN_ELAPSED_S - 120))
+    if [ "$UPTIME_MIN" -ge "$_COMPAT_THRESHOLD" ]; then
+      _FRESH_PASS=1
+    fi
+  fi
+
+  if [ "$_FRESH_PASS" -eq 1 ]; then
+    # Fresh-stack baseline: all SUT services share initial startup uptime.
+    # Write baseline evidence only — no verdict marker files.
+    echo "$TIMESTAMP - FRESH_STACK_BASELINE: first monitor pass; all ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services share fresh startup uptime (spread=${UPTIME_SPREAD}s, uptime_min=${UPTIME_MIN}s, run_elapsed=${_RUN_ELAPSED_S}s); classified as initial-start baseline, not environment interruption" \
+      >> "$ARTIFACT_PATH/restart_alerts.log"
+    printf '%s\n' "$TIMESTAMP - FRESH_STACK_BASELINE: first-pass on freshly started stack; all SUT services healthy; not an environment interruption" \
+      > "$ARTIFACT_PATH/fresh_stack_baseline.txt"
+    echo -e "${YELLOW}INFO: Fresh-stack first-pass baseline — not an environment interruption${NC}"
+    echo "  All ${RESTART_COUNT}/${TOTAL_CONTAINERS} SUT services share initial startup uptime (spread=${UPTIME_SPREAD}s)."
+    echo "  This is expected after 'make docker-up'. Run continues."
+    FRESH_STACK_BASELINE_APPLIED=1
+  elif [ "$FRACTION_MET" -eq 1 ] && ( [ "$TIGHT_SPREAD_MET" -eq 1 ] || [ "$MONITOR_FRESH" -eq 1 ] ); then
     # environment_interruption: remove any pre-existing FAILED marker so only
     # one verdict marker exists at a time (mutual exclusion).
     rm -f "$ARTIFACT_PATH/soak_test_FAILED.txt"
@@ -458,19 +543,21 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
     echo "Time: $TIMESTAMP"
   fi
 
-  # Capture failure evidence regardless of cause class.
-  echo "Capturing failure evidence..."
-  docker ps --all > "$ARTIFACT_PATH/failure_container_status.txt"
-  docker stats --no-stream > "$ARTIFACT_PATH/failure_resources.txt"
+  if [ "$FRESH_STACK_BASELINE_APPLIED" -eq 0 ]; then
+    # Capture failure evidence for real restarts only (not for fresh-stack baseline).
+    echo "Capturing failure evidence..."
+    docker ps --all > "$ARTIFACT_PATH/failure_container_status.txt"
+    docker stats --no-stream > "$ARTIFACT_PATH/failure_resources.txt"
 
-  for service in cdb_ws cdb_signal cdb_risk cdb_execution cdb_db_writer cdb_paper_runner; do
-    if docker ps -a --filter "name=$service" --format "{{.Names}}" | grep -q "$service"; then
-      echo "  Capturing logs: $service"
-      docker logs "$service" --tail 500 > "$ARTIFACT_PATH/failure_logs_${service}.txt" 2>&1 || true
-    fi
-  done
+    for service in cdb_ws cdb_signal cdb_risk cdb_execution cdb_db_writer cdb_paper_runner; do
+      if docker ps -a --filter "name=$service" --format "{{.Names}}" | grep -q "$service"; then
+        echo "  Capturing logs: $service"
+        docker logs "$service" --tail 500 > "$ARTIFACT_PATH/failure_logs_${service}.txt" 2>&1 || true
+      fi
+    done
 
-  echo -e "${RED}See $ARTIFACT_PATH for evidence.${NC}"
+    echo -e "${RED}See $ARTIFACT_PATH for evidence.${NC}"
+  fi
   # Don't exit - continue monitoring to capture full failure timeline
 else
   echo -e "${GREEN}✓ No restarts detected${NC}"
@@ -480,16 +567,23 @@ else
   # On platforms without flock (Git Bash / MSYS2 on Windows), the checkpoint
   # is written directly — safe for solo-maintainer setups with a single
   # cron instance (Issue #1420).
-  _checkpoint_write() {
-    _CK=-1
-    [ -f "$LAST_CHECKPOINT_FILE" ] && _CK=$(cat "$LAST_CHECKPOINT_FILE")
-    if [ "$ELAPSED_HOURS" -le "$_CK" ]; then
-      echo "Checkpoint $ELAPSED_HOURS already written (last=$_CK) — skipping duplicate"
-    else
-      echo "$TIMESTAMP - Hour $ELAPSED_HOURS: No restarts" >> "$ARTIFACT_PATH/hourly_checks.log"
-      echo "$ELAPSED_HOURS" > "$LAST_CHECKPOINT_FILE"
-    fi
-  }
+  if [ "$_HAS_FLOCK" -eq 1 ]; then
+    (
+      flock -x -w 30 200 || {
+        echo "WARNING: could not acquire checkpoint lock within 30 s — skipping hourly log write"
+        exit 0
+      }
+      _checkpoint_write
+    ) 200>"$ARTIFACT_PATH/checkpoint.lock"
+  else
+    _checkpoint_write
+  fi
+fi
+
+# Write hourly checkpoint for fresh-stack baseline pass. The run continues
+# normally — the baseline classification is not a failure.
+if [ "$FRESH_STACK_BASELINE_APPLIED" -eq 1 ]; then
+  echo -e "${YELLOW}INFO: Fresh-stack baseline — writing hour-0 checkpoint${NC}"
   if [ "$_HAS_FLOCK" -eq 1 ]; then
     (
       flock -x -w 30 200 || {
