@@ -20,6 +20,7 @@ import argparse
 import json
 import re
 import sys
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -146,10 +147,17 @@ def _check_shadow_probe(probe_file: Path) -> bool:
     # A valid shadow-block proof must show the order was REJECTED *and* that
     # nothing was filled.  A non-zero filled_quantity would contradict the
     # zero-execution guarantee even if the status field reads "REJECTED".
+    # Normalize to Decimal: Redis xrevrange returns stream field values as
+    # strings ("0.0"), so a plain == 0 comparison would reject valid evidence.
+    raw_fill = order_result.get("filled_quantity", 1)
+    try:
+        filled_qty = Decimal(str(raw_fill))
+    except InvalidOperation:
+        filled_qty = Decimal(1)  # fail-closed: unparseable → treat as non-zero
     return (
         order_result_found
         and order_result.get("status") == "REJECTED"
-        and order_result.get("filled_quantity", 1) == 0
+        and filled_qty == Decimal(0)
     )
 
 

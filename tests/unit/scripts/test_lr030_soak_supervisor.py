@@ -481,3 +481,35 @@ def test_2440_execution_orders_placeholder_invalid_evidence(tmp_path: Path) -> N
     assert result["status"] == INVALID_EVIDENCE
     failed_checks = {f["check"] for f in result["failures"]}
     assert "no_template_placeholders" in failed_checks
+
+
+def test_shadow_probe_string_zero_fill_is_valid(tmp_path: Path) -> None:
+    """Shadow probe with filled_quantity="0.0" (Redis stream string) => RUNNING_VALID.
+
+    Redis xrevrange returns all stream field values as strings.  A probe
+    delivered via the Redis stream fallback path carries "0.0" not numeric 0.
+    The supervisor must accept this as valid zero-execution evidence.
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    _write_valid_hourly_log(run_dir)
+    (run_dir / "shadow_block_probe.json").write_text(
+        json.dumps(
+            {
+                "probe_order_id": "probe-003",
+                "order_result_found": True,
+                "order_result": {"status": "REJECTED", "filled_quantity": "0.0"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = evaluate(
+        run_dir,
+        _as_of(120),
+        hourly_deadline_minutes=75,
+        require_shadow_block_probe=True,
+    )
+
+    assert result["status"] == RUNNING_VALID
+    assert result["checks"]["shadow_block_probe_valid"] is True
