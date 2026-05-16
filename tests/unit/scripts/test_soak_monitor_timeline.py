@@ -1856,22 +1856,22 @@ class TestFreshStackFirstPassDetection:
             "the per-container fresh-stack logging has been removed"
         )
 
-    def test_lr030_soak_monitor_bash_uses_run_intent_mtime_for_uptime_compat(
+    def test_lr030_soak_monitor_bash_uses_run_start_epoch_for_uptime_compat(
         self,
     ) -> None:
-        """Regression anchor: uptime-compat guard must read run_intent.txt mtime.
+        """Regression anchor: uptime-compat guard must use RUN_START_EPOCH.
 
-        This is the critical fix from the rubber-duck review: ELAPSED_HOURS==0 &&
-        LAST_CHECKPOINT==-1 alone cannot distinguish T+0 from a real Docker-daemon
-        restart at T+30min (before the first hourly checkpoint).  The mtime of
-        run_intent.txt gives a concrete run-start epoch for comparison.
+        The global RUN_START_EPOCH is derived from the artifact directory name
+        (actual run launch time) or first-invocation fallback — NOT from
+        run_intent.txt mtime, which would be the monitor invocation time and
+        yield _RUN_ELAPSED_S ≈ 0, making the compat check trivially pass even
+        for containers that restarted mid-run.
         """
         content = _read_soak_monitor()
-        assert "run_intent.txt" in content, "run_intent.txt must appear in soak_monitor.sh"
-        # stat -c %Y provides the mtime epoch used for uptime-compat comparison
-        assert "stat -c %Y" in content or "RUN_START_EPOCH" in content, (
-            "Uptime-compatibility guard (stat -c %%Y run_intent.txt or RUN_START_EPOCH) "
-            "missing from soak_monitor.sh — the mid-run restart ambiguity fix is absent"
+        assert "RUN_START_EPOCH" in content, (
+            "Uptime-compatibility guard must use global RUN_START_EPOCH "
+            "(derived from artifact directory name / run_start.txt) instead of "
+            "run_intent.txt mtime — the mid-run restart ambiguity fix is absent"
         )
 
     def test_lr030_soak_monitor_bash_writes_fresh_tags_to_fresh_stack_baseline_log(
@@ -1900,7 +1900,6 @@ class TestFreshStackFirstPassDetection:
         no_restart_alerts gate.
         """
         content = _read_soak_monitor()
-        import re
 
         # Find all lines that both contain FRESH_RESTART: and restart_alerts.log
         bad_lines = [

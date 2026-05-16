@@ -500,8 +500,7 @@ if [ "$RESTART_DETECTED" -eq 1 ]; then
      && [ "$RESTART_COUNT" -eq "$EXPECTED_SERVICES" ] \
      && [ "$TOTAL_CONTAINERS" -eq "$EXPECTED_SERVICES" ]; then
     _NOW_EPOCH=$(date +%s)
-    _RUN_START_EPOCH=$(stat -c %Y "$ARTIFACT_PATH/run_intent.txt" 2>/dev/null || echo 0)
-    _RUN_ELAPSED_S=$((_NOW_EPOCH - _RUN_START_EPOCH))
+    _RUN_ELAPSED_S=$((_NOW_EPOCH - RUN_START_EPOCH))
     _COMPAT_THRESHOLD=$((_RUN_ELAPSED_S - 120))
     if [ "$UPTIME_MIN" -ge "$_COMPAT_THRESHOLD" ]; then
       _FRESH_PASS=1
