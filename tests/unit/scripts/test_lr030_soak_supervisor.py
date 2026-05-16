@@ -356,9 +356,8 @@ def test_env_interruption_pattern_is_inconclusive_not_failed(tmp_path: Path) -> 
 def test_restart_detected_pattern_is_failed_early(tmp_path: Path) -> None:
     """RESTART DETECTED: <service> is a SUT container restart => FAILED_EARLY.
 
-    This pattern is written by soak_monitor.sh when a Docker service container
-    restarts.  It is a zero-restart-policy violation and must not be classified
-    as host-level (INCONCLUSIVE_EARLY).
+    When no ENVIRONMENT_INTERRUPTION is present, RESTART DETECTED is a standalone
+    SUT restart (zero-restart-policy violation).
     """
     run_dir = _make_run_dir(tmp_path)
     (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
@@ -373,6 +372,32 @@ def test_restart_detected_pattern_is_failed_early(tmp_path: Path) -> None:
     assert result["status"] == FAILED_EARLY
     failed_checks = {f["check"] for f in result["failures"]}
     assert "no_hard_restart_patterns" in failed_checks
+
+
+def test_restart_detected_with_env_interruption_is_inconclusive(tmp_path: Path) -> None:
+    """RESTART DETECTED + ENVIRONMENT_INTERRUPTION in same log => INCONCLUSIVE_EARLY.
+
+    soak_monitor.sh writes RESTART DETECTED precursor lines before writing the
+    ENVIRONMENT_INTERRUPTION bulk-restart classification.  When both appear in
+    the same log the raw lines are context, not standalone SUT failures, so the
+    verdict must be INCONCLUSIVE_EARLY, not FAILED_EARLY.
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    _write_valid_hourly_log(run_dir)
+    (run_dir / "restart_alerts.log").write_text(
+        "2026-05-16 14:00:00 UTC - RESTART DETECTED: cdb_risk\n"
+        "2026-05-16 14:00:00 UTC - RESTART DETECTED: cdb_execution\n"
+        "2026-05-16 14:00:01 UTC - ENVIRONMENT_INTERRUPTION (bulk host reboot)\n",
+        encoding="utf-8",
+    )
+
+    result = evaluate(run_dir, _as_of(120))
+
+    assert result["status"] == INCONCLUSIVE_EARLY
+    failed_checks = {f["check"] for f in result["failures"]}
+    assert "no_env_interruption_patterns" in failed_checks
+    assert "no_hard_restart_patterns" not in failed_checks
 
 
 def test_shadow_probe_with_nonzero_fill_is_invalid(tmp_path: Path) -> None:

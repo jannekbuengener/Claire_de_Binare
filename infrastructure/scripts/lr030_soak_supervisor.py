@@ -67,13 +67,18 @@ SCHEMA_VERSION = "1.0"
 # Artifact directory name must be exactly soak_lr030_YYYYMMDD_HHMMSS.
 _DIR_NAME_RE = re.compile(r"^soak_lr030_(\d{8})_(\d{6})$")
 
-# SUT_RESTART / RESTART DETECTED = service-under-test restart → FAILED_EARLY.
-# "RESTART DETECTED: <service>" is written by soak_monitor.sh when a Docker
-# service container restarts; that IS a zero-restart-policy violation.
-_HARD_RESTART_RE = re.compile(r"SUT_RESTART|RESTART DETECTED", re.IGNORECASE)
+# SUT_RESTART = explicitly classified SUT restart → always FAILED_EARLY.
+_SUT_RESTART_RE = re.compile(r"SUT_RESTART", re.IGNORECASE)
 
-# ENVIRONMENT_INTERRUPTION = host-level OS/VM reboot → INCONCLUSIVE_EARLY.
-_SOFT_RESTART_RE = re.compile(r"ENVIRONMENT_INTERRUPTION", re.IGNORECASE)
+# RESTART DETECTED: <service> is emitted by soak_monitor.sh for each container
+# restart before the final classification is written.  When ENVIRONMENT_INTERRUPTION
+# also appears in the same log the raw lines are precursors to the bulk-restart
+# marker and must be treated as INCONCLUSIVE_EARLY context; when it is absent they
+# indicate a standalone SUT restart → FAILED_EARLY.
+_RAW_RESTART_RE = re.compile(r"RESTART DETECTED", re.IGNORECASE)
+
+# ENVIRONMENT_INTERRUPTION = host-level OS/VM or bulk-Docker reboot → INCONCLUSIVE_EARLY.
+_ENV_INTERRUPTION_RE = re.compile(r"ENVIRONMENT_INTERRUPTION", re.IGNORECASE)
 
 # Hourly checkpoint line format written by soak_monitor.sh:
 #   "2026-05-16 13:00:00 UTC - Hour 1: No restarts"
@@ -240,8 +245,19 @@ def evaluate(
     soft_hits: list[str] = []
     if restart_log.is_file():
         content = restart_log.read_text(encoding="utf-8", errors="replace")
-        hard_hits = list(set(_HARD_RESTART_RE.findall(content)))
-        soft_hits = list(set(_SOFT_RESTART_RE.findall(content)))
+        sut_hits = list(set(_SUT_RESTART_RE.findall(content)))
+        raw_hits = list(set(_RAW_RESTART_RE.findall(content)))
+        env_hits = list(set(_ENV_INTERRUPTION_RE.findall(content)))
+        if env_hits:
+            # ENVIRONMENT_INTERRUPTION present: RESTART DETECTED lines are
+            # precursors written by soak_monitor.sh before the bulk-restart
+            # classification; treat them as part of the env-interruption context.
+            hard_hits = sut_hits
+            soft_hits = env_hits + raw_hits
+        else:
+            # No environment interruption: RESTART DETECTED is a standalone SUT restart.
+            hard_hits = sut_hits + raw_hits
+            soft_hits = []
 
     checks["no_hard_restart_patterns"] = not bool(hard_hits)
     if hard_hits:
