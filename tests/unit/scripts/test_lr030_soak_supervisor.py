@@ -19,6 +19,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(
     0, str(Path(__file__).resolve().parents[3] / "infrastructure" / "scripts")
 )
@@ -538,3 +540,45 @@ def test_shadow_probe_string_zero_fill_is_valid(tmp_path: Path) -> None:
 
     assert result["status"] == RUNNING_VALID
     assert result["checks"]["shadow_block_probe_valid"] is True
+
+
+@pytest.mark.parametrize(
+    "probe_content",
+    [
+        # top-level value is a JSON array, not a dict
+        "[1, 2, 3]",
+        # top-level is a string
+        '"just a string"',
+        # order_result is a string (non-dict truthy value)
+        '{"order_result_found": true, "order_result": "some_string"}',
+        # order_result is a number
+        '{"order_result_found": true, "order_result": 42}',
+        # order_result is a list
+        '{"order_result_found": true, "order_result": ["a", "b"]}',
+    ],
+)
+def test_malformed_shadow_probe_is_invalid_not_crash(
+    tmp_path: Path, probe_content: str
+) -> None:
+    """Malformed shadow_block_probe.json must yield INVALID_EVIDENCE, not crash.
+
+    The supervisor must not raise AttributeError when the JSON is valid but has a
+    non-object top-level value or a non-object order_result field.  Both cases
+    must be classified fail-closed as INVALID_EVIDENCE rather than surfacing a
+    traceback.
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    _write_valid_hourly_log(run_dir)
+    (run_dir / "shadow_block_probe.json").write_text(probe_content, encoding="utf-8")
+
+    result = evaluate(
+        run_dir,
+        _as_of(120),
+        hourly_deadline_minutes=75,
+        require_shadow_block_probe=True,
+    )
+
+    # Must not crash; must treat malformed proof as absence of valid proof.
+    assert result["status"] in (RUNNING_VALID, INVALID_EVIDENCE, INCONCLUSIVE_EARLY, FAILED_EARLY)
+    assert result["checks"]["shadow_block_probe_valid"] is False

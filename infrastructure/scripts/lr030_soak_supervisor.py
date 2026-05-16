@@ -147,8 +147,12 @@ def _check_shadow_probe(probe_file: Path) -> bool:
         data = json.loads(probe_file.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
+    if not isinstance(data, dict):
+        return False
     order_result_found = bool(data.get("order_result_found"))
-    order_result = data.get("order_result") or {}
+    order_result = data.get("order_result")
+    if not isinstance(order_result, dict):
+        return False
     # A valid shadow-block proof must show the order was REJECTED *and* that
     # nothing was filled.  A non-zero filled_quantity would contradict the
     # zero-execution guarantee even if the status field reads "REJECTED".
