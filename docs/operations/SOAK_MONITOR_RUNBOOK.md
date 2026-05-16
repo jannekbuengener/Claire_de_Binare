@@ -131,6 +131,82 @@ exists. This ensures `hourly_checks.log` is unambiguous about run state.
 The monitor does **not** self-terminate after failure. To stop it,
 deactivate the cron job or scheduled task manually.
 
+## LR-030 Early-Fail Supervisor
+
+`infrastructure/scripts/lr030_soak_supervisor.py` catches a broken or failing LR-030
+run within the first hour instead of surfacing the problem only after a >24h review.
+It is read-only — no Docker interaction, no GitHub writes, no runtime mutation.
+
+**Usage:**
+
+```bash
+# Check a live or completed LR-030 run directory
+python infrastructure/scripts/lr030_soak_supervisor.py \
+    artifacts/soak_lr030_YYYYMMDD_HHMMSS/
+
+# Require shadow-block-probe evidence (optional gate)
+python infrastructure/scripts/lr030_soak_supervisor.py \
+    artifacts/soak_lr030_YYYYMMDD_HHMMSS/ \
+    --require-shadow-block-probe
+
+# Override the hourly-log deadline (default 75 min)
+python infrastructure/scripts/lr030_soak_supervisor.py \
+    artifacts/soak_lr030_YYYYMMDD_HHMMSS/ \
+    --hourly-deadline-minutes 90
+```
+
+**Exit codes:**
+
+| Code | Status | Meaning |
+|---|---|---|
+| 0 | `RUNNING_VALID` | All checks pass so far |
+| 1 | `ARTIFACT_CONTRACT_BROKEN` | Wrong path prefix or wrong `run_intent.txt` |
+| 1 | `FAILED_EARLY` | `soak_test_FAILED.txt` or `SUT_RESTART` in logs |
+| 1 | `INCONCLUSIVE_EARLY` | `soak_test_INCONCLUSIVE.txt` or `ENVIRONMENT_INTERRUPTION` |
+| 1 | `INVALID_EVIDENCE` | Template placeholders in checkpoint files |
+| 1 | `MONITOR_DEAD` | `hourly_checks.log` missing/invalid after deadline |
+| 2 | *(CLI error)* | Missing or invalid arguments |
+
+**Checks performed:**
+1. Artifact directory name matches `soak_lr030_YYYYMMDD_HHMMSS`.
+2. `run_intent.txt` contains exactly `lr030` (catches RC-2 intent drift from #2440).
+3. `soak_test_FAILED.txt` absent.
+4. `restart_alerts.log` free of `SUT_RESTART` patterns.
+5. `soak_test_INCONCLUSIVE.txt` absent.
+6. `restart_alerts.log` free of `ENVIRONMENT_INTERRUPTION`/`RESTART DETECTED`.
+7. No un-expanded template variables (`$runId`, `$artifactDir`, `${checkpoint}`, etc.)
+   in `.txt` or `.json` files (catches RC-3 checkpoint scripting errors from #2440).
+8. `hourly_checks.log` present after `--hourly-deadline-minutes` (default 75) with
+   at least one monotonically increasing `Hour N:` entry.
+9. `shadow_block_probe.json` with auditable `REJECTED` result when
+   `--require-shadow-block-probe` is set.
+
+**Integration with cron runs:** Run the supervisor after each hourly cron invocation:
+
+```bash
+# Combined cron line (adjust path)
+0 * * * * cd /path/to/repo && \
+  SOAK_RUN_INTENT=lr030 ./infrastructure/scripts/soak_monitor.sh >> artifacts/soak_cron.log 2>&1 && \
+  python infrastructure/scripts/lr030_soak_supervisor.py \
+    "$(cat artifacts/soak_active_run_path_lr030.txt)" >> artifacts/soak_cron.log 2>&1
+```
+
+**Output:** Always JSON to stdout. Example for a passing run:
+
+```json
+{
+  "schema_version": "1.0",
+  "status": "RUNNING_VALID",
+  "artifact_path": "artifacts/soak_lr030_20260516_120000",
+  "run_intent": "lr030",
+  "elapsed_minutes": 90.0,
+  "hourly_check_count": 1,
+  "hourly_hours_logged": [1],
+  "checks": { "artifact_path_prefix_valid": true, "run_intent_is_lr030": true, "..." },
+  "failures": []
+}
+```
+
 ## Disable / Rollback
 
 ```bash

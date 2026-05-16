@@ -289,3 +289,32 @@ Boundary:
 
 **Default behavior:** Without `SOAK_RUN_INTENT`, the monitor defaults to
 `lr040` (backwards-compatible with all existing runs).
+
+## LR-030 Early-Fail Supervisor (#2440 lesson)
+
+The old LR-030 run (`lr030-shadow-soak-20260512`) was only classified
+`INCONCLUSIVE` during post-run review — after >24h of invalid data had
+already accumulated. The root causes were detectable within the first 60 minutes:
+
+| Root cause | Early signal |
+|---|---|
+| `run_intent.txt` = `lr040` (intent drift) | Artifact-contract check fails at T+0 |
+| `soak_test_INCONCLUSIVE.txt` written | Inconclusive marker check fails at T+31min |
+| 12/12 `ENVIRONMENT_INTERRUPTION` in logs | Environment-interruption check fails |
+| `hourly_checks.log` missing | MONITOR_DEAD fires at T+75min |
+
+Use `infrastructure/scripts/lr030_soak_supervisor.py` to surface these failures
+within the first hour.
+
+**Invoke after each hourly cron cycle:**
+
+```bash
+python infrastructure/scripts/lr030_soak_supervisor.py \
+    "$(cat artifacts/soak_active_run_path_lr030.txt)"
+```
+
+Exit 0 = `RUNNING_VALID`. Any non-zero exit means the run is already compromised
+and should be investigated or aborted before wasting further operator time.
+
+See `docs/operations/SOAK_MONITOR_RUNBOOK.md` → *LR-030 Early-Fail Supervisor*
+for full option reference and cron integration.
