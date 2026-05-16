@@ -66,13 +66,13 @@ SCHEMA_VERSION = "1.0"
 # Artifact directory name must be exactly soak_lr030_YYYYMMDD_HHMMSS.
 _DIR_NAME_RE = re.compile(r"^soak_lr030_(\d{8})_(\d{6})$")
 
-# SUT_RESTART = service-under-test restarted itself → FAILED_EARLY.
-_HARD_RESTART_RE = re.compile(r"SUT_RESTART", re.IGNORECASE)
+# SUT_RESTART / RESTART DETECTED = service-under-test restart → FAILED_EARLY.
+# "RESTART DETECTED: <service>" is written by soak_monitor.sh when a Docker
+# service container restarts; that IS a zero-restart-policy violation.
+_HARD_RESTART_RE = re.compile(r"SUT_RESTART|RESTART DETECTED", re.IGNORECASE)
 
-# ENVIRONMENT_INTERRUPTION / RESTART DETECTED = host-level event → INCONCLUSIVE_EARLY.
-_SOFT_RESTART_RE = re.compile(
-    r"ENVIRONMENT_INTERRUPTION|RESTART DETECTED", re.IGNORECASE
-)
+# ENVIRONMENT_INTERRUPTION = host-level OS/VM reboot → INCONCLUSIVE_EARLY.
+_SOFT_RESTART_RE = re.compile(r"ENVIRONMENT_INTERRUPTION", re.IGNORECASE)
 
 # Hourly checkpoint line format written by soak_monitor.sh:
 #   "2026-05-16 13:00:00 UTC - Hour 1: No restarts"
@@ -134,7 +134,7 @@ def _find_placeholder_hits(artifact_path: Path) -> list[dict[str, str]]:
 
 
 def _check_shadow_probe(probe_file: Path) -> bool:
-    """Return True when probe_file contains an auditable REJECTED result."""
+    """Return True when probe_file contains an auditable REJECTED result with zero fills."""
     if not probe_file.is_file():
         return False
     try:
@@ -143,7 +143,14 @@ def _check_shadow_probe(probe_file: Path) -> bool:
         return False
     order_result_found = bool(data.get("order_result_found"))
     order_result = data.get("order_result") or {}
-    return order_result_found and order_result.get("status") == "REJECTED"
+    # A valid shadow-block proof must show the order was REJECTED *and* that
+    # nothing was filled.  A non-zero filled_quantity would contradict the
+    # zero-execution guarantee even if the status field reads "REJECTED".
+    return (
+        order_result_found
+        and order_result.get("status") == "REJECTED"
+        and order_result.get("filled_quantity", 1) == 0
+    )
 
 
 def _determine_status(failures: list[dict[str, str]]) -> str:

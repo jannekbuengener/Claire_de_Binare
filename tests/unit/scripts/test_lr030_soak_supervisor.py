@@ -353,6 +353,60 @@ def test_env_interruption_pattern_is_inconclusive_not_failed(tmp_path: Path) -> 
     assert result["status"] == INCONCLUSIVE_EARLY
 
 
+def test_restart_detected_pattern_is_failed_early(tmp_path: Path) -> None:
+    """RESTART DETECTED: <service> is a SUT container restart => FAILED_EARLY.
+
+    This pattern is written by soak_monitor.sh when a Docker service container
+    restarts.  It is a zero-restart-policy violation and must not be classified
+    as host-level (INCONCLUSIVE_EARLY).
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    _write_valid_hourly_log(run_dir)
+    (run_dir / "restart_alerts.log").write_text(
+        "2026-05-16 14:00:00 UTC - RESTART DETECTED: cdb_risk\n",
+        encoding="utf-8",
+    )
+
+    result = evaluate(run_dir, _as_of(120))
+
+    assert result["status"] == FAILED_EARLY
+    failed_checks = {f["check"] for f in result["failures"]}
+    assert "no_hard_restart_patterns" in failed_checks
+
+
+def test_shadow_probe_with_nonzero_fill_is_invalid(tmp_path: Path) -> None:
+    """Shadow probe with REJECTED status but non-zero filled_quantity => INVALID_EVIDENCE.
+
+    A filled_quantity > 0 contradicts the zero-execution guarantee even when
+    the status field reads "REJECTED".
+    """
+    run_dir = _make_run_dir(tmp_path)
+    (run_dir / "run_intent.txt").write_text("lr030\n", encoding="utf-8")
+    _write_valid_hourly_log(run_dir)
+    (run_dir / "shadow_block_probe.json").write_text(
+        json.dumps(
+            {
+                "probe_order_id": "probe-002",
+                "order_result_found": True,
+                "order_result": {"status": "REJECTED", "filled_quantity": 0.5},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = evaluate(
+        run_dir,
+        _as_of(120),
+        hourly_deadline_minutes=75,
+        require_shadow_block_probe=True,
+    )
+
+    assert result["status"] == INVALID_EVIDENCE
+    failed_checks = {f["check"] for f in result["failures"]}
+    assert "shadow_block_probe_valid" in failed_checks
+
+
 def test_non_monotone_hourly_log_is_monitor_dead(tmp_path: Path) -> None:
     """Hourly log with non-monotone hours => MONITOR_DEAD (log corruption)."""
     run_dir = _make_run_dir(tmp_path)
