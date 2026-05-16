@@ -19,8 +19,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-import pytest
-
 sys.path.insert(
     0, str(Path(__file__).resolve().parents[3] / "infrastructure" / "scripts")
 )
@@ -407,9 +405,10 @@ def test_2440_placeholder_tokens_invalid_evidence(tmp_path: Path) -> None:
     result = evaluate(run_dir, _as_of(50), hourly_deadline_minutes=75)
 
     assert result["status"] == INVALID_EVIDENCE
-    hits = {h["match"] for f in result["failures"] for h in []}  # unused shorthand
     failed_checks = {f["check"] for f in result["failures"]}
     assert "no_template_placeholders" in failed_checks
+    placeholder_fail = next(f for f in result["failures"] if f["check"] == "no_template_placeholders")
+    assert "<zero_execution_ok>" in placeholder_fail["detail"]
 
 
 def test_2440_execution_orders_placeholder_invalid_evidence(tmp_path: Path) -> None:
