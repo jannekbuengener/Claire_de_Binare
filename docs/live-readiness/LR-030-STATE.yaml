@@ -1,0 +1,12 @@
+spec_version: "1.0"
+task_id: "LR-030"
+task_title: "Shadow Mode (live data, zero execution)"
+status: "DONE"
+completion_timestamp: "2026-05-17T21:11:52Z"
+completion_author: "jannekbuengener"
+evidence_file: "docs/evidence/LR-030.md"
+evidence_commit: "8182546c"
+
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null

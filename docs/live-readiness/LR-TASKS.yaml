@@ -35,4 +35,7 @@ tasks:
   - task_id: "LR-020"
     task_title: "E2E Paper Trading (Full Pipeline)"
 
+  - task_id: "LR-030"
+    task_title: "Shadow Mode (live data, zero execution)"
+
   # Future tasks appended here (maintain task_id ascending order)
