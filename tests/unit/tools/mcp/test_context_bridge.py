@@ -301,7 +301,6 @@ class TestDefensiveSchemaCopies:
         tools = bridge.list_tools()
 
         caller_schema = tools[0]["inputSchema"]
-        _original_properties = caller_schema.get("properties", {}).copy()
 
         caller_schema["properties"]["caller_added_field"] = {"type": "string"}
 
@@ -2391,7 +2390,6 @@ class TestContextRequiredReadsHandler:
             "context.required_reads",
             {"task_scope": "Inspect code.", "target_issue": None, "operation_mode": "read_only"},
         )
-        _paths = {r["path"] for r in result["resolved_reads"]}
         # DELIVERY_APPROVED.yaml is only added for write modes
         delivery_entries = [
             r for r in result["resolved_reads"]

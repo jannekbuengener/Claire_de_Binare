@@ -552,10 +552,6 @@ def test_db_backed_cadence_violation_raises() -> None:
 @pytest.mark.unit
 def test_db_backed_missing_required_field_raises() -> None:
     """Row missing a required key → DatasetLoadError (field guard in validator)."""
-    rows = _make_db_rows(14, _DB_WARMUP_START_MS)
-    # Drop 'close' (index 4) from row 5 by returning only 6 columns
-    bad_row = rows[5][:4] + rows[5][5:]  # skip index 4 (close)
-    _rows = rows[:5] + [bad_row] + rows[6:]
     spec = _make_db_spec()
     # The mapping in load() uses positional indices, so missing column causes IndexError
     # which is caught by the try/except around cursor.execute/fetchall —

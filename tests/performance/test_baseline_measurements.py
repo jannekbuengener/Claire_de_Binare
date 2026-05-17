@@ -179,9 +179,6 @@ class TestLatencyBaselines:
         require_perf_run()
 
         def full_pipeline():
-            # Step 1: Market data
-            _market_data = {"symbol": "BTCUSDT", "price": 50000.0}
-
             # Step 3: Risk approval
             approved = True
 

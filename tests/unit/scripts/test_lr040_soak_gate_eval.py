@@ -16,7 +16,6 @@ def _build_hourly_log(hours: int = 73) -> str:
     """Generate hourly_checks.log spanning ``hours`` hours."""
     lines = []
     for h in range(hours):
-        _day_offset = h // 24
         hour_of_day = h % 24
         lines.append(
             f"2026-03-08 {hour_of_day:02d}:00:00 UTC - "

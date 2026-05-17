@@ -88,9 +88,8 @@ def test_tc_003_risk_guard_test_balance_fallback():
     """TC-003: Risk uses test balance when live balance is disabled."""
     test_balance = Decimal("1000")
     use_live_balance = False
-    _live_balance = None
 
-    selected_balance = test_balance if not use_live_balance else _live_balance
+    selected_balance = test_balance if not use_live_balance else None
     assert selected_balance == test_balance
 
     signal = {

@@ -284,7 +284,6 @@ class TestDeterminism:
         """Canonical report dict contains no timestamp fields derived from wall-clock."""
         reporter = ReplayReporter()
         d = reporter.build_report_dict(_make_valid_report_input(), [])
-        _canonical_str = canonical_json_dumps(d)
         # gate_result should not be present when no gate_evaluator and no gate_result in input
         assert "gate_result" not in d
         # The report should not contain "timestamp" anywhere at top level

@@ -33,6 +33,8 @@ from typing import Protocol
 
 from core.replay.dataset_spec import DatasetSpec, DatasetSpecError as DatasetSpecError  # noqa: F401 — re-exported for caller convenience
 
+__all__ = ["DatasetSpec", "DatasetSpecError"]
+
 _REQUIRED_CANDLE_FIELDS: frozenset[str] = frozenset({"ts_ms", "high", "low", "close"})
 _ONE_MINUTE_MS: int = 60_000
 
