@@ -17,7 +17,7 @@ RUN apt-get update \
 # Python Requirements
 COPY services/execution/requirements.txt ./
 RUN python -m venv /venv \
-    && /venv/bin/pip install --upgrade pip==25.3 \
+    && /venv/bin/pip install --upgrade pip==26.1 \
     && /venv/bin/pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2 \
     && /venv/bin/pip install --no-cache-dir -r requirements.txt
 
@@ -35,6 +35,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
+RUN pip install --upgrade pip==26.1
 
 COPY --from=build /venv /venv
 ENV PATH="/venv/bin:$PATH"

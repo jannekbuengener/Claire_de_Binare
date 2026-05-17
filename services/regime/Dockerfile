@@ -5,7 +5,7 @@ FROM python:3.11-slim-trixie@sha256:6d85378d88a19cd4d76079817532d62232be95757cb4
 WORKDIR /app
 
 # Upgrade pip to fix CVE-2025-8869 (CVSS 5.9)
-RUN pip install --upgrade pip==25.3
+RUN pip install --upgrade pip==26.1
 RUN python -m pip install --no-cache-dir --upgrade setuptools==82.0.0 wheel==0.46.2
 
 # System-Dependencies
