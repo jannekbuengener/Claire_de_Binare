@@ -26,7 +26,7 @@ import sys
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List
 
 import psycopg2
 from psycopg2.extras import RealDictCursor

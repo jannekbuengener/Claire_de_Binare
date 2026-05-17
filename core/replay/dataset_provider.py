@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
-from core.replay.dataset_spec import DatasetSpec, DatasetSpecError  # noqa: F401 — re-exported for caller convenience
+from core.replay.dataset_spec import DatasetSpec, DatasetSpecError as DatasetSpecError  # noqa: F401 — re-exported for caller convenience
 
 _REQUIRED_CANDLE_FIELDS: frozenset[str] = frozenset({"ts_ms", "high", "low", "close"})
 _ONE_MINUTE_MS: int = 60_000

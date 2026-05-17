@@ -625,7 +625,7 @@ class TestWriteManagementReport:
         # Use a path that is a file (not a dir) so mkdir fails.
         blocker = tmp_path / "blocker"
         blocker.write_text("block")
-        target = blocker / "management_report.md"
+        _target = blocker / "management_report.md"
         with pytest.raises(ReplayReportBuilderError, match="Failed to write management report"):
             write_management_report(report, blocker)
 

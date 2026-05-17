@@ -2,11 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import json
-from core.utils.clock import utcnow
-from services.risk.models import RiskModel
-
 CONSTANT = 42
 
 

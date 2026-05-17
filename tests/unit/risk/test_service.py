@@ -456,7 +456,7 @@ def test_proactive_unwind_no_trigger_when_no_open_positions(mock_redis, mock_pos
                 ),
                 patch.object(manager, "_emit_risk_event", MagicMock()),
             ):
-                order = manager.process_signal(signal)
+                manager.process_signal(signal)
 
             # Verify: BUY might be blocked by other checks, but no unwind triggered
             manager.send_order.assert_not_called()

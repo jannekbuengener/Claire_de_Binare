@@ -47,11 +47,6 @@ def context_search_handler(**kwargs) -> dict[str, Any]:
     if not isinstance(limit, int) or limit <= 0:
         limit = 10
 
-    # Validate filters
-    filters = kwargs.get("filters", {})
-    if not isinstance(filters, dict):
-        filters = {}
-
     # Use mocked NoopQueryAdapter (no live DB/network)
     from tools.surrealdb.context_query import NoopQueryAdapter
 
@@ -558,7 +553,6 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     """
     # --- Input extraction ---
     task_scope = kwargs.get("task_scope")
-    target_issue = kwargs.get("target_issue")
     target_paths = kwargs.get("target_paths", [])
     operation_mode = kwargs.get("operation_mode", "")
     context_package_ref = kwargs.get("context_package_ref")
@@ -569,8 +563,6 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     uncertainties_in = kwargs.get("uncertainties")
 
     # --- Normalize ---
-    if not isinstance(target_issue, str):
-        target_issue = None
     if not isinstance(context_package_ref, str):
         context_package_ref = None
     if not isinstance(target_paths, list):

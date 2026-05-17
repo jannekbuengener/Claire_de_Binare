@@ -1,7 +1,5 @@
 """Tests für die spezialisierten CDB Agenten."""
 
-import pytest
-
 from cdb_agent_sdk.agents.dataflow_observer import (
     DATAFLOW_OBSERVER_PROMPT,
     DATAFLOW_OBSERVER_TOOLS,

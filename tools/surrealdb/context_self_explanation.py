@@ -23,7 +23,7 @@ Design intent:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 _SCHEMA_VERSION = "self-explanation/v1"

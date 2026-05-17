@@ -30,6 +30,7 @@ def get_db_connection():
         )
     except psycopg2.OperationalError as exc:
         pytest.skip(f"Postgres not available for integration tests: {exc}")
+        return None  # unreachable — pytest.skip() always raises
 
 
 def execute_sql_file(conn, sql_file_path: Path):

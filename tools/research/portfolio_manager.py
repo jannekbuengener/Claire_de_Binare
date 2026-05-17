@@ -8,7 +8,6 @@ Manages portfolio state in Redis and persists to PostgreSQL
 import json
 import logging
 from typing import Dict, Optional
-from datetime import datetime
 
 import redis
 

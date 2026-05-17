@@ -381,7 +381,7 @@ def test_kill_switch_inactive_does_not_block(mock_redis, mock_postgres):
     ):
         # Signal will likely be blocked by decide_trade (missing market_state etc.)
         # but it must NOT be blocked by kill-switch
-        result = manager.process_signal(signal)
+        manager.process_signal(signal)
 
     # We don't check if order was created (depends on market_state etc.)
     # We just verify kill-switch did not raise or return early

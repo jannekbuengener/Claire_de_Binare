@@ -301,7 +301,7 @@ class TestDefensiveSchemaCopies:
         tools = bridge.list_tools()
 
         caller_schema = tools[0]["inputSchema"]
-        original_properties = caller_schema.get("properties", {}).copy()
+        _original_properties = caller_schema.get("properties", {}).copy()
 
         caller_schema["properties"]["caller_added_field"] = {"type": "string"}
 
@@ -2091,7 +2091,7 @@ class TestContextStopResolverHandler:
 
         original = ["S1: scope ambiguous", "S4: no evidence"]
         before = list(original)
-        _result = resolve_stop_conditions(stop_conditions=original)
+        resolve_stop_conditions(stop_conditions=original)
         assert original == before, (
             f"Input list was mutated: {before} -> {original}"
         )
@@ -2391,7 +2391,7 @@ class TestContextRequiredReadsHandler:
             "context.required_reads",
             {"task_scope": "Inspect code.", "target_issue": None, "operation_mode": "read_only"},
         )
-        paths = {r["path"] for r in result["resolved_reads"]}
+        _paths = {r["path"] for r in result["resolved_reads"]}
         # DELIVERY_APPROVED.yaml is only added for write modes
         delivery_entries = [
             r for r in result["resolved_reads"]

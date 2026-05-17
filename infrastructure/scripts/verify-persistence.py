@@ -28,7 +28,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
-from typing import Optional, Tuple
+from typing import Tuple
 
 
 # Configuration

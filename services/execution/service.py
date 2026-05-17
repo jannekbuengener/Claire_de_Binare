@@ -94,7 +94,6 @@ stats = {
 }
 
 # Thread-safe sets with lock (Fix for Issue #306)
-_orders_lock = Lock()
 bot_shutdown_active = False
 blocked_strategy_ids = set()
 blocked_bot_ids = set()

@@ -180,7 +180,7 @@ class TestLatencyBaselines:
 
         def full_pipeline():
             # Step 1: Market data
-            market_data = {"symbol": "BTCUSDT", "price": 50000.0}
+            _market_data = {"symbol": "BTCUSDT", "price": 50000.0}
 
             # Step 3: Risk approval
             approved = True

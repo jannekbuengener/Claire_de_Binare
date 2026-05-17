@@ -48,7 +48,6 @@ from services.validation.replay_reporter import (
 
 _VALID_RUN_ID = "replay-test-abc123def456"
 _VALID_COMMIT = "abc123def456"
-_HASH_64 = "a" * 64
 
 
 def _make_run_spec(**overrides: Any) -> ReplayRunSpec:
@@ -285,7 +284,7 @@ class TestDeterminism:
         """Canonical report dict contains no timestamp fields derived from wall-clock."""
         reporter = ReplayReporter()
         d = reporter.build_report_dict(_make_valid_report_input(), [])
-        canonical_str = canonical_json_dumps(d)
+        _canonical_str = canonical_json_dumps(d)
         # gate_result should not be present when no gate_evaluator and no gate_result in input
         assert "gate_result" not in d
         # The report should not contain "timestamp" anywhere at top level

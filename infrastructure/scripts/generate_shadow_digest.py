@@ -16,7 +16,7 @@ import json
 import logging
 import subprocess
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 

@@ -565,7 +565,7 @@ class TestEdgeCases:
     def test_bytes_decoded(self):
         """Redis entries with bytes keys/values are decoded correctly."""
         env = _make_envelope_json()
-        entry = ("1-0", {b"envelope": json.dumps(env).encode()})
+        _entry = ("1-0", {b"envelope": json.dumps(env).encode()})
 
         # parse_stream_entry expects str fields; iter_stream_entries
         # handles decoding. Test parse directly with str.

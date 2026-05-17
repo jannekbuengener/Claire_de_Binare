@@ -382,6 +382,6 @@ def test_extract_explicit_repo_paths_adversarial_many_slashes() -> None:
 
     adversarial = "a" + "/" * 100 + "b" * 100 + ".txt"
     start = time.time()
-    result = backlog_curation.extract_explicit_repo_paths(adversarial)
+    backlog_curation.extract_explicit_repo_paths(adversarial)
     elapsed = time.time() - start
     assert elapsed < 1.0, f"Path extraction took {elapsed}s (should complete in <1s)"

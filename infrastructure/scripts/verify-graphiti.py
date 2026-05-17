@@ -14,8 +14,6 @@ import json
 import sys
 import urllib.request
 import urllib.error
-from typing import Optional
-
 
 def check_health_endpoint(host: str, port: int, timeout: int) -> dict:
     """Check if Graphiti health endpoint responds."""

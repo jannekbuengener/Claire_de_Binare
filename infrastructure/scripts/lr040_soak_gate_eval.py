@@ -136,7 +136,6 @@ def evaluate_lr040_soak(artifact_dir: Path) -> dict:
         duration = timestamps[-1] - timestamps[0]
         duration_hours = duration.total_seconds() / 3600
     else:
-        duration = timedelta(0)
         duration_hours = 0.0
 
     # --- Restart / failure / inconclusive checks ---

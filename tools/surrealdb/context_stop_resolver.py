@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import re
 
-from dataclasses import dataclass, field
 from typing import Any
 
 _STOP_RULE_MAP: dict[str, tuple[str, str]] = {
@@ -70,22 +69,6 @@ _LIVE_KEYWORDS = (
 _LIVE_BOUNDARY_PATTERNS = (
     r"\blive\b",
 )
-
-_VALID_TYPES = frozenset({
-    "missing_context",
-    "missing_evidence",
-    "scope_drift_risk",
-    "runtime_surface_touched",
-    "trading_surface_touched",
-    "write_requires_human_go",
-    "stale_context",
-    "contradiction_risk",
-    "forbidden_path",
-    "secrets_risk",
-})
-
-_VALID_SEVERITIES = frozenset({"info", "warning", "blocking"})
-
 
 _REQUIRED_ACTIONS: dict[str, str] = {
     "missing_context": (

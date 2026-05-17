@@ -5,10 +5,8 @@ import argparse
 import hashlib
 import json
 import re
-import shutil
 import subprocess
 import sys
-import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any

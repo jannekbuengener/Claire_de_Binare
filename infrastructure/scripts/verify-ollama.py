@@ -15,9 +15,6 @@ import json
 import sys
 import urllib.request
 import urllib.error
-from typing import Optional
-
-
 REQUIRED_MODELS = [
     "nomic-embed-text",
     "deepseek-r1:7b",

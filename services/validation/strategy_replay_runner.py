@@ -356,8 +356,6 @@ def _parse_db_dataset_window(db_dataset_window: str) -> tuple[int, int]:
 # ---------------------------------------------------------------------------
 # Scenario override mapping (fail-closed)
 # ---------------------------------------------------------------------------
-_SCENARIO_GROUP_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{1,64}$")
-
 # Mapping: scenario override key -> ExecutionSimulator config field
 _SCNARIO_OVERRIDE_KEY_TO_SIMULATOR: dict[str, str] = {
     "execution_slippage_bps": "BASE_SLIPPAGE_BPS",

@@ -59,11 +59,6 @@ _MEDIUM_DIRS: tuple[str, ...] = (
     "knowledge/contracts/",
 )
 
-_LOW_DIRS: tuple[str, ...] = (
-    "docs/",
-    ".github/",
-)
-
 _HARD_DIRS: tuple[str, ...] = (
     "core/",
     "services/",

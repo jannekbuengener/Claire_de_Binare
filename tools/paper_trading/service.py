@@ -20,7 +20,7 @@ import json
 import logging
 import time
 import signal
-from datetime import datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 import threading
 

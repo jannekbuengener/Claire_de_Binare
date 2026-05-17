@@ -289,7 +289,7 @@ def _make_mock_redis(symbol_map: dict[str, tuple[str | None, str | None]]) -> Ma
     mock = MagicMock()
 
     def keys(pattern: str) -> list[str]:
-        prefix = pattern.rstrip("*")
+        _prefix = pattern.rstrip("*")
         return [f"{CANDLES_PREFIX}:{sym}" for sym in symbol_map]
 
     def get(key: str) -> str | None:

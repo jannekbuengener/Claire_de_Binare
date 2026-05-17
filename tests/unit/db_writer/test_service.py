@@ -16,7 +16,7 @@ from unittest.mock import MagicMock
 import pytest
 
 try:
-    import prometheus_client  # noqa: F401
+    __import__("prometheus_client")  # noqa: F401 — side-effect import: availability check
 except ImportError:
     _dummy_metrics = []
 

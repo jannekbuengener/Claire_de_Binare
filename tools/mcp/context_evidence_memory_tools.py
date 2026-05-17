@@ -303,7 +303,7 @@ def _build_evidence_ref_where(params: Mapping[str, Any]) -> str:
                 if 0.0 <= conf <= 1.0:
                     return f"WHERE confidence >= {conf}"
             except (TypeError, ValueError):
-                pass
+                pass  # invalid or non-numeric confidence value; skip
     return ""
 
 
