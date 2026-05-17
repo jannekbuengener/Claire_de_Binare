@@ -36,7 +36,7 @@ Phase notes (audit interpretation):
 - P2 is `DONE`: `LR-020-STATE.yaml` = DONE (commit `8c75697`); `LR-021` closed with evidence slices.
 - P3 is `DONE`: `LR-031` is PASS-evidenced and `LR-030` zero-execution behavior is repo-backed. A >24h soak run (`lr030-shadow-soak-20260516_204415`) was executed and its evidence committed under `reports/lr030/2026-05-17/` (issue [#2440](https://github.com/jannekbuengener/Claire_de_Binare/issues/2440) closed 2026-05-17). `LR-030-STATE.yaml` = DONE (evidence commit `8182546c`). Residual uncertainty closed.
 - P4 is `DONE`: `LR-040` PASS (72.19h soak, `soak_test_20260401_114850`); `LR-041` evidence present (`docs/evidence/LR-041.md`, #787 closed); `LR-042` evidence present (`docs/evidence/LR-042.md`, #788 closed).
-- P5 prestart pack is committed with GO status (`reports/p5_canary/2026-04-04/`); lean shadow evidence handoff is also committed there (`lean_shadow_evidence_handoff.yaml`). Both are prestart-only artifacts — they do not authorize live capital. `LR-050` nevertheless remains `NO-GO` / fail-closed, and P1 plus the LR-030 residual uncertainty remain unresolved.
+- P5 prestart pack is committed with GO status (`reports/p5_canary/2026-04-04/`); lean shadow evidence handoff is also committed there (`lean_shadow_evidence_handoff.yaml`). Both are prestart-only artifacts — they do not authorize live capital. `LR-050` nevertheless remains `NO-GO` / fail-closed, and P1 (`LR-012`) remains the outstanding blocker.
 
 ## C) DONE Snapshot (LR-001..LR-007)
 
