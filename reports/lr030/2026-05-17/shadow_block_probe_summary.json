@@ -1,0 +1,18 @@
+{
+  "run_id": "lr030-shadow-soak-20260516_204415",
+  "artifact_dir": "artifacts/soak_lr030_20260516_204415",
+  "probe_ts": "20260517_111146",
+  "probe_order_id": "lr030-soak-probe-20260517_111146",
+  "status": "shadow-block-proof-ok",
+  "shadow_block_probe_file": "artifacts/soak_lr030_20260516_204415/shadow_block_probe.json",
+  "expected_result": "REJECTED",
+  "actual_result": "REJECTED",
+  "filled_quantity": 0.0,
+  "orders_filled_total": 0,
+  "shadow_blocked_total": 2,
+  "supervisor_post_probe": "RUNNING_VALID",
+  "shadow_block_probe_valid": true,
+  "real_money": false,
+  "live_readiness": "NO-GO",
+  "notes": "Shadow-block probe executed inside cdb_execution container, identical to CI workflow path. Order published to 'orders' pubsub, received REJECTED via 'order_results' pubsub. Stream also confirmed. BOM-free JSON written. Supervisor --require-shadow-block-probe: RUNNING_VALID."
+}

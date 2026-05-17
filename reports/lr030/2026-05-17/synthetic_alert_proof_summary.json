@@ -1,0 +1,20 @@
+{
+  "status": "alert-proof-ok",
+  "run_id": "lr030-shadow-soak-20260516_204415",
+  "method": "alertmanager-api-v2-direct-post",
+  "alertname": "CDBSyntheticLR030SoakAlert",
+  "artifact_dir": "artifacts/soak_lr030_20260516_204415",
+  "prometheus_state": "not-in-prometheus-expected-direct-post",
+  "live_readiness": "NO-GO",
+  "delivery": {
+    "alertmanager_state": "active",
+    "receiver_route": "default-receiver",
+    "run_id_label": "lr030-shadow-soak-20260516_204415",
+    "synthetic_label": "true",
+    "severity": "warning"
+  },
+  "proof_ts": "20260517_105828",
+  "notes": "Synthetic alert proof only. Alert directly POSTed to Alertmanager API v2. No LR status upgrade. No live/echtgeld-go. Alert auto-resolves at endsAt.",
+  "regression_check": "no-new-abort-critical-alerts",
+  "real_money": false
+}
