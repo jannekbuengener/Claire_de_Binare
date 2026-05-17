@@ -43,7 +43,7 @@ jobs:
             scan_name: redis
           - image: postgres:15.18-alpine@sha256:df7bca0066e6f60cc3dd32faa70caddec20e2c22b58932f79498e5704b23854a
             scan_name: postgres
-          - image: prom/prometheus:v3.11.2@sha256:5550dc63da361dc30f6fe02ac0e4dfc736ededfef3c8d12a634db04a67824d78
+          - image: prom/prometheus:v3.11.3@sha256:e4254400b85610324913f0dc4acf92603d9984e7519414c5a12811aa6146acc3
             scan_name: prometheus
           - image: grafana/grafana:11.6.14-ubuntu@sha256:d39d4352aad1df307dc4affa40aeadb1d8eaf34401914b269d70da1abf3973a5
             scan_name: grafana
