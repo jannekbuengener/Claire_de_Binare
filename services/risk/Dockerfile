@@ -2,6 +2,12 @@ FROM python:3.11-slim-trixie@sha256:e78299e55776ca065dcb769f80161f48465ad3520142
 
 WORKDIR /app
 
+# Security: upgrade OS packages with available Trixie security patches (#2289)
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && apt-get install -y \
     curl \
   && rm -rf /var/lib/apt/lists/*

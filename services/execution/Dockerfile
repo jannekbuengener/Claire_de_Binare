@@ -7,6 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# Security: upgrade OS packages with available Trixie security patches (#2289)
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Build-Abhängigkeiten nur im Build-Stage
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -27,6 +33,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
+
+# Security: upgrade OS packages with available Trixie security patches (#2289)
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Runtime-Abhängigkeiten (kein build-essential/libpq-dev)
 RUN apt-get update \
