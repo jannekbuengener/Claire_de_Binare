@@ -13,7 +13,7 @@ name: ${STACK_NAME:-cdb}
 
 services:
   cdb_redis:
-    image: redis:7.4.8-alpine@sha256:7aec734b2bb298a1d769fd8729f13b8514a41bf90fcdd1f38ec52267fbaa8ee6
+    image: redis:7.4.9-alpine@sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99
     container_name: cdb_redis
     restart: unless-stopped
     volumes:
@@ -31,7 +31,7 @@ services:
       - cdb_network
 
   cdb_postgres:
-    image: postgres:15.17-alpine@sha256:09e4f20b14ddb3dfe3a0c825b206032aaf8f28300ba2070c0b60fc1c10c6abc7
+    image: postgres:15.18-alpine@sha256:df7bca0066e6f60cc3dd32faa70caddec20e2c22b58932f79498e5704b23854a
     container_name: cdb_postgres
     restart: unless-stopped
     environment:
