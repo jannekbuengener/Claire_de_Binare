@@ -1,0 +1,20 @@
+spec_version: "1.0"
+task_id: "LR-012"
+task_title: "Negative Payload Handling"
+status: "DONE"
+completion_timestamp: "2026-03-05T21:07:03Z"
+completion_author: "jannekbuengener"
+evidence_file: "docs/evidence/LR-012.md"
+evidence_commit: "088f6371"
+
+blocked_reason_code: null
+blocked_reason_text: null
+blocked_since: null
+
+scope_note: >
+  Scope narrowed to execution consumer negative payload handling, consistent with
+  issue #781 maintainer closure (2026-03-05). Candles/signal defensive handling
+  and Grafana visibility are non-blocking residuals; see docs/evidence/LR-012.md.
+
+live_readiness_impact: "does_not_clear_global_no_go"
+global_verdict_after_closure: "NO-GO"
