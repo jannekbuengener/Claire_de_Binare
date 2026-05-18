@@ -826,6 +826,62 @@ def test_wave14_missing_decision_claim_ref_is_warning(
 
 
 @pytest.mark.unit
+def test_wave14_missing_decision_evidence_ref_is_warning(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "decision_events",
+        [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=["ev-missing"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    matching = [f for f in payload["findings"] if f["code"] == "decision_evidence_ref_not_in_batch"]
+    assert len(matching) == 1
+    assert matching[0]["severity"] == "warning"
+    assert payload["validation"]["blocking_count"] == 0
+
+
+@pytest.mark.unit
+def test_wave14_valid_within_batch_decision_evidence_ref_passes(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "evidence_refs",
+        [_base_record(evidence_id="ev-001", created_at="2026-05-18T00:00:00Z")],
+    )
+    _write_jsonl(
+        tmp_path,
+        "decision_events",
+        [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=["ev-001"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert not any(f["code"] == "decision_evidence_ref_not_in_batch" for f in payload["findings"])
+
+
+@pytest.mark.unit
 def test_wave14_missing_memory_evidence_ref_is_warning(
     tmp_path: Path, capsys
 ) -> None:
