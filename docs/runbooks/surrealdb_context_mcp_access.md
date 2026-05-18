@@ -31,6 +31,47 @@ Out of scope for this runbook:
 
 ---
 
+## 1.5. MCP Capability Resolution Protocol
+
+**Before relying on any tool in this runbook, resolve capability explicitly.**
+
+Repo-defined tools are not automatically available to agents. A tool is available
+only when the active MCP surface exposes it and invocation dispatches a real handler.
+
+**Capability beats assumption. Repo presence is not MCP availability.**
+
+| Check | Pass criterion | Fail action |
+|---|---|---|
+| Active MCP inventory | Required tool appears in the active MCP tool list | Stop and report missing surface/config |
+| Dispatch | Tool call reaches a real handler | Stop on `unknown_tool` or `not_implemented` |
+| Read-only contract | Response reports `metadata.read_only == true` where applicable | Stop and report contract violation |
+| DB-backed mode | SurrealDB is accessed only when `adapter_config_path` is explicitly passed | Stop if DB access is implicit |
+| Local DB boundary | Remote DB URLs are rejected | Stop and report boundary failure |
+| Write/admin guard | Write/admin statements fail closed before network access | Stop and report guard failure |
+
+For repo-native Context MCP access, `claire-de-binare.mcp.json` must expose the
+`cdb_context` server entry:
+
+```json
+{
+  "command": "python",
+  "args": ["-m", "tools.mcp.server"],
+  "type": "stdio"
+}
+```
+
+The MCP host must invoke the server from the repository root so that `tools.*`
+module paths resolve correctly.
+
+If any capability check fails:
+- Do not switch to a raw/external SurrealDB MCP server.
+- Report the exact missing layer.
+- Propose the smallest CDB-native read-only fix after Human-GO.
+
+Established by PR #2559 (`a35d7728`). Cross-reference: `cdb-session-start` skill, step 5.
+
+---
+
 ## 2. Non-Goals (Anti-Criteria)
 
 This runbook explicitly does **not** establish or imply any of the following:

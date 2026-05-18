@@ -77,9 +77,38 @@ Establish a verified, fail-closed starting state before any repo work begins.
    The Git truth checks in steps 1-3 do not replace the control-context read; they
    precede it.
 
-5. Create a clean execution surface:
+5. MCP Capability Resolution Gate (conditional):
 
-   Once steps 1-4 are complete and no gate has fired, create the working surface:
+   When the session scope includes Context, SurrealDB, MCP tools, ContextBridge,
+   or DB-backed agent memory, verify capability before any implementation or
+   tool-dependent planning.
+
+   **Capability beats assumption.** Repo presence is not MCP availability. A tool
+   counts as available only if the active MCP surface exposes it and invocation
+   dispatches a real handler.
+
+   | # | Check | Pass criterion |
+   |---|---|---|
+   | 1 | Active inventory | Tool appears in the active MCP tool list |
+   | 2 | No `unknown_tool` | Tool call does not return `unknown_tool` |
+   | 3 | No `not_implemented` | Tool call does not return `not_implemented` |
+   | 4 | Real dispatch | Handler returns real behavior |
+   | 5 | Read-only contract | `metadata.read_only == true` where applicable |
+   | 6 | Explicit DB opt-in | DB-backed mode requires explicit `adapter_config_path` |
+   | 7 | Fail-closed boundaries | Remote DB URLs and write/admin statements are rejected |
+
+   If any check fails:
+   - STOP.
+   - Report the exact missing layer.
+   - Do not adopt raw/external SurrealDB MCP as a shortcut.
+   - Propose only the smallest CDB-native read-only slice after Human-GO.
+   - LR remains NO-GO. No Echtgeld-Go.
+
+   Reference: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.
+
+6. Create a clean execution surface:
+
+   Once steps 1-5 are complete and no gate has fired, create the working surface:
    - Branch from current `origin/main` (never from stale local main).
    - Clean worktree confirmed.
    - Explicit target issue identified and open.
@@ -96,6 +125,8 @@ Establish a verified, fail-closed starting state before any repo work begins.
 - If `cdb-control-intake` cannot be completed, stop.
 - If any of the risky conditions in step 2 cannot be resolved, stop and report
   what remains unresolved before any file is touched.
+- If MCP capability cannot be verified for a Context/SurrealDB tool in scope,
+  stop and report the missing layer instead of implementing or calling around it.
 
 ## Output
 
@@ -135,3 +166,5 @@ Arbeitsflaeche
 - Do not mark the gate as `go` when any of the fail-closed conditions is unresolved.
 - Do not invent reviewer, approver, or merge-authority roles; this is a
   solo-maintainer repo.
+- Do not treat repo presence of MCP files, registry entries, or `tools/mcp/server.py`
+  as proof that a tool is callable through the active MCP surface.

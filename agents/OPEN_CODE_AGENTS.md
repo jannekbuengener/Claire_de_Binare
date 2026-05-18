@@ -31,6 +31,7 @@ Gilt für **alle** OpenCode Agents (egal welcher Provider).
 - Für CDB-Repo-Arbeit danach `cdb-session-start`
 - Danach `cdb-control-intake`
 - Bei Issue-Arbeit danach `cdb-issue-to-session-plan`
+- Bei Context-, SurrealDB-, MCP-Tool-, ContextBridge- oder DB-backed-Memory-Scope: MCP Capability Resolution Gate ausführen vor Implementierung oder toolabhängiger Planung — Repo-Präsenz ist nicht gleich MCP-Verfügbarkeit. Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.
 - Danach nur task-spezifische Skills laden
 - Keine pauschale Skill-Massenladung
 - Third-Party-/Cybersecurity-Skills nur bei explizitem Bedarf und nur defensiv/prüfend
