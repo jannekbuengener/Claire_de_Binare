@@ -9,17 +9,23 @@ import shutil
 import pytest
 
 from tools.surrealdb.context_indexer import (
+    EVIDENCE_REF_TEST_FILE_CONFIDENCE,
     SCHEMA_VERSION,
+    IndexerResult,
+    ScopeConfigSummary,
+    TestCase,
     WriteDeniedError,
-    run_indexer,
+    _evidence_refs_from_test_cases,
+    build_snapshot,
+    jsonl_records,
     load_scope_config,
     main,
-    jsonl_records,
-    build_snapshot,
-    validate_output_path,
     resolve_input_path,
-    EXPORT_FILES,
+    run_indexer,
+    stable_id,
+    validate_output_path,
     write_jsonl_exports,
+    EXPORT_FILES,
 )
 
 
@@ -688,14 +694,15 @@ def test_export_files_includes_wave14_artifacts() -> None:
 
 
 @pytest.mark.unit
-def test_jsonl_records_returns_empty_lists_for_wave14(tmp_path: Path) -> None:
+def test_jsonl_records_wave14_non_evidence_placeholders_are_always_empty(tmp_path: Path) -> None:
+    """claims, decision_events, agent_memories are always empty regardless of input."""
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
     result = run_indexer(
         fixture_root,
         fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
     )
     records = jsonl_records(result)
-    for artifact in ("evidence_refs", "claims", "decision_events", "agent_memories"):
+    for artifact in ("claims", "decision_events", "agent_memories"):
         assert artifact in records, f"jsonl_records() is missing key: {artifact}"
         assert records[artifact] == [], (
             f"expected empty list for {artifact}, got {records[artifact]!r}"
@@ -746,3 +753,190 @@ def test_indexer_output_passes_importer_jsonl_file_missing_check(tmp_path: Path)
         f"validate_jsonl() produced {len(file_missing)} jsonl_file_missing finding(s) "
         f"for Wave-14 artifacts after write_jsonl_exports: {file_missing}"
     )
+
+
+# ── Wave-14 evidence_ref generator tests ─────────────────────────────────────
+
+# Minimal fixture factories — avoid running the full indexer pipeline for
+# generator-focused unit tests.
+
+_MINIMAL_SCOPE = ScopeConfigSummary(
+    path="infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    schema_version="context-ingestion-scope/v0",
+    include_paths=[],
+    conditional_paths=[],
+    exclude_paths=[],
+    sensitivity_classes=[],
+    include_rules=[],
+    conditional_rules=[],
+    exclude_rules=[],
+    file_type_rules=[],
+    forbidden_patterns=[],
+    max_file_size_bytes=1048576,
+)
+
+# Valid 64-char lowercase hex strings — satisfies importer sha256 format check.
+_HASH_ALPHA = "a" * 64
+_HASH_BETA = "b" * 64
+
+
+def _make_result_with_test_cases(test_cases: list[TestCase]) -> IndexerResult:
+    return IndexerResult(
+        root=Path("."),
+        scope_config=_MINIMAL_SCOPE,
+        git_commit=None,
+        generated_at="2024-01-01T00:00:00Z",
+        run_id="run-unit-test-001",
+        state_hash="deadbeef",
+        files=[],
+        repo_artifacts=[],
+        doc_pages=[],
+        doc_sections=[],
+        doc_chunks=[],
+        validation_findings=[],
+        test_cases=test_cases,
+    )
+
+
+def _make_test_case(source_path: str, source_hash: str, name: str) -> TestCase:
+    return TestCase(
+        test_id=stable_id("test_case", source_path, name),
+        source_path=source_path,
+        source_hash=source_hash,
+        symbol_id=stable_id("symbol", source_path, name),
+        name=name,
+        qualified_name=f"{source_path}::{name}",
+        line_start=1,
+        line_end=10,
+        test_type="unit",
+        parent_class=None,
+        confidence="high",
+        inferred=False,
+    )
+
+
+@pytest.mark.unit
+def test_evidence_refs_from_test_files_are_deterministic() -> None:
+    tc1a = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_foo")
+    tc1b = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_bar")
+    tc2 = _make_test_case("tests/unit/test_beta.py", _HASH_BETA, "test_baz")
+    result = _make_result_with_test_cases([tc1a, tc1b, tc2])
+
+    records_a = _evidence_refs_from_test_cases(result)
+    records_b = _evidence_refs_from_test_cases(result)
+
+    assert records_a == records_b
+    assert [r["evidence_id"] for r in records_a] == [r["evidence_id"] for r in records_b]
+
+
+@pytest.mark.unit
+def test_evidence_refs_are_per_test_file_not_per_test_case() -> None:
+    tcs = [
+        _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_one"),
+        _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_two"),
+        _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_three"),
+        _make_test_case("tests/unit/test_beta.py", _HASH_BETA, "test_x"),
+    ]
+    result = _make_result_with_test_cases(tcs)
+    records = _evidence_refs_from_test_cases(result)
+
+    assert len(records) == 2, f"expected 2 records (one per file), got {len(records)}"
+    source_paths = [r["source_path"] for r in records]
+    assert source_paths == sorted(source_paths), "records must be sorted by source_path"
+    assert "tests/unit/test_alpha.py" in source_paths
+    assert "tests/unit/test_beta.py" in source_paths
+
+
+@pytest.mark.unit
+def test_evidence_refs_contain_required_fields() -> None:
+    tc = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_foo")
+    result = _make_result_with_test_cases([tc])
+    records = _evidence_refs_from_test_cases(result)
+
+    assert len(records) == 1
+    rec = records[0]
+    for field in ("schema_version", "run_id", "evidence_id", "created_at"):
+        assert field in rec and rec[field], f"required field missing or empty: {field}"
+    assert rec["schema_version"] == SCHEMA_VERSION
+    assert rec["run_id"] == "run-unit-test-001"
+    assert rec["evidence_type"] == "test_file"
+    assert rec["source_path"] == "tests/unit/test_alpha.py"
+    assert rec["source_hash"] == _HASH_ALPHA
+    assert rec["confidence"] == EVIDENCE_REF_TEST_FILE_CONFIDENCE
+    assert rec["created_at"] == "2024-01-01T00:00:00Z"
+
+
+@pytest.mark.unit
+def test_evidence_refs_do_not_infer_claim_or_decision_links() -> None:
+    tc = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_foo")
+    result = _make_result_with_test_cases([tc])
+    records = _evidence_refs_from_test_cases(result)
+
+    assert records
+    rec = records[0]
+    for forbidden_field in ("validates", "invalidates", "related_decisions", "claim_refs"):
+        value = rec.get(forbidden_field)
+        assert not value, (
+            f"evidence_ref must not infer {forbidden_field!r}, got {value!r}"
+        )
+    comment = rec.get("comment", "")
+    for forbidden_phrase in ("human-go", "lr-go", "echtgeld", "live", "approved"):
+        assert forbidden_phrase.lower() not in comment.lower(), (
+            f"comment must not contain {forbidden_phrase!r}: {comment!r}"
+        )
+
+
+@pytest.mark.unit
+def test_wave14_non_evidence_placeholders_remain_empty_with_generator_active() -> None:
+    tc = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_foo")
+    result = _make_result_with_test_cases([tc])
+    records = jsonl_records(result)
+
+    assert records["claims"] == [], "claims must remain empty"
+    assert records["decision_events"] == [], "decision_events must remain empty"
+    assert records["agent_memories"] == [], "agent_memories must remain empty"
+    assert len(records["evidence_refs"]) == 1, "evidence_refs should be populated"
+
+
+@pytest.mark.unit
+def test_evidence_refs_empty_when_no_test_cases() -> None:
+    result = _make_result_with_test_cases([])
+    records = _evidence_refs_from_test_cases(result)
+    assert records == [], f"expected empty list, got {records!r}"
+
+
+@pytest.mark.unit
+def test_generated_evidence_ref_records_pass_importer_field_validation(
+    tmp_path: Path,
+) -> None:
+    """Evidence ref records produced by the generator satisfy importer field requirements.
+
+    Uses direct JSONL file writing (not IndexerResult.write_jsonl_exports) to avoid
+    cross-reference violations between synthetic test_cases and absent code_symbols.
+    Evidence refs are not subject to source_hash cross-reference checks.
+    """
+    import json as _json
+
+    from tools.surrealdb.context_importer import (  # noqa: PLC0415
+        EXPECTED_JSONL_FILES,
+        validate_jsonl,
+    )
+
+    tc = _make_test_case("tests/unit/test_alpha.py", _HASH_ALPHA, "test_foo")
+    result = _make_result_with_test_cases([tc])
+    evidence_records = _evidence_refs_from_test_cases(result)
+
+    for artifact, filename in EXPECTED_JSONL_FILES.items():
+        out_file = tmp_path / filename
+        if artifact == "evidence_refs":
+            lines = [_json.dumps(r) for r in evidence_records]
+            out_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        else:
+            out_file.write_bytes(b"")
+
+    report = validate_jsonl(tmp_path, expected_run_id="run-unit-test-001")
+    blocking = [f for f in report.findings if f.severity == "blocking"]
+    assert not blocking, (
+        f"Unexpected blocking findings for generated evidence_refs records: {blocking}"
+    )
+

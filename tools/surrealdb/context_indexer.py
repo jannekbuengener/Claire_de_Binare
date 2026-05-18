@@ -2059,6 +2059,51 @@ def _path_contains_trading_state(source_path: str) -> bool:
     return bool(parts & TRADING_STATE_PATH_PARTS)
 
 
+EVIDENCE_REF_TEST_FILE_CONFIDENCE: float = 0.8
+
+
+def _evidence_refs_from_test_cases(result: IndexerResult) -> list[dict[str, Any]]:
+    """Derive one evidence_ref per unique test file from indexed test cases.
+
+    Produces at most one record per distinct source_path, sorted deterministically.
+    Does NOT infer validates, invalidates, claim_refs, or decision linkages.
+    All three other Wave-14 artifacts (claims, decision_events, agent_memories) remain
+    empty — their records require human or agent authorship.
+    """
+    if not result.test_cases:
+        return []
+    seen: dict[str, str] = {}
+    for tc in result.test_cases:
+        existing = seen.get(tc.source_path)
+        if existing is None:
+            seen[tc.source_path] = tc.source_hash
+        elif existing != tc.source_hash:
+            raise ValueError(
+                f"conflicting source_hash for test file {tc.source_path!r}: "
+                f"{existing!r} vs {tc.source_hash!r}"
+            )
+    records = []
+    for source_path in sorted(seen):
+        source_hash = seen[source_path]
+        records.append(
+            {
+                "schema_version": SCHEMA_VERSION,
+                "run_id": result.run_id,
+                "evidence_id": stable_id("evidence_ref", source_path, source_hash),
+                "evidence_type": "test_file",
+                "source_path": source_path,
+                "source_hash": source_hash,
+                "confidence": EVIDENCE_REF_TEST_FILE_CONFIDENCE,
+                "comment": (
+                    "Generated from indexed test cases; "
+                    "no claim/decision linkage inferred."
+                ),
+                "created_at": result.generated_at,
+            }
+        )
+    return records
+
+
 def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
     return {
         "repo_artifacts": [
@@ -2089,7 +2134,7 @@ def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
         "dependency_edges": [
             edge.to_payload(result.run_id) for edge in result.dependency_edges
         ],
-        "evidence_refs": [],
+        "evidence_refs": _evidence_refs_from_test_cases(result),
         "claims": [],
         "decision_events": [],
         "agent_memories": [],
