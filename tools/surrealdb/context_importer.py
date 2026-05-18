@@ -113,6 +113,10 @@ EXPECTED_JSONL_FILES = {
     "config_references": "config_references.jsonl",
     "doc_code_links": "doc_code_links.jsonl",
     "dependency_edges": "dependency_edges.jsonl",
+    "evidence_refs": "evidence_refs.jsonl",
+    "claims": "claims.jsonl",
+    "decision_events": "decision_events.jsonl",
+    "agent_memories": "agent_memories.jsonl",
 }
 
 IMPORT_ORDER = (
@@ -126,6 +130,10 @@ IMPORT_ORDER = (
     "config_references",
     "doc_code_links",
     "dependency_edges",
+    "evidence_refs",
+    "claims",
+    "decision_events",
+    "agent_memories",
 )
 
 TABLE_BY_ARTIFACT = {
@@ -139,6 +147,10 @@ TABLE_BY_ARTIFACT = {
     "config_references": "config_reference",
     "doc_code_links": "doc_code_link",
     "dependency_edges": "dependency_edge",
+    "evidence_refs": "evidence_ref",
+    "claims": "claim",
+    "decision_events": "decision_event",
+    "agent_memories": "agent_memory",
 }
 
 ID_FIELD_BY_ARTIFACT = {
@@ -152,6 +164,10 @@ ID_FIELD_BY_ARTIFACT = {
     "config_references": "config_ref_id",
     "doc_code_links": "link_id",
     "dependency_edges": "edge_id",
+    "evidence_refs": "evidence_id",
+    "claims": "claim_id",
+    "decision_events": "decision_id",
+    "agent_memories": "memory_id",
 }
 
 REQUIRED_JSONL_FIELDS: dict[str, frozenset[str]] = {
@@ -246,6 +262,18 @@ REQUIRED_JSONL_FIELDS: dict[str, frozenset[str]] = {
     "dependency_edges": frozenset(
         {"schema_version", "run_id", "edge_id", "from_id", "to_id", "edge_type"}
     ),
+    "evidence_refs": frozenset(
+        {"schema_version", "run_id", "evidence_id", "created_at"}
+    ),
+    "claims": frozenset(
+        {"schema_version", "run_id", "claim_id", "created_at"}
+    ),
+    "decision_events": frozenset(
+        {"schema_version", "run_id", "decision_id", "created_at"}
+    ),
+    "agent_memories": frozenset(
+        {"schema_version", "run_id", "memory_id", "created_at"}
+    ),
 }
 
 TRADING_STATE_TABLES = frozenset(
@@ -271,10 +299,8 @@ GOVERNANCE_MIRROR_TABLES = frozenset(
 FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLES
 
 # Wave-14 Context Intelligence tables (evidence / claim / decision / memory).
-# These tables are declared in context_import.local.example.yaml but are not
-# yet backed by JSONL import artifacts. The allowlist is extended here so the
-# config-vs-allowlist drift test stays green while full import support is
-# deferred to a follow-up slice.
+# Kept as an explicit documentation anchor for the Context-only table surface.
+# The JSONL artifacts for these tables are defined in the import constants above.
 WAVE14_CONTEXT_IMPORT_TABLES = frozenset(
     {
         "evidence_ref",

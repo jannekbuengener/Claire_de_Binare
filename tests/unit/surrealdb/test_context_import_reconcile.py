@@ -147,6 +147,30 @@ def _valid_records() -> dict[str, list[dict]]:
                 edge_type="imports",
             )
         ],
+        "evidence_refs": [
+            _base_record(
+                evidence_id="ev-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "claims": [
+            _base_record(
+                claim_id="claim-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "decision_events": [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "agent_memories": [
+            _base_record(
+                memory_id="memory-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
     }
 
 
@@ -175,7 +199,7 @@ def test_dry_run_empty_existing_state_creates_candidates(
     payload = _read_json(capsys)
     assert payload["status"] == "reconciled"
     assert payload["surrealdb_writes"] == "disabled"
-    assert payload["counts"]["creates"] == 10
+    assert payload["counts"]["creates"] == 14
     assert payload["counts"]["skips"] == 0
     assert all(action["action"] == "create" for action in payload["actions"])
 
@@ -505,7 +529,7 @@ def test_dry_run_duplicate_plan_skip_does_not_emit_second_candidate(
     ]
     assert len(page_actions) == 1
     assert page_actions[0]["action"] == "create"
-    assert payload["counts"]["creates"] == 10
+    assert payload["counts"]["creates"] == 14
     assert payload["counts"]["skips"] == 0
     assert payload["counts"]["update_candidates"] == 0
 

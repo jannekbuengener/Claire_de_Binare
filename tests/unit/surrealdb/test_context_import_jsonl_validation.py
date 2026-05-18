@@ -146,6 +146,30 @@ def _write_valid_artifacts(input_dir: Path) -> None:
                 edge_type="imports",
             )
         ],
+        "evidence_refs": [
+            _base_record(
+                evidence_id="ev-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "claims": [
+            _base_record(
+                claim_id="claim-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "decision_events": [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "agent_memories": [
+            _base_record(
+                memory_id="memory-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
     }
     for artifact, items in records.items():
         _write_jsonl(input_dir, artifact, items)
@@ -625,3 +649,47 @@ def test_apply_short_circuits_before_jsonl_validation(capsys) -> None:
     assert exit_code == EXIT_WRITE_DENIED
     payload = _read_json(capsys)
     assert payload["error"] == "WRITE_DENIED"
+
+
+@pytest.mark.unit
+def test_wave14_artifacts_pass_validation(tmp_path: Path, capsys) -> None:
+    _write_valid_artifacts(tmp_path)
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "passed"
+    assert payload["validation"]["blocking_count"] == 0
+    assert payload["artifact_counts"]["evidence_refs"] == 1
+    assert payload["artifact_counts"]["claims"] == 1
+    assert payload["artifact_counts"]["decision_events"] == 1
+    assert payload["artifact_counts"]["agent_memories"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "artifact,pk_field",
+    [
+        ("evidence_refs", "evidence_id"),
+        ("claims", "claim_id"),
+        ("decision_events", "decision_id"),
+        ("agent_memories", "memory_id"),
+    ],
+)
+def test_wave14_missing_pk_is_blocking(
+    tmp_path: Path, capsys, artifact: str, pk_field: str
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    bad_record = _base_record(created_at="2026-05-18T00:00:00Z")
+    _write_jsonl(tmp_path, artifact, [bad_record])
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_VALIDATION_ERROR
+    payload = _read_json(capsys)
+    assert any(
+        finding["code"] == "required_field_missing"
+        and finding["artifact"] == artifact
+        for finding in payload["findings"]
+    )

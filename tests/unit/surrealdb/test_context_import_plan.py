@@ -142,6 +142,30 @@ def _valid_records() -> dict[str, list[dict]]:
                 edge_type="imports",
             )
         ],
+        "evidence_refs": [
+            _base_record(
+                evidence_id="ev-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "claims": [
+            _base_record(
+                claim_id="claim-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "decision_events": [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
+        "agent_memories": [
+            _base_record(
+                memory_id="memory-001",
+                created_at="2026-05-18T00:00:00Z",
+            )
+        ],
     }
 
 
@@ -162,7 +186,7 @@ def test_plan_generates_deterministic_create_actions(tmp_path: Path, capsys) -> 
     assert payload["implemented"] is True
     assert payload["surrealdb_connection"] == "disabled"
     assert payload["has_blocking_validation_findings"] is False
-    assert payload["action_counts"] == {"create": 10}
+    assert payload["action_counts"] == {"create": 14}
     assert payload["import_order"] == [
         "repo_artifact",
         "doc_page",
@@ -174,6 +198,10 @@ def test_plan_generates_deterministic_create_actions(tmp_path: Path, capsys) -> 
         "config_reference",
         "doc_code_link",
         "dependency_edge",
+        "evidence_ref",
+        "claim",
+        "decision_event",
+        "agent_memory",
     ]
     assert [action["record_id"] for action in payload["actions"]] == [
         "repo_artifact:artifact-doc",
@@ -186,6 +214,10 @@ def test_plan_generates_deterministic_create_actions(tmp_path: Path, capsys) -> 
         "config_reference:config-safe",
         "doc_code_link:link-example",
         "dependency_edge:edge-example",
+        "evidence_ref:ev-001",
+        "claim:claim-001",
+        "decision_event:decision-001",
+        "agent_memory:memory-001",
     ]
     section_action = payload["actions"][2]
     assert section_action["depends_on"] == ["doc_page:page-example"]
@@ -245,7 +277,7 @@ def test_plan_marks_duplicate_input_record_as_skip(tmp_path: Path, capsys) -> No
         action for action in payload["actions"] if action["table"] == "repo_artifact"
     ]
     assert [action["action"] for action in repo_actions] == ["create", "skip"]
-    assert payload["action_counts"] == {"create": 10, "skip": 1}
+    assert payload["action_counts"] == {"create": 14, "skip": 1}
 
 
 @pytest.mark.unit
@@ -290,3 +322,30 @@ def test_plan_report_output_outside_whitelist_is_rejected(
     assert exit_code == EXIT_WRITE_DENIED
     payload = _read_json(capsys)
     assert payload["error"] == "WRITE_DENIED"
+
+
+@pytest.mark.unit
+def test_plan_includes_wave14_artifacts(tmp_path: Path, capsys) -> None:
+    _write_valid_artifacts(tmp_path)
+
+    assert main(["plan", "--input-dir", str(tmp_path)]) == EXIT_OK
+    payload = _read_json(capsys)
+    tables = {action["table"] for action in payload["actions"]}
+    assert "evidence_ref" in tables
+    assert "claim" in tables
+    assert "decision_event" in tables
+    assert "agent_memory" in tables
+
+
+@pytest.mark.unit
+def test_import_order_ends_with_wave14_in_dependency_order(tmp_path: Path, capsys) -> None:
+    _write_valid_artifacts(tmp_path)
+
+    assert main(["plan", "--input-dir", str(tmp_path)]) == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["import_order"][-4:] == [
+        "evidence_ref",
+        "claim",
+        "decision_event",
+        "agent_memory",
+    ]
