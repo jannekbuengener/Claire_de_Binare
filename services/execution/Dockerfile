@@ -56,7 +56,11 @@ ENV PATH="/venv/bin:$PATH"
 COPY core /app/core
 
 # Service-Code kopieren
-COPY services/execution/ /app
+COPY services/execution /app/services/execution
+
+RUN mkdir -p /app/services \
+    && touch /app/services/__init__.py \
+    && touch /app/services/execution/__init__.py
 
 # Non-Root User
 RUN useradd --create-home --uid 1000 execuser \
@@ -71,4 +75,4 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
 EXPOSE 8003
 
 # Start Kommando
-CMD ["python", "-u", "service.py"]
+CMD ["python", "-m", "services.execution.service"]

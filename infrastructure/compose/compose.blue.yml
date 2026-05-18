@@ -268,7 +268,7 @@ services:
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
       CDB_KILL_SWITCH_STATE_FILE: "/app/kill_switch/.cdb_kill_switch.state"
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -u service.py"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && export MEXC_API_KEY=$(cat /run/secrets/mexc_api_key) && export MEXC_API_SECRET=$(cat /run/secrets/mexc_api_secret) && exec python -m services.execution.service"]
     ports:
       - "127.0.0.1:8003:8003"
     volumes:
@@ -304,7 +304,7 @@ services:
       REDIS_HOST: cdb_redis
       POSTGRES_HOST: cdb_postgres
       POSTGRES_USER: ${POSTGRES_USER:-claire_user}
-    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -u db_writer.py"]
+    entrypoint: ["sh", "-c", "export REDIS_PASSWORD=$(cat /run/secrets/redis_password) && export POSTGRES_PASSWORD=$(cat /run/secrets/postgres_password) && exec python -m services.db_writer.db_writer"]
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
       interval: 30s

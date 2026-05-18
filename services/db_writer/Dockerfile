@@ -22,7 +22,11 @@ RUN pip install --no-cache-dir redis psycopg2-binary prometheus-client
 COPY core /app/core
 
 # Copy service code
-COPY services/db_writer/db_writer.py .
+COPY services/db_writer /app/services/db_writer
+
+RUN mkdir -p /app/services \
+    && touch /app/services/__init__.py \
+    && touch /app/services/db_writer/__init__.py
 
 # Non-Root User
 RUN useradd --create-home --uid 1000 dbwriter \
@@ -34,4 +38,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import redis; r = redis.Redis(host='${REDIS_HOST:-cdb_redis}', port=6379); r.ping()" || exit 1
 
 # Run service
-CMD ["python", "-u", "db_writer.py"]
+CMD ["python", "-m", "services.db_writer.db_writer"]
