@@ -50,13 +50,18 @@ only when the active MCP surface exposes it and invocation dispatches a real han
 | Write/admin guard | Write/admin statements fail closed before network access | Stop and report guard failure |
 
 For repo-native Context MCP access, `claire-de-binare.mcp.json` must expose the
-`cdb_context` server entry:
+`cdb_context` server entry under the top-level `mcpServers` object:
 
 ```json
 {
-  "command": "python",
-  "args": ["-m", "tools.mcp.server"],
-  "type": "stdio"
+  "mcpServers": {
+    "cdb_context": {
+      "enabled": true,
+      "command": "python",
+      "args": ["-m", "tools.mcp.server"],
+      "type": "stdio"
+    }
+  }
 }
 ```
 
