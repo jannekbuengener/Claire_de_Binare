@@ -43,6 +43,10 @@ EXPECTED_JSONL = (
     "config_references.jsonl",
     "doc_code_links.jsonl",
     "dependency_edges.jsonl",
+    "evidence_refs.jsonl",
+    "claims.jsonl",
+    "decision_events.jsonl",
+    "agent_memories.jsonl",
 )
 FIXED_AT = "2026-05-02T10:11:12Z"
 FIXED_COMMIT = "0123456789abcdef0123456789abcdef01234567"

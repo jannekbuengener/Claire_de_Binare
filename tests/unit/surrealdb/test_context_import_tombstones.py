@@ -86,6 +86,10 @@ def _write_valid_artifacts(tmp_path: Path, *, run_id: str = "run-tomb-1") -> Non
         "config_references.jsonl": [],
         "doc_code_links.jsonl": [],
         "dependency_edges.jsonl": [],
+        "evidence_refs.jsonl": [],
+        "claims.jsonl": [],
+        "decision_events.jsonl": [],
+        "agent_memories.jsonl": [],
     }
     for name, items in rows.items():
         path = tmp_path / name
