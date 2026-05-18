@@ -2824,3 +2824,133 @@ class TestCdbContextImpactHandler:
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_operation_mode"
         assert "write" in result["error"]["message"]
+
+
+class TestWave14BridgeDispatch:
+    """Prove that Wave-14 tools dispatch to real handlers, not registry stubs.
+
+    Each test calls bridge.execute_tool() and asserts:
+    - error code is NOT 'not_implemented' (real handler reached)
+    - metadata.read_only is True (handler enforces read-only contract)
+
+    Tests use create_bridge() so the Wave-14 handler replacement loop in
+    ContextBridge.__init__() is exercised end-to-end.
+    """
+
+    _WAVE14_TOOLS = [
+        "cdb_context_evidence_resolve",
+        "cdb_context_claim_resolve",
+        "cdb_context_memory_get",
+        "cdb_context_trust_summary",
+        "cdb_context_decision_history",
+        "cdb_context_decision_replay",
+    ]
+
+    @pytest.mark.parametrize("tool_name", _WAVE14_TOOLS)
+    def test_dispatch_reaches_real_handler(self, tool_name: str) -> None:
+        """Tool must not return not_implemented."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(tool_name, {})
+        error_code = result.get("error", {}).get("code")
+        assert error_code != "not_implemented", (
+            f"{tool_name} returned not_implemented — registry stub not replaced"
+        )
+
+    @pytest.mark.parametrize("tool_name", _WAVE14_TOOLS)
+    def test_metadata_read_only_true(self, tool_name: str) -> None:
+        """Handler must return metadata.read_only == True."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(tool_name, {})
+        metadata = result.get("metadata", {})
+        assert metadata.get("read_only") is True, (
+            f"{tool_name} missing metadata.read_only=True in result: {result}"
+        )
+
+    def test_evidence_resolve_with_records(self) -> None:
+        """evidence_resolve accepts inline records (noop/in-memory path)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_evidence_resolve",
+            {
+                "evidence_records": [
+                    {"id": "ev_test_1", "claim_id": "c1", "source": "unit_test"}
+                ]
+            },
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_claim_resolve_with_records(self) -> None:
+        """claim_resolve accepts inline records (noop/in-memory path)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_claim_resolve",
+            {
+                "claim_records": [
+                    {"id": "c1", "text": "Test claim", "status": "open"}
+                ]
+            },
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_memory_get_with_records(self) -> None:
+        """memory_get accepts inline records (noop/in-memory path)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_memory_get",
+            {
+                "memory_records": [
+                    {"id": "m1", "agent": "test_agent", "content": "test"}
+                ]
+            },
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_trust_summary_with_scope(self) -> None:
+        """trust_summary accepts a scope parameter."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_trust_summary",
+            {"scope": "test_scope"},
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_decision_history_with_events(self) -> None:
+        """decision_history accepts inline events (noop/in-memory path)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_decision_history",
+            {
+                "decision_events": [
+                    {"id": "de1", "type": "gate_decision", "outcome": "pass"}
+                ]
+            },
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_decision_replay_with_events(self) -> None:
+        """decision_replay accepts inline events (noop/in-memory path)."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "cdb_context_decision_replay",
+            {
+                "decision_id": "de1",
+                "decision_events": [
+                    {"id": "de1", "type": "gate_decision", "outcome": "pass"}
+                ],
+            },
+        )
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+
+    def test_unknown_tool_is_distinct_from_not_implemented(self) -> None:
+        """unknown_tool error is different from not_implemented."""
+        bridge = create_bridge()
+        result = bridge.execute_tool("cdb_context_nonexistent_tool", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "unknown_tool"
+        assert result["error"]["code"] != "not_implemented"

@@ -10,6 +10,12 @@
         "REDIS_PASSWORD": "${REDIS_PASSWORD}"
       },
       "type": "stdio"
+    },
+    "cdb_context": {
+      "enabled": true,
+      "command": "python",
+      "args": ["-m", "tools.mcp.server"],
+      "type": "stdio"
     }
   }
 }
