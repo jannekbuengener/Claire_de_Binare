@@ -101,7 +101,7 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 | Service | Container | Image | Port | Status | Funktion |
 |---------|-----------|-------|------|--------|----------|
 | **Prometheus** | cdb_prometheus | prom/prometheus:v3.11.3 | 19090→9090 | **AKTIV** | Metrics Collection |
-| **Grafana** | cdb_grafana | grafana/grafana:11.6.14-security-04-ubuntu@sha256:adeac4e7 | 3000 | **AKTIV** | Dashboards |
+| **Grafana** | cdb_grafana | grafana/grafana:12.4.3-security-02-ubuntu@sha256:089f9dbb | 3000 | **AKTIV** | Dashboards |
 | **Postgres Exporter** | cdb_postgres_exporter | prometheuscommunity/postgres-exporter | 9187 | **AKTIV** | PG Metrics; DSN-Wiring ueber `postgres_password` Secret + `PGPASSWORD`, `DATA_SOURCE_NAME` wird zur Laufzeit aus `POSTGRES_USER`/`POSTGRES_DB` und Host/Port zusammengesetzt |
 | **Redis Exporter** | cdb_redis_exporter | bitnami/redis-exporter | 9121 | **AKTIV** | Redis Metrics |
 | **cAdvisor** | cdb_cadvisor | gcr.io/cadvisor/cadvisor:v0.49.2 | — | **AKTIV** | Container Metrics |

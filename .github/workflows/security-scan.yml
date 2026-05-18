@@ -45,7 +45,7 @@ jobs:
             scan_name: postgres
           - image: prom/prometheus:v3.11.3@sha256:e4254400b85610324913f0dc4acf92603d9984e7519414c5a12811aa6146acc3
             scan_name: prometheus
-          - image: grafana/grafana:11.6.14-security-04-ubuntu@sha256:adeac4e7218222d9306f33ffe7e6f644c8ab7047a4f82f3fef60cdfbd71051d0
+          - image: grafana/grafana:12.4.3-security-02-ubuntu@sha256:089f9dbbfa3c21e6989aab20f14f1a78cef54c04819af5e9deb2bd9c37966bc5
             scan_name: grafana
       fail-fast: false
 
