@@ -62,6 +62,10 @@ EXPORT_FILES = {
     "config_references": "config_references.jsonl",
     "doc_code_links": "doc_code_links.jsonl",
     "dependency_edges": "dependency_edges.jsonl",
+    "evidence_refs": "evidence_refs.jsonl",
+    "claims": "claims.jsonl",
+    "decision_events": "decision_events.jsonl",
+    "agent_memories": "agent_memories.jsonl",
 }
 
 EXIT_VALIDATION_ERROR = 1
@@ -2085,6 +2089,10 @@ def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
         "dependency_edges": [
             edge.to_payload(result.run_id) for edge in result.dependency_edges
         ],
+        "evidence_refs": [],
+        "claims": [],
+        "decision_events": [],
+        "agent_memories": [],
     }
 
 
@@ -2286,7 +2294,9 @@ def write_jsonl_exports(result: IndexerResult, output_dir: Path) -> None:
         records = jsonl_records(result)
         for key, filename in EXPORT_FILES.items():
             lines = [_json_dumps_record(record) for record in records[key]]
-            (output_dir / filename).write_text("\n".join(lines) + "\n", encoding="utf-8")
+            (output_dir / filename).write_text(
+                ("\n".join(lines) + "\n") if lines else "", encoding="utf-8"
+            )
         snapshot = build_snapshot(result, output_dir)
         (output_dir / "snapshot.json").write_text(
             json.dumps(snapshot, ensure_ascii=True, indent=2) + "\n",

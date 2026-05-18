@@ -18,6 +18,8 @@ from tools.surrealdb.context_indexer import (
     build_snapshot,
     validate_output_path,
     resolve_input_path,
+    EXPORT_FILES,
+    write_jsonl_exports,
 )
 
 
@@ -520,6 +522,10 @@ def test_jsonl_export_snapshot_and_validation_in_fixture_repo(
         "doc_chunks.jsonl",
         "skipped_files.jsonl",
         "forbidden_files.jsonl",
+        "evidence_refs.jsonl",
+        "claims.jsonl",
+        "decision_events.jsonl",
+        "agent_memories.jsonl",
         "snapshot.json",
         "validation_report.json",
     ):
@@ -671,4 +677,72 @@ def test_resolve_input_path_prefers_root_over_cwd(
     scope = load_scope_config(resolved)
     assert scope.max_file_size_bytes == 999999, (
         f"Expected target_repo max_file_size_bytes=999999, got {scope.max_file_size_bytes}"
+    )
+
+
+@pytest.mark.unit
+def test_export_files_includes_wave14_artifacts() -> None:
+    wave14_keys = {"evidence_refs", "claims", "decision_events", "agent_memories"}
+    missing = wave14_keys - set(EXPORT_FILES)
+    assert not missing, f"EXPORT_FILES is missing Wave-14 keys: {missing}"
+
+
+@pytest.mark.unit
+def test_jsonl_records_returns_empty_lists_for_wave14(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    records = jsonl_records(result)
+    for artifact in ("evidence_refs", "claims", "decision_events", "agent_memories"):
+        assert artifact in records, f"jsonl_records() is missing key: {artifact}"
+        assert records[artifact] == [], (
+            f"expected empty list for {artifact}, got {records[artifact]!r}"
+        )
+
+
+@pytest.mark.unit
+def test_write_jsonl_exports_writes_wave14_files(tmp_path: Path) -> None:
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    output_dir = tmp_path / "output"
+    write_jsonl_exports(result, output_dir)
+    for filename in (
+        "evidence_refs.jsonl",
+        "claims.jsonl",
+        "decision_events.jsonl",
+        "agent_memories.jsonl",
+    ):
+        path = output_dir / filename
+        assert path.exists(), f"write_jsonl_exports() did not create {filename}"
+        assert path.is_file(), f"{filename} is not a regular file"
+        assert path.read_bytes() == b"", f"{filename} should be empty for Wave-14 placeholder"
+
+
+@pytest.mark.unit
+def test_indexer_output_passes_importer_jsonl_file_missing_check(tmp_path: Path) -> None:
+    from tools.surrealdb.context_importer import validate_jsonl  # noqa: PLC0415
+
+    fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
+    result = run_indexer(
+        fixture_root,
+        fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
+    )
+    output_dir = tmp_path / "output"
+    write_jsonl_exports(result, output_dir)
+
+    report = validate_jsonl(output_dir)
+    wave14_artifacts = {"evidence_refs", "claims", "decision_events", "agent_memories"}
+    file_missing = [
+        f
+        for f in report.findings
+        if f.code == "jsonl_file_missing" and f.artifact in wave14_artifacts
+    ]
+    assert not file_missing, (
+        f"validate_jsonl() produced {len(file_missing)} jsonl_file_missing finding(s) "
+        f"for Wave-14 artifacts after write_jsonl_exports: {file_missing}"
     )
