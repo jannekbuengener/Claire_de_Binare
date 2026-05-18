@@ -2707,20 +2707,23 @@ def _action_dependencies(artifact: str, record: dict[str, Any]) -> tuple[str, ..
     return tuple(sorted(dict.fromkeys(dependencies)))
 
 
+def _plan_warning_from_finding(finding: JsonlValidationFinding) -> ImportPlanWarning:
+    return ImportPlanWarning(
+        code=finding.code,
+        message=finding.message,
+        artifact=finding.artifact,
+        source_ref=finding.source_path,
+        severity=finding.severity,
+    )
+
+
 def build_import_plan(
     input_dir: Path, expected_run_id: str | None = None
 ) -> ImportPlan:
     report = validate_jsonl(input_dir, expected_run_id)
     if report.blocking_count:
         warnings = tuple(
-            ImportPlanWarning(
-                code=finding.code,
-                message=finding.message,
-                artifact=finding.artifact,
-                source_ref=finding.source_path,
-                severity=finding.severity,
-            )
-            for finding in report.findings
+            _plan_warning_from_finding(finding) for finding in report.findings
         )
         return ImportPlan(
             schema_version=SCHEMA_VERSION,
@@ -2739,7 +2742,11 @@ def build_import_plan(
         )
 
     actions: list[ImportPlanAction] = []
-    warnings: list[ImportPlanWarning] = []
+    warnings: list[ImportPlanWarning] = [
+        _plan_warning_from_finding(finding)
+        for finding in report.findings
+        if finding.severity == "warning"
+    ]
     seen_record_ids: set[str] = set()
 
     for artifact in IMPORT_ORDER:

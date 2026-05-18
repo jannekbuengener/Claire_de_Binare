@@ -280,6 +280,69 @@ def test_plan_marks_duplicate_input_record_as_skip(tmp_path: Path, capsys) -> No
     assert payload["action_counts"] == {"create": 14, "skip": 1}
 
 
+# ---------------------------------------------------------------------------
+# Wave-14 validation warning carry-through tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_build_import_plan_carries_wave14_validation_warnings(
+    tmp_path: Path, capsys
+) -> None:
+    records = _valid_records()
+    records["claims"] = [
+        _base_record(
+            claim_id="claim-001",
+            created_at="2026-05-18T00:00:00Z",
+            evidence_refs=["ev-missing"],
+        )
+    ]
+    for artifact, artifact_records in records.items():
+        _write_jsonl(tmp_path, artifact, artifact_records)
+
+    exit_code = main(["plan", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "planned"
+    assert payload["has_blocking_validation_findings"] is False
+    codes = [w["code"] for w in payload["warnings"]]
+    assert "claim_evidence_ref_not_in_batch" in codes
+    match = next(
+        w for w in payload["warnings"] if w["code"] == "claim_evidence_ref_not_in_batch"
+    )
+    assert match["severity"] == "warning"
+
+
+@pytest.mark.unit
+def test_build_import_plan_carries_decision_claim_validation_warnings(
+    tmp_path: Path, capsys
+) -> None:
+    records = _valid_records()
+    records["decision_events"] = [
+        _base_record(
+            decision_id="decision-001",
+            created_at="2026-05-18T00:00:00Z",
+            claim_refs=["claim-missing"],
+        )
+    ]
+    for artifact, artifact_records in records.items():
+        _write_jsonl(tmp_path, artifact, artifact_records)
+
+    exit_code = main(["plan", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert payload["status"] == "planned"
+    assert payload["has_blocking_validation_findings"] is False
+    codes = [w["code"] for w in payload["warnings"]]
+    assert "decision_claim_ref_not_in_batch" in codes
+    match = next(
+        w for w in payload["warnings"] if w["code"] == "decision_claim_ref_not_in_batch"
+    )
+    assert match["severity"] == "warning"
+
+
 @pytest.mark.unit
 def test_plan_markdown_report_output_is_written_under_whitelist(
     tmp_path: Path, monkeypatch, capsys
