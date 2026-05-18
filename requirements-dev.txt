@@ -16,7 +16,7 @@ PyYAML==6.0.3  # YAML parsing for governance tests
 mypy==2.0.0
 
 # Code Quality
-black==26.3.1
+black==26.5.0
 ruff==0.15.13
 
 # Security Scanning
