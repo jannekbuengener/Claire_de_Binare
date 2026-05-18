@@ -277,6 +277,33 @@ context-down:
 	  down 2>/dev/null || true
 	@echo "[OK] cdb_surrealdb stopped."
 
+ifeq ($(OS),Windows_NT)
+context-status:
+	@pwsh -NoProfile -Command "\
+	Write-Host '=== SurrealDB Local Context Runtime --- Status ==='; \
+	Write-Host ''; \
+	Write-Host '--- Container ---'; \
+	docker inspect cdb_surrealdb 2>&1 | Out-Null; \
+	if ($$LASTEXITCODE -eq 0) { \
+	  $$status = docker inspect --format '{{.State.Status}}' cdb_surrealdb 2>&1; \
+	  $$health = docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}}' cdb_surrealdb 2>&1; \
+	  $$rawPorts = docker port cdb_surrealdb 2>&1; \
+	  $$ports = if ($$rawPorts) { ($$rawPorts | Where-Object { $$_ }) -join ', ' } else { 'none' }; \
+	  Write-Host \"  cdb_surrealdb: $$status (health: $$health)\"; \
+	  Write-Host \"  Ports: $$ports\" \
+	} else { \
+	  Write-Host '  cdb_surrealdb: not found (container does not exist)' \
+	}; \
+	Write-Host ''; \
+	Write-Host '--- Volume ---'; \
+	$$volName = if ($$env:STACK_NAME) { $$env:STACK_NAME } else { 'cdb_database' }; \
+	$$volName = $$volName + '_surrealdb_data'; \
+	docker volume inspect $$volName 2>&1 | Out-Null; \
+	if ($$LASTEXITCODE -eq 0) { Write-Host \"  $${volName}: exists\" } else { Write-Host \"  $${volName}: not found\" }; \
+	Write-Host ''; \
+	Write-Host 'NOTE: This is Context Infrastructure only --- not a Live/Trading Go.' \
+	"
+else
 context-status:
 	@echo "=== SurrealDB Local Context Runtime — Status ==="
 	@echo ""
@@ -300,6 +327,7 @@ context-status:
 	 fi
 	@echo ""
 	@echo "NOTE: This is Context Infrastructure only — not a Live/Trading Go."
+endif
 
 context-logs:
 	@docker logs cdb_surrealdb --tail 50 2>/dev/null || echo "cdb_surrealdb is not running or not found."
