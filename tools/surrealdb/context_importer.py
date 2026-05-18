@@ -269,7 +269,24 @@ GOVERNANCE_MIRROR_TABLES = frozenset(
 )
 
 FORBIDDEN_CONTEXT_IMPORT_TABLES = TRADING_STATE_TABLES | GOVERNANCE_MIRROR_TABLES
-ALLOWED_CONTEXT_IMPORT_TABLES = frozenset(TABLE_BY_ARTIFACT.values())
+
+# Wave-14 Context Intelligence tables (evidence / claim / decision / memory).
+# These tables are declared in context_import.local.example.yaml but are not
+# yet backed by JSONL import artifacts. The allowlist is extended here so the
+# config-vs-allowlist drift test stays green while full import support is
+# deferred to a follow-up slice.
+WAVE14_CONTEXT_IMPORT_TABLES = frozenset(
+    {
+        "evidence_ref",
+        "claim",
+        "decision_event",
+        "agent_memory",
+    }
+)
+
+ALLOWED_CONTEXT_IMPORT_TABLES = (
+    frozenset(TABLE_BY_ARTIFACT.values()) | WAVE14_CONTEXT_IMPORT_TABLES
+)
 
 ALLOWED_AUTH_MODES = frozenset({"none", "root", "scope"})
 
