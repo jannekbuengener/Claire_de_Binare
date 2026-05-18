@@ -2397,6 +2397,78 @@ def _validate_cross_references(
                 )
             )
 
+    # Wave-14 within-batch cross-reference checks (warning only).
+    # References across batches are valid (evidence may exist from prior imports),
+    # so missing IDs are warnings, never blocking.
+    evidence_ids = {
+        item.get("evidence_id")
+        for item in records["evidence_refs"]
+        if isinstance(item.get("evidence_id"), str)
+    }
+    claim_ids_w14 = {
+        item.get("claim_id")
+        for item in records["claims"]
+        if isinstance(item.get("claim_id"), str)
+    }
+
+    for record in records["claims"]:
+        for ref in record.get("evidence_refs") or []:
+            if isinstance(ref, str) and ref not in evidence_ids:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "claim_evidence_ref_not_in_batch",
+                        "claim evidence_ref is not present in this JSONL batch;"
+                        " it may refer to existing DB evidence",
+                        artifact="claims",
+                        line=record.get("__line"),
+                        record=record,
+                    )
+                )
+
+    for record in records["decision_events"]:
+        for ref in record.get("evidence_refs") or []:
+            if isinstance(ref, str) and ref not in evidence_ids:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "decision_evidence_ref_not_in_batch",
+                        "decision_event evidence_ref is not present in this JSONL batch;"
+                        " it may refer to existing DB evidence",
+                        artifact="decision_events",
+                        line=record.get("__line"),
+                        record=record,
+                    )
+                )
+        for ref in record.get("claim_refs") or []:
+            if isinstance(ref, str) and ref not in claim_ids_w14:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "decision_claim_ref_not_in_batch",
+                        "decision_event claim_ref is not present in this JSONL batch;"
+                        " it may refer to existing DB claim",
+                        artifact="decision_events",
+                        line=record.get("__line"),
+                        record=record,
+                    )
+                )
+
+    for record in records["agent_memories"]:
+        for ref in record.get("evidence_refs") or []:
+            if isinstance(ref, str) and ref not in evidence_ids:
+                findings.append(
+                    _finding(
+                        "warning",
+                        "memory_evidence_ref_not_in_batch",
+                        "agent_memory evidence_ref is not present in this JSONL batch;"
+                        " it may refer to existing DB evidence",
+                        artifact="agent_memories",
+                        line=record.get("__line"),
+                        record=record,
+                    )
+                )
+
 
 def validate_jsonl(
     input_dir: Path, expected_run_id: str | None = None

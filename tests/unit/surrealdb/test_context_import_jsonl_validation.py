@@ -693,3 +693,195 @@ def test_wave14_missing_pk_is_blocking(
         and finding["artifact"] == artifact
         for finding in payload["findings"]
     )
+
+
+# ---------------------------------------------------------------------------
+# Wave-14 cross-reference validation tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_wave14_empty_evidence_refs_array_produces_no_findings(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "claims",
+        [_base_record(claim_id="claim-001", created_at="2026-05-18T00:00:00Z", evidence_refs=[])],
+    )
+    _write_jsonl(
+        tmp_path,
+        "decision_events",
+        [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=[],
+                claim_refs=[],
+            )
+        ],
+    )
+    _write_jsonl(
+        tmp_path,
+        "agent_memories",
+        [_base_record(memory_id="memory-001", created_at="2026-05-18T00:00:00Z", evidence_refs=[])],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    cross_ref_codes = {
+        "claim_evidence_ref_not_in_batch",
+        "decision_evidence_ref_not_in_batch",
+        "decision_claim_ref_not_in_batch",
+        "memory_evidence_ref_not_in_batch",
+    }
+    assert not any(f["code"] in cross_ref_codes for f in payload["findings"])
+    assert payload["validation"]["blocking_count"] == 0
+
+
+@pytest.mark.unit
+def test_wave14_valid_within_batch_claim_evidence_ref_passes(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "evidence_refs",
+        [_base_record(evidence_id="ev-001", created_at="2026-05-18T00:00:00Z")],
+    )
+    _write_jsonl(
+        tmp_path,
+        "claims",
+        [
+            _base_record(
+                claim_id="claim-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=["ev-001"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    assert not any(f["code"] == "claim_evidence_ref_not_in_batch" for f in payload["findings"])
+
+
+@pytest.mark.unit
+def test_wave14_missing_claim_evidence_ref_is_warning(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "claims",
+        [
+            _base_record(
+                claim_id="claim-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=["ev-missing"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    matching = [f for f in payload["findings"] if f["code"] == "claim_evidence_ref_not_in_batch"]
+    assert len(matching) == 1
+    assert matching[0]["severity"] == "warning"
+    assert payload["validation"]["blocking_count"] == 0
+
+
+@pytest.mark.unit
+def test_wave14_missing_decision_claim_ref_is_warning(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "decision_events",
+        [
+            _base_record(
+                decision_id="decision-001",
+                created_at="2026-05-18T00:00:00Z",
+                claim_refs=["claim-missing"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    matching = [f for f in payload["findings"] if f["code"] == "decision_claim_ref_not_in_batch"]
+    assert len(matching) == 1
+    assert matching[0]["severity"] == "warning"
+    assert payload["validation"]["blocking_count"] == 0
+
+
+@pytest.mark.unit
+def test_wave14_missing_memory_evidence_ref_is_warning(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "agent_memories",
+        [
+            _base_record(
+                memory_id="memory-001",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_refs=["ev-missing"],
+            )
+        ],
+    )
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    matching = [f for f in payload["findings"] if f["code"] == "memory_evidence_ref_not_in_batch"]
+    assert len(matching) == 1
+    assert matching[0]["severity"] == "warning"
+    assert payload["validation"]["blocking_count"] == 0
+
+
+@pytest.mark.unit
+def test_wave14_indexer_generated_evidence_refs_pass_cross_ref_check(
+    tmp_path: Path, capsys
+) -> None:
+    _write_valid_artifacts(tmp_path)
+    _write_jsonl(
+        tmp_path,
+        "evidence_refs",
+        [
+            _base_record(
+                evidence_id="evidence_ref:abc123",
+                created_at="2026-05-18T00:00:00Z",
+                evidence_type="test_file",
+                source_path="tests/unit/surrealdb/test_context_indexer.py",
+                source_hash=HASH,
+                confidence=0.8,
+            )
+        ],
+    )
+    # claims/decision_events/agent_memories remain empty (no refs to validate)
+
+    exit_code = main(["validate-jsonl", "--input-dir", str(tmp_path), "--run-id", RUN_ID])
+
+    assert exit_code == EXIT_OK
+    payload = _read_json(capsys)
+    cross_ref_codes = {
+        "claim_evidence_ref_not_in_batch",
+        "decision_evidence_ref_not_in_batch",
+        "decision_claim_ref_not_in_batch",
+        "memory_evidence_ref_not_in_batch",
+    }
+    assert not any(f["code"] in cross_ref_codes for f in payload["findings"])
+    assert payload["validation"]["blocking_count"] == 0
