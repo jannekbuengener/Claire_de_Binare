@@ -411,9 +411,49 @@ TRADING_STATE_PATH_PARTS = frozenset(
     }
 )
 
-# Fields added internally by the importer's validator to JSONL records;
-# they are not part of the original JSONL and must not be written to SurrealDB.
-_JSONL_INTERNAL_FIELDS = frozenset({"__line"})
+# Fields stripped from JSONL records before writing to SurrealDB.
+# Includes importer-internal fields (__line) and JSONL envelope fields
+# (schema_version, run_id, sensitivity) that are not declared in any table
+# schema. SurrealDB v2 SCHEMAFULL tables reject undeclared fields; SCHEMALESS
+# tables accept them but these fields carry no domain meaning in the DB.
+_JSONL_INTERNAL_FIELDS = frozenset({"__line", "schema_version", "run_id", "sensitivity"})
+
+# Datetime field names declared as TYPE datetime in context_intelligence_v0.surql.
+# SurrealDB v2 SCHEMAFULL tables reject plain JSON strings for TYPE datetime fields
+# when records are written via the HTTP /sql endpoint.  The _payload_to_surql_content
+# helper converts only these allowlisted fields (when their value is an ISO-8601-Z
+# string) to SurrealQL datetime literals (d"...").
+_SURQL_DATETIME_FIELDS: frozenset[str] = frozenset({
+    "collected_at",
+    "computed_at",
+    "created_at",
+    "detected_at",
+    "expires_at",
+    "generated_at",
+    "observed_at",
+})
+_SURQL_DATETIME_RE: re.Pattern[str] = re.compile(
+    r'"('
+    + "|".join(sorted(_SURQL_DATETIME_FIELDS))
+    + r')":\s*"(\d{4}-\d{2}-\d{2}T[^"]+Z)"'
+)
+
+
+def _payload_to_surql_content(payload: dict[str, Any]) -> str:
+    """Serialize *payload* to a SurrealQL CONTENT string.
+
+    Behaves like ``json.dumps(payload, ensure_ascii=True, sort_keys=True)``
+    but additionally converts allowlisted ISO-8601-Z datetime string values to
+    SurrealQL datetime literals so that SurrealDB v2 SCHEMAFULL ``TYPE datetime``
+    fields accept them via the HTTP ``/sql`` endpoint.
+
+    Only field names in ``_SURQL_DATETIME_FIELDS`` are affected, and only when
+    the value matches an ISO-8601 timestamp ending in ``Z``.  All other string
+    values are left as plain JSON strings.
+    """
+    raw = json.dumps(payload, ensure_ascii=True, sort_keys=True)
+    return _SURQL_DATETIME_RE.sub(r'"\1": d"\2"', raw)
+
 
 EXIT_OK = 0
 EXIT_VALIDATION_ERROR = 1
@@ -1263,7 +1303,7 @@ class SurrealDBLocalContextApplyAdapter:
         self, table: str, record_id: str, payload: dict[str, Any]
     ) -> None:
         rid = self._surql_record_id(table, record_id)
-        payload_json = json.dumps(payload, ensure_ascii=True, sort_keys=True)
+        payload_json = _payload_to_surql_content(payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
         self._sql_request(sql)
 
@@ -1271,7 +1311,7 @@ class SurrealDBLocalContextApplyAdapter:
         self, table: str, record_id: str, payload: dict[str, Any]
     ) -> None:
         rid = self._surql_record_id(table, record_id)
-        payload_json = json.dumps(payload, ensure_ascii=True, sort_keys=True)
+        payload_json = _payload_to_surql_content(payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
         self._sql_request(sql)
 
@@ -1296,7 +1336,7 @@ class SurrealDBLocalContextApplyAdapter:
         )
         domain_payload = {k: v for k, v in payload.items() if k not in _meta}
         rid = self._surql_record_id(table, record_id)
-        payload_json = json.dumps(domain_payload, ensure_ascii=True, sort_keys=True)
+        payload_json = _payload_to_surql_content(domain_payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
         self._sql_request(sql)
 
@@ -1646,9 +1686,9 @@ def _build_payload_for_op(
         return payload, ts_iso
 
     # For create/update: write the actual JSONL domain payload to the adapter.
-    # Internal importer fields (__line) are stripped at plan-build time;
-    # any remaining envelope fields (schema_version, run_id) are present
-    # in the payload but silently dropped by SCHEMAFULL tables in SurrealDB.
+    # Envelope fields (schema_version, run_id, sensitivity, __line) are stripped
+    # at plan-build time via _JSONL_INTERNAL_FIELDS; remaining fields are the
+    # domain payload declared in the table schema.
     db_payload = dict(op.payload) if op.payload is not None else {}
     return db_payload, None
 

@@ -25,6 +25,7 @@ from tools.surrealdb.context_importer import (
     TOMBSTONE_FIELD_LAST_SEEN_RUN_ID,
     TOMBSTONE_FIELD_REASON,
     TOMBSTONE_FIELD_SUPERSEDED_BY,
+    _payload_to_surql_content,
     main,
 )
 
@@ -642,3 +643,159 @@ def test_example_config_auth_mode_is_root() -> None:
         "The local sidecar (cdb_surrealdb) requires SURREAL_USER/SURREAL_PASS; "
         "auth_mode must be 'root', not 'none'."
     )
+
+
+# ---------------------------------------------------------------------------
+# SurrealQL datetime literal serialization (#2573 / datetime coercion fix)
+# ---------------------------------------------------------------------------
+
+
+def _capture_sql(monkeypatch: pytest.MonkeyPatch) -> "list[str]":
+    """Return a list that will be populated with each SQL body sent via urlopen."""
+    sent: list[str] = []
+
+    def fake_urlopen(req, timeout=None):
+        sent.append(req.data.decode("utf-8"))
+        resp = MagicMock()
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = MagicMock(return_value=False)
+        resp.status = 200
+        resp.read.return_value = _ok_body()
+        return resp
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+    return sent
+
+
+@pytest.mark.unit
+def test_apply_create_observed_at_becomes_surql_literal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create must write observed_at as a SurrealQL datetime literal.
+
+    SurrealDB v2 SCHEMAFULL TYPE datetime rejects plain JSON strings; the
+    importer must emit d"..." syntax for allowlisted datetime fields.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "repo_artifact",
+        "art-ts-1",
+        {
+            "artifact_id": "art-ts-1",
+            "source_path": "docs/DESIGN.md",
+            "observed_at": "2026-05-18T19:50:12Z",
+            "confidence": 1.0,
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # observed_at must be a SurrealQL datetime literal, not a JSON string
+    assert 'd"2026-05-18T19:50:12Z"' in content_part
+    assert '"observed_at": "2026-05-18T19:50:12Z"' not in content_part
+    # Non-datetime fields must remain untouched
+    assert "DESIGN.md" in content_part
+    assert '"confidence": 1.0' in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_non_allowlisted_iso_string_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Non-allowlisted fields with ISO-like string values must stay as JSON strings.
+
+    Only the explicit _SURQL_DATETIME_FIELDS allowlist is converted; arbitrary
+    text fields (e.g. description, notes) that happen to contain ISO timestamps
+    must not be rewritten.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "repo_artifact",
+        "art-ts-2",
+        {
+            "artifact_id": "art-ts-2",
+            "description": "2026-05-18T19:50:12Z",  # non-allowlisted field
+            "source_path": "README.md",
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # The non-allowlisted field must remain a plain JSON string
+    assert '"description": "2026-05-18T19:50:12Z"' in content_part
+    assert 'description: d"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_update_collected_at_becomes_surql_literal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_update must also convert allowlisted datetime fields (e.g. collected_at)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_update(
+        "evidence_ref",
+        "ev-1",
+        {
+            "evidence_id": "ev-1",
+            "collected_at": "2026-04-01T10:00:00Z",
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert 'd"2026-04-01T10:00:00Z"' in content_part
+    assert '"collected_at": "2026-04-01T10:00:00Z"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_tombstone_datetime_field_surql_literal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_tombstone must use the same datetime literal serialization.
+
+    Tombstone meta-fields are stripped before writing; remaining domain fields
+    that contain allowlisted datetime values must be emitted as d"..." literals.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    payload = _tombstone_payload()
+    # Add an allowlisted datetime field to the domain portion
+    payload["observed_at"] = "2026-03-15T08:30:00Z"
+
+    adapter.apply_tombstone("doc_chunk", "chunk-ts-1", payload)
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Domain datetime field converted to literal
+    assert 'd"2026-03-15T08:30:00Z"' in content_part
+    # Tombstone meta-fields stripped as before
+    assert "record_removed_from_snapshot" not in content_part
+
+
+@pytest.mark.unit
+def test_payload_to_surql_content_roundtrip() -> None:
+    """_payload_to_surql_content unit tests: allowlist, non-allowlist, null, number."""
+    # Allowlisted field with Z-suffix ISO string → converted
+    result = _payload_to_surql_content({"observed_at": "2026-05-18T19:50:12Z", "x": "y"})
+    assert '"observed_at": d"2026-05-18T19:50:12Z"' in result
+    assert '"x": "y"' in result
+
+    # Non-allowlisted ISO-like field → not converted
+    result2 = _payload_to_surql_content({"timestamp_text": "2026-05-18T19:50:12Z"})
+    assert '"timestamp_text": "2026-05-18T19:50:12Z"' in result2
+    assert "d\"" not in result2
+
+    # Allowlisted field without Z suffix → not converted (no partial matches)
+    result3 = _payload_to_surql_content({"observed_at": "2026-05-18T19:50:12"})
+    assert '"observed_at": "2026-05-18T19:50:12"' in result3
+    assert "d\"" not in result3
+
+    # Null value for allowlisted field → not converted (null is not a string)
+    result4 = _payload_to_surql_content({"observed_at": None})
+    assert '"observed_at": null' in result4
+    assert "d\"" not in result4

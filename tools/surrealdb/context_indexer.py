@@ -15,6 +15,7 @@ import re
 import subprocess
 import tomllib
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -231,14 +232,20 @@ class RepoArtifact:
             "artifact_id": self.artifact_id,
             "source_path": self.source_path,
             "file_type": self.file_type,
+            "artifact_type": self.file_type,
             "raw_sha256": self.raw_sha256,
             "normalized_sha256": self.normalized_sha256,
             "source_hash": self.normalized_sha256,
             "integrity_algo": "sha256",
             "size_bytes": self.size_bytes,
-            "git_commit": self.git_commit,
-            "observed_at": self.observed_at,
+            "observed_at": _normalize_observed_at(self.observed_at),
             "sensitivity": self.sensitivity,
+            "source_url": "",
+            "source_commit": self.git_commit or "",
+            "mime_type": "",
+            "freshness": "current",
+            "confidence": 1.0,
+            "comment": "",
         }
 
     def to_state_payload(self) -> dict[str, Any]:
@@ -273,9 +280,13 @@ class DocPage:
             "source_hash": self.source_hash,
             "title": self.title,
             "doc_format": self.doc_format,
-            "git_commit": self.git_commit,
-            "observed_at": self.observed_at,
+            "observed_at": _normalize_observed_at(self.observed_at),
             "sensitivity": self.sensitivity,
+            "source_url": "",
+            "source_commit": self.git_commit or "",
+            "freshness": "current",
+            "confidence": 1.0,
+            "comment": "",
         }
 
 
@@ -298,15 +309,16 @@ class DocSection:
             "run_id": run_id,
             "section_id": self.section_id,
             "page_id": self.page_id,
-            "page_ref": f"doc_page:{self.page_id}",
             "source_path": self.source_path,
             "source_hash": self.source_hash,
-            "heading": self.heading,
+            "heading": self.heading if self.heading else "[intro]",
             "heading_path": self.heading_path,
             "section_level": self.section_level,
             "section_index": self.section_index,
             "span_start_line": self.span_start_line,
             "span_end_line": self.span_end_line,
+            "confidence": 1.0,
+            "comment": "",
         }
 
 
@@ -330,9 +342,7 @@ class DocChunk:
             "run_id": run_id,
             "chunk_id": self.chunk_id,
             "page_id": self.page_id,
-            "page_ref": f"doc_page:{self.page_id}",
             "section_id": self.section_id,
-            "section_ref": f"doc_section:{self.section_id}",
             "source_path": self.source_path,
             "source_hash": self.source_hash,
             "heading_path": self.heading_path,
@@ -342,6 +352,8 @@ class DocChunk:
             "content": self.content,
             "content_hash": self.content_hash,
             "tokens_estimate": estimate_tokens(self.content),
+            "confidence": 1.0,
+            "comment": "",
         }
 
     def to_state_payload(self) -> dict[str, Any]:
@@ -566,8 +578,10 @@ class DependencyEdge:
             "to_id": self.to_id,
             "edge_type": self.edge_type,
             "source_path": self.source_path,
-            "confidence": self.confidence,
+            "confidence": {"high": 1.0, "medium": 0.7, "low": 0.3}.get(self.confidence, 1.0),
+            "evidence_level": "inferred",
             "inferred": self.inferred,
+            "comment": "",
         }
 
 
@@ -881,6 +895,17 @@ def _utc_now() -> str:
     dt = cdb_utcnow().replace(microsecond=0)
     iso = dt.isoformat().replace("+00:00", "")
     return iso if iso.endswith("Z") else iso + "Z"
+
+
+def _normalize_observed_at(value: str) -> str:
+    """Normalize any ISO 8601 datetime string to a UTC naive string for SurrealDB TYPE datetime."""
+    try:
+        dt = datetime.fromisoformat(value)
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.replace(microsecond=0).isoformat() + "Z"
+    except (ValueError, AttributeError):
+        return value
 
 
 def _resolve_existing_root(path: Path) -> Path:

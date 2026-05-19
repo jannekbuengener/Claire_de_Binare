@@ -1,0 +1,153 @@
+schema_version: context-ingestion-scope/v0
+
+# SMOKE-TEST-ONLY SCOPE — NOT the canonical ingestion scope.
+# Intentionally narrow: docs/, knowledge/ (minus deep-issues-lab), agents/, README.md.
+# Forbidden patterns are IDENTICAL to the canonical scope — no guardrail weakening.
+# Use with: --scope-config infrastructure/config/surrealdb/context_ingestion_scope.smoke.yaml
+# Canonical scope: infrastructure/config/surrealdb/context_ingestion_scope.yaml
+
+source_document:
+  path: infrastructure/config/surrealdb/context_ingestion_scope.smoke.yaml
+  status: smoke_test_only_not_canonical_ingestion_scope
+
+mode:
+  intent: smoke_test_only_narrow_context_ingestion_scope
+  smoke_test: true
+  canonical_scope: false
+  surrealdb_activation: forbidden
+  surrealdb_connect: forbidden
+  surrealdb_apply: forbidden
+  runtime_change: forbidden
+  live_readiness_verdict: NO-GO
+
+include_paths:
+  - path: docs/
+    sensitivity_class: public_context
+    purpose: Architecture, runbooks, governance-adjacent documentation.
+  - path: knowledge/
+    sensitivity_class: internal_context
+    purpose: Canonical knowledge, governance, and operating documents.
+    notes:
+      - knowledge/deep-issues-lab/ is excluded via exclude_paths.
+  - path: agents/
+    sensitivity_class: internal_context
+    purpose: Agent registry, roles, boot instructions, and operating boundaries.
+  - path: README.md
+    sensitivity_class: public_context
+    purpose: Repo-level entry context (root file only, not recursive).
+
+conditional_paths: []
+
+exclude_paths:
+  - path: .git/
+    reason: Internal Git data.
+  - path: .venv/
+    reason: Local build artifacts.
+  - path: .worktrees/
+    reason: Local work surfaces.
+  - path: logs/
+    reason: Potentially sensitive runtime data.
+  - path: artifacts/
+    reason: Generated outputs; not canonical.
+  - path: docs/archive/
+    reason: Historical fallback only.
+  - path: temp/
+    reason: Temporary output area.
+  - path: tmp/
+    reason: Temporary output area.
+  - path: DELIVERY_APPROVED.yaml
+    reason: Human-controlled delivery gate.
+  - path: knowledge/deep-issues-lab/
+    reason: Research scratch area; contains high-density forbidden-pattern keyword matches; not canonical knowledge for smoke ingestion.
+  - path: docs/surrealdb/context-wave21-cross-cutting-hardening.md
+    reason: Security-hardening doc that discusses forbidden-pattern keywords (secret, token) in documentation context; excluded from smoke scope to avoid false positives from lexical matching.
+
+allowed_file_types:
+  - extension: .md
+    type: markdown
+    purpose: Preferred documentation input.
+  - extension: .yaml
+    type: yaml
+    purpose: Ontologies, config, and structured specifications.
+  - extension: .yml
+    type: yaml
+    purpose: Ontologies, config, and structured specifications.
+  - extension: .json
+    type: json
+    purpose: Structured contracts, metadata, and schemas.
+
+sensitivity_classes:
+  public_context:
+    meaning: Publicly shareable repo context without sensitive operating metadata.
+    allowed_use: Normal read-only ingestion.
+  internal_context:
+    meaning: Internal repo or architecture context without secrets, not intended for arbitrary external sharing.
+    allowed_use: Read-only ingestion with internal context binding.
+  sensitive_metadata:
+    meaning: Non-secret metadata whose path, topology, or control meaning requires minimization.
+    allowed_use: Minimized read-only ingestion; capture metadata instead of full text when sufficient.
+  forbidden:
+    meaning: Not ingestible.
+    allowed_use: Never read, hash, chunk, export, or ingest.
+
+forbidden_patterns:
+  secrets:
+    - api_key
+    - private_key
+    - password
+    - passwd
+    - secret
+    - token
+    - credential
+    - broker_credential
+    - wallet_secret
+    - session_secret
+    - SECRETS_PATH values or secret file contents
+  trading_runtime_state:
+    - order state
+    - fill state
+    - position state
+    - balance state
+    - exposure state
+    - live risk state
+    - broker state
+    - execution state
+    - runtime Redis state
+    - runtime Postgres state
+    - productive external service state
+  generated_or_local:
+    - generated logs
+    - database dumps
+    - runtime captures
+    - local worktree data
+    - temporary files
+    - archive material without explicit reference and separate approval
+
+limits:
+  max_file_size_bytes: 1048576
+  binary_files: forbidden
+  database_dumps: forbidden
+  media_files: forbidden
+  notebook_outputs: forbidden
+  archive_policy:
+    default: forbidden
+    exception: Explicit canonical reference plus separate approval required.
+  output_roots:
+    approved_by_cli_contract:
+      - artifacts/
+      - temp/
+    notes:
+      - This config does not authorize writing outputs.
+
+guardrails:
+  - No productive SurrealDB enablement.
+  - No productive ingestion.
+  - Smoke-test scope only; not canonical ingestion scope.
+  - No secrets in scope.
+  - No orders, positions, fills, live risk state, broker state, execution state, or trading runtime state in scope.
+  - Forbidden files must not be read, hashed, chunked, exported, or ingested.
+  - Ambiguous content must fail closed as forbidden.
+  - Scope expansions require explicit canonical governance reference.
+  - Forbidden patterns are identical to canonical scope; no weakening.
+  - Live-Readiness remains NO-GO.
+  - Board stage trade-capable is not Live-Readiness GO.

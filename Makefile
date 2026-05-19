@@ -28,6 +28,7 @@ REPLAY_DRY_RUN ?= 0
 REPLAY_DETERMINISTIC_VERIFY ?= 1
 
 CONTEXT_SNAP_DIR ?= artifacts/context-intelligence/latest
+CONTEXT_SCOPE_CONFIG ?= infrastructure/config/surrealdb/context_ingestion_scope.yaml
 
 .PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db
 
@@ -358,8 +359,13 @@ context-reset-local:
 context-scan:
 	@echo "=== Context Scan: Repo-Artefakte und Doc-Chunks (kein DB-Write) ==="
 	@mkdir -p $(CONTEXT_SNAP_DIR)
-	@python3 -m tools.surrealdb.context_indexer scan --apply-writes --output $(CONTEXT_SNAP_DIR)/scan-report.json
-	@echo "[OK] Scan complete: $(CONTEXT_SNAP_DIR)/scan-report.json"
+	@python3 -m tools.surrealdb.context_indexer scan --apply-writes \
+		--scope-config $(CONTEXT_SCOPE_CONFIG) \
+		--output $(CONTEXT_SNAP_DIR)/scan-report.json
+	@python3 -m tools.surrealdb.context_indexer export-jsonl --apply-writes \
+		--scope-config $(CONTEXT_SCOPE_CONFIG) \
+		--output $(CONTEXT_SNAP_DIR)
+	@echo "[OK] Scan + JSONL export complete: $(CONTEXT_SNAP_DIR)"
 
 context-import-dry-run:
 	@echo "=== Context Import Dry-Run: geplante Aktionen, kein DB-Write ==="
@@ -410,7 +416,7 @@ context-smoke-db: context-env-check
 		--database cdb_context_intel \
 		--apply --apply-mode local-dev \
 		--config infrastructure/config/surrealdb/context_import.local.example.yaml \
-		--run-id $$(date +%Y%m%d%H%M%S) \
+		--run-id $$(python3 -c "import json; print(json.load(open('$(CONTEXT_SNAP_DIR)/snapshot.json'))['run_id'])") \
 		--adapter surrealdb-local \
 		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 	@echo "--- Schritt 4: Query-Smoke (hard, >= 1 Record, fail-closed) ---"
