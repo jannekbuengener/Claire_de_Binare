@@ -799,3 +799,147 @@ def test_payload_to_surql_content_roundtrip() -> None:
     result4 = _payload_to_surql_content({"observed_at": None})
     assert '"observed_at": null' in result4
     assert "d\"" not in result4
+
+
+@pytest.mark.unit
+def test_payload_to_surql_content_record_ref_unquoted() -> None:
+    """page_ref / section_ref record-ref strings are unquoted in CONTENT (#2577)."""
+    result = _payload_to_surql_content({
+        "page_ref": "doc_page:\u27e8page-example\u27e9",
+        "title": "Example",
+    })
+    assert '"page_ref": doc_page:\u27e8page-example\u27e9' in result
+    assert '"title": "Example"' in result
+    # Must not appear quoted
+    assert '"page_ref": "doc_page:' not in result
+
+
+@pytest.mark.unit
+def test_payload_to_surql_content_section_ref_unquoted() -> None:
+    """section_ref record-ref strings are unquoted in CONTENT (#2577)."""
+    result = _payload_to_surql_content({
+        "section_ref": "doc_section:\u27e8section-example\u27e9",
+    })
+    assert '"section_ref": doc_section:\u27e8section-example\u27e9' in result
+    assert '"section_ref": "doc_section:' not in result
+
+
+@pytest.mark.unit
+def test_payload_to_surql_content_datetime_regression_after_ascii_change() -> None:
+    """ensure_ascii=False must not break the existing datetime literal conversion."""
+    result = _payload_to_surql_content({
+        "observed_at": "2026-05-18T19:50:12Z",
+        "title": "still works",
+    })
+    assert '"observed_at": d"2026-05-18T19:50:12Z"' in result
+    assert '"title": "still works"' in result
+
+
+@pytest.mark.unit
+def test_apply_create_doc_section_page_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create for doc_section: page_id is remapped to page_ref record ref (#2577).
+
+    Input payload uses page_id (JSONL contract); the SQL CONTENT must contain
+    an unquoted page_ref record ref and must NOT contain page_id.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "doc_section",
+        "section-example",
+        {
+            "section_id": "section-example",
+            "page_id": "page-example",
+            "heading": "Example",
+            "source_path": "docs/example.md",
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # page_ref must be an unquoted SurrealDB record ref
+    assert '"page_ref": doc_page:\u27e8page-example\u27e9' in content_part
+    # page_id must not appear in DB payload
+    assert '"page_id"' not in content_part
+    # page_ref value must NOT be a quoted JSON string
+    assert '"page_ref": "' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_doc_chunk_page_ref_and_section_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create for doc_chunk: page_id + section_id remapped to record refs (#2577).
+
+    Input payload uses page_id and section_id (JSONL contract); the SQL CONTENT
+    must contain unquoted page_ref and section_ref record refs.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "doc_chunk",
+        "chunk-example",
+        {
+            "chunk_id": "chunk-example",
+            "page_id": "page-example",
+            "section_id": "section-example",
+            "content": "safe context",
+            "source_path": "docs/example.md",
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"page_ref": doc_page:\u27e8page-example\u27e9' in content_part
+    assert '"section_ref": doc_section:\u27e8section-example\u27e9' in content_part
+    assert '"page_id"' not in content_part
+    assert '"section_id"' not in content_part
+    assert '"page_ref": "' not in content_part
+    assert '"section_ref": "' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_update_doc_section_page_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_update for doc_section also remaps page_id to page_ref (#2577)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_update(
+        "doc_section",
+        "section-upd",
+        {
+            "section_id": "section-upd",
+            "page_id": "page-upd",
+            "heading": "Updated",
+            "source_path": "docs/updated.md",
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"page_ref": doc_page:\u27e8page-upd\u27e9' in content_part
+    assert '"page_id"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_non_ref_table_payload_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Tables without record-ref mappings must pass payload through unchanged (#2577 regression)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "repo_artifact",
+        "art-1",
+        {"artifact_id": "art-1", "source_path": "src/main.py"},
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"artifact_id": "art-1"' in content_part
+    assert '"source_path": "src/main.py"' in content_part

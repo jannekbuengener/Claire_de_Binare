@@ -438,21 +438,89 @@ _SURQL_DATETIME_RE: re.Pattern[str] = re.compile(
     + r')":\s*"(\d{4}-\d{2}-\d{2}T[^"]+Z)"'
 )
 
+# Record-ref field names that must be written as unquoted SurrealDB record refs
+# rather than plain JSON strings.  doc_section.page_ref and doc_chunk.page_ref /
+# section_ref are in scope for this slice; dependency_edge.from_ref/to_ref require
+# indexer table-qualification and are handled in a separate follow-up slice.
+_SURQL_RECORD_REF_FIELDS: frozenset[str] = frozenset({"page_ref", "section_ref"})
+# Matches the JSON-serialised form of a record-ref value produced by
+# _remap_record_refs_for_db_payload after json.dumps(..., ensure_ascii=False).
+# ensure_ascii=False is required so that U+27E8/U+27E9 (⟨⟩) appear as literal
+# Unicode chars in the JSON output and can be matched by this pattern.
+# Example input:  "page_ref": "doc_page:⟨page-example⟩"
+# Capture groups: (1) field name, (2) table:⟨id⟩  (without quotes)
+_SURQL_RECORD_REF_RE: re.Pattern[str] = re.compile(
+    '"('
+    + "|".join(sorted(_SURQL_RECORD_REF_FIELDS))
+    + ')":\\s*"((?:doc_page|doc_section):\u27e8[^\u27e9]+\u27e9)"'
+)
+
+# Maps SurrealDB table name → [(src_field, dst_field, target_table), ...]
+# _remap_record_refs_for_db_payload uses this to convert plain-string ID fields
+# emitted by the indexer (e.g. page_id) into SurrealDB record-ref strings
+# (e.g. page_ref = "doc_page:⟨id⟩") before the DB-write payload is serialised.
+# The JSONL contract (page_id / section_id) is not changed; only the adapter
+# payload for create/update is remapped.
+_TABLE_RECORD_REF_REMAP: dict[str, list[tuple[str, str, str]]] = {
+    "doc_section": [("page_id", "page_ref", "doc_page")],
+    "doc_chunk": [
+        ("page_id", "page_ref", "doc_page"),
+        ("section_id", "section_ref", "doc_section"),
+    ],
+}
+
+
+def _remap_record_refs_for_db_payload(
+    table: str, payload: dict[str, Any]
+) -> dict[str, Any]:
+    """Remap plain-string ID fields to SurrealDB record-ref strings for *table*.
+
+    For tables listed in ``_TABLE_RECORD_REF_REMAP``, pops the source field
+    (e.g. ``page_id``) and inserts the destination field (e.g. ``page_ref``)
+    with a record-ref string in the form ``"doc_page:\u27e8<id>\u27e9"``.
+    The ref string is later unquoted by ``_payload_to_surql_content`` via
+    ``_SURQL_RECORD_REF_RE``, producing a valid SurrealDB ``TYPE record`` value.
+
+    If a required source ID is absent or not a non-empty string the mapping is
+    skipped for that field; downstream SurrealDB ``TYPE record`` validation will
+    surface the missing ref rather than having the importer silently guess.
+
+    All other tables are returned unchanged (no-op).
+    """
+    mappings = _TABLE_RECORD_REF_REMAP.get(table)
+    if not mappings:
+        return payload
+    result = dict(payload)
+    for src_field, dst_field, target_table in mappings:
+        raw_id = result.pop(src_field, None)
+        if raw_id and isinstance(raw_id, str):
+            escaped = raw_id.replace("\u27e9", "\\u27e9")
+            result[dst_field] = f"{target_table}:\u27e8{escaped}\u27e9"
+    return result
+
 
 def _payload_to_surql_content(payload: dict[str, Any]) -> str:
     """Serialize *payload* to a SurrealQL CONTENT string.
 
-    Behaves like ``json.dumps(payload, ensure_ascii=True, sort_keys=True)``
-    but additionally converts allowlisted ISO-8601-Z datetime string values to
-    SurrealQL datetime literals so that SurrealDB v2 SCHEMAFULL ``TYPE datetime``
-    fields accept them via the HTTP ``/sql`` endpoint.
+    Behaves like ``json.dumps(payload, ensure_ascii=False, sort_keys=True)``
+    but additionally:
 
-    Only field names in ``_SURQL_DATETIME_FIELDS`` are affected, and only when
-    the value matches an ISO-8601 timestamp ending in ``Z``.  All other string
-    values are left as plain JSON strings.
+    - converts allowlisted ISO-8601-Z datetime string values to SurrealQL
+      datetime literals (``d"..."``) via ``_SURQL_DATETIME_RE``; and
+    - unquotes allowlisted record-ref string values (e.g.
+      ``"doc_page:\u27e8id\u27e9"``) so SurrealDB accepts them as
+      ``TYPE record`` values via ``_SURQL_RECORD_REF_RE``.
+
+    ``ensure_ascii=False`` is required so that SurrealDB bracket chars
+    U+27E8/U+27E9 (⟨⟩) appear as literal Unicode in the JSON output,
+    enabling the ``_SURQL_RECORD_REF_RE`` pattern to match them.
+    All existing field values are ASCII-safe, so this change is backward
+    compatible with the datetime-literal path.
     """
-    raw = json.dumps(payload, ensure_ascii=True, sort_keys=True)
-    return _SURQL_DATETIME_RE.sub(r'"\1": d"\2"', raw)
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    raw = _SURQL_DATETIME_RE.sub(r'"\1": d"\2"', raw)
+    raw = _SURQL_RECORD_REF_RE.sub(r'"\1": \2', raw)
+    return raw
 
 
 EXIT_OK = 0
@@ -1303,7 +1371,8 @@ class SurrealDBLocalContextApplyAdapter:
         self, table: str, record_id: str, payload: dict[str, Any]
     ) -> None:
         rid = self._surql_record_id(table, record_id)
-        payload_json = _payload_to_surql_content(payload)
+        db_payload = _remap_record_refs_for_db_payload(table, payload)
+        payload_json = _payload_to_surql_content(db_payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
         self._sql_request(sql)
 
@@ -1311,7 +1380,8 @@ class SurrealDBLocalContextApplyAdapter:
         self, table: str, record_id: str, payload: dict[str, Any]
     ) -> None:
         rid = self._surql_record_id(table, record_id)
-        payload_json = _payload_to_surql_content(payload)
+        db_payload = _remap_record_refs_for_db_payload(table, payload)
+        payload_json = _payload_to_surql_content(db_payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
         self._sql_request(sql)
 
