@@ -465,6 +465,22 @@ _SURQL_RECORD_REF_RE: re.Pattern[str] = re.compile(
     + '):\u27e8[^\u27e9]+\u27e9)"'
 )
 
+# Supplementary-plane Unicode characters (U+10000–U+10FFFF, e.g. emoji) are encoded
+# as 4-byte UTF-8 sequences when json.dumps(..., ensure_ascii=False) is used.
+# SurrealDB's HTTP /sql endpoint returns HTTP 400 for statements that contain literal
+# 4-byte UTF-8 code points in string values (confirmed by all 9 doc_page failures in
+# import-run10.json — every failing title contains emoji; all 593 passing ones do not).
+# BMP characters (U+0000–U+FFFF), including the ⟨⟩ bracket chars used for record refs,
+# are not affected and must remain as literal Unicode for _SURQL_RECORD_REF_RE to match.
+_SUPPLEMENTARY_UNICODE_RE: re.Pattern[str] = re.compile(r"[\U00010000-\U0010FFFF]")
+
+
+def _escape_supplementary(m: re.Match[str]) -> str:
+    """Convert a supplementary-plane code point to a JSON \\uXXXX\\uYYYY surrogate pair."""
+    cp = ord(m.group()) - 0x10000
+    return f"\\u{0xD800 | (cp >> 10):04x}\\u{0xDC00 | (cp & 0x3FF):04x}"
+
+
 # Maps SurrealDB table name → [(src_field, dst_field, target_table), ...]
 # _remap_record_refs_for_db_payload uses this to convert plain-string ID fields
 # emitted by the indexer (e.g. page_id) into SurrealDB record-ref strings
@@ -536,6 +552,12 @@ def _payload_to_surql_content(payload: dict[str, Any]) -> str:
     Behaves like ``json.dumps(payload, ensure_ascii=False, sort_keys=True)``
     but additionally:
 
+    - escapes supplementary-plane Unicode code points (U+10000–U+10FFFF,
+      e.g. emoji in ``title`` fields) as JSON ``\\uXXXX\\uYYYY`` surrogate
+      pairs via ``_SUPPLEMENTARY_UNICODE_RE``.  SurrealDB's HTTP ``/sql``
+      endpoint returns HTTP 400 for statements containing literal 4-byte
+      UTF-8 codepoints; BMP chars (U+0000–U+FFFF), including the ⟨⟩ bracket
+      chars used for record refs, are intentionally left as literal Unicode;
     - converts allowlisted ISO-8601-Z datetime string values to SurrealQL
       datetime literals (``d"..."``) via ``_SURQL_DATETIME_RE``; and
     - unquotes allowlisted record-ref string values (e.g.
@@ -545,10 +567,9 @@ def _payload_to_surql_content(payload: dict[str, Any]) -> str:
     ``ensure_ascii=False`` is required so that SurrealDB bracket chars
     U+27E8/U+27E9 (⟨⟩) appear as literal Unicode in the JSON output,
     enabling the ``_SURQL_RECORD_REF_RE`` pattern to match them.
-    All existing field values are ASCII-safe, so this change is backward
-    compatible with the datetime-literal path.
     """
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    raw = _SUPPLEMENTARY_UNICODE_RE.sub(_escape_supplementary, raw)
     raw = _SURQL_DATETIME_RE.sub(r'"\1": d"\2"', raw)
     raw = _SURQL_RECORD_REF_RE.sub(r'"\1": \2', raw)
     return raw

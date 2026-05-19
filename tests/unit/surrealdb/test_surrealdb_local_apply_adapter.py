@@ -836,6 +836,43 @@ def test_payload_to_surql_content_datetime_regression_after_ascii_change() -> No
 
 
 @pytest.mark.unit
+def test_payload_to_surql_content_escapes_supplementary_unicode() -> None:
+    """Supplementary-plane chars (emoji) are escaped as JSON surrogate pairs (#2578).
+
+    SurrealDB's HTTP /sql endpoint returns HTTP 400 for statements that contain
+    literal 4-byte UTF-8 codepoints (U+10000+).  _payload_to_surql_content must
+    convert them to \\uXXXX\\uYYYY surrogate pair escape sequences.
+    """
+    # 🚀 = U+1F680; surrogate pair: U+D83D U+DE80
+    result = _payload_to_surql_content({"title": "\U0001f680 QUICK START"})
+    assert "\\ud83d\\ude80" in result
+    assert "\U0001f680" not in result
+
+    # 🤖 = U+1F916; surrogate pair: U+D83E U+DD16
+    result2 = _payload_to_surql_content({"title": "\U0001f916 Agent Guide"})
+    assert "\\ud83e\\udd16" in result2
+    assert "\U0001f916" not in result2
+
+
+@pytest.mark.unit
+def test_payload_to_surql_content_bmp_unicode_unchanged() -> None:
+    """BMP Unicode (U+0000–U+FFFF) must NOT be escaped, especially ⟨⟩ for record refs.
+
+    The ⟨⟩ bracket chars (U+27E8/U+27E9) must remain as literal Unicode so that
+    _SURQL_RECORD_REF_RE can match and unquote record-ref values.
+    The em dash (—, U+2014) and similar BMP chars in titles must also pass through.
+    """
+    # ⟨⟩ chars in a record ref must stay literal so the regex can match and unquote
+    result = _payload_to_surql_content({"page_ref": "doc_page:\u27e8bmp-id\u27e9"})
+    assert '"page_ref": doc_page:\u27e8bmp-id\u27e9' in result
+    assert '"page_ref": "doc_page:' not in result  # must be unquoted
+
+    # BMP non-ASCII in title (e.g. em-dash) must appear literally
+    result2 = _payload_to_surql_content({"title": "Session \u2014 2026"})
+    assert '"title": "Session \u2014 2026"' in result2
+
+
+@pytest.mark.unit
 def test_apply_create_doc_section_page_ref(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
