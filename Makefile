@@ -29,6 +29,7 @@ REPLAY_DETERMINISTIC_VERIFY ?= 1
 
 CONTEXT_SNAP_DIR ?= artifacts/context-intelligence/latest
 CONTEXT_SCOPE_CONFIG ?= infrastructure/config/surrealdb/context_ingestion_scope.yaml
+PYTHON ?= python3
 
 .PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db
 
@@ -338,11 +339,11 @@ context-restart: context-down context-up
 
 context-schema-apply:
 	@echo "=== SurrealDB Schema Apply: context_intelligence_v0 ==="
-	@python3 tools/surrealdb/local_schema_apply.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@$(PYTHON) tools/surrealdb/local_schema_apply.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 context-schema-check:
 	@echo "=== SurrealDB Schema Check: context_intelligence_v0 ==="
-	@python3 tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@$(PYTHON) tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 context-reset-local:
 	@echo "=== SurrealDB Local Reset (DESTRUKTIV - nur Context-Intelligence-Daten) ==="
@@ -354,34 +355,34 @@ context-reset-local:
 		echo "ERROR: Explicit confirmation required. Run: make context-reset-local CONFIRM=1"; \
 		exit 2; \
 	fi
-	@python3 tools/surrealdb/local_reset.py --confirm --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@$(PYTHON) tools/surrealdb/local_reset.py --confirm --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 context-scan:
 	@echo "=== Context Scan: Repo-Artefakte und Doc-Chunks (kein DB-Write) ==="
 	@mkdir -p $(CONTEXT_SNAP_DIR)
-	@python3 -m tools.surrealdb.context_indexer scan --apply-writes \
+	@$(PYTHON) -m tools.surrealdb.context_indexer scan --apply-writes \
 		--scope-config $(CONTEXT_SCOPE_CONFIG) \
 		--output $(CONTEXT_SNAP_DIR)/scan-report.json
-	@python3 -m tools.surrealdb.context_indexer export-jsonl --apply-writes \
+	@$(PYTHON) -m tools.surrealdb.context_indexer export-jsonl --apply-writes \
 		--scope-config $(CONTEXT_SCOPE_CONFIG) \
 		--output $(CONTEXT_SNAP_DIR)
 	@echo "[OK] Scan + JSONL export complete: $(CONTEXT_SNAP_DIR)"
 
 context-import-dry-run:
 	@echo "=== Context Import Dry-Run: geplante Aktionen, kein DB-Write ==="
-	@python3 -m tools.surrealdb.context_importer dry-run --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel || echo "[NOTE] Import dry-run: kein JSONL-Input — zuerst context-scan ausfuehren"
+	@$(PYTHON) -m tools.surrealdb.context_importer dry-run --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel || echo "[NOTE] Import dry-run: kein JSONL-Input — zuerst context-scan ausfuehren"
 	@echo "[OK] Import dry-run abgeschlossen (keine DB-Writes)"
 
 context-import-local:
 	@echo "=== Context Local Import: Schreiben in lokale SurrealDB ==="
-	@python3 tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
-	@python3 -m tools.surrealdb.context_importer apply --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $$(date +%Y%m%d%H%M%S) --adapter surrealdb-local --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@$(PYTHON) tools/surrealdb/local_schema_check.py --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
+	@$(PYTHON) -m tools.surrealdb.context_importer apply --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $$(date +%Y%m%d%H%M%S) --adapter surrealdb-local --secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 
 context-query-smoke:
 	@echo "=== Context Query Smoke (read-only, graceful fail wenn kein Container) ==="
-	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-snapshot 2>&1 || echo "[NOTE] show-snapshot: Container nicht laufend oder keine Daten"
-	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-drift 2>&1 || echo "[NOTE] show-drift: Container nicht laufend oder keine Daten"
-	@python3 -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml find-artifact 2>&1 || echo "[NOTE] find-artifact: Container nicht laufend oder keine Daten"
+	@$(PYTHON) -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-snapshot 2>&1 || echo "[NOTE] show-snapshot: Container nicht laufend oder keine Daten"
+	@$(PYTHON) -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml show-drift 2>&1 || echo "[NOTE] show-drift: Container nicht laufend oder keine Daten"
+	@$(PYTHON) -m tools.surrealdb.context_query --config infrastructure/config/surrealdb/context_query.local.example.yaml find-artifact 2>&1 || echo "[NOTE] find-artifact: Container nicht laufend oder keine Daten"
 	@echo "[OK] Context query smoke abgeschlossen"
 
 context-smoke:
@@ -404,23 +405,23 @@ context-smoke-db: context-env-check
 	@echo "=== Hard DB-backed Context Smoke (fail-closed) #2460 ==="
 	@echo "NOTE: Lokaler Scope nur. LR: NO-GO. Kein Echtgeld. Kein Trading-Start."
 	@echo "--- Schritt 1: Hard Schema-Check (Container + Schema, fail-closed) ---"
-	@python3 tools/surrealdb/local_schema_check.py --hard-mode \
+	@$(PYTHON) tools/surrealdb/local_schema_check.py --hard-mode \
 		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 	@echo "--- Schritt 2: Scan (Snapshot + JSONL erzeugen) ---"
 	$(MAKE) context-scan
 	@echo "--- Schritt 3: Import (echter SurrealDB-Adapter, fail-closed) ---"
-	@python3 -m tools.surrealdb.context_importer apply \
+	@$(PYTHON) -m tools.surrealdb.context_importer apply \
 		--input-dir $(CONTEXT_SNAP_DIR) \
 		--surreal-url http://127.0.0.1:8010 \
 		--namespace cdb_context_local \
 		--database cdb_context_intel \
 		--apply --apply-mode local-dev \
 		--config infrastructure/config/surrealdb/context_import.local.example.yaml \
-		--run-id $$(python3 -c "import json; print(json.load(open('$(CONTEXT_SNAP_DIR)/snapshot.json'))['run_id'])") \
+		--run-id $$($(PYTHON) -c "import json; print(json.load(open('$(CONTEXT_SNAP_DIR)/snapshot.json'))['run_id'])") \
 		--adapter surrealdb-local \
 		--secrets-path $${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb}
 	@echo "--- Schritt 4: Query-Smoke (hard, >= 1 Record, fail-closed) ---"
-	@python3 -m tools.surrealdb.context_query \
+	@$(PYTHON) -m tools.surrealdb.context_query \
 		--adapter surrealdb-local \
 		--hard-mode \
 		--min-count 1 \
