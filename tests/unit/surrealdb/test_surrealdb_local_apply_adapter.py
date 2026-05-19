@@ -943,3 +943,107 @@ def test_apply_create_non_ref_table_payload_unchanged(
     content_part = sent[0].split("CONTENT", 1)[1]
     assert '"artifact_id": "art-1"' in content_part
     assert '"source_path": "src/main.py"' in content_part
+
+
+# ---------------------------------------------------------------------------
+# dependency_edge record-ref remap (#2577 follow-up)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_apply_create_dependency_edge_with_real_tables_produces_refs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """dependency_edge with real from_table/to_table produces from_ref/to_ref (#2577)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "dependency_edge",
+        "edge-contains-1",
+        {
+            "edge_id": "edge-contains-1",
+            "edge_type": "contains",
+            "from_id": "repo_artifact:abc123",
+            "from_table": "repo_artifact",
+            "to_id": "code_symbol:def456",
+            "to_table": "code_symbol",
+            "inferred": False,
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert "from_ref" in content_part
+    assert "to_ref" in content_part
+    assert '"from_ref": repo_artifact:\u27e8repo_artifact:abc123\u27e9' in content_part
+    assert '"to_ref": code_symbol:\u27e8code_symbol:def456\u27e9' in content_part
+    assert '"from_id"' not in content_part
+    assert '"to_id"' not in content_part
+    assert '"from_table"' not in content_part
+    assert '"to_table"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_dependency_edge_virtual_to_table_omits_to_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """dependency_edge with virtual to_table (e.g. 'module') omits to_ref (#2577).
+
+    Virtual tables are not in _KNOWN_SURQL_RECORD_TABLES; the importer must not
+    produce a to_ref and must still pop from_id/to_id/from_table/to_table from
+    the payload (they are not SurrealDB schema fields).
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "dependency_edge",
+        "edge-inferred-1",
+        {
+            "edge_id": "edge-inferred-1",
+            "edge_type": "imports",
+            "from_id": "repo_artifact:src123",
+            "from_table": "repo_artifact",
+            "to_id": "module:os",
+            "to_table": "module",  # virtual — not a schema table
+            "inferred": True,
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert "from_ref" in content_part
+    assert "to_ref" not in content_part
+    assert '"to_id"' not in content_part
+    assert '"from_id"' not in content_part
+    assert '"from_table"' not in content_part
+    assert '"to_table"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_dependency_edge_no_table_fields_no_crash(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Old JSONL without from_table/to_table must not crash (#2577 backward compat)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "dependency_edge",
+        "edge-old-1",
+        {
+            "edge_id": "edge-old-1",
+            "edge_type": "contains",
+            "from_id": "repo_artifact:old123",
+            "to_id": "code_symbol:old456",
+            # no from_table / to_table
+            "inferred": False,
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # No refs produced because table information is missing
+    assert "from_ref" not in content_part
+    assert "to_ref" not in content_part
+    # ID fields must still be popped (they are not schema fields)
+    assert '"from_id"' not in content_part
+    assert '"to_id"' not in content_part

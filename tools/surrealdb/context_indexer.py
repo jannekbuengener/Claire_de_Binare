@@ -568,6 +568,12 @@ class DependencyEdge:
     source_path: str | None
     confidence: str
     inferred: bool
+    # SurrealDB table names for from_id/to_id endpoints.  Empty string means
+    # the target is a virtual/inferred node (e.g. "module", "symbol_mention")
+    # that has no corresponding SurrealDB table; the importer skips record-ref
+    # construction for those endpoints.
+    from_table: str = ""
+    to_table: str = ""
 
     def to_payload(self, run_id: str) -> dict[str, Any]:
         return {
@@ -577,6 +583,8 @@ class DependencyEdge:
             "from_id": self.from_id,
             "to_id": self.to_id,
             "edge_type": self.edge_type,
+            "from_table": self.from_table,
+            "to_table": self.to_table,
             "source_path": self.source_path,
             "confidence": {"high": 1.0, "medium": 0.7, "low": 0.3}.get(self.confidence, 1.0),
             "evidence_level": "inferred",
@@ -1633,6 +1641,8 @@ def derive_dependency_edges(
                 source_path=symbol.source_path,
                 confidence="high",
                 inferred=False,
+                from_table="repo_artifact",
+                to_table="code_symbol",
             )
         )
 
@@ -1720,6 +1730,8 @@ def derive_dependency_edges(
                     source_path=imp_ref.source_path,
                     confidence="high",
                     inferred=False,
+                    from_table="repo_artifact",
+                    to_table="repo_artifact",
                 )
             )
         else:
@@ -1738,6 +1750,8 @@ def derive_dependency_edges(
                     source_path=imp_ref.source_path,
                     confidence="high",
                     inferred=True,
+                    from_table="repo_artifact",
+                    to_table="module",
                 )
             )
 
@@ -1762,6 +1776,8 @@ def derive_dependency_edges(
                     source_path=link.source_path,
                     confidence="high",
                     inferred=False,
+                    from_table="repo_artifact",
+                    to_table="code_symbol",
                 )
             )
         else:
@@ -1780,6 +1796,8 @@ def derive_dependency_edges(
                     source_path=link.source_path,
                     confidence="high",
                     inferred=True,
+                    from_table="repo_artifact",
+                    to_table="symbol_mention",
                 )
             )
 

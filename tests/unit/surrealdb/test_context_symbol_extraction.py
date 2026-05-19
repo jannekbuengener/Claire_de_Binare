@@ -481,6 +481,8 @@ def test_derive_dependency_edges_contains() -> None:
     for edge in contains_edges:
         assert edge.from_id == artifact.artifact_id
         assert edge.inferred is False
+        assert edge.from_table == "repo_artifact"
+        assert edge.to_table == "code_symbol"
 
 
 @pytest.mark.unit
@@ -501,6 +503,8 @@ def test_derive_dependency_edges_imports_resolved() -> None:
     assert import_edges[0].from_id == src_artifact.artifact_id
     assert import_edges[0].to_id == target_artifact.artifact_id
     assert import_edges[0].inferred is False
+    assert import_edges[0].from_table == "repo_artifact"
+    assert import_edges[0].to_table == "repo_artifact"
 
 
 @pytest.mark.unit
@@ -513,9 +517,8 @@ def test_derive_dependency_edges_imports_inferred_when_not_resolved() -> None:
     import_edges = [e for e in edges if e.edge_type == "imports"]
     assert len(import_edges) == 1
     assert import_edges[0].inferred is True
-
-
-# ---------------------------------------------------------------------------
+    assert import_edges[0].from_table == "repo_artifact"
+    assert import_edges[0].to_table == "module"
 # Absolute import submodule resolution (Codex review fix — #2062 addendum P1)
 # ---------------------------------------------------------------------------
 
@@ -736,6 +739,8 @@ def test_derive_dependency_edges_documents_resolved() -> None:
     assert all(e.inferred is False for e in doc_edges)
     tf_sym = next(s for s in symbols if s.qualified_name == "top_level_function")
     assert any(e.to_id == tf_sym.symbol_id for e in doc_edges)
+    assert all(e.from_table == "repo_artifact" for e in doc_edges)
+    assert all(e.to_table == "code_symbol" for e in doc_edges)
 
 
 @pytest.mark.unit
@@ -748,9 +753,27 @@ def test_derive_dependency_edges_mentions_unresolved() -> None:
     mentions_edges = [e for e in edges if e.edge_type == "mentions"]
     assert len(mentions_edges) == 1
     assert mentions_edges[0].inferred is True
+    assert mentions_edges[0].from_table == "repo_artifact"
+    assert mentions_edges[0].to_table == "symbol_mention"
 
 
-# ---------------------------------------------------------------------------
+@pytest.mark.unit
+def test_dependency_edge_to_payload_includes_from_to_table() -> None:
+    """to_payload() must emit from_table/to_table for importer record-ref remap."""
+    artifact = _make_artifact("services/svc.py")
+    symbols, _ = extract_code_symbols(artifact, _PYTHON_SAMPLE)
+    edges = derive_dependency_edges([artifact], symbols, [], [])
+
+    contains_edges = [e for e in edges if e.edge_type == "contains"]
+    assert contains_edges, "expected at least one contains edge"
+    payload = contains_edges[0].to_payload("run-test")
+    assert payload["from_table"] == "repo_artifact"
+    assert payload["to_table"] == "code_symbol"
+    assert "from_id" in payload
+    assert "to_id" in payload
+
+
+
 # Issue #2063: JSONL export extension
 # ---------------------------------------------------------------------------
 

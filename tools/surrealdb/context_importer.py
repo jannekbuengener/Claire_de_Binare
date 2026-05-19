@@ -438,21 +438,31 @@ _SURQL_DATETIME_RE: re.Pattern[str] = re.compile(
     + r')":\s*"(\d{4}-\d{2}-\d{2}T[^"]+Z)"'
 )
 
+# SurrealDB table names that have a real schema table (from TABLE_BY_ARTIFACT).
+# Used by _remap_record_refs_for_db_payload to gate dependency_edge ref building:
+# virtual nodes (e.g. "module", "symbol_mention") are absent and refs are skipped.
+_KNOWN_SURQL_RECORD_TABLES: frozenset[str] = frozenset(TABLE_BY_ARTIFACT.values())
+
 # Record-ref field names that must be written as unquoted SurrealDB record refs
-# rather than plain JSON strings.  doc_section.page_ref and doc_chunk.page_ref /
-# section_ref are in scope for this slice; dependency_edge.from_ref/to_ref require
-# indexer table-qualification and are handled in a separate follow-up slice.
-_SURQL_RECORD_REF_FIELDS: frozenset[str] = frozenset({"page_ref", "section_ref"})
+# rather than plain JSON strings.
+_SURQL_RECORD_REF_FIELDS: frozenset[str] = frozenset(
+    {"from_ref", "page_ref", "section_ref", "to_ref"}
+)
 # Matches the JSON-serialised form of a record-ref value produced by
 # _remap_record_refs_for_db_payload after json.dumps(..., ensure_ascii=False).
 # ensure_ascii=False is required so that U+27E8/U+27E9 (⟨⟩) appear as literal
 # Unicode chars in the JSON output and can be matched by this pattern.
 # Example input:  "page_ref": "doc_page:⟨page-example⟩"
 # Capture groups: (1) field name, (2) table:⟨id⟩  (without quotes)
+# Table prefix alternation is derived from _KNOWN_SURQL_RECORD_TABLES so that
+# doc_page/doc_section (existing) and repo_artifact/code_symbol (dependency_edge)
+# are all covered without hardcoding.
 _SURQL_RECORD_REF_RE: re.Pattern[str] = re.compile(
     '"('
     + "|".join(sorted(_SURQL_RECORD_REF_FIELDS))
-    + ')":\\s*"((?:doc_page|doc_section):\u27e8[^\u27e9]+\u27e9)"'
+    + ')":\\s*"((?:'
+    + "|".join(sorted(_KNOWN_SURQL_RECORD_TABLES))
+    + '):\u27e8[^\u27e9]+\u27e9)"'
 )
 
 # Maps SurrealDB table name → [(src_field, dst_field, target_table), ...]
@@ -478,25 +488,46 @@ def _remap_record_refs_for_db_payload(
     For tables listed in ``_TABLE_RECORD_REF_REMAP``, pops the source field
     (e.g. ``page_id``) and inserts the destination field (e.g. ``page_ref``)
     with a record-ref string in the form ``"doc_page:\u27e8<id>\u27e9"``.
+
+    For ``dependency_edge`` the source and target tables are dynamic and come
+    from ``from_table``/``to_table`` payload fields emitted by the indexer.
+    Both ``from_id``/``to_id`` and ``from_table``/``to_table`` are always
+    popped from the DB payload (they are not SurrealDB schema fields).  If
+    ``from_table``/``to_table`` name a real schema table (present in
+    ``_KNOWN_SURQL_RECORD_TABLES``) the corresponding ``from_ref``/``to_ref``
+    record-ref is built; otherwise the field is omitted and SurrealDB's own
+    ``TYPE record`` constraint will surface the gap.  Virtual/inferred nodes
+    (``module``, ``symbol_mention``) fall into this category — edges that
+    target them continue to fail import the same as before this change.
+
     The ref string is later unquoted by ``_payload_to_surql_content`` via
     ``_SURQL_RECORD_REF_RE``, producing a valid SurrealDB ``TYPE record`` value.
-
-    If a required source ID is absent or not a non-empty string the mapping is
-    skipped for that field; downstream SurrealDB ``TYPE record`` validation will
-    surface the missing ref rather than having the importer silently guess.
 
     All other tables are returned unchanged (no-op).
     """
     mappings = _TABLE_RECORD_REF_REMAP.get(table)
-    if not mappings:
-        return payload
-    result = dict(payload)
-    for src_field, dst_field, target_table in mappings:
-        raw_id = result.pop(src_field, None)
-        if raw_id and isinstance(raw_id, str):
-            escaped = raw_id.replace("\u27e9", "\\u27e9")
-            result[dst_field] = f"{target_table}:\u27e8{escaped}\u27e9"
-    return result
+    if mappings is not None:
+        result = dict(payload)
+        for src_field, dst_field, target_table in mappings:
+            raw_id = result.pop(src_field, None)
+            if raw_id and isinstance(raw_id, str):
+                escaped = raw_id.replace("\u27e9", "\\u27e9")
+                result[dst_field] = f"{target_table}:\u27e8{escaped}\u27e9"
+        return result
+    if table == "dependency_edge":
+        result = dict(payload)
+        from_table = result.pop("from_table", None)
+        to_table = result.pop("to_table", None)
+        from_id = result.pop("from_id", None)
+        to_id = result.pop("to_id", None)
+        if from_table in _KNOWN_SURQL_RECORD_TABLES and from_id and isinstance(from_id, str):
+            escaped = from_id.replace("\u27e9", "\\u27e9")
+            result["from_ref"] = f"{from_table}:\u27e8{escaped}\u27e9"
+        if to_table in _KNOWN_SURQL_RECORD_TABLES and to_id and isinstance(to_id, str):
+            escaped = to_id.replace("\u27e9", "\\u27e9")
+            result["to_ref"] = f"{to_table}:\u27e8{escaped}\u27e9"
+        return result
+    return payload
 
 
 def _payload_to_surql_content(payload: dict[str, Any]) -> str:
