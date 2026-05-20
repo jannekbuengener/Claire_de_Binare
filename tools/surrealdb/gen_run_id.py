@@ -19,16 +19,16 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import datetime
+import time
 from pathlib import Path
 
 
 def _timestamp_run_id() -> str:
     """Return YYYYMMDDHHMMSS using f-string formatting (no % chars)."""
-    now = datetime.now()
+    t = time.localtime()
     return (
-        f"{now.year:04d}{now.month:02d}{now.day:02d}"
-        f"{now.hour:02d}{now.minute:02d}{now.second:02d}"
+        f"{t.tm_year:04d}{t.tm_mon:02d}{t.tm_mday:02d}"
+        f"{t.tm_hour:02d}{t.tm_min:02d}{t.tm_sec:02d}"
     )
 
 
