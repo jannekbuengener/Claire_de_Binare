@@ -1449,3 +1449,73 @@ def test_apply_create_dependency_edge_no_table_fields_no_crash(
     # ID fields must still be popped (they are not schema fields)
     assert '"from_id"' not in content_part
     assert '"to_id"' not in content_part
+
+
+# ---------------------------------------------------------------------------
+# dependency_edge source_path → source_ref remap (#2585)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_apply_create_dependency_edge_source_path_remapped_to_source_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """source_path in dep_edge payload must be remapped to source_ref (#2585).
+
+    The indexer emits source_path; the schema declares source_ref TYPE string.
+    _remap_record_refs_for_db_payload must rename the field so SurrealDB's
+    SCHEMAFULL constraint is satisfied and the undeclared source_path key is removed.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "dependency_edge",
+        "edge-src-ref-1",
+        {
+            "edge_id": "edge-src-ref-1",
+            "edge_type": "contains",
+            "from_id": "repo_artifact:abc123",
+            "from_table": "repo_artifact",
+            "to_id": "code_symbol:def456",
+            "to_table": "code_symbol",
+            "source_path": "docs/live-readiness/LR-007.md",
+            "inferred": False,
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"source_ref": "docs/live-readiness/LR-007.md"' in content_part
+    assert '"source_path"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_dependency_edge_source_path_absent_when_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """dep_edge without source_path must not have source_path in DB payload (#2585).
+
+    When source_path is absent the conditional remap is skipped entirely, so
+    source_path must not appear in the CONTENT. An existing source_ref (if any)
+    is preserved unchanged.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "dependency_edge",
+        "edge-no-src-1",
+        {
+            "edge_id": "edge-no-src-1",
+            "edge_type": "contains",
+            "from_id": "repo_artifact:abc123",
+            "from_table": "repo_artifact",
+            "to_id": "code_symbol:def456",
+            "to_table": "code_symbol",
+            "inferred": False,
+            # no source_path
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"source_path"' not in content_part

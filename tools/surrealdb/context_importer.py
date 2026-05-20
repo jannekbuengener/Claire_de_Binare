@@ -572,6 +572,10 @@ def _remap_record_refs_for_db_payload(
         if to_table in _KNOWN_SURQL_RECORD_TABLES and to_id and isinstance(to_id, str):
             escaped = to_id.replace("\u27e9", "\\u27e9")
             result["to_ref"] = f"{to_table}:\u27e8{escaped}\u27e9"
+        # Remap indexer field name to schema field name (source_path → source_ref).
+        # Only remap when source_path is present so an existing source_ref is not clobbered.
+        if "source_path" in result:
+            result["source_ref"] = result.pop("source_path")
         return result
     # For tables not covered above, apply any declared field stripping.
     extra_strip = _TABLE_DB_EXTRA_STRIP_FIELDS.get(table)
@@ -2975,6 +2979,17 @@ def build_import_plan(
             else:
                 action = "create"
                 reason = "validated JSONL record; DB-independent candidate create"
+                # Defer dependency_edge records whose to_table is a virtual node type
+                # (not a real SurrealDB table). These cannot have a to_ref built and
+                # would always fail DB writes with a schema constraint error.
+                if table == "dependency_edge":
+                    to_table_val = record.get("to_table")
+                    if to_table_val and to_table_val not in _KNOWN_SURQL_RECORD_TABLES:
+                        action = "skip"
+                        reason = (
+                            f"deferred_virtual_target: to_table '{to_table_val}' "
+                            "has no real SurrealDB record table"
+                        )
                 seen_record_ids.add(record_id)
             actions.append(
                 ImportPlanAction(

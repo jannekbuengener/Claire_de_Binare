@@ -412,3 +412,73 @@ def test_import_order_ends_with_wave14_in_dependency_order(tmp_path: Path, capsy
         "decision_event",
         "agent_memory",
     ]
+
+
+# ---------------------------------------------------------------------------
+# dependency_edge virtual-target skip (#2585)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_plan_dependency_edge_virtual_to_table_skipped(
+    tmp_path: Path, capsys
+) -> None:
+    """dep_edge with virtual to_table must produce action=skip, not create (#2585).
+
+    symbol_mention and similar virtual node types have no real SurrealDB table.
+    Attempting a DB write for such edges always fails with a schema constraint error.
+    The plan must mark them as skip with reason containing 'deferred_virtual_target'.
+    """
+    records = _valid_records()
+    records["dependency_edges"] = [
+        _base_record(
+            edge_id="edge-virtual-1",
+            from_id="repo_artifact:abc123",
+            to_id="symbol_mention:def456",
+            edge_type="mentions",
+            from_table="repo_artifact",
+            to_table="symbol_mention",  # virtual — not a real SurrealDB table
+        )
+    ]
+    for artifact, items in records.items():
+        _write_jsonl(tmp_path, artifact, items)
+
+    assert main(["plan", "--input-dir", str(tmp_path)]) == EXIT_OK
+    payload = _read_json(capsys)
+
+    dep_actions = [a for a in payload["actions"] if a["table"] == "dependency_edge"]
+    assert len(dep_actions) == 1
+    assert dep_actions[0]["action"] == "skip"
+    assert "deferred_virtual_target" in dep_actions[0]["reason"]
+    assert "symbol_mention" in dep_actions[0]["reason"]
+
+
+@pytest.mark.unit
+def test_plan_dependency_edge_real_to_table_creates(
+    tmp_path: Path, capsys
+) -> None:
+    """dep_edge with a real to_table must produce action=create, not skip (#2585).
+
+    When both from_table and to_table are real SurrealDB tables, the edge is
+    importable and must be planned as a create action.
+    """
+    records = _valid_records()
+    records["dependency_edges"] = [
+        _base_record(
+            edge_id="edge-real-1",
+            from_id="repo_artifact:abc123",
+            to_id="code_symbol:def456",
+            edge_type="contains",
+            from_table="repo_artifact",
+            to_table="code_symbol",  # real table
+        )
+    ]
+    for artifact, items in records.items():
+        _write_jsonl(tmp_path, artifact, items)
+
+    assert main(["plan", "--input-dir", str(tmp_path)]) == EXIT_OK
+    payload = _read_json(capsys)
+
+    dep_actions = [a for a in payload["actions"] if a["table"] == "dependency_edge"]
+    assert len(dep_actions) == 1
+    assert dep_actions[0]["action"] == "create"
