@@ -983,6 +983,251 @@ def test_apply_create_non_ref_table_payload_unchanged(
 
 
 # ---------------------------------------------------------------------------
+# SCHEMAFULL extra-field stripping (#2584)
+# doc_section: section_level, source_path
+# doc_chunk:   source_path, heading_path, previous_chunk_id, next_chunk_id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_apply_create_doc_section_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create for doc_section strips section_level and source_path (#2584).
+
+    Both fields are emitted by the indexer but not declared in the SCHEMAFULL
+    schema (context_intelligence_v0.surql).  They must be absent from the SQL
+    CONTENT so SurrealDB does not reject the statement.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "doc_section",
+        "section-strip-test",
+        {
+            "section_id": "section-strip-test",
+            "page_id": "page-1",
+            "heading": "Overview",
+            "heading_path": ["Overview"],
+            "section_level": 1,
+            "section_index": 0,
+            "span_start_line": 1,
+            "span_end_line": 10,
+            "source_hash": "abc123",
+            "source_path": "docs/example.md",
+            "confidence": 1.0,
+            "comment": "",
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Schema-declared fields must be present
+    assert '"section_id": "section-strip-test"' in content_part
+    assert '"page_ref": doc_page:\u27e8page-1\u27e9' in content_part
+    assert '"heading": "Overview"' in content_part
+    assert '"heading_path"' in content_part
+    # Extra fields not in schema must be absent
+    assert '"section_level"' not in content_part
+    assert '"source_path"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_create_doc_chunk_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create for doc_chunk strips source_path, heading_path, previous/next_chunk_id (#2584).
+
+    All four fields are emitted by the indexer but not declared in the SCHEMAFULL
+    schema for doc_chunk.  They must be absent from the SQL CONTENT.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "doc_chunk",
+        "chunk-strip-test",
+        {
+            "chunk_id": "chunk-strip-test",
+            "page_id": "page-1",
+            "section_id": "section-1",
+            "source_path": "docs/example.md",
+            "source_hash": "abc123",
+            "heading_path": ["Overview"],
+            "chunk_index": 0,
+            "previous_chunk_id": None,
+            "next_chunk_id": "chunk-2",
+            "content": "some content",
+            "content_hash": "def456",
+            "tokens_estimate": 10,
+            "confidence": 1.0,
+            "comment": "",
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Schema-declared fields must be present
+    assert '"chunk_id": "chunk-strip-test"' in content_part
+    assert '"page_ref": doc_page:\u27e8page-1\u27e9' in content_part
+    assert '"section_ref": doc_section:\u27e8section-1\u27e9' in content_part
+    assert '"content": "some content"' in content_part
+    assert '"tokens_estimate": 10' in content_part
+    # Extra fields not in doc_chunk schema must be absent
+    assert '"source_path"' not in content_part
+    assert '"heading_path"' not in content_part
+    assert '"previous_chunk_id"' not in content_part
+    assert '"next_chunk_id"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_update_doc_section_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_update for doc_section also strips section_level and source_path (#2584)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_update(
+        "doc_section",
+        "section-upd-strip",
+        {
+            "section_id": "section-upd-strip",
+            "page_id": "page-2",
+            "heading": "Intro",
+            "section_level": 2,
+            "source_path": "docs/intro.md",
+            "source_hash": "hash1",
+            "confidence": 1.0,
+            "comment": "",
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"page_ref": doc_page:\u27e8page-2\u27e9' in content_part
+    assert '"section_level"' not in content_part
+    assert '"source_path"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_update_doc_chunk_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_update for doc_chunk also strips all four extra fields (#2584)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_update(
+        "doc_chunk",
+        "chunk-upd-strip",
+        {
+            "chunk_id": "chunk-upd-strip",
+            "page_id": "page-2",
+            "section_id": "section-2",
+            "source_path": "docs/intro.md",
+            "heading_path": ["Intro"],
+            "previous_chunk_id": "chunk-0",
+            "next_chunk_id": "chunk-upd-strip-next",
+            "content": "updated content",
+            "content_hash": "ghi789",
+            "tokens_estimate": 5,
+            "source_hash": "hash2",
+            "confidence": 1.0,
+            "comment": "",
+        },
+    )
+
+    content_part = sent[0].split("CONTENT", 1)[1]
+    assert '"page_ref": doc_page:\u27e8page-2\u27e9' in content_part
+    assert '"section_ref": doc_section:\u27e8section-2\u27e9' in content_part
+    assert '"source_path"' not in content_part
+    assert '"heading_path"' not in content_part
+    assert '"previous_chunk_id"' not in content_part
+    assert '"next_chunk_id"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_tombstone_doc_section_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_tombstone for doc_section strips section_level and source_path (#2584).
+
+    Tombstone payloads preserve prior domain fields; the extra SCHEMAFULL-
+    incompatible fields must still be absent from the DB write.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    payload = {
+        TOMBSTONE_FIELD_FLAG: True,
+        TOMBSTONE_FIELD_AT: "2026-05-20T12:00:00Z",
+        TOMBSTONE_FIELD_REASON: "record_removed_from_snapshot",
+        TOMBSTONE_FIELD_LAST_SEEN_RUN_ID: "run-1",
+        TOMBSTONE_FIELD_SUPERSEDED_BY: None,
+        # Prior domain fields including non-schema extras
+        "section_id": "section-ts-strip",
+        "heading": "Gone",
+        "section_level": 1,
+        "source_path": "docs/gone.md",
+        "source_hash": "ts-hash",
+        "confidence": 1.0,
+        "comment": "",
+    }
+
+    adapter.apply_tombstone("doc_section", "section-ts-strip", payload)
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Domain fields that ARE in the schema must be preserved
+    assert '"section_id": "section-ts-strip"' in content_part
+    assert '"heading": "Gone"' in content_part
+    # Extra non-schema fields must be stripped
+    assert '"section_level"' not in content_part
+    assert '"source_path"' not in content_part
+
+
+@pytest.mark.unit
+def test_apply_tombstone_doc_chunk_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_tombstone for doc_chunk strips all four extra fields (#2584)."""
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    payload = {
+        TOMBSTONE_FIELD_FLAG: True,
+        TOMBSTONE_FIELD_AT: "2026-05-20T12:00:00Z",
+        TOMBSTONE_FIELD_REASON: "record_removed_from_snapshot",
+        TOMBSTONE_FIELD_LAST_SEEN_RUN_ID: "run-1",
+        TOMBSTONE_FIELD_SUPERSEDED_BY: None,
+        # Prior domain fields including non-schema extras
+        "chunk_id": "chunk-ts-strip",
+        "content": "old content",
+        "source_path": "docs/old.md",
+        "heading_path": ["Old"],
+        "previous_chunk_id": "chunk-prev",
+        "next_chunk_id": "chunk-next",
+        "source_hash": "ts-hash",
+        "confidence": 1.0,
+        "comment": "",
+    }
+
+    adapter.apply_tombstone("doc_chunk", "chunk-ts-strip", payload)
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Domain fields that ARE in the schema must be preserved
+    assert '"chunk_id": "chunk-ts-strip"' in content_part
+    assert '"content": "old content"' in content_part
+    # Extra non-schema fields must be stripped
+    assert '"source_path"' not in content_part
+    assert '"heading_path"' not in content_part
+    assert '"previous_chunk_id"' not in content_part
+    assert '"next_chunk_id"' not in content_part
+
+
+# ---------------------------------------------------------------------------
 # dependency_edge record-ref remap (#2577 follow-up)
 # ---------------------------------------------------------------------------
 

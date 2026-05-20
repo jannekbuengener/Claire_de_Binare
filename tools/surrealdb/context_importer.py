@@ -495,6 +495,30 @@ _TABLE_RECORD_REF_REMAP: dict[str, list[tuple[str, str, str]]] = {
     ],
 }
 
+# Fields present in the indexer JSONL payload that are NOT declared in any
+# SCHEMAFULL table schema (context_intelligence_v0.surql).  Stripped from the
+# DB-write payload for create/update/tombstone operations so that SurrealDB v2
+# SCHEMAFULL tables do not reject the statement with "Found field '...', but no
+# such field exists for table '...'".
+# The JSONL export contract and REQUIRED_JSONL_FIELDS are NOT changed; stripping
+# happens only at DB-write time inside _remap_record_refs_for_db_payload and
+# apply_tombstone.
+_TABLE_DB_EXTRA_STRIP_FIELDS: dict[str, frozenset[str]] = {
+    # section_level: derivable from len(heading_path); not in schema.
+    # source_path: accessible via page_ref -> doc_page; redundant in DB.
+    "doc_section": frozenset({"section_level", "source_path"}),
+    # source_path: accessible via page_ref -> doc_page; redundant in DB.
+    # heading_path: not declared in doc_chunk schema (only in doc_section).
+    # previous_chunk_id / next_chunk_id: navigation hints; no TYPE record
+    #   declaration in v0 schema; stripped until a reviewed schema extension.
+    "doc_chunk": frozenset({
+        "source_path",
+        "heading_path",
+        "previous_chunk_id",
+        "next_chunk_id",
+    }),
+}
+
 
 def _remap_record_refs_for_db_payload(
     table: str, payload: dict[str, Any]
@@ -529,6 +553,10 @@ def _remap_record_refs_for_db_payload(
             if raw_id and isinstance(raw_id, str):
                 escaped = raw_id.replace("\u27e9", "\\u27e9")
                 result[dst_field] = f"{target_table}:\u27e8{escaped}\u27e9"
+        # Strip SCHEMAFULL-incompatible extra fields that the indexer emits but
+        # that are not declared in context_intelligence_v0.surql for this table.
+        for field in _TABLE_DB_EXTRA_STRIP_FIELDS.get(table, frozenset()):
+            result.pop(field, None)
         return result
     if table == "dependency_edge":
         result = dict(payload)
@@ -1456,7 +1484,10 @@ class SurrealDBLocalContextApplyAdapter:
         _meta = TOMBSTONE_REQUIRED_FIELDS | frozenset(
             {"table", "record_id", "run_id", "payload_hash"}
         )
-        domain_payload = {k: v for k, v in payload.items() if k not in _meta}
+        _extra = _TABLE_DB_EXTRA_STRIP_FIELDS.get(table, frozenset())
+        domain_payload = {
+            k: v for k, v in payload.items() if k not in _meta and k not in _extra
+        }
         rid = self._surql_record_id(table, record_id)
         payload_json = _payload_to_surql_content(domain_payload)
         sql = f"UPSERT {rid} CONTENT {payload_json};"
