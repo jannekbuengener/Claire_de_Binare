@@ -32,6 +32,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 _MAKEFILE = Path(__file__).parents[3] / "Makefile"
+_GEN_RUN_ID = Path(__file__).parents[3] / "tools" / "surrealdb" / "gen_run_id.py"
 _EXAMPLE_QUERY_CONFIG = Path(
     "infrastructure/config/surrealdb/context_query.local.example.yaml"
 )
@@ -295,3 +296,152 @@ def test_makefile_context_smoke_db_uses_min_count() -> None:
     assert (
         "--min-count" in recipe_text
     ), "--min-count not found in context-smoke-db recipe (query step)"
+
+
+# ===========================================================================
+# Windows-compatibility contract tests (#2587)
+# ===========================================================================
+
+# ---------------------------------------------------------------------------
+# 11. Makefile: no POSIX ${SECRETS_PATH:-...} in affected context targets
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_no_posix_secrets_path_expansion() -> None:
+    """No POSIX parameter-expansion default syntax in context smoke targets (#2587)."""
+    content = _read_makefile()
+    posix_pattern = "${SECRETS_PATH:-"
+    targets = [
+        "context-schema-apply",
+        "context-schema-check",
+        "context-import-local",
+        "context-smoke-db",
+    ]
+    for target in targets:
+        recipe = _lines_for_target(content, target)
+        recipe_text = "\n".join(recipe)
+        assert posix_pattern not in recipe_text, (
+            f"POSIX secrets-path expansion '{posix_pattern}' still present in "
+            f"'{target}' recipe — breaks cmd.exe"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 12. Makefile: SECRETS_PATH Make variable defined in preamble
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_secrets_path_make_variable_defined() -> None:
+    """SECRETS_PATH must be defined as a Make variable (not shell expansion) (#2587)."""
+    content = _read_makefile()
+    assert "SECRETS_PATH ?=" in content, (
+        "SECRETS_PATH Make variable not found — required for Windows cmd.exe compat"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 13. Makefile: context-scan uses Python pathlib, not mkdir -p
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_context_scan_no_mkdir_p() -> None:
+    """context-scan must not use 'mkdir -p' (POSIX only) (#2587)."""
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-scan")
+    assert recipe, "context-scan target has no recipe lines"
+    recipe_text = "\n".join(recipe)
+    assert "mkdir -p" not in recipe_text, (
+        "'mkdir -p' found in context-scan recipe — use Python pathlib instead"
+    )
+    assert "pathlib" in recipe_text, (
+        "Python pathlib not found in context-scan recipe — needed to replace mkdir -p"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 14. Makefile: context-smoke-db uses gen_run_id.py for run-id
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_context_smoke_db_run_id_uses_gen_run_id() -> None:
+    """context-smoke-db must use gen_run_id.py for run-id, not shell command substitution (#2587)."""
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-smoke-db")
+    recipe_text = "\n".join(recipe)
+    assert "gen_run_id.py" in recipe_text, (
+        "gen_run_id.py not found in context-smoke-db recipe — required for Windows compat"
+    )
+    assert "$$($(PYTHON)" not in recipe_text, (
+        "Shell command substitution '$$($(PYTHON) -c ...)' still present in "
+        "context-smoke-db — breaks cmd.exe"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 15. Makefile: context-import-local uses gen_run_id.py, not $(date ...)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_context_import_local_no_posix_date() -> None:
+    """context-import-local must not use '$(date ...)' (POSIX only) (#2587)."""
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-import-local")
+    assert recipe, "context-import-local target has no recipe lines"
+    recipe_text = "\n".join(recipe)
+    assert "$(date " not in recipe_text, (
+        "'$(date ...)' found in context-import-local recipe — 'date' not in cmd.exe"
+    )
+    assert "gen_run_id.py" in recipe_text, (
+        "gen_run_id.py not found in context-import-local recipe — needed to replace $(date)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 16–17. gen_run_id.py unit tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_gen_run_id_file_exists() -> None:
+    """tools/surrealdb/gen_run_id.py must exist (#2587)."""
+    assert _GEN_RUN_ID.exists(), f"gen_run_id.py not found at {_GEN_RUN_ID}"
+
+
+@pytest.mark.unit
+def test_gen_run_id_generates_timestamp_without_args() -> None:
+    """gen_run_id with no args must return a 14-digit YYYYMMDDHHMMSS string (#2587)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("gen_run_id", _GEN_RUN_ID)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+
+    result = mod._timestamp_run_id()
+    assert result.isdigit(), f"Expected all-digits timestamp, got: {result!r}"
+    assert len(result) == 14, f"Expected 14-digit timestamp YYYYMMDDHHMMSS, got: {result!r}"
+    # No % characters (cmd.exe safety)
+    assert "%" not in result, f"Timestamp contains '%' character: {result!r}"
+
+
+@pytest.mark.unit
+def test_gen_run_id_reads_run_id_from_snapshot(tmp_path: Path) -> None:
+    """gen_run_id with a snapshot.json arg must return run_id from that file (#2587)."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("gen_run_id", _GEN_RUN_ID)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+
+    snapshot = tmp_path / "snapshot.json"
+    snapshot.write_text(
+        json.dumps({"run_id": "20260520120000", "scope": "smoke"}), encoding="utf-8"
+    )
+    result = mod._run_id_from_snapshot(str(snapshot))
+    assert result == "20260520120000", f"Unexpected run_id: {result!r}"
