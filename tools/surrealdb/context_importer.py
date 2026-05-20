@@ -467,18 +467,14 @@ _SURQL_RECORD_REF_RE: re.Pattern[str] = re.compile(
 
 # Supplementary-plane Unicode characters (U+10000–U+10FFFF, e.g. emoji) are encoded
 # as 4-byte UTF-8 sequences when json.dumps(..., ensure_ascii=False) is used.
-# SurrealDB's HTTP /sql endpoint returns HTTP 400 for statements that contain literal
-# 4-byte UTF-8 code points in string values (confirmed by all 9 doc_page failures in
-# import-run10.json — every failing title contains emoji; all 593 passing ones do not).
+# SurrealDB 3.0.4's HTTP /sql endpoint accepts literal UTF-8 supplementary-plane code
+# points (U+10000–U+10FFFF, e.g. emoji) in string values.  It explicitly REJECTS the
+# JSON surrogate-pair escape notation (\uD83D\uDE80); the parser returns HTTP 400 with
+# "Parse error: String contains invalid escape sequence, unicode escape character is not
+# a valid unicode character."  Therefore literal UTF-8 (ensure_ascii=False) is the
+# correct serialisation and no supplementary-Unicode escaping is applied.
 # BMP characters (U+0000–U+FFFF), including the ⟨⟩ bracket chars used for record refs,
-# are not affected and must remain as literal Unicode for _SURQL_RECORD_REF_RE to match.
-_SUPPLEMENTARY_UNICODE_RE: re.Pattern[str] = re.compile(r"[\U00010000-\U0010FFFF]")
-
-
-def _escape_supplementary(m: re.Match[str]) -> str:
-    """Convert a supplementary-plane code point to a JSON \\uXXXX\\uYYYY surrogate pair."""
-    cp = ord(m.group()) - 0x10000
-    return f"\\u{0xD800 | (cp >> 10):04x}\\u{0xDC00 | (cp & 0x3FF):04x}"
+# remain as literal Unicode so that _SURQL_RECORD_REF_RE can match them.
 
 
 # Maps SurrealDB table name → [(src_field, dst_field, target_table), ...]
@@ -504,6 +500,10 @@ _TABLE_RECORD_REF_REMAP: dict[str, list[tuple[str, str, str]]] = {
 # happens only at DB-write time inside _remap_record_refs_for_db_payload and
 # apply_tombstone.
 _TABLE_DB_EXTRA_STRIP_FIELDS: dict[str, frozenset[str]] = {
+    # schema_version / run_id / sensitivity: indexer pipeline metadata emitted by
+    # context_indexer.py but not declared in the doc_page schema.  Stripped at
+    # DB-write time to avoid SCHEMAFULL rejection.
+    "doc_page": frozenset({"schema_version", "run_id", "sensitivity"}),
     # section_level: derivable from len(heading_path); not in schema.
     # source_path: accessible via page_ref -> doc_page; redundant in DB.
     "doc_section": frozenset({"section_level", "source_path"}),
@@ -543,7 +543,9 @@ def _remap_record_refs_for_db_payload(
     The ref string is later unquoted by ``_payload_to_surql_content`` via
     ``_SURQL_RECORD_REF_RE``, producing a valid SurrealDB ``TYPE record`` value.
 
-    All other tables are returned unchanged (no-op).
+    For any table listed in ``_TABLE_DB_EXTRA_STRIP_FIELDS``, the named fields
+    are stripped from the payload before returning so that SCHEMAFULL tables do
+    not reject the DB write.  All other tables are returned unchanged.
     """
     mappings = _TABLE_RECORD_REF_REMAP.get(table)
     if mappings is not None:
@@ -571,6 +573,10 @@ def _remap_record_refs_for_db_payload(
             escaped = to_id.replace("\u27e9", "\\u27e9")
             result["to_ref"] = f"{to_table}:\u27e8{escaped}\u27e9"
         return result
+    # For tables not covered above, apply any declared field stripping.
+    extra_strip = _TABLE_DB_EXTRA_STRIP_FIELDS.get(table)
+    if extra_strip:
+        return {k: v for k, v in payload.items() if k not in extra_strip}
     return payload
 
 
@@ -580,16 +586,15 @@ def _payload_to_surql_content(payload: dict[str, Any]) -> str:
     Behaves like ``json.dumps(payload, ensure_ascii=False, sort_keys=True)``
     but additionally:
 
-    - escapes supplementary-plane Unicode code points (U+10000–U+10FFFF,
-      e.g. emoji in ``title`` fields) as JSON ``\\uXXXX\\uYYYY`` surrogate
-      pairs via ``_SUPPLEMENTARY_UNICODE_RE``.  SurrealDB's HTTP ``/sql``
-      endpoint returns HTTP 400 for statements containing literal 4-byte
-      UTF-8 codepoints; BMP chars (U+0000–U+FFFF), including the ⟨⟩ bracket
-      chars used for record refs, are intentionally left as literal Unicode;
+    - preserves supplementary-plane Unicode code points (U+10000–U+10FFFF,
+      e.g. emoji in ``title`` fields) as literal UTF-8.  SurrealDB 3.0.4
+      accepts literal UTF-8 for supplementary chars and explicitly rejects
+      the JSON surrogate-pair escape notation (\\uXXXX\\uYYYY), returning
+      HTTP 400 "Parse error: … not a valid unicode character";
     - converts allowlisted ISO-8601-Z datetime string values to SurrealQL
       datetime literals (``d"..."``) via ``_SURQL_DATETIME_RE``; and
     - unquotes allowlisted record-ref string values (e.g.
-      ``"doc_page:\u27e8id\u27e9"``) so SurrealDB accepts them as
+      ``"doc_page:\\u27e8id\\u27e9"``) so SurrealDB accepts them as
       ``TYPE record`` values via ``_SURQL_RECORD_REF_RE``.
 
     ``ensure_ascii=False`` is required so that SurrealDB bracket chars
@@ -597,7 +602,6 @@ def _payload_to_surql_content(payload: dict[str, Any]) -> str:
     enabling the ``_SURQL_RECORD_REF_RE`` pattern to match them.
     """
     raw = json.dumps(payload, ensure_ascii=False, sort_keys=True)
-    raw = _SUPPLEMENTARY_UNICODE_RE.sub(_escape_supplementary, raw)
     raw = _SURQL_DATETIME_RE.sub(r'"\1": d"\2"', raw)
     raw = _SURQL_RECORD_REF_RE.sub(r'"\1": \2', raw)
     return raw
@@ -1401,8 +1405,10 @@ class SurrealDBLocalContextApplyAdapter:
             ) from exc
 
         if status not in (200, 204):
+            body_snippet = body.decode("utf-8", errors="replace")[:400].strip()
+            detail = f" — {body_snippet}" if body_snippet else ""
             raise ApplyAdapterError(
-                f"surrealdb-local HTTP {status} — check container is running"
+                f"surrealdb-local HTTP {status} — check container is running{detail}"
             )
 
         try:

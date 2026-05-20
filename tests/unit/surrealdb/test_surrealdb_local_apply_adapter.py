@@ -304,6 +304,77 @@ def test_http_500_raises_apply_adapter_error(monkeypatch: pytest.MonkeyPatch) ->
 
 
 @pytest.mark.unit
+def test_http_400_error_includes_response_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    """HTTP 400 ApplyAdapterError must embed the SurrealDB response body for diagnosis."""
+    adapter = _make_adapter()
+    surrealdb_msg = b'{"code":400,"information":"Parse error near supplementary unicode"}'
+
+    class FakeHTTPError(urllib.error.HTTPError):
+        def read(self) -> bytes:
+            return surrealdb_msg
+
+    http_err = FakeHTTPError(
+        url=f"{_LOCAL_URL}/sql",
+        code=400,
+        msg="Bad Request",
+        hdrs=None,  # type: ignore[arg-type]
+        fp=None,  # type: ignore[arg-type]
+    )
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *a, **kw: (_ for _ in ()).throw(http_err),
+    )
+
+    with pytest.raises(ApplyAdapterError, match="Parse error near supplementary unicode"):
+        adapter.apply_create("doc_page", "abc", {"title": "test"})
+
+
+@pytest.mark.unit
+def test_apply_create_emoji_title_sends_literal_utf8(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SQL sent to SurrealDB must use literal UTF-8 for emoji titles, not surrogate pairs.
+
+    SurrealDB 3.0.4 accepts literal UTF-8 supplementary-plane chars and explicitly
+    rejects the JSON surrogate-pair escape notation (\\uXXXX\\uYYYY), returning HTTP 400
+    "Parse error: … not a valid unicode character".
+    """
+    adapter = _make_adapter()
+    captured: list[bytes] = []
+
+    def fake_urlopen(req, timeout=None):
+        captured.append(req.data)
+        resp = MagicMock()
+        resp.__enter__ = lambda s: s
+        resp.__exit__ = MagicMock(return_value=False)
+        resp.status = 200
+        resp.read.return_value = json.dumps([{"status": "OK", "result": []}]).encode()
+        return resp
+
+    monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
+
+    adapter.apply_create(
+        "doc_page",
+        "sha256abc",
+        {
+            "title": "🚀 Launch doc",
+            "source_path": "/a.md",
+            "source_url": "file:///a.md",
+            "source_hash": "abc",
+            "source_hash_algo": "sha256",
+        },
+    )
+
+    assert captured, "urlopen was not called"
+    sql_bytes = captured[0]
+    sql_text = sql_bytes.decode("utf-8")
+    # Literal rocket emoji MUST appear in the SQL wire bytes (UTF-8 encoded)
+    assert "\U0001f680" in sql_text
+    # Surrogate-pair escapes must NOT be present — SurrealDB 3.0.4 rejects them
+    assert "\\ud83d\\ude80" not in sql_text
+
+
+@pytest.mark.unit
 def test_connection_refused_raises_apply_adapter_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -836,22 +907,23 @@ def test_payload_to_surql_content_datetime_regression_after_ascii_change() -> No
 
 
 @pytest.mark.unit
-def test_payload_to_surql_content_escapes_supplementary_unicode() -> None:
-    """Supplementary-plane chars (emoji) are escaped as JSON surrogate pairs (#2578).
+def test_payload_to_surql_content_preserves_supplementary_unicode() -> None:
+    """Supplementary-plane chars (emoji) must be preserved as literal UTF-8 (#2586).
 
-    SurrealDB's HTTP /sql endpoint returns HTTP 400 for statements that contain
-    literal 4-byte UTF-8 codepoints (U+10000+).  _payload_to_surql_content must
-    convert them to \\uXXXX\\uYYYY surrogate pair escape sequences.
+    SurrealDB 3.0.4 accepts literal UTF-8 supplementary-plane chars and explicitly
+    rejects the JSON surrogate-pair escape notation (\\uXXXX\\uYYYY), returning HTTP 400
+    "Parse error: … not a valid unicode character".  _payload_to_surql_content must
+    leave them as literal Unicode, not escape them.
     """
-    # 🚀 = U+1F680; surrogate pair: U+D83D U+DE80
+    # 🚀 = U+1F680 — must appear literally, no surrogate pairs
     result = _payload_to_surql_content({"title": "\U0001f680 QUICK START"})
-    assert "\\ud83d\\ude80" in result
-    assert "\U0001f680" not in result
+    assert "\U0001f680" in result
+    assert "\\ud83d\\ude80" not in result
 
-    # 🤖 = U+1F916; surrogate pair: U+D83E U+DD16
+    # 🤖 = U+1F916 — must appear literally, no surrogate pairs
     result2 = _payload_to_surql_content({"title": "\U0001f916 Agent Guide"})
-    assert "\\ud83e\\udd16" in result2
-    assert "\U0001f916" not in result2
+    assert "\U0001f916" in result2
+    assert "\\ud83e\\udd16" not in result2
 
 
 @pytest.mark.unit
@@ -983,10 +1055,58 @@ def test_apply_create_non_ref_table_payload_unchanged(
 
 
 # ---------------------------------------------------------------------------
-# SCHEMAFULL extra-field stripping (#2584)
+# SCHEMAFULL extra-field stripping (#2584, #2586)
+# doc_page:    schema_version, run_id, sensitivity
 # doc_section: section_level, source_path
 # doc_chunk:   source_path, heading_path, previous_chunk_id, next_chunk_id
 # ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_apply_create_doc_page_schemafull_extra_fields_stripped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """apply_create for doc_page strips schema_version, run_id, sensitivity (#2586).
+
+    All three fields are emitted by the indexer but not declared in the SCHEMAFULL
+    schema (context_intelligence_v0.surql).  They must be absent from the SQL CONTENT
+    so SurrealDB does not reject the statement.
+    """
+    sent = _capture_sql(monkeypatch)
+    adapter = _make_adapter()
+
+    adapter.apply_create(
+        "doc_page",
+        "sha256-test-page",
+        {
+            "schema_version": "v0",
+            "run_id": "run-abc123",
+            "page_id": "sha256-test-page",
+            "source_path": "docs/example.md",
+            "source_hash": "abc123",
+            "source_hash_algo": "sha256",
+            "title": "Example Page",
+            "doc_format": "markdown",
+            "observed_at": "2026-05-19T14:00:00Z",
+            "sensitivity": "public",
+            "source_url": "file:///docs/example.md",
+            "source_commit": "abc",
+            "freshness": "fresh",
+            "confidence": 1.0,
+            "comment": "",
+        },
+    )
+
+    assert len(sent) == 1
+    content_part = sent[0].split("CONTENT", 1)[1]
+    # Schema-declared fields must be present
+    assert '"page_id": "sha256-test-page"' in content_part
+    assert '"title": "Example Page"' in content_part
+    assert '"source_path": "docs/example.md"' in content_part
+    # Extra fields not in schema must be absent
+    assert '"schema_version"' not in content_part
+    assert '"run_id"' not in content_part
+    assert '"sensitivity"' not in content_part
 
 
 @pytest.mark.unit
