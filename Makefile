@@ -414,7 +414,7 @@ context-smoke-db: context-env-check
 	@$(PYTHON) tools/surrealdb/local_schema_check.py --hard-mode \
 		--secrets-path "$(SECRETS_PATH)"
 	@echo "--- Schritt 2: Scan (Snapshot + JSONL erzeugen) ---"
-	$(MAKE) context-scan
+	$(MAKE) context-scan CONTEXT_SCOPE_CONFIG=infrastructure/config/surrealdb/context_ingestion_scope.smoke.yaml
 	@echo "--- Schritt 3: Import (echter SurrealDB-Adapter, fail-closed) ---"
 	@$(PYTHON) -m tools.surrealdb.context_importer apply \
 		--input-dir $(CONTEXT_SNAP_DIR) \

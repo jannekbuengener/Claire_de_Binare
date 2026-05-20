@@ -573,6 +573,30 @@ def test_validation_blocks_secret_pattern_in_included_content(tmp_path: Path) ->
     assert "content_forbidden_pattern" in codes
 
 
+_SMOKE_SCOPE_CONFIG = Path(
+    "infrastructure/config/surrealdb/context_ingestion_scope.smoke.yaml"
+)
+
+
+@pytest.mark.unit
+def test_smoke_scope_has_zero_content_forbidden_pattern_findings() -> None:
+    """Smoke scope scan of the live repo must produce 0 content_forbidden_pattern findings (#2592).
+
+    Regression guard: ensures that context-smoke-db will not fail-close on
+    content_forbidden_pattern after the CONTEXT_SCOPE_CONFIG override in the Makefile.
+    The smoke scope excludes all paths known to contain credential-like patterns.
+    """
+    result = run_indexer(Path("."), _SMOKE_SCOPE_CONFIG)
+    forbidden = [
+        f for f in result.blocking_findings if f.code == "content_forbidden_pattern"
+    ]
+    assert forbidden == [], (
+        f"Smoke scope produced {len(forbidden)} content_forbidden_pattern "
+        "blocking finding(s):\n"
+        + "\n".join(f"  {f.source_path or '(no path)'}" for f in forbidden)
+    )
+
+
 @pytest.mark.unit
 def test_jsonl_records_and_snapshot_are_consistent(tmp_path: Path) -> None:
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")

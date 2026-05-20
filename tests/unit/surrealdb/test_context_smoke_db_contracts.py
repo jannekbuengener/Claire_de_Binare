@@ -429,6 +429,32 @@ def test_gen_run_id_generates_timestamp_without_args() -> None:
     assert "%" not in result, f"Timestamp contains '%' character: {result!r}"
 
 
+# ---------------------------------------------------------------------------
+# 18. Makefile: context-smoke-db passes smoke scope config to context-scan (#2592)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+def test_makefile_context_smoke_db_uses_smoke_scope_config() -> None:
+    """context-smoke-db must override CONTEXT_SCOPE_CONFIG with the smoke scope file (#2592)."""
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-smoke-db")
+    assert recipe, "context-smoke-db target has no recipe lines"
+    recipe_text = "\n".join(recipe)
+    assert "context_ingestion_scope.smoke.yaml" in recipe_text, (
+        "context-smoke-db does not pass context_ingestion_scope.smoke.yaml "
+        "to context-scan — canonical scope would scan test/service code and "
+        "block on content_forbidden_pattern (#2592)"
+    )
+    # The override must be on the context-scan line, not an unrelated step.
+    scan_lines = [line for line in recipe if "context-scan" in line]
+    assert scan_lines, "No context-scan call found in context-smoke-db recipe"
+    assert any("context_ingestion_scope.smoke.yaml" in line for line in scan_lines), (
+        "context-scan invocation in context-smoke-db does not include the "
+        "smoke scope config override"
+    )
+
+
 @pytest.mark.unit
 def test_gen_run_id_reads_run_id_from_snapshot(tmp_path: Path) -> None:
     """gen_run_id with a snapshot.json arg must return run_id from that file (#2587)."""
