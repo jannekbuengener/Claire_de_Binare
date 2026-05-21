@@ -678,6 +678,10 @@ def test_high_confidence_secret_re_rejects_false_positives() -> None:
     Dots (config attribute paths), underscores at start (function calls), colons
     at start (SurrealDB tokenizer) all result in < 12 char runs or non-matching
     characters, keeping these false positives excluded.
+
+    Added #2597: all-caps constants (SCREAMING_SNAKE_CASE) and snake_case variable
+    references must not match. These are variable/constant references, not literal
+    credential values. See services/execution/mexc_executor.py and services/ws/service.py.
     """
     negative_cases = [
         "token = base64.b64encode(",
@@ -689,6 +693,8 @@ def test_high_confidence_secret_re_rejects_false_positives() -> None:
         "password=self.redis_password",
         'password=os.environ["REDIS_PASSWORD"]',
         "token=settings.API_TOKEN",
+        "self.api_secret = MEXC_API_SECRET",  # all-caps constant reference (#2597)
+        "password=redis_password",            # snake_case variable reference (#2597)
     ]
     for case in negative_cases:
         assert (

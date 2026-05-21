@@ -82,6 +82,7 @@ HIGH_CONFIDENCE_SECRET_RE = re.compile(
     r"(?:"
     r"[\"'][A-Za-z0-9_.+/=@:-]{12,}[\"']"  # quoted literal
     r"|"
+    r"(?![A-Za-z]+(?:_[A-Za-z]+)+\b)"  # exclude var-like unquoted (all-caps const, snake_case var)
     r"[A-Za-z0-9][A-Za-z0-9+/=@_-]{11,}"  # unquoted literal: alphanum-start + 11 more (12+ total); no dots/colons; underscore allowed mid-value but not at start (excludes _read_secret etc.)
     r")"
 )
