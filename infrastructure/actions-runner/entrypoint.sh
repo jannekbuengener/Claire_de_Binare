@@ -110,7 +110,11 @@ else
 fi
 
 # ── Persist runner state to volume ──────────────────────────────
+# On a fresh Docker volume the mount point is root:root, so we must
+# fix ownership *before* the unprivileged cp — otherwise set -e
+# kills the container before chown is ever reached.
 sudo mkdir -p "$STATE_DIR"
+sudo chown -R runner:runner "$STATE_DIR"
 for f in .runner .credentials .credentials_rsaparams .path; do
   if [ -f "/actions-runner/$f" ]; then
     cp "/actions-runner/$f" "$STATE_DIR/$f"
