@@ -2,15 +2,14 @@
 # This file is not the canonical PR gate and not the 431B Docker CI lab baseline.
 # LEGACY-FREEZE (2026-04-07): tool-version drift is acceptable.
 # Not parity-tracked with ci.yml. No version alignment required.
+# NOISE-FREEZE (2026-05-21): auto-triggers removed; workflow_dispatch only.
+# Refs #2613 — 15 non-required jobs on ubuntu-latest generate persistent
+# billing-/account-locked noise. Canonical required checks are served by
+# ci.yml (self-hosted, merge-gate). This workflow must not auto-run.
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches: [ main ]
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
-  workflow_dispatch:  # Manueller Trigger
+  workflow_dispatch:  # Manueller Trigger — NO auto-runs
 
 env:
   PYTHON_VERSION: '3.12'
