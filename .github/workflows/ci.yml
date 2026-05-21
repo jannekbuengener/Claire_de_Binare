@@ -27,7 +27,7 @@ jobs:
   ci:
     # Canonical PR gate: branch protection and Sentinel depend on this exact check-run name.
     name: ci (Unit/Integration + Lint gesammelt)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, cdb, docker, merge-gate]
 
     steps:
       - name: Checkout
