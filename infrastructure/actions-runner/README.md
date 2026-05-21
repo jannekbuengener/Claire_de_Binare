@@ -61,6 +61,21 @@ rebuilds without re-registration.
 (`docker compose down && docker compose up -d --build`) do not need a
 new token.
 
+### Complete vs Partial State
+
+The entrypoint distinguishes three registration paths:
+
+| State | Condition | Behavior |
+|-------|-----------|----------|
+| **Complete** | `.runner` + `.credentials` + `.credentials_rsaparams` all present | Skip registration, reconnect |
+| **Partial** | Some but not all required files present | Require `RUNNER_TOKEN` for re-registration, or exit with clear error |
+| **None** | No state files present | Require `RUNNER_TOKEN` for initial registration, or exit with clear error |
+
+A **partial state** can occur if the state volume is corrupted or only
+partially restored. In this case the runner cannot self-heal without a
+fresh `RUNNER_TOKEN`. The entrypoint will print a descriptive error and
+exit rather than crash with an unbound-variable error.
+
 ## Deregistration
 
 By default, stopping the container (`docker compose down`) does **not**
