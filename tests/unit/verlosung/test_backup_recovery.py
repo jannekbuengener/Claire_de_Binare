@@ -35,7 +35,7 @@ def postgres_conn():
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     yield conn
     conn.close()
@@ -214,7 +214,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
         port=5432,
         database="postgres",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     admin_conn.autocommit = True
     admin_cursor = admin_conn.cursor()
@@ -289,7 +289,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     restored_cursor = restored_conn.cursor()
 

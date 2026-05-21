@@ -167,7 +167,7 @@ def test_secret_not_in_error_message() -> None:
     """Raw credentials must not appear in QueryAdapterError messages."""
     import urllib.error
 
-    adapter = _make_adapter(user="admin", password="s3cr3t_p@ssw0rd")
+    adapter = _make_adapter(user="admin", password="local_test")
     http_error = urllib.error.HTTPError(
         url="http://127.0.0.1:8010/sql",
         code=500,
@@ -178,7 +178,7 @@ def test_secret_not_in_error_message() -> None:
     with patch("urllib.request.build_opener", return_value=_mock_opener_raising(http_error)):
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
-    assert "s3cr3t_p@ssw0rd" not in excinfo.value.message
+    assert "local_test" not in excinfo.value.message
 
 
 # ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ def redis_client():
     client = redis.Redis(
         host="localhost",
         port=6379,
-        password="claire_redis_secret_2024",
+        password="local_test",
         decode_responses=True,
     )
     yield client
@@ -41,7 +41,7 @@ def postgres_conn():
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     yield conn
     conn.close()

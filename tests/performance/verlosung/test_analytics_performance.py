@@ -26,7 +26,7 @@ def postgres_conn():
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     yield conn
     conn.close()
@@ -338,7 +338,7 @@ def test_analytics_query_tool_integration(postgres_conn):
     # Prepare environment: copy current env and add PostgreSQL credentials
     test_env = os.environ.copy()
     test_env["POSTGRES_HOST"] = "localhost"
-    test_env["POSTGRES_PASSWORD"] = "claire_db_secret_2024"
+    test_env["POSTGRES_PASSWORD"] = "local_test"
 
     results = []
 

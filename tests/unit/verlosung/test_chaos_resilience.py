@@ -82,7 +82,7 @@ def test_redis_crash_and_recovery():
     # Verify Redis ist erreichbar
     try:
         redis_client = redis.Redis(
-            host="localhost", port=6379, password="claire_redis_secret_2024"
+            host="localhost", port=6379, password="local_test"
         )
         assert redis_client.ping(), "Redis should respond to ping"
         print("    ✓ Redis is reachable")
@@ -124,7 +124,7 @@ def test_redis_crash_and_recovery():
             redis_client = redis.Redis(
                 host="localhost",
                 port=6379,
-                password="claire_redis_secret_2024",
+                password="local_test",
                 socket_connect_timeout=5,
             )
 
@@ -187,7 +187,7 @@ def test_postgres_crash_and_recovery():
             port=5432,
             database="claire_de_binare",
             user="claire_user",
-            password="claire_db_secret_2024",
+            password="local_test",
         )
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
@@ -215,7 +215,7 @@ def test_postgres_crash_and_recovery():
             port=5432,
             database="claire_de_binare",
             user="claire_user",
-            password="claire_db_secret_2024",
+            password="local_test",
             connect_timeout=3,
         )
         conn.close()
@@ -246,7 +246,7 @@ def test_postgres_crash_and_recovery():
                 port=5432,
                 database="claire_de_binare",
                 user="claire_user",
-                password="claire_db_secret_2024",
+                password="local_test",
                 connect_timeout=5,
             )
 
@@ -277,7 +277,7 @@ def test_postgres_crash_and_recovery():
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
@@ -452,7 +452,7 @@ def test_concurrent_redis_and_postgres_crash():
     # Check Redis
     try:
         redis_client = redis.Redis(
-            host="localhost", port=6379, password="claire_redis_secret_2024"
+            host="localhost", port=6379, password="local_test"
         )
         if redis_client.ping():
             redis_recovered = True
@@ -467,7 +467,7 @@ def test_concurrent_redis_and_postgres_crash():
             port=5432,
             database="claire_de_binare",
             user="claire_user",
-            password="claire_db_secret_2024",
+            password="local_test",
         )
         cursor = conn.cursor()
         cursor.execute("SELECT 1")

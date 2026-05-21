@@ -334,7 +334,7 @@ host = "localhost"
 port = 8000
 
 [secrets]
-api_key = "abc123secret"
+api_key = "local_test"
 username = "admin"
 """
 

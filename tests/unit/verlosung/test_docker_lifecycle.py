@@ -299,7 +299,7 @@ def test_docker_compose_volume_persistence():
             port=5432,
             database="claire_de_binare",
             user="claire_user",
-            password="claire_db_secret_2024",
+            password="local_test",
         )
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
@@ -325,7 +325,7 @@ def test_docker_compose_volume_persistence():
         port=5432,
         database="claire_de_binare",
         user="claire_user",
-        password="claire_db_secret_2024",
+        password="local_test",
     )
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")

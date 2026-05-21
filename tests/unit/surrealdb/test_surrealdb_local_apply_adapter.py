@@ -418,7 +418,7 @@ def test_surrealdb_err_response_raises_apply_adapter_error(
 
 @pytest.mark.unit
 def test_password_not_in_adapter_error_message(monkeypatch: pytest.MonkeyPatch) -> None:
-    adapter = _make_adapter(user="myuser", password="supersecret123")
+    adapter = _make_adapter(user="myuser", password="local_test")
     monkeypatch.setattr(
         "urllib.request.urlopen",
         lambda *a, **kw: (_ for _ in ()).throw(
@@ -429,7 +429,7 @@ def test_password_not_in_adapter_error_message(monkeypatch: pytest.MonkeyPatch) 
     with pytest.raises(ApplyAdapterError) as exc_info:
         adapter.apply_create("repo_artifact", "abc", {"k": "v"})
 
-    assert "supersecret123" not in str(exc_info.value)
+    assert "local_test" not in str(exc_info.value)
     assert "myuser" not in str(exc_info.value)
 
 
