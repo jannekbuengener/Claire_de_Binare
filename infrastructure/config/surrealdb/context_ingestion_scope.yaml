@@ -119,6 +119,21 @@ exclude_paths:
     reason: Temporary output/work area; not an approved ingestion source or output canon.
   - path: DELIVERY_APPROVED.yaml
     reason: Human-controlled delivery gate; agents must not modify or ingest as approval state.
+  - path: knowledge/deep-issues-lab/
+    reason: >
+      High-density forbidden-pattern keyword matches. Research scratch area contains
+      redacted placeholders and demo credential values that trigger content_forbidden_pattern.
+      Mirrored from context_ingestion_scope.smoke.yaml exclusion (#2594).
+  - path: docs/surrealdb/context-wave21-cross-cutting-hardening.md
+    reason: >
+      Security-hardening doc discussing forbidden-pattern keywords and SurrealDB tokenizer
+      syntax (token::tokenizer::en) that produces a false-positive HIGH_CONFIDENCE_SECRET_RE
+      match. Mirrored from context_ingestion_scope.smoke.yaml exclusion (#2594).
+  - path: tests/fixtures/surrealdb/
+    reason: >
+      Synthetic fixture repos used for indexer unit tests. Contains deliberate secret-like
+      patterns (e.g. api_key = "ABCDEF...") that are true-positive test data for the scanner
+      itself — not canonical documentation content to be ingested (#2594).
 
 allowed_file_types:
   - extension: .md

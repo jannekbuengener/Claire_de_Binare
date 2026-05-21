@@ -10,6 +10,7 @@ import pytest
 
 from tools.surrealdb.context_indexer import (
     EVIDENCE_REF_TEST_FILE_CONFIDENCE,
+    HIGH_CONFIDENCE_SECRET_RE,
     SCHEMA_VERSION,
     IndexerResult,
     ScopeConfigSummary,
@@ -595,6 +596,49 @@ def test_smoke_scope_has_zero_content_forbidden_pattern_findings() -> None:
         "blocking finding(s):\n"
         + "\n".join(f"  {f.source_path or '(no path)'}" for f in forbidden)
     )
+
+
+@pytest.mark.unit
+def test_high_confidence_secret_re_matches_quoted_literals() -> None:
+    """Quoted secret-like literals must still be detected after pattern refinement (#2594).
+
+    These cases represent true-positive credential patterns that the scanner must
+    continue to block — both real-looking and synthetic fixture keys.
+    """
+    positive_cases = [
+        'api_key = "ABCDEF1234567890"',
+        'api_key = "sk-test-abc123xyz456"',
+        'password="claire_redis_secret_2024"',
+        "secret='some-long-token-value-ab'",
+        'token = "eyJhbGciOiJIUzI1NiI"',
+    ]
+    for case in positive_cases:
+        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is not None, (
+            f"Expected a match for quoted literal but got none: {case!r}"
+        )
+
+
+@pytest.mark.unit
+def test_high_confidence_secret_re_rejects_false_positives() -> None:
+    """Code/config expressions must not match after mandatory-quote refinement (#2594).
+
+    Before the fix (optional quote [\"']?), function call results, config attribute
+    paths, and SurrealDB tokenizer syntax all triggered false positives. After the fix
+    (mandatory quote [\"']), only quoted string literals match.
+    """
+    negative_cases = [
+        "token = base64.b64encode(",
+        "password=config.REDIS_PASSWORD",
+        "class::token::tokenizer::en",
+        "self.password = _read_secret(",
+        "user, password = _load_credentials(env_file)",
+        "api_key=config.MEXC_API_KEY",
+        "password=self.redis_password",
+    ]
+    for case in negative_cases:
+        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is None, (
+            f"Expected no match for code/config expression but got one: {case!r}"
+        )
 
 
 @pytest.mark.unit
