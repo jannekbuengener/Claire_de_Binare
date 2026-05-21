@@ -43,6 +43,42 @@ authenticates with its own credentials stored in `.runner`/`.credentials`.
 A new token is required only when the container is rebuilt from scratch
 or after a manual "Remove runner" in the GitHub UI.
 
+## State Persistence
+
+Runner credentials (`.runner`, `.credentials`, `.credentials_rsaparams`,
+`.path`) are persisted in a dedicated Docker volume (`runner-state` for
+Runner 1, `runner-state-2` for Runner 2). This allows container
+rebuilds without re-registration.
+
+**How it works**:
+- On startup, the entrypoint restores credentials from the state volume
+  before checking whether registration is needed.
+- After registration, credentials are copied to the state volume.
+- If the state volume contains valid credentials, `RUNNER_TOKEN` is not
+  required. The runner reconnects automatically.
+
+**First-time setup** still requires `RUNNER_TOKEN`. After that, rebuilds
+(`docker compose down && docker compose up -d --build`) do not need a
+new token.
+
+## Deregistration
+
+By default, stopping the container (`docker compose down`) does **not**
+deregister the runner from GitHub. The runner stays registered and
+reconnects on the next start.
+
+To intentionally deregister (e.g. before decommissioning a runner), set
+`RUNNER_DEREGISTER_ON_EXIT=true` in `.env.runner` / `.env.runner2`. This
+requires `RUNNER_TOKEN` to be present.
+
+```bash
+# Normal stop — runner stays registered
+docker compose -f infrastructure/actions-runner/docker-compose.runner.yml down
+
+# Intentional removal — set RUNNER_DEREGISTER_ON_EXIT=true first
+# Then stop the container. The runner will deregister from GitHub.
+```
+
 ## Stopping & Removing
 
 **Stop** (runner goes offline, stays registered):
@@ -51,10 +87,9 @@ or after a manual "Remove runner" in the GitHub UI.
 docker compose -f infrastructure/actions-runner/docker-compose.runner.yml down
 ```
 
-**Remove** (fully deregister): use the GitHub UI
-Settings > Actions > Runners > select runner > Remove, then follow the
-displayed removal command. If you rebuild the container without removing the
-old entry first, a duplicate runner may appear in the UI.
+**Remove** (fully deregister): set `RUNNER_DEREGISTER_ON_EXIT=true` in
+`.env.runner`, then stop the container; or use the GitHub UI
+Settings > Actions > Runners > select runner > Remove.
 
 ## Runner 2 — Dedicated Merge-Gate Runner
 
@@ -87,7 +122,8 @@ name, volume, and labels — completely independent from Runner 1.
 | Container name | `cdb_gh_runner` | `cdb_gh_runner_2` |
 | Env file | `.env.runner` | `.env.runner2` |
 | Runner name | `cdb-docker-runner-1` | `cdb-docker-runner-2` |
-| Volume | `runner-work` | `runner-work-2` |
+| Work volume | `runner-work` | `runner-work-2` |
+| State volume | `runner-state` | `runner-state-2` |
 | Labels | `self-hosted`, `cdb`, `docker` | `self-hosted`, `cdb`, `docker`, `merge-gate` |
 
 ### Labels
@@ -102,10 +138,44 @@ fallback to GitHub-hosted runners.
 
 ### Stopping & Removing Runner 2
 
-**Stop**:
+**Stop** (runner stays registered):
 ```bash
 docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml down
 ```
 
-**Remove** (fully deregister): use the GitHub UI
+**Remove** (fully deregister): set `RUNNER_DEREGISTER_ON_EXIT=true` in
+`.env.runner2`, then stop the container; or use the GitHub UI
 Settings > Actions > Runners > select `cdb-docker-runner-2` > Remove.
+
+## Rebuild Without Token
+
+After the initial registration, the runner credentials are persisted in the
+state volume. Rebuilding the container does not require a new token:
+
+```bash
+# Rebuild without re-registration
+docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml down
+docker compose -f infrastructure/actions-runner/docker-compose.runner2.yml up -d --build
+# Logs should show: "Restored .runner from persistent state"
+# or: "Runner already configured"
+```
+
+If the state volume is deleted or corrupted, a new `RUNNER_TOKEN` is required
+for re-registration.
+
+## Rollback
+
+If state persistence causes issues:
+
+1. Remove state volume mounts from compose files.
+2. Revert `entrypoint.sh` to the previous version.
+3. Volumes remain on disk — do not delete them unless intentionally
+   clearing state.
+4. If state is corrupted: generate a new `RUNNER_TOKEN`, remove the old
+   runner entry from the GitHub UI, and re-register.
+
+## Maintenance Window
+
+When restarting or rebuilding a runner that handles required merge checks
+(`ci`, `policy-gate`), avoid doing so while a check is running. Check
+the GitHub Actions queue or runner busy status before stopping.

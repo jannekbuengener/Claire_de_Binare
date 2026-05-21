@@ -10,8 +10,10 @@ services:
     env_file: .env.runner
     volumes:
       - runner-work:/actions-runner/_work
+      - runner-state:/actions-runner/runner-state
       - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
 
 volumes:
   runner-work:
+  runner-state:
