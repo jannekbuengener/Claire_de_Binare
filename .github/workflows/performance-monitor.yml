@@ -1,11 +1,9 @@
 name: Performance Monitor
 
+# NOISE-FREEZE (#2613): auto-triggers disabled due to billing/account-locked
+# non-required check noise. Manual workflow_dispatch remains available.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * 0'  # Weekly performance check
 
 permissions:
   contents: read

@@ -1,11 +1,8 @@
 name: 🚫 Advanced Emoji Filter
 
+# NOISE-FREEZE (#2613): auto-triggers disabled due to billing/account-locked
+# non-required check noise. Manual workflow_dispatch remains available.
 on:
-  push:
-    branches: [ main ]
-  schedule:
-    # Täglich um 2 Uhr (UTC) scannen
-    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       auto_fix:
