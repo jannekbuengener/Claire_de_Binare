@@ -1,10 +1,8 @@
 name: CodeQL Python
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  # NOISE-FREEZE (#2613): push and pull_request auto-triggers disabled due to billing/account-locked
+  # non-required security check noise. Scheduled and manual runs remain available.
   schedule:
     - cron: "21 3 * * 1"
   workflow_dispatch:

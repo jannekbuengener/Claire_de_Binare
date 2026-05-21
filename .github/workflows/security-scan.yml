@@ -3,17 +3,11 @@ name: Security Scan
 # Weekly scan + PR trigger for infrastructure changes
 # Issue #97: Trivy Container Scanning
 on:
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required security check noise. Scheduled and manual runs remain available.
   schedule:
     - cron: '0 2 * * 1'  # Monday 02:00 UTC
-  push:
-    branches:
-      - main
-      - 'release/*'
-    paths:
-      - 'services/**/Dockerfile'
-      - 'infrastructure/compose/**'
-      - '.github/workflows/security-scan.yml'
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 permissions:
   contents: read
