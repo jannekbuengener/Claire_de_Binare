@@ -79,7 +79,12 @@ HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 FENCE_RE = re.compile(r"^\s*(```|~~~)")
 HIGH_CONFIDENCE_SECRET_RE = re.compile(
     r"(?i)\b(api[_-]?key|private[_-]?key|password|passwd|secret|token|credential)"
-    r"\b\s*[:=]\s*[\"'][A-Za-z0-9_.+/=@:-]{12,}[\"']"
+    r"\b\s*[:=]\s*"
+    r"(?:"
+    r"[\"'][A-Za-z0-9_.+/=@:-]{12,}[\"']"  # quoted literal
+    r"|"
+    r"[A-Za-z0-9+/=@-]{12,}"  # unquoted literal (no dots/underscores/colons — excludes config refs and tokenizer syntax)
+    r")"
 )
 AWS_ACCESS_KEY_RE = re.compile(r"\bAKIA[0-9A-Z]{16}\b")
 PRIVATE_KEY_RE = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")

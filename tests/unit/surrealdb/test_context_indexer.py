@@ -619,12 +619,33 @@ def test_high_confidence_secret_re_matches_quoted_literals() -> None:
 
 
 @pytest.mark.unit
-def test_high_confidence_secret_re_rejects_false_positives() -> None:
-    """Code/config expressions must not match after mandatory-quote refinement (#2594).
+def test_high_confidence_secret_re_matches_unquoted_literals() -> None:
+    """Unquoted literal credential values must be detected after unquoted-branch fix (#2594).
 
-    Before the fix (optional quote [\"']?), function call results, config attribute
-    paths, and SurrealDB tokenizer syntax all triggered false positives. After the fix
-    (mandatory quote [\"']), only quoted string literals match.
+    These are cases where the credential value appears directly without surrounding quotes,
+    representing plain-text secret leakage in config/doc snippets. The bot review on PR #2595
+    correctly identified that the mandatory-quote-only pattern missed these forms.
+    """
+    unquoted_positive_cases = [
+        "password=supersecretvalue123",
+        "token: abcdefghijklmnop",
+        "api_key=sk-test-abc123xyz456",
+        "secret=xK9mN2pQrT4vW7zA1cE",
+        "credential=ABCDEF1234567890GHIJ",
+    ]
+    for case in unquoted_positive_cases:
+        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is not None, (
+            f"Expected a match for unquoted literal credential but got none: {case!r}"
+        )
+
+
+@pytest.mark.unit
+def test_high_confidence_secret_re_rejects_false_positives() -> None:
+    """Code/config expressions must not match — neither quoted nor unquoted branches.
+
+    Dots (config attribute paths), underscores at start (function calls), colons
+    at start (SurrealDB tokenizer) all result in < 12 char runs or non-matching
+    characters, keeping these false positives excluded.
     """
     negative_cases = [
         "token = base64.b64encode(",
@@ -634,6 +655,8 @@ def test_high_confidence_secret_re_rejects_false_positives() -> None:
         "user, password = _load_credentials(env_file)",
         "api_key=config.MEXC_API_KEY",
         "password=self.redis_password",
+        "password=os.environ[\"REDIS_PASSWORD\"]",
+        "token=settings.API_TOKEN",
     ]
     for case in negative_cases:
         assert HIGH_CONFIDENCE_SECRET_RE.search(case) is None, (
