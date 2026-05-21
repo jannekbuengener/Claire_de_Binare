@@ -632,6 +632,8 @@ def test_high_confidence_secret_re_matches_unquoted_literals() -> None:
         "api_key=sk-test-abc123xyz456",
         "secret=xK9mN2pQrT4vW7zA1cE",
         "credential=ABCDEF1234567890GHIJ",
+        "token=ghp_abc123xyz456def789",      # GitHub-style token with underscore prefix
+        "password=super_secret_value123",    # underscore mid-value
     ]
     for case in unquoted_positive_cases:
         assert HIGH_CONFIDENCE_SECRET_RE.search(case) is not None, (
