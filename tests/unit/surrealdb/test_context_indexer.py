@@ -58,6 +58,22 @@ def test_scope_config_loads_canonical_file() -> None:
 
 
 @pytest.mark.unit
+def test_canonical_scope_excludes_mock_exchange_paths() -> None:
+    """Mock exchange documentation paths must be excluded from canonical ingestion (#2596).
+
+    These paths contain placeholder/mock credential examples for local testing
+    and package documentation — not canonical context-ingestion content.
+    """
+    summary = load_scope_config(SCOPE_CONFIG)
+    assert ".codex/cdb_skills/mockexchange/" in summary.exclude_paths, (
+        "Mock skill path must be excluded from canonical scope"
+    )
+    assert "tools/test_pack/mock_exchange/" in summary.exclude_paths, (
+        "Mock exchange test pack path must be excluded from canonical scope"
+    )
+
+
+@pytest.mark.unit
 def test_scan_defaults_to_dry_run_and_never_connects_to_surrealdb(capsys) -> None:
     exit_code = main(["scan", "--scope-config", str(SCOPE_CONFIG)])
 

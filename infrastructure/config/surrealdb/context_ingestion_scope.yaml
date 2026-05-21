@@ -134,6 +134,14 @@ exclude_paths:
       Synthetic fixture repos used for indexer unit tests. Contains deliberate secret-like
       patterns (e.g. api_key = "ABCDEF...") that are true-positive test data for the scanner
       itself — not canonical documentation content to be ingested (#2594).
+  - path: .codex/cdb_skills/mockexchange/
+    reason: >
+      Mock-Exchange-Skill-Dokumentation mit Platzhalter-/Mock-Credential-Beispielen für
+      lokale Tests und Package-Dokumentation. Kein canonical Context-Ingestion-Content (#2596).
+  - path: tools/test_pack/mock_exchange/
+    reason: >
+      Mock-Exchange-Fixture-/Test-Pack-Dokumentation mit Platzhalter-Credential-Beispielen.
+      Kein canonical Context-Ingestion-Content (#2596).
 
 allowed_file_types:
   - extension: .md
