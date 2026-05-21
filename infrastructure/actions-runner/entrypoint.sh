@@ -27,6 +27,10 @@ if [ -n "${DOCKER_GID:-}" ]; then
   fi
 fi
 
+# ── Fix volume permissions ────────────────────────────────────────
+sudo mkdir -p /actions-runner/_work/_tool /actions-runner/_work/_temp /actions-runner/_work/_update
+sudo chown -R runner:runner /actions-runner/_work
+
 # ── Configure runner ────────────────────────────────────────────
 cd /actions-runner
 
