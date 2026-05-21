@@ -18,6 +18,7 @@ in einem separaten externen Doku-Repo gesucht wurde.
 7. `CURRENT_STATUS.md`
 8. `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
 9. `docs/runbooks/CONTROL_REGISTER.md`
+10. `agents/OPEN_CODE_AGENTS.md` — OpenCode Agent Shared Contract (Brain Evidence Gate fuer OpenCode Agents)
 
 ## Canonical Domains
 
@@ -57,6 +58,47 @@ in einem separaten externen Doku-Repo gesucht wurde.
 - Eine Board-Stage darf nie als implizite Live-Freigabe oder Strategie-Validierung interpretiert werden.
 - Das lokale Archiv `docs/archive/docs_hub_snapshot/` ist nur noch ein optionaler historischer Rueckgriff.
 - Externe Docs-Repo-Pfade sind kein produktiver Default mehr.
+
+## Brain Evidence Gate
+
+For sessions whose scope includes **Strategy, Runtime, Module, Service, Contract,
+Context, SurrealDB, MCP tools, DB-backed Memory, or Evidence**, every agent
+MUST output the following block **before any plan**:
+
+```text
+## Brain Evidence
+brain_source: surrealdb-local | in_memory | repo-only | unavailable
+brain_status: used | partial | not-used | blocked
+tools_or_queries:
+  - <Tool/Command/Query>
+records_or_results:
+  - <Record-ID/Count/Source/Hash, falls vorhanden>
+repo_crosscheck:
+  - <Datei/Pfad/Symbol/Commit>
+impact_on_plan:
+  - <Was dadurch anders geplant wurde>
+limitations:
+  - <Was nicht bewiesen ist>
+```
+
+### Field Logic
+
+- `brain_source=surrealdb-local`: Brain-Claims sind erlaubt, aber nur mit
+  Tool-/Query-/Record-Evidence.
+- `brain_source=in_memory`: Nur Fixture/Noop/In-Memory-Kontext; keine DB-backed
+  Brain-Claims.
+- `brain_source=repo-only`: Klar `brain-not-used` melden.
+- `brain_source=unavailable`: Klar `blocked` oder `repo-only fallback` melden.
+
+### Rules
+
+- No plan may claim Memory/Evidence/Decision consideration without
+  record/tool/query evidence.
+- Strategy/Runtime/Module work MUST distinguish `repo-only` from brain-backed.
+- `CURRENT_STATUS.md` is a ledger, not live truth.
+- GitHub/Repo/Live evidence wins over Brain/CIS claims.
+- Board-Stage `trade-capable` is not Live-Go.
+- LR remains NO-GO.
 
 ## Legacy Note
 

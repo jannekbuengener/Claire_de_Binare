@@ -23,6 +23,7 @@ Wichtige kanonische Dateien:
 - [`docs/runbooks/CONTROL_REGISTER.md`](docs/runbooks/CONTROL_REGISTER.md)
 - [`knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md`](knowledge/runbooks/CDB_CONTROL_BOARD_RUNBOOK.md)
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md)
+- [`agents/OPEN_CODE_AGENTS.md`](agents/OPEN_CODE_AGENTS.md)
 
 Aktueller Projektstand:
 - Working Repo ist der produktive Canon fuer Agenten-, Governance-, Knowledge- und Navigationsdoku.
@@ -263,4 +264,5 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 - Read `knowledge/governance/CDB_AGENT_POLICY.md` section 4 before any write.
 - Respect single-writer locks, explicit stop signals, and write gates.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
+- Before planning for strategy/runtime/module/service/contract/context scope, output a `Brain Evidence` block (see `agents/AGENTS.md` § Brain Evidence Gate).
 - LR status remains NO-GO for live trading unless explicitly changed by canon/human approval.

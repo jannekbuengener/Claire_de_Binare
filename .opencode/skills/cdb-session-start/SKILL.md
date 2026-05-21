@@ -77,7 +77,28 @@ Establish a verified, fail-closed starting state before any repo work begins.
    The Git truth checks in steps 1-3 do not replace the control-context read; they
    precede it.
 
-5. MCP Capability Resolution Gate (conditional):
+5. Brain Evidence Gate (scope-abhängig):
+
+   If the session scope includes **Strategy, Runtime, Module, Service, Contract,
+   Context, SurrealDB, MCP tools, DB-backed Memory, or Evidence**, output the
+   Brain Evidence block from `agents/AGENTS.md` § Brain Evidence Gate **before
+   any plan**.
+
+   The block MUST contain all fields (`brain_source`, `brain_status`,
+   `tools_or_queries`, `records_or_results`, `repo_crosscheck`, `impact_on_plan`,
+   `limitations`) with honest values.
+
+   **No plan may claim Memory/Evidence/Decision consideration without
+   record/tool/query evidence.**
+
+   If the block is missing or incomplete:
+   - STOP.
+   - Report which fields are missing or which values are unsubstantiated.
+   - Do not proceed to implementation planning.
+
+   Reference: `agents/AGENTS.md` § Brain Evidence Gate.
+
+6. MCP Capability Resolution Gate (conditional):
 
    When the session scope includes Context, SurrealDB, MCP tools, ContextBridge,
    or DB-backed agent memory, verify capability before any implementation or
@@ -106,9 +127,9 @@ Establish a verified, fail-closed starting state before any repo work begins.
 
    Reference: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.
 
-6. Create a clean execution surface:
+7. Create a clean execution surface:
 
-   Once steps 1-5 are complete and no gate has fired, create the working surface:
+   Once steps 1-6 are complete and no gate has fired, create the working surface:
    - Branch from current `origin/main` (never from stale local main).
    - Clean worktree confirmed.
    - Explicit target issue identified and open.
@@ -125,6 +146,8 @@ Establish a verified, fail-closed starting state before any repo work begins.
 - If `cdb-control-intake` cannot be completed, stop.
 - If any of the risky conditions in step 2 cannot be resolved, stop and report
   what remains unresolved before any file is touched.
+- If the Brain Evidence Gate block is missing or incomplete for a relevant
+  scope, stop and report which fields are missing or unsubstantiated.
 - If MCP capability cannot be verified for a Context/SurrealDB tool in scope,
   stop and report the missing layer instead of implementing or calling around it.
 
@@ -148,6 +171,15 @@ Control-Snapshot (via cdb-control-intake)
 - Board stage:
 - LR verdict:
 - Weekly focus:
+
+Brain Evidence (nur bei relevantem Scope)
+- brain_source:
+- brain_status:
+- tools_or_queries:
+- records_or_results:
+- repo_crosscheck:
+- impact_on_plan:
+- limitations:
 
 Arbeitsflaeche
 - Branch:
