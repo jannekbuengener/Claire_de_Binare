@@ -1,8 +1,8 @@
 name: Core Guard
 
 on:
-  push:
-    branches: [main]
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required check noise. Scheduled and manual runs remain available.
   workflow_dispatch:
   schedule:
     - cron: '15 5 * * 0'

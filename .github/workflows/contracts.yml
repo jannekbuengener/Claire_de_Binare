@@ -1,12 +1,8 @@
 name: Contract Validation
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'docs/contracts/**'
-      - 'tests/unit/contracts/**'
-      - '.github/workflows/contracts.yml'
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required check noise. Scheduled and manual runs remain available.
   workflow_dispatch:
   schedule:
     - cron: '45 4 * * *'

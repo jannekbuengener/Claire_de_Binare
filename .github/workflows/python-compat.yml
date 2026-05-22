@@ -4,8 +4,8 @@ on:
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:
-  push:
-    branches: [main]
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required check noise. Scheduled and manual runs remain available.
 
 permissions:
   contents: read

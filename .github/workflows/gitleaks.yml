@@ -9,8 +9,8 @@
 name: Gitleaks Secret Scan
 
 on:
-  push:
-    branches: [main]
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required check noise. Scheduled and manual runs remain available.
   schedule:
     - cron: '0 3 * * 0'  # Weekly Sunday 03:00 UTC
   workflow_dispatch:

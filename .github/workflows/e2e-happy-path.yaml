@@ -4,9 +4,8 @@ name: E2E Happy Path
 # runs post-merge on main, on schedule, or manually via workflow_dispatch.
 
 on:
-  push:
-    branches: [ main ]
-    # No paths-ignore - always run
+  # NOISE-FREEZE (#2613): push auto-trigger disabled due to billing/account-locked
+  # non-required check noise. Scheduled and manual runs remain available.
   workflow_dispatch:
   schedule:
     - cron: '30 5 * * 0'
