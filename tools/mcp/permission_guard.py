@@ -6,10 +6,12 @@ Enforces three-layer defense-in-depth for #2099:
 2. Execute Gate: ToolDefinition.read_only + Input Gate before handler dispatch.
 3. Input Gate: mutative query/operation patterns in tool parameters are blocked.
 
-The Input Gate applies pattern scanning only to query/command tools
-(context.search, context.trace, context.explain_source, context.package,
-context.show_snapshot, context.show_audit) whose free-text parameters could
-contain SQL/SurrealQL injection or command vectors.
+ The Input Gate applies pattern scanning only to query/command tools
+ (context.search, context.trace, context.explain_source, context.package,
+ context.show_snapshot, context.show_audit) whose free-text parameters could
+ contain SQL/SurrealQL injection or command vectors. Identifier fields for
+ registry-audit lookups are exempt when they name tools rather than carry
+ query text.
 
 Structural tools (context.readiness, context.briefing, context.self_explain,
 context.stop_resolver, context.required_reads, cdb_context_impact) are exempt from input scanning
@@ -30,24 +32,26 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-FORBIDDEN_SQL_KEYWORDS: frozenset[str] = frozenset({
-    "INSERT",
-    "UPDATE",
-    "DELETE",
-    "CREATE",
-    "DROP",
-    "ALTER",
-    "MUTATE",
-    "REPLACE",
-    "REMOVE",
-    "MERGE",
-    "RELATE",
-    "DEFINE",
-    "REBUILD",
-    "TRUNCATE",
-    "GRANT",
-    "REVOKE",
-})
+FORBIDDEN_SQL_KEYWORDS: frozenset[str] = frozenset(
+    {
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "CREATE",
+        "DROP",
+        "ALTER",
+        "MUTATE",
+        "REPLACE",
+        "REMOVE",
+        "MERGE",
+        "RELATE",
+        "DEFINE",
+        "REBUILD",
+        "TRUNCATE",
+        "GRANT",
+        "REVOKE",
+    }
+)
 
 FORBIDDEN_QUERY_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bINSERT\b\s", re.IGNORECASE),
@@ -71,122 +75,131 @@ FORBIDDEN_QUERY_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bMUTATE\b\s", re.IGNORECASE),
 )
 
-FORBIDDEN_RUNTIME_OPERATIONS: frozenset[str] = frozenset({
-    "git_commit",
-    "git_push",
-    "git_merge",
-    "git_rebase",
-    "git_reset",
-    "git_checkout_write",
-    "issue_create",
-    "issue_update",
-    "issue_close",
-    "issue_comment",
-    "issue_label",
-    "pr_create",
-    "pr_merge",
-    "pr_review_submit",
-    "docker_build",
-    "docker_push",
-    "docker_compose_up",
-    "db_migration_apply",
-    "db_schema_mutate",
-    "file_write",
-    "file_delete",
-    "file_move",
-    "secret_write",
-    "secret_rotate",
-    "env_write",
-    "deploy",
-    "release",
-    "publish",
-})
+FORBIDDEN_RUNTIME_OPERATIONS: frozenset[str] = frozenset(
+    {
+        "git_commit",
+        "git_push",
+        "git_merge",
+        "git_rebase",
+        "git_reset",
+        "git_checkout_write",
+        "issue_create",
+        "issue_update",
+        "issue_close",
+        "issue_comment",
+        "issue_label",
+        "pr_create",
+        "pr_merge",
+        "pr_review_submit",
+        "docker_build",
+        "docker_push",
+        "docker_compose_up",
+        "db_migration_apply",
+        "db_schema_mutate",
+        "file_write",
+        "file_delete",
+        "file_move",
+        "secret_write",
+        "secret_rotate",
+        "env_write",
+        "deploy",
+        "release",
+        "publish",
+    }
+)
 
 FORBIDDEN_REPO_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(
-        r"\bgit\s+(commit|push|merge|rebase|reset|checkout\b)", re.IGNORECASE
-    ),
-    re.compile(
-        r"\bgh\s+(issue|pr|release)\s+(create|close|merge|edit)", re.IGNORECASE
-    ),
+    re.compile(r"\bgit\s+(commit|push|merge|rebase|reset|checkout\b)", re.IGNORECASE),
+    re.compile(r"\bgh\s+(issue|pr|release)\s+(create|close|merge|edit)", re.IGNORECASE),
     re.compile(r"\bdocker\s+(build|push|compose\s+up)", re.IGNORECASE),
 )
 
-INPUT_SCAN_TOOLS: frozenset[str] = frozenset({
-    "context.search",
-    "context.trace",
-    "context.explain_source",
-    "context.package",
-    "context.show_snapshot",
-    "context.show_audit",
-})
+INPUT_SCAN_TOOLS: frozenset[str] = frozenset(
+    {
+        "context.search",
+        "context.trace",
+        "context.explain_source",
+        "context.package",
+        "context.show_snapshot",
+        "context.show_audit",
+    }
+)
 
-INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset({
-    "context.readiness",
-    "context.briefing",
-    "cdb_context_briefing",
-    "context.self_explain",
-    "context.stop_resolver",
-    "context.required_reads",
-    "cdb_context_impact",
-    # Wave-14 read-only record context tools (#2122).
-    # These tools process evidence/claim/memory/decision records whose titles
-    # and content legitimately contain words like "Create", "Update", "Delete",
-    # "migration", "runbook" — blocking them via mutation scan would make the
-    # tools unusable for normal context records.
-    "cdb_context_evidence_resolve",
-    "cdb_context_claim_resolve",
-    "cdb_context_memory_get",
-    "cdb_context_trust_summary",
-    "cdb_context_decision_history",
-    "cdb_context_decision_replay",
-    # Wave-15 contradiction scan MCP tool (#2148).
-    # Processes doc/code/decision/claim/evidence records whose content legitimately
-    # contains words like "Create", "Update", "Delete", "migration", "runbook".
-    # The tool is read-only and fail-closed; the scan service itself enforces
-    # no-write, no-network, no-auto-fix guardrails.
-    "cdb_context_contradictions",
-    # Wave-16-C stale context MCP tool (#2157).
-    # Processes scan bundles whose source paths, reasons, and recommended_refresh
-    # strings legitimately contain words like "Create", "Update", "Delete",
-    # "migration", "runbook". The tool is read-only, bundle-driven, and
-    # fail-closed; the scan service enforces no-write, no-network, no-auto-fix.
-    "cdb_context_stale",
-    # Wave-17-C scope drift MCP tool (#2165).
-    # Processes scan bundles including generated_findings.content whose
-    # legitimate values are exactly the write-intent strings the firewall
-    # scans for (e.g. "commit", "push", "create file", "git push").
-    # The tool is read-only, bundle-driven, and fail-closed; the scope drift
-    # firewall service enforces no-write, no-network, no-auto-fix guardrails.
-    "cdb_context_scope_drift",
-    # Wave-18-B quality score MCP tool (#2173).
-    # Processes quality bundles whose source paths, decision descriptions, and
-    # evidence content legitimately contain words like "Create", "Update",
-    # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
-    # and fail-closed; the quality scoring service enforces no-write, no-network,
-    # no-auto-fix guardrails.
-    "cdb_context_quality_score",
-    # Wave-18-D architect signals MCP tool (#2175).
-    # Processes signal bundles whose findings and explanations legitimately
-    # contain write-intent strings. The tool is read-only, bundle-driven, and
-    # fail-closed; the architect signal service enforces no-write, no-network,
-    # no-auto-fix guardrails.
-    "cdb_context_architect_signals",
-    # Wave-19 visual control room MCP tool (#2181).
-    # Processes context bundles whose evidence content, decision descriptions,
-    # and source paths legitimately contain words like "Create", "Update",
-    # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
-    # and fail-closed; the control room view builder enforces no-write,
-    # no-network, no-auto-fix guardrails.
-    "cdb_control_room_view",
-    # Wave-20 Agent OS readiness MCP tool (#2192).
-    # Processes context bundles aggregating quality, scope-drift, contradiction,
-    # stale, and architect-signal findings whose content legitimately contains
-    # words like "Create", "Update", "Delete", "migration", "runbook".
-    # The tool is read-only, bundle-driven, and fail-closed; the evaluator
-    # enforces no-write, no-network, no-auto-fix, no-live-go guardrails.
-    "cdb_agent_os_readiness",
-})
+INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset(
+    {
+        "context.readiness",
+        "context.briefing",
+        "cdb_context_briefing",
+        "context.self_explain",
+        "context.stop_resolver",
+        "context.required_reads",
+        "cdb_context_impact",
+        # Wave-14 read-only record context tools (#2122).
+        # These tools process evidence/claim/memory/decision records whose titles
+        # and content legitimately contain words like "Create", "Update", "Delete",
+        # "migration", "runbook" — blocking them via mutation scan would make the
+        # tools unusable for normal context records.
+        "cdb_context_evidence_resolve",
+        "cdb_context_claim_resolve",
+        "cdb_context_memory_get",
+        "cdb_context_trust_summary",
+        "cdb_context_decision_history",
+        "cdb_context_decision_replay",
+        # Wave-15 contradiction scan MCP tool (#2148).
+        # Processes doc/code/decision/claim/evidence records whose content legitimately
+        # contains words like "Create", "Update", "Delete", "migration", "runbook".
+        # The tool is read-only and fail-closed; the scan service itself enforces
+        # no-write, no-network, no-auto-fix guardrails.
+        "cdb_context_contradictions",
+        # Wave-16-C stale context MCP tool (#2157).
+        # Processes scan bundles whose source paths, reasons, and recommended_refresh
+        # strings legitimately contain words like "Create", "Update", "Delete",
+        # "migration", "runbook". The tool is read-only, bundle-driven, and
+        # fail-closed; the scan service enforces no-write, no-network, no-auto-fix.
+        "cdb_context_stale",
+        # Wave-17-C scope drift MCP tool (#2165).
+        # Processes scan bundles including generated_findings.content whose
+        # legitimate values are exactly the write-intent strings the firewall
+        # scans for (e.g. "commit", "push", "create file", "git push").
+        # The tool is read-only, bundle-driven, and fail-closed; the scope drift
+        # firewall service enforces no-write, no-network, no-auto-fix guardrails.
+        "cdb_context_scope_drift",
+        # Wave-18-B quality score MCP tool (#2173).
+        # Processes quality bundles whose source paths, decision descriptions, and
+        # evidence content legitimately contain words like "Create", "Update",
+        # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
+        # and fail-closed; the quality scoring service enforces no-write, no-network,
+        # no-auto-fix guardrails.
+        "cdb_context_quality_score",
+        # Wave-18-D architect signals MCP tool (#2175).
+        # Processes signal bundles whose findings and explanations legitimately
+        # contain write-intent strings. The tool is read-only, bundle-driven, and
+        # fail-closed; the architect signal service enforces no-write, no-network,
+        # no-auto-fix guardrails.
+        "cdb_context_architect_signals",
+        # Wave-19 visual control room MCP tool (#2181).
+        # Processes context bundles whose evidence content, decision descriptions,
+        # and source paths legitimately contain words like "Create", "Update",
+        # "Delete", "migration", "runbook". The tool is read-only, bundle-driven,
+        # and fail-closed; the control room view builder enforces no-write,
+        # no-network, no-auto-fix guardrails.
+        "cdb_control_room_view",
+        # Wave-20 Agent OS readiness MCP tool (#2192).
+        # Processes context bundles aggregating quality, scope-drift, contradiction,
+        # stale, and architect-signal findings whose content legitimately contains
+        # words like "Create", "Update", "Delete", "migration", "runbook".
+        # The tool is read-only, bundle-driven, and fail-closed; the evaluator
+        # enforces no-write, no-network, no-auto-fix, no-live-go guardrails.
+        "cdb_agent_os_readiness",
+    }
+)
+
+PARAMETER_SCAN_EXEMPTIONS: dict[str, frozenset[str]] = {
+    # `context.show_audit` treats these fields as tool-name identifiers.
+    # They must reach the handler even when a future/unknown tool name contains
+    # words like "create" or "update".
+    "context.show_audit": frozenset({"target_tool", "entity_id"}),
+}
 
 
 @dataclass(frozen=True)
@@ -253,6 +266,8 @@ class PermissionGuard:
         results: list[PermissionCheckResult] = []
 
         for key, value in _walk_parameters(parameters):
+            if _should_skip_parameter_scan(tool_name, key):
+                continue
             if isinstance(value, str):
                 violations = _scan_string(value, tool_name, key, should_scan)
                 results.extend(violations)
@@ -268,7 +283,8 @@ class PermissionGuard:
 
 
 def _walk_parameters(
-    params: dict[str, Any], prefix: str = "",
+    params: dict[str, Any],
+    prefix: str = "",
 ) -> list[tuple[str, Any]]:
     flat: list[tuple[str, Any]] = []
     for key, value in params.items():
@@ -286,8 +302,18 @@ def _walk_parameters(
     return flat
 
 
+def _should_skip_parameter_scan(tool_name: str, param_path: str) -> bool:
+    exempt_params = PARAMETER_SCAN_EXEMPTIONS.get(tool_name)
+    if not exempt_params:
+        return False
+    return param_path in exempt_params
+
+
 def _scan_string(
-    value: str, tool_name: str, param_path: str, full_scan: bool,
+    value: str,
+    tool_name: str,
+    param_path: str,
+    full_scan: bool,
 ) -> list[PermissionCheckResult]:
     results: list[PermissionCheckResult] = []
     upper = value.strip().upper()
