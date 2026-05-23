@@ -882,8 +882,7 @@ class TestContextReadinessHandler:
         )
         assert result["readiness"]["status"] == "blocked_missing_context"
         assert any(
-            "no stop conditions" in m
-            for m in result["readiness"]["missing_context"]
+            "no stop conditions" in m for m in result["readiness"]["missing_context"]
         )
 
     # --- Blocked: missing_evidence ---
@@ -1100,10 +1099,16 @@ class TestContextReadinessHandler:
         )
         r = result["readiness"]
         expected_fields = [
-            "status", "reasons", "required_next_reads",
-            "human_go_required", "stop_conditions",
-            "missing_context", "missing_evidence",
-            "scope_drift_findings", "uncertainties", "guardrails",
+            "status",
+            "reasons",
+            "required_next_reads",
+            "human_go_required",
+            "stop_conditions",
+            "missing_context",
+            "missing_evidence",
+            "scope_drift_findings",
+            "uncertainties",
+            "guardrails",
         ]
         for field in expected_fields:
             assert field in r, f"Missing output field: {field}"
@@ -1351,7 +1356,9 @@ class TestContextBriefingHandler:
         assert session_context["brain_source"] == "repo-only"
         assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
 
-    def test_repo_only_session_context_matches_brain_evidence_gate_defaults(self) -> None:
+    def test_repo_only_session_context_matches_brain_evidence_gate_defaults(
+        self,
+    ) -> None:
         """repo-only session handoff stays non-DB-backed and explicitly not-used."""
         bridge = create_bridge()
         result = bridge.execute_tool(
@@ -1460,7 +1467,9 @@ class TestContextBriefingHandler:
             "open_epics": ["#2607"],
         }
 
-    def test_malformed_working_assumptions_degrade_to_empty_with_limitation(self) -> None:
+    def test_malformed_working_assumptions_degrade_to_empty_with_limitation(
+        self,
+    ) -> None:
         """Malformed working_assumptions fail closed to an empty list."""
         bridge = create_bridge()
         result = bridge.execute_tool(
@@ -1497,8 +1506,7 @@ class TestContextBriefingHandler:
         )
         session_context = result["briefing"]["session_context"]
         assert any(
-            "limitations malformed" in item
-            for item in session_context["limitations"]
+            "limitations malformed" in item for item in session_context["limitations"]
         )
         assert all(isinstance(item, str) for item in session_context["limitations"])
 
@@ -1525,7 +1533,9 @@ class TestContextBriefingHandler:
                     "related_prs": ["#2613"],
                     "open_epics": ["#2607"],
                 },
-                "working_assumptions": ["Use briefing session context before planning."],
+                "working_assumptions": [
+                    "Use briefing session context before planning."
+                ],
             },
         )
         briefing = result["briefing"]
@@ -1773,8 +1783,7 @@ class TestContextBriefingHandler:
         stop_conditions = b["stop_conditions"]
         all_text = " ".join(stop_conditions + b["unresolved_questions"])
         assert (
-            "blocked" in all_text.lower()
-            or "scope" in all_text.lower()
+            "blocked" in all_text.lower() or "scope" in all_text.lower()
         ), "Readiness blocker should be reflected in output"
 
     def test_known_risks_contains_mock_note(self) -> None:
@@ -1793,8 +1802,7 @@ class TestContextBriefingHandler:
         assert result["status"] == "ok"
         b = result["briefing"]
         assert any(
-            "synthetic" in r.lower() or "mock" in r.lower()
-            for r in b["known_risks"]
+            "synthetic" in r.lower() or "mock" in r.lower() for r in b["known_risks"]
         ), "Known risks must surface v0 mock note"
 
     def test_validation_plan_present_for_all_modes(self) -> None:
@@ -1895,7 +1903,13 @@ class TestContextBriefingHandler:
         assert b["human_go_required"] is False
         assert len(b["required_reads"]) >= 6
         # Must not contain blocked scope or artificial missing reads
-        assert "blocked" not in b["scope_summary"].lower().split("readiness status: ")[-1].split(".")[0]
+        assert (
+            "blocked"
+            not in b["scope_summary"]
+            .lower()
+            .split("readiness status: ")[-1]
+            .split(".")[0]
+        )
 
     def test_different_target_paths_produce_different_briefing_id(self) -> None:
         """Different target_paths produce different briefing_id."""
@@ -1961,7 +1975,9 @@ class TestCdbContextBriefingAlias:
             assert "guardrails" in briefing
             assert "human_go_required" in briefing
 
-    def test_alias_preserves_stop_conditions_guardrails_human_go_visibility(self) -> None:
+    def test_alias_preserves_stop_conditions_guardrails_human_go_visibility(
+        self,
+    ) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "cdb_context_briefing",
@@ -2026,9 +2042,7 @@ class TestContextStopResolverHandler:
     def test_empty_stop_conditions_returns_empty(self) -> None:
         """Empty stop_conditions returns empty resolved list."""
         bridge = create_bridge()
-        result = bridge.execute_tool(
-            "context.stop_resolver", {"stop_conditions": []}
-        )
+        result = bridge.execute_tool("context.stop_resolver", {"stop_conditions": []})
         assert result["status"] == "ok"
         assert result["resolved"] == []
 
@@ -2284,13 +2298,25 @@ class TestContextStopResolverHandler:
         )
         assert result["status"] == "ok"
         r = result["resolved"][0]
-        for field in ("type", "severity", "reason", "required_action", "human_go_required"):
+        for field in (
+            "type",
+            "severity",
+            "reason",
+            "required_action",
+            "human_go_required",
+        ):
             assert field in r, f"Missing field: {field}"
         assert r["type"] in {
-            "missing_context", "missing_evidence", "scope_drift_risk",
-            "runtime_surface_touched", "trading_surface_touched",
-            "write_requires_human_go", "stale_context",
-            "contradiction_risk", "forbidden_path", "secrets_risk",
+            "missing_context",
+            "missing_evidence",
+            "scope_drift_risk",
+            "runtime_surface_touched",
+            "trading_surface_touched",
+            "write_requires_human_go",
+            "stale_context",
+            "contradiction_risk",
+            "forbidden_path",
+            "secrets_risk",
         }
         assert r["severity"] in {"info", "warning", "blocking"}
         assert isinstance(r["human_go_required"], bool)
@@ -2388,9 +2414,9 @@ class TestContextStopResolverHandler:
         assert "stop_conditions" in b
         assert isinstance(b["stop_conditions"], list)
         for sc in b["stop_conditions"]:
-            assert isinstance(sc, str), (
-                f"stop_conditions must remain string[], got {type(sc).__name__}: {sc!r}"
-            )
+            assert isinstance(
+                sc, str
+            ), f"stop_conditions must remain string[], got {type(sc).__name__}: {sc!r}"
 
     def test_resolver_does_not_mutate_input_list(self) -> None:
         """Input stop_conditions list is not mutated by resolve_stop_conditions."""
@@ -2399,9 +2425,7 @@ class TestContextStopResolverHandler:
         original = ["S1: scope ambiguous", "S4: no evidence"]
         before = list(original)
         resolve_stop_conditions(stop_conditions=original)
-        assert original == before, (
-            f"Input list was mutated: {before} -> {original}"
-        )
+        assert original == before, f"Input list was mutated: {before} -> {original}"
 
     def test_briefing_surfaces_resolver_failure(self) -> None:
         """When the resolver raises, briefing surfaces it in known_risks
@@ -2427,17 +2451,17 @@ class TestContextStopResolverHandler:
         b = result["briefing"]
         assert isinstance(b["stop_conditions"], list)
         for sc in b["stop_conditions"]:
-            assert isinstance(sc, str), (
-                f"stop_conditions must remain string[] on failure"
-            )
+            assert isinstance(
+                sc, str
+            ), f"stop_conditions must remain string[] on failure"
         risk_text = " ".join(b["known_risks"]).lower()
-        assert "resolver unavailable" in risk_text, (
-            f"known_risks should surface resolver failure, got: {b['known_risks']}"
-        )
+        assert (
+            "resolver unavailable" in risk_text
+        ), f"known_risks should surface resolver failure, got: {b['known_risks']}"
         unresolved_text = " ".join(b["unresolved_questions"]).lower()
-        assert "stop condition resolver failed" in unresolved_text, (
-            f"unresolved_questions should surface resolver failure, got: {b['unresolved_questions']}"
-        )
+        assert (
+            "stop condition resolver failed" in unresolved_text
+        ), f"unresolved_questions should surface resolver failure, got: {b['unresolved_questions']}"
 
     def test_live_substring_no_false_positive_deliverable(self) -> None:
         """'deliverable' does NOT trigger forbidden_path (word-boundary fix)."""
@@ -2448,9 +2472,9 @@ class TestContextStopResolverHandler:
         )
         assert result["status"] == "ok"
         r = result["resolved"][0]
-        assert r["type"] != "forbidden_path", (
-            f"deliverable should not trigger forbidden_path, got {r['type']}"
-        )
+        assert (
+            r["type"] != "forbidden_path"
+        ), f"deliverable should not trigger forbidden_path, got {r['type']}"
 
     def test_key_substring_no_false_positive_monkeypatch(self) -> None:
         """'monkeypatch' etc. does NOT trigger secrets_risk (word-boundary fix)."""
@@ -2459,9 +2483,9 @@ class TestContextStopResolverHandler:
         for text in ("monkeypatch", "keyboard", "key result", "turkey"):
             result = resolve_stop_conditions(stop_conditions=[text])
             for r in result:
-                assert r["type"] != "secrets_risk", (
-                    f"{text!r} should not trigger secrets_risk, got {r['type']}"
-                )
+                assert (
+                    r["type"] != "secrets_risk"
+                ), f"{text!r} should not trigger secrets_risk, got {r['type']}"
 
     def test_standalone_live_still_triggers_forbidden_path(self) -> None:
         """Standalone word 'live' still triggers forbidden_path."""
@@ -2481,9 +2505,9 @@ class TestContextStopResolverHandler:
         for text in ("api_key found", "private key exposed", "secret_key leaked"):
             result = resolve_stop_conditions(stop_conditions=[text])
             assert len(result) >= 1
-            assert result[0]["type"] == "secrets_risk", (
-                f"{text!r} should trigger secrets_risk"
-            )
+            assert (
+                result[0]["type"] == "secrets_risk"
+            ), f"{text!r} should trigger secrets_risk"
 
 
 class TestContextRequiredReadsHandler:
@@ -2523,7 +2547,11 @@ class TestContextRequiredReadsHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
         )
         assert result["status"] == "ok"
 
@@ -2532,7 +2560,11 @@ class TestContextRequiredReadsHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Test scope.", "target_issue": 123, "operation_mode": "read_only"},
+            {
+                "task_scope": "Test scope.",
+                "target_issue": 123,
+                "operation_mode": "read_only",
+            },
         )
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_target_issue"
@@ -2568,7 +2600,11 @@ class TestContextRequiredReadsHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
         )
         assert result["status"] == "ok"
         assert result["tool"] == "context.required_reads"
@@ -2581,7 +2617,11 @@ class TestContextRequiredReadsHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
         )
         baseline_paths = {
             "AGENTS.md",
@@ -2605,7 +2645,11 @@ class TestContextRequiredReadsHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Test scope.", "target_issue": None, "operation_mode": "read_only"},
+            {
+                "task_scope": "Test scope.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
         )
         for read in result["resolved_reads"]:
             if read["path"] == "AGENTS.md":
@@ -2666,9 +2710,9 @@ class TestContextRequiredReadsHandler:
         # Same path under a non-existent root should fail
         fake_root = Path("/nonexistent/repo/root")
         available, warning = _check_availability("AGENTS.md", repo_root=fake_root)
-        assert available is False, (
-            f"AGENTS.md should NOT exist under fake root, got available={available}"
-        )
+        assert (
+            available is False
+        ), f"AGENTS.md should NOT exist under fake root, got available={available}"
         assert warning is not None
 
     # --- Write mode ---
@@ -2687,26 +2731,35 @@ class TestContextRequiredReadsHandler:
         assert result["status"] == "ok"
         paths = {r["path"] for r in result["resolved_reads"]}
         # Write mode should add governance-related reads
-        assert "knowledge/governance/CDB_AGENT_POLICY.md" in paths or len(
-            [r for r in result["resolved_reads"] if r["priority"] == "must_read"]
-        ) > 6, "Write mode should add extra must_read entries"
+        assert (
+            "knowledge/governance/CDB_AGENT_POLICY.md" in paths
+            or len(
+                [r for r in result["resolved_reads"] if r["priority"] == "must_read"]
+            )
+            > 6
+        ), "Write mode should add extra must_read entries"
 
     def test_read_only_mode_does_not_add_write_reads(self) -> None:
         """read_only mode doesn't add write-mode governance reads."""
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.required_reads",
-            {"task_scope": "Inspect code.", "target_issue": None, "operation_mode": "read_only"},
+            {
+                "task_scope": "Inspect code.",
+                "target_issue": None,
+                "operation_mode": "read_only",
+            },
         )
         # DELIVERY_APPROVED.yaml is only added for write modes
         delivery_entries = [
-            r for r in result["resolved_reads"]
+            r
+            for r in result["resolved_reads"]
             if r["path"] == "knowledge/governance/DELIVERY_APPROVED.yaml"
             and r["priority"] == "must_read"
         ]
-        assert len(delivery_entries) == 0, (
-            "DELIVERY_APPROVED.yaml must_read should not appear in read_only mode"
-        )
+        assert (
+            len(delivery_entries) == 0
+        ), "DELIVERY_APPROVED.yaml must_read should not appear in read_only mode"
 
     # --- Domain scope ---
 
@@ -2724,9 +2777,9 @@ class TestContextRequiredReadsHandler:
         )
         assert result["status"] == "ok"
         paths = {r["path"] for r in result["resolved_reads"]}
-        assert "docs/surrealdb/context-package-model-v1.md" in paths, (
-            "SurrealDB scope should add context package model doc"
-        )
+        assert (
+            "docs/surrealdb/context-package-model-v1.md" in paths
+        ), "SurrealDB scope should add context package model doc"
 
     def test_ci_domain_reads_point_to_files(self) -> None:
         """CI domain reads resolve to concrete files, not directories."""
@@ -2739,13 +2792,13 @@ class TestContextRequiredReadsHandler:
         assert len(ci_reads) > 0, "CI domain must have reads"
         for read in ci_reads:
             path = read["path"]
-            assert not path.endswith("/"), (
-                f"CI read path must be a file, not directory: {path!r}"
-            )
+            assert not path.endswith(
+                "/"
+            ), f"CI read path must be a file, not directory: {path!r}"
             available, warning = _check_availability(path)
-            assert available is True, (
-                f"CI read {path!r} should be available, got warning={warning!r}"
-            )
+            assert (
+                available is True
+            ), f"CI read {path!r} should be available, got warning={warning!r}"
 
     # --- Symbols do not invent file paths ---
 
@@ -2758,18 +2811,21 @@ class TestContextRequiredReadsHandler:
                 "task_scope": "Refactor handler.",
                 "target_issue": None,
                 "operation_mode": "read_only",
-                "target_symbols": ["context_briefing_handler", "resolve_required_reads"],
+                "target_symbols": [
+                    "context_briefing_handler",
+                    "resolve_required_reads",
+                ],
             },
         )
         assert result["status"] == "ok"
         for read in result["resolved_reads"]:
             if read["source_ref"] == "target_symbols":
-                assert read["available"] is False, (
-                    f"Symbol entry should have available=false: {read}"
-                )
-                assert read["warning"] is not None, (
-                    f"Symbol entry should have warning: {read}"
-                )
+                assert (
+                    read["available"] is False
+                ), f"Symbol entry should have available=false: {read}"
+                assert (
+                    read["warning"] is not None
+                ), f"Symbol entry should have warning: {read}"
                 return
         pytest.fail("No target_symbols entry found in resolved reads")
 
@@ -2802,7 +2858,14 @@ class TestContextRequiredReadsHandler:
                 "operation_mode": "read_only",
             },
         )
-        required_fields = {"path", "priority", "reason", "source_ref", "available", "warning"}
+        required_fields = {
+            "path",
+            "priority",
+            "reason",
+            "source_ref",
+            "available",
+            "warning",
+        }
         for read in result["resolved_reads"]:
             for field in required_fields:
                 assert field in read, f"Read missing field {field}: {read}"
@@ -2820,9 +2883,9 @@ class TestContextRequiredReadsHandler:
         )
         valid_priorities = {"must_read", "should_read", "optional"}
         for read in result["resolved_reads"]:
-            assert read["priority"] in valid_priorities, (
-                f"Invalid priority {read['priority']!r} in {read['path']}"
-            )
+            assert (
+                read["priority"] in valid_priorities
+            ), f"Invalid priority {read['priority']!r} in {read['path']}"
 
     # --- Schema compatibility ---
 
@@ -2844,9 +2907,9 @@ class TestContextRequiredReadsHandler:
         assert "required_reads" in b
         assert isinstance(b["required_reads"], list)
         for item in b["required_reads"]:
-            assert isinstance(item, str), (
-                f"required_reads must remain string[], got {type(item).__name__}: {item!r}"
-            )
+            assert isinstance(
+                item, str
+            ), f"required_reads must remain string[], got {type(item).__name__}: {item!r}"
 
     # --- Tool registration ---
 
@@ -2885,9 +2948,9 @@ class TestContextRequiredReadsHandler:
                 "context.required_reads",
                 {"task_scope": "Test.", "target_issue": None, "operation_mode": mode},
             )
-            assert result["status"] == "ok", (
-                f"Valid mode {mode!r} should be accepted, got {result}"
-            )
+            assert (
+                result["status"] == "ok"
+            ), f"Valid mode {mode!r} should be accepted, got {result}"
 
 
 class TestCdbContextImpactHandler:
@@ -2979,7 +3042,10 @@ class TestCdbContextImpactHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "cdb_context_impact",
-            {"target_paths": ["knowledge/governance/CDB_CONSTITUTION.md"], "target_issue": "#2111"},
+            {
+                "target_paths": ["knowledge/governance/CDB_CONSTITUTION.md"],
+                "target_issue": "#2111",
+            },
         )
         assert result["status"] == "ok"
         assert result["impact"]["impact_level"] == "blocking"
@@ -3160,9 +3226,9 @@ class TestWave14BridgeDispatch:
         bridge = create_bridge()
         result = bridge.execute_tool(tool_name, {})
         error_code = result.get("error", {}).get("code")
-        assert error_code != "not_implemented", (
-            f"{tool_name} returned not_implemented — registry stub not replaced"
-        )
+        assert (
+            error_code != "not_implemented"
+        ), f"{tool_name} returned not_implemented — registry stub not replaced"
 
     @pytest.mark.parametrize("tool_name", _WAVE14_TOOLS)
     def test_metadata_read_only_true(self, tool_name: str) -> None:
@@ -3170,9 +3236,9 @@ class TestWave14BridgeDispatch:
         bridge = create_bridge()
         result = bridge.execute_tool(tool_name, {})
         metadata = result.get("metadata", {})
-        assert metadata.get("read_only") is True, (
-            f"{tool_name} missing metadata.read_only=True in result: {result}"
-        )
+        assert (
+            metadata.get("read_only") is True
+        ), f"{tool_name} missing metadata.read_only=True in result: {result}"
 
     def test_evidence_resolve_with_records(self) -> None:
         """evidence_resolve accepts inline records (noop/in-memory path)."""
@@ -3193,11 +3259,7 @@ class TestWave14BridgeDispatch:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "cdb_context_claim_resolve",
-            {
-                "claim_records": [
-                    {"id": "c1", "text": "Test claim", "status": "open"}
-                ]
-            },
+            {"claim_records": [{"id": "c1", "text": "Test claim", "status": "open"}]},
         )
         assert result.get("error", {}).get("code") != "not_implemented"
         assert result.get("metadata", {}).get("read_only") is True
