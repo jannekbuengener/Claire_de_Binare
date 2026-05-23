@@ -1080,6 +1080,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             "limitations malformed; using generated limitations"
         )
 
+    session_context_limitations_norm = list(dict.fromkeys(session_context_limitations))
+
     # --- Normalize arrays ---
     if not isinstance(target_paths, list):
         target_paths = []
@@ -1108,6 +1110,12 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "operation_mode": operation_mode,
         "agent_type": agent_type_norm,
         "risk_level": risk_level_norm,
+        "repo_state": repo_state,
+        "github_state": github_state,
+        "brain_source": brain_source,
+        "brain_status": brain_status,
+        "working_assumptions": working_assumptions,
+        "limitations": session_context_limitations_norm,
     }
     briefing_id = hashlib.sha256(
         json.dumps(request_for_hash, sort_keys=True).encode()
@@ -1349,7 +1357,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             "db_claims_allowed": brain_source == "surrealdb-local",
         },
         "working_assumptions": working_assumptions,
-        "limitations": list(dict.fromkeys(session_context_limitations)),
+        "limitations": session_context_limitations_norm,
     }
 
     # --- Enrichment (#2122) ---

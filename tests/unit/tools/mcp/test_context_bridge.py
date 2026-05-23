@@ -1467,6 +1467,175 @@ class TestContextBriefingHandler:
             "open_epics": ["#2607"],
         }
 
+    def test_repo_state_branch_changes_briefing_id(self) -> None:
+        """Different normalized repo_state.branch values change briefing_id."""
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-hash-repo-branch",
+            "task_scope": "Validate briefing_id repo_state sensitivity.",
+            "target_issue": "#2607",
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+            "repo_state": {
+                "commit": "abc123",
+                "working_tree": "clean",
+            },
+        }
+        r1 = bridge.execute_tool(
+            "context.briefing",
+            {**base, "repo_state": {**base["repo_state"], "branch": "branch-a"}},
+        )
+        r2 = bridge.execute_tool(
+            "context.briefing",
+            {**base, "repo_state": {**base["repo_state"], "branch": "branch-b"}},
+        )
+        assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+    def test_github_state_changes_briefing_id(self) -> None:
+        """Different normalized github_state values change briefing_id."""
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-hash-github-state",
+            "task_scope": "Validate briefing_id github_state sensitivity.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+        r1 = bridge.execute_tool(
+            "context.briefing",
+            {
+                **base,
+                "github_state": {
+                    "target_issue": "#2607",
+                    "related_prs": ["#2618"],
+                    "open_epics": [],
+                },
+            },
+        )
+        r2 = bridge.execute_tool(
+            "context.briefing",
+            {
+                **base,
+                "github_state": {
+                    "target_issue": "#2607",
+                    "related_prs": ["#9999"],
+                    "open_epics": [],
+                },
+            },
+        )
+        assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+    def test_brain_source_changes_briefing_id(self) -> None:
+        """Different brain_source values change briefing_id."""
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-hash-brain-source",
+            "task_scope": "Validate briefing_id brain_source sensitivity.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+        r1 = bridge.execute_tool(
+            "context.briefing", {**base, "brain_source": "repo-only"}
+        )
+        r2 = bridge.execute_tool(
+            "context.briefing", {**base, "brain_source": "in_memory"}
+        )
+        assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+    def test_working_assumptions_change_briefing_id(self) -> None:
+        """Different working_assumptions values change briefing_id."""
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-hash-assumptions",
+            "task_scope": "Validate briefing_id assumptions sensitivity.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+        r1 = bridge.execute_tool(
+            "context.briefing", {**base, "working_assumptions": ["assumption-a"]}
+        )
+        r2 = bridge.execute_tool(
+            "context.briefing", {**base, "working_assumptions": ["assumption-b"]}
+        )
+        assert r1["briefing"]["briefing_id"] != r2["briefing"]["briefing_id"]
+
+    def test_malformed_session_context_inputs_are_normalized_before_hashing(
+        self,
+    ) -> None:
+        """Malformed session-context inputs hash by normalized, deterministic values."""
+        bridge = create_bridge()
+        base = {
+            "task_id": "cdb-briefing-hash-malformed-session-context",
+            "task_scope": "Validate normalized hashing for malformed session inputs.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+        }
+        malformed_inputs = {
+            "brain_source": object(),
+            "brain_status": 1,
+            "repo_state": "bad",
+            "github_state": "bad",
+            "working_assumptions": "bad",
+            "limitations": "bad",
+        }
+        r1 = bridge.execute_tool("context.briefing", {**base, **malformed_inputs})
+        r2 = bridge.execute_tool("context.briefing", {**base, **malformed_inputs})
+        assert r1["briefing"]["briefing_id"] == r2["briefing"]["briefing_id"]
+
+    def test_identical_normalized_session_context_inputs_keep_same_briefing_id(
+        self,
+    ) -> None:
+        """Equivalent normalized inputs produce identical briefing_id."""
+        bridge = create_bridge()
+        inputs_a = {
+            "task_id": "cdb-briefing-hash-normalized-equality",
+            "task_scope": "Validate normalized session hashing equality.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+            "repo_state": {
+                "branch": " feature/session-context ",
+                "commit": " abc123 ",
+                "working_tree": "dirty",
+            },
+            "github_state": {
+                "target_issue": None,
+                "related_prs": ["#2618"],
+                "open_epics": ["#2607"],
+            },
+            "brain_source": "repo-only",
+            "brain_status": "not-used",
+            "working_assumptions": ["assumption"],
+            "limitations": ["limit", "limit"],
+        }
+        inputs_b = {
+            "task_id": "cdb-briefing-hash-normalized-equality",
+            "task_scope": "Validate normalized session hashing equality.",
+            "target_issue": None,
+            "requested_depth": "quick",
+            "operation_mode": "read_only",
+            "repo_state": {
+                "branch": "feature/session-context",
+                "commit": "abc123",
+                "working_tree": "dirty",
+            },
+            "github_state": {
+                "target_issue": None,
+                "related_prs": ["#2618"],
+                "open_epics": ["#2607"],
+            },
+            "brain_source": "repo-only",
+            "brain_status": "not-used",
+            "working_assumptions": ["assumption"],
+            "limitations": ["limit"],
+        }
+        r1 = bridge.execute_tool("context.briefing", inputs_a)
+        r2 = bridge.execute_tool("context.briefing", inputs_b)
+        assert r1["briefing"]["briefing_id"] == r2["briefing"]["briefing_id"]
+
     def test_malformed_working_assumptions_degrade_to_empty_with_limitation(
         self,
     ) -> None:
