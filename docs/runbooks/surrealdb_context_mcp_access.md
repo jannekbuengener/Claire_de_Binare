@@ -95,7 +95,7 @@ Repo presence is not MCP availability. Each surface must be verified independent
 | Agent Surface | L1 Config | L2 Host | L3 Server | L4 Inventory | L5 Invocation | Overall Status |
 |---|---|---|---|---|---|---|---|
 | **Codex** | ✓ verified | via host agent (OpenCode or Claude) | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | reference in agents/templates/codex_mcp_config.md |
-| **OpenCode** | ✓ verified | ✓ repo-tracked config (`.opencode.jsonc`) | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | repo-tracked config + bridge-verified; stdio server needs env fix |
+| **OpenCode** | ✓ verified | ✓ host-active verified | ✓ host-active verified | ✓ bridge verified | ✓ bridge verified | repo-tracked config (`opencode.jsonc`) + host-active; cdb_context server connected in OpenCode UI |
 | **Claude / Cloud Code** | ✓ verified | template in `agents/templates/claude_mcp.json.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific copy to user-level `.mcp.json` |
 | **Gemini** | ✓ verified | template in `agents/templates/gemini_mcp_config.yml.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific embed in workflow YAML |
 | **Onboarding / new agent** | ✓ verified | setup script in `agents/templates/onboarding_mcp_setup.ps1` | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | setup script validates L1/L3/L4/L5; L2 requires manual host config |
@@ -129,11 +129,13 @@ python -c "import tools.mcp.server; print('STDIO IMPORT OK')"
 # pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
 ```
 
+> **Note on config naming:** OpenCode's project-level config must be named `opencode.jsonc` or `opencode.json` (no leading dot). The repo tracked config was renamed from `.opencode.jsonc` to `opencode.jsonc` to match this requirement. Pre-existing user-level config at `~/.config/opencode/opencode.jsonc` is loaded alongside and merged per OpenCode's config precedence rules.
+
 **Repo-tracked configs and templates:**
 
 | Surface | File | Type | Location |
 |---------|------|------|----------|
-| OpenCode | `.opencode.jsonc` | repo-tracked config (auto-loaded) | repo root |
+| OpenCode | `opencode.jsonc` | repo-tracked config (auto-loaded) | repo root |
 | Claude / Cloud Code | `claude_mcp.json.template` | template (copy to user-level `.mcp.json`) | `agents/templates/` |
 | Gemini | `gemini_mcp_config.yml.template` | template (embed in workflow YAML) | `agents/templates/` |
 | Codex | `codex_mcp_config.md` | reference (no separate MCP surface) | `agents/templates/` |

@@ -7,7 +7,7 @@ the calling agent's MCP configuration.
 
 ## Via OpenCode
 
-1. Ensure `.opencode.jsonc` in repo root includes the `cdb_context` MCP entry.
+1. Ensure `opencode.jsonc` in repo root includes the `cdb_context` MCP entry.
 2. When OpenCode invokes Codex (via agent delegation), `cdb_context` tools
    are available in the MCP inventory.
 

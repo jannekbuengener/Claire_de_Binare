@@ -87,7 +87,7 @@ python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge()
 
 | Surface | Config-Datei | Typ |
 |---------|--------------|-----|
-| OpenCode | `.opencode.jsonc` (Repo-Root) | repo-getrackte Konfiguration |
+| OpenCode | `opencode.jsonc` (Repo-Root) | repo-getrackte Konfiguration |
 | Claude / Cloud Code | `agents/templates/claude_mcp.json.template` | Vorlage (muss in user-level `.mcp.json` kopiert werden) |
 | Gemini | `agents/templates/gemini_mcp_config.yml.template` | Vorlage (muss in Workflow-YAML eingebettet werden) |
 | Codex | `agents/templates/codex_mcp_config.md` | Referenz (kein eigenes MCP-Surface) |
