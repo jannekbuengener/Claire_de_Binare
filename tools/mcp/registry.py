@@ -487,6 +487,34 @@ TOOLS_V0 = [
                     "enum": ["low", "medium", "high"],
                     "description": "Pre-assessed risk level of the task.",
                 },
+                "repo_state": {
+                    "type": "object",
+                    "description": "Optional caller-provided repo session state.",
+                },
+                "github_state": {
+                    "type": "object",
+                    "description": "Optional caller-provided GitHub session state.",
+                },
+                "brain_source": {
+                    "type": "string",
+                    "enum": ["repo-only", "in_memory", "surrealdb-local", "unavailable"],
+                    "description": "Optional session memory source classification.",
+                },
+                "brain_status": {
+                    "type": "string",
+                    "enum": ["used", "partial", "not-used", "blocked"],
+                    "description": "Optional session memory usage status.",
+                },
+                "working_assumptions": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional short-lived assumptions supplied by the caller.",
+                },
+                "limitations": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Optional session limitations supplied by the caller.",
+                },
             },
             "required": ["task_id", "task_scope", "target_issue", "requested_depth", "operation_mode"],
         },
@@ -517,6 +545,27 @@ TOOLS_V0 = [
                         "stale_evidence_notice": {"type": "array", "items": {"type": "string"}},
                         "contradictory_evidence_notice": {"type": "array", "items": {"type": "string"}},
                         "missing_evidence_notice": {"type": "array", "items": {"type": "string"}},
+                        "session_context": {
+                            "type": "object",
+                            "properties": {
+                                "memory_type": {"type": "string"},
+                                "session_only": {"type": "boolean"},
+                                "ttl_seconds": {"type": "integer"},
+                                "brain_source": {"type": "string"},
+                                "brain_status": {"type": "string"},
+                                "repo_state": {"type": "object"},
+                                "github_state": {"type": "object"},
+                                "agent_operating_mode": {"type": "object"},
+                                "working_assumptions": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                                "limitations": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                        },
                         "dependency_paths": {"type": "array"},
                         "known_risks": {"type": "array", "items": {"type": "string"}},
                         "guardrails": {"type": "array", "items": {"type": "string"}},

@@ -60,6 +60,8 @@ Dateilisten für laufende Session.
 
 **Beispiel**: Geladene Issue-Liste für laufende Wave-1-Session.
 
+`context.briefing.briefing.session_context` ist die kanonische read-only Handoff-Fläche für solches Kurzzeitgedächtnis im MCP-Bridge-Scope. Sie muss `memory_type="working_memory"` und `session_only=true` tragen und darf nicht als persistente `agent_memory`-/DB-Memory missverstanden werden.
+
 ---
 
 ### 3.2 `semantic_memory`
@@ -212,6 +214,7 @@ Jeder `agent_memory`-Eintrag MUSS folgende Felder enthalten:
 - Abgelaufene Einträge sind **stale** — sie dürfen gelesen, aber nicht mehr als
   aktuelle Wahrheit behandelt werden.
 - TTL-Überschreitung führt nicht zu automatischem Löschen; der Eintrag bleibt im Audit-Trail.
+- Für `context.briefing.briefing.session_context` ist `ttl_seconds=14400` ein passender `working_memory`-Wert innerhalb dieser Kurzzeit-Regel; daraus folgt kein Recht auf persistente Speicherung oder DB-Write.
 
 ---
 

@@ -1276,6 +1276,314 @@ class TestContextBriefingHandler:
         assert b["briefing_id"] != ""
         assert len(b["briefing_id"]) == 16
 
+    def test_briefing_contains_session_context(self) -> None:
+        """Successful response includes briefing.session_context."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-session-context",
+                "task_scope": "Add structured session context.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        assert result["status"] == "ok"
+        assert "session_context" in result["briefing"]
+
+    def test_session_context_core_working_memory_fields(self) -> None:
+        """session_context exposes stable working-memory defaults."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-working-memory",
+                "task_scope": "Validate session context defaults.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["memory_type"] == "working_memory"
+        assert session_context["session_only"] is True
+        assert session_context["ttl_seconds"] <= 14400
+
+    def test_missing_repo_and_github_state_degrade_without_fabrication(self) -> None:
+        """Missing optional repo/github state degrades to unknown or empty values."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-missing-session-state",
+                "task_scope": "Validate missing session state handling.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["repo_state"] == {
+            "branch": "unknown",
+            "commit": "unknown",
+            "working_tree": "unknown",
+        }
+        assert session_context["github_state"]["target_issue"] is None
+        assert session_context["github_state"]["related_prs"] == []
+        assert session_context["github_state"]["open_epics"] == []
+
+    def test_repo_only_brain_source_disables_db_claims(self) -> None:
+        """repo-only brain source forbids DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-repo-only",
+                "task_scope": "Validate repo-only brain source handling.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "repo-only",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_source"] == "repo-only"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_repo_only_session_context_matches_brain_evidence_gate_defaults(self) -> None:
+        """repo-only session handoff stays non-DB-backed and explicitly not-used."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-brain-evidence-defaults",
+                "task_scope": "Validate Brain Evidence Gate compatibility.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "repo-only",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_status"] == "not-used"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+        assert any(
+            "no DB-backed memory or evidence claims" in item
+            for item in session_context["limitations"]
+        )
+
+    def test_in_memory_brain_source_still_disables_db_claims(self) -> None:
+        """Non-SurrealDB brain sources do not permit DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-in-memory-brain",
+                "task_scope": "Validate in-memory Brain Evidence compatibility.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "in_memory",
+                "brain_status": "used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_source"] == "in_memory"
+        assert session_context["brain_status"] == "used"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_surrealdb_local_is_only_mode_that_allows_db_claims(self) -> None:
+        """Only surrealdb-local enables DB-backed claim mode."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-surrealdb-local",
+                "task_scope": "Validate surrealdb-local claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "surrealdb-local",
+                "brain_status": "used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_source"] == "surrealdb-local"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is True
+
+    def test_repo_state_values_are_preserved_when_provided(self) -> None:
+        """Caller-provided repo_state values are preserved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-repo-state-preserve",
+                "task_scope": "Validate repo_state preservation.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "repo_state": {
+                    "branch": "feature/session-context",
+                    "commit": "abc123def456",
+                    "working_tree": "dirty",
+                },
+            },
+        )
+        assert result["briefing"]["session_context"]["repo_state"] == {
+            "branch": "feature/session-context",
+            "commit": "abc123def456",
+            "working_tree": "dirty",
+        }
+
+    def test_github_state_values_are_preserved_when_provided(self) -> None:
+        """Caller-provided github_state values are preserved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-github-state-preserve",
+                "task_scope": "Validate github_state preservation.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "github_state": {
+                    "target_issue": "#2607",
+                    "related_prs": ["#2613", "#2614"],
+                    "open_epics": ["#2607"],
+                },
+            },
+        )
+        assert result["briefing"]["session_context"]["github_state"] == {
+            "target_issue": "#2607",
+            "related_prs": ["#2613", "#2614"],
+            "open_epics": ["#2607"],
+        }
+
+    def test_malformed_working_assumptions_degrade_to_empty_with_limitation(self) -> None:
+        """Malformed working_assumptions fail closed to an empty list."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-bad-assumptions",
+                "task_scope": "Validate working_assumptions degradation.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "working_assumptions": "not-a-list",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["working_assumptions"] == []
+        assert any(
+            "working_assumptions malformed" in item
+            for item in session_context["limitations"]
+        )
+
+    def test_malformed_limitations_degrade_safely(self) -> None:
+        """Malformed limitations fail closed to generated limitations only."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-bad-limitations",
+                "task_scope": "Validate limitations degradation.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "limitations": "not-a-list",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert any(
+            "limitations malformed" in item
+            for item in session_context["limitations"]
+        )
+        assert all(isinstance(item, str) for item in session_context["limitations"])
+
+    def test_session_context_can_populate_brain_evidence_fields(self) -> None:
+        """session_context plus sibling briefing fields can fill all Brain Evidence keys."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-brain-evidence-complete",
+                "task_scope": "Validate Brain Evidence handoff completeness.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "repo-only",
+                "brain_status": "not-used",
+                "repo_state": {
+                    "branch": "fix/2613-noise-freeze-remaining-push-triggers",
+                    "commit": "f345cf0c",
+                    "working_tree": "dirty",
+                },
+                "github_state": {
+                    "target_issue": "#2607",
+                    "related_prs": ["#2613"],
+                    "open_epics": ["#2607"],
+                },
+                "working_assumptions": ["Use briefing session context before planning."],
+            },
+        )
+        briefing = result["briefing"]
+        session_context = briefing["session_context"]
+
+        brain_evidence = {
+            "brain_source": session_context["brain_source"],
+            "brain_status": session_context["brain_status"],
+            "tools_or_queries": session_context["working_assumptions"]
+            or session_context["limitations"],
+            "records_or_results": [
+                session_context["repo_state"]["branch"],
+                session_context["repo_state"]["commit"],
+                str(session_context["github_state"]["target_issue"]),
+                *session_context["github_state"]["related_prs"],
+                *session_context["github_state"]["open_epics"],
+            ],
+            "repo_crosscheck": [
+                session_context["repo_state"]["branch"],
+                session_context["repo_state"]["commit"],
+                *briefing["required_reads"],
+            ],
+            "impact_on_plan": [
+                *session_context["working_assumptions"],
+                *session_context["limitations"],
+            ],
+            "limitations": session_context["limitations"],
+        }
+
+        assert brain_evidence["brain_source"] == "repo-only"
+        assert brain_evidence["brain_status"] == "not-used"
+        for key in (
+            "tools_or_queries",
+            "records_or_results",
+            "repo_crosscheck",
+            "impact_on_plan",
+            "limitations",
+        ):
+            assert isinstance(brain_evidence[key], list)
+            assert brain_evidence[key]
+
+    def test_session_context_read_only_mode_sets_human_go_false(self) -> None:
+        """read_only operation mode stays non-human-gated in session_context."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-read-only-mode",
+                "task_scope": "Validate read-only session mode.",
+                "target_issue": None,
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["agent_operating_mode"]["operation_mode"] == "read_only"
+        assert session_context["agent_operating_mode"]["human_go_required"] is False
+
     def test_output_contains_all_16_contract_fields(self) -> None:
         """Output contains all 16 briefing contract fields per #2104 schema."""
         bridge = create_bridge()

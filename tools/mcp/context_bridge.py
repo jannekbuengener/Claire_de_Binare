@@ -827,6 +827,12 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     _decision_events_raw = kwargs.get("decision_events")
     _memory_records_raw = kwargs.get("memory_records")
     _enrichment_scope = kwargs.get("enrichment_scope", "wave14")
+    _repo_state_raw = kwargs.get("repo_state")
+    _github_state_raw = kwargs.get("github_state")
+    _brain_source_raw = kwargs.get("brain_source")
+    _brain_status_raw = kwargs.get("brain_status")
+    _working_assumptions_raw = kwargs.get("working_assumptions")
+    _session_limitations_raw = kwargs.get("limitations")
     if not isinstance(_enrichment_scope, str) or not _enrichment_scope.strip():
         _enrichment_scope = "wave14"
     else:
@@ -930,6 +936,143 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
 
     if risk_level not in frozenset({"low", "medium", "high"}):
         risk_level = "medium"
+
+    valid_brain_sources = frozenset({
+        "repo-only",
+        "in_memory",
+        "surrealdb-local",
+        "unavailable",
+    })
+    valid_brain_statuses = frozenset({"used", "partial", "not-used", "blocked"})
+    valid_working_tree_states = frozenset({"clean", "dirty", "unknown"})
+    session_context_limitations: list[str] = []
+
+    if isinstance(_brain_source_raw, str) and _brain_source_raw in valid_brain_sources:
+        brain_source = _brain_source_raw
+    else:
+        brain_source = "repo-only"
+        if _brain_source_raw is not None:
+            session_context_limitations.append(
+                "brain_source malformed; defaulted to repo-only"
+            )
+        else:
+            session_context_limitations.append(
+                "brain_source not provided; defaulted to repo-only"
+            )
+
+    if isinstance(_brain_status_raw, str) and _brain_status_raw in valid_brain_statuses:
+        brain_status = _brain_status_raw
+    else:
+        brain_status = "not-used" if brain_source == "repo-only" else "blocked"
+        if _brain_status_raw is not None:
+            session_context_limitations.append(
+                "brain_status malformed; defaulted conservatively"
+            )
+        else:
+            session_context_limitations.append(
+                "brain_status not provided; defaulted conservatively"
+            )
+
+    if brain_source == "repo-only":
+        session_context_limitations.append(
+            "repo-only brain source; no DB-backed memory or evidence claims"
+        )
+
+    repo_state = {
+        "branch": "unknown",
+        "commit": "unknown",
+        "working_tree": "unknown",
+    }
+    if isinstance(_repo_state_raw, dict):
+        repo_branch = _repo_state_raw.get("branch")
+        repo_commit = _repo_state_raw.get("commit")
+        repo_working_tree = _repo_state_raw.get("working_tree")
+
+        if isinstance(repo_branch, str) and repo_branch.strip():
+            repo_state["branch"] = repo_branch.strip()
+        else:
+            session_context_limitations.append(
+                "repo_state.branch missing or malformed; using unknown"
+            )
+
+        if isinstance(repo_commit, str) and repo_commit.strip():
+            repo_state["commit"] = repo_commit.strip()
+        else:
+            session_context_limitations.append(
+                "repo_state.commit missing or malformed; using unknown"
+            )
+
+        if repo_working_tree in valid_working_tree_states:
+            repo_state["working_tree"] = repo_working_tree
+        else:
+            session_context_limitations.append(
+                "repo_state.working_tree missing or malformed; using unknown"
+            )
+    else:
+        session_context_limitations.append(
+            "repo_state not provided; using unknown repo state"
+        )
+
+    github_state = {
+        "target_issue": target_issue if isinstance(target_issue, str) else None,
+        "related_prs": [],
+        "open_epics": [],
+    }
+    if isinstance(_github_state_raw, dict):
+        github_target_issue = _github_state_raw.get("target_issue")
+        if github_target_issue is None or isinstance(github_target_issue, str):
+            github_state["target_issue"] = github_target_issue
+        else:
+            session_context_limitations.append(
+                "github_state.target_issue malformed; using request target_issue or null"
+            )
+
+        for field_name in ("related_prs", "open_epics"):
+            field_value = _github_state_raw.get(field_name)
+            if isinstance(field_value, list):
+                github_state[field_name] = [
+                    item for item in field_value if isinstance(item, str)
+                ]
+                if len(github_state[field_name]) != len(field_value):
+                    session_context_limitations.append(
+                        f"github_state.{field_name} contained non-string entries; dropped invalid items"
+                    )
+            elif field_value is not None:
+                session_context_limitations.append(
+                    f"github_state.{field_name} malformed; using empty list"
+                )
+    else:
+        session_context_limitations.append(
+            "github_state not provided; using request target_issue and empty related PR/epic lists"
+        )
+
+    working_assumptions = []
+    if isinstance(_working_assumptions_raw, list):
+        working_assumptions = [
+            item for item in _working_assumptions_raw if isinstance(item, str)
+        ]
+        if len(working_assumptions) != len(_working_assumptions_raw):
+            session_context_limitations.append(
+                "working_assumptions contained non-string entries; dropped invalid items"
+            )
+    elif _working_assumptions_raw is not None:
+        session_context_limitations.append(
+            "working_assumptions malformed; using empty list"
+        )
+
+    if isinstance(_session_limitations_raw, list):
+        caller_limitations = [
+            item for item in _session_limitations_raw if isinstance(item, str)
+        ]
+        session_context_limitations.extend(caller_limitations)
+        if len(caller_limitations) != len(_session_limitations_raw):
+            session_context_limitations.append(
+                "limitations contained non-string entries; dropped invalid items"
+            )
+    elif _session_limitations_raw is not None:
+        session_context_limitations.append(
+            "limitations malformed; using generated limitations"
+        )
 
     # --- Normalize arrays ---
     if not isinstance(target_paths, list):
@@ -1182,6 +1325,23 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             "evidence_required": "Explicit acknowledgement in session log",
         }
     )
+
+    session_context = {
+        "memory_type": "working_memory",
+        "session_only": True,
+        "ttl_seconds": 14400,
+        "brain_source": brain_source,
+        "brain_status": brain_status,
+        "repo_state": repo_state,
+        "github_state": github_state,
+        "agent_operating_mode": {
+            "operation_mode": operation_mode,
+            "human_go_required": human_go_required,
+            "db_claims_allowed": brain_source == "surrealdb-local",
+        },
+        "working_assumptions": working_assumptions,
+        "limitations": list(dict.fromkeys(session_context_limitations)),
+    }
 
     # --- Enrichment (#2122) ---
     enrichment_id = hashlib.sha256(
@@ -1508,6 +1668,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "blocking_trust_findings": blocking_trust_findings,
         "recommended_next_reads": recommended_next_reads_enrichment,
         "approval_semantics": {"no_echtgeld_go": True},
+        "session_context": session_context,
         "dependency_paths": dependency_paths,
         "known_risks": known_risks,
         "guardrails": guardrails,

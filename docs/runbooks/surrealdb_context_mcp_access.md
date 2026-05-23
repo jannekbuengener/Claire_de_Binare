@@ -418,6 +418,119 @@ result = bridge.execute_tool("context.briefing", {
 
 Response includes `briefing_id` (16-char hex, deterministic), `scope_summary`, `required_reads`, `guardrails` (7 mandatory), `stop_conditions`, `validation_plan`, `human_go_required`. Depths: `quick` (summary only), `standard` (with artifacts), `deep` (with mock uncertainty warnings).
 
+`briefing.session_context` is the canonical short-term/session-memory handoff surface for Context/MCP work. It is always `working_memory` with `session_only=true`, remains read-only, and must not be treated as persistent SurrealDB memory. If `brain_source` is `repo-only` or `in_memory`, agents must not make DB-backed Brain or evidence claims from this surface.
+
+Deterministic example with explicit session context inputs:
+
+```python
+result = bridge.execute_tool("context.briefing", {
+    "task_id": "task_review_2607",
+    "target_issue": "#2607",
+    "task_scope": "review session-context handoff behavior",
+    "requested_depth": "quick",
+    "operation_mode": "read_only",
+    "brain_source": "repo-only",
+    "brain_status": "not-used",
+    "repo_state": {
+        "branch": "fix/2613-noise-freeze-remaining-push-triggers",
+        "commit": "f345cf0c",
+        "working_tree": "dirty"
+    },
+    "github_state": {
+        "target_issue": "#2607",
+        "related_prs": [],
+        "open_epics": ["#2607"]
+    },
+    "working_assumptions": [
+        "repo-only verification is sufficient for this handoff"
+    ]
+})
+```
+
+Expected abbreviated output:
+
+```json
+{
+  "tool": "context.briefing",
+  "status": "ok",
+  "briefing": {
+    "session_context": {
+      "memory_type": "working_memory",
+      "session_only": true,
+      "ttl_seconds": 14400,
+      "brain_source": "repo-only",
+      "brain_status": "not-used",
+      "repo_state": {
+        "branch": "fix/2613-noise-freeze-remaining-push-triggers",
+        "commit": "f345cf0c",
+        "working_tree": "dirty"
+      },
+      "github_state": {
+        "target_issue": "#2607",
+        "related_prs": [],
+        "open_epics": ["#2607"]
+      },
+      "agent_operating_mode": {
+        "operation_mode": "read_only",
+        "human_go_required": false,
+        "db_claims_allowed": false
+      },
+      "working_assumptions": [
+        "repo-only verification is sufficient for this handoff"
+      ]
+    }
+  }
+}
+```
+
+Brain Evidence mapping from `briefing.session_context`:
+
+- `brain_source <- briefing.session_context.brain_source`
+- `brain_status <- briefing.session_context.brain_status`
+- `tools_or_queries <- caller-provided MCP/tool reads or, if absent, conservative session limitations`
+- `records_or_results <- briefing.session_context.repo_state + briefing.session_context.github_state`
+- `repo_crosscheck <- briefing.session_context.repo_state + briefing.required_reads + request target paths/symbols when present`
+- `impact_on_plan <- briefing.session_context.working_assumptions + briefing.session_context.limitations`
+- `limitations <- briefing.session_context.limitations`
+
+Canonical Brain Evidence block derived from the example above:
+
+```text
+## Brain Evidence
+brain_source: repo-only
+brain_status: not-used
+tools_or_queries:
+  - context.briefing(task_review_2607)
+  - repo-only verification is sufficient for this handoff
+records_or_results:
+  - branch=fix/2613-noise-freeze-remaining-push-triggers
+  - commit=f345cf0c
+  - working_tree=dirty
+  - target_issue=#2607
+  - related_prs=[]
+  - open_epics=[#2607]
+repo_crosscheck:
+  - briefing.required_reads
+  - branch=fix/2613-noise-freeze-remaining-push-triggers
+  - commit=f345cf0c
+impact_on_plan:
+  - repo-only verification is sufficient for this handoff
+  - repo-only brain source; no DB-backed memory or evidence claims
+limitations:
+  - repo-only brain source; no DB-backed memory or evidence claims
+```
+
+### #2607 Short-Term Session Context Acceptance
+
+- Structured `session_context` preserves `branch`, `commit`, and `working_tree` when caller-provided.
+- Issue/PR state can be handed off through `github_state` (`target_issue`, `related_prs`, `open_epics`).
+- `working_assumptions` are temporary session hints only because `session_only=true`.
+- `ttl_seconds` is bounded to `<= 14400` (4h) for this MCP handoff surface.
+- `repo-only` and `in_memory` are not DB-backed and must keep `db_claims_allowed=false`.
+- Persistent Brain or memory claims require `brain_source=surrealdb-local`; otherwise Brain remains non-DB-backed.
+- `session_context` does not authorize any automatic long-term memory write or persistent DB write.
+- A full Brain Evidence block can be generated from `briefing.session_context` plus the sibling briefing fields such as `required_reads`.
+
 ### 7.7 context.stop_resolver
 
 ```python
