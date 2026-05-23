@@ -103,6 +103,7 @@ Repo presence is not MCP availability. Each surface must be verified independent
 **Status key:**
 - `✓ verified` — directly confirmed in this repo session
 - `✓ repo-tracked config` — actual config file tracked in repo, auto-loaded by agent host
+- `✓ host-active verified` — agent host loaded and connected the MCP server (green in host UI)
 - `via host agent` — covered by calling agent's MCP config
 - `template in ...` — tracked template file; requires manual copy/embed
 - `setup script in ...` — executable validation script
@@ -130,6 +131,8 @@ python -c "import tools.mcp.server; print('STDIO IMPORT OK')"
 ```
 
 > **Note on config naming:** OpenCode's project-level config must be named `opencode.jsonc` or `opencode.json` (no leading dot). The repo tracked config was renamed from `.opencode.jsonc` to `opencode.jsonc` to match this requirement. Pre-existing user-level config at `~/.config/opencode/opencode.jsonc` is loaded alongside and merged per OpenCode's config precedence rules.
+>
+> **Note on server naming:** The repo defines server name `cdb_context`. If a user-level or remote config defines a different server named `cdb`, it is a separate server entry. Both coexist in the OpenCode MCP list. The `cdb` (remote) failure shown in OpenCode is pre-existing and unrelated to the repo baseline — it targets `http://127.0.0.1:8812/mcp` and requires a separate MCP server on that port.
 
 **Repo-tracked configs and templates:**
 
