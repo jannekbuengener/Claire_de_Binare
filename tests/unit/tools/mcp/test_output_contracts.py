@@ -60,17 +60,13 @@ class TestTraceOutputContract:
 
     def test_ok_output_has_tool_and_status(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool(
-            "context.trace", {"target_id": "evt_001"}
-        )
+        result = bridge.execute_tool("context.trace", {"target_id": "evt_001"})
         assert result["tool"] == "context.trace"
         assert result["status"] == "ok"
 
     def test_trace_has_root_with_id_type_title(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool(
-            "context.trace", {"target_id": "evt_001"}
-        )
+        result = bridge.execute_tool("context.trace", {"target_id": "evt_001"})
         root = result["trace"]["root"]
         assert "id" in root
         assert "type" in root
@@ -147,9 +143,7 @@ class TestPackageOutputContract:
 
     def test_ok_output_has_package_with_format_items_created_at(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool(
-            "context.package", {"artifacts": ["art_001"]}
-        )
+        result = bridge.execute_tool("context.package", {"artifacts": ["art_001"]})
         pkg = result["package"]
         assert "format" in pkg
         assert "items" in pkg
@@ -158,9 +152,7 @@ class TestPackageOutputContract:
 
     def test_package_id_is_string(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool(
-            "context.package", {"artifacts": ["art_001"]}
-        )
+        result = bridge.execute_tool("context.package", {"artifacts": ["art_001"]})
         assert isinstance(result["package"]["package_id"], str)
 
     def test_error_output_has_invalid_artifacts_code(self) -> None:
@@ -252,7 +244,11 @@ class TestReadinessOutputContract:
             },
         )
         guardrails_text = " ".join(result["readiness"]["guardrails"])
-        assert "NO-GO" in guardrails_text or "No-Go" in guardrails_text or "no_go" in guardrails_text.lower()
+        assert (
+            "NO-GO" in guardrails_text
+            or "No-Go" in guardrails_text
+            or "no_go" in guardrails_text.lower()
+        )
 
 
 class TestBriefingOutputContract:

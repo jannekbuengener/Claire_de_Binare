@@ -15,14 +15,18 @@ class TestShowSnapshotHandler:
 
     def test_show_snapshot_returns_ok(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool("context.show_snapshot", {"snapshot_id": "snap_001"})
+        result = bridge.execute_tool(
+            "context.show_snapshot", {"snapshot_id": "snap_001"}
+        )
         assert result["status"] == "ok"
         assert result["tool"] == "context.show_snapshot"
         assert result["snapshot"]["snapshot_id"] == "snap_001"
 
     def test_show_snapshot_includes_tool_names(self) -> None:
         bridge = create_bridge()
-        result = bridge.execute_tool("context.show_snapshot", {"snapshot_id": "snap_001"})
+        result = bridge.execute_tool(
+            "context.show_snapshot", {"snapshot_id": "snap_001"}
+        )
         assert result["status"] == "ok"
         assert isinstance(result["snapshot"]["tool_names"], list)
         assert "context.show_snapshot" in result["snapshot"]["tool_names"]
