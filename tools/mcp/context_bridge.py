@@ -1343,6 +1343,10 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         }
     )
 
+    db_claims_allowed = brain_source == "surrealdb-local" and brain_status in frozenset(
+        {"used", "partial"}
+    )
+
     session_context = {
         "memory_type": "working_memory",
         "session_only": True,
@@ -1354,7 +1358,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "agent_operating_mode": {
             "operation_mode": operation_mode,
             "human_go_required": human_go_required,
-            "db_claims_allowed": brain_source == "surrealdb-local",
+            "db_claims_allowed": db_claims_allowed,
         },
         "working_assumptions": working_assumptions,
         "limitations": session_context_limitations_norm,

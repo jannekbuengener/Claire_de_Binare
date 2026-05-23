@@ -418,7 +418,7 @@ result = bridge.execute_tool("context.briefing", {
 
 Response includes `briefing_id` (16-char hex, deterministic), `scope_summary`, `required_reads`, `guardrails` (7 mandatory), `stop_conditions`, `validation_plan`, `human_go_required`. Depths: `quick` (summary only), `standard` (with artifacts), `deep` (with mock uncertainty warnings).
 
-`briefing.session_context` is the canonical short-term/session-memory handoff surface for Context/MCP work. It is always `working_memory` with `session_only=true`, remains read-only, and must not be treated as persistent SurrealDB memory. If `brain_source` is `repo-only` or `in_memory`, agents must not make DB-backed Brain or evidence claims from this surface.
+`briefing.session_context` is the canonical short-term/session-memory handoff surface for Context/MCP work. It is always `working_memory` with `session_only=true`, remains read-only, and must not be treated as persistent SurrealDB memory. DB-backed Brain or evidence claims require both `brain_source="surrealdb-local"` and a usable `brain_status` (`used` or `partial`). `blocked`, `not-used`, `repo-only`, `in_memory`, and `unavailable` stay fail-closed.
 
 Deterministic example with explicit session context inputs:
 
@@ -527,7 +527,7 @@ limitations:
 - `working_assumptions` are temporary session hints only because `session_only=true`.
 - `ttl_seconds` is bounded to `<= 14400` (4h) for this MCP handoff surface.
 - `repo-only` and `in_memory` are not DB-backed and must keep `db_claims_allowed=false`.
-- Persistent Brain or memory claims require `brain_source=surrealdb-local`; otherwise Brain remains non-DB-backed.
+- Persistent Brain or memory claims require `brain_source=surrealdb-local` and usable `brain_status` (`used` or `partial`); `blocked` always disables DB-backed claims.
 - `session_context` does not authorize any automatic long-term memory write or persistent DB write.
 - A full Brain Evidence block can be generated from `briefing.session_context` plus the sibling briefing fields such as `required_reads`.
 

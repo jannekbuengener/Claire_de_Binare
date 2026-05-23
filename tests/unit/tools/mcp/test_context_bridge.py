@@ -1400,8 +1400,8 @@ class TestContextBriefingHandler:
         assert session_context["brain_status"] == "used"
         assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
 
-    def test_surrealdb_local_is_only_mode_that_allows_db_claims(self) -> None:
-        """Only surrealdb-local enables DB-backed claim mode."""
+    def test_surrealdb_local_used_allows_db_claims(self) -> None:
+        """surrealdb-local with used status enables DB-backed claim mode."""
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.briefing",
@@ -1418,6 +1418,97 @@ class TestContextBriefingHandler:
         session_context = result["briefing"]["session_context"]
         assert session_context["brain_source"] == "surrealdb-local"
         assert session_context["agent_operating_mode"]["db_claims_allowed"] is True
+
+    def test_surrealdb_local_partial_allows_db_claims(self) -> None:
+        """surrealdb-local with partial status still enables DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-surrealdb-partial",
+                "task_scope": "Validate surrealdb-local partial claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "surrealdb-local",
+                "brain_status": "partial",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is True
+
+    def test_surrealdb_local_blocked_disables_db_claims(self) -> None:
+        """Blocked brain status fail-closes DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-surrealdb-blocked",
+                "task_scope": "Validate blocked surrealdb claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "surrealdb-local",
+                "brain_status": "blocked",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_surrealdb_local_not_used_disables_db_claims(self) -> None:
+        """Not-used surrealdb status fail-closes DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-surrealdb-not-used",
+                "task_scope": "Validate not-used surrealdb claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "surrealdb-local",
+                "brain_status": "not-used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_repo_only_used_still_disables_db_claims(self) -> None:
+        """repo-only stays non-DB-backed even with a usable status string."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-repo-only-used",
+                "task_scope": "Validate repo-only used claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "repo-only",
+                "brain_status": "used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_malformed_brain_status_disables_db_claims(self) -> None:
+        """Malformed brain_status fail-closes DB-backed claims."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-bad-brain-status",
+                "task_scope": "Validate malformed brain_status claim mode.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "surrealdb-local",
+                "brain_status": "bad-status",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_status"] == "blocked"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
 
     def test_repo_state_values_are_preserved_when_provided(self) -> None:
         """Caller-provided repo_state values are preserved."""

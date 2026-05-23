@@ -60,7 +60,7 @@ Dateilisten für laufende Session.
 
 **Beispiel**: Geladene Issue-Liste für laufende Wave-1-Session.
 
-`context.briefing.briefing.session_context` ist die kanonische read-only Handoff-Fläche für solches Kurzzeitgedächtnis im MCP-Bridge-Scope. Sie muss `memory_type="working_memory"` und `session_only=true` tragen und darf nicht als persistente `agent_memory`-/DB-Memory missverstanden werden.
+`context.briefing.briefing.session_context` ist die kanonische read-only Handoff-Fläche für solches Kurzzeitgedächtnis im MCP-Bridge-Scope. Sie muss `memory_type="working_memory"` und `session_only=true` tragen und darf nicht als persistente `agent_memory`-/DB-Memory missverstanden werden. DB-backed Claims aus dieser Fläche sind nur zulässig, wenn `brain_source="surrealdb-local"` und `brain_status` nutzbar ist (`used` oder `partial`); `blocked` bleibt fail-closed.
 
 ---
 
