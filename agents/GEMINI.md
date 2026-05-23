@@ -67,7 +67,26 @@ Gemini prüft **nicht**:
 
 ---
 
-## 3a. Nutzung externer Evidenzquellen (MCP-Server)
+## 3a. CDB Context MCP Capability — Context-/MCP-/Memory-/Evidence-Scope
+
+### Pflicht
+
+Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Memory oder Evidence** umfasst:
+
+1. **MCP Capability Resolution vor jeder Planung ausführen** – aktives Tool-Inventar prüfen, nicht Config-Präsenz.
+2. `context.briefing`, `context.required_reads` und `context.readiness` müssen im aktiven MCP-Inventar erscheinen.
+3. Falls nicht verfügbar: **STOP** und explizit auf `repo-only` + `brain_status=not-used` degradieren.
+4. DB-backed Brain-Claims nur bei `brain_source=surrealdb-local` und nutzbarem `brain_status` (`used`/`partial`). `blocked`, `not-used`, `repo-only` und `unavailable` bleiben fail-closed.
+5. Repo-Evidence unter `records_or_results` dokumentieren.
+
+### Referenz
+
+- Agent-MCP-Matrix: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
+- MCP Capability Resolution Protocol: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5
+- Brain Evidence Gate: `agents/AGENTS.md` § Brain Evidence Gate
+- `cdb_context` Server-Entry: `claire-de-binare.mcp.json`
+
+## 3b. Nutzung externer Evidenzquellen (MCP-Server)
 
 Bei Analysen zu **Systemzustand, Stabilität, Fehlerszenarien, Incidents oder Ursachenbewertungen**
 MUSS Gemini prüfen, ob belastbare Evidenz über angebundene **MCP-Server** verfügbar ist,

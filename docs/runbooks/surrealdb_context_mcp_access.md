@@ -75,6 +75,68 @@ If any capability check fails:
 
 Established by PR #2559 (`a35d7728`). Cross-reference: `cdb-session-start` skill, step 5.
 
+### 1.5.1. Agent MCP Installation Matrix
+
+This matrix defines how every active agent surface accesses the CDB Context MCP.
+Repo presence is not MCP availability. Each surface must be verified independently.
+
+**Five-level distinction:**
+
+| Level | Criterion | How to verify |
+|---|---|---|
+| L1 | Config file exists | `claire-de-binare.mcp.json` present in repo root |
+| L2 | Agent host knows config | Host MCP config references `cdb_context` server entry |
+| L3 | MCP server starts | `python -m tools.mcp.server` runs without error |
+| L4 | Tool inventory exposes target | `context.briefing` appears in active MCP tool list |
+| L5 | Actual invocation works | `context.briefing({...})` returns valid response |
+
+**Per-surface status:**
+
+| Agent Surface | L1 Config | L2 Host | L3 Server | L4 Inventory | L5 Invocation | Overall Status |
+|---|---|---|---|---|---|---|
+| **Codex** | ✓ verified | needs manual install | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | documented + bridge-verified; stdio server needs env fix |
+| **OpenCode** | ✓ verified | needs manual install | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | documented + bridge-verified; stdio server needs env fix |
+| **Claude / Cloud Code** | ✓ verified | needs manual install (Claude Code MCP settings) | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
+| **Gemini** | ✓ verified | needs manual install (Gemini MCP settings) | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
+| **Onboarding / new agent** | ✓ verified | documented in AGENT_SETUP_GUIDE.md | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
+
+**Status key:**
+- `✓ verified` — directly confirmed in this repo session
+- `needs manual install` — config exists but agent host must register it; no automated deployment in scope
+- `⚠️ blocked (env)` — local environment dependency conflict (pydantic-core version); not a code defect
+- `needs host-specific test` — requires the specific agent host to be running with the config registered
+
+**Validation commands (bridge-level, works regardless of MCP SDK):**
+
+```bash
+# Bridge creates successfully — returns tool count
+python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
+# Expected: 26
+
+# Key tool present in inventory
+python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
+# Expected: True
+```
+
+**Validation command (stdio server, requires MCP SDK + compatible pydantic-core):**
+
+```bash
+python -m tools.mcp.server
+# If blocked by pydantic-core version mismatch, fix:
+# pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
+```
+
+**Capability Resolution Rules (all surfaces):**
+
+When scope includes Context, MCP, SurrealDB, ContextBridge, DB-backed Memory, or Evidence:
+
+1. Run MCP Capability Resolution before planning — verify active tool inventory, not config file presence.
+2. If `context.briefing` or required MCP tools are unavailable: stop or explicitly degrade to repo-only.
+3. Do not claim DB-backed Brain/Evidence/Memory unless `surrealdb-local` or equivalent DB-backed source is actually available and usable.
+4. Non-DB fallback must not report DB-backed `brain_status="used"`.
+5. Missing MCP access must be reported as `brain_source=unavailable` or explicit `repo-only` / `brain_status=not-used` fallback.
+6. Repo-wide fallback for any surface that cannot verify MCP access: `brain_source=repo-only`, `brain_status=not-used`, repo evidence under `records_or_results`.
+
 ---
 
 ## 2. Non-Goals (Anti-Criteria)

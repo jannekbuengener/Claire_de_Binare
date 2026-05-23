@@ -1,4 +1,4 @@
-# 🤖 Agent Quick Start Guide
+# Agent Quick Start Guide
 
 **Problem gelöst**: "Warum kommt denn Codex und Claude nicht?"
 
@@ -30,6 +30,25 @@ export OPENAI_API_KEY="sk-..."
 # 3. Validieren
 make agent-validate
 ```
+
+---
+
+## CDB Context MCP (Pflicht bei Context-/MCP-/Memory-/Evidence-Arbeit)
+
+Bevor du Context-, MCP-, Memory- oder Evidence-Tools nutzt:
+
+1. **Config-Datei prüfen**: `claire-de-binare.mcp.json` existiert im Repo-Root mit `cdb_context`-Server-Entry.
+2. **Agent-Host-Konfiguration prüfen**: Der Host muss die `cdb_context`-Server-Definition registriert haben.
+3. **Bridge validieren**:
+   ```bash
+   python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
+   # Erwartet: 26
+   python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
+   # Erwartet: True
+   ```
+4. **Capability Resolution**: Wenn `context.briefing` nicht im MCP-Inventar ist → auf `brain_source=repo-only` + `brain_status=not-used` degradieren. Keine DB-backed Claims.
+
+Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
 
 ---
 

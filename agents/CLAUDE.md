@@ -145,7 +145,32 @@ YOLO / dangerously-skip-permissions **nicht empfehlen**.
 
 ---
 
-## 6.1 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)
+## 6.1 CDB Context MCP Capability — Context-/MCP-/Memory-/Evidence-Scope (verbindlich)
+
+### 6.1.1 Pflicht
+
+Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Memory oder Evidence** umfasst:
+
+1. **MCP Capability Resolution vor jeder Planung ausführen** – aktives Tool-Inventar prüfen.
+2. `context.briefing`, `context.required_reads` und `context.readiness` müssen im aktiven MCP-Inventar erscheinen.
+3. Falls nicht verfügbar: **STOP** und explizit auf `repo-only` + `brain_status=not-used` degradieren.
+4. DB-backed Brain-Claims nur bei `brain_source=surrealdb-local` und nutzbarem `brain_status` (`used`/`partial`).
+5. Nicht-DB-Fallback nie `brain_status=used` melden.
+
+### 6.1.2 Fallback
+
+- `brain_source: unavailable` → Stop oder repo-only Fallback
+- `brain_source: repo-only` → `brain_status: not-used`
+- Repo-Evidence unter `records_or_results` dokumentieren
+
+### 6.1.3 Referenz
+
+- Agent-MCP-Matrix: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
+- MCP Capability Resolution Protocol: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5
+- Brain Evidence Gate: `agents/AGENTS.md` § Brain Evidence Gate
+- `cdb_context` Server-Entry: `claire-de-binare.mcp.json`
+
+## 6.2 MCP Toolkit (Docker Desktop) — Observability & Integrationen (verbindlich)
 
 Docker Desktop läuft bei Jannek mit **MCP Toolkit**. Claude MUSS diese MCP-Server als **First-Class-Interfaces** nutzen, sobald es um Runtime-Status, CI/Repo-Orga oder Monitoring geht.
 Ziel: weniger Blindflug, mehr reproduzierbare Evidence.

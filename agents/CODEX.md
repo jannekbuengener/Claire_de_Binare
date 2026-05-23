@@ -168,6 +168,37 @@ No session ends without creating at least one GitHub Issue.
 
 ---
 
+---
+
+## 9. MCP Capability Resolution (bei Context-/MCP-/Memory-/Evidence-Scope)
+
+Wenn der Task-Scope **Context, SurrealDB, MCP tools, ContextBridge, DB-backed Memory oder Evidence** umfasst:
+
+### 9.1 Pflicht vor Planung
+
+1. **MCP Capability Resolution vor jeder Planung ausführen** – aktives Tool-Inventar prüfen, nicht nur Config-Präsenz.
+2. `context.briefing` oder benötigte MCP-Tools müssen im aktiven MCP-Inventar erscheinen.
+3. Falls nicht verfügbar: **STOP** und explizit auf `repo-only` degradieren.
+4. DB-backed Brain/Evidence/Memory nur beanspruchen, wenn `surrealdb-local` tatsächlich verfügbar und nutzbar ist (`brain_source=surrealdb-local` mit `brain_status=used` oder `partial`).
+5. Nicht-DB-Fallback darf **nie** `brain_status=used` melden.
+
+### 9.2 Fallback-Regel
+
+Fehlender MCP-Zugriff wird gemeldet als:
+- `brain_source: unavailable` → expliziter Stop oder repo-only Fallback
+- `brain_source: repo-only` → `brain_status: not-used`
+
+Repo-Evidence unter `records_or_results` dokumentieren, keine DB-backed Claims.
+
+### 9.3 Referenz
+
+- Agent-MCP-Matrix: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
+- MCP Capability Resolution Protocol: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5
+- Brain Evidence Gate: `agents/AGENTS.md` § Brain Evidence Gate
+- `cdb_context` Server-Entry: `claire-de-binare.mcp.json`
+
+---
+
 ## Abschluss
 
 Codex ist die **Produktionsmaschine** des Systems.  
