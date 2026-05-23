@@ -83,6 +83,21 @@ python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge()
 - Keine DB-backed Brain-Claims ohne `surrealdb-local` und nutzbaren `brain_status`.
 - Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1.
 
+### Per-Agent Templates und Setup-Script
+
+| Surface | Config-Datei | Typ |
+|---------|--------------|-----|
+| OpenCode | `.opencode.jsonc` (Repo-Root) | repo-getrackte Konfiguration |
+| Claude / Cloud Code | `agents/templates/claude_mcp.json.template` | Vorlage (muss in user-level `.mcp.json` kopiert werden) |
+| Gemini | `agents/templates/gemini_mcp_config.yml.template` | Vorlage (muss in Workflow-YAML eingebettet werden) |
+| Codex | `agents/templates/codex_mcp_config.md` | Referenz (kein eigenes MCP-Surface) |
+| Alle Surfaces | `agents/templates/onboarding_mcp_setup.ps1` | Setup-Skript (L1/L3/L4/L5 validieren) |
+
+**Setup ausführen:**
+```bash
+pwsh -File agents/templates/onboarding_mcp_setup.ps1
+```
+
 ### Legacy MCP-Konfigurationsdateien (historisch)
 
 Das Projekt verwendete früher zwei MCP-Konfigurationsdateien (nicht mehr kanonisch):

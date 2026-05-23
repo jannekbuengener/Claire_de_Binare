@@ -93,16 +93,19 @@ Repo presence is not MCP availability. Each surface must be verified independent
 **Per-surface status:**
 
 | Agent Surface | L1 Config | L2 Host | L3 Server | L4 Inventory | L5 Invocation | Overall Status |
-|---|---|---|---|---|---|---|
-| **Codex** | ✓ verified | needs manual install | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | documented + bridge-verified; stdio server needs env fix |
-| **OpenCode** | ✓ verified | needs manual install | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | documented + bridge-verified; stdio server needs env fix |
-| **Claude / Cloud Code** | ✓ verified | needs manual install (Claude Code MCP settings) | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
-| **Gemini** | ✓ verified | needs manual install (Gemini MCP settings) | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
-| **Onboarding / new agent** | ✓ verified | documented in AGENT_SETUP_GUIDE.md | needs host-specific test | needs host-specific test | needs host-specific test | documented; needs host-specific manual install |
+|---|---|---|---|---|---|---|---|
+| **Codex** | ✓ verified | via host agent (OpenCode or Claude) | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | reference in agents/templates/codex_mcp_config.md |
+| **OpenCode** | ✓ verified | ✓ repo-tracked config (`.opencode.jsonc`) | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | repo-tracked config + bridge-verified; stdio server needs env fix |
+| **Claude / Cloud Code** | ✓ verified | template in `agents/templates/claude_mcp.json.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific copy to user-level `.mcp.json` |
+| **Gemini** | ✓ verified | template in `agents/templates/gemini_mcp_config.yml.template` | needs host-specific test | needs host-specific test | needs host-specific test | template exists; needs host-specific embed in workflow YAML |
+| **Onboarding / new agent** | ✓ verified | setup script in `agents/templates/onboarding_mcp_setup.ps1` | ⚠️ blocked (env: pydantic-core mismatch) | ✓ bridge verified | ✓ bridge verified | setup script validates L1/L3/L4/L5; L2 requires manual host config |
 
 **Status key:**
 - `✓ verified` — directly confirmed in this repo session
-- `needs manual install` — config exists but agent host must register it; no automated deployment in scope
+- `✓ repo-tracked config` — actual config file tracked in repo, auto-loaded by agent host
+- `via host agent` — covered by calling agent's MCP config
+- `template in ...` — tracked template file; requires manual copy/embed
+- `setup script in ...` — executable validation script
 - `⚠️ blocked (env)` — local environment dependency conflict (pydantic-core version); not a code defect
 - `needs host-specific test` — requires the specific agent host to be running with the config registered
 
@@ -124,6 +127,34 @@ python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge()
 python -m tools.mcp.server
 # If blocked by pydantic-core version mismatch, fix:
 # pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
+```
+
+**Repo-tracked configs and templates:**
+
+| Surface | File | Type | Location |
+|---------|------|------|----------|
+| OpenCode | `.opencode.jsonc` | repo-tracked config (auto-loaded) | repo root |
+| Claude / Cloud Code | `claude_mcp.json.template` | template (copy to user-level `.mcp.json`) | `agents/templates/` |
+| Gemini | `gemini_mcp_config.yml.template` | template (embed in workflow YAML) | `agents/templates/` |
+| Codex | `codex_mcp_config.md` | reference (no separate MCP surface) | `agents/templates/` |
+| Any surface | `onboarding_mcp_setup.ps1` | validation script (run from repo root) | `agents/templates/` |
+
+Run the onboarding script to validate your setup:
+
+```bash
+pwsh -File agents/templates/onboarding_mcp_setup.ps1
+```
+
+Expected output:
+```
+=== CDB Context MCP Capability Validation ===
+[L1] Config file exists... PASS
+[L2] Host knows config (manual check)... SKIP (manual)
+[L3] Bridge creates successfully... PASS (26 tools)
+[L4] context.briefing in tool inventory... PASS
+[L5] context.briefing invocation... PASS
+=== Results: 4 passed, 0 failed ===
+CDB Context MCP is available.
 ```
 
 **Capability Resolution Rules (all surfaces):**

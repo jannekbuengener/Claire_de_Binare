@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "cdb_context": {
+      "type": "local",
+      "command": ["python", "-m", "tools.mcp.server"],
+      "enabled": true
+    }
+  }
+}

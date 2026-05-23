@@ -1,0 +1,22 @@
+# CDB Context MCP — Gemini workflow inline config
+#
+# Add this under the `mcpServers` section of your Gemini workflow's
+# inline MCP configuration (e.g., gemini-invoke.yml, gemini-review.yml).
+#
+# Requirements:
+# - Python 3.12 with project dependencies installed
+# - Repository checked out with tools/ directory available
+# - Compatible pydantic + pydantic-core versions (see pyproject.toml)
+#
+# Note: CDB Context MCP uses Python stdio transport. In GitHub Actions
+# runners, this requires the repo checkout + Python setup steps before
+# the Gemini CLI step. See .github/workflows/mcp_runtime.yml for the
+# Python dependency install pattern.
+#
+#   mcpServers:
+#     cdb_context:
+#       command: python
+#       args:
+#         - -m
+#         - tools.mcp.server
+#       enabled: true
