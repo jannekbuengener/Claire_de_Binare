@@ -86,7 +86,7 @@ Repo presence is not MCP availability. Each surface must be verified independent
 |---|---|---|---|
 | L1 | Config file exists | `claire-de-binare.mcp.json` present in repo root |
 | L2 | Agent host knows config | Host MCP config references `cdb_context` server entry |
-| L3 | MCP server starts | L3a: bridge import (`create_bridge()` works); L3b: stdio server (`python -m tools.mcp.server` runs). If bridge works but stdio is blocked by env, report WARN — bridge-level access is available, host integration needs env fix. |
+| L3 | MCP server starts | L3a: bridge import (`create_bridge()` works); L3b: stdio server import (`import tools.mcp.server` — bounded, no event loop). If bridge works but stdio is blocked by env, report WARN — bridge-level access is available, host integration needs env fix. |
 | L4 | Tool inventory exposes target | `context.briefing` appears in active MCP tool list |
 | L5 | Actual invocation works | `context.briefing({...})` returns valid response |
 
@@ -121,10 +121,10 @@ python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge()
 # Expected: True
 ```
 
-**Validation command (stdio server, requires MCP SDK + compatible pydantic-core):**
+**Validation command (stdio server import — bounded, does not enter event loop):**
 
 ```bash
-python -m tools.mcp.server
+python -c "import tools.mcp.server; print('STDIO IMPORT OK')"
 # If blocked by pydantic-core version mismatch, fix:
 # pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
 ```
@@ -150,11 +150,11 @@ Expected output (best case — bridge + stdio both work):
 === CDB Context MCP Capability Validation ===
 [L1] Config file exists... PASS
 [L2] Host knows config (manual check)... SKIP (manual)
-[L3] Bridge import and stdio server probe... PASS
-       Bridge: 26 tools, Stdio server: OK
+[L3] Bridge and stdio server check... PASS
+       Bridge: 26 tools, Stdio import: OK
 [L4] context.briefing in tool inventory... PASS
 [L5] context.briefing invocation... PASS
-=== Results: 4 passed, 0 failed ===
+=== Results: 4 passed, 0 warnings, 0 failed ===
 CDB Context MCP is available.
 ```
 
@@ -163,16 +163,16 @@ Expected output (bridge works, stdio blocked by env):
 === CDB Context MCP Capability Validation ===
 [L1] Config file exists... PASS
 [L2] Host knows config (manual check)... SKIP (manual)
-[L3] Bridge import and stdio server probe... BRIDGE OK — STDIO BLOCKED
-       Bridge: 26 tools, Stdio server: BLOCKED
+[L3] Bridge and stdio server check... BRIDGE OK — STDIO BLOCKED
+       Bridge: 26 tools, Stdio import: BLOCKED
        STDIO WARN: <error details>
        This is a local environment blocker (pydantic-core version mismatch),
        not a #2619 config defect. Bridge-level tool access works.
        Fix: pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
 [L4] context.briefing in tool inventory... PASS
 [L5] context.briefing invocation... PASS
-=== Results: 4 passed, 0 failed ===
-CDB Context MCP is available (bridge); stdio server needs env fix.
+=== Results: 4 passed, 1 warnings, 0 failed ===
+CDB Context MCP is available (bridge); warnings above.
 ```
 
 **Capability Resolution Rules (all surfaces):**

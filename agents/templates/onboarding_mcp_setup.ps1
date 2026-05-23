@@ -19,6 +19,7 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = $PSScriptRoot | Split-Path -Parent | Split-Path -Parent
 $ConfigFile = Join-Path $RepoRoot "claire-de-binare.mcp.json"
 $Pass = 0
+$Warn = 0
 $Fail = 0
 
 Write-Host "=== CDB Context MCP Capability Validation ===" -ForegroundColor Cyan
@@ -42,8 +43,8 @@ Write-Host " SKIP (manual)" -ForegroundColor Yellow
 Write-Host "  Check your Agent host MCP settings for 'cdb_context' server entry."
 Write-Host "  Source config: $ConfigFile"
 
-# ---- L3: MCP server starts (bridge + stdio probe) ----
-Write-Host "[L3] Bridge import and stdio server probe..." -NoNewline
+# ---- L3: MCP server starts (bridge import + stdio server import) ----
+Write-Host "[L3] Bridge and stdio server check..." -NoNewline
 $bridgeOk = $false
 $stdioOk = $false
 $stdioDetails = ""
@@ -60,14 +61,14 @@ try {
     $stdioDetails = "Bridge FAIL: $_"
 }
 
-# L3b: Stdio server probe — can python -m tools.mcp.server start?
+# L3b: Stdio server import — bounded module-level import, does not enter event loop
 if ($bridgeOk) {
     try {
-        $serverTest = & python -m tools.mcp.server --help 2>&1
-        if ($LASTEXITCODE -eq 0) {
+        $serverTest = & python -c "import tools.mcp.server; print('STDIO IMPORT OK')" 2>&1
+        if ($LASTEXITCODE -eq 0 -and $serverTest -eq "STDIO IMPORT OK") {
             $stdioOk = $true
         } else {
-            throw "stdio server exited with code $LASTEXITCODE"
+            throw "stdio import failed (exit code $LASTEXITCODE)"
         }
     } catch {
         $stdioDetails = "STDIO WARN: $_"
@@ -76,16 +77,16 @@ if ($bridgeOk) {
 
 if ($bridgeOk -and $stdioOk) {
     Write-Host " PASS" -ForegroundColor Green
-    Write-Host "       Bridge: $toolCount tools, Stdio server: OK" -ForegroundColor Green
+    Write-Host "       Bridge: $toolCount tools, Stdio import: OK" -ForegroundColor Green
     $Pass++
 } elseif ($bridgeOk -and -not $stdioOk) {
     Write-Host " BRIDGE OK — STDIO BLOCKED" -ForegroundColor Yellow
-    Write-Host "       Bridge: $toolCount tools, Stdio server: BLOCKED" -ForegroundColor Yellow
+    Write-Host "       Bridge: $toolCount tools, Stdio import: BLOCKED" -ForegroundColor Yellow
     Write-Host "       $stdioDetails" -ForegroundColor Yellow
     Write-Host "       This is a local environment blocker (pydantic-core version mismatch)," -ForegroundColor Yellow
     Write-Host "       not a #2619 config defect. Bridge-level tool access works." -ForegroundColor Yellow
     Write-Host "       Fix: pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'" -ForegroundColor Yellow
-    $Pass++  # bridge works, count as pass with warning
+    $Warn++
 } else {
     Write-Host " FAIL" -ForegroundColor Red
     Write-Host "       $stdioDetails" -ForegroundColor Red
@@ -131,11 +132,14 @@ print(result.get('status', 'error'))
 
 # ---- Summary ----
 Write-Host ""
-Write-Host "=== Results: $Pass passed, $Fail failed ===" -ForegroundColor Cyan
+Write-Host "=== Results: $Pass passed, $Warn warnings, $Fail failed ===" -ForegroundColor Cyan
 if ($Fail -gt 0) {
     Write-Host "L2 (manual) is not counted as a failure." -ForegroundColor Yellow
     Write-Host "See agents/templates/ for per-agent install templates." -ForegroundColor Yellow
     exit 1
+} elseif ($Warn -gt 0) {
+    Write-Host "CDB Context MCP is available (bridge); warnings above." -ForegroundColor Yellow
+    exit 0
 } else {
     Write-Host "CDB Context MCP is available." -ForegroundColor Green
     exit 0
