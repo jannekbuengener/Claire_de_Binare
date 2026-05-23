@@ -26,7 +26,11 @@ from tools.mcp.permission_guard import (
     PermissionCheckResult,
     PermissionGuard,
 )
-from tools.mcp.registry import ContextToolRegistry, ToolDefinition
+from tools.mcp.registry import (
+    ContextToolRegistry,
+    ToolDefinition,
+    create_not_implemented_handler,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -115,10 +119,22 @@ class TestExecuteGate:
 
     def test_execute_not_implemented_tool_returns_error(self) -> None:
         """Stub tool returns not_implemented error."""
-        bridge = create_bridge()
-        result = bridge.execute_tool("context.show_audit", {"entity_id": "test"})
-        assert result["status"] == "error"
-        assert result["error"]["code"] == "not_implemented"
+        name = "__test_stub_not_implemented__"
+        ContextToolRegistry._tools[name] = ToolDefinition(
+            name=name,
+            description="Temporary stub tool for permission guard tests",
+            input_schema={"type": "object", "properties": {}},
+            output_schema={"type": "object", "properties": {}},
+            read_only=True,
+            handler=create_not_implemented_handler(name),
+        )
+        try:
+            bridge = create_bridge()
+            result = bridge.execute_tool(name, {})
+            assert result["status"] == "error"
+            assert result["error"]["code"] == "not_implemented"
+        finally:
+            del ContextToolRegistry._tools[name]
 
     def test_execute_search_with_forbidden_keyword_blocked(self) -> None:
         """context.search with INSERT in query is blocked by input gate."""

@@ -194,15 +194,22 @@ TOOLS_V0 = [
     ),
     ToolDefinition(
         name="context.show_audit",
-        description="Show audit trail for a specific entity or action.",
+        description="Show deterministic registry audit snapshot for a target tool (no DB/network).",
         input_schema={
             "type": "object",
             "properties": {
-                "entity_id": {"type": "string"},
+                "target_tool": {
+                    "type": "string",
+                    "description": "Target tool name to audit (preferred).",
+                },
+                "entity_id": {
+                    "type": "string",
+                    "description": "Deprecated alias for target_tool (backward compatible).",
+                },
                 "audit_type": {"type": "string", "default": "all"},
                 "limit": {"type": "integer", "default": 50},
             },
-            "required": ["entity_id"],
+            "anyOf": [{"required": ["target_tool"]}, {"required": ["entity_id"]}],
         },
         output_schema={
             "type": "object",

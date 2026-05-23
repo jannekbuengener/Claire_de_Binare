@@ -363,3 +363,98 @@ class TestShowSnapshotOutputContract:
         result = bridge.execute_tool("context.show_snapshot", {})
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_snapshot_id"
+
+
+class TestShowAuditOutputContract:
+    """Verify context.show_audit output matches contract structure."""
+
+    def test_ok_output_has_tool_and_status(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.show_audit", {"entity_id": "context.show_snapshot"}
+        )
+        assert result["tool"] == "context.show_audit"
+        assert result["status"] == "ok"
+
+    def test_audit_has_required_fields(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.show_audit", {"entity_id": "context.show_snapshot"}
+        )
+        audit = result["audit"]
+        for field in (
+            "audit_id",
+            "target_tool",
+            "audit_type",
+            "limit",
+            "exists",
+            "read_only",
+            "handler_status",
+            "input_schema_keys",
+            "output_schema_keys",
+            "guard",
+            "source",
+            "limitations",
+        ):
+            assert field in audit, f"Missing field: {field}"
+        assert audit["target_tool"] == "context.show_snapshot"
+        assert isinstance(audit["audit_id"], str)
+        assert isinstance(audit["audit_type"], str)
+        assert isinstance(audit["limit"], int)
+        assert isinstance(audit["exists"], bool)
+        assert isinstance(audit["read_only"], bool)
+        assert isinstance(audit["input_schema_keys"], list)
+        assert isinstance(audit["output_schema_keys"], list)
+        assert isinstance(audit["guard"], dict)
+        assert audit["source"] == "registry"
+
+    def test_audit_id_is_deterministic_for_identical_inputs(self) -> None:
+        bridge = create_bridge()
+        params = {
+            "target_tool": "context.show_snapshot",
+            "audit_type": "all",
+            "limit": 50,
+        }
+        r1 = bridge.execute_tool("context.show_audit", params)
+        r2 = bridge.execute_tool("context.show_audit", params)
+        assert r1["audit"]["audit_id"] == r2["audit"]["audit_id"]
+
+    def test_audit_id_changes_when_target_tool_changes(self) -> None:
+        bridge = create_bridge()
+        r1 = bridge.execute_tool(
+            "context.show_audit", {"target_tool": "context.show_snapshot"}
+        )
+        r2 = bridge.execute_tool(
+            "context.show_audit", {"target_tool": "context.search"}
+        )
+        assert r1["audit"]["audit_id"] != r2["audit"]["audit_id"]
+
+    def test_audit_id_changes_when_audit_type_changes(self) -> None:
+        bridge = create_bridge()
+        r1 = bridge.execute_tool(
+            "context.show_audit",
+            {"target_tool": "context.show_snapshot", "audit_type": "all"},
+        )
+        r2 = bridge.execute_tool(
+            "context.show_audit",
+            {"target_tool": "context.show_snapshot", "audit_type": "handler"},
+        )
+        assert r1["audit"]["audit_id"] != r2["audit"]["audit_id"]
+
+    def test_audit_id_changes_when_limit_changes(self) -> None:
+        bridge = create_bridge()
+        r1 = bridge.execute_tool(
+            "context.show_audit",
+            {"target_tool": "context.show_snapshot", "limit": 1},
+        )
+        r2 = bridge.execute_tool(
+            "context.show_audit",
+            {"target_tool": "context.show_snapshot", "limit": 2},
+        )
+        assert r1["audit"]["audit_id"] != r2["audit"]["audit_id"]
+
+    def test_invalid_entity_id_fails_closed(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.show_audit", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_entity_id"

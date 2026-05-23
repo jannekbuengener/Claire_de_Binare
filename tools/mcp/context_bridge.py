@@ -12,6 +12,7 @@ Reference:
 
 import logging
 import json
+import hashlib
 from copy import deepcopy
 from typing import Any, Optional
 
@@ -274,6 +275,125 @@ def context_show_snapshot_handler(**kwargs) -> dict[str, Any]:
         "tool": "context.show_snapshot",
         "status": "ok",
         "snapshot": snapshot,
+    }
+
+
+def context_show_audit_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.show_audit tool.
+
+    Deterministic audit/dispatch snapshot derived from registry/runtime metadata
+    only. No DB access. No network. No GitHub. No side effects. Fail-closed.
+
+    Notes:
+    - This tool does not provide a DB-backed audit trail.
+    - handler_status is inferred from registry handler wiring (no dispatch).
+    """
+    target_tool_in = kwargs.get("target_tool")
+    entity_id = kwargs.get("entity_id")
+    audit_type = kwargs.get("audit_type", "all")
+    limit = kwargs.get("limit", 50)
+
+    if isinstance(target_tool_in, str) and target_tool_in.strip():
+        target_tool = target_tool_in.strip()
+    elif isinstance(entity_id, str) and entity_id.strip():
+        target_tool = entity_id.strip()
+    else:
+        return {
+            "tool": "context.show_audit",
+            "status": "error",
+            "error": {
+                "code": "invalid_entity_id",
+                "message": (
+                    "target_tool or entity_id is required and must be a non-empty string"
+                ),
+            },
+        }
+
+    audit_type_clean = audit_type.strip() if isinstance(audit_type, str) else "all"
+    if not audit_type_clean:
+        audit_type_clean = "all"
+
+    limit_int = 50
+    if isinstance(limit, int) and not isinstance(limit, bool) and limit > 0:
+        limit_int = min(limit, 200)
+
+    tool_def = ContextToolRegistry.get_tool(target_tool)
+    exists = tool_def is not None
+
+    handler_status = "unknown_tool"
+    read_only = False
+    input_schema_keys: list[str] = []
+    output_schema_keys: list[str] = []
+
+    if exists and tool_def is not None:
+        read_only = bool(tool_def.read_only)
+        handler = tool_def.handler
+        if handler is None:
+            handler_status = "not_implemented"
+        else:
+            handler_name = getattr(handler, "__name__", "")
+            if handler_name == "not_implemented_handler":
+                handler_status = "not_implemented"
+            else:
+                handler_status = "implemented"
+
+        input_schema_keys = sorted(
+            list(tool_def.input_schema.get("properties", {}).keys())
+        )[:limit_int]
+        output_schema_keys = sorted(
+            list(tool_def.output_schema.get("properties", {}).keys())
+        )[:limit_int]
+
+    source = "registry"
+    audit_id_payload = {
+        "target_tool": target_tool,
+        "audit_type": audit_type_clean,
+        "limit": limit_int,
+        "exists": exists,
+        "read_only": read_only,
+        "handler_status": handler_status,
+        "input_schema_keys": input_schema_keys,
+        "output_schema_keys": output_schema_keys,
+        "source": source,
+    }
+    digest = hashlib.sha256(
+        json.dumps(audit_id_payload, sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+    audit_id = f"audit_{digest[:12]}"
+
+    limitations = [
+        "Registry-only audit snapshot (no DB-backed audit trail).",
+        "No handler dispatch performed; handler_status is inferred from wiring.",
+        "No Live-Go / no Echtgeld authorization implied. LR remains NO-GO.",
+    ]
+    if audit_type_clean != "all":
+        limitations.append(
+            "audit_type is accepted for contract compatibility; registry audit ignores it."
+        )
+
+    return {
+        "tool": "context.show_audit",
+        "status": "ok",
+        "audit": {
+            "audit_id": audit_id,
+            "audit_type": audit_type_clean,
+            "target_tool": target_tool,
+            "exists": exists,
+            "read_only": read_only,
+            "handler_status": handler_status,
+            "input_schema_keys": input_schema_keys,
+            "output_schema_keys": output_schema_keys,
+            "guard": {
+                "mutation_blocked": True,
+                "db_writes_allowed": False,
+            },
+            "source": source,
+            "limit": limit_int,
+            "limitations": limitations,
+        },
     }
 
 
@@ -2361,6 +2481,17 @@ class ContextBridge:
                 handler=context_show_snapshot_handler,
             )
             self._registry._tools["context.show_snapshot"] = new_show_snapshot
+        old_show_audit = self._registry.get_tool("context.show_audit")
+        if old_show_audit:
+            new_show_audit = ToolDefinition(
+                name=old_show_audit.name,
+                description=old_show_audit.description,
+                input_schema=old_show_audit.input_schema,
+                output_schema=old_show_audit.output_schema,
+                read_only=old_show_audit.read_only,
+                handler=context_show_audit_handler,
+            )
+            self._registry._tools["context.show_audit"] = new_show_audit
         old_package = self._registry.get_tool("context.package")
         if old_package:
             new_package = ToolDefinition(

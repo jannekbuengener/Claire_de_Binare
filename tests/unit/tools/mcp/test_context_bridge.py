@@ -264,12 +264,14 @@ class TestContextBridge:
         assert schema["name"] == "context.search"
         assert schema["readOnly"] is True
 
-    def test_execute_not_implemented_tool(self) -> None:
-        """Verify executing stub tool returns not_implemented error."""
+    def test_execute_show_audit_tool(self) -> None:
+        """Verify executing context.show_audit returns deterministic audit output."""
         bridge = ContextBridge()
-        result = bridge.execute_tool("context.show_audit", {"entity_id": "test"})
-        assert result["status"] == "error"
-        assert result["error"]["code"] == "not_implemented"
+        result = bridge.execute_tool(
+            "context.show_audit", {"target_tool": "context.show_audit"}
+        )
+        assert result["status"] == "ok"
+        assert result["audit"]["handler_status"] == "implemented"
 
     def test_execute_unknown_tool(self) -> None:
         """Verify executing unknown tool returns error."""
