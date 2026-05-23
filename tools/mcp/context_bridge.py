@@ -979,6 +979,17 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 "brain_status not provided; defaulted conservatively"
             )
 
+    if brain_source == "repo-only" and brain_status != "not-used":
+        brain_status = "not-used"
+        session_context_limitations.append(
+            "repo-only brain source cannot advertise used or partial brain status; coerced to not-used"
+        )
+    elif brain_source == "unavailable" and brain_status != "blocked":
+        brain_status = "blocked"
+        session_context_limitations.append(
+            "unavailable brain source cannot advertise usable brain status; coerced to blocked"
+        )
+
     if brain_source == "repo-only":
         session_context_limitations.append(
             "repo-only brain source; no DB-backed memory or evidence claims"

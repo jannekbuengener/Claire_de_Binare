@@ -1489,7 +1489,51 @@ class TestContextBriefingHandler:
             },
         )
         session_context = result["briefing"]["session_context"]
+        assert session_context["brain_status"] == "not-used"
         assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+
+    def test_repo_only_used_status_is_coerced_to_not_used(self) -> None:
+        """repo-only cannot preserve an impossible used brain status."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-repo-only-coerced-status",
+                "task_scope": "Validate repo-only brain status coercion.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "repo-only",
+                "brain_status": "used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_status"] == "not-used"
+        assert any(
+            "coerced to not-used" in item for item in session_context["limitations"]
+        )
+
+    def test_unavailable_used_status_is_coerced_to_blocked(self) -> None:
+        """Unavailable brain source cannot preserve a usable brain status."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.briefing",
+            {
+                "task_id": "cdb-briefing-unavailable-coerced-status",
+                "task_scope": "Validate unavailable brain status coercion.",
+                "target_issue": "#2607",
+                "requested_depth": "quick",
+                "operation_mode": "read_only",
+                "brain_source": "unavailable",
+                "brain_status": "used",
+            },
+        )
+        session_context = result["briefing"]["session_context"]
+        assert session_context["brain_status"] == "blocked"
+        assert session_context["agent_operating_mode"]["db_claims_allowed"] is False
+        assert any(
+            "coerced to blocked" in item for item in session_context["limitations"]
+        )
 
     def test_malformed_brain_status_disables_db_claims(self) -> None:
         """Malformed brain_status fail-closes DB-backed claims."""
