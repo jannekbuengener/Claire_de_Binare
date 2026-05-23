@@ -267,7 +267,7 @@ class TestContextBridge:
     def test_execute_not_implemented_tool(self) -> None:
         """Verify executing stub tool returns not_implemented error."""
         bridge = ContextBridge()
-        result = bridge.execute_tool("context.show_snapshot", {"snapshot_id": "test"})
+        result = bridge.execute_tool("context.show_audit", {"entity_id": "test"})
         assert result["status"] == "error"
         assert result["error"]["code"] == "not_implemented"
 

@@ -750,7 +750,7 @@ Even when `status: ready_for_human_go`, the agent MUST stop and wait for explici
 | Symptom | Error Code | Cause | Action |
 |---------|------------|-------|--------|
 | `"unknown_tool"` | `unknown_tool` | Tool name not in registry | Check spelling. Use `bridge.list_tool_names()`. |
-| `"not_implemented"` | `not_implemented` | Tool is a stub (show_snapshot, show_audit) | These tools are not yet implemented. Use the CLI or wait for future Wave. |
+| `"not_implemented"` | `not_implemented` | Tool is a stub (show_audit) | `context.show_audit` is not yet implemented. Use other tools or wait for a future Wave. `context.show_snapshot` is implemented and can be used to inspect registry truth without triggering Verify. |
 | `"invalid_query"` | `invalid_query` | Missing, empty, or non-string query | Provide a non-empty string in the `query` field. |
 | `"invalid_artifacts"` | `invalid_artifacts` | Missing or non-list artifacts | Provide a non-empty list of artifact ID strings. |
 | `"invalid_parameters"` | `invalid_parameters` | Parameters not a dict | Pass parameters as `dict`, not list/string/int. |

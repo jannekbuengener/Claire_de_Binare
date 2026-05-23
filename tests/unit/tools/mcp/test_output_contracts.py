@@ -338,3 +338,32 @@ class TestCdbContextBriefingAliasOutputContract:
         assert "guardrails" in result["briefing"]
         assert isinstance(result["briefing"]["guardrails"], list)
         assert len(result["briefing"]["guardrails"]) > 0
+
+
+class TestShowSnapshotOutputContract:
+    """Verify context.show_snapshot output matches contract structure."""
+
+    def test_ok_output_has_tool_and_status(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.show_snapshot", {"snapshot_id": "snap_contract_001"}
+        )
+        assert result["tool"] == "context.show_snapshot"
+        assert result["status"] == "ok"
+
+    def test_snapshot_has_required_fields(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.show_snapshot", {"snapshot_id": "snap_contract_001"}
+        )
+        snap = result["snapshot"]
+        assert snap["snapshot_id"] == "snap_contract_001"
+        assert isinstance(snap["tools_count"], int)
+        assert isinstance(snap["tool_names"], list)
+        assert "context.show_snapshot" in snap["tool_names"]
+
+    def test_invalid_snapshot_id_fails_closed(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool("context.show_snapshot", {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_snapshot_id"

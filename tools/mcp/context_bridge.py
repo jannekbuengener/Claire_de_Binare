@@ -218,6 +218,65 @@ def context_explain_source_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def context_show_snapshot_handler(**kwargs) -> dict[str, Any]:
+    """
+    Read-only handler for context.show_snapshot tool.
+
+    Returns a deterministic in-memory snapshot of registry truth:
+    which Context MCP tools are currently registered and marked read-only.
+
+    No DB writes. No network. No GitHub. Fail-closed.
+    """
+    snapshot_id = kwargs.get("snapshot_id")
+    include_details = kwargs.get("include_details", True)
+
+    if not snapshot_id or not isinstance(snapshot_id, str) or not snapshot_id.strip():
+        return {
+            "tool": "context.show_snapshot",
+            "status": "error",
+            "error": {
+                "code": "invalid_snapshot_id",
+                "message": "snapshot_id is required and must be a non-empty string",
+            },
+        }
+
+    if not isinstance(include_details, bool):
+        include_details = True
+
+    tool_names = sorted(ContextToolRegistry.list_tool_names())
+    snapshot: dict[str, Any] = {
+        "snapshot_id": snapshot_id.strip(),
+        "tools_count": len(tool_names),
+        "tool_names": tool_names,
+        "read_only_enforced": True,
+        "guardrails": [
+            "Read-only snapshot of registry truth. No DB/network/GitHub access.",
+            "Snapshot is not authorization. LR remains NO-GO.",
+        ],
+    }
+
+    if include_details:
+        details: list[dict[str, Any]] = []
+        for name in tool_names:
+            tool = ContextToolRegistry.get_tool(name)
+            if tool is None:
+                continue
+            details.append(
+                {
+                    "name": tool.name,
+                    "read_only": tool.read_only,
+                    "description": tool.description,
+                }
+            )
+        snapshot["tools"] = details
+
+    return {
+        "tool": "context.show_snapshot",
+        "status": "ok",
+        "snapshot": snapshot,
+    }
+
+
 def context_package_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.package tool.
@@ -2291,6 +2350,17 @@ class ContextBridge:
                 handler=context_explain_source_handler,
             )
             self._registry._tools["context.explain_source"] = new_explain
+        old_show_snapshot = self._registry.get_tool("context.show_snapshot")
+        if old_show_snapshot:
+            new_show_snapshot = ToolDefinition(
+                name=old_show_snapshot.name,
+                description=old_show_snapshot.description,
+                input_schema=old_show_snapshot.input_schema,
+                output_schema=old_show_snapshot.output_schema,
+                read_only=old_show_snapshot.read_only,
+                handler=context_show_snapshot_handler,
+            )
+            self._registry._tools["context.show_snapshot"] = new_show_snapshot
         old_package = self._registry.get_tool("context.package")
         if old_package:
             new_package = ToolDefinition(
