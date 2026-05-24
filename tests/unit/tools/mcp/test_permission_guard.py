@@ -702,7 +702,7 @@ class TestAllCurrentToolsPassInputGate:
 
     def test_context_explain_source_normal_passes(self, bridge: ContextBridge) -> None:
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_001"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert result["status"] == "ok"
 

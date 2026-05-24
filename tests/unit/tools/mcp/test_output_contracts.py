@@ -95,7 +95,7 @@ class TestExplainSourceOutputContract:
     def test_ok_output_has_tool_and_status(self) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_001"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert result["tool"] == "context.explain_source"
         assert result["status"] == "ok"
@@ -103,7 +103,7 @@ class TestExplainSourceOutputContract:
     def test_explanation_has_source_ref_type_provenance(self) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_001"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         expl = result["explanation"]
         assert "source_ref" in expl
@@ -113,7 +113,7 @@ class TestExplainSourceOutputContract:
     def test_explanation_has_confidence_warnings_stale_tombstone(self) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_001"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         expl = result["explanation"]
         assert "confidence" in expl
@@ -124,7 +124,7 @@ class TestExplainSourceOutputContract:
     def test_source_refs_is_list(self) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_001"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert isinstance(result["explanation"]["source_refs"], list)
 
@@ -132,10 +132,43 @@ class TestExplainSourceOutputContract:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.explain_source",
-            {"source_ref": "src_001", "include_chain": False},
+            {"source_ref": "context.readiness", "include_chain": False},
         )
         provenance = result["explanation"]["provenance"]
         assert "chain" not in provenance
+
+    def test_file_source_uses_repo_relative_path_and_not_mock_values(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        expl = result["explanation"]
+        assert expl["source_type"] == "file"
+        assert (
+            expl["provenance"]["repo_relative_path"]
+            == "docs/runbooks/surrealdb_context_mcp_access.md"
+        )
+        assert "mock" not in str(expl).lower()
+
+    def test_source_refs_are_sorted_and_stable(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "context.readiness"}
+        )
+        refs = result["explanation"]["source_refs"]
+        assert refs == sorted(refs, key=lambda item: (item["ref"], item["type"]))
+
+    def test_chain_omitted_when_include_chain_false(self) -> None:
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {
+                "source_ref": "docs/runbooks/surrealdb_context_mcp_access.md",
+                "include_chain": False,
+            },
+        )
+        assert "chain" not in result["explanation"]["provenance"]
 
 
 class TestPackageOutputContract:

@@ -14,6 +14,8 @@ import logging
 import json
 import hashlib
 from copy import deepcopy
+from pathlib import Path, PurePosixPath
+import re
 from typing import Any, Optional
 
 from tools.mcp.permission_guard import PermissionGuard
@@ -22,6 +24,134 @@ from tools.mcp.registry import ContextToolRegistry, ToolDefinition
 logger = logging.getLogger(__name__)
 
 CDB_CONTEXT_BRIEFING_MAX_RESPONSE_BYTES = 200_000
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _explain_source_error(code: str, message: str) -> dict[str, Any]:
+    return {
+        "tool": "context.explain_source",
+        "status": "error",
+        "error": {
+            "code": code,
+            "message": message,
+        },
+    }
+
+
+def _normalize_repo_relative_path(path_value: str) -> str | None:
+    normalized = path_value.strip().replace("\\", "/")
+    if not normalized:
+        return None
+    if normalized.startswith("/") or normalized.startswith("//"):
+        return None
+    if re.match(r"^[A-Za-z]:", normalized):
+        return None
+
+    parts: list[str] = []
+    for part in PurePosixPath(normalized).parts:
+        if part in ("", "."):
+            continue
+        if part == "..":
+            return None
+        parts.append(part)
+
+    if not parts:
+        return None
+
+    return PurePosixPath(*parts).as_posix()
+
+
+def _repo_relative_file_exists(repo_relative_path: str) -> bool:
+    return (REPO_ROOT / repo_relative_path).is_file()
+
+
+def _infer_handler_status(tool_def: ToolDefinition) -> str:
+    handler = tool_def.handler
+    if handler is None:
+        return "not_implemented"
+
+    handler_name = getattr(handler, "__name__", "")
+    if handler_name == "not_implemented_handler":
+        return "not_implemented"
+
+    return "implemented"
+
+
+def _sorted_source_refs(*entries: dict[str, str]) -> list[dict[str, str]]:
+    refs = [dict(entry) for entry in entries]
+    return sorted(refs, key=lambda item: (item["ref"], item["type"]))
+
+
+def _build_tool_source_explanation(
+    source_ref: str,
+    tool_name: str,
+    include_chain: bool,
+    resolution_chain: list[dict[str, Any]],
+) -> dict[str, Any]:
+    tool_def = ContextToolRegistry.get_tool(tool_name)
+    if tool_def is None:
+        raise KeyError(tool_name)
+
+    source_refs = _sorted_source_refs(
+        {"ref": "resolver:registry", "type": "resolver"},
+        {"ref": f"tool:{tool_name}", "type": "tool"},
+    )
+    provenance: dict[str, Any] = {
+        "tool_name": tool_name,
+        "read_only": bool(tool_def.read_only),
+        "handler_status": _infer_handler_status(tool_def),
+        "input_schema_keys": sorted(
+            list(tool_def.input_schema.get("properties", {}).keys())
+        ),
+        "output_schema_keys": sorted(
+            list(tool_def.output_schema.get("properties", {}).keys())
+        ),
+        "resolver": "registry",
+    }
+    if include_chain:
+        provenance["chain"] = [dict(step) for step in resolution_chain]
+
+    return {
+        "source_ref": source_ref,
+        "source_type": "tool",
+        "provenance": provenance,
+        "source_refs": source_refs,
+        "confidence": 1.0,
+        "warnings": [],
+        "stale": False,
+        "tombstone": False,
+    }
+
+
+def _build_file_source_explanation(
+    source_ref: str,
+    repo_relative_path: str,
+    include_chain: bool,
+    resolution_chain: list[dict[str, Any]],
+) -> dict[str, Any]:
+    source_refs = _sorted_source_refs(
+        {"ref": f"path:{repo_relative_path}", "type": "repo_file"},
+        {"ref": "resolver:repo", "type": "resolver"},
+    )
+    provenance: dict[str, Any] = {
+        "repo_relative_path": repo_relative_path,
+        "source_type": "file",
+        "exists": True,
+        "resolver": "repo",
+    }
+    if include_chain:
+        provenance["chain"] = [dict(step) for step in resolution_chain]
+
+    return {
+        "source_ref": source_ref,
+        "source_type": "file",
+        "provenance": provenance,
+        "source_refs": source_refs,
+        "confidence": 1.0,
+        "warnings": [],
+        "stale": False,
+        "tombstone": False,
+    }
 
 
 def context_search_handler(**kwargs) -> dict[str, Any]:
@@ -159,62 +289,186 @@ def context_explain_source_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.explain_source tool.
 
-    Explains provenance of a context source/evidence item.
-    Uses mocked responses (no live DB/network).
-    Fails closed on invalid inputs.
+    Explains provenance of a source using repo-/registry-only resolution.
+    Supports:
+    - exact registered tool names or tool:<tool-name>
+    - existing repo-relative file paths or path:<repo-relative-path>
+    No DB, MCP live, memory, or network resolution is performed.
     """
-    # Validate required source_ref
     source_ref = kwargs.get("source_ref")
     if not source_ref or not isinstance(source_ref, str) or not source_ref.strip():
-        return {
-            "tool": "context.explain_source",
-            "status": "error",
-            "error": {
-                "code": "invalid_source_ref",
-                "message": "source_ref is required and must be a non-empty string",
-            },
-        }
+        return _explain_source_error(
+            "invalid_source_ref",
+            "source_ref is required and must be a non-empty string",
+        )
 
-    # Validate include_chain
     include_chain = kwargs.get("include_chain", True)
     if not isinstance(include_chain, bool):
         include_chain = True
 
-    # Mocked explain result (no live DB/network)
-    mocked_explanation = {
-        "source_ref": source_ref,
-        "source_type": "evidence",
-        "provenance": {
-            "source_path": f"/mock/path/{source_ref}",
-            "hash": "mock_hash_123",
-            "commit": "mock_commit_456",
-            "run_id": "mock_run_789",
-            "import_audit_ref": "mock_audit_012",
-            "evidence_refs": ["mock_ev_1", "mock_ev_2"],
-        },
-        "source_refs": [
-            {"ref": "mock_audit_012", "type": "import_audit"},
-            {"ref": "mock_ev_1", "type": "evidence"},
-        ],
-        "confidence": 0.9,
-        "warnings": [],
-        "stale": False,
-        "tombstone": False,
-    }
-
+    source_ref_clean = source_ref.strip()
+    resolution_chain: list[dict[str, Any]] = []
     if include_chain:
-        mocked_explanation["provenance"]["chain"] = [
-            {"level": 1, "ref": "mock_parent_1", "type": "derived"},
-            {"level": 2, "ref": "mock_parent_2", "type": "source"},
-        ]
+        resolution_chain.append(
+            {
+                "step": "input_normalized",
+                "source_ref": source_ref_clean.replace("\\", "/"),
+            }
+        )
+
+    if source_ref_clean.startswith("tool:"):
+        bare_tool_name = source_ref_clean.split(":", 1)[1].strip()
+        if not bare_tool_name:
+            return _explain_source_error(
+                "invalid_source_ref",
+                "tool: references must include a non-empty registered tool name",
+            )
+
+        if include_chain:
+            resolution_chain.append(
+                {
+                    "step": "registry_checked",
+                    "tool_name": bare_tool_name,
+                    "matched": ContextToolRegistry.get_tool(bare_tool_name) is not None,
+                }
+            )
+
+        tool_def = ContextToolRegistry.get_tool(bare_tool_name)
+        if tool_def is None:
+            return _explain_source_error(
+                "source_not_found",
+                "source_ref did not match a registered tool",
+            )
+
+        if include_chain:
+            resolution_chain.append(
+                {
+                    "step": "resolved",
+                    "source_type": "tool",
+                    "resolver": "registry",
+                }
+            )
+
+        explanation = _build_tool_source_explanation(
+            source_ref=f"tool:{bare_tool_name}",
+            tool_name=bare_tool_name,
+            include_chain=include_chain,
+            resolution_chain=resolution_chain,
+        )
+    elif source_ref_clean.startswith("path:"):
+        bare_path = source_ref_clean.split(":", 1)[1].strip()
+        repo_relative_path = _normalize_repo_relative_path(bare_path)
+        if repo_relative_path is None:
+            return _explain_source_error(
+                "invalid_source_ref",
+                "path: references must use a repo-relative path without absolute prefixes or parent traversal",
+            )
+
+        exists = _repo_relative_file_exists(repo_relative_path)
+        if include_chain:
+            resolution_chain.append(
+                {
+                    "step": "repo_path_checked",
+                    "repo_relative_path": repo_relative_path,
+                    "exists": exists,
+                }
+            )
+
+        if not exists:
+            return _explain_source_error(
+                "source_not_found",
+                "source_ref did not match an existing repo-relative file path",
+            )
+
+        if include_chain:
+            resolution_chain.append(
+                {
+                    "step": "resolved",
+                    "source_type": "file",
+                    "resolver": "repo",
+                }
+            )
+
+        explanation = _build_file_source_explanation(
+            source_ref=f"path:{repo_relative_path}",
+            repo_relative_path=repo_relative_path,
+            include_chain=include_chain,
+            resolution_chain=resolution_chain,
+        )
+    else:
+        tool_def = ContextToolRegistry.get_tool(source_ref_clean)
+        if include_chain:
+            resolution_chain.append(
+                {
+                    "step": "registry_checked",
+                    "tool_name": source_ref_clean,
+                    "matched": tool_def is not None,
+                }
+            )
+
+        if tool_def is not None:
+            if include_chain:
+                resolution_chain.append(
+                    {
+                        "step": "resolved",
+                        "source_type": "tool",
+                        "resolver": "registry",
+                    }
+                )
+
+            explanation = _build_tool_source_explanation(
+                source_ref=source_ref_clean,
+                tool_name=source_ref_clean,
+                include_chain=include_chain,
+                resolution_chain=resolution_chain,
+            )
+        else:
+            repo_relative_path = _normalize_repo_relative_path(source_ref_clean)
+            if repo_relative_path is None:
+                return _explain_source_error(
+                    "invalid_source_ref",
+                    "source_ref path candidates must be repo-relative and must not use absolute prefixes or parent traversal",
+                )
+
+            exists = _repo_relative_file_exists(repo_relative_path)
+            if include_chain:
+                resolution_chain.append(
+                    {
+                        "step": "repo_path_checked",
+                        "repo_relative_path": repo_relative_path,
+                        "exists": exists,
+                    }
+                )
+
+            if not exists:
+                return _explain_source_error(
+                    "source_not_found",
+                    "source_ref must resolve to a registered tool or an existing repo-relative file path",
+                )
+
+            if include_chain:
+                resolution_chain.append(
+                    {
+                        "step": "resolved",
+                        "source_type": "file",
+                        "resolver": "repo",
+                    }
+                )
+
+            explanation = _build_file_source_explanation(
+                source_ref=repo_relative_path,
+                repo_relative_path=repo_relative_path,
+                include_chain=include_chain,
+                resolution_chain=resolution_chain,
+            )
 
     return {
         "tool": "context.explain_source",
         "status": "ok",
-        "explanation": mocked_explanation,
+        "explanation": explanation,
         "metadata": {
-            "explained_at": "2026-05-03T12:00:00Z",
             "include_chain": include_chain,
+            "resolution_mode": "repo_registry_only",
         },
     }
 

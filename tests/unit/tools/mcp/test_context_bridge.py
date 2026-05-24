@@ -4,6 +4,7 @@ Unit tests for Context MCP Bridge Scaffold.
 Tests the scaffold structure without requiring live SurrealDB or network.
 """
 
+from pathlib import Path
 import pytest
 from tools.mcp.context_bridge import ContextBridge, create_bridge
 from tools.mcp.registry import ContextToolRegistry
@@ -164,21 +165,22 @@ class TestContextExplainSourceHandler:
         assert result["error"]["code"] == "invalid_source_ref"
 
     def test_valid_source_ref_returns_ok(self) -> None:
-        """Valid source_ref returns ok status with explanation (mocked)."""
+        """Registered tool name resolves to repo-/registry-only explanation."""
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_abc123"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert result["status"] == "ok"
         assert result["tool"] == "context.explain_source"
         assert "explanation" in result
-        assert result["explanation"]["source_ref"] == "src_abc123"
+        assert result["explanation"]["source_ref"] == "context.readiness"
+        assert result["explanation"]["source_type"] == "tool"
 
     def test_include_chain_default_true(self) -> None:
         """include_chain defaults to True."""
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_abc123"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert result["status"] == "ok"
         assert result["metadata"]["include_chain"] is True
@@ -189,7 +191,7 @@ class TestContextExplainSourceHandler:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.explain_source",
-            {"source_ref": "src_abc123", "include_chain": False},
+            {"source_ref": "context.readiness", "include_chain": False},
         )
         assert result["status"] == "ok"
         assert result["metadata"]["include_chain"] is False
@@ -199,7 +201,7 @@ class TestContextExplainSourceHandler:
         """Explanation has all required fields per #2096."""
         bridge = create_bridge()
         result = bridge.execute_tool(
-            "context.explain_source", {"source_ref": "src_abc123"}
+            "context.explain_source", {"source_ref": "context.readiness"}
         )
         assert result["status"] == "ok"
         expl = result["explanation"]
@@ -211,6 +213,150 @@ class TestContextExplainSourceHandler:
         assert "warnings" in expl
         assert "stale" in expl
         assert "tombstone" in expl
+
+    def test_tool_prefix_resolves_registered_tool(self) -> None:
+        """tool:<name> resolves exactly like the bare registered tool name."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "tool:context.readiness"}
+        )
+        assert result["status"] == "ok"
+        assert result["explanation"]["source_ref"] == "tool:context.readiness"
+        assert result["explanation"]["source_type"] == "tool"
+
+    def test_repo_relative_path_returns_ok(self) -> None:
+        """Repo-relative paths resolve as file sources."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "ok"
+        assert result["explanation"]["source_type"] == "file"
+        assert (
+            result["explanation"]["provenance"]["repo_relative_path"]
+            == "docs/runbooks/surrealdb_context_mcp_access.md"
+        )
+        assert result["explanation"]["provenance"]["exists"] is True
+        assert result["explanation"]["provenance"]["resolver"] == "repo"
+
+    def test_path_prefix_resolves_repo_relative_file(self) -> None:
+        """path:<path> only resolves repo files."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "path:docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "ok"
+        assert result["explanation"]["source_type"] == "file"
+
+    def test_backslash_path_normalizes_to_forward_slashes(self) -> None:
+        """Backslash separators normalize deterministically."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": r"path:docs\runbooks\surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "ok"
+        assert (
+            result["explanation"]["provenance"]["repo_relative_path"]
+            == "docs/runbooks/surrealdb_context_mcp_access.md"
+        )
+
+    def test_tool_prefix_does_not_fallback_to_path_resolution(self) -> None:
+        """tool: only checks the registry."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "tool:docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "source_not_found"
+
+    def test_path_prefix_does_not_fallback_to_tool_resolution(self) -> None:
+        """path: only checks repo-relative files."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "path:context.readiness"}
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "source_not_found"
+
+    def test_unknown_source_ref_returns_source_not_found(self) -> None:
+        """Unknown non-empty refs fail closed with source_not_found."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "context.__does_not_exist__"}
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "source_not_found"
+
+    def test_absolute_path_is_rejected(self) -> None:
+        """Absolute paths are rejected instead of being resolved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": r"C:\tmp\surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_source_ref"
+
+    def test_unc_path_is_rejected(self) -> None:
+        """UNC paths are rejected instead of being resolved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": r"\\server\share\surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_source_ref"
+
+    def test_parent_traversal_is_rejected(self) -> None:
+        """Parent traversal is rejected instead of being resolved."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "../docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "invalid_source_ref"
+
+    def test_tool_provenance_uses_registry_truth(self) -> None:
+        """Tool provenance reports registry fields without dispatching the tool."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "context.readiness"}
+        )
+        provenance = result["explanation"]["provenance"]
+        assert provenance["tool_name"] == "context.readiness"
+        assert provenance["read_only"] is True
+        assert provenance["handler_status"] == "implemented"
+        assert isinstance(provenance["input_schema_keys"], list)
+        assert isinstance(provenance["output_schema_keys"], list)
+
+    def test_include_chain_true_only_contains_internal_resolver_steps(self) -> None:
+        """Resolver chain stays internal and deterministic."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source", {"source_ref": "context.readiness"}
+        )
+        chain = result["explanation"]["provenance"]["chain"]
+        assert [step["step"] for step in chain] == [
+            "input_normalized",
+            "registry_checked",
+            "resolved",
+        ]
+
+    def test_file_output_uses_repo_relative_paths_only(self) -> None:
+        """File output never leaks absolute local paths."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            "context.explain_source",
+            {"source_ref": "docs/runbooks/surrealdb_context_mcp_access.md"},
+        )
+        rendered = str(result["explanation"])
+        assert str(Path.cwd()) not in rendered
+        assert Path.cwd().as_posix() not in rendered
 
 
 class TestContextBridge:

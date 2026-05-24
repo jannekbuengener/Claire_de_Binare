@@ -252,7 +252,7 @@ print(result["status"])  # "ok" or "error"
 |------|--------|-------------|
 | `context.search` | Full | Search the context knowledge base (keyword + structured queries). Returns results with confidence scores and warnings. |
 | `context.trace` | Full | Trace decision or event lineage through the context graph. Returns root node and lineage chain. |
-| `context.explain_source` | Full | Explain provenance of a context source or evidence item. Returns source type, provenance chain, confidence, and stale/tombstone flags. |
+| `context.explain_source` | Full | Resolve provenance for a registered tool or existing repo-relative file path. Repo-/registry-only, deterministic, no DB/network, rejects absolute and traversal paths. |
 | `context.package` | Full | Package context artifacts for handoff between agents or sessions. Capped at 10 items. Includes stop conditions. |
 | `context.readiness` | Full | Assess agent action readiness for a given task scope. Returns one of 6 readiness status values. Requires task_scope and operation_mode. |
 | `context.self_explain` | Full | Generate structured self-explanation for governance-relevant conditions. 9 explanation types supported. |
@@ -262,7 +262,7 @@ print(result["status"])  # "ok" or "error"
 | `context.show_snapshot` | Full | Deterministic registry snapshot (tool inventory + read-only flags). No DB/network/GitHub. |
 | `context.show_audit` | Full | Deterministic registry audit snapshot for a target tool (schema keys + handler wiring status). No DB/network/GitHub. |
 
-All 11 tools are registered as `read_only: true`. Both `context.show_*` tools are implemented as registry-only snapshots (no DB-backed trail).
+All 11 tools are registered as `read_only: true`. `context.show_snapshot`, `context.show_audit`, and `context.explain_source` are deterministic repo-/registry-only views (no DB-backed trail).
 
 ---
 
@@ -294,7 +294,7 @@ Input scanning uses word-boundary regex and recursive parameter walking (dicts a
 
 ## 7. Tool Usage Examples
 
-All examples use mocked/in-memory responses. For real SurrealDB data, a future Wave will provide a real adapter.
+`context.search`, `context.trace`, and `context.package` examples below still use mocked/in-memory responses. `context.explain_source`, `context.show_snapshot`, and `context.show_audit` are already deterministic repo-/registry-only handlers. For real SurrealDB data, a future Wave will provide a real adapter where applicable.
 
 ### 7.1 context.search
 
@@ -358,10 +358,16 @@ Maximum depth is 20. `depth_exceeded` error returned above 20.
 
 ```python
 result = bridge.execute_tool("context.explain_source", {
-    "source_ref": "src_001",
+    "source_ref": "context.readiness",
     "include_chain": True
 })
 ```
+
+Supported refs: exact tool name, `tool:<tool-name>`, repo-relative file path, or
+`path:<repo-relative-path>`. Prefixes are strict: `tool:` only checks the registry,
+`path:` only checks repo files. Unknown refs fail closed with `source_not_found`.
+Absolute paths, Windows drive paths, UNC paths, and `..` traversal fail closed with
+`invalid_source_ref`. File outputs always use repo-relative paths only.
 
 Response:
 ```json
@@ -369,30 +375,45 @@ Response:
     "tool": "context.explain_source",
     "status": "ok",
     "explanation": {
-        "source_ref": "src_001",
-        "source_type": "evidence",
+        "source_ref": "context.readiness",
+        "source_type": "tool",
         "provenance": {
-            "source_path": "/mock/path/src_001",
-            "hash": "mock_hash_123",
-            "commit": "mock_commit_456",
-            "run_id": "mock_run_789",
-            "import_audit_ref": "mock_audit_012",
-            "evidence_refs": ["mock_ev_1", "mock_ev_2"],
+            "tool_name": "context.readiness",
+            "read_only": true,
+            "handler_status": "implemented",
+            "input_schema_keys": [
+                "operation_mode",
+                "required_reads",
+                "stop_conditions",
+                "task_scope"
+            ],
+            "output_schema_keys": [
+                "human_go_required",
+                "reasons",
+                "required_next_reads",
+                "status",
+                "warnings"
+            ],
+            "resolver": "registry",
             "chain": [
-                {"level": 1, "ref": "mock_parent_1", "type": "derived"},
-                {"level": 2, "ref": "mock_parent_2", "type": "source"}
+                {"step": "input_normalized", "source_ref": "context.readiness"},
+                {"step": "registry_checked", "tool_name": "context.readiness", "matched": true},
+                {"step": "resolved", "source_type": "tool", "resolver": "registry"}
             ]
         },
         "source_refs": [
-            {"ref": "mock_audit_012", "type": "import_audit"},
-            {"ref": "mock_ev_1", "type": "evidence"}
+            {"ref": "resolver:registry", "type": "resolver"},
+            {"ref": "tool:context.readiness", "type": "tool"}
         ],
-        "confidence": 0.9,
+        "confidence": 1.0,
         "warnings": [],
         "stale": false,
         "tombstone": false
     },
-    "metadata": {"explained_at": "2026-05-03T12:00:00Z", "include_chain": true}
+    "metadata": {
+        "include_chain": true,
+        "resolution_mode": "repo_registry_only"
+    }
 }
 ```
 
