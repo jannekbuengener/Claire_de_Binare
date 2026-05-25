@@ -5,6 +5,7 @@ Tests the scaffold structure without requiring live SurrealDB or network.
 """
 
 from pathlib import Path
+from typing import Any
 import pytest
 from tools.mcp.context_bridge import ContextBridge, create_bridge
 from tools.mcp.registry import ContextToolRegistry
