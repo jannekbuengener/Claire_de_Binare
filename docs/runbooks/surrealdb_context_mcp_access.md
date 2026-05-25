@@ -294,7 +294,7 @@ Input scanning uses word-boundary regex and recursive parameter walking (dicts a
 
 ## 7. Tool Usage Examples
 
-`context.search` and `context.trace` examples below still use mocked/in-memory responses. `context.package`, `context.explain_source`, `context.show_snapshot`, and `context.show_audit` are deterministic repo-/registry-only handlers. For real SurrealDB data, a future Wave will provide a real adapter where applicable.
+`context.search` examples below still use mocked/in-memory responses. `context.trace` is read-only and fail-closed, but in the current repo-/in-memory bridge mode it does not invent provenance or lineage. `context.package`, `context.explain_source`, `context.show_snapshot`, and `context.show_audit` are deterministic repo-/registry-only handlers. For real SurrealDB data, a future Wave will provide a real adapter where applicable.
 
 ### 7.1 context.search
 
@@ -343,16 +343,13 @@ Response:
     "tool": "context.trace",
     "status": "ok",
     "trace": {
-        "root": {"id": "evt_001", "type": "unknown", "title": "Mock trace target: evt_001"},
-        "lineage": [
-            {"id": "mock_related_0", "type": "derived", "relationship": "related_to", "depth": 1},
-            {"id": "mock_related_1", "type": "derived", "relationship": "related_to", "depth": 2}
-        ]
+        "root": {"id": "evt_001", "type": "unknown", "title": "Trace target: evt_001"},
+        "lineage": []
     }
 }
 ```
 
-Maximum depth is 20. `depth_exceeded` error returned above 20.
+Maximum depth is 20. `depth_exceeded` error returned above 20. In the current read-only bridge mode, lineage stays empty unless a future evidence-backed resolver is available.
 
 ### 7.3 context.explain_source
 

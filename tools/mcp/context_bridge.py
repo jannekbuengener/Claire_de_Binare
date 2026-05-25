@@ -256,31 +256,19 @@ def context_trace_handler(**kwargs) -> dict[str, Any]:
             },
         }
 
-    # Mocked trace results (no live DB/network)
-    # In production, this would query the context graph
+    # No evidence-backed lineage is available in the current read-only bridge mode.
     root = {
         "id": target_id,
         "type": "unknown",
-        "title": f"Mock trace target: {target_id}",
+        "title": f"Trace target: {target_id}",
     }
-
-    lineage = []
-    for i in range(min(depth, 3)):  # Mock up to 3 levels
-        lineage.append(
-            {
-                "id": f"mock_related_{i}",
-                "type": "derived",
-                "relationship": "related_to",
-                "depth": i + 1,
-            }
-        )
 
     return {
         "tool": "context.trace",
         "status": "ok",
         "trace": {
             "root": root,
-            "lineage": lineage,
+            "lineage": [],
         },
     }
 

@@ -68,19 +68,16 @@ class TestTraceOutputContract:
         bridge = create_bridge()
         result = bridge.execute_tool("context.trace", {"target_id": "evt_001"})
         root = result["trace"]["root"]
-        assert "id" in root
-        assert "type" in root
-        assert "title" in root
+        assert root["id"] == "evt_001"
+        assert root["type"] == "unknown"
+        assert root["title"] == "Trace target: evt_001"
 
-    def test_trace_has_lineage_with_relationship(self) -> None:
+    def test_trace_lineage_empty_without_evidence(self) -> None:
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.trace", {"target_id": "evt_001", "depth": 3}
         )
-        for item in result["trace"]["lineage"]:
-            assert "id" in item
-            assert "relationship" in item
-            assert "depth" in item
+        assert result["trace"]["lineage"] == []
 
     def test_error_output_has_target_not_found_code(self) -> None:
         bridge = create_bridge()
