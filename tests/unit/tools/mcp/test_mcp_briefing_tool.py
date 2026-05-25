@@ -12,7 +12,6 @@ from tools.mcp.context_bridge import (
     cdb_context_briefing_handler,
 )
 
-
 pytestmark = pytest.mark.unit
 
 
@@ -27,21 +26,37 @@ class TestContextBriefingHandler:
 
     def test_empty_task_id_returns_error(self) -> None:
         """Empty task_id fails closed."""
-        result = context_briefing_handler(task_id="", task_scope="test", target_issue=None, requested_depth="quick", operation_mode="read_only")
+        result = context_briefing_handler(
+            task_id="",
+            task_scope="test",
+            target_issue=None,
+            requested_depth="quick",
+            operation_mode="read_only",
+        )
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_task_id"
 
     def test_missing_task_scope_returns_error(self) -> None:
         """Missing task_scope fails closed."""
-        result = context_briefing_handler(task_id="test-1", requested_depth="quick", operation_mode="read_only")
+        result = context_briefing_handler(
+            task_id="test-1", requested_depth="quick", operation_mode="read_only"
+        )
         assert result["status"] == "error"
         assert result["error"]["code"] == "invalid_task_scope"
 
-    def test_missing_target_issue_returns_error(self) -> None:
-        """Missing target_issue (not provided) fails closed."""
-        result = context_briefing_handler(task_id="test-1", task_scope="test", requested_depth="quick", operation_mode="read_only")
-        assert result["status"] == "error"
-        assert result["error"]["code"] == "invalid_target_issue"
+    def test_missing_target_issue_defaults_to_none(self) -> None:
+        """Missing target_issue defaults to None (optional field)."""
+        result = context_briefing_handler(
+            task_id="test-1",
+            task_scope="test",
+            requested_depth="quick",
+            operation_mode="read_only",
+        )
+        assert result["status"] == "ok"
+        assert (
+            result["briefing"]["session_context"]["github_state"]["target_issue"]
+            is None
+        )
 
     def test_valid_request_returns_ok(self) -> None:
         """Valid inputs produce ok status with briefing."""
@@ -164,10 +179,16 @@ class TestBriefingOutputStructure:
         )
         if result["status"] == "ok":
             briefing = result["briefing"]
-            required = {"briefing_id", "scope_summary", "human_go_required", "guardrails", "stop_conditions"}
-            assert required.issubset(briefing.keys()), (
-                f"Missing required fields: {required - set(briefing.keys())}"
-            )
+            required = {
+                "briefing_id",
+                "scope_summary",
+                "human_go_required",
+                "guardrails",
+                "stop_conditions",
+            }
+            assert required.issubset(
+                briefing.keys()
+            ), f"Missing required fields: {required - set(briefing.keys())}"
 
     def test_guardrails_non_empty(self) -> None:
         """Guardrails list is non-empty."""
