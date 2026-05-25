@@ -584,11 +584,16 @@ result = bridge.execute_tool("context.briefing", {
 })
 ```
 
-Response includes `briefing_id` (16-char hex, deterministic), `scope_summary`, `required_reads`, `guardrails` (7 mandatory), `stop_conditions`, `validation_plan`, `human_go_required`. Depths: `quick` (summary only), `standard` (with artifacts), `deep` (with mock uncertainty warnings).
+Response includes `briefing_id` (16-char hex, deterministic), `scope_summary`, `required_reads`, `guardrails` (7 mandatory), `stop_conditions`, `validation_plan`, `human_go_required`. Depths: `quick` (summary only), `standard` (with artifacts), `deep` (with mock uncertainty warnings). If `target_issue` is omitted it defaults to `null`; if `requested_depth` is omitted it defaults to `quick`.
 
-`briefing.session_context` is the canonical short-term/session-memory handoff surface for Context/MCP work. It is always `working_memory` with `session_only=true`, remains read-only, and must not be treated as persistent SurrealDB memory. DB-backed Brain or evidence claims require both `brain_source="surrealdb-local"` and a usable `brain_status` (`used` or `partial`). `blocked`, `not-used`, `repo-only`, `in_memory`, and `unavailable` stay fail-closed.
+`briefing.session_context` is the canonical short-term/session-memory handoff surface for Context/MCP work. It is always `working_memory` with `session_only=true`, remains read-only, and must not be treated as persistent SurrealDB memory. `brain_source` / `brain_status` are derived, not trusted from caller claims:
 
-Deterministic example with explicit session context inputs:
+- `adapter_config_path` (+ `secrets_path` when required by the config) triggers a real Wave-14 trust-summary read through the existing adapter layer. Only `metadata.source="surrealdb-local"` enables DB-backed briefing claims.
+- Inline `evidence_records` / `claim_records` / `decision_events` / `memory_records` derive `brain_source="in_memory"` with `db_claims_allowed=false`.
+- No DB path and no inline records derive `brain_source="repo-only"` and `brain_status="not-used"`.
+- Caller-supplied `brain_source` / `brain_status` are ignored and surfaced only as limitations when present.
+
+Deterministic repo-only example with explicit session state inputs:
 
 ```python
 result = bridge.execute_tool("context.briefing", {
@@ -597,8 +602,6 @@ result = bridge.execute_tool("context.briefing", {
     "task_scope": "review session-context handoff behavior",
     "requested_depth": "quick",
     "operation_mode": "read_only",
-    "brain_source": "repo-only",
-    "brain_status": "not-used",
     "repo_state": {
         "branch": "fix/2613-noise-freeze-remaining-push-triggers",
         "commit": "f345cf0c",
@@ -695,7 +698,7 @@ limitations:
 - `working_assumptions` are temporary session hints only because `session_only=true`.
 - `ttl_seconds` is bounded to `<= 14400` (4h) for this MCP handoff surface.
 - `repo-only` and `in_memory` are not DB-backed and must keep `db_claims_allowed=false`.
-- Persistent Brain or memory claims require `brain_source=surrealdb-local` and usable `brain_status` (`used` or `partial`); `blocked` always disables DB-backed claims.
+- Persistent Brain or memory claims require a real adapter-backed read that returns `metadata.source="surrealdb-local"`; briefing fails closed when DB-backed mode is requested but config/auth/adapter source cannot prove that path.
 - `session_context` does not authorize any automatic long-term memory write or persistent DB write.
 - A full Brain Evidence block can be generated from `briefing.session_context` plus the sibling briefing fields such as `required_reads`.
 

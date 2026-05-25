@@ -1418,6 +1418,124 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     }
 
 
+def _briefing_error_from_inner_result(
+    result: dict[str, Any],
+    *,
+    tool_name: str = "context.briefing",
+) -> dict[str, Any]:
+    """Project an inner MCP-style error result onto the briefing tool surface."""
+    error = result.get("error", {}) if isinstance(result, dict) else {}
+    projected: dict[str, Any] = {
+        "tool": tool_name,
+        "status": "error",
+        "error": {
+            "code": error.get("code", "execution_error"),
+            "message": error.get(
+                "message", "briefing DB-backed preflight failed unexpectedly"
+            ),
+        },
+    }
+    details = error.get("details")
+    if isinstance(details, dict):
+        projected["error"]["details"] = deepcopy(details)
+
+    metadata = result.get("metadata")
+    if isinstance(metadata, dict):
+        projected["metadata"] = deepcopy(metadata)
+    return projected
+
+
+def _has_non_empty_record_list(value: Any) -> bool:
+    return isinstance(value, list) and bool(value)
+
+
+def _derive_briefing_brain_context(
+    *,
+    adapter_config_path: Any,
+    secrets_path: Any,
+    enrichment_scope: str,
+    evidence_records: Any,
+    claim_records: Any,
+    decision_events: Any,
+    memory_records: Any,
+    caller_brain_source: Any,
+    caller_brain_status: Any,
+) -> tuple[str, str, list[str]] | dict[str, Any]:
+    """Derive briefing brain context from real reads or conservative fallbacks."""
+    limitations: list[str] = []
+
+    if caller_brain_source is not None:
+        limitations.append(
+            "brain_source caller input ignored; derived from actual context source"
+        )
+    if caller_brain_status is not None:
+        limitations.append(
+            "brain_status caller input ignored; derived from actual context source"
+        )
+
+    if adapter_config_path is not None:
+        from tools.mcp.context_evidence_memory_tools import (
+            handle_cdb_context_trust_summary,
+        )
+
+        trust_summary_request: dict[str, Any] = {
+            "tool": "cdb_context_trust_summary",
+            "parameters": {
+                "adapter_config_path": adapter_config_path,
+                "scope": enrichment_scope,
+            },
+        }
+        if secrets_path is not None:
+            trust_summary_request["parameters"]["secrets_path"] = secrets_path
+
+        trust_summary_result = handle_cdb_context_trust_summary(trust_summary_request)
+        if trust_summary_result.get("status") != "ok":
+            return _briefing_error_from_inner_result(trust_summary_result)
+
+        metadata = trust_summary_result.get("metadata", {})
+        source = metadata.get("source")
+        if source != "surrealdb-local":
+            return {
+                "tool": "context.briefing",
+                "status": "error",
+                "error": {
+                    "code": "adapter_unavailable",
+                    "message": (
+                        "DB-backed briefing requested, but the Wave-14 adapter did "
+                        f"not return source='surrealdb-local' (got {source!r})"
+                    ),
+                    "details": {
+                        "expected_source": "surrealdb-local",
+                        "actual_source": source,
+                    },
+                },
+                "metadata": deepcopy(metadata) if isinstance(metadata, dict) else {},
+            }
+
+        limitations.append(
+            "brain context derived from Wave-14 trust summary adapter metadata"
+        )
+        return "surrealdb-local", "used", limitations
+
+    if any(
+        (
+            _has_non_empty_record_list(evidence_records),
+            _has_non_empty_record_list(claim_records),
+            _has_non_empty_record_list(decision_events),
+            _has_non_empty_record_list(memory_records),
+        )
+    ):
+        limitations.append(
+            "brain context derived from inline enrichment records (in-memory)"
+        )
+        return "in_memory", "used", limitations
+
+    limitations.append(
+        "brain_source derived as repo-only; no DB-backed memory or evidence claims"
+    )
+    return "repo-only", "not-used", limitations
+
+
 def context_briefing_handler(**kwargs) -> dict[str, Any]:
     """
     Read-only handler for context.briefing tool.
@@ -1437,11 +1555,11 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
 
     _MISSING = object()
 
-    # --- Input extraction (no defaults for required fields) ---
+    # --- Input extraction (defaults only for optional briefing context) ---
     task_id = kwargs.get("task_id")
     task_scope = kwargs.get("task_scope")
-    target_issue = kwargs.get("target_issue", _MISSING)
-    requested_depth = kwargs.get("requested_depth", _MISSING)
+    target_issue = kwargs.get("target_issue", None)
+    requested_depth = kwargs.get("requested_depth", "quick")
     operation_mode = kwargs.get("operation_mode", _MISSING)
     target_paths = kwargs.get("target_paths", [])
     target_symbols = kwargs.get("target_symbols", [])
@@ -1455,6 +1573,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     _decision_events_raw = kwargs.get("decision_events")
     _memory_records_raw = kwargs.get("memory_records")
     _enrichment_scope = kwargs.get("enrichment_scope", "wave14")
+    _adapter_config_path = kwargs.get("adapter_config_path")
+    _secrets_path = kwargs.get("secrets_path")
     _repo_state_raw = kwargs.get("repo_state")
     _github_state_raw = kwargs.get("github_state")
     _brain_source_raw = kwargs.get("brain_source")
@@ -1487,16 +1607,6 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             },
         }
 
-    if target_issue is _MISSING:
-        return {
-            "tool": "context.briefing",
-            "status": "error",
-            "error": {
-                "code": "invalid_target_issue",
-                "message": "target_issue is required (must be a string or null)",
-            },
-        }
-
     if target_issue is not None and not isinstance(target_issue, str):
         return {
             "tool": "context.briefing",
@@ -1504,16 +1614,6 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             "error": {
                 "code": "invalid_target_issue",
                 "message": "target_issue must be a string or null",
-            },
-        }
-
-    if requested_depth is _MISSING:
-        return {
-            "tool": "context.briefing",
-            "status": "error",
-            "error": {
-                "code": "invalid_depth",
-                "message": "requested_depth is required",
             },
         }
 
@@ -1567,59 +1667,23 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     if risk_level not in frozenset({"low", "medium", "high"}):
         risk_level = "medium"
 
-    valid_brain_sources = frozenset(
-        {
-            "repo-only",
-            "in_memory",
-            "surrealdb-local",
-            "unavailable",
-        }
-    )
-    valid_brain_statuses = frozenset({"used", "partial", "not-used", "blocked"})
     valid_working_tree_states = frozenset({"clean", "dirty", "unknown"})
     session_context_limitations: list[str] = []
-
-    if isinstance(_brain_source_raw, str) and _brain_source_raw in valid_brain_sources:
-        brain_source = _brain_source_raw
-    else:
-        brain_source = "repo-only"
-        if _brain_source_raw is not None:
-            session_context_limitations.append(
-                "brain_source malformed; defaulted to repo-only"
-            )
-        else:
-            session_context_limitations.append(
-                "brain_source not provided; defaulted to repo-only"
-            )
-
-    if isinstance(_brain_status_raw, str) and _brain_status_raw in valid_brain_statuses:
-        brain_status = _brain_status_raw
-    else:
-        brain_status = "not-used" if brain_source == "repo-only" else "blocked"
-        if _brain_status_raw is not None:
-            session_context_limitations.append(
-                "brain_status malformed; defaulted conservatively"
-            )
-        else:
-            session_context_limitations.append(
-                "brain_status not provided; defaulted conservatively"
-            )
-
-    if brain_source == "repo-only" and brain_status != "not-used":
-        brain_status = "not-used"
-        session_context_limitations.append(
-            "repo-only brain source cannot advertise used or partial brain status; coerced to not-used"
-        )
-    elif brain_source == "unavailable" and brain_status != "blocked":
-        brain_status = "blocked"
-        session_context_limitations.append(
-            "unavailable brain source cannot advertise usable brain status; coerced to blocked"
-        )
-
-    if brain_source == "repo-only":
-        session_context_limitations.append(
-            "repo-only brain source; no DB-backed memory or evidence claims"
-        )
+    brain_context = _derive_briefing_brain_context(
+        adapter_config_path=_adapter_config_path,
+        secrets_path=_secrets_path,
+        enrichment_scope=_enrichment_scope,
+        evidence_records=_evidence_records_raw,
+        claim_records=_claim_records_raw,
+        decision_events=_decision_events_raw,
+        memory_records=_memory_records_raw,
+        caller_brain_source=_brain_source_raw,
+        caller_brain_status=_brain_status_raw,
+    )
+    if isinstance(brain_context, dict):
+        return brain_context
+    brain_source, brain_status, derived_brain_limitations = brain_context
+    session_context_limitations.extend(derived_brain_limitations)
 
     repo_state = {
         "branch": "unknown",
@@ -2025,19 +2089,29 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     )
 
     if not _has_records:
-        # Fail-closed: no records provided — controlled-empty enrichment
-        missing_evidence_notice = [
-            "no_evidence_records_provided",
-            "no_decision_events_provided",
-        ]
-        trust_summary = (
-            "Enrichment skipped: no evidence_records, claim_records, decision_events, "
-            "or memory_records provided. Supply records to enable evidence/decision enrichment."
-        )
-        stop_conditions.append(
-            "S5: no enrichment records provided — supply evidence_records, claim_records, "
-            "decision_events, or memory_records to enable enrichment"
-        )
+        if brain_source == "surrealdb-local":
+            trust_summary = (
+                "DB-backed session context established via Wave-14 trust summary. "
+                "Artifact enrichment skipped because no inline enrichment records "
+                "were provided to context.briefing."
+            )
+            recommended_next_reads_enrichment.append(
+                "Provide inline enrichment records if artifact-level enrichment is required in the briefing payload"
+            )
+        else:
+            # Fail-closed: no records provided — controlled-empty enrichment
+            missing_evidence_notice = [
+                "no_evidence_records_provided",
+                "no_decision_events_provided",
+            ]
+            trust_summary = (
+                "Enrichment skipped: no evidence_records, claim_records, decision_events, "
+                "or memory_records provided. Supply records to enable evidence/decision enrichment."
+            )
+            stop_conditions.append(
+                "S5: no enrichment records provided — supply evidence_records, claim_records, "
+                "decision_events, or memory_records to enable enrichment"
+            )
     else:
         # Real enrichment using Wave-14 services (#2122)
         # Read-only, fail-closed, no DB/network/write.
