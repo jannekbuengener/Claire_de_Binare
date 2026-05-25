@@ -47,6 +47,13 @@ from tools.surrealdb.context_query import (
 logger = logging.getLogger(__name__)
 
 _IN_MEMORY_SOURCE = "in_memory"
+_ALLOWED_MCP_SOURCES = frozenset(
+    {
+        _IN_MEMORY_SOURCE,
+        "surrealdb-local",
+        "surrealdb-local-unavailable",
+    }
+)
 
 
 def _make_adapter_error(tool_name: str, message: str) -> dict[str, Any]:
@@ -78,6 +85,29 @@ def adapter_source(adapter: QueryAdapter) -> str:
     if status == "noop-no-network":
         return _IN_MEMORY_SOURCE
     return status
+
+
+def derive_guarded_source_label(
+    params: Mapping[str, Any] | None = None,
+    *,
+    adapter: QueryAdapter | None = None,
+) -> str:
+    """Derive ``metadata.source`` strictly from adapter evidence.
+
+    Caller-provided request fields such as ``source``, ``brain_source``,
+    ``brain_status``, or nested ``metadata.source`` are intentionally ignored.
+    Without a real adapter object this helper always fail-closes to
+    ``"in_memory"``.
+    """
+    _ = params
+    if adapter is None:
+        return _IN_MEMORY_SOURCE
+
+    source = adapter_source(adapter)
+    if source not in _ALLOWED_MCP_SOURCES:
+        logger.warning("unexpected adapter source label %r; fail-closing", source)
+        return _IN_MEMORY_SOURCE
+    return source
 
 
 def build_adapter_from_params(

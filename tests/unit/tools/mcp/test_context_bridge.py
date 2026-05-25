@@ -3770,3 +3770,103 @@ class TestWave14BridgeDispatch:
         assert result["status"] == "error"
         assert result["error"]["code"] == "unknown_tool"
         assert result["error"]["code"] != "not_implemented"
+
+    @staticmethod
+    def _minimal_payload(tool_name: str) -> dict[str, Any]:
+        if tool_name == "cdb_context_evidence_resolve":
+            return {
+                "mode": "by_artifact",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+                "evidence_records": [
+                    {
+                        "evidence_id": "ev_test_1",
+                        "evidence_type": "test_run",
+                        "confidence": 0.8,
+                        "artifact_refs": ["tools/surrealdb/evidence_lookup.py"],
+                        "claim_refs": [],
+                        "decision_refs": [],
+                    }
+                ],
+            }
+        if tool_name == "cdb_context_claim_resolve":
+            return {
+                "mode": "by_topic",
+                "topic": "context_tools",
+                "claim_records": [
+                    {
+                        "claim_id": "claim_test_1",
+                        "title": "Test claim",
+                        "statement": "read-only claim",
+                        "status": "supported",
+                        "scope": "wave14",
+                        "topic": "context_tools",
+                        "evidence_refs": [],
+                    }
+                ],
+            }
+        if tool_name == "cdb_context_memory_get":
+            return {
+                "mode": "by_scope",
+                "scope": "wave14",
+                "memory_records": [
+                    {
+                        "memory_id": "mem_test_1",
+                        "scope": "wave14",
+                        "memory_type": "constraint",
+                        "content": "read-only memory",
+                        "agent": "bridge-test",
+                    }
+                ],
+            }
+        if tool_name == "cdb_context_trust_summary":
+            return {"scope": "wave14"}
+        if tool_name == "cdb_context_decision_history":
+            return {
+                "mode": "by_topic",
+                "topic": "context_tools",
+                "decision_events": [
+                    {
+                        "decision_id": "dec_test_1",
+                        "title": "Decision",
+                        "topic": "context_tools",
+                        "scope": "wave14",
+                        "status": "approved",
+                    }
+                ],
+            }
+        if tool_name == "cdb_context_decision_replay":
+            return {
+                "mode": "replay_by_scope",
+                "scope": "wave14",
+                "decision_events": [
+                    {
+                        "decision_id": "dec_test_1",
+                        "title": "Decision",
+                        "topic": "context_tools",
+                        "scope": "wave14",
+                        "status": "approved",
+                    }
+                ],
+            }
+        raise AssertionError(f"Unhandled Wave-14 tool: {tool_name}")
+
+    @pytest.mark.parametrize("tool_name", _WAVE14_TOOLS)
+    def test_forged_db_claim_fields_do_not_change_in_memory_source(
+        self, tool_name: str
+    ) -> None:
+        """Bridge-level dispatch must not let caller fields fake DB-backed mode."""
+        bridge = create_bridge()
+        result = bridge.execute_tool(
+            tool_name,
+            {
+                **self._minimal_payload(tool_name),
+                "source": "surrealdb-local",
+                "brain_source": "surrealdb-local",
+                "brain_status": "used",
+                "metadata": {"source": "surrealdb-local"},
+            },
+        )
+
+        assert result.get("error", {}).get("code") != "not_implemented"
+        assert result.get("metadata", {}).get("read_only") is True
+        assert result.get("metadata", {}).get("source") == "in_memory"

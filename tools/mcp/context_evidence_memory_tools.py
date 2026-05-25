@@ -45,8 +45,8 @@ from tools.surrealdb.decision_history_query import (
 )
 from tools.surrealdb.context_query import ContextQueryError
 from tools.mcp.surrealdb_adapter_factory import (
-    adapter_source,
     build_adapter_from_params,
+    derive_guarded_source_label,
 )
 
 TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE = "cdb_context_evidence_resolve"
@@ -387,14 +387,14 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
         evidence_records: list[Mapping[str, Any]] = [
             _normalize_evidence_ref_row(row) for row in _raw_rows
         ]
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
     else:
         evidence_records = _extract_records(
             params, "evidence_records", TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE
         )
         if isinstance(evidence_records, dict):
             return evidence_records
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
 
     mode = _as_str_or_none(params.get("mode")) or "by_artifact"
 
@@ -498,14 +498,14 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
         claim_records: list[Mapping[str, Any]] = [
             _normalize_claim_row(row) for row in _raw_claim_rows
         ]
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
     else:
         claim_records = _extract_records(
             params, "claim_records", TOOL_CDB_CONTEXT_CLAIM_RESOLVE
         )
         if isinstance(claim_records, dict):
             return claim_records
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
 
     mode = _as_str_or_none(params.get("mode")) or "by_topic"
 
@@ -591,14 +591,14 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
                 message=str(exc),
             )
         memory_records = [_normalize_memory_row(r) for r in memory_records]
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
     else:
         memory_records = _extract_records(
             params, "memory_records", TOOL_CDB_CONTEXT_MEMORY_GET
         )
         if isinstance(memory_records, dict):
             return memory_records
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
 
     mode = _as_str_or_none(params.get("mode")) or "by_scope"
 
@@ -693,7 +693,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
                 code="adapter_query_error",
                 message=str(exc),
             )
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
         _topic = _as_str_or_none(params.get("topic"))
         _artifact = _as_str_or_none(params.get("artifact"))
         evidence_result_raw: dict[str, Any] | None = None
@@ -739,7 +739,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
                 "trust_summary: decision lookup skipped (%s)", _exc
             )  # soft: available sub-results used
     else:
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
         evidence_result_raw = _as_mapping(params.get("evidence_result"))
         claim_result_raw = _as_mapping(params.get("claim_result"))
         decision_result_raw = _as_mapping(params.get("decision_result"))

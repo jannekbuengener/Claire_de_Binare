@@ -16,8 +16,8 @@ from tools.surrealdb.decision_replay_builder import (
 )
 from tools.surrealdb.context_query import ContextQueryError
 from tools.mcp.surrealdb_adapter_factory import (
-    adapter_source,
     build_adapter_from_params,
+    derive_guarded_source_label,
 )
 
 TOOL_CDB_CONTEXT_DECISION_HISTORY = "cdb_context_decision_history"
@@ -203,13 +203,13 @@ def handle_cdb_context_decision_history(request: Mapping[str, Any]) -> dict[str,
                 code="adapter_query_error",
                 message=str(exc),
             )
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
     else:
         decision_events = _extract_decision_events(params)
         if isinstance(decision_events, dict):
             decision_events["tool"] = TOOL_CDB_CONTEXT_DECISION_HISTORY
             return decision_events
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
 
     mode = params.get("mode")
     try:
@@ -326,13 +326,13 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
                 code="adapter_query_error",
                 message=str(exc),
             )
-        _source = adapter_source(_adapter)
+        _source = derive_guarded_source_label(params, adapter=_adapter)
     else:
         decision_events = _extract_decision_events(params)
         if isinstance(decision_events, dict):
             decision_events["tool"] = TOOL_CDB_CONTEXT_DECISION_REPLAY
             return decision_events
-        _source = "in_memory"
+        _source = derive_guarded_source_label(params)
 
     mode = params.get("mode")
     try:

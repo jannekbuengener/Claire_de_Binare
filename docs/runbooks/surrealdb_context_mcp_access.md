@@ -187,9 +187,10 @@ When scope includes Context, MCP, SurrealDB, ContextBridge, DB-backed Memory, or
 1. Run MCP Capability Resolution before planning — verify active tool inventory, not config file presence.
 2. If `context.briefing` or required MCP tools are unavailable: stop or explicitly degrade to repo-only.
 3. Do not claim DB-backed Brain/Evidence/Memory unless `surrealdb-local` or equivalent DB-backed source is actually available and usable.
-4. Non-DB fallback must not report DB-backed `brain_status="used"`.
-5. Missing MCP access must be reported as `brain_source=unavailable` or explicit `repo-only` / `brain_status=not-used` fallback.
-6. Repo-wide fallback for any surface that cannot verify MCP access: `brain_source=repo-only`, `brain_status=not-used`, repo evidence under `records_or_results`.
+4. For Wave-14 read-only MCP tools, `metadata.source` must come only from guarded adapter evidence; caller-supplied `source`, `brain_source`, `brain_status`, or nested `metadata.source` values are not DB proof.
+5. Non-DB fallback must not report DB-backed `brain_status="used"`.
+6. Missing MCP access must be reported as `brain_source=unavailable` or explicit `repo-only` / `brain_status=not-used` fallback.
+7. Repo-wide fallback for any surface that cannot verify MCP access: `brain_source=repo-only`, `brain_status=not-used`, repo evidence under `records_or_results`.
 
 ---
 
