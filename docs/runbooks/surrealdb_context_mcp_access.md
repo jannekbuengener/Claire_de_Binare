@@ -594,6 +594,81 @@ Response includes `briefing_id` (16-char hex, deterministic), `scope_summary`, `
 - No DB path and no inline records derive `brain_source="repo-only"` and `brain_status="not-used"`.
 - Caller-supplied `brain_source` / `brain_status` are ignored and surfaced only as limitations when present.
 
+### 7.7 Local Wave-14 `surrealdb-local` Proof Smoke
+
+The committed fixture slice for the real local proof lives under:
+
+- `tests/fixtures/surrealdb/wave14_real_smoke/evidence_refs.jsonl`
+- `tests/fixtures/surrealdb/wave14_real_smoke/claims.jsonl`
+- `tests/fixtures/surrealdb/wave14_real_smoke/agent_memories.jsonl`
+- `tests/fixtures/surrealdb/wave14_real_smoke/decision_events.jsonl`
+
+These four files are the only committed seed artifacts. The local-only smoke test
+materializes the remaining importer bundle files as empty temp files at runtime,
+because `tools.surrealdb.context_importer` fail-closes when any expected JSONL
+artifact is missing.
+
+Hard preflight before any real DB-backed Wave-14 claim:
+
+```powershell
+Invoke-WebRequest http://127.0.0.1:8010/health
+Invoke-WebRequest http://127.0.0.1:8010/version
+Test-Path infrastructure/config/surrealdb/context_query.local.yaml
+[bool]$env:CDB_CONTEXT_SECRETS_PATH
+[bool]$env:SECRETS_PATH
+```
+
+Fail-closed rules:
+
+- If `/health` or `/version` is not `200`, stop.
+- If `infrastructure/config/surrealdb/context_query.local.yaml` is missing, stop.
+- Resolve secrets dir in this order (never print the path, check existence only):
+  - `CDB_CONTEXT_SECRETS_PATH` if set (override)
+  - `SECRETS_PATH` if set (canon)
+  - Windows default: `%USERPROFILE%\Documents\.secrets\.cdb` (canon)
+  - Linux/Mac default: `$HOME/Documents/.secrets/.cdb` (canon)
+- If no secrets dir resolves, or if `SURREALDB_ENV` is missing inside it, stop.
+- If only `context_query.local.example.yaml` exists, status stays `BLOCKED_NEEDS_AUTH_CONFIG`.
+- Never print secret file contents. The smoke only checks the config path and the
+  presence of env flags and required secret file existence.
+
+Opt-in execution:
+
+```powershell
+$env:CDB_RUN_REAL_SURREALDB_SMOKE = "1"
+pytest -v tests/unit/tools/mcp/test_mcp_wave14_surrealdb_mode.py
+pytest -v tests/unit/tools/mcp/test_context_bridge.py
+pytest -v -m local_only tests/local/tools/mcp/test_wave14_real_surrealdb_smoke.py
+```
+
+What the local smoke does:
+
+1. Re-checks the same preflight gates and skips fail-closed if they are missing.
+2. Builds a temporary full JSONL bundle from the four committed Wave-14 seed files.
+3. Applies that bundle to the local Context DB through the existing importer using:
+   - `--adapter surrealdb-local`
+   - `--apply --apply-mode local-dev`
+   - `--config infrastructure/config/surrealdb/context_import.local.example.yaml`
+   - explicit `--secrets-path`
+4. Calls all six Wave-14 MCP handlers with:
+   - `adapter_config_path=infrastructure/config/surrealdb/context_query.local.yaml`
+   - `secrets_path=<resolved secrets dir>` (see resolution order above; `CDB_CONTEXT_SECRETS_PATH` is an override, not a new default)
+5. Asserts for each tool:
+   - `status == "ok"`
+   - `metadata.source == "surrealdb-local"`
+   - `metadata.read_only == true`
+   - expected result payload is non-empty
+   - no secret-like auth values are echoed back
+
+Tool coverage in the real local smoke:
+
+- `cdb_context_memory_get` → seeded `agent_memory`
+- `cdb_context_evidence_resolve` → seeded `evidence_ref`
+- `cdb_context_claim_resolve` → seeded `claim`
+- `cdb_context_trust_summary` → seeded `evidence_ref` + `claim` + `agent_memory` + `decision_event`
+- `cdb_context_decision_history` → seeded `decision_event`
+- `cdb_context_decision_replay` → seeded `decision_event`
+
 Deterministic repo-only example with explicit session state inputs:
 
 ```python

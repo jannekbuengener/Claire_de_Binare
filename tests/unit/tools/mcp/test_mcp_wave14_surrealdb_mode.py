@@ -480,6 +480,57 @@ def test_trust_summary_db_mode_ok(monkeypatch) -> None:
     assert mock_adapter.execute.call_count == 4
 
 
+@pytest.mark.unit
+def test_trust_summary_db_mode_scope_fallback_for_schema_claims(monkeypatch) -> None:
+    """DB trust_summary must include schema-backed claims that only carry scope."""
+    mock_adapter = MagicMock(spec=QueryAdapter)
+    mock_adapter.status = "surrealdb-local"
+    mock_adapter.execute.side_effect = [
+        [_EVIDENCE_SCHEMA_RECORD],
+        [_CLAIM_SCHEMA_RECORD],
+        [_MEMORY_SCHEMA_RECORD],
+        [
+            {
+                "decision_id": "dec-schema-001",
+                "title": "Schema-format decision",
+                "question": "Should the real DB smoke use scope?",
+                "answer": "Yes, by_scope is the schema-safe path.",
+                "decision_type": "implementation",
+                "status": "accepted",
+                "scope": "wave14",
+                "evidence_refs": ["ev-db-001"],
+                "claim_refs": ["claim-schema-001"],
+                "affected_artifacts": ["tools/mcp/context_evidence_memory_tools.py"],
+                "agent": "codex",
+                "human_go": False,
+                "created_at": "2026-05-25T00:00:00Z",
+            }
+        ],
+    ]
+    _patch_adapter_factory(
+        monkeypatch,
+        "tools.mcp.context_evidence_memory_tools.build_adapter_from_params",
+        mock_adapter,
+    )
+
+    result = handle_cdb_context_trust_summary(
+        {
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {
+                "adapter_config_path": _FAKE_CONFIG_PATH,
+                "scope": "wave14",
+                "artifact": "tools/surrealdb/evidence_lookup.py",
+            },
+        }
+    )
+
+    assert result["status"] == "ok", result
+    assert result["metadata"]["source"] == "surrealdb-local"
+    assert result["result"]["claim_status_summary"].get("supported") == 1
+    assert result["result"]["decision_currentness"]["total"] == 1
+    assert result["result"]["memory_trust_summary"]["total"] == 1
+
+
 # ---------------------------------------------------------------------------
 # Decision History — DB mode
 # ---------------------------------------------------------------------------

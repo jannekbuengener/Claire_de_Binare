@@ -714,7 +714,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
         try:
             claim_result_raw = resolve_claims_v1(
                 [_normalize_claim_row(r) for r in _cl_raw],
-                ClaimResolveRequest(mode="by_topic", topic=_topic, limit=_limit),
+                ClaimResolveRequest(mode="by_scope", scope=scope, limit=_limit),
             )
         except ClaimResolverError as _exc:
             logging.getLogger(__name__).debug(
