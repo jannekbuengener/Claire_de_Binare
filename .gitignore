@@ -145,6 +145,7 @@ Claire_de_Binare_Docs/
 .cdb_local/
 
 # AI tooling local state
+.cursor/settings.json
 .claude_settings.json
 .claude/
 .gemini/
