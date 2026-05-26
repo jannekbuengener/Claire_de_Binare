@@ -123,7 +123,9 @@ def _resolve_secrets_path() -> Path | None:
 
 def _require_local_opt_in() -> str:
     if os.environ.get("CDB_RUN_REAL_SURREALDB_SMOKE") != "1":
-        pytest.skip("real surrealdb-local smoke disabled; set CDB_RUN_REAL_SURREALDB_SMOKE=1")
+        pytest.skip(
+            "real surrealdb-local smoke disabled; set CDB_RUN_REAL_SURREALDB_SMOKE=1"
+        )
 
     if not _QUERY_CONFIG_PATH.exists():
         pytest.skip(
