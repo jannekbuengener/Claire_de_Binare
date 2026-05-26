@@ -438,9 +438,9 @@ def test_wave14_real_smoke_cleanup_proof(seeded_bundle: dict[str, Any]) -> None:
     plan: Wave14SmokeRecordPlan = seeded_bundle["plan"]
     sql_client: Wave14SmokeSqlClient = seeded_bundle["sql_client"]
     for table, raw_id in plan.records_by_table:
-        assert sql_client.record_exists(table, raw_id), (
-            f"expected seeded record before cleanup: {table}:{raw_id}"
-        )
+        assert sql_client.record_exists(
+            table, raw_id
+        ), f"expected seeded record before cleanup: {table}:{raw_id}"
 
 
 def test_wave14_real_smoke_idempotent_cycle() -> None:

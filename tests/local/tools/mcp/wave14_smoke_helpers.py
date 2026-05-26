@@ -131,7 +131,9 @@ def _replace_value(value: Any, id_map: dict[str, str]) -> Any:
     return value
 
 
-def _replace_record_fields(record: dict[str, Any], id_map: dict[str, str]) -> dict[str, Any]:
+def _replace_record_fields(
+    record: dict[str, Any], id_map: dict[str, str]
+) -> dict[str, Any]:
     updated: dict[str, Any] = {}
     for key, value in record.items():
         if key in _ID_REFERENCE_FIELDS or key.endswith("_refs") or key.endswith("_by"):
@@ -255,7 +257,9 @@ class Wave14SmokeSqlClient:
             with urllib.request.urlopen(req, timeout=self._timeout) as resp:
                 body = resp.read()
         except urllib.error.URLError as exc:
-            raise RuntimeError(f"local SurrealDB /sql request failed: {exc.reason}") from exc
+            raise RuntimeError(
+                f"local SurrealDB /sql request failed: {exc.reason}"
+            ) from exc
 
         raw = body.decode("utf-8", errors="replace")
         if not raw.strip():
@@ -283,7 +287,9 @@ class Wave14SmokeSqlClient:
         self.execute(f"DELETE {rid};")
 
 
-def assert_run_records_absent(client: Wave14SmokeSqlClient, plan: Wave14SmokeRecordPlan) -> None:
+def assert_run_records_absent(
+    client: Wave14SmokeSqlClient, plan: Wave14SmokeRecordPlan
+) -> None:
     present = [
         f"{table}:{raw_id}"
         for table, raw_id in plan.records_by_table
@@ -296,7 +302,9 @@ def assert_run_records_absent(client: Wave14SmokeSqlClient, plan: Wave14SmokeRec
         )
 
 
-def cleanup_run_records(client: Wave14SmokeSqlClient, plan: Wave14SmokeRecordPlan) -> None:
+def cleanup_run_records(
+    client: Wave14SmokeSqlClient, plan: Wave14SmokeRecordPlan
+) -> None:
     # Delete decisions first, then dependent rows.
     delete_order = (
         ("decision_event", plan.decision_ids),
