@@ -269,3 +269,31 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
 - Before planning for strategy/runtime/module/service/contract/context scope, output a `Brain Evidence` block (see `agents/AGENTS.md` § Brain Evidence Gate).
 - LR status remains NO-GO for live trading unless explicitly changed by canon/human approval.
+
+---
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- Python 3.12 is available at `/usr/bin/python3`. Tools (`pytest`, `ruff`, `black`, etc.) install to `/home/ubuntu/.local/bin` — ensure this is on PATH: `export PATH="/home/ubuntu/.local/bin:$PATH"`.
+- No Docker is installed by default. Unit and integration tests (`make test-unit`, `make test-integration`) run without containers. E2E tests (`make test-e2e`) require the BLUE+RED Docker stack and are not runnable in this environment without Docker setup.
+
+### Running Tests (CI mode, no containers)
+
+- Canonical CI command: `pytest -q -k "not test_mcp_time_server_runtime"`
+- Equivalently: `make test` (runs `make test-unit && make test-integration`)
+- For coverage: `make test-coverage` (80% threshold)
+
+### Linting
+
+- `ruff check .` — must pass (CI-required)
+- `black --check .` — CI only checks changed files, not the whole repo. Many existing files are not formatted; do not reformat files you did not change.
+
+### Services
+
+All services under `services/` require Redis and Postgres (provided by Docker in normal operation). In Cloud Agent mode without Docker, verify service logic through unit/integration tests rather than starting services directly.
+
+### Secrets
+
+Services expect secrets from a directory (default `~/Documents/.secrets/.cdb/`). For testing, this path does not need to exist — unit/integration tests mock all external dependencies.
