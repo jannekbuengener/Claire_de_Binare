@@ -644,21 +644,33 @@ pytest -v -m local_only tests/local/tools/mcp/test_wave14_real_surrealdb_smoke.p
 What the local smoke does:
 
 1. Re-checks the same preflight gates and skips fail-closed if they are missing.
-2. Builds a temporary full JSONL bundle from the four committed Wave-14 seed files.
-3. Applies that bundle to the local Context DB through the existing importer using:
+2. Generates a unique `run_id` per invocation (`{timestamp}-{pid}` by default, or
+   optional override via `CDB_WAVE14_SMOKE_RUN_ID`).
+3. Materializes run-scoped record IDs from the four committed seed files (for example
+   `ev-wave14-real-{run_tag}-001`) without mutating committed fixtures.
+4. Asserts pre-import that run-scoped IDs and `.tmp/wave14-real-smoke/{run_id}` are
+   absent; fails closed if stale records remain.
+5. Builds a temporary full JSONL bundle from the materialized Wave-14 seed records.
+6. Applies that bundle to the local Context DB through the existing importer using:
    - `--adapter surrealdb-local`
    - `--apply --apply-mode local-dev`
    - `--config infrastructure/config/surrealdb/context_import.local.example.yaml`
    - explicit `--secrets-path`
-4. Calls all six Wave-14 MCP handlers with:
+7. Calls all six Wave-14 MCP handlers with:
    - `adapter_config_path=infrastructure/config/surrealdb/context_query.local.yaml`
    - `secrets_path=<resolved secrets dir>` (see resolution order above; `CDB_CONTEXT_SECRETS_PATH` is an override, not a new default)
-5. Asserts for each tool:
+8. Asserts for each tool:
    - `status == "ok"`
    - `metadata.source == "surrealdb-local"`
    - `metadata.read_only == true`
    - expected result payload is non-empty
    - no secret-like auth values are echoed back
+9. Cleans up only the run-scoped DB record IDs and removes
+   `.tmp/wave14-real-smoke/{run_id}` after the module finishes; repeated local runs
+   must not accumulate stale rows or temp artifacts.
+
+This smoke is `local_only`, opt-in via `CDB_RUN_REAL_SURREALDB_SMOKE=1`, and is not
+part of CI by default.
 
 Tool coverage in the real local smoke:
 
