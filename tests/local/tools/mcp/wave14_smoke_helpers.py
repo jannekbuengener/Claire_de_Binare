@@ -181,9 +181,23 @@ def cleanup_tmp_root(tmp_root: Path) -> None:
         raise AssertionError("wave14 real-smoke tmp dir still present after cleanup")
 
 
-def _surql_record_id(table: str, raw_id: str) -> str:
-    escaped = raw_id.replace("\u27e9", "\\u27e9")
-    return f"{table}:\u27e8{escaped}\u27e9"
+_TABLE_ID_FIELD = {
+    "evidence_ref": "evidence_id",
+    "claim": "claim_id",
+    "agent_memory": "memory_id",
+    "decision_event": "decision_id",
+}
+
+
+def _table_id_field(table: str) -> str:
+    try:
+        return _TABLE_ID_FIELD[table]
+    except KeyError as exc:
+        raise ValueError("unsupported Wave-14 smoke table") from exc
+
+
+def _surql_string(value: str) -> str:
+    return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
 
 class Wave14SmokeSqlClient:
@@ -274,8 +288,9 @@ class Wave14SmokeSqlClient:
         return [item for item in parsed if isinstance(item, dict)]
 
     def record_exists(self, table: str, raw_id: str) -> bool:
-        rid = _surql_record_id(table, raw_id)
-        results = self.execute(f"SELECT * FROM {rid};")
+        id_field = _table_id_field(table)
+        literal = _surql_string(raw_id)
+        results = self.execute(f"SELECT * FROM {table} WHERE {id_field} = {literal};")
         for item in results:
             result = item.get("result")
             if isinstance(result, list) and result:
@@ -283,8 +298,9 @@ class Wave14SmokeSqlClient:
         return False
 
     def delete_record(self, table: str, raw_id: str) -> None:
-        rid = _surql_record_id(table, raw_id)
-        self.execute(f"DELETE {rid};")
+        id_field = _table_id_field(table)
+        literal = _surql_string(raw_id)
+        self.execute(f"DELETE {table} WHERE {id_field} = {literal};")
 
 
 def assert_run_records_absent(
