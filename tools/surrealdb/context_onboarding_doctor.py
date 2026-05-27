@@ -485,9 +485,25 @@ def _validate_output_safe(text: str) -> None:
             raise ValueError(f"output contains forbidden substring: {forbidden}")
 
 
+_HELP_EPILOG = """\
+Examples:
+  python -m tools.surrealdb.context_onboarding_doctor
+  python -m tools.surrealdb.context_onboarding_doctor --format json
+  python -m tools.surrealdb.context_onboarding_doctor --skip-mcp --skip-schema
+  make context-doctor
+
+Exit codes:
+  0  checks OK or only non-blocking warnings
+  1  onboarding not usable (missing secrets/config/DB/schema)
+  2  CLI usage error
+"""
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Read-only preflight for local Context Intelligence onboarding."
+        description="Read-only preflight for local Context Intelligence onboarding.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=_HELP_EPILOG,
     )
     parser.add_argument(
         "--format",
