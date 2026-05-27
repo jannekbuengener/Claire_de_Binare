@@ -235,14 +235,16 @@ except InvalidOperation:
 
 Codex skill surface: `.codex/cdb_skills/`
 
+Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1: Session-Foundation)
+
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
-| Skill | Purpose |
-|-------|---------|
-| `cdb-session-start` | Fail-closed session start (verifies Git truth first) |
-| `cdb-session-close` | Disciplined session close with honest summary |
-| `cdb-issue-to-session-plan` | Convert issue to session plan |
-| `cdb-control-intake` | Control context reading |
+| Skill | Purpose | Cursor path |
+|-------|---------|-------------|
+| `cdb-session-start` | Fail-closed session start (verifies Git truth first) | `.cursor/skills/cdb-session-start/SKILL.md` |
+| `cdb-session-close` | Disciplined session close with honest summary | `.cursor/skills/cdb-session-close/SKILL.md` |
+| `cdb-issue-to-session-plan` | Convert issue to session plan | `.cursor/skills/cdb-issue-to-session-plan/SKILL.md` |
+| `cdb-control-intake` | Control context reading | `.cursor/skills/cdb-control-intake/SKILL.md` |
 | `cdb-shadow-validation` | Shadow validation workflows |
 | `cdb-backtest-engine` | Backtest engine operations |
 | `cdb-ci-cd-guard` | CI/CD guardrails |

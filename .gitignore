@@ -152,6 +152,8 @@ Claire_de_Binare_Docs/
 .agent_briefings/
 gha-creds-*.json
 .codex-worktree-*/
+.codex/cdb_skills/.system/
+.codex/cdb_skills/Anthropic-Cybersecurity-Skills/
 codex-worktree-*/
 evals/
 

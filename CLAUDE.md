@@ -21,8 +21,12 @@ The authoritative role definition for Claude is at `agents/roles/CLAUDE.md`. Rea
 **Control Board Stage:** `trade-capable` (ratified 2026-04-08) — orthogonal to LR `NO-GO`; no live capital, no Grafana gate, no strategy validation.
 
 **Session-Boundary Skills (Pflicht, fail-closed):** Lesen und anwenden — kein Überspringen.
-- **Vor** jeder Repo-/GitHub-/Planungs-/Implementierungsarbeit: `.codex/cdb_skills/cdb-session-start/SKILL.md`
-- **Nach** Implementierung/Validierung/Repo-Arbeit, vor Abschluss: `.codex/cdb_skills/cdb-session-close/SKILL.md`
+- **Vor** jeder Repo-/GitHub-/Planungs-/Implementierungsarbeit:
+  - Codex: `.codex/cdb_skills/cdb-session-start/SKILL.md`
+  - Cursor: `.cursor/skills/cdb-session-start/SKILL.md`
+- **Nach** Implementierung/Validierung/Repo-Arbeit, vor Abschluss:
+  - Codex: `.codex/cdb_skills/cdb-session-close/SKILL.md`
+  - Cursor: `.cursor/skills/cdb-session-close/SKILL.md`
 
 **Session-Ende (Pflicht):** Session-Log unter `knowledge/logs/sessions/YYYY-MM-DD-<topic>.md` ablegen. `CURRENT_STATUS.md` aktualisieren wenn sich Repo-/Engineering-Status geändert hat.
 
