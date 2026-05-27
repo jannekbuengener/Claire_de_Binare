@@ -235,7 +235,7 @@ except InvalidOperation:
 
 Codex skill surface: `.codex/cdb_skills/`
 
-Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1 Session-Foundation, PR 2 Governance & Validation)
+Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1–3: vollständige OpenCode-Migration)
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
@@ -246,18 +246,19 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | `cdb-issue-to-session-plan` | Convert issue to session plan | `.cursor/skills/cdb-issue-to-session-plan/SKILL.md` |
 | `cdb-control-intake` | Control context reading | `.cursor/skills/cdb-control-intake/SKILL.md` |
 | `cdb-shadow-validation` | Shadow validation workflows | `.cursor/skills/cdb-shadow-validation/SKILL.md` |
-| `cdb-backtest-engine` | Backtest engine operations |
+| `cdb-backtest-engine` | Backtest engine operations | `.cursor/skills/cdb-backtest-engine/SKILL.md` |
 | `cdb-ci-cd-guard` | CI/CD guardrails | `.cursor/skills/cdb-ci-cd-guard/SKILL.md` |
 | `cdb-contract-evidence-gatekeeper` | Contract evidence gating | `.cursor/skills/cdb-contract-evidence-gatekeeper/SKILL.md` |
 | `cdb-drift-reconcile` | Drift reconciliation | `.cursor/skills/cdb-drift-reconcile/SKILL.md` |
-| `cdb-exchange-adapters` | Exchange adapter operations |
-| `cdb-risk-governance` | Risk governance operations |
-| `cdb-trading-core` | Trading core operations |
-| `cdb-docs-ops` | Documentation and ops-doc maintenance |
+| `cdb-exchange-adapters` | Exchange adapter operations | `.cursor/skills/cdb-exchange-adapters/SKILL.md` |
+| `cdb-risk-governance` | Risk governance operations | `.cursor/skills/cdb-risk-governance/SKILL.md` |
+| `cdb-trading-core` | Trading core operations | `.cursor/skills/cdb-trading-core/SKILL.md` |
+| `cdb-docs-ops` | Documentation and ops-doc maintenance | `.cursor/skills/cdb-docs-ops/SKILL.md` |
+| `cdb-operator` | Operator workflow (bootloader, GO gates) | `.cursor/skills/cdb-operator/SKILL.md` |
 | `codex-primary-runtime` | Core runtime operations |
-| `ctb-docker-stack` | Docker stack operations |
-| `gh-address-comments` | GitHub comment handling |
-| `gh-fix-ci` | CI fix operations |
+| `ctb-docker-stack` | Docker stack operations | `.cursor/skills/ctb-docker-stack/SKILL.md` |
+| `gh-address-comments` | GitHub comment handling | `.cursor/skills/gh-address-comments/SKILL.md` |
+| `gh-fix-ci` | CI fix operations | `.cursor/skills/gh-fix-ci/SKILL.md` |
 
 ---
 
