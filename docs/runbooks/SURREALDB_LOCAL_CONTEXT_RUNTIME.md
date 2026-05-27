@@ -86,6 +86,28 @@ Exits 0 wenn OK, 1 wenn Datei fehlt oder `SECRETS_PATH` nicht gesetzt.
 
 ---
 
+## Onboarding Doctor (Preflight)
+
+```bash
+make context-doctor
+# oder:
+python -m tools.surrealdb.context_onboarding_doctor --format json
+```
+
+Read-only Preflight für neue Agents/Operatoren (#2642). Prüft:
+
+- MCP HTTP-Port `127.0.0.1:8811` (TCP, optional — stdio `cdb_context` kann trotzdem funktionieren)
+- SurrealDB `127.0.0.1:8010` (`/health`, `/version`, read-only Schema)
+- `SECRETS_PATH` / `CDB_CONTEXT_SECRETS_PATH` (nur SET/VALID/INVALID, keine Werte)
+- Canon Secret Store und `SURREALDB_ENV` (EXISTS/MISSING)
+- `context_query.local.yaml` (EXISTS/MISSING)
+
+Keine Secrets im Output. Kein Docker-Start/Stop. Kein DB-Write. LR bleibt **NO-GO**.
+
+Exit codes: `0` = nutzbar oder nur Warnings, `1` = blockierender Befund, `2` = CLI-Fehler.
+
+---
+
 ## Start
 
 ```bash

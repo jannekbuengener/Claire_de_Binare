@@ -150,6 +150,18 @@ Run the onboarding script to validate your setup:
 pwsh -File agents/templates/onboarding_mcp_setup.ps1
 ```
 
+**Context onboarding doctor** (#2642) — zusätzlicher read-only Preflight für Secrets,
+lokale Config, SurrealDB und optionalen MCP-HTTP-Port:
+
+```bash
+make context-doctor
+python -m tools.surrealdb.context_onboarding_doctor --format json
+```
+
+- Repo-stdio-MCP: `cdb_context` in `claire-de-binare.mcp.json` (kein TCP-Port nötig).
+- Issue #2642 prüft optional `127.0.0.1:8811` (HTTP MCP host).
+- Separater remote `cdb`-Server in OpenCode nutzt laut Runbook-Hinweis `127.0.0.1:8812/mcp` — nicht mit #2642 verwechseln.
+
 Expected output (best case — bridge + stdio both work):
 ```
 === CDB Context MCP Capability Validation ===

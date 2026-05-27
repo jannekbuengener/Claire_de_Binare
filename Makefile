@@ -37,7 +37,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-doctor
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -100,6 +100,7 @@ help:
 	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
 	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
 	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
+	@echo "  make context-doctor          - Read-only onboarding preflight (#2642)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
 # ============================================================================
@@ -350,6 +351,10 @@ context-schema-apply:
 context-schema-check:
 	@echo "=== SurrealDB Schema Check: context_intelligence_v0 ==="
 	@$(PYTHON) tools/surrealdb/local_schema_check.py --secrets-path "$(SECRETS_PATH)"
+
+context-doctor:
+	@echo "=== Context Onboarding Doctor (read-only preflight) ==="
+	@$(PYTHON) -m tools.surrealdb.context_onboarding_doctor
 
 context-reset-local:
 	@echo "=== SurrealDB Local Reset (DESTRUKTIV - nur Context-Intelligence-Daten) ==="
