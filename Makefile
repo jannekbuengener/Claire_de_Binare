@@ -29,7 +29,11 @@ REPLAY_DETERMINISTIC_VERIFY ?= 1
 
 CONTEXT_SNAP_DIR ?= artifacts/context-intelligence/latest
 CONTEXT_SCOPE_CONFIG ?= infrastructure/config/surrealdb/context_ingestion_scope.yaml
-PYTHON ?= python3
+ifeq ($(OS),Windows_NT)
+  PYTHON ?= python
+else
+  PYTHON ?= python3
+endif
 
 ifeq ($(OS),Windows_NT)
   SECRETS_PATH ?= $(USERPROFILE)/Documents/.secrets/.cdb
