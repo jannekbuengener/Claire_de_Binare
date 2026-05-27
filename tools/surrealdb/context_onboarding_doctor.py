@@ -16,6 +16,7 @@ Exit codes:
     1 - onboarding not usable (missing secrets/config/DB/schema)
     2 - CLI usage error
 """
+
 from __future__ import annotations
 
 import argparse
@@ -317,8 +318,7 @@ def prioritize_next_action(report: DoctorReport) -> str:
         )
     if report.config_context_query_local == "missing":
         return (
-            "create context_query.local.yaml from "
-            "context_query.local.example.yaml"
+            "create context_query.local.yaml from " "context_query.local.example.yaml"
         )
     if report.surrealdb_status == "not_reachable":
         return "start local SurrealDB with make context-up"
@@ -382,9 +382,7 @@ def build_report(
     report.secrets_surrealdb_env = secrets.surrealdb_env
 
     config_path = root / CONTEXT_QUERY_LOCAL_REL
-    report.config_context_query_local = (
-        "exists" if config_path.is_file() else "missing"
-    )
+    report.config_context_query_local = "exists" if config_path.is_file() else "missing"
 
     if skip_mcp:
         report.mcp_server_status = "skipped"
@@ -435,10 +433,12 @@ def build_report(
                     report.surrealdb_schema = "skipped"
                 else:
                     user, password = creds
-                    checker = check_schema_readonly if schema_checker is None else schema_checker
-                    report.surrealdb_schema = checker(
-                        SURREALDB_URL, user, password
+                    checker = (
+                        check_schema_readonly
+                        if schema_checker is None
+                        else schema_checker
                     )
+                    report.surrealdb_schema = checker(SURREALDB_URL, user, password)
         else:
             report.surrealdb_schema = "skipped"
 

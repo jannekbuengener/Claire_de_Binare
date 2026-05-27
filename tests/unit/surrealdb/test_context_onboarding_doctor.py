@@ -67,7 +67,9 @@ def test_resolve_secrets_falls_back_to_secrets_path(tmp_path: Path) -> None:
 
 
 def test_resolve_secrets_missing_returns_none(tmp_path: Path) -> None:
-    with patch.object(doctor, "_canon_default_secrets_dir", return_value=tmp_path / "nope"):
+    with patch.object(
+        doctor, "_canon_default_secrets_dir", return_value=tmp_path / "nope"
+    ):
         resolved = doctor.resolve_secrets_dir({})
     assert resolved.resolved_source == "none"
     assert resolved.canon_store == "missing"
@@ -180,7 +182,9 @@ def test_schema_ok_and_fail(tmp_path: Path) -> None:
         skip_mcp=True,
         skip_schema=False,
         tcp_checker=lambda _h, port, _t: port == 8010,
-        http_checker=lambda url, _t: 200 if "/health" in url or "/version" in url else None,
+        http_checker=lambda url, _t: (
+            200 if "/health" in url or "/version" in url else None
+        ),
         schema_checker=schema_ok,
         environ=env,
     )
@@ -189,7 +193,9 @@ def test_schema_ok_and_fail(tmp_path: Path) -> None:
         skip_mcp=True,
         skip_schema=False,
         tcp_checker=lambda _h, port, _t: port == 8010,
-        http_checker=lambda url, _t: 200 if "/health" in url or "/version" in url else None,
+        http_checker=lambda url, _t: (
+            200 if "/health" in url or "/version" in url else None
+        ),
         schema_checker=schema_fail,
         environ=env,
     )
