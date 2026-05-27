@@ -235,7 +235,7 @@ except InvalidOperation:
 
 Codex skill surface: `.codex/cdb_skills/`
 
-Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1: Session-Foundation)
+Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1 Session-Foundation, PR 2 Governance & Validation)
 
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
@@ -245,11 +245,11 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 | `cdb-session-close` | Disciplined session close with honest summary | `.cursor/skills/cdb-session-close/SKILL.md` |
 | `cdb-issue-to-session-plan` | Convert issue to session plan | `.cursor/skills/cdb-issue-to-session-plan/SKILL.md` |
 | `cdb-control-intake` | Control context reading | `.cursor/skills/cdb-control-intake/SKILL.md` |
-| `cdb-shadow-validation` | Shadow validation workflows |
+| `cdb-shadow-validation` | Shadow validation workflows | `.cursor/skills/cdb-shadow-validation/SKILL.md` |
 | `cdb-backtest-engine` | Backtest engine operations |
-| `cdb-ci-cd-guard` | CI/CD guardrails |
-| `cdb-contract-evidence-gatekeeper` | Contract evidence gating |
-| `cdb-drift-reconcile` | Drift reconciliation |
+| `cdb-ci-cd-guard` | CI/CD guardrails | `.cursor/skills/cdb-ci-cd-guard/SKILL.md` |
+| `cdb-contract-evidence-gatekeeper` | Contract evidence gating | `.cursor/skills/cdb-contract-evidence-gatekeeper/SKILL.md` |
+| `cdb-drift-reconcile` | Drift reconciliation | `.cursor/skills/cdb-drift-reconcile/SKILL.md` |
 | `cdb-exchange-adapters` | Exchange adapter operations |
 | `cdb-risk-governance` | Risk governance operations |
 | `cdb-trading-core` | Trading core operations |
