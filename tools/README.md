@@ -32,7 +32,8 @@ Non-interactive form:
 
 - `infrastructure/scripts/init-secrets.ps1` - Initialize local secrets in `~/Documents/.secrets/.cdb`.
 - `infrastructure/scripts/setup_blue_red.ps1` - Canonical PowerShell runtime entrypoint for the BLUE+RED stack.
-- `tools/verify_stack.ps1` - Verify Docker stack health, expected volumes, networks, and optional endpoints.
+- `tools/verify_stack.ps1` - Verify Docker stack health, expected volumes, networks, and optional endpoints. Default expects canonical BLUE+RED only (10 services); pass `-IncludeLogging:$true` when the optional `logging.yml` overlay is running.
+- On Windows, prefer `.\tools\cdb.ps1 stack verify` for stack health; `make docker-health` is also Windows-compatible via PowerShell filtering.
 - `tools/cdb-service-logs.ps1` - Read focused service logs during runtime diagnosis.
 - `infrastructure/scripts/smoke_test.ps1` - Validate the current BLUE core flow path. This does not validate the full BLUE+RED stack end-to-end.
 

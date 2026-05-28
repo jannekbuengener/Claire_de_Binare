@@ -212,12 +212,21 @@ docker-down:
 	docker compose -f infrastructure/compose/compose.red.yml down; \
 	docker compose -f infrastructure/compose/compose.blue.yml down
 
+ifeq ($(OS),Windows_NT)
+docker-health:
+	@echo "🏥 Prüfe Health-Status aller Container (BLUE+RED)..."
+	@echo "--- BLUE ---"
+	@pwsh -NoProfile -Command "docker compose -f infrastructure/compose/compose.blue.yml ps --format 'table {{.Name}}\t{{.Status}}' 2>$$null | Select-String 'cdb_'"
+	@echo "--- RED ---"
+	@pwsh -NoProfile -Command "docker compose -f infrastructure/compose/compose.red.yml ps --format 'table {{.Name}}\t{{.Status}}' 2>$$null | Select-String 'cdb_'"
+else
 docker-health:
 	@echo "🏥 Prüfe Health-Status aller Container (BLUE+RED)..."
 	@echo "--- BLUE ---"
 	@docker compose -f infrastructure/compose/compose.blue.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null | grep cdb_ || true
 	@echo "--- RED ---"
 	@docker compose -f infrastructure/compose/compose.red.yml ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null | grep cdb_ || true
+endif
 
 # ============================================================================# Context (SurrealDB Local Runtime) — #2393 / #2394
 # Context Infrastructure only. No Trading-Runtime. No BLUE/RED touch.

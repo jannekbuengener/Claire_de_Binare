@@ -12,7 +12,10 @@
 .PARAMETER StackName
     Stack name prefix (default: STACK_NAME env var or "cdb").
 .PARAMETER IncludeLogging
-    Include logging services (cdb_loki, cdb_promtail) in expected list.
+    Include logging overlay services (cdb_loki, cdb_promtail). Default is false
+    because Loki/Promtail live in infrastructure/compose/logging.yml, not the
+    canonical BLUE+RED start. Use -IncludeLogging:$true when the logging overlay
+    is running.
 .PARAMETER IncludePaperRunner
     Include paper trading runner in expected list.
 .PARAMETER ExpectedVolumes
@@ -25,12 +28,14 @@
     pwsh -File tools/verify_stack.ps1 -Verbose -Json
 .EXAMPLE
     .\tools\cdb.ps1 stack verify
+.EXAMPLE
+    pwsh -File tools/verify_stack.ps1 -IncludeLogging:$true -Verbose
 #>
 param(
     [switch]$Verbose,
     [switch]$Json,
     [string]$StackName = ($env:STACK_NAME | ForEach-Object { $_ }) ?? 'cdb',
-    [bool]$IncludeLogging = $true,
+    [bool]$IncludeLogging = $false,
     [bool]$IncludePaperRunner = $true,
     [int]$ExpectedVolumes = 6,
     [int]$ExpectedNetworks = 2
@@ -53,6 +58,10 @@ function Require-Command($name) {
 }
 
 Require-Command docker
+
+if (-not $IncludeLogging) {
+    Write-Info 'Logging overlay excluded (default). Pass -IncludeLogging:$true when logging.yml is up.'
+}
 
 $expectedServices = @(
     'cdb_redis',
@@ -156,7 +165,9 @@ if ($Verbose) {
         'cdb_paper_runner' = 'http://localhost:8004/health'
         'cdb_grafana' = 'http://localhost:3000/api/health'
         'cdb_prometheus' = 'http://localhost:19090/-/healthy'
-        'cdb_loki' = 'http://localhost:3100/ready'
+    }
+    if ($IncludeLogging) {
+        $endpoints['cdb_loki'] = 'http://localhost:3100/ready'
     }
 
     foreach ($key in $endpoints.Keys) {

@@ -57,8 +57,8 @@
 
 | Service | Reason | Alternative |
 |---------|--------|-------------|
-| `cdb_loki` | Not in current compose | Removed earlier |
-| `cdb_promtail` | Not in current compose | Removed earlier |
+| `cdb_loki` | Not in current compose | Optional overlay via `logging.yml`; verify with `tools/verify_stack.ps1 -IncludeLogging:$true` |
+| `cdb_promtail` | Not in current compose | Optional overlay via `logging.yml`; verify with `tools/verify_stack.ps1 -IncludeLogging:$true` |
 | `cdb_node_exporter` | Removed from active BLUE+RED runtime canon due to Windows/WSL2 mount propagation issues | cAdvisor for container metrics; no host node-exporter metrics in current canon |
 
 ---
