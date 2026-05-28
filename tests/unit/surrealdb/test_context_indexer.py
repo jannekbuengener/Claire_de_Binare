@@ -694,7 +694,7 @@ def test_high_confidence_secret_re_rejects_false_positives() -> None:
         'password=os.environ["REDIS_PASSWORD"]',
         "token=settings.API_TOKEN",
         "self.api_secret = MEXC_API_SECRET",  # all-caps constant reference (#2597)
-        "password=redis_password",            # snake_case variable reference (#2597)
+        "password=redis_password",  # snake_case variable reference (#2597)
     ]
     for case in negative_cases:
         assert (
