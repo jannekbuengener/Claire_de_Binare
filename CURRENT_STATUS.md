@@ -3,14 +3,14 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-28
+**Last Updated**: 2026-05-29
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-05-28)
+## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `4bd54e11`, PR #2601 gemergt; Merge-Commit `4bd54e1160a132aa8e8753b9b59039cd32d329cc`)
+- **main**: green (HEAD `c147f947`; Follow-up Batch PRs #2670–#2673 gemergt)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2646 (Draft/HOLD — Cursor Cloud AGENTS.md; nicht Teil der abgeschlossenen Plan-GO-Queue)
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
@@ -102,6 +102,7 @@
 - **Merged (Session 2026-05-27, Wave-14 Context Onboarding)**: PR #2651 (`7971437d`) — feat(surrealdb): context onboarding doctor (`make context-doctor`, read-only preflight). Closes #2642. PR #2608 (`9e16d3b5`) — build(surrealdb): Makefile OS-aware `PYTHON` default (`python` on Windows_NT, `python3` elsewhere); Makefile-only. Refs #2603 (Epic bleibt OPEN). Session-Log: `knowledge/logs/sessions/2026-05-27-context-onboarding-doctor-and-python-default.md`.
 - **Merged (Session 2026-05-27, Cursor Skills Migration PR 1–3)**: PR #2653 (`f3308489`) — Wave 0+1: `.gitignore` Codex-runtime hygiene; 4 session-foundation skills → `.codex/cdb_skills/` + `.cursor/skills/`; `CLAUDE.md`/`AGENTS.md`. PR #2654 (`d0e90efe`) — Wave 2: 4 governance skills + gatekeeper references. PR #2655 (`87459c47`) — Wave 3+4: final 9 domain/ops skills; 17/17 OpenCode CDB skills now in Codex + Cursor. Session-Log: `knowledge/logs/sessions/2026-05-27-cursor-skills-migration-pr1-pr3.md`. LR bleibt NO-GO.
 - **Merged (Session 2026-05-28, Plan-GO PR-Queue nach Runner-Recovery)**: Runner-Recovery (#2659 CLOSED). Queue gemergt: #2631 (`c717157e`), #2632 (`c2778373`), #2599 (`3c56acd9`, Closes #2596), #2628 (`c8dbcefe`, ruff bump + lockfile-Konflikt), #2633 (`7ec9863c`, codeql-action bump), #2600 (`51c33045`, Closes #2597), #2601 (`4bd54e11`, Closes #2598). `origin/main` @ `4bd54e11`. Offen: nur #2646 (Draft). Session-Log: `knowledge/logs/sessions/2026-05-28-pr-queue-runner-recovery.md`. LR bleibt NO-GO.
+- **Merged (Session 2026-05-29, Follow-up Batch #2660–#2669)**: Drei PR-Slices von `origin/main`: PR #2670 (`d08ddaa4`) — stack verify logging default + Windows `docker-health` (Closes #2668/#2669); PR #2672 (`b22072b1`) — Redis AOF RCA runbook (Closes #2667); PR #2673 (`c147f947`) — CONTROL_REGISTER notes PRs #2629–#2633 + review-thread runbook (Closes #2660–#2664/#2640). #2645 manuell als Duplikat von #2640 geschlossen. Gordon: `GORDON_NOT_AVAILABLE`. Session-Log: `knowledge/logs/sessions/2026-05-29-followup-batch-2660-2669.md`. LR bleibt NO-GO.
 
 ---
 
