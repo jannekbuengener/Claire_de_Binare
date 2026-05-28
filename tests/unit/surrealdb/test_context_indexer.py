@@ -29,7 +29,6 @@ from tools.surrealdb.context_indexer import (
     EXPORT_FILES,
 )
 
-
 SCOPE_CONFIG = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
 FIXTURE_ROOT = Path("tests/fixtures/surrealdb/context_indexer")
 
@@ -65,12 +64,12 @@ def test_canonical_scope_excludes_mock_exchange_paths() -> None:
     and package documentation — not canonical context-ingestion content.
     """
     summary = load_scope_config(SCOPE_CONFIG)
-    assert ".codex/cdb_skills/mockexchange/" in summary.exclude_paths, (
-        "Mock skill path must be excluded from canonical scope"
-    )
-    assert "tools/test_pack/mock_exchange/" in summary.exclude_paths, (
-        "Mock exchange test pack path must be excluded from canonical scope"
-    )
+    assert (
+        ".codex/cdb_skills/mockexchange/" in summary.exclude_paths
+    ), "Mock skill path must be excluded from canonical scope"
+    assert (
+        "tools/test_pack/mock_exchange/" in summary.exclude_paths
+    ), "Mock exchange test pack path must be excluded from canonical scope"
 
 
 @pytest.mark.unit
@@ -88,9 +87,7 @@ def test_scan_defaults_to_dry_run_and_never_connects_to_surrealdb(capsys) -> Non
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize(
-    "command", ["scan", "plan", "snapshot"]
-)
+@pytest.mark.parametrize("command", ["scan", "plan", "snapshot"])
 def test_command_payloads_return_offline_results(command: str, capsys) -> None:
     exit_code = main([command, "--scope-config", str(SCOPE_CONFIG), "--dry-run"])
 
@@ -102,9 +99,7 @@ def test_command_payloads_return_offline_results(command: str, capsys) -> None:
 
 
 @pytest.mark.unit
-def test_markdown_format_renders_without_writing(
-    tmp_path: Path, capsys
-) -> None:
+def test_markdown_format_renders_without_writing(tmp_path: Path, capsys) -> None:
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
     exit_code = main(
         [
@@ -112,7 +107,10 @@ def test_markdown_format_renders_without_writing(
             "--root",
             str(fixture_root),
             "--scope-config",
-            str(fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml"),
+            str(
+                fixture_root
+                / "infrastructure/config/surrealdb/context_ingestion_scope.yaml"
+            ),
             "--format",
             "markdown",
         ]
@@ -402,9 +400,7 @@ def test_parent_directory_creation_failure_returns_structured_error(
 
 @pytest.mark.unit
 def test_missing_scope_config_returns_input_not_found(capsys) -> None:
-    exit_code = main(
-        ["scan", "--scope-config", "missing/context_ingestion_scope.yaml"]
-    )
+    exit_code = main(["scan", "--scope-config", "missing/context_ingestion_scope.yaml"])
 
     assert exit_code == 3
     payload = json.loads(capsys.readouterr().out)
@@ -474,7 +470,9 @@ def test_discovery_classification_and_hashing_with_fixture_repo(tmp_path: Path) 
     assert len(result.skipped_files) == 1
     assert len(result.forbidden_files) == 1
 
-    artifact_map = {artifact.source_path: artifact for artifact in result.repo_artifacts}
+    artifact_map = {
+        artifact.source_path: artifact for artifact in result.repo_artifacts
+    }
     assert "docs/guide.md" in artifact_map
     assert "docs/eol_lf.md" in artifact_map
     assert "docs/eol_crlf.md" in artifact_map
@@ -482,18 +480,28 @@ def test_discovery_classification_and_hashing_with_fixture_repo(tmp_path: Path) 
 
 
 @pytest.mark.unit
-def test_markdown_chunking_keeps_heading_context_and_chunk_links(tmp_path: Path) -> None:
+def test_markdown_chunking_keeps_heading_context_and_chunk_links(
+    tmp_path: Path,
+) -> None:
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
     result = run_indexer(
         fixture_root,
         fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
     )
 
-    guide_sections = [section for section in result.doc_sections if section.source_path == "docs/guide.md"]
+    guide_sections = [
+        section
+        for section in result.doc_sections
+        if section.source_path == "docs/guide.md"
+    ]
     assert guide_sections
-    assert any(section.heading_path == ["Guide", "Section Alpha"] for section in guide_sections)
+    assert any(
+        section.heading_path == ["Guide", "Section Alpha"] for section in guide_sections
+    )
 
-    chunks = [chunk for chunk in result.doc_chunks if chunk.source_path == "docs/guide.md"]
+    chunks = [
+        chunk for chunk in result.doc_chunks if chunk.source_path == "docs/guide.md"
+    ]
     assert chunks
     chunk_by_id = {chunk.chunk_id: chunk for chunk in chunks}
     for section in guide_sections:
@@ -554,12 +562,18 @@ def test_jsonl_export_snapshot_and_validation_in_fixture_repo(
     ):
         assert (fixture_root / output_dir / filename).exists()
 
-    lines = (fixture_root / output_dir / "repo_artifacts.jsonl").read_text(encoding="utf-8").splitlines()
+    lines = (
+        (fixture_root / output_dir / "repo_artifacts.jsonl")
+        .read_text(encoding="utf-8")
+        .splitlines()
+    )
     assert lines
     first_record = json.loads(lines[0])
     assert first_record["schema_version"] == SCHEMA_VERSION
 
-    snapshot = json.loads((fixture_root / output_dir / "snapshot.json").read_text(encoding="utf-8"))
+    snapshot = json.loads(
+        (fixture_root / output_dir / "snapshot.json").read_text(encoding="utf-8")
+    )
     assert snapshot["schema_version"] == SCHEMA_VERSION
     assert snapshot["validation"]["blocking_count"] == 0
 
@@ -629,9 +643,9 @@ def test_high_confidence_secret_re_matches_quoted_literals() -> None:
         'token = "eyJhbGciOiJIUzI1NiI"',
     ]
     for case in positive_cases:
-        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is not None, (
-            f"Expected a match for quoted literal but got none: {case!r}"
-        )
+        assert (
+            HIGH_CONFIDENCE_SECRET_RE.search(case) is not None
+        ), f"Expected a match for quoted literal but got none: {case!r}"
 
 
 @pytest.mark.unit
@@ -648,13 +662,13 @@ def test_high_confidence_secret_re_matches_unquoted_literals() -> None:
         "api_key=sk-test-abc123xyz456",
         "secret=xK9mN2pQrT4vW7zA1cE",
         "credential=ABCDEF1234567890GHIJ",
-        "token=ghp_abc123xyz456def789",      # GitHub-style token with underscore prefix
-        "password=super_secret_value123",    # underscore mid-value
+        "token=ghp_abc123xyz456def789",  # GitHub-style token with underscore prefix
+        "password=super_secret_value123",  # underscore mid-value
     ]
     for case in unquoted_positive_cases:
-        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is not None, (
-            f"Expected a match for unquoted literal credential but got none: {case!r}"
-        )
+        assert (
+            HIGH_CONFIDENCE_SECRET_RE.search(case) is not None
+        ), f"Expected a match for unquoted literal credential but got none: {case!r}"
 
 
 @pytest.mark.unit
@@ -673,13 +687,13 @@ def test_high_confidence_secret_re_rejects_false_positives() -> None:
         "user, password = _load_credentials(env_file)",
         "api_key=config.MEXC_API_KEY",
         "password=self.redis_password",
-        "password=os.environ[\"REDIS_PASSWORD\"]",
+        'password=os.environ["REDIS_PASSWORD"]',
         "token=settings.API_TOKEN",
     ]
     for case in negative_cases:
-        assert HIGH_CONFIDENCE_SECRET_RE.search(case) is None, (
-            f"Expected no match for code/config expression but got one: {case!r}"
-        )
+        assert (
+            HIGH_CONFIDENCE_SECRET_RE.search(case) is None
+        ), f"Expected no match for code/config expression but got one: {case!r}"
 
 
 @pytest.mark.unit
@@ -708,15 +722,22 @@ def test_hashing_normalizes_line_endings_in_fixture_repo(tmp_path: Path) -> None
         fixture_root,
         fixture_root / "infrastructure/config/surrealdb/context_ingestion_scope.yaml",
     )
-    artifact_map = {artifact.source_path: artifact for artifact in result.repo_artifacts}
-    assert artifact_map["docs/eol_lf.md"].raw_sha256 != artifact_map["docs/eol_crlf.md"].raw_sha256
+    artifact_map = {
+        artifact.source_path: artifact for artifact in result.repo_artifacts
+    }
+    assert (
+        artifact_map["docs/eol_lf.md"].raw_sha256
+        != artifact_map["docs/eol_crlf.md"].raw_sha256
+    )
     assert (
         artifact_map["docs/eol_lf.md"].normalized_sha256
         == artifact_map["docs/eol_crlf.md"].normalized_sha256
     )
 
 
-_SCOPE_CONFIG_RELATIVE = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
+_SCOPE_CONFIG_RELATIVE = Path(
+    "infrastructure/config/surrealdb/context_ingestion_scope.yaml"
+)
 
 _SCOPE_CONFIG_YAML_TEMPLATE = """\
 schema_version: context-ingestion-scope/v0
@@ -742,7 +763,9 @@ guardrails: []
 """
 
 
-def _make_minimal_repo(base: Path, include_path: str, max_file_size: int = 1048576) -> Path:
+def _make_minimal_repo(
+    base: Path, include_path: str, max_file_size: int = 1048576
+) -> Path:
     """Create a minimal repo-like directory with a scope config and one doc."""
     config_path = base / _SCOPE_CONFIG_RELATIVE
     config_path.parent.mkdir(parents=True, exist_ok=True)
@@ -754,7 +777,9 @@ def _make_minimal_repo(base: Path, include_path: str, max_file_size: int = 10485
     )
     doc_dir = base / include_path.rstrip("/")
     doc_dir.mkdir(parents=True, exist_ok=True)
-    (doc_dir / "readme.md").write_text("# Hello\n\nThis is a test doc.\n", encoding="utf-8")
+    (doc_dir / "readme.md").write_text(
+        "# Hello\n\nThis is a test doc.\n", encoding="utf-8"
+    )
     return base
 
 
@@ -781,18 +806,18 @@ def test_resolve_input_path_prefers_root_over_cwd(
     resolved = resolve_input_path(_SCOPE_CONFIG_RELATIVE, target_repo)
 
     # Must resolve inside target_repo, not caller_repo
-    assert resolved.is_relative_to(target_repo), (
-        f"Expected path inside target_repo ({target_repo}), got {resolved}"
-    )
-    assert not resolved.is_relative_to(caller_repo), (
-        f"Path must not resolve to caller_repo ({caller_repo}), got {resolved}"
-    )
+    assert resolved.is_relative_to(
+        target_repo
+    ), f"Expected path inside target_repo ({target_repo}), got {resolved}"
+    assert not resolved.is_relative_to(
+        caller_repo
+    ), f"Path must not resolve to caller_repo ({caller_repo}), got {resolved}"
 
     # Loading the config proves the target repo policy is active, not caller's
     scope = load_scope_config(resolved)
-    assert scope.max_file_size_bytes == 999999, (
-        f"Expected target_repo max_file_size_bytes=999999, got {scope.max_file_size_bytes}"
-    )
+    assert (
+        scope.max_file_size_bytes == 999999
+    ), f"Expected target_repo max_file_size_bytes=999999, got {scope.max_file_size_bytes}"
 
 
 @pytest.mark.unit
@@ -803,7 +828,9 @@ def test_export_files_includes_wave14_artifacts() -> None:
 
 
 @pytest.mark.unit
-def test_jsonl_records_wave14_non_evidence_placeholders_are_always_empty(tmp_path: Path) -> None:
+def test_jsonl_records_wave14_non_evidence_placeholders_are_always_empty(
+    tmp_path: Path,
+) -> None:
     """claims, decision_events, agent_memories are always empty regardless of input."""
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
     result = run_indexer(
@@ -813,9 +840,9 @@ def test_jsonl_records_wave14_non_evidence_placeholders_are_always_empty(tmp_pat
     records = jsonl_records(result)
     for artifact in ("claims", "decision_events", "agent_memories"):
         assert artifact in records, f"jsonl_records() is missing key: {artifact}"
-        assert records[artifact] == [], (
-            f"expected empty list for {artifact}, got {records[artifact]!r}"
-        )
+        assert (
+            records[artifact] == []
+        ), f"expected empty list for {artifact}, got {records[artifact]!r}"
 
 
 @pytest.mark.unit
@@ -836,11 +863,15 @@ def test_write_jsonl_exports_writes_wave14_files(tmp_path: Path) -> None:
         path = output_dir / filename
         assert path.exists(), f"write_jsonl_exports() did not create {filename}"
         assert path.is_file(), f"{filename} is not a regular file"
-        assert path.read_bytes() == b"", f"{filename} should be empty for Wave-14 placeholder"
+        assert (
+            path.read_bytes() == b""
+        ), f"{filename} should be empty for Wave-14 placeholder"
 
 
 @pytest.mark.unit
-def test_indexer_output_passes_importer_jsonl_file_missing_check(tmp_path: Path) -> None:
+def test_indexer_output_passes_importer_jsonl_file_missing_check(
+    tmp_path: Path,
+) -> None:
     from tools.surrealdb.context_importer import validate_jsonl  # noqa: PLC0415
 
     fixture_root = _copy_fixture_repo(tmp_path, "repo_clean")
@@ -935,7 +966,9 @@ def test_evidence_refs_from_test_files_are_deterministic() -> None:
     records_b = _evidence_refs_from_test_cases(result)
 
     assert records_a == records_b
-    assert [r["evidence_id"] for r in records_a] == [r["evidence_id"] for r in records_b]
+    assert [r["evidence_id"] for r in records_a] == [
+        r["evidence_id"] for r in records_b
+    ]
 
 
 @pytest.mark.unit
@@ -983,16 +1016,21 @@ def test_evidence_refs_do_not_infer_claim_or_decision_links() -> None:
 
     assert records
     rec = records[0]
-    for forbidden_field in ("validates", "invalidates", "related_decisions", "claim_refs"):
+    for forbidden_field in (
+        "validates",
+        "invalidates",
+        "related_decisions",
+        "claim_refs",
+    ):
         value = rec.get(forbidden_field)
-        assert not value, (
-            f"evidence_ref must not infer {forbidden_field!r}, got {value!r}"
-        )
+        assert (
+            not value
+        ), f"evidence_ref must not infer {forbidden_field!r}, got {value!r}"
     comment = rec.get("comment", "")
     for forbidden_phrase in ("human-go", "lr-go", "echtgeld", "live", "approved"):
-        assert forbidden_phrase.lower() not in comment.lower(), (
-            f"comment must not contain {forbidden_phrase!r}: {comment!r}"
-        )
+        assert (
+            forbidden_phrase.lower() not in comment.lower()
+        ), f"comment must not contain {forbidden_phrase!r}: {comment!r}"
 
 
 @pytest.mark.unit
@@ -1045,7 +1083,6 @@ def test_generated_evidence_ref_records_pass_importer_field_validation(
 
     report = validate_jsonl(tmp_path, expected_run_id="run-unit-test-001")
     blocking = [f for f in report.findings if f.severity == "blocking"]
-    assert not blocking, (
-        f"Unexpected blocking findings for generated evidence_refs records: {blocking}"
-    )
-
+    assert (
+        not blocking
+    ), f"Unexpected blocking findings for generated evidence_refs records: {blocking}"

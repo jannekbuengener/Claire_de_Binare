@@ -23,7 +23,6 @@ import yaml
 
 from core.utils.clock import utcnow as cdb_utcnow
 
-
 SCHEMA_VERSION = "context-indexer/v0"
 SCOPE_CONFIG_SCHEMA_VERSION = "context-ingestion-scope/v0"
 DEFAULT_SCOPE_CONFIG = Path(
@@ -99,9 +98,9 @@ TRADING_STATE_PATH_PARTS = {
     "execution_state",
 }
 
-KNOWN_LOCAL_MODULE_PREFIXES: frozenset[str] = frozenset({
-    "core", "services", "tools", "infrastructure", "tests"
-})
+KNOWN_LOCAL_MODULE_PREFIXES: frozenset[str] = frozenset(
+    {"core", "services", "tools", "infrastructure", "tests"}
+)
 SECRET_CONFIG_KEY_RE = re.compile(
     r"(?i)(api[_\-]?key|private[_\-]?key|password|passwd|secret|token|credential"
     r"|auth[_\-]?key|access[_\-]?key|signing[_\-]?key|encryption[_\-]?key)"
@@ -591,7 +590,9 @@ class DependencyEdge:
             "from_table": self.from_table,
             "to_table": self.to_table,
             "source_path": self.source_path,
-            "confidence": {"high": 1.0, "medium": 0.7, "low": 0.3}.get(self.confidence, 1.0),
+            "confidence": {"high": 1.0, "medium": 0.7, "low": 0.3}.get(
+                self.confidence, 1.0
+            ),
             "evidence_level": "inferred",
             "inferred": self.inferred,
             "comment": "",
@@ -634,7 +635,9 @@ class IndexerResult:
 
     @property
     def blocking_findings(self) -> list[ValidationFinding]:
-        return [item for item in self.validation_findings if item.severity == "blocking"]
+        return [
+            item for item in self.validation_findings if item.severity == "blocking"
+        ]
 
 
 def _path_entries(value: Any, key: str) -> list[str]:
@@ -656,7 +659,10 @@ def _path_rules(value: Any, key: str) -> list[PathRule]:
         if not isinstance(item, dict) or not item.get("path"):
             raise ScopeConfigValidationError(f"{key} entries must contain path")
         sensitivity_class = item.get("sensitivity_class")
-        if sensitivity_class is not None and sensitivity_class not in EXPECTED_SENSITIVITY_CLASSES:
+        if (
+            sensitivity_class is not None
+            and sensitivity_class not in EXPECTED_SENSITIVITY_CLASSES
+        ):
             raise ScopeConfigValidationError(
                 f"{key} entry has unsupported sensitivity_class: {sensitivity_class}"
             )
@@ -676,7 +682,9 @@ def _file_type_rules(value: Any) -> list[FileTypeRule]:
     rules: list[FileTypeRule] = []
     for item in value:
         if not isinstance(item, dict) or not item.get("type"):
-            raise ScopeConfigValidationError("allowed_file_types entries must contain type")
+            raise ScopeConfigValidationError(
+                "allowed_file_types entries must contain type"
+            )
         extension = item.get("extension")
         pattern = item.get("pattern")
         if not extension and not pattern:
@@ -690,7 +698,9 @@ def _file_type_rules(value: Any) -> list[FileTypeRule]:
                 pattern=str(pattern) if pattern else None,
             )
         )
-    return sorted(rules, key=lambda rule: (rule.file_type, rule.extension or rule.pattern or ""))
+    return sorted(
+        rules, key=lambda rule: (rule.file_type, rule.extension or rule.pattern or "")
+    )
 
 
 def _flatten_forbidden_patterns(value: Any) -> list[str]:
@@ -715,7 +725,9 @@ def load_scope_config(path: Path) -> ScopeConfigSummary:
     except OSError as exc:
         raise ScopeConfigValidationError(f"scope config read failed: {exc}") from exc
     except yaml.YAMLError as exc:
-        raise ScopeConfigValidationError(f"scope config YAML parse failed: {exc}") from exc
+        raise ScopeConfigValidationError(
+            f"scope config YAML parse failed: {exc}"
+        ) from exc
 
     if not isinstance(data, dict):
         raise ScopeConfigValidationError("scope config must be a YAML mapping")
@@ -787,9 +799,9 @@ def _matches_rule(rel_path: str, rule_path: str) -> bool:
     normalized_rule = rule.strip("/")
     normalized_rel = rel_path.strip("/")
     if _has_glob_magic(rule):
-        return fnmatch.fnmatchcase(normalized_rel, normalized_rule) or fnmatch.fnmatchcase(
-            Path(normalized_rel).name, normalized_rule
-        )
+        return fnmatch.fnmatchcase(
+            normalized_rel, normalized_rule
+        ) or fnmatch.fnmatchcase(Path(normalized_rel).name, normalized_rule)
     return normalized_rel == normalized_rule or normalized_rel.startswith(
         f"{normalized_rule}/"
     )
@@ -818,7 +830,9 @@ def _safe_relative_to_root(path: Path, root: Path) -> str | None:
     return _normalize_relative_path(rel)
 
 
-def _detect_file_type(rel_path: str, path: Path, scope: ScopeConfigSummary) -> str | None:
+def _detect_file_type(
+    rel_path: str, path: Path, scope: ScopeConfigSummary
+) -> str | None:
     name = path.name
     suffix = path.suffix.lower()
     for rule in scope.file_type_rules:
@@ -833,7 +847,9 @@ def _detect_file_type(rel_path: str, path: Path, scope: ScopeConfigSummary) -> s
 
 
 def _matched_exclude_rule(rel_path: str, scope: ScopeConfigSummary) -> PathRule | None:
-    matches = [rule for rule in scope.exclude_rules if _matches_rule(rel_path, rule.path)]
+    matches = [
+        rule for rule in scope.exclude_rules if _matches_rule(rel_path, rule.path)
+    ]
     if not matches:
         return None
     return max(matches, key=lambda rule: len(rule.path))
@@ -864,7 +880,9 @@ def _sha256_text(text: str) -> str:
 
 
 def _stable_json_hash(value: Any) -> str:
-    encoded = json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    encoded = json.dumps(
+        value, ensure_ascii=True, sort_keys=True, separators=(",", ":")
+    )
     return _sha256_text(encoded)
 
 
@@ -1142,7 +1160,11 @@ def classify_and_hash_files(
         )
         normalized_text_by_path[rel_path] = normalized_text
 
-    return files, sorted(artifacts, key=lambda item: item.source_path), normalized_text_by_path
+    return (
+        files,
+        sorted(artifacts, key=lambda item: item.source_path),
+        normalized_text_by_path,
+    )
 
 
 def _safe_file_size(path: Path) -> int:
@@ -1241,14 +1263,19 @@ def build_markdown_records(
     chunks_without_links: list[DocChunk] = []
 
     for artifact in artifacts:
-        if artifact.file_type != "markdown" or artifact.sensitivity == "sensitive_metadata":
+        if (
+            artifact.file_type != "markdown"
+            or artifact.sensitivity == "sensitive_metadata"
+        ):
             continue
         text = normalized_text_by_path.get(artifact.source_path)
         if text is None:
             continue
         parsed_sections = _parse_markdown_sections(text)
         title = _markdown_title(parsed_sections, artifact.source_path)
-        page_id = stable_id("doc_page", artifact.source_path, artifact.normalized_sha256)
+        page_id = stable_id(
+            "doc_page", artifact.source_path, artifact.normalized_sha256
+        )
         pages.append(
             DocPage(
                 page_id=page_id,
@@ -1305,16 +1332,18 @@ def build_markdown_records(
                         content=content,
                         content_hash=content_hash,
                         previous_chunk_id=chunk_ids[index - 1] if index > 0 else None,
-                        next_chunk_id=chunk_ids[index + 1]
-                        if index + 1 < len(chunk_ids)
-                        else None,
+                        next_chunk_id=(
+                            chunk_ids[index + 1] if index + 1 < len(chunk_ids) else None
+                        ),
                     )
                 )
 
     return (
         sorted(pages, key=lambda item: item.source_path),
         sorted(sections, key=lambda item: (item.source_path, item.section_index)),
-        sorted(chunks_without_links, key=lambda item: (item.source_path, item.chunk_index)),
+        sorted(
+            chunks_without_links, key=lambda item: (item.source_path, item.chunk_index)
+        ),
     )
 
 
@@ -1490,10 +1519,16 @@ def extract_test_cases(code_symbols: list[CodeSymbol]) -> list[TestCase]:
             "function",
             "async_function",
         )
-        is_test_method = symbol.name.startswith("test_") and symbol.symbol_type in (
-            "method",
-            "async_method",
-        ) and symbol.parent_class is not None and symbol.parent_class.startswith("Test")
+        is_test_method = (
+            symbol.name.startswith("test_")
+            and symbol.symbol_type
+            in (
+                "method",
+                "async_method",
+            )
+            and symbol.parent_class is not None
+            and symbol.parent_class.startswith("Test")
+        )
         if is_test_func or is_test_method:
             test_type = "function" if symbol.parent_class is None else "method"
             test_cases.append(
@@ -1962,7 +1997,10 @@ def validate_indexer_result(result: IndexerResult) -> list[ValidationFinding]:
 
     for file_record in result.files:
         if file_record.status == "included":
-            if _matched_exclude_rule(file_record.source_path, result.scope_config) is not None:
+            if (
+                _matched_exclude_rule(file_record.source_path, result.scope_config)
+                is not None
+            ):
                 findings.append(
                     ValidationFinding(
                         severity="blocking",
@@ -2099,7 +2137,9 @@ def validate_indexer_result(result: IndexerResult) -> list[ValidationFinding]:
             )
         )
 
-    return sorted(findings, key=lambda item: (item.severity, item.code, item.source_path or ""))
+    return sorted(
+        findings, key=lambda item: (item.severity, item.code, item.source_path or "")
+    )
 
 
 def _path_contains_trading_state(source_path: str) -> bool:
@@ -2163,10 +2203,12 @@ def jsonl_records(result: IndexerResult) -> dict[str, list[dict[str, Any]]]:
         ],
         "doc_chunks": [chunk.to_payload(result.run_id) for chunk in result.doc_chunks],
         "skipped_files": [
-            file_record.to_payload(result.run_id) for file_record in result.skipped_files
+            file_record.to_payload(result.run_id)
+            for file_record in result.skipped_files
         ],
         "forbidden_files": [
-            file_record.to_payload(result.run_id) for file_record in result.forbidden_files
+            file_record.to_payload(result.run_id)
+            for file_record in result.forbidden_files
         ],
         "code_symbols": [sym.to_payload(result.run_id) for sym in result.code_symbols],
         "import_references": [
@@ -2268,7 +2310,10 @@ def build_command_payload(
             {
                 "status": "completed",
                 "counts": _counts(result),
-                "files": [file_record.to_payload(result.run_id) for file_record in result.files],
+                "files": [
+                    file_record.to_payload(result.run_id)
+                    for file_record in result.files
+                ],
             }
         )
         return base
@@ -2466,9 +2511,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.command == "export-jsonl":
-            output = validate_output_directory(args.output, args.apply_writes and not dry_run)
+            output = validate_output_directory(
+                args.output, args.apply_writes and not dry_run
+            )
         else:
-            output = validate_output_path(args.output, args.apply_writes and not dry_run)
+            output = validate_output_path(
+                args.output, args.apply_writes and not dry_run
+            )
         result = run_indexer(args.root, args.scope_config)
         payload = build_command_payload(
             args.command,
