@@ -29,7 +29,6 @@ from tools.surrealdb.context_indexer import (
     stable_id,
 )
 
-
 SCOPE_CONFIG = Path("infrastructure/config/surrealdb/context_ingestion_scope.yaml")
 FIXTURE_ROOT = Path("tests/fixtures/surrealdb/context_graph")
 
@@ -489,15 +488,11 @@ def test_derive_dependency_edges_contains() -> None:
 def test_derive_dependency_edges_imports_resolved() -> None:
     src = "from core.utils.clock import utcnow\n"
     src_artifact = _make_artifact("services/myservice.py")
-    target_artifact = _make_artifact(
-        "core/utils/clock.py", normalized_sha256="b" * 64
-    )
+    target_artifact = _make_artifact("core/utils/clock.py", normalized_sha256="b" * 64)
     _, _ = extract_code_symbols(src_artifact, src)
     imp_refs, _ = extract_import_references(src_artifact, src)
 
-    edges = derive_dependency_edges(
-        [src_artifact, target_artifact], [], imp_refs, []
-    )
+    edges = derive_dependency_edges([src_artifact, target_artifact], [], imp_refs, [])
     import_edges = [e for e in edges if e.edge_type == "imports"]
     assert len(import_edges) == 1
     assert import_edges[0].from_id == src_artifact.artifact_id
@@ -519,6 +514,8 @@ def test_derive_dependency_edges_imports_inferred_when_not_resolved() -> None:
     assert import_edges[0].inferred is True
     assert import_edges[0].from_table == "repo_artifact"
     assert import_edges[0].to_table == "module"
+
+
 # Absolute import submodule resolution (Codex review fix — #2062 addendum P1)
 # ---------------------------------------------------------------------------
 
@@ -539,7 +536,9 @@ def test_derive_dependency_edges_absolute_submodule_resolved() -> None:
 
 
 @pytest.mark.unit
-def test_derive_dependency_edges_absolute_submodule_no_artifact_stays_inferred() -> None:
+def test_derive_dependency_edges_absolute_submodule_no_artifact_stays_inferred() -> (
+    None
+):
     """from core.utils import clock stays inferred when core/utils/clock.py is absent."""
     src = "from core.utils import clock\n"
     src_artifact = _make_artifact("services/myservice.py")
@@ -627,8 +626,8 @@ def test_extract_import_references_stores_import_level() -> None:
 
     by_module = {r.module: r for r in refs}
     assert by_module["os"].import_level == 0
-    assert by_module[""].import_level == 1       # from . import sibling
-    assert by_module["utils"].import_level == 2   # from ..utils import helper
+    assert by_module[""].import_level == 1  # from . import sibling
+    assert by_module["utils"].import_level == 2  # from ..utils import helper
 
 
 @pytest.mark.unit
@@ -712,9 +711,9 @@ def test_run_indexer_ast_error_paths_are_unique() -> None:
 
     result = run_indexer(Path("."), SCOPE_CONFIG)
     error_paths = [e.source_path for e in result.ast_parse_errors]
-    assert len(error_paths) == len(set(error_paths)), (
-        f"duplicate AstParseError paths: {[p for p in error_paths if error_paths.count(p) > 1]}"
-    )
+    assert len(error_paths) == len(
+        set(error_paths)
+    ), f"duplicate AstParseError paths: {[p for p in error_paths if error_paths.count(p) > 1]}"
     snapshot = build_snapshot(result)
     assert snapshot["ast_parse_error_count"] == len(result.ast_parse_errors)
 
@@ -771,7 +770,6 @@ def test_dependency_edge_to_payload_includes_from_to_table() -> None:
     assert payload["to_table"] == "code_symbol"
     assert "from_id" in payload
     assert "to_id" in payload
-
 
 
 # Issue #2063: JSONL export extension
@@ -838,7 +836,9 @@ def test_run_indexer_extracts_symbols_from_python_files() -> None:
     """Ensure that the live repo run finds code symbols in Python source files."""
     result = run_indexer(Path("."), SCOPE_CONFIG)
     # The real repo has Python files, so we expect symbols to be extracted
-    assert len(result.code_symbols) > 0, "expected code symbols from Python files in scope"
+    assert (
+        len(result.code_symbols) > 0
+    ), "expected code symbols from Python files in scope"
     for sym in result.code_symbols:
         assert sym.source_path
         assert sym.symbol_id.startswith("code_symbol:")

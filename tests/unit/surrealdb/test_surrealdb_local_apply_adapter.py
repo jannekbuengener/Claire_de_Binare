@@ -2,6 +2,7 @@
 
 All tests use mocked urllib; no real SurrealDB container is needed.
 """
+
 from __future__ import annotations
 
 import base64
@@ -174,7 +175,9 @@ def test_apply_create_no_auth_header_when_no_credentials(
 
 
 @pytest.mark.unit
-def test_apply_create_includes_basic_auth_header(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_apply_create_includes_basic_auth_header(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     adapter = _make_adapter(user="root", password="s3cr3t")
     captured_req: list[Any] = []
 
@@ -307,7 +310,9 @@ def test_http_500_raises_apply_adapter_error(monkeypatch: pytest.MonkeyPatch) ->
 def test_http_400_error_includes_response_body(monkeypatch: pytest.MonkeyPatch) -> None:
     """HTTP 400 ApplyAdapterError must embed the SurrealDB response body for diagnosis."""
     adapter = _make_adapter()
-    surrealdb_msg = b'{"code":400,"information":"Parse error near supplementary unicode"}'
+    surrealdb_msg = (
+        b'{"code":400,"information":"Parse error near supplementary unicode"}'
+    )
 
     class FakeHTTPError(urllib.error.HTTPError):
         def read(self) -> bytes:
@@ -325,7 +330,9 @@ def test_http_400_error_includes_response_body(monkeypatch: pytest.MonkeyPatch) 
         lambda *a, **kw: (_ for _ in ()).throw(http_err),
     )
 
-    with pytest.raises(ApplyAdapterError, match="Parse error near supplementary unicode"):
+    with pytest.raises(
+        ApplyAdapterError, match="Parse error near supplementary unicode"
+    ):
         adapter.apply_create("doc_page", "abc", {"title": "test"})
 
 
@@ -690,9 +697,7 @@ def test_makefile_context_import_local_passes_secrets_path() -> None:
                 return
         elif in_target and not line.startswith("\t") and line.strip():
             break
-    pytest.fail(
-        "context-import-local target in Makefile does not pass --secrets-path"
-    )
+    pytest.fail("context-import-local target in Makefile does not pass --secrets-path")
 
 
 @pytest.mark.unit
@@ -852,33 +857,37 @@ def test_apply_tombstone_datetime_field_surql_literal(
 def test_payload_to_surql_content_roundtrip() -> None:
     """_payload_to_surql_content unit tests: allowlist, non-allowlist, null, number."""
     # Allowlisted field with Z-suffix ISO string → converted
-    result = _payload_to_surql_content({"observed_at": "2026-05-18T19:50:12Z", "x": "y"})
+    result = _payload_to_surql_content(
+        {"observed_at": "2026-05-18T19:50:12Z", "x": "y"}
+    )
     assert '"observed_at": d"2026-05-18T19:50:12Z"' in result
     assert '"x": "y"' in result
 
     # Non-allowlisted ISO-like field → not converted
     result2 = _payload_to_surql_content({"timestamp_text": "2026-05-18T19:50:12Z"})
     assert '"timestamp_text": "2026-05-18T19:50:12Z"' in result2
-    assert "d\"" not in result2
+    assert 'd"' not in result2
 
     # Allowlisted field without Z suffix → not converted (no partial matches)
     result3 = _payload_to_surql_content({"observed_at": "2026-05-18T19:50:12"})
     assert '"observed_at": "2026-05-18T19:50:12"' in result3
-    assert "d\"" not in result3
+    assert 'd"' not in result3
 
     # Null value for allowlisted field → not converted (null is not a string)
     result4 = _payload_to_surql_content({"observed_at": None})
     assert '"observed_at": null' in result4
-    assert "d\"" not in result4
+    assert 'd"' not in result4
 
 
 @pytest.mark.unit
 def test_payload_to_surql_content_record_ref_unquoted() -> None:
     """page_ref / section_ref record-ref strings are unquoted in CONTENT (#2577)."""
-    result = _payload_to_surql_content({
-        "page_ref": "doc_page:\u27e8page-example\u27e9",
-        "title": "Example",
-    })
+    result = _payload_to_surql_content(
+        {
+            "page_ref": "doc_page:\u27e8page-example\u27e9",
+            "title": "Example",
+        }
+    )
     assert '"page_ref": doc_page:\u27e8page-example\u27e9' in result
     assert '"title": "Example"' in result
     # Must not appear quoted
@@ -888,9 +897,11 @@ def test_payload_to_surql_content_record_ref_unquoted() -> None:
 @pytest.mark.unit
 def test_payload_to_surql_content_section_ref_unquoted() -> None:
     """section_ref record-ref strings are unquoted in CONTENT (#2577)."""
-    result = _payload_to_surql_content({
-        "section_ref": "doc_section:\u27e8section-example\u27e9",
-    })
+    result = _payload_to_surql_content(
+        {
+            "section_ref": "doc_section:\u27e8section-example\u27e9",
+        }
+    )
     assert '"section_ref": doc_section:\u27e8section-example\u27e9' in result
     assert '"section_ref": "doc_section:' not in result
 
@@ -898,10 +909,12 @@ def test_payload_to_surql_content_section_ref_unquoted() -> None:
 @pytest.mark.unit
 def test_payload_to_surql_content_datetime_regression_after_ascii_change() -> None:
     """ensure_ascii=False must not break the existing datetime literal conversion."""
-    result = _payload_to_surql_content({
-        "observed_at": "2026-05-18T19:50:12Z",
-        "title": "still works",
-    })
+    result = _payload_to_surql_content(
+        {
+            "observed_at": "2026-05-18T19:50:12Z",
+            "title": "still works",
+        }
+    )
     assert '"observed_at": d"2026-05-18T19:50:12Z"' in result
     assert '"title": "still works"' in result
 

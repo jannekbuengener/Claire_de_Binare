@@ -181,8 +181,7 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     # Step 3: Insert Test Data (simulate new data after backup)
     print("  📝 Step 3: Insert test snapshot (after backup)...")
 
-    cursor.execute(
-        """
+    cursor.execute("""
         INSERT INTO portfolio_snapshots (
             timestamp, total_equity, available_balance, total_unrealized_pnl, total_realized_pnl,
             daily_pnl, total_exposure_pct, open_positions, metadata
@@ -190,17 +189,14 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
             NOW(), 100000.0, 95000.0, 500.0, 1000.0,
             200.0, 0.05, 2, '{"test": "restore_marker"}'::jsonb
         )
-    """
-    )
+    """)
     postgres_conn.commit()
 
     cursor.execute("SELECT COUNT(*) FROM portfolio_snapshots")
     after_insert_count = cursor.fetchone()[0]
 
     print(f"    ✓ After insert: {after_insert_count} snapshots")
-    assert (
-        after_insert_count == baseline_count + 1
-    ), "Test snapshot should be inserted"
+    assert after_insert_count == baseline_count + 1, "Test snapshot should be inserted"
 
     # Step 4: Drop and Recreate Database (simulate catastrophic failure)
     print("  💥 Step 4: Drop and recreate database (simulate disaster)...")
@@ -220,14 +216,12 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     admin_cursor = admin_conn.cursor()
 
     # Terminate connections
-    admin_cursor.execute(
-        """
+    admin_cursor.execute("""
         SELECT pg_terminate_backend(pg_stat_activity.pid)
         FROM pg_stat_activity
         WHERE pg_stat_activity.datname = 'claire_de_binare'
           AND pid <> pg_backend_pid()
-    """
-    )
+    """)
 
     # Drop DB
     admin_cursor.execute("DROP DATABASE IF EXISTS claire_de_binare")
@@ -305,12 +299,10 @@ def test_postgres_restore_from_backup(backup_dir, postgres_conn):
     ), f"Data mismatch: expected {baseline_count}, got {restored_count}"
 
     # Validate test snapshot is NOT present
-    restored_cursor.execute(
-        """
+    restored_cursor.execute("""
         SELECT COUNT(*) FROM portfolio_snapshots
         WHERE metadata->>'test' = 'restore_marker'
-    """
-    )
+    """)
     test_marker_count = restored_cursor.fetchone()[0]
 
     assert (
@@ -460,8 +452,7 @@ def test_automated_backup_script_concept():
     """
     print("\n💡 Concept-Test: Automated Backup Script...")
 
-    print(
-        """
+    print("""
   📋 Beispiel für automatisiertes Backup-Script:
 
   #!/bin/bash
@@ -495,18 +486,15 @@ def test_automated_backup_script_concept():
     echo "❌ Backup failed!"
     exit 1
   fi
-  """
-    )
+  """)
 
     print("  ✅ Backup script concept documented")
 
-    print(
-        """
+    print("""
   📋 Beispiel für Cronjob (täglich um 02:00 Uhr):
 
   0 2 * * * /home/user/Claire_de_Binare_Cleanroom/backoffice/scripts/backup_postgres.sh >> /var/log/claire_backup.log 2>&1
-  """
-    )
+  """)
 
     print("\n✅ Concept test passed (no actual backup script created)")
 

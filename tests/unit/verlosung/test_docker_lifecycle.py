@@ -34,7 +34,9 @@ def parse_docker_json(stdout):
             try:
                 services.append(json.loads(line))
             except json.JSONDecodeError:
-                logging.getLogger(__name__).debug("JSON decode error for docker ps line (ignored)")
+                logging.getLogger(__name__).debug(
+                    "JSON decode error for docker ps line (ignored)"
+                )
     return services
 
 

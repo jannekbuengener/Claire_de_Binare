@@ -48,8 +48,7 @@ def test_query_performance_signals_aggregation(postgres_conn):
 
     start = time.time()
 
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             symbol,
             signal_type,
@@ -62,8 +61,7 @@ def test_query_performance_signals_aggregation(postgres_conn):
         GROUP BY symbol, signal_type
         ORDER BY signal_count DESC
         LIMIT 10
-    """
-    )
+    """)
 
     results = cursor.fetchall()
     elapsed = time.time() - start
@@ -99,8 +97,7 @@ def test_query_performance_portfolio_snapshots_timeseries(postgres_conn):
 
     start = time.time()
 
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             DATE(timestamp) as date,
             COUNT(*) as snapshot_count,
@@ -112,8 +109,7 @@ def test_query_performance_portfolio_snapshots_timeseries(postgres_conn):
         GROUP BY DATE(timestamp)
         ORDER BY date DESC
         LIMIT 30
-    """
-    )
+    """)
 
     results = cursor.fetchall()
     elapsed = time.time() - start
@@ -148,8 +144,7 @@ def test_query_performance_trades_join_orders(postgres_conn):
 
     start = time.time()
 
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             t.id as trade_id,
             t.symbol,
@@ -165,8 +160,7 @@ def test_query_performance_trades_join_orders(postgres_conn):
         WHERE t.timestamp >= NOW() - INTERVAL '24 hours'
         ORDER BY t.timestamp DESC
         LIMIT 100
-    """
-    )
+    """)
 
     results = cursor.fetchall()
     elapsed = time.time() - start
@@ -200,8 +194,7 @@ def test_query_performance_full_text_search(postgres_conn):
     start = time.time()
 
     # Search in JSONB metadata
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             symbol,
             signal_type,
@@ -211,8 +204,7 @@ def test_query_performance_full_text_search(postgres_conn):
         WHERE metadata ? 'strategy'
         ORDER BY timestamp DESC
         LIMIT 50
-    """
-    )
+    """)
 
     results = cursor.fetchall()
     elapsed = time.time() - start
@@ -238,8 +230,7 @@ def test_database_index_effectiveness(postgres_conn):
     cursor = postgres_conn.cursor(cursor_factory=RealDictCursor)
 
     # Check existing indices
-    cursor.execute(
-        """
+    cursor.execute("""
         SELECT
             schemaname,
             tablename,
@@ -248,8 +239,7 @@ def test_database_index_effectiveness(postgres_conn):
         FROM pg_indexes
         WHERE schemaname = 'public'
         ORDER BY tablename, indexname
-    """
-    )
+    """)
 
     indices = cursor.fetchall()
 
@@ -278,15 +268,13 @@ def test_database_index_effectiveness(postgres_conn):
     # EXPLAIN ANALYZE für wichtige Query
     print("\n📊 Checking index usage (EXPLAIN ANALYZE)...")
 
-    cursor.execute(
-        """
+    cursor.execute("""
         EXPLAIN (FORMAT JSON, ANALYZE TRUE)
         SELECT * FROM signals
         WHERE timestamp >= NOW() - INTERVAL '1 day'
         ORDER BY timestamp DESC
         LIMIT 10
-    """
-    )
+    """)
 
     # RealDictCursor returns dict, not tuple
     row = cursor.fetchone()

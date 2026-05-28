@@ -21,12 +21,15 @@ from tools.surrealdb.context_query import (
     load_config,
 )
 
-EXAMPLE_CONFIG = Path("infrastructure/config/surrealdb/context_query.local.example.yaml")
+EXAMPLE_CONFIG = Path(
+    "infrastructure/config/surrealdb/context_query.local.example.yaml"
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_adapter(
     url: str = "http://127.0.0.1:8010",
@@ -73,6 +76,7 @@ def _mock_opener_raising(exc: Exception) -> MagicMock:
 # URL validation
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_http_localhost_ip_accepted() -> None:
     adapter = _make_adapter(url="http://127.0.0.1:8010")
@@ -116,10 +120,13 @@ def test_wss_url_rejected() -> None:
 # HTTP request structure
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_execute_select_posts_to_sql_endpoint() -> None:
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ) as mock_build:
         result = adapter.execute("SELECT * FROM repo_artifact")
     assert result == []
     req = mock_build.return_value.open.call_args[0][0]
@@ -131,7 +138,9 @@ def test_execute_select_posts_to_sql_endpoint() -> None:
 @pytest.mark.unit
 def test_correct_headers_sent() -> None:
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ) as mock_build:
         adapter.execute("SELECT * FROM repo_artifact")
     req = mock_build.return_value.open.call_args[0][0]
     assert req.get_header("Accept") == "application/json"
@@ -143,7 +152,9 @@ def test_correct_headers_sent() -> None:
 @pytest.mark.unit
 def test_auth_none_sends_no_authorization_header() -> None:
     adapter = _make_adapter(user=None, password=None)
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ) as mock_build:
         adapter.execute("SELECT * FROM doc_chunk")
     req = mock_build.return_value.open.call_args[0][0]
     assert req.get_header("Authorization") is None
@@ -152,7 +163,9 @@ def test_auth_none_sends_no_authorization_header() -> None:
 @pytest.mark.unit
 def test_auth_root_sends_basic_authorization() -> None:
     adapter = _make_adapter(user="admin", password="secret")
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ) as mock_build:
         adapter.execute("SELECT * FROM doc_chunk")
     req = mock_build.return_value.open.call_args[0][0]
     auth = req.get_header("Authorization")
@@ -175,7 +188,9 @@ def test_secret_not_in_error_message() -> None:
         hdrs=MagicMock(),
         fp=None,
     )
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(http_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(http_error)
+    ):
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
     assert "local_test" not in excinfo.value.message
@@ -184,6 +199,7 @@ def test_secret_not_in_error_message() -> None:
 # ---------------------------------------------------------------------------
 # Write-denial BEFORE HTTP
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
@@ -220,6 +236,7 @@ def test_multi_statement_denied_before_http() -> None:
 # SurrealDB error responses
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_surrealdb_err_response_raises_query_adapter_error() -> None:
     err_body = json.dumps(
@@ -249,7 +266,9 @@ def test_http_500_raises_query_adapter_error() -> None:
         fp=None,
     )
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(http_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(http_error)
+    ):
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
     assert "500" in excinfo.value.message
@@ -259,13 +278,16 @@ def test_http_500_raises_query_adapter_error() -> None:
 # Unreachable DB — soft vs hard mode
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_urlError_soft_mode_returns_empty_and_sets_unavailable() -> None:
     import urllib.error
 
     adapter = _make_adapter(hard_mode=False)
     url_error = urllib.error.URLError(reason="Connection refused")
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(url_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(url_error)
+    ):
         result = adapter.execute("SELECT * FROM repo_artifact")
     assert result == []
     assert adapter.status == "surrealdb-local-unavailable"
@@ -277,7 +299,9 @@ def test_urlError_hard_mode_raises_query_adapter_error() -> None:
 
     adapter = _make_adapter(hard_mode=True)
     url_error = urllib.error.URLError(reason="Connection refused")
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(url_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(url_error)
+    ):
         with pytest.raises(QueryAdapterError):
             adapter.execute("SELECT * FROM repo_artifact")
     assert adapter.status == "surrealdb-local-unavailable"
@@ -287,10 +311,13 @@ def test_urlError_hard_mode_raises_query_adapter_error() -> None:
 # Results
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_empty_result_returns_empty_list() -> None:
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ):
         result = adapter.execute("SELECT * FROM repo_artifact")
     assert result == []
 
@@ -299,7 +326,9 @@ def test_empty_result_returns_empty_list() -> None:
 def test_rows_returned_correctly() -> None:
     rows = [{"id": "repo_artifact:1", "source_path": "core/foo.py"}]
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response(rows))):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response(rows))
+    ):
         result = adapter.execute("SELECT * FROM repo_artifact")
     assert result == rows
 
@@ -307,7 +336,9 @@ def test_rows_returned_correctly() -> None:
 @pytest.mark.unit
 def test_adapter_status_connected_after_success() -> None:
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ):
         adapter.execute("SELECT * FROM repo_artifact")
     assert adapter.status == "surrealdb-local"
 
@@ -317,7 +348,10 @@ def test_adapter_status_unavailable_after_urlError() -> None:
     import urllib.error
 
     adapter = _make_adapter(hard_mode=False)
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(urllib.error.URLError("refused"))):
+    with patch(
+        "urllib.request.build_opener",
+        return_value=_mock_opener_raising(urllib.error.URLError("refused")),
+    ):
         adapter.execute("SELECT * FROM repo_artifact")
     assert adapter.status == "surrealdb-local-unavailable"
 
@@ -325,6 +359,7 @@ def test_adapter_status_unavailable_after_urlError() -> None:
 # ---------------------------------------------------------------------------
 # Schema-compatibility: no tombstone = false in default queries
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.unit
 def test_build_artifact_query_default_no_tombstone_filter() -> None:
@@ -340,7 +375,9 @@ def test_build_doc_query_default_no_tombstone_filter() -> None:
 
 @pytest.mark.unit
 def test_build_artifact_query_with_filters_no_tombstone_filter() -> None:
-    query = build_artifact_query(source_path="src/", file_type="python", include_tombstoned=False)
+    query = build_artifact_query(
+        source_path="src/", file_type="python", include_tombstoned=False
+    )
     assert "tombstoned" not in query
 
 
@@ -348,11 +385,13 @@ def test_build_artifact_query_with_filters_no_tombstone_filter() -> None:
 # _load_query_credentials
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.unit
 def test_load_credentials_none_mode_returns_none_pair() -> None:
     config = load_config(EXAMPLE_CONFIG)
     # config has auth_mode = root from YAML; create a mock config-like object instead
     from dataclasses import replace
+
     config_none = replace(config, auth_mode="none")
     user, password = _load_query_credentials(config_none, secrets_path=None)
     assert user is None
@@ -378,7 +417,9 @@ def test_load_credentials_root_missing_env_file_raises(tmp_path: Path) -> None:
 def test_load_credentials_root_valid_env_file(tmp_path: Path) -> None:
     config = load_config(EXAMPLE_CONFIG)
     env_file = tmp_path / "SURREALDB_ENV"
-    env_file.write_text("SURREAL_USER=testuser\nSURREAL_PASS=testpass\n", encoding="utf-8")
+    env_file.write_text(
+        "SURREAL_USER=testuser\nSURREAL_PASS=testpass\n", encoding="utf-8"
+    )
     user, password = _load_query_credentials(config, secrets_path=tmp_path)
     assert user == "testuser"
     assert password == "testpass"
@@ -440,7 +481,9 @@ def test_redirect_response_is_denied_without_following() -> None:
     redirect_error = QueryAdapterError(
         "redirect denied for local SurrealDB query request (HTTP 302)"
     )
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(redirect_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(redirect_error)
+    ):
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
     assert "redirect denied" in excinfo.value.message
@@ -458,7 +501,9 @@ def test_redirect_does_not_leak_authorization_header() -> None:
     redirect_error = QueryAdapterError(
         "redirect denied for local SurrealDB query request (HTTP 301)"
     )
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(redirect_error)) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(redirect_error)
+    ) as mock_build:
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
     # Must have attempted exactly one request, then stopped
@@ -472,7 +517,9 @@ def test_redirect_does_not_leak_authorization_header() -> None:
 def test_no_redirect_handler_is_passed_to_build_opener() -> None:
     """build_opener must be called with a _NoRedirectHandler instance."""
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response([]))
+    ) as mock_build:
         adapter.execute("SELECT * FROM repo_artifact")
     call_args = mock_build.call_args
     assert len(call_args[0]) == 1
@@ -484,7 +531,9 @@ def test_success_still_posts_to_local_sql_endpoint() -> None:
     """Regression: successful SELECT still works correctly after redirect-block change."""
     rows = [{"id": "repo_artifact:1", "source_path": "core/foo.py"}]
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener(_mock_response(rows))) as mock_build:
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener(_mock_response(rows))
+    ) as mock_build:
         result = adapter.execute("SELECT * FROM repo_artifact")
     assert result == rows
     req = mock_build.return_value.open.call_args[0][0]
@@ -505,7 +554,9 @@ def test_http_500_still_raises_query_adapter_error() -> None:
         fp=None,
     )
     adapter = _make_adapter()
-    with patch("urllib.request.build_opener", return_value=_mock_opener_raising(http_error)):
+    with patch(
+        "urllib.request.build_opener", return_value=_mock_opener_raising(http_error)
+    ):
         with pytest.raises(QueryAdapterError) as excinfo:
             adapter.execute("SELECT * FROM repo_artifact")
     assert "500" in excinfo.value.message

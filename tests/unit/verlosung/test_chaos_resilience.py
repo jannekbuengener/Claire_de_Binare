@@ -50,7 +50,9 @@ def is_service_healthy(service_name):
                 return "healthy" in status.lower() or service.get("Health") == "healthy"
 
         except json.JSONDecodeError:
-            logging.getLogger(__name__).debug("JSON decode error for docker service line (ignored)")
+            logging.getLogger(__name__).debug(
+                "JSON decode error for docker service line (ignored)"
+            )
 
     return False
 
@@ -81,9 +83,7 @@ def test_redis_crash_and_recovery():
 
     # Verify Redis ist erreichbar
     try:
-        redis_client = redis.Redis(
-            host="localhost", port=6379, password="local_test"
-        )
+        redis_client = redis.Redis(host="localhost", port=6379, password="local_test")
         assert redis_client.ping(), "Redis should respond to ping"
         print("    ✓ Redis is reachable")
     except Exception as e:
@@ -287,9 +287,7 @@ def test_postgres_crash_and_recovery():
     print(f"    ✓ After restart: {after_count} snapshots")
 
     # Data should be preserved (Volume-Persistence)
-    assert (
-        after_count == baseline_count
-    ), f"Data lost: {baseline_count} → {after_count}"
+    assert after_count == baseline_count, f"Data lost: {baseline_count} → {after_count}"
 
     print("    ✓ No data loss")
 
@@ -451,9 +449,7 @@ def test_concurrent_redis_and_postgres_crash():
 
     # Check Redis
     try:
-        redis_client = redis.Redis(
-            host="localhost", port=6379, password="local_test"
-        )
+        redis_client = redis.Redis(host="localhost", port=6379, password="local_test")
         if redis_client.ping():
             redis_recovered = True
             print("    ✓ Redis recovered")
