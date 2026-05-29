@@ -524,6 +524,52 @@ Proven behaviors: block without GO, block on scope mismatch, block on contract v
 
 ---
 
+## 20. Slice 6 addendum — local-only gated write smoke (#2694)
+
+**Delivered:** gated localhost UPSERT smoke executor, `local_only` integration test, unit tests with mock SQL. No MCP write. No `PERSIST_ALLOWED` flip.
+
+### 20.1 Write smoke module
+
+| Artifact | Role |
+| --- | --- |
+| `tools/surrealdb/memory_db_write_smoke.py` | `execute_gated_local_memory_write_v1()`, env + gate fail-closed |
+| `docs/surrealdb/memory-write-gate-v1.md` §8 | Operator-GO + env contract |
+
+Properties:
+
+- Requires `CDB_RUN_REAL_SURREALDB_MEMORY_WRITE=1` **and** `gate_status == approved_dry_run`
+- `persist_allowed` remains `false` in gate envelope; runtime permission is env + operator GO only
+- Writes: one `evidence_ref` + one `agent_memory` via `MemoryDbProofSqlClient.upsert_create()` (localhost)
+- Scope prefix: `memory_db_write_smoke:<run_tag>` (distinct from Slice 4 read proof scope)
+- Audit envelope: `human_go_token` never serialized; `write_status: written_local_only`
+
+### 20.2 Tests
+
+| File | Marker | CI |
+| --- | --- | --- |
+| `tests/unit/surrealdb/test_memory_db_write_smoke.py` | `unit` | yes (mock SQL) |
+| `tests/local/surrealdb/test_memory_db_write_smoke.py` | `local_only` | no (opt-in DB) |
+
+Proven (unit): gate blocked → zero `upsert_create`; env missing → no write; gate pass + env → two UPSERTs.
+
+Proven (local, opt-in): gated UPSERT → `prove_agent_memory_db_read_v1` scope match → `finally` DELETE.
+
+### 20.3 No-changes list (Slice 6)
+
+- `memory_write_gate.py` module constant unchanged (`PERSIST_ALLOWED = False`)
+- No MCP write tools, no BLUE/RED, no trading/risk/execution path
+- LR remains NO-GO
+
+### 20.4 Remaining gaps after Slice 6
+
+| Gap | Follow-up |
+| --- | --- |
+| Productive memory write / importer default path | Future slice after sustained smoke evidence |
+| MCP write surface | Explicit design slice |
+| Production `audit_observation` persistence | After write path ratified |
+
+---
+
 ## Provenance
 
 | Source | Role |

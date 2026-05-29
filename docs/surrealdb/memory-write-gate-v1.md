@@ -110,6 +110,50 @@ ruff check tools/surrealdb/memory_write_gate.py tests/unit/surrealdb/test_memory
 
 ---
 
+## 8. Slice 6 — local-only write smoke (execution)
+
+**Issue**: [#2694](https://github.com/jannekbuengener/Claire_de_Binare/issues/2694)  
+**Status**: Gated executor + `local_only` test (no CI DB). LR remains NO-GO.
+
+### Preconditions (all required)
+
+| Layer | Requirement |
+| --- | --- |
+| Operator prompt | Explicit Operator-GO for Slice 6 local write smoke |
+| Gate | `evaluate_memory_write_gate()` → `approved_dry_run` |
+| Env | `CDB_RUN_REAL_SURREALDB_MEMORY_WRITE=1` (orthogonal to read flag `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE`) |
+| Module constant | `PERSIST_ALLOWED` stays `False` in `memory_write_gate.py` |
+| Runtime | `MemoryDbProofSqlClient` → `127.0.0.1:8010` only |
+| Token env | `CDB_MEMORY_WRITE_HUMAN_GO_TOKEN` (`GO-YYYY-MM-DD[-suffix]`) — never log raw value |
+
+### Execution surface
+
+| Artifact | Path |
+| --- | --- |
+| Write smoke executor | `tools/surrealdb/memory_db_write_smoke.py` |
+| Local test | `tests/local/surrealdb/test_memory_db_write_smoke.py` |
+| Unit tests (mock SQL) | `tests/unit/surrealdb/test_memory_db_write_smoke.py` |
+| Helpers | `tests/local/surrealdb/memory_db_proof_helpers.py` (`memory_db_write_smoke:<tag>` scope) |
+
+Flow: gate pass → env check → UPSERT `evidence_ref` then `agent_memory` → read-back via `prove_agent_memory_db_read_v1` → `finally` DELETE run-scoped rows.
+
+### Validation
+
+```bash
+pytest tests/unit/surrealdb/test_memory_db_write_smoke.py -q
+ruff check tools/surrealdb/memory_db_write_smoke.py tests/local/surrealdb/test_memory_db_write_smoke.py tests/unit/surrealdb/test_memory_db_write_smoke.py
+```
+
+Local-only (after Operator-GO):
+
+```powershell
+$env:CDB_RUN_REAL_SURREALDB_MEMORY_WRITE = "1"
+$env:CDB_MEMORY_WRITE_HUMAN_GO_TOKEN = "GO-2026-05-29-slice6"
+pytest tests/local/surrealdb/test_memory_db_write_smoke.py -q
+```
+
+---
+
 ## Provenance
 
 | Source | Role |

@@ -31,7 +31,10 @@ LOCAL_DB = "cdb_context_intel"
 LOCAL_ALLOWED_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
 
 _BASE_SCOPE = "memory_db_proof"
+_BASE_WRITE_SCOPE = "memory_db_write_smoke"
 _BASE_EVIDENCE_IDS = ("ev-mdbproof-base-001", "ev-mdbproof-base-002")
+_BASE_WRITE_EVIDENCE_ID = "ev-mdbwrite-base-001"
+_JSONL_STRIP_FIELDS = frozenset({"schema_version", "run_id", "sensitivity"})
 
 _ID_REFERENCE_FIELDS = frozenset(
     {
@@ -333,6 +336,25 @@ class MemoryDbProofSqlClient:
         literal = _surql_string(raw_id)
         self.execute(f"DELETE {table} WHERE {id_field} = {literal};")
 
+    @staticmethod
+    def _surql_record_id(table: str, record_id: str) -> str:
+        escaped = record_id.replace("\u27e9", "\\u27e9")
+        return f"{table}:\u27e8{escaped}\u27e9"
+
+    def upsert_create(self, table: str, record_id: str, payload: dict[str, Any]) -> None:
+        """UPSERT one record on local SurrealDB (Slice 6 write smoke only)."""
+        from tools.surrealdb.context_importer import (
+            _payload_to_surql_content,
+            _remap_record_refs_for_db_payload,
+        )
+
+        rid = self._surql_record_id(table, record_id)
+        db_payload = _remap_record_refs_for_db_payload(table, dict(payload))
+        for field in _JSONL_STRIP_FIELDS:
+            db_payload.pop(field, None)
+        payload_json = _payload_to_surql_content(db_payload)
+        self.execute(f"UPSERT {rid} CONTENT {payload_json};")
+
 
 def assert_memory_proof_records_absent(
     client: MemoryDbProofSqlClient, plan: MemoryDbProofRecordPlan
@@ -362,3 +384,142 @@ def cleanup_memory_proof_records(
             if client.record_exists(table, raw_id, id_field=id_field):
                 client.delete_record(table, raw_id, id_field=id_field)
     assert_memory_proof_records_absent(client, plan)
+
+
+@dataclass(frozen=True)
+class MemoryWriteSmokeRecordPlan:
+    """Run-scoped IDs for Slice 6 local-only write smoke (single memory row)."""
+
+    run_id: str
+    run_tag: str
+    scope: str
+    evidence_id: str
+    memory_id: str
+
+    @property
+    def records_by_table(self) -> tuple[tuple[str, str], ...]:
+        return (
+            ("evidence_ref", self.evidence_id),
+            ("agent_memory", self.memory_id),
+        )
+
+
+def resolve_memory_write_smoke_run_id() -> str:
+    override = os.environ.get("CDB_MEMORY_WRITE_SMOKE_RUN_ID", "").strip()
+    if override:
+        return override
+    return f"{_timestamp_run_id()}-{os.getpid()}"
+
+
+def memory_write_smoke_tmp_root(run_id: str) -> Path:
+    return _REPO_ROOT / ".tmp" / "memory-db-write-smoke" / run_id
+
+
+def build_memory_write_smoke_plan(run_id: str) -> MemoryWriteSmokeRecordPlan:
+    tag = memory_proof_run_tag(run_id)
+    scope = f"{_BASE_WRITE_SCOPE}:{tag}"
+    stem, suffix = _BASE_WRITE_EVIDENCE_ID.rsplit("-", 1)
+    evidence_id = f"{stem}-{tag}-{suffix}"
+    memory_id = _compute_single_run_scoped_memory_id(
+        scope=scope,
+        evidence_id=evidence_id,
+    )
+    return MemoryWriteSmokeRecordPlan(
+        run_id=run_id,
+        run_tag=tag,
+        scope=scope,
+        evidence_id=evidence_id,
+        memory_id=memory_id,
+    )
+
+
+def _compute_single_run_scoped_memory_id(
+    *,
+    scope: str,
+    evidence_id: str,
+) -> str:
+    fresh_path = _FIXTURE_DIR / "agent_memories.jsonl"
+    for raw_line in fresh_path.read_text(encoding="utf-8").splitlines():
+        if not raw_line.strip():
+            continue
+        record = json.loads(raw_line)
+        record["scope"] = scope
+        record["namespace"] = scope
+        record["evidence_refs"] = [evidence_id]
+        record["content"] = "Slice 6 local-only gated memory write smoke record."
+        return generate_memory_id(
+            scope=record["scope"],
+            namespace=record["namespace"],
+            memory_type=record["memory_type"],
+            created_by=record["created_by"],
+            content=record["content"],
+            source_refs=record["source_refs"],
+        )
+    raise ValueError("agent_memories.jsonl fixture has no records")
+
+
+def materialize_memory_write_smoke_evidence(
+    *,
+    run_id: str,
+    plan: MemoryWriteSmokeRecordPlan,
+) -> dict[str, Any]:
+    path = _FIXTURE_DIR / "evidence_refs.jsonl"
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        if not raw_line.strip():
+            continue
+        record = json.loads(raw_line)
+        record["run_id"] = run_id
+        record["evidence_id"] = plan.evidence_id
+        record["comment"] = "Slice 6 local-only gated memory write smoke evidence"
+        return record
+    raise ValueError("evidence_refs.jsonl fixture has no records")
+
+
+def materialize_memory_write_smoke_memory_record(
+    *,
+    run_id: str,
+    plan: MemoryWriteSmokeRecordPlan,
+) -> dict[str, Any]:
+    fresh_path = _FIXTURE_DIR / "agent_memories.jsonl"
+    for raw_line in fresh_path.read_text(encoding="utf-8").splitlines():
+        if not raw_line.strip():
+            continue
+        record = json.loads(raw_line)
+        record["run_id"] = run_id
+        record["scope"] = plan.scope
+        record["namespace"] = plan.scope
+        record["evidence_refs"] = [plan.evidence_id]
+        record["memory_id"] = plan.memory_id
+        record["content"] = "Slice 6 local-only gated memory write smoke record."
+        return record
+    raise ValueError("agent_memories.jsonl fixture has no records")
+
+
+def assert_memory_write_smoke_records_absent(
+    client: MemoryDbProofSqlClient, plan: MemoryWriteSmokeRecordPlan
+) -> None:
+    id_fields = {"evidence_ref": "evidence_id", "agent_memory": "memory_id"}
+    present = [
+        f"{table}:{raw_id}"
+        for table, raw_id in plan.records_by_table
+        if client.record_exists(table, raw_id, id_field=id_fields[table])
+    ]
+    if present:
+        raise AssertionError(
+            "run-scoped memory write smoke records already exist before write: "
+            + ", ".join(present)
+        )
+
+
+def cleanup_memory_write_smoke_records(
+    client: MemoryDbProofSqlClient, plan: MemoryWriteSmokeRecordPlan
+) -> None:
+    delete_order = (
+        ("agent_memory", (plan.memory_id,), "memory_id"),
+        ("evidence_ref", (plan.evidence_id,), "evidence_id"),
+    )
+    for table, ids, id_field in delete_order:
+        for raw_id in ids:
+            if client.record_exists(table, raw_id, id_field=id_field):
+                client.delete_record(table, raw_id, id_field=id_field)
+    assert_memory_write_smoke_records_absent(client, plan)
