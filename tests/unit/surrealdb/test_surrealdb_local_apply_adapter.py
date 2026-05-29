@@ -501,6 +501,10 @@ def test_makefile_context_import_local_uses_surrealdb_local_adapter() -> None:
     makefile = Path(__file__).parents[3] / "Makefile"
     assert makefile.exists(), "Makefile not found"
     content = makefile.read_text(encoding="utf-8")
+    # Makefile conditional directives (ifeq/else/endif) sit at column 0 inside a
+    # recipe but do NOT terminate the target; they wrap the Windows/POSIX branches
+    # used to derive the deterministic run_id (mirrors context-smoke-db).
+    conditional_directives = ("ifeq", "ifneq", "ifdef", "ifndef", "else", "endif")
     in_target = False
     for line in content.splitlines():
         if line.startswith("context-import-local:"):
@@ -508,6 +512,8 @@ def test_makefile_context_import_local_uses_surrealdb_local_adapter() -> None:
         elif in_target and line.startswith("\t"):
             if "--adapter surrealdb-local" in line:
                 return
+        elif in_target and line.strip().startswith(conditional_directives):
+            continue
         elif in_target and not line.startswith("\t") and line.strip():
             break
     pytest.fail(

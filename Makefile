@@ -407,7 +407,21 @@ context-import-dry-run:
 context-import-local:
 	@echo "=== Context Local Import: Schreiben in lokale SurrealDB ==="
 	@$(PYTHON) tools/surrealdb/local_schema_check.py --secrets-path "$(SECRETS_PATH)"
-	@$(PYTHON) -m tools.surrealdb.context_importer apply --input-dir $(CONTEXT_SNAP_DIR) --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $(shell $(PYTHON) tools/surrealdb/gen_run_id.py) --adapter surrealdb-local --secrets-path "$(SECRETS_PATH)"
+ifeq ($(OS),Windows_NT)
+	@pwsh -NoProfile -Command "$$rid = & '$(PYTHON)' 'tools/surrealdb/gen_run_id.py' '$(CONTEXT_SNAP_DIR)/snapshot.json'; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; & '$(PYTHON)' -m tools.surrealdb.context_importer apply --input-dir '$(CONTEXT_SNAP_DIR)' --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $$rid --adapter surrealdb-local --secrets-path '$(SECRETS_PATH)'; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }"
+else
+	@RUN_ID=$$($(PYTHON) tools/surrealdb/gen_run_id.py $(CONTEXT_SNAP_DIR)/snapshot.json); \
+	$(PYTHON) -m tools.surrealdb.context_importer apply \
+		--input-dir $(CONTEXT_SNAP_DIR) \
+		--surreal-url http://127.0.0.1:8010 \
+		--namespace cdb_context_local \
+		--database cdb_context_intel \
+		--apply --apply-mode local-dev \
+		--config infrastructure/config/surrealdb/context_import.local.example.yaml \
+		--run-id $$RUN_ID \
+		--adapter surrealdb-local \
+		--secrets-path "$(SECRETS_PATH)"
+endif
 
 context-query-smoke:
 	@echo "=== Context Query Smoke (read-only, graceful fail wenn kein Container) ==="

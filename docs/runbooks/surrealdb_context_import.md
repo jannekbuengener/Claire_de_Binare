@@ -91,7 +91,7 @@ Example (local/dev only):
 # example, not production
 python tools/surrealdb/context_indexer.py export-jsonl \
   --scope-config infrastructure/config/surrealdb/context_ingestion_scope.yaml \
-  --output-dir temp/context-index/run \
+  --output temp/context-index/run \
   --format json
 ```
 
