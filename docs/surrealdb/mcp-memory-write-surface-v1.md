@@ -43,6 +43,22 @@ Not implemented in this slice:
 Any future mutation surface requires explicit operator GO, contract evidence, and
 a separate issue/PR — not implied by this design doc.
 
+### Readiness gates (productive audit trail #2730)
+
+Before MCP Phase 2 mutation design proceeds, these gates apply (spec-only on
+`main` until separate implementation issues):
+
+| Gate | Requirement |
+| --- | --- |
+| G0 | [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) landed |
+| G1 | Non-local audit endpoint design (future issue) |
+| G2 | MCP Phase 2 design aligned with T3 audit semantics |
+| G3 | `PERSIST_ALLOWED` code flip — **not** MCP-only |
+| G4 | Productive `agent_memory` write — separate from MCP dry-run |
+
+MCP dry-run (Phase 1) remains default; `MUTATION_ALLOWED = False`. Operator
+checklist: [`productive-memory-write-readiness-runbook-v1.md`](productive-memory-write-readiness-runbook-v1.md).
+
 ## Cross-refs
 
 - Gate: [`memory_write_gate.py`](../../tools/surrealdb/memory_write_gate.py)
@@ -50,6 +66,7 @@ a separate issue/PR — not implied by this design doc.
 - Operator runbook: [`memory-write-path-v1-runbook.md`](memory-write-path-v1-runbook.md)
 - Output contract: [`memory_output_contract.py`](../../tools/mcp/memory_output_contract.py) (#2701)
 - Bridge contract: [`context-mcp-bridge-contract.md`](context-mcp-bridge-contract.md)
+- Productive audit trail: [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) (#2730)
 
 ## Validation
 

@@ -611,6 +611,33 @@ Operator and CI-boundary proof path for #2606 restgaps 1–2 (read + stale scan)
 
 ---
 
+## 22. Slice 8 addendum — Productive memory audit trail spec (#2730)
+
+**Delivered:** governance contract + readiness runbook only. No code change. No
+`PERSIST_ALLOWED` flip. No MCP mutation. No productive persist activation.
+
+| Artifact | Role |
+| --- | --- |
+| `docs/surrealdb/productive-memory-audit-trail-v1.md` | T3 productive audit trail semantics, fail-closed matrix, Human-GO tiers, activation gates G0–G4 |
+| `docs/surrealdb/productive-memory-write-readiness-runbook-v1.md` | Operator evidence pack + #2606 re-audit hook |
+
+### 22.1 Gap status after #2730
+
+| Gap | Before #2730 | After #2730 spec |
+| --- | --- | --- |
+| Productive audit trail semantics | Undocumented BLOCKED | **SPECIFIED (G0); NOT ACTIVATED** |
+| Local `audit_observation` (T2) | Delivered (#2703) | Unchanged |
+| Productive `agent_memory` write | Blocked | Still blocked (T4 / G4) |
+| `PERSIST_ALLOWED` | `False` in code | Unchanged |
+
+Proof matrix row 3 in [`db-runtime-ci-proof-path-v1.md`](db-runtime-ci-proof-path-v1.md)
+updated to **SPECIFIED / NOT ACTIVATED**.
+
+Parent #2606 criterion 6 remains **PARTIAL** until T3 runtime is implemented;
+spec enables parent re-audit per readiness runbook §7.
+
+---
+
 ## Provenance
 
 | Source | Role |

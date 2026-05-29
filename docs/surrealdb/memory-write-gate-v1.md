@@ -181,10 +181,31 @@ pytest tests/unit/surrealdb/test_memory_write_path_v1.py tests/unit/surrealdb/te
 
 ---
 
+## 10. Productive audit trail spec (#2730)
+
+**Issue:** [#2730](https://github.com/jannekbuengener/Claire_de_Binare/issues/2730)  
+**Status:** Spec only — **not activated**
+
+The gate module constant **`PERSIST_ALLOWED = False`** remains the current
+fail-closed line in code. Local T2 paths (§9, Slice 6 §8) do not constitute a
+productive audit trail.
+
+Formal semantics for a future **productive-tier audit trail** (T3) and readiness
+gates G0–G4:
+
+- [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md)
+- [`productive-memory-write-readiness-runbook-v1.md`](productive-memory-write-readiness-runbook-v1.md)
+
+Human-GO tiers (HG-L / HG-P / HG-W) are defined in the contract; local operator
+GO does not authorize productive persist or `PERSIST_ALLOWED` flip.
+
+---
+
 ## Provenance
 
 | Source | Role |
 | --- | --- |
+| `docs/surrealdb/productive-memory-audit-trail-v1.md` | T3 audit trail spec (#2730) |
 | `docs/surrealdb/scoped-agent-memory-model-v1.md` | Write constraints M5–M7 |
 | `docs/surrealdb/context-agent-memory-import-policy-v1.md` | No agent self-GO |
 | `tools/surrealdb/scope_drift_firewall.py` | `human_go_token` pattern |
