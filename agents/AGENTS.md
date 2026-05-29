@@ -22,8 +22,10 @@ in einem separaten externen Doku-Repo gesucht wurde.
 
 ## Cursor Subagents
 
-Cursor IDE helper roles live under `.cursor/agents/`. They are **not** standalone
-authorities; Session Lead and Human Gate retain decision power.
+`.cursor/agents/` is the **Cursor IDE subagent surface** — operational helper
+roles invoked as `/cdb-<name>`. This is **discovery and delegation only**; it
+does not create a new authority tier. Session Lead, Human Gate, and
+`knowledge/governance/CDB_AGENT_POLICY.md` remain authoritative.
 
 | Item | Path |
 | --- | --- |
@@ -31,12 +33,31 @@ authorities; Session Lead and Human Gate retain decision power.
 | Shared contract | `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md` |
 | Subagent files | `.cursor/agents/cdb-*.md` |
 
+**Parent agent enforcement:** The invoking parent must enforce Jannek GO,
+session-start, Single-Writer LOCK (when issue-scoped), Brain Evidence (when
+scope requires), and scope limits before any subagent write or GitHub mutation.
+Subagents return evidence to the parent; they do not own delivery.
+
 **Readonly policy:** only `cdb-ci-debugger`, `cdb-context-intelligence-engineer`,
 `cdb-docs-canon-maintainer`, and `cdb-implementation-engineer` have
-`readonly: false` — and only after Jannek GO, session-start, and LOCK when
-issue-scoped. All other subagents are read-only.
+`readonly: false` in frontmatter — **technical capability only**, not
+autonomous write permission. Effective writes require GO + session-start + LOCK
+(when issue-scoped). All other subagents are read-only regardless of user phrasing.
+
+**GitHub writes:** Subagent-related GitHub mutations (PR create/update, issue
+comments, labels, review actions, merges, branch deletes, workflow dispatch) are
+**`gh` CLI only**. MCP/GitHub API/connectors: read/inspect/dry-run unless a
+separate explicit GO lifts a named action.
+
+**Zone A vs Write-Zone:** Read-only discovery (repo reads, `gh view/list`) is
+allowed without GO. Commits, pushes, and GitHub mutations are Write-Zone per
+`CDB_AGENT_POLICY.md` §4. On conflict, **`CDB_AGENT_POLICY.md` wins** (see
+shared contract § Zone A vs Write-Zone).
 
 Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
+
+Related surfaces (not subagents): `.cursor/skills/` (session skills),
+`.opencode/skills/` (OpenCode), `.codex/cdb_skills/` (Codex).
 
 ## Canonical Domains
 

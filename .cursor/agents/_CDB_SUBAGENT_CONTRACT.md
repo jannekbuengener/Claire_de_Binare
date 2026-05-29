@@ -18,6 +18,31 @@ work. They are **not** standalone authorities:
 
 ---
 
+## Parent agent enforcement
+
+The **parent agent** (Session Lead / invoking operator context) owns gates;
+subagents do not self-authorize.
+
+**Parent MUST enforce before delegating or accepting subagent output:**
+
+1. **Jannek GO** — explicit, scoped GO for any write, GitHub mutation, or
+   delivery action (subagent prompts alone are not GO).
+2. **Session-start** — `.cursor/skills/cdb-session-start/SKILL.md` completed for
+   the write scope when applicable.
+3. **Single-Writer LOCK** — per `knowledge/governance/CDB_AGENT_POLICY.md` §4
+   when issue-scoped writes apply.
+4. **Brain Evidence Gate** — when scope requires it (see below).
+5. **Scope gates** — IN/OUT scope stated; subagent must not expand scope.
+
+**`readonly: false` in frontmatter** means the subagent *can* edit files **only
+after** the parent has confirmed GO + session-start + LOCK (when required). It is
+**not** a free pass; without gates the subagent stays read-only (fail-closed).
+
+Subagents must **STOP** and return the missing gate (GO, LOCK, skill, evidence)
+instead of improvising writes or GitHub actions.
+
+---
+
 ## Cursor Subagent Contract
 
 - Work in your own clean context and return one final, consolidated result to the parent agent.
@@ -50,11 +75,40 @@ Before any analysis, implementation, review, or plan:
 - Live-readiness remains **NO-GO** unless the LR SSOT and explicit human gate say otherwise.
 - Default mode is read-only until Jannek gives a precise GO.
 - No writes, commits, pushes, labels, comments, merges, branch deletes, workflow dispatches, stack changes, or live-mode changes without explicit GO.
-- GitHub writes must use `gh` CLI only. No direct API writes unless explicitly authorized for a narrow gap.
+- **GitHub writes — `gh` CLI only (absolute):** Any repository-mutating or
+  GitHub-side action MUST go through the **`gh` CLI**, including: PR
+  create/update, issue comments, labels, review actions, merges, branch deletes,
+  and workflow dispatch. **No silent substitute** via GitHub REST/GraphQL API,
+  MCP GitHub tools, connectors, or IDE integrations when `gh` can perform the
+  action.
+- **MCP / API / connectors — read-only default for subagents:** GitHub MCP,
+  GitHub API clients, and third-party connectors may be used for **read /
+  inspect / dry-run** only (e.g. `gh pr view`, `gh issue view`, check status).
+  They MUST NOT perform mutating GitHub operations unless Jannek gives a
+  **separate, explicit GO** that names the exact tool and action — and even
+  then, prefer `gh` for the mutation. MCP config mutation is out of scope
+  unless explicitly GO-gated.
 - Direct push to `main` is not an acceptable default path. Use PR-based flow.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
 - If scope grows, checks are red, evidence is missing, or assumptions are unstable: stop and report.
 - Before Docker/infra stack changes, ask Gordon for advice first. If Gordon is unavailable, report `GORDON_NOT_AVAILABLE` and hold changes unless Jannek explicitly overrides.
+
+---
+
+## Zone A vs Write-Zone (`CDB_AGENT_POLICY` precedence)
+
+`knowledge/governance/CDB_AGENT_POLICY.md` is authoritative when subagent text
+or user phrasing conflicts with policy.
+
+| Class | Zone | Subagent behavior |
+| --- | --- | --- |
+| Read-only discovery | Zone A–C (non-mutating) | Allowed without GO: repo reads, `gh` **view/list/status**, analysis, comparisons, plans marked review-only. |
+| Mutating repo/GitHub/infra | Write-Zone (§4 Write-Gates) | Requires Jannek GO + session-start + LOCK (when issue-scoped) + **`gh`-only** for GitHub mutations. |
+| Forbidden | Zone D | Never: custody/tresor, hard limits, canonical policy edits without GO, execution without risk layer, safety bypass. |
+
+**Tension rule:** Subagents must not treat Zone A autonomy as permission to
+commit, push, merge, label, comment on GitHub, dispatch workflows, or mutate
+MCP/runtime/infra. Those are Write-Zone actions. On ambiguity → **STOP** (fail-closed).
 
 ---
 
@@ -152,6 +206,8 @@ DB-backed Memory** (see `agents/OPEN_CODE_AGENTS.md`):
 4. `brain_source=unavailable` → **repo-only fallback**; mark limitations explicitly; no DB-backed claims.
 5. Wave-14 read-only tools: `metadata.source=surrealdb-local` only from real adapter evidence; caller-supplied source fields are not DB evidence (fail-closed).
 6. Do not mutate MCP configuration unless explicitly scoped and GO-gated.
+7. **No MCP GitHub mutation:** MCP tools must not create/update GitHub resources
+   (issues, PRs, comments, labels, merges) for subagents; use `gh` after GO.
 
 ---
 

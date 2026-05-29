@@ -65,6 +65,19 @@ Canon matrix: `docs/meta/WORKING_REPO_CANON.md`.
 - `CURRENT_STATUS.md` is a ledger, not live truth.
 - Board stage `trade-capable` is not Live-Go.
 - No subagent grants merge, deploy, live trading, or Echtgeld GO.
+- **`CDB_AGENT_POLICY.md` wins** on conflict; see shared contract § Zone A vs Write-Zone.
+
+## Write gates (summary)
+
+| Gate | Rule |
+| --- | --- |
+| Parent enforcement | Parent agent enforces Jannek GO, session-start, LOCK, Brain Evidence, scope — not the subagent alone. |
+| `readonly: false` | Technical capability only; fail-closed without GO + session-start + LOCK (when issue-scoped). |
+| GitHub mutations | **`gh` CLI only** — PRs, comments, labels, reviews, merges, branch deletes, workflow dispatch. |
+| MCP / API / connectors | Read / inspect / dry-run only unless separate explicit GO names tool + action. |
+| Zone A discovery | Read-only repo/GitHub inspection allowed; mutating actions = Write-Zone. |
+
+Full rules: [`_CDB_SUBAGENT_CONTRACT.md`](_CDB_SUBAGENT_CONTRACT.md) (§ Parent agent enforcement, § Non-Negotiable Operating Rules, § Zone A vs Write-Zone).
 
 ## Reload
 
