@@ -32,19 +32,24 @@ authorization and memory contract validity without executing persistence.
   → **`unsafe_input`** (handler-level; record body exempt from blanket scan).
 - No SQL client, no adapter import, no `agent_memory` UPSERT.
 
-## Phase 2 (G2 design — #2739)
+## Phase 2 (G2 design — #2739; G3a scaffold — #2741)
 
 Spec: [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md)
 
-**Not implemented on `main`.** G2 defines:
+**G3a (#2741): refusal scaffold implemented on `main` (after merge).** Handler
+`memory_write_intent_tools.py` resolves `operation_mode` and refuses non-dry-run
+modes per G2 (`productive_audit_not_activated`, `local_audit_mcp_not_activated`,
+`agent_memory_write_not_activated`, `hg_p_required`, `operation_mode_invalid`).
+Dry-run path unchanged; registry remains `read_only=True`; no SQL; no
+`PERSIST_ALLOWED` flip.
 
-- `operation_mode` resolution (`dry_run`, `audit_persist_productive`, etc.)
-- MCP refusal contracts for T3 productive audit (`productive_audit_not_activated`)
-- Permission model extensions (registry / PermissionGuard — G3 code)
-- Wiring intent to G1 governed endpoint via future `memory_write_path_productive`
+G2 also defines (not yet implemented):
 
-Any future mutation or registry `read_only=False` change requires G3 maintainer GO,
-contract evidence, and a separate issue/PR — not implied by Phase 1 or G2 docs.
+- Permission model extensions (registry / PermissionGuard — G3b/G3c)
+- Wiring intent to G1 governed endpoint via `memory_write_path_productive` (G3b)
+
+Any future mutation or registry `read_only=False` change requires maintainer GO,
+contract evidence, and a separate issue/PR — not implied by Phase 1, G2, or G3a.
 
 ### Legacy Phase 2 stub (pre-G2)
 
@@ -83,6 +88,7 @@ checklist: [`productive-memory-write-readiness-runbook-v1.md`](productive-memory
 - Productive audit trail: [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) (#2730)
 - G1 endpoint design: [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735)
 - G2 MCP Phase 2 design: [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) (#2739)
+- G3a MCP operation_mode scaffold: #2741 (handler refusal codes; no persist)
 
 ## Validation
 

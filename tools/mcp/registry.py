@@ -1007,7 +1007,17 @@ TOOLS_V0 = [
                     "type": "object",
                     "properties": {
                         "record": {"type": "object"},
+                        "memory_record": {"type": "object"},
                         "authorization": {"type": "object"},
+                        "operation_mode": {
+                            "type": "string",
+                            "enum": [
+                                "dry_run",
+                                "audit_persist_local",
+                                "audit_persist_productive",
+                                "agent_memory_write",
+                            ],
+                        },
                         "dry_run": {"type": "boolean", "default": True},
                     },
                     "required": ["record"],

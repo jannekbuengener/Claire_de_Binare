@@ -1,4 +1,4 @@
-"""Unit tests for cdb_context_memory_write_intent MCP tool — #2704."""
+"""Unit tests for cdb_context_memory_write_intent MCP tool — #2704 / G3a #2741."""
 
 from __future__ import annotations
 
@@ -70,6 +70,94 @@ def test_default_dry_run_returns_gate_envelope() -> None:
     assert result["gate_status"] == "approved_dry_run"
     assert result["gate_envelope"]["persist_allowed"] is False
     assert result["dry_run_only"] is True
+    assert result["operation_mode_resolved"] == "dry_run"
+    assert result["productive_audit_status"] == "not_activated"
+    assert result["mcp_phase"] == "1"
+
+
+@pytest.mark.unit
+def test_memory_record_alias_accepted() -> None:
+    response = handle_cdb_context_memory_write_intent(
+        _request(memory_record=_valid_record(), authorization=_valid_auth())
+    )
+    assert response["status"] == "ok"
+    assert response["result"]["gate_status"] == "approved_dry_run"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("operation_mode", "code", "gate_status"),
+    [
+        (
+            "audit_persist_productive",
+            "productive_audit_not_activated",
+            "blocked_productive_audit_not_implemented",
+        ),
+        (
+            "audit_persist_local",
+            "local_audit_mcp_not_activated",
+            "blocked_local_audit_mcp_not_activated",
+        ),
+        (
+            "agent_memory_write",
+            "agent_memory_write_not_activated",
+            "blocked_agent_memory_write_not_activated",
+        ),
+    ],
+)
+def test_non_dry_run_operation_mode_refused(
+    operation_mode: str, code: str, gate_status: str
+) -> None:
+    response = handle_cdb_context_memory_write_intent(
+        _request(
+            record=_valid_record(),
+            authorization=_valid_auth(),
+            operation_mode=operation_mode,
+        )
+    )
+    assert response["status"] == "refused"
+    assert response["code"] == code
+    assert response["operation_mode_resolved"] == operation_mode
+    assert response["gate_status"] == gate_status
+    assert response["productive_audit_status"] == "not_activated"
+    assert response["mcp_phase"] == "1"
+
+
+@pytest.mark.unit
+def test_audit_persist_productive_hg_l_refuses_hg_p_required() -> None:
+    auth = {**_valid_auth(), "human_go_tier": "HG-L"}
+    response = handle_cdb_context_memory_write_intent(
+        _request(
+            record=_valid_record(),
+            authorization=auth,
+            operation_mode="audit_persist_productive",
+        )
+    )
+    assert response["status"] == "refused"
+    assert response["code"] == "hg_p_required"
+    assert response["gate_status"] == "blocked_hg_p_required"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("invalid_mode", ["  ", "bogus_mode", 123])
+def test_invalid_operation_mode(invalid_mode) -> None:
+    response = handle_cdb_context_memory_write_intent(
+        _request(
+            record=_valid_record(),
+            operation_mode=invalid_mode,
+        )
+    )
+    assert response["status"] == "refused"
+    assert response["code"] == "operation_mode_invalid"
+
+
+@pytest.mark.unit
+def test_audit_persist_local_boolean_flag_still_mutation_blocked() -> None:
+    response = handle_cdb_context_memory_write_intent(
+        _request(record=_valid_record(), audit_persist_local=True)
+    )
+    assert response["status"] == "error"
+    assert response["error"]["code"] == "mutation_blocked_by_default"
 
 
 @pytest.mark.unit

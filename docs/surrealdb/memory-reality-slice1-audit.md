@@ -678,6 +678,29 @@ updated to **DESIGN-READY (G1+G2 MCP) / NOT ACTIVATED**.
 
 Parent #2606 criterion 6 remains **PARTIAL**; G2 design does not close epic.
 
+### 22.4 G3a addendum — MCP operation_mode fail-closed scaffold (#2741)
+
+**Delivered:** Handler-level `operation_mode` resolution and G2 refusal codes in
+`tools/mcp/memory_write_intent_tools.py`. Unit tests cover refusal matrix. Registry
+schema extended; `read_only=True` unchanged. No SQL client, no productive persist,
+no `PERSIST_ALLOWED` flip.
+
+| Mode | MCP behavior (G3a) |
+| --- | --- |
+| `dry_run` (default) | Gate evaluation only (Phase 1 unchanged + phase fields) |
+| `audit_persist_productive` | `status: refused`, `productive_audit_not_activated` |
+| `audit_persist_local` | `status: refused`, `local_audit_mcp_not_activated` |
+| `agent_memory_write` | `status: refused`, `agent_memory_write_not_activated` |
+| Invalid mode | `status: refused`, `operation_mode_invalid` |
+
+| Gap | After G3a |
+| --- | --- |
+| `memory_write_path_productive` module | Not implemented (G3b) |
+| HG-P operator proof / governed endpoint | Not implemented (G3c) |
+| `PERSIST_ALLOWED` flip | Unchanged (`False`) |
+
+Parent #2606 criterion 6 remains **PARTIAL**; G3a scaffold does not close epic.
+
 ---
 
 ## Provenance

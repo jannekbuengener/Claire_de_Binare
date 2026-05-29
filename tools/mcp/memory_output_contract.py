@@ -62,7 +62,7 @@ def validate_memory_output_contract(response: Mapping[str, Any]) -> list[str]:
         if field not in response:
             violations.append(f"missing required envelope field: {field}")
 
-    if response.get("status") == "error":
+    if response.get("status") in ("error", "refused"):
         return violations
 
     metadata = response.get("metadata")
