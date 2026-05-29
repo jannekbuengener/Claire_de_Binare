@@ -50,7 +50,7 @@ menschliche Review oder gesteuerte Agenten-Folgearbeit — **keine autonomen Akt
 
 ## 3. Typ-Katalog (`observation_type`)
 
-Exakt 8 kanonische Typen. Kein freier String außerhalb dieses Katalogs.
+Exakt 9 kanonische Typen. Kein freier String außerhalb dieses Katalogs.
 
 | Typ | Beschreibung | Typischer Severity |
 |---|---|---|
@@ -62,6 +62,7 @@ Exakt 8 kanonische Typen. Kein freier String außerhalb dieses Katalogs.
 | `decision_without_evidence` | `decision_event` ohne `evidence_refs` und ohne `human_go` | `warning` / `blocking` |
 | `conflicting_decision` | Zwei `decision_event`-Records mit widersprüchlichen Antworten ohne Supersession-Chain | `warning` / `blocking` |
 | `scope_risk` | Erkannte Scope-Drift oder Scope-Überschreitung ohne autorisierte Erweiterung | `warning` / `blocking` |
+| `memory_write_gate_evaluation` | Human-GO memory write gate evaluation (dry-run or blocked) | `info` / `blocking` |
 
 ---
 
@@ -111,7 +112,7 @@ Enforcement kommt in einem späteren Schema-Version (v1+).
 | A4 | Kein Runtime-Write als direkte Folge einer Observation. |
 | A5 | Kein Memory-Write als direkte Folge einer Observation. |
 | A6 | Keine automatische Issue-Erzeugung auf GitHub. |
-| A7 | `observation_type` muss aus dem 8-Typen-Katalog (§3) stammen. |
+| A7 | `observation_type` muss aus dem 9-Typen-Katalog (§3) stammen. |
 | A8 | `severity` muss aus dem 3-Werte-Katalog (§4) stammen. |
 | A9 | `status` muss aus dem 4-Werte-Katalog (§5) stammen. |
 | A10 | Observations werden nicht gelöscht — `status: superseded` oder `resolved` für Ablösung. |

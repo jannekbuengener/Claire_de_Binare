@@ -154,6 +154,33 @@ pytest tests/local/surrealdb/test_memory_db_write_smoke.py -q
 
 ---
 
+## 9. Write Path v1 — operator orchestration (#2703)
+
+**Issue**: [#2703](https://github.com/jannekbuengener/Claire_de_Binare/issues/2703)  
+**Status**: Dry-run default; optional localhost `audit_observation` persist.
+
+| Artifact | Path |
+| --- | --- |
+| Write path orchestrator | `tools/surrealdb/memory_write_path_v1.py` |
+| Audit materializer | `tools/surrealdb/audit_observation_from_gate.py` |
+| Operator runbook | `docs/surrealdb/memory-write-path-v1-runbook.md` |
+| Unit tests | `tests/unit/surrealdb/test_memory_write_path_v1.py` |
+
+Properties:
+
+- Default mode `dry_run`: gate evaluation only, zero SQL
+- `audit_persist_local` requires `CDB_PERSIST_MEMORY_WRITE_GATE_AUDIT=1` plus gate pass
+- Persists **audit_observation only** — never `agent_memory`
+- `PERSIST_ALLOWED` unchanged (`False`)
+
+Validation:
+
+```bash
+pytest tests/unit/surrealdb/test_memory_write_path_v1.py tests/unit/surrealdb/test_audit_observation_from_gate.py -v
+```
+
+---
+
 ## Provenance
 
 | Source | Role |

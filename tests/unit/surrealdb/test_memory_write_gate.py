@@ -5,6 +5,7 @@ No DB. No MCP. No persistence. Harness must not invoke write executors.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
@@ -173,3 +174,13 @@ def test_harness_does_not_call_write_executor_on_pass() -> None:
         now=FIXED_NOW,
     )
     executor.assert_not_called()
+
+
+@pytest.mark.unit
+def test_envelope_never_contains_raw_human_go_token() -> None:
+    token = "GO-2026-05-29-slice5-secret"
+    auth = _valid_auth(human_go_token=token)
+    result = evaluate_memory_write_gate(_valid_record(), auth, now=FIXED_NOW)
+    serialized = json.dumps(result, default=str)
+    assert token not in serialized
+    assert '"human_go_token"' not in serialized

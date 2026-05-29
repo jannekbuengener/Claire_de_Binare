@@ -572,6 +572,37 @@ Proven (local, opt-in): gated UPSERT → `prove_agent_memory_db_read_v1` scope m
 
 ---
 
+## 21. Slice 7 addendum — Memory Write Path v1 (#2703)
+
+**Delivered:** operator orchestration, audit_observation materialization, local audit persist (env-gated), runbook. No `agent_memory` write via path v1. `PERSIST_ALLOWED` unchanged.
+
+### 21.1 Modules
+
+| Artifact | Role |
+| --- | --- |
+| `tools/surrealdb/memory_write_path_v1.py` | `run_memory_write_path_v1()` dry_run + audit_persist_local |
+| `tools/surrealdb/audit_observation_from_gate.py` | Gate audit → `audit_observation` row |
+| `docs/surrealdb/memory-write-path-v1-runbook.md` | Operator runbook + evidence template |
+
+### 21.2 Tests
+
+| File | Marker | CI |
+| --- | --- | --- |
+| `tests/unit/surrealdb/test_memory_write_path_v1.py` | `unit` | yes |
+| `tests/unit/surrealdb/test_audit_observation_from_gate.py` | `unit` | yes |
+
+Proven: dry_run zero SQL; audit persist env-gated; blocked without GO; no raw token in gate envelope; audit_observation UPSERT only.
+
+### 21.3 Remaining gaps after Slice 7
+
+| Gap | Follow-up |
+| --- | --- |
+| MCP write surface (dry-run intent tool) | #2704 |
+| Parent closure audit | #2705 |
+| Productive memory write / PERSIST_ALLOWED flip | Separate maintainer GO |
+
+---
+
 ## Provenance
 
 | Source | Role |
