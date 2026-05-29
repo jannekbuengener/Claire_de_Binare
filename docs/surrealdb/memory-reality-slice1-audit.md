@@ -405,6 +405,57 @@ Canon names enforced: `created_by` (NOT `agent_id`), `source_refs` (NOT `source_
 
 ---
 
+## 18. Slice 4 addendum — DB-backed memory read proof (#2606)
+
+**Delivered (PR pending):** read-only proof helper, contract-compliant fixtures, opt-in local smoke.
+
+### 18.1 Proof helper
+
+| Artifact | Role |
+| --- | --- |
+| `tools/surrealdb/memory_db_read_proof.py` | `prove_agent_memory_db_read_v1()` — adapter SELECT → strip importer metadata → `validate_memory_record(strict=False)` → `classify_memory_freshness` → optional `read_memory_v1` cross-check |
+
+Evidence bundle fields: `source` / `adapter_status`, `record_count`, `memory_ids`, aggregated `evidence_refs`, per-record `freshness`, `limitations`, read-only `approval_semantics`.
+
+### 18.2 Fixtures and local gate
+
+| Artifact | Role |
+| --- | --- |
+| `tests/fixtures/surrealdb/memory_db_proof/` | Contract-compliant `agent_memories.jsonl` (fresh + expired) + `evidence_refs.jsonl`; `memory_id` via `generate_memory_id()` |
+| `tests/local/surrealdb/memory_db_proof_helpers.py` | Run-scoped materialize/seed/cleanup (Wave-14 pattern, local-dev only) |
+| Env gate | `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE=1` (separate from Wave-14 smoke) |
+
+Local proof command:
+
+```powershell
+$env:CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE = "1"
+pytest -v -m local_only tests/local/surrealdb/test_memory_db_read_proof.py
+```
+
+### 18.3 Tests
+
+| File | Marker | CI |
+| --- | --- | --- |
+| `tests/unit/surrealdb/test_memory_db_read_proof.py` | `unit` | yes (mock adapter) |
+| `tests/local/surrealdb/test_memory_db_read_proof.py` | `local_only` | no (opt-in) |
+
+Proven behaviors: DB read → `source=surrealdb-local` (helper + MCP), contract validation pass, UUIDv5 `memory_id` match, freshness fresh vs expired, forged caller `source` ignored on MCP path.
+
+### 18.4 No-changes list (Slice 4)
+
+- No memory write feature, no MCP write, no schema/docker changes
+- Wave-14 pre-contract fixture unchanged
+- LR remains NO-GO
+
+### 18.5 Remaining gaps after Slice 4
+
+| Gap | Follow-up |
+| --- | --- |
+| Human-GO write gate design | Slice 5 / separate Human-GO slice |
+| Memory write implementation | After Human-GO + write gate |
+
+---
+
 ## Provenance
 
 | Source | Role |

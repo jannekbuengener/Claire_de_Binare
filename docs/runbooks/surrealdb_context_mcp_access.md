@@ -693,6 +693,17 @@ Tool coverage in the real local smoke:
 - `cdb_context_decision_history` → seeded `decision_event`
 - `cdb_context_decision_replay` → seeded `decision_event`
 
+### Memory contract DB read proof (#2606 Slice 4)
+
+Separate opt-in gate for contract-compliant `agent_memory` rows (not the pre-contract Wave-14 fixture):
+
+```powershell
+$env:CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE = "1"
+pytest -v -m local_only tests/local/surrealdb/test_memory_db_read_proof.py
+```
+
+Requires the same local SurrealDB preflight as Wave-14 (`context_query.local.yaml`, secrets, `127.0.0.1:8010` health). Not part of CI by default.
+
 Deterministic repo-only example with explicit session state inputs:
 
 ```python
