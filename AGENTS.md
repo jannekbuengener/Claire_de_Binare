@@ -272,12 +272,21 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 
 ---
 
-## Cursor Cloud specific instructions
+## Cursor Cloud Agent environment (remote only)
+
+These notes apply only to Cursor Cloud / remote agent environments. Local Windows,
+Linux, and Docker-based operator workflows differ — see `CLAUDE.md` and Makefile
+targets.
 
 ### Environment
 
-- Python 3.12 is available at `/usr/bin/python3`. Tools (`pytest`, `ruff`, `black`, etc.) install to `/home/ubuntu/.local/bin` — ensure this is on PATH: `export PATH="/home/ubuntu/.local/bin:$PATH"`.
-- No Docker is installed by default. Unit and integration tests (`make test-unit`, `make test-integration`) run without containers. E2E tests (`make test-e2e`) require the BLUE+RED Docker stack and are not runnable in this environment without Docker setup.
+- In default Cursor Cloud images, Python 3.12 is at `/usr/bin/python3`; pip user
+  tools install to `/home/ubuntu/.local/bin` — add to PATH:
+  `export PATH="/home/ubuntu/.local/bin:$PATH"`.
+- Docker is not available by default. Unit and integration tests
+  (`make test-unit`, `make test-integration`) run without containers. E2E
+  (`make test-e2e`) requires the BLUE+RED stack and is not runnable here without
+  Docker setup.
 
 ### Running Tests (CI mode, no containers)
 
@@ -288,12 +297,19 @@ OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pa
 ### Linting
 
 - `ruff check .` — must pass (CI-required)
-- `black --check .` — CI only checks changed files, not the whole repo. Many existing files are not formatted; do not reformat files you did not change.
+- Black: CI runs `black --check` on changed `services/` and `tests/` `.py` files
+  only. Many existing files are not formatted; do not reformat files you did not
+  change.
 
 ### Services
 
-All services under `services/` require Redis and Postgres (provided by Docker in normal operation). In Cloud Agent mode without Docker, verify service logic through unit/integration tests rather than starting services directly.
+All services under `services/` require Redis and Postgres (provided by Docker in
+normal operation). In Cloud Agent mode without Docker, verify service logic
+through unit/integration tests rather than starting services directly.
 
 ### Secrets
 
-Services expect secrets from a directory (default `~/Documents/.secrets/.cdb/`). For testing, this path does not need to exist — unit/integration tests mock all external dependencies.
+Services expect secrets from a directory (default `~/Documents/.secrets/.cdb/`).
+For testing, this path does not need to exist — unit/integration tests mock all
+external dependencies. LR remains NO-GO; no live trading or real credentials in
+Cloud Agent sessions.
