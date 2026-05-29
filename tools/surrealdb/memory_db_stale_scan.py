@@ -102,9 +102,7 @@ def _wave16_memory_ttl_findings(
         as_of=as_of,
     )
     memory_findings = [
-        f
-        for f in scan_result.findings
-        if f.stale_type == "memory_ttl_expired"
+        f for f in scan_result.findings if f.stale_type == "memory_ttl_expired"
     ]
     return {
         "finding_count": len(memory_findings),
