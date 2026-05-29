@@ -653,8 +653,29 @@ def _tombstone_meta(include_tombstoned: bool) -> dict[str, Any]:
     }
 
 
+_SURQL_STRING_LITERAL_RE = re.compile(
+    r'"(?:\\.|[^"\\])*"' + r"|" + r"'(?:\\.|[^'\\])*'"
+)
+
+
 def _normalize_statement(statement: str) -> str:
-    return re.sub(r"\s+", " ", statement.strip()).upper()
+    """Collapse whitespace and uppercase keywords for classifier guards only.
+
+    String literal contents are preserved so write-keyword checks and
+    classification metadata do not mutate user filter values.
+    """
+    collapsed = re.sub(r"\s+", " ", statement.strip())
+    if not collapsed:
+        return collapsed
+
+    parts: list[str] = []
+    last = 0
+    for match in _SURQL_STRING_LITERAL_RE.finditer(collapsed):
+        parts.append(collapsed[last : match.start()].upper())
+        parts.append(match.group(0))
+        last = match.end()
+    parts.append(collapsed[last:].upper())
+    return "".join(parts)
 
 
 def _secret_key_segments(key: str) -> set[str]:

@@ -6,7 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from tools.surrealdb.context_query import WriteDeniedError, classify_statement, load_config
+from tools.surrealdb.context_query import (
+    WriteDeniedError,
+    build_artifact_query,
+    build_symbol_query,
+    build_trace_query,
+    classify_statement,
+    load_config,
+)
 
 
 EXAMPLE_CONFIG = Path("infrastructure/config/surrealdb/context_query.local.example.yaml")
@@ -130,3 +137,48 @@ def test_whitespace_and_case_variants_are_stable() -> None:
 def test_transaction_migration_apply_flows_are_blocked(statement: str) -> None:
     with pytest.raises(WriteDeniedError):
         classify_statement(statement)
+
+
+@pytest.mark.unit
+def test_built_artifact_query_preserves_file_type_literal_case() -> None:
+    query = build_artifact_query(file_type="md", limit=10)
+    result = classify_statement(query)
+
+    assert result.allowed is True
+    assert 'file_type = "md"' in query
+    assert 'FILE_TYPE = "md"' in result.normalized
+    assert '"MD"' not in result.normalized
+
+
+@pytest.mark.unit
+def test_built_trace_query_preserves_source_path_literal_case() -> None:
+    query = build_trace_query(source_path="docs/", limit=10)
+    result = classify_statement(query)
+
+    assert result.allowed is True
+    assert 'source_path CONTAINS "docs/"' in query
+    assert 'SOURCE_PATH CONTAINS "docs/"' in result.normalized
+    assert '"DOCS/"' not in result.normalized
+
+
+@pytest.mark.unit
+def test_built_symbol_query_name_apply_is_read_only() -> None:
+    query = build_symbol_query(name="apply", limit=10)
+    result = classify_statement(query)
+
+    assert result.allowed is True
+    assert 'name CONTAINS "apply"' in query
+    assert 'NAME CONTAINS "apply"' in result.normalized
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    "literal",
+    ["update", "delete", "create", "insert"],
+)
+def test_write_keywords_inside_string_literals_are_allowed(literal: str) -> None:
+    statement = f'SELECT * FROM doc_chunk WHERE name CONTAINS "{literal}"'
+    result = classify_statement(statement)
+
+    assert result.allowed is True
+    assert f'"{literal}"' in result.normalized
