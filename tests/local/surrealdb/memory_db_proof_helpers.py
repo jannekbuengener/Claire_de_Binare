@@ -491,6 +491,8 @@ def materialize_memory_write_smoke_memory_record(
         record["evidence_refs"] = [plan.evidence_id]
         record["memory_id"] = plan.memory_id
         record["content"] = "Slice 6 local-only gated memory write smoke record."
+        for field in _JSONL_STRIP_FIELDS:
+            record.pop(field, None)
         return record
     raise ValueError("agent_memories.jsonl fixture has no records")
 
