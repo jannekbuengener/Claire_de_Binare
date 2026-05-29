@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `f158822f`; PR #2708 stale scan; PR #2699 ledger; PR #2698 harness fix; PR #2696 Slice 6 write-smoke harness; PR #2693 Slice 5 gate)
+- **main**: green (HEAD `a948554b`; PR #2711 MCP write intent; PR #2710 write path v1; PR #2709 Slice 5 verify; PR #2708 stale scan; PR #2701 output contract)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -22,7 +22,8 @@
 
 ## Session Ledger (historical, not active focus)
 
-- **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. Next: #2703 (write path v1), #2704 (MCP write design). #2606 remains OPEN. LR NO-GO.
+- **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. #2606 remains OPEN. LR NO-GO.
+- **Merged (Session 2026-05-29, #2606 Memory Write Path Campaign)**: PR #2710 (`1580a8cb`) — Slice 7 write path v1: `memory_write_path_v1.py`, `audit_observation_from_gate.py`, operator runbook, audit type `memory_write_gate_evaluation`, 26 unit tests (path + materializer + gate token redaction). PR #2711 (`a948554b`) — MCP dry-run write surface: `cdb_context_memory_write_intent`, registry/bridge/guard, design doc, 11 unit tests. Closes #2703/#2704. #2606 campaign comment + #2705 readiness in session log. `PERSIST_ALLOWED` unchanged; no productive agent_memory write; LR NO-GO. Session log: `knowledge/logs/sessions/2026-05-29-2606-memory-write-path-and-mcp-surface.md`.
 - **Merged (2026-05-29)**: #2646 — Cursor Cloud remote-only AGENTS.md overlay (e93317d2); rebase + scoping rework, required CI green.
 - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
 - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
