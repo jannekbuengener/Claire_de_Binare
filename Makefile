@@ -292,11 +292,18 @@ endif
 
 context-down:
 	@echo "Stopping SurrealDB context sidecar (BLUE/RED untouched)..."
+ifeq ($(OS),Windows_NT)
+	@pwsh -NoProfile -Command "\
+	$$sp = if ($$env:SECRETS_PATH) { $$env:SECRETS_PATH } else { Join-Path $$env:USERPROFILE 'Documents\.secrets\.cdb' }; \
+	$$env:SECRETS_PATH = $$sp; \
+	docker compose -f 'infrastructure/compose/surrealdb.yml' -f 'infrastructure/compose/surrealdb-dev.yml' down 2>&1 | Out-Null"
+else
 	@SECRETS_PATH=$${SECRETS_PATH:-$$HOME/Documents/.secrets/.cdb} \
 	 docker compose \
 	  -f infrastructure/compose/surrealdb.yml \
 	  -f infrastructure/compose/surrealdb-dev.yml \
 	  down 2>/dev/null || true
+endif
 	@echo "[OK] cdb_surrealdb stopped."
 
 ifeq ($(OS),Windows_NT)
@@ -434,16 +441,21 @@ context-smoke-db: context-env-check
 	@echo "--- Schritt 2: Scan (Snapshot + JSONL erzeugen) ---"
 	$(MAKE) context-scan CONTEXT_SCOPE_CONFIG=infrastructure/config/surrealdb/context_ingestion_scope.smoke.yaml
 	@echo "--- Schritt 3: Import (echter SurrealDB-Adapter, fail-closed) ---"
-	@$(PYTHON) -m tools.surrealdb.context_importer apply \
+ifeq ($(OS),Windows_NT)
+	@pwsh -NoProfile -Command "$$rid = & '$(PYTHON)' 'tools/surrealdb/gen_run_id.py' '$(CONTEXT_SNAP_DIR)/snapshot.json'; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; & '$(PYTHON)' -m tools.surrealdb.context_importer apply --input-dir '$(CONTEXT_SNAP_DIR)' --surreal-url http://127.0.0.1:8010 --namespace cdb_context_local --database cdb_context_intel --apply --apply-mode local-dev --config infrastructure/config/surrealdb/context_import.local.example.yaml --run-id $$rid --adapter surrealdb-local --secrets-path '$(SECRETS_PATH)'; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }"
+else
+	@RUN_ID=$$($(PYTHON) tools/surrealdb/gen_run_id.py $(CONTEXT_SNAP_DIR)/snapshot.json); \
+	$(PYTHON) -m tools.surrealdb.context_importer apply \
 		--input-dir $(CONTEXT_SNAP_DIR) \
 		--surreal-url http://127.0.0.1:8010 \
 		--namespace cdb_context_local \
 		--database cdb_context_intel \
 		--apply --apply-mode local-dev \
 		--config infrastructure/config/surrealdb/context_import.local.example.yaml \
-		--run-id $(shell $(PYTHON) tools/surrealdb/gen_run_id.py $(CONTEXT_SNAP_DIR)/snapshot.json) \
+		--run-id $$RUN_ID \
 		--adapter surrealdb-local \
 		--secrets-path "$(SECRETS_PATH)"
+endif
 	@echo "--- Schritt 4: Query-Smoke (hard, >= 1 Record, fail-closed) ---"
 	@$(PYTHON) -m tools.surrealdb.context_query \
 		--adapter surrealdb-local \

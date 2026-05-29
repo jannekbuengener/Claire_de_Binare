@@ -44,7 +44,7 @@ def _read_makefile() -> str:
 
 
 def _lines_for_target(content: str, target: str) -> list[str]:
-    """Return all indented recipe lines under a Makefile target."""
+    """Return recipe and conditional lines under a Makefile target."""
     lines = content.splitlines()
     in_target = False
     recipe: list[str] = []
@@ -55,10 +55,13 @@ def _lines_for_target(content: str, target: str) -> list[str]:
         if in_target:
             if line.startswith("\t"):
                 recipe.append(line)
+            elif line.startswith("ifeq ") or line.startswith("else") or line.startswith("endif"):
+                recipe.append(line)
             elif line.strip() == "" or line.startswith("#"):
                 continue
+            elif line and not line.startswith("\t") and ":" in line.split()[0]:
+                break
             else:
-                # New non-indented line = new target or variable; stop.
                 break
     return recipe
 
@@ -375,9 +378,24 @@ def test_makefile_context_smoke_db_run_id_uses_gen_run_id() -> None:
     assert "gen_run_id.py" in recipe_text, (
         "gen_run_id.py not found in context-smoke-db recipe — required for Windows compat"
     )
-    assert "$$($(PYTHON)" not in recipe_text, (
+    assert "$$($(PYTHON) -c" not in recipe_text, (
         "Shell command substitution '$$($(PYTHON) -c ...)' still present in "
         "context-smoke-db — breaks cmd.exe"
+    )
+
+
+@pytest.mark.unit
+def test_makefile_context_smoke_db_run_id_not_parse_time_shell() -> None:
+    """run-id must be resolved after context-scan, not via parse-time $(shell ...) (#2603)."""
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-smoke-db")
+    recipe_text = "\n".join(recipe)
+    assert (
+        "$(shell $(PYTHON) tools/surrealdb/gen_run_id.py $(CONTEXT_SNAP_DIR)/snapshot.json)"
+        not in recipe_text
+    ), (
+        "parse-time $(shell gen_run_id.py snapshot.json) causes run_id_mismatch "
+        "after context-scan refreshes snapshot.json"
     )
 
 
