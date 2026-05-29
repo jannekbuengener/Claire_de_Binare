@@ -65,6 +65,19 @@ The following are explicitly out of scope for this system:
 - **Output**: `StaleKnowledgeScanResult` containing `findings`, `blocking_count`,
   `severity_summary`, `recommended_refresh`, and `guardrails`.
 
+### 3.1.1 DB-backed memory stale scan — `scan_agent_memory_stale_v1`
+
+- **Module**: `tools/surrealdb/memory_db_stale_scan.py`
+- **Schema version**: `memory-db-stale-scan/v1`
+- **API**: `scan_agent_memory_stale_v1(adapter, scope, limit=200, now=None) → dict`
+- **Read-only**. SELECT from `agent_memory` via a local SurrealDB adapter only;
+  classifies rows with `classify_memory_freshness`; optionally bridges expired rows
+  into Wave-16 `memory_ttl_expired` findings. No writes. No auto-fix.
+- **Scope**: complements §3.1 bundle scan (#2702); the bundle path above is unchanged.
+- **Evidence**: unit mocks in CI; opt-in local proof via
+  `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE=1` and
+  `tests/local/surrealdb/test_memory_db_stale_scan.py`.
+
 ### 3.2 CLI — `stale_context_cli.py`
 
 - **Module**: `tools/surrealdb/stale_context_cli.py`
