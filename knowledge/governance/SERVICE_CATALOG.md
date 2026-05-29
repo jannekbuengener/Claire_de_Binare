@@ -172,10 +172,23 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 
 ---
 
+## Stack-Verification (kanonisch)
+
+| Pfad | Erwartung | Hinweis |
+|------|-----------|---------|
+| `tools/verify_stack.ps1` | 10 Services (BLUE+RED-Subset) | Default `$IncludeLogging = $false`; Loki/Promtail leben in `logging.yml`, nicht im Standard-Start |
+| `tools/verify_stack.ps1 -IncludeLogging:$true` | +2 OVERLAY-Services | Nur wenn `logging.yml`-Overlay aktiv ist |
+| `.\tools\cdb.ps1 stack verify` | Front Door zu `verify_stack.ps1` | Gleiche Semantik wie oben |
+| `make docker-health` | Container-Health via Makefile | Windows-kompatibel (PowerShell `Select-String`, kein `grep`) |
+
+Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
+
 ## Prüf-Checkliste (bei jedem Stack-Start)
 
 - [ ] Alle AKTIV-Services laufen (`docker ps`)
 - [ ] Alle Services "healthy" (keine "unhealthy" oder "starting")
+- [ ] `tools/verify_stack.ps1` oder `make docker-health` ohne unerwartete Missing/Unhealthy
+- [ ] OVERLAY-Services (Loki/Promtail) nur geprueft, wenn Overlay bewusst gestartet (`-IncludeLogging:$true`)
 - [ ] GAP-Services bewusst nicht gestartet (dokumentiert)
 - [ ] BEREIT-Services bewusst deaktiviert (Begründung aktuell)
 - [ ] Keine unbekannten Container im Stack
@@ -203,3 +216,4 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, ARVP gate, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation und Audit-Komponenten, keine Runtime-Services im BLUE/RED-Stack. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-04-26 | PRs #1944/#1947 Nachzug: `primary_breakout_v1` nutzt zeitbasierte Lookback-Semantik (SignalEngine). `strategy_backtest_runner` implementiert opt-in Gate-Trace (JSONL); ARVP Replay CLI exponiert/forwarded `--gate-trace-path`. (Issues #1945/#1948) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Service (Delta-Counter + lazy `mexc_pb`-Import) und Postgres-Exporter-DSN/Secret-Wiring im RED-Stack nachgezogen (Issues #2454/#2456) | Codex |
+| 2026-05-29 | PR #2670/#2671 Nachzug: Stack-Verification-Tabelle (`verify_stack.ps1` Default ohne Logging-Overlay, `-IncludeLogging:$true` opt-in, Windows-`make docker-health`) ergänzt (Issue #2671) | Codex |

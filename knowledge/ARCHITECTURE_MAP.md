@@ -68,7 +68,7 @@ Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanon
 
 ### Logging Overlay (logging.yml) — separates Overlay, nicht Teil des Standard-BLUE/RED-Starts
 
-Aktivierung: `docker compose -f compose.blue.yml -f logging.yml up -d`
+Aktivierung: `docker compose -f infrastructure/compose/compose.blue.yml -f infrastructure/compose/logging.yml up -d`
 
 | Service | Container | Compose-Datei |
 |---------|-----------|---------------|
@@ -91,6 +91,16 @@ docker compose -f infrastructure/compose/compose.red.yml up -d
 
 # Schnellcheck
 docker ps --filter "name=cdb_" --format "table {{.Names}}\t{{.Status}}"
+
+# Kanonischer Stack-Verify (10 Services, BLUE+RED-Subset; Logging-Overlay standardmaessig aus)
+pwsh -NoProfile -File tools/verify_stack.ps1
+# Optional mit Loki/Promtail, wenn logging.yml laeuft:
+pwsh -NoProfile -File tools/verify_stack.ps1 -IncludeLogging:$true
+# Front Door:
+.\tools\cdb.ps1 stack verify
+
+# Makefile-Health (Windows-kompatibel via PowerShell-Filter statt grep)
+make docker-health
 ```
 
 ### Erwarteter Output (BLUE + RED healthy)
@@ -248,3 +258,4 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-23 | PR #1891 Nachzug: ARVP Operator-Facing Dataset Layer finalisiert (file\|db modes, db_dataset_window format, source-aware paths, legacy naming entfernt). CLI-Naming: run_accelerated_shadow_replay → run_arvp_replay (Issue #1892) | Codex |
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |
+| 2026-05-29 | PR #2670/#2671 Nachzug: `verify_stack.ps1` Default ohne Logging-Overlay; `-IncludeLogging:$true` fuer Loki/Promtail; Logging-Aktivierungspfad auf `infrastructure/compose/` praezisiert; Windows-`make docker-health` ergaenzt (Issue #2671) | Codex |
