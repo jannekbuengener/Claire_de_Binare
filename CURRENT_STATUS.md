@@ -10,9 +10,8 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `c147f947`; Follow-up Batch PRs #2670–#2673 gemergt)
+- **main**: green (HEAD `e93317d2`; PR #2646 merged — Cursor Cloud AGENTS.md overlay)
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #2646 (Draft/HOLD — Cursor Cloud AGENTS.md; nicht Teil der abgeschlossenen Plan-GO-Queue)
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
   - #2289 (Security Alert Readout Epic — OPEN)
@@ -23,7 +22,7 @@
 
 ## Session Ledger (historical, not active focus)
 
-- **Merged (Session 3, 2026-03-22)**: #1226 P5 prestart normalization (df169f4)
+- **Merged (2026-05-29)**: #2646 — Cursor Cloud remote-only AGENTS.md overlay (e93317d2); rebase + scoping rework, required CI green.
 - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
 - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
 - **Merged (Session 7, 2026-03-26)**: #1266/#1267 — execErrState: KeepLast fix (216d0eb), geschlossen 2026-03-27; #1282/#1283 disk-check + pointer robustness (08f7e7b), geschlossen 2026-03-27.
