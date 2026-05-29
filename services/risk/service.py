@@ -775,14 +775,13 @@ class RiskManager:
     def connect_redis(self):
         """Redis-Verbindung"""
         try:
-            self.redis_client = redis.Redis(
+            self.redis_client = create_redis_client(
                 host=self.config.redis_host,
                 port=self.config.redis_port,
                 password=self.config.redis_password,
                 db=self.config.redis_db,
                 decode_responses=True,
             )
-            self.redis_client.ping()
             logger.info(
                 f"Redis verbunden: {self.config.redis_host}:{self.config.redis_port}"
             )
@@ -809,17 +808,17 @@ class RiskManager:
             self._envelope_publisher = None
             return
 
+        if self.redis_client is None:
+            logger.error("Envelope emission requires an active Redis client")
+            self._envelope_redis_client = None
+            self._envelope_publisher = None
+            return
+
         try:
             from core.replay.emitter import configure_envelope_emission
             from core.replay.publisher import EnvelopePublisher
 
-            envelope_client = create_redis_client(
-                host=self.config.redis_host,
-                port=self.config.redis_port,
-                password=self.config.redis_password,
-                db=self.config.redis_db,
-                decode_responses=True,
-            )
+            envelope_client = self.redis_client
             mode = os.getenv("CDB_ENVELOPE_REDIS_MODE", "stream").lower()
             if mode != "pubsub":
                 mode = "stream"

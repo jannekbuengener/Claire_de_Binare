@@ -30,6 +30,7 @@ def test_setup_envelope_emitter_off_does_not_create_client(monkeypatch):
     sys.modules.pop("core.replay.publisher", None)
 
     manager = RiskManager()
+    manager.redis_client = MagicMock()
     called = False
 
     def fake_create(**kwargs):
@@ -51,11 +52,11 @@ def test_setup_envelope_emitter_off_does_not_create_client(monkeypatch):
 def test_setup_envelope_emitter_on_pubsub(monkeypatch):
     manager = RiskManager()
     client = MagicMock()
+    manager.redis_client = client
     monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_MODE", "PuBSub")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_STREAM", "stream.envelopes")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_CHANNEL", "channel.envelopes")
-    monkeypatch.setitem(_SVC_GLOBALS, "create_redis_client", lambda **kwargs: client)
 
     manager._setup_envelope_emitter()
 
@@ -80,9 +81,9 @@ def test_setup_envelope_emitter_on_pubsub(monkeypatch):
 def test_setup_envelope_emitter_invalid_mode_defaults_to_stream(monkeypatch):
     manager = RiskManager()
     client = MagicMock()
+    manager.redis_client = client
     monkeypatch.setenv("CDB_ENVELOPE_EMISSION", "1")
     monkeypatch.setenv("CDB_ENVELOPE_REDIS_MODE", "INVALID")
-    monkeypatch.setitem(_SVC_GLOBALS, "create_redis_client", lambda **kwargs: client)
 
     manager._setup_envelope_emitter()
 

@@ -310,6 +310,18 @@ All services under `services/` require Redis and Postgres (provided by Docker in
 normal operation). In Cloud Agent mode without Docker, verify service logic
 through unit/integration tests rather than starting services directly.
 
+### Redis (message bus)
+
+- **Runtime services** must use `create_redis_client` from `core.utils.redis_client`
+  (shared `ConnectionPool` per host/port/db/TLS config). Do not open ad-hoc
+  `redis.Redis()` connections in long-lived service processes.
+- **One client per service** where possible: pub/sub, streams, and envelope emission
+  should reuse the same pool-backed client (see `services/risk/service.py`).
+- **Cache keys / streams**: prefer consistent prefixes (`cdb:` for streams,
+  dotted channel names for pub/sub) and TTLs on ephemeral cache data.
+- Cursor’s **Redis plugin** applies pooling, timeout, and structure rules automatically
+  when editing Redis-related code.
+
 ### Secrets
 
 Services expect secrets from a directory (default `~/Documents/.secrets/.cdb/`).
