@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `6eade2e4`; PR #2698 harness fix; PR #2696 Slice 6 write-smoke harness; PR #2693 Slice 5 gate)
+- **main**: green (HEAD `e1bff7bf`; PR #2699 ledger; PR #2698 harness fix; PR #2696 Slice 6 write-smoke harness; PR #2693 Slice 5 gate)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -105,7 +105,7 @@
 - **Session 2026-05-29 (#2606/#2687)**: #2687 Context Query Config Init vorbereitet. PR #2690 fuegt `make context-query-config-init` hinzu, haelt `context_query.local.yaml` gitignored, aktualisiert Doctor-/Runbook-Hinweise und testet den secret-freien Init-Pfad. Gordon-Decommission als separates Follow-up #2689 angelegt; keine Gordon-Bereinigung in diesem Scope. #2606 bleibt OPEN; kein `surrealdb-local` DB-Smoke und keine LR-/Live-Aenderung. Session-Log: `knowledge/logs/sessions/2026-05-29-2687-context-query-config-init.md`.
 - **Merged (Session 2026-05-29, #2606 Slice 5)**: PR #2693 (`32de609f`) — Human-GO memory write gate dry-run harness. Delivered: `tools/surrealdb/memory_write_gate.py` (`PERSIST_ALLOWED = False`), `tests/unit/surrealdb/test_memory_write_gate.py` (15 unit tests), `docs/surrealdb/memory-write-gate-v1.md`, audit §19 addendum in `docs/surrealdb/memory-reality-slice1-audit.md`. Required checks green: `ci (Unit/Integration + Lint gesammelt)`, `policy-gate`; Black-format fix im PR-Scope enthalten. #2606-Kommentar: https://github.com/jannekbuengener/Claire_de_Binare/issues/2606#issuecomment-4571553312. #2606 bleibt OPEN; Slice 6 (#2694) nur nach explizitem Operator-GO. #2689 bleibt separat offen. LR bleibt NO-GO. Session-Log: `knowledge/logs/sessions/2026-05-29-2606-memory-slice5-write-gate.md`.
 - **Merged (Session 2026-05-29, #2606 Slice 6 harness)**: PR #2696 (`1b720e8e`) — local-only memory write smoke harness (`memory_db_write_smoke.py`, unit + local_only tests, docs §8/§20). Real DB write smoke **not** executed. GitHub-Tracker: #2606 war faelschlich CLOSED (`stateReason: COMPLETED`, 2026-05-29) und wurde per Tracker-Hygiene wieder **OPEN** gesetzt; Kommentar: https://github.com/jannekbuengener/Claire_de_Binare/issues/2606#issuecomment-4572200504. LR bleibt NO-GO.
-- **Merged (Session 2026-05-29, #2694 harness fix)**: PR #2698 (`6eade2e4`) — strip JSONL-only fields in `materialize_memory_write_smoke_memory_record()` so strict gate contract passes on clean `main`. CI green. Session-Log: `knowledge/logs/sessions/2026-05-29-2694-clean-main-memory-write-smoke.md` (ledger PR pending).
+- **Merged (Session 2026-05-29, #2694 harness fix)**: PR #2698 (`6eade2e4`) — strip JSONL-only fields in `materialize_memory_write_smoke_memory_record()` so strict gate contract passes on clean `main`. CI green. Session-Log: `knowledge/logs/sessions/2026-05-29-2694-clean-main-memory-write-smoke.md` (ledger PR #2699 merged).
 - **Closed (Session 2026-05-29, #2694 clean-main Operator-GO)**: Clean-main local-only memory write smoke PASS on `main` @ `6eade2e4` (post-#2698, unpatched). Operator-GO token present (redacted in logs/comments). Evidence: https://github.com/jannekbuengener/Claire_de_Binare/issues/2694#issuecomment-4572832277. #2694 CLOSED (`COMPLETED`). #2606 bleibt **OPEN** — Parent-DoD audit: mostly PARTIAL/OPEN (siehe Session-Log). LR bleibt NO-GO.
 
 ---
