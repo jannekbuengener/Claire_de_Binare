@@ -182,7 +182,9 @@ def _assert_no_secret_leak(payload: dict[str, Any], *, secrets_path: Path) -> No
 
 
 @pytest.fixture
-def memory_db_proof_context() -> tuple[MemoryDbProofRecordPlan, Path, MemoryDbProofSqlClient]:
+def memory_db_proof_context() -> (
+    tuple[MemoryDbProofRecordPlan, Path, MemoryDbProofSqlClient]
+):
     secrets_path = _require_local_opt_in()
     run_id = resolve_memory_proof_run_id()
     plan = build_memory_proof_record_plan(run_id)
@@ -207,7 +209,9 @@ def test_memory_db_read_proof_skips_without_env_flag() -> None:
 
 
 def test_memory_db_read_proof_helper_and_mcp(
-    memory_db_proof_context: tuple[MemoryDbProofRecordPlan, Path, MemoryDbProofSqlClient],
+    memory_db_proof_context: tuple[
+        MemoryDbProofRecordPlan, Path, MemoryDbProofSqlClient
+    ],
 ) -> None:
     plan, secrets_path, _sql_client = memory_db_proof_context
     adapter = _build_adapter(secrets_path)
@@ -246,9 +250,7 @@ def test_memory_db_read_proof_helper_and_mcp(
     )
     assert mcp_result["status"] == "ok", mcp_result
     assert mcp_result["metadata"]["source"] == "surrealdb-local"
-    matched_ids = {
-        item["memory_id"] for item in mcp_result["result"]["matched_memory"]
-    }
+    matched_ids = {item["memory_id"] for item in mcp_result["result"]["matched_memory"]}
     assert plan.memory_ids[0] in matched_ids
     assert plan.memory_ids[1] in matched_ids
     _assert_no_secret_leak(mcp_result, secrets_path=secrets_path)

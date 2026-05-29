@@ -99,7 +99,9 @@ def _compute_run_scoped_memory_ids(
 ) -> tuple[str, ...]:
     fresh_path = _FIXTURE_DIR / "agent_memories.jsonl"
     memory_ids: list[str] = []
-    for index, raw_line in enumerate(fresh_path.read_text(encoding="utf-8").splitlines()):
+    for index, raw_line in enumerate(
+        fresh_path.read_text(encoding="utf-8").splitlines()
+    ):
         if not raw_line.strip():
             continue
         record = json.loads(raw_line)
@@ -177,9 +179,11 @@ def materialize_memory_proof_records(
         else:
             record["run_id"] = run_id
             record = {
-                key: _replace_value(value, id_map)
-                if key in _ID_REFERENCE_FIELDS or key == "evidence_id"
-                else value
+                key: (
+                    _replace_value(value, id_map)
+                    if key in _ID_REFERENCE_FIELDS or key == "evidence_id"
+                    else value
+                )
                 for key, value in record.items()
             }
         records.append(json.dumps(record, ensure_ascii=True, sort_keys=True))
@@ -217,9 +221,7 @@ def materialize_memory_proof_bundle(
         target = bundle_dir / filename
         if filename in seeded:
             target.write_text(
-                materialize_memory_proof_records(
-                    filename, run_id=run_id, plan=plan
-                ),
+                materialize_memory_proof_records(filename, run_id=run_id, plan=plan),
                 encoding="utf-8",
             )
         else:

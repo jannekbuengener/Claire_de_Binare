@@ -54,7 +54,9 @@ def _safe_surql_str(value: str | None) -> str | None:
 
 
 def _strip_db_metadata(row: Mapping[str, Any]) -> dict[str, Any]:
-    return {key: value for key, value in dict(row).items() if key not in _DB_STRIP_FIELDS}
+    return {
+        key: value for key, value in dict(row).items() if key not in _DB_STRIP_FIELDS
+    }
 
 
 def _serialize_freshness(freshness: MemoryFreshness) -> dict[str, Any]:
@@ -129,7 +131,9 @@ def prove_agent_memory_db_read_v1(
             }
         )
 
-    normalized_for_reader = [_normalize_memory_row(item["record"]) for item in validated_records]
+    normalized_for_reader = [
+        _normalize_memory_row(item["record"]) for item in validated_records
+    ]
     crosscheck = read_memory_v1(
         normalized_for_reader,
         MemoryReadRequest(mode="by_scope", scope=safe_scope, limit=limit),

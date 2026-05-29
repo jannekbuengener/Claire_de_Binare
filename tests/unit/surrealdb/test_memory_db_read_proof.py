@@ -96,22 +96,26 @@ def test_prove_agent_memory_db_read_v1_validates_and_classifies() -> None:
     assert proof["approval_semantics"]["read_only"] is True
 
     by_id = {item["record"]["memory_id"]: item for item in proof["records"]}
-    fresh = by_id[generate_memory_id(
-        scope=_SCOPE,
-        namespace=_SCOPE,
-        memory_type="semantic_memory",
-        created_by="cdb-test-001",
-        content="Fresh memory for DB read proof slice 4.",
-        source_refs=["docs/surrealdb/memory-reality-slice1-audit.md"],
-    )]
-    expired = by_id[generate_memory_id(
-        scope=_SCOPE,
-        namespace=_SCOPE,
-        memory_type="semantic_memory",
-        created_by="cdb-test-001",
-        content="Expired memory for DB read proof slice 4.",
-        source_refs=["docs/surrealdb/memory-reality-slice1-audit.md"],
-    )]
+    fresh = by_id[
+        generate_memory_id(
+            scope=_SCOPE,
+            namespace=_SCOPE,
+            memory_type="semantic_memory",
+            created_by="cdb-test-001",
+            content="Fresh memory for DB read proof slice 4.",
+            source_refs=["docs/surrealdb/memory-reality-slice1-audit.md"],
+        )
+    ]
+    expired = by_id[
+        generate_memory_id(
+            scope=_SCOPE,
+            namespace=_SCOPE,
+            memory_type="semantic_memory",
+            created_by="cdb-test-001",
+            content="Expired memory for DB read proof slice 4.",
+            source_refs=["docs/surrealdb/memory-reality-slice1-audit.md"],
+        )
+    ]
 
     assert fresh["freshness"]["is_fresh"] is True
     assert fresh["freshness"]["is_expired"] is False
@@ -152,7 +156,9 @@ def test_prove_agent_memory_db_read_v1_read_memory_crosscheck() -> None:
         adapter=adapter, scope=_SCOPE, limit=10, now=_NOW
     )
     assert proof["read_memory_crosscheck"]["matched_count"] == 2
-    assert set(proof["read_memory_crosscheck"]["memory_ids"]) == set(proof["memory_ids"])
+    assert set(proof["read_memory_crosscheck"]["memory_ids"]) == set(
+        proof["memory_ids"]
+    )
 
 
 @pytest.mark.unit
