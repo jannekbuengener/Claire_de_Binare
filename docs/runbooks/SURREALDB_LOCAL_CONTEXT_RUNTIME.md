@@ -343,6 +343,27 @@ Voraussetzung: `cdb_surrealdb` muss laufen (`make context-up`).
 
 ---
 
+## Memory DB proof (read-only) — `#2603`
+
+Narrow operator path for #2606 DB-backed **read** + **stale scan** (not the full
+`context-smoke-db` pipeline). Run-scoped fixtures via `context_importer`
+`local-dev`; cleanup in `finally`. No productive memory write.
+
+**Doc:** [`docs/surrealdb/db-runtime-ci-proof-path-v1.md`](../surrealdb/db-runtime-ci-proof-path-v1.md)
+
+```bash
+make context-up
+make context-memory-db-proof
+```
+
+CLI equivalent:
+
+```bash
+python -m tools.surrealdb.memory_db_proof_cli run-proof --confirm
+```
+
+---
+
 ## Häufige Fehler
 
 ### Docker Desktop läuft nicht

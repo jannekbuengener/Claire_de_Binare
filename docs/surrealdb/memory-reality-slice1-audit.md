@@ -603,6 +603,14 @@ Proven: dry_run zero SQL; audit persist env-gated; blocked without GO; no raw to
 
 ---
 
+## Addendum: DB runtime / CI proof path (#2603)
+
+Operator and CI-boundary proof path for #2606 restgaps 1–2 (read + stale scan):
+[`db-runtime-ci-proof-path-v1.md`](db-runtime-ci-proof-path-v1.md). Makefile target:
+`make context-memory-db-proof`. Epic #2606 remains OPEN.
+
+---
+
 ## Provenance
 
 | Source | Role |

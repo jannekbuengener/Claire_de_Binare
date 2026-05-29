@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-doctor
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-doctor
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -105,6 +105,7 @@ help:
 	@echo "  make context-query-smoke     - Lese-Query-Smoke (graceful fail)"
 	@echo "  make context-smoke           - Komplette lokale Pipeline (smoke test)"
 	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
+	@echo "  make context-memory-db-proof - Narrow memory read+stale proof (#2603/#2606)"
 	@echo "  make context-doctor          - Read-only onboarding preflight (#2642)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -483,6 +484,16 @@ endif
 		--secrets-path "$(SECRETS_PATH)" \
 		show-snapshot
 	@echo "[OK] context-smoke-db: fail-closed DB-backed smoke complete (LR: NO-GO)"
+
+context-memory-db-proof: context-env-check
+	@echo "=== Memory DB Proof (read + stale scan, fail-closed) #2603 ==="
+	@echo "NOTE: Lokaler Scope nur. LR: NO-GO. Run-scoped fixture seed; kein produktiver Write."
+	@echo "--- Schritt 1: Hard Schema-Check (cdb_surrealdb muss laufen) ---"
+	@$(PYTHON) tools/surrealdb/local_schema_check.py --hard-mode \
+		--secrets-path "$(SECRETS_PATH)"
+	@echo "--- Schritt 2: Read proof + stale scan (run-scoped cleanup) ---"
+	@$(PYTHON) -m tools.surrealdb.memory_db_proof_cli run-proof --confirm
+	@echo "[OK] context-memory-db-proof: memory DB read+stale proof complete (LR: NO-GO)"
 
 # ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================
