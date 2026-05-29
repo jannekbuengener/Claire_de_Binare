@@ -341,10 +341,67 @@ Canon names enforced: `created_by` (NOT `agent_id`), `source_refs` (NOT `source_
 
 | Gap | Slice |
 | --- | --- |
-| TTL unit drift (`ttl` seconds vs `ttl_days` in reader) | Slice 3 |
-| DB-backed memory read proof | Slice 3 |
+| TTL unit drift (`ttl` seconds vs `ttl_days` in reader) | **Slice 3 (closed in-memory)** |
+| DB-backed memory read proof | Follow-up slice (not Slice 3 scope) |
 | Human-GO write gate design | Slice 4 |
 | Memory write implementation | Slice 5 (only after Human-GO + Slices 2–4) |
+
+---
+
+## 17. Slice 3 addendum
+
+**Slice 3 delivered:** `2606-memory-slice3-ttl-freshness`  
+**Date:** 2026-05-29
+
+### 17.1 What was built
+
+| Artifact | Path |
+| --- | --- |
+| Freshness classifier | `classify_memory_freshness()` in `tools/surrealdb/memory_contract.py` |
+| Reader TTL fix | `tools/surrealdb/memory_read.py` — uses contract helper, optional `now=` |
+| MCP normalizer fix | `tools/mcp/context_evidence_memory_tools.py` — no `ttl` → `ttl_days` copy |
+| Unit tests | `tests/unit/surrealdb/test_memory_freshness.py` (15 tests) |
+| Characterization update | `tests/unit/surrealdb/test_memory_read_characterization.py` |
+
+### 17.2 R4 closed (in-memory proof)
+
+| Before | After |
+| --- | --- |
+| Reader used `ttl_days` + wall-clock age in days | Reader uses `expires_at`, `ttl` (seconds), `stale_after`, optional legacy `ttl_days` |
+| MCP copied `ttl` → `ttl_days` 1:1 | Schema `ttl` passes through unchanged |
+| Fake-fresh records when `ttl=3600` meant 3600 days | Canonical seconds + `expires_at` classification |
+
+**Canon:** `ttl` is seconds; `expires_at` authoritative when present; `stale_after` is seconds since `created_at`. Stale/expired records are **marked**, not filtered.
+
+**Injectable time:** `read_memory_v1(..., now=)` for deterministic tests; production default `cdb_utcnow()`.
+
+**Legacy shim:** Reader fixtures with only `ttl_days` (no `ttl`/`expires_at`) still work with reason `legacy_ttl_days` (e.g. `wave14_v1.json`).
+
+### 17.3 Test coverage (Slice 3)
+
+15 unit tests in `test_memory_freshness.py` plus updated characterization tests:
+- fresh / expired / stale_after / superseded / explicit stale
+- legacy `ttl_days` only
+- derived expiry from `ttl` seconds when `expires_at` absent
+- reader marks expired without filtering
+- MCP normalizer preserves `ttl` seconds
+- guardrail: no `datetime.now()` in `memory_read.py`
+
+### 17.4 No-changes list (Slice 3)
+
+- No DB access, no SurrealDB runtime, no Docker/infra
+- No memory write, no MCP registry changes
+- `stale_knowledge_scan.py` unchanged (already uses `expires_at`)
+- `DELIVERY_APPROVED.yaml` unchanged
+- LR remains NO-GO
+
+### 17.5 Remaining gaps after Slice 3
+
+| Gap | Follow-up |
+| --- | --- |
+| DB-backed memory read proof (`surrealdb-local`) | Separate slice / local_only |
+| Human-GO write gate design | Slice 4 |
+| Memory write implementation | Slice 5 |
 
 ---
 

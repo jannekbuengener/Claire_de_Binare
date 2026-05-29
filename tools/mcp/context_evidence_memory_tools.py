@@ -221,8 +221,8 @@ def _normalize_memory_row(row: Mapping[str, Any]) -> dict[str, Any]:
     SurrealDB agent_memory schema  → memory reader contract
     ─────────────────────────────────────────────────────────
     created_by (str)  → agent    (str)
-    ttl        (int)  → ttl_days (int)   [unit assumed days; only int field present]
-    scope      (str)  → agent fallback if created_by is absent
+    ttl        (int)  → ttl      (int, seconds — unchanged)
+    expires_at, stale_after       → pass-through when present
 
     Resolver-only fields absent from the schema receive empty defaults so that
     ``read_memory_v1`` can operate without KeyErrors.  Modes ``by_topic``,
@@ -232,8 +232,6 @@ def _normalize_memory_row(row: Mapping[str, Any]) -> dict[str, Any]:
     result = dict(row)
     if "agent" not in result:
         result["agent"] = result.get("created_by") or result.get("scope") or ""
-    if "ttl_days" not in result and "ttl" in result:
-        result["ttl_days"] = result["ttl"]
     if "topic" not in result:
         result["topic"] = None
     if "topics" not in result:

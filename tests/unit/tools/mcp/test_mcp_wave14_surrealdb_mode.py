@@ -1014,7 +1014,7 @@ def test_memory_get_db_limit_invalid_returns_error(monkeypatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Bu_hE: _normalize_memory_row maps created_by → agent and ttl → ttl_days
+# Bu_hE: _normalize_memory_row maps created_by → agent; ttl stays seconds
 # ---------------------------------------------------------------------------
 
 

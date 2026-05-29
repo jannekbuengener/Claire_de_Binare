@@ -32,8 +32,9 @@ from __future__ import annotations
 
 import hashlib
 import uuid
-from datetime import datetime, timezone
-from typing import Any
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash
 
@@ -91,6 +92,16 @@ _REQUIRED_FIELDS: tuple[str, ...] = (
 
 class MemoryContractError(ValueError):
     """Raised when a memory record or memory_id contract is violated."""
+
+
+@dataclass(frozen=True)
+class MemoryFreshness:
+    """TTL/freshness classification for a memory record at a fixed point in time."""
+
+    is_fresh: bool
+    is_stale: bool
+    is_expired: bool
+    reasons: tuple[str, ...]
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +199,137 @@ def generate_memory_id(
 # ---------------------------------------------------------------------------
 # Validation internals
 # ---------------------------------------------------------------------------
+
+
+def _parse_datetime_lenient(value: Any) -> datetime | None:
+    """Parse ISO datetime for freshness classification; fail-soft on error."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return (
+            value.astimezone(timezone.utc)
+            if value.tzinfo
+            else value.replace(tzinfo=timezone.utc)
+        )
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return (
+        parsed.astimezone(timezone.utc)
+        if parsed.tzinfo
+        else parsed.replace(tzinfo=timezone.utc)
+    )
+
+
+def _as_int_lenient(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def classify_memory_freshness(
+    record: Mapping[str, Any],
+    *,
+    now: datetime,
+) -> MemoryFreshness:
+    """Classify memory freshness/staleness at an explicit point in time.
+
+    Canon: ``ttl`` is seconds; ``expires_at`` is authoritative when present;
+    ``stale_after`` is seconds since ``created_at``. Records are marked stale
+    or expired, never filtered. Legacy reader fixtures may supply ``ttl_days``
+    (whole days) only when neither ``ttl`` nor ``expires_at`` is present.
+
+    Args:
+        record: Raw or partially normalized memory mapping.
+        now: Reference instant (UTC-aware or naive treated as UTC).
+
+    Returns:
+        MemoryFreshness with ``is_expired`` a subset of ``is_stale``.
+    """
+    if now.tzinfo is None:
+        ref = now.replace(tzinfo=timezone.utc)
+    else:
+        ref = now.astimezone(timezone.utc)
+
+    reasons: list[str] = []
+
+    superseded_by = record.get("superseded_by")
+    if isinstance(superseded_by, str) and superseded_by.strip():
+        reasons.append("superseded_by")
+        return MemoryFreshness(
+            is_fresh=False,
+            is_stale=True,
+            is_expired=False,
+            reasons=tuple(reasons),
+        )
+
+    if bool(record.get("stale", False)):
+        reasons.append("explicit_stale")
+        return MemoryFreshness(
+            is_fresh=False,
+            is_stale=True,
+            is_expired=False,
+            reasons=tuple(reasons),
+        )
+
+    created_at = _parse_datetime_lenient(record.get("created_at"))
+    if created_at is None and "_created_at_dt" in record:
+        created_at = _parse_datetime_lenient(record.get("_created_at_dt"))
+
+    expires_at = _parse_datetime_lenient(record.get("expires_at"))
+    ttl_int = _as_int_lenient(record.get("ttl"))
+
+    if (
+        expires_at is None
+        and ttl_int is not None
+        and ttl_int > 0
+        and created_at is not None
+    ):
+        expires_at = created_at + timedelta(seconds=ttl_int)
+
+    is_expired = False
+    if expires_at is not None and ref >= expires_at:
+        reasons.append("expires_at_elapsed")
+        is_expired = True
+
+    stale_after = _as_int_lenient(record.get("stale_after"))
+    if (
+        stale_after is not None
+        and stale_after >= 0
+        and created_at is not None
+        and (ref - created_at).total_seconds() >= stale_after
+    ):
+        reasons.append("stale_after_elapsed")
+
+    has_ttl = "ttl" in record
+    has_expires = "expires_at" in record and record.get("expires_at") is not None
+    ttl_days = _as_int_lenient(record.get("ttl_days"))
+    if (
+        not has_ttl
+        and not has_expires
+        and ttl_days is not None
+        and created_at is not None
+    ):
+        age_days = (ref - created_at).days
+        if age_days > ttl_days:
+            reasons.append("legacy_ttl_days")
+
+    is_stale = bool(reasons)
+    return MemoryFreshness(
+        is_fresh=not is_stale,
+        is_stale=is_stale,
+        is_expired=is_expired,
+        reasons=tuple(reasons),
+    )
 
 
 def _parse_datetime_strict(value: Any, field: str) -> datetime:

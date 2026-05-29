@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
 from core.utils.clock import utcnow as cdb_utcnow
+from tools.surrealdb.memory_contract import classify_memory_freshness
 
 SCHEMA_VERSION = "memory-read/v1"
 
@@ -62,7 +63,11 @@ def _parse_datetime(raw: Any) -> datetime | None:
     if raw is None:
         return None
     if isinstance(raw, datetime):
-        return raw.astimezone(timezone.utc) if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+        return (
+            raw.astimezone(timezone.utc)
+            if raw.tzinfo
+            else raw.replace(tzinfo=timezone.utc)
+        )
     if not isinstance(raw, str):
         return None
     text = raw.strip()
@@ -74,7 +79,11 @@ def _parse_datetime(raw: Any) -> datetime | None:
         parsed = datetime.fromisoformat(text)
     except ValueError:
         return None
-    return parsed.astimezone(timezone.utc) if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return (
+        parsed.astimezone(timezone.utc)
+        if parsed.tzinfo
+        else parsed.replace(tzinfo=timezone.utc)
+    )
 
 
 def _as_list(value: Any) -> list[Any]:
@@ -108,7 +117,9 @@ def _as_int(value: Any) -> int | None:
 def _compute_trust(memory: Mapping[str, Any]) -> str:
     """Classify memory trust level from record fields."""
     stale = bool(memory.get("stale", False))
-    superseded = bool(memory.get("superseded", False)) or bool(memory.get("superseded_by"))
+    superseded = bool(memory.get("superseded", False)) or bool(
+        memory.get("superseded_by")
+    )
     evidence_backed = bool(memory.get("evidence_backed", False)) or bool(
         _as_list(memory.get("evidence_refs"))
     )
@@ -127,19 +138,14 @@ def _compute_trust(memory: Mapping[str, Any]) -> str:
     return "weak"
 
 
-def _is_stale_by_ttl(memory: Mapping[str, Any]) -> bool:
-    """Return True if TTL has elapsed."""
-    ttl_days = _as_int(memory.get("ttl_days"))
-    if ttl_days is None:
-        return False
-    created_at: datetime | None = memory.get("_created_at_dt")
-    if created_at is None:
-        return False
-    age_days = (cdb_utcnow().replace(tzinfo=timezone.utc) - created_at).days
-    return age_days > ttl_days
+def _resolve_now(now: datetime | None) -> datetime:
+    effective = now if now is not None else cdb_utcnow()
+    if effective.tzinfo is None:
+        return effective.replace(tzinfo=timezone.utc)
+    return effective.astimezone(timezone.utc)
 
 
-def _normalize_memory(raw: Mapping[str, Any]) -> dict[str, Any]:
+def _normalize_memory(raw: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
     memory_id = _as_str(raw.get("memory_id"))
     if not memory_id:
         raise MemoryReadError("memory record missing memory_id")
@@ -149,7 +155,9 @@ def _normalize_memory(raw: Mapping[str, Any]) -> dict[str, Any]:
     scope = _as_str(raw.get("scope")) or ""
     agent = _as_str(raw.get("agent")) or ""
     superseded_by = _as_str(raw.get("superseded_by"))
-    ttl_days = _as_int(raw.get("ttl_days"))
+    ttl = _as_int(raw.get("ttl"))
+    expires_at = _parse_datetime(raw.get("expires_at"))
+    stale_after = _as_int(raw.get("stale_after"))
 
     topics: list[str] = []
     if _as_str(raw.get("topic")):
@@ -176,7 +184,6 @@ def _normalize_memory(raw: Mapping[str, Any]) -> dict[str, Any]:
         "evidence_refs": sorted(set(evidence_refs)),
         "source_refs": sorted(set(source_refs)),
         "superseded_by": superseded_by,
-        "ttl_days": ttl_days,
         "stale": stale_flag,
         "superseded": bool(superseded_by),
         "evidence_backed": bool(evidence_refs),
@@ -184,9 +191,23 @@ def _normalize_memory(raw: Mapping[str, Any]) -> dict[str, Any]:
         "created_at": created_at.isoformat() if created_at else None,
         "_created_at_dt": created_at,
     }
-    # TTL-based stale detection
-    if not stale_flag and _is_stale_by_ttl(entry):
+    if ttl is not None:
+        entry["ttl"] = ttl
+    if expires_at is not None:
+        entry["expires_at"] = expires_at.isoformat()
+    if stale_after is not None:
+        entry["stale_after"] = stale_after
+    if _as_int(raw.get("ttl_days")) is not None:
+        entry["ttl_days"] = _as_int(raw.get("ttl_days"))
+
+    freshness = classify_memory_freshness(
+        {**raw, **entry, "_created_at_dt": created_at}, now=now
+    )
+    if freshness.is_stale:
         entry["stale"] = True
+    entry["expired"] = freshness.is_expired
+    if freshness.reasons:
+        entry["freshness_reasons"] = list(freshness.reasons)
 
     entry["trust_level"] = _compute_trust(entry)
     return entry
@@ -218,7 +239,7 @@ def _validate_request(req: MemoryReadRequest) -> None:
         raise MemoryReadError(f"{req.mode} requires {required_field}")
 
 
-def _match(memory: Mapping[str, Any], req: MemoryReadRequest) -> bool:
+def _match(memory: Mapping[str, Any], req: MemoryReadRequest, *, now: datetime) -> bool:
     if req.mode == "by_scope":
         scope = (req.scope or "").strip()
         return scope == str(memory.get("scope", "")).strip()
@@ -237,22 +258,34 @@ def _match(memory: Mapping[str, Any], req: MemoryReadRequest) -> bool:
         dt: datetime | None = memory.get("_created_at_dt")
         if dt is None:
             return False
-        age_days = (cdb_utcnow().replace(tzinfo=timezone.utc) - dt).days
+        age_days = (now - dt).days
         return age_days <= req.freshness_days
     if req.mode == "by_memory_type":
-        return str(memory.get("memory_type", "")).strip().lower() == (req.memory_type or "").strip().lower()
+        return (
+            str(memory.get("memory_type", "")).strip().lower()
+            == (req.memory_type or "").strip().lower()
+        )
     return False
 
 
 def read_memory_v1(
     memory_records: Iterable[Mapping[str, Any]],
     request: MemoryReadRequest,
+    *,
+    now: datetime | None = None,
 ) -> dict[str, Any]:
     """Read scoped agent memory over in-memory records.
 
     Deterministic and side-effect-free. No writes.
+
+    Args:
+        memory_records: In-memory agent_memory rows.
+        request: Query mode and filters.
+        now: Optional reference instant for TTL/freshness (UTC). Defaults to
+            ``cdb_utcnow()`` when omitted.
     """
     _validate_request(request)
+    ref_now = _resolve_now(now)
 
     warnings: list[str] = []
 
@@ -260,10 +293,10 @@ def read_memory_v1(
     for raw in memory_records:
         if not isinstance(raw, Mapping):
             continue
-        normalized.append(_normalize_memory(raw))
+        normalized.append(_normalize_memory(raw, now=ref_now))
 
     normalized_sorted = sorted(normalized, key=_memory_sort_key)
-    matched = [m for m in normalized_sorted if _match(m, request)]
+    matched = [m for m in normalized_sorted if _match(m, request, now=ref_now)]
 
     if not matched:
         warnings.append("no_memory_matched")
@@ -309,7 +342,9 @@ def read_memory_v1(
     }
 
     # Strip internal dt field before returning
-    clean_matched = [{k: v for k, v in m.items() if k != "_created_at_dt"} for m in matched]
+    clean_matched = [
+        {k: v for k, v in m.items() if k != "_created_at_dt"} for m in matched
+    ]
 
     approval_semantics = {
         "read_only": True,
