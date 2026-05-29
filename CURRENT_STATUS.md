@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `7528655c`; PR #2712 campaign ledger; PR #2711 MCP write intent; PR #2710 write path v1; PR #2709 Slice 5 verify; PR #2708 stale scan; PR #2707 output contract)
+- **main**: green (HEAD `bd00a4df`; PR #2714 parent closure audit; PR #2712 campaign ledger; PR #2711 MCP write intent; PR #2710 write path v1)
 - **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: 11/17 PASS, 6 PARTIAL closure-relevant; gatekeeper **BLOCKED** for epic close). LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
