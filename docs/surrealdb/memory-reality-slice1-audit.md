@@ -636,6 +636,27 @@ updated to **SPECIFIED / NOT ACTIVATED**.
 Parent #2606 criterion 6 remains **PARTIAL** until T3 runtime is implemented;
 spec enables parent re-audit per readiness runbook §7.
 
+### 22.2 G1 addendum — Productive audit trail endpoint design (#2735)
+
+**Delivered:** endpoint design doc only. No code change. No `PERSIST_ALLOWED`
+flip. No MCP mutation. No productive persist activation.
+
+| Artifact | Role |
+| --- | --- |
+| `docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md` | T3 governed endpoint topology, TLS, namespace, credentials, T2→T3 mapping, fail-closed matrix |
+
+| Gap | After #2730 G0 | After #2735 G1 |
+| --- | --- | --- |
+| Productive audit trail semantics | SPECIFIED (G0); NOT ACTIVATED | Unchanged |
+| Governed endpoint design | Undocumented | **DESIGN-READY (G1); NOT ACTIVATED** |
+| Local `audit_observation` (T2) | Delivered (#2703) | Unchanged |
+| `PERSIST_ALLOWED` | `False` in code | Unchanged |
+
+Proof matrix row 3 in [`db-runtime-ci-proof-path-v1.md`](db-runtime-ci-proof-path-v1.md)
+updated to **DESIGN-READY (G1) / NOT ACTIVATED**.
+
+Parent #2606 criterion 6 remains **PARTIAL**; G1 design does not close epic.
+
 ---
 
 ## Provenance

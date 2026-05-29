@@ -51,7 +51,7 @@ Before MCP Phase 2 mutation design proceeds, these gates apply (spec-only on
 | Gate | Requirement |
 | --- | --- |
 | G0 | [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) landed |
-| G1 | Non-local audit endpoint design (future issue) |
+| G1 | Non-local audit endpoint design — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) ([#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735); design only) |
 | G2 | MCP Phase 2 design aligned with T3 audit semantics |
 | G3 | `PERSIST_ALLOWED` code flip — **not** MCP-only |
 | G4 | Productive `agent_memory` write — separate from MCP dry-run |
@@ -67,6 +67,7 @@ checklist: [`productive-memory-write-readiness-runbook-v1.md`](productive-memory
 - Output contract: [`memory_output_contract.py`](../../tools/mcp/memory_output_contract.py) (#2701)
 - Bridge contract: [`context-mcp-bridge-contract.md`](context-mcp-bridge-contract.md)
 - Productive audit trail: [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) (#2730)
+- G1 endpoint design: [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735)
 
 ## Validation
 

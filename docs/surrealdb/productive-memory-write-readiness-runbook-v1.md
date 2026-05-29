@@ -33,6 +33,7 @@ Read in order before any readiness assessment:
 5. [`mcp-memory-write-surface-v1.md`](mcp-memory-write-surface-v1.md)
 6. [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
 7. [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md) (ledger; live truth = GitHub/`main`)
+8. [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735 G1 — design only; T3 not activated)
 
 ---
 
@@ -130,7 +131,7 @@ pytest tests/unit/surrealdb/test_memory_write_gate.py \
 # python -m tools.surrealdb.memory_write_path_v1 ... audit_persist_local
 ```
 
-**Productive T3/T4:** **NOT DEFINED** — blocked until G1–G4 implementation issues land.
+**Productive T3/T4:** T3 endpoint **design defined** ([#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735) — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md)); **runtime blocked** until G2–G4 implementation issues land.
 
 ---
 
@@ -157,7 +158,8 @@ Use one of:
 | Verdict | Meaning |
 | --- | --- |
 | **SPEC COMPLIANT (G0)** | Contract/runbook present; no activation attempted |
-| **NOT READY (T3/T4)** | Implementation gates G1–G4 not met |
+| **DESIGN COMPLIANT (G1)** | Endpoint design doc present (#2735); T3 runtime still not activated |
+| **NOT READY (T3/T4)** | G1 design may be present; runtime gates G2–G4 not met |
 | **BLOCKED (SAFETY)** | Secret leak, unintended persist, or scope violation detected |
 
 ---

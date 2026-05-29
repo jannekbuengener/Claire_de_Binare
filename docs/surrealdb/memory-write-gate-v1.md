@@ -195,6 +195,7 @@ gates G0–G4:
 
 - [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md)
 - [`productive-memory-write-readiness-runbook-v1.md`](productive-memory-write-readiness-runbook-v1.md)
+- [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735 G1 — design only)
 
 Human-GO tiers (HG-L / HG-P / HG-W) are defined in the contract; local operator
 GO does not authorize productive persist or `PERSIST_ALLOWED` flip.
@@ -206,6 +207,7 @@ GO does not authorize productive persist or `PERSIST_ALLOWED` flip.
 | Source | Role |
 | --- | --- |
 | `docs/surrealdb/productive-memory-audit-trail-v1.md` | T3 audit trail spec (#2730) |
+| `docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md` | T3 endpoint design (#2735 G1) |
 | `docs/surrealdb/scoped-agent-memory-model-v1.md` | Write constraints M5–M7 |
 | `docs/surrealdb/context-agent-memory-import-policy-v1.md` | No agent self-GO |
 | `tools/surrealdb/scope_drift_firewall.py` | `human_go_token` pattern |
