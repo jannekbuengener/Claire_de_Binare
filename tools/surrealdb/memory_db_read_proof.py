@@ -13,6 +13,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Mapping, Protocol
 
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.mcp.context_evidence_memory_tools import _normalize_memory_row
 from tools.mcp.surrealdb_adapter_factory import adapter_source
 from tools.surrealdb.memory_contract import (
@@ -69,7 +70,7 @@ def _serialize_freshness(freshness: MemoryFreshness) -> dict[str, Any]:
 
 
 def _resolve_now(now: datetime | None) -> datetime:
-    effective = now if now is not None else datetime.now(timezone.utc)
+    effective = now if now is not None else cdb_utcnow()
     if effective.tzinfo is None:
         return effective.replace(tzinfo=timezone.utc)
     return effective.astimezone(timezone.utc)
