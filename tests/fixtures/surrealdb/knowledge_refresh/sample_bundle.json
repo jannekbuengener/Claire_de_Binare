@@ -1,0 +1,105 @@
+{
+  "_comment": "Knowledge Refresh Loop sample bundle (#2717). Deterministic, no live data.",
+  "meta": {
+    "scope_id": "knowledge-refresh-sample",
+    "level": "domain",
+    "as_of": "2026-05-06T12:00:00+00:00",
+    "description": "Mixed stale, canon, orphan, and accepted-stale cases"
+  },
+  "sources": [
+    {
+      "source_id": "src-canon-stale-001",
+      "path": "AGENTS.md",
+      "current_hash": "aaa111",
+      "last_verified_hash": "bbb222",
+      "exists": true,
+      "owner": "cdb-core",
+      "has_documentation": true,
+      "has_tests": false
+    },
+    {
+      "source_id": "src-deleted-001",
+      "path": "docs/deprecated/old-runbook.md",
+      "exists": false,
+      "deleted_at": "2026-04-01T12:00:00+00:00"
+    },
+    {
+      "source_id": "src-orphan-001",
+      "path": "docs/scratch/unowned-notes.md",
+      "exists": true
+    },
+    {
+      "source_id": "src-mixed-001",
+      "path": "tools/surrealdb/stale_knowledge_scan.py",
+      "current_hash": "deadbeef",
+      "last_verified_hash": "cafebabe",
+      "exists": true,
+      "owner": "cdb-core",
+      "has_documentation": true,
+      "has_tests": true
+    },
+    {
+      "source_id": "src-accepted-001",
+      "path": "docs/architecture/legacy-note.md",
+      "current_hash": "111111",
+      "last_verified_hash": "222222",
+      "exists": true,
+      "status": "accepted_stale"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": "D-001",
+      "title": "Use stale scan for refresh loop",
+      "status": "active",
+      "evidence_refs": ["E-001"]
+    }
+  ],
+  "evidence_records": [
+    {
+      "evidence_id": "E-001",
+      "expires_at": "2026-01-01T00:00:00+00:00",
+      "topic": "Expired canary evidence (fixture)"
+    }
+  ],
+  "memory_records": [
+    {
+      "memory_id": "MEM-001",
+      "expires_at": "2026-01-01T00:00:00+00:00",
+      "scope": "cdb"
+    }
+  ],
+  "dependency_edges": [
+    {
+      "edge_id": "EDGE-001",
+      "source": "tools/surrealdb/stale_knowledge_scan.py",
+      "target": "core/utils/clock.py",
+      "confidence": "high",
+      "observed": true
+    }
+  ],
+  "context_packages": [
+    {
+      "package_id": "PKG-001",
+      "source_snapshot_id": "snap-old",
+      "current_snapshot_id": "snap-new"
+    }
+  ],
+  "briefings": [
+    {
+      "briefing_id": "BR-001",
+      "source_snapshot_id": "snap-brief-old",
+      "current_snapshot_id": "snap-brief-new"
+    }
+  ],
+  "contradiction_findings": [
+    {
+      "contradiction_id": "C-001",
+      "contradiction_type": "doc_vs_code",
+      "severity": "watch",
+      "status": "open",
+      "affected_paths": ["tools/surrealdb/stale_knowledge_scan.py"]
+    }
+  ],
+  "scope_drift_findings": []
+}
