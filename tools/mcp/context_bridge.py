@@ -2811,6 +2811,18 @@ def cdb_context_memory_get_handler(**kwargs) -> dict[str, Any]:
     return handle_cdb_context_memory_get(kwargs)
 
 
+def cdb_context_memory_write_intent_handler(**kwargs) -> dict[str, Any]:
+    """Read-only MCP handler for cdb_context_memory_write_intent (#2704).
+
+    Dry-run gate evaluation only. Fail-closed on mutation flags. No DB/network/write.
+    """
+    from tools.mcp.memory_write_intent_tools import (
+        handle_cdb_context_memory_write_intent,
+    )
+
+    return handle_cdb_context_memory_write_intent(kwargs)
+
+
 def cdb_context_trust_summary_handler(**kwargs) -> dict[str, Any]:
     """Read-only MCP handler for cdb_context_trust_summary.
 
@@ -3106,6 +3118,7 @@ class ContextBridge:
             "cdb_context_evidence_resolve": cdb_context_evidence_resolve_handler,
             "cdb_context_claim_resolve": cdb_context_claim_resolve_handler,
             "cdb_context_memory_get": cdb_context_memory_get_handler,
+            "cdb_context_memory_write_intent": cdb_context_memory_write_intent_handler,
             "cdb_context_trust_summary": cdb_context_trust_summary_handler,
             "cdb_context_decision_history": cdb_context_decision_history_handler,
             "cdb_context_decision_replay": cdb_context_decision_replay_handler,

@@ -55,6 +55,7 @@ Die folgenden `cdb_context_*` Namen sind die **Ziel-/Contract-Aliase** gemäß #
 | `cdb_context_evidence_resolve` | Evidence-Referenzen auflösen | (vorgesehen) `context.evidence_resolve` | target/future (handler not present on `origin/main`) |
 | `cdb_context_decision_history` | Historische Entscheidungen abrufen | (follow-up) `cdb_context_decision_history` | target/future (not in `origin/main` context bridge) |
 | `cdb_context_memory_get` | Agent Memory State abrufen | (follow-up) `context.memory_get` | target/future (handler not present on `origin/main`) |
+| `cdb_context_memory_write_intent` | Memory write intent gate (dry-run) | `cdb_context_memory_write_intent` | dry-run exposed (#2704) |
 | `cdb_context_impact` | Auswirkungen einer Entscheidung bewerten | `cdb_context_impact` | currently exposed |
 | `cdb_context_briefing` | Strukturiertes Briefing generieren | `cdb_context_briefing` (Alias für `context.briefing`) | currently exposed |
 

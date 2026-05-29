@@ -992,6 +992,41 @@ TOOLS_V0 = [
         handler=create_not_implemented_handler("cdb_context_memory_get"),
     ),
     ToolDefinition(
+        name="cdb_context_memory_write_intent",
+        description=(
+            "Memory write intent gate MCP tool (dry-run default). Evaluates "
+            "Human-GO memory write authorization against the memory contract. "
+            "Read-only, fail-closed, no DB/network/write execution. "
+            "Mutation flags blocked. No Live-Go, no Echtgeld-Go."
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "record": {"type": "object"},
+                        "authorization": {"type": "object"},
+                        "dry_run": {"type": "boolean", "default": True},
+                    },
+                    "required": ["record"],
+                },
+            },
+        },
+        output_schema={
+            "type": "object",
+            "properties": {
+                "tool": {"type": "string"},
+                "status": {"type": "string"},
+                "result": {"type": "object"},
+                "metadata": {"type": "object"},
+            },
+        },
+        read_only=True,
+        handler=create_not_implemented_handler("cdb_context_memory_write_intent"),
+    ),
+    ToolDefinition(
         name="cdb_context_trust_summary",
         description=(
             "Wave-14 trust summary MCP tool. Builds a trust assessment from "

@@ -20,6 +20,12 @@ stop_conditions, and structural field checks. Task descriptions like
 "Deploy system" or "Update config" are legitimate scope descriptions
 that the readiness/briefing handlers evaluate correctly.
 
+``cdb_context_memory_write_intent`` (#2704) is exempt from blanket input scanning
+because memory record content may contain SQL-like words; the handler still
+blocks mutation flags and optional query/sql injection fields. Registry
+``read_only=True`` is unchanged — enabling mutation would require an explicit
+future registry/permission-guard change outside this slice.
+
 This module does NOT perform any writes, runtime actions, or live assertions.
 It is a pure, stateless, deterministic guard layer.
 
@@ -142,6 +148,9 @@ INPUT_SCAN_EXEMPT_TOOLS: frozenset[str] = frozenset(
         "cdb_context_evidence_resolve",
         "cdb_context_claim_resolve",
         "cdb_context_memory_get",
+        # #2704 memory write intent: record content may contain SQL-like words;
+        # tool is dry-run gate evaluation only (MUTATION_ALLOWED=False).
+        "cdb_context_memory_write_intent",
         "cdb_context_trust_summary",
         "cdb_context_decision_history",
         "cdb_context_decision_replay",
