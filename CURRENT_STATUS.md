@@ -10,9 +10,9 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `294d1ca0`; PR #2718 #2603 db runtime proof path merged 2026-05-29)
+- **main**: green (HEAD `0cc53336`; PR #2724 #2719 claim-at-rest + PR #2725 #2720 cross-session rediscovery merged 2026-05-29)
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
-- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6**; DB read/stale **runtime-proven locally** via #2603 path). Rest gaps: #2719–#2721. `PERSIST_ALLOWED=False`. LR NO-GO.
+- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6**; DB read/stale **runtime-proven locally** via #2603 path). Rest gaps **#2719/#2720**: **PASS WITH LIMITS** (local operator paths; CI mock-only). **#2721** optional CI SurrealDB workflow still open. Productive audit trail **BLOCKED**. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -24,6 +24,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **Campaign (Session 2026-05-29, #2606 #2719 + #2720 claim evidence + rediscovery)**: PR #2724 (`d308bf6a`) — claim evidence at rest (`make context-claim-evidence-proof`, `claim-evidence-at-rest/v1`). PR #2725 (`0cc53336`) — cross-session rediscovery (`make context-memory-rediscovery-proof`, `memory-cross-session-rediscovery/v1`). Proof matrix rows 4–5 → **PASS WITH LIMITS** in `docs/surrealdb/db-runtime-ci-proof-path-v1.md`. #2719/#2720 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; #2721 + audit-trail BLOCKED remain). Session log: `knowledge/logs/sessions/2026-05-29-2606-claim-evidence-and-rediscovery.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2603 DB Runtime / CI Proof Path)**: Proof matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; `make context-memory-db-proof`; unit contracts; operator `context-memory-db-proof` PASS (read+stale, run-scoped). Follow-ups #2719 claim-at-rest, #2720 cross-session, #2721 optional CI SurrealDB workflow. #2603 closes on PR #2718 merge; #2606 stays OPEN. Session log: `knowledge/logs/sessions/2026-05-29-2603-db-runtime-ci-proof-path.md`. LR NO-GO.
 - **Reconciled (Session 2026-05-29, #2713 Epic body R1–R3)**: #2606 GitHub epic body aligned to `memory-reality-slice1-audit.md` R1–R3; **NOT_CLOSURE_READY** + PASS 11 / PARTIAL 6 / OPEN 0; #2603 rest axis; boundaries restated. #2713 closes; #2606 OPEN. Session log: `knowledge/logs/sessions/2026-05-29-2606-epic-body-r1-r3-reconcile.md`. LR NO-GO.
 - **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. #2606 remains OPEN. LR NO-GO.
