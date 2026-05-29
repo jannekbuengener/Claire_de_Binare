@@ -48,6 +48,7 @@ from tools.mcp.surrealdb_adapter_factory import (
     build_adapter_from_params,
     derive_guarded_source_label,
 )
+from tools.mcp.memory_output_contract import stamp_limitations
 
 TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE = "cdb_context_evidence_resolve"
 TOOL_CDB_CONTEXT_CLAIM_RESOLVE = "cdb_context_claim_resolve"
@@ -448,6 +449,7 @@ def handle_cdb_context_evidence_resolve(request: Mapping[str, Any]) -> dict[str,
     semantics = dict(result.get("approval_semantics") or {})
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
+    stamp_limitations(result)
 
     return _ok_response(
         TOOL_CDB_CONTEXT_EVIDENCE_RESOLVE, result=result, source=_source
@@ -547,6 +549,7 @@ def handle_cdb_context_claim_resolve(request: Mapping[str, Any]) -> dict[str, An
     semantics = dict(result.get("approval_semantics") or {})
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
+    stamp_limitations(result)
 
     return _ok_response(TOOL_CDB_CONTEXT_CLAIM_RESOLVE, result=result, source=_source)
 
@@ -641,6 +644,7 @@ def handle_cdb_context_memory_get(request: Mapping[str, Any]) -> dict[str, Any]:
     semantics = dict(result.get("approval_semantics") or {})
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
+    stamp_limitations(result)
 
     return _ok_response(TOOL_CDB_CONTEXT_MEMORY_GET, result=result, source=_source)
 
@@ -774,5 +778,6 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
     semantics = dict(result.get("approval_semantics") or {})
     semantics["no_echtgeld_go"] = True
     result["approval_semantics"] = semantics
+    stamp_limitations(result)
 
     return _ok_response(TOOL_CDB_CONTEXT_TRUST_SUMMARY, result=result, source=_source)
