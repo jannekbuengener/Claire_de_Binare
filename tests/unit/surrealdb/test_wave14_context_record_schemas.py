@@ -46,7 +46,10 @@ def test_surql_declares_created_at_for_wave14_tables(
 @pytest.mark.unit
 @pytest.mark.parametrize(
     ("artifact", "table"),
-    [(artifact, TABLE_BY_ARTIFACT[artifact]) for artifact in contracts.WAVE14_JSONL_ARTIFACTS],
+    [
+        (artifact, TABLE_BY_ARTIFACT[artifact])
+        for artifact in contracts.WAVE14_JSONL_ARTIFACTS
+    ],
 )
 def test_jsonl_required_fields_map_to_surql_columns(
     surql_text: str, artifact: str, table: str
@@ -55,7 +58,9 @@ def test_jsonl_required_fields_map_to_surql_columns(
     jsonl_required = contracts.WAVE14_JSONL_REQUIRED[artifact]
     record_fields = jsonl_required - contracts.JSONL_ENVELOPE_FIELDS
     missing = record_fields - surql_fields
-    assert not missing, f"{artifact} JSONL fields missing from {table} surql: {sorted(missing)}"
+    assert (
+        not missing
+    ), f"{artifact} JSONL fields missing from {table} surql: {sorted(missing)}"
 
 
 @pytest.mark.unit
@@ -69,7 +74,10 @@ def test_evidence_ref_normalization_aliases() -> None:
     }
     normalized = _normalize_evidence_ref_row(row)
 
-    for schema_field, contract_field in contracts.EVIDENCE_SCHEMA_TO_LOOKUP_ALIASES.items():
+    for (
+        schema_field,
+        contract_field,
+    ) in contracts.EVIDENCE_SCHEMA_TO_LOOKUP_ALIASES.items():
         if schema_field == "source_path":
             assert normalized[contract_field] == [row[schema_field]]
         else:
@@ -191,9 +199,10 @@ def test_decision_event_null_and_empty_fields_do_not_crash_history_query() -> No
         events,
         DecisionHistoryQueryRequest(mode="by_scope", scope="wave14"),
     )
-    assert result["schema_version"] == contracts.SERVICE_SCHEMA_VERSIONS[
-        "cdb_context_decision_history"
-    ]
+    assert (
+        result["schema_version"]
+        == contracts.SERVICE_SCHEMA_VERSIONS["cdb_context_decision_history"]
+    )
     assert len(result["matched_decisions"]) == 1
     decision = result["matched_decisions"][0]
     assert decision["decision_id"] == "dec-empty-001"
