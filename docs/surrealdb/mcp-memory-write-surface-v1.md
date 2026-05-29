@@ -32,7 +32,21 @@ authorization and memory contract validity without executing persistence.
   → **`unsafe_input`** (handler-level; record body exempt from blanket scan).
 - No SQL client, no adapter import, no `agent_memory` UPSERT.
 
-## Phase 2 (future — separate Human-GO)
+## Phase 2 (G2 design — #2739)
+
+Spec: [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md)
+
+**Not implemented on `main`.** G2 defines:
+
+- `operation_mode` resolution (`dry_run`, `audit_persist_productive`, etc.)
+- MCP refusal contracts for T3 productive audit (`productive_audit_not_activated`)
+- Permission model extensions (registry / PermissionGuard — G3 code)
+- Wiring intent to G1 governed endpoint via future `memory_write_path_productive`
+
+Any future mutation or registry `read_only=False` change requires G3 maintainer GO,
+contract evidence, and a separate issue/PR — not implied by Phase 1 or G2 docs.
+
+### Legacy Phase 2 stub (pre-G2)
 
 Not implemented in this slice:
 
@@ -52,7 +66,7 @@ Before MCP Phase 2 mutation design proceeds, these gates apply (spec-only on
 | --- | --- |
 | G0 | [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) landed |
 | G1 | Non-local audit endpoint design — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) ([#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735); design only) |
-| G2 | MCP Phase 2 design aligned with T3 audit semantics |
+| G2 | MCP Phase 2 design — [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) ([#2739](https://github.com/jannekbuengener/Claire_de_Binare/issues/2739); design only) |
 | G3 | `PERSIST_ALLOWED` code flip — **not** MCP-only |
 | G4 | Productive `agent_memory` write — separate from MCP dry-run |
 
@@ -68,6 +82,7 @@ checklist: [`productive-memory-write-readiness-runbook-v1.md`](productive-memory
 - Bridge contract: [`context-mcp-bridge-contract.md`](context-mcp-bridge-contract.md)
 - Productive audit trail: [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) (#2730)
 - G1 endpoint design: [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735)
+- G2 MCP Phase 2 design: [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) (#2739)
 
 ## Validation
 

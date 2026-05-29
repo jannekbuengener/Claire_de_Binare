@@ -221,7 +221,7 @@ include **all** items (implementation issue — not #2730):
 | --- | --- | --- | --- |
 | G0 | Spec | This contract + readiness runbook | **This issue** |
 | G1 | Non-local audit endpoint design | Endpoint, TLS, namespace, credentials policy | [#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735) — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) |
-| G2 | MCP Phase 2 design | Mutation guard + audit wiring spec | Future issue |
+| G2 | MCP Phase 2 design | Mutation guard + audit wiring spec | [#2739](https://github.com/jannekbuengener/Claire_de_Binare/issues/2739) — [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) |
 | G3 | `PERSIST_ALLOWED` code flip | Code change + tests; separate Human-GO | Future issue |
 | G4 | Productive `agent_memory` write | Executor on governed endpoint | Future issue |
 
@@ -251,6 +251,7 @@ include **all** items (implementation issue — not #2730):
 | [`memory-reality-slice1-audit.md`](memory-reality-slice1-audit.md) | Slice history §22 |
 | [`productive-memory-write-readiness-runbook-v1.md`](productive-memory-write-readiness-runbook-v1.md) | Operator readiness |
 | [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) | G1 endpoint design (#2735) |
+| [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) | G2 MCP Phase 2 design (#2739) |
 
 ---
 

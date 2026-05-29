@@ -657,6 +657,27 @@ updated to **DESIGN-READY (G1) / NOT ACTIVATED**.
 
 Parent #2606 criterion 6 remains **PARTIAL**; G1 design does not close epic.
 
+### 22.3 G2 addendum — MCP Phase 2 productive audit trail design (#2739)
+
+**Delivered:** MCP Phase 2 design doc only. No handler/registry code change. No
+`PERSIST_ALLOWED` flip. No MCP mutation. No productive persist activation.
+
+| Artifact | Role |
+| --- | --- |
+| `docs/surrealdb/productive-memory-audit-trail-mcp-phase2-design-v1.md` | MCP `operation_mode` resolution, permission model (spec), request/response/refusal contracts, fail-closed matrix |
+
+| Gap | After #2735 G1 | After #2739 G2 |
+| --- | --- | --- |
+| Governed endpoint design | DESIGN-READY (G1); NOT ACTIVATED | Unchanged |
+| MCP Phase 2 productive audit wiring | Undocumented | **DESIGN-READY (G2 MCP); NOT ACTIVATED** |
+| Phase 1 MCP dry-run | Active (#2704) | Unchanged |
+| `MUTATION_ALLOWED` / `PERSIST_ALLOWED` | `False` in code | Unchanged |
+
+Proof matrix row 3 in [`db-runtime-ci-proof-path-v1.md`](db-runtime-ci-proof-path-v1.md)
+updated to **DESIGN-READY (G1+G2 MCP) / NOT ACTIVATED**.
+
+Parent #2606 criterion 6 remains **PARTIAL**; G2 design does not close epic.
+
 ---
 
 ## Provenance

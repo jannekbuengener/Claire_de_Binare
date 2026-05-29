@@ -371,7 +371,7 @@ pytest tests/unit/surrealdb/test_memory_write_gate.py \
 | Gate | Issue | Scope |
 | --- | --- | --- |
 | **G1** | **#2735 (this doc)** | Endpoint design — **NOT ACTIVATED** |
-| G2 | Future | MCP Phase 2 design — mutation guard + audit wiring spec |
+| **G2** | **#2739** — [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) | MCP Phase 2 design — **NOT ACTIVATED** |
 | G3 | Future | Productive audit persist adapter + tests + HG-P operator proof; optional `PERSIST_ALLOWED` flip |
 | G4 | Future | Productive `agent_memory` write (HG-W) |
 | #2606 | Stays OPEN | Criterion 6 **PARTIAL** until T3 runtime evidence |
