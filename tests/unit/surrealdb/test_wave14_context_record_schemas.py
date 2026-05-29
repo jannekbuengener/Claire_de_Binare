@@ -126,7 +126,8 @@ def test_memory_normalization_maps_schema_aliases() -> None:
     }
     normalized = _normalize_memory_row(row)
     assert normalized["agent"] == "agent-test-001"
-    assert normalized["ttl_days"] == 7
+    assert normalized["ttl"] == 7
+    assert "ttl_days" not in normalized
     for field in contracts.MEMORY_SCHEMA_DEFAULTS:
         assert field in normalized
 
