@@ -192,6 +192,8 @@ runtime_evidence_bundle_P1.json
 
 # User-local SurrealDB context importer config (copy of .example.yaml with real auth_mode/credentials)
 infrastructure/config/surrealdb/context_import.local.yaml
+# User-local SurrealDB context query config (copy of .example.yaml; never commit)
+infrastructure/config/surrealdb/context_query.local.yaml
 
 # Local-only ops helper artifact (do not version)
 scripts/cdb_ops.ps1

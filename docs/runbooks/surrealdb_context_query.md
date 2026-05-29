@@ -57,14 +57,17 @@ docker run --rm -p 8000:8000 surrealdb/surrealdb:latest start --user root --pass
 
 ### 3.2 Local Config
 
-Copy the example config to a local working copy:
+Create the local working copy from the checked-in example:
 
 ```bash
-cp infrastructure/config/surrealdb/context_query.local.example.yaml \
-   infrastructure/config/surrealdb/context_query.local.yaml
+make context-query-config-init
 ```
 
-Edit `context_query.local.yaml` to point to your local SurrealDB instance if using real data.
+This validates the read-only example config and creates the gitignored
+`infrastructure/config/surrealdb/context_query.local.yaml` file if it is missing.
+Edit only local endpoint/auth-mode settings if needed. Do not put secrets into
+this config; root credentials stay in `SURREALDB_ENV` under the local secrets
+directory.
 
 ---
 

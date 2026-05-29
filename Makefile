@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-doctor
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-doctor
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -90,6 +90,7 @@ help:
 	@echo ""
 	@echo "Context (SurrealDB Local Runtime — kein Trading-Scope):"
 	@echo "  make context-env-check       - Env/Secrets-Guard pruefen (kein Secret-Leak)"
+	@echo "  make context-query-config-init - Lokale read-only Query-Config aus Example anlegen"
 	@echo "  make context-up              - SurrealDB Sidecar starten (BLUE/RED unangetastet)"
 	@echo "  make context-down            - SurrealDB Sidecar stoppen (BLUE/RED unangetastet)"
 	@echo "  make context-status          - Container/Volume/Port-Status (kein Secret-Leak)"
@@ -267,6 +268,9 @@ context-env-check:
 	 echo "     SURREAL_USER=[REDACTED]"; \
 	 echo "     SURREAL_PASS=[REDACTED]"
 endif
+
+context-query-config-init:
+	@$(PYTHON) -m tools.surrealdb.local_query_config_init
 
 ifeq ($(OS),Windows_NT)
 context-up: context-env-check

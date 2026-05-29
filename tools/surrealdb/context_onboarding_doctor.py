@@ -317,9 +317,7 @@ def prioritize_next_action(report: DoctorReport) -> str:
             "infrastructure/config/surrealdb/SURREALDB_ENV.example"
         )
     if report.config_context_query_local == "missing":
-        return (
-            "create context_query.local.yaml from " "context_query.local.example.yaml"
-        )
+        return "run make context-query-config-init"
     if report.surrealdb_status == "not_reachable":
         return "start local SurrealDB with make context-up"
     if report.surrealdb_health == "fail" or report.surrealdb_version == "fail":
@@ -490,6 +488,7 @@ Examples:
   python -m tools.surrealdb.context_onboarding_doctor
   python -m tools.surrealdb.context_onboarding_doctor --format json
   python -m tools.surrealdb.context_onboarding_doctor --skip-mcp --skip-schema
+  make context-query-config-init
   make context-doctor
 
 Exit codes:

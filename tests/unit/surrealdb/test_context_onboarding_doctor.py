@@ -223,7 +223,7 @@ def test_schema_ok_and_fail(tmp_path: Path) -> None:
                 "secrets_surrealdb_env": "exists",
                 "config_context_query_local": "missing",
             },
-            "create context_query.local.yaml from context_query.local.example.yaml",
+            "run make context-query-config-init",
         ),
         (
             {

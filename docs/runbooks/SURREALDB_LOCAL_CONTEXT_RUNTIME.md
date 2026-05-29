@@ -53,6 +53,7 @@ context_query.py     ──► read-only Queries
 | Docker Desktop läuft | `docker ps` liefert Ausgabe ohne Fehler |
 | `cdb_network` vorhanden | `docker network ls \| grep cdb_network` |
 | Lokale Env-Datei vorhanden | `make context-env-check` |
+| Lokale read-only Query-Config vorhanden | `make context-query-config-init` |
 | `SECRETS_PATH` gesetzt oder Default-Pfad vorhanden | `ls ${SECRETS_PATH:-$HOME/Documents/.secrets/.cdb}/SURREALDB_ENV` |
 | Lokales Repo vorhanden | `git status` |
 | Python 3.12 + Tools | `python3 --version` |
@@ -66,6 +67,17 @@ context_query.py     ──► read-only Queries
 | Override | `SECRETS_PATH=/pfad/zu/dir make context-up` |
 
 Template: `infrastructure/config/surrealdb/SURREALDB_ENV.example`
+
+**Lokale Query-Config anlegen (secret-frei):**
+
+```bash
+make context-query-config-init
+```
+
+Der Befehl kopiert `infrastructure/config/surrealdb/context_query.local.example.yaml`
+nach `infrastructure/config/surrealdb/context_query.local.yaml`, validiert die
+read-only Guardrails und lässt die lokale Datei gitignored. Die Datei darf keine
+Secrets enthalten; Credentials bleiben ausschließlich in `SURREALDB_ENV`.
 
 **`cdb_network` anlegen (falls fehlend):**
 
@@ -101,6 +113,9 @@ Read-only Preflight für neue Agents/Operatoren (#2642). Prüft:
 - `SECRETS_PATH` / `CDB_CONTEXT_SECRETS_PATH` (nur SET/VALID/INVALID, keine Werte)
 - Canon Secret Store und `SURREALDB_ENV` (EXISTS/MISSING)
 - `context_query.local.yaml` (EXISTS/MISSING)
+
+Wenn `context_query.local.yaml` fehlt, zuerst `make context-query-config-init`
+ausführen. Keine Secret-Werte in die Query-Config eintragen.
 
 Keine Secrets im Output. Kein Docker-Start/Stop. Kein DB-Write. LR bleibt **NO-GO**.
 

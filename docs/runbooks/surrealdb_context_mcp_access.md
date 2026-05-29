@@ -633,14 +633,16 @@ Test-Path infrastructure/config/surrealdb/context_query.local.yaml
 Fail-closed rules:
 
 - If `/health` or `/version` is not `200`, stop.
-- If `infrastructure/config/surrealdb/context_query.local.yaml` is missing, stop.
+- If `infrastructure/config/surrealdb/context_query.local.yaml` is missing, run
+  `make context-query-config-init` first; stop if that init fails.
 - Resolve secrets dir in this order (never print the path, check existence only):
   - `CDB_CONTEXT_SECRETS_PATH` if set (override)
   - `SECRETS_PATH` if set (canon)
   - Windows default: `%USERPROFILE%\Documents\.secrets\.cdb` (canon)
   - Linux/Mac default: `$HOME/Documents/.secrets/.cdb` (canon)
 - If no secrets dir resolves, or if `SURREALDB_ENV` is missing inside it, stop.
-- If only `context_query.local.example.yaml` exists, status stays `BLOCKED_NEEDS_AUTH_CONFIG`.
+- If only `context_query.local.example.yaml` exists and init was not run, status
+  stays `BLOCKED_NEEDS_AUTH_CONFIG`.
 - Never print secret file contents. The smoke only checks the config path and the
   presence of env flags and required secret file existence.
 
