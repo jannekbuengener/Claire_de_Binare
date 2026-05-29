@@ -266,6 +266,88 @@ Stop and do not implement write if:
 
 ---
 
+## 16. Slice 2 addendum
+
+**Slice 2 delivered**: `2606-memory-slice2-contracts`  
+**Repo HEAD at delivery**: see PR for commit SHA  
+**Date**: 2026-05-29
+
+### 16.1 What was built
+
+| Artifact | Path |
+| --- | --- |
+| `memory_contract.py` | `tools/surrealdb/memory_contract.py` |
+| Unit tests | `tests/unit/surrealdb/test_memory_contract.py` |
+
+### 16.2 R5 finalized (memory_id spec)
+
+R5 from Slice 1 (planned, not implemented) is now implemented:
+
+| Property | Value |
+| --- | --- |
+| Algorithm | UUIDv5 (`uuid.uuid5`) |
+| Namespace constant | `MEMORY_ID_NAMESPACE = uuid.UUID("b4e1d2c3-a5f6-4780-9bcd-ef0123456789")` |
+| Name string | `{scope}\|{namespace}\|{memory_type}\|{created_by}\|{content_hash}\|{source_refs_fingerprint}` |
+| `content_hash` | SHA256 of `content.strip().encode("utf-8")` |
+| `source_refs_fingerprint` | `canonical_hash(sorted(set(source_refs)))` from `core/replay/canonical_json.py` |
+| **NOT in ID** | `created_at`, `ttl`, `confidence`, `evidence_refs` |
+
+### 16.3 Validator contract (v1)
+
+`validate_memory_record(raw, *, strict=True)`:
+
+- Required: `scope`, `namespace`, `memory_type`, `content`, `source_refs`, `evidence_refs`, `confidence`, `ttl`, `created_by`, `created_at`
+- `memory_type`: one of 6 CANONICAL_MEMORY_TYPES (lowercased)
+- `source_refs` / `evidence_refs`: non-empty list of non-empty strings
+- `confidence`: float in [0.0, 1.0]
+- `ttl`: int ≥ 0 (seconds); if ttl > 0 → `expires_at` required and must be strictly after `created_at`
+- Optional: `superseded_by` (non-empty if present), `stale_after` (int ≥ 0), `comment`
+- `strict=True`: rejects unknown fields
+- If `memory_id` present: must match computed value
+- If `memory_id` absent: computed and attached
+
+Canon names enforced: `created_by` (NOT `agent_id`), `source_refs` (NOT `source_ref`), `superseded_by` (NOT `supersedes`).
+
+### 16.4 Test coverage (Slice 2)
+
+76 unit tests in `tests/unit/surrealdb/test_memory_contract.py`:
+- ID determinism and stability (3 tests)
+- ID sensitivity to all 6 identity fields (6 parametrized)
+- ID insensitivity to `created_at`, `confidence`/`ttl`, `evidence_refs`
+- `compute_content_hash`: determinism, strip, length, sensitivity
+- `compute_source_refs_fingerprint`: order-insensitive, deduplicating, deterministic, sensitive
+- Valid record: memory_id added, memory_type normalized, fields preserved
+- Missing required fields: 10 parametrized
+- Empty `evidence_refs` / `source_refs`
+- Confidence out of range: 4 parametrized; edge values 0.0/1.0 pass
+- TTL contract: ttl=0 OK without `expires_at`; ttl>0 fails without `expires_at`, fails if `expires_at` ≤ `created_at`
+- `stale_after`: valid and negative
+- `superseded_by`: valid, empty string, whitespace
+- Unknown memory_type
+- Unknown extra field strict/non-strict
+- `memory_id` mismatch
+- `validate_memory_id_matches_record`: correct / wrong / missing
+
+### 16.5 No-changes list (Slice 2)
+
+- `memory_read.py` — unchanged
+- `core/utils/uuid_gen.py` — unchanged
+- MCP tools — unchanged
+- SurrealDB schema / Docker / infrastructure — unchanged
+- `DELIVERY_APPROVED.yaml` — unchanged
+- LR verdict remains NO-GO
+
+### 16.6 Remaining gaps after Slice 2
+
+| Gap | Slice |
+| --- | --- |
+| TTL unit drift (`ttl` seconds vs `ttl_days` in reader) | Slice 3 |
+| DB-backed memory read proof | Slice 3 |
+| Human-GO write gate design | Slice 4 |
+| Memory write implementation | Slice 5 (only after Human-GO + Slices 2–4) |
+
+---
+
 ## Provenance
 
 | Source | Role |
