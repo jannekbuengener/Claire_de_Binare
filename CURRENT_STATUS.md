@@ -10,8 +10,9 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `bb5db77d`; PR #2714 parent closure audit; campaign #2710–#2712)
-- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6 / OPEN 0**; gatekeeper **BLOCKED**). Epic GitHub body R1–R3 reconciled (#2713). Rest axis: **#2603**. `PERSIST_ALLOWED=False`. LR NO-GO.
+- **main**: green (HEAD `294d1ca0`; PR #2718 #2603 db runtime proof path merged 2026-05-29)
+- **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
+- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6**; DB read/stale **runtime-proven locally** via #2603 path). Rest gaps: #2719–#2721. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -23,6 +24,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **Campaign (Session 2026-05-29, #2603 DB Runtime / CI Proof Path)**: Proof matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; `make context-memory-db-proof`; unit contracts; operator `context-memory-db-proof` PASS (read+stale, run-scoped). Follow-ups #2719 claim-at-rest, #2720 cross-session, #2721 optional CI SurrealDB workflow. #2603 closes on PR #2718 merge; #2606 stays OPEN. Session log: `knowledge/logs/sessions/2026-05-29-2603-db-runtime-ci-proof-path.md`. LR NO-GO.
 - **Reconciled (Session 2026-05-29, #2713 Epic body R1–R3)**: #2606 GitHub epic body aligned to `memory-reality-slice1-audit.md` R1–R3; **NOT_CLOSURE_READY** + PASS 11 / PARTIAL 6 / OPEN 0; #2603 rest axis; boundaries restated. #2713 closes; #2606 OPEN. Session log: `knowledge/logs/sessions/2026-05-29-2606-epic-body-r1-r3-reconcile.md`. LR NO-GO.
 - **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. #2606 remains OPEN. LR NO-GO.
 - **Audited (Session 2026-05-29, #2705 Parent Closure Audit)**: Formal #2606 DoD re-evaluation after #2701–#2704. Verdict: **BLOCKED** for epic closure (6 closure-relevant PARTIAL: DB-backed read/stale CI proof, production audit trail, claim evidence at rest, cross-session rediscovery, epic body drift). #2705 closes; #2606 stays OPEN. 171 unit tests PASS (audit scope). Session log: `knowledge/logs/sessions/2026-05-29-2606-parent-closure-audit.md`. LR NO-GO.
