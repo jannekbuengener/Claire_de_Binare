@@ -1,0 +1,247 @@
+name: Optional SurrealDB Memory Proof
+
+# Non-required, opt-in proof workflow for #2603/#2606 memory paths.
+# Does NOT gate merges. LR remains NO-GO. No productive memory write.
+
+on:
+  workflow_dispatch:
+    inputs:
+      proof_suite:
+        description: "Proof suite to attempt when preflight passes"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - db-read-only
+          - preflight-only
+      attempt_runtime_proof:
+        description: "Run make proof targets after successful preflight"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  surrealdb-memory-proof:
+    name: Optional SurrealDB Memory Proof
+    runs-on: [self-hosted, cdb, docker]
+    timeout-minutes: 45
+    continue-on-error: true
+    env:
+      CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Init evidence directory
+        shell: bash
+        run: mkdir -p artifacts/surrealdb_memory_proof
+
+      - name: Ensure local query config exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          make context-query-config-init 2>&1 | tee artifacts/surrealdb_memory_proof/query_config_init.log
+
+      - name: Collect proof plan (preflight)
+        id: preflight
+        shell: bash
+        run: |
+          set +e
+          python -m tools.surrealdb.memory_db_proof_cli preflight --confirm \
+            > artifacts/surrealdb_memory_proof/preflight_db_read.json 2>&1
+          db_rc=$?
+
+          python -m tools.surrealdb.claim_evidence_proof_cli preflight --confirm \
+            > artifacts/surrealdb_memory_proof/preflight_claim_evidence.json 2>&1
+          claim_rc=$?
+
+          python -m tools.surrealdb.memory_rediscovery_proof_cli preflight --confirm \
+            > artifacts/surrealdb_memory_proof/preflight_rediscovery.json 2>&1
+          rediscovery_rc=$?
+          set -e
+
+          ok="false"
+          if [[ "$db_rc" -eq 0 && "$claim_rc" -eq 0 && "$rediscovery_rc" -eq 0 ]]; then
+            ok="true"
+          fi
+
+          echo "preflight_ok=${ok}" >> "$GITHUB_OUTPUT"
+          echo "db_preflight_rc=${db_rc}" >> "$GITHUB_OUTPUT"
+          echo "claim_preflight_rc=${claim_rc}" >> "$GITHUB_OUTPUT"
+          echo "rediscovery_preflight_rc=${rediscovery_rc}" >> "$GITHUB_OUTPUT"
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("artifacts/surrealdb_memory_proof")
+          plan = {
+              "schema_version": "surrealdb-memory-proof-plan/v1",
+              "issue": "#2721",
+              "lr_verdict": "NO-GO",
+              "required_ci_gate": False,
+              "operator_targets": {
+                  "db_read_stale": "make context-memory-db-proof",
+                  "claim_evidence": "make context-claim-evidence-proof",
+                  "cross_session_rediscovery": "make context-memory-rediscovery-proof",
+              },
+              "manual_local_fallback": (
+                  "If this workflow preflight fails, run the same make targets on a "
+                  "workstation with Docker, SECRETS_PATH/SURREALDB_ENV, and "
+                  "make context-up. See docs/runbooks/SURREALDB_LOCAL_CONTEXT_RUNTIME.md"
+              ),
+              "preflight_artifacts": [
+                  "preflight_db_read.json",
+                  "preflight_claim_evidence.json",
+                  "preflight_rediscovery.json",
+              ],
+          }
+          (root / "proof_plan.json").write_text(
+              json.dumps(plan, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Start context sidecar when preflight passed
+        if: >-
+          steps.preflight.outputs.preflight_ok == 'true'
+          && github.event.inputs.attempt_runtime_proof == 'true'
+          && github.event.inputs.proof_suite != 'preflight-only'
+        shell: bash
+        run: |
+          set -euo pipefail
+          make context-up 2>&1 | tee artifacts/surrealdb_memory_proof/context_up.log
+          make context-schema-apply 2>&1 | tee artifacts/surrealdb_memory_proof/context_schema_apply.log
+
+      - name: Run memory DB read proof
+        if: >-
+          steps.preflight.outputs.preflight_ok == 'true'
+          && github.event.inputs.attempt_runtime_proof == 'true'
+          && (github.event.inputs.proof_suite == 'all' || github.event.inputs.proof_suite == 'db-read-only')
+        shell: bash
+        run: |
+          set -euo pipefail
+          make context-memory-db-proof 2>&1 | tee artifacts/surrealdb_memory_proof/context_memory_db_proof.log
+
+      - name: Run claim evidence proof
+        if: >-
+          steps.preflight.outputs.preflight_ok == 'true'
+          && github.event.inputs.attempt_runtime_proof == 'true'
+          && github.event.inputs.proof_suite == 'all'
+        shell: bash
+        run: |
+          set -euo pipefail
+          make context-claim-evidence-proof 2>&1 | tee artifacts/surrealdb_memory_proof/context_claim_evidence_proof.log
+
+      - name: Run cross-session rediscovery proof
+        if: >-
+          steps.preflight.outputs.preflight_ok == 'true'
+          && github.event.inputs.attempt_runtime_proof == 'true'
+          && github.event.inputs.proof_suite == 'all'
+        shell: bash
+        run: |
+          set -euo pipefail
+          make context-memory-rediscovery-proof 2>&1 | tee artifacts/surrealdb_memory_proof/context_memory_rediscovery_proof.log
+
+      - name: Stop context sidecar
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          make context-down 2>&1 | tee artifacts/surrealdb_memory_proof/context_down.log
+
+      - name: Build proof summary
+        if: always()
+        shell: bash
+        env:
+          PREFLIGHT_OK: ${{ steps.preflight.outputs.preflight_ok }}
+          PROOF_SUITE: ${{ github.event.inputs.proof_suite }}
+          ATTEMPT_RUNTIME: ${{ github.event.inputs.attempt_runtime_proof }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("artifacts/surrealdb_memory_proof")
+          summary = {
+              "schema_version": "surrealdb-memory-proof-summary/v1",
+              "event_name": os.environ.get("GITHUB_EVENT_NAME", "unknown"),
+              "proof_suite": os.environ.get("PROOF_SUITE", "unknown"),
+              "attempt_runtime_proof": os.environ.get("ATTEMPT_RUNTIME", "unknown"),
+              "preflight_ok": os.environ.get("PREFLIGHT_OK") == "true",
+              "required_ci_gate": False,
+              "lr_verdict": "NO-GO",
+              "limitations": [
+                  "optional_non_required_workflow",
+                  "self_hosted_runner_with_docker_label",
+                  "no_productive_memory_write",
+                  "failures_do_not_block_merge",
+              ],
+          }
+          (root / "summary.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          md = "\n".join(
+              [
+                  "## Optional SurrealDB Memory Proof",
+                  "",
+                  "**Non-required workflow.** Failures do not block merges. LR: NO-GO.",
+                  "",
+                  f"- proof_suite: `{summary['proof_suite']}`",
+                  f"- attempt_runtime_proof: `{summary['attempt_runtime_proof']}`",
+                  f"- preflight_ok: `{summary['preflight_ok']}`",
+                  "",
+                  "### Operator fallback (manual local proof)",
+                  "",
+                  "```bash",
+                  "make context-up",
+                  "make context-memory-db-proof",
+                  "make context-claim-evidence-proof",
+                  "make context-memory-rediscovery-proof",
+                  "```",
+                  "",
+                  "Doc: `docs/runbooks/SURREALDB_LOCAL_CONTEXT_RUNTIME.md`",
+              ]
+          )
+          (root / "summary.md").write_text(md + "\n", encoding="utf-8")
+          print(md)
+          PY
+          cat artifacts/surrealdb_memory_proof/summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload proof artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: surrealdb-memory-proof-${{ github.run_id }}
+          path: artifacts/surrealdb_memory_proof/
+          if-no-files-found: warn
+          retention-days: 14

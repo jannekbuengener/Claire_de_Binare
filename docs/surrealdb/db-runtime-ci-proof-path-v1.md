@@ -29,7 +29,7 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | 3 | Productive audit trail | Gate + local `audit_observation` only | By design blocked | Document **BLOCKED** | **BLOCKED** (no activation) |
 | 4 | Claim evidence at rest | `claim_evidence_at_rest.py`; unit mocks; optional `context-claim-evidence-proof` | CI: mocks only; runtime: local operator path | `make context-claim-evidence-proof`; see [`claim-evidence-at-rest-v1.md`](claim-evidence-at-rest-v1.md) | **PASS WITH LIMITS** — local operator path; CI **PARTIAL** |
 | 5 | Cross-session rediscovery | `memory_cross_session_rediscovery.py`; manifest + subprocess prove | CI: mocks only; runtime: local operator | `make context-memory-rediscovery-proof`; see [`cross-session-memory-rediscovery-v1.md`](cross-session-memory-rediscovery-v1.md) | **PASS WITH LIMITS** — local two-process proof; CI **PARTIAL** |
-| 6 | CI/runtime SurrealDB service | `context-smoke-db` needs Docker + secrets; not in `ci.yml` | Self-hosted `docker` label; no SurrealDB step | Document boundary; optional non-required workflow | **NEEDS_FOLLOW_UP** |
+| 6 | CI/runtime SurrealDB service | `context-smoke-db` needs Docker + secrets; not in `ci.yml` | Self-hosted `docker` label; optional workflow | `.github/workflows/surrealdb-memory-proof.yml` (`workflow_dispatch`, non-required); preflight + optional `make context-memory-db-proof` / `context-claim-evidence-proof` / `context-memory-rediscovery-proof`; manual fallback in runbook | **PASS WITH LIMITS** — opt-in GHA path; required CI stays mock-only |
 
 ---
 
@@ -45,8 +45,11 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | `make context-claim-evidence-proof` | Claim evidence at rest on run-scoped fixtures (#2719) | No (operator; minutes) |
 | `make context-memory-rediscovery-proof` | Cross-session memory_id+scope rediscovery (#2720) | No (operator; minutes) |
 | `pytest -m local_only` memory proof tests | Same as CLI cycle with env gate | No |
+| `.github/workflows/surrealdb-memory-proof.yml` | Preflight + optional operator proofs on self-hosted Docker runner | No (opt-in `workflow_dispatch` only) |
 
 **CI policy:** Do not add live SurrealDB to required `.github/workflows/ci.yml`.
+Optional proof workflow: `surrealdb-memory-proof.yml` (#2721) — `continue-on-error: true`,
+not a branch-protection required check.
 Canonical gate remains `pytest -q -k "not test_mcp_time_server_runtime"`.
 
 ---

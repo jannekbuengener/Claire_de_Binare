@@ -388,6 +388,35 @@ lookup by ``memory_id`` and ``scope``. See
 make context-memory-rediscovery-proof
 ```
 
+### Optional GitHub Actions proof (#2721)
+
+Non-required, opt-in workflow for self-hosted runners with the `docker` label.
+Does **not** gate merges; failures are informational. LR remains **NO-GO**.
+
+| Item | Value |
+|------|-------|
+| Workflow | `.github/workflows/surrealdb-memory-proof.yml` |
+| Trigger | `workflow_dispatch` only |
+| Runner | `[self-hosted, cdb, docker]` |
+| Permissions | `contents: read` |
+| Inputs | `proof_suite` (`all` / `db-read-only` / `preflight-only`); `attempt_runtime_proof` |
+
+**Runner prerequisites:** Docker, `SECRETS_PATH` with `SURREALDB_ENV`, local query config
+(`make context-query-config-init`). The workflow runs preflight first; when preflight passes
+and `attempt_runtime_proof=true`, it may invoke the same `make` targets as the operator path
+above and uploads redacted artifacts (`proof_plan.json`, `summary.md`, logs).
+
+**Manual fallback** (canonical when GHA preflight fails or runner lacks secrets):
+
+```bash
+make context-up
+make context-memory-db-proof
+make context-claim-evidence-proof
+make context-memory-rediscovery-proof
+```
+
+Doc matrix row 6: [`docs/surrealdb/db-runtime-ci-proof-path-v1.md`](../surrealdb/db-runtime-ci-proof-path-v1.md).
+
 ---
 
 ## Häufige Fehler
