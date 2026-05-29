@@ -10,7 +10,8 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `a948554b`; PR #2711 MCP write intent; PR #2710 write path v1; PR #2709 Slice 5 verify; PR #2708 stale scan; PR #2701 output contract)
+- **main**: green (HEAD `7528655c`; PR #2712 campaign ledger; PR #2711 MCP write intent; PR #2710 write path v1; PR #2709 Slice 5 verify; PR #2708 stale scan; PR #2707 output contract)
+- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: 11/17 PASS, 6 PARTIAL closure-relevant; gatekeeper **BLOCKED** for epic close). LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -23,7 +24,8 @@
 ## Session Ledger (historical, not active focus)
 
 - **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. #2606 remains OPEN. LR NO-GO.
-- **Merged (Session 2026-05-29, #2606 Memory Write Path Campaign)**: PR #2710 (`1580a8cb`) — Slice 7 write path v1: `memory_write_path_v1.py`, `audit_observation_from_gate.py`, operator runbook, audit type `memory_write_gate_evaluation`, 26 unit tests (path + materializer + gate token redaction). PR #2711 (`a948554b`) — MCP dry-run write surface: `cdb_context_memory_write_intent`, registry/bridge/guard, design doc, 11 unit tests. Closes #2703/#2704. #2606 campaign comment + #2705 readiness in session log. `PERSIST_ALLOWED` unchanged; no productive agent_memory write; LR NO-GO. Session log: `knowledge/logs/sessions/2026-05-29-2606-memory-write-path-and-mcp-surface.md`.
+- **Audited (Session 2026-05-29, #2705 Parent Closure Audit)**: Formal #2606 DoD re-evaluation after #2701–#2704. Verdict: **BLOCKED** for epic closure (6 closure-relevant PARTIAL: DB-backed read/stale CI proof, production audit trail, claim evidence at rest, cross-session rediscovery, epic body drift). #2705 closes; #2606 stays OPEN. 171 unit tests PASS (audit scope). Session log: `knowledge/logs/sessions/2026-05-29-2606-parent-closure-audit.md`. LR NO-GO.
+- **Merged (Session 2026-05-29, #2606 Memory Write Path Campaign)**: PR #2710 (`1580a8cb`) — Slice 7 write path v1. PR #2711 (`a948554b`) — MCP dry-run write surface. PR #2712 (`7528655c`) — campaign ledger. Closes #2703/#2704. Session log: `knowledge/logs/sessions/2026-05-29-2606-memory-write-path-and-mcp-surface.md`.
 - **Merged (2026-05-29)**: #2646 — Cursor Cloud remote-only AGENTS.md overlay (e93317d2); rebase + scoping rework, required CI green.
 - **Merged (Session 4, 2026-03-22)**: #1257 fix(lr031): liveness floor min=1 (a407838)
 - **Merged (Session 5+6, 2026-03-24)**: #1270/#1271 (soak env_interruption/timeline), #1273 (batch soak+alerting fixes, af0f21e), #1274 (docs, ee29e99)
