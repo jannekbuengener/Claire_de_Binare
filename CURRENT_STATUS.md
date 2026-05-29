@@ -10,7 +10,7 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `e93317d2`; PR #2646 merged — Cursor Cloud AGENTS.md overlay)
+- **main**: green (HEAD `32de609f`; PR #2693 merged — #2606 Slice 5 Human-GO memory write gate)
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -103,6 +103,7 @@
 - **Merged (Session 2026-05-28, Plan-GO PR-Queue nach Runner-Recovery)**: Runner-Recovery (#2659 CLOSED). Queue gemergt: #2631 (`c717157e`), #2632 (`c2778373`), #2599 (`3c56acd9`, Closes #2596), #2628 (`c8dbcefe`, ruff bump + lockfile-Konflikt), #2633 (`7ec9863c`, codeql-action bump), #2600 (`51c33045`, Closes #2597), #2601 (`4bd54e11`, Closes #2598). `origin/main` @ `4bd54e11`. Offen: nur #2646 (Draft). Session-Log: `knowledge/logs/sessions/2026-05-28-pr-queue-runner-recovery.md`. LR bleibt NO-GO.
 - **Merged (Session 2026-05-29, Follow-up Batch #2660–#2669)**: Drei PR-Slices von `origin/main`: PR #2670 (`d08ddaa4`) — stack verify logging default + Windows `docker-health` (Closes #2668/#2669); PR #2672 (`b22072b1`) — Redis AOF RCA runbook (Closes #2667); PR #2673 (`c147f947`) — CONTROL_REGISTER notes PRs #2629–#2633 + review-thread runbook (Closes #2660–#2664/#2640). #2645 manuell als Duplikat von #2640 geschlossen. Gordon: `GORDON_NOT_AVAILABLE`. Session-Log: `knowledge/logs/sessions/2026-05-29-followup-batch-2660-2669.md`. LR bleibt NO-GO.
 - **Session 2026-05-29 (#2606/#2687)**: #2687 Context Query Config Init vorbereitet. PR #2690 fuegt `make context-query-config-init` hinzu, haelt `context_query.local.yaml` gitignored, aktualisiert Doctor-/Runbook-Hinweise und testet den secret-freien Init-Pfad. Gordon-Decommission als separates Follow-up #2689 angelegt; keine Gordon-Bereinigung in diesem Scope. #2606 bleibt OPEN; kein `surrealdb-local` DB-Smoke und keine LR-/Live-Aenderung. Session-Log: `knowledge/logs/sessions/2026-05-29-2687-context-query-config-init.md`.
+- **Merged (Session 2026-05-29, #2606 Slice 5)**: PR #2693 (`32de609f`) — Human-GO memory write gate dry-run harness. Delivered: `tools/surrealdb/memory_write_gate.py` (`PERSIST_ALLOWED = False`), `tests/unit/surrealdb/test_memory_write_gate.py` (15 unit tests), `docs/surrealdb/memory-write-gate-v1.md`, audit §19 addendum in `docs/surrealdb/memory-reality-slice1-audit.md`. Required checks green: `ci (Unit/Integration + Lint gesammelt)`, `policy-gate`; Black-format fix im PR-Scope enthalten. #2606-Kommentar: https://github.com/jannekbuengener/Claire_de_Binare/issues/2606#issuecomment-4571553312. #2606 bleibt OPEN; Slice 6 (#2694) nur nach explizitem Operator-GO. #2689 bleibt separat offen. LR bleibt NO-GO. Session-Log: `knowledge/logs/sessions/2026-05-29-2606-memory-slice5-write-gate.md`.
 
 ---
 
