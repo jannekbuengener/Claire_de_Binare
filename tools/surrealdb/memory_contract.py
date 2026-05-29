@@ -377,8 +377,8 @@ def validate_memory_record(raw: Any, *, strict: bool = True) -> dict[str, Any]:
     - confidence: numeric value in [0.0, 1.0].
     - ttl: integer >= 0 (seconds).
     - If ttl > 0: expires_at required, and must be strictly after created_at.
-    - Optional superseded_by: non-empty string if present.
-    - Optional stale_after: integer >= 0 if present.
+    - Optional superseded_by: non-empty string if present and not null.
+    - Optional stale_after: integer >= 0 if present and not null.
     - Optional comment: any string.
     - If memory_id is present: must equal the computed UUIDv5.
     - If memory_id is absent: validator computes and attaches it.
@@ -500,7 +500,7 @@ def validate_memory_record(raw: Any, *, strict: bool = True) -> dict[str, Any]:
     # superseded_by (optional, non-empty if present)
     if "superseded_by" in raw:
         sv = raw["superseded_by"]
-        if not isinstance(sv, str) or not sv.strip():
+        if sv is not None and (not isinstance(sv, str) or not sv.strip()):
             raise MemoryContractError(
                 "superseded_by must be a non-empty string if present"
             )
@@ -508,14 +508,15 @@ def validate_memory_record(raw: Any, *, strict: bool = True) -> dict[str, Any]:
     # stale_after (optional, int >= 0)
     if "stale_after" in raw:
         sa = raw["stale_after"]
-        try:
-            sa_int = int(sa)
-        except (TypeError, ValueError) as exc:
-            raise MemoryContractError(
-                f"stale_after must be an integer >= 0; got {sa!r}"
-            ) from exc
-        if sa_int < 0:
-            raise MemoryContractError(f"stale_after must be >= 0; got {sa_int}")
+        if sa is not None:
+            try:
+                sa_int = int(sa)
+            except (TypeError, ValueError) as exc:
+                raise MemoryContractError(
+                    f"stale_after must be an integer >= 0; got {sa!r}"
+                ) from exc
+            if sa_int < 0:
+                raise MemoryContractError(f"stale_after must be >= 0; got {sa_int}")
 
     # Compute canonical memory_id
     computed_id = generate_memory_id(

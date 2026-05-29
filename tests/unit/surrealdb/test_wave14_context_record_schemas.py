@@ -141,6 +141,21 @@ def test_memory_normalization_maps_schema_aliases() -> None:
 
 
 @pytest.mark.unit
+def test_agent_memory_stale_after_schema_is_optional(surql_text: str) -> None:
+    assert (
+        "DEFINE FIELD stale_after ON TABLE agent_memory TYPE option<int>;" in surql_text
+    )
+
+
+@pytest.mark.unit
+def test_agent_memory_superseded_by_schema_is_optional(surql_text: str) -> None:
+    assert (
+        "DEFINE FIELD superseded_by ON TABLE agent_memory TYPE option<string>;"
+        in surql_text
+    )
+
+
+@pytest.mark.unit
 def test_memory_normalization_uses_scope_when_created_by_missing() -> None:
     row = {
         "memory_id": "mem-scope-fallback",

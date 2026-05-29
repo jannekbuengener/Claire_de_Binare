@@ -261,8 +261,8 @@ DEFINE FIELD evidence_refs ON TABLE agent_memory TYPE array;
 DEFINE FIELD confidence ON TABLE agent_memory TYPE float;
 DEFINE FIELD ttl ON TABLE agent_memory TYPE int;
 DEFINE FIELD expires_at ON TABLE agent_memory TYPE datetime;
-DEFINE FIELD stale_after ON TABLE agent_memory TYPE int;
-DEFINE FIELD superseded_by ON TABLE agent_memory TYPE string;
+DEFINE FIELD stale_after ON TABLE agent_memory TYPE option<int>;
+DEFINE FIELD superseded_by ON TABLE agent_memory TYPE option<string>;
 DEFINE FIELD created_by ON TABLE agent_memory TYPE string;
 DEFINE FIELD comment ON TABLE agent_memory TYPE string;
 DEFINE FIELD created_at ON TABLE agent_memory TYPE datetime VALUE $value OR time::now(); -- REQUIRED(v0-draft)

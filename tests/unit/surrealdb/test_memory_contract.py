@@ -458,6 +458,21 @@ def test_validate_memory_record_stale_after_zero_ok() -> None:
 
 
 @pytest.mark.unit
+def test_validate_memory_record_stale_after_missing_optional_ok() -> None:
+    rec = _valid_record()
+    rec.pop("stale_after", None)
+    out = validate_memory_record(rec)
+    assert "stale_after" not in out
+
+
+@pytest.mark.unit
+def test_validate_memory_record_stale_after_none_optional_ok() -> None:
+    rec = _valid_record(stale_after=None)
+    out = validate_memory_record(rec)
+    assert out["stale_after"] is None
+
+
+@pytest.mark.unit
 def test_validate_memory_record_stale_after_negative_rejected() -> None:
     rec = _valid_record(stale_after=-1)
     with pytest.raises(MemoryContractError, match="stale_after"):
@@ -474,6 +489,21 @@ def test_validate_memory_record_superseded_by_valid() -> None:
     rec = _valid_record(superseded_by="mem-prev-id-001")
     out = validate_memory_record(rec)
     assert out["superseded_by"] == "mem-prev-id-001"
+
+
+@pytest.mark.unit
+def test_validate_memory_record_superseded_by_missing_optional_ok() -> None:
+    rec = _valid_record()
+    rec.pop("superseded_by", None)
+    out = validate_memory_record(rec)
+    assert "superseded_by" not in out
+
+
+@pytest.mark.unit
+def test_validate_memory_record_superseded_by_none_optional_ok() -> None:
+    rec = _valid_record(superseded_by=None)
+    out = validate_memory_record(rec)
+    assert out["superseded_by"] is None
 
 
 @pytest.mark.unit

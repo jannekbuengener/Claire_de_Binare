@@ -407,7 +407,7 @@ Canon names enforced: `created_by` (NOT `agent_id`), `source_refs` (NOT `source_
 
 ## 18. Slice 4 addendum — DB-backed memory read proof (#2606)
 
-**Delivered (PR pending):** read-only proof helper, contract-compliant fixtures, opt-in local smoke.
+**Delivered:** read-only proof helper, contract-compliant fixtures, opt-in local smoke.
 
 ### 18.1 Proof helper
 
@@ -441,13 +441,31 @@ pytest -v -m local_only tests/local/surrealdb/test_memory_db_read_proof.py
 
 Proven behaviors: DB read → `source=surrealdb-local` (helper + MCP), contract validation pass, UUIDv5 `memory_id` match, freshness fresh vs expired, forged caller `source` ignored on MCP path.
 
-### 18.4 No-changes list (Slice 4)
+### 18.4 #2691 optional-field correction
 
-- No memory write feature, no MCP write, no schema/docker changes
+The local-only DB smoke initially exposed a schemafull SurrealDB mismatch:
+missing optional `agent_memory.stale_after` values were treated as `NONE` and
+rejected by `TYPE int`. Runtime verification then exposed the same optional-field
+class for `superseded_by` (`NONE` rejected by `TYPE string`).
+
+Correction:
+
+- `stale_after` is `option<int>` in `context_intelligence_v0.surql`.
+- `superseded_by` is `option<string>` in `context_intelligence_v0.surql`.
+- `validate_memory_record()` accepts explicit `None` for both optional fields.
+- Tests cover missing and `None` values, plus schema declarations.
+
+Post-fix local-only smoke result: `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE=1 pytest
+tests/local/surrealdb/test_memory_db_read_proof.py -q` passed (`1 passed, 1
+skipped`) against `surrealdb-local`.
+
+### 18.5 No-changes list (Slice 4)
+
+- No memory write feature, no MCP write, no Docker/runtime-stack changes
 - Wave-14 pre-contract fixture unchanged
 - LR remains NO-GO
 
-### 18.5 Remaining gaps after Slice 4
+### 18.6 Remaining gaps after Slice 4
 
 | Gap | Follow-up |
 | --- | --- |
