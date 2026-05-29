@@ -474,6 +474,56 @@ skipped`) against `surrealdb-local`.
 
 ---
 
+## 19. Slice 5 addendum — Human-GO write gate design + harness (#2606)
+
+**Delivered:** in-memory gate module, contract doc, unit tests. No persistence.
+
+### 19.1 Gate module
+
+| Artifact | Role |
+| --- | --- |
+| `tools/surrealdb/memory_write_gate.py` | `MemoryWriteAuthorization`, `evaluate_memory_write_gate()` |
+| `docs/surrealdb/memory-write-gate-v1.md` | Human-GO representation, audit fields, DELIVERY_APPROVED boundary |
+
+Gate properties:
+
+- `PERSIST_ALLOWED = False` (module constant; never true in Slice 5)
+- Fail-closed block reasons: `no_authorization`, `no_human_go`, `contract_violation`, `scope_mismatch`, `missing_evidence`, `agent_self_asserted_go`, `supersede_requires_target`
+- Pass status: `approved_dry_run` only
+- Reuses `validate_memory_record()` from Slice 2; no changes to read path or MCP registry
+
+### 19.2 Human-GO boundary
+
+| Authorizing | Memory write? |
+| --- | --- |
+| `MemoryWriteAuthorization` with valid `human_go_token` | Gate may pass dry-run only |
+| `DELIVERY_APPROVED.yaml` | No |
+| Agent record fields `human_go` / `human_go_token` | Forbidden |
+
+### 19.3 Tests
+
+| File | Marker | CI |
+| --- | --- | --- |
+| `tests/unit/surrealdb/test_memory_write_gate.py` | `unit` | yes |
+
+Proven behaviors: block without GO, block on scope mismatch, block on contract violation, block on supersede without target, dry-run pass with valid auth, harness never calls write executor.
+
+### 19.4 No-changes list (Slice 5)
+
+- No memory write feature, no DB write, no MCP write, no Docker/runtime changes
+- `memory_read.py`, `memory_db_read_proof.py`, importer unchanged
+- LR remains NO-GO
+
+### 19.5 Remaining gaps after Slice 5
+
+| Gap | Follow-up |
+| --- | --- |
+| Minimal local-only write smoke | Slice 6 (only after gate + operator GO) |
+| MCP write surface | Out of scope until explicit design slice |
+| Production audit_observation persistence | Future slice after write smoke |
+
+---
+
 ## Provenance
 
 | Source | Role |
