@@ -13,7 +13,10 @@ from unittest.mock import patch
 
 import pytest
 
-from tools.surrealdb.memory_db_proof_local_dev import ENV_REAL_SURREALDB_MEMORY_SMOKE
+from tools.surrealdb.memory_db_proof_local_dev import (
+    ENV_REAL_SURREALDB_MEMORY_SMOKE,
+    QUERY_CONFIG_REL,
+)
 from tools.surrealdb.memory_db_proof_runtime import (
     RUNTIME_SCHEMA_VERSION,
     check_memory_db_proof_preconditions,
@@ -76,6 +79,12 @@ def test_preflight_ok_with_confirm_when_health_and_config_ok(
     (secrets / "SURREALDB_ENV").write_text(
         "SURREAL_USER=x\nSURREAL_PASS=y\n", encoding="utf-8"
     )
+    fake_root = tmp_path / "repo"
+    config_dir = fake_root / QUERY_CONFIG_REL.parent
+    config_dir.mkdir(parents=True)
+    (config_dir / QUERY_CONFIG_REL.name).write_text(
+        "schema_version: context-query-local/v0\n", encoding="utf-8"
+    )
     with patch(
         "tools.surrealdb.memory_db_proof_runtime.http_status",
         return_value=200,
@@ -84,7 +93,11 @@ def test_preflight_ok_with_confirm_when_health_and_config_ok(
             "tools.surrealdb.memory_db_proof_runtime.resolve_secrets_path",
             return_value=secrets,
         ):
-            result = check_memory_db_proof_preconditions(confirm=True)
+            with patch(
+                "tools.surrealdb.memory_db_proof_runtime.repo_root",
+                return_value=fake_root,
+            ):
+                result = check_memory_db_proof_preconditions(confirm=True)
     assert result["ok"] is True
     assert result["errors"] == []
 

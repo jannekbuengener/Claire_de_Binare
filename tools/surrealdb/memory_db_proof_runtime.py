@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from core.utils.clock import utcnow as cdb_utcnow
 from tools.mcp.context_evidence_memory_tools import TOOL_CDB_CONTEXT_MEMORY_GET
 from tools.mcp.surrealdb_adapter_factory import build_adapter_from_params
 from tools.surrealdb.memory_contract import validate_memory_id_matches_record
@@ -128,7 +129,7 @@ def run_memory_db_proof_cycle(
     if secrets_path is None:
         raise RuntimeError("secrets path missing after preflight")
 
-    ref_now = now or datetime.now(timezone.utc)
+    ref_now = now or cdb_utcnow()
     run_id = resolve_memory_proof_run_id()
     plan = build_memory_proof_record_plan(run_id)
     tmp_root = memory_proof_tmp_root(run_id)
