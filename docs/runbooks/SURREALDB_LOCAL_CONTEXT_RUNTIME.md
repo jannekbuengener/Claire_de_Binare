@@ -378,6 +378,16 @@ CLI equivalent:
 python -m tools.surrealdb.claim_evidence_proof_cli run-proof --confirm
 ```
 
+### Cross-session memory rediscovery (#2720)
+
+Two-process proof: manifest under ``.cdb_memory_rediscovery/<run_id>/`` plus DB
+lookup by ``memory_id`` and ``scope``. See
+[`docs/surrealdb/cross-session-memory-rediscovery-v1.md`](../surrealdb/cross-session-memory-rediscovery-v1.md).
+
+```bash
+make context-memory-rediscovery-proof
+```
+
 ---
 
 ## Häufige Fehler

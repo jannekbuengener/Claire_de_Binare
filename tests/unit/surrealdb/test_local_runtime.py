@@ -105,6 +105,23 @@ def test_makefile_context_claim_evidence_proof_invokes_cli() -> None:
 
 
 @pytest.mark.unit
+def test_makefile_context_memory_rediscovery_proof_in_phony() -> None:
+    content = _read_makefile()
+    phony_lines = [line for line in content.splitlines() if line.startswith(".PHONY:")]
+    phony_text = " ".join(phony_lines)
+    assert "context-memory-rediscovery-proof" in phony_text
+
+
+@pytest.mark.unit
+def test_makefile_context_memory_rediscovery_proof_invokes_cli() -> None:
+    content = _read_makefile()
+    recipe = _lines_for_target(content, "context-memory-rediscovery-proof")
+    recipe_text = "\n".join(recipe)
+    assert "memory_rediscovery_proof_cli" in recipe_text
+    assert "run-proof" in recipe_text
+
+
+@pytest.mark.unit
 def test_local_schema_check_hard_mode_exits_nonzero_if_offline() -> None:
     from tools.surrealdb import local_schema_check
 

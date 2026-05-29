@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-doctor
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -107,6 +107,7 @@ help:
 	@echo "  make context-smoke-db        - Hard fail-closed DB-backed smoke (#2460)"
 	@echo "  make context-memory-db-proof - Narrow memory read+stale proof (#2603/#2606)"
 	@echo "  make context-claim-evidence-proof - Claim evidence at rest proof (#2719/#2606)"
+	@echo "  make context-memory-rediscovery-proof - Cross-session memory rediscovery (#2720)"
 	@echo "  make context-doctor          - Read-only onboarding preflight (#2642)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -505,6 +506,16 @@ context-claim-evidence-proof: context-env-check
 	@echo "--- Schritt 2: Claim evidence at rest proof (run-scoped cleanup) ---"
 	@$(PYTHON) -m tools.surrealdb.claim_evidence_proof_cli run-proof --confirm
 	@echo "[OK] context-claim-evidence-proof: claim evidence at rest complete (LR: NO-GO)"
+
+context-memory-rediscovery-proof: context-env-check
+	@echo "=== Cross-session memory rediscovery proof #2720 ==="
+	@echo "NOTE: Lokaler Scope nur. LR: NO-GO. Manifest + subprocess prove; kein produktiver Write."
+	@echo "--- Schritt 1: Hard Schema-Check (cdb_surrealdb muss laufen) ---"
+	@$(PYTHON) tools/surrealdb/local_schema_check.py --hard-mode \
+		--secrets-path "$(SECRETS_PATH)"
+	@echo "--- Schritt 2: Seed + manifest + subprocess prove (run-scoped cleanup) ---"
+	@$(PYTHON) -m tools.surrealdb.memory_rediscovery_proof_cli run-proof --confirm
+	@echo "[OK] context-memory-rediscovery-proof: cross-session rediscovery complete (LR: NO-GO)"
 
 # ============================================================================# Paper Trading (14-Tage Test)
 # ============================================================================
