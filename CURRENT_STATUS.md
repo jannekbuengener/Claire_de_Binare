@@ -10,8 +10,8 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `bd00a4df`; PR #2714 parent closure audit; PR #2712 campaign ledger; PR #2711 MCP write intent; PR #2710 write path v1)
-- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: 11/17 PASS, 6 PARTIAL closure-relevant; gatekeeper **BLOCKED** for epic close). LR NO-GO.
+- **main**: green (HEAD `bb5db77d`; PR #2714 parent closure audit; campaign #2710–#2712)
+- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6 / OPEN 0**; gatekeeper **BLOCKED**). Epic GitHub body R1–R3 reconciled (#2713). Rest axis: **#2603**. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -23,6 +23,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **Reconciled (Session 2026-05-29, #2713 Epic body R1–R3)**: #2606 GitHub epic body aligned to `memory-reality-slice1-audit.md` R1–R3; **NOT_CLOSURE_READY** + PASS 11 / PARTIAL 6 / OPEN 0; #2603 rest axis; boundaries restated. #2713 closes; #2606 OPEN. Session log: `knowledge/logs/sessions/2026-05-29-2606-epic-body-r1-r3-reconcile.md`. LR NO-GO.
 - **Verified (Session 2026-05-29, #2606 Slice 5)**: Slice 5 Human-GO write gate harness verified on `main` @ `f158822f` — 15 gate unit tests + 95 contract/freshness regressions PASS; audit §2/§7 reconciled with §19. No code change. Session log: `knowledge/logs/sessions/2026-05-29-2606-slice5-verification.md`. #2606 remains OPEN. LR NO-GO.
 - **Audited (Session 2026-05-29, #2705 Parent Closure Audit)**: Formal #2606 DoD re-evaluation after #2701–#2704. Verdict: **BLOCKED** for epic closure (6 closure-relevant PARTIAL: DB-backed read/stale CI proof, production audit trail, claim evidence at rest, cross-session rediscovery, epic body drift). #2705 closes; #2606 stays OPEN. 171 unit tests PASS (audit scope). Session log: `knowledge/logs/sessions/2026-05-29-2606-parent-closure-audit.md`. LR NO-GO.
 - **Merged (Session 2026-05-29, #2606 Memory Write Path Campaign)**: PR #2710 (`1580a8cb`) — Slice 7 write path v1. PR #2711 (`a948554b`) — MCP dry-run write surface. PR #2712 (`7528655c`) — campaign ledger. Closes #2703/#2704. Session log: `knowledge/logs/sessions/2026-05-29-2606-memory-write-path-and-mcp-surface.md`.

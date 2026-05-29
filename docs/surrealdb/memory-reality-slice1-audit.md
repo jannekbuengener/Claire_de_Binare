@@ -21,7 +21,7 @@ This document records the **as-built** state of scoped agent memory: contract do
 | Question | Verdict |
 | --- | --- |
 | Is the memory **model** doc ↔ schema aligned? | **Yes** — `scoped-agent-memory-model-v1.md` matches `agent_memory` in `context_intelligence_v0.surql`. |
-| Is the **epic #2606 body** aligned? | **No (stale)** — field names and memory-type count differ from canon. |
+| Is the **epic #2606 body** aligned? | **Yes (R1–R3)** — reconciled via #2713 (2026-05-29); field names and six memory types match canon. |
 | Is **read** implemented? | **Yes, in-memory only** at the domain layer; MCP can opt into DB via `adapter_config_path` but CI proves dispatch with mocks, not live `agent_memory` rows. |
 | Is **write** gated in code? | **Partial (Slice 5, §19)** — in-memory `memory_write_gate.py` fail-closed harness; `PERSIST_ALLOWED=False`; no DB/MCP/importer write path. MCP read tools remain read-only. |
 | Safe to plan Memory-Write next? | **Partial** — Slices 2–6 delivered (contract, DB read proof, gate harness, local write smoke); production write path + `audit_observation` persistence remain #2703/#2704. |
@@ -614,4 +614,4 @@ Proven: dry_run zero SQL; audit persist env-gated; blocked without GO; no raw to
 | `tools/mcp/surrealdb_adapter_factory.py` | Source honesty |
 | `tools/mcp/permission_guard.py` | Read-only enforcement |
 | `core/utils/uuid_gen.py` | ID patterns |
-| GitHub issue #2606 | Epic (body partially stale) |
+| GitHub issue #2606 | Epic (body R1–R3 reconciled #2713) |
