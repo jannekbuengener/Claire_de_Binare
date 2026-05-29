@@ -23,8 +23,8 @@ This document records the **as-built** state of scoped agent memory: contract do
 | Is the memory **model** doc ↔ schema aligned? | **Yes** — `scoped-agent-memory-model-v1.md` matches `agent_memory` in `context_intelligence_v0.surql`. |
 | Is the **epic #2606 body** aligned? | **No (stale)** — field names and memory-type count differ from canon. |
 | Is **read** implemented? | **Yes, in-memory only** at the domain layer; MCP can opt into DB via `adapter_config_path` but CI proves dispatch with mocks, not live `agent_memory` rows. |
-| Is **write** gated in code? | **No write path** — read-only MCP + `PermissionGuard`; no Human-GO write gate for memory. |
-| Safe to plan Memory-Write next? | **No** — reconcile field/TTL drift and prove DB-backed read before write design. |
+| Is **write** gated in code? | **Partial (Slice 5, §19)** — in-memory `memory_write_gate.py` fail-closed harness; `PERSIST_ALLOWED=False`; no DB/MCP/importer write path. MCP read tools remain read-only. |
+| Safe to plan Memory-Write next? | **Partial** — Slices 2–6 delivered (contract, DB read proof, gate harness, local write smoke); production write path + `audit_observation` persistence remain #2703/#2704. |
 
 ---
 
@@ -147,17 +147,19 @@ All Wave-14 readers declare: **no DB, no writes, in-memory records only**.
 
 ## 7. Write-gate findings
 
+> **Slice 5 update (§19):** Human-GO write gate design + in-memory harness delivered in `memory_write_gate.py`. This section records the Slice 1 baseline; see §19 for current gate state.
+
 | Gate (v1 doc / ownership) | Implemented? | Notes |
 | --- | --- | --- |
-| Scoped write (`scope` + `namespace`) | No write API | Validator not built |
-| `source_refs` + `evidence_refs` required | Doc only | Reject logic = Slice 2 |
-| Human-GO for memory write | No | `decision_event.human_go` exists for decisions, not memory |
-| Audit trail on write | No | `audit_observation` table exists in schema draft |
-| Fail-closed without GO | N/A (no write) | MCP read tools return `no_write` in approval_semantics |
+| Scoped write (`scope` + `namespace`) | **Slice 5 (gate only)** | `validate_memory_record()` + scope match in gate; no write API |
+| `source_refs` + `evidence_refs` required | **Slice 2 + 5** | Contract validator + gate block on violation |
+| Human-GO for memory write | **Slice 5 (gate only)** | `MemoryWriteAuthorization` + `GO-YYYY-MM-DD[-suffix]` token; dry-run only |
+| Audit trail on write | **Slice 5 envelope only** | Gate `audit` block; DB `audit_observation` persistence = #2703 |
+| Fail-closed without GO | **Slice 5** | `blocked_*` statuses; `PERSIST_ALLOWED=False` |
 | Cross-agent write ban | Doc only | |
-| No backflow to Git/Postgres/runtime | Doc only | |
+| No backflow to Git/Postgres/runtime | Doc + gate | Gate has no persistence side effects |
 
-**Human-GO (future)**: must be explicit, out-of-band from agent self-assertion; likely `DELIVERY_APPROVED.yaml` or dedicated operator token — **not defined for memory** in repo today.
+**Human-GO (Slice 5):** explicit operator-supplied `MemoryWriteAuthorization` out-of-band; `DELIVERY_APPROVED.yaml` and `decision_event.human_go` do **not** authorize memory writes. See `docs/surrealdb/memory-write-gate-v1.md`.
 
 ---
 
