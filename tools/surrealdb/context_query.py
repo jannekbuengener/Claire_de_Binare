@@ -330,9 +330,7 @@ class SurrealDBLocalQueryAdapter(QueryAdapter):
 
     def _make_auth_header(self) -> str | None:
         if self._user and self._password:
-            token = base64.b64encode(
-                f"{self._user}:{self._password}".encode()
-            ).decode()
+            token = base64.b64encode(f"{self._user}:{self._password}".encode()).decode()
             return f"Basic {token}"
         return None
 
@@ -364,9 +362,7 @@ class SurrealDBLocalQueryAdapter(QueryAdapter):
         except urllib.error.URLError as exc:
             self.status = self._STATUS_UNAVAILABLE
             if self._hard_mode:
-                raise QueryAdapterError(
-                    f"SurrealDB unreachable: {exc.reason}"
-                ) from exc
+                raise QueryAdapterError(f"SurrealDB unreachable: {exc.reason}") from exc
             logger.warning("SurrealDB unreachable (soft mode): %s", exc.reason)
             return []
         try:
@@ -836,7 +832,9 @@ def build_symbol_query(
     if name:
         conditions.append(f"name CONTAINS {_surrealql_string(name)}")
     if qualified_name:
-        conditions.append(f"qualified_name CONTAINS {_surrealql_string(qualified_name)}")
+        conditions.append(
+            f"qualified_name CONTAINS {_surrealql_string(qualified_name)}"
+        )
     if source_path:
         conditions.append(f"source_path CONTAINS {_surrealql_string(source_path)}")
     if symbol_type:
@@ -1921,7 +1919,9 @@ def _handle(args: argparse.Namespace) -> tuple[dict[str, Any], int]:
     adapter_name = getattr(args, "adapter", "noop")
     if adapter_name == "surrealdb-local":
         if config is None:
-            raise InputNotFoundError("--config is required for --adapter surrealdb-local")
+            raise InputNotFoundError(
+                "--config is required for --adapter surrealdb-local"
+            )
         secrets_path = getattr(args, "secrets_path", None)
         user, password = _load_query_credentials(config, secrets_path)
         hard_mode = getattr(args, "hard_mode", False)

@@ -15,8 +15,9 @@ from tools.surrealdb.context_query import (
     load_config,
 )
 
-
-EXAMPLE_CONFIG = Path("infrastructure/config/surrealdb/context_query.local.example.yaml")
+EXAMPLE_CONFIG = Path(
+    "infrastructure/config/surrealdb/context_query.local.example.yaml"
+)
 
 
 @pytest.mark.unit
@@ -133,7 +134,9 @@ def test_whitespace_and_case_variants_are_stable() -> None:
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("statement", ["APPLY something", "MIGRATION run", "TRANSACTION start"])
+@pytest.mark.parametrize(
+    "statement", ["APPLY something", "MIGRATION run", "TRANSACTION start"]
+)
 def test_transaction_migration_apply_flows_are_blocked(statement: str) -> None:
     with pytest.raises(WriteDeniedError):
         classify_statement(statement)
