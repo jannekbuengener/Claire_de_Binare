@@ -237,6 +237,9 @@ Codex skill surface: `.codex/cdb_skills/`
 
 Cursor skill surface: `.cursor/skills/` (repo-versioniert; PR 1–3: vollständige OpenCode-Migration)
 
+Cursor subagent surface: `.cursor/agents/` (helper roles; shared contract
+`_CDB_SUBAGENT_CONTRACT.md`; registry pointer in `agents/AGENTS.md` § Cursor Subagents)
+
 OpenCode skill surface zusaetzlich: `.opencode/skills/` (gezielt laden, nicht pauschal).
 
 | Skill | Purpose | Cursor path |

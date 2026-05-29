@@ -18,6 +18,7 @@ Das alte Docs-Hub-Material ist nur noch:
 | Domain | Canonical Path |
 | --- | --- |
 | Agent registry | `agents/AGENTS.md` |
+| Cursor subagents (helper roles) | `.cursor/agents/` + `_CDB_SUBAGENT_CONTRACT.md` |
 | Governance / policy | `knowledge/governance/` |
 | Knowledge hub | `knowledge/` |
 | GitHub templates / community docs | `.github/` |

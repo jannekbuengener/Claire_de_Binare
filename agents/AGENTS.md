@@ -20,10 +20,30 @@ in einem separaten externen Doku-Repo gesucht wurde.
 9. `docs/runbooks/CONTROL_REGISTER.md`
 10. `agents/OPEN_CODE_AGENTS.md` — OpenCode Agent Shared Contract (Brain Evidence Gate fuer OpenCode Agents)
 
+## Cursor Subagents
+
+Cursor IDE helper roles live under `.cursor/agents/`. They are **not** standalone
+authorities; Session Lead and Human Gate retain decision power.
+
+| Item | Path |
+| --- | --- |
+| Pack README | `.cursor/agents/README_CDB_CURSOR_SUBAGENTS.md` |
+| Shared contract | `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md` |
+| Subagent files | `.cursor/agents/cdb-*.md` |
+
+**Readonly policy:** only `cdb-ci-debugger`, `cdb-context-intelligence-engineer`,
+`cdb-docs-canon-maintainer`, and `cdb-implementation-engineer` have
+`readonly: false` — and only after Jannek GO, session-start, and LOCK when
+issue-scoped. All other subagents are read-only.
+
+Invocation: `/cdb-<name>` (e.g. `/cdb-governance-gatekeeper`).
+
 ## Canonical Domains
 
 - `agents/`
   - Gemeinsame Agenten-Entrypoints und lokale Agenten-Navigation.
+- `.cursor/agents/`
+  - Cursor subagent definitions (helper roles; shared contract required).
 - `knowledge/governance/`
   - Kanonische Governance-, Policy- und Invariant-Dokumente.
 - `knowledge/`
