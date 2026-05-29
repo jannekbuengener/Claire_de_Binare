@@ -10,10 +10,11 @@
 
 ## Repo / Engineering Status (2026-05-29)
 
-- **main**: green (HEAD `fb490be3`; PR #2732 #2730 productive memory audit trail spec merged 2026-05-29)
+- **main**: green (HEAD `be27623`; PR #2731 Cursor subagent write-gate hardening merged 2026-05-29; prior #2732/#2730 @ `fb490be3`)
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
 - **#2730 Productive Memory Audit Trail Spec**: **CLOSED** — `docs/surrealdb/productive-memory-audit-trail-v1.md` + `productive-memory-write-readiness-runbook-v1.md`; proof matrix row 3 → **SPECIFIED / NOT ACTIVATED** (G0 only; no runtime flip). `PERSIST_ALLOWED=False` unchanged. LR NO-GO.
-- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (Parent Closure Audit #2705: **PASS 11 / PARTIAL 6**; DB read/stale **runtime-proven locally** via #2603 path). Rest gaps **#2719/#2720**: **PASS WITH LIMITS** (local operator paths; CI mock-only). **#2721**: **CLOSED** — optional non-required GHA workflow `surrealdb-memory-proof.yml` (matrix row 6 **PASS WITH LIMITS**). Productive audit trail **SPECIFIED / NOT ACTIVATED** (#2730; G1+ not activated). Parent re-audit follow-up pending. `PERSIST_ALLOWED=False`. LR NO-GO.
+- **#2733 Parent Re-Audit (#2606)**: **COMPLETE** (read-only) — matrix **PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2**; #2606 remains **NOT_CLOSURE_READY**. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. Epic body refreshed on GitHub.
+- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (re-audit #2733). Closure blockers: DB read/stale CI/default (#2/#3 PARTIAL), productive audit T3 not activated (#6 PARTIAL), claim/rediscovery PASS WITH LIMITS only (#8/#9). **#2719/#2720/#2721** closed on main. Next: **#2735** (G1 endpoint design). `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)
@@ -25,6 +26,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **Audited (Session 2026-05-29, #2733 #2606 parent re-audit)**: Read-only re-audit after #2730 spec merge. Verdict: **NOT_CLOSURE_READY** — PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2; productive audit trail SPECIFIED / NOT ACTIVATED. #2606 body refreshed; #2733 evidence log landed. G1 follow-up **#2735** filed. No code/MCP/DB change. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2730 productive memory audit trail spec)**: PR #2732 (`fb490be3`) — `productive-memory-audit-trail-v1.md`, `productive-memory-write-readiness-runbook-v1.md`; cross-refs in proof matrix, slice1 audit §22, write-gate §10, MCP surface. Proof matrix row 3 → **SPECIFIED / NOT ACTIVATED**. #2730 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; parent re-audit recommended). Session log: `knowledge/logs/sessions/2026-05-29-2730-productive-memory-audit-trail.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2721 optional SurrealDB memory proof workflow)**: PR #2727 (`6bc74f4f`) — `.github/workflows/surrealdb-memory-proof.yml` (`workflow_dispatch`, non-required, `continue-on-error: true`); workflow shape tests; proof matrix row 6 → **PASS WITH LIMITS**; runbook section. #2721 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; productive audit trail BLOCKED). Session log: `knowledge/logs/sessions/2026-05-29-2721-optional-surrealdb-memory-proof-workflow.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2606 #2719 + #2720 claim evidence + rediscovery)**: PR #2724 (`d308bf6a`) — claim evidence at rest (`make context-claim-evidence-proof`, `claim-evidence-at-rest/v1`). PR #2725 (`0cc53336`) — cross-session rediscovery (`make context-memory-rediscovery-proof`, `memory-cross-session-rediscovery/v1`). Proof matrix rows 4–5 → **PASS WITH LIMITS** in `docs/surrealdb/db-runtime-ci-proof-path-v1.md`. #2719/#2720 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; audit-trail BLOCKED remain). Session log: `knowledge/logs/sessions/2026-05-29-2606-claim-evidence-and-rediscovery.md`. LR NO-GO.
