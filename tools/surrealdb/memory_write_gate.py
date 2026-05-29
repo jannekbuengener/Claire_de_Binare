@@ -131,9 +131,11 @@ def _blocked_envelope(
             ),
             "subject_ref": memory_id,
             "message": message,
-            "evidence_refs": list(authorization.evidence_refs)
-            if authorization and authorization.evidence_refs
-            else [],
+            "evidence_refs": (
+                list(authorization.evidence_refs)
+                if authorization and authorization.evidence_refs
+                else []
+            ),
             "observed_by": OBSERVED_BY,
             "observed_at": observed_at.isoformat(),
             "severity": "blocking",
