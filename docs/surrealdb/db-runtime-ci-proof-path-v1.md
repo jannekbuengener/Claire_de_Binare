@@ -27,8 +27,8 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | 1 | DB read proof | `memory_db_read_proof.py`; unit mocks; `tests/local/.../test_memory_db_read_proof.py` | CI: mocks only; runtime: `local_only` + `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE=1` | Operator: `make context-memory-db-proof`; contracts in unit tests | **IMPLEMENTABLE_NOW** — local PASS path; CI stays **PARTIAL** |
 | 2 | DB stale scan proof | `memory_db_stale_scan.py`; #2708 on main | Same boundary as (1) | Same operator path | **IMPLEMENTABLE_NOW** — local PASS path; CI **PARTIAL** |
 | 3 | Productive audit trail | Gate + local `audit_observation` only | By design blocked | Document **BLOCKED** | **BLOCKED** (no activation) |
-| 4 | Claim evidence at rest | Contract + `claim_resolver.py` warnings | No DB enforcement | Follow-up issue | **NEEDS_FOLLOW_UP** |
-| 5 | Cross-session rediscovery | Depends on (1); `memory_id`+`scope` in helpers | Not CI-proven across sessions | Follow-up issue | **NEEDS_FOLLOW_UP** |
+| 4 | Claim evidence at rest | `claim_evidence_at_rest.py`; unit mocks; optional `context-claim-evidence-proof` | CI: mocks only; runtime: local operator path | `make context-claim-evidence-proof`; see [`claim-evidence-at-rest-v1.md`](claim-evidence-at-rest-v1.md) | **PASS WITH LIMITS** — local operator path; CI **PARTIAL** |
+| 5 | Cross-session rediscovery | Depends on (1); `memory_id`+`scope` in helpers | Not CI-proven across sessions | Follow-up #2720 | **NEEDS_FOLLOW_UP** (until #2720 lands) |
 | 6 | CI/runtime SurrealDB service | `context-smoke-db` needs Docker + secrets; not in `ci.yml` | Self-hosted `docker` label; no SurrealDB step | Document boundary; optional non-required workflow | **NEEDS_FOLLOW_UP** |
 
 ---
@@ -42,6 +42,7 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | Unit: `test_context_smoke_db_contracts.py` | `context-smoke-db` recipe (#2460) | Yes |
 | `make context-smoke-db` | Full context pipeline + DB write + query min-count | No (operator; ~26 min) |
 | `make context-memory-db-proof` | Narrow read + stale on run-scoped fixtures | No (operator; minutes) |
+| `make context-claim-evidence-proof` | Claim evidence at rest on run-scoped fixtures (#2719) | No (operator; minutes) |
 | `pytest -m local_only` memory proof tests | Same as CLI cycle with env gate | No |
 
 **CI policy:** Do not add live SurrealDB to required `.github/workflows/ci.yml`.

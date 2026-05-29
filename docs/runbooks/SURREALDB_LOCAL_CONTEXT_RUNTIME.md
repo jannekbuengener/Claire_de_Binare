@@ -362,6 +362,22 @@ CLI equivalent:
 python -m tools.surrealdb.memory_db_proof_cli run-proof --confirm
 ```
 
+### Claim evidence at rest (#2719)
+
+Narrow operator proof that run-scoped `claim` rows reference persisted
+`evidence_ref` records (fail-closed; no productive write). See
+[`docs/surrealdb/claim-evidence-at-rest-v1.md`](../surrealdb/claim-evidence-at-rest-v1.md).
+
+```bash
+make context-claim-evidence-proof
+```
+
+CLI equivalent:
+
+```bash
+python -m tools.surrealdb.claim_evidence_proof_cli run-proof --confirm
+```
+
 ---
 
 ## Häufige Fehler

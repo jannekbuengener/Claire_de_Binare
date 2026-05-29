@@ -39,6 +39,7 @@ IMPORT_CONFIG_REL = Path(
 _BASE_SCOPE = "memory_db_proof"
 _BASE_WRITE_SCOPE = "memory_db_write_smoke"
 _BASE_EVIDENCE_IDS = ("ev-mdbproof-base-001", "ev-mdbproof-base-002")
+_BASE_CLAIM_ID = "claim-mdbproof-base-001"
 _BASE_WRITE_EVIDENCE_ID = "ev-mdbwrite-base-001"
 _JSONL_STRIP_FIELDS = frozenset({"schema_version", "run_id", "sensitivity"})
 
@@ -63,11 +64,13 @@ class MemoryDbProofRecordPlan:
     scope: str
     evidence_ids: tuple[str, ...]
     memory_ids: tuple[str, ...]
+    claim_ids: tuple[str, ...]
 
     @property
     def records_by_table(self) -> tuple[tuple[str, str], ...]:
         rows: list[tuple[str, str]] = []
         rows.extend(("evidence_ref", item) for item in self.evidence_ids)
+        rows.extend(("claim", item) for item in self.claim_ids)
         rows.extend(("agent_memory", item) for item in self.memory_ids)
         return tuple(rows)
 
@@ -95,6 +98,12 @@ def build_memory_proof_record_plan(run_id: str) -> MemoryDbProofRecordPlan:
         return f"{stem}-{tag}-{suffix}"
 
     evidence_ids = tuple(_scoped_evidence(item) for item in _BASE_EVIDENCE_IDS)
+
+    def _scoped_claim(base: str) -> str:
+        stem, suffix = base.rsplit("-", 1)
+        return f"{stem}-{tag}-{suffix}"
+
+    claim_ids = (_scoped_claim(_BASE_CLAIM_ID),)
     memory_ids = _compute_run_scoped_memory_ids(scope=scope, evidence_ids=evidence_ids)
     return MemoryDbProofRecordPlan(
         run_id=run_id,
@@ -102,6 +111,7 @@ def build_memory_proof_record_plan(run_id: str) -> MemoryDbProofRecordPlan:
         scope=scope,
         evidence_ids=evidence_ids,
         memory_ids=memory_ids,
+        claim_ids=claim_ids,
     )
 
 
@@ -137,6 +147,7 @@ def _id_remap(plan: MemoryDbProofRecordPlan) -> dict[str, str]:
     return {
         _BASE_EVIDENCE_IDS[0]: plan.evidence_ids[0],
         _BASE_EVIDENCE_IDS[1]: plan.evidence_ids[1],
+        _BASE_CLAIM_ID: plan.claim_ids[0],
     }
 
 
@@ -191,14 +202,17 @@ def materialize_memory_proof_records(
             record = _replace_record_fields(record, plan=plan, id_map=id_map)
         else:
             record["run_id"] = run_id
+            record["scope"] = plan.scope
             record = {
                 key: (
                     _replace_value(value, id_map)
-                    if key in _ID_REFERENCE_FIELDS or key == "evidence_id"
+                    if key in _ID_REFERENCE_FIELDS or key in {"evidence_id", "claim_id"}
                     else value
                 )
                 for key, value in record.items()
             }
+            if filename == "claims.jsonl":
+                record["evidence_refs"] = [plan.evidence_ids[0]]
         records.append(json.dumps(record, ensure_ascii=True, sort_keys=True))
     return "\n".join(records) + ("\n" if records else "")
 
@@ -229,7 +243,7 @@ def materialize_memory_proof_bundle(
 ) -> Path:
     bundle_dir = tmp_path / "memory-db-proof-bundle"
     bundle_dir.mkdir(parents=True, exist_ok=True)
-    seeded = frozenset({"evidence_refs.jsonl", "agent_memories.jsonl"})
+    seeded = frozenset({"evidence_refs.jsonl", "agent_memories.jsonl", "claims.jsonl"})
     for filename in EXPECTED_JSONL_FILES.values():
         target = bundle_dir / filename
         if filename in seeded:
@@ -371,7 +385,11 @@ class MemoryDbProofSqlClient:
 def assert_memory_proof_records_absent(
     client: MemoryDbProofSqlClient, plan: MemoryDbProofRecordPlan
 ) -> None:
-    id_fields = {"evidence_ref": "evidence_id", "agent_memory": "memory_id"}
+    id_fields = {
+        "evidence_ref": "evidence_id",
+        "claim": "claim_id",
+        "agent_memory": "memory_id",
+    }
     present = [
         f"{table}:{raw_id}"
         for table, raw_id in plan.records_by_table
@@ -389,6 +407,7 @@ def cleanup_memory_proof_records(
 ) -> None:
     delete_order = (
         ("agent_memory", plan.memory_ids, "memory_id"),
+        ("claim", plan.claim_ids, "claim_id"),
         ("evidence_ref", plan.evidence_ids, "evidence_id"),
     )
     for table, ids, id_field in delete_order:
@@ -589,7 +608,11 @@ def materialize_memory_write_smoke_memory_record(
 def assert_memory_write_smoke_records_absent(
     client: MemoryDbProofSqlClient, plan: MemoryWriteSmokeRecordPlan
 ) -> None:
-    id_fields = {"evidence_ref": "evidence_id", "agent_memory": "memory_id"}
+    id_fields = {
+        "evidence_ref": "evidence_id",
+        "claim": "claim_id",
+        "agent_memory": "memory_id",
+    }
     present = [
         f"{table}:{raw_id}"
         for table, raw_id in plan.records_by_table
