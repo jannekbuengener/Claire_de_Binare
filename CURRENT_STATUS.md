@@ -3,18 +3,19 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-29
+**Last Updated**: 2026-05-30
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
-## Repo / Engineering Status (2026-05-29)
+## Repo / Engineering Status (2026-05-30)
 
-- **main**: green (HEAD `be27623`; PR #2731 Cursor subagent write-gate hardening merged 2026-05-29; prior #2732/#2730 @ `fb490be3`)
+- **main**: green (HEAD `ce44cd38`; PR #2742 G3a MCP operation_mode scaffold merged 2026-05-30; prior #2731 @ `be27623`)
+- **#2741 G3a MCP operation_mode scaffold**: **CLOSED** — PR #2742 (`ce44cd38`); G2 refusal codes in `cdb_context_memory_write_intent`; dry-run only; `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`. Session log: `knowledge/logs/sessions/2026-05-30-g3a-mcp-operation-mode-scaffold.md`. LR NO-GO.
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
 - **#2730 Productive Memory Audit Trail Spec**: **CLOSED** — `docs/surrealdb/productive-memory-audit-trail-v1.md` + `productive-memory-write-readiness-runbook-v1.md`; proof matrix row 3 → **SPECIFIED / NOT ACTIVATED** (G0 only; no runtime flip). `PERSIST_ALLOWED=False` unchanged. LR NO-GO.
 - **#2733 Parent Re-Audit (#2606)**: **COMPLETE** (read-only) — matrix **PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2**; #2606 remains **NOT_CLOSURE_READY**. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. Epic body refreshed on GitHub.
-- **#2606 Parent Memory Epic**: OPEN — **NOT_CLOSURE_READY** (re-audit #2733). Closure blockers: DB read/stale CI/default (#2/#3 PARTIAL), productive audit T3 not activated (#6 PARTIAL), claim/rediscovery PASS WITH LIMITS only (#8/#9). **#2719/#2720/#2721** closed on main. Next: **#2735** (G1 endpoint design). `PERSIST_ALLOWED=False`. LR NO-GO.
+- **#2606 Parent Memory Epic**: **CLOSED on GitHub (2026-05-30, unexpected)** — auto-closed on PR #2742 merge despite PR boundary “does not close #2606”; ledger still treats epic as **NOT_CLOSURE_READY** until operator reconciles issue state. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)

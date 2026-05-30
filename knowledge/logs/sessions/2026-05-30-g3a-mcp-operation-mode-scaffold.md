@@ -36,7 +36,15 @@ ruff check tools/mcp/memory_write_intent_tools.py tools/mcp/memory_output_contra
 - Registry `read_only=True`
 - #2606 not closed
 
+## Merge (2026-05-30)
+
+- PR [#2742](https://github.com/jannekbuengener/Claire_de_Binare/pull/2742) **MERGED** (squash) → main @ `ce44cd38`
+- CI: `ci (Unit/Integration + Lint gesammelt)` + `policy-gate` green; no review threads
+- #2741 **CLOSED** (expected)
+- **Anomaly:** GitHub auto-closed #2606 despite PR body `Refs #2606` / explicit non-close boundary — operator reopen may be required
+
 ## Next
 
 - G3b: `memory_write_path_productive` module + mock tests
 - G3c: HG-P operator proof (separate GO)
+- Reconcile #2606 state if parent epic must remain OPEN
