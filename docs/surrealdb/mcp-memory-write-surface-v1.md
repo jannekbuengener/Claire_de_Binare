@@ -45,11 +45,16 @@ Dry-run path unchanged; registry remains `read_only=True`; no SQL; no
 
 G2 also defines (not yet implemented):
 
-- Permission model extensions (registry / PermissionGuard — G3b/G3c)
-- Wiring intent to G1 governed endpoint via `memory_write_path_productive` (G3b)
+- Permission model extensions (registry / PermissionGuard — G3c)
+- MCP handler wiring to productive adapter execution (G3c+)
+
+**G3b (#2744): adapter contract proof (pending merge).** Module
+`memory_write_path_productive.py` provides mock-proven T3 boundary with HG-P tier
+semantics and mock sink only. MCP handler still refuses `audit_persist_productive`
+(G3a); no `PERSIST_ALLOWED` / `MUTATION_ALLOWED` flip.
 
 Any future mutation or registry `read_only=False` change requires maintainer GO,
-contract evidence, and a separate issue/PR — not implied by Phase 1, G2, or G3a.
+contract evidence, and a separate issue/PR — not implied by Phase 1, G2, G3a, or G3b.
 
 ### Legacy Phase 2 stub (pre-G2)
 
@@ -89,6 +94,7 @@ checklist: [`productive-memory-write-readiness-runbook-v1.md`](productive-memory
 - G1 endpoint design: [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735)
 - G2 MCP Phase 2 design: [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) (#2739)
 - G3a MCP operation_mode scaffold: #2741 (handler refusal codes; no persist)
+- G3b productive adapter contract proof: #2744 (mock sink only; no MCP enable)
 
 ## Validation
 
