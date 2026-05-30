@@ -41,9 +41,15 @@ ruff check tools/surrealdb/memory_write_path_productive.py \
 - MCP `audit_persist_productive` still refused (G3a handler unchanged)
 - #2606 not closed
 
-## Non-goals (explicit)
+## Merge status
 
-- G3c HG-P operator proof
-- Productive endpoint activation
-- `agent_memory_write`
-- Infra/workflow changes
+- PR [#2745](https://github.com/jannekbuengener/Claire_de_Binare/pull/2745) open
+- CI `ci (Unit/Integration + Lint gesammelt)`: **PASS**
+- `policy-gate`: **queued** (self-hosted runner `[self-hosted, cdb, docker, merge-gate]`)
+- Merge blocked until policy-gate completes
+
+## Next (post-merge)
+
+- Close #2744
+- Comment on #2606 (do not close)
+- Update §22.5 addendum from "pending merge" to "delivered"
