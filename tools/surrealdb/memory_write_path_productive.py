@@ -319,15 +319,6 @@ def _success_envelope(
     )
 
 
-def _public_audit_observation(
-    audit_observation: Mapping[str, Any] | None,
-) -> dict[str, Any] | None:
-    if audit_observation is None:
-        return None
-    cleaned = _public_gate_envelope(audit_observation)
-    return cleaned if isinstance(cleaned, dict) else dict(audit_observation)
-
-
 def run_memory_write_path_productive(
     record: Mapping[str, Any],
     authorization: ProductiveWriteAuthorization | None,
