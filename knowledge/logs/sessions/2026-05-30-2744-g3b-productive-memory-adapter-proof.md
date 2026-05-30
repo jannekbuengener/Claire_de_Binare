@@ -1,9 +1,9 @@
 # Session: G3b productive memory adapter contract proof (#2744)
 
 **Date:** 2026-05-30  
-**Issue:** [#2744](https://github.com/jannekbuengener/Claire_de_Binare/issues/2744)  
+**Issue:** [#2744](https://github.com/jannekbuengener/Claire_de_Binare/issues/2744) — **CLOSED**  
 **Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (OPEN / NOT_CLOSURE_READY)  
-**Branch:** `feat/2606-g3b-productive-memory-adapter-proof`
+**PR:** [#2745](https://github.com/jannekbuengener/Claire_de_Binare/pull/2745) — merged `f1177553`
 
 ## Goal
 
@@ -39,17 +39,17 @@ ruff check tools/surrealdb/memory_write_path_productive.py \
 - `PRODUCTIVE_ACTIVATED=False` (module constant)
 - Mock sink only; no real SurrealDB/HTTP writes
 - MCP `audit_persist_productive` still refused (G3a handler unchanged)
-- #2606 not closed
+- #2606 not closed (reopened after auto-close on merge)
 
 ## Merge status
 
-- PR [#2745](https://github.com/jannekbuengener/Claire_de_Binare/pull/2745) open
+- PR #2745: **MERGED** (squash) → `main` @ `f1177553`
 - CI `ci (Unit/Integration + Lint gesammelt)`: **PASS**
-- `policy-gate`: **queued** (self-hosted runner `[self-hosted, cdb, docker, merge-gate]`)
-- Merge blocked until policy-gate completes
+- `policy-gate`: **PASS**
+- Bugbot duplicate-helper thread resolved pre-merge (`df11966e`)
 
-## Next (post-merge)
+## Post-merge governance
 
-- Close #2744
-- Comment on #2606 (do not close)
-- Update §22.5 addendum from "pending merge" to "delivered"
+- #2744 **CLOSED** (via PR body `Closes #2744`)
+- #2606 **reopened** + delivery comment (epic NOT_CLOSURE_READY)
+- §22.5 addendum updated to merged state

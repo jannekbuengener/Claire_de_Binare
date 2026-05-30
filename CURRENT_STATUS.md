@@ -10,12 +10,13 @@
 
 ## Repo / Engineering Status (2026-05-30)
 
-- **main**: green (HEAD `ce44cd38`; PR #2742 G3a MCP operation_mode scaffold merged 2026-05-30; prior #2731 @ `be27623`)
+- **main**: green (HEAD `f1177553`; PR #2745 G3b productive memory adapter proof merged 2026-05-30; prior #2742 G3a @ `ce44cd38`)
+- **#2744 G3b productive memory adapter contract proof**: **CLOSED** — PR #2745 (`f1177553`); mock-only `memory_write_path_productive.py` + 14 unit tests; `PRODUCTIVE_ACTIVATED=False`; `PERSIST_ALLOWED=False` unchanged. Session log: `knowledge/logs/sessions/2026-05-30-2744-g3b-productive-memory-adapter-proof.md`. LR NO-GO.
 - **#2741 G3a MCP operation_mode scaffold**: **CLOSED** — PR #2742 (`ce44cd38`); G2 refusal codes in `cdb_context_memory_write_intent`; dry-run only; `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`. Session log: `knowledge/logs/sessions/2026-05-30-g3a-mcp-operation-mode-scaffold.md`. LR NO-GO.
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
 - **#2730 Productive Memory Audit Trail Spec**: **CLOSED** — `docs/surrealdb/productive-memory-audit-trail-v1.md` + `productive-memory-write-readiness-runbook-v1.md`; proof matrix row 3 → **SPECIFIED / NOT ACTIVATED** (G0 only; no runtime flip). `PERSIST_ALLOWED=False` unchanged. LR NO-GO.
 - **#2733 Parent Re-Audit (#2606)**: **COMPLETE** (read-only) — matrix **PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2**; #2606 remains **NOT_CLOSURE_READY**. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. Epic body refreshed on GitHub.
-- **#2606 Parent Memory Epic**: **CLOSED on GitHub (2026-05-30, unexpected)** — auto-closed on PR #2742 merge despite PR boundary “does not close #2606”; ledger still treats epic as **NOT_CLOSURE_READY** until operator reconciles issue state. `PERSIST_ALLOWED=False`. LR NO-GO.
+- **#2606 Parent Memory Epic**: **OPEN** (NOT_CLOSURE_READY) — auto-closed again on G3b merge (#2745); reopened 2026-05-30. G3b delivers mock adapter contract only; G3c/HG-P and `PERSIST_ALLOWED` flip remain out of scope. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)

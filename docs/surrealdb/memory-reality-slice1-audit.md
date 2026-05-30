@@ -695,7 +695,7 @@ no `PERSIST_ALLOWED` flip.
 
 | Gap | After G3a |
 | --- | --- |
-| `memory_write_path_productive` module | Not implemented (G3b) |
+| `memory_write_path_productive` module | Implemented (G3b, mock-only; `f1177553`) |
 | HG-P operator proof / governed endpoint | Not implemented (G3c) |
 | `PERSIST_ALLOWED` flip | Unchanged (`False`) |
 
@@ -703,7 +703,7 @@ Parent #2606 criterion 6 remains **PARTIAL**; G3a scaffold does not close epic.
 
 ### 22.5 G3b addendum — productive memory adapter contract proof (#2744)
 
-**Delivered (pending merge):** Mock-proven contract boundary in
+**Delivered (merged `f1177553`, PR #2745):** Mock-proven contract boundary in
 `tools/surrealdb/memory_write_path_productive.py`. Unit tests cover 14 fail-closed
 checks. Mock sink only; no real DB/network writes; `PRODUCTIVE_ACTIVATED=False`;
 `PERSIST_ALLOWED` unchanged.
