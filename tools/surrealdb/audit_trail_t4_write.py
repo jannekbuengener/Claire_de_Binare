@@ -388,19 +388,19 @@ def execute_hgw_proof_write(
         client.create_audit_observation_proof(
             observation_id, audit_row, memory_id=memory_id
         )
+        audit_written = True
         if not client.record_exists(
             "audit_observation", observation_id, id_field="observation_id"
         ):
             raise AuditTrailT4WriteError("audit_observation read-back failed")
-        audit_written = True
 
         memory_row = _enrich_memory_row_for_audit_trail_db(
             _build_agent_memory_row(gate_envelope, audit_row)
         )
         client.upsert_create("agent_memory", memory_id, memory_row)
+        memory_written = True
         if not client.record_exists("agent_memory", memory_id, id_field="memory_id"):
             raise AuditTrailT4WriteError("agent_memory read-back failed")
-        memory_written = True
     except AuditTrailT4WriteError:
         if audit_written or memory_written:
             try:
