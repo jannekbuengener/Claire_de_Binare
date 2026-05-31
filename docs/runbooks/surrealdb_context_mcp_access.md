@@ -134,6 +134,8 @@ Linux/macOS: use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.
 # pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
 ```
 
+> **Note on OpenCode command:** The tracked `opencode.jsonc` uses portable `python` so Linux/macOS/Cloud Agent checkouts work out of the box. Windows-local CDB may override to `.venv/Scripts/python.exe` in user-level `~/.config/opencode/opencode.jsonc` when system Python lacks project deps.
+>
 > **Note on config naming:** OpenCode's project-level config must be named `opencode.jsonc` or `opencode.json` (no leading dot). The repo tracked config was renamed from `.opencode.jsonc` to `opencode.jsonc` to match this requirement. Pre-existing user-level config at `~/.config/opencode/opencode.jsonc` is loaded alongside and merged per OpenCode's config precedence rules.
 >
 > **Note on server naming:** The repo defines server name `cdb_context`. If a user-level or remote config defines a different server named `cdb`, it is a separate server entry. Both coexist in the OpenCode MCP list. The `cdb` (remote) failure shown in OpenCode is pre-existing and unrelated to the repo baseline — it targets `http://127.0.0.1:8812/mcp` and requires a separate MCP server on that port.

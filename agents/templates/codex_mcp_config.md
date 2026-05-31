@@ -31,7 +31,8 @@ reloads.
 ## Via OpenCode
 
 1. Ensure `opencode.jsonc` in repo root includes the `cdb_context` MCP entry
-   (`.venv/Scripts/python.exe` on Windows-local CDB).
+   (portable `python` in the tracked config; Windows-local optional override to
+   `.venv/Scripts/python.exe` via user-level `~/.config/opencode/opencode.jsonc`).
 2. When OpenCode invokes Codex (via agent delegation), `cdb_context` tools
    are available in the MCP inventory.
 

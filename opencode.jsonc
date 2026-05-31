@@ -3,8 +3,7 @@
   "mcp": {
     "cdb_context": {
       "type": "local",
-      // Windows-local CDB: repo venv + cwd = repo root. Linux/macOS: use ".venv/bin/python".
-      "command": [".venv/Scripts/python.exe", "-m", "tools.mcp.server"],
+      "command": ["python", "-m", "tools.mcp.server"],
       "enabled": true
     }
   }
