@@ -156,21 +156,41 @@ def run_proof(
         else ("yes" if "cdb_network" in t4_networks else "unknown")
     )
     matrix["t2_localhost_excluded"] = "yes"
-    matrix["scaffold_activation"] = (
-        "hgw_proof_executed"
-        if write_proof_row and hgw_proof_env_authorized()
-        else "not_activated"
-    )
+    matrix["scaffold_activation"] = "not_activated"
     matrix["hgw_proof_env_authorized"] = hgw_proof_env_authorized()
+
+    preflight_failures: list[str] = []
+    if matrix["endpoint_reachable"] is not True:
+        preflight_failures.append("endpoint_reachable")
+    if matrix["non_localhost"] is not True:
+        preflight_failures.append("non_localhost")
+    if matrix["tls_baseline"] is not True:
+        preflight_failures.append("tls_baseline")
+    if matrix["audit_observation_available"] is not True:
+        preflight_failures.append("audit_observation_available")
+    if matrix["agent_memory_table_present"] is not True:
+        preflight_failures.append("agent_memory_table_present")
+    if matrix["ns_present"] is not True:
+        preflight_failures.append("ns_present")
+    if matrix["db_present"] is not True:
+        preflight_failures.append("db_present")
+    if matrix["blue_red_coupling"] != "no":
+        preflight_failures.append("blue_red_coupling")
+    if matrix.get("container_inspect") != "ok":
+        preflight_failures.append("container_inspect")
 
     if write_proof_row:
         if not hgw_proof_env_authorized():
             matrix.update(_write_proof_row_status(write_proof_row=True))
+        elif preflight_failures:
+            matrix.update(_write_proof_row_status(write_proof_row=True))
+            matrix["write_proof_row_error"] = "preflight_failed"
         else:
             try:
                 write_result = redact_write_result(
                     execute_hgw_proof_write(env, ssl_context=ssl_context)
                 )
+                matrix["scaffold_activation"] = "hgw_proof_executed"
                 matrix.update(
                     _write_proof_row_status(
                         write_proof_row=True, write_result=write_result
@@ -196,25 +216,7 @@ def run_proof(
     else:
         matrix.update(_write_proof_row_status(write_proof_row=False))
 
-    failures = []
-    if matrix["endpoint_reachable"] is not True:
-        failures.append("endpoint_reachable")
-    if matrix["non_localhost"] is not True:
-        failures.append("non_localhost")
-    if matrix["tls_baseline"] is not True:
-        failures.append("tls_baseline")
-    if matrix["audit_observation_available"] is not True:
-        failures.append("audit_observation_available")
-    if matrix["agent_memory_table_present"] is not True:
-        failures.append("agent_memory_table_present")
-    if matrix["ns_present"] is not True:
-        failures.append("ns_present")
-    if matrix["db_present"] is not True:
-        failures.append("db_present")
-    if matrix["blue_red_coupling"] != "no":
-        failures.append("blue_red_coupling")
-    if matrix.get("container_inspect") != "ok":
-        failures.append("container_inspect")
+    failures = list(preflight_failures)
     if write_proof_row:
         if matrix.get("write_proof_row_status") != "executed":
             failures.append("write_proof_row_blocked")
