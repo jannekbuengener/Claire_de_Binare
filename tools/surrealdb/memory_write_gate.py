@@ -78,9 +78,26 @@ def persist_env_enabled() -> bool:
     return os.environ.get(PERSIST_ENV_VAR) == "1"
 
 
-def _target_issue_references_2759(target_issue: str) -> bool:
+_TARGET_ISSUE_2759_PATTERNS = (
+    re.compile(rf"^#?{re.escape(PERSIST_TARGET_ISSUE_REF)}$"),
+    re.compile(rf"^issues?/{re.escape(PERSIST_TARGET_ISSUE_REF)}$", re.IGNORECASE),
+    re.compile(
+        rf"^github:issue/{re.escape(PERSIST_TARGET_ISSUE_REF)}$",
+        re.IGNORECASE,
+    ),
+)
+
+
+def target_issue_references_2759(target_issue: str) -> bool:
+    """Return True only for normalized #2759 issue references (exact number)."""
     text = target_issue.strip()
-    return PERSIST_TARGET_ISSUE_REF in text
+    if not text:
+        return False
+    return any(pattern.match(text) for pattern in _TARGET_ISSUE_2759_PATTERNS)
+
+
+def _target_issue_references_2759(target_issue: str) -> bool:
+    return target_issue_references_2759(target_issue)
 
 
 def _scope_matches_proof_scope(scope: str, proof_scope: str) -> bool:

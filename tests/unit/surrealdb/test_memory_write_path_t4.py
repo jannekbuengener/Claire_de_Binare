@@ -127,6 +127,30 @@ def test_no_write_without_hgw() -> None:
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "target_issue",
+    ["12759", "27590", "not-2759"],
+)
+def test_no_write_for_non_exact_target_issue_2759(
+    monkeypatch: pytest.MonkeyPatch,
+    target_issue: str,
+) -> None:
+    monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    sink = _MockSink()
+    result = run_memory_write_path_t4(
+        _valid_record(),
+        _valid_auth(target_issue=target_issue),
+        mode="agent_memory_persist_productive",
+        sink=sink,
+        now=FIXED_NOW,
+    )
+    assert result["status"] == "refused"
+    assert result["code"] == "target_issue_mismatch"
+    assert not sink._audit_rows
+
+
+@pytest.mark.unit
 def test_no_write_without_target_issue_2759(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

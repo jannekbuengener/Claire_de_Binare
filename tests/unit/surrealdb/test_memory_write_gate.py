@@ -232,6 +232,39 @@ def test_approved_for_persist_false_without_hgw_tier(
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    "target_issue",
+    ["12759", "27590", "not-2759", "issue/27590"],
+)
+def test_approved_for_persist_false_for_non_exact_target_issue(
+    monkeypatch: pytest.MonkeyPatch,
+    target_issue: str,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert (
+        approved_for_persist(
+            _hgw_auth(target_issue=target_issue),
+            human_go_tier="HG-W",
+        )
+        is False
+    )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_true_for_github_issue_ref(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert (
+        approved_for_persist(
+            _hgw_auth(target_issue="github:issue/2759"),
+            human_go_tier="HG-W",
+        )
+        is True
+    )
+
+
+@pytest.mark.unit
 def test_approved_for_persist_false_without_target_issue_2759(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

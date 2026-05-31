@@ -36,6 +36,7 @@ from tools.surrealdb.memory_write_gate import (
     approved_for_persist,
     evaluate_memory_write_gate,
     persist_env_enabled,
+    target_issue_references_2759,
 )
 
 WRITE_PATH_T4_SCHEMA_VERSION = "memory-write-path-t4/v1"
@@ -459,7 +460,7 @@ def run_memory_write_path_t4(
             authorization=authorization,
         )
 
-    if "2759" not in authorization.target_issue.strip():
+    if not target_issue_references_2759(authorization.target_issue):
         return _refused_envelope(
             code="target_issue_mismatch",
             message=(
