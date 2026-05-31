@@ -336,21 +336,22 @@ def _build_agent_memory_row(
     gate_envelope: Mapping[str, Any],
     audit_row: Mapping[str, Any],
 ) -> dict[str, Any]:
+    validated = gate_envelope.get("validated_record") or {}
     memory_id = str(gate_envelope["memory_id"])
     observation_id = str(audit_row["observation_id"])
     return {
         "memory_id": memory_id,
-        "scope": gate_envelope.get("scope") or PROOF_SCOPE,
-        "namespace": gate_envelope.get("namespace"),
-        "memory_type": gate_envelope.get("memory_type"),
-        "content": gate_envelope.get("content"),
-        "source_refs": list(gate_envelope.get("source_refs") or []),
-        "evidence_refs": list(gate_envelope.get("evidence_refs") or []),
-        "confidence": gate_envelope.get("confidence"),
-        "ttl": gate_envelope.get("ttl"),
-        "expires_at": gate_envelope.get("expires_at"),
-        "created_by": gate_envelope.get("created_by"),
-        "created_at": gate_envelope.get("created_at"),
+        "scope": validated.get("scope") or PROOF_SCOPE,
+        "namespace": validated.get("namespace"),
+        "memory_type": validated.get("memory_type"),
+        "content": validated.get("content"),
+        "source_refs": list(validated.get("source_refs") or []),
+        "evidence_refs": list(validated.get("evidence_refs") or []),
+        "confidence": validated.get("confidence"),
+        "ttl": validated.get("ttl"),
+        "expires_at": validated.get("expires_at"),
+        "created_by": validated.get("created_by"),
+        "created_at": validated.get("created_at"),
         "audit_observation_id": observation_id,
         "subject_ref": f"agent_memory:{memory_id}",
         "related_memory": [memory_id],

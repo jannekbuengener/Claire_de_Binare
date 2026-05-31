@@ -378,6 +378,28 @@ def test_mcp_still_blocks_agent_memory_write() -> None:
 
 
 @pytest.mark.unit
+def test_agent_memory_row_uses_validated_record(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.setattr(t4_module, "PERSIST_ALLOWED", True)
+    sink = _MockSink()
+    record = _valid_record()
+    result = run_memory_write_path_t4(
+        record,
+        _valid_auth(),
+        mode="agent_memory_persist_productive",
+        sink=sink,
+        now=FIXED_NOW,
+    )
+    assert result["status"] == "ok"
+    memory_row = sink._memory_rows[record["memory_id"]]
+    assert memory_row["scope"] == record["scope"]
+    assert memory_row["content"] == record["content"]
+    assert memory_row["namespace"] == record["namespace"]
+
+
+@pytest.mark.unit
 def test_dry_run_evaluates_gate_only() -> None:
     sink = _MockSink()
     result = run_memory_write_path_t4(
