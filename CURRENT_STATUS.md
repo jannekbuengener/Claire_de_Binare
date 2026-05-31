@@ -10,8 +10,8 @@
 
 ## Repo / Engineering Status (2026-05-31)
 
-- **G3c T3 audit endpoint (operator host)**: **PROVISIONED** — isolated stack `cdb_audit_trail_t3` outside BLUE/RED/T2; TLS-only HTTPS (mTLS optional); NS/DB `cdb`/`audit_trail`; proof matrix PASS (`audit_trail_t3_proof --write-proof-row`). GitHub: #2750/#2753/#2748 **CLOSED**; #2747 **OPEN** → `READY_FOR_HG_P_PROOF`. **No** HG-P productive proof run; `PERSIST_ALLOWED=False` unchanged. Session log: `knowledge/logs/sessions/2026-05-31-g3c-t3-endpoint-provisioning.md`. LR NO-GO.
-- **main**: green (HEAD `13c46b04` local snapshot; G3c repo artifacts uncommitted locally)
+- **G3c T3 audit endpoint + HG-P proof (#2747)**: **COMPLETED** — isolated stack `cdb_audit_trail_t3` outside BLUE/RED/T2; TLS-only HTTPS (mTLS optional); NS/DB `cdb`/`audit_trail`; HG-P proof PASS (`audit_trail_t3_proof --write-proof-row`, `pass=true`, `audit_observation` only, `agent_memory_write=no`). GitHub: #2747 **CLOSED**; provisioning chain #2748/#2750/#2751/#2752/#2753 **CLOSED**. `PERSIST_ALLOWED=False` unchanged. Session logs: `knowledge/logs/sessions/2026-05-31-g3c-t3-endpoint-provisioning.md`, `knowledge/logs/sessions/2026-05-31-2747-hgp-proof.md`. LR NO-GO.
+- **main**: green (HEAD `c899f859` — PR #2754 merged)
 - **#2744 G3b productive memory adapter contract proof**: **CLOSED** — PR #2745 (`f1177553`); mock-only `memory_write_path_productive.py` + 14 unit tests; `PRODUCTIVE_ACTIVATED=False`; `PERSIST_ALLOWED=False` unchanged. Session log: `knowledge/logs/sessions/2026-05-30-2744-g3b-productive-memory-adapter-proof.md`. LR NO-GO.
 - **#2741 G3a MCP operation_mode scaffold**: **CLOSED** — PR #2742 (`ce44cd38`); G2 refusal codes in `cdb_context_memory_write_intent`; dry-run only; `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`. Session log: `knowledge/logs/sessions/2026-05-30-g3a-mcp-operation-mode-scaffold.md`. LR NO-GO.
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
