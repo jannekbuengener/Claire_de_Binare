@@ -1,0 +1,26 @@
+# T3 Governed Audit Trail — Env Template (REDACTED placeholders only)
+#
+# PURPOSE: Template for governed non-localhost T3 SurrealDB audit endpoint.
+# NOT the T2 local sidecar (SURREALDB_ENV @ 127.0.0.1:8010).
+#
+# USAGE:
+#   1. Run: python tools/surrealdb/audit_trail_t3_bootstrap.py
+#      (generates credentials, TLS, and writes the real file outside git)
+#   2. Or copy to ${SECRETS_PATH}/SURREALDB_AUDIT_TRAIL_ENV and fill manually.
+#   3. Never commit the real file to git.
+#
+# DEFAULT SECRETS_PATH:
+#   Windows: %USERPROFILE%\Documents\.secrets\.cdb\
+#
+# VERIFY structure (no value leak):
+#   python tools/surrealdb/audit_trail_t3_proof.py --check-env-only
+#
+# NOTE: Endpoint provisioning does NOT activate productive persist paths.
+# PERSIST_ALLOWED / PRODUCTIVE_ACTIVATED / MUTATION_ALLOWED remain unchanged.
+# LR remains NO-GO.
+
+SURREAL_URL=REDACTED_HTTPS_NON_LOCALHOST_URL
+SURREAL_NS=cdb
+SURREAL_DB=audit_trail
+SURREAL_USER=REDACTED_AUDIT_TRAIL_USER
+SURREAL_PASS=REDACTED_AUDIT_TRAIL_PASSWORD

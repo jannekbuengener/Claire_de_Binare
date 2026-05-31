@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -312,6 +312,19 @@ else
 	  down 2>/dev/null || true
 endif
 	@echo "[OK] cdb_surrealdb stopped."
+
+audit-trail-t3-bootstrap:
+	@$(PYTHON) -m tools.surrealdb.audit_trail_t3_bootstrap --secrets-path "$(SECRETS_PATH)"
+
+audit-trail-t3-proof:
+	@$(PYTHON) -m tools.surrealdb.audit_trail_t3_proof --secrets-path "$(SECRETS_PATH)" --write-proof-row
+
+audit-trail-t3-status:
+	@docker inspect cdb_surrealdb_audit_trail > /dev/null 2>&1 && docker inspect --format 'cdb_surrealdb_audit_trail: {{.State.Status}} (health: {{if .State.Health}}{{.State.Health.Status}}{{else}}n/a{{end}})' cdb_surrealdb_audit_trail || echo "cdb_surrealdb_audit_trail: not found"
+
+audit-trail-t3-down:
+	@SECRETS_PATH="$(SECRETS_PATH)" docker compose --env-file "$(SECRETS_PATH)/audit_trail_t3.compose.env" -f infrastructure/compose/surrealdb-audit-trail-t3.yml down 2>/dev/null || true
+	@echo "[OK] cdb_surrealdb_audit_trail stopped (BLUE/RED untouched)."
 
 ifeq ($(OS),Windows_NT)
 context-status:
