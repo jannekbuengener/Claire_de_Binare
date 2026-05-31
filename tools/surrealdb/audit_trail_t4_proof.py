@@ -122,6 +122,8 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         failures.append("tls_baseline")
     if matrix["audit_observation_available"] is not True:
         failures.append("audit_observation_available")
+    if matrix["agent_memory_table_present"] is not True:
+        failures.append("agent_memory_table_present")
     if matrix["blue_red_coupling"] != "no":
         failures.append("blue_red_coupling")
     if matrix.get("container_inspect") != "ok":

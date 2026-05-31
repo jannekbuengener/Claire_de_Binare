@@ -66,6 +66,20 @@ def test_check_env_only_matrix_passes(tmp_path, monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_t4_endpoint_fingerprint_differs_from_t3() -> None:
+    from tools.surrealdb.audit_trail_t4_common import (
+        endpoint_fingerprint as t4_fingerprint,
+    )
+    from tools.surrealdb.audit_trail_t3_common import (
+        endpoint_fingerprint as t3_fingerprint,
+    )
+
+    assert t4_fingerprint(ns="cdb", db="audit_trail") != t3_fingerprint(
+        ns="cdb", db="audit_trail"
+    )
+
+
+@pytest.mark.unit
 def test_table_exists_rejects_statement_error(monkeypatch) -> None:
     from tools.surrealdb import audit_trail_t4_proof as proof_module
 
@@ -128,7 +142,7 @@ def test_write_proof_row_fails_matrix_when_requested(tmp_path, monkeypatch) -> N
     )
     monkeypatch.setattr(
         "tools.surrealdb.audit_trail_t4_proof._table_exists",
-        fake_table_exists,
+        lambda _env, _ssl, table: table == "audit_observation",
     )
     monkeypatch.setattr(
         "tools.surrealdb.audit_trail_t4_proof.container_network_names",
