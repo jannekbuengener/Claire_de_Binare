@@ -721,6 +721,34 @@ checks. Mock sink only; no real DB/network writes; `PRODUCTIVE_ACTIVATED=False`;
 
 Parent #2606 criterion 6 remains **PARTIAL**; G3b contract proof does not close epic.
 
+### 23. G4 addendum — T4 agent_memory path scaffold (#2758)
+
+**Delivered:** Mock-proven T4 orchestrator in
+`tools/surrealdb/memory_write_path_t4.py`, proof CLI
+`tools/surrealdb/audit_trail_t4_proof.py`, unit tests, and
+[`memory-write-path-t4-runbook-v1.md`](memory-write-path-t4-runbook-v1.md).
+
+| Mode | G4 scaffold behavior |
+| --- | --- |
+| `dry_run` (default) | Gate evaluation only; `path_status=evaluated_only` |
+| `agent_memory_persist_productive` | Mock sink + HG-W + env; audit_observation first; agent_memory blocked |
+
+| Guardrail | Status |
+| --- | --- |
+| `PERSIST_ALLOWED` | Unchanged (`False`) |
+| `PRODUCTIVE_ACTIVATED` (T4) | `False` |
+| HG-W required | Yes (`hg_w_required` if HG-P/HG-L) |
+| MCP mutation | Still blocked |
+| Proof `--write-proof-row` | Refused (`g3_track_required`) |
+
+| Gap | After G4 scaffold |
+| --- | --- |
+| G3 `PERSIST_ALLOWED` flip | Follow-up Maintainer track |
+| HG-W operator proof on governed endpoint | Follow-up Maintainer track |
+| #2606 criterion 6 full PASS | Blocked on above |
+
+Parent #2606 criterion 6 remains **PASS WITH LIMITS**; G4 scaffold does not close epic.
+
 ---
 
 ## #2606 DoD reconcile 2026-05-31 (#2 / #3)

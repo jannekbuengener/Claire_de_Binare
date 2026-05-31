@@ -139,7 +139,7 @@ Default when no explicit productive-tier Human-GO and activation gate pass:
 | Write path v1 `audit_persist_local` | Opt-in; localhost only | Yes (audit only) | No | No |
 | MCP `cdb_context_memory_write_intent` | Dry-run only | No | No | **Blocked** |
 | Productive audit trail (T3) | **Not activated** | N/A | No | No |
-| Productive `agent_memory` write (T4) | **Not activated** | N/A | No | No |
+| Productive `agent_memory` write (T4) | **Scaffold only (#2758)** | N/A | No | No |
 
 Module constants on `main` (unchanged by this spec):
 
@@ -211,7 +211,7 @@ include **all** items (implementation issue — not #2730):
 | Slice 6 write smoke | `127.0.0.1:8010` | `CDB_RUN_REAL_SURREALDB_MEMORY_WRITE=1` | `evidence_ref`, `agent_memory` | **No** (local proof) | `memory-write-gate-v1.md` §8 |
 | MCP write intent | N/A | None | None | No (dry-run) | `mcp-memory-write-surface-v1.md` |
 | **Productive audit trail (T3)** | Governed endpoint (future) | HG-P + activation gate | `audit_observation` | **Spec only** | **this document** |
-| **Productive memory write (T4)** | Governed endpoint (future) | HG-W + G3/G4 | `agent_memory` + refs | **Not activated** | Future slice |
+| **Productive memory write (T4)** | Governed endpoint (future) | HG-W + G3/G4 | `agent_memory` + refs | **Scaffold delivered; NOT activated** | [`memory-write-path-t4-runbook-v1.md`](memory-write-path-t4-runbook-v1.md) |
 
 ---
 
@@ -223,7 +223,7 @@ include **all** items (implementation issue — not #2730):
 | G1 | Non-local audit endpoint design | Endpoint, TLS, namespace, credentials policy | [#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735) — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) |
 | G2 | MCP Phase 2 design | Mutation guard + audit wiring spec | [#2739](https://github.com/jannekbuengener/Claire_de_Binare/issues/2739) — [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) |
 | G3 | `PERSIST_ALLOWED` code flip | Code change + tests; separate Human-GO | Future issue |
-| G4 | Productive `agent_memory` write | Executor on governed endpoint | Future issue |
+| G4 | Productive `agent_memory` write | Executor on governed endpoint | **Scaffold #2758** (NOT ACTIVATED) |
 
 **Rule:** No gate may be skipped. G0 does not activate T3 or T4.
 
