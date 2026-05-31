@@ -1,20 +1,20 @@
 {
   "mcpServers": {
+    "cdb_context": {
+      "enabled": true,
+      "command": ".venv/Scripts/python.exe",
+      "args": ["-m", "tools.mcp.server"],
+      "type": "stdio"
+    },
     "redis": {
       "enabled": true,
       "command": "cmd",
       "args": ["npx", "-y", "@modelcontextprotocol/redis"],
       "env": {
-        "REDIS_PORT": "6379",
         "REDIS_HOST": "cdb_redis",
+        "REDIS_PORT": "6379",
         "REDIS_PASSWORD": "${REDIS_PASSWORD}"
       },
-      "type": "stdio"
-    },
-    "cdb_context": {
-      "enabled": true,
-      "command": "python",
-      "args": ["-m", "tools.mcp.server"],
       "type": "stdio"
     }
   }
