@@ -1,4 +1,5 @@
 """Redacted proof checks for governed T4 agent_memory endpoint scaffold (#2759)."""
+
 from __future__ import annotations
 
 import argparse
@@ -144,7 +145,9 @@ def run_proof(
     matrix["audit_observation_available"] = _table_exists(
         env, ssl_context, "audit_observation"
     )
-    matrix["agent_memory_table_present"] = _table_exists(env, ssl_context, "agent_memory")
+    matrix["agent_memory_table_present"] = _table_exists(
+        env, ssl_context, "agent_memory"
+    )
     inspect_ok, t4_networks = container_network_names(CONTAINER_NAME)
     matrix["container_inspect"] = "ok" if inspect_ok else "failed"
     matrix["blue_red_coupling"] = (
@@ -154,7 +157,9 @@ def run_proof(
     )
     matrix["t2_localhost_excluded"] = "yes"
     matrix["scaffold_activation"] = (
-        "hgw_proof_executed" if write_proof_row and hgw_proof_env_authorized() else "not_activated"
+        "hgw_proof_executed"
+        if write_proof_row and hgw_proof_env_authorized()
+        else "not_activated"
     )
     matrix["hgw_proof_env_authorized"] = hgw_proof_env_authorized()
 

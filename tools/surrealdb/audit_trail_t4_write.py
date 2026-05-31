@@ -74,16 +74,12 @@ class AuditTrailT4SqlClient:
             ssl_context=self._ssl_context,
         )
         if status != 200:
-            raise AuditTrailT4WriteError(
-                f"T4 /sql request failed with HTTP {status}"
-            )
+            raise AuditTrailT4WriteError(f"T4 /sql request failed with HTTP {status}")
         return check_statement_results(body)
 
     def record_exists(self, table: str, raw_id: str, *, id_field: str) -> bool:
         literal = _surql_string(raw_id)
-        results = self.execute(
-            f"SELECT * FROM {table} WHERE {id_field} = {literal};"
-        )
+        results = self.execute(f"SELECT * FROM {table} WHERE {id_field} = {literal};")
         for item in results:
             result = item.get("result")
             if isinstance(result, list) and result:
@@ -202,7 +198,9 @@ def build_hgw_proof_record(*, now: datetime | None = None) -> dict[str, Any]:
     }
 
 
-def build_hgw_proof_authorization(*, now: datetime | None = None) -> T4WriteAuthorization:
+def build_hgw_proof_authorization(
+    *, now: datetime | None = None
+) -> T4WriteAuthorization:
     token = os.environ.get(HGW_TOKEN_ENV_VAR, "").strip()
     if not token:
         raise AuditTrailT4WriteError(
@@ -288,14 +286,20 @@ def _normalize_surql_datetime(value: Any) -> Any:
 
 
 def _filter_fields(row: dict[str, Any], allowed: frozenset[str]) -> dict[str, Any]:
-    return {key: _normalize_surql_datetime(value) for key, value in row.items() if key in allowed}
+    return {
+        key: _normalize_surql_datetime(value)
+        for key, value in row.items()
+        if key in allowed
+    }
 
 
 def _enrich_audit_row_for_audit_trail_db(
     audit_row: dict[str, Any], *, memory_id: str
 ) -> dict[str, Any]:
     enriched = dict(audit_row)
-    enriched.setdefault("comment", "HG-W T4 proof audit_observation (#2759; run-scoped).")
+    enriched.setdefault(
+        "comment", "HG-W T4 proof audit_observation (#2759; run-scoped)."
+    )
     enriched.setdefault("related_claims", [])
     enriched.setdefault("related_decisions", [])
     enriched.setdefault("confidence", 1.0)
@@ -343,9 +347,7 @@ def execute_hgw_proof_write(
         )
 
     try:
-        audit_row = materialize_audit_observation_from_gate(
-            gate_envelope, now=ref_now
-        )
+        audit_row = materialize_audit_observation_from_gate(gate_envelope, now=ref_now)
     except AuditObservationMaterializeError as exc:
         raise AuditTrailT4WriteError(str(exc)) from exc
 
@@ -372,7 +374,9 @@ def execute_hgw_proof_write(
     client = AuditTrailT4SqlClient(env, ssl_context=ssl_context)
     observation_id = str(audit_row["observation_id"])
 
-    if client.record_exists("audit_observation", observation_id, id_field="observation_id"):
+    if client.record_exists(
+        "audit_observation", observation_id, id_field="observation_id"
+    ):
         raise AuditTrailT4WriteError("duplicate audit_observation proof row")
 
     if client.record_exists("agent_memory", memory_id, id_field="memory_id"):
@@ -381,7 +385,9 @@ def execute_hgw_proof_write(
     client.create_audit_observation_proof(
         observation_id, audit_row, memory_id=memory_id
     )
-    if not client.record_exists("audit_observation", observation_id, id_field="observation_id"):
+    if not client.record_exists(
+        "audit_observation", observation_id, id_field="observation_id"
+    ):
         raise AuditTrailT4WriteError("audit_observation read-back failed")
 
     memory_row = _enrich_memory_row_for_audit_trail_db(
@@ -414,7 +420,9 @@ def rollback_hgw_proof_write(
     client = AuditTrailT4SqlClient(env, ssl_context=ssl_context)
     if client.record_exists("agent_memory", memory_id, id_field="memory_id"):
         client.delete_record("agent_memory", memory_id, id_field="memory_id")
-    if client.record_exists("audit_observation", observation_id, id_field="observation_id"):
+    if client.record_exists(
+        "audit_observation", observation_id, id_field="observation_id"
+    ):
         client.delete_record(
             "audit_observation", observation_id, id_field="observation_id"
         )

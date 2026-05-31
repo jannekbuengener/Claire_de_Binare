@@ -188,7 +188,9 @@ def test_table_exists_rejects_statement_error(monkeypatch) -> None:
 
 
 @pytest.mark.unit
-def test_write_proof_row_fails_matrix_when_hgw_env_missing(tmp_path, monkeypatch) -> None:
+def test_write_proof_row_fails_matrix_when_hgw_env_missing(
+    tmp_path, monkeypatch
+) -> None:
     secrets = tmp_path / ".secrets" / ".cdb"
     secrets.mkdir(parents=True)
     env_file = secrets / "SURREALDB_AUDIT_TRAIL_ENV"
