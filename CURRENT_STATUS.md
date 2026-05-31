@@ -10,15 +10,15 @@
 
 ## Repo / Engineering Status (2026-05-31)
 
-- **#2606 DoD reconcile (#2/#3 DB read/stale)**: **IN PROGRESS** — branch `docs/2606-dod-reconcile-db-read-stale`; integration fixture tests in required CI; operator + unit layers per #2603; live SurrealDB in `ci.yml` remains out of scope. Epic **OPEN** (NOT_CLOSURE_READY). Session log: `knowledge/logs/sessions/2026-05-31-2606-dod-reconcile-db-read-stale.md`. LR NO-GO.
+- **#2606 DoD reconcile (#2/#3 DB read/stale)**: **COMPLETED** — PR [#2756](https://github.com/jannekbuengener/Claire_de_Binare/pull/2756) merged (`93b468d3`); integration fixture tests in required CI; DoD #2/#3 → **PASS** (reconciled); epic **OPEN** (NOT_CLOSURE_READY; strict blockers #6/#8/#9). Session log: `knowledge/logs/sessions/2026-05-31-2606-dod-reconcile-db-read-stale.md`. LR NO-GO.
 - **G3c T3 audit endpoint + HG-P proof (#2747)**: **COMPLETED** — isolated stack `cdb_audit_trail_t3` outside BLUE/RED/T2; TLS-only HTTPS (mTLS optional); NS/DB `cdb`/`audit_trail`; HG-P proof PASS (`audit_trail_t3_proof --write-proof-row`, `pass=true`, `audit_observation` only, `agent_memory_write=no`). GitHub: #2747 **CLOSED**; provisioning chain #2748/#2750/#2751/#2752/#2753 **CLOSED**. `PERSIST_ALLOWED=False` unchanged. Session logs: `knowledge/logs/sessions/2026-05-31-g3c-t3-endpoint-provisioning.md`, `knowledge/logs/sessions/2026-05-31-2747-hgp-proof.md`. LR NO-GO.
-- **main**: green (HEAD `c4914808` — PR #2755 merged; status ledger refresh)
+- **main**: green (HEAD `93b468d3` — PR #2756 merged)
 - **#2744 G3b productive memory adapter contract proof**: **CLOSED** — PR #2745 (`f1177553`); mock-only `memory_write_path_productive.py` + 14 unit tests; `PRODUCTIVE_ACTIVATED=False`; `PERSIST_ALLOWED=False` unchanged. Session log: `knowledge/logs/sessions/2026-05-30-2744-g3b-productive-memory-adapter-proof.md`. LR NO-GO.
 - **#2741 G3a MCP operation_mode scaffold**: **CLOSED** — PR #2742 (`ce44cd38`); G2 refusal codes in `cdb_context_memory_write_intent`; dry-run only; `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`. Session log: `knowledge/logs/sessions/2026-05-30-g3a-mcp-operation-mode-scaffold.md`. LR NO-GO.
 - **#2603 Context Runtime / CI Proof**: **CLOSED** — `make context-memory-db-proof`, matrix `docs/surrealdb/db-runtime-ci-proof-path-v1.md`; operator PASS 2026-05-29
 - **#2730 Productive Memory Audit Trail Spec**: **CLOSED** — `docs/surrealdb/productive-memory-audit-trail-v1.md` + `productive-memory-write-readiness-runbook-v1.md`; proof matrix row 3 → **SPECIFIED / NOT ACTIVATED** (G0 only; no runtime flip). `PERSIST_ALLOWED=False` unchanged. LR NO-GO.
 - **#2733 Parent Re-Audit (#2606)**: **COMPLETE** (read-only) — matrix **PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2**; #2606 remains **NOT_CLOSURE_READY**. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. Epic body refreshed on GitHub.
-- **#2606 Parent Memory Epic**: **OPEN** (NOT_CLOSURE_READY) — false-closed by PR #2755; reopened 2026-05-31. DoD #2/#3 reconcile in flight (`docs/2606-dod-reconcile-db-read-stale`). Strict blockers #6/#8/#9 remain. `PERSIST_ALLOWED=False`. LR NO-GO.
+- **#2606 Parent Memory Epic**: **OPEN** (NOT_CLOSURE_READY) — false-closed by PR #2755/#2756; reopened 2026-05-31. DoD #2/#3 **PASS** (reconciled, PR #2756). Strict blockers #6/#8/#9 remain. `PERSIST_ALLOWED=False`. LR NO-GO.
 - **Active GitHub focus (manual, non-exhaustive)**:
   - #2448 (CURRENT_STATUS focus reconcile — Hygiene-Slice)
   - #2440 (LR-030 Shadow/Soak Run — OPEN, Review-Befund `INCONCLUSIVE`, kein LR-Go)

@@ -3,7 +3,9 @@
 **Date:** 2026-05-31  
 **Scope:** DoD reconcile for #2606 criteria DB-backed read + DB stale scan  
 **LR:** NO-GO  
-**Branch:** `docs/2606-dod-reconcile-db-read-stale`
+**Branch:** `docs/2606-dod-reconcile-db-read-stale` → merged as PR [#2756](https://github.com/jannekbuengener/Claire_de_Binare/pull/2756) @ `93b468d3`
+
+**Post-merge hygiene:** #2606 auto-closed again on #2756 merge; reopened + re-audit comment posted.
 
 ---
 
