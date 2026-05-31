@@ -723,6 +723,24 @@ Parent #2606 criterion 6 remains **PARTIAL**; G3b contract proof does not close 
 
 ---
 
+## #2606 DoD reconcile 2026-05-31 (#2 / #3)
+
+**Scope:** Epic DoD criteria **DB-backed read** and **DB-backed stale scan** only. No
+`PERSIST_ALLOWED` flip; no live SurrealDB in required `.github/workflows/ci.yml`.
+
+| Layer | Evidence |
+| --- | --- |
+| Required CI — unit | `tests/unit/surrealdb/test_memory_db_read_proof.py`, `test_memory_db_stale_scan.py` |
+| Required CI — integration | `tests/integration/surrealdb/test_memory_db_read_proof_fixture_adapter.py`, `test_memory_db_stale_scan_fixture_adapter.py` (committed fixtures under `tests/fixtures/surrealdb/memory_db_proof/`) |
+| Operator (optional refresh) | `make context-memory-db-proof` → `source=surrealdb-local` (#2603) |
+
+**Verdict:** Criteria #2/#3 → **PASS** (reconciled). Epic remains **NOT_CLOSURE_READY**
+(strict DoD: #6 production-auditable write without LIMITS; #8/#9 full PASS still open).
+
+Canon: [`db-runtime-ci-proof-path-v1.md`](db-runtime-ci-proof-path-v1.md) § #2606 DoD delta.
+
+---
+
 ## Provenance
 
 | Source | Role |

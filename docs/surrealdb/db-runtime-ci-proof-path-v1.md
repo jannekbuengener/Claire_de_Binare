@@ -24,8 +24,8 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 
 | # | Restgap | Current evidence | CI / runtime today | #2603 target | Decision |
 |---|---------|------------------|-------------------|--------------|----------|
-| 1 | DB read proof | `memory_db_read_proof.py`; unit mocks; `tests/local/.../test_memory_db_read_proof.py` | CI: mocks only; runtime: `local_only` + `CDB_RUN_REAL_SURREALDB_MEMORY_SMOKE=1` | Operator: `make context-memory-db-proof`; contracts in unit tests | **IMPLEMENTABLE_NOW** — local PASS path; CI stays **PARTIAL** |
-| 2 | DB stale scan proof | `memory_db_stale_scan.py`; #2708 on main | Same boundary as (1) | Same operator path | **IMPLEMENTABLE_NOW** — local PASS path; CI **PARTIAL** |
+| 1 | DB read proof | `memory_db_read_proof.py`; unit mocks; integration fixture adapter (`tests/integration/surrealdb/`); `tests/local/.../test_memory_db_read_proof.py` | Required CI: unit + integration fixtures; runtime: `local_only` + operator `make context-memory-db-proof` | Operator: `make context-memory-db-proof`; contracts in unit + integration tests | **PASS** (#2606 DoD reconcile 2026-05-31; live SurrealDB in required CI remains out of scope per #2603) |
+| 2 | DB stale scan proof | `memory_db_stale_scan.py`; #2708 on main; integration fixture adapter | Same boundary as (1) | Same operator path | **PASS** (same reconcile as row 1) |
 | 3 | Productive audit trail | Gate + local `audit_observation` only; spec [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md) (#2730); G1 [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md) (#2735); G2 MCP [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) (#2739) | By design not activated | **DESIGN-READY (G1+G2 MCP) / NOT ACTIVATED** | **DESIGN-READY (G1+G2)**; runtime **NOT ACTIVATED** |
 | 4 | Claim evidence at rest | `claim_evidence_at_rest.py`; unit mocks; optional `context-claim-evidence-proof` | CI: mocks only; runtime: local operator path | `make context-claim-evidence-proof`; see [`claim-evidence-at-rest-v1.md`](claim-evidence-at-rest-v1.md) | **PASS WITH LIMITS** — local operator path; CI **PARTIAL** |
 | 5 | Cross-session rediscovery | `memory_cross_session_rediscovery.py`; manifest + subprocess prove | CI: mocks only; runtime: local operator | `make context-memory-rediscovery-proof`; see [`cross-session-memory-rediscovery-v1.md`](cross-session-memory-rediscovery-v1.md) | **PASS WITH LIMITS** — local two-process proof; CI **PARTIAL** |
@@ -38,6 +38,7 @@ compose changes; closing #2606; SurrealDB in required CI (~26 min `context-smoke
 | Layer | What it proves | Required CI? |
 |-------|----------------|--------------|
 | Unit: `test_memory_db_read_proof.py`, `test_memory_db_stale_scan.py` | Tool contracts, mocks | Yes |
+| Integration: `tests/integration/surrealdb/test_memory_db_*_fixture_adapter.py` | Read + stale against committed fixture rows via adapter (not MagicMock-only) | Yes |
 | Unit: `test_local_runtime.py`, `test_memory_db_proof_runtime_contract.py` | Makefile targets, CLI, env parity, `local_schema_check` hard/soft | Yes |
 | Unit: `test_context_smoke_db_contracts.py` | `context-smoke-db` recipe (#2460) | Yes |
 | `make context-smoke-db` | Full context pipeline + DB write + query min-count | No (operator; ~26 min) |
@@ -100,16 +101,18 @@ On `main` as of campaign merge:
 
 ---
 
-## #2606 DoD delta (expected after #2603)
+## #2606 DoD delta (after #2603 + reconcile 2026-05-31)
 
-| Criterion | Before | After #2603 |
-|-----------|--------|-------------|
-| DB-backed read | PARTIAL (local_only only) | PARTIAL globally; **runtime PASS** via `context-memory-db-proof` |
-| DB-backed stale scan | PARTIAL (same) | Same pattern |
-| Productive audit trail | BLOCKED (undocumented) | **DESIGN-READY (G1+G2 MCP) / NOT ACTIVATED** (#2730 G0 + #2735 G1 + #2739 G2); T3 persist still blocked |
-| Claim at rest | PARTIAL | PARTIAL + follow-up |
-| Cross-session rediscovery | PARTIAL | PARTIAL + follow-up |
-| Epic closure | BLOCKED | **still BLOCKED** |
+| Criterion | Before #2603 | After #2603 | After DoD reconcile (#2/#3) |
+|-----------|--------------|-------------|------------------------------|
+| DB-backed read (#2606 §2) | PARTIAL (local_only only) | PARTIAL globally; operator PASS via `context-memory-db-proof` | **PASS** — unit contracts + required-CI integration fixture adapter + documented operator path; **no** live SurrealDB in `ci.yml` |
+| DB-backed stale scan (#2606 §3) | PARTIAL (same) | Same pattern | **PASS** (same three-layer evidence) |
+| Productive audit trail (#2606 §6) | BLOCKED (undocumented) | **DESIGN-READY / NOT ACTIVATED** (#2730) | **PASS WITH LIMITS** — T3 HG-P proof (#2747); no productive `agent_memory` write |
+| Claim at rest (#2606 §8) | PARTIAL | PASS WITH LIMITS (#2719) | **PASS WITH LIMITS** (unchanged) |
+| Cross-session rediscovery (#2606 §9) | PARTIAL | PASS WITH LIMITS (#2720) | **PASS WITH LIMITS** (unchanged) |
+| Epic closure | BLOCKED | **still BLOCKED** | **NOT_CLOSURE_READY** — strict DoD: #6/#8/#9 not full PASS |
+
+**Reconcile policy (ratified 2026-05-31):** #2606 criteria #2/#3 PASS is coupled to #2603 reality — operator path plus required-CI fixture-backed integration tests. Live SurrealDB in required CI is explicitly **not** a PASS blocker.
 
 ---
 
