@@ -719,35 +719,44 @@ checks. Mock sink only; no real DB/network writes; `PRODUCTIVE_ACTIVATED=False`;
 | MCP `audit_persist_productive` execution | Still refused (G3a handler) |
 | `PERSIST_ALLOWED` flip | Unchanged (`False`) |
 
-Parent #2606 criterion 6 remains **PARTIAL**; G3b contract proof does not close epic.
+Pre-closeout state after G3b: parent #2606 criterion 6 remained **PARTIAL**;
+the G4/HG-W sections below record how the later 2026-05-31 closeout cleared
+that gap without closing the epic.
 
-### 23. G4 addendum — T4 agent_memory path scaffold (#2758)
+### 23. G4 endgame — T4 productive proof path closeout (#2758 / #2759)
 
-**Delivered:** Mock-proven T4 orchestrator in
-`tools/surrealdb/memory_write_path_t4.py`, proof CLI
-`tools/surrealdb/audit_trail_t4_proof.py`, unit tests, and
-[`memory-write-path-t4-runbook-v1.md`](memory-write-path-t4-runbook-v1.md).
+**Delivered:** PR [#2760](https://github.com/jannekbuengener/Claire_de_Binare/pull/2760)
+landed the T4 scaffold; PR
+[#2762](https://github.com/jannekbuengener/Claire_de_Binare/pull/2762)
+added `approved_for_persist()` and the env-gated HG-W proof scope;
+PR [#2763](https://github.com/jannekbuengener/Claire_de_Binare/pull/2763)
+backfilled `audit_trail_t4_write.py` plus proof CLI write/rollback wiring.
+Operator HG-W proof on 2026-05-31 is recorded in
+`knowledge/logs/sessions/2026-05-31-2759-hgw-proof.md` (redacted).
 
 | Mode | G4 scaffold behavior |
 | --- | --- |
 | `dry_run` (default) | Gate evaluation only; `path_status=evaluated_only` |
-| `agent_memory_persist_productive` | Mock sink + HG-W + env; audit_observation first; agent_memory blocked |
+| `agent_memory_persist_productive` | HG-W + env-gated proof path; audit_observation first; `agent_memory` only when operator gates pass |
 
 | Guardrail | Status |
 | --- | --- |
-| `PERSIST_ALLOWED` | Unchanged (`False`) |
+| `PERSIST_ALLOWED` | Unchanged (`False`) on `main` |
 | `PRODUCTIVE_ACTIVATED` (T4) | `False` |
-| HG-W required | Yes (`hg_w_required` if HG-P/HG-L) |
+| `approved_for_persist()` env gates | Required (`CDB_PERSIST_ALLOWED=1`, proof scope `g4-hgw-proof-2759`) |
+| HG-W proof executed | Yes (`audit_observation_written=yes`, `agent_memory_written=yes`) |
+| Rollback verified | Yes (`rollback_status=ok`) |
 | MCP mutation | Still blocked |
-| Proof `--write-proof-row` | Refused (`g3_track_required`) |
+| Proof `--write-proof-row` outside authorized window | Refused (`hgw_proof_not_authorized`) |
 
-| Gap | After G4 scaffold |
+| Outcome | Status after closeout |
 | --- | --- |
-| G3 `PERSIST_ALLOWED` flip | Follow-up Maintainer track |
-| HG-W operator proof on governed endpoint | Follow-up Maintainer track |
-| #2606 criterion 6 full PASS | Blocked on above |
+| #2758 delivery | Complete via #2760 + #2762 + #2763 + #2759 evidence |
+| #2606 criterion 6 | **PASS** |
+| #2606 epic closure | Still open; non-#6 rest axes remain outside this slice |
 
-Parent #2606 criterion 6 remains **PASS WITH LIMITS**; G4 scaffold does not close epic.
+Parent #2606 criterion 6 is now **PASS**; the epic stays open because the
+remaining closure gaps are not part of this G4 closeout slice.
 
 ---
 
