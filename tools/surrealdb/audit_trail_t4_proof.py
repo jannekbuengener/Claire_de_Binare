@@ -1,4 +1,4 @@
-"""Redacted proof checks for governed T4 agent_memory endpoint scaffold (#2758)."""
+"""Redacted proof checks for governed T4 agent_memory endpoint scaffold (#2759)."""
 from __future__ import annotations
 
 import argparse
@@ -156,7 +156,8 @@ def main() -> None:
         "--write-proof-row",
         action="store_true",
         help=(
-            "Request one scoped agent_memory proof write (refused until G3/HG-W track)."
+            "Request one scoped agent_memory proof write (refused until HG-W + "
+            "CDB_PERSIST_ALLOWED + #2759 track)."
         ),
     )
     parser.add_argument(

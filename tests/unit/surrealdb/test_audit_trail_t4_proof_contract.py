@@ -1,4 +1,4 @@
-"""Contract tests for audit_trail_t4_proof CLI — no network (#2758)."""
+"""Contract tests for audit_trail_t4_proof CLI — no network (#2759)."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def test_write_proof_row_skipped_by_default() -> None:
 
 
 @pytest.mark.unit
-def test_write_proof_row_refused_until_g3_track() -> None:
+def test_write_proof_row_refused_until_hgw_authorized() -> None:
     status = _write_proof_row_status(write_proof_row=True)
     assert status["write_proof_row_requested"] == "yes"
     assert status["write_proof_row_status"] == "refused"

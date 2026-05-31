@@ -1,4 +1,4 @@
-"""Unit tests for memory_write_path_t4 — G4 #2758."""
+"""Unit tests for memory_write_path_t4 — G4 #2759."""
 
 from __future__ import annotations
 
@@ -9,8 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tools.surrealdb.memory_write_gate import PERSIST_ALLOWED
-from tools.surrealdb import memory_write_path_t4 as t4_module
+from tools.surrealdb.memory_write_gate import PERSIST_ALLOWED, PERSIST_ENV_VAR
 from tools.surrealdb.memory_write_path_t4 import (
     PRODUCTIVE_ACTIVATED,
     PRODUCTIVE_ENV_VAR,
@@ -57,8 +56,8 @@ def _valid_auth(**overrides) -> T4WriteAuthorization:
         authorized_by="jannekbuengener",
         authorized_at="2026-05-31T12:00:00+00:00",
         scope=f"memory_write_path_t4:{PROOF_SCOPE}",
-        target_issue="2758",
-        evidence_refs=("github:issue/2758",),
+        target_issue="2759",
+        evidence_refs=("github:issue/2759",),
         operation="create",
     )
     base.update(overrides)
@@ -128,10 +127,30 @@ def test_no_write_without_hgw() -> None:
 
 
 @pytest.mark.unit
-def test_no_write_when_persist_allowed_false(
+def test_no_write_without_target_issue_2759(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    sink = _MockSink()
+    result = run_memory_write_path_t4(
+        _valid_record(),
+        _valid_auth(target_issue="2758"),
+        mode="agent_memory_persist_productive",
+        sink=sink,
+        now=FIXED_NOW,
+    )
+    assert result["status"] == "refused"
+    assert result["code"] == "target_issue_mismatch"
+    assert not sink._audit_rows
+
+
+@pytest.mark.unit
+def test_no_write_without_persist_env_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.delenv(PERSIST_ENV_VAR, raising=False)
     sink = _MockSink()
     result = run_memory_write_path_t4(
         _valid_record(),
@@ -140,12 +159,30 @@ def test_no_write_when_persist_allowed_false(
         sink=sink,
         now=FIXED_NOW,
     )
-    assert result["status"] == "ok"
-    assert result["path_status"] == "mock_persisted_audit_only"
+    assert result["status"] == "refused"
+    assert result["code"] == "persist_env_missing"
+    assert not sink._audit_rows
+
+
+@pytest.mark.unit
+def test_no_write_when_persist_allowed_false(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """PERSIST_ALLOWED module constant stays False; env gate required for memory."""
+    assert PERSIST_ALLOWED is False
+    monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.delenv(PERSIST_ENV_VAR, raising=False)
+    sink = _MockSink()
+    result = run_memory_write_path_t4(
+        _valid_record(),
+        _valid_auth(),
+        mode="agent_memory_persist_productive",
+        sink=sink,
+        now=FIXED_NOW,
+    )
+    assert result["status"] == "refused"
+    assert result["code"] == "persist_env_missing"
     assert result["agent_memory_written"] is False
-    assert "agent_memory" not in result["tables_written"]
-    assert result["tables_written"] == ["audit_observation"]
-    assert len(sink._audit_rows) == 1
     assert not sink._memory_rows
 
 
@@ -154,7 +191,7 @@ def test_exactly_one_scoped_proof_write(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
-    monkeypatch.setattr(t4_module, "PERSIST_ALLOWED", True)
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     record = _valid_record()
     auth = _valid_auth()
@@ -187,7 +224,7 @@ def test_duplicate_memory_id_when_persist_allowed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
-    monkeypatch.setattr(t4_module, "PERSIST_ALLOWED", True)
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     record = _valid_record()
     memory_id = record["memory_id"]
@@ -212,7 +249,7 @@ def test_audit_observation_emitted_before_memory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
-    monkeypatch.setattr(t4_module, "PERSIST_ALLOWED", True)
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     result = run_memory_write_path_t4(
         _valid_record(),
@@ -280,6 +317,7 @@ def test_localhost_endpoint_refused(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     result = run_memory_write_path_t4(
         _valid_record(),
@@ -299,6 +337,7 @@ def test_forbidden_keys_blocked(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     record = _valid_record()
     auth = _valid_auth()
@@ -365,8 +404,8 @@ def test_mcp_still_blocks_agent_memory_write() -> None:
                     "authorized_by": "jannekbuengener",
                     "authorized_at": "2026-05-31T12:00:00+00:00",
                     "scope": _valid_record()["scope"],
-                    "target_issue": "2758",
-                    "evidence_refs": ["github:issue/2758"],
+                    "target_issue": "2759",
+                    "evidence_refs": ["github:issue/2759"],
                     "operation": "create",
                 },
                 "operation_mode": "agent_memory_write",
@@ -382,7 +421,7 @@ def test_agent_memory_row_uses_validated_record(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv(PRODUCTIVE_ENV_VAR, "1")
-    monkeypatch.setattr(t4_module, "PERSIST_ALLOWED", True)
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
     sink = _MockSink()
     record = _valid_record()
     result = run_memory_write_path_t4(

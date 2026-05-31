@@ -1,19 +1,19 @@
-# Memory Write Path T4 Runbook v1 (#2758)
+# Memory Write Path T4 Runbook v1 (#2759 Phase A)
 
-**Issue:** [#2758](https://github.com/jannekbuengener/Claire_de_Binare/issues/2758)  
+**Issue:** [#2759](https://github.com/jannekbuengener/Claire_de_Binare/issues/2759) (Phase A); scaffold from [#2758](https://github.com/jannekbuengener/Claire_de_Binare/issues/2758)  
 **Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606)  
 **Contract:** [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md)  
-**Status:** G4 scaffold — **NOT ACTIVATED** (mock-only; `PERSIST_ALLOWED=False`)  
+**Status:** Phase A — **NOT ACTIVATED** (mock-only; `PERSIST_ALLOWED=False`; `approved_for_persist()` env-gated)  
 **LR:** NO-GO (unchanged)
 
 ---
 
 ## 1. Purpose
 
-Operator reference for the **T4 agent_memory write path scaffold** delivered in
-#2758. This runbook documents fail-closed behavior, mandatory
+Operator reference for the **T4 agent_memory write path** (#2758 scaffold, #2759 Phase A
+`approved_for_persist` gate). Documents fail-closed behavior, mandatory
 `audit_observation` ordering, and proof CLI usage. It does **not** authorize
-productive `agent_memory` UPSERT, `PERSIST_ALLOWED` flips, or MCP mutation.
+real productive `agent_memory` UPSERT, code-level `PERSIST_ALLOWED` flips, or MCP mutation.
 
 ---
 
@@ -33,19 +33,26 @@ productive `agent_memory` UPSERT, `PERSIST_ALLOWED` flips, or MCP mutation.
 | --- | --- | --- |
 | T4 orchestrator | `tools/surrealdb/memory_write_path_t4.py` | HG-W gate chain; mock sink only |
 | T4 proof CLI | `tools/surrealdb/audit_trail_t4_proof.py` | Read-only matrix; write stub refused |
-| Gate (unchanged) | `tools/surrealdb/memory_write_gate.py` | `PERSIST_ALLOWED=False` |
+| Gate (unchanged) | `tools/surrealdb/memory_write_gate.py` | `PERSIST_ALLOWED=False`; `approved_for_persist()` |
 
 ### Modes
 
 | Mode | Behavior |
 | --- | --- |
 | `dry_run` (default) | Gate evaluation only; `path_status=evaluated_only` |
-| `agent_memory_persist_productive` | Mock sink + HG-W + env; audit first; memory blocked while `PERSIST_ALLOWED=False` |
+| `agent_memory_persist_productive` | Mock sink + HG-W + env gates; audit first; memory via `approved_for_persist()` only |
 
-### Env gate
+### Env gates
 
-- `CDB_PERSIST_PRODUCTIVE_AGENT_MEMORY=1` required for productive-mode mock path
-- Orthogonal to `PERSIST_ALLOWED` (code constant remains `False` in #2758 scope)
+- `CDB_PERSIST_PRODUCTIVE_AGENT_MEMORY=1` — required to enter productive-mode mock path
+- `CDB_PERSIST_ALLOWED=1` — operator env gate for `approved_for_persist()` (Phase A #2759)
+- Module constant `PERSIST_ALLOWED` remains **`False`** on `main` (not flipped in Phase A)
+
+### Proof scope
+
+- Exactly one scoped proof record: `g4-hgw-proof-2759`
+- Authorization `target_issue` must reference `#2759`
+- Authorization `scope` must be `memory_write_path_t4:g4-hgw-proof-2759`
 
 ### Human-GO tier
 
@@ -63,9 +70,9 @@ When productive mode is invoked (mock scaffold):
 2. `materialize_audit_observation_from_gate()`
 3. `audit_observation_row_is_redacted()` check
 4. Mock `upsert_audit_observation`
-5. **Only if** `PERSIST_ALLOWED=True` (future G3 track): mock `upsert_agent_memory`
+5. **Only if** `approved_for_persist()` returns true (HG-W + `CDB_PERSIST_ALLOWED=1` + #2759 + proof scope): mock `upsert_agent_memory`
 
-In #2758 scaffold, step 5 never runs; response includes
+By default on `main`, step 5 does not run; response includes
 `agent_memory_written=false` and `path_status=mock_persisted_audit_only`.
 
 ---
@@ -79,12 +86,12 @@ python -m tools.surrealdb.audit_trail_t4_proof --check-env-only
 # Read-only endpoint matrix (requires governed T3/T4 endpoint env)
 python -m tools.surrealdb.audit_trail_t4_proof
 
-# Write proof row — REFUSED until G3 + HG-W operator track
+# Write proof row — REFUSED until HG-W + CDB_PERSIST_ALLOWED + #2759 operator track
 python -m tools.surrealdb.audit_trail_t4_proof --write-proof-row
 ```
 
 `--write-proof-row` returns matrix with `write_proof_row_status=refused` and
-`write_proof_row_blocked_code=g3_track_required`.
+`write_proof_row_blocked_code=hgw_proof_not_authorized`.
 
 ---
 
@@ -118,13 +125,13 @@ ruff check tools/surrealdb/memory_write_path_t4.py \
 
 ---
 
-## 8. Non-goals (#2758)
+## 8. Non-goals (Phase A / #2759)
 
-- No `PERSIST_ALLOWED` flip
-- No productive `agent_memory` UPSERT on governed endpoint
+- No code-level `PERSIST_ALLOWED=True` on `main`
+- No real productive `agent_memory` UPSERT on governed endpoint (Phase B/C)
 - No MCP mutation enablement
 - No #2606 epic close
 - No LR upgrade
 
-Full PASS on #2606 criterion 6 requires separate Maintainer HG-W operator track
-(G3 flip + governed endpoint proof).
+Full PASS on #2606 criterion 6 requires Maintainer HG-W operator proof (Phase B/C)
+after explicit operator GO.

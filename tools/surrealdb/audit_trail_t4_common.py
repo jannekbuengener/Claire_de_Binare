@@ -1,4 +1,4 @@
-"""Shared helpers for T4 governed agent_memory operator tooling (#2758)."""
+"""Shared helpers for T4 governed agent_memory operator tooling (#2759)."""
 from __future__ import annotations
 
 import hashlib
@@ -23,12 +23,13 @@ from tools.surrealdb.audit_trail_t3_common import (  # noqa: F401 — re-export
 
 T4_ENDPOINT_CLASS = "governed_non_localhost_T4"
 T4_PRODUCTIVE_ENV_VAR = "CDB_PERSIST_PRODUCTIVE_AGENT_MEMORY"
-T4_WRITE_PROOF_BLOCKED_CODE = "g3_track_required"
+T4_WRITE_PROOF_BLOCKED_CODE = "hgw_proof_not_authorized"
 T4_WRITE_PROOF_BLOCKED_MESSAGE = (
-    "T4 write-proof-row refused: G3 PERSIST_ALLOWED flip and HG-W operator track "
-    "required before productive agent_memory proof writes."
+    "T4 write-proof-row refused: HG-W operator authorization, "
+    "CDB_PERSIST_ALLOWED env gate, and #2759 proof scope required before "
+    "productive agent_memory proof writes."
 )
-T4_PROOF_SCOPE = "g4-hgw-proof-2758"
+T4_PROOF_SCOPE = "g4-hgw-proof-2759"
 T4_WRITER_SCOPE = "audit_observation_then_agent_memory"
 
 

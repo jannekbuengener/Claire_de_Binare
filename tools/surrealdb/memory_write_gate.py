@@ -11,6 +11,7 @@ Guardrails:
 
 from __future__ import annotations
 
+import os
 import re
 import uuid
 from dataclasses import dataclass
@@ -28,6 +29,11 @@ from tools.surrealdb.memory_contract import (
 GATE_SCHEMA_VERSION = "memory-write-gate/v1"
 OBSERVED_BY = "memory_write_gate/v1"
 PERSIST_ALLOWED = False
+
+PERSIST_ENV_VAR = "CDB_PERSIST_ALLOWED"
+PROOF_SCOPE_HGW_2759 = "g4-hgw-proof-2759"
+REQUIRED_PERSIST_HUMAN_GO_TIER = "HG-W"
+PERSIST_TARGET_ISSUE_REF = "2759"
 
 OBSERVATION_ID_NAMESPACE = uuid.UUID("c8f2a1b0-4d3e-4f5a-9b6c-7d8e9f0a1b2c")
 
@@ -65,6 +71,57 @@ def _parse_observed_at(value: datetime | None) -> datetime:
 def _is_valid_human_go_token(token: str) -> bool:
     text = token.strip()
     return bool(text) and bool(HumanGoTokenPattern.match(text))
+
+
+def persist_env_enabled() -> bool:
+    """Return True when operator env gate CDB_PERSIST_ALLOWED=1 is set."""
+    return os.environ.get(PERSIST_ENV_VAR) == "1"
+
+
+def _target_issue_references_2759(target_issue: str) -> bool:
+    text = target_issue.strip()
+    return PERSIST_TARGET_ISSUE_REF in text
+
+
+def _scope_matches_proof_scope(scope: str, proof_scope: str) -> bool:
+    normalized = scope.strip()
+    expected = f"memory_write_path_t4:{proof_scope}"
+    return normalized == expected
+
+
+def approved_for_persist(
+    authorization: MemoryWriteAuthorization,
+    *,
+    human_go_tier: str | None = None,
+    proof_scope: str = PROOF_SCOPE_HGW_2759,
+) -> bool:
+    """Return True only when all HG-W persist preconditions are satisfied.
+
+    Fail-closed: PERSIST_ALLOWED module constant remains False on main.
+    Productive mock/real persist requires explicit operator env gate plus
+    HG-W tier, #2759 target_issue, valid GO token, and proof scope match.
+
+    Never logs or returns raw human_go_token.
+    """
+    if not persist_env_enabled():
+        return False
+    if human_go_tier is None or human_go_tier.strip().upper() != REQUIRED_PERSIST_HUMAN_GO_TIER:
+        return False
+    if not _target_issue_references_2759(authorization.target_issue):
+        return False
+    if not _is_valid_human_go_token(authorization.human_go_token):
+        return False
+    if not _scope_matches_proof_scope(authorization.scope, proof_scope):
+        return False
+    if not authorization.authorized_by.strip():
+        return False
+    if not authorization.authorized_at.strip():
+        return False
+    if not authorization.evidence_refs or not any(
+        ref.strip() for ref in authorization.evidence_refs
+    ):
+        return False
+    return True
 
 
 def _merge_evidence_refs(

@@ -1,10 +1,11 @@
-"""Memory Write Path T4 — mock-proven agent_memory scaffold — G4 #2758.
+"""Memory Write Path T4 — mock-proven agent_memory scaffold — G4 #2759.
 
 Non-productive adapter/contract proof for future T4 productive agent_memory write.
 Never performs real DB/network writes. PRODUCTIVE_ACTIVATED remains False.
 
 Guardrails:
     - PERSIST_ALLOWED in memory_write_gate remains False (not flipped here).
+    - Productive memory branch requires approved_for_persist() (env + HG-W + #2759).
     - Default mode is dry_run (zero persistence).
     - agent_memory_persist_productive requires HG-W, env gate, and mock sink only.
     - Mandatory audit_observation before any agent_memory branch.
@@ -31,7 +32,10 @@ from tools.surrealdb.memory_write_gate import (
     GATE_SCHEMA_VERSION,
     MemoryWriteAuthorization,
     PERSIST_ALLOWED,
+    PROOF_SCOPE_HGW_2759,
+    approved_for_persist,
     evaluate_memory_write_gate,
+    persist_env_enabled,
 )
 
 WRITE_PATH_T4_SCHEMA_VERSION = "memory-write-path-t4/v1"
@@ -40,7 +44,7 @@ PRODUCTIVE_TIER = "T4"
 PRODUCTIVE_ACTIVATED = False
 PRODUCTIVE_ENV_VAR = "CDB_PERSIST_PRODUCTIVE_AGENT_MEMORY"
 REQUIRED_HUMAN_GO_TIER = "HG-W"
-PROOF_SCOPE = "g4-hgw-proof-2758"
+PROOF_SCOPE = PROOF_SCOPE_HGW_2759
 ALLOWED_SINK_MODE = "mock"
 ALLOWED_SINK_TABLES = frozenset({"audit_observation", "agent_memory"})
 
@@ -442,6 +446,42 @@ def run_memory_write_path_t4(
             authorization=authorization,
         )
 
+    gate_auth = _to_gate_authorization(authorization)
+    if not persist_env_enabled():
+        return _refused_envelope(
+            code="persist_env_missing",
+            message=(
+                "T4 agent_memory persist blocked: CDB_PERSIST_ALLOWED env gate "
+                "required."
+            ),
+            gate_envelope=gate_envelope,
+            operation_mode_resolved="agent_memory_persist_productive",
+            authorization=authorization,
+        )
+
+    if "2759" not in authorization.target_issue.strip():
+        return _refused_envelope(
+            code="target_issue_mismatch",
+            message=(
+                "T4 agent_memory persist blocked: target_issue must reference #2759."
+            ),
+            gate_envelope=gate_envelope,
+            operation_mode_resolved="agent_memory_persist_productive",
+            authorization=authorization,
+        )
+
+    if authorization.scope.strip() != f"memory_write_path_t4:{PROOF_SCOPE}":
+        return _refused_envelope(
+            code="proof_scope_mismatch",
+            message=(
+                f"T4 agent_memory persist blocked: scope must match proof scope "
+                f"{PROOF_SCOPE!r}."
+            ),
+            gate_envelope=gate_envelope,
+            operation_mode_resolved="agent_memory_persist_productive",
+            authorization=authorization,
+        )
+
     if sink is None:
         return _refused_envelope(
             code="mock_sink_required",
@@ -523,7 +563,13 @@ def run_memory_write_path_t4(
 
     memory_id = str(gate_envelope["memory_id"])
 
-    if not PERSIST_ALLOWED:
+    persist_approved = approved_for_persist(
+        gate_auth,
+        human_go_tier=tier,
+        proof_scope=PROOF_SCOPE,
+    )
+
+    if not persist_approved:
         return _success_envelope(
             gate_envelope,
             path_status="mock_persisted_audit_only",

@@ -14,8 +14,12 @@ import pytest
 from tools.surrealdb.memory_write_gate import (
     GATE_SCHEMA_VERSION,
     PERSIST_ALLOWED,
+    PERSIST_ENV_VAR,
+    PROOF_SCOPE_HGW_2759,
     MemoryWriteAuthorization,
+    approved_for_persist,
     evaluate_memory_write_gate,
+    persist_env_enabled,
     run_memory_write_gate_harness,
 )
 
@@ -184,3 +188,95 @@ def test_envelope_never_contains_raw_human_go_token() -> None:
     serialized = json.dumps(result, default=str)
     assert token not in serialized
     assert '"human_go_token"' not in serialized
+
+
+def _hgw_auth(**overrides) -> MemoryWriteAuthorization:
+    base = dict(
+        human_go_token="GO-2026-05-31-hgw",
+        authorized_by="jannekbuengener",
+        authorized_at="2026-05-31T12:00:00+00:00",
+        scope=f"memory_write_path_t4:{PROOF_SCOPE_HGW_2759}",
+        target_issue="2759",
+        evidence_refs=("github:issue/2759",),
+        operation="create",
+    )
+    base.update(overrides)
+    return MemoryWriteAuthorization(**base)
+
+
+@pytest.mark.unit
+def test_persist_env_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(PERSIST_ENV_VAR, raising=False)
+    assert persist_env_enabled() is False
+
+
+@pytest.mark.unit
+def test_approved_for_persist_false_without_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv(PERSIST_ENV_VAR, raising=False)
+    assert (
+        approved_for_persist(_hgw_auth(), human_go_tier="HG-W") is False
+    )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_false_without_hgw_tier(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    for tier in ("HG-P", "HG-L", ""):
+        assert (
+            approved_for_persist(_hgw_auth(), human_go_tier=tier) is False
+        )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_false_without_target_issue_2759(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert (
+        approved_for_persist(
+            _hgw_auth(target_issue="2758"),
+            human_go_tier="HG-W",
+        )
+        is False
+    )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_false_without_valid_go_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert (
+        approved_for_persist(
+            _hgw_auth(human_go_token="invalid-token"),
+            human_go_tier="HG-W",
+        )
+        is False
+    )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_false_wrong_proof_scope(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert (
+        approved_for_persist(
+            _hgw_auth(scope="memory_write_path_t4:wrong-scope"),
+            human_go_tier="HG-W",
+        )
+        is False
+    )
+
+
+@pytest.mark.unit
+def test_approved_for_persist_true_under_full_hgw_conditions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(PERSIST_ENV_VAR, "1")
+    assert PERSIST_ALLOWED is False
+    assert approved_for_persist(_hgw_auth(), human_go_tier="HG-W") is True
