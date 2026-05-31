@@ -15,6 +15,7 @@ from tools.surrealdb.audit_trail_t4_common import (
     T4_WRITE_PROOF_BLOCKED_MESSAGE,
     T4_WRITER_SCOPE,
     build_ssl_context,
+    check_statement_results,
     container_network_names,
     endpoint_fingerprint,
     guard_non_localhost,
@@ -36,7 +37,8 @@ def _table_exists(env, ssl_context, table: str) -> bool:
         return False
     try:
         results = json.loads(body.decode("utf-8"))
-    except json.JSONDecodeError:
+        check_statement_results(body)
+    except (json.JSONDecodeError, ValueError):
         return False
     return isinstance(results, list) and bool(results)
 

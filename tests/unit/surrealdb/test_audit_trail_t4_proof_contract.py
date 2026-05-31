@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from tools.surrealdb.audit_trail_t4_common import (
@@ -61,6 +63,20 @@ def test_check_env_only_matrix_passes(tmp_path, monkeypatch) -> None:
     assert matrix["endpoint_class"] == T4_ENDPOINT_CLASS
     assert matrix["pass"] is True
     assert matrix["env_structure"] == "ok"
+
+
+@pytest.mark.unit
+def test_table_exists_rejects_statement_error(monkeypatch) -> None:
+    from tools.surrealdb import audit_trail_t4_proof as proof_module
+
+    def fake_sql(*args, **kwargs):
+        body = json.dumps([{"status": "ERR", "result": "table missing"}]).encode(
+            "utf-8"
+        )
+        return 200, body
+
+    monkeypatch.setattr(proof_module, "sql_request", fake_sql)
+    assert proof_module._table_exists(None, None, "audit_observation") is False
 
 
 @pytest.mark.unit
