@@ -107,10 +107,10 @@ On `main` as of campaign merge:
 |-----------|--------------|-------------|------------------------------|
 | DB-backed read (#2606 §2) | PARTIAL (local_only only) | PARTIAL globally; operator PASS via `context-memory-db-proof` | **PASS** — unit contracts + required-CI integration fixture adapter + documented operator path; **no** live SurrealDB in `ci.yml` |
 | DB-backed stale scan (#2606 §3) | PARTIAL (same) | Same pattern | **PASS** (same three-layer evidence) |
-| Productive audit trail (#2606 §6) | BLOCKED (undocumented) | **DESIGN-READY / NOT ACTIVATED** (#2730) | **PASS WITH LIMITS** — T3 HG-P proof (#2747); no productive `agent_memory` write |
+| Productive audit trail (#2606 §6) | BLOCKED (undocumented) | **DESIGN-READY / NOT ACTIVATED** (#2730) | **PASS** — HG-W governed proof path delivered via #2759 / PR #2763; `audit_observation_written=yes`, `agent_memory_written=yes`, rollback verified; `PERSIST_ALLOWED=False` remains fail-closed on `main` |
 | Claim at rest (#2606 §8) | PARTIAL | PASS WITH LIMITS (#2719) | **PASS WITH LIMITS** (unchanged) |
 | Cross-session rediscovery (#2606 §9) | PARTIAL | PASS WITH LIMITS (#2720) | **PASS WITH LIMITS** (unchanged) |
-| Epic closure | BLOCKED | **still BLOCKED** | **NOT_CLOSURE_READY** — strict DoD: #6/#8/#9 not full PASS |
+| Epic closure | BLOCKED | **still BLOCKED** | **NOT_CLOSURE_READY** — criterion #6 reconciled; remaining non-#6 rest axes still prevent full closure |
 
 **Reconcile policy (ratified 2026-05-31):** #2606 criteria #2/#3 PASS is coupled to #2603 reality — operator path plus required-CI fixture-backed integration tests. Live SurrealDB in required CI is explicitly **not** a PASS blocker.
 

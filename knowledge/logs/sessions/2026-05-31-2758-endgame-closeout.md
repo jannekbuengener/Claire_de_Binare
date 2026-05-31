@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-31  
 **Scope:** Reconcile repo canon and GitHub trackers to the delivered G4/T4 end state across #2760, #2762, #2763, and the HG-W proof in #2759  
-**Issues:** #2758 (closeout), #2759 (evidence anchor), #2606 (criterion-6 re-audit only)  
+**Issues:** #2758 (closeout), #2759 (evidence anchor), #2606 (historical criterion-6 reference only)
 **Main anchor at reconcile start:** `cbecf65e` (PR #2765 merged)  
 **LR:** NO-GO (unchanged)
 
@@ -35,7 +35,7 @@
 | HG-W gate prep | PR #2762 (`177a98cc`) |
 | Repo-backed proof wiring | PR #2763 (`de869df3`) |
 | HG-W operator proof | `knowledge/logs/sessions/2026-05-31-2759-hgw-proof.md` |
-| Criterion-6 status change | #2606 follow-up comment from this closeout slice |
+| Criterion-6 status change | repo canon / ledger reconcile in this closeout slice |
 
 ---
 
@@ -49,7 +49,7 @@
 | `PERSIST_ALLOWED` on `main` | False |
 | MCP mutation | blocked |
 | #2606 criterion #6 | **PASS** |
-| #2606 epic | **OPEN** (remaining non-#6 closure axes unchanged) |
+| #2606 issue state | **CLOSED** (GitHub-live; untouched by this slice) |
 
 ---
 
@@ -58,7 +58,7 @@
 - No new runtime, DB, MCP mutation, or BLUE/RED behavior changes in this closeout patch
 - No code-level `PERSIST_ALLOWED=True` on `main`
 - No LR-Go and no Echtgeld implication
-- No epic close for #2606 in this slice
+- No reopen or body-forcing for #2606 in this slice
 
 ---
 
