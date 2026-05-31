@@ -25,6 +25,13 @@ from tools.surrealdb.audit_trail_t4_common import (
     resolve_env_file,
     sql_request,
 )
+from tools.surrealdb.audit_trail_t4_write import (
+    AuditTrailT4WriteError,
+    execute_hgw_proof_write,
+    hgw_proof_env_authorized,
+    redact_write_result,
+    rollback_hgw_proof_write,
+)
 
 
 def _table_exists(env, ssl_context, table: str) -> bool:
@@ -43,25 +50,48 @@ def _table_exists(env, ssl_context, table: str) -> bool:
     return isinstance(results, list) and bool(results)
 
 
-def _write_proof_row_status(*, write_proof_row: bool) -> dict[str, str]:
+def _write_proof_row_status(
+    *,
+    write_proof_row: bool,
+    write_result: dict[str, str] | None = None,
+) -> dict[str, str]:
     if not write_proof_row:
         return {
             "write_proof_row_requested": "no",
             "write_proof_row_status": "skipped",
             "proof_row_written": "no",
         }
+    if write_result is None:
+        return {
+            "write_proof_row_requested": "yes",
+            "write_proof_row_status": "refused",
+            "write_proof_row_blocked_code": T4_WRITE_PROOF_BLOCKED_CODE,
+            "write_proof_row_blocked_message": T4_WRITE_PROOF_BLOCKED_MESSAGE,
+            "proof_row_written": "no",
+            "agent_memory_written": "no",
+            "audit_observation_written": "no",
+        }
     return {
         "write_proof_row_requested": "yes",
-        "write_proof_row_status": "refused",
-        "write_proof_row_blocked_code": T4_WRITE_PROOF_BLOCKED_CODE,
-        "write_proof_row_blocked_message": T4_WRITE_PROOF_BLOCKED_MESSAGE,
-        "proof_row_written": "no",
-        "agent_memory_written": "no",
-        "audit_observation_written": "no",
+        "write_proof_row_status": "executed",
+        "proof_row_written": write_result.get("proof_row_written", "no"),
+        "agent_memory_written": write_result.get("agent_memory_written", "no"),
+        "audit_observation_written": write_result.get(
+            "audit_observation_written", "no"
+        ),
+        "subject_ref": write_result.get("subject_ref", ""),
+        "memory_id": write_result.get("memory_id", ""),
+        "observation_id": write_result.get("observation_id", ""),
     }
 
 
-def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only: bool) -> dict:
+def run_proof(
+    *,
+    secrets_path: str | None,
+    write_proof_row: bool,
+    check_env_only: bool,
+    rollback_after: bool = False,
+) -> dict:
     env_file = resolve_env_file(secrets_path)
     env = load_env_file(env_file)
 
@@ -76,9 +106,11 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
             ns=env.surreal_ns, db=env.surreal_db
         ),
     }
-    matrix.update(_write_proof_row_status(write_proof_row=write_proof_row))
+    write_result: dict[str, str] | None = None
+    rollback_result: dict[str, str] | None = None
 
     if check_env_only:
+        matrix.update(_write_proof_row_status(write_proof_row=write_proof_row))
         for key in (
             "SURREAL_URL",
             "SURREAL_NS",
@@ -90,12 +122,13 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         matrix["env_structure"] = "ok"
         matrix["ns_present"] = env.surreal_ns == "cdb"
         matrix["db_present"] = env.surreal_db == "audit_trail"
+        matrix["hgw_proof_env_authorized"] = hgw_proof_env_authorized()
         failures: list[str] = []
         if matrix["ns_present"] is not True:
             failures.append("ns_present")
         if matrix["db_present"] is not True:
             failures.append("db_present")
-        if write_proof_row:
+        if write_proof_row and not hgw_proof_env_authorized():
             failures.append("write_proof_row_blocked")
         matrix["failures"] = failures
         matrix["pass"] = not failures
@@ -120,7 +153,43 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         else ("yes" if "cdb_network" in t4_networks else "unknown")
     )
     matrix["t2_localhost_excluded"] = "yes"
-    matrix["scaffold_activation"] = "not_activated"
+    matrix["scaffold_activation"] = (
+        "hgw_proof_executed" if write_proof_row and hgw_proof_env_authorized() else "not_activated"
+    )
+    matrix["hgw_proof_env_authorized"] = hgw_proof_env_authorized()
+
+    if write_proof_row:
+        if not hgw_proof_env_authorized():
+            matrix.update(_write_proof_row_status(write_proof_row=True))
+        else:
+            try:
+                write_result = redact_write_result(
+                    execute_hgw_proof_write(env, ssl_context=ssl_context)
+                )
+                matrix.update(
+                    _write_proof_row_status(
+                        write_proof_row=True, write_result=write_result
+                    )
+                )
+                if rollback_after:
+                    rollback_result = rollback_hgw_proof_write(
+                        env,
+                        ssl_context=ssl_context,
+                        memory_id=str(write_result["memory_id"]),
+                        observation_id=str(write_result["observation_id"]),
+                    )
+                    matrix["rollback_status"] = rollback_result["rollback_status"]
+                    matrix["rollback_agent_memory_deleted"] = rollback_result[
+                        "agent_memory_deleted"
+                    ]
+                    matrix["rollback_audit_observation_deleted"] = rollback_result[
+                        "audit_observation_deleted"
+                    ]
+            except AuditTrailT4WriteError as exc:
+                matrix.update(_write_proof_row_status(write_proof_row=True))
+                matrix["write_proof_row_error"] = str(exc)[:200]
+    else:
+        matrix.update(_write_proof_row_status(write_proof_row=False))
 
     failures = []
     if matrix["endpoint_reachable"] is not True:
@@ -142,7 +211,14 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
     if matrix.get("container_inspect") != "ok":
         failures.append("container_inspect")
     if write_proof_row:
-        failures.append("write_proof_row_blocked")
+        if matrix.get("write_proof_row_status") != "executed":
+            failures.append("write_proof_row_blocked")
+        elif matrix.get("agent_memory_written") != "yes":
+            failures.append("agent_memory_written")
+        elif matrix.get("audit_observation_written") != "yes":
+            failures.append("audit_observation_written")
+        if rollback_after and matrix.get("rollback_status") != "ok":
+            failures.append("rollback_failed")
 
     matrix["pass"] = not failures
     matrix["failures"] = failures
@@ -156,8 +232,16 @@ def main() -> None:
         "--write-proof-row",
         action="store_true",
         help=(
-            "Request one scoped agent_memory proof write (refused until HG-W + "
+            "Request one scoped agent_memory proof write (requires HG-W env gates + "
             "CDB_PERSIST_ALLOWED + #2759 track)."
+        ),
+    )
+    parser.add_argument(
+        "--rollback-after",
+        action="store_true",
+        help=(
+            "After a successful --write-proof-row, DELETE run-scoped proof rows "
+            "and verify absence."
         ),
     )
     parser.add_argument(
@@ -177,6 +261,7 @@ def main() -> None:
             secrets_path=args.secrets_path,
             write_proof_row=args.write_proof_row,
             check_env_only=args.check_env_only,
+            rollback_after=args.rollback_after,
         )
     except Exception as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
