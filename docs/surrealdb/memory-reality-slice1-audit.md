@@ -753,10 +753,11 @@ Operator HG-W proof on 2026-05-31 is recorded in
 | --- | --- |
 | #2758 delivery | Complete via #2760 + #2762 + #2763 + #2759 evidence |
 | #2606 criterion 6 | **PASS** |
-| #2606 epic closure | Still open; non-#6 rest axes remain outside this slice |
+| #2606 issue state | **CLOSED** (GitHub-live); non-#6 rest axes remain outside this slice and are not re-evaluated here |
 
-Parent #2606 criterion 6 is now **PASS**; the epic stays open because the
-remaining closure gaps are not part of this G4 closeout slice.
+Parent #2606 criterion 6 is now **PASS**. GitHub-live issue state for #2606 is
+**CLOSED**; this addendum does not reopen the issue or re-evaluate the
+remaining non-#6 closure axes.
 
 ---
 
