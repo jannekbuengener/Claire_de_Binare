@@ -2,7 +2,7 @@
   "mcpServers": {
     "cdb_context": {
       "enabled": true,
-      "command": "python",
+      "command": ".venv/Scripts/python.exe",
       "args": ["-m", "tools.mcp.server"],
       "type": "stdio"
     }

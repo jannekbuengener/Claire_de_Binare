@@ -10,6 +10,7 @@ This directory contains MCP configuration templates for each agent surface.
 | `claude_mcp.json.template` | Claude / Cloud Code | template (needs manual copy) | Needs manual install |
 | `gemini_mcp_config.yml.template` | Gemini workflow | inline config snippet (needs manual embed) | Needs manual install |
 | `codex_mcp_config.md` | Codex | reference only (no separate MCP surface) | Via host agent |
+| `codex_config.example.toml` | Codex | template (copy to `.codex/config.toml`) | Needs manual install |
 | `onboarding_mcp_setup.ps1` | Onboarding / any agent | validation script | Run from repo root |
 
 ## Distinction
@@ -20,16 +21,18 @@ This directory contains MCP configuration templates for each agent surface.
 
 ## Common pattern
 
-All templates reference the same `cdb_context` server entry:
+All templates reference the same `cdb_context` stdio server as `claire-de-binare.mcp.json`:
 
 ```json
 {
-  "command": "python",
+  "command": ".venv/Scripts/python.exe",
   "args": ["-m", "tools.mcp.server"]
 }
 ```
 
-The canonical config lives in `claire-de-binare.mcp.json` at repo root.
+**Portability:** On Windows-local CDB checkouts, use the repo `.venv` interpreter (relative path above). On Linux/macOS, use `.venv/bin/python` with the same args. The MCP host must use **cwd = repo root** so `tools.*` resolves. Do not use HTTP `127.0.0.1:8811` as the primary Context MCP path.
+
+The canonical sync source is `claire-de-binare.mcp.json` at repo root (Cursor: `.cursor/mcp.json`).
 
 ## Validation
 

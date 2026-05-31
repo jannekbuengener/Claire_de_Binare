@@ -49,7 +49,7 @@ Der **CDB Context MCP** ist das repo-native MCP-Interface für Context Intellige
   "mcpServers": {
     "cdb_context": {
       "enabled": true,
-      "command": "python",
+      "command": ".venv/Scripts/python.exe",
       "args": ["-m", "tools.mcp.server"],
       "type": "stdio"
     }
@@ -57,25 +57,31 @@ Der **CDB Context MCP** ist das repo-native MCP-Interface für Context Intellige
 }
 ```
 
+**Portabilität:** Windows-local CDB nutzt die repo-`.venv` (Pfad oben). Linux/macOS:
+`command` = `.venv/bin/python`, gleiche `args`. Primärer Pfad ist **stdio** aus dem
+Repo-Root — kein HTTP `127.0.0.1:8811` als Default.
+
 **Installation pro Agent-Host:**
-1. Das Repo muss lokal ausgecheckt sein und der Agent muss von dort starten (damit `tools.*`-Pfade auflösen).
+1. Das Repo muss lokal ausgecheckt sein und der Agent muss mit **cwd = Repo-Root** starten (damit `tools.*`-Pfade auflösen).
 2. Der Agent-Host muss die `cdb_context`-Server-Definition aus `claire-de-binare.mcp.json` in seine aktive MCP-Konfiguration übernehmen.
-3. Python 3.12 und die Projekt-Abhängigkeiten müssen installiert sein.
+3. Python 3.12 und die Projekt-Abhängigkeiten müssen installiert sein (`.venv`).
 
 **Validierung (fünf Ebenen):**
 1. Config existiert: `Test-Path claire-de-binare.mcp.json`
 2. Host kennt Config: Agent-Host-MCP-Einstellungen prüfen
-3. Server startet: `python -m tools.mcp.server` läuft fehlerfrei
+3. Server startet: `.venv/Scripts/python.exe -m tools.mcp.server` läuft fehlerfrei (Windows-local)
 4. Tool-Inventar: `context.briefing` erscheint im MCP-Tool-Inventar
 5. Aufruf funktioniert: `context.briefing({"task_id": "test", "task_scope": "validate", "operation_mode": "read_only"})` liefert gültige Response
 
 **Bridge-Validation (auch ohne MCP SDK):**
 ```bash
-python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
+.venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
 # Erwartet: 26
-python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
+.venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
 # Erwartet: True
 ```
+
+Linux/macOS: `.venv/bin/python` statt `.venv/Scripts/python.exe`.
 
 **Capability Resolution (Pflicht bei Context-/MCP-/Memory-/Evidence-Scope):**
 - Vor jeder Planung prüfen, ob `context.briefing` im aktiven MCP-Inventar ist.

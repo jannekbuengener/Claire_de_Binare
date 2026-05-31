@@ -57,7 +57,7 @@ For repo-native Context MCP access, `claire-de-binare.mcp.json` must expose the
   "mcpServers": {
     "cdb_context": {
       "enabled": true,
-      "command": "python",
+      "command": ".venv/Scripts/python.exe",
       "args": ["-m", "tools.mcp.server"],
       "type": "stdio"
     }
@@ -65,8 +65,10 @@ For repo-native Context MCP access, `claire-de-binare.mcp.json` must expose the
 }
 ```
 
-The MCP host must invoke the server from the repository root so that `tools.*`
-module paths resolve correctly.
+Windows-local CDB uses the repo `.venv` interpreter (relative path). Linux/macOS:
+`.venv/bin/python` with the same args. The MCP host must invoke the server from the
+repository root so that `tools.*` module paths resolve correctly. Stdio from repo root
+is the primary path — not HTTP `127.0.0.1:8811`.
 
 If any capability check fails:
 - Do not switch to a raw/external SurrealDB MCP server.
@@ -113,19 +115,21 @@ Repo presence is not MCP availability. Each surface must be verified independent
 **Validation commands (bridge-level, works regardless of MCP SDK):**
 
 ```bash
-# Bridge creates successfully — returns tool count
-python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
+# Bridge creates successfully — returns tool count (Windows-local venv)
+.venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
 # Expected: 26
 
 # Key tool present in inventory
-python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
+.venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
 # Expected: True
 ```
+
+Linux/macOS: use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.
 
 **Validation command (stdio server import — bounded, does not enter event loop):**
 
 ```bash
-python -c "import tools.mcp.server; print('STDIO IMPORT OK')"
+.venv/Scripts/python.exe -c "import tools.mcp.server; print('STDIO IMPORT OK')"
 # If blocked by pydantic-core version mismatch, fix:
 # pip install 'pydantic>=2.0,<3.0' 'pydantic-core==2.46.4'
 ```

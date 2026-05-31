@@ -4,8 +4,8 @@
 # inline MCP configuration (e.g., gemini-invoke.yml, gemini-review.yml).
 #
 # Requirements:
-# - Python 3.12 with project dependencies installed
-# - Repository checked out with tools/ directory available
+# - Python 3.12 with project dependencies installed (repo `.venv`)
+# - Repository checked out with tools/ directory available; host cwd = repo root
 # - Compatible pydantic + pydantic-core versions (see pyproject.toml)
 #
 # Note: CDB Context MCP uses Python stdio transport. In GitHub Actions
@@ -15,8 +15,10 @@
 #
 #   mcpServers:
 #     cdb_context:
-#       command: python
+#       command: .venv/Scripts/python.exe
 #       args:
 #         - -m
 #         - tools.mcp.server
 #       enabled: true
+#
+# Linux/macOS CI/local: use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.

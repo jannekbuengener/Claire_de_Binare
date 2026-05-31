@@ -1,0 +1,10 @@
+# Copy to `.codex/config.toml` in the CDB repo root (directory is typically gitignored).
+# Run Codex with cwd = Claire_de_Binare repo root so `tools.*` imports resolve.
+#
+# Linux/macOS: set command to ".venv/bin/python" (same args and cwd).
+
+[mcp_servers.cdb_context]
+enabled = true
+command = ".venv/Scripts/python.exe"
+args = ["-m", "tools.mcp.server"]
+cwd = "."
