@@ -9,7 +9,6 @@ from pathlib import Path
 from core.utils.uuid_gen import generate_uuid_hex
 from tools.surrealdb.audit_trail_t3_common import (
     CONTAINER_NAME,
-    T2_CONTAINER_NAME,
     build_ssl_context,
     check_statement_results,
     endpoint_fingerprint,
@@ -110,7 +109,6 @@ def _optional_proof_row(env, ssl_context, *, write_proof_row: bool) -> bool:
 def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only: bool) -> dict:
     env_file = resolve_env_file(secrets_path)
     env = load_env_file(env_file)
-    ssl_context = build_ssl_context(env.tls_dir / "cert.pem")
 
     matrix: dict[str, str | bool] = {
         "endpoint_class": "governed_non_localhost_T3",
@@ -127,6 +125,7 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         matrix["env_structure"] = "ok"
         return matrix
 
+    ssl_context = build_ssl_context(env.tls_dir / "cert.pem")
     host = guard_non_localhost(env.surreal_url)
     matrix["non_localhost"] = host not in {"127.0.0.1", "localhost", "::1"}
     matrix["tls_baseline"] = health_check(env.surreal_url, ssl_context=ssl_context)
@@ -138,8 +137,13 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
     )
     matrix["writer_scope"] = "audit_observation_only"
     matrix["agent_memory_write"] = "no" if _agent_memory_write_blocked(env, ssl_context) else "yes"
-    t3_networks = container_network_names(CONTAINER_NAME)
-    matrix["blue_red_coupling"] = "no" if "cdb_network" not in t3_networks else "yes"
+    inspect_ok, t3_networks = container_network_names(CONTAINER_NAME)
+    matrix["container_inspect"] = "ok" if inspect_ok else "failed"
+    matrix["blue_red_coupling"] = (
+        "no"
+        if inspect_ok and "cdb_network" not in t3_networks
+        else ("yes" if "cdb_network" in t3_networks else "unknown")
+    )
     matrix["t2_localhost_excluded"] = "yes"
     matrix["proof_row_written"] = (
         "yes" if _optional_proof_row(env, ssl_context, write_proof_row=write_proof_row) else "no"
@@ -158,6 +162,8 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         failures.append("agent_memory_write")
     if matrix["blue_red_coupling"] != "no":
         failures.append("blue_red_coupling")
+    if matrix.get("container_inspect") != "ok":
+        failures.append("container_inspect")
     if write_proof_row and matrix["proof_row_written"] != "yes":
         failures.append("proof_row_written")
 

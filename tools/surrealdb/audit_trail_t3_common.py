@@ -334,7 +334,7 @@ def check_statement_results(body: bytes) -> list[dict]:
     return results
 
 
-def container_network_names(container_name: str) -> set[str]:
+def container_network_names(container_name: str) -> tuple[bool, set[str]]:
     proc = subprocess.run(
         [
             "docker",
@@ -348,8 +348,8 @@ def container_network_names(container_name: str) -> set[str]:
         check=False,
     )
     if proc.returncode != 0:
-        return set()
-    return {part for part in proc.stdout.strip().split() if part}
+        return False, set()
+    return True, {part for part in proc.stdout.strip().split() if part}
 
 
 def redact_output(text: str, env: AuditTrailEnv) -> str:
