@@ -1,0 +1,37 @@
+---
+alwaysApply: true
+---
+
+Red, missing, stale, or pending required checks are not a reason to stop and ask Jannek.
+
+If required checks are red, missing, stale, or pending:
+1. Inspect live check status and logs.
+2. Identify the cause.
+3. Update the branch if needed.
+4. Rerun checks if useful.
+5. Apply small in-scope fixes if the cause is inside the approved plan.
+6. Recheck.
+7. Merge only when required checks are green.
+
+If the failure cannot be fixed within the approved scope:
+- do not expand scope silently
+- document HOLD/BLOCKED
+- dedupe existing issues
+- create a follow-up issue if needed
+- link the finding in the final report
+- continue independent approved work where possible
+
+When merge is explicitly allowed by the approved plan, merge autonomously if all criteria are true:
+1. PR belongs to approved scope.
+2. Diff matches the plan and has no unauthorized scope growth.
+3. All required checks are green.
+4. Non-required checks are green, skipped with explanation, or documented as non-blocking.
+5. No blocking reviews, unresolved blocker threads, or CHANGES_REQUESTED state.
+6. PR is not draft and not HOLD/BLOCKED.
+7. Branch is mergeable or has been updated in scope.
+8. No secrets, sensitive values, or token leaks were introduced.
+9. No safety, LR, live/echtgeld, productive DB, MCP mutation, or BLUE/RED boundary is bypassed.
+10. PR body or final report includes Delivered, Validation, Non-goals, and Remaining uncertainty.
+
+Do not ask “Should I merge?” when the merge criteria are satisfied.
+Instead: merge, then report the evidence.

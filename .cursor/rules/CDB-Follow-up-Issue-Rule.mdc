@@ -1,0 +1,22 @@
+---
+alwaysApply: true
+---
+
+Create a deduplicated follow-up issue without asking Jannek when an important next action is discovered but falls outside the approved plan.
+
+Process:
+1. Do not silently expand the current scope.
+2. Search existing open issues and PRs for duplicates.
+3. If no suitable issue exists, create a focused follow-up issue.
+4. Link the follow-up in the final report.
+5. Continue the approved plan where independent progress is possible.
+
+Use follow-up issues for:
+- out-of-scope fixes
+- non-blocking technical debt
+- unresolved blockers
+- CI failures outside current scope
+- missing docs/contracts discovered during validation
+- safety-relevant restgaps
+
+Do not create noisy issues for trivial observations.

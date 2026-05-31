@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+---
+
+When Jannek approves a plan, that approval covers all explicitly described steps inside that plan scope.
+
+Do not ask for separate micro-approvals such as:
+- Merge-GO
+- Review-GO
+- Resolve-GO
+- Comment-GO
+- Label-GO
+- Push-GO
+- Branch-update-GO
+- Issue-close-GO
+
+After Plan-GO:
+1. Recheck live state.
+2. Execute the approved plan.
+3. Validate the result.
+4. Report evidence and final status.
+5. Handle deviations according to the plan and safety rules.
+
+Allowed after Plan-GO, if explicitly inside scope:
+- review PRs
+- inspect diffs
+- check required checks
+- update branches
+- rerun checks
+- implement small in-scope fixes
+- commit and push
+- resolve review threads
+- post comments
+- apply or remove labels
+- close issues
+- merge PRs
+- create deduplicated follow-up issues
+- report final status
+
+This is not a blank check. Productive DB writes, MCP mutations, BLUE/RED runtime changes, LR/live/echtgeld actions, secret handling, and scope expansion still require their own explicit scope or gate.

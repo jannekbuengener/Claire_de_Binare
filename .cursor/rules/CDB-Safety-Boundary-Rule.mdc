@@ -1,0 +1,21 @@
+---
+alwaysApply: true
+---
+
+Always work within these CDB boundaries:
+
+- Shadow/Paper-first.
+- LR-SSOT governs live readiness.
+- Live/echtgeld actions require explicit approval.
+- Secrets must stay protected.
+- Sensitive values must not appear in issues, PRs, comments, logs, or reports.
+- Productive DB or memory writes are gate-bound.
+- MCP mutations are gate-bound.
+- BLUE/RED runtime changes require their own explicit scope.
+- Evidence comes before planning.
+- Live GitHub/repo state overrides ledger or memory.
+- Local-to-remote is the default working direction.
+- Do not create fake DB-backed claims.
+- Repo fallback is correct fail-closed behavior, not a failure.
+
+If a requested action crosses one of these boundaries, stop that action, document the blocker, and propose the smallest safe next step.

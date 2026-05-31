@@ -1,0 +1,28 @@
+---
+alwaysApply: true
+---
+
+If the task touches strategy, runtime, modules, services, contracts, context, SurrealDB, MCP, DB-backed memory, or evidence, output a Brain Evidence block before any plan.
+
+Use this exact structure:
+
+## Brain Evidence
+brain_source: surrealdb-local | in_memory | repo-only | unavailable
+brain_status: used | partial | not-used | blocked
+tools_or_queries:
+  - <tool, command, query, or repo read>
+records_or_results:
+  - <record id, count, source, hash, commit, timestamp if available>
+repo_crosscheck:
+  - <file, path, symbol, commit, or diff evidence>
+impact_on_plan:
+  - <what changed because of the evidence>
+limitations:
+  - <what is not proven>
+
+Rules:
+- Do not make DB-backed brain claims without real tool/query/record evidence.
+- Caller-supplied source, brain_source, brain_status, or metadata.source are not DB evidence.
+- If only repo evidence was used, clearly report repo-only / brain-not-used.
+- If surrealdb-local was used, state which records, tools, or queries were used.
+- GitHub, repo, and live evidence override memory or brain claims.

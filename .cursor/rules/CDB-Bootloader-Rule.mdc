@@ -1,0 +1,20 @@
+---
+alwaysApply: true
+---
+
+For any task in the Claire_de_Binare/CDB repository, resolve governance before implementation.
+
+Required order:
+1. Resolve the CDB agent bootloader:
+   - root pointer: AGENTS.md
+   - canonical agent registry: agents/AGENTS.md
+   - full Read Order from agents/AGENTS.md
+2. Prefer verified Context/DB/MCP evidence when available.
+3. Every Context/DB/MCP claim must include tool/query/record evidence.
+4. If Context/DB/MCP evidence is missing, stale, contradictory, or unverifiable, fail closed by reading the repo files directly.
+5. If a canonical file or Read Order entry is missing, report it exactly and do not start implementation.
+6. Only after governance is resolved, fetch live GitHub issues, PRs, checks, and diffs.
+
+Never improvise issue work before reading governance.
+GitHub live data remains authoritative for issues, PRs, checks, branches, and diffs.
+Repo-backed files remain authoritative for code, contracts, docs, and governance.

@@ -1,0 +1,33 @@
+---
+alwaysApply: true
+---
+
+For CDB work, finish with a compact evidence-based report.
+
+Use this structure:
+
+Status:
+- DONE_MERGED | DONE_NO_PR | HOLD | BLOCKED | PARTIAL
+
+Scope:
+- <what was approved>
+
+Delivered:
+- <what changed or was verified>
+
+Validation:
+- <commands, checks, tests, PR checks, or live GitHub evidence>
+
+GitHub/Repo State:
+- <issues, PRs, branch, commit, merge status>
+
+Boundaries:
+- <LR/live/echtgeld/secrets/DB/MCP/runtime impact>
+
+Follow-ups:
+- <created or existing issues, or “none”>
+
+Limitations:
+- <what remains unproven or intentionally untouched>
+
+Keep it factual. Do not pad with motivational filler.
