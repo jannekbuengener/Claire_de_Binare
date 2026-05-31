@@ -88,8 +88,17 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         ):
             matrix[f"env_key_{key}"] = "present"
         matrix["env_structure"] = "ok"
-        matrix["pass"] = True
-        matrix["failures"] = []
+        matrix["ns_present"] = env.surreal_ns == "cdb"
+        matrix["db_present"] = env.surreal_db == "audit_trail"
+        failures: list[str] = []
+        if matrix["ns_present"] is not True:
+            failures.append("ns_present")
+        if matrix["db_present"] is not True:
+            failures.append("db_present")
+        if write_proof_row:
+            failures.append("write_proof_row_blocked")
+        matrix["failures"] = failures
+        matrix["pass"] = not failures
         return matrix
 
     ssl_context = build_ssl_context(env.tls_dir / "cert.pem")
@@ -124,6 +133,10 @@ def run_proof(*, secrets_path: str | None, write_proof_row: bool, check_env_only
         failures.append("audit_observation_available")
     if matrix["agent_memory_table_present"] is not True:
         failures.append("agent_memory_table_present")
+    if matrix["ns_present"] is not True:
+        failures.append("ns_present")
+    if matrix["db_present"] is not True:
+        failures.append("db_present")
     if matrix["blue_red_coupling"] != "no":
         failures.append("blue_red_coupling")
     if matrix.get("container_inspect") != "ok":

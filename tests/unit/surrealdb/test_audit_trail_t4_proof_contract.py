@@ -66,6 +66,38 @@ def test_check_env_only_matrix_passes(tmp_path, monkeypatch) -> None:
 
 
 @pytest.mark.unit
+def test_check_env_only_write_proof_row_still_fails(tmp_path, monkeypatch) -> None:
+    secrets = tmp_path / ".secrets" / ".cdb"
+    secrets.mkdir(parents=True)
+    env_file = secrets / "SURREALDB_AUDIT_TRAIL_ENV"
+    env_file.write_text(
+        "\n".join(
+            [
+                "SURREAL_URL=https://audit-trail.example:8011",
+                "SURREAL_NS=cdb",
+                "SURREAL_DB=audit_trail",
+                "SURREAL_USER=audit_writer",
+                "SURREAL_PASS=redacted",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    tls_dir = secrets / "audit_trail_tls"
+    tls_dir.mkdir()
+    (tls_dir / "cert.pem").write_text("dummy", encoding="utf-8")
+
+    monkeypatch.setenv("SECRETS_PATH", str(secrets))
+    matrix = run_proof(
+        secrets_path=str(secrets),
+        write_proof_row=True,
+        check_env_only=True,
+    )
+    assert matrix["write_proof_row_status"] == "refused"
+    assert matrix["pass"] is False
+    assert "write_proof_row_blocked" in matrix["failures"]
+
+
+@pytest.mark.unit
 def test_t4_endpoint_fingerprint_differs_from_t3() -> None:
     from tools.surrealdb.audit_trail_t4_common import (
         endpoint_fingerprint as t4_fingerprint,
@@ -77,6 +109,66 @@ def test_t4_endpoint_fingerprint_differs_from_t3() -> None:
     assert t4_fingerprint(ns="cdb", db="audit_trail") != t3_fingerprint(
         ns="cdb", db="audit_trail"
     )
+
+
+@pytest.mark.unit
+def test_wrong_namespace_fails_matrix(tmp_path, monkeypatch) -> None:
+    secrets = tmp_path / ".secrets" / ".cdb"
+    secrets.mkdir(parents=True)
+    env_file = secrets / "SURREALDB_AUDIT_TRAIL_ENV"
+    env_file.write_text(
+        "\n".join(
+            [
+                "SURREAL_URL=https://audit-trail.example:8011",
+                "SURREAL_NS=wrong_ns",
+                "SURREAL_DB=audit_trail",
+                "SURREAL_USER=audit_writer",
+                "SURREAL_PASS=redacted",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    tls_dir = secrets / "audit_trail_tls"
+    tls_dir.mkdir()
+    (tls_dir / "cert.pem").write_text("dummy", encoding="utf-8")
+
+    monkeypatch.setenv("SECRETS_PATH", str(secrets))
+
+    def fake_health(*args, **kwargs):
+        return True
+
+    def fake_guard(url):
+        return "audit-trail.example"
+
+    monkeypatch.setattr(
+        "tools.surrealdb.audit_trail_t4_proof.build_ssl_context",
+        lambda *_args, **_kwargs: object(),
+    )
+    monkeypatch.setattr(
+        "tools.surrealdb.audit_trail_t4_proof.health_check",
+        fake_health,
+    )
+    monkeypatch.setattr(
+        "tools.surrealdb.audit_trail_t4_proof.guard_non_localhost",
+        fake_guard,
+    )
+    monkeypatch.setattr(
+        "tools.surrealdb.audit_trail_t4_proof._table_exists",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        "tools.surrealdb.audit_trail_t4_proof.container_network_names",
+        lambda *_args, **_kwargs: (True, {"audit_trail_net"}),
+    )
+
+    matrix = run_proof(
+        secrets_path=str(secrets),
+        write_proof_row=False,
+        check_env_only=False,
+    )
+    assert matrix["ns_present"] is False
+    assert matrix["pass"] is False
+    assert "ns_present" in matrix["failures"]
 
 
 @pytest.mark.unit
