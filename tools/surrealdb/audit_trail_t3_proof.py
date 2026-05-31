@@ -4,9 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import uuid
 from pathlib import Path
 
+from core.utils.uuid_gen import generate_uuid_hex
 from tools.surrealdb.audit_trail_t3_common import (
     CONTAINER_NAME,
     T2_CONTAINER_NAME,
@@ -67,7 +67,7 @@ def _agent_memory_write_blocked(env, ssl_context) -> bool:
 def _optional_proof_row(env, ssl_context, *, write_proof_row: bool) -> bool:
     if not write_proof_row:
         return True
-    observation_id = f"g3c-env-proof-{uuid.uuid4().hex[:12]}"
+    observation_id = f"g3c-env-proof-{generate_uuid_hex(name='g3c-env-proof-row')}"
     sql = (
         "CREATE audit_observation SET "
         f"observation_id = '{observation_id}', "
