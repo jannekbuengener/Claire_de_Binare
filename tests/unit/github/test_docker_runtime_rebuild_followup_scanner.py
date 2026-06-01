@@ -202,7 +202,7 @@ def test_model_classifier_accepts_json_wrapped_in_markdown_fence(monkeypatch) ->
 }
 ```"""
 
-    monkeypatch.setattr(scanner, "run_command", fenced_json)
+    monkeypatch.setattr(scanner, "run_models_with_retry", fenced_json)
 
     classification = scanner.classify_finding(
         prompt_file=Path(".github/prompts/cdb-control-followup.prompt.yml"),
