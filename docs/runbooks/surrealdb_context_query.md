@@ -187,6 +187,34 @@ python -m tools.surrealdb.context_query \
     show-audit --run-id run-123
 ```
 
+### 5.10 Global verification flags (read-only)
+
+These global flags apply to query subcommands. They support fail-closed
+verification of read results. They do **not** authorize writes, `--apply`, or
+productive SurrealDB mutations (`PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`).
+
+| Flag | Default | Behavior |
+|------|---------|----------|
+| `--hard-mode` | off (soft mode) | When the query uses a live local DB connection, an unreachable database causes a **non-zero exit** (`QueryAdapterError`). Without this flag, unreachable DBs return empty results and a warning. |
+| `--min-count N` | `0` (no floor) | After a successful query, exit non-zero with `MIN_COUNT_NOT_MET` if `payload.count` is below `N`. |
+
+For the full operator smoke path that combines these flags with local DB setup,
+see [`SURREALDB_LOCAL_CONTEXT_RUNTIME.md`](SURREALDB_LOCAL_CONTEXT_RUNTIME.md)
+(`make context-smoke-db`).
+
+Example (read-only query with verification flags):
+
+```bash
+python -m tools.surrealdb.context_query \
+    --config infrastructure/config/surrealdb/context_query.local.yaml \
+    --hard-mode \
+    --min-count 1 \
+    find-artifact --source-path src/
+```
+
+**Note:** LR verdict remains **NO-GO**. This runbook covers read-only context
+queries only.
+
 ---
 
 ## 6. Output Formats
