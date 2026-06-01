@@ -1,8 +1,13 @@
 # Gordon Brief: Phase 8B - Deterministic risk_events Persistence
 
-**Date:** 2026-02-15
-**Requester:** Claude Opus 4.5
-**Status:** AWAITING GORDON REVIEW
+> **Orphaned / historisch** — Gordon/Docker-AI/MCP_DOCKER als Review-Gate ist
+> **dekommissioniert** (#2689). Inhalt unten ist Archiv-Evidence; keine aktive
+> Freigabe oder Blocker-Warteschlange. Entscheidungen: Jannek Human-GO +
+> GitHub-live-before-ledger.
+
+**Date:** 2026-02-15  
+**Requester:** Claude Opus 4.5  
+**Status:** ORPHANED (historisch: AWAITING GORDON REVIEW)
 
 ---
 
@@ -102,11 +107,11 @@ Pitfalls: [any additional concerns]
 
 ---
 
-**Awaiting Gordon's review before implementation.**
+**Historisch:** Review wurde extern simuliert; kein aktiver Gordon-Gate mehr.
 
 ---
 
-## Gordon Response (via MCP_DOCKER)
+## Gordon Response (via MCP_DOCKER) — historisch, nicht operativ
 
 **Consultation Date:** 2026-02-15
 **Method:** Docker infrastructure inspection
@@ -173,4 +178,4 @@ Pitfalls: [any additional concerns]
 
 ---
 
-**Status:** GORDON APPROVED - Proceed with implementation
+**Status (historisch):** GORDON APPROVED — Archiv only; Implementation-GO nur via Jannek + Live-Evidence

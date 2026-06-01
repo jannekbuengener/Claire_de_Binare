@@ -1,9 +1,15 @@
 # Execution-Service - Entwicklungsstatus
 
+> **Historischer Snapshot (orphaned)** — Stand 2025-10-23. Nicht als aktiver
+> Deployment- oder Debug-Status verwenden. Gordon als Deployment-Owner ist
+> **veraltet**; Stack-Ops und Container-Änderungen erfordern Jannek Human-GO.
+> Aktueller Service-Canon: Repo unter `services/execution/`, Ledger:
+> `CURRENT_STATUS.md`.
+
 **Erstellt**: 2025-10-23 14:30 UTC  
-**Status**: 🟡 Code fertig, Container-Deployment in Debugging  
+**Status**: 🟡 Code fertig, Container-Deployment in Debugging (historisch)  
 **Version**: 0.1.0  
-**Verantwortlich**: Claude (Code), Gordon (Deployment)
+**Verantwortlich (historisch)**: Claude (Code), solo-maintainer (Deployment via Human-GO)
 
 ---
 
@@ -121,9 +127,9 @@ CMD ["python", "-u", "service.py"]
 
 **Symptom**: Container startet und crasht sofort  
 **Impact**: 🔴 Kritisch - Service nicht deployed  
-**Status**: 🟡 Gordon debuggt aktiv
+**Status**: 🟡 Container-Debug offen (historisch; kein externer Gordon-Gate)
 
-### Diagnose-Schritte (für Gordon)
+### Diagnose-Schritte (historisch — Operator / solo-maintainer)
 
 **1. Build-Logs prüfen**
 ```powershell
@@ -230,15 +236,15 @@ Service gilt als **deployed**, wenn:
 
 ## 📝 NÄCHSTE SCHRITTE
 
-### 1. Gordon: Container stabilisieren (JETZT) 🔴
+### 1. Operator: Container stabilisieren (historisch) 🔴
 - Build-Logs analysieren
 - Runtime-Fehler identifizieren
-- Fixes anwenden
+- Fixes anwenden (nur mit Jannek Human-GO)
 - Container zum Laufen bringen
 
-### 2. Claude: Lösung dokumentieren (DANACH) 📝
-- Gordon's Fixes in Doku übernehmen
-- PROJECT_STATUS.md aktualisieren
+### 2. Doku aktualisieren (DANACH) 📝
+- Fixes in Ledger/Session-Log übernehmen
+- `CURRENT_STATUS.md` aktualisieren (nicht dieses Snapshot-Dokument)
 - Lessons Learned festhalten
 
 ### 3. Team: End-to-End Test (DANN) 🧪
@@ -254,10 +260,10 @@ Service gilt als **deployed**, wenn:
 | Rolle | Person | Aufgabe | Status |
 |-------|--------|---------|--------|
 | **IT-Chef** | Claude | Code entwickeln, Architektur | ✅ Fertig |
-| **Server-Admin** | Gordon | Container deployen, debuggen | 🟡 Aktiv |
+| **Operator / Deployment** | Jannek (solo-maintainer) | Container deployen, debuggen | Human-GO |
 | **Projektleiter** | Jannek | Koordination, Entscheidungen | ✅ Aktiv |
 
-**Kommunikation**: Gordon → Jannek → Claude
+**Kommunikation (historisch ersetzt)**: Operator Human-GO → Implementierung → Ledger
 
 ---
 
@@ -278,4 +284,4 @@ Service gilt als **deployed**, wenn:
 
 **Erstellt**: 2025-10-23 14:30 UTC  
 **Letzte Änderung**: 2025-10-23 14:30 UTC  
-**Nächstes Update**: Nach Gordon's Container-Fix
+**Nächstes Update**: Nicht geplant — Datei orphaned; siehe `CURRENT_STATUS.md`

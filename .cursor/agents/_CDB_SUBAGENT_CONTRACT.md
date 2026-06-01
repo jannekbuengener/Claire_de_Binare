@@ -91,7 +91,7 @@ Before any analysis, implementation, review, or plan:
 - Direct push to `main` is not an acceptable default path. Use PR-based flow.
 - `DELIVERY_APPROVED.yaml` is human-controlled; agents must not modify it.
 - If scope grows, checks are red, evidence is missing, or assumptions are unstable: stop and report.
-- Before Docker/infra stack changes, ask Gordon for advice first. If Gordon is unavailable, report `GORDON_NOT_AVAILABLE` and hold changes unless Jannek explicitly overrides.
+- Before Docker/infra stack changes, require explicit Jannek Human-GO with stated scope. There is no external Gordon/Docker-AI gate; if GO is missing, **STOP** (fail-closed). Prefer GitHub-live and repo evidence before ledger or memory claims.
 
 ---
 

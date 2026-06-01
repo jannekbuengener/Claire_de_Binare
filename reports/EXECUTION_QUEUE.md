@@ -1,7 +1,14 @@
 # EXECUTION_QUEUE.md
-**Generiert:** 2026-01-07
-**Repo:** Claire_de Binare
-**Ziel:** Now Queue - Produktion/CI/Security entblocken
+
+> **Historischer Snapshot (orphaned)** — generiert 2026-01-07. Nicht als aktive
+> Queue, Merge-Plan oder Deployment-Owner-SSOT verwenden. Gordon/Docker-AI
+> Erwähnungen unten sind **historisch**; operatives Gate ist Jannek Human-GO +
+> GitHub-live-before-ledger. Aktueller Repo-Stand: `CURRENT_STATUS.md`,
+> `docs/runbooks/CONTROL_REGISTER.md`.
+
+**Generiert:** 2026-01-07  
+**Repo:** Claire_de Binare  
+**Ziel:** Now Queue - Produktion/CI/Security entblocken (historisch)
 
 ---
 

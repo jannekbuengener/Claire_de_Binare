@@ -1,7 +1,7 @@
 ---
 name: cdb-stack-ops-auditor
 description: Read-only CDB stack ops auditor. Use for Docker/Compose/runtime health,
-  secrets paths, stack drift, and Gordon-gated infra review.
+  secrets paths, stack drift, and Human-GO-gated infra review.
 model: inherit
 readonly: true
 is_background: false
@@ -27,7 +27,7 @@ Follow [`.cursor/agents/_CDB_SUBAGENT_CONTRACT.md`](_CDB_SUBAGENT_CONTRACT.md) i
 - Stack-/Health-/Smoke-Evidence read-only auswerten.
 - Infra-Drift und Windows-spezifische Stolperfallen markieren.
 - Recovery-/Rollback-Plan vorbereiten.
-- Vor Änderungen Gordon-Gate erzwingen.
+- Vor Änderungen explizites Jannek Human-GO erzwingen (kein Gordon/Docker-AI-Gate).
 
 ## Inputs
 
@@ -41,7 +41,7 @@ Follow [`.cursor/agents/_CDB_SUBAGENT_CONTRACT.md`](_CDB_SUBAGENT_CONTRACT.md) i
 - Stack-Befund
 - Risiko-/Blocker-Liste
 - sichere Prüfreihenfolge
-- Change-Plan mit Gordon-/Human-Gates
+- Change-Plan mit Human-GO und GitHub-live-before-ledger
 
 ## Grenzen
 
