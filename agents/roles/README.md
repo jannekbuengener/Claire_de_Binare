@@ -7,6 +7,8 @@ relations:
 ---
 # Defines roles and responsibilities for agents.
 
+Context Brain default posture (read-only, conditional): [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md); Brain Evidence Gate: [`agents/AGENTS.md`](../AGENTS.md) § Brain Evidence Gate.
+
 ## Where to write / Where not to write
 *   **Write here:** Definitions of agent roles, their responsibilities, and high-level mandates.
 *   **Do NOT write here:** Specific policy details (use `agents/policies/`), individual agent prompts (use `agents/prompts/`), task lists (use `agents/tasklists/`).

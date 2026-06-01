@@ -131,6 +131,17 @@ limitations:
 - `brain_source=repo-only`: Klar `brain-not-used` melden.
 - `brain_source=unavailable`: Klar `blocked` oder `repo-only fallback` melden.
 
+### Default posture (SSOT)
+
+Kanonische Policy: [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md)
+(`read_only_context_brain = conditional`, Issue #2775).
+
+- Default bis echte Context-/DB-/MCP-Evidence: `brain_source=repo-only`,
+  `brain_status=not-used`.
+- `in_memory` / Noop: read-only Helper/Bundle erlaubt, **keine** DB-backed Claims.
+- `surrealdb-local`: nur mit Adapter-/Tool-/Query-/Record-Evidence; caller-supplied
+  `brain_source` / `metadata.source` sind keine Evidence (GitHub issue #2638).
+
 ### Rules
 
 - No plan may claim Memory/Evidence/Decision consideration without

@@ -1,4 +1,6 @@
 ---
+
+Context Brain default posture (read-only, conditional): [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md); Brain Evidence Gate: [`agents/AGENTS.md`](../AGENTS.md) § Brain Evidence Gate.
 agent: GEMINI
 role: auditor
 status: active
