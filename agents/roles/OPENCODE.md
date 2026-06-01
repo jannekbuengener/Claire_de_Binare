@@ -1,6 +1,3 @@
-
-
-Context Brain default posture (read-only, conditional): [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md); Brain Evidence Gate: [`agents/AGENTS.md`](../AGENTS.md) § Brain Evidence Gate.
 ---
 relations:
   role: doc
@@ -13,6 +10,9 @@ relations:
   status: active
   tags: [opencode, agents, trust]
 ---
+
+Context Brain default posture (read-only, conditional): [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md); Brain Evidence Gate: [`agents/AGENTS.md`](../AGENTS.md) § Brain Evidence Gate.
+
 # OpenCode Agents — Shared Contract
 
 Gilt für **alle** OpenCode Agents (egal welcher Provider).
