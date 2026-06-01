@@ -51,7 +51,7 @@ def test_issue_automation_exports_summary_json_to_outputs() -> None:
 def test_comment_epic_does_not_use_fragile_issue_links_python_one_liner() -> None:
     content = WORKFLOW_PATH.read_text(encoding="utf-8")
     assert 'issue_links="$(python3 -c' not in content
-    assert "refs=[(f\"#" not in content
+    assert 'refs=[(f"#' not in content
 
 
 @pytest.mark.unit
