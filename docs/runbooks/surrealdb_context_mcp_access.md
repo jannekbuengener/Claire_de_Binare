@@ -177,6 +177,30 @@ python -m tools.surrealdb.context_onboarding_doctor --format json
 - Issue #2642 prüft optional `127.0.0.1:8811` (HTTP MCP host).
 - Separater remote `cdb`-Server in OpenCode nutzt laut Runbook-Hinweis `127.0.0.1:8812/mcp` — nicht mit #2642 verwechseln.
 
+**Context operator certification** (#2776) — wiederholbarer read-only Proof Pack
+für Bridge/Registry/Permission-Guard (kein produktiver DB-Smoke, kein `--apply`):
+
+```bash
+make context-certify
+python -m tools.surrealdb.context_certify --format json
+python -m tools.surrealdb.context_certify --format markdown --output context-certify.md
+```
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | `final_verdict: certified` — static registry/guard gates pass |
+| `1` | Blocking failure (e.g. non-read-only tool in registry) |
+| `2` | CLI or output validation error |
+
+Default behavior:
+- Emits JSON (with `--format json`) or markdown/text summary including `gate_matrix`,
+  `skipped_checks_with_reason`, `safety_flags`, and `lr_note: NO-GO`.
+- Does **not** run `make context-smoke-db`, `make context-smoke`, or any `--apply` path.
+- Live MCP/SurrealDB probes are **skipped** unless `--include-live-checks` (non-blocking).
+
+Safety boundary: `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`; LR remains **NO-GO**;
+Phase-2 (#2778) is not activated by certification alone.
+
 Expected output (best case — bridge + stdio both work):
 ```
 === CDB Context MCP Capability Validation ===
