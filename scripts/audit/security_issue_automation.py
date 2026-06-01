@@ -265,25 +265,16 @@ def run_automation(
     ranked_candidates = [
         cand for _idx, cand in sorted(enumerate(automation_candidates), key=_sort_key)
     ]
-    capped = max(0, len(ranked_candidates) - MAX_NEW_ISSUES_PER_RUN)
-    capped_candidates = ranked_candidates[MAX_NEW_ISSUES_PER_RUN:]
-    if capped:
-        print(
-            f"  Cap active: processing first {MAX_NEW_ISSUES_PER_RUN} escalation candidate(s), "
-            f"deferring {capped} candidate(s) to follow-up runs."
-        )
-    for cand in capped_candidates:
-        print(f"  CAPPED (deferred): {cand.get('suggested_title', '?')!r}")
-
-    process_candidates = ranked_candidates[:MAX_NEW_ISSUES_PER_RUN]
-
     created = 0
     deduped = 0
     skipped = skipped_low + skipped_comparison_sources
+    capped = 0
     failed = 0
+    capped_titles: list[str] = []
     created_issues: list[dict[str, str]] = []
+    create_slots_used = 0
 
-    for candidate in process_candidates:
+    for candidate in ranked_candidates:
         fingerprint = candidate["fingerprint"]
         title = candidate.get("suggested_title", "?")
 
@@ -303,9 +294,16 @@ def run_automation(
             deduped += 1
             continue
 
+        if create_slots_used >= MAX_NEW_ISSUES_PER_RUN:
+            capped += 1
+            capped_titles.append(str(title))
+            print(f"  CAPPED (deferred): {title!r}")
+            continue
+
         if dry_run:
             print(f"  DRY-RUN: would create issue: {title!r}")
             skipped += 1
+            create_slots_used += 1
             continue
 
         # Live: create the issue.
@@ -324,9 +322,18 @@ def run_automation(
                 }
             )
             created += 1
+            create_slots_used += 1
         else:
             print(f"  FAIL (issue create): {title!r}", file=sys.stderr)
             failed += 1
+
+    if capped:
+        print(
+            f"  Cap active: reached {MAX_NEW_ISSUES_PER_RUN} new issue slot(s), "
+            f"deferred {capped} non-deduped candidate(s) to follow-up runs."
+        )
+        for capped_title in capped_titles:
+            print(f"  CAPPED (summary): {capped_title!r}")
 
     return {
         "mode": "dry-run" if dry_run else "live",

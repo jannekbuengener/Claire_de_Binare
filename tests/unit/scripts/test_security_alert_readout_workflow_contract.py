@@ -40,3 +40,8 @@ def test_issue_automation_exports_summary_json_to_outputs() -> None:
     assert "automation_summary_json" in content
     assert "AUTOMATION_SUMMARY_JSON=" in content
     assert "issue-automation counters: created=" in content
+    assert "|| true" in content
+    assert (
+        '\'{"mode":"skipped","created":0,"deduped":0,"skipped":0,"capped":0,"failed":0,"created_issues":[]}\''
+        in content
+    )

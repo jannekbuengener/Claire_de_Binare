@@ -649,6 +649,90 @@ def test_live_mode_caps_created_issues_to_10(tmp_path: Path) -> None:
     assert summary["failed"] == 0
 
 
+def test_deduped_top_10_do_not_block_later_new_candidates(tmp_path: Path) -> None:
+    new_groups = []
+    escalations = []
+    for i in range(12):
+        subject = f"cve-2026-dedupe-cap-{i}"
+        new_groups.append(
+            {"source": "code_scanning", "subject": subject, "branch": "main"}
+        )
+        escalations.append(
+            {
+                "source": "code_scanning",
+                "severity": "critical",
+                "subject": subject,
+                "affected_component": f"svc/{i}",
+                "branch": "main",
+            }
+        )
+
+    delta_path = _write_delta(
+        tmp_path, _base_delta(new_groups=new_groups, escalations=escalations)
+    )
+
+    def _dedupe_first_ten(*, fingerprint: str, repo: str) -> bool:
+        del repo
+        for i in range(10):
+            if fingerprint == build_fingerprint(
+                source="code_scanning",
+                severity_band="high",
+                subject=f"cve-2026-dedupe-cap-{i}",
+                affected_component=f"svc/{i}",
+                branch="main",
+            ):
+                return True
+        return False
+
+    summary = run_automation(
+        delta_path=delta_path,
+        repo="owner/repo",
+        dry_run=False,
+        _check_dedupe=_dedupe_first_ten,
+        _create_issue=_create_ok,
+    )
+    assert summary["eligible_candidates"] == 12
+    assert summary["created"] == 2
+    assert summary["deduped"] == 10
+    assert summary["capped"] == 0
+    assert summary["failed"] == 0
+
+
+def test_cap_counts_only_non_deduped_candidates(tmp_path: Path) -> None:
+    new_groups = []
+    escalations = []
+    for i in range(14):
+        subject = f"cve-2026-cap-only-new-{i}"
+        new_groups.append(
+            {"source": "code_scanning", "subject": subject, "branch": "main"}
+        )
+        escalations.append(
+            {
+                "source": "code_scanning",
+                "severity": "critical",
+                "subject": subject,
+                "affected_component": f"svc/{i}",
+                "branch": "main",
+            }
+        )
+
+    delta_path = _write_delta(
+        tmp_path, _base_delta(new_groups=new_groups, escalations=escalations)
+    )
+    summary = run_automation(
+        delta_path=delta_path,
+        repo="owner/repo",
+        dry_run=False,
+        _check_dedupe=_no_dedupe,
+        _create_issue=_create_ok,
+    )
+    assert summary["eligible_candidates"] == 14
+    assert summary["created"] == 10
+    assert summary["capped"] == 4
+    assert summary["deduped"] == 0
+    assert summary["failed"] == 0
+
+
 def test_priority_is_critical_then_high_then_error(tmp_path: Path) -> None:
     delta = _base_delta(
         new_groups=[

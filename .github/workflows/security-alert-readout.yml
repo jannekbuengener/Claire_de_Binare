@@ -599,9 +599,11 @@ jobs:
           SCRIPT_EXIT=$?
           set -e
 
-          SUMMARY_JSON="$(grep '^AUTOMATION_SUMMARY_JSON=' "${LOG_PATH}" | tail -n 1 | sed 's/^AUTOMATION_SUMMARY_JSON=//')"
-          if [[ -z "${SUMMARY_JSON}" ]]; then
-            SUMMARY_JSON="{\"mode\":\"${AUTOMATION_MODE}\",\"created\":0,\"deduped\":0,\"skipped\":0,\"capped\":0,\"failed\":1,\"created_issues\":[]}"
+          SUMMARY_LINE="$(grep '^AUTOMATION_SUMMARY_JSON=' "${LOG_PATH}" | tail -n 1 || true)"
+          if [[ -n "${SUMMARY_LINE}" ]]; then
+            SUMMARY_JSON="${SUMMARY_LINE#AUTOMATION_SUMMARY_JSON=}"
+          else
+            SUMMARY_JSON='{"mode":"skipped","created":0,"deduped":0,"skipped":0,"capped":0,"failed":0,"created_issues":[]}'
           fi
 
           echo "automation_mode=${AUTOMATION_MODE}" >> "${GITHUB_OUTPUT}"
