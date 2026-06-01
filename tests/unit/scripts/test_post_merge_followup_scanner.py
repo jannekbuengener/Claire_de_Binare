@@ -84,8 +84,8 @@ def test_parse_retry_after_seconds_30s() -> None:
     assert scanner._parse_retry_after_seconds("(retry after 30s)") == 30
 
 
-def test_parse_retry_after_seconds_5m30s() -> None:
-    assert scanner._parse_retry_after_seconds("(retry after 5m30s)") == 330
+def test_parse_retry_after_seconds_5m30s_capped() -> None:
+    assert scanner._parse_retry_after_seconds("(retry after 5m30s)") == 120
 
 
 def test_parse_retry_after_seconds_fallback() -> None:
