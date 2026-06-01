@@ -25,10 +25,10 @@ import json
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
 
+from core.utils.clock import utcnow
 from tools.mcp.context_bridge import create_bridge
 from tools.mcp.permission_guard import (
     FORBIDDEN_SQL_KEYWORDS,
@@ -366,7 +366,7 @@ def build_report(
     final_verdict: FinalVerdict = "fail" if blocking_fail else "certified"
 
     return CertifyReport(
-        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        timestamp=utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         git_sha=git_info["git_sha"],
         branch=git_info["branch"],
         worktree_clean=git_info["worktree_clean"],
