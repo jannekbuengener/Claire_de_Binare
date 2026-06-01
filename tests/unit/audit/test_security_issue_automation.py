@@ -85,11 +85,16 @@ def _always_dedupe(**_kwargs: Any) -> bool:
 
 
 def _create_ok(**_kwargs: Any) -> bool:
-    return True
+    return {
+        "number": "1234",
+        "url": "https://github.com/owner/repo/issues/1234",
+        "title": "stub",
+        "fingerprint": "abcd1234ef567890",
+    }
 
 
 def _create_fail(**_kwargs: Any) -> bool:
-    return False
+    return None
 
 
 def _dedupe_error(**_kwargs: Any) -> bool:
@@ -140,15 +145,15 @@ def test_automation_bands_include_high_only() -> None:
 
 def test_no_new_groups_produces_no_creates(tmp_path: Path) -> None:
     delta_path = _write_delta(tmp_path, _base_delta())
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=True,
         _check_dedupe=_no_dedupe,
         _create_issue=_create_ok,
     )
-    assert created == 0
-    assert failed == 0
+    assert summary["created"] == 0
+    assert summary["failed"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +184,7 @@ def test_dry_run_does_not_call_create(tmp_path: Path) -> None:
         ],
     )
     delta_path = _write_delta(tmp_path, delta)
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=True,
@@ -187,8 +192,8 @@ def test_dry_run_does_not_call_create(tmp_path: Path) -> None:
         _create_issue=_capture_create,
     )
     assert create_calls == [], "dry-run must not call _create_issue"
-    assert created == 0
-    assert failed == 0
+    assert summary["created"] == 0
+    assert summary["failed"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -212,15 +217,15 @@ def test_live_mode_creates_for_critical_candidate(tmp_path: Path) -> None:
         ],
     )
     delta_path = _write_delta(tmp_path, delta)
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
         _check_dedupe=_no_dedupe,
         _create_issue=_create_ok,
     )
-    assert created == 1
-    assert failed == 0
+    assert summary["created"] == 1
+    assert summary["failed"] == 0
 
 
 def test_live_mode_creates_for_high_candidate(tmp_path: Path) -> None:
@@ -239,15 +244,15 @@ def test_live_mode_creates_for_high_candidate(tmp_path: Path) -> None:
         ],
     )
     delta_path = _write_delta(tmp_path, delta)
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
         _check_dedupe=_no_dedupe,
         _create_issue=_create_ok,
     )
-    assert created == 1
-    assert failed == 0
+    assert summary["created"] == 1
+    assert summary["failed"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -269,7 +274,7 @@ def test_medium_severity_candidate_not_created(tmp_path: Path) -> None:
         create_calls.append(kwargs)
         return True
 
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
@@ -277,7 +282,7 @@ def test_medium_severity_candidate_not_created(tmp_path: Path) -> None:
         _create_issue=_capture,
     )
     assert create_calls == [], "medium/low should never trigger issue creation"
-    assert created == 0
+    assert summary["created"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -307,7 +312,7 @@ def test_existing_dedupe_marker_skips_create(tmp_path: Path) -> None:
         create_calls.append(kwargs)
         return True
 
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
@@ -315,9 +320,9 @@ def test_existing_dedupe_marker_skips_create(tmp_path: Path) -> None:
         _create_issue=_capture,
     )
     assert create_calls == [], "dedupe match must suppress issue creation"
-    assert created == 0
-    assert skipped >= 1
-    assert failed == 0
+    assert summary["created"] == 0
+    assert summary["deduped"] >= 1
+    assert summary["failed"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -347,7 +352,7 @@ def test_dedupe_error_is_fail_closed(tmp_path: Path) -> None:
         create_calls.append(kwargs)
         return True
 
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
@@ -355,8 +360,8 @@ def test_dedupe_error_is_fail_closed(tmp_path: Path) -> None:
         _create_issue=_capture,
     )
     assert create_calls == [], "dedupe failure must not trigger issue creation"
-    assert created == 0
-    assert failed >= 1
+    assert summary["created"] == 0
+    assert summary["failed"] >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -380,15 +385,15 @@ def test_failed_create_reports_exit_2(tmp_path: Path) -> None:
         ],
     )
     delta_path = _write_delta(tmp_path, delta)
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
         _check_dedupe=_no_dedupe,
         _create_issue=_create_fail,
     )
-    assert failed >= 1
-    assert created == 0
+    assert summary["failed"] >= 1
+    assert summary["created"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -431,7 +436,7 @@ def test_comparison_skipped_source_excluded(tmp_path: Path) -> None:
         create_calls.append(kwargs)
         return True
 
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
@@ -439,7 +444,7 @@ def test_comparison_skipped_source_excluded(tmp_path: Path) -> None:
         _create_issue=_capture,
     )
     assert create_calls == [], "comparison_skipped source must be excluded"
-    assert created == 0
+    assert summary["created"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -469,7 +474,7 @@ def test_secret_scanning_source_excluded(tmp_path: Path) -> None:
         create_calls.append(kwargs)
         return True
 
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=False,
@@ -477,7 +482,7 @@ def test_secret_scanning_source_excluded(tmp_path: Path) -> None:
         _create_issue=_capture,
     )
     assert create_calls == [], "secret_scanning must always be excluded"
-    assert created == 0
+    assert summary["created"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -508,7 +513,7 @@ def test_real_delta_json_shape_is_normalized(tmp_path: Path) -> None:
         ],
     )
     delta_path = _write_delta(tmp_path, delta)
-    created, skipped, failed = run_automation(
+    summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
         dry_run=True,
@@ -516,8 +521,8 @@ def test_real_delta_json_shape_is_normalized(tmp_path: Path) -> None:
         _create_issue=_create_ok,
     )
     # With dry-run: created=0, skipped≥1 (the one escalation-severity candidate), failed=0
-    assert failed == 0
-    assert skipped >= 1
+    assert summary["failed"] == 0
+    assert summary["skipped"] >= 1
 
 
 # ---------------------------------------------------------------------------
@@ -603,3 +608,68 @@ def test_fingerprint_stability_across_invocations() -> None:
     fp2 = build_fingerprint(**kwargs)
     assert fp1 == fp2
     assert _FINGERPRINT_RE.match(fp1), "fingerprint must match 16-char hex pattern"
+
+
+def test_live_mode_caps_created_issues_to_10(tmp_path: Path) -> None:
+    new_groups = []
+    escalations = []
+    for i in range(12):
+        subject = f"cve-2026-cap-{i}"
+        new_groups.append(
+            {"source": "code_scanning", "subject": subject, "branch": "main"}
+        )
+        escalations.append(
+            {
+                "source": "code_scanning",
+                "severity": "critical",
+                "subject": subject,
+                "affected_component": f"svc/{i}",
+                "branch": "main",
+            }
+        )
+    delta_path = _write_delta(tmp_path, _base_delta(new_groups=new_groups, escalations=escalations))
+    summary = run_automation(
+        delta_path=delta_path,
+        repo="owner/repo",
+        dry_run=False,
+        _check_dedupe=_no_dedupe,
+        _create_issue=_create_ok,
+    )
+    assert summary["eligible_candidates"] == 12
+    assert summary["created"] == 10
+    assert summary["capped"] == 2
+    assert summary["failed"] == 0
+
+
+def test_priority_is_critical_then_high_then_error(tmp_path: Path) -> None:
+    delta = _base_delta(
+        new_groups=[
+            {"source": "code_scanning", "subject": "s-critical", "branch": "main"},
+            {"source": "code_scanning", "subject": "s-high", "branch": "main"},
+            {"source": "code_scanning", "subject": "s-error", "branch": "main"},
+        ],
+        escalations=[
+            {"source": "code_scanning", "severity": "high", "subject": "s-high", "affected_component": "a", "branch": "main"},
+            {"source": "code_scanning", "severity": "error", "subject": "s-error", "affected_component": "b", "branch": "main"},
+            {"source": "code_scanning", "severity": "critical", "subject": "s-critical", "affected_component": "c", "branch": "main"},
+        ],
+    )
+    delta_path = _write_delta(tmp_path, delta)
+    seen_titles: list[str] = []
+
+    def _capture_create(*, candidate: dict[str, Any], repo: str) -> dict[str, Any]:
+        del repo
+        seen_titles.append(str(candidate.get("suggested_title", "")))
+        return _create_ok()
+
+    summary = run_automation(
+        delta_path=delta_path,
+        repo="owner/repo",
+        dry_run=False,
+        _check_dedupe=_no_dedupe,
+        _create_issue=_capture_create,
+    )
+    assert summary["created"] == 3
+    assert "s-critical" in seen_titles[0].lower()
+    assert "s-high" in seen_titles[1].lower()
+    assert "s-error" in seen_titles[2].lower()

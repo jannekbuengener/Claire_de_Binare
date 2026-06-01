@@ -38,7 +38,7 @@ on:
         default: "false"
         type: boolean
       issue_automation_live:
-        description: "Enable live mode for issue-automation job (creates real GitHub issues). Defaults to false (dry-run). Scheduled runs always use dry-run."
+        description: "Enable live mode for manual workflow_dispatch (creates real GitHub issues). Scheduled runs are always live; manual default remains dry-run."
         required: false
         default: "false"
         type: boolean
@@ -375,6 +375,7 @@ jobs:
       DELTA_STATUS:     ${{ needs.security-readout.outputs.delta_status || 'unknown/failed' }}
       AUTOMATION_MODE:  ${{ needs.issue-automation.outputs.automation_mode || 'skipped' }}
       AUTOMATION_EXIT:  ${{ needs.issue-automation.outputs.automation_exit || 'skipped' }}
+      AUTOMATION_SUMMARY_JSON: ${{ needs.issue-automation.outputs.automation_summary_json || '{"mode":"skipped","created":0,"deduped":0,"skipped":0,"capped":0,"failed":0,"created_issues":[]}' }}
     steps:
       - name: Post compact ledger comment to epic #2289
         env:
@@ -441,15 +442,30 @@ jobs:
             escalation_note="manual triage required"
           fi
 
-          # Derive automation boundary line from the issue-automation job outputs.
+          # Derive automation boundary and counters from issue-automation outputs.
           automation_mode="${AUTOMATION_MODE:-skipped}"
           automation_exit="${AUTOMATION_EXIT:-skipped}"
+          summary_json="${AUTOMATION_SUMMARY_JSON:-}"
+          if [[ -z "${summary_json}" ]]; then
+            summary_json='{"mode":"skipped","created":0,"deduped":0,"skipped":0,"capped":0,"failed":0,"created_issues":[]}'
+          fi
+
+          summary_tsv="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print("{}\t{}\t{}\t{}\t{}\t{}".format(d.get("created",0),d.get("deduped",0),d.get("skipped",0),d.get("capped",0),d.get("failed",0),d.get("mode","unknown")))' "${summary_json}")"
+          IFS=$'\t' read -r created_count deduped_count skipped_count capped_count failed_count reported_mode <<< "${summary_tsv}"
+
+          issue_links="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); refs=[(f\"#{str(i.get(\"number\",\"\")).strip()} ({str(i.get(\"url\",\"\")).strip()})\" if str(i.get(\"number\",\"\")).strip() and str(i.get(\"url\",\"\")).strip() else str(i.get(\"url\",\"\")).strip()) for i in (d.get(\"created_issues\",[]) or [])]; print(\"; \".join([r for r in refs if r]))' "${summary_json}")"
+
           if [[ "${automation_mode}" == "live" ]]; then
-            automation_note="issue-automation: LIVE (exit: ${automation_exit}) — check run log for created/skipped/failed counts"
+            automation_note="issue-automation: LIVE (exit: ${automation_exit})"
           elif [[ "${automation_mode}" == "dry-run" ]]; then
             automation_note="issue-automation: dry-run (exit: ${automation_exit}) — no GitHub writes"
           else
             automation_note="issue-automation: skipped/not-run"
+          fi
+
+          cap_note=""
+          if [[ "${capped_count}" != "0" ]]; then
+            cap_note="cap reached: ${capped_count} weitere Kandidaten werden im naechsten Run/Follow-up verarbeitet"
           fi
 
           comment_file="$(mktemp)"
@@ -475,6 +491,9 @@ jobs:
 
           **Security boundaries**
           - ${automation_note}
+          - issue-automation counters: created=${created_count}, deduped=${deduped_count}, skipped=${skipped_count}, capped=${capped_count}, failed=${failed_count}
+          - issue-automation created issues: ${issue_links:-none}
+          - ${cap_note:-cap not reached}
           - no alert dismissals
           - no auto-merge
           - secret scanning remains redacted/status-only
@@ -487,11 +506,12 @@ jobs:
 
   issue-automation:
     # Create GitHub issues for new high-severity alert groups detected in the
-    # delta JSON.  Dry-run by default; pass issue_automation_live=true via
-    # workflow_dispatch to enable live issue creation.
+    # delta JSON. Scheduled runs are live by default; workflow_dispatch is
+    # dry-run by default and can be switched to live with issue_automation_live=true.
     #
     # Invariants:
-    # - Scheduled runs: always dry-run (no issue spam).
+    # - Scheduled runs: always live (create deduplicated real issues).
+    # - Manual workflow_dispatch: dry-run by default, live with explicit input.
     # - No auto-close, no alert dismissals, no LR derivation.
     # - Dedupe is fail-closed: a lookup failure skips creation (exit 2).
     # - Secret scanning candidates are excluded at the script layer.
@@ -506,6 +526,7 @@ jobs:
     outputs:
       automation_mode: ${{ steps.run-automation.outputs.automation_mode }}
       automation_exit: ${{ steps.run-automation.outputs.automation_exit }}
+      automation_summary_json: ${{ steps.run-automation.outputs.automation_summary_json }}
 
     env:
       DATE_DIR:       ${{ needs.security-readout.outputs.date_dir }}
@@ -546,12 +567,13 @@ jobs:
             echo "This is expected when security-readout failed or produced no delta."
             echo "automation_mode=skipped" >> "${GITHUB_OUTPUT}"
             echo "automation_exit=skipped" >> "${GITHUB_OUTPUT}"
+            echo "automation_summary_json={\"mode\":\"skipped\",\"created\":0,\"deduped\":0,\"skipped\":0,\"capped\":0,\"failed\":0,\"created_issues\":[]}" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
-          # Scheduled runs are always dry-run to prevent uncontrolled issue spam.
-          # Live mode requires explicit workflow_dispatch with issue_automation_live=true.
-          LIVE_MODE="false"
+          # Scheduled runs are productive by default (live issue creation).
+          # Manual workflow_dispatch remains dry-run unless explicitly enabled.
+          LIVE_MODE="true"
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             LIVE_MODE="${{ inputs.issue_automation_live || 'false' }}"
           fi
@@ -566,15 +588,24 @@ jobs:
             echo "Issue automation: DRY-RUN mode (no GitHub writes)"
           fi
 
+          LOG_PATH="/tmp/security-issue-automation.log"
+          rm -f "${LOG_PATH}"
+
           set +e
           python3 scripts/audit/security_issue_automation.py \
             --delta-json "${DELTA_JSON}" \
             --repo "${GITHUB_REPOSITORY}" \
-            ${LIVE_FLAG}
+            ${LIVE_FLAG} | tee "${LOG_PATH}"
           SCRIPT_EXIT=$?
           set -e
 
+          SUMMARY_JSON="$(grep '^AUTOMATION_SUMMARY_JSON=' "${LOG_PATH}" | tail -n 1 | sed 's/^AUTOMATION_SUMMARY_JSON=//')"
+          if [[ -z "${SUMMARY_JSON}" ]]; then
+            SUMMARY_JSON="{\"mode\":\"${AUTOMATION_MODE}\",\"created\":0,\"deduped\":0,\"skipped\":0,\"capped\":0,\"failed\":1,\"created_issues\":[]}"
+          fi
+
           echo "automation_mode=${AUTOMATION_MODE}" >> "${GITHUB_OUTPUT}"
           echo "automation_exit=${SCRIPT_EXIT}" >> "${GITHUB_OUTPUT}"
+          echo "automation_summary_json=${SUMMARY_JSON}" >> "${GITHUB_OUTPUT}"
           exit ${SCRIPT_EXIT}
 

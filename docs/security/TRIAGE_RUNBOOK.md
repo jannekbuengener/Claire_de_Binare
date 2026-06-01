@@ -419,12 +419,18 @@ Der Marker ist primäre Dedupe-Wahrheit; die Suche ist ein Best-Effort-Guard.
 
 | Trigger | Modus |
 |---------|-------|
-| `schedule` | immer dry-run — kein Issue-Spam auf geplanten Runs |
+| `schedule` | immer live — erstellt echte deduplizierte Issues |
 | `workflow_dispatch` ohne `issue_automation_live=true` | dry-run |
 | `workflow_dispatch` mit `issue_automation_live=true` | live — erstellt echte Issues |
 
 Im Dry-run werden alle Candidates geloggt (`DRY-RUN: would create issue: …`),
 aber keine GitHub-Writes durchgeführt.
+
+### Hard Cap pro Lauf
+
+- Pro Workflow-Lauf werden maximal **10 neue Issues** erstellt.
+- Priorisierung der Verarbeitung: **critical > high > error**, danach stabile Sortierung.
+- Überzählige Kandidaten werden als `capped` gezählt und im nächsten Run / Follow-up verarbeitet.
 
 ### CLI-Referenz
 
@@ -448,6 +454,10 @@ python3 scripts/audit/security_issue_automation.py \
 | `0` | ok — alle Candidates verarbeitet (erstellt oder übersprungen) |
 | `1` | Input-Fehler — Delta-JSON fehlt oder ungültig |
 | `2` | Partial-Failure — mindestens eine Issue-Erstellung oder ein Dedupe-Lookup fehlgeschlagen |
+
+Der Automation-Run emittiert zusätzlich eine maschinenlesbare Einzeile:
+`AUTOMATION_SUMMARY_JSON=<json>`
+mit Feldern `created`, `deduped`, `skipped`, `capped`, `failed` und `created_issues`.
 
 ### Verknüpfte Skripte
 

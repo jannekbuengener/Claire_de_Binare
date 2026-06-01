@@ -48,12 +48,14 @@ from audit.security_alert_issue_candidates import (  # noqa: E402
 # Only candidates in the "high" severity band (covers critical / high / error)
 # are candidates for automated issue creation.
 AUTOMATION_SEVERITY_BANDS: frozenset[str] = frozenset({"high"})
+MAX_NEW_ISSUES_PER_RUN = 10
+_SEVERITY_PRIORITY: dict[str, int] = {"critical": 0, "high": 1, "error": 2}
 
 # Fingerprints are 16-char lowercase hex produced by build_fingerprint().
 _FINGERPRINT_RE: re.Pattern[str] = re.compile(r"^[0-9a-f]{16}$")
 
 CheckDedupeFn = Callable[..., bool]
-CreateIssueFn = Callable[..., bool]
+CreateIssueFn = Callable[..., dict[str, Any] | None]
 
 
 # ---------------------------------------------------------------------------
@@ -144,8 +146,8 @@ def _render_issue_body(candidate: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def gh_create_issue(*, candidate: dict[str, Any], repo: str) -> bool:
-    """Create a GitHub issue for the candidate via ``gh``. Return True on success."""
+def gh_create_issue(*, candidate: dict[str, Any], repo: str) -> dict[str, Any] | None:
+    """Create a GitHub issue for the candidate via ``gh`` and return issue metadata."""
     title = candidate.get("suggested_title", "Security alert")[:220]
     body = _render_issue_body(candidate)
     labels: list[str] = candidate.get("suggested_labels", [])
@@ -160,7 +162,18 @@ def gh_create_issue(*, candidate: dict[str, Any], repo: str) -> bool:
             f"  gh issue create failed: {result.stderr.strip()!r}",
             file=sys.stderr,
         )
-    return result.returncode == 0
+        return None
+
+    issue_url = result.stdout.strip().splitlines()[-1].strip() if result.stdout.strip() else ""
+    issue_number = ""
+    if issue_url.rstrip("/").split("/")[-1].isdigit():
+        issue_number = issue_url.rstrip("/").split("/")[-1]
+    return {
+        "title": title,
+        "url": issue_url,
+        "number": issue_number,
+        "fingerprint": candidate.get("fingerprint", ""),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -175,11 +188,11 @@ def run_automation(
     dry_run: bool,
     _check_dedupe: CheckDedupeFn = gh_check_dedupe,
     _create_issue: CreateIssueFn = gh_create_issue,
-) -> tuple[int, int, int]:
+) -> dict[str, Any]:
     """Process candidates from the delta JSON.
 
     Returns:
-        (created, skipped, failed) counts.
+        Summary dict with machine-readable counters and created issue refs.
 
     Raises:
         SecurityAlertIssueCandidatesError: on unrecoverable input error.
@@ -210,11 +223,13 @@ def run_automation(
 
     # Remove candidates from skipped sources (defense-in-depth; delta should not
     # emit them, but we guard here as well).
+    skipped_comparison_sources = 0
     if skipped_sources:
         candidates = [
             c for c in candidates
             if c.get("source", "").strip().lower() not in skipped_sources
         ]
+        skipped_comparison_sources = len(build_candidates(raw)) - len(candidates)
 
     # Filter to escalation-severity candidates only.
     automation_candidates = [
@@ -225,11 +240,38 @@ def run_automation(
     if skipped_low:
         print(f"  Skipped {skipped_low} candidate(s) below escalation threshold (severity_band not in {set(AUTOMATION_SEVERITY_BANDS)}).")
 
-    created = 0
-    skipped = 0
-    failed = 0
+    def _sort_key(item: tuple[int, dict[str, Any]]) -> tuple[Any, ...]:
+        idx, cand = item
+        sev = str(cand.get("severity", "")).strip().lower()
+        return (
+            _SEVERITY_PRIORITY.get(sev, 99),
+            str(cand.get("source", "")),
+            str(cand.get("subject", "")),
+            str(cand.get("affected_component", "")),
+            str(cand.get("branch", "")),
+            idx,
+        )
 
-    for candidate in automation_candidates:
+    ranked_candidates = [cand for _idx, cand in sorted(enumerate(automation_candidates), key=_sort_key)]
+    capped = max(0, len(ranked_candidates) - MAX_NEW_ISSUES_PER_RUN)
+    capped_candidates = ranked_candidates[MAX_NEW_ISSUES_PER_RUN:]
+    if capped:
+        print(
+            f"  Cap active: processing first {MAX_NEW_ISSUES_PER_RUN} escalation candidate(s), "
+            f"deferring {capped} candidate(s) to follow-up runs."
+        )
+    for cand in capped_candidates:
+        print(f"  CAPPED (deferred): {cand.get('suggested_title', '?')!r}")
+
+    process_candidates = ranked_candidates[:MAX_NEW_ISSUES_PER_RUN]
+
+    created = 0
+    deduped = 0
+    skipped = skipped_low + skipped_comparison_sources
+    failed = 0
+    created_issues: list[dict[str, str]] = []
+
+    for candidate in process_candidates:
         fingerprint = candidate["fingerprint"]
         title = candidate.get("suggested_title", "?")
 
@@ -246,7 +288,7 @@ def run_automation(
 
         if already_exists:
             print(f"  SKIP (dedupe match): {title!r}")
-            skipped += 1
+            deduped += 1
             continue
 
         if dry_run:
@@ -255,15 +297,37 @@ def run_automation(
             continue
 
         # Live: create the issue.
-        success = _create_issue(candidate=candidate, repo=repo)
-        if success:
-            print(f"  CREATED: {title!r}")
+        issue_meta = _create_issue(candidate=candidate, repo=repo)
+        if issue_meta:
+            number = str(issue_meta.get("number", "")).strip()
+            url = str(issue_meta.get("url", "")).strip()
+            ref = f"#{number}" if number else (url or "created")
+            print(f"  CREATED: {title!r} ({ref})")
+            created_issues.append(
+                {
+                    "number": number,
+                    "url": url,
+                    "title": str(issue_meta.get("title", title)),
+                    "fingerprint": str(issue_meta.get("fingerprint", fingerprint)),
+                }
+            )
             created += 1
         else:
             print(f"  FAIL (issue create): {title!r}", file=sys.stderr)
             failed += 1
 
-    return created, skipped, failed
+    return {
+        "mode": "dry-run" if dry_run else "live",
+        "cap": MAX_NEW_ISSUES_PER_RUN,
+        "total_candidates": len(candidates),
+        "eligible_candidates": len(automation_candidates),
+        "created": created,
+        "deduped": deduped,
+        "skipped": skipped,
+        "capped": capped,
+        "failed": failed,
+        "created_issues": created_issues,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -312,7 +376,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"security-issue-automation: mode={mode} repo={args.repo} delta={delta_path}")
 
     try:
-        created, skipped, failed = run_automation(
+        summary = run_automation(
             delta_path=delta_path,
             repo=args.repo,
             dry_run=dry_run,
@@ -321,8 +385,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    print(f"Done: created={created} skipped={skipped} failed={failed}")
-    return 2 if failed > 0 else 0
+    print(
+        "Done: created={created} deduped={deduped} skipped={skipped} capped={capped} failed={failed}".format(
+            created=summary["created"],
+            deduped=summary["deduped"],
+            skipped=summary["skipped"],
+            capped=summary["capped"],
+            failed=summary["failed"],
+        )
+    )
+    print(
+        "AUTOMATION_SUMMARY_JSON="
+        + json.dumps(summary, sort_keys=True, separators=(",", ":"))
+    )
+    return 2 if int(summary["failed"]) > 0 else 0
 
 
 if __name__ == "__main__":
