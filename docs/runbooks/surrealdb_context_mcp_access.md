@@ -117,11 +117,20 @@ Repo presence is not MCP availability. Each surface must be verified independent
 ```bash
 # Bridge creates successfully — returns tool count (Windows-local venv)
 .venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print(len(b.list_tools()))"
-# Expected: 26
+# Expected: 27
 
 # Key tool present in inventory
 .venv/Scripts/python.exe -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); print('context.briefing' in [t['name'] for t in b.list_tools()])"
 # Expected: True
+```
+
+Active bridge inventory (`create_bridge().list_tools()`): **27** read-only tools.
+The count delta vs. the pre-#2704 inventory of 26 is **`cdb_context_memory_write_intent`**
+(dry-run Human-GO gate evaluation only; no DB adapter; not a Wave-15–20 surface).
+Inspect with:
+
+```bash
+python -c "from tools.mcp.context_bridge import create_bridge; print([t['name'] for t in create_bridge().list_tools()])"
 ```
 
 Linux/macOS: use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.
@@ -174,7 +183,7 @@ Expected output (best case — bridge + stdio both work):
 [L1] Config file exists... PASS
 [L2] Host knows config (manual check)... SKIP (manual)
 [L3] Bridge and stdio server check... PASS
-       Bridge: 26 tools, Stdio import: OK
+       Bridge: 27 tools, Stdio import: OK
 [L4] context.briefing in tool inventory... PASS
 [L5] context.briefing invocation... PASS
 === Results: 4 passed, 0 warnings, 0 failed ===
@@ -187,7 +196,7 @@ Expected output (bridge works, stdio blocked by env):
 [L1] Config file exists... PASS
 [L2] Host knows config (manual check)... SKIP (manual)
 [L3] Bridge and stdio server check... BRIDGE OK — STDIO BLOCKED
-       Bridge: 26 tools, Stdio import: BLOCKED
+       Bridge: 27 tools, Stdio import: BLOCKED
        STDIO WARN: <error details>
        This is a local environment blocker (pydantic-core version mismatch),
        not a #2619 config defect. Bridge-level tool access works.
@@ -255,6 +264,8 @@ print(f"Loaded {len(tools)} tools: {', '.join(tool_names)}")
 ```
 
 The bridge initializes with real handler implementations (not registry stubs) and asserts read-only consistency on construction. All tools return structured dictionaries with `"tool"`, `"status"` (either `"ok"` or `"error"`), and tool-specific fields.
+
+As of #2704, `create_bridge().list_tools()` returns **27** tools (all `read_only: true`). The inventory includes Wave-14 evidence/memory/decision handlers, Wave-15–20 bundle adapters, and `cdb_context_memory_write_intent` (dry-run gate scaffold; no persistence path).
 
 Call a tool:
 
@@ -700,6 +711,46 @@ Tool coverage in the real local smoke:
 - `cdb_context_trust_summary` → seeded `evidence_ref` + `claim` + `agent_memory` + `decision_event`
 - `cdb_context_decision_history` → seeded `decision_event`
 - `cdb_context_decision_replay` → seeded `decision_event`
+
+### 7.8 Wave-15–20 Closure Proof Policy
+
+Wave-14 tools that may emit `metadata.source="surrealdb-local"` have a documented real local
+DB proof path in §7.7 (#2639, #2649, #2650). **Wave-15–20 tools do not use
+`SurrealDBLocalQueryAdapter` and do not open a SurrealDB connection.** They are bundle-driven
+adapters over in-memory domain services; default bridge mode remains `NoopQueryAdapter` /
+`in_memory`. Caller-supplied `metadata.source` or `brain_*` fields are not DB proof (#2638).
+
+**Closure rule for Wave-15–20:** `closure_without_real_db_proof_allowed` when handler wiring,
+unit-test evidence, and this runbook policy are satisfied. **Do not** require §7.7 local DB
+smoke for Wave-15–20 closure. If a future change adds adapter-backed reads or
+`surrealdb-local` claims to any Wave-15–20 handler, stop and open a follow-up slice with an
+explicit `real_db_proof_required_before_closure` policy before marking the tool complete.
+
+| Tool | Wave | Purpose | Closure policy | DB-backed claims | Required closure evidence |
+|------|------|---------|----------------|------------------|---------------------------|
+| `cdb_context_contradictions` | 15 | Detect contradictions across in-memory record bundles (signal only; no auto-fix). | `closure_without_real_db_proof_allowed` | No — `metadata.source` stays `in_memory`; no adapter path. | Handler: `tools/mcp/context_contradiction_tools.py`; unit: `tests/unit/tools/mcp/test_mcp_contradiction_tool.py`; bridge/guard registration; this §7.8 row. |
+| `cdb_context_stale` | 16 | Scan stale knowledge markers in a supplied bundle (artifact/decision/evidence/memory/edge scopes). | `closure_without_real_db_proof_allowed` | No — bundle input required; fails closed without bundle. | Handler: `tools/mcp/stale_context_tools.py`; unit: `tests/unit/tools/mcp/test_mcp_stale_context_tool.py`; bridge/guard registration; this §7.8 row. |
+| `cdb_context_scope_drift` | 17 | Detect scope-drift firewall findings from an in-memory bundle; optional blocking output. | `closure_without_real_db_proof_allowed` | No — bundle input required; no filesystem/DB backfill. | Handler: `tools/mcp/scope_drift_tools.py`; unit: `tests/unit/tools/mcp/test_scope_drift_tools.py`; bridge/guard registration; this §7.8 row. |
+| `cdb_context_quality_score` | 18 | Score knowledge-quality dimensions from an in-memory bundle. | `closure_without_real_db_proof_allowed` | No — `metadata.source="in_memory"` only. | Handler: `tools/mcp/quality_scoring_tools.py`; unit: `tests/unit/tools/mcp/test_quality_scoring_tools.py` + domain tests in `tests/unit/surrealdb/test_quality_scoring.py`; bridge/guard registration; this §7.8 row. |
+| `cdb_context_architect_signals` | 18 | Emit architect signals (watch/blocking) from bundle dependency/quality inputs. | `closure_without_real_db_proof_allowed` | No — bundle input required; no DB/network. | Handler: `tools/mcp/architect_signal_tools.py`; domain unit: `tests/unit/surrealdb/test_quality_scoring.py` (architect signal cases); bridge/guard registration; this §7.8 row. Optional local DB smoke: **not required**. |
+| `cdb_control_room_view` | 19 | Build read-only control-room views (9 view types) from an in-memory bundle. | `closure_without_real_db_proof_allowed` | No — no runtime/trading console; bundle-only. | Handler: `tools/mcp/control_room_tools.py`; unit: `tests/unit/tools/mcp/test_control_room_tools.py` + `tests/unit/surrealdb/test_control_room_view_builder.py`; bridge/guard registration; this §7.8 row. |
+| `cdb_agent_os_readiness` | 20 | Evaluate Agent OS readiness level and optional markdown report from a bundle. | `closure_without_real_db_proof_allowed` | No — bundle-only; no Live-Go/Echtgeld semantics. | Handler: `tools/mcp/agent_os_readiness_tools.py`; unit: `tests/unit/tools/mcp/test_agent_os_readiness_tools.py` + `tests/unit/surrealdb/test_agent_os_readiness.py`; bridge/guard registration; this §7.8 row. |
+
+**Wave-15–20 validation (CI-safe, no Real-DB smoke):**
+
+```bash
+pytest tests/unit/tools/mcp/test_context_bridge.py tests/unit/tools/mcp/test_permission_guard.py \
+  tests/unit/tools/mcp/test_mcp_wave14_tools.py \
+  tests/unit/tools/mcp/test_mcp_contradiction_tool.py tests/unit/tools/mcp/test_mcp_stale_context_tool.py \
+  tests/unit/tools/mcp/test_scope_drift_tools.py tests/unit/tools/mcp/test_quality_scoring_tools.py \
+  tests/unit/tools/mcp/test_control_room_tools.py tests/unit/tools/mcp/test_agent_os_readiness_tools.py -v
+python -c "from tools.mcp.context_bridge import create_bridge; b=create_bridge(); assert len(b.list_tools())==27; assert all(t.get('readOnly') for t in b.list_tools())"
+```
+
+**HOLD gap (none for current handlers):** No Wave-15–20 handler currently emits guarded
+`surrealdb-local` claims. If implementation drifts to adapter-backed reads, treat as
+`real_db_proof_required_before_closure` and block #2605 epic closure until a Wave-14-style
+proof slice lands.
 
 ### Memory contract DB read proof (#2606 Slice 4)
 
