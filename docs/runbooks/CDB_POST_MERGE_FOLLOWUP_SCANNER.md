@@ -91,3 +91,21 @@ Zweck: kleiner fail-closed V1-Scanner fuer repo-backed Nachzugarbeit nach gemerg
 - fail-closed, wenn der Prompt kein valides JSON liefert
 - kein Auto-Issue fuer unklare oder schwache Evidenz
 - kein Auto-Issue-Duplikat fuer denselben repo-backed Befund
+
+## Rate-Limit-Resilienz
+
+- `gh models run` wird mit bounded Retry (max 3 Versuche) und Backoff aufgerufen
+- Retry-Signaturen:
+  - `rate limited` / `rate limit`
+  - `abuse detection mechanism`
+  - HTML `<title>Rate limit`
+  - `retry after`
+- Bei Rate-Limit nach 3 Versuchen: `ModelsRateLimitedError` -> degraded Result
+- Im degraded-Zustand:
+  - `status: degraded_rate_limited` im Result-JSON
+  - Summary enthaelt klaren Hinweis auf fehlende Modellklassifikation
+  - **Keine** Blind-Follow-up-Issues aus unsicherer Modellklassifikation
+  - `force_follow_up_issue=True` (deterministisch, z.B. `docker_runtime_rebuild_followup_required`)
+    bleibt aktiv und erzeugt weiterhin Issues ohne Modell
+- Script exit 0 (kein roter Workflow), Artifact wird immer geschrieben
+- Harter Fail bleibt bei echten Input-/Contract-/Script-Fehlern erhalten
