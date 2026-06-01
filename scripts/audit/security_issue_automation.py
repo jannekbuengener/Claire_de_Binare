@@ -80,16 +80,16 @@ def gh_check_dedupe(*, fingerprint: str, repo: str) -> bool:
     _validate_fingerprint(fingerprint)
     marker_fragment = f"cdb-security-alert-group:{fingerprint}"
     query_string = f'repo:{repo} is:issue "{marker_fragment}" in:body'
-    graphql = (
-        "query($q:String!){"
-        "search(type:ISSUE,query:$q,first:5){"
-        "issueCount}}"
-    )
+    graphql = "query($q:String!){" "search(type:ISSUE,query:$q,first:5){" "issueCount}}"
     result = subprocess.run(
         [
-            "gh", "api", "graphql",
-            "-f", f"query={graphql}",
-            "-F", f"q={query_string}",
+            "gh",
+            "api",
+            "graphql",
+            "-f",
+            f"query={graphql}",
+            "-F",
+            f"q={query_string}",
         ],
         capture_output=True,
         text=True,
@@ -129,7 +129,9 @@ def _render_issue_body(candidate: dict[str, Any]) -> str:
         "",
         "### Next action",
         "",
-        str(fields.get("next_action", "Human triage and bounded remediation planning.")),
+        str(
+            fields.get("next_action", "Human triage and bounded remediation planning.")
+        ),
         "",
         "### References",
         "",
@@ -164,7 +166,9 @@ def gh_create_issue(*, candidate: dict[str, Any], repo: str) -> dict[str, Any] |
         )
         return None
 
-    issue_url = result.stdout.strip().splitlines()[-1].strip() if result.stdout.strip() else ""
+    issue_url = (
+        result.stdout.strip().splitlines()[-1].strip() if result.stdout.strip() else ""
+    )
     issue_number = ""
     if issue_url.rstrip("/").split("/")[-1].isdigit():
         issue_number = issue_url.rstrip("/").split("/")[-1]
@@ -200,9 +204,13 @@ def run_automation(
     try:
         raw = json.loads(delta_path.read_text(encoding="utf-8"))
     except OSError as exc:
-        raise SecurityAlertIssueCandidatesError(f"Cannot read {delta_path}: {exc}") from exc
+        raise SecurityAlertIssueCandidatesError(
+            f"Cannot read {delta_path}: {exc}"
+        ) from exc
     except json.JSONDecodeError as exc:
-        raise SecurityAlertIssueCandidatesError(f"Invalid JSON in {delta_path}: {exc}") from exc
+        raise SecurityAlertIssueCandidatesError(
+            f"Invalid JSON in {delta_path}: {exc}"
+        ) from exc
     if not isinstance(raw, dict):
         raise SecurityAlertIssueCandidatesError("Delta JSON root must be an object")
 
@@ -226,19 +234,21 @@ def run_automation(
     skipped_comparison_sources = 0
     if skipped_sources:
         candidates = [
-            c for c in candidates
+            c
+            for c in candidates
             if c.get("source", "").strip().lower() not in skipped_sources
         ]
         skipped_comparison_sources = len(build_candidates(raw)) - len(candidates)
 
     # Filter to escalation-severity candidates only.
     automation_candidates = [
-        c for c in candidates
-        if c.get("severity_band") in AUTOMATION_SEVERITY_BANDS
+        c for c in candidates if c.get("severity_band") in AUTOMATION_SEVERITY_BANDS
     ]
     skipped_low = len(candidates) - len(automation_candidates)
     if skipped_low:
-        print(f"  Skipped {skipped_low} candidate(s) below escalation threshold (severity_band not in {set(AUTOMATION_SEVERITY_BANDS)}).")
+        print(
+            f"  Skipped {skipped_low} candidate(s) below escalation threshold (severity_band not in {set(AUTOMATION_SEVERITY_BANDS)})."
+        )
 
     def _sort_key(item: tuple[int, dict[str, Any]]) -> tuple[Any, ...]:
         idx, cand = item
@@ -252,7 +262,9 @@ def run_automation(
             idx,
         )
 
-    ranked_candidates = [cand for _idx, cand in sorted(enumerate(automation_candidates), key=_sort_key)]
+    ranked_candidates = [
+        cand for _idx, cand in sorted(enumerate(automation_candidates), key=_sort_key)
+    ]
     capped = max(0, len(ranked_candidates) - MAX_NEW_ISSUES_PER_RUN)
     capped_candidates = ranked_candidates[MAX_NEW_ISSUES_PER_RUN:]
     if capped:

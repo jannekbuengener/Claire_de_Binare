@@ -2,6 +2,7 @@
 
 Injected helpers simulate GitHub calls so no network / gh auth needed.
 """
+
 from __future__ import annotations
 
 import json
@@ -34,7 +35,9 @@ from audit.security_alert_issue_candidates import build_fingerprint  # noqa: E40
 _SCHEMA = "security_alert_delta.v1"
 
 
-def _base_delta(*, new_groups: list | None = None, escalations: list | None = None) -> dict:
+def _base_delta(
+    *, new_groups: list | None = None, escalations: list | None = None
+) -> dict:
     """Canonical-key delta shape (already normalized — mirrors what candidates tests use)."""
     return {
         "schema_version": _SCHEMA,
@@ -51,7 +54,9 @@ def _base_delta(*, new_groups: list | None = None, escalations: list | None = No
     }
 
 
-def _real_delta_shape(*, new_groups: list | None = None, escalation_alerts: list | None = None) -> dict:
+def _real_delta_shape(
+    *, new_groups: list | None = None, escalation_alerts: list | None = None
+) -> dict:
     """Flat-count / escalation_alerts delta shape — as emitted by security_alert_delta.py."""
     return {
         "schema_version": _SCHEMA,
@@ -73,6 +78,7 @@ def _write_delta(tmp_path: Path, delta: dict) -> Path:
 
 
 # Injected stub factories.
+
 
 def _no_dedupe(**_kwargs: Any) -> bool:
     """Simulate: no existing issue found."""
@@ -412,9 +418,7 @@ def test_comparison_skipped_source_excluded(tmp_path: Path) -> None:
             "escalation_alerts": 0,
         },
         "sources": {"current_reference_now_utc": "2026-05-15T06:15:00Z"},
-        "comparison_skipped_sources": [
-            {"source": "dependabot", "reason": "no token"}
-        ],
+        "comparison_skipped_sources": [{"source": "dependabot", "reason": "no token"}],
         "new_groups": [
             # This group's source is in comparison_skipped_sources — should be excluded.
             {"source": "dependabot", "subject": "openssl", "branch": "main"},
@@ -531,7 +535,9 @@ def test_real_delta_json_shape_is_normalized(tmp_path: Path) -> None:
 
 
 def test_missing_delta_json_returns_exit_1(tmp_path: Path) -> None:
-    result = main(["--delta-json", str(tmp_path / "does_not_exist.json"), "--repo", "owner/repo"])
+    result = main(
+        ["--delta-json", str(tmp_path / "does_not_exist.json"), "--repo", "owner/repo"]
+    )
     assert result == 1
 
 
@@ -627,7 +633,9 @@ def test_live_mode_caps_created_issues_to_10(tmp_path: Path) -> None:
                 "branch": "main",
             }
         )
-    delta_path = _write_delta(tmp_path, _base_delta(new_groups=new_groups, escalations=escalations))
+    delta_path = _write_delta(
+        tmp_path, _base_delta(new_groups=new_groups, escalations=escalations)
+    )
     summary = run_automation(
         delta_path=delta_path,
         repo="owner/repo",
@@ -649,9 +657,27 @@ def test_priority_is_critical_then_high_then_error(tmp_path: Path) -> None:
             {"source": "code_scanning", "subject": "s-error", "branch": "main"},
         ],
         escalations=[
-            {"source": "code_scanning", "severity": "high", "subject": "s-high", "affected_component": "a", "branch": "main"},
-            {"source": "code_scanning", "severity": "error", "subject": "s-error", "affected_component": "b", "branch": "main"},
-            {"source": "code_scanning", "severity": "critical", "subject": "s-critical", "affected_component": "c", "branch": "main"},
+            {
+                "source": "code_scanning",
+                "severity": "high",
+                "subject": "s-high",
+                "affected_component": "a",
+                "branch": "main",
+            },
+            {
+                "source": "code_scanning",
+                "severity": "error",
+                "subject": "s-error",
+                "affected_component": "b",
+                "branch": "main",
+            },
+            {
+                "source": "code_scanning",
+                "severity": "critical",
+                "subject": "s-critical",
+                "affected_component": "c",
+                "branch": "main",
+            },
         ],
     )
     delta_path = _write_delta(tmp_path, delta)

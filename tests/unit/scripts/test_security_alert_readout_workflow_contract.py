@@ -31,7 +31,7 @@ def test_issue_automation_scheduled_runs_default_to_live_mode() -> None:
     content = WORKFLOW_PATH.read_text(encoding="utf-8")
     assert 'LIVE_MODE="true"' in content
     assert 'if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then' in content
-    assert 'LIVE_MODE="${{ inputs.issue_automation_live || \'false\' }}"' in content
+    assert "LIVE_MODE=\"${{ inputs.issue_automation_live || 'false' }}\"" in content
 
 
 @pytest.mark.unit
