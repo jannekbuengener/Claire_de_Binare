@@ -138,14 +138,20 @@ def is_gh_models_rate_limit_error(stderr: str) -> bool:
     return any(sig in lower for sig in signatures)
 
 
+MAX_RETRY_AFTER_CAP_SECONDS = 120
+
+
 def _parse_retry_after_seconds(stderr: str) -> int:
-    """Extract retry-after duration in seconds from stderr like '(retry after 1m0s)'."""
+    """Extract retry-after duration in seconds from stderr like '(retry after 1m0s)'.
+    Capped at MAX_RETRY_AFTER_CAP_SECONDS to avoid blocking the workflow
+    when the server returns a long retry-after (e.g. 30m)."""
     match = re.search(r"retry after\s+(?:(\d+)m)?(\d+)s", stderr, re.IGNORECASE)
     if match:
         minutes = int(match.group(1)) if match.group(1) else 0
         seconds = int(match.group(2))
-        return minutes * 60 + seconds
-    return 60
+        raw = minutes * 60 + seconds
+        return min(raw, MAX_RETRY_AFTER_CAP_SECONDS)
+    return min(60, MAX_RETRY_AFTER_CAP_SECONDS)
 
 
 MAX_GH_MODELS_RETRIES = 3
