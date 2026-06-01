@@ -45,3 +45,18 @@ def test_issue_automation_exports_summary_json_to_outputs() -> None:
         '\'{"mode":"skipped","created":0,"deduped":0,"skipped":0,"capped":0,"failed":0,"created_issues":[]}\''
         in content
     )
+
+
+@pytest.mark.unit
+def test_comment_epic_does_not_use_fragile_issue_links_python_one_liner() -> None:
+    content = WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert 'issue_links="$(python3 -c' not in content
+    assert 'refs=[(f"#' not in content
+
+
+@pytest.mark.unit
+def test_comment_epic_uses_robust_multiline_issue_links_renderer() -> None:
+    content = WORKFLOW_PATH.read_text(encoding="utf-8")
+    assert 'issue_links="$(SUMMARY_JSON="${summary_json}" python3 -c "' in content
+    assert "created_issues = payload.get('created_issues')" in content
+    assert "print('; '.join(refs))" in content

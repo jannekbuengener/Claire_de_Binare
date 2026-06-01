@@ -453,7 +453,33 @@ jobs:
           summary_tsv="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print("{}\t{}\t{}\t{}\t{}\t{}".format(d.get("created",0),d.get("deduped",0),d.get("skipped",0),d.get("capped",0),d.get("failed",0),d.get("mode","unknown")))' "${summary_json}")"
           IFS=$'\t' read -r created_count deduped_count skipped_count capped_count failed_count reported_mode <<< "${summary_tsv}"
 
-          issue_links="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); refs=[(f\"#{str(i.get(\"number\",\"\")).strip()} ({str(i.get(\"url\",\"\")).strip()})\" if str(i.get(\"number\",\"\")).strip() and str(i.get(\"url\",\"\")).strip() else str(i.get(\"url\",\"\")).strip()) for i in (d.get(\"created_issues\",[]) or [])]; print(\"; \".join([r for r in refs if r]))' "${summary_json}")"
+          issue_links="$(SUMMARY_JSON="${summary_json}" python3 -c "
+          import json
+          import os
+
+          raw = os.environ.get('SUMMARY_JSON', '')
+          try:
+              payload = json.loads(raw) if raw else {}
+          except json.JSONDecodeError:
+              payload = {}
+
+          created_issues = payload.get('created_issues')
+          if not isinstance(created_issues, list):
+              created_issues = []
+
+          refs = []
+          for item in created_issues:
+              if not isinstance(item, dict):
+                  continue
+              number = str(item.get('number', '')).strip()
+              url = str(item.get('url', '')).strip()
+              if number and url:
+                  refs.append(f'#{number} ({url})')
+              elif url:
+                  refs.append(url)
+
+          print('; '.join(refs))
+          ")"
 
           if [[ "${automation_mode}" == "live" ]]; then
             automation_note="issue-automation: LIVE (exit: ${automation_exit})"
