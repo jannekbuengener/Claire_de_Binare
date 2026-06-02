@@ -40,7 +40,7 @@ Out of scope for this runbook:
 | **`local_only`** (localhost / in-memory MCP) | **Active** — default read-only path |
 | **`managed_readonly`** | **NOT ACTIVATED** — future issue + Jannek-GO |
 | **`nonlocal_readonly_mcp`** | **NOT ACTIVATED** — tunnel/security review GO |
-| **`managed_write_capable`** | **NO-GO** — see issue #2804 (write strategy design only) |
+| **`managed_write_capable`** | **NO-GO** — SSOT: [`knowledge/decisions/CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](../../knowledge/decisions/CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md) (GitHub issue #2804; design only, no activation) |
 
 Operators and agents must **not** enable managed SurrealDB endpoints, remote MCP
 servers, or tunnel config under this runbook alone. Capability checks (§1.5) still

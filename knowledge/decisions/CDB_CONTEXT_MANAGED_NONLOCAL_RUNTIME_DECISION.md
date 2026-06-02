@@ -30,7 +30,9 @@ Brain Evidence). It is a **governance and documentation** artifact only.
 - Runtime, Docker, BLUE/RED, compose, or MCP config changes
 - Productive SurrealDB writes or memory persistence
 - Live-readiness upgrade, Echtgeld authorization, or trading actions
-- Implementation of controlled write strategy v2 (GitHub issue #2804)
+- Implementation of controlled write strategy v2 — SSOT:
+  [`CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md)
+  (GitHub issue #2804; design only, no activation)
 - Closing epic #2778 or grandparent #1976
 
 **Related but separate lineage:** productive **T3 audit trail** endpoint design
@@ -52,7 +54,9 @@ Jannek-GO per option:
 2. **Managed read-only** and **non-local read-only MCP** remain **deferred** design
    candidates only.
 3. **Managed write-capable** runtime remains **explicit NO-GO** for this slice and for
-   Phase-2 read adoption; write strategy is issue #2804 + LR/HG ladders.
+   Phase-2 read adoption; write strategy SSOT is
+   [`CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md)
+   (#2804) + LR/HG ladders.
 
 Default agent reporting remains per
 [`CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md):
@@ -65,7 +69,7 @@ Default agent reporting remains per
 | `local_only` | Context/SurrealDB/MCP stays fully local read-only; `surrealdb-local` or in-memory Noop; MCP stdio from repo root | **RECOMMENDED (current)** | **Active** (read-only; not LR-Go) |
 | `managed_readonly` | Future vendor- or operator-hosted SurrealDB used **only** for read-only context queries | **DEFERRED** | **NOT ACTIVATED** — separate issue + Jannek-GO |
 | `nonlocal_readonly_mcp` | Future non-local read-only MCP/Context access (tunnel, remote bridge, or hosted MCP) | **DEFERRED** | **NOT ACTIVATED** — tunnel/security review GO |
-| `managed_write_capable` | Write-capable managed runtime (persist, mutation, productive memory) | **REJECTED / OUT OF SCOPE** | **NO-GO** — #2804 + `PERSIST_ALLOWED`/`MUTATION_ALLOWED` gates |
+| `managed_write_capable` | Write-capable managed runtime (persist, mutation, productive memory) | **REJECTED / OUT OF SCOPE** | **NO-GO** — [`CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md) + `PERSIST_ALLOWED`/`MUTATION_ALLOWED` gates |
 
 ### Comparison notes
 
