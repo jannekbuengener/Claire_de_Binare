@@ -145,13 +145,32 @@ def _redact_mapping(
     return redacted
 
 
-def _artifact_sort_key(artifact: Mapping[str, Any]) -> tuple[str, str, str]:
-    artifact_id = _as_str(artifact.get("artifact_id")) or _as_str(artifact.get("id")) or ""
-    artifact_type = _as_str(artifact.get("artifact_type")) or _as_str(artifact.get("type")) or ""
-    payload = dict(artifact)
-    for transient in _TRANSIENT_ARTIFACT_FIELDS:
-        payload.pop(transient, None)
-    return (artifact_id, artifact_type, canonical_json_dumps(payload))
+def _redacted_artifact_sort_key(redacted_artifact: Mapping[str, Any]) -> tuple[str, str, str]:
+    artifact_id = _as_str(redacted_artifact.get("artifact_id")) or ""
+    artifact_type = _as_str(redacted_artifact.get("artifact_type")) or ""
+    return (
+        artifact_id,
+        artifact_type,
+        canonical_json_dumps(_artifact_hash_payload(redacted_artifact)),
+    )
+
+
+def _dedupe_redaction_summary(
+    summary: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    seen: set[tuple[str, str, str]] = set()
+    deduped: list[dict[str, str]] = []
+    for entry in summary:
+        key = (
+            entry.get("path", ""),
+            entry.get("field", ""),
+            entry.get("redaction_type", ""),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(entry)
+    return sorted(deduped, key=lambda item: (item.get("path", ""), item.get("field", "")))
 
 
 def _normalize_artifact(artifact: Mapping[str, Any]) -> dict[str, Any]:
@@ -234,24 +253,6 @@ def _stable_redacted_links(
     ]
 
 
-def _dedupe_redaction_summary(
-    summary: list[dict[str, str]],
-) -> list[dict[str, str]]:
-    seen: set[tuple[str, str, str]] = set()
-    deduped: list[dict[str, str]] = []
-    for entry in summary:
-        key = (
-            entry.get("path", ""),
-            entry.get("field", ""),
-            entry.get("redaction_type", ""),
-        )
-        if key in seen:
-            continue
-        seen.add(key)
-        deduped.append(entry)
-    return sorted(deduped, key=lambda item: (item.get("path", ""), item.get("field", "")))
-
-
 def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]:
     """Build a Context Package v2 envelope from in-memory ingredients."""
     target_scope = _as_str(request.target_scope)
@@ -268,12 +269,20 @@ def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]
     limitations: list[str] = []
 
     normalized_artifacts = [_normalize_artifact(item) for item in request.artifacts]
-    sorted_artifacts = sorted(normalized_artifacts, key=_artifact_sort_key)
+    redacted_candidates: list[dict[str, Any]] = []
+    for artifact in normalized_artifacts:
+        artifact_id = artifact["artifact_id"]
+        redacted_candidates.append(
+            _redact_mapping(artifact, f"artifacts[{artifact_id}]", redaction_summary)
+        )
+    sorted_redacted_artifacts = sorted(
+        redacted_candidates,
+        key=_redacted_artifact_sort_key,
+    )
 
     redacted_artifacts: list[dict[str, Any]] = []
     artifact_hashes: list[str] = []
-    for index, artifact in enumerate(sorted_artifacts):
-        redacted = _redact_mapping(artifact, f"artifacts[{index}]", redaction_summary)
+    for redacted in sorted_redacted_artifacts:
         redacted_artifacts.append(redacted)
         artifact_hashes.append(canonical_hash(_artifact_hash_payload(redacted)))
 

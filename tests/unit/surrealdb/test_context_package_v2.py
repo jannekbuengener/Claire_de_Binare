@@ -207,6 +207,15 @@ def test_empty_artifacts_fail_closed() -> None:
 
 
 @pytest.mark.unit
+def test_secret_only_differences_do_not_change_package_id_for_same_artifact() -> None:
+    artifact_a = _sample_artifact("shared-artifact", metadata={"api_key": "sk-one"})
+    artifact_b = _sample_artifact("shared-artifact", metadata={"api_key": "sk-two"})
+    package_a = build_context_package_v2(_base_request(artifacts=[artifact_a]))
+    package_b = build_context_package_v2(_base_request(artifacts=[artifact_b]))
+    assert package_a["package_id"] == package_b["package_id"]
+
+
+@pytest.mark.unit
 def test_required_reads_are_redacted() -> None:
     secret = "sk-required-read-secret"
     package = build_context_package_v2(
