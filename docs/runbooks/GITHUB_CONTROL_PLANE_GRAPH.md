@@ -190,7 +190,7 @@ graph TD
     SL -.->|reads| labels_json[labels.json]
 ```
 
-> **Parking note (#2772):** `control_board_auto_routing.yml` is parked; its previous edges to `O5` (Project board items) and `O6` (Labels on issues/PRs) are intentionally removed. The dispatch stub does not call the routing script.
+> **Parking note (#2772, #2805):** `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked. Their previous edges to `O5` (Project board items), `O6` (Labels on issues/PRs) and the dispatch chain between them are intentionally removed. The dispatch stubs do not call the routing script or `createDispatchEvent`.
 
 ---
 
@@ -226,7 +226,7 @@ Full mapping across all support surfaces.
 | Hygiene issues | `cdb-weekly-control-hygiene-classifier.yml` |
 | Follow-up issues/comments | `cdb-post-merge-followup-scanner.yml`, `cdb-control-followup-classifier.yml`, `triage_guard.yml` |
 | Project board items | `control_board_upsert.yml`, `project_reconcile_daily.yml`, `add_to_project.yml` (`control_board_auto_routing.yml` was parked in #2772 and no longer writes to the project board) |
-| Issue labels | `sync-labels.yml`, `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `control-board-routing-label-dispatch.yml`, `project_status_label_map.yml`, `milestone_stage_label_sync.yml`, `stale.yml`, `gemini-triage.yml` (`control_board_auto_routing.yml` was parked in #2772 and no longer labels issues) |
+| Issue labels | `sync-labels.yml`, `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `project_status_label_map.yml`, `milestone_stage_label_sync.yml`, `stale.yml`, `gemini-triage.yml` (`control_board_auto_routing.yml` was parked in #2772 and no longer labels issues; `control-board-routing-label-dispatch.yml` was parked in #2805 and no longer dispatches label events) |
 | PR check status | `ci.yml`, `policy-gate.yml`, `docs-hub-guard.yml`, `gitleaks.yml` |
 
 ---
@@ -249,7 +249,7 @@ These workflows are self-contained (no `.github/scripts/` or `.github/prompts/` 
 | `add_to_project.yml` | Reconcile |
 | `milestone_stage_label_sync.yml` | Reconcile |
 | `control_board_auto_routing.yml` | Reconcile (PARKED #2772; dispatch stub only) |
-| `control-board-routing-label-dispatch.yml` | Reconcile |
+| `control-board-routing-label-dispatch.yml` | Reconcile (PARKED #2805; dispatch stub only) |
 | `ci.yml` | CI |
 | `contracts.yml` | CI |
 | `lr021_replay_smoke.yml` | CI |

@@ -177,7 +177,7 @@ Check issue labels for `control-delta`, `hygiene`, `triage` prefixes.
 Cross-reference with `docs/runbooks/CONTROL_REGISTER.md` § Active Infra Workflows.
 
 ### 4.3 A label operation cascaded into many workflows
-Label events (`issues: labeled`) trigger: `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `control-board-routing-label-dispatch.yml`, `project_status_label_map.yml`, `project_status_sync.yml`. Any unexpected label on an issue can trigger all of these. Check the labeling source first.
+Label events (`issues: labeled`) trigger: `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `project_status_label_map.yml`, `project_status_sync.yml`. Any unexpected label on an issue can trigger all of these. Check the labeling source first. (`control-board-routing-label-dispatch.yml` was removed from the cascade in #2805.)
 
 ### 4.4 `ci.yml` is failing
 `ci.yml` is the canonical required check. Before diagnosing the failure, confirm it's `ci.yml` (not `ci.yaml` — the legacy frozen copy). Check:
@@ -209,6 +209,7 @@ Workflows that **mutate repo state** outside their own run:
 | `auto-label.yml` | Labels issues | Historisch/unklar |
 | `auto-milestone.yml` | Assigns milestones | Fires on issue labeled events |
 | `auto-milestone-label-dispatch.yml` | Dispatches milestone label assignment | Issues trigger |
+| `control-board-routing-label-dispatch.yml` | **PARKED fail-closed (#2805)** — auto-dispatch to `control_board_route_issue_label` listener removed; dispatch stub only | Dispatch (issues trigger removed) |
 | `auto-milestone-pr-apply.yml` | Assigns milestone to PR | workflow_run downstream |
 | `control_board_upsert.yml` | Creates/updates GitHub Project board items | Schedule + dispatch |
 | `project_reconcile_daily.yml` | Reconciles project board state | Daily schedule |
@@ -251,6 +252,7 @@ Workflows that **mutate repo state** outside their own run:
 - `gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml` — reusable only, no standalone trigger.
 - `gemini-scheduled-triage.yml` — parked fail-closed (schedule removed deliberately).
 - `control_board_auto_routing.yml` — **PARKED fail-closed in #2772**: auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only prints parking notice. Re-enabling per-event routing requires a separate scoped issue.
+- `control-board-routing-label-dispatch.yml` — **PARKED fail-closed in #2805**: auto `issues` trigger removed; `createDispatchEvent` to `control_board_route_issue_label` removed (listener was withdrawn in #2772/#2796). Dispatch stub only prints parking notice. Re-enabling per-label dispatch requires a separate scoped issue.
 - `auto-label.yml`, `bulk-issue-labeling.yml`, `comprehensive-issue-labeling.yml`, `issue-governance.yml`, `milestone-assignment.yml` — historisch/unklar; do not enable without scoped review.
 
 ---

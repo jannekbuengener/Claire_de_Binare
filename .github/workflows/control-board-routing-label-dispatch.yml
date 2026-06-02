@@ -1,57 +1,41 @@
+# ⚠️ PARKED fail-closed in #2805 (2026-06-02).
+# Auto-dispatched `control_board_route_issue_label` events to the Control Board
+# Auto Routing workflow on routing-relevant issue label changes (`stage:`,
+# `prio:`, `p0`–`p3` labels). The live trigger is removed because the
+# repository_dispatch listener (`control_board_route_issue_label`) was removed
+# in #2772 / #2796 and has no active consumer:
+# - `issues` (type: labeled) fired on every routing-relevant label change.
+# - `control_board_upsert.yml` (`workflow_dispatch` + Monday `02:30 UTC`
+#   schedule) remains the active board reconciliation path, gated by
+#   `CDB_CONTROL_BOARD_AUTOMATION_ENABLED`.
+# No automatic label dispatch remains. The workflow is retained as a
+# `workflow_dispatch` stub only; it does NOT call createDispatchEvent because
+# the consumer listener was intentionally withdrawn.
+# Re-enable per-label dispatch requires a separate scoped issue.
+# See .github/README.md for current control-plane documentation.
+
 name: Control Board Routing Label Dispatch
 
 on:
-  issues:
-    types: [labeled]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  dispatch-control-board-routing:
-    if: >-
-      ${{
-        vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED == 'true' &&
-        (
-          startsWith(github.event.label.name || '', 'stage:') ||
-          startsWith(github.event.label.name || '', 'label:stage:') ||
-          startsWith(github.event.label.name || '', 'prio:') ||
-          startsWith(github.event.label.name || '', 'priority:') ||
-          github.event.label.name == 'p0' ||
-          github.event.label.name == 'p1' ||
-          github.event.label.name == 'p2' ||
-          github.event.label.name == 'p3' ||
-          github.event.label.name == 'P0' ||
-          github.event.label.name == 'P1' ||
-          github.event.label.name == 'P2' ||
-          github.event.label.name == 'P3'
-        )
-      }}
+  parked-notice:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch routing-relevant label event
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const issueNumber = context.payload.issue?.number;
-            const labelName = String(context.payload.label?.name || "").trim();
-
-            if (!issueNumber) {
-              core.warning("Could not determine the issue number for this event.");
-              return;
-            }
-
-            await github.rest.repos.createDispatchEvent({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              event_type: "control_board_route_issue_label",
-              client_payload: {
-                issue_number: issueNumber,
-                action: context.payload.action || "",
-                label: labelName,
-              },
-            });
-
-            core.info(
-              `Dispatched control_board_route_issue_label for issue #${issueNumber} (${labelName || "<none>"}).`
-            );
+      - name: Parking notice
+        run: |
+          echo "⚠️  Control Board Routing Label Dispatch is parked fail-closed."
+          echo "Auto-trigger removed in #2805 (2026-06-02):"
+          echo "  - on: issues (labeled)"
+          echo "  - createDispatchEvent (event_type: control_board_route_issue_label)"
+          echo "The repository_dispatch listener was removed in #2772 / #2796."
+          echo "Active board reconciliation runs through control_board_upsert.yml"
+          echo "(workflow_dispatch + Mon 02:30 UTC schedule, gated by"
+          echo "vars.CDB_CONTROL_BOARD_AUTOMATION_ENABLED)."
+          echo "This dispatch stub prints the diagnostic only; no Dispatch API"
+          echo "calls are performed."
+          echo "See .github/README.md for current control-plane documentation."
