@@ -108,7 +108,32 @@ def test_missing_values_conservative_with_warnings() -> None:
     sparse = next(c for c in candidates if c["result_id"] == "res-missing-factors")
     explanation = compute_ranking_explanation(sparse)
     assert any(w.startswith("missing_factor:") for w in explanation["warnings"])
+    assert "missing_factor:graph_distance" in explanation["warnings"]
     assert explanation["final_score"] < 0.75
+
+
+@pytest.mark.unit
+def test_non_finite_numeric_factors_are_not_treated_as_perfect() -> None:
+    candidate = {
+        "result_id": "nan-match",
+        "source_ref": "x:nan",
+        "confidence": 0.8,
+        "freshness": 0.8,
+        "source_match": float("inf"),
+        "graph_distance": 1,
+        "evidence_strength": 0.8,
+        "scope_match": 0.8,
+        "memory_trust": 0.8,
+    }
+    explanation = compute_ranking_explanation(candidate)
+    assert explanation["factor_scores"]["source_match"] == MISSING_FACTOR_DEFAULT
+    assert "invalid_factor:source_match" in explanation["warnings"]
+    assert explanation["final_score"] < 0.9
+
+    nan_candidate = {**candidate, "source_match": 0.8, "confidence": "NaN"}
+    nan_explanation = compute_ranking_explanation(nan_candidate)
+    assert nan_explanation["factor_scores"]["confidence"] == MISSING_FACTOR_DEFAULT
+    assert "invalid_factor:confidence" in nan_explanation["warnings"]
 
 
 @pytest.mark.unit

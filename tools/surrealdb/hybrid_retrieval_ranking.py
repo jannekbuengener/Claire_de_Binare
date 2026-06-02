@@ -18,6 +18,7 @@ Guardrails:
 
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping, Sequence
 
 SCHEMA_VERSION = "hybrid-retrieval-ranking/v1"
@@ -76,6 +77,14 @@ def _as_float(value: Any) -> float | None:
         return None
 
 
+def _as_finite_float(value: Any) -> float | None:
+    """Parse a float and reject non-finite values (NaN, +/-inf)."""
+    parsed = _as_float(value)
+    if parsed is None or not math.isfinite(parsed):
+        return None
+    return parsed
+
+
 def _as_str(value: Any) -> str | None:
     if value is None:
         return None
@@ -93,22 +102,38 @@ def _as_bool(value: Any) -> bool:
     return bool(value)
 
 
-def normalize_factor(value: float | None, *, missing_default: float = MISSING_FACTOR_DEFAULT) -> float:
-    """Clamp a factor to [0, 1]; missing values use a conservative default."""
-    if value is None:
+def normalize_factor(value: Any, *, missing_default: float = MISSING_FACTOR_DEFAULT) -> float:
+    """Clamp a finite factor to [0, 1]; missing/invalid values use a conservative default."""
+    numeric = _as_finite_float(value)
+    if numeric is None:
         return missing_default
-    return max(0.0, min(1.0, value))
+    return max(0.0, min(1.0, numeric))
 
 
-def graph_distance_to_score(distance: float | None, *, max_hops: float = GRAPH_DISTANCE_MAX_HOPS) -> float:
+def _score_numeric_field(
+    raw: Any,
+    *,
+    missing_default: float = MISSING_FACTOR_DEFAULT,
+) -> tuple[float, bool, bool]:
+    """Return (score, is_missing, is_invalid)."""
+    if raw is None:
+        return missing_default, True, False
+    numeric = _as_finite_float(raw)
+    if numeric is None:
+        return missing_default, False, True
+    return max(0.0, min(1.0, numeric)), False, False
+
+
+def graph_distance_to_score(distance: Any, *, max_hops: float = GRAPH_DISTANCE_MAX_HOPS) -> float:
     """Map graph distance (hops) to a score in [0, 1]; closer nodes score higher."""
-    if distance is None:
+    numeric = _as_finite_float(distance)
+    if numeric is None:
         return MISSING_FACTOR_DEFAULT
-    if distance < 0:
+    if numeric < 0:
         return 0.0
-    if distance <= 1.0:
-        return normalize_factor(distance)
-    capped = min(distance, max_hops)
+    if numeric <= 1.0:
+        return normalize_factor(numeric)
+    capped = min(numeric, max_hops)
     return max(0.0, 1.0 - (capped / max_hops))
 
 
@@ -116,7 +141,7 @@ def _evidence_strength_to_score(value: Any) -> tuple[float, bool]:
     """Return (score, was_missing). Accepts float 0-1 or contract strength strings."""
     if value is None:
         return MISSING_FACTOR_DEFAULT, True
-    numeric = _as_float(value)
+    numeric = _as_finite_float(value)
     if numeric is not None:
         return normalize_factor(numeric), False
     text = _as_str(value)
@@ -140,19 +165,33 @@ def _resolve_factor_scores(
 
     # source_match
     raw = candidate.get("source_match")
-    if raw is None:
-        scores["source_match"] = MISSING_FACTOR_DEFAULT
+    score, is_missing, is_invalid = _score_numeric_field(raw)
+    scores["source_match"] = score
+    if is_missing:
         missing_flags.append("source_match")
-    else:
-        scores["source_match"] = normalize_factor(_as_float(raw))
+    elif is_invalid:
+        warnings.append("invalid_factor:source_match")
 
     # graph_distance — prefer graph_distance_score if pre-normalized
-    if candidate.get("graph_distance_score") is not None:
-        scores["graph_distance"] = normalize_factor(
-            _as_float(candidate.get("graph_distance_score"))
-        )
+    gds_raw = candidate.get("graph_distance_score")
+    gd_raw = candidate.get("graph_distance")
+    if gds_raw is not None:
+        score, is_missing, is_invalid = _score_numeric_field(gds_raw)
+        scores["graph_distance"] = score
+        if is_missing:
+            missing_flags.append("graph_distance")
+        elif is_invalid:
+            warnings.append("invalid_factor:graph_distance")
+    elif gd_raw is not None:
+        numeric = _as_finite_float(gd_raw)
+        if numeric is None:
+            scores["graph_distance"] = MISSING_FACTOR_DEFAULT
+            warnings.append("invalid_factor:graph_distance")
+        else:
+            scores["graph_distance"] = graph_distance_to_score(numeric)
     else:
-        scores["graph_distance"] = graph_distance_to_score(_as_float(candidate.get("graph_distance")))
+        scores["graph_distance"] = MISSING_FACTOR_DEFAULT
+        missing_flags.append("graph_distance")
 
     # evidence_strength
     ev_score, ev_missing = _evidence_strength_to_score(candidate.get("evidence_strength"))
@@ -164,27 +203,30 @@ def _resolve_factor_scores(
     fresh_raw = candidate.get("freshness")
     if fresh_raw is None and candidate.get("freshness_score") is not None:
         fresh_raw = candidate.get("freshness_score")
-    if fresh_raw is None:
-        scores["freshness"] = MISSING_FACTOR_DEFAULT
+    score, is_missing, is_invalid = _score_numeric_field(fresh_raw)
+    scores["freshness"] = score
+    if is_missing:
         missing_flags.append("freshness")
-    else:
-        scores["freshness"] = normalize_factor(_as_float(fresh_raw))
+    elif is_invalid:
+        warnings.append("invalid_factor:freshness")
 
     # confidence
     conf_raw = candidate.get("confidence")
-    if conf_raw is None:
-        scores["confidence"] = MISSING_FACTOR_DEFAULT
+    score, is_missing, is_invalid = _score_numeric_field(conf_raw)
+    scores["confidence"] = score
+    if is_missing:
         missing_flags.append("confidence")
-    else:
-        scores["confidence"] = normalize_factor(_as_float(conf_raw))
+    elif is_invalid:
+        warnings.append("invalid_factor:confidence")
 
     # scope_match
     scope_raw = candidate.get("scope_match")
-    if scope_raw is None:
-        scores["scope_match"] = MISSING_FACTOR_DEFAULT
+    score, is_missing, is_invalid = _score_numeric_field(scope_raw)
+    scores["scope_match"] = score
+    if is_missing:
         missing_flags.append("scope_match")
-    else:
-        scores["scope_match"] = normalize_factor(_as_float(scope_raw))
+    elif is_invalid:
+        warnings.append("invalid_factor:scope_match")
 
     # memory_trust
     mem_raw = candidate.get("memory_trust")
