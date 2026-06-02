@@ -207,6 +207,46 @@ def test_empty_artifacts_fail_closed() -> None:
 
 
 @pytest.mark.unit
+def test_tokenized_url_values_are_redacted() -> None:
+    secret_url = "https://example.com/context?token=super-secret-value"
+    package = build_context_package_v2(
+        _base_request(
+            artifacts=[_sample_artifact(source_url=secret_url)],
+            evidence_links=[{"ref": secret_url}],
+        )
+    )
+    serialized = json.dumps(package)
+    assert "super-secret-value" not in serialized
+    assert package["artifacts"][0]["source_url"] == "[REDACTED]"
+    assert package["evidence_links"][0]["ref"] == "[REDACTED]"
+    assert all(
+        "super-secret-value" not in entry.get("path", "")
+        for entry in package["redaction_summary"]
+    )
+
+
+@pytest.mark.unit
+def test_link_secret_only_differences_do_not_change_package_id() -> None:
+    package_a = build_context_package_v2(
+        _base_request(
+            evidence_links=[
+                {"ref": "evidence:shared", "api_key": "sk-one"},
+                {"ref": "evidence:other", "content_hash": "abc"},
+            ],
+        )
+    )
+    package_b = build_context_package_v2(
+        _base_request(
+            evidence_links=[
+                {"ref": "evidence:shared", "api_key": "sk-two"},
+                {"ref": "evidence:other", "content_hash": "abc"},
+            ],
+        )
+    )
+    assert package_a["package_id"] == package_b["package_id"]
+
+
+@pytest.mark.unit
 def test_private_rank_field_does_not_change_package_id() -> None:
     artifact_a = _sample_artifact("shared-artifact", _rank=1)
     artifact_b = _sample_artifact("shared-artifact", _rank=99)
@@ -221,6 +261,21 @@ def test_secret_only_differences_do_not_change_package_id_for_same_artifact() ->
     artifact_b = _sample_artifact("shared-artifact", metadata={"api_key": "sk-two"})
     package_a = build_context_package_v2(_base_request(artifacts=[artifact_a]))
     package_b = build_context_package_v2(_base_request(artifacts=[artifact_b]))
+    assert package_a["package_id"] == package_b["package_id"]
+
+
+@pytest.mark.unit
+def test_required_read_secret_only_differences_do_not_change_package_id() -> None:
+    package_a = build_context_package_v2(
+        _base_request(
+            required_reads=[{"path": "AGENTS.md", "api_key": "sk-one"}],
+        )
+    )
+    package_b = build_context_package_v2(
+        _base_request(
+            required_reads=[{"path": "AGENTS.md", "api_key": "sk-two"}],
+        )
+    )
     assert package_a["package_id"] == package_b["package_id"]
 
 

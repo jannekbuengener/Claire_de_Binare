@@ -54,6 +54,11 @@ _SECRET_VALUE_RE = re.compile(
     re.IGNORECASE,
 )
 
+_URL_QUERY_SECRET_RE = re.compile(
+    r"[?&](?:token|api[_-]?key|secret|password|credential|auth)=[^&\s#\"']+",
+    re.IGNORECASE,
+)
+
 _TRANSIENT_ARTIFACT_FIELDS = frozenset(
     {
         "generated_at",
@@ -100,7 +105,19 @@ def _is_sensitive_key(key: str) -> bool:
 def _looks_like_secret_value(value: Any) -> bool:
     if not isinstance(value, str):
         return False
-    return bool(_SECRET_VALUE_RE.search(value.strip()))
+    text = value.strip()
+    if not text:
+        return False
+    return bool(_SECRET_VALUE_RE.search(text) or _URL_QUERY_SECRET_RE.search(text))
+
+
+def _safe_summary_path_segment(value: Any, *, fallback: str) -> str:
+    text = _as_str(value)
+    if not text:
+        return fallback
+    if _looks_like_secret_value(text):
+        return fallback
+    return text
 
 
 def _redact_value(
@@ -198,33 +215,52 @@ def _artifact_hash_payload(redacted_artifact: Mapping[str, Any]) -> dict[str, An
     return payload
 
 
-def _stable_required_reads(
+def _redacted_link_sort_key(redacted_link: Mapping[str, Any]) -> tuple[str, str]:
+    ref = _as_str(redacted_link.get("ref")) or _as_str(redacted_link.get("id")) or ""
+    return ref, canonical_json_dumps(dict(redacted_link))
+
+
+def _stable_redacted_links(
+    links: Sequence[Mapping[str, Any]] | None,
+    path_prefix: str,
+    summary: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    if not links:
+        return []
+    redacted_candidates = [
+        _redact_mapping(
+            dict(item),
+            f"{path_prefix}[{_safe_summary_path_segment(_as_str(item.get('ref')) or _as_str(item.get('id')), fallback=str(index))}]",
+            summary,
+        )
+        for index, item in enumerate(links)
+    ]
+    return sorted(redacted_candidates, key=_redacted_link_sort_key)
+
+
+def _redacted_required_read_sort_key(redacted_read: Mapping[str, Any]) -> tuple[str, str, str]:
+    return (
+        _as_str(redacted_read.get("path")) or "",
+        _as_str(redacted_read.get("priority")) or "",
+        canonical_json_dumps(dict(redacted_read)),
+    )
+
+
+def _stable_redacted_required_reads(
     required_reads: Sequence[Mapping[str, Any]] | None,
+    summary: list[dict[str, str]],
 ) -> list[dict[str, Any]]:
     if not required_reads:
         return []
-    normalized = [dict(item) for item in required_reads]
-    return sorted(
-        normalized,
-        key=lambda item: (
-            _as_str(item.get("path")) or "",
-            _as_str(item.get("priority")) or "",
-            canonical_json_dumps(item),
-        ),
-    )
-
-
-def _stable_links(links: Sequence[Mapping[str, Any]] | None) -> list[dict[str, Any]]:
-    if not links:
-        return []
-    normalized = [dict(item) for item in links]
-    return sorted(
-        normalized,
-        key=lambda item: (
-            _as_str(item.get("ref")) or _as_str(item.get("id")) or "",
-            canonical_json_dumps(item),
-        ),
-    )
+    redacted_candidates = [
+        _redact_mapping(
+            dict(item),
+            f"required_reads[{_as_str(item.get('path')) or index}]",
+            summary,
+        )
+        for index, item in enumerate(required_reads)
+    ]
+    return sorted(redacted_candidates, key=_redacted_required_read_sort_key)
 
 
 def _fingerprint(value: Any) -> str | None:
@@ -239,18 +275,6 @@ def _fingerprint(value: Any) -> str | None:
             return None
         return canonical_hash(value)
     return canonical_hash(value)
-
-
-def _stable_redacted_links(
-    links: Sequence[Mapping[str, Any]] | None,
-    path_prefix: str,
-    summary: list[dict[str, str]],
-) -> list[dict[str, Any]]:
-    stable = _stable_links(links)
-    return [
-        _redact_mapping(item, f"{path_prefix}[{index}]", summary)
-        for index, item in enumerate(stable)
-    ]
 
 
 def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]:
@@ -286,11 +310,10 @@ def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]
         redacted_artifacts.append(redacted)
         artifact_hashes.append(canonical_hash(_artifact_hash_payload(redacted)))
 
-    required_reads_stable = _stable_required_reads(request.required_reads)
-    required_reads = [
-        _redact_mapping(item, f"required_reads[{index}]", redaction_summary)
-        for index, item in enumerate(required_reads_stable)
-    ]
+    required_reads = _stable_redacted_required_reads(
+        request.required_reads,
+        redaction_summary,
+    )
     evidence_links = _stable_redacted_links(
         request.evidence_links,
         "evidence_links",
