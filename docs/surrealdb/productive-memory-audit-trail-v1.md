@@ -1,7 +1,7 @@
 # Productive Memory Audit Trail v1 — Contract (#2730)
 
 **Issue:** [#2730](https://github.com/jannekbuengener/Claire_de_Binare/issues/2730)  
-**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (stays OPEN)  
+**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (CLOSED 2026-05-31; design doc historical)  
 **Status:** Spec / governance design — **NOT ACTIVATED**  
 **LR:** NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md))  
 **Board stage:** `trade-capable` is orthogonal; not live authorization.

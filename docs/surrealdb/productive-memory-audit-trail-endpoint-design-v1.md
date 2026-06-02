@@ -1,7 +1,7 @@
 # Productive Memory Audit Trail Endpoint Design v1 (#2735)
 
 **Issue:** [#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735)  
-**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (stays OPEN)  
+**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (CLOSED 2026-05-31; design doc historical)  
 **Builds on:** G0 contract [#2730](https://github.com/jannekbuengener/Claire_de_Binare/issues/2730) — [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md)  
 **Status:** **DESIGN ONLY — T3 NOT ACTIVATED**  
 **LR:** NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md))  
@@ -374,7 +374,7 @@ pytest tests/unit/surrealdb/test_memory_write_gate.py \
 | **G2** | **#2739** — [`productive-memory-audit-trail-mcp-phase2-design-v1.md`](productive-memory-audit-trail-mcp-phase2-design-v1.md) | MCP Phase 2 design — **NOT ACTIVATED** |
 | G3 | Future | Productive audit persist adapter + tests + HG-P operator proof; optional `PERSIST_ALLOWED` flip |
 | G4 | Future | Productive `agent_memory` write (HG-W) |
-| #2606 | Stays OPEN | Criterion 6 **PARTIAL** until T3 runtime evidence |
+| #2606 | CLOSED (2026-05-31) | Criterion 6 **PARTIAL** at design time; epic closed on GitHub-live |
 
 ---
 
