@@ -40,4 +40,4 @@ Issue #2802 / PR #2818 — read-only Control-Room signal layer aggregating Phase
 ## Follow-ups
 
 - MCP expose `cdb_control_room_signal_layer` deferred (dedupe against #2803 / #2804 before new issue)
-- #2778 remaining Phase-2 child slices (#2797–#2804; #2802 now CLOSED)
+- #2778 remaining Phase-2 child slices (#2803/#2804 OPEN; #2797–#2802 CLOSED)
