@@ -141,7 +141,7 @@ When combining results from multiple modes, the following ranking factors are ap
 | Factor | Weight | Description |
 |--------|--------|--------------|
 | `source_match` | 0.20 | Direct match to query source/type |
-| `graph_distance` | 0.15 | Proximity in entity graph (closer = higher) |
+| `graph_distance` | 0.15 | Graph proximity (hop count via `graph_distance`, or pre-normalized via `graph_distance_score`) |
 | `evidence_strength` | 0.15 | Quality of supporting evidence |
 | `freshness` | 0.15 | Recency of the result (decay over time) |
 | `confidence` | 0.20 | Confidence score of the result |
@@ -207,9 +207,14 @@ Each ranked result may include:
 
 #### Graph distance convention
 
-- Prefer `graph_distance_score` (0.0–1.0) when already normalized.
-- Otherwise `graph_distance` is treated as hop count when `> 1.0`, or as a
-  normalized score when `<= 1.0`.
+- **`graph_distance_score`** (optional): pre-normalized proximity in `0.0–1.0`.
+  Use this when the adapter already computed a score.
+- **`graph_distance`** (optional): **hop count only** (non-negative integer or
+  float). `0` hops → `1.0`; higher hops decay linearly to `0.0` at
+  `GRAPH_DISTANCE_MAX_HOPS` (default `10`). Do **not** send normalized values
+  (e.g. `0.5`) in `graph_distance` — they would be misread as half a hop.
+- If both fields are absent, ranking uses the missing-factor default and emits
+  `missing_factor:graph_distance`.
 
 ### Freshness Decay
 
