@@ -162,3 +162,8 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 ## Monatlicher Audit
 Spätestens bis 3. des Monats → Audit-Kommentar in Issue #1445 anhängen.
 Audit-Template: s. Issue #1445 Body.
+
+## Workflow Evidence Follow-ups
+
+- `gitleaks.yml` (PR #2771): Secret-Scan bleibt Scheduled/Manual mit deaktiviertem Push-Trigger (#2613). **Read-only:** Top-Level `contents: read` + `pull-requests: read` — scannt Repo-/Git-Historie ohne Runtime-, DB-, MCP-, Docker-Stack- oder LR-/Live-/Echtgeld-Signal. **GitHub-Schreibpfade (nicht read-only):** Top-Level `security-events: write`; Jobs `gitleaks` und `full-scan` laden SARIF via `github/codeql-action/upload-sarif` in GitHub Security (Code Scanning-Alerts). Bei aktivem PR-Trigger koennte `GITLEAKS_ENABLE_COMMENTS=true` zusaetzlich PR-Kommentare schreiben; aktuell nur Schedule/`workflow_dispatch`.
+- `security-alert-readout.yml` (PR #2787): **Read-only:** Job `security-readout` (Artifact/Step-Summary-only, kein direkter Main-Push); Summary-/Issue-Link-Rendering in `comment-epic` stabilisiert. **GitHub-Schreibpfade (nicht read-only):** `comment-epic` postet Ledger-Kommentare auf Epic #2289 (`issues: write`); `issue-automation` erstellt bei Scheduled-Runs standardmaessig echte Issues (`LIVE_MODE=true`, `issues: write`; manuell nur mit `issue_automation_live=true`); optionaler `persist-via-pr`-Pfad nur bei explizitem `workflow_dispatch`. Keine Alert-Dismissals, kein Auto-Merge, kein LR-/Live-/Echtgeld-Signal.
