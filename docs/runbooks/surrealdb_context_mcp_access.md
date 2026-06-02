@@ -793,6 +793,12 @@ explicit `real_db_proof_required_before_closure` policy before marking the tool 
 | `cdb_control_room_view` | 19 | Build read-only control-room views (9 view types) from an in-memory bundle. | `closure_without_real_db_proof_allowed` | No — no runtime/trading console; bundle-only. | Handler: `tools/mcp/control_room_tools.py`; unit: `tests/unit/tools/mcp/test_control_room_tools.py` + `tests/unit/surrealdb/test_control_room_view_builder.py`; bridge/guard registration; this §7.8 row. |
 | `cdb_agent_os_readiness` | 20 | Evaluate Agent OS readiness level and optional markdown report from a bundle. | `closure_without_real_db_proof_allowed` | No — bundle-only; no Live-Go/Echtgeld semantics. | Handler: `tools/mcp/agent_os_readiness_tools.py`; unit: `tests/unit/tools/mcp/test_agent_os_readiness_tools.py` + `tests/unit/surrealdb/test_agent_os_readiness.py`; bridge/guard registration; this §7.8 row. |
 
+**Phase-2 pure builder (no MCP tool in #2802):** `build_control_room_signal_layer_v1` in
+`tools/surrealdb/control_room_signal_layer.py` — read-only operator signal envelope from
+Context Package v2 / ranking / replay / readiness / certification dicts. Contract:
+`docs/surrealdb/control-room-readonly-signal-layer-v1.md`. Unit:
+`tests/unit/surrealdb/test_control_room_signal_layer.py`.
+
 **Wave-15–20 validation (CI-safe, no Real-DB smoke):**
 
 ```bash
