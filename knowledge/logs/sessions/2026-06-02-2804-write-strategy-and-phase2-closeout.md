@@ -48,4 +48,12 @@ limitations:
 
 - Branch: `phase2-2804-write-strategy-and-2778-closeout`
 - Worktree: `Claire_de_Binare__2804-write-strategy-closeout`
-- PR: (filled after push)
+- PR: [#2823](https://github.com/jannekbuengener/Claire_de_Binare/pull/2823) merged `57a810d8`
+- #2804: CLOSED via PR
+- #2778: comment `READY_FOR_FINAL_CLOSEOUT_REVIEW` (issue remains OPEN)
+
+## Validation (post-merge)
+
+- Required checks: `ci`, `policy-gate` — pass
+- `Cursor Bugbot` — pending at merge (non-required)
+- Merge via GitHub API (local `main` worktree conflict in root repo)
