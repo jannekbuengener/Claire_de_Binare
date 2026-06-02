@@ -1,7 +1,7 @@
 # Productive Memory Audit Trail — MCP Phase 2 Design v1 (#2739)
 
 **Issue:** [#2739](https://github.com/jannekbuengener/Claire_de_Binare/issues/2739)  
-**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (stays OPEN)  
+**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (CLOSED 2026-05-31; design doc historical)  
 **Builds on:** G0 [#2730](https://github.com/jannekbuengener/Claire_de_Binare/issues/2730) — [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md); G1 [#2735](https://github.com/jannekbuengener/Claire_de_Binare/issues/2735) — [`productive-memory-audit-trail-endpoint-design-v1.md`](productive-memory-audit-trail-endpoint-design-v1.md)  
 **Status:** **DESIGN ONLY — G2 MCP PHASE 2 — NOT ACTIVATED**  
 **LR:** NO-GO ([`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../live-readiness/LR-AUDIT-STATUS-2026-03-05.md))  

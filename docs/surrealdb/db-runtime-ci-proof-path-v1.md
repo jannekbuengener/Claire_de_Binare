@@ -2,7 +2,7 @@
 
 **Status:** Campaign deliverable  
 **Epic:** [#2603](https://github.com/jannekbuengener/Claire_de_Binare/issues/2603)  
-**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (stays OPEN)  
+**Parent:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (CLOSED 2026-05-31; design doc historical)  
 **LR:** NO-GO (unchanged)  
 **Board stage:** `trade-capable` is not live-go.
 

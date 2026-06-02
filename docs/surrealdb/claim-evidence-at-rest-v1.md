@@ -2,7 +2,7 @@
 
 **Status:** Campaign deliverable  
 **Issue:** [#2719](https://github.com/jannekbuengener/Claire_de_Binare/issues/2719)  
-**Epic:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (stays OPEN)  
+**Epic:** [#2606](https://github.com/jannekbuengener/Claire_de_Binare/issues/2606) (CLOSED 2026-05-31; design doc historical)  
 **LR:** NO-GO (unchanged)
 
 ---
