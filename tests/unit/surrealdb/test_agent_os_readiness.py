@@ -226,7 +226,9 @@ def test_acceptable_readiness_one_weak_finding() -> None:
 
 
 def test_missing_bundle_raises_error() -> None:
-    with pytest.raises(AgentOsReadinessError, match="bundle must be a non-None mapping"):
+    with pytest.raises(
+        AgentOsReadinessError, match="bundle must be a non-None mapping"
+    ):
         evaluate_agent_os_readiness_v1(None)
 
 
@@ -543,17 +545,13 @@ def test_operator_certification_missing_is_not_global_blocker() -> None:
     bundle = _clean_bundle()
     result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
     assert result.readiness_level == "strong"
-    assert any(
-        "operator_certification" in m for m in result.missing_inputs
-    )
+    assert any("operator_certification" in m for m in result.missing_inputs)
 
 
 def test_operator_certification_missing_on_minimal_bundle() -> None:
     result = evaluate_agent_os_readiness_v1(_minimal_bundle(), as_of=_AS_OF)
     assert result.readiness_level != "blocked"
-    assert any(
-        "operator_certification" in m for m in result.missing_inputs
-    )
+    assert any("operator_certification" in m for m in result.missing_inputs)
 
 
 def test_operator_certification_invalid_not_silent_green() -> None:

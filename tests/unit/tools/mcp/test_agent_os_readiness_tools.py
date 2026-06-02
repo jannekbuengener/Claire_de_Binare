@@ -33,7 +33,12 @@ def _clean_bundle() -> dict[str, Any]:
             }
         ],
         "decisions": [
-            {"decision_id": "D-MCP-001", "title": "MCP tool design", "status": "active", "evidence_refs": ["E-MCP-001"]}
+            {
+                "decision_id": "D-MCP-001",
+                "title": "MCP tool design",
+                "status": "active",
+                "evidence_refs": ["E-MCP-001"],
+            }
         ],
         "evidence_items": [
             {
@@ -263,6 +268,5 @@ def test_mcp_passes_operator_certification_through_bundle() -> None:
     assert result["status"] == "ok"
     assert result["readiness_level"] == "strong"
     assert not any(
-        "operator_certification" in item
-        for item in result["result"]["missing_inputs"]
+        "operator_certification" in item for item in result["result"]["missing_inputs"]
     )

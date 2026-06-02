@@ -89,16 +89,16 @@ class AgentOsReadinessError(ValueError):
 class AgentOsReadinessResult:
     """Full Agent OS readiness evaluation result."""
 
-    readiness_id: str               # SHA-256(scope_id|generated_at)[:16]
+    readiness_id: str  # SHA-256(scope_id|generated_at)[:16]
     target_scope: str
-    readiness_level: str            # blocked / weak / acceptable / strong
+    readiness_level: str  # blocked / weak / acceptable / strong
     blocking_findings: tuple[str, ...]
     weak_findings: tuple[str, ...]
     missing_inputs: tuple[str, ...]
     recommended_next_reads: tuple[str, ...]
     required_validation: tuple[str, ...]
-    guardrails: tuple[str, ...]     # always GUARDRAILS (5 items)
-    confidence: float               # 0.0–1.0; capped to 0.3 when blocked
+    guardrails: tuple[str, ...]  # always GUARDRAILS (5 items)
+    confidence: float  # 0.0–1.0; capped to 0.3 when blocked
     generated_at: str
     schema_version: str = SCHEMA_VERSION
 
@@ -221,7 +221,12 @@ def _readiness_id(scope_id: str, generated_at: str) -> str:
 def _is_open(item: Mapping[str, Any]) -> bool:
     """Return True if a finding is open (not resolved / accepted / fp)."""
     status = _as_str(item.get("status", "")).lower()
-    return status not in {"resolved", "accepted_risk", "accepted_stale", "false_positive"}
+    return status not in {
+        "resolved",
+        "accepted_risk",
+        "accepted_stale",
+        "false_positive",
+    }
 
 
 def _is_blocking_severity(item: Mapping[str, Any]) -> bool:
@@ -234,8 +239,7 @@ def _validate_bundle(bundle: Any) -> Mapping[str, Any]:
     """Validate bundle structure; raise AgentOsReadinessError on failure."""
     if bundle is None or not isinstance(bundle, Mapping):
         raise AgentOsReadinessError(
-            "bundle must be a non-None mapping "
-            "(got %s)" % type(bundle).__name__
+            "bundle must be a non-None mapping " "(got %s)" % type(bundle).__name__
         )
     meta = bundle.get("meta")
     if not isinstance(meta, Mapping):
@@ -401,13 +405,9 @@ def _evaluate_architect_signals(
             if status in {"resolved", "accepted_risk", "false_positive"}:
                 continue
             if severity == "blocking":
-                blocking.append(
-                    f"architect signal blocking: {title or signal_type}"
-                )
+                blocking.append(f"architect signal blocking: {title or signal_type}")
             elif severity in {"watch", "info"}:
-                weak.append(
-                    f"architect signal {severity}: {title or signal_type}"
-                )
+                weak.append(f"architect signal {severity}: {title or signal_type}")
     except Exception as exc:  # noqa: BLE001
         weak.append(f"architect signals error: {exc!s}")
     return blocking, weak
@@ -465,9 +465,7 @@ def _evaluate_operator_certification(
 
     final_verdict = _as_str(cert.get("final_verdict", "")).lower().strip()
     if final_verdict and final_verdict not in _FINAL_VERDICTS:
-        weak.append(
-            f"operator certification invalid final_verdict: {final_verdict!r}"
-        )
+        weak.append(f"operator certification invalid final_verdict: {final_verdict!r}")
         final_verdict = ""
 
     blocked_checks = _as_list(cert.get("blocked_checks_with_reason"))
@@ -543,16 +541,9 @@ def _evaluate_operator_certification(
     if adoption_status == "skipped":
         weak.append("operator certification adoption_status=skipped")
         if not extra_validation:
-            extra_validation.append(
-                "Document skip reasons before adoption claims."
-            )
+            extra_validation.append("Document skip reasons before adoption claims.")
 
-    if (
-        not final_verdict
-        and not adoption_status
-        and not gate_matrix
-        and not weak
-    ):
+    if not final_verdict and not adoption_status and not gate_matrix and not weak:
         weak.append("operator certification incomplete: missing final_verdict")
         extra_validation.append(
             "Include final_verdict from make context-certify output."
@@ -650,7 +641,9 @@ def evaluate_agent_os_readiness_v1(
             "bundle.meta.scope_id is required and must be a non-empty string"
         )
 
-    generated_at = as_of if isinstance(as_of, str) and as_of.strip() else cdb_utcnow().isoformat()
+    generated_at = (
+        as_of if isinstance(as_of, str) and as_of.strip() else cdb_utcnow().isoformat()
+    )
 
     # Aggregate signals from all sub-evaluators
     all_blocking: list[str] = []
@@ -676,9 +669,7 @@ def evaluate_agent_os_readiness_v1(
     all_blocking.extend(b5)
     all_weak.extend(w5)
 
-    b6, w6, cert_missing, cert_validation = _evaluate_operator_certification(
-        validated
-    )
+    b6, w6, cert_missing, cert_validation = _evaluate_operator_certification(validated)
     all_blocking.extend(b6)
     all_weak.extend(w6)
 
@@ -686,9 +677,7 @@ def evaluate_agent_os_readiness_v1(
     missing_inputs.extend(cert_missing)
 
     core_missing_inputs = [
-        item
-        for item in missing_inputs
-        if "operator_certification" not in item
+        item for item in missing_inputs if "operator_certification" not in item
     ]
 
     # Derive readiness level (fail-closed: any blocker → blocked)
