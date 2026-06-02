@@ -51,10 +51,12 @@ limitations:
 ## GitHub
 
 - Worktree: `Claire_de_Binare__2778-final-closeout`
-- Branch: `phase2-2778-final-closeout-review`
-- PR: (filled after push)
+- PR [#2825](https://github.com/jannekbuengener/Claire_de_Binare/pull/2825) merged @ `735b4ca0` (review fix `68acc9eb`: #2777/#2781 **CLOSED** in deferred table)
+- Review thread `r3344555892` resolved after reply
 
-## Post-merge (planned)
+## Post-merge
 
-- If `PASS_CLOSEOUT` still valid on merged main: close #2778 + comment #1976
-- No close of #1976 or #2821
+- C1–C14 recheck on `main`: **PASS_CLOSEOUT** unchanged
+- #2778 **CLOSED** (GitHub-live); closeout comment posted
+- #1976 comment posted (Phase-2 complete; epic stays OPEN)
+- Ledger follow-up: PR for `CURRENT_STATUS.md` sync
