@@ -207,6 +207,24 @@ def test_empty_artifacts_fail_closed() -> None:
 
 
 @pytest.mark.unit
+def test_evidence_and_replay_links_are_redacted() -> None:
+    secret = "Bearer abc.def.ghi"
+    package = build_context_package_v2(
+        _base_request(
+            evidence_links=[{"ref": "evidence:1", "api_key": secret}],
+            decision_replay_links=[
+                {"ref": "decision:1", "token": "sk-live-secret-value"}
+            ],
+        )
+    )
+    serialized = json.dumps(package)
+    assert secret not in serialized
+    assert "sk-live-secret-value" not in serialized
+    assert package["evidence_links"][0]["api_key"] == "[REDACTED]"
+    assert package["decision_replay_links"][0]["token"] == "[REDACTED]"
+
+
+@pytest.mark.unit
 def test_fixture_minimal_ingredients_builds_package() -> None:
     payload = json.loads(_FIXTURE_PATH.read_text(encoding="utf-8"))
     package = build_context_package_v2(ContextPackageV2Request(**payload))

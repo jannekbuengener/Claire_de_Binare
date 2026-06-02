@@ -222,6 +222,18 @@ def _fingerprint(value: Any) -> str | None:
     return canonical_hash(value)
 
 
+def _stable_redacted_links(
+    links: Sequence[Mapping[str, Any]] | None,
+    path_prefix: str,
+    summary: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    stable = _stable_links(links)
+    return [
+        _redact_mapping(item, f"{path_prefix}[{index}]", summary)
+        for index, item in enumerate(stable)
+    ]
+
+
 def _dedupe_redaction_summary(
     summary: list[dict[str, str]],
 ) -> list[dict[str, str]]:
@@ -266,8 +278,16 @@ def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]
         artifact_hashes.append(canonical_hash(_artifact_hash_payload(redacted)))
 
     required_reads = _stable_required_reads(request.required_reads)
-    evidence_links = _stable_links(request.evidence_links)
-    decision_replay_links = _stable_links(request.decision_replay_links)
+    evidence_links = _stable_redacted_links(
+        request.evidence_links,
+        "evidence_links",
+        redaction_summary,
+    )
+    decision_replay_links = _stable_redacted_links(
+        request.decision_replay_links,
+        "decision_replay_links",
+        redaction_summary,
+    )
 
     ranked_context: dict[str, Any] | None = None
     if request.ranked_context is not None:
