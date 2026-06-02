@@ -193,6 +193,19 @@ def test_invalid_custom_weights_rejected() -> None:
 
 
 @pytest.mark.unit
+def test_non_finite_custom_weights_rejected() -> None:
+    nan_weights = dict(DEFAULT_RANKING_WEIGHTS)
+    nan_weights["confidence"] = float("nan")
+    with pytest.raises(HybridRetrievalRankingError, match="finite number"):
+        rank_retrieval_results([], weights=nan_weights)
+
+    inf_weights = dict(DEFAULT_RANKING_WEIGHTS)
+    inf_weights["source_match"] = float("inf")
+    with pytest.raises(HybridRetrievalRankingError, match="finite number"):
+        rank_retrieval_results([], weights=inf_weights)
+
+
+@pytest.mark.unit
 def test_explanation_structure() -> None:
     explanation = compute_ranking_explanation(_load_fixture_candidates()[0])
     assert set(explanation["factor_scores"]) == set(RANKING_FACTORS)

@@ -265,12 +265,24 @@ def _validate_weights(weights: Mapping[str, float]) -> dict[str, float]:
     missing = [f for f in RANKING_FACTORS if f not in weights]
     if missing:
         raise HybridRetrievalRankingError(f"missing ranking factors: {missing}")
-    total = sum(float(weights[f]) for f in RANKING_FACTORS)
-    if abs(total - 1.0) > 1e-6:
+    resolved: dict[str, float] = {}
+    for factor in RANKING_FACTORS:
+        value = _as_finite_float(weights[factor])
+        if value is None:
+            raise HybridRetrievalRankingError(
+                f"ranking weight for {factor} must be a finite number"
+            )
+        if value < 0:
+            raise HybridRetrievalRankingError(
+                f"ranking weight for {factor} must be non-negative, got {value}"
+            )
+        resolved[factor] = value
+    total = sum(resolved[f] for f in RANKING_FACTORS)
+    if not math.isfinite(total) or abs(total - 1.0) > 1e-6:
         raise HybridRetrievalRankingError(
             f"ranking weights must sum to 1.0, got {total:.6f}"
         )
-    return {f: float(weights[f]) for f in RANKING_FACTORS}
+    return resolved
 
 
 def compute_ranking_explanation(
