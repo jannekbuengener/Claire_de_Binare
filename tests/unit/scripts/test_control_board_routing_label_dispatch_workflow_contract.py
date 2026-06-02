@@ -69,9 +69,7 @@ def test_parked_workflow_does_not_use_github_script_action() -> None:
 
 
 @pytest.mark.unit
-def test_parked_workflow_does_not_reference_dispatch_event_type_in_on_block() -> (
-    None
-):
+def test_parked_workflow_does_not_reference_dispatch_event_type_in_on_block() -> None:
     workflow = _load_workflow()
     on_triggers = _on_triggers(workflow)
     assert "repository_dispatch" not in on_triggers, (
