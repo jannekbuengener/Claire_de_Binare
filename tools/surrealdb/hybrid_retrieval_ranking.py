@@ -381,6 +381,13 @@ def _validate_weights(weights: Mapping[str, float]) -> dict[str, float]:
     return resolved
 
 
+def _coalesce_weights(weights: Mapping[str, float] | None) -> dict[str, float]:
+    """Use defaults only when weights is None; explicit mappings must validate."""
+    if weights is None:
+        return _validate_weights(DEFAULT_RANKING_WEIGHTS)
+    return _validate_weights(weights)
+
+
 def compute_ranking_explanation(
     candidate: Mapping[str, Any],
     weights: Mapping[str, float] | None = None,
@@ -388,7 +395,7 @@ def compute_ranking_explanation(
     query_context: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compute factor scores, weighted contributions, and final score for one candidate."""
-    resolved_weights = _validate_weights(weights or DEFAULT_RANKING_WEIGHTS)
+    resolved_weights = _coalesce_weights(weights)
     reference = _resolve_reference_time(candidate, query_context)
     factor_scores, warnings, caveats = _resolve_factor_scores(
         candidate, reference=reference
@@ -441,7 +448,7 @@ def rank_retrieval_results(
     query_context: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Rank retrieval candidates with explainable weighted scores (deterministic)."""
-    resolved_weights = _validate_weights(weights or DEFAULT_RANKING_WEIGHTS)
+    resolved_weights = _coalesce_weights(weights)
     ranked: list[dict[str, Any]] = []
 
     for candidate in candidates:

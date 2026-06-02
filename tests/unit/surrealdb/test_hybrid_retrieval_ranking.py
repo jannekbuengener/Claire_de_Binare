@@ -226,6 +226,12 @@ def test_invalid_custom_weights_rejected() -> None:
 
 
 @pytest.mark.unit
+def test_empty_custom_weights_rejected() -> None:
+    with pytest.raises(HybridRetrievalRankingError, match="missing ranking factors"):
+        rank_retrieval_results([], weights={})
+
+
+@pytest.mark.unit
 def test_non_finite_custom_weights_rejected() -> None:
     nan_weights = dict(DEFAULT_RANKING_WEIGHTS)
     nan_weights["confidence"] = float("nan")
