@@ -145,6 +145,12 @@ Phase-2 **`PASS_CLOSEOUT`** does not override (1).
 
 ---
 
+## Governance postscript (2026-06-02, after PR #2827 merge)
+
+GitHub **auto-closed** #1976 when PR #2827 merged (squash subject referenced `#1976`; PR body stated non-goals “does not close #1976”). That close was **not** Real-Task-Proof PASS or Grandparent DoD satisfaction. **#1976 was reopened** the same day with an explicit issue comment. Epic status on GitHub remains **OPEN**; ledger lines must not treat the transient close as canon.
+
+---
+
 ## Non-goals (this slice)
 
 - Executing the Real-Task-Proof run itself

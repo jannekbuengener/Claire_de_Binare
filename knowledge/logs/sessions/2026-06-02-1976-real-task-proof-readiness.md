@@ -34,5 +34,11 @@ Read-only Grandparent DoD and Real-Task-Proof readiness assessment for epic #197
 
 ## GitHub
 
-- PR: [#2827](https://github.com/jannekbuengener/Claire_de_Binare/pull/2827)
+- PR: [#2827](https://github.com/jannekbuengener/Claire_de_Binare/pull/2827) merged @ `22c70b861ec7358bb7542688e3315797db2413a4`
 - Issue comments on #1976 and #2821 after merge
+
+## Governance correction (post-merge)
+
+- **Bug:** GitHub auto-closed #1976 when PR #2827 merged (squash subject contained `#1976`; not `Closes` in body — linked-issue autoclose). **Not** Real-Task-Proof PASS or epic-close.
+- **Fix:** `gh issue reopen 1976` + reopen comment (2026-06-02). Ledger sync: follow-up PR for `CURRENT_STATUS.md` / this log.
+- **Prevention:** Docs-only PR titles should avoid bare epic `#NNNN` when non-goals explicitly exclude close; prefer issue numbers only in body with “does not close”.
