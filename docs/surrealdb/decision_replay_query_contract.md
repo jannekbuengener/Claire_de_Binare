@@ -194,11 +194,47 @@ Minimalfall:
 - Für Konsistenz mit #2118 soll bei Änderungen immer die #2118 Unit-Suite grün bleiben:
   - `pytest -v tests/unit/surrealdb/test_decision_history_query_v1.py`
 
+## Agent-readable JSON Schema (v2, additive — #2800)
+
+`schema_version`: `decision-replay-query/v2`
+
+v2 **behält alle v1-Felder** und ergänzt read-only Evidence-Enrichment:
+
+```json
+{
+  "schema_version": "decision-replay-query/v2",
+  "evidence_links": [{ "id": "ev-002", "link_status": "summary_resolved|record_resolved|unresolved" }],
+  "resolved_evidence": [{ "id": "ev-002", "resolution_source": "summary|record", "authorization_implied": false }],
+  "unresolved_evidence_refs": ["ev-missing-001"],
+  "evidence_resolution_status": "none|refs_only|partial|full",
+  "evidence_warnings": ["unresolved_evidence_refs_present"],
+  "decision_chain_hash": "sha256-hex (deterministic, no wall-clock)",
+  "replay_explainability": {
+    "mode": "replay_by_decision_id",
+    "primary_decision_id": "dec-002",
+    "evidence_resolution_status": "partial",
+    "limitations": ["..."],
+    "authorization_note": "Replay explains only..."
+  }
+}
+```
+
+### v2 Semantics (fail-closed)
+
+- **Optional inputs**: `evidence_summaries` (wie v1) und/oder in-memory `evidence_records` (MCP/builder).
+- **Nie implizit verifizieren**: `known_evidence_ids` allein reicht **nicht** für `resolved_evidence`; fehlende Records/Summaries bleiben in `unresolved_evidence_refs`.
+- **`decision_chain_hash`**: Hash über `decision_chain`, `supersession_chain`, sortierte evidence/claim refs und unresolved-Listen — **ohne** `current_status.as_of`.
+- **Redaction**: token/secret/password/api_key-artige Felder in resolved payloads → `[REDACTED]`.
+- **LR / Live**: `approval_semantics` und `replay_explainability.history_only` bleiben non-authorizing; kein Live-Go, kein Echtgeld-Go.
+
+### v2 Validation (CI)
+
+- `pytest -q tests/unit/surrealdb/test_decision_replay_builder_v1.py` (v1 unverändert)
+- `pytest -q tests/unit/surrealdb/test_decision_replay_builder_v2.py`
+- `pytest -q tests/unit/tools/mcp/test_wave14_query_contracts.py -k decision_replay`
+
 ## Non-Goals (explizit)
 
-- Kein Replay Builder (#2119)
-- Kein MCP Tool (#2124)
-- Kein Evidence Lookup (#2116)
-- Kein Claim Resolution (#2117)
 - Keine produktive SurrealDB-Queries, keine DB-Writes, keine Runtime-/Docker-Änderungen
 - Keine Live-/LR-/Echtgeld-Autorisierung
+- Keine automatische Freigabe aus Replay- oder Evidence-Output

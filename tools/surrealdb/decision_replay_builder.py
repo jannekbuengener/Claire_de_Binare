@@ -1,7 +1,8 @@
-"""Decision Replay Builder v1 — side-effect-free domain component.
+"""Decision Replay Builder v1/v2 — side-effect-free domain component.
 
 Issue:
     #2119 — [SURREALDB][CONTEXT][REPLAY] Implement decision replay v1
+    #2800 — [PHASE-2][SURREALDB][SLICE-4] Evidence-aware decision replay v2
     Parent: #2115 (Wave-14)
     Epic: #1976
 
@@ -26,6 +27,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping
 
+import re
+
+from core.replay.canonical_json import canonical_hash
 from core.utils.clock import utcnow
 from tools.surrealdb.decision_history_query import (
     DecisionHistoryQueryRequest,
@@ -33,6 +37,12 @@ from tools.surrealdb.decision_history_query import (
 )
 
 SCHEMA_VERSION = "decision-replay-query/v1"
+SCHEMA_VERSION_V2 = "decision-replay-query/v2"
+
+_SENSITIVE_KEY_RE = re.compile(
+    r"(token|secret|password|api[_-]?key|credential|private[_-]?key)",
+    re.IGNORECASE,
+)
 
 SUPPORTED_MODES = frozenset(
     {
@@ -523,3 +533,277 @@ def build_decision_replay_v1(
         "warnings": sorted(set(warnings + list(history_result.get("warnings", [])))),
         "approval_semantics": approval_semantics,
     }
+
+
+def _is_sensitive_key(key: str) -> bool:
+    return bool(_SENSITIVE_KEY_RE.search(key))
+
+
+def _redact_value(key: str, value: Any) -> Any:
+    if _is_sensitive_key(key):
+        return "[REDACTED]"
+    if isinstance(value, dict):
+        return _redact_mapping(value)
+    if isinstance(value, list):
+        return [_redact_value(key, item) for item in value]
+    return value
+
+
+def _redact_mapping(raw: Mapping[str, Any]) -> dict[str, Any]:
+    redacted: dict[str, Any] = {}
+    for key, value in raw.items():
+        if str(key).startswith("_"):
+            continue
+        redacted[str(key)] = _redact_value(str(key), value)
+    return redacted
+
+
+def _index_evidence_records(
+    evidence_records: Iterable[Mapping[str, Any]] | None,
+) -> dict[str, dict[str, Any]]:
+    if evidence_records is None:
+        return {}
+    index: dict[str, dict[str, Any]] = {}
+    for raw in evidence_records:
+        if not isinstance(raw, Mapping):
+            continue
+        evidence_id = raw.get("evidence_id")
+        if not isinstance(evidence_id, str) or not evidence_id.strip():
+            continue
+        sanitized = _redact_mapping(_sanitize_decision(raw))
+        sanitized.pop("_created_at_dt", None)
+        index[evidence_id.strip()] = sanitized
+    return index
+
+
+def _resolved_from_v1_chain(evidence_chain: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+    resolved_by_id: dict[str, dict[str, Any]] = {}
+    for item in evidence_chain.get("resolved", []):
+        if not isinstance(item, Mapping):
+            continue
+        ref = item.get("id")
+        if isinstance(ref, str) and ref.strip():
+            resolved_by_id[ref.strip()] = dict(item)
+    return resolved_by_id
+
+
+def _evidence_resolution_status(
+    refs: list[str],
+    unresolved: list[str],
+    resolved_count: int,
+    *,
+    inputs_provided: bool,
+) -> str:
+    if not refs:
+        return "none"
+    if not inputs_provided:
+        return "refs_only"
+    if unresolved:
+        return "partial" if resolved_count else "refs_only"
+    if resolved_count >= len(refs):
+        return "full"
+    return "partial"
+
+
+def _build_evidence_enrichment_v2(
+    base: Mapping[str, Any],
+    *,
+    evidence_records: Iterable[Mapping[str, Any]] | None = None,
+    evidence_summaries: Mapping[str, Any] | None = None,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[str],
+    str,
+    list[str],
+]:
+    evidence_chain = base.get("evidence_chain") or {}
+    refs = sorted(
+        {
+            str(ref).strip()
+            for ref in evidence_chain.get("refs", [])
+            if isinstance(ref, str) and ref.strip()
+        }
+    )
+    v1_unresolved = {
+        str(ref).strip()
+        for ref in evidence_chain.get("unresolved", [])
+        if isinstance(ref, str) and ref.strip()
+    }
+    v1_resolved = _resolved_from_v1_chain(evidence_chain)
+    record_index = _index_evidence_records(evidence_records)
+
+    inputs_provided = evidence_summaries is not None or bool(record_index)
+    evidence_links: list[dict[str, Any]] = []
+    resolved_evidence: list[dict[str, Any]] = []
+    unresolved: list[str] = []
+    evidence_warnings: list[str] = []
+
+    if refs and not inputs_provided:
+        evidence_warnings.append("evidence_resolution_inputs_not_provided")
+
+    for ref in refs:
+        link_status = "unresolved"
+        if ref in v1_resolved:
+            entry = _redact_mapping(v1_resolved[ref])
+            entry["resolution_source"] = "summary"
+            entry["authorization_implied"] = False
+            resolved_evidence.append(entry)
+            link_status = "summary_resolved"
+        elif ref in record_index:
+            resolved_evidence.append(
+                {
+                    "id": ref,
+                    "resolution_source": "record",
+                    "authorization_implied": False,
+                    "evidence": record_index[ref],
+                }
+            )
+            link_status = "record_resolved"
+        else:
+            unresolved.append(ref)
+            link_status = "unresolved"
+        evidence_links.append({"id": ref, "link_status": link_status})
+
+    unresolved = sorted(set(unresolved) | v1_unresolved)
+    resolved_ids = {
+        item.get("id")
+        for item in resolved_evidence
+        if isinstance(item.get("id"), str) and item.get("id")
+    }
+    unresolved = sorted(ref for ref in unresolved if ref not in resolved_ids)
+
+    if unresolved:
+        evidence_warnings.append("unresolved_evidence_refs_present")
+    if refs and unresolved and inputs_provided:
+        evidence_warnings.append("evidence_resolution_partial")
+
+    status = _evidence_resolution_status(
+        refs,
+        unresolved,
+        len(resolved_evidence),
+        inputs_provided=inputs_provided,
+    )
+    return evidence_links, resolved_evidence, unresolved, status, evidence_warnings
+
+
+def _decision_chain_hash_payload(base: Mapping[str, Any]) -> dict[str, Any]:
+    evidence_chain = base.get("evidence_chain") or {}
+    claim_chain = base.get("claim_chain") or {}
+    return {
+        "decision_chain": list(base.get("decision_chain") or []),
+        "supersession_chain": list(base.get("supersession_chain") or []),
+        "evidence_refs": sorted(
+            str(ref).strip()
+            for ref in evidence_chain.get("refs", [])
+            if isinstance(ref, str) and ref.strip()
+        ),
+        "claim_refs": sorted(
+            str(ref).strip()
+            for ref in claim_chain.get("refs", [])
+            if isinstance(ref, str) and ref.strip()
+        ),
+        "unresolved_evidence_refs": sorted(
+            str(ref).strip()
+            for ref in evidence_chain.get("unresolved", [])
+            if isinstance(ref, str) and ref.strip()
+        ),
+        "unresolved_claim_refs": sorted(
+            str(ref).strip()
+            for ref in claim_chain.get("unresolved", [])
+            if isinstance(ref, str) and ref.strip()
+        ),
+    }
+
+
+def _build_replay_explainability_v2(
+    base: Mapping[str, Any],
+    *,
+    evidence_resolution_status: str,
+    unresolved_evidence_refs: list[str],
+    evidence_warnings: list[str],
+) -> dict[str, Any]:
+    query = base.get("query") or {}
+    decision_summary = base.get("decision_summary") or {}
+    evidence_chain = base.get("evidence_chain") or {}
+    refs = evidence_chain.get("refs", [])
+    limitations: list[str] = []
+    if evidence_resolution_status in {"refs_only", "partial"}:
+        limitations.append(
+            "Evidence refs are visible; full resolution requires optional "
+            "evidence_summaries or in-memory evidence_records."
+        )
+    if unresolved_evidence_refs:
+        limitations.append(
+            "Unresolved evidence refs remain unverified and do not imply approval."
+        )
+    if evidence_warnings:
+        limitations.append("See evidence_warnings and warnings for operator detail.")
+
+    approval = base.get("approval_semantics") or {}
+    return {
+        "mode": query.get("mode"),
+        "primary_decision_id": decision_summary.get("decision_id"),
+        "evidence_resolution_status": evidence_resolution_status,
+        "evidence_ref_count": len(refs) if isinstance(refs, list) else 0,
+        "unresolved_evidence_count": len(unresolved_evidence_refs),
+        "decision_chain_length": len(base.get("decision_chain") or []),
+        "limitations": limitations,
+        "authorization_note": approval.get("note"),
+        "history_only": approval.get("history_only", True),
+    }
+
+
+def build_decision_replay_v2(
+    decision_events: Iterable[Mapping[str, Any]],
+    request: DecisionReplayRequest,
+    *,
+    known_evidence_ids: set[str] | None = None,
+    known_claim_ids: set[str] | None = None,
+    evidence_summaries: Mapping[str, Any] | None = None,
+    claim_summaries: Mapping[str, Any] | None = None,
+    evidence_records: Iterable[Mapping[str, Any]] | None = None,
+    claim_records: Iterable[Mapping[str, Any]] | None = None,
+    stop_conditions: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Build Decision Replay v2: v1 semantics plus evidence enrichment and chain hash."""
+    _ = claim_records  # reserved for future claim-record enrichment; v1 claim_chain unchanged
+    base = build_decision_replay_v1(
+        decision_events,
+        request,
+        known_evidence_ids=known_evidence_ids,
+        known_claim_ids=known_claim_ids,
+        evidence_summaries=evidence_summaries,
+        claim_summaries=claim_summaries,
+        stop_conditions=stop_conditions,
+    )
+    (
+        evidence_links,
+        resolved_evidence,
+        unresolved_evidence_refs,
+        evidence_resolution_status,
+        evidence_warnings,
+    ) = _build_evidence_enrichment_v2(
+        base,
+        evidence_records=evidence_records,
+        evidence_summaries=evidence_summaries,
+    )
+
+    enriched = dict(base)
+    enriched["schema_version"] = SCHEMA_VERSION_V2
+    enriched["evidence_links"] = evidence_links
+    enriched["resolved_evidence"] = resolved_evidence
+    enriched["unresolved_evidence_refs"] = unresolved_evidence_refs
+    enriched["evidence_resolution_status"] = evidence_resolution_status
+    enriched["evidence_warnings"] = sorted(set(evidence_warnings))
+    enriched["decision_chain_hash"] = canonical_hash(_decision_chain_hash_payload(base))
+    enriched["replay_explainability"] = _build_replay_explainability_v2(
+        base,
+        evidence_resolution_status=evidence_resolution_status,
+        unresolved_evidence_refs=unresolved_evidence_refs,
+        evidence_warnings=enriched["evidence_warnings"],
+    )
+    enriched["warnings"] = sorted(
+        set(enriched.get("warnings", [])) | set(enriched["evidence_warnings"])
+    )
+    return enriched

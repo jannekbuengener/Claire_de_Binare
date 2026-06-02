@@ -12,7 +12,7 @@ from tools.surrealdb.decision_history_query import (
 from tools.surrealdb.decision_replay_builder import (
     DecisionReplayError,
     DecisionReplayRequest,
-    build_decision_replay_v1,
+    build_decision_replay_v2,
 )
 from tools.surrealdb.context_query import ContextQueryError
 from tools.mcp.surrealdb_adapter_factory import (
@@ -390,6 +390,8 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
 
     evidence_summaries = _as_mapping(params.get("evidence_summaries"))
     claim_summaries = _as_mapping(params.get("claim_summaries"))
+    evidence_records = _as_list_of_mappings(params.get("evidence_records"))
+    claim_records = _as_list_of_mappings(params.get("claim_records"))
 
     stop_conditions_raw = params.get("stop_conditions")
     stop_conditions: list[dict[str, Any]] | None = None
@@ -399,13 +401,15 @@ def handle_cdb_context_decision_replay(request: Mapping[str, Any]) -> dict[str, 
         stop_conditions = [dict(x) for x in stop_conditions_raw]
 
     try:
-        result = build_decision_replay_v1(
+        result = build_decision_replay_v2(
             decision_events,
             replay_request,
             known_evidence_ids=known_evidence_ids,
             known_claim_ids=known_claim_ids,
             evidence_summaries=evidence_summaries,
             claim_summaries=claim_summaries,
+            evidence_records=evidence_records,
+            claim_records=claim_records,
             stop_conditions=stop_conditions,
         )
     except DecisionReplayError as exc:

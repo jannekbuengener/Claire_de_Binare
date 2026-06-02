@@ -55,7 +55,7 @@ def test_cdb_context_decision_replay_returns_replay_output() -> None:
     assert result["tool"] == TOOL_CDB_CONTEXT_DECISION_REPLAY
     assert result["status"] == "ok"
     assert result["metadata"]["read_only"] is True
-    assert result["result"]["schema_version"] == "decision-replay-query/v1"
+    assert result["result"]["schema_version"] == "decision-replay-query/v2"
     assert result["result"]["decision_summary"]["decision_id"] == "dec-002"
 
 

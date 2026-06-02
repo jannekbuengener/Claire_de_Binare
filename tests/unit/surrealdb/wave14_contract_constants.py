@@ -105,7 +105,7 @@ SERVICE_SCHEMA_VERSIONS: dict[str, str] = {
     "cdb_context_memory_get": "memory-read/v1",
     "cdb_context_trust_summary": "trust-summary/v1",
     "cdb_context_decision_history": "decision-history-query/v1",
-    "cdb_context_decision_replay": "decision-replay-query/v1",
+    "cdb_context_decision_replay": "decision-replay-query/v2",
 }
 
 WAVE14_QUERY_RESULT_KEYS: dict[str, frozenset[str]] = {
@@ -220,6 +220,13 @@ WAVE14_QUERY_RESULT_KEYS: dict[str, frozenset[str]] = {
             "human_go",
             "warnings",
             "approval_semantics",
+            "evidence_links",
+            "resolved_evidence",
+            "unresolved_evidence_refs",
+            "evidence_resolution_status",
+            "evidence_warnings",
+            "decision_chain_hash",
+            "replay_explainability",
         }
     ),
 }
