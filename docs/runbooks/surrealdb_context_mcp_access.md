@@ -31,6 +31,31 @@ Out of scope for this runbook:
 
 ---
 
+## 1.6. Managed / non-local runtime posture (NOT ACTIVE)
+
+**Canonical decision:** [`knowledge/decisions/CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md`](../../knowledge/decisions/CDB_CONTEXT_MANAGED_NONLOCAL_RUNTIME_DECISION.md) (GitHub issue #2803).
+
+| Posture | Status |
+| --- | --- |
+| **`local_only`** (localhost / in-memory MCP) | **Active** — default read-only path |
+| **`managed_readonly`** | **NOT ACTIVATED** — future issue + Jannek-GO |
+| **`nonlocal_readonly_mcp`** | **NOT ACTIVATED** — tunnel/security review GO |
+| **`managed_write_capable`** | **NO-GO** — see issue #2804 (write strategy design only) |
+
+Operators and agents must **not** enable managed SurrealDB endpoints, remote MCP
+servers, or tunnel config under this runbook alone. Capability checks (§1.5) still
+require **local DB boundary** — remote URLs are rejected by the adapter factory on
+`main`.
+
+**Defaults unchanged:** `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`. **LR**
+remains **NO-GO**. Board stage `trade-capable` is **not** LR-Go. Context Brain / MCP
+read results **do not** authorize code changes, merges, or runtime actions.
+
+Productive **T3 audit trail** non-local endpoint design (G1, issue #2735) is a
+**separate** lineage from this read-path decision — do not conflate activation.
+
+---
+
 ## 1.5. MCP Capability Resolution Protocol
 
 **Before relying on any tool in this runbook, resolve capability explicitly.**
