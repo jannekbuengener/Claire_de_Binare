@@ -106,7 +106,7 @@ Only entries that differ materially from their group baseline are listed.
 | `auto-milestone.yml` | `perm:w-issues` | — |
 | `auto-milestone-label-dispatch.yml` | `perm:w-contents` | — |
 | `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
-| `control_board_auto_routing.yml` | `perm:w-issues` | — |
+| `control_board_auto_routing.yml` | (parked #2772; `perm:r` only) | — |
 | `control-board-routing-label-dispatch.yml` | `perm:w-contents` | — |
 | `cdb-backlog-curation.yml` | `perm:w-issues` | `in:script:backlog_curation.py` |
 | `cdb-backlog-anomaly-escalation.yml` | `perm:w-issues`, `perm:actions-read` | `in:wrun`, `in:script:backlog_anomaly_escalation.py` |
@@ -158,7 +158,7 @@ Label, milestone, and project board management.
 | `auto-milestone-pr-intent.yml` | aktiv | PR | Detect milestone intent on PR open | — | PR label, milestone hint | O | None (automatic) |
 | `milestone_stage_label_sync.yml` | aktiv | issues | Sync milestone stage to labels | — | Issue labels updated | O | None (automatic) |
 | `control_board_upsert.yml` | aktiv | dispatch, sched (Mon 02:30 UTC) | Create/upsert GitHub Project board items | — | Project board items | O | Weekly review in #1445 |
-| `control_board_auto_routing.yml` | aktiv | issues, PR | Route issues/PRs to project board | — | Project board item, label | O | None (automatic) |
+| `control_board_auto_routing.yml` | **parked** | dispatch (issues, PR, repository_dispatch triggers removed in #2772) | **PARKED fail-closed**: per-event routing for project board was removed in #2772; dispatch stub only prints parking notice | — | (Disabled) | — | Re-enable requires explicit scoped decision |
 | `control-board-routing-label-dispatch.yml` | aktiv | issues | Dispatch routing label for board | — | Label on issue | O | None (automatic) |
 | `project_reconcile_daily.yml` | aktiv | sched, dispatch | Daily project board reconciliation | — | Project board state reconciled | O | Daily check in #1445 |
 | `project_status_label_map.yml` | aktiv | issues | Map project status column to labels | — | Labels on issue | O | None (automatic) |
@@ -306,7 +306,7 @@ Secret scanning, vulnerability detection, and security audit.
 
 Legacy label and milestone automation. Not actively maintained; do not enable without scoped review.
 
-> These 5 workflows have overlapping scope with the Reconcile group. Before activating any of them, review for collision with `sync-labels.yml`, `auto-milestone.yml`, and `control_board_auto_routing.yml`.
+> These 5 workflows have overlapping scope with the Reconcile group. Before activating any of them, review for collision with `sync-labels.yml`, `auto-milestone.yml`, and (historically) `control_board_auto_routing.yml`. The latter was parked in #2772 and no longer auto-runs.
 
 | File | Status | Trigger(s) | Purpose | Scripts | Key Outputs | FP | HT |
 |---|---|---|---|---|---|---|---|
@@ -332,28 +332,29 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 
 | Status | Count |
 |---|---|
-| aktiv | 55 |
+| aktiv | 54 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
-| parked | 4 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`) |
+| parked | 5 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`, `control_board_auto_routing`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **66** (aktiv 55 + manual 4 + parked 4 + historisch 2 + frozen 1 = 66... see note below) |
+| **Total** | **66** (aktiv 54 + manual 4 + parked 5 + historisch 2 + frozen 1 = 66... see note below) |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
-> Of the 54 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
+> Of the 53 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
+> `parked` updated from 4→5 in #2772: `control_board_auto_routing.yml` (auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only).
 
 | Status | Count |
 |---|---|
-| aktiv (independently triggered) | 52 |
+| aktiv (independently triggered) | 51 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
-| parked | 4 |
+| parked | 5 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
 | **Total** | **66** |
 
-> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows.
+> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) is parked but retained as a `workflow_dispatch` diagnostic stub.
 
 ---
 
@@ -386,4 +387,4 @@ From the #1633 audit — strong but potentially underdocumented:
 - 5 historisch label/milestone workflows have overlapping scope with active Reconcile group. Collision risk if accidentally enabled.
 - `gemini-scheduled-triage.yml` is parked (schedule removed) but not deleted. Should be explicitly annotated in the YAML with a `# PARKED` comment.
 - `auto-milestone-pr-apply.yml` depends on `workflow_run` from an upstream workflow — the exact upstream workflow name should be verified against the current workflow name if `ci.yml` is ever renamed.
-- `triage_guard.yml` triggers on all issue events; its scope overlap with `auto-milestone.yml` and `control_board_auto_routing.yml` is worth periodic review.
+- `triage_guard.yml` triggers on all issue events; its scope overlap with `auto-milestone.yml` is worth periodic review. (`control_board_auto_routing.yml` was parked in #2772 and no longer fires on issue events.)

@@ -12,7 +12,7 @@ ist kein Live-Kapital-GO und keine Strategie-Validierung.
 - Upsert-Script: `scripts/project/upsert_control_board.py`
 - Routing-Script: `scripts/project/route_control_board.py`
 - Workflow Upsert: `.github/workflows/control_board_upsert.yml`
-- Workflow Routing: `.github/workflows/control_board_auto_routing.yml`
+- Workflow Routing: `.github/workflows/control_board_auto_routing.yml` (**PARKED in #2772** — nur noch `workflow_dispatch`-Stub)
 
 ## Feature Toggle (default OFF)
 
@@ -41,7 +41,7 @@ Empfohlene Installation-Permissions (repo-scoped):
 Zuordnung pro Automation:
 
 - `control_board_upsert.yml`: `Projects` + `Metadata`
-- `control_board_auto_routing.yml`: `Projects` + `Issues` + `Pull requests` + `Metadata`
+- `control_board_auto_routing.yml` (geparkt #2772): `Projects` + `Issues` + `Pull requests` + `Metadata` (historisch — aktuell nicht mehr aktiv genutzt)
 
 ### B) PAT Fallback (`ADD_TO_PROJECT_PAT`)
 
@@ -135,7 +135,9 @@ Workflow:
 
 ## Routing-Regeln (Automation)
 
-Trigger:
+> **Status (#2772):** `control_board_auto_routing.yml` ist geparkt; `issues`/`pull_request`/`repository_dispatch`-Trigger sind entfernt. Der Workflow laeuft nur noch per `workflow_dispatch` und fuehrt keine Project-Mutationen aus. Die nachfolgend dokumentierten Routing-Regeln bleiben als Referenz fuer eine kuenftige Re-Aktivierung erhalten, gelten aber aktuell als inaktiv.
+
+Trigger (historisch, derzeit inaktiv):
 
 - `issues`: `opened`, `labeled`
 - `pull_request`: `opened`, `closed`
@@ -187,6 +189,7 @@ B) Toggle ON:
 1. `CDB_CONTROL_BOARD_AUTOMATION_ENABLED=true`.
 2. Issue erstellen (`P1 ...`) + `label:stage:proof`.
 3. Erwartung: Item im Project, Stage/Priority gesetzt, Status nur wenn leer gesetzt, Milestone nur leer/managed ueberschrieben.
+4. **Hinweis (#2772):** Auto-Routing ueber Events ist derzeit geparkt. Bei `workflow_dispatch` werden keine Project-Writes ausgeloest. Fuer End-to-End-Verifikation stattdessen `control_board_upsert.yml` per `workflow_dispatch` (Dry-Run/Apply) nutzen.
 
 Wenn E2E lokal nicht moeglich:
 

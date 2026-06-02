@@ -13,7 +13,7 @@ The `.github` control plane has four functional layers:
 
 ```
 Layer 1: Assets
-  .github/workflows/*.yml      67 workflow definitions + labels.json
+  .github/workflows/*.yml      66 workflow definitions + labels.json
   .github/ISSUE_TEMPLATE/      10 issue form templates
   .github/pull_request_template.md
   .github/CODEOWNERS, dependabot.yml, SECURITY.md, LABELS.md, MILESTONES.md, emoji-config.yaml
@@ -213,8 +213,8 @@ Workflows that **mutate repo state** outside their own run:
 | `control_board_upsert.yml` | Creates/updates GitHub Project board items | Schedule + dispatch |
 | `project_reconcile_daily.yml` | Reconciles project board state | Daily schedule |
 | `project_status_label_map.yml` | Maps project status to labels | Issues trigger |
-| `project_status_sync.yml` | Syncs project status columns | Issues trigger |
-| `control_board_auto_routing.yml` | Routes to project board | Issues + PR trigger |
+| `project_status_sync.yml` | Syncs issue labels back to project status | Issues trigger |
+| `control_board_auto_routing.yml` | **PARKED fail-closed (#2772)** — per-event routing withdrawn; dispatch stub only | Dispatch (issues/PR/repository_dispatch triggers removed) |
 | `add_to_project.yml` | Adds items to project | Issues trigger |
 | `cdb-daily-delta-triage.yml` | Creates issues (bounded) | Schedule 4×/week |
 | `cdb-weekly-control-hygiene-classifier.yml` | Creates issues | Mo/Do/Fr 07:30 UTC |
@@ -239,7 +239,7 @@ Workflows that **mutate repo state** outside their own run:
 | Is the repo live-trade-ready? | `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md` |
 | What is the current Board stage? | `docs/runbooks/CONTROL_REGISTER.md` |
 | Which workflows are actively operational? | `docs/runbooks/CONTROL_REGISTER.md` § Active Infra Workflows |
-| Complete workflow register (all 67)? | `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` |
+| Complete workflow register (all 66)? | `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` |
 | What does a workflow do in detail? | The workflow YAML itself + register entry |
 | What scripts back a workflow? | `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` |
 | Which labels exist? | `.github/workflows/labels.json` (canonical); `.github/LABELS.md` (docs) |
@@ -250,6 +250,7 @@ Workflows that **mutate repo state** outside their own run:
 - `ci.yaml` — legacy copy of `ci.yml`, frozen. Do not activate or merge with `ci.yml`.
 - `gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml` — reusable only, no standalone trigger.
 - `gemini-scheduled-triage.yml` — parked fail-closed (schedule removed deliberately).
+- `control_board_auto_routing.yml` — **PARKED fail-closed in #2772**: auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only prints parking notice. Re-enabling per-event routing requires a separate scoped issue.
 - `auto-label.yml`, `bulk-issue-labeling.yml`, `comprehensive-issue-labeling.yml`, `issue-governance.yml`, `milestone-assignment.yml` — historisch/unklar; do not enable without scoped review.
 
 ---
@@ -301,7 +302,7 @@ pytest tests/test_control_plane.py -v
 ## 9. Linked documentation
 
 - `.github/README.md` — canonical entrypoint with folder layout
-- `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` — full 65-workflow register
+- `docs/runbooks/GITHUB_WORKFLOW_REGISTER.md` — full 66-workflow register
 - `docs/runbooks/GITHUB_CONTROL_PLANE_GRAPH.md` — relationship matrix + Mermaid graph
 - `.github/control-plane/README.md` — collection layer usage
 - `docs/runbooks/CONTROL_REGISTER.md` — board stage + LR verdict + active infra list

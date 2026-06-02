@@ -111,6 +111,7 @@ Kontext-Issue-Nummern sind historische Anker (alle CLOSED) — nicht als offene 
 | `gemini-scheduled-triage.yml` | manuell (geparkt fail-closed) | Gemini-Triage |
 | `project_reconcile_daily.yml` | täglich | Board-Reconciliation |
 | `control_board_upsert.yml` | Mo 02:30 UTC | GitHub Project #8 Upsert |
+| `control_board_auto_routing.yml` | manuell (geparkt fail-closed, #2772) | Per-Event-Router fuer Project #8; auto-`issues`/`pull_request`/`repository_dispatch`-Trigger bewusst entfernt, nur noch `workflow_dispatch` (druckt Parkhinweis). Board-Konsistenz laeuft ueber `control_board_upsert.yml`. |
 
 ---
 

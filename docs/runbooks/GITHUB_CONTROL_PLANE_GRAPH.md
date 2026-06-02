@@ -73,7 +73,7 @@ This section models the `workflow -> issue template` relationship in three expli
 | Coupling class | Repo-true status | Workflow side | Template side |
 |---|---|---|---|
 | **Direct runtime coupling** | **None at present** | No workflow reads template files at runtime | Templates are rendered by GitHub UI, not by workflow steps |
-| **Governance/intake coupling** | **Present** | Issue-event flows consume issue labels/state created at intake (`issues` triggers like `auto-milestone*`, `project_status_*`, `control_board_auto_routing`, `triage_guard`, `add_to_project`) | Intake forms (`bug_report.yml`, `feature_request.yml`, `task.yml`, `live-readiness.yml`) pre-shape labels/scope and therefore downstream routing |
+| **Governance/intake coupling** | **Present** | Issue-event flows consume issue labels/state created at intake (`issues` triggers like `auto-milestone*`, `project_status_*`, `triage_guard`, `add_to_project`; `control_board_auto_routing` was parked in #2772 and no longer fires on issue events) | Intake forms (`bug_report.yml`, `feature_request.yml`, `task.yml`, `live-readiness.yml`) pre-shape labels/scope and therefore downstream routing |
 | **Policy/bookkeeping coupling (human gate)** | **Present** | Workflows do not enforce merge-gated closure/bookkeeping checklists by themselves | Governance-heavy templates (`standard.md`, `meta_cluster.md`, `meta_phase.md`, `meta_tracking.md`, `meta_governance.md`) define closure/bookkeeping expectations that operators apply during PR/issue handling |
 | **No direct runtime relationship** | **Explicitly true for most non-issue workflows** | `push` / `pull_request` / `schedule` / `workflow_call` flows execute independently of template files | Templates do not alter those runtime paths unless issue metadata later enters workflow triggers |
 
@@ -147,7 +147,7 @@ graph TD
         SL[sync-labels.yml]
         CBU[control_board_upsert.yml]
         PRD[project_reconcile_daily.yml]
-        CAR[control_board_auto_routing.yml]
+        CAR[control_board_auto_routing.yml<br/>(PARKED #2772)]
     end
 
     %% Script connections
@@ -180,8 +180,6 @@ graph TD
     TG --> O3
     CBU --> O5
     PRD --> O5
-    CAR --> O5
-    CAR --> O6
     SL --> O6
     CI --> O8
     PG --> O8
@@ -191,6 +189,8 @@ graph TD
     %% Root file link
     SL -.->|reads| labels_json[labels.json]
 ```
+
+> **Parking note (#2772):** `control_board_auto_routing.yml` is parked; its previous edges to `O5` (Project board items) and `O6` (Labels on issues/PRs) are intentionally removed. The dispatch stub does not call the routing script.
 
 ---
 
@@ -225,8 +225,8 @@ Full mapping across all support surfaces.
 | Delta/control issues | `cdb-daily-delta-triage.yml`, `smart-insights.yml` |
 | Hygiene issues | `cdb-weekly-control-hygiene-classifier.yml` |
 | Follow-up issues/comments | `cdb-post-merge-followup-scanner.yml`, `cdb-control-followup-classifier.yml`, `triage_guard.yml` |
-| Project board items | `control_board_upsert.yml`, `project_reconcile_daily.yml`, `control_board_auto_routing.yml`, `add_to_project.yml` |
-| Issue labels | `sync-labels.yml`, `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `control_board_auto_routing.yml`, `control-board-routing-label-dispatch.yml`, `project_status_label_map.yml`, `milestone_stage_label_sync.yml`, `stale.yml`, `gemini-triage.yml` |
+| Project board items | `control_board_upsert.yml`, `project_reconcile_daily.yml`, `add_to_project.yml` (`control_board_auto_routing.yml` was parked in #2772 and no longer writes to the project board) |
+| Issue labels | `sync-labels.yml`, `auto-milestone.yml`, `auto-milestone-label-dispatch.yml`, `control-board-routing-label-dispatch.yml`, `project_status_label_map.yml`, `milestone_stage_label_sync.yml`, `stale.yml`, `gemini-triage.yml` (`control_board_auto_routing.yml` was parked in #2772 and no longer labels issues) |
 | PR check status | `ci.yml`, `policy-gate.yml`, `docs-hub-guard.yml`, `gitleaks.yml` |
 
 ---
@@ -248,7 +248,7 @@ These workflows are self-contained (no `.github/scripts/` or `.github/prompts/` 
 | `project_status_sync.yml` | Reconcile |
 | `add_to_project.yml` | Reconcile |
 | `milestone_stage_label_sync.yml` | Reconcile |
-| `control_board_auto_routing.yml` | Reconcile |
+| `control_board_auto_routing.yml` | Reconcile (PARKED #2772; dispatch stub only) |
 | `control-board-routing-label-dispatch.yml` | Reconcile |
 | `ci.yml` | CI |
 | `contracts.yml` | CI |
