@@ -107,7 +107,7 @@ Only entries that differ materially from their group baseline are listed.
 | `auto-milestone-label-dispatch.yml` | `perm:w-contents` | — |
 | `auto-milestone-pr-apply.yml` | `perm:w-issues` | `in:wrun` |
 | `control_board_auto_routing.yml` | (parked #2772; `perm:r` only) | — |
-| `control-board-routing-label-dispatch.yml` | `perm:w-contents` | — |
+| `control-board-routing-label-dispatch.yml` | (parked #2805; `perm:r` only) | — |
 | `cdb-backlog-curation.yml` | `perm:w-issues` | `in:script:backlog_curation.py` |
 | `cdb-backlog-anomaly-escalation.yml` | `perm:w-issues`, `perm:actions-read` | `in:wrun`, `in:script:backlog_anomaly_escalation.py` |
 | `cdb-daily-delta-triage.yml` | `perm:w-issues` | `in:script:daily_delta_triage.py`, `in:control-register` |
@@ -159,7 +159,7 @@ Label, milestone, and project board management.
 | `milestone_stage_label_sync.yml` | aktiv | issues | Sync milestone stage to labels | — | Issue labels updated | O | None (automatic) |
 | `control_board_upsert.yml` | aktiv | dispatch, sched (Mon 02:30 UTC) | Create/upsert GitHub Project board items | — | Project board items | O | Weekly review in #1445 |
 | `control_board_auto_routing.yml` | **parked** | dispatch (issues, PR, repository_dispatch triggers removed in #2772) | **PARKED fail-closed**: per-event routing for project board was removed in #2772; dispatch stub only prints parking notice | — | (Disabled) | — | Re-enable requires explicit scoped decision |
-| `control-board-routing-label-dispatch.yml` | aktiv | issues | Dispatch routing label for board | — | Label on issue | O | None (automatic) |
+| `control-board-routing-label-dispatch.yml` | **parked** | dispatch (issues trigger removed in #2805) | **PARKED fail-closed**: auto-dispatch to `control_board_route_issue_label` listener removed in #2772 / #2796; dispatch stub only prints parking notice | — | (Disabled) | — | Re-enable requires explicit scoped decision |
 | `project_reconcile_daily.yml` | aktiv | sched, dispatch | Daily project board reconciliation | — | Project board state reconciled | O | Daily check in #1445 |
 | `project_status_label_map.yml` | aktiv | issues | Map project status column to labels | — | Labels on issue | O | None (automatic) |
 | `project_status_sync.yml` | aktiv | issues | Sync issue labels back to project status | — | Project status field updated | O | None (automatic) |
@@ -331,30 +331,31 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 ## Status summary
 
 | Status | Count |
-|---|---|
-| aktiv | 54 |
+|---|---|---|
+| aktiv | 53 |
 | manual-only | 4 (`label-bootstrap`, `required-checks-audit`, `governance-audit`, `cdb-control-followup-classifier`) |
-| parked | 5 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`, `control_board_auto_routing`) |
+| parked | 6 (`gemini-scheduled-triage`, `issue-governance`, `auto-label`, `comprehensive-issue-labeling`, `control_board_auto_routing`, `control-board-routing-label-dispatch`) |
 | historisch | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
-| **Total** | **66** (aktiv 54 + manual 4 + parked 5 + historisch 2 + frozen 1 = 66... see note below) |
+| **Total** | **66** (aktiv 53 + manual 4 + parked 6 + historisch 2 + frozen 1 = 66... see note below) |
 
 > **Count note:** `ci.yaml` is tracked separately as `frozen legacy`, not folded into the `historisch` bucket.
 > Of the 53 active workflows, 3 (`gemini-invoke.yml`, `gemini-review.yml`, `gemini-triage.yml`) are `workflow_call` reusable units and are not independently triggerable.
 > `parked` updated from 1→4 in #1642: `issue-governance.yml` (PR #1658), `auto-label.yml` and `comprehensive-issue-labeling.yml` (PR #1702).
 > `parked` updated from 4→5 in #2772: `control_board_auto_routing.yml` (auto `issues`/`pull_request`/`repository_dispatch` triggers removed; dispatch stub only).
+> `parked` updated from 5→6 in #2805: `control-board-routing-label-dispatch.yml` (auto `issues` trigger removed; dispatch stub only; `createDispatchEvent` removed).
 
 | Status | Count |
-|---|---|
-| aktiv (independently triggered) | 51 |
+|---|---|---|
+| aktiv (independently triggered) | 50 |
 | reusable (workflow_call only) | 3 (`gemini-invoke`, `gemini-review`, `gemini-triage`) |
 | manual-only (dispatch-only) | 4 |
-| parked | 5 |
+| parked | 6 |
 | historisch / unklar | 2 |
 | frozen legacy | 1 (`ci.yaml`) |
 | **Total** | **66** |
 
-> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) is parked but retained as a `workflow_dispatch` diagnostic stub.
+> **Methodology note:** The current repo has 66 tracked workflow YAML files. `ci.yaml` is split out as `frozen legacy`; the three Gemini `workflow_call` units are active but non-standalone reusable workflows. `control_board_auto_routing.yml` (#2772) and `control-board-routing-label-dispatch.yml` (#2805) are parked but retained as `workflow_dispatch` diagnostic stubs.
 
 ---
 
