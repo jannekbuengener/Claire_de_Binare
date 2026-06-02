@@ -10,14 +10,15 @@
 
 ## Repo / Engineering Status (2026-06-02)
 
+- **#2800 Evidence-aware decision replay v2**: **COMPLETED** — PR [#2814](https://github.com/jannekbuengener/Claire_de_Binare/pull/2814) squash-merged (`622fb17d`); `build_decision_replay_v2` + MCP handler + contract docs/tests on `main` (v1 semantics unchanged). GitHub-live: #2800 **CLOSED**; epic #2778 **OPEN**; grandparent #1976 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-02-2800-evidence-aware-decision-replay-v2.md`. Read-only/in-memory evidence; no productive DB/MCP writes. LR NO-GO.
 - **#2799 Hybrid retrieval and ranking v1**: **COMPLETED** — PR [#2812](https://github.com/jannekbuengener/Claire_de_Binare/pull/2812) squash-merged (`8bc98fab`); `tools/surrealdb/hybrid_retrieval_ranking.py` + fixture unit tests on `main`. GitHub-live: #2799 **CLOSED**; epic #2778 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-02-2799-hybrid-ranking-v1.md`. MCP `context.search` wiring and vector weighting deferred. LR NO-GO.
-- **#2778 Phase-2 planning activation**: **ACTIVE-PLANNING** (Jannek GO 2026-06-02; planning/child-slicing only — not implementation blanket GO). Entry recheck **READY-FOR-JANNEK-GO** posted; child slices **#2797–#2804** (#2799 **CLOSED** via PR #2812; others OPEN). Comments: [#2778 activation](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597944784), [entry recheck](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597927077). Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-entry-and-planning.md`. LR NO-GO.
+- **#2778 Phase-2 planning activation**: **ACTIVE-PLANNING** (Jannek GO 2026-06-02; planning/child-slicing only — not implementation blanket GO). Entry recheck **READY-FOR-JANNEK-GO** posted; child slices **#2797–#2804** (#2799 **CLOSED** via PR #2812; #2800 **CLOSED** via PR #2814; others OPEN). Comments: [#2778 activation](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597944784), [entry recheck](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597927077). Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-entry-and-planning.md`. LR NO-GO.
 - **Phase-1 closeout chain (complete)**: #2773–#2777, #2689, #2780, #2781 **CLOSED**; #2780 via PR [#2795](https://github.com/jannekbuengener/Claire_de_Binare/pull/2795) (`5c365391` area); docs audit `PASS_WITH_DEFERRED_EXIT_ITEMS`.
 - **#1976 grandparent epic**: **OPEN** — Real-Task-Proof still required before closeout; not implied by #2778 planning GO.
 - **#2794**: **OPEN** — non-blocking architecture-doc follow-up (post-#2793).
-- **main**: `8bc98fab` (PR #2812 #2799 hybrid ranking squash-merged; prior `25cd8c82` was PR #2796 control-board auto-routing).
+- **main**: `622fb17d` (PR #2814 #2800 decision replay v2 squash-merged; prior `8bc98fab` was PR #2812 #2799 hybrid ranking).
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #2778 + child slices #2797–#2804 (#2799 **CLOSED**; others OPEN — Phase-2 planning → scoped implementation)
+  - #2778 + child slices #2797–#2804 (#2799 **CLOSED**; #2800 **CLOSED**; others OPEN — Phase-2 planning → scoped implementation)
   - #1976 (grandparent; OPEN)
   - #2794 (architecture doc; non-blocking)
   - #2440 (LR-030 Shadow/Soak — OPEN)
@@ -50,6 +51,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **Merged (Session 2026-06-02, #2800 evidence-aware decision replay v2)**: PR #2814 (`622fb17d`) — `build_decision_replay_v2`, MCP replay handler, contract docs/tests; Codex review hash fix for enriched evidence state. #2800 **CLOSED**; #2778 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-02-2800-evidence-aware-decision-replay-v2.md`. LR NO-GO.
 - **GitHub-only (Session 2026-06-02, #2778 Phase-2 entry + planning)**: Entry-gate recheck → READY-FOR-JANNEK-GO; Jannek GO → ACTIVE-PLANNING; child issues #2797–#2804 created; comments on #2778/#1976. No repo code/MCP/DB mutation. Phase-1 chain #2780/#2777/#2781 closed in same arc. Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-entry-and-planning.md`. LR NO-GO.
 - **Audited (Session 2026-05-29, #2733 #2606 parent re-audit)**: Read-only re-audit after #2730 spec merge. Verdict: **NOT_CLOSURE_READY** — PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2; productive audit trail SPECIFIED / NOT ACTIVATED. #2606 body refreshed; #2733 evidence log landed. G1 follow-up **#2735** filed. No code/MCP/DB change. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2730 productive memory audit trail spec)**: PR #2732 (`fb490be3`) — `productive-memory-audit-trail-v1.md`, `productive-memory-write-readiness-runbook-v1.md`; cross-refs in proof matrix, slice1 audit §22, write-gate §10, MCP surface. Proof matrix row 3 → **SPECIFIED / NOT ACTIVATED**. #2730 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; parent re-audit recommended). Session log: `knowledge/logs/sessions/2026-05-29-2730-productive-memory-audit-trail.md`. LR NO-GO.
