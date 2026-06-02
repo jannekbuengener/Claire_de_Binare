@@ -149,6 +149,33 @@ limitations:
 - Board-Stage `trade-capable` is not Live-Go.
 - LR remains NO-GO unless LR SSOT and human gate change.
 
+### Context Brain adoption (#2775 / Phase-2 slice #2797)
+
+SSOT: [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](../../knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md)
+(`read_only_context_brain = conditional`). Handoff details: [`agents/OPEN_CODE_AGENTS.md`](../../agents/OPEN_CODE_AGENTS.md).
+
+**Source priority** (higher wins):
+
+1. Live GitHub → 2. Repo files → 3. SurrealDB context package (guarded adapter only) →
+4. Ledger (`CURRENT_STATUS.md` is **not** live truth) → 5. Fallback with limitations.
+
+**Defaults until verified Context/DB/MCP evidence:**
+
+- `brain_source=repo-only`, `brain_status=not-used`
+- `in_memory` / Noop: no DB-backed claims
+- `surrealdb-local`: only with adapter/tool/query/record evidence; caller-supplied
+  `source`, `brain_source`, `brain_status`, or `metadata.source` are **not** evidence
+
+**`briefing.session_context`:** read-only working/session memory (`session_only=true`);
+not persistent DB memory. DB-backed claims only when `brain_source=surrealdb-local` and
+`brain_status` is `used` or `partial`.
+
+**Outputs are advisory:** Context Brain / MCP / briefing results do **not** trigger
+automatic code changes, issue creation, labels, merges, or productive DB writes.
+
+**Write gates (unchanged on main):** `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`;
+no raw SurrealQL agent surface; no trading-state/secrets ingestion into SurrealDB.
+
 ---
 
 ## Write-Gates (Single-Writer LOCK)

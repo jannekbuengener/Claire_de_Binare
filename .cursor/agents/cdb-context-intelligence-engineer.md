@@ -30,6 +30,7 @@ Before any plan in Context/SurrealDB/MCP scope:
 3. If MCP tools are unavailable → `brain_source=unavailable`, `brain_status=not-used` or `blocked`, **repo-only fallback** only; state limitations explicitly.
 4. Do not claim DB-backed memory or CIS evidence without tool/query/record proof.
 5. Refer to `agents/OPEN_CODE_AGENTS.md` and `docs/runbooks/surrealdb_context_mcp_access.md` §1.5.
+6. Apply source priority and adoption rules from shared contract § Context Brain adoption (#2775 / #2797): no auto code/issue/DB writes from briefing output; `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False` unless separate GO changes code gates.
 
 ## Write scope
 

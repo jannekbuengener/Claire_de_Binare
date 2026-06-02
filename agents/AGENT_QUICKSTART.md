@@ -47,8 +47,9 @@ Bevor du Context-, MCP-, Memory- oder Evidence-Tools nutzt:
    # Erwartet: True
    ```
 4. **Capability Resolution**: Wenn `context.briefing` nicht im MCP-Inventar ist → auf `brain_source=repo-only` + `brain_status=not-used` degradieren. Keine DB-backed Claims.
+5. **Brain Evidence + Source priority**: Vor Planung in Context-/Evidence-Scope den Brain-Evidence-Block aus `agents/AGENTS.md` ausgeben. Source priority: GitHub live → Repo → guarded SurrealDB → Ledger → Fallback. Context Brain liefert keine automatischen Writes/Issues.
 
-Referenz: `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
+Referenz: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`, `docs/runbooks/surrealdb_context_mcp_access.md` § 1.5.1
 
 ---
 

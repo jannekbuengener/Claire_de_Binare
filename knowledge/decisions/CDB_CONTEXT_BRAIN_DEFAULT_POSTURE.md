@@ -198,7 +198,7 @@ Stop or fail-closed when:
 
 | Surface | Alignment |
 | --- | --- |
-| **Cursor** | `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md` — Brain Evidence Gate; parent enforces this decision |
+| **Cursor** | `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md` — Brain Evidence Gate + § Context Brain adoption (#2775 / #2797); parent enforces this decision |
 | **Codex** | `agents/CODEX.md` § MCP Capability Resolution |
 | **OpenCode** | `agents/OPEN_CODE_AGENTS.md` — briefing + Wave-14 contracts |
 | **Claude** | `agents/CLAUDE.md` / `agents/roles/CLAUDE.md` — context MCP capability |

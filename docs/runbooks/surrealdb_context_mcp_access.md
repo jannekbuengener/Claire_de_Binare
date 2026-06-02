@@ -235,6 +235,11 @@ CDB Context MCP is available (bridge); warnings above.
 
 When scope includes Context, MCP, SurrealDB, ContextBridge, DB-backed Memory, or Evidence:
 
+**Source priority** (SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`):
+live GitHub → repo files → SurrealDB context package (guarded adapter only) →
+ledger (`CURRENT_STATUS.md` not live truth) → fallback. Context/MCP/briefing
+output does not authorize automatic code, issue, or productive DB writes.
+
 1. Run MCP Capability Resolution before planning — verify active tool inventory, not config file presence.
 2. If `context.briefing` or required MCP tools are unavailable: stop or explicitly degrade to repo-only.
 3. Do not claim DB-backed Brain/Evidence/Memory unless `surrealdb-local` or equivalent DB-backed source is actually available and usable.
