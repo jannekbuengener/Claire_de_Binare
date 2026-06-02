@@ -116,7 +116,7 @@ class TestHandleAgentOsReadinessOk:
     def test_valid_bundle_has_guardrails(self) -> None:
         result = handle_agent_os_readiness(bundle=_clean_bundle(), as_of=_AS_OF)
         assert "guardrails" in result
-        assert len(result["guardrails"]) == 5
+        assert len(result["guardrails"]) == 6
 
     def test_valid_bundle_has_metadata(self) -> None:
         result = handle_agent_os_readiness(bundle=_clean_bundle(), as_of=_AS_OF)
@@ -244,3 +244,25 @@ class TestBridgeIntegration:
         tool_names = ContextToolRegistry.list_tool_names()
         assert TOOL_CDB_AGENT_OS_READINESS in tool_names
         assert len(tool_names) >= 26
+
+
+def test_mcp_passes_operator_certification_through_bundle() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {
+        "final_verdict": "certified",
+        "gate_matrix": [
+            {
+                "check_id": "registry_all_read_only",
+                "status": "pass",
+                "blocking": True,
+                "detail": "ok",
+            }
+        ],
+    }
+    result = handle_agent_os_readiness(bundle=bundle, as_of=_AS_OF)
+    assert result["status"] == "ok"
+    assert result["readiness_level"] == "strong"
+    assert not any(
+        "operator_certification" in item
+        for item in result["result"]["missing_inputs"]
+    )
