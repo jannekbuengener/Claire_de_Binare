@@ -114,6 +114,54 @@ def test_certification_warn_creates_validation() -> None:
 
 
 @pytest.mark.unit
+def test_certification_invalid_adoption_status_not_pass() -> None:
+    envelope = build_control_room_signal_layer_v1(
+        _base_request(
+            operator_certification={
+                "adoption_status": "bogus",
+                "final_verdict": "certified",
+            },
+        )
+    )
+    assert envelope["summary_status"] == "WARN"
+    assert any("invalid adoption_status" in w for w in envelope["warnings"])
+    assert envelope["required_validation"]
+
+
+@pytest.mark.unit
+def test_certification_invalid_final_verdict_not_pass() -> None:
+    envelope = build_control_room_signal_layer_v1(
+        _base_request(
+            operator_certification={
+                "adoption_status": "pass",
+                "final_verdict": "maybe",
+            },
+        )
+    )
+    assert envelope["summary_status"] == "WARN"
+    assert any("invalid final_verdict" in w for w in envelope["warnings"])
+
+
+@pytest.mark.unit
+def test_ranking_invalid_factor_warnings_propagate() -> None:
+    envelope = build_control_room_signal_layer_v1(
+        _base_request(
+            ranked_results=[
+                {
+                    "result_id": "doc-2",
+                    "warnings": ["invalid_factor:confidence"],
+                    "ranking_explanation": {"final_score": 0.5, "warnings": []},
+                }
+            ],
+        )
+    )
+    assert envelope["summary_status"] == "WARN"
+    card = next(c for c in envelope["signal_cards"] if c["card_id"] == "ranking.doc-2")
+    assert card["severity"] == "WARN"
+    assert any("invalid_factor:confidence" in w for w in envelope["warnings"])
+
+
+@pytest.mark.unit
 def test_ranking_inferred_creates_warn_card() -> None:
     envelope = build_control_room_signal_layer_v1(
         _base_request(

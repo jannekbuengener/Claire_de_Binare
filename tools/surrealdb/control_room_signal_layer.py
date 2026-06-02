@@ -330,7 +330,7 @@ def _extract_from_ranking(
         )
 
         severity = "PASS"
-        if any(w.startswith("weak_match:") for w in row_warnings) or caveats:
+        if row_warnings or caveats:
             severity = "WARN"
         if _as_bool(row.get("inferred")):
             severity = "WARN"
@@ -692,6 +692,38 @@ def _extract_from_certification(
                 title="Operator certification skipped",
                 detail="adoption_status=skipped",
                 skip_reason=skip_reason,
+            )
+        )
+
+    if adoption_lower and adoption_lower not in _ADOPTION_STATUSES:
+        msg = f"operator certification invalid adoption_status: {adoption_status!r}"
+        warnings.append(msg)
+        required_validation.append(
+            "adoption_status must be one of: pass, warn, fail, blocked, skipped"
+        )
+        cards.append(
+            _make_card(
+                card_id="certification.adoption_status.invalid",
+                source="operator_certification",
+                severity="WARN",
+                title="Operator certification invalid adoption status",
+                detail=msg,
+            )
+        )
+
+    if final_lower and final_lower not in _FINAL_VERDICTS:
+        msg = f"operator certification invalid final_verdict: {final_verdict!r}"
+        warnings.append(msg)
+        required_validation.append(
+            "Include valid final_verdict (certified or fail) from make context-certify"
+        )
+        cards.append(
+            _make_card(
+                card_id="certification.final_verdict.invalid",
+                source="operator_certification",
+                severity="WARN",
+                title="Operator certification invalid final verdict",
+                detail=msg,
             )
         )
 
