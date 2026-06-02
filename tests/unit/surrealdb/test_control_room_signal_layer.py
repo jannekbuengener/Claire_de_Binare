@@ -129,6 +129,18 @@ def test_certification_invalid_adoption_status_not_pass() -> None:
 
 
 @pytest.mark.unit
+def test_certification_missing_final_verdict_not_pass() -> None:
+    envelope = build_control_room_signal_layer_v1(
+        _base_request(
+            operator_certification={"adoption_status": "pass"},
+        )
+    )
+    assert envelope["summary_status"] == "WARN"
+    assert any("missing final_verdict" in w for w in envelope["warnings"])
+    assert envelope["required_validation"]
+
+
+@pytest.mark.unit
 def test_certification_invalid_final_verdict_not_pass() -> None:
     envelope = build_control_room_signal_layer_v1(
         _base_request(

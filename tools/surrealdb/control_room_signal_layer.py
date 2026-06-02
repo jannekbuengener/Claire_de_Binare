@@ -727,6 +727,23 @@ def _extract_from_certification(
             )
         )
 
+    if not final_lower:
+        msg = "operator certification incomplete: missing final_verdict"
+        warnings.append(msg)
+        required_validation.append(
+            "Include final_verdict from make context-certify output; "
+            "adoption_status alone is not CertifyReport proof."
+        )
+        cards.append(
+            _make_card(
+                card_id="certification.final_verdict.missing",
+                source="operator_certification",
+                severity="WARN",
+                title="Operator certification missing final verdict",
+                detail=msg,
+            )
+        )
+
     skipped_checks = _as_list(cert.get("skipped_checks_with_reason"))
     if skipped_checks and adoption_lower != "skipped":
         count = sum(1 for item in skipped_checks if isinstance(item, Mapping))
