@@ -34,7 +34,7 @@ Brain Evidence). It is a **governance and documentation** artifact only.
 - Closing epic #2778 or grandparent #1976
 
 **Related but separate lineage:** productive **T3 audit trail** endpoint design
-([`docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md`](../docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md),
+([`docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md`](../../docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md),
 issue #2735 / G1 ladder). That path targets **governed non-localhost write** for
 `audit_observation` only under HG-P. This decision covers **Context/MCP read** posture
 and future **managed read-only** candidates — do not merge scopes or infer T3
@@ -89,7 +89,7 @@ labels until a future contract extends the factory with inverse allowlist guards
 | --- | --- | --- |
 | G0-1 | Phase-2 read-only slices **#2797–#2802** landed on `main` with PR SHAs | GitHub merge evidence |
 | G0-2 | Default brain posture **#2775** remains active; no contradiction | This repo + `CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md` |
-| G0-3 | MCP capability **L3–L5** verified per agent surface or documented WARN | [`docs/runbooks/surrealdb_context_mcp_access.md`](../docs/runbooks/surrealdb_context_mcp_access.md) §1.5.1 |
+| G0-3 | MCP capability **L3–L5** verified per agent surface or documented WARN | [`docs/runbooks/surrealdb_context_mcp_access.md`](../../docs/runbooks/surrealdb_context_mcp_access.md) §1.5.1 |
 | G0-4 | **Managed secret-handling policy** accepted (no secrets in repo/PRs/logs) | Dedicated issue + decision doc |
 | G0-5 | Security/deployment review (TLS, tenant isolation, egress, audit logging) | Design issue + operator sign-off |
 | G0-6 | Adapter contract extension (**read-only**, non-local allowlist, localhost denylist for productive-read path) | Implementation PR + unit tests |
@@ -222,11 +222,11 @@ implementation.
 | Slice | Issue | Artifact (non-exhaustive) |
 | --- | --- | --- |
 | Brain adoption | #2797 | Read-only agent brain adoption |
-| Context package v2 | #2798 | [`docs/surrealdb/context-package-model-v2.md`](../docs/surrealdb/context-package-model-v2.md) |
-| Hybrid retrieval | #2799 | [`docs/surrealdb/context-hybrid-retrieval-strategy-v1.md`](../docs/surrealdb/context-hybrid-retrieval-strategy-v1.md) |
-| Decision replay v2 | #2800 | [`docs/surrealdb/decision_replay_query_contract.md`](../docs/surrealdb/decision_replay_query_contract.md) |
+| Context package v2 | #2798 | [`docs/surrealdb/context-package-model-v2.md`](../../docs/surrealdb/context-package-model-v2.md) |
+| Hybrid retrieval | #2799 | [`docs/surrealdb/context-hybrid-retrieval-strategy-v1.md`](../../docs/surrealdb/context-hybrid-retrieval-strategy-v1.md) |
+| Decision replay v2 | #2800 | [`docs/surrealdb/decision_replay_query_contract.md`](../../docs/surrealdb/decision_replay_query_contract.md) |
 | Operator certification | #2801 | Runbook §1.5.2 certification flow |
-| Control room signals | #2802 | [`docs/surrealdb/control-room-readonly-signal-layer-v1.md`](../docs/surrealdb/control-room-readonly-signal-layer-v1.md) |
+| Control room signals | #2802 | [`docs/surrealdb/control-room-readonly-signal-layer-v1.md`](../../docs/surrealdb/control-room-readonly-signal-layer-v1.md) |
 | Write strategy (design) | #2804 | Separate slice — not activated here |
 
 ## What requires Jannek-GO and LR-SSOT impact review
@@ -243,7 +243,7 @@ implementation.
 ## Safety and LR boundaries
 
 - **Live-readiness:** NO-GO per
-  [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
+  [`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`](../../docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md)
   unless changed only via LR SSOT.
 - **Board stage:** `trade-capable` is orthogonal; not live authorization.
 - **`PERSIST_ALLOWED=False`** and **`MUTATION_ALLOWED=False`** remain defaults; this
@@ -256,7 +256,7 @@ implementation.
 
 - [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md) — #2775
 - [`agents/AGENTS.md`](../../agents/AGENTS.md) — Brain Evidence Gate
-- [`docs/runbooks/surrealdb_context_mcp_access.md`](../docs/runbooks/surrealdb_context_mcp_access.md)
+- [`docs/runbooks/surrealdb_context_mcp_access.md`](../../docs/runbooks/surrealdb_context_mcp_access.md)
 - [`tools/mcp/surrealdb_adapter_factory.py`](../../tools/mcp/surrealdb_adapter_factory.py)
-- [`docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md`](../docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md) — G1 T3 (separate)
+- [`docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md`](../../docs/surrealdb/productive-memory-audit-trail-endpoint-design-v1.md) — G1 T3 (separate)
 - GitHub issue #2803 (this decision), #2778 (parent), #1976 (grandparent), #2804 (write design)
