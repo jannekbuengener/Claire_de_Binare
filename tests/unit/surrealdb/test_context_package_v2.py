@@ -207,6 +207,15 @@ def test_empty_artifacts_fail_closed() -> None:
 
 
 @pytest.mark.unit
+def test_private_rank_field_does_not_change_package_id() -> None:
+    artifact_a = _sample_artifact("shared-artifact", _rank=1)
+    artifact_b = _sample_artifact("shared-artifact", _rank=99)
+    package_a = build_context_package_v2(_base_request(artifacts=[artifact_a]))
+    package_b = build_context_package_v2(_base_request(artifacts=[artifact_b]))
+    assert package_a["package_id"] == package_b["package_id"]
+
+
+@pytest.mark.unit
 def test_secret_only_differences_do_not_change_package_id_for_same_artifact() -> None:
     artifact_a = _sample_artifact("shared-artifact", metadata={"api_key": "sk-one"})
     artifact_b = _sample_artifact("shared-artifact", metadata={"api_key": "sk-two"})
