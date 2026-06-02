@@ -92,9 +92,51 @@ Only `meta.scope_id` is required; all other keys default to `[]`.
   "stale_findings": [...],         // optional
   "scope_drift_findings": [...],   // optional
   "memory_items": [...],           // optional
-  "dependency_edges": [...]        // optional
+  "dependency_edges": [...],       // optional
+  "operator_certification": {...}  // optional (#2801); alias: context_certification
 }
 ```
+
+---
+
+## Operator certification integration (#2801)
+
+Optional bundle field `operator_certification` carries a subset of the
+`make context-certify` proof pack (`CertifyReport.to_dict()`). The evaluator
+reads it in-memory only — no file, DB, or network access.
+
+Example (certified with expected skipped checks):
+
+```json
+{
+  "meta": {"scope_id": "phase2-adoption", "level": "domain"},
+  "operator_certification": {
+    "final_verdict": "certified",
+    "gate_matrix": [
+      {
+        "check_id": "registry_all_read_only",
+        "status": "pass",
+        "blocking": true,
+        "detail": "ok"
+      }
+    ],
+    "skipped_checks_with_reason": [
+      {
+        "check": "context-smoke-db",
+        "reason": "not run by certification (operator-only)"
+      }
+    ],
+    "safety_flags": {
+      "PERSIST_ALLOWED": false,
+      "MUTATION_ALLOWED": false
+    }
+  }
+}
+```
+
+PASS / WARN / FAIL / BLOCKED / SKIPPED semantics and adoption-claim rules:
+see [SurrealDB Context MCP Access Runbook](../runbooks/surrealdb_context_mcp_access.md)
+(certification adoption matrix, #2801).
 
 ---
 
@@ -112,7 +154,7 @@ Only `meta.scope_id` is required; all other keys default to `[]`.
 | `missing_inputs` | `tuple[str, ...]` | Empty or absent bundle keys |
 | `recommended_next_reads` | `tuple[str, ...]` | Minimum recommended reads (6 items) |
 | `required_validation` | `tuple[str, ...]` | Steps required based on readiness level |
-| `guardrails` | `tuple[str, ...]` | Always 5 items, always non-empty |
+| `guardrails` | `tuple[str, ...]` | Always 6 items, always non-empty |
 | `confidence` | `float` | 0.0–1.0; capped at 0.30 when blocked |
 | `generated_at` | `str` | ISO-8601 UTC timestamp |
 | `schema_version` | `str` | `"agent-os-readiness/v1"` |

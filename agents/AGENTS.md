@@ -142,11 +142,28 @@ Kanonische Policy: [`knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`](
 - `surrealdb-local`: nur mit Adapter-/Tool-/Query-/Record-Evidence; caller-supplied
   `brain_source` / `metadata.source` sind keine Evidence (GitHub issue #2638).
 
+### Source priority (when resolving context)
+
+Higher wins; fail-closed when lower layers conflict:
+
+1. **Live GitHub** — issues, PRs, checks, branches, comments
+2. **Repo files** — governance, code, contracts, runbooks
+3. **SurrealDB context package** — only with guarded adapter + record evidence
+4. **Ledger / status snapshots** — e.g. `CURRENT_STATUS.md` (not live truth)
+5. **Fallback** — explicit limitations; do not invent DB-backed claims
+
 ### Rules
 
 - No plan may claim Memory/Evidence/Decision consideration without
   record/tool/query evidence.
 - Strategy/Runtime/Module work MUST distinguish `repo-only` from brain-backed.
+- `context.briefing` / `briefing.session_context` is read-only working/session
+  memory (`session_only=true`); not persistent DB memory; see
+  `agents/OPEN_CODE_AGENTS.md` for handoff mapping.
+- Context Brain / MCP read results do **not** authorize automatic code changes,
+  issue creation, or writes — parent agent and Jannek GO still required.
+- `PERSIST_ALLOWED=False` and `MUTATION_ALLOWED=False` remain defaults on `main`;
+  no productive SurrealDB writes from agent surfaces without separate explicit GO.
 - `CURRENT_STATUS.md` is a ledger, not live truth.
 - GitHub/Repo/Live evidence wins over Brain/CIS claims.
 - Board-Stage `trade-capable` is not Live-Go.

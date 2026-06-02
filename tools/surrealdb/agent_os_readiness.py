@@ -35,6 +35,7 @@ Guardrails:
     - No Live-Readiness-Go. No Echtgeld-Go.
     - read-only: no mutations anywhere in the readiness evaluation path.
     - Human-GO required for any action after blocking findings.
+    - Operator certification (#2801) is an adoption gate, not LR-Go.
 """
 
 from __future__ import annotations
@@ -58,7 +59,13 @@ GUARDRAILS: tuple[str, ...] = (
     "No Live-Readiness-Go. No Echtgeld-Go.",
     "read-only: no mutations anywhere in the readiness evaluation path.",
     "Human-GO required for any action after blocking findings.",
+    "Operator certification is an adoption gate, not LR-Go or Phase-2 activation.",
 )
+
+_ADOPTION_STATUSES: frozenset[str] = frozenset(
+    {"pass", "warn", "fail", "blocked", "skipped"}
+)
+_FINAL_VERDICTS: frozenset[str] = frozenset({"certified", "fail"})
 
 # Minimum recommended reads for any agent operating on this system.
 RECOMMENDED_NEXT_READS: tuple[str, ...] = (
@@ -82,16 +89,16 @@ class AgentOsReadinessError(ValueError):
 class AgentOsReadinessResult:
     """Full Agent OS readiness evaluation result."""
 
-    readiness_id: str               # SHA-256(scope_id|generated_at)[:16]
+    readiness_id: str  # SHA-256(scope_id|generated_at)[:16]
     target_scope: str
-    readiness_level: str            # blocked / weak / acceptable / strong
+    readiness_level: str  # blocked / weak / acceptable / strong
     blocking_findings: tuple[str, ...]
     weak_findings: tuple[str, ...]
     missing_inputs: tuple[str, ...]
     recommended_next_reads: tuple[str, ...]
     required_validation: tuple[str, ...]
-    guardrails: tuple[str, ...]     # always GUARDRAILS (5 items)
-    confidence: float               # 0.0–1.0; capped to 0.3 when blocked
+    guardrails: tuple[str, ...]  # always GUARDRAILS (5 items)
+    confidence: float  # 0.0–1.0; capped to 0.3 when blocked
     generated_at: str
     schema_version: str = SCHEMA_VERSION
 
@@ -214,7 +221,12 @@ def _readiness_id(scope_id: str, generated_at: str) -> str:
 def _is_open(item: Mapping[str, Any]) -> bool:
     """Return True if a finding is open (not resolved / accepted / fp)."""
     status = _as_str(item.get("status", "")).lower()
-    return status not in {"resolved", "accepted_risk", "accepted_stale", "false_positive"}
+    return status not in {
+        "resolved",
+        "accepted_risk",
+        "accepted_stale",
+        "false_positive",
+    }
 
 
 def _is_blocking_severity(item: Mapping[str, Any]) -> bool:
@@ -227,8 +239,7 @@ def _validate_bundle(bundle: Any) -> Mapping[str, Any]:
     """Validate bundle structure; raise AgentOsReadinessError on failure."""
     if bundle is None or not isinstance(bundle, Mapping):
         raise AgentOsReadinessError(
-            "bundle must be a non-None mapping "
-            "(got %s)" % type(bundle).__name__
+            "bundle must be a non-None mapping " "(got %s)" % type(bundle).__name__
         )
     meta = bundle.get("meta")
     if not isinstance(meta, Mapping):
@@ -394,16 +405,164 @@ def _evaluate_architect_signals(
             if status in {"resolved", "accepted_risk", "false_positive"}:
                 continue
             if severity == "blocking":
-                blocking.append(
-                    f"architect signal blocking: {title or signal_type}"
-                )
+                blocking.append(f"architect signal blocking: {title or signal_type}")
             elif severity in {"watch", "info"}:
-                weak.append(
-                    f"architect signal {severity}: {title or signal_type}"
-                )
+                weak.append(f"architect signal {severity}: {title or signal_type}")
     except Exception as exc:  # noqa: BLE001
         weak.append(f"architect signals error: {exc!s}")
     return blocking, weak
+
+
+def _get_operator_certification_payload(bundle: Mapping[str, Any]) -> Any:
+    """Return optional operator certification proof-pack subset from the bundle."""
+    cert = bundle.get("operator_certification")
+    if cert is None:
+        cert = bundle.get("context_certification")
+    return cert
+
+
+def _evaluate_operator_certification(
+    bundle: Mapping[str, Any],
+) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Evaluate optional operator certification evidence from the bundle.
+
+    Accepts a subset of ``CertifyReport.to_dict()`` from ``make context-certify``.
+    Missing certification is a missing input only (not a global blocker).
+
+    Returns:
+        (blocking_findings, weak_findings, missing_inputs, extra_validation)
+    """
+    blocking: list[str] = []
+    weak: list[str] = []
+    missing: list[str] = []
+    extra_validation: list[str] = []
+
+    cert = _get_operator_certification_payload(bundle)
+    if cert is None:
+        missing.append("bundle.operator_certification is empty or missing")
+        return blocking, weak, missing, extra_validation
+
+    if not isinstance(cert, Mapping):
+        weak.append(
+            "operator certification invalid: expected mapping "
+            f"(got {type(cert).__name__})"
+        )
+        extra_validation.append(
+            "Provide operator_certification as a CertifyReport subset "
+            "from make context-certify."
+        )
+        return blocking, weak, missing, extra_validation
+
+    adoption_status = _as_str(cert.get("adoption_status", "")).lower().strip()
+    if adoption_status and adoption_status not in _ADOPTION_STATUSES:
+        weak.append(
+            f"operator certification invalid adoption_status: {adoption_status!r}"
+        )
+        extra_validation.append(
+            "adoption_status must be one of: pass, warn, fail, blocked, skipped."
+        )
+        adoption_status = ""
+
+    final_verdict = _as_str(cert.get("final_verdict", "")).lower().strip()
+    if final_verdict and final_verdict not in _FINAL_VERDICTS:
+        weak.append(f"operator certification invalid final_verdict: {final_verdict!r}")
+        final_verdict = ""
+
+    blocked_checks = _as_list(cert.get("blocked_checks_with_reason"))
+    gate_matrix = _as_list(cert.get("gate_matrix"))
+    skipped_checks = _as_list(cert.get("skipped_checks_with_reason"))
+
+    for item in blocked_checks:
+        if not isinstance(item, Mapping):
+            continue
+        check = _as_str(item.get("check", "?"))
+        reason = _as_str(item.get("reason", ""))
+        blocking.append(
+            f"operator certification blocked: {check}"
+            + (f" — {reason}" if reason else "")
+        )
+
+    for gate in gate_matrix:
+        if not isinstance(gate, Mapping):
+            continue
+        status = _as_str(gate.get("status", "")).lower()
+        check_id = _as_str(gate.get("check_id", "?"))
+        detail = _as_str(gate.get("detail", ""))
+        if status == "blocked":
+            blocking.append(
+                f"operator certification gate blocked: {check_id}"
+                + (f" — {detail}" if detail else "")
+            )
+        elif status == "fail" and gate.get("blocking") is True:
+            blocking.append(
+                f"operator certification gate fail (blocking): {check_id}"
+                + (f" — {detail}" if detail else "")
+            )
+
+    if final_verdict == "fail":
+        blocking.append("operator certification final_verdict=fail")
+
+    if adoption_status in {"fail", "blocked"}:
+        blocking.append(f"operator certification adoption_status={adoption_status}")
+
+    if blocking:
+        extra_validation.append(
+            "Operator certification failed; adoption claims are blocked. "
+            "Re-run make context-certify after remediation."
+        )
+        return blocking, weak, missing, extra_validation
+
+    non_blocking_gate_fails = False
+    for gate in gate_matrix:
+        if not isinstance(gate, Mapping):
+            continue
+        status = _as_str(gate.get("status", "")).lower()
+        check_id = _as_str(gate.get("check_id", "?"))
+        detail = _as_str(gate.get("detail", ""))
+        if status == "fail" and gate.get("blocking") is not True:
+            non_blocking_gate_fails = True
+            weak.append(
+                f"operator certification gate warn (non-blocking fail): {check_id}"
+                + (f" — {detail}" if detail else "")
+            )
+
+    if non_blocking_gate_fails:
+        extra_validation.append(
+            "Document non-blocking certification gate failures as adoption "
+            "caveats before claiming Context/Memory operator readiness."
+        )
+
+    if adoption_status == "warn":
+        weak.append("operator certification adoption_status=warn")
+        extra_validation.append(
+            "Document adoption caveats before claiming Context/Memory "
+            "operator readiness."
+        )
+
+    skipped_count = sum(1 for item in skipped_checks if isinstance(item, Mapping))
+    if skipped_count:
+        weak.append(
+            f"operator certification has {skipped_count} skipped check(s); "
+            "document skip reasons for adoption claims"
+        )
+        extra_validation.append(
+            "Document skipped_checks_with_reason in adoption evidence "
+            "before claiming Context/Memory operator readiness."
+        )
+
+    if adoption_status == "skipped":
+        weak.append("operator certification adoption_status=skipped")
+        if not extra_validation:
+            extra_validation.append("Document skip reasons before adoption claims.")
+
+    if not final_verdict and not weak:
+        weak.append("operator certification incomplete: missing final_verdict")
+        extra_validation.append(
+            "Include final_verdict from make context-certify output; "
+            "adoption_status alone is not CertifyReport proof."
+        )
+
+    return blocking, weak, missing, extra_validation
 
 
 def _evaluate_missing_inputs(
@@ -495,7 +654,9 @@ def evaluate_agent_os_readiness_v1(
             "bundle.meta.scope_id is required and must be a non-empty string"
         )
 
-    generated_at = as_of if isinstance(as_of, str) and as_of.strip() else cdb_utcnow().isoformat()
+    generated_at = (
+        as_of if isinstance(as_of, str) and as_of.strip() else cdb_utcnow().isoformat()
+    )
 
     # Aggregate signals from all sub-evaluators
     all_blocking: list[str] = []
@@ -521,12 +682,21 @@ def evaluate_agent_os_readiness_v1(
     all_blocking.extend(b5)
     all_weak.extend(w5)
 
+    b6, w6, cert_missing, cert_validation = _evaluate_operator_certification(validated)
+    all_blocking.extend(b6)
+    all_weak.extend(w6)
+
     missing_inputs = _evaluate_missing_inputs(validated)
+    missing_inputs.extend(cert_missing)
+
+    core_missing_inputs = [
+        item for item in missing_inputs if "operator_certification" not in item
+    ]
 
     # Derive readiness level (fail-closed: any blocker → blocked)
     if all_blocking:
         readiness_level = "blocked"
-    elif len(all_weak) >= 3 or missing_inputs:
+    elif len(all_weak) >= 3 or core_missing_inputs:
         readiness_level = "weak"
     elif all_weak:
         readiness_level = "acceptable"
@@ -537,10 +707,12 @@ def evaluate_agent_os_readiness_v1(
         readiness_level,
         blocking_count=len(all_blocking),
         weak_count=len(all_weak),
-        missing_count=len(missing_inputs),
+        missing_count=len(core_missing_inputs),
     )
 
     required_validation = _derive_required_validation(readiness_level)
+    if cert_validation:
+        required_validation = required_validation + tuple(cert_validation)
 
     r_id = _readiness_id(scope_id, generated_at)
 

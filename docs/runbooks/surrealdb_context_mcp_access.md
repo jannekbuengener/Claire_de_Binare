@@ -201,6 +201,34 @@ Default behavior:
 Safety boundary: `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`; LR remains **NO-GO**;
 Phase-2 (#2778) is not activated by certification alone.
 
+**Operator flow — certification → readiness (#2801):**
+
+1. `make context-doctor` (inventory / optional live checks)
+2. `make context-certify` (or `--format json`) — redact secrets before sharing proof
+3. Embed a subset of the proof pack in the readiness bundle as `operator_certification`
+   (alias: `context_certification`)
+4. Evaluate via `cdb_agent_os_readiness` MCP tool or `evaluate_agent_os_readiness_v1`
+
+Windows canonical surface: PowerShell onboarding
+(`agents/templates/onboarding_mcp_setup.ps1`) plus the Makefile targets above.
+CI does **not** require live SurrealDB for certification or readiness evaluation.
+
+**Certification adoption matrix (PASS / WARN / FAIL / BLOCKED / SKIPPED):**
+
+| Signal | Source | Agent OS readiness effect | Adoption claims | Unrelated PRs |
+| --- | --- | --- | --- | --- |
+| **PASS** | `final_verdict: certified`, no blocking gates | No certification findings | Allowed with redacted proof | Not blocked |
+| **WARN** | Non-blocking gate `fail`, or `adoption_status: warn` | Weak finding + validation step | Only with documented caveat | Not blocked |
+| **SKIPPED** | Non-empty `skipped_checks_with_reason` | Weak finding + validation step | Require documented skip reasons | Not blocked |
+| **FAIL** | `final_verdict: fail` or blocking gate `fail` | Blocking finding | **Blocked** | Not blocked |
+| **BLOCKED** | `blocked_checks_with_reason` or gate `status: blocked` | Blocking finding | **Blocked** | Not blocked |
+| **missing** | No `operator_certification` in bundle | Listed in `missing_inputs` only | No adoption claim without certify | Not blocked |
+| **invalid** | Non-mapping or unknown verdict | Weak finding (fail-closed) | No silent green | Not blocked |
+
+Agent OS Readiness is a **signal**, not an authorization. Certification is an
+**adoption gate**, not LR-Go. Missing certification must not block unrelated PR
+work or general readiness checks that do not claim operator adoption.
+
 Expected output (best case — bridge + stdio both work):
 ```
 === CDB Context MCP Capability Validation ===
@@ -234,6 +262,11 @@ CDB Context MCP is available (bridge); warnings above.
 **Capability Resolution Rules (all surfaces):**
 
 When scope includes Context, MCP, SurrealDB, ContextBridge, DB-backed Memory, or Evidence:
+
+**Source priority** (SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`):
+live GitHub → repo files → SurrealDB context package (guarded adapter only) →
+ledger (`CURRENT_STATUS.md` not live truth) → fallback. Context/MCP/briefing
+output does not authorize automatic code, issue, or productive DB writes.
 
 1. Run MCP Capability Resolution before planning — verify active tool inventory, not config file presence.
 2. If `context.briefing` or required MCP tools are unavailable: stop or explicitly degrade to repo-only.

@@ -13,6 +13,7 @@ ist kein Live-Kapital-GO und keine Strategie-Validierung.
 - Routing-Script: `scripts/project/route_control_board.py`
 - Workflow Upsert: `.github/workflows/control_board_upsert.yml`
 - Workflow Routing: `.github/workflows/control_board_auto_routing.yml` (**PARKED in #2772** — nur noch `workflow_dispatch`-Stub)
+- Label Dispatch: `.github/workflows/control-board-routing-label-dispatch.yml` (**PARKED in #2805** — nur noch `workflow_dispatch`-Stub)
 
 ## Feature Toggle (default OFF)
 

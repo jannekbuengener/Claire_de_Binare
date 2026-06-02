@@ -226,7 +226,9 @@ def test_acceptable_readiness_one_weak_finding() -> None:
 
 
 def test_missing_bundle_raises_error() -> None:
-    with pytest.raises(AgentOsReadinessError, match="bundle must be a non-None mapping"):
+    with pytest.raises(
+        AgentOsReadinessError, match="bundle must be a non-None mapping"
+    ):
         evaluate_agent_os_readiness_v1(None)
 
 
@@ -271,10 +273,10 @@ def test_readiness_id_differs_for_different_scope() -> None:
 # ── Guardrail tests ───────────────────────────────────────────────────────────
 
 
-def test_guardrails_always_5_items() -> None:
+def test_guardrails_always_6_items() -> None:
     for bundle in (_clean_bundle(), _bundle_with_blocking_scope_drift()):
         result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
-        assert len(result.guardrails) == 5
+        assert len(result.guardrails) == 6
 
 
 def test_guardrails_all_non_empty() -> None:
@@ -464,3 +466,133 @@ def test_false_positive_contradiction_not_counted() -> None:
     ]
     result = evaluate_agent_os_readiness_v1(b, as_of=_AS_OF)
     assert result.readiness_level != "blocked"
+
+
+# ── Operator certification (#2801) ───────────────────────────────────────────
+
+
+def _certified_pass() -> dict[str, Any]:
+    return {
+        "final_verdict": "certified",
+        "gate_matrix": [
+            {
+                "check_id": "registry_all_read_only",
+                "status": "pass",
+                "blocking": True,
+                "detail": "ok",
+            }
+        ],
+    }
+
+
+def test_operator_certification_pass_not_blocked() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = _certified_pass()
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "strong"
+    assert not any("operator certification" in f for f in result.blocking_findings)
+
+
+def test_operator_certification_fail_blocks_adoption() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {
+        "final_verdict": "fail",
+        "blocked_checks_with_reason": [
+            {"check": "registry_all_read_only", "reason": "non-read-only tool"}
+        ],
+    }
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "blocked"
+    assert any("final_verdict=fail" in f for f in result.blocking_findings)
+
+
+def test_operator_certification_blocked_checks_block() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {
+        "final_verdict": "certified",
+        "blocked_checks_with_reason": [
+            {"check": "permission_guard", "reason": "inconsistent registry"}
+        ],
+    }
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "blocked"
+    assert any("operator certification blocked" in f for f in result.blocking_findings)
+
+
+def test_operator_certification_skipped_is_weak_with_validation() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {
+        "final_verdict": "certified",
+        "gate_matrix": [
+            {
+                "check_id": "registry_all_read_only",
+                "status": "pass",
+                "blocking": True,
+                "detail": "ok",
+            }
+        ],
+        "skipped_checks_with_reason": [
+            {"check": "context-smoke-db", "reason": "operator-only"},
+        ],
+    }
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level in ("acceptable", "weak")
+    assert any("skipped check" in f for f in result.weak_findings)
+    assert any("skipped_checks_with_reason" in v for v in result.required_validation)
+
+
+def test_operator_certification_missing_is_not_global_blocker() -> None:
+    bundle = _clean_bundle()
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "strong"
+    assert any("operator_certification" in m for m in result.missing_inputs)
+
+
+def test_operator_certification_missing_on_minimal_bundle() -> None:
+    result = evaluate_agent_os_readiness_v1(_minimal_bundle(), as_of=_AS_OF)
+    assert result.readiness_level != "blocked"
+    assert any("operator_certification" in m for m in result.missing_inputs)
+
+
+def test_operator_certification_invalid_not_silent_green() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = "not-a-mapping"
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level != "strong"
+    assert any("invalid" in f for f in result.weak_findings)
+
+
+def test_operator_certification_warn_non_blocking_gate() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {
+        "final_verdict": "certified",
+        "gate_matrix": [
+            {
+                "check_id": "context_doctor_live",
+                "status": "fail",
+                "blocking": False,
+                "detail": "live doctor failed",
+            }
+        ],
+    }
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "acceptable"
+    assert any("non-blocking fail" in f for f in result.weak_findings)
+    assert any("non-blocking" in v for v in result.required_validation)
+
+
+def test_operator_certification_adoption_pass_without_proof_not_strong() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {"adoption_status": "pass"}
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level != "strong"
+    assert any("incomplete" in f for f in result.weak_findings)
+    assert any("final_verdict" in v for v in result.required_validation)
+
+
+def test_context_certification_alias() -> None:
+    bundle = _clean_bundle()
+    bundle["context_certification"] = _certified_pass()
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level == "strong"
+    assert not any("operator certification" in f for f in result.blocking_findings)
