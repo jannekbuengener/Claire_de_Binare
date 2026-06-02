@@ -468,6 +468,12 @@ def rank_retrieval_results(
         ranked.append(row)
 
     ranked.sort(key=_tie_break_key)
-    if limit is not None and limit > 0:
-        return ranked[:limit]
-    return ranked
+    if limit is None:
+        return ranked
+    if isinstance(limit, bool) or not isinstance(limit, int):
+        raise HybridRetrievalRankingError("limit must be a non-negative integer or None")
+    if limit < 0:
+        raise HybridRetrievalRankingError("limit must be non-negative")
+    if limit == 0:
+        return []
+    return ranked[:limit]

@@ -86,6 +86,25 @@ def test_zero_hop_graph_distance_ranks_above_one_hop() -> None:
 
 
 @pytest.mark.unit
+def test_limit_zero_returns_empty_list() -> None:
+    candidates = _load_fixture_candidates()
+    assert rank_retrieval_results(candidates, limit=0) == []
+
+
+@pytest.mark.unit
+def test_limit_none_returns_all_ranked() -> None:
+    candidates = _load_fixture_candidates()
+    ranked = rank_retrieval_results(candidates, limit=None)
+    assert len(ranked) == len(candidates)
+
+
+@pytest.mark.unit
+def test_negative_limit_raises() -> None:
+    with pytest.raises(HybridRetrievalRankingError, match="non-negative"):
+        rank_retrieval_results([], limit=-1)
+
+
+@pytest.mark.unit
 def test_weighted_ranking_sorts_strong_first() -> None:
     candidates = _load_fixture_candidates()
     ranked = rank_retrieval_results(candidates)

@@ -159,6 +159,9 @@ path; MCP `context.search` wiring remains a follow-up.
 - **Entry points**: `rank_retrieval_results()`, `compute_ranking_explanation()`
 - **Inputs**: in-memory candidate dicts (no live DB required for CI)
 - **Outputs**: ranked candidates with `score` and nested `ranking_explanation`
+- **`limit`**: `None` returns all ranked candidates; `0` returns an empty list;
+  positive integers cap the result count. Negative limits raise
+  `HybridRetrievalRankingError`.
 
 #### Explainability schema
 
