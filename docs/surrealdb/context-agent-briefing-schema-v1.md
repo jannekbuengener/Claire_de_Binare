@@ -185,7 +185,7 @@ This document (#2104) delivers the **concrete schema slice** of #2018: the norma
     },
     "context_package_ref": {
       "type": ["string", "null"],
-      "description": "Reference to the assembled Context Package (#2016), or null if no package was produced."
+      "description": "Reference (package_id) to the assembled Context Package (#2016 v1 doc, #2798 v2 envelope), or null if no package was produced. v2 schema: docs/surrealdb/context-package-model-v2.md."
     },
     "required_reads": {
       "type": "array",
@@ -338,7 +338,7 @@ This document (#2104) delivers the **concrete schema slice** of #2018: the norma
 |-------|:--------:|------|-----------|
 | `briefing_id` | Yes | `string` | Deterministic briefing identifier, derived as a hash of request fields. Enables idempotent retrieval and replay-verifiability. |
 | `scope_summary` | Yes | `string` | Human-readable paragraph summarising what the task is about, what context was found, and what constraints apply. |
-| `context_package_ref` | No | `string \| null` | Reference (package_id) to the Context Package (#2016) assembled for this briefing. `null` if no package was produced (e.g. for quick depth). |
+| `context_package_ref` | No | `string \| null` | Reference (package_id) to the Context Package assembled for this briefing (#2016 v1 model, #2798 v2 envelope — see `docs/surrealdb/context-package-model-v2.md`). `null` if no package was produced (e.g. for quick depth). |
 | `required_reads` | No | `string[]` | Ordered list of canonical files the agent must read. Minimum baseline per #2021 §6.3: AGENTS.md, agents/AGENTS.md, agents/OPEN_CODE_AGENTS.md, CONTROL_REGISTER.md, CURRENT_STATUS.md, LR-AUDIT-STATUS. |
 | `relevant_artifacts` | No | `object[]` | Key context artefacts matching the task scope. Each artefact carries a source_ref and confidence score. |
 | `relevant_symbols` | No | `object[]` | Code symbols (functions, classes, modules) in scope, with file paths and dependency lists. |

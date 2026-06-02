@@ -1060,6 +1060,8 @@ Even when `status: ready_for_human_go`, the agent MUST stop and wait for explici
 | Bridge Tests | `tests/unit/tools/mcp/test_context_bridge.py` |
 | Permission Guard Tests | `tests/unit/tools/mcp/test_permission_guard.py` |
 | Package Handler Tests | `tests/unit/tools/mcp/test_context_package_handler.py` |
+| Context Package v2 Model | `docs/surrealdb/context-package-model-v2.md` |
+| Context Package v2 Builder Tests | `tests/unit/surrealdb/test_context_package_v2.py` |
 | Output Contract Tests | `tests/unit/tools/mcp/test_output_contracts.py` |
 | Control Register | `docs/runbooks/CONTROL_REGISTER.md` |
 
