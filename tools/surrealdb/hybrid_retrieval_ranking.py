@@ -19,6 +19,7 @@ Guardrails:
 from __future__ import annotations
 
 import math
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 SCHEMA_VERSION = "hybrid-retrieval-ranking/v1"
@@ -46,6 +47,12 @@ DEFAULT_RANKING_WEIGHTS: dict[str, float] = {
 MISSING_FACTOR_DEFAULT = 0.35
 WEAK_CONFIDENCE_THRESHOLD = 0.30
 GRAPH_DISTANCE_MAX_HOPS = 10.0
+FRESHNESS_DECAY_PER_DAY = 0.05
+FRESHNESS_NO_TIMESTAMP_DEFAULT = 0.5
+FRESHNESS_MAX_SCORE = 1.0
+FRESHNESS_MIN_SCORE = 0.1
+FRESHNESS_FULL_SCORE_MAX_AGE_DAYS = 1.0
+FRESHNESS_MIN_SCORE_AGE_DAYS = 18.0
 
 GUARDRAILS: tuple[str, ...] = (
     "Retrieval results are context, not truth.",
@@ -124,6 +131,70 @@ def _score_numeric_field(
     return max(0.0, min(1.0, numeric)), False, False
 
 
+def _parse_datetime(raw: Any) -> datetime | None:
+    if raw is None:
+        return None
+    if isinstance(raw, datetime):
+        return (
+            raw.astimezone(timezone.utc)
+            if raw.tzinfo
+            else raw.replace(tzinfo=timezone.utc)
+        )
+    if not isinstance(raw, str):
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return (
+        parsed.astimezone(timezone.utc)
+        if parsed.tzinfo
+        else parsed.replace(tzinfo=timezone.utc)
+    )
+
+
+def _resolve_reference_time(
+    candidate: Mapping[str, Any],
+    query_context: Mapping[str, Any] | None,
+) -> datetime:
+    for source in (query_context, candidate):
+        if not source:
+            continue
+        for key in ("as_of", "reference_time", "reference_at", "now"):
+            parsed = _parse_datetime(source.get(key))
+            if parsed is not None:
+                return parsed
+    return datetime.now(timezone.utc)
+
+
+def created_at_to_freshness_score(
+    created_at: datetime,
+    *,
+    reference: datetime,
+) -> float:
+    """Map created_at to freshness per strategy v1 (5% decay/day, clamped)."""
+    ref = (
+        reference.astimezone(timezone.utc)
+        if reference.tzinfo
+        else reference.replace(tzinfo=timezone.utc)
+    )
+    created = (
+        created_at.astimezone(timezone.utc)
+        if created_at.tzinfo
+        else created_at.replace(tzinfo=timezone.utc)
+    )
+    age_days = max(0.0, (ref - created).total_seconds()) / 86400.0
+    if age_days < FRESHNESS_FULL_SCORE_MAX_AGE_DAYS:
+        return FRESHNESS_MAX_SCORE
+    score = FRESHNESS_MAX_SCORE - (FRESHNESS_DECAY_PER_DAY * age_days)
+    return max(FRESHNESS_MIN_SCORE, min(FRESHNESS_MAX_SCORE, score))
+
+
 def graph_distance_to_score(distance: Any, *, max_hops: float = GRAPH_DISTANCE_MAX_HOPS) -> float:
     """Map graph distance (hops) to a score in [0, 1]; closer nodes score higher."""
     numeric = _as_finite_float(distance)
@@ -155,6 +226,8 @@ def _evidence_strength_to_score(value: Any) -> tuple[float, bool]:
 
 def _resolve_factor_scores(
     candidate: Mapping[str, Any],
+    *,
+    reference: datetime | None = None,
 ) -> tuple[dict[str, float], list[str], list[str]]:
     """Extract normalized factor scores, warnings, and caveats for one candidate."""
     warnings: list[str] = list(candidate.get("warnings") or [])
@@ -199,16 +272,27 @@ def _resolve_factor_scores(
     if ev_missing:
         missing_flags.append("evidence_strength")
 
-    # freshness — use freshness field or freshness_score
+    # freshness — explicit score, else derive from created_at, else contract default
     fresh_raw = candidate.get("freshness")
     if fresh_raw is None and candidate.get("freshness_score") is not None:
         fresh_raw = candidate.get("freshness_score")
-    score, is_missing, is_invalid = _score_numeric_field(fresh_raw)
-    scores["freshness"] = score
-    if is_missing:
-        missing_flags.append("freshness")
-    elif is_invalid:
-        warnings.append("invalid_factor:freshness")
+    if fresh_raw is not None:
+        score, is_missing, is_invalid = _score_numeric_field(fresh_raw)
+        scores["freshness"] = score
+        if is_missing:
+            missing_flags.append("freshness")
+        elif is_invalid:
+            warnings.append("invalid_factor:freshness")
+    else:
+        created_at = _parse_datetime(candidate.get("created_at"))
+        if created_at is not None:
+            ref = reference or datetime.now(timezone.utc)
+            scores["freshness"] = created_at_to_freshness_score(
+                created_at, reference=ref
+            )
+        else:
+            scores["freshness"] = FRESHNESS_NO_TIMESTAMP_DEFAULT
+            missing_flags.append("freshness")
 
     # confidence
     conf_raw = candidate.get("confidence")
@@ -293,7 +377,10 @@ def compute_ranking_explanation(
 ) -> dict[str, Any]:
     """Compute factor scores, weighted contributions, and final score for one candidate."""
     resolved_weights = _validate_weights(weights or DEFAULT_RANKING_WEIGHTS)
-    factor_scores, warnings, caveats = _resolve_factor_scores(candidate)
+    reference = _resolve_reference_time(candidate, query_context)
+    factor_scores, warnings, caveats = _resolve_factor_scores(
+        candidate, reference=reference
+    )
 
     contributions: dict[str, float] = {
         factor: round(factor_scores[factor] * resolved_weights[factor], 6)

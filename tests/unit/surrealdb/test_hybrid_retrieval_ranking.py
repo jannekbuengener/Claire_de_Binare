@@ -18,12 +18,14 @@ import pytest
 
 from tools.surrealdb.hybrid_retrieval_ranking import (
     DEFAULT_RANKING_WEIGHTS,
+    FRESHNESS_NO_TIMESTAMP_DEFAULT,
     GUARDRAILS,
     MISSING_FACTOR_DEFAULT,
     RANKING_FACTORS,
     SCHEMA_VERSION,
     HybridRetrievalRankingError,
     compute_ranking_explanation,
+    created_at_to_freshness_score,
     graph_distance_to_score,
     normalize_factor,
     rank_retrieval_results,
@@ -109,7 +111,38 @@ def test_missing_values_conservative_with_warnings() -> None:
     explanation = compute_ranking_explanation(sparse)
     assert any(w.startswith("missing_factor:") for w in explanation["warnings"])
     assert "missing_factor:graph_distance" in explanation["warnings"]
+    assert explanation["factor_scores"]["freshness"] == FRESHNESS_NO_TIMESTAMP_DEFAULT
     assert explanation["final_score"] < 0.75
+
+
+@pytest.mark.unit
+def test_created_at_derives_freshness_without_missing_warning() -> None:
+    candidate = {
+        "result_id": "dated",
+        "source_ref": "evidence:dated",
+        "created_at": "2026-05-31T12:00:00Z",
+        "confidence": 0.8,
+        "source_match": 0.8,
+        "graph_distance": 1,
+        "evidence_strength": 0.8,
+        "scope_match": 0.8,
+        "memory_trust": 0.8,
+    }
+    explanation = compute_ranking_explanation(
+        candidate,
+        query_context={"as_of": "2026-06-01T11:00:00Z"},
+    )
+    assert explanation["factor_scores"]["freshness"] == 1.0
+    assert "missing_factor:freshness" not in explanation["warnings"]
+
+
+@pytest.mark.unit
+def test_created_at_freshness_decay_clamped() -> None:
+    from datetime import datetime, timezone
+
+    ref = datetime(2026, 6, 20, tzinfo=timezone.utc)
+    created = datetime(2026, 6, 1, tzinfo=timezone.utc)
+    assert created_at_to_freshness_score(created, reference=ref) == 0.1
 
 
 @pytest.mark.unit
