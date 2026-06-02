@@ -195,7 +195,9 @@ def _collect_static_gates() -> tuple[list[GateEntry], dict[str, Any], dict[str, 
         "non_read_only_tools": non_read_only,
     }
     permission_summary = {
-        "registry_gate": "pass" if registry_ok and consistency_status == "pass" else "fail",
+        "registry_gate": (
+            "pass" if registry_ok and consistency_status == "pass" else "fail"
+        ),
         "input_scan_tools_count": len(INPUT_SCAN_TOOLS),
         "input_scan_exempt_tools_count": len(INPUT_SCAN_EXEMPT_TOOLS),
         "forbidden_sql_keywords_count": len(FORBIDDEN_SQL_KEYWORDS),
@@ -315,9 +317,7 @@ def build_report(
     root = _repo_root() if repo_root is None else repo_root
     git_info = _git_metadata(root)
     static_gates, mcp_summary, permission_summary = _collect_static_gates()
-    doctor_status, doctor_gates = _run_doctor(
-        root, include_live=include_live_checks
-    )
+    doctor_status, doctor_gates = _run_doctor(root, include_live=include_live_checks)
 
     gates = static_gates + doctor_gates
     skipped = _default_skipped_checks()
@@ -360,9 +360,7 @@ def build_report(
         "read_only_by_default": True,
     }
 
-    blocking_fail = any(
-        gate.status == "fail" and gate.blocking for gate in gates
-    )
+    blocking_fail = any(gate.status == "fail" and gate.blocking for gate in gates)
     final_verdict: FinalVerdict = "fail" if blocking_fail else "certified"
 
     return CertifyReport(

@@ -116,9 +116,7 @@ def test_registry_failure_marks_fail(tmp_path: Path) -> None:
             "assert_read_only_consistency",
             side_effect=ValueError("non-read-only tools found"),
         ):
-            with patch(
-                "tools.surrealdb.context_certify.create_bridge"
-            ) as mock_bridge:
+            with patch("tools.surrealdb.context_certify.create_bridge") as mock_bridge:
                 mock_bridge.return_value.get_read_only_status.return_value = (
                     bridge_status
                 )
