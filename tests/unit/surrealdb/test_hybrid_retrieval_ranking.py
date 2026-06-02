@@ -62,9 +62,27 @@ def test_normalize_factor_clamps_and_missing() -> None:
 @pytest.mark.unit
 def test_graph_distance_to_score() -> None:
     assert graph_distance_to_score(None) == MISSING_FACTOR_DEFAULT
-    assert graph_distance_to_score(0.0) == 0.0
-    assert graph_distance_to_score(1.0) == 1.0
+    assert graph_distance_to_score(0) == 1.0
+    assert graph_distance_to_score(1) == 0.9
     assert graph_distance_to_score(3) > graph_distance_to_score(8)
+
+
+@pytest.mark.unit
+def test_zero_hop_graph_distance_ranks_above_one_hop() -> None:
+    exact = {
+        "result_id": "exact",
+        "source_ref": "a:exact",
+        "confidence": 0.8,
+        "freshness": 0.8,
+        "source_match": 0.8,
+        "graph_distance": 0,
+        "evidence_strength": 0.8,
+        "scope_match": 0.8,
+        "memory_trust": 0.8,
+    }
+    one_hop = {**exact, "result_id": "one-hop", "source_ref": "b:one-hop", "graph_distance": 1}
+    ranked = rank_retrieval_results([one_hop, exact])
+    assert ranked[0]["result_id"] == "exact"
 
 
 @pytest.mark.unit

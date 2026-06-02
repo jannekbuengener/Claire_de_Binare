@@ -201,14 +201,15 @@ def created_at_to_freshness_score(
 
 
 def graph_distance_to_score(distance: Any, *, max_hops: float = GRAPH_DISTANCE_MAX_HOPS) -> float:
-    """Map graph distance (hops) to a score in [0, 1]; closer nodes score higher."""
+    """Map raw graph hop count to a score in [0, 1]; closer nodes score higher.
+
+    Pre-normalized scores belong in ``graph_distance_score``, not ``graph_distance``.
+    """
     numeric = _as_finite_float(distance)
     if numeric is None:
         return MISSING_FACTOR_DEFAULT
     if numeric < 0:
         return 0.0
-    if numeric <= 1.0:
-        return normalize_factor(numeric)
     capped = min(numeric, max_hops)
     return max(0.0, 1.0 - (capped / max_hops))
 
