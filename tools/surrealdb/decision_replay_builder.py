@@ -687,7 +687,30 @@ def _build_evidence_enrichment_v2(
     return evidence_links, resolved_evidence, unresolved, status, evidence_warnings
 
 
-def _decision_chain_hash_payload(base: Mapping[str, Any]) -> dict[str, Any]:
+def _resolved_evidence_ids(resolved_evidence: Iterable[Mapping[str, Any]]) -> list[str]:
+    ids: list[str] = []
+    for item in resolved_evidence:
+        if not isinstance(item, Mapping):
+            continue
+        ref = item.get("id")
+        if isinstance(ref, str) and ref.strip():
+            ids.append(ref.strip())
+            continue
+        evidence = item.get("evidence")
+        if isinstance(evidence, Mapping):
+            evidence_id = evidence.get("evidence_id")
+            if isinstance(evidence_id, str) and evidence_id.strip():
+                ids.append(evidence_id.strip())
+    return sorted(set(ids))
+
+
+def _decision_chain_hash_payload(
+    base: Mapping[str, Any],
+    *,
+    unresolved_evidence_refs: list[str],
+    resolved_evidence_ids: list[str],
+    evidence_resolution_status: str,
+) -> dict[str, Any]:
     evidence_chain = base.get("evidence_chain") or {}
     claim_chain = base.get("claim_chain") or {}
     return {
@@ -703,11 +726,9 @@ def _decision_chain_hash_payload(base: Mapping[str, Any]) -> dict[str, Any]:
             for ref in claim_chain.get("refs", [])
             if isinstance(ref, str) and ref.strip()
         ),
-        "unresolved_evidence_refs": sorted(
-            str(ref).strip()
-            for ref in evidence_chain.get("unresolved", [])
-            if isinstance(ref, str) and ref.strip()
-        ),
+        "unresolved_evidence_refs": sorted(unresolved_evidence_refs),
+        "resolved_evidence_ids": sorted(resolved_evidence_ids),
+        "evidence_resolution_status": evidence_resolution_status,
         "unresolved_claim_refs": sorted(
             str(ref).strip()
             for ref in claim_chain.get("unresolved", [])
@@ -796,7 +817,14 @@ def build_decision_replay_v2(
     enriched["unresolved_evidence_refs"] = unresolved_evidence_refs
     enriched["evidence_resolution_status"] = evidence_resolution_status
     enriched["evidence_warnings"] = sorted(set(evidence_warnings))
-    enriched["decision_chain_hash"] = canonical_hash(_decision_chain_hash_payload(base))
+    enriched["decision_chain_hash"] = canonical_hash(
+        _decision_chain_hash_payload(
+            base,
+            unresolved_evidence_refs=unresolved_evidence_refs,
+            resolved_evidence_ids=_resolved_evidence_ids(resolved_evidence),
+            evidence_resolution_status=evidence_resolution_status,
+        )
+    )
     enriched["replay_explainability"] = _build_replay_explainability_v2(
         base,
         evidence_resolution_status=evidence_resolution_status,

@@ -151,6 +151,27 @@ def test_v2_human_go_visible_but_non_authorizing() -> None:
 
 
 @pytest.mark.unit
+def test_v2_hash_reflects_enriched_evidence_resolution_state() -> None:
+    fixture = _load_fixture()
+    req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)
+    refs_only = build_decision_replay_v2(fixture["decisions"], req)
+    with_record = build_decision_replay_v2(
+        fixture["decisions"],
+        req,
+        evidence_records=[
+            {
+                "evidence_id": "ev-002",
+                "title": "Resolved via record",
+                "created_at": "2026-05-02T10:00:00+00:00",
+            }
+        ],
+    )
+    assert refs_only["decision_chain_hash"] != with_record["decision_chain_hash"]
+    assert refs_only["evidence_resolution_status"] == "refs_only"
+    assert with_record["evidence_resolution_status"] == "partial"
+
+
+@pytest.mark.unit
 def test_v2_refs_only_status_when_no_resolution_inputs() -> None:
     fixture = _load_fixture()
     req = DecisionReplayRequest(mode="replay_by_decision_id", decision_id="dec-002", limit=50)

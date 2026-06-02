@@ -223,7 +223,7 @@ v2 **behält alle v1-Felder** und ergänzt read-only Evidence-Enrichment:
 
 - **Optional inputs**: `evidence_summaries` (wie v1) und/oder in-memory `evidence_records` (MCP/builder).
 - **Nie implizit verifizieren**: `known_evidence_ids` allein reicht **nicht** für `resolved_evidence`; fehlende Records/Summaries bleiben in `unresolved_evidence_refs`.
-- **`decision_chain_hash`**: Hash über `decision_chain`, `supersession_chain`, sortierte evidence/claim refs und unresolved-Listen — **ohne** `current_status.as_of`.
+- **`decision_chain_hash`**: Hash über `decision_chain`, `supersession_chain`, sortierte evidence/claim refs, **v2-angereicherte** `unresolved_evidence_refs`, `resolved_evidence_ids`, `evidence_resolution_status` — **ohne** `current_status.as_of`.
 - **Redaction**: token/secret/password/api_key-artige Felder in resolved payloads → `[REDACTED]`.
 - **LR / Live**: `approval_semantics` und `replay_explainability.history_only` bleiben non-authorizing; kein Live-Go, kein Echtgeld-Go.
 
