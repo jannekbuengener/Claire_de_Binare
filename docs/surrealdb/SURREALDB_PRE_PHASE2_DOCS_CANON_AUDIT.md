@@ -221,11 +221,12 @@ python -c "from tools.mcp.context_bridge import create_bridge; tools=create_brid
 make context-certify
 # final_verdict: certified, tool_count: 27, lr_note: NO-GO, PERSIST_ALLOWED: False, MUTATION_ALLOWED: False
 
-rg "PERSIST_ALLOWED\s*=\s*True|MUTATION_ALLOWED\s*=\s*True" docs/surrealdb
-# (no matches — only negations in memory-write-path-t4-runbook-v1.md)
+rg "PERSIST_ALLOWED\s*=\s*True|MUTATION_ALLOWED\s*=\s*True" docs/surrealdb \
+  --glob '!SURREALDB_PRE_PHASE2_DOCS_CANON_AUDIT.md'
+# memory-write-path-t4-runbook-v1.md:140 — negation ("No code-level PERSIST_ALLOWED=True on main"); safe
 
-rg "stays OPEN" docs/surrealdb
-# (empty after fixes)
+rg "stays OPEN" docs/surrealdb --glob '!SURREALDB_PRE_PHASE2_DOCS_CANON_AUDIT.md'
+# (empty — six design-doc headers reconciled in this PR; audit matrix rows are meta, not live claims)
 ```
 
 **Not run:** `make context-smoke-db`, `make context-import-local`, any `--apply`, Docker stack.
