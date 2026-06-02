@@ -17,7 +17,7 @@
 brain_source: repo-only
 brain_status: used
 tools_or_queries:
-  - gh issue view 1976, 2778, 2821 (2026-06-02)
+  - gh issue view 1976 --json state; gh issue view 2778 --json state; gh issue view 2821 --json state (2026-06-02)
   - gh issue list --state open (context band #2034–#2205 → none open)
   - git rev-parse HEAD → f25c6f50751fbb6d7bc8e19b81e84cefedb08b9d
   - PYTHONPATH=. python: create_bridge().list_tools() → 27 tools, all_readonly=True

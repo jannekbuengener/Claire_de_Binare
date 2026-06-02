@@ -11,7 +11,9 @@ Read-only Grandparent DoD and Real-Task-Proof readiness assessment for epic #197
 
 ## Validation
 
-- `gh issue view 1976 2778 2821` — #2778 CLOSED; #1976/#2821 OPEN
+- `gh issue view 1976 --json state` → OPEN
+- `gh issue view 2778 --json state` → CLOSED
+- `gh issue view 2821 --json state` → OPEN
 - `git rev-parse HEAD` → `f25c6f50751fbb6d7bc8e19b81e84cefedb08b9d`
 - `PYTHONPATH=. python -c "from tools.mcp.context_bridge import create_bridge; ..."` → 27 tools, all read-only
 - `pytest -q tests/unit/surrealdb/test_context_package_v2.py tests/unit/agents/test_agent_brain_adoption_contract.py -m unit` → 23 passed
@@ -32,5 +34,5 @@ Read-only Grandparent DoD and Real-Task-Proof readiness assessment for epic #197
 
 ## GitHub
 
-- PR: (filled after create)
+- PR: [#2827](https://github.com/jannekbuengener/Claire_de_Binare/pull/2827)
 - Issue comments on #1976 and #2821 after merge
