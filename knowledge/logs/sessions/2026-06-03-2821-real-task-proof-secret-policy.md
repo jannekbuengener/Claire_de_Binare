@@ -8,7 +8,7 @@ secret policy (Gates 0–4). Docs-only; no code/runtime/MCP mutations.
 ## Brain Evidence
 
 - `brain_source`: repo-only
-- `brain_status`: used
+- `brain_status`: not-used
 - pytest 23 passed; MCP list_tools 27 all read-only
 - No surrealdb-local record IDs
 
@@ -37,7 +37,9 @@ secret policy (Gates 0–4). Docs-only; no code/runtime/MCP mutations.
 - `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`
 - No secrets in PR output
 
-## Post-merge (planned)
+## Post-merge (2026-06-02 UTC)
 
-- Close #2821 via PR; comment with policy path + SHA
-- Comment on #1976 with RTP PASS + proof link; **keep #1976 OPEN** (readiness §B epic-close HOLD)
+- PR [#2829](https://github.com/jannekbuengener/Claire_de_Binare/pull/2829) merged → `3a19b372`
+- #2821 **CLOSED**; #1976 **OPEN** (epic-close HOLD per readiness §B)
+- Issue comments posted with policy path + proof links
+- Codex review fixes: UTC date, no #1976 close, SSOT §F, `brain_status: not-used`
