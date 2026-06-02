@@ -155,6 +155,24 @@ def test_certification_invalid_final_verdict_not_pass() -> None:
 
 
 @pytest.mark.unit
+def test_ranking_secret_warning_redacted_in_envelope_warnings() -> None:
+    envelope = build_control_room_signal_layer_v1(
+        _base_request(
+            ranked_results=[
+                {
+                    "result_id": "api_key=sk-testsecretvalue123456789",
+                    "warnings": ["api_key=sk-testsecretvalue123456789"],
+                    "ranking_explanation": {"final_score": 0.1, "warnings": []},
+                }
+            ],
+        )
+    )
+    serialized = json.dumps(envelope)
+    assert "sk-testsecretvalue" not in serialized
+    assert "[REDACTED]" in serialized
+
+
+@pytest.mark.unit
 def test_ranking_invalid_factor_warnings_propagate() -> None:
     envelope = build_control_room_signal_layer_v1(
         _base_request(

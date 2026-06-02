@@ -341,9 +341,16 @@ def _extract_from_ranking(
 
         if severity == "WARN":
             for warning in row_warnings:
-                warnings.append(f"ranking {stable_id}: {warning}")
+                warnings.append(
+                    _sanitize_free_text(
+                        f"ranking {_sanitize_free_text(stable_id)}: "
+                        f"{_sanitize_free_text(warning)}"
+                    )
+                )
             required_validation.append(
-                f"Verify ranking result {stable_id} against repo or verified evidence"
+                _sanitize_free_text(
+                    f"Verify ranking result {stable_id} against repo or verified evidence"
+                )
             )
 
         cards.append(
@@ -921,9 +928,13 @@ def build_control_room_signal_layer_v1(
     limitations.extend(cert_lim)
 
     signal_cards = sorted(cards, key=_card_sort_key)
-    blocking_findings = sorted(set(blocking_findings))
-    warnings = sorted(set(warnings))
-    required_validation = sorted(set(required_validation))
+    blocking_findings = sorted(
+        {_sanitize_free_text(item) for item in blocking_findings if item}
+    )
+    warnings = sorted({_sanitize_free_text(item) for item in warnings if item})
+    required_validation = sorted(
+        {_sanitize_free_text(item) for item in required_validation if item}
+    )
     limitations = sorted(set(limitations))
 
     any_input_present = any(
