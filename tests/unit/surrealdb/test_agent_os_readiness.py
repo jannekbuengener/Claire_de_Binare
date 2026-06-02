@@ -578,6 +578,16 @@ def test_operator_certification_warn_non_blocking_gate() -> None:
     result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
     assert result.readiness_level == "acceptable"
     assert any("non-blocking fail" in f for f in result.weak_findings)
+    assert any("non-blocking" in v for v in result.required_validation)
+
+
+def test_operator_certification_adoption_pass_without_proof_not_strong() -> None:
+    bundle = _clean_bundle()
+    bundle["operator_certification"] = {"adoption_status": "pass"}
+    result = evaluate_agent_os_readiness_v1(bundle, as_of=_AS_OF)
+    assert result.readiness_level != "strong"
+    assert any("incomplete" in f for f in result.weak_findings)
+    assert any("final_verdict" in v for v in result.required_validation)
 
 
 def test_context_certification_alias() -> None:

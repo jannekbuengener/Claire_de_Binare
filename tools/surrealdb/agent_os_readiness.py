@@ -512,6 +512,7 @@ def _evaluate_operator_certification(
         )
         return blocking, weak, missing, extra_validation
 
+    non_blocking_gate_fails = False
     for gate in gate_matrix:
         if not isinstance(gate, Mapping):
             continue
@@ -519,13 +520,24 @@ def _evaluate_operator_certification(
         check_id = _as_str(gate.get("check_id", "?"))
         detail = _as_str(gate.get("detail", ""))
         if status == "fail" and gate.get("blocking") is not True:
+            non_blocking_gate_fails = True
             weak.append(
                 f"operator certification gate warn (non-blocking fail): {check_id}"
                 + (f" — {detail}" if detail else "")
             )
 
+    if non_blocking_gate_fails:
+        extra_validation.append(
+            "Document non-blocking certification gate failures as adoption "
+            "caveats before claiming Context/Memory operator readiness."
+        )
+
     if adoption_status == "warn":
         weak.append("operator certification adoption_status=warn")
+        extra_validation.append(
+            "Document adoption caveats before claiming Context/Memory "
+            "operator readiness."
+        )
 
     skipped_count = sum(1 for item in skipped_checks if isinstance(item, Mapping))
     if skipped_count:
@@ -543,10 +555,11 @@ def _evaluate_operator_certification(
         if not extra_validation:
             extra_validation.append("Document skip reasons before adoption claims.")
 
-    if not final_verdict and not adoption_status and not gate_matrix and not weak:
+    if not final_verdict and not weak:
         weak.append("operator certification incomplete: missing final_verdict")
         extra_validation.append(
-            "Include final_verdict from make context-certify output."
+            "Include final_verdict from make context-certify output; "
+            "adoption_status alone is not CertifyReport proof."
         )
 
     return blocking, weak, missing, extra_validation
