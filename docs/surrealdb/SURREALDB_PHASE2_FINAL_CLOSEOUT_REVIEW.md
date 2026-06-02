@@ -109,7 +109,7 @@ limitations:
 | Runbook Draft → Active promotion | **DEFERRED** | #2780 non-blocking hygiene |
 | #2821 secret policy Gates 0–4 | **OPEN / FUTURE** | Activation blocker for **future** writes; **not** a Phase-2 delivery blocker when documented |
 | #1976 grandparent close | **OPEN** | Real-Task-Proof / parent DoD outside #2778 |
-| #2777 / #2781 | **OPEN** | Phase-1/planning hygiene; not Phase-2 child scope |
+| #2777 / #2781 | **CLOSED** | Phase-1 closeout/planning gates closed 2026-06-02; not Phase-2 child scope; see CURRENT_STATUS Phase-1 chain |
 
 ---
 
