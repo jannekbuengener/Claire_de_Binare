@@ -259,3 +259,10 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: `verify_stack.ps1` Default ohne Logging-Overlay; `-IncludeLogging:$true` fuer Loki/Promtail; Logging-Aktivierungspfad auf `infrastructure/compose/` praezisiert; Windows-`make docker-health` ergaenzt (Issue #2671) | Codex |
+### PostgreSQL Schema Artefacts (PR #2793)
+
+| Artifact | Migration | Status | Bedeutung |
+|---|---|---|---|
+| `risk_events` idempotency | `infrastructure/database/migrations/005_risk_events_idempotent.sql` | **AKTIV** | Fuegt `decision_pk` und `input_snapshot_hash` hinzu; der Unique-Key auf `decision_pk` macht Risk-Persistenz replay-sicher. |
+| `correlation_ledger` | `infrastructure/database/migrations/006_correlation_phase8c.sql` | **AKTIV** | Append-only Audit-Trail fuer `SIGNAL`/`DECISION`/`ORDER`/`FILL`-Ketten; Grundlage fuer Export- und Replay-Referenzfenster. |
+| `blocked_decisions` | `infrastructure/database/migrations/006_correlation_phase8c.sql` | **AKTIV** | Append-only Audit-Trail fuer BLOCK-Entscheidungen; nutzt denselben `decision_pk`-Mechanismus wie `risk_events`. |

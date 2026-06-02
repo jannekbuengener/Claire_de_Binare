@@ -217,3 +217,10 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-04-26 | PRs #1944/#1947 Nachzug: `primary_breakout_v1` nutzt zeitbasierte Lookback-Semantik (SignalEngine). `strategy_backtest_runner` implementiert opt-in Gate-Trace (JSONL); ARVP Replay CLI exponiert/forwarded `--gate-trace-path`. (Issues #1945/#1948) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Service (Delta-Counter + lazy `mexc_pb`-Import) und Postgres-Exporter-DSN/Secret-Wiring im RED-Stack nachgezogen (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: Stack-Verification-Tabelle (`verify_stack.ps1` Default ohne Logging-Overlay, `-IncludeLogging:$true` opt-in, Windows-`make docker-health`) ergänzt (Issue #2671) | Codex |
+## PostgreSQL Schema Artefacts
+
+| Artefakt | Migration | Status | Bedeutung |
+|---|---|---|---|
+| `risk_events` idempotency | `infrastructure/database/migrations/005_risk_events_idempotent.sql` | **AKTIV** | `decision_pk` + `input_snapshot_hash`; Unique-Key auf `decision_pk` macht Risk-Persistenz replay-sicher. |
+| `correlation_ledger` | `infrastructure/database/migrations/006_correlation_phase8c.sql` | **AKTIV** | Append-only Audit-Trail fuer `SIGNAL`/`DECISION`/`ORDER`/`FILL`-Ketten; Grundlage fuer Export- und Replay-Referenzfenster. |
+| `blocked_decisions` | `infrastructure/database/migrations/006_correlation_phase8c.sql` | **AKTIV** | Append-only Audit-Trail fuer BLOCK-Entscheidungen; nutzt denselben `decision_pk`-Mechanismus wie `risk_events`. |
