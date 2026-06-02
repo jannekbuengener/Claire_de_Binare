@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -116,6 +117,90 @@ def run_command(args: list[str], *, input_text: str | None = None) -> str:
             f"command failed ({result.returncode}): {' '.join(args)}\n{result.stderr.strip()}"
         )
     return result.stdout
+
+
+class ModelsRateLimitedError(RuntimeError):
+    """Raised when gh models run is blocked by GitHub Abuse-/Rate-Limit and retries are exhausted."""
+
+
+def is_gh_models_rate_limit_error(stderr: str) -> bool:
+    """Detect whether stderr indicates a GitHub Models Rate-Limit or Abuse-Detection error."""
+    if not stderr:
+        return False
+    lower = stderr.lower()
+    signatures = [
+        "rate limited",
+        "rate limit",
+        "abuse detection mechanism",
+        "<title>rate limit",
+        "retry after",
+    ]
+    return any(sig in lower for sig in signatures)
+
+
+MAX_RETRY_AFTER_CAP_SECONDS = 120
+
+
+def _parse_retry_after_seconds(stderr: str) -> int:
+    """Extract retry-after duration in seconds from stderr like '(retry after 1m0s)'.
+    Capped at MAX_RETRY_AFTER_CAP_SECONDS to avoid blocking the workflow
+    when the server returns a long retry-after (e.g. 30m)."""
+    match = re.search(r"retry after\s+(?:(\d+)m)?(\d+)s", stderr, re.IGNORECASE)
+    if match:
+        minutes = int(match.group(1)) if match.group(1) else 0
+        seconds = int(match.group(2))
+        raw = minutes * 60 + seconds
+        return min(raw, MAX_RETRY_AFTER_CAP_SECONDS)
+    return min(60, MAX_RETRY_AFTER_CAP_SECONDS)
+
+
+MAX_GH_MODELS_RETRIES = 3
+RETRY_BACKOFF_SECONDS = [30, 60, 120]
+
+
+def run_models_with_retry(
+    prompt_file: Path,
+    finding_input: str,
+    *,
+    max_retries: int = MAX_GH_MODELS_RETRIES,
+) -> str:
+    last_error: str | None = None
+    for attempt in range(1, max_retries + 1):
+        args = [
+            "gh",
+            "models",
+            "run",
+            "--file",
+            str(prompt_file),
+            "--var",
+            f"input={finding_input}",
+        ]
+        result = subprocess.run(
+            args,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            timeout=120,
+            check=False,
+        )
+        if result.returncode == 0:
+            return result.stdout
+        combined = (result.stderr or "") + (result.stdout or "")
+        if is_gh_models_rate_limit_error(combined):
+            last_error = combined.strip()
+            if attempt < max_retries:
+                delay = _parse_retry_after_seconds(combined)
+                time.sleep(delay)
+                continue
+            raise ModelsRateLimitedError(
+                f"gh models run rate-limited after {max_retries} retries:\n{last_error}"
+            )
+        raise RuntimeError(
+            f"command failed ({result.returncode}): {' '.join(args)}\n{result.stderr.strip()}"
+        )
+
+    raise RuntimeError("unreachable")
 
 
 def run_gh_repo(repo: str, args: list[str], *, input_text: str | None = None) -> str:
@@ -506,16 +591,9 @@ def classify_finding(
     prompt_file: Path,
     finding: Finding,
 ) -> dict[str, Any]:
-    raw = run_command(
-        [
-            "gh",
-            "models",
-            "run",
-            "--file",
-            str(prompt_file),
-            "--var",
-            f"input={finding.classification_input}",
-        ]
+    raw = run_models_with_retry(
+        prompt_file=prompt_file,
+        finding_input=finding.classification_input,
     )
     if not raw.strip():
         raise RuntimeError(
@@ -748,9 +826,11 @@ def upsert_control_comment(
 
 def build_summary(result: dict[str, Any]) -> str:
     pr = result["pr"]
+    status = result.get("status", "completed")
     lines = [
         "# CDB Post-Merge Follow-up Scan",
         "",
+        f"- Status: `{status}`",
         f"- PR: #{pr['number']} ({pr['url']})",
         f"- Title: {pr['title']}",
         f"- Mode: `{result['publish_mode']}`",
@@ -758,6 +838,19 @@ def build_summary(result: dict[str, Any]) -> str:
         f"- Classified findings: `{len(result['findings'])}`",
         "",
     ]
+    if status == "degraded_rate_limited":
+        lines.extend(
+            [
+                "## Degraded: Rate Limited",
+                "",
+                "The GitHub Models API returned a rate-limit or abuse-detection error. "
+                "Model classification was not available for one or more findings. "
+                "No blind follow-up issues were created based on unavailable model output.",
+                "Run the scanner manually via `workflow_dispatch` when the rate limit resets.",
+                "",
+            ]
+        )
+
     if not result["findings"]:
         lines.extend(
             [
@@ -771,9 +864,12 @@ def build_summary(result: dict[str, Any]) -> str:
 
     for finding in result["findings"]:
         cls = finding["classification"]
+        degraded_note = ""
+        if finding.get("degraded_reason") == "rate_limited":
+            degraded_note = " (degraded — model classification unavailable)"
         lines.extend(
             [
-                f"## {finding['title']}",
+                f"## {finding['title']}{degraded_note}",
                 "",
                 f"- Rule: `{finding['rule_id']}`",
                 f"- Classification: `{cls['classification']}`",
@@ -844,11 +940,31 @@ def main() -> int:
 
     results: list[dict[str, Any]] = []
     comment_findings: list[dict[str, Any]] = []
+    degraded: bool = False
     for finding in candidates:
-        classification = classification_for_finding(
-            prompt_file=args.prompt_file,
-            finding=finding,
-        )
+        try:
+            classification = classification_for_finding(
+                prompt_file=args.prompt_file,
+                finding=finding,
+            )
+        except ModelsRateLimitedError:
+            degraded = True
+            degraded_classification = {
+                "classification": "unclear",
+                "confidence": 0.0,
+                "affected_artifacts": finding.affected_candidates,
+                "suggested_next_step": (
+                    "No model classification available — scanner was rate-limited. "
+                    "No blind follow-up issue was created. Re-run the scanner "
+                    "manually when the rate limit resets."
+                ),
+            }
+            item = asdict(finding)
+            item["classification"] = degraded_classification
+            item["degraded_reason"] = "rate_limited"
+            results.append(item)
+            continue
+
         item = asdict(finding)
         item["classification"] = classification
         if args.publish_mode == "publish":
@@ -871,6 +987,7 @@ def main() -> int:
             findings=comment_findings,
         )
 
+    status = "degraded_rate_limited" if degraded else "completed"
     payload = {
         "repo": args.repo,
         "publish_mode": args.publish_mode,
@@ -880,6 +997,7 @@ def main() -> int:
             "url": pr["url"],
             "mergedAt": pr["mergedAt"],
         },
+        "status": status,
         "candidate_count": len(candidates),
         "findings": results,
         "control_comment": control_comment,

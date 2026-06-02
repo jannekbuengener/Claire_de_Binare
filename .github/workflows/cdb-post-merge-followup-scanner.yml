@@ -90,4 +90,4 @@ jobs:
         with:
           name: cdb-post-merge-followup-scan
           path: artifacts/cdb-post-merge-followup/
-          if-no-files-found: error
+          if-no-files-found: warn
