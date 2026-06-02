@@ -277,7 +277,11 @@ def build_context_package_v2(request: ContextPackageV2Request) -> dict[str, Any]
         redacted_artifacts.append(redacted)
         artifact_hashes.append(canonical_hash(_artifact_hash_payload(redacted)))
 
-    required_reads = _stable_required_reads(request.required_reads)
+    required_reads_stable = _stable_required_reads(request.required_reads)
+    required_reads = [
+        _redact_mapping(item, f"required_reads[{index}]", redaction_summary)
+        for index, item in enumerate(required_reads_stable)
+    ]
     evidence_links = _stable_redacted_links(
         request.evidence_links,
         "evidence_links",

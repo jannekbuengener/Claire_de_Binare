@@ -207,6 +207,18 @@ def test_empty_artifacts_fail_closed() -> None:
 
 
 @pytest.mark.unit
+def test_required_reads_are_redacted() -> None:
+    secret = "sk-required-read-secret"
+    package = build_context_package_v2(
+        _base_request(
+            required_reads=[{"path": "AGENTS.md", "api_key": secret}],
+        )
+    )
+    assert secret not in json.dumps(package)
+    assert package["required_reads"][0]["api_key"] == "[REDACTED]"
+
+
+@pytest.mark.unit
 def test_evidence_and_replay_links_are_redacted() -> None:
     secret = "Bearer abc.def.ghi"
     package = build_context_package_v2(
