@@ -1,5 +1,9 @@
 # Technischer Review: Gemini-Migrationsplan
 
+> **Status: historical/orphaned snapshot (2025-12-12).** Gordon/Docker-AI
+> Erwähnungen dokumentieren frühere Architektur-Empfehlungen — **kein operatives
+> Review-Gate**. Aktuelle Infra-Canon: `infrastructure/compose/`, `CURRENT_STATUS.md`.
+
 **Reviewer:** Claude (Session Lead)
 **Reviewee:** Gemini (Senior Repository Architect & Governance Planner)
 **Datum:** 2025-12-12
@@ -18,7 +22,7 @@ Gemini's Migrationsplan ist **strukturell solide, governance-konform und technis
 - ✅ Plan ist vollständig und detailliert (3 Tabellen: Governance, T1, T2/T3)
 - ✅ Ziel-Struktur entspricht `CDB_REPO_STRUCTURE.md`
 - ⚠️ **Git-History-Abhängigkeit kritisch**: t1/t2/t3 existieren nicht im HEAD
-- ⚠️ **Docker-Infrastruktur-Integration erforderlich**: Gordon's Empfehlungen müssen berücksichtigt werden
+- ⚠️ **Docker-Infrastruktur-Integration erforderlich**: frühere Gordon-Empfehlungen (2025-12-12, historisch) berücksichtigen — kein Gordon-Gate
 - ✅ Service-Umbenennungen logisch und konsistent
 - ⚠️ requirements.txt DROP erfordert Dependency-Migration-Strategie
 

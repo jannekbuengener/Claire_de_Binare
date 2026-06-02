@@ -4,7 +4,7 @@ title: 'Sicherheitsarchitektur für KI-Agenten'
 subtitle: 'Ein "Defense in Depth"-Ansatz für autonome Handelssysteme'
 author: 'Jannek Buengener, ChatGPT, Claude Code, und Gemini'
 date: '2025-12-17'
-status: 'Refactored'
+status: 'Refactored — historical concept (Gordon agent decommissioned; #2689)'
 tags:
   - Architektur
   - Sicherheit
@@ -12,6 +12,10 @@ tags:
   - API-Gateway
   - RL-Safety
 ---
+
+> **Not an active operational gate.** Gordon/Docker-AI agent surface is
+> decommissioned. Treat as deep-research archive only; Human-GO + repo evidence
+> govern live decisions.
 
 # Sicherheitsarchitektur für KI-Agenten
 
