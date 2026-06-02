@@ -3,8 +3,24 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-05-31
+**Last Updated**: 2026-06-02
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
+
+---
+
+## Repo / Engineering Status (2026-06-02)
+
+- **#2778 Phase-2 planning activation**: **ACTIVE-PLANNING** (Jannek GO 2026-06-02; planning/child-slicing only — not implementation blanket GO). Entry recheck **READY-FOR-JANNEK-GO** posted; child slices **#2797–#2804** OPEN. Comments: [#2778 activation](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597944784), [entry recheck](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778#issuecomment-4597927077). Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-entry-and-planning.md`. LR NO-GO.
+- **Phase-1 closeout chain (complete)**: #2773–#2777, #2689, #2780, #2781 **CLOSED**; #2780 via PR [#2795](https://github.com/jannekbuengener/Claire_de_Binare/pull/2795) (`5c365391` area); docs audit `PASS_WITH_DEFERRED_EXIT_ITEMS`.
+- **#1976 grandparent epic**: **OPEN** — Real-Task-Proof still required before closeout; not implied by #2778 planning GO.
+- **#2794**: **OPEN** — non-blocking architecture-doc follow-up (post-#2793).
+- **main**: `25cd8c82` (PR #2796 control-board auto-routing merged during session ff-only sync).
+- **Active GitHub focus (manual, non-exhaustive)**:
+  - #2778 + child slices #2797–#2804 (Phase-2 planning → scoped implementation)
+  - #1976 (grandparent; OPEN)
+  - #2794 (architecture doc; non-blocking)
+  - #2440 (LR-030 Shadow/Soak — OPEN)
+  - #2289 / #2290 (security alert readout — OPEN)
 
 ---
 
@@ -33,6 +49,7 @@
 
 ## Session Ledger (historical, not active focus)
 
+- **GitHub-only (Session 2026-06-02, #2778 Phase-2 entry + planning)**: Entry-gate recheck → READY-FOR-JANNEK-GO; Jannek GO → ACTIVE-PLANNING; child issues #2797–#2804 created; comments on #2778/#1976. No repo code/MCP/DB mutation. Phase-1 chain #2780/#2777/#2781 closed in same arc. Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-entry-and-planning.md`. LR NO-GO.
 - **Audited (Session 2026-05-29, #2733 #2606 parent re-audit)**: Read-only re-audit after #2730 spec merge. Verdict: **NOT_CLOSURE_READY** — PASS 11 / PARTIAL 3 / PASS WITH LIMITS 2; productive audit trail SPECIFIED / NOT ACTIVATED. #2606 body refreshed; #2733 evidence log landed. G1 follow-up **#2735** filed. No code/MCP/DB change. Session log: `knowledge/logs/sessions/2026-05-29-2733-2606-parent-reaudit.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2730 productive memory audit trail spec)**: PR #2732 (`fb490be3`) — `productive-memory-audit-trail-v1.md`, `productive-memory-write-readiness-runbook-v1.md`; cross-refs in proof matrix, slice1 audit §22, write-gate §10, MCP surface. Proof matrix row 3 → **SPECIFIED / NOT ACTIVATED**. #2730 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; parent re-audit recommended). Session log: `knowledge/logs/sessions/2026-05-29-2730-productive-memory-audit-trail.md`. LR NO-GO.
 - **Campaign (Session 2026-05-29, #2721 optional SurrealDB memory proof workflow)**: PR #2727 (`6bc74f4f`) — `.github/workflows/surrealdb-memory-proof.yml` (`workflow_dispatch`, non-required, `continue-on-error: true`); workflow shape tests; proof matrix row 6 → **PASS WITH LIMITS**; runbook section. #2721 **CLOSED**; #2606 **OPEN** (NOT_CLOSURE_READY; productive audit trail BLOCKED). Session log: `knowledge/logs/sessions/2026-05-29-2721-optional-surrealdb-memory-proof-workflow.md`. LR NO-GO.
