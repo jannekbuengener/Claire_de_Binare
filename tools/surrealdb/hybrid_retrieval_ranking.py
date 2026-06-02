@@ -22,6 +22,8 @@ import math
 from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
+from core.utils.clock import utcnow as cdb_utcnow
+
 SCHEMA_VERSION = "hybrid-retrieval-ranking/v1"
 
 RANKING_FACTORS = (
@@ -169,7 +171,10 @@ def _resolve_reference_time(
             parsed = _parse_datetime(source.get(key))
             if parsed is not None:
                 return parsed
-    return datetime.now(timezone.utc)
+    parsed_now = _parse_datetime(cdb_utcnow())
+    if parsed_now is None:
+        raise HybridRetrievalRankingError("reference time from clock is invalid")
+    return parsed_now
 
 
 def created_at_to_freshness_score(
@@ -286,7 +291,14 @@ def _resolve_factor_scores(
     else:
         created_at = _parse_datetime(candidate.get("created_at"))
         if created_at is not None:
-            ref = reference or datetime.now(timezone.utc)
+            ref = reference
+            if ref is None:
+                parsed_now = _parse_datetime(cdb_utcnow())
+                if parsed_now is None:
+                    raise HybridRetrievalRankingError(
+                        "reference time required for created_at freshness"
+                    )
+                ref = parsed_now
             scores["freshness"] = created_at_to_freshness_score(
                 created_at, reference=ref
             )
