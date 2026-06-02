@@ -1,8 +1,13 @@
 # Blue/Red Stack Split - Implementation Summary
 
-**Date:** 2026-01-29
-**Status:** ✅ Complete & Ready for Review
-**Review:** Pending Gordon (system-architect agent)
+> **Status: historical/orphaned snapshot**  
+> **Not an active operational gate.** Gordon/Docker-AI ist decommissioned. Review/
+> Merge-Gate: Jannek Human-GO + GitHub-live + repo evidence. Aktueller Canon:
+> `infrastructure/docs/BLUE_RED_SPLIT.md`, `CURRENT_STATUS.md`.
+
+**Date:** 2026-01-29 (historisch)  
+**Status:** ✅ Complete — delivered and merged  
+**Review (historisch):** Jannek Human-GO + smoke evidence (kein Gordon-Gate)
 
 ---
 
@@ -257,11 +262,11 @@ reports/
 
 ## Next Steps
 
-### 1. Gordon Review
+### 1. Human Review (historisch abgeschlossen)
 
-**Agent:** `system-architect` (or manual review by Jannek)
+**Gate:** Jannek Human-GO + repo-backed smoke evidence (kein Gordon/Docker-AI)
 
-**Review Points:**
+**Review Points (historisch):**
 - [ ] Evidence chain correct? (risk/service.py dependencies)
 - [ ] Network architecture sound? (external network, no shared volumes)
 - [ ] Service mapping justified? (allocation/regime in BLUE)
@@ -291,7 +296,7 @@ docker compose -f infrastructure/compose/compose.red.yml down
 
 ### 3. Merge & Finalize
 
-**After Gordon approval:**
+**After Human-GO (historisch):**
 1. Commit compose files + scripts + docs
 2. Update main README.md (link to QUICK_START.md)
 3. Deprecate legacy base.yml + dev.yml (or mark as legacy)
@@ -325,7 +330,7 @@ docker compose -f infrastructure/compose/compose.red.yml down
 ✅ **Governance:**
 - Evidence-based decisions documented
 - File:line references for all claims
-- Gordon review completed
+- Human review completed (historisch; kein Gordon-Gate)
 
 ---
 
@@ -383,4 +388,4 @@ docker compose -f infrastructure/compose/compose.blue.yml logs | Select-String "
 ---
 
 **Implementation Status:** ✅ Complete
-**Ready for:** Gordon Review → Verification → Merge
+**Ready for (historisch):** Human-GO → Verification → Merge — **DONE**

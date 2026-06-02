@@ -134,17 +134,17 @@
 
 ---
 
-### 2. Issue #499 - Follow-up: Gordon Docker setup — Scout/Trivy/Metrics + Dockerfile strategy
+### 2. Issue #499 - Follow-up: Gordon Docker setup (historisch) — Scout/Trivy/Metrics + Dockerfile strategy
 **Labels:** prio:must, prio:should, type:security, scope:infra, docker, review, follow-up
-**Warum:** Docker security - Gordon setup review, hardening
+**Warum (historisch):** Docker security — frühere Gordon-Setup-Review; kein operatives Gate
 **Abhängigkeiten:** PR #497
 **Done:** Scout/Trivy configured, Metrics setup, Dockerfile strategy documented
 
 ---
 
-### 3. Issue #498 - Review: Gordon Docker setup + CI workflow claims
+### 3. Issue #498 - Review: Gordon Docker setup (historisch) + CI workflow claims
 **Labels:** prio:must, prio:should, type:security, agent:gemini, agent:copilot
-**Warum:** Docker review - CI workflow claims verification
+**Warum (historisch):** Docker review — frühere Gordon-CI-Claims; Jannek/GitHub-live Gate
 **Abhängigkeiten:** PR #497, Issue #499
 **Done:** Review complete, CI workflow claims verified/adjusted
 
@@ -270,7 +270,7 @@ done
 
 ## Blocker PRs (Konflikt-auflösung nötig)
 
-- PR #497 - CONFLICTING - Gordon Docker setup
+- PR #497 - CONFLICTING - Gordon Docker setup (historisch; kein Gordon-Gate)
 - PR #504 - CONFLICTING - CI fetch fix
 - PR #476 - CONFLICTING - CI path filters
 - PR #481 - CONFLICTING - CI emoji report

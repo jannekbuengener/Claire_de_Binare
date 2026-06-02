@@ -1,7 +1,7 @@
 -- Migration 005: Add idempotency to risk_events
 -- Date: 2026-02-15
 -- Reason: Phase 8B - Deterministic persistence with replay-safe PK
--- Gordon Review: APPROVED (reports/GORDON_P8B_BRIEF.md)
+-- Historical note: Phase 8B review artifact (reports/GORDON_P8B_BRIEF.md); Gordon gate decommissioned (#2689). Human-GO + repo evidence only.
 
 -- Add idempotency columns
 ALTER TABLE risk_events ADD COLUMN IF NOT EXISTS decision_pk VARCHAR(36);

@@ -1,8 +1,14 @@
 # Gordon Review Response - Blue/Red Stack Split
 
-**Review Date:** 2026-01-29
-**Reviewer:** Gordon (system-architect agent)
-**Status:** ✅ ALL CONDITIONS RESOLVED
+> **Status: historical/orphaned snapshot**  
+> **Not an active operational gate.** Do not treat Gordon/Docker-AI as an available
+> approval, review, deployment, stack, or debugging authority. Operatives Gate:
+> Jannek Human-GO + GitHub-live-before-ledger + repo-backed evidence. Siehe
+> #2689 / `.cursor/agents/_CDB_SUBAGENT_CONTRACT.md`.
+
+**Review Date:** 2026-01-29 (historisch)  
+**Reviewer:** Gordon (system-architect agent — decommissioned; Archiv only)  
+**Status (historisch):** ✅ ALL CONDITIONS RESOLVED — merged to main; kein offener Gate
 
 ---
 
@@ -117,7 +123,7 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 ✅ **ALREADY COMPLETE** - SERVICE_MAPPING.md shows 9 BLUE services with table
 
 ### D) PR erstellen
-🔄 **IN PROGRESS** - Creating PR with Gordon Review Summary
+✅ **COMPLETE (historisch)** — PR merged; Gordon-Gate nicht mehr operativ
 
 ---
 
@@ -153,4 +159,4 @@ $ git show f01e541:infrastructure/compose/compose.blue.yml | grep -E "^\s+cdb_(d
 
 ---
 
-**Status:** Ready for PR creation and merge to main
+**Status (historisch):** Delivered and merged — archive only; no active Gordon gate
