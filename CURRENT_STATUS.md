@@ -10,8 +10,8 @@
 
 ## Repo / Engineering Status (2026-06-03)
 
-- **#2831 Grandparent §B wave matrix recertification**: **IN PROGRESS** (branch `surrealdb-1976-wave-matrix-recert`) — deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B update in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). GitHub-live: #2831 **OPEN**; #1976 **OPEN** (HOLD); #2832/#2833 **OPEN**. LR NO-GO; no writes/runtime activation.
-- **#1976 grandparent epic**: **OPEN** — §B recert delivered via #2831; epic-close **HOLD** until #2832 (second RTP) and #2833 (closeout). RTP #2821 **PASS** (PR #2829). See recert doc above.
+- **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md) + §B/§G in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). GitHub-live: #2831 **CLOSED**; #1976 **OPEN** (HOLD; reopened if auto-closed by merge subject); #2832/#2833 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-03-2831-wave-matrix-recertification.md`. LR NO-GO.
+- **#1976 grandparent epic**: **OPEN** — §B recert on `main` (PR #2834); epic-close **HOLD** until #2832 (second RTP) and #2833 (closeout). RTP #2821 **PASS** (PR #2829). Do not close from recert alone.
 
 ## Repo / Engineering Status (2026-06-02)
 
@@ -27,9 +27,8 @@
 - **Phase-1 closeout chain (complete)**: #2773–#2777, #2689, #2780, #2781 **CLOSED**; #2780 via PR [#2795](https://github.com/jannekbuengener/Claire_de_Binare/pull/2795) (`5c365391` area); docs audit `PASS_WITH_DEFERRED_EXIT_ITEMS`.
 - **#1976 grandparent epic**: **OPEN** — RTP **PASS** for #2821 slice on `main` (PR #2829); epic-close **HOLD** (readiness §B). See [`SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md).
 - **#2794**: **OPEN** — non-blocking architecture-doc follow-up (post-#2793).
-- **main**: `3a19b372` (PR #2829 #2821 secret policy + RTP proof).
+- **main**: `5face9c9` (PR #2834 #2831 §B wave matrix recert).
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #2831 §B wave matrix recert (OPEN → PR pending)
   - #2832 second RTP; #2833 grandparent closeout (OPEN)
   - #1976 grandparent epic (OPEN; HOLD)
   - Phase-2 children #2797–#2804 (**all CLOSED**)
