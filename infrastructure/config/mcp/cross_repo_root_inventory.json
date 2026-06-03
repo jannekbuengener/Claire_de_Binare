@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "issue_refs": ["#2853", "#2847"],
+  "discovery_notes": [
+    "Read-only filesystem discovery; no git clone or private-repo fetch.",
+    "Local status and GitHub target status are evaluated independently.",
+    "GitHub reachability uses gh repo view when a slug is configured (optional)."
+  ],
+  "defaults": {
+    "workspaces_repos_dir_env": "CDB_WORKSPACES_REPOS"
+  },
+  "entries": [
+    {
+      "key": "working",
+      "display_name": "Claire de Binare (working repo)",
+      "required": true,
+      "local": { "kind": "repo_root" },
+      "github": {
+        "owner": "jannekbuengener",
+        "repo": "Claire_de_Binare"
+      }
+    },
+    {
+      "key": "db",
+      "display_name": "SurrealDB / context tooling",
+      "required": true,
+      "local": { "relative_path": "tools/surrealdb" },
+      "github": { "kind": "same_as_working" }
+    },
+    {
+      "key": "mcp",
+      "display_name": "MCP bridge and registry",
+      "required": true,
+      "local": { "relative_path": "tools/mcp" },
+      "github": { "kind": "same_as_working" }
+    },
+    {
+      "key": "config",
+      "display_name": "MCP and Python project config",
+      "required": true,
+      "local": {
+        "relative_paths": ["claire-de-binare.mcp.json", "pyproject.toml"]
+      },
+      "github": { "kind": "same_as_working" }
+    },
+    {
+      "key": "traumtaenzer",
+      "display_name": "TraumTaenzer (sibling repo)",
+      "required": false,
+      "local": { "sibling_dir": "TraumTaenzer" },
+      "github": {
+        "owner": "jannekbuengener",
+        "repo": "TraumTaenzer"
+      }
+    },
+    {
+      "key": "sample_brain",
+      "display_name": "sample_brain (external brain repo)",
+      "required": false,
+      "local": { "sibling_dir": "sample_brain" },
+      "github": {
+        "owner": "jannekbuengener",
+        "repo": "sample_brain"
+      }
+    },
+    {
+      "key": "gpt_mcp_server",
+      "display_name": "gpt-mcp-server (external MCP repo)",
+      "required": false,
+      "local": { "sibling_dir": "gpt-mcp-server" },
+      "github": {
+        "owner": "jannekbuengener",
+        "repo": "gpt-mcp-server"
+      }
+    }
+  ]
+}

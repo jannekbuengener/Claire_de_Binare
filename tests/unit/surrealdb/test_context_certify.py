@@ -13,6 +13,13 @@ from tools.surrealdb import context_certify as certify
 
 pytestmark = pytest.mark.unit
 
+
+@pytest.fixture
+def certify_repo_root() -> Path:
+    """Working-repo root with cross-repo inventory config (#2853)."""
+    return certify._repo_root()
+
+
 REQUIRED_TOP_LEVEL_KEYS = {
     "timestamp",
     "git_sha",
@@ -33,8 +40,8 @@ REQUIRED_TOP_LEVEL_KEYS = {
 }
 
 
-def test_build_report_certified_by_default(tmp_path: Path) -> None:
-    report = certify.build_report(tmp_path)
+def test_build_report_certified_by_default(certify_repo_root: Path) -> None:
+    report = certify.build_report(certify_repo_root)
     payload = report.to_dict()
     assert REQUIRED_TOP_LEVEL_KEYS <= set(payload.keys())
     assert report.final_verdict == "certified"
@@ -45,6 +52,10 @@ def test_build_report_certified_by_default(tmp_path: Path) -> None:
     assert report.lr_note == "NO-GO"
     assert any(
         gate.check_id == "registry_all_read_only" and gate.status == "pass"
+        for gate in report.gate_matrix
+    )
+    assert any(
+        gate.check_id == "cross_repo_root_inventory" and gate.status == "pass"
         for gate in report.gate_matrix
     )
     assert report.skipped_checks_with_reason
@@ -82,8 +93,8 @@ def test_compute_exit_code() -> None:
     assert certify.compute_exit_code(fail) == 1
 
 
-def test_format_json_roundtrip(tmp_path: Path) -> None:
-    report = certify.build_report(tmp_path)
+def test_format_json_roundtrip(certify_repo_root: Path) -> None:
+    report = certify.build_report(certify_repo_root)
     text = certify.format_report(report, "json")
     certify._validate_output_safe(text)
     parsed = json.loads(text)
@@ -91,12 +102,12 @@ def test_format_json_roundtrip(tmp_path: Path) -> None:
     assert isinstance(parsed["gate_matrix"], list)
 
 
-def test_main_exit_code_zero(tmp_path: Path) -> None:
-    code = certify.main(["--repo-root", str(tmp_path), "--format", "json"])
+def test_main_exit_code_zero(certify_repo_root: Path) -> None:
+    code = certify.main(["--repo-root", str(certify_repo_root), "--format", "json"])
     assert code == 0
 
 
-def test_registry_failure_marks_fail(tmp_path: Path) -> None:
+def test_registry_failure_marks_fail(certify_repo_root: Path) -> None:
     bad_tool = ToolDefinition(
         name="context.bad_write",
         description="injected for certify test",
@@ -120,13 +131,13 @@ def test_registry_failure_marks_fail(tmp_path: Path) -> None:
                 mock_bridge.return_value.get_read_only_status.return_value = (
                     bridge_status
                 )
-                report = certify.build_report(tmp_path)
+                report = certify.build_report(certify_repo_root)
     assert report.final_verdict == "fail"
     assert report.blocked_checks_with_reason
     assert certify.compute_exit_code(report) == 1
 
 
-def test_git_metadata_detects_dirty(tmp_path: Path) -> None:
+def test_git_metadata_detects_dirty(certify_repo_root: Path) -> None:
     with patch.object(certify, "_git_metadata") as mock_git:
         mock_git.return_value = {
             "git_sha": "deadbeef",
@@ -134,13 +145,13 @@ def test_git_metadata_detects_dirty(tmp_path: Path) -> None:
             "worktree_clean": False,
             "git_available": True,
         }
-        report = certify.build_report(tmp_path)
+        report = certify.build_report(certify_repo_root)
     assert report.git_sha == "deadbeef"
     assert report.worktree_clean is False
 
 
-def test_test_command_suggestions_present(tmp_path: Path) -> None:
-    report = certify.build_report(tmp_path)
+def test_test_command_suggestions_present(certify_repo_root: Path) -> None:
+    report = certify.build_report(certify_repo_root)
     suggestions = report.test_results["test_command_suggestions"]
     assert any("test_context_certify" in cmd for cmd in suggestions)
     assert any("test_context_onboarding_doctor" in cmd for cmd in suggestions)

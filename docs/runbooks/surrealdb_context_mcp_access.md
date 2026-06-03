@@ -207,6 +207,19 @@ python -m tools.surrealdb.context_onboarding_doctor --format json
 - Issue #2642 prüft optional `127.0.0.1:8811` (HTTP MCP host).
 - Separater remote `cdb`-Server in OpenCode nutzt laut Runbook-Hinweis `127.0.0.1:8812/mcp` — nicht mit #2642 verwechseln.
 
+**Cross-repo root inventory** (#2853) — deterministische Tabelle für Working-Repo und
+konfigurierte Sibling-/Extern-Roots (lokal vs. GitHub getrennt; kein Clone):
+
+```bash
+make context-root-inventory
+python -m tools.mcp.cross_repo_root_inventory --format markdown
+python -m tools.mcp.cross_repo_root_inventory --format json --no-github-check
+```
+
+- SSOT: `infrastructure/config/mcp/cross_repo_root_inventory.json`
+- Evidence: `docs/evidence/context_tooling/CDB_CROSS_REPO_ROOT_INVENTORY_2026-06-03.md`
+- Harness/certify binden dieselbe Inventory-Quelle ein (`context-live-invoke`, `context-certify`).
+
 **Context operator certification** (#2776) — wiederholbarer read-only Proof Pack
 für Bridge/Registry/Permission-Guard (kein produktiver DB-Smoke, kein `--apply`):
 

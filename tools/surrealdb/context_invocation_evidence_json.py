@@ -217,6 +217,7 @@ def build_invocation_evidence(report: harness.HarnessReport) -> dict[str, Any]:
         "worktree_clean": report.worktree_clean,
         "lr_note": report.lr_note,
         "safety_flags": dict(report.safety_flags),
+        "root_inventory": dict(report.root_inventory),
     }
     document["determinism_hash"] = compute_aggregate_determinism_hash(document)
     return document

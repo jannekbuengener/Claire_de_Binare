@@ -3,7 +3,7 @@
 Invokes every registered tool via ContextBridge (same handler path as MCP server)
 with benchmark-safe parameters. Produces a per-tool matrix for regression detection.
 
-Issue: #2849, #2852 (profiles + ratification), #2850 (JSON evidence)
+Issue: #2849, #2852 (profiles + ratification), #2850 (JSON evidence), #2853 (root inventory)
 Parent: #2847
 
 Usage:
@@ -397,6 +397,7 @@ class HarnessReport:
     registry_tool_names: list[str] = field(default_factory=list)
     missing_from_manifest: list[str] = field(default_factory=list)
     extra_in_manifest: list[str] = field(default_factory=list)
+    root_inventory: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -418,6 +419,7 @@ class HarnessReport:
             "registry_tool_names": self.registry_tool_names,
             "missing_from_manifest": self.missing_from_manifest,
             "extra_in_manifest": self.extra_in_manifest,
+            "root_inventory": self.root_inventory,
         }
 
 
@@ -443,14 +445,29 @@ def _registry_tool_names(bridge: Any) -> list[str]:
     return sorted(names)
 
 
+def _attach_root_inventory(
+    repo_root: Path,
+    *,
+    check_github: bool = True,
+) -> dict[str, Any]:
+    from tools.mcp.cross_repo_root_inventory import build_inventory
+
+    report = build_inventory(repo_root, check_github=check_github)
+    return report.to_dict()
+
+
 def run_matrix(
     *,
     live: bool = True,
     profile: InvocationProfile = "minimal",
     fail_on_limits: bool = False,
+    check_github_roots: bool = True,
 ) -> HarnessReport:
     """Build the invocation matrix. When live=False, only validate manifest/registry."""
     repo_root = _repo_root()
+    root_inventory = _attach_root_inventory(
+        repo_root, check_github=check_github_roots
+    )
     git = _git_metadata(repo_root)
     bridge = create_bridge() if live else None
     invocations = invocations_for_profile(profile)
@@ -536,6 +553,11 @@ def run_matrix(
         fail_reasons.append(
             f"{summary['PASS_WITH_LIMITS']} PASS_WITH_LIMITS row(s) not allowed"
         )
+    if root_inventory.get("roots_verdict") == "fail":
+        fail_reasons.append("cross-repo root inventory: required local root missing")
+        for reason in root_inventory.get("fail_reasons") or []:
+            if isinstance(reason, str):
+                fail_reasons.append(f"root_inventory: {reason}")
 
     final: FinalVerdict = "fail" if fail_reasons else "pass"
 
@@ -555,6 +577,7 @@ def run_matrix(
         registry_tool_names=registry_names,
         missing_from_manifest=missing,
         extra_in_manifest=extra,
+        root_inventory=root_inventory,
     )
 
 
@@ -594,6 +617,23 @@ def format_report_markdown(report: HarnessReport) -> str:
             lines.append(f"- missing_from_manifest: {report.missing_from_manifest}")
         if report.extra_in_manifest:
             lines.append(f"- extra_in_manifest: {report.extra_in_manifest}")
+    if report.root_inventory:
+        inv = report.root_inventory
+        lines.extend(
+            [
+                "",
+                "## Cross-repo root inventory (#2853)",
+                f"- **roots_verdict:** {inv.get('roots_verdict')}",
+            ]
+        )
+        for row in inv.get("rows") or []:
+            if not isinstance(row, dict):
+                continue
+            lines.append(
+                f"- `{row.get('key')}`: local={row.get('local_status')} "
+                f"github={row.get('github_target_status')} "
+                f"path={row.get('local_path') or '—'}"
+            )
     lines.extend(
         [
             "",

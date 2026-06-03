@@ -205,6 +205,50 @@ def _collect_static_gates() -> tuple[list[GateEntry], dict[str, Any], dict[str, 
     return gates, mcp_summary, permission_summary
 
 
+def _collect_root_inventory_gates(repo_root: Path) -> list[GateEntry]:
+    from tools.mcp.cross_repo_root_inventory import build_inventory
+
+    try:
+        inv = build_inventory(repo_root, check_github=False)
+    except (FileNotFoundError, ValueError) as exc:
+        return [
+            GateEntry(
+                check_id="cross_repo_root_inventory",
+                status="fail",
+                blocking=True,
+                detail=f"inventory build failed: {exc}",
+            )
+        ]
+
+    missing_optional = [
+        row.key for row in inv.rows if row.local_status == "MISSING" and not row.required
+    ]
+    if inv.roots_verdict == "fail":
+        status: GateStatus = "fail"
+        detail = "; ".join(inv.fail_reasons) or "required local root missing"
+        blocking = True
+    elif missing_optional:
+        status = "pass"
+        detail = (
+            f"roots_verdict={inv.roots_verdict}; optional missing: "
+            f"{', '.join(missing_optional)}"
+        )
+        blocking = False
+    else:
+        status = "pass"
+        detail = f"roots_verdict={inv.roots_verdict}; all configured roots present"
+        blocking = False
+
+    return [
+        GateEntry(
+            check_id="cross_repo_root_inventory",
+            status=status,
+            blocking=blocking,
+            detail=detail,
+        )
+    ]
+
+
 def _default_skipped_checks() -> list[dict[str, str]]:
     return [
         {
@@ -318,8 +362,9 @@ def build_report(
     git_info = _git_metadata(root)
     static_gates, mcp_summary, permission_summary = _collect_static_gates()
     doctor_status, doctor_gates = _run_doctor(root, include_live=include_live_checks)
+    root_gates = _collect_root_inventory_gates(root)
 
-    gates = static_gates + doctor_gates
+    gates = static_gates + doctor_gates + root_gates
     skipped = _default_skipped_checks()
     blocked: list[dict[str, str]] = []
 
