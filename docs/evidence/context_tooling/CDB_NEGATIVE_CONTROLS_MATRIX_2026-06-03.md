@@ -70,4 +70,4 @@ Machine-readable matrix index is embedded in harness JSON evidence under
 - Enabling `PERSIST_ALLOWED` / `MUTATION_ALLOWED` in CI
 - Live MCP stdio mutation proofs
 - Security workflow changes
-- Operator trust scoring (#2856) or senses docs (#2855)
+- Operator trust scoring (#2856); agent senses operator map delivered in #2855 (`docs/runbooks/CDB_AGENT_SENSES_OPERATOR.md`)

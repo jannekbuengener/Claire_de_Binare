@@ -29,6 +29,10 @@ Out of scope for this runbook:
 - Context import pipeline (see `surrealdb_context_import.md`)
 - Context query CLI (see `surrealdb_context_query.md`)
 
+**Operator map (agent senses, evidence ladder, fallbacks):**
+[`CDB_AGENT_SENSES_OPERATOR.md`](CDB_AGENT_SENSES_OPERATOR.md) (Issue [#2855](https://github.com/jannekbuengener/Claire_de_Binare/issues/2855)).
+Evidence index: [`docs/evidence/context_tooling/README.md`](../evidence/context_tooling/README.md).
+
 ---
 
 ## 1.6. Managed / non-local runtime posture (NOT ACTIVE)
