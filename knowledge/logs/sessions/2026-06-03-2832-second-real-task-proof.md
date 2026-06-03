@@ -18,7 +18,7 @@
 
 - `context_certify --format json` → `certified`, 27 read-only tools.
 - Bridge enumerate → 27 tools, all read-only.
-- `build_context_package_v2` for `issue:2513` → `pkg_aae9de29cb43`.
+- `build_context_package_v2` for `issue:2513` → `pkg_ffb00bafd919` (3 required_reads).
 - `pytest` (certify + package_v2 + context_bridge) → 280 passed.
 - `gh issue view` 2513, 2832, 1976, 2833.
 

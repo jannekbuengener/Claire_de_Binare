@@ -368,6 +368,23 @@ Legacy label and milestone automation. Not actively maintained; do not enable wi
 | `policy-gate.yml` | Gates PR type classification; patterns downstream checks |
 | `gitleaks.yml` | Fails on detected secrets |
 
+### Branch protection merge blockers on `main` (#2837)
+
+Required GitHub status checks (not workflows, but enforced at merge):
+
+| Check | Required |
+|---|---|
+| `ci (Unit/Integration + Lint gesammelt)` | yes |
+| `policy-gate` | yes |
+
+**Not** branch-protection merge blockers (solo-maintainer, live as of 2026-06-03):
+
+- Human approving reviews (`required_approving_review_count=0`)
+- Code owner reviews (`require_code_owner_reviews=false`)
+- **Inline review thread resolution** (`required_conversation_resolution=false` — disabled #2837)
+
+Unresolved inline review threads remain visible review signals; operators should still address blocking/security/actionable feedback before merge. See `docs/runbooks/GITHUB_CONTROL_PLANE_RUNBOOK.md` § 1c.
+
 ---
 
 ## Gold-im-Keller candidates

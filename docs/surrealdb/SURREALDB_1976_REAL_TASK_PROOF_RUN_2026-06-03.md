@@ -25,7 +25,7 @@ tools_or_queries:
   - PYTHONPATH=. python: PERSIST_ALLOWED/MUTATION_ALLOWED → False/False
   - PYTHONPATH=. python: create_bridge().list_tools() → 27 tools, all_readonly=True
   - python -m tools.surrealdb.context_certify --format json → final_verdict certified
-  - build_context_package_v2(target_scope=issue:2513) → pkg_aae9de29cb43 (in_memory)
+  - build_context_package_v2(target_scope=issue:2513) → pkg_ffb00bafd919 (in_memory)
   - pytest -q test_context_certify, test_context_package_v2, test_context_bridge -m unit → 280 passed
 records_or_results:
   - #2513: OPEN (upstream-blocked Trivy tracking)
@@ -101,7 +101,7 @@ limitations:
 | --- | --- |
 | `agents/AGENTS.md` | Read Order (bootloader) |
 | `docs/security/TRIAGE_RUNBOOK.md` | Dismissal governance SSOT for #2513 |
-| `docs/runbooks/surrealdb_context_mcp_access.md` | §1.5 capability protocol; §1.5.1 matrix |
+| `docs/runbooks/surrealdb_context_mcp_access.md` | §1.5 capability protocol |
 | `tools/surrealdb/memory_write_gate.py` | PERSIST gate |
 | `tools/mcp/memory_write_intent_tools.py` | MUTATION gate |
 | `tools/mcp/context_bridge.py` | Bridge / list_tools |
@@ -118,7 +118,7 @@ limitations:
 | --- | --- |
 | `make context-certify` / `context_certify` | `final_verdict: certified`; 27/27 read-only; gates pass |
 | MCP bridge enumerate | `create_bridge().list_tools()` → 27, `all_readonly=True` |
-| Context Package v2 | `target_scope=issue:2513` → `package_id=pkg_aae9de29cb43`; 3 artifacts, 2 required_reads |
+| Context Package v2 | `target_scope=issue:2513` → `package_id=pkg_ffb00bafd919`; 3 artifacts, 3 required_reads |
 | Runbook §1.5 | Capability protocol aligned with bridge inventory (L3 bridge verified; IDE host not mounted) |
 | Unit tests | 280 passed (certify + package_v2 + context_bridge) |
 
@@ -151,8 +151,8 @@ limitations:
 | --- | --- |
 | `python -m tools.surrealdb.context_certify --format json` | **certified**; `git_sha=44c2895d`; safety_flags read-only |
 | `PYTHONPATH=. python` bridge enumerate | **27** tools, **all_readonly=True** |
-| `build_context_package_v2` (`issue:2513`) | **pkg_aae9de29cb43**; `package_mode=in_memory` |
-| `pytest -q tests/unit/surrealdb/test_context_certify.py tests/unit/surrealdb/test_context_package_v2.py tests/unit/tools/mcp/test_context_bridge.py -m unit` | **280 passed** (4.11s) |
+| `build_context_package_v2` (`issue:2513`) | **pkg_ffb00bafd919**; in-memory envelope; content_hash in determinism block |
+| `pytest -q tests/unit/surrealdb/test_context_certify.py tests/unit/surrealdb/test_context_package_v2.py tests/unit/tools/mcp/test_context_bridge.py -m unit` | **280 passed** (2.22s) |
 
 No `.py` files modified in this slice (docs-only PR).
 
