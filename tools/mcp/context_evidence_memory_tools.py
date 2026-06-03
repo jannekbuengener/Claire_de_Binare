@@ -34,6 +34,7 @@ from tools.surrealdb.memory_read import (
     read_memory_v1,
 )
 from tools.surrealdb.trust_summary import (
+    TrustContextSignals,
     TrustSummaryError,
     TrustSummaryRequest,
     build_trust_summary_v1,
@@ -760,6 +761,18 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             message=str(exc),
         )
 
+    context_signals: TrustContextSignals | None = None
+    try:
+        context_signals = TrustContextSignals.from_mapping(
+            _as_mapping(params.get("context_signals"))
+        )
+    except TrustSummaryError as exc:
+        return _error_response(
+            TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            code="invalid_parameters",
+            message=str(exc),
+        )
+
     try:
         result = build_trust_summary_v1(
             trust_request,
@@ -767,6 +780,7 @@ def handle_cdb_context_trust_summary(request: Mapping[str, Any]) -> dict[str, An
             claim_result=claim_result_raw,
             decision_result=decision_result_raw,
             memory_result=memory_result_raw,
+            context_signals=context_signals,
         )
     except TrustSummaryError as exc:
         return _error_response(

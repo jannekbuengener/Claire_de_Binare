@@ -2264,6 +2264,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     missing_evidence_notice: list[str] = []
     blocking_trust_findings: list[str] = []
     recommended_next_reads_enrichment: list[str] = []
+    operator_trust_level: str = "MEDIUM"
+    trust_limitations: list[str] = []
 
     _has_records = any(
         [
@@ -2290,7 +2292,13 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 "no_evidence_records_provided",
                 "no_decision_events_provided",
             ]
+            operator_trust_level = "LOW"
+            trust_limitations = [
+                "No enrichment records supplied; trust synthesis is incomplete.",
+                "operator_trust_level LOW: not operational truth.",
+            ]
             trust_summary = (
+                f"Operator trust: {operator_trust_level}. "
                 "Enrichment skipped: no evidence_records, claim_records, decision_events, "
                 "or memory_records provided. Supply records to enable evidence/decision enrichment."
             )
@@ -2520,6 +2528,10 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                 memory_result=_memory_service_result,
             )
             _trust_level = _ts_result.get("trust_level", "blocked")
+            operator_trust_level = str(
+                _ts_result.get("operator_trust_level") or "BLOCKED"
+            )
+            trust_limitations = list(_ts_result.get("limitations") or [])
             _composite_score = _ts_result.get("composite_score", 0.0)
             _ts_blocking = _ts_result.get("blocking_trust_findings", [])
             if _ts_blocking:
@@ -2528,7 +2540,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
             if _stale_ts_flags:
                 stale_evidence_notice.extend([str(_f) for _f in _stale_ts_flags])
             trust_summary = (
-                f"Trust level: {_trust_level}. "
+                f"Operator trust: {operator_trust_level}. "
+                f"Trust level (legacy): {_trust_level}. "
                 f"Composite score: {_composite_score:.2f}. "
                 f"Evidence items: {len(enriched_evidence)}. "
                 f"Decisions: {len(enriched_decisions)}. "
@@ -2550,7 +2563,15 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
                         "review evidence before proceeding"
                     )
         except TrustSummaryError as _e:
-            trust_summary = f"Trust summary unavailable: {_e}. no_echtgeld_go: true."
+            operator_trust_level = "BLOCKED"
+            trust_limitations = [
+                f"trust_summary_error: {_e}",
+                "operator_trust_level BLOCKED: not operational truth.",
+            ]
+            trust_summary = (
+                f"Operator trust: {operator_trust_level}. "
+                f"Trust summary unavailable: {_e}. no_echtgeld_go: true."
+            )
             known_risks.append(f"trust_summary_error: {_e}")
 
     # --- Assemble briefing result ---
@@ -2560,6 +2581,8 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         "enriched_briefing_id": briefing_id,
         "scope_summary": scope_summary,
         "trust_summary": trust_summary,
+        "operator_trust_level": operator_trust_level,
+        "trust_limitations": trust_limitations,
         "context_package_ref": context_package_ref,
         "required_reads": required_reads,
         "relevant_artifacts": package_artifacts[:10],

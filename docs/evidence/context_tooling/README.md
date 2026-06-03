@@ -22,4 +22,5 @@ Operator and benchmark artifacts for CDB Context/MCP hardening (parent [#2847](h
 ## Contracts
 
 - [DB_RECORD_EVIDENCE_CONTRACT.md](../../contracts/context_tooling/DB_RECORD_EVIDENCE_CONTRACT.md) — #2851
+- [CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md](../../contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md) — #2856
 - [TOOL_INVOCATION_JSON_EVIDENCE.md](../../contracts/context_tooling/TOOL_INVOCATION_JSON_EVIDENCE.md) — #2850

@@ -1,0 +1,10 @@
+{
+  "scope": "fixture-low",
+  "expected_operator_trust_level": "LOW",
+  "context_signals": {
+    "caller_supplied_source_only": true
+  },
+  "evidence_result": {
+    "evidence_summary": {"overall_strength": "weak"}
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "scope": "fixture-medium",
+  "expected_operator_trust_level": "MEDIUM",
+  "context_signals": {
+    "record_source": "repo-only",
+    "repo_crosscheck_present": true
+  },
+  "evidence_result": {
+    "evidence_summary": {"overall_strength": "strong"},
+    "blocking_missing_ids": [],
+    "stale_evidence_ids": []
+  },
+  "claim_result": {
+    "status_counts": {"supported": 8},
+    "disputed_claim_ids": []
+  },
+  "decision_result": {
+    "matched_decisions": ["d1", "d2"],
+    "current_decisions": ["d1", "d2"],
+    "superseded_decisions": [],
+    "invalidated_decisions": []
+  },
+  "memory_result": {
+    "trust_counts": {"source_backed": 4}
+  }
+}

@@ -144,6 +144,14 @@ make context-live-invoke
 make context-live-invoke-full
 ```
 
+## Trust thresholds (operator levels)
+
+For `cdb_context_trust_summary` / briefing trust synthesis, operator-facing
+`HIGH` | `MEDIUM` | `LOW` | `BLOCKED` rules are defined in
+[`CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md)
+(Issue [#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856)).
+Trust levels do not override DB-record evidence rules above.
+
 ## Related Wave-14 tables
 
 Evidence/claim/memory/decision record shapes: `tests/unit/surrealdb/wave14_contract_constants.py` and `infrastructure/surrealdb/context_intelligence_v0.surql`.

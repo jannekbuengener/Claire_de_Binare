@@ -1,0 +1,11 @@
+{
+  "scope": "fixture-blocked-github",
+  "expected_operator_trust_level": "BLOCKED",
+  "context_signals": {
+    "github_live_mismatch": true
+  },
+  "evidence_result": {
+    "evidence_summary": {"overall_strength": "strong"},
+    "blocking_missing_ids": []
+  }
+}

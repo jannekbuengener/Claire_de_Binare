@@ -158,10 +158,15 @@ WAVE14_QUERY_RESULT_KEYS: dict[str, frozenset[str]] = {
     "cdb_context_trust_summary": frozenset(
         {
             "schema_version",
+            "operator_trust_contract_version",
             "scope",
             "topic",
             "artifact",
             "trust_level",
+            "operator_trust_level",
+            "operator_trust_mapping",
+            "limitations",
+            "authorization_semantics",
             "composite_score",
             "evidence_strength",
             "evidence_strength_score",

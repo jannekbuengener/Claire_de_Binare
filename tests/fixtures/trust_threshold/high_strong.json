@@ -1,0 +1,29 @@
+{
+  "scope": "fixture-high",
+  "expected_operator_trust_level": "HIGH",
+  "context_signals": {
+    "repo_crosscheck_present": true,
+    "record_source": "surrealdb-local",
+    "freshness_ok": true
+  },
+  "evidence_result": {
+    "evidence_summary": {"overall_strength": "strong"},
+    "blocking_missing_ids": [],
+    "stale_evidence_ids": []
+  },
+  "claim_result": {
+    "status_counts": {"supported": 8},
+    "disputed_claim_ids": [],
+    "stale_claim_ids": []
+  },
+  "decision_result": {
+    "matched_decisions": ["d1", "d2"],
+    "current_decisions": ["d1", "d2"],
+    "superseded_decisions": [],
+    "invalidated_decisions": []
+  },
+  "memory_result": {
+    "trust_counts": {"source_backed": 4},
+    "stale_memory_ids": []
+  }
+}

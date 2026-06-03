@@ -839,6 +839,7 @@ Tool coverage in the real local smoke:
 - `cdb_context_evidence_resolve` → seeded `evidence_ref`
 - `cdb_context_claim_resolve` → seeded `claim`
 - `cdb_context_trust_summary` → seeded `evidence_ref` + `claim` + `agent_memory` + `decision_event`
+- `cdb_context_trust_summary` operator fields (trust-summary/v1, [#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856)): `operator_trust_level` (`BLOCKED`|`LOW`|`MEDIUM`|`HIGH`), `operator_trust_mapping`, `limitations`, `authorization_semantics` (always no Human-GO / no persist / no mutation). Legacy `trust_level` (`blocked`|`weak`|`acceptable`|`strong`) remains for Wave-14 compatibility. Optional request `parameters.context_signals` for harness gates — see [`CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](../contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md). `context.briefing` mirrors `operator_trust_level` and `trust_limitations` on the briefing envelope.
 - `cdb_context_decision_history` → seeded `decision_event`
 - `cdb_context_decision_replay` → seeded `decision_event`
 

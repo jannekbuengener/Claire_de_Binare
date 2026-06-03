@@ -347,6 +347,16 @@ class TestTrustSummaryOutputContract:
             "blocked", "weak", "acceptable", "strong"
         )
 
+    def test_operator_trust_level_present(self) -> None:
+        response = handle_cdb_context_trust_summary({
+            "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,
+            "parameters": {"scope": "wave14"},
+        })
+        assert response["result"]["operator_trust_level"] in (
+            "BLOCKED", "LOW", "MEDIUM", "HIGH"
+        )
+        assert "authorization_semantics" in response["result"]
+
     def test_metadata_source_guarded(self) -> None:
         response = handle_cdb_context_trust_summary({
             "tool": TOOL_CDB_CONTEXT_TRUST_SUMMARY,

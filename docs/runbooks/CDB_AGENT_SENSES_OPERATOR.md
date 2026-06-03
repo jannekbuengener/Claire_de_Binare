@@ -157,7 +157,27 @@ Matrix and regression: [`CDB_NEGATIVE_CONTROLS_MATRIX_2026-06-03.md`](../evidenc
 5. If DB claim needed → satisfy [#2851](https://github.com/jannekbuengener/Claire_de_Binare/issues/2851) contract + JSON evidence ([#2850](https://github.com/jannekbuengener/Claire_de_Binare/issues/2850)).
 6. **Never** enable productive writes, `PERSIST_ALLOWED=True`, or `MUTATION_ALLOWED=True` without explicit Human-GO and separate scope.
 
-Trust scoring thresholds remain **out of scope** here — see [#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856).
+### 8.1 Trust thresholds ([#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856))
+
+SSOT contract: [`CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](../contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md).
+
+`cdb_context_trust_summary` and `context.briefing` expose **dual fields**:
+
+| Field | Values | Use |
+| --- | --- | --- |
+| `trust_level` | `blocked`, `weak`, `acceptable`, `strong` | Wave-14 legacy (composite bands) |
+| `operator_trust_level` | `BLOCKED`, `LOW`, `MEDIUM`, `HIGH` | Operator / prompt SSOT |
+
+| `operator_trust_level` | Operator rule |
+| --- | --- |
+| `HIGH` | Prioritization and `recommended_next_reads` only — **not** operational truth |
+| `MEDIUM` | Planning hints; capped when `record_source` is `repo-only` / `in_memory` |
+| `LOW` | **Fail-closed** for writes, live actions, merges, LR — recheck GitHub + repo |
+| `BLOCKED` | **Fail-closed** — resolve blocking evidence / live mismatch before proceed |
+
+Trust **never** grants Human-GO, Live-GO, Echtgeld-GO, persist, or mutation (`authorization_semantics` always denies). Even `HIGH` has `operational_truth_allowed=false`.
+
+Optional harness parameter `context_signals` (see contract) gates HIGH; when omitted, operator level follows legacy mapping only.
 
 ---
 
@@ -205,6 +225,7 @@ Redact secrets before sharing JSON or certification output externally.
 | Agent registry + Brain Evidence Gate | [`agents/AGENTS.md`](../../agents/AGENTS.md) |
 | MCP access + capability protocol | [`surrealdb_context_mcp_access.md`](surrealdb_context_mcp_access.md) |
 | DB record evidence contract | [`docs/contracts/context_tooling/DB_RECORD_EVIDENCE_CONTRACT.md`](../contracts/context_tooling/DB_RECORD_EVIDENCE_CONTRACT.md) |
+| Trust threshold contract | [`docs/contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md`](../contracts/context_tooling/CDB_CONTEXT_TRUST_THRESHOLD_CONTRACT.md) |
 | JSON invocation evidence | [`docs/contracts/context_tooling/TOOL_INVOCATION_JSON_EVIDENCE.md`](../contracts/context_tooling/TOOL_INVOCATION_JSON_EVIDENCE.md) |
 | Context tooling evidence index | [`docs/evidence/context_tooling/README.md`](../evidence/context_tooling/README.md) |
 | Benchmark #2 proof | [`docs/evidence/context_tooling/CDB_ALL_TOOLS_LIVE_INVOCATION_PROOF_2026-06-03.md`](../evidence/context_tooling/CDB_ALL_TOOLS_LIVE_INVOCATION_PROOF_2026-06-03.md) |
@@ -213,6 +234,5 @@ Redact secrets before sharing JSON or certification output externally.
 
 ## Non-goals (this issue)
 
-- Trust scoring policy ([#2856](https://github.com/jannekbuengener/Claire_de_Binare/issues/2856))
 - Security alert triage ([#2860](https://github.com/jannekbuengener/Claire_de_Binare/issues/2860)–#2869, PR [#2877](https://github.com/jannekbuengener/Claire_de_Binare/pull/2877))
 - Runtime BLUE/RED, productive DB writes, or MCP mutations
