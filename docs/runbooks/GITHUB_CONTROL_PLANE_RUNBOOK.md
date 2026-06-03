@@ -72,6 +72,27 @@ Cross-reference:
 - For `.github`, meta, governance, and closure-sensitive PRs: merge manually only after final human review.
 - Merge state does not prove completion state; issue/PR closure semantics remain acceptance-first and merged-`main` based.
 
+## 1c. `main` branch protection — merge blockers (solo-maintainer, #2837)
+
+Live GitHub branch protection on `main` (verify with `gh api repos/jannekbuengener/Claire_de_Binare/branches/main/protection`):
+
+| Rule | Setting | Merge impact |
+|---|---|---|
+| `required_status_checks` | `ci (Unit/Integration + Lint gesammelt)`, `policy-gate`; `strict=true` | **Blocks merge** until both checks are green and branch is up to date |
+| `required_approving_review_count` | `0` | Does not block merge (solo-maintainer) |
+| `require_code_owner_reviews` | `false` | Does not block merge |
+| `required_conversation_resolution` | **`false`** (disabled 2026-06-03, #2837) | **Does not block merge** — unresolved inline review threads are review signals only |
+| `required_linear_history` | `true` | Blocks non-linear history (squash/rebase merge expected) |
+| `enforce_admins` | `true` | Admins subject to same rules |
+| `allow_force_pushes` / `allow_deletions` | `false` | Safety guardrails |
+
+**Operator discipline (unchanged intent):**
+- Treat blocking/security/actionable inline review comments as merge prerequisites by process, even though branch protection no longer enforces thread resolution.
+- Normal PR timeline comments (issue-style comments, bot receipts, `@`-mentions) were **never** branch-protection blockers; only inline review threads were, while the rule was enabled.
+- Optional recovery runbook when threads should be cleaned up anyway: `docs/runbooks/resolve_review_threads_via_graphql.md` (historical / hygiene; not a merge gate).
+
+**Non-goals:** No LR/live/echtgeld implication. CI + `policy-gate` remain the enforced technical merge gate.
+
 ---
 
 ## 2. How to Read a Workflow Safely
