@@ -44,7 +44,7 @@
 |----------------|--------------|
 | [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) | Planning context; §5 mirrors parameters — values live here |
 | [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) | GO block §5 must copy **concrete** values from this SSOT after #2528 closes |
-| [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | Venue — blocks **Allowed Symbols** until closed |
+| [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | Venue — blocks **Allowed Symbols** until closed; SSOT: [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) |
 | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | Kill-switch / stop / halt verification SSOT — [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) |
 | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | Secrets / credential readiness SSOT — [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Observability SSOT — [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) |

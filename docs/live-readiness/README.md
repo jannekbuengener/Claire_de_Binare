@@ -15,3 +15,4 @@ LR-050 hard risk limits (gate parameters, NO-GO until values + human GO): [LR-05
 LR-050 kill-switch runbook (stop/halt paths, NO-GO until Human Approval): [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md)
 LR-050 secrets readiness (credential gates, no key exposure, NO-GO): [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md)
 LR-050 observability gates (monitoring/alert/receiver matrix, NO-GO): [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md)
+LR-050 venue audit (broker/exchange path inventory, NO-GO): [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md)

@@ -51,7 +51,7 @@
 | [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) | Gate #4 requires this SSOT CLOSED before live-capital GO |
 | [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) | Numeric limits; unrelated to secret values |
 | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) | Halt/revocation; post-incident secret rotation coupled here |
-| [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | **Canary venue**, venue permission model, passphrase, IP allowlist, account binding |
+| [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | **Canary venue**, venue permission model, passphrase, IP allowlist, account binding — SSOT: [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) — receiver proof |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary plan — must reference credential gates below |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run — config/auth path without secret exposure |

@@ -61,7 +61,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 
 | Risk / gate | Owner issue | State | Note |
 |-------------|-------------|-------|------|
-| Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | No preferred canary venue documented yet |
+| Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | SSOT: [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) — inventory + candidate path; **not** live-ready |
 | Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
 | Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
 | Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
@@ -111,7 +111,7 @@ Alle Felder sind **TBD** bis die Kind-Issues liefern. Werte hier sind Platzhalte
 
 | Parameter | Value | Source issue |
 |-----------|-------|--------------|
-| **Venue** | TBD | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) |
+| **Venue** | TBD (see [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) §7 — MEXC repo-found candidate only) | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) |
 | **Symbols** | TBD | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528), [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) |
 | **Max notional (per order / session)** | TBD (`TBD_BLOCKER_BEFORE_LIVE`) | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) §4 |
 | **Max daily loss** | TBD (`TBD_BLOCKER_BEFORE_LIVE`) | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) §4 |
@@ -196,6 +196,7 @@ No credentials, API keys, or secret values belong in this document.
 ## Related documents (no duplication)
 
 - [`README.md`](./README.md) — live-readiness index
+- [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) — venue/broker/exchange path inventory ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527))
 - [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) — hard capital/order/loss gate parameters ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528))
 - [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — stop/halt paths and verification matrix ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
 - [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — exact live-capital GO/REVOKE wording ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))

@@ -57,6 +57,7 @@
 | [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) | Planning context; §6 Stop/Kill references this SSOT |
 | [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) | GO block `Stop/kill rules:` must reference this file after #2529 closes; REVOKED §9.1 triggers halt |
 | [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) | Numeric limits; stop rows defer verification proof to this runbook |
+| [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) | Venue paths; `MOCK_TRADING` / `DRY_RUN` / `MEXC_TESTNET` are safe modes ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527)) |
 | [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) | Post-halt credential rotation / revocation ([#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530)) |
 | [`docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) | Operator HTTP toggle flows (`:8002`); **does not** prove end-to-end order stop alone |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Alert-triggered halt / abort vs investigate matrix |

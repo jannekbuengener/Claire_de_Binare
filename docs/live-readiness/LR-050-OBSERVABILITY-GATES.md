@@ -46,6 +46,7 @@
 | [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) | §7 Monitoring — this SSOT |
 | [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) | Outage / fill-rate policy pointers |
 | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) | Manual halt when alerts unevaluable |
+| [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) | Venue/exchange path inventory ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527)) |
 | [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) | Alert credential names; receiver proof |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary Plan — must embed alert/receiver gates |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run — non-destructive gate checks only |
