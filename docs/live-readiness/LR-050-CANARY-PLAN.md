@@ -119,7 +119,7 @@ Paper/mock paths may expose additional types in [`services/execution/paper_tradi
 
 ## 6. Execution mode matrix (`cdb_execution` runtime SSOT)
 
-**Fail-closed:** On `cdb_execution`, effective mode is set only by explicit env flags in [`services/execution/config.py`](../../services/execution/config.py): `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET`. [`services/execution/service.py`](../../services/execution/service.py) logs `TRADING_MODE` but does **not** apply `get_legacy_config()` from [`core/config/trading_mode.py`](../../core/config/trading_mode.py) on the active service path (Venue Audit §3.3).
+**Fail-closed:** On `cdb_execution`, effective mode is set only by explicit env flags in [`services/execution/config.py`](../../services/execution/config.py): `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET`. `MOCK_TRADING` **defaults to `true`**; [`services/execution/service.py`](../../services/execution/service.py) uses the mock adapter while it remains true. The service logs `TRADING_MODE` but does **not** apply `get_legacy_config()` from [`core/config/trading_mode.py`](../../core/config/trading_mode.py) on the active path (Venue Audit §3.3).
 
 | Phase | Intended flags (operator-set) | Real money / exchange submit? | Proof owner |
 |-------|----------------------------|-------------------------------|-------------|
@@ -127,7 +127,7 @@ Paper/mock paths may expose additional types in [`services/execution/paper_tradi
 | **#2533 Dry-run Proof** | **Explicit** `DRY_RUN=true`; log `config.DRY_RUN`; typically `MOCK_TRADING=false` if exercising `LiveExecutor` init | **No** exchange submit | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) |
 | `TRADING_MODE=staged` **alone** | **Does not change** `MOCK_TRADING`/`DRY_RUN`/`MEXC_TESTNET` | **Unknown** — treat as **not** dry-run proof | **Forbidden** as #2533 evidence |
 | Later testnet exchange-touch | **Explicit** `MOCK_TRADING=false`, `MEXC_TESTNET=true`, `DRY_RUN=false` | Testnet orders possible if creds loaded — **separate** Runtime-GO after Human GO | Not #2533 dry-run |
-| Mainnet / live-capital | `MEXC_TESTNET=false`, `DRY_RUN=false`, `CONFIRM_LIVE_TRADING=true`, plus Human GO | **Yes** — only after exact Human Approval on #2535 | Human Approval + operator |
+| Mainnet / live-capital | **Explicit** `MOCK_TRADING=false`, `MEXC_TESTNET=false`, `DRY_RUN=false`, `CONFIRM_LIVE_TRADING=true`, plus Human GO | **Yes** — only after exact Human Approval on #2535; without `MOCK_TRADING=false` the service stays in mock mode | Human Approval + operator |
 
 **TRADING_MODE** is **log/legacy context** on the active execution path unless a future repo change wires `get_legacy_config()` into `cdb_execution` with evidence.
 
