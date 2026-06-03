@@ -8,6 +8,7 @@
 | Parent meta | [#2847](https://github.com/jannekbuengener/Claire_de_Binare/issues/2847) |
 | Validator | [`tools/surrealdb/db_record_evidence_contract.py`](../../../tools/surrealdb/db_record_evidence_contract.py) |
 | JSON Schema | [`docs/contracts/db_record_evidence_claim.v1.schema.json`](../db_record_evidence_claim.v1.schema.json) |
+| Invocation bundle (#2850) | [`TOOL_INVOCATION_JSON_EVIDENCE.md`](TOOL_INVOCATION_JSON_EVIDENCE.md) |
 
 ## Purpose
 

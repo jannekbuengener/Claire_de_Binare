@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare.local/contracts/tool_invocation_evidence.v1.schema.json",
+  "title": "Tool invocation benchmark evidence (aggregate)",
+  "description": "Machine-readable evidence bundle for context live invocation harness (#2850). evidence_claims entries MUST comply with db_record_evidence_claim.v1.schema.json.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "run_id_or_invocation_id",
+    "profile",
+    "final_verdict",
+    "started_at_or_observed_at",
+    "tool_invocations",
+    "evidence_claims",
+    "limits",
+    "accepted_limitations",
+    "missing_evidence_codes",
+    "summary_counts",
+    "determinism_hash",
+    "redaction_summary",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "tool-invocation-evidence/v1"
+    },
+    "run_id_or_invocation_id": { "type": "string", "minLength": 1 },
+    "profile": { "enum": ["minimal", "full"] },
+    "final_verdict": { "enum": ["PASS", "PASS_WITH_LIMITS", "FAIL"] },
+    "started_at_or_observed_at": { "type": "string" },
+    "tool_invocations": { "type": "array" },
+    "evidence_claims": {
+      "type": "array",
+      "description": "Each item is a db-record-evidence claim per #2851"
+    },
+    "limits": { "type": "array" },
+    "accepted_limitations": { "type": "array" },
+    "missing_evidence_codes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "summary_counts": { "type": "object" },
+    "determinism_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "redaction_summary": { "type": "string" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

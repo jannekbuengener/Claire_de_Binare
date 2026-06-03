@@ -3,13 +3,14 @@
 Invokes every registered tool via ContextBridge (same handler path as MCP server)
 with benchmark-safe parameters. Produces a per-tool matrix for regression detection.
 
-Issue: #2849, #2852 (profiles + ratification)
+Issue: #2849, #2852 (profiles + ratification), #2850 (JSON evidence)
 Parent: #2847
 
 Usage:
     python -m tools.surrealdb.context_live_invocation_harness
     python -m tools.surrealdb.context_live_invocation_harness --profile full
     python -m tools.surrealdb.context_live_invocation_harness --format json
+    python -m tools.surrealdb.context_live_invocation_harness --format json --output docs/evidence/context_tooling/latest_invocation_evidence.json
     make context-live-invoke
     make context-live-invoke-full
 
@@ -611,7 +612,11 @@ def format_report_markdown(report: HarnessReport) -> str:
 
 def format_report(report: HarnessReport, fmt: OutputFormat) -> str:
     if fmt == "json":
-        return json.dumps(report.to_dict(), indent=2, sort_keys=True)
+        from tools.surrealdb.context_invocation_evidence_json import (
+            serialize_invocation_evidence,
+        )
+
+        return serialize_invocation_evidence(report)
     if fmt in ("text", "markdown"):
         return format_report_markdown(report)
     raise ValueError(f"unsupported format: {fmt!r}")
@@ -621,6 +626,7 @@ _HELP_EPILOG = """\
 Examples:
   python -m tools.surrealdb.context_live_invocation_harness
   python -m tools.surrealdb.context_live_invocation_harness --format json
+  python -m tools.surrealdb.context_live_invocation_harness --format json --output docs/evidence/context_tooling/latest_invocation_evidence.json
   make context-live-invoke
   make context-live-invoke-full
 
@@ -646,7 +652,10 @@ def main(argv: list[str] | None = None) -> int:
         "--format",
         choices=("text", "json", "markdown"),
         default="text",
-        help="Output format (default: text)",
+        help=(
+            "Output format (default: text). json emits #2850 machine-readable "
+            "invocation evidence (compatible with db-record-evidence claims)."
+        ),
     )
     parser.add_argument(
         "--output",

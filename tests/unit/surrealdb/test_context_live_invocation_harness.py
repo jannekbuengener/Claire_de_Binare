@@ -198,7 +198,7 @@ def test_run_matrix_fails_when_registry_missing_manifest_entry(
     assert report.missing_from_manifest == ["context.unlisted_tool"]
 
 
-def test_format_report_json_contains_matrix() -> None:
+def test_format_report_json_emits_machine_readable_evidence() -> None:
     report = harness.HarnessReport(
         timestamp="2026-06-03T00:00:00Z",
         git_sha="abc",
@@ -217,5 +217,6 @@ def test_format_report_json_contains_matrix() -> None:
         ],
     )
     payload = harness.format_report(report, "json")
+    assert "tool-invocation-evidence/v1" in payload
     assert '"context.search"' in payload
-    assert '"PASS"' in payload
+    assert "determinism_hash" in payload
