@@ -240,6 +240,36 @@ def _as_list(value: Any) -> list[Any]:
     return [value]
 
 
+def _declared_scope_mapping(bundle: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Normalize declared_scope for rule evaluation (fail-closed, no AttributeError).
+
+    Operator/benchmark bundles may pass a plain scope label string instead of a
+    structured object. A non-empty string means "label only" with no path/issue
+    constraints — rules that require target_paths or allowed_domains stay inactive.
+    """
+    raw = bundle.get("declared_scope")
+    if raw is None:
+        return {}
+    if isinstance(raw, Mapping):
+        return raw
+    if isinstance(raw, str):
+        return {}
+    raise ScopeDriftFirewallError(
+        "declared_scope must be a mapping/object or scope label string, "
+        f"got {type(raw).__name__}"
+    )
+
+
+def _meta_mapping(bundle: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Normalize meta to a mapping; ignore non-mapping values (no path constraints)."""
+    raw = bundle.get("meta")
+    if raw is None:
+        return {}
+    if isinstance(raw, Mapping):
+        return raw
+    return {}
+
+
 def _make_finding(
     *,
     drift_type: str,
@@ -314,7 +344,7 @@ def _rule_path_out_of_scope(
         touched_artifacts[].path: str
     """
     findings: list[ScopeDriftFinding] = []
-    declared_scope = bundle.get("declared_scope") or {}
+    declared_scope = _declared_scope_mapping(bundle)
     target_paths = _as_list(declared_scope.get("target_paths"))
     touched = _as_list(bundle.get("touched_artifacts"))
 
@@ -363,7 +393,7 @@ def _rule_domain_out_of_scope(
         touched_artifacts[].surface_type: str
     """
     findings: list[ScopeDriftFinding] = []
-    declared_scope = bundle.get("declared_scope") or {}
+    declared_scope = _declared_scope_mapping(bundle)
     allowed_domains = _as_list(declared_scope.get("allowed_domains"))
     touched = _as_list(bundle.get("touched_artifacts"))
 
@@ -412,7 +442,7 @@ def _rule_issue_out_of_scope(
         issue_refs[].label: str  — optional
     """
     findings: list[ScopeDriftFinding] = []
-    declared_scope = bundle.get("declared_scope") or {}
+    declared_scope = _declared_scope_mapping(bundle)
     target_issue = _as_str(declared_scope.get("target_issue"))
     allowed_issues_raw = _as_list(declared_scope.get("allowed_issues"))
     issue_refs = _as_list(bundle.get("issue_refs"))
@@ -659,7 +689,7 @@ def _rule_unexpected_dependency_expansion(
         touched_artifacts: list[dict]
     """
     findings: list[ScopeDriftFinding] = []
-    declared_scope = bundle.get("declared_scope") or {}
+    declared_scope = _declared_scope_mapping(bundle)
     touched = _as_list(bundle.get("touched_artifacts"))
     target_paths = _as_list(declared_scope.get("target_paths"))
 
@@ -775,7 +805,7 @@ def _rule_missing_human_go(
         meta.human_go_token: str | None  — explicit GO token
     """
     findings: list[ScopeDriftFinding] = []
-    meta = bundle.get("meta") or {}
+    meta = _meta_mapping(bundle)
     operation_mode = _as_str(meta.get("operation_mode")) or ""
     human_go_token = _as_str(meta.get("human_go_token"))
 

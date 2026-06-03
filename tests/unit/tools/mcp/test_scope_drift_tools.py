@@ -507,3 +507,93 @@ def test_no_db_no_network_no_write_bundle_write_keywords() -> None:
     # Must return a valid dict response (error or ok — no exception)
     assert isinstance(result, dict)
     assert "status" in result
+
+
+# ── 15. Benchmark #2 minimal bundles (#2844) ─────────────────────────────────
+
+
+def _bundle_benchmark_minimal() -> dict[str, Any]:
+    """Operator-style minimal bundle from Benchmark #2 live invocation."""
+    return {
+        "meta": {"scope_id": "bench", "level": "system"},
+        "declared_scope": "benchmark",
+        "touched_artifacts": [],
+        "issue_refs": [],
+        "generated_findings": [],
+        "forbidden_surfaces": [],
+    }
+
+
+def _bundle_valid_minimal_structured() -> dict[str, Any]:
+    """Structured declared_scope with explicit empty constraint lists."""
+    return {
+        "meta": {"scope_id": "bench", "as_of": _AS_OF},
+        "declared_scope": {
+            "target_paths": [],
+            "allowed_domains": [],
+        },
+        "touched_artifacts": [],
+        "issue_refs": [],
+        "generated_findings": [],
+        "forbidden_surfaces": [],
+    }
+
+
+@pytest.mark.unit
+def test_benchmark_minimal_bundle_no_scan_error() -> None:
+    """#2844: string declared_scope must not raise scan_error / AttributeError."""
+    result = handle_cdb_context_scope_drift(_request(_bundle_benchmark_minimal()))
+    assert result["status"] == "ok"
+    assert result.get("error") is None
+    assert result["scan_status"] == "ok"
+    assert result["summary"]["total_count"] == 0
+
+
+@pytest.mark.unit
+def test_benchmark_minimal_bundle_via_bridge() -> None:
+    """Bridge path matches direct handler for minimal benchmark bundle."""
+    bridge = ContextBridge()
+    result = bridge.execute_tool(
+        TOOL_CDB_CONTEXT_SCOPE_DRIFT,
+        {"bundle": _bundle_benchmark_minimal(), "as_of": _AS_OF},
+    )
+    assert result["status"] == "ok"
+    assert "scan_error" not in str(result.get("error", {}))
+
+
+@pytest.mark.unit
+def test_empty_bundle_lists_ok() -> None:
+    """Empty artifact lists with empty declared_scope object → ok, zero findings."""
+    result = handle_cdb_context_scope_drift(
+        _request(
+            {
+                "declared_scope": {},
+                "touched_artifacts": [],
+                "issue_refs": [],
+                "generated_findings": [],
+                "forbidden_surfaces": [],
+            }
+        )
+    )
+    assert result["status"] == "ok"
+    assert result["summary"]["total_count"] == 0
+
+
+@pytest.mark.unit
+def test_malformed_declared_scope_type_returns_invalid_bundle() -> None:
+    """Non-string/non-mapping declared_scope → invalid_bundle, not scan_error."""
+    result = handle_cdb_context_scope_drift(
+        _request({"declared_scope": ["not", "a", "mapping"]})
+    )
+    assert result["status"] == "error"
+    assert result["error"]["code"] == "invalid_bundle"
+    assert "declared_scope" in result["error"]["message"]
+
+
+@pytest.mark.unit
+def test_valid_minimal_structured_bundle_deterministic() -> None:
+    """Structured minimal bundle returns stable ok response with explicit as_of."""
+    result = handle_cdb_context_scope_drift(_request(_bundle_valid_minimal_structured()))
+    assert result["status"] == "ok"
+    assert result["scanned_at"] == _AS_OF
+    assert result["summary"]["total_count"] == 0

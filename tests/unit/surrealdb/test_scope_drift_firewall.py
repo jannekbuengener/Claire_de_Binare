@@ -188,6 +188,25 @@ def test_invalid_bundle_list_raises() -> None:
         scan_scope_drift_v1([])  # type: ignore[arg-type]
 
 
+@pytest.mark.unit
+def test_declared_scope_string_label_no_attribute_error() -> None:
+    """#2844: plain-string declared_scope must not break rule evaluation."""
+    bundle = {
+        "declared_scope": "benchmark",
+        "touched_artifacts": [],
+        "issue_refs": [],
+    }
+    result = scan_scope_drift_v1(bundle, as_of=_AS_OF)
+    assert result.status == "ok"
+    assert len(result.findings) == 0
+
+
+@pytest.mark.unit
+def test_declared_scope_invalid_type_raises() -> None:
+    with pytest.raises(ScopeDriftFirewallError, match="declared_scope"):
+        scan_scope_drift_v1({"declared_scope": 42}, as_of=_AS_OF)
+
+
 # ── Deterministic IDs ─────────────────────────────────────────────────────────
 
 
