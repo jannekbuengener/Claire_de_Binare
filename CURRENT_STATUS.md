@@ -3,15 +3,20 @@
 **Status Class**: Working Repo / Engineering Status
 **Authority**: Current repo/main/test/dependency snapshot; not the canonical live-readiness or Echtgeld Go/No-Go source.
 **Operational Canon**: `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
-**Last Updated**: 2026-06-02
+**Last Updated**: 2026-06-03
 **GitHub Boundary**: The live commit and PR state is tracked in GitHub (UI/API or `gh`); this file is a curated repo/engineering ledger, not a live mirror.
 
 ---
 
+## Repo / Engineering Status (2026-06-03)
+
+- **#2831 Grandparent §B wave matrix recertification**: **IN PROGRESS** (branch `surrealdb-1976-wave-matrix-recert`) — deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B update in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). GitHub-live: #2831 **OPEN**; #1976 **OPEN** (HOLD); #2832/#2833 **OPEN**. LR NO-GO; no writes/runtime activation.
+- **#1976 grandparent epic**: **OPEN** — §B recert delivered via #2831; epic-close **HOLD** until #2832 (second RTP) and #2833 (closeout). RTP #2821 **PASS** (PR #2829). See recert doc above.
+
 ## Repo / Engineering Status (2026-06-02)
 
 - **#2821 managed runtime secret policy (design)**: **COMPLETED** — PR [#2829](https://github.com/jannekbuengener/Claire_de_Binare/pull/2829) squash-merged (`3a19b372`); [`knowledge/decisions/CDB_CONTEXT_MANAGED_RUNTIME_SECRET_POLICY_GATES_0_4.md`](knowledge/decisions/CDB_CONTEXT_MANAGED_RUNTIME_SECRET_POLICY_GATES_0_4.md) + Real-Task-Proof [`docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md) (**RTP PASS** §C). Satisfies #2803 **G0-4** documentation only; managed/non-local **NOT ACTIVATED**. GitHub-live: #2821 **CLOSED**; #1976 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-03-2821-real-task-proof-secret-policy.md`. LR NO-GO.
-- **#1976 grandparent / Real-Task-Proof**: Readiness SSOT §F on `main` (PR #2829); **RTP PASS** for scoped #2821 delivered. **#1976 stays OPEN** — epic-close **HOLD** per readiness §B until FAIL/PARTIAL wave items accepted or remediated. Grandparent wave matrix not re-certified. LR NO-GO.
+- **#1976 grandparent / Real-Task-Proof**: Readiness SSOT §F on `main` (PR #2829); **RTP PASS** for scoped #2821 delivered. **#1976 stays OPEN** — epic-close **HOLD**; §B recert filed under #2831 (2026-06-03). LR NO-GO.
 - **#2778 Phase-2 epic / final closeout**: **COMPLETED** — PR [#2825](https://github.com/jannekbuengener/Claire_de_Binare/pull/2825) squash-merged (`735b4ca0`); [`docs/surrealdb/SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md`](docs/surrealdb/SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md) on `main` with **`PASS_CLOSEOUT`** (C1–C14). GitHub-live: #2778 **CLOSED**; #1976 **OPEN**; #2821 **CLOSED**. Session log: `knowledge/logs/sessions/2026-06-02-2778-phase2-final-closeout-review.md`. LR NO-GO.
 - **#2804 Controlled write strategy v2 (design only)**: **COMPLETED** — PR [#2823](https://github.com/jannekbuengener/Claire_de_Binare/pull/2823) squash-merged (`57a810d8`); SSOT [`knowledge/decisions/CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md`](knowledge/decisions/CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md) + Phase-2 closeout matrix; runbook/managed-runtime cross-links; **no** write-path activation. **`PERSIST_ALLOWED=False`**, **`MUTATION_ALLOWED=False`** unchanged. GitHub-live: #2804 **CLOSED**. Session log: `knowledge/logs/sessions/2026-06-02-2804-write-strategy-and-phase2-closeout.md`. LR NO-GO.
 - **#2803 Managed / non-local runtime decision**: **COMPLETED** — PR [#2820](https://github.com/jannekbuengener/Claire_de_Binare/pull/2820) squash-merged (`02ce3ed7`); decision record + runbook §1.6 on `main`. **Posture:** `local_only` active; managed/non-local **NOT ACTIVATED**. GitHub-live: #2803 **CLOSED**. Session log: `knowledge/logs/sessions/2026-06-02-2803-managed-nonlocal-runtime-decision.md`. LR NO-GO.
@@ -24,9 +29,10 @@
 - **#2794**: **OPEN** — non-blocking architecture-doc follow-up (post-#2793).
 - **main**: `3a19b372` (PR #2829 #2821 secret policy + RTP proof).
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #1976 grandparent epic-close (OPEN; §B wave gaps)
+  - #2831 §B wave matrix recert (OPEN → PR pending)
+  - #2832 second RTP; #2833 grandparent closeout (OPEN)
+  - #1976 grandparent epic (OPEN; HOLD)
   - Phase-2 children #2797–#2804 (**all CLOSED**)
-  - #1976 (grandparent; OPEN)
   - #2794 (architecture doc; non-blocking)
   - #2440 (LR-030 Shadow/Soak — OPEN)
   - #2289 / #2290 (security alert readout — OPEN)
