@@ -98,11 +98,16 @@ No second exchange client exists under [`core/clients/`](../../core/clients/) (o
 | **paper** | `TradingMode.PAPER`; `MOCK_TRADING` + `DRY_RUN` in `get_legacy_config(PAPER)` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) | Aligned with safe defaults |
 | **dry-run** (no venue send) | `DRY_RUN=true` → `LiveExecutor` with `client=None`, simulated FILLED | [`live_executor.py`](../../services/execution/live_executor.py) | **true** in `.env.example` |
 | **testnet (exchange-touch)** | `MEXC_TESTNET=true` with real executor (`MOCK_TRADING=false`, `DRY_RUN=false`) | `config.py`, `trading_mode.py` | Not default; see STAGED row below |
-| **STAGED bundle** (`TRADING_MODE=staged`) | `get_legacy_config(STAGED)` → `MOCK_TRADING=false`, **`DRY_RUN=false`**, `MEXC_TESTNET=true` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) | **Not** a dry-run bundle — orders may submit on testnet |
-| **live** (mainnet-capable) | `MOCK_TRADING=false` + `DRY_RUN=false` + `MEXC_TESTNET=false` + `CONFIRM_LIVE_TRADING=true` + `LIVE_TRADING_CONFIRMED=yes` (for `TRADING_MODE=live`) | [`service.py`](../../services/execution/service.py) `_require_live_confirmation()`, `trading_mode.py` | **Not** default; fail-closed |
+| **STAGED bundle** (documented only) | `get_legacy_config(STAGED)` → `MOCK_TRADING=false`, **`DRY_RUN=false`**, `MEXC_TESTNET=true` | [`core/config/trading_mode.py`](../../core/config/trading_mode.py) | **Not** applied by `cdb_execution` today (see below) |
+| **`TRADING_MODE` env** | Logged at startup only in `cdb_execution` | [`services/execution/service.py`](../../services/execution/service.py) ~964–967 | **Does not** set `MOCK_TRADING` / `DRY_RUN` / `MEXC_TESTNET` |
+| **live** (mainnet-capable) | `MOCK_TRADING=false` + `DRY_RUN=false` + `MEXC_TESTNET=false` + `CONFIRM_LIVE_TRADING=true` | [`service.py`](../../services/execution/service.py) `_require_live_confirmation()`, [`config.py`](../../services/execution/config.py) | **Not** default; fail-closed; `LIVE_TRADING_CONFIRMED` checked in `trading_mode.py` for mode parsing elsewhere |
 | **sandbox** | No `sandbox` mode string or dedicated env in `services/` | repo search | Mark **unknown** / not implemented as distinct mode |
 
-**`TRADING_MODE` vs explicit env (fail-closed for #2533):** `TRADING_MODE=staged` applies the STAGED bundle above (`DRY_RUN=false`). A non-destructive dry-run proof requires an **explicit** `DRY_RUN=true` (and evidence that execution honors it) — **not** inferring dry-run from STAGED alone. `.env.example` defaults (`DRY_RUN=true`) are overridden when legacy config is applied from `TRADING_MODE`.
+**Effective flags on `cdb_execution` (repo-backed):** [`services/execution/config.py`](../../services/execution/config.py) reads `MOCK_TRADING`, `DRY_RUN`, and `MEXC_TESTNET` **directly from env** (defaults `true` / `true` / `true`). [`services/execution/service.py`](../../services/execution/service.py) logs `TRADING_MODE` but **does not** call `get_legacy_config()` — repo search shows `get_legacy_config` is used in [`core/config/trading_mode.py`](../../core/config/trading_mode.py) and **unit tests only**, not in `services/` production code.
+
+**Fail-closed for #2532 / #2533:** Operators must set **explicit** `MOCK_TRADING`, `DRY_RUN`, and `MEXC_TESTNET` for the intended path. Setting only `TRADING_MODE=staged` (or `paper` / `live`) **does not** change execution behavior today. The STAGED/PAPER/LIVE rows in `get_legacy_config()` are **documented bundles** for planning and tests — not the active runtime mapper.
+
+**Dry-run proof (#2533):** require **explicit** `DRY_RUN=true` (and log evidence from `config.DRY_RUN`) — **not** inferring dry-run from `TRADING_MODE` or from the STAGED bundle table alone.
 
 **Repo inconsistency (document, not externally verified):** [`core/clients/mexc.py`](../../core/clients/mexc.py) uses `https://contract.mexc.com` when `testnet=True` and `https://api.mexc.com` when live; [`services/execution/config.py`](../../services/execution/config.py) default `MEXC_BASE_URL` is `https://contract.mexc.com`. [`services/ws/mexc_v3_client.py`](../../services/ws/mexc_v3_client.py) always uses spot WS `wss://wbs-api.mexc.com/ws` regardless of `MEXC_TESTNET`. Treat operational testnet/sandbox correctness as **TBD_BLOCKER_BEFORE_LIVE**.
 
@@ -133,8 +138,9 @@ Columns: **LR-050 canary** = `ready` | `TBD_BLOCKER_BEFORE_LIVE` | `forbidden` |
 | `cdb_ws` + `WS_SOURCE=mexc_pb` | live (public WS URL in repo) | no | yes | typically no for public stream | TBD_BLOCKER_BEFORE_LIVE | `mexc_v3_client.py` | WS endpoint not tied to `MEXC_TESTNET`; may be production feed |
 | `cdb_risk` + `RealBalanceFetcher` | live/testnet per `MEXC_BASE_URL` / creds | no | no (balance read) | yes | TBD_BLOCKER_BEFORE_LIVE | `balance_fetcher.py`, `risk/service.py` | Balance fetch is exchange call — out of scope for this audit run; gated for canary |
 | `core.clients.MexcClient` REST | testnet or live per `testnet` arg | yes (API methods) | yes (ticker/account) | yes | TBD_BLOCKER_BEFORE_LIVE | `core/clients/mexc.py` | Shared by execution + risk |
-| `TradingMode.STAGED` bundle | testnet | yes (`DRY_RUN=false` in bundle) | no | yes | TBD_BLOCKER_BEFORE_LIVE | `trading_mode.py` `get_legacy_config(STAGED)` | **Not** #2533 dry-run; exchange submit may occur on testnet |
-| `TradingMode.LIVE` bundle | live | yes | no | yes | forbidden | `trading_mode.py`, `LIVE_TRADING_CONFIRMED` | Real money; Human Approval required |
+| `get_legacy_config(STAGED)` (doc/test only) | testnet bundle | yes if equivalent env set | no | yes | docs_only | `trading_mode.py`; not wired in `cdb_execution` | #2532 must set explicit env, not `TRADING_MODE` alone |
+| `TRADING_MODE` on `cdb_execution` | unknown (not mapped) | follows `MOCK_TRADING`/`DRY_RUN` env | no | no | docs_only | `service.py` log line | Informational log only |
+| `get_legacy_config(LIVE)` (doc/test only) | live bundle | yes if equivalent env set | no | yes | forbidden | `trading_mode.py` | Real money; explicit env + Human Approval |
 | `tests/integration/test_mexc_testnet.py` | testnet (opt-in external) | unknown | unknown | yes (test env) | docs_only | `test_mexc_testnet.py` | Requires `CDB_EXTERNAL_TESTS=1`; not CI default |
 | `tools/test_pack` ccxt emulator | mock/lab | unknown | unknown | unknown | docs_only | `tools/test_pack/README.md` | Not production runtime |
 | **sandbox** (distinct mode) | sandbox | unknown | unknown | unknown | TBD_BLOCKER_BEFORE_LIVE | not found in `services/` | No repo-backed sandbox mode |
@@ -205,8 +211,8 @@ If, after [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/253
 
 1. **Venue candidate:** MEXC — **only** because it is the only integrated execution venue in repo; **not** pre-approved as canary venue.
 2. **Pre-live-capital steps (no Echtgeld-Go):** remain on `MOCK_TRADING=true` / shadow / paper paths for system proof.
-3. **[#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) dry-run proof (non-destructive):** require **explicit** `DRY_RUN=true` with `LiveExecutor` / adapter init evidence (no exchange order submit). **Do not** equate this with `TRADING_MODE=staged` — `get_legacy_config(TradingMode.STAGED)` sets `DRY_RUN=false` (see §3.3). `TradingMode.PAPER` maps `DRY_RUN=true` but uses mock executor; pick the proof bundle in #2533 and document resolved flags.
-4. **Later testnet exchange-touch (still gated, not #2533 dry-run):** `TradingMode.STAGED` / `get_legacy_config(STAGED)` → `MOCK_TRADING=false`, `MEXC_TESTNET=true`, **`DRY_RUN=false`** — real executor with testnet-capable REST; only after Human GO + #2532 scope; **never** imply mainnet from defaults.
+3. **[#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) dry-run proof (non-destructive):** set and evidence **explicit** env on `cdb_execution`: `DRY_RUN=true` (and typically `MOCK_TRADING=false` if exercising `LiveExecutor`), with log proof from startup (`config.DRY_RUN`). **`TRADING_MODE` alone changes nothing** on the active execution path (§3.3).
+4. **Later testnet exchange-touch (still gated, not #2533 dry-run):** set **explicit** env (not `TRADING_MODE` alone): `MOCK_TRADING=false`, `MEXC_TESTNET=true`, `DRY_RUN=false` — aligns with the **documented** STAGED bundle in `get_legacy_config(STAGED)` but must be operator-set until/unless execution wires `TRADING_MODE` → legacy config; only after Human GO + #2532 scope; **never** imply mainnet from defaults.
 5. **Mainnet / real-money path:** `MEXC_TESTNET=false`, `DRY_RUN=false`, `CONFIRM_LIVE_TRADING=true`, `LIVE_TRADING_CONFIRMED=yes` — **forbidden** until explicit Human Approval per [LR-050-HUMAN-APPROVAL.md](./LR-050-HUMAN-APPROVAL.md).
 
 ### 7.2 Clear blockers (fail-closed)
@@ -220,7 +226,8 @@ If, after [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/253
 | WS MD URL vs execution testnet flag alignment | #2532 / #2533 |
 | Venue permission model, IP allowlist, account binding | #2532 |
 | Allowed symbols / notional caps | #2528, #2532 |
-| Dry-run evidence (`real_money=false` / dry_run attestation; not `TRADING_MODE=staged` alone) | #2533 |
+| Dry-run evidence (`real_money=false` / `config.DRY_RUN`; not `TRADING_MODE` alone) | #2533 |
+| `TRADING_MODE` not mapped to execution env in `cdb_execution` | #2532 / #2533 (explicit flags) |
 | Observability receiver proof | #2531 |
 | Final LR reconcile | #2535 |
 
@@ -240,7 +247,7 @@ Must concretize (using this SSOT, not replacing it):
 - Confirm or reject **MEXC** as canary venue (only repo-backed option today).
 - Symbol list and order types.
 - Which credential file set (`MEXC_*` vs `MEXC_TRADE_*`).
-- Testnet vs mainnet scope; align `MEXC_TESTNET`, `DRY_RUN`, `MOCK_TRADING`, `WS_SOURCE`.
+- Testnet vs mainnet scope; set **explicit** `MEXC_TESTNET`, `DRY_RUN`, `MOCK_TRADING` on `cdb_execution` (do not rely on `TRADING_MODE` alone); align `WS_SOURCE`.
 - Capital limits from [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md).
 - Venue dashboard permissions (trade-only; withdrawal/transfer/admin **forbidden**).
 - IP allowlist / account binding if required by venue.
@@ -249,8 +256,10 @@ Must concretize (using this SSOT, not replacing it):
 
 Repo-backed checks to evidence **without** order placement:
 
-- Config resolution: `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET`, `EXECUTION_ADAPTER_ID`, `TRADING_MODE` — prove **effective** flags after any `TRADING_MODE` → `get_legacy_config()` mapping.
-- **Fail-closed:** `TRADING_MODE=staged` alone is **not** sufficient for dry-run (`DRY_RUN=false` in STAGED bundle); require explicit `DRY_RUN=true` in the proof config.
+- Config resolution from **effective execution env**: `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET`, `EXECUTION_ADAPTER_ID` ([`services/execution/config.py`](../../services/execution/config.py)).
+- Log line: `TRADING_MODE` value at startup ([`service.py`](../../services/execution/service.py)) — must **not** be treated as the source of truth for flags unless a future wiring change applies `get_legacy_config()`.
+- **Fail-closed:** `TRADING_MODE=staged` (or any `TRADING_MODE`) **without** matching explicit env does **not** prove STAGED or dry-run behavior on `cdb_execution` today.
+- Require explicit `DRY_RUN=true` in env for non-destructive dry-run proof.
 - `LiveExecutor(dry_run=True)` / adapter init without exchange submit.
 - Risk gate behavior on dry-run path.
 - Logs attest `real_money=false` / dry-run / no live mainnet bundle.
@@ -275,6 +284,7 @@ Before any `ready-for-human-live-approval` state:
 | `MexcExecutor` legacy module | Present; **not** active service wiring |
 | CCXT in production | **Not found** on active path |
 | Distinct **sandbox** mode | **Not found** in services |
+| `TRADING_MODE` → `get_legacy_config()` on `cdb_execution` | **Not wired** — env flags are SSOT for execution runtime |
 | Public WS feed vs execution testnet alignment | **Unproven** |
 
 ---
