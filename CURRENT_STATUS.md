@@ -10,10 +10,10 @@
 
 ## Repo / Engineering Status (2026-06-03)
 
-- **#2832 Second Real-Task-Proof (RTP #2)**: **COMPLETED** — PR [#2839](https://github.com/jannekbuengener/Claire_de_Binare/pull/2839) squash-merged (`75e1e8e2`); scoped task [#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) read-only Trivy triage; verdict **PASS** in [`docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md); session log `knowledge/logs/sessions/2026-06-03-2832-second-real-task-proof.md`. GitHub-live: #2832 **CLOSED**; #1976 **OPEN** (HOLD); #2833 **OPEN**. LR NO-GO; no dismissals/runtime.
+- **#2833 Grandparent operator closeout / #1976 epic**: **COMPLETED** (in PR) — operator decision **CLOSE #1976**; §B recert (#2831/PR #2834), Thermos SSOT (#2836), RTP #2821/#2832 (PR #2829/#2839), ledger #2840; SSOT §I in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). Session log: `knowledge/logs/sessions/2026-06-03-2833-grandparent-closeout.md`. GitHub-live: #2833 **CLOSED** after merge; #1976 **CLOSED** after evidence comment. LR NO-GO; no productive writes/runtime activation.
+- **#2832 Second Real-Task-Proof (RTP #2)**: **COMPLETED** — PR [#2839](https://github.com/jannekbuengener/Claire_de_Binare/pull/2839) squash-merged (`75e1e8e2`); scoped task [#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) read-only Trivy triage; verdict **PASS** in [`docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md); session log `knowledge/logs/sessions/2026-06-03-2832-second-real-task-proof.md`. GitHub-live: #2832 **CLOSED**. LR NO-GO; no dismissals/runtime.
 - **#2837 Branch protection — disable required_conversation_resolution**: **COMPLETED** — merged via PR [#2838](https://github.com/jannekbuengener/Claire_de_Binare/pull/2838) (`7862b9bf`); `required_conversation_resolution.enabled=false` on `main`. Session log: `knowledge/logs/sessions/2026-06-03-disable-required-conversation-resolution.md`. No LR/live/DB/MCP/runtime impact.
-- **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B summary in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). Thermos SSOT follow-up PR [#2836](https://github.com/jannekbuengener/Claire_de_Binare/pull/2836). GitHub-live: #2831 **CLOSED**; #1976 **OPEN** (HOLD); #2833 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-03-2831-wave-matrix-recertification.md`. LR NO-GO; no writes/runtime activation.
-- **#1976 grandparent epic**: **OPEN** — §B recert on `main` (PR #2834); RTP #2821 **PASS** (PR #2829); RTP #2832 **PASS** (PR #2839). Epic-close **HOLD** until #2833 (operator closeout). Do not close from RTP alone.
+- **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B summary in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). Thermos SSOT follow-up PR [#2836](https://github.com/jannekbuengener/Claire_de_Binare/pull/2836). GitHub-live: #2831 **CLOSED**. Session log: `knowledge/logs/sessions/2026-06-03-2831-wave-matrix-recertification.md`. LR NO-GO; no writes/runtime activation.
 
 ## Repo / Engineering Status (2026-06-02)
 
@@ -28,13 +28,12 @@
 - **#2802 Control-room signal layer v1**: **COMPLETED** — PR [#2818](https://github.com/jannekbuengener/Claire_de_Binare/pull/2818) merged (`2f1d88c6`); read-only `build_control_room_signal_layer_v1` + contract + 20 unit tests on `main` (orthogonal to Wave-19 view builder; no MCP/UI/runtime). GitHub-live: #2802 **CLOSED**; epic #2778 **CLOSED**; grandparent #1976 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-02-2802-control-room-signal-layer.md`. No productive DB/MCP writes. LR NO-GO.
 - **Phase-1 closeout chain (complete)**: #2773–#2777, #2689, #2780, #2781 **CLOSED**; #2780 via PR [#2795](https://github.com/jannekbuengener/Claire_de_Binare/pull/2795) (`5c365391` area); docs audit `PASS_WITH_DEFERRED_EXIT_ITEMS`.
 - **#1976 grandparent epic**: **OPEN** — RTP **PASS** for #2821 slice on `main` (PR #2829); epic-close **HOLD** (readiness §B). See [`SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md).
-- **#2794**: **OPEN** — non-blocking architecture-doc follow-up (post-#2793).
-- **main**: `5face9c9` (PR #2834 #2831 §B wave matrix recert).
+- **#2794**: **CLOSED** — architecture-doc reconcile (post-#2793).
+- **main**: `2c684c69` (post PR #2840 RTP ledger; closeout PR pending).
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - #2832 second RTP; #2833 grandparent closeout (OPEN)
-  - #1976 grandparent epic (OPEN; HOLD)
+  - #1976 grandparent epic (**CLOSED** after #2833 closeout)
   - Phase-2 children #2797–#2804 (**all CLOSED**)
-  - #2794 (architecture doc; non-blocking)
+  - #2513 (Trivy upstream tracking — OPEN; orthogonal)
   - #2440 (LR-030 Shadow/Soak — OPEN)
   - #2289 / #2290 (security alert readout — OPEN)
 

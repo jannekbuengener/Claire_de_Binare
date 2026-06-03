@@ -2,13 +2,13 @@
 
 | Field | Value |
 | --- | --- |
-| **Epic** | [#1976](https://github.com/jannekbuengener/Claire_de_Binare/issues/1976) (stays **OPEN**) |
+| **Epic** | [#1976](https://github.com/jannekbuengener/Claire_de_Binare/issues/1976) **CLOSED** (operator closeout [#2833](https://github.com/jannekbuengener/Claire_de_Binare/issues/2833), 2026-06-03) |
 | **Phase-2 prerequisite** | [#2778](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778) **CLOSED** — [`SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md`](SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md) **`PASS_CLOSEOUT`** |
-| **Repo SHA** | `5face9c99eeb14b50f9d220b06728abfdd39ec3b` (`origin/main` after PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834); recert evidence @ `1f2d361d`) |
-| **Review date** | 2026-06-03 (§B recert); 2026-06-02 (initial readiness) |
-| **Readiness verdict** | **`READY_FOR_REAL_TASK_PROOF_RUN`** (scoped task [#2821](https://github.com/jannekbuengener/Claire_de_Binare/issues/2821)) |
-| **Epic-close verdict** | **`HOLD`** — Grandparent DoD not fully satisfied (see §B) |
-| **Real-Task-Proof Gate** | **`PASS`** (scoped #2821) — see §F addendum; does **not** authorize #1976 epic close |
+| **Repo SHA** | `2c684c69738062d52394892aa4b92aa819db28ff` (`origin/main` after PR [#2840](https://github.com/jannekbuengener/Claire_de_Binare/pull/2840); closeout ledger pending this PR) |
+| **Review date** | 2026-06-03 (§B recert, RTP #2, operator closeout); 2026-06-02 (initial readiness) |
+| **Readiness verdict** | **`READY_FOR_REAL_TASK_PROOF_RUN`** — historical; RTP runs **PASS** (§F, §H) |
+| **Epic-close verdict** | **`CLOSE`** — §B recert + RTP #1/#2 + operator ratification via #2833 (see §I) |
+| **Real-Task-Proof Gate** | **`PASS`** (#2821 §F, #2832 §H); satisfied for grandparent close |
 
 ---
 
@@ -43,12 +43,12 @@
 | Welle 21 | **ACCEPTED_HOLD** (vector/CI deferred per epic non-goals) |
 | Phase-2 #2778 | **PASS** (`PASS_CLOSEOUT`) |
 | Guardrails / #2821 design + RTP #2821 | **PASS** |
-| **#2832** second RTP | **PASS** (PR #2839 @ `75e1e8e2`) — #2833 closeout still blocks epic close |
-| **#2833** operator closeout | **OPEN** — ratify PASS_WITH_LIMITS / ACCEPTED_HOLD or remediate |
+| **#2832** second RTP | **PASS** (PR #2839 @ `75e1e8e2`) |
+| **#2833** operator closeout | **COMPLETE** — final decision **CLOSE** (§I) |
 
-### Epic-close verdict: **HOLD**
+### Epic-close verdict: **CLOSE**
 
-#1976 must **not** close until #2832 completes and #2833 ratifies recert rows (see matrix SSOT). Phase-2 **`PASS_CLOSEOUT`** and §B recert (#2831, PR #2834) do not authorize epic close alone.
+#1976 closed after #2832 RTP **PASS**, §B recert (#2831 / PR #2834), Thermos SSOT (#2836), and operator closeout #2833 ratifying **PASS_WITH_LIMITS** (Wellen 8–20) and **ACCEPTED_HOLD** (Welle 21). LR NO-GO and write gates unchanged; see §I.
 
 ---
 
@@ -97,8 +97,8 @@
 | Verdict | Value |
 | --- | --- |
 | Phase-2 prerequisite (#2778) | **Satisfied** (`PASS_CLOSEOUT` on `main`) |
-| Grandparent DoD (#1976) | **HOLD** — §B recert 2026-06-03; #2832/#2833 open; productive paths not activated |
-| Real-Task-Proof Gate | **PASS** (scoped #2821) — §F; epic close still **HOLD** |
+| Grandparent DoD (#1976) | **CLOSE** — operator #2833; §B recert + RTP #1/#2 complete |
+| Real-Task-Proof Gate | **PASS** (#2821 §F, #2832 §H) |
 | **Readiness for proof run** | **Completed** — see §F; #2821 delivery via PR #2829 |
 
 ---
@@ -159,9 +159,39 @@ Post-run update to this SSOT. Supersedes §C/E **pre-run** FAIL rows for #2821 p
 
 ---
 
+## I) Operator closeout (#2833, 2026-06-03)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Closeout slice | **COMPLETE** | Issue [#2833](https://github.com/jannekbuengener/Claire_de_Binare/issues/2833) |
+| **Final decision** | **CLOSE #1976** | No hard child blocker in #2034–#2205; wave band 0 open issues (GitHub-live 2026-06-03) |
+| §B recert | **Ratified** | PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) @ `5face9c9`; #2831 **CLOSED** |
+| Thermos SSOT | **Merged** | PR [#2836](https://github.com/jannekbuengener/Claire_de_Binare/pull/2836) @ `44c2895d` |
+| RTP #1 | **PASS** | PR [#2829](https://github.com/jannekbuengener/Claire_de_Binare/pull/2829); #2821 **CLOSED** — see §F |
+| RTP #2 | **PASS** | PR [#2839](https://github.com/jannekbuengener/Claire_de_Binare/pull/2839) @ `75e1e8e2`; #2832 **CLOSED** |
+| Post-merge ledger | **Merged** | PR [#2840](https://github.com/jannekbuengener/Claire_de_Binare/pull/2840) @ `2c684c69` |
+| Accepted limits | **PASS_WITH_LIMITS** (Wellen 8–20); **ACCEPTED_HOLD** (Welle 21) | Per matrix SSOT — not remediation blockers |
+| #1976 | **CLOSED** | After this closeout PR + GitHub evidence comment |
+| #2833 | **CLOSED** | Via closeout PR `Closes #2833` |
+
+### Safety boundaries (unchanged at epic close)
+
+- **LR:** NO-GO — epic close does **not** change live-readiness
+- **Board `trade-capable`:** not LR-Go, not Echtgeld-Go
+- **Writes:** `PERSIST_ALLOWED=False`, `MUTATION_ALLOWED=False`; managed/non-local **NOT ACTIVATED**
+- **#2513** remains OPEN (Trivy upstream tracking); orthogonal to epic close
+
+### Restunsicherheiten
+
+- No surrealdb-local record evidence in closeout slice (`brain_status: not-used`)
+- PASS_WITH_LIMITS: productive e2e/runbook depth not re-run in #2831
+- MCP tool surface enumerated in-process (27 tools at RTP #2); count may drift on future `main`
+
+---
+
 ## Non-goals (this slice)
 
 - Executing the Real-Task-Proof run itself *(completed in §F addendum via separate PR #2829)*
-- Closing #1976 *(epic remains OPEN per §B)*
+- Closing #1976 *(completed in §I via operator closeout #2833)*
 - Implementing Wellen 7–21 gaps or activating productive SurrealDB/MCP writes
 - Closing #2832 or #2833 from #2831 alone
