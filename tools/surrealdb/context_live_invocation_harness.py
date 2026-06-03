@@ -303,13 +303,17 @@ def classify_tool_result(
     code = _extract_error_code(result)
 
     if tool_name == "cdb_context_memory_write_intent":
-        if status == "refused":
+        from tools.surrealdb.negative_controls import (
+            classify_memory_write_intent_negative_control,
+        )
+
+        verdict = classify_memory_write_intent_negative_control(
+            result, invocation_path="bridge"
+        )
+        if verdict == "PASS":
             return "PASS"
-        if code == "agent_memory_write_not_activated" and status in (
-            "refused",
-            "error",
-        ):
-            return "PASS"
+        if verdict == "BLOCKED_SAFETY":
+            return "BLOCKED_SAFETY"
         return "FAIL"
 
     if status == "ok":

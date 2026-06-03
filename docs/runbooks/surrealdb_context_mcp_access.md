@@ -272,6 +272,32 @@ Agent OS Readiness is a **signal**, not an authorization. Certification is an
 **adoption gate**, not LR-Go. Missing certification must not block unrelated PR
 work or general readiness checks that do not claim operator adoption.
 
+### Negative-control regression matrix (#2854)
+
+Write-intent and mutation-adjacent surfaces must stay **fail-closed** in CI:
+
+- Canonical matrix: `tools/surrealdb/negative_controls_matrix.py`
+- Classifiers: `tools/surrealdb/negative_controls.py` (`PASS` vs `BLOCKED_SAFETY` vs `FAIL`)
+- Regression tests: `tests/unit/surrealdb/test_negative_controls_regression.py`
+- Evidence doc: `docs/evidence/context_tooling/CDB_NEGATIVE_CONTROLS_MATRIX_2026-06-03.md`
+
+| Path | `cdb_context_memory_write_intent` expected classification |
+|------|-----------------------------------------------------------|
+| Bridge (in-process handlers) | **PASS** when `status=refused` / dry-run `approved_dry_run` |
+| MCP stdio (Smart Mode policy) | **BLOCKED_SAFETY** when policy blocks the call (not FAIL) |
+
+**Never** set `PERSIST_ALLOWED=True` or `MUTATION_ALLOWED=True` in CI. Caller-supplied
+`brain_source` / `metadata.source` is not DB evidence ([#2638](https://github.com/jannekbuengener/Claire_de_Binare/issues/2638)).
+
+Rerun:
+
+```bash
+make context-negative-controls
+```
+
+Harness JSON evidence (`make context-live-invoke --format json`) includes a
+`negative_controls` summary block for machine-readable proof. Refs parent epic [#2847](https://github.com/jannekbuengener/Claire_de_Binare/issues/2847).
+
 Expected output (best case — bridge + stdio both work):
 ```
 === CDB Context MCP Capability Validation ===
