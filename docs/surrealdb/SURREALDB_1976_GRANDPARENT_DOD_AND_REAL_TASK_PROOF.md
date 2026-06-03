@@ -146,6 +146,19 @@ Post-run update to this SSOT. Supersedes §C/E **pre-run** FAIL rows for #2821 p
 
 ---
 
+## H) RTP #2 addendum (2026-06-03, #2832)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Scoped task | #2513 read-only Trivy triage (no dismissals) | Issue body + `docs/security/TRIAGE_RUNBOOK.md` |
+| Proof artifact | RTP **PASS** (§C matrix) | [`SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md`](SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md) |
+| Delivery PR | *(pending merge)* | Branch `real-task-proof-2832-context-workflow` @ `44c2895d` base |
+| #2832 | Closes on merge | PR `Closes #2832` only |
+| #1976 | **Stays OPEN** | #2833 operator closeout still pending |
+| #2833 | **Stays OPEN** | Ratify §B rows after RTP #2 |
+
+---
+
 ## Non-goals (this slice)
 
 - Executing the Real-Task-Proof run itself *(completed in §F addendum via separate PR #2829)*
