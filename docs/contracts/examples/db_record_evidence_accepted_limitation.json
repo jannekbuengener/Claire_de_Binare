@@ -1,0 +1,25 @@
+{
+  "schema_version": "db-record-evidence-contract/v1",
+  "claim_id": "claim-harness-minimal-missing-evidence",
+  "claim_type": "context_tooling_benchmark",
+  "claim_text_or_summary": "Minimal harness invocation omitted inline evidence_records; handler fail-closed.",
+  "producer_tool": "cdb_context_evidence_resolve",
+  "tool_invocation_id_or_hash": "inv-minimal-cdb_context_evidence_resolve",
+  "query_or_lookup_fingerprint": "bridge:cdb_context_evidence_resolve:minimal:no_inline_records",
+  "record_source": "in_memory",
+  "record_ids": [],
+  "record_hashes_or_content_fingerprints": [],
+  "record_timestamps_or_freshness_signal": "not_applicable",
+  "repo_crosscheck": {
+    "path": "tools/surrealdb/context_live_invocation_harness.py",
+    "symbol": "PASS_WITH_LIMITS_ERROR_CODES",
+    "commit": "71a02158"
+  },
+  "source_priority": "repo_files",
+  "trust_classification": "accepted_limitation",
+  "limitations": [
+    "status=error code=missing_evidence_records — ACCEPTED_LIMITATION per #2852 ratification"
+  ],
+  "redaction_summary": "no sensitive values present",
+  "determinism_hash": "724d54f6a4c28f30f459280ad2510371f004f3ed4b3cefa4de459e709e6e96c1"
+}

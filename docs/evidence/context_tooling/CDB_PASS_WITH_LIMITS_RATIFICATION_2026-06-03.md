@@ -65,6 +65,9 @@ make context-live-invoke
 make context-live-invoke-full
 
 pytest tests/unit/surrealdb/test_context_live_invocation_harness.py -q
+
+# DB-record evidence contract (agent claims; Issue #2851)
+pytest tests/unit/surrealdb/test_db_record_evidence_contract.py -q
 ```
 
 ---

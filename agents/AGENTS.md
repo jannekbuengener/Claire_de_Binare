@@ -155,7 +155,9 @@ Higher wins; fail-closed when lower layers conflict:
 ### Rules
 
 - No plan may claim Memory/Evidence/Decision consideration without
-  record/tool/query evidence.
+  record/tool/query evidence. Structured claim envelope:
+  [`docs/contracts/context_tooling/DB_RECORD_EVIDENCE_CONTRACT.md`](../docs/contracts/context_tooling/DB_RECORD_EVIDENCE_CONTRACT.md)
+  (validator: `tools/surrealdb/db_record_evidence_contract.py`, Issue #2851).
 - Strategy/Runtime/Module work MUST distinguish `repo-only` from brain-backed.
 - `context.briefing` / `briefing.session_context` is read-only working/session
   memory (`session_only=true`); not persistent DB memory; see

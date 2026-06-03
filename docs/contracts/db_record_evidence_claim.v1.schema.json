@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DB Record Evidence Claim",
+  "$comment": "Issue #2851 — agent-facing context/tooling claim envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "claim_id",
+    "claim_type",
+    "claim_text_or_summary",
+    "producer_tool",
+    "tool_invocation_id_or_hash",
+    "query_or_lookup_fingerprint",
+    "record_source",
+    "record_ids",
+    "record_hashes_or_content_fingerprints",
+    "record_timestamps_or_freshness_signal",
+    "repo_crosscheck",
+    "source_priority",
+    "trust_classification",
+    "limitations",
+    "redaction_summary",
+    "determinism_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "db-record-evidence-contract/v1",
+      "type": "string"
+    },
+    "claim_id": { "type": "string", "minLength": 1 },
+    "claim_type": { "type": "string", "minLength": 1 },
+    "claim_text_or_summary": { "type": "string", "minLength": 1 },
+    "producer_tool": { "type": "string", "minLength": 1 },
+    "tool_invocation_id_or_hash": { "type": "string", "minLength": 1 },
+    "query_or_lookup_fingerprint": { "type": "string", "minLength": 1 },
+    "record_source": {
+      "type": "string",
+      "enum": [
+        "surrealdb-local",
+        "surrealdb-local-unavailable",
+        "in_memory",
+        "repo-only"
+      ]
+    },
+    "record_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "record_hashes_or_content_fingerprints": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "record_timestamps_or_freshness_signal": { "type": "string" },
+    "repo_crosscheck": {
+      "oneOf": [
+        { "type": "string", "minLength": 1 },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "path": { "type": "string" },
+            "file": { "type": "string" },
+            "symbol": { "type": "string" },
+            "commit": { "type": "string" },
+            "sha": { "type": "string" }
+          }
+        },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ]
+    },
+    "source_priority": {
+      "type": "string",
+      "enum": [
+        "live_github",
+        "repo_files",
+        "surrealdb_context",
+        "ledger_snapshots",
+        "fallback"
+      ]
+    },
+    "trust_classification": {
+      "type": "string",
+      "enum": [
+        "valid_db_backed",
+        "partial",
+        "repo_only",
+        "in_memory_fixture",
+        "accepted_limitation",
+        "invalid_fake_db"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "redaction_summary": { "type": "string" },
+    "determinism_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "caller_evidence": {
+      "type": "object",
+      "description": "Optional audit trail of ignored caller fields; must not be sole DB proof",
+      "additionalProperties": true
+    }
+  }
+}

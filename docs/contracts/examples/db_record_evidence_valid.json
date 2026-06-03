@@ -1,0 +1,25 @@
+{
+  "schema_version": "db-record-evidence-contract/v1",
+  "claim_id": "claim-wave14-evidence-001",
+  "claim_type": "wave14_read",
+  "claim_text_or_summary": "Evidence resolve returned one evidence_ref row from guarded local adapter.",
+  "producer_tool": "cdb_context_evidence_resolve",
+  "tool_invocation_id_or_hash": "a3f2c8e91b004d2f9e7a6c5b4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3",
+  "query_or_lookup_fingerprint": "SELECT * FROM evidence_ref WHERE evidence_id = $id LIMIT 1",
+  "record_source": "surrealdb-local",
+  "record_ids": ["evidence_ref:bench001"],
+  "record_hashes_or_content_fingerprints": [],
+  "record_timestamps_or_freshness_signal": "adapter_reported_created_at=2026-06-01T12:00:00Z",
+  "repo_crosscheck": {
+    "path": "tools/mcp/context_evidence_memory_tools.py",
+    "symbol": "cdb_context_evidence_resolve_handler",
+    "commit": "71a02158"
+  },
+  "source_priority": "surrealdb_context",
+  "trust_classification": "valid_db_backed",
+  "limitations": [
+    "LR NO-GO; record proof does not authorize live trading or persistence activation"
+  ],
+  "redaction_summary": "no sensitive values present",
+  "determinism_hash": "74d88a673992203aa732f65844ca895e7350772b3ea26c46e753dd2702967fd6"
+}
