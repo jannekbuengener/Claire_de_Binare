@@ -326,9 +326,7 @@ def validate_db_record_evidence_claim(claim: Mapping[str, Any]) -> list[str]:
 
     if classified == "valid_db_backed":
         if record_source != "surrealdb-local":
-            violations.append(
-                "valid_db_backed requires record_source=surrealdb-local"
-            )
+            violations.append("valid_db_backed requires record_source=surrealdb-local")
         if not _has_tool_query_proof(claim):
             violations.append(
                 "valid_db_backed requires producer_tool and "
