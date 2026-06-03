@@ -159,4 +159,5 @@ Operator checklist gate #2 in [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROV
 - [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) — decision pack ([#2526](https://github.com/jannekbuengener/Claire_de_Binare/issues/2526))
 - [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — human GO/REVOKE ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))
 - [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — stop/halt SSOT ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
+- [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md) — integration plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532); plan_only)
 - [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) — global NO-GO (unchanged)

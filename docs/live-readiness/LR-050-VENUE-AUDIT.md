@@ -53,6 +53,7 @@
 | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) | Halt paths; `MOCK_TRADING` / `DRY_RUN` / `MEXC_TESTNET` are safe modes, not venue GO |
 | [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) | Credential names; venue permissions deferred here until this audit |
 | [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) | Monitoring gates ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
+| [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md) | Integration plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532); plan_only — references this audit, no inventory duplicate) |
 | [`knowledge/contracts/EXTERNAL_ADAPTERS.md`](../../knowledge/contracts/EXTERNAL_ADAPTERS.md) | Adapter boundary spec |
 | [`core/contracts/external_adapter_registry.py`](../../core/contracts/external_adapter_registry.py) | `mock_builtin` / `mexc_builtin` registry |
 

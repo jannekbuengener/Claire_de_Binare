@@ -48,7 +48,7 @@
 | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) | Manual halt when alerts unevaluable |
 | [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) | Venue/exchange path inventory ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527)) |
 | [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) | Alert credential names; receiver proof |
-| [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary Plan — must embed alert/receiver gates |
+| [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary Plan — SSOT: [LR-050-CANARY-PLAN.md](./LR-050-CANARY-PLAN.md) (`plan_only`, not executable) |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run — non-destructive gate checks only |
 | [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | Final LR reconcile after child SSOTs |
 | [`infrastructure/monitoring/alerts.yml`](../../infrastructure/monitoring/alerts.yml) | Prometheus alert rules (read-only reference) |
