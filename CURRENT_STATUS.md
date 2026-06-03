@@ -14,12 +14,13 @@
 - **#2832 Second Real-Task-Proof (RTP #2)**: **COMPLETED** — PR [#2839](https://github.com/jannekbuengener/Claire_de_Binare/pull/2839) squash-merged (`75e1e8e2`); scoped task [#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) read-only Trivy triage; verdict **PASS** in [`docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md); session log `knowledge/logs/sessions/2026-06-03-2832-second-real-task-proof.md`. GitHub-live: #2832 **CLOSED**. LR NO-GO; no dismissals/runtime.
 - **#2837 Branch protection — disable required_conversation_resolution**: **COMPLETED** — merged via PR [#2838](https://github.com/jannekbuengener/Claire_de_Binare/pull/2838) (`7862b9bf`); `required_conversation_resolution.enabled=false` on `main`. Session log: `knowledge/logs/sessions/2026-06-03-disable-required-conversation-resolution.md`. No LR/live/DB/MCP/runtime impact.
 - **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B summary in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). Thermos SSOT follow-up PR [#2836](https://github.com/jannekbuengener/Claire_de_Binare/pull/2836). GitHub-live: #2831 **CLOSED**. Session log: `knowledge/logs/sessions/2026-06-03-2831-wave-matrix-recertification.md`. LR NO-GO; no writes/runtime activation.
-- **main**: `18684827` (post #2841 grandparent closeout on GitHub-live; ledger reconcile #2842 in flight).
+- **#2842 CURRENT_STATUS ledger reconcile**: **COMPLETED** — PR [#2922](https://github.com/jannekbuengener/Claire_de_Binare/pull/2922) squash-merged (`fa84c750`); grandparent #1976/#2832/#2833 active block aligned to GitHub-live. GitHub-live: #2842 **CLOSED**. LR NO-GO.
+- **#2847 Context/MCP tooling hardening meta**: **COMPLETED** — Benchmark #2 hardening backlog (#2844–#2856, #2842); harness re-run 2026-06-03: minimal 21 PASS / 6 PASS_WITH_LIMITS (ACCEPTED_LIMITATION), full 27 PASS, 0 FAIL; ratification [`CDB_PASS_WITH_LIMITS_RATIFICATION_2026-06-03.md`](docs/evidence/context_tooling/CDB_PASS_WITH_LIMITS_RATIFICATION_2026-06-03.md). GitHub-live: #2847 **CLOSED**. LR NO-GO; no productive writes/runtime activation.
+- **main**: `fa84c750` (post #2842 ledger reconcile; #2847 meta closeout ledger in flight).
 - **Active GitHub focus (manual, non-exhaustive)**:
-  - [#2847](https://github.com/jannekbuengener/Claire_de_Binare/issues/2847) Context/MCP tooling hardening meta backlog (**OPEN**)
   - [#2513](https://github.com/jannekbuengener/Claire_de_Binare/issues/2513) Trivy upstream tracking (**OPEN**; orthogonal)
   - [#2440](https://github.com/jannekbuengener/Claire_de_Binare/issues/2440) LR-030 Shadow/Soak (**OPEN**)
-  - Grandparent arc #1976 / #2832 / #2833 (**CLOSED** on GitHub-live after PR #2841)
+  - Context/MCP hardening meta #2847 / grandparent arc #1976 / #2832 / #2833 (**CLOSED** on GitHub-live)
 
 ## Repo / Engineering Status (2026-06-02)
 
