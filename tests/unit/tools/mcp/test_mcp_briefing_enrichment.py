@@ -174,7 +174,8 @@ class TestBriefingEnrichmentWithRecords:
         assert len(briefing["enriched_memory"]) > 0
         # Trust summary: from real trust_summary_v1 service
         ts = briefing["trust_summary"]
-        assert "Trust level:" in ts
+        assert "Operator trust:" in ts
+        assert "Trust level (legacy):" in ts
         assert "Composite score:" in ts
         assert "no_echtgeld_go: true" in ts
 
