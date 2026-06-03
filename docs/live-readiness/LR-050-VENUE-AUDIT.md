@@ -54,6 +54,7 @@
 | [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) | Credential names; venue permissions deferred here until this audit |
 | [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) | Monitoring gates ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md) | Integration plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532); plan_only — references this audit, no inventory duplicate) |
+| [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) | Dry-run proof contract ([#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533); docs_only; runtime evidence not executed) |
 | [`knowledge/contracts/EXTERNAL_ADAPTERS.md`](../../knowledge/contracts/EXTERNAL_ADAPTERS.md) | Adapter boundary spec |
 | [`core/contracts/external_adapter_registry.py`](../../core/contracts/external_adapter_registry.py) | `mock_builtin` / `mexc_builtin` registry |
 

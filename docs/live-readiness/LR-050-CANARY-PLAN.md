@@ -280,5 +280,6 @@ It does **not**:
 
 - [`README.md`](./README.md) — live-readiness index
 - [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) — [#2526](https://github.com/jannekbuengener/Claire_de_Binare/issues/2526)
+- [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) — dry-run proof contract ([#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533); docs_only)
 - [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md) — global NO-GO (unchanged by this issue)
 - [`docs/runbooks/CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — Board stage vs LR

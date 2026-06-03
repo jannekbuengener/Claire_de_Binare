@@ -17,3 +17,4 @@ LR-050 secrets readiness (credential gates, no key exposure, NO-GO): [LR-050-SEC
 LR-050 observability gates (monitoring/alert/receiver matrix, NO-GO): [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md)
 LR-050 venue audit (broker/exchange path inventory, NO-GO): [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md)
 LR-050 canary integration plan (plan_only, not executable, NO-GO): [LR-050-CANARY-PLAN.md](./LR-050-CANARY-PLAN.md)
+LR-050 dry-run proof contract (docs_only, runtime evidence not executed, NO-GO): [LR-050-DRY-RUN-PROOF.md](./LR-050-DRY-RUN-PROOF.md)

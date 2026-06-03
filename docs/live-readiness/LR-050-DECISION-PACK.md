@@ -67,7 +67,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 | Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
 | Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | SSOT: [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) — Prometheus / Alertmanager / receiver proof |
 | First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | OPEN | SSOT: [LR-050-CANARY-PLAN.md](./LR-050-CANARY-PLAN.md) — `plan_only`, not executable |
-| Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | OPEN | `real_money=false` / dry_run proof |
+| Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | OPEN | SSOT: [LR-050-DRY-RUN-PROOF.md](./LR-050-DRY-RUN-PROOF.md) — `dry_run_proof_contract`, `docs_only`; runtime evidence `blocker_before_live` |
 | Exact human approval wording and checklist | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) | OPEN | **Child gate** — no GO wording in this pack |
 | Final LR verdict reconcile | [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | OPEN | After #2527–#2534; may set `ready-for-human-live-approval` only if evidence supports it |
 
@@ -203,6 +203,7 @@ No credentials, API keys, or secret values belong in this document.
 - [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) — credential handling and readiness ([#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530))
 - [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) — monitoring/alert/receiver gates ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531))
 - [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md) — first live-capital canary integration plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532); plan_only, not executable)
+- [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) — docs-only dry-run proof contract ([#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533); runtime evidence not executed)
 - [`ISSUES.md`](./ISSUES.md) — LR task list
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — prestart template
 - [`docs/runbooks/CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — Board stage vs LR

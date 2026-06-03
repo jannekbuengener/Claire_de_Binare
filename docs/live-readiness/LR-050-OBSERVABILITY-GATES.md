@@ -238,6 +238,8 @@ The Canary Plan **MUST** include:
 
 ## 11. Handoff — [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) Dry-run Proof
 
+SSOT: [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) (`dry_run_proof_contract`, `docs_only`; **runtime evidence not executed**).
+
 **May** prove without real money or receiver tests (repo/CI bounded):
 
 - Config resolution references correct alert files.

@@ -262,6 +262,7 @@ Reason: <short factual reason>
 
 - [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) — Planungskontext und Gate-Matrix
 - [`LR-050-CANARY-PLAN.md`](./LR-050-CANARY-PLAN.md) — Canary integration plan ([#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532); plan_only, not executable)
+- [`LR-050-DRY-RUN-PROOF.md`](./LR-050-DRY-RUN-PROOF.md) — docs-only dry-run proof contract ([#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533))
 - [`LR-050-VENUE-AUDIT.md`](./LR-050-VENUE-AUDIT.md) — venue/broker path inventory SSOT ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527))
 - [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — Stop/Halt SSOT ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
 - [`README.md`](./README.md) — Live-readiness index
