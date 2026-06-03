@@ -112,9 +112,9 @@ Jeder Parameter muss einen **konkreten Wert** aus dem repo-backed SSOT des jewei
 |-----------|------------------------|--------------|----------------------------------|
 | **Venue** | `Venue:` | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | TBD |
 | **Symbole** | `Symbols:` | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528), [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | TBD |
-| **Max-Notional (pro Order)** | `Max notional per order:` | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | TBD |
-| **Max-Notional (Session gesamt)** | `Max notional session total:` | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | TBD |
-| **Max Daily Loss** | `Max daily loss:` | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | TBD |
+| **Max-Notional (pro Order)** | `Max notional per order:` | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)) | TBD (`TBD_BLOCKER_BEFORE_LIVE`) |
+| **Max-Notional (Session gesamt)** | `Max notional session total:` | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)) | TBD (`TBD_BLOCKER_BEFORE_LIVE`) |
+| **Max Daily Loss** | `Max daily loss:` | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)) | TBD (`TBD_BLOCKER_BEFORE_LIVE`) |
 | **Laufzeit** | `Duration (UTC window):` | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | TBD |
 | **Stop-/Kill-Regeln** | `Stop/kill rules:` | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) + [`KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) | TBD (Verweis auf #2529 SSOT) |
 | **Startzeitpunkt** | `Start time (UTC):` | Operator + [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | TBD |

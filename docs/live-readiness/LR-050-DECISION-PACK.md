@@ -62,7 +62,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 | Risk / gate | Owner issue | State | Note |
 |-------------|-------------|-------|------|
 | Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | No preferred canary venue documented yet |
-| Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | Max notional, daily loss, exposure caps TBD |
+| Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
 | Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | Runbook + halt paths |
 | Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | Names, store, permissions TBD |
 | Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | Prometheus / Alertmanager readiness |
@@ -107,15 +107,17 @@ Revocation / halt trigger:
 
 Alle Felder sind **TBD** bis die Kind-Issues liefern. Werte hier sind Platzhalter, keine Freigabe.
 
+**Risk-limit detail (enforceability, fail-closed, proof hooks):** [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)).
+
 | Parameter | Value | Source issue |
 |-----------|-------|--------------|
 | **Venue** | TBD | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) |
 | **Symbols** | TBD | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528), [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) |
-| **Max notional (per order / session)** | TBD | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) |
-| **Max daily loss** | TBD | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) |
+| **Max notional (per order / session)** | TBD (`TBD_BLOCKER_BEFORE_LIVE`) | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) §4 |
+| **Max daily loss** | TBD (`TBD_BLOCKER_BEFORE_LIVE`) | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) §4 |
 | **Laufzeit (canary window)** | TBD | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) |
 | Order types | TBD | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) |
-| Trading window / cooldown | TBD | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) |
+| Trading window / cooldown | TBD (`TBD_BLOCKER_BEFORE_LIVE`) | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) §4 |
 
 Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md`](../../knowledge/operating_rules/LIVE_TRADING_RUNBOOK.md).
 
@@ -194,6 +196,7 @@ No credentials, API keys, or secret values belong in this document.
 ## Related documents (no duplication)
 
 - [`README.md`](./README.md) — live-readiness index
+- [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) — hard capital/order/loss gate parameters ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528))
 - [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — exact live-capital GO/REVOKE wording ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))
 - [`ISSUES.md`](./ISSUES.md) — LR task list
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — prestart template
