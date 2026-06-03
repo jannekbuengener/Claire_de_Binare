@@ -116,7 +116,7 @@ Jeder Parameter muss einen **konkreten Wert** aus dem repo-backed SSOT des jewei
 | **Max-Notional (Session gesamt)** | `Max notional session total:` | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)) | TBD (`TBD_BLOCKER_BEFORE_LIVE`) |
 | **Max Daily Loss** | `Max daily loss:` | [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528)) | TBD (`TBD_BLOCKER_BEFORE_LIVE`) |
 | **Laufzeit** | `Duration (UTC window):` | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | TBD |
-| **Stop-/Kill-Regeln** | `Stop/kill rules:` | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) + [`KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) | TBD (Verweis auf #2529 SSOT) |
+| **Stop-/Kill-Regeln** | `Stop/kill rules:` | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529)) + [`KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) | TBD (concrete canary stop criteria from #2532; SSOT structure in runbook) |
 | **Startzeitpunkt** | `Start time (UTC):` | Operator + [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | TBD |
 | **Widerruf / Halt** | `Revocation/halt:` | Dieses Dokument §9 | Siehe §9 — Operator kann jederzeit REVOKED ausgeben |
 
@@ -176,7 +176,7 @@ LR-050 LIVE-CAPITAL HUMAN APPROVAL REVOKED
 
 Zusätzlich erforderlich: `Operator:`, `Revocation UTC: <ISO-8601-Z>`, `Reason:` (kurz, sachlich).
 
-**Wirkung:** Sofortiges Ende der Live-Kapital-Autorisierung; keine neuen Live-Orders; Halt gemäß [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) SSOT und [`KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md).
+**Wirkung:** Sofortiges Ende der Live-Kapital-Autorisierung; keine neuen Live-Orders; Halt gemäß [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529)) und [`KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md).
 
 ### 9.2 Operativer Halt (ohne formales REVOKED)
 
@@ -261,6 +261,7 @@ Reason: <short factual reason>
 ## Related documents
 
 - [`LR-050-DECISION-PACK.md`](./LR-050-DECISION-PACK.md) — Planungskontext und Gate-Matrix
+- [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — Stop/Halt SSOT ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
 - [`README.md`](./README.md) — Live-readiness index
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — Prestart (nicht Live-Kapital)
 - [`docs/runbooks/CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — Board stage vs LR

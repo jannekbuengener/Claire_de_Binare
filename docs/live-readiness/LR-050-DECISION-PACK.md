@@ -63,7 +63,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 |-------------|-------------|-------|------|
 | Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | No preferred canary venue documented yet |
 | Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
-| Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | Runbook + halt paths |
+| Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
 | Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | Names, store, permissions TBD |
 | Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | Prometheus / Alertmanager readiness |
 | First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | OPEN | Depends on #2527–#2531 |
@@ -127,10 +127,10 @@ Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.
 
 | Topic | Reference |
 |-------|-----------|
+| **Kill-switch / stop SSOT** | [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529)) |
 | Kill-switch operator checklist | [`docs/operations/KILL_SWITCH_OPERATOR_CHECKLIST.md`](../operations/KILL_SWITCH_OPERATOR_CHECKLIST.md) |
 | P5 governance baseline | [`governance/p5_canary_readiness.yaml`](../../governance/p5_canary_readiness.yaml) |
-| Kill-switch verification in soak gate | `infrastructure/scripts/soak_gate_eval.py` — `kill_switch_precheck_inactive` |
-| Dedicated audit / runbook | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) (OPEN) |
+| Kill-switch verification in soak gate | `infrastructure/scripts/soak_gate_eval.py` — `kill_switch_precheck_inactive` (see runbook §9 precheck gap) |
 
 **Rollback (fail-closed default):**
 
@@ -197,6 +197,7 @@ No credentials, API keys, or secret values belong in this document.
 
 - [`README.md`](./README.md) — live-readiness index
 - [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) — hard capital/order/loss gate parameters ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528))
+- [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — stop/halt paths and verification matrix ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
 - [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — exact live-capital GO/REVOKE wording ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))
 - [`ISSUES.md`](./ISSUES.md) — LR task list
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — prestart template
