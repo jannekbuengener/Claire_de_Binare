@@ -46,6 +46,7 @@
 | [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) | GO block §5 must copy **concrete** values from this SSOT after #2528 closes |
 | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | Venue — blocks **Allowed Symbols** until closed |
 | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | Kill-switch / stop / halt verification SSOT — [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) |
+| [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | Secrets / credential readiness SSOT — [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Alertmanager/Prometheus abort vs investigate matrix |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary plan — must reference all limits below |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run — must prove gates block/simulate with `real_money=false` |

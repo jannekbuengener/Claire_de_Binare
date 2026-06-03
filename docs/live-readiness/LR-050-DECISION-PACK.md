@@ -64,7 +64,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 | Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | No preferred canary venue documented yet |
 | Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
 | Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
-| Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | Names, store, permissions TBD |
+| Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
 | Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | Prometheus / Alertmanager readiness |
 | First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | OPEN | Depends on #2527–#2531 |
 | Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | OPEN | `real_money=false` / dry_run proof |
@@ -184,7 +184,7 @@ No credentials, API keys, or secret values belong in this document.
 | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | Venue audit | Yes |
 | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | Risk limits | Yes |
 | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | Kill-switch | Yes |
-| [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | Secrets handling | Yes |
+| [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | Secrets handling — [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) | Yes |
 | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Observability | Yes |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary plan | Yes |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run proof | Yes |
@@ -199,6 +199,7 @@ No credentials, API keys, or secret values belong in this document.
 - [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) — hard capital/order/loss gate parameters ([#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528))
 - [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) — stop/halt paths and verification matrix ([#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529))
 - [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — exact live-capital GO/REVOKE wording ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))
+- [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) — credential handling and readiness ([#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530))
 - [`ISSUES.md`](./ISSUES.md) — LR task list
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — prestart template
 - [`docs/runbooks/CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — Board stage vs LR
