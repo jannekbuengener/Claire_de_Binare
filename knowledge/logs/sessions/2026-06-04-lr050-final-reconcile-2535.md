@@ -10,7 +10,7 @@ Repo-backed final LR-050 reconcile after child deliverables #2526–#2534. Docum
 
 ## Delivered
 
-- [`docs/live-readiness/LR-050-FINAL-RECONCILE.md`](../../docs/live-readiness/LR-050-FINAL-RECONCILE.md) — verdict SSOT (NO-GO, fail-closed, blocker_before_live open)
+- [`docs/live-readiness/LR-050-FINAL-RECONCILE.md`](../../../docs/live-readiness/LR-050-FINAL-RECONCILE.md) — verdict SSOT (NO-GO, fail-closed, blocker_before_live open)
 - Mirror updates: README, GO_NO_GO, LR-AUDIT-STATUS, LR-050-DECISION-PACK §3 (CLOSED) + crosslink
 
 ## Validation
