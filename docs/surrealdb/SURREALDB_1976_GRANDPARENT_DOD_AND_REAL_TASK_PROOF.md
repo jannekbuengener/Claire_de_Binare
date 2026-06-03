@@ -43,7 +43,7 @@
 | Welle 21 | **ACCEPTED_HOLD** (vector/CI deferred per epic non-goals) |
 | Phase-2 #2778 | **PASS** (`PASS_CLOSEOUT`) |
 | Guardrails / #2821 design + RTP #2821 | **PASS** |
-| **#2832** second RTP | **OPEN** — blocks epic close |
+| **#2832** second RTP | **PASS** (PR #2839 @ `75e1e8e2`) — #2833 closeout still blocks epic close |
 | **#2833** operator closeout | **OPEN** — ratify PASS_WITH_LIMITS / ACCEPTED_HOLD or remediate |
 
 ### Epic-close verdict: **HOLD**
@@ -152,8 +152,8 @@ Post-run update to this SSOT. Supersedes §C/E **pre-run** FAIL rows for #2821 p
 | --- | --- | --- |
 | Scoped task | #2513 read-only Trivy triage (no dismissals) | Issue body + `docs/security/TRIAGE_RUNBOOK.md` |
 | Proof artifact | RTP **PASS** (§C matrix) | [`SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md`](SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-03.md) |
-| Delivery PR | *(pending merge)* | Branch `real-task-proof-2832-context-workflow` @ `44c2895d` base |
-| #2832 | Closes on merge | PR `Closes #2832` only |
+| Delivery PR | **MERGED** | PR [#2839](https://github.com/jannekbuengener/Claire_de_Binare/pull/2839) @ `75e1e8e2`; #2832 **CLOSED** |
+| #2832 | **CLOSED** | RTP **PASS** — proof doc on `main` |
 | #1976 | **Stays OPEN** | #2833 operator closeout still pending |
 | #2833 | **Stays OPEN** | Ratify §B rows after RTP #2 |
 
