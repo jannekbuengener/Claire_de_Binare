@@ -4,7 +4,7 @@
 | --- | --- |
 | **Epic** | [#1976](https://github.com/jannekbuengener/Claire_de_Binare/issues/1976) (stays **OPEN**) |
 | **Phase-2 prerequisite** | [#2778](https://github.com/jannekbuengener/Claire_de_Binare/issues/2778) **CLOSED** — [`SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md`](SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md) **`PASS_CLOSEOUT`** |
-| **Repo SHA** | `1f2d361d529f8cd6ef33938c523e302eca25e07f` (`origin/main` post §B recert #2831) |
+| **Repo SHA** | `5face9c99eeb14b50f9d220b06728abfdd39ec3b` (`origin/main` after PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834); recert evidence @ `1f2d361d`) |
 | **Review date** | 2026-06-03 (§B recert); 2026-06-02 (initial readiness) |
 | **Readiness verdict** | **`READY_FOR_REAL_TASK_PROOF_RUN`** (scoped task [#2821](https://github.com/jannekbuengener/Claire_de_Binare/issues/2821)) |
 | **Epic-close verdict** | **`HOLD`** — Grandparent DoD not fully satisfied (see §B) |
@@ -14,34 +14,9 @@
 
 ## Brain Evidence
 
-```text
-brain_source: repo-only
-brain_status: used
-tools_or_queries:
-  - gh issue view 1976 --json state; gh issue view 2778 --json state; gh issue view 2821 --json state (2026-06-02)
-  - gh issue list --state open (context band #2034–#2205 → none open)
-  - git rev-parse HEAD → f25c6f50751fbb6d7bc8e19b81e84cefedb08b9d
-  - PYTHONPATH=. python: create_bridge().list_tools() → 27 tools, all_readonly=True
-  - pytest -q tests/unit/surrealdb/test_context_package_v2.py tests/unit/agents/test_agent_brain_adoption_contract.py -m unit → 23 passed
-records_or_results:
-  - #2778: CLOSED (GitHub live)
-  - #1976, #2821: OPEN
-  - Context wave #2034–#2205: no open issues in gh list
-  - Phase-2 closeout on main: PASS_CLOSEOUT (doc + C1–C14)
-repo_crosscheck:
-  - docs/surrealdb/SURREALDB_PHASE2_FINAL_CLOSEOUT_REVIEW.md
-  - knowledge/decisions/CDB_CONTEXT_* + CDB_CONTROLLED_WRITE_STRATEGY_V2_DESIGN.md
-  - tools/surrealdb/context_indexer.py, context_importer.py, context_package_v2.py, agent_os_readiness.py
-  - tools/mcp/context_bridge.py, permission_guard.py
-  - tests/unit/surrealdb/test_context_package_v2.py, tests/unit/agents/test_agent_brain_adoption_contract.py
-impact_on_plan:
-  - Phase-2 closeout ≠ #1976 Grandparent DoD; epic stays OPEN
-  - Real-Task-Proof run not yet executed → no PASS claim
-  - Next step: scoped read-only proof on #2821 (separate Run-GO for execution)
-limitations:
-  - No surrealdb-local query/record IDs in this readiness slice
-  - Grandparent wave matrix uses repo + GitHub issue closure; not full re-validation of every wave gate artifact
-```
+**Current slice (2026-06-03 §B recert):** see Brain Evidence block in [`SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md) (`brain_source: repo-only`, `brain_status: not-used` per [`agents/AGENTS.md`](../../agents/AGENTS.md)).
+
+**Historical (2026-06-02 readiness pre-run):** archived in session log [`2026-06-02-1976-real-task-proof-readiness.md`](../../knowledge/logs/sessions/2026-06-02-1976-real-task-proof-readiness.md). Do not treat pre-run `#2821 OPEN` / SHA `f25c6f50` rows as live canon — superseded by §F and §B recert.
 
 ---
 
@@ -59,39 +34,27 @@ limitations:
 
 ## B) Grandparent DoD matrix (#1976 body)
 
-Re-certified 2026-06-03 against `origin/main` @ `1f2d361d`. Full matrix: [`SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md). Legend: **PASS** / **PASS_WITH_LIMITS** / **ACCEPTED_HOLD** / **OPEN** (follow-up).
+**Matrix SSOT:** [`SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md) — full rows, Waves 8–12 pipeline, blocks/limits. Recert evidence @ `origin/main` `1f2d361d`; merged via PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) @ `5face9c9`. Legend: **PASS** / **PASS_WITH_LIMITS** / **ACCEPTED_HOLD** / **OPEN**.
 
-| DoD group | Expectation (epic) | Status | Evidence / gap |
-| --- | --- | --- | --- |
-| Planungsanker Wellen 1–6 | Docs, contracts, models | **PASS** | Wave issues **CLOSED**; contracts on `main` |
-| Welle 7 — Repo landing | Architecture, roadmap, schema draft, handoff | **PASS** | #2034–#2043 **CLOSED**; canon docs on `main` |
-| Welle 8 — Indexer scaffold | CLI, scope, hash, chunk, JSONL, snapshot | **PASS_WITH_LIMITS** | [`context_indexer.py`](../../tools/surrealdb/context_indexer.py); epic e2e validation not re-run |
-| Welle 9 — Symbol/graph export | AST, edges, graph JSONL | **PASS_WITH_LIMITS** | Export modules on `main`; productive DB apply not default |
-| Welle 10 — Import/reconcile/apply | Controlled SurrealDB import pipeline | **PASS_WITH_LIMITS** | [`context_importer.py`](../../tools/surrealdb/context_importer.py); `PERSIST_ALLOWED=False` |
-| Welle 11–12 — Query CLI / MCP | Read-only query + MCP bridge | **PASS_WITH_LIMITS** | `context_query.py`, MCP 27 read-only; #2773/#2774 closeout |
-| Welle 13–14 — Briefing, evidence, memory, trust | Agent intelligence layer | **PASS_WITH_LIMITS** | Wave 14 + Phase-2 v2/replay on `main` |
-| Welle 15–18 — Governance runtime | Contradiction, stale, scope, quality, architect | **PASS_WITH_LIMITS** | Runtime modules + closed anchors; runbook depth spot-check |
-| Welle 19–20 — Control room, self-explanation, Agent OS | Reports + readiness | **PASS_WITH_LIMITS** | Builders + #2802 signal layer on `main` |
-| Welle 21 — Cross-cutting | Search, CI, perf, backup plans | **ACCEPTED_HOLD** | #2205 **CLOSED**; vector/CI deferred per epic non-goals |
-| Phase-2 overlay (#2778) | Read-only adoption, retrieval, ops | **PASS** | `PASS_CLOSEOUT` on `main` |
-| Guardrails LR / writes / secrets | Fail-closed | **PASS** | LR NO-GO; gates False; #2803/#2804 |
-| **#2821 secret policy (Gates 0–4)** | Managed/non-local prerequisite | **PASS** (design) | Policy doc; PR #2829; #2821 **CLOSED** |
-| **Real-Task-Proof Gate (#2821)** | Live task under repo/GitHub context | **PASS** (scoped) | RTP run 2026-06-02; not second RTP |
-| **Follow-up #2832** | Second RTP (other task type) | **OPEN** | [#2832](https://github.com/jannekbuengener/Claire_de_Binare/issues/2832) |
-| **Follow-up #2833** | Close vs HOLD | **OPEN** | [#2833](https://github.com/jannekbuengener/Claire_de_Binare/issues/2833); blocked on #2832 |
+| Area | Summary verdict |
+| --- | --- |
+| Wellen 1–7 | **PASS** |
+| Wellen 8–20 | **PASS_WITH_LIMITS** (implementation on `main`; productive e2e/runbook depth not re-run in #2831) |
+| Welle 21 | **ACCEPTED_HOLD** (vector/CI deferred per epic non-goals) |
+| Phase-2 #2778 | **PASS** (`PASS_CLOSEOUT`) |
+| Guardrails / #2821 design + RTP #2821 | **PASS** |
+| **#2832** second RTP | **OPEN** — blocks epic close |
+| **#2833** operator closeout | **OPEN** — ratify PASS_WITH_LIMITS / ACCEPTED_HOLD or remediate |
 
 ### Epic-close verdict: **HOLD**
 
-#1976 must **not** close until:
-
-1. **Real-Task-Proof** — first scoped **PASS** (#2821) satisfied; second RTP [#2832](https://github.com/jannekbuengener/Claire_de_Binare/issues/2832) still **OPEN**, and
-2. Operator closeout [#2833](https://github.com/jannekbuengener/Claire_de_Binare/issues/2833) ratifies **PASS_WITH_LIMITS** / **ACCEPTED_HOLD** rows or orders remediation.
-
-Phase-2 **`PASS_CLOSEOUT`** and §B recert (#2831) do not authorize epic close alone.
+#1976 must **not** close until #2832 completes and #2833 ratifies recert rows (see matrix SSOT). Phase-2 **`PASS_CLOSEOUT`** and §B recert (#2831, PR #2834) do not authorize epic close alone.
 
 ---
 
 ## C) Real-Task-Proof gate matrix (#1976 “Finales Real-Task-Proof Gate”)
+
+**Historical pre-run snapshot (2026-06-02).** Superseded by §F for scoped RTP #2821 (**PASS**). Do not use `#2821 OPEN` or pre-run FAIL rows as live canon.
 
 | Criterion | Required | Evidence today (2026-06-02) | Gap |
 | --- | --- | --- | --- |
@@ -165,9 +128,9 @@ Post-run update to this SSOT. Supersedes §C/E **pre-run** FAIL rows for #2821 p
 | Proof artifact | RTP **PASS** (§C matrix) | [`SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md`](SURREALDB_1976_REAL_TASK_PROOF_RUN_2026-06-02.md) |
 | Delivery PR | [#2829](https://github.com/jannekbuengener/Claire_de_Binare/pull/2829) | Branch `real-task-proof-2821-secret-policy` @ `05483b5d` (pre-merge) |
 | #2821 | Closes on merge | PR `Closes #2821` |
-| #1976 | **Stays OPEN** | Epic-close **HOLD** per §B — RTP PASS satisfies criterion (1) only; criterion (2) FAIL/PARTIAL waves still open |
+| #1976 | **Stays OPEN** | Epic-close **HOLD** — RTP PASS satisfies criterion (1) only; criterion (2) #2832 second RTP + #2833 closeout pending (§B recert: PASS_WITH_LIMITS / ACCEPTED_HOLD per matrix SSOT) |
 
-**Operator rule:** Do not close #1976 from RTP PASS alone. Comment on #1976 with proof link; remediate or accept §B gaps before epic closeout.
+**Operator rule:** Do not close #1976 from RTP PASS alone. Epic close requires #2832, #2833, and operator ratification of recert rows.
 
 ---
 
@@ -176,9 +139,9 @@ Post-run update to this SSOT. Supersedes §C/E **pre-run** FAIL rows for #2821 p
 | Item | Status | Evidence |
 | --- | --- | --- |
 | Recert slice | **COMPLETE** (docs) | [`SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md) |
-| `origin/main` SHA | `1f2d361d` | Post PR #2830 ledger |
-| §B row upgrades | PARTIAL → **PASS_WITH_LIMITS** / **ACCEPTED_HOLD** where current main supports | See recert doc |
-| #2831 | Closes on merge | PR `Closes #2831` |
+| Recert evidence SHA | `1f2d361d` | Pre-merge recert baseline (post PR #2830 ledger) |
+| Delivery | **MERGED** | PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) @ `5face9c9`; #2831 **CLOSED** |
+| §B row upgrades | PARTIAL → **PASS_WITH_LIMITS** / **ACCEPTED_HOLD** | Full matrix in recert doc only |
 | #1976 | **Stays OPEN** | #2832 RTP #2 + #2833 closeout pending |
 
 ---

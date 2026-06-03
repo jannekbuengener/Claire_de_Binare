@@ -25,7 +25,7 @@ tools_or_queries:
   - PYTHONPATH=. python: create_bridge().list_tools() → 27 tools, all_readonly=True (in-process; not surrealdb-local)
   - Static: git cat-file / file presence on HEAD for tools/surrealdb/* and tools/mcp/*
 records_or_results:
-  - #2831 OPEN at start; #1976 OPEN; #2778/#2821 CLOSED; #2832/#2833 OPEN
+  - #2831 CLOSED via PR #2834; #1976 OPEN; #2778/#2821 CLOSED; #2832/#2833 OPEN
   - Wave band #2034–#2205: 0 open issues
   - PERSIST_ALLOWED=False (memory_write_gate.py); MUTATION_ALLOWED=False (memory_write_intent_tools.py)
 repo_crosscheck:

@@ -4,9 +4,10 @@
 | --- | --- |
 | **Issue** | [#2831](https://github.com/jannekbuengener/Claire_de_Binare/issues/2831) |
 | **Parent** | [#1976](https://github.com/jannekbuengener/Claire_de_Binare/issues/1976) |
-| **Branch** | `surrealdb-1976-wave-matrix-recert` |
-| **Base SHA** | `1f2d361d529f8cd6ef33938c523e302eca25e07f` |
+| **Delivery** | PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) @ `5face9c9`; #2831 **CLOSED** |
 | **Mode** | Docs-only; read-only evidence |
+| **Merge SHA** | `5face9c99eeb14b50f9d220b06728abfdd39ec3b` |
+| **Base SHA (recert evidence)** | `1f2d361d529f8cd6ef33938c523e302eca25e07f` |
 
 ## Deliverables
 
