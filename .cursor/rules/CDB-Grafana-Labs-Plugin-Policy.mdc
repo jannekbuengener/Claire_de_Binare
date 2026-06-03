@@ -1,0 +1,37 @@
+---
+alwaysApply: true
+---
+
+# CDB Grafana Labs Plugin Policy
+
+The Grafana Labs Cursor plugin may be used only as Skill + Rule support. It does not replace the local Grafana stack.
+
+## Status
+
+- `ADD_PLUGIN_ALLOWED` — plugin Skill/Rule in Cursor is allowed
+- `ASSISTANT_CLI_HOLD` — Assistant CLI, tunnel, and Cloud paths are blocked
+- `LOCAL_READONLY_GRAFANA_LATER` — live queries only when explicitly scoped: local, read-only, Viewer SA
+
+## Allowed
+
+- Skill/Rule for Grafana workflow help (prompts, investigations, runbook alignment)
+- Formulating prompts and investigation steps without executing Cloud/Assistant paths
+- Reading repo-backed Grafana and monitoring documentation
+- Preparing local read-only checks (no credentials in repo or chat)
+
+## Not allowed
+
+- Setting up Grafana Assistant CLI
+- Starting Assistant tunnel
+- Configuring Grafana Cloud or any Cloud stack URL
+- Using admin tokens or any token in agent context
+- Writing tokens into chat, issues, PRs, logs, or repo files
+- Grafana write operations (dashboards, alerts, users, datasources) from agents
+
+## CDB canon
+
+- Local stack remains authoritative; Grafana runs on RED/monitoring, typically `http://localhost:3000`
+- Real queries later: local and read-only only, with a dedicated Grafana Viewer service account
+- No admin token in agent context; no Cloud; no LR/live/echtgeld implication from plugin use
+
+If a request crosses a not-allowed boundary, stop, document the blocker, and propose the smallest safe next step (repo docs, prepared read-only checklist, or explicit human gate for local Viewer access).
