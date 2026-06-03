@@ -962,29 +962,36 @@ class TestContextReadinessHandler:
             for m in result["readiness"]["missing_context"]
         )
 
-    def test_missing_required_reads_returns_blocked_missing_context(self) -> None:
-        """Missing minimum required reads blocks."""
+    def test_missing_canon_on_effective_scan_root_blocks(self, tmp_path) -> None:
+        """Missing minimum canon files at effective_scan_root blocks (#2848)."""
+        (tmp_path / "AGENTS.md").write_text("pointer\n", encoding="utf-8")
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.readiness",
             {
                 "task_scope": "Inspect the risk engine.",
                 "operation_mode": "read_only",
+                "stop_conditions": ["S1: unit test"],
+                "repo_root": str(tmp_path),
                 "required_reads": ["AGENTS.md"],
             },
         )
         assert result["readiness"]["status"] == "blocked_missing_context"
         missing = result["readiness"]["missing_context"]
-        assert any("minimum required reads missing" in m for m in missing)
+        assert any("effective_scan_root" in m for m in missing)
 
-    def test_no_context_package_and_no_reads_blocks(self) -> None:
-        """No context package and no required reads blocks."""
+    def test_no_context_package_and_no_reads_blocks_without_canon_on_disk(
+        self, tmp_path
+    ) -> None:
+        """No package, empty required_reads, and no canon on scan root blocks."""
         bridge = create_bridge()
         result = bridge.execute_tool(
             "context.readiness",
             {
                 "task_scope": "Refactor something.",
                 "operation_mode": "read_only",
+                "stop_conditions": ["S1: unit test"],
+                "repo_root": str(tmp_path),
             },
         )
         assert result["readiness"]["status"] == "blocked_missing_context"

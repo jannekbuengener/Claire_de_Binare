@@ -13,6 +13,7 @@ Reference:
 import logging
 import json
 import hashlib
+import os
 from copy import deepcopy
 from pathlib import Path, PurePosixPath
 import re
@@ -63,6 +64,144 @@ def _normalize_repo_relative_path(path_value: str) -> str | None:
 
 def _repo_relative_file_exists(repo_relative_path: str) -> bool:
     return (REPO_ROOT / repo_relative_path).is_file()
+
+
+READINESS_MINIMUM_READS: tuple[str, ...] = (
+    "AGENTS.md",
+    "agents/AGENTS.md",
+    "agents/OPEN_CODE_AGENTS.md",
+    "docs/runbooks/CONTROL_REGISTER.md",
+    "CURRENT_STATUS.md",
+    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
+)
+
+
+def _paths_same_dir(left: Path, right: Path) -> bool:
+    try:
+        return os.path.samefile(left, right)
+    except OSError:
+        return left.resolve() == right.resolve()
+
+
+def _canon_file_exists_at_root(scan_root: Path, repo_relative_path: str) -> bool:
+    normalized = _normalize_repo_relative_path(repo_relative_path)
+    if normalized is None:
+        return False
+    return (scan_root / normalized).is_file()
+
+
+def _missing_canon_reads_on_disk(
+    scan_root: Path, minimum_reads: tuple[str, ...] = READINESS_MINIMUM_READS
+) -> list[str]:
+    return [rel for rel in minimum_reads if not _canon_file_exists_at_root(scan_root, rel)]
+
+
+def _resolve_readiness_root_context(
+    kwargs: dict[str, Any],
+) -> tuple[dict[str, Any], Path | None]:
+    """Resolve host cwd vs repo root for readiness; fail-closed on invalid explicit root."""
+    host_cwd = Path.cwd().resolve()
+    limitations: list[str] = []
+    evidence: list[str] = []
+
+    root_source = "bridge_module"
+    resolved_repo_root = REPO_ROOT.resolve()
+
+    explicit_root = kwargs.get("repo_root")
+    if explicit_root is not None:
+        if not isinstance(explicit_root, str) or not explicit_root.strip():
+            return (
+                {
+                    "host_cwd": str(host_cwd),
+                    "resolved_repo_root": None,
+                    "effective_scan_root": None,
+                    "root_source": "parameter_invalid",
+                    "cwd_matches_repo_root": False,
+                    "root_drift_detected": True,
+                    "drift_severity": "blocked",
+                    "limitations": [
+                        "repo_root parameter must be a non-empty string path to a directory"
+                    ],
+                    "evidence": [],
+                    "resolution_error": "invalid repo_root parameter",
+                },
+                None,
+            )
+        try:
+            candidate = Path(explicit_root.strip()).resolve()
+        except OSError:
+            return (
+                {
+                    "host_cwd": str(host_cwd),
+                    "resolved_repo_root": None,
+                    "effective_scan_root": None,
+                    "root_source": "parameter_invalid",
+                    "cwd_matches_repo_root": False,
+                    "root_drift_detected": True,
+                    "drift_severity": "blocked",
+                    "limitations": [f"repo_root path resolution failed: {explicit_root!r}"],
+                    "evidence": [],
+                    "resolution_error": "repo_root path resolution failed",
+                },
+                None,
+            )
+        if not candidate.is_dir():
+            return (
+                {
+                    "host_cwd": str(host_cwd),
+                    "resolved_repo_root": str(candidate),
+                    "effective_scan_root": None,
+                    "root_source": "parameter_invalid",
+                    "cwd_matches_repo_root": False,
+                    "root_drift_detected": True,
+                    "drift_severity": "blocked",
+                    "limitations": [
+                        f"repo_root is not a directory: {candidate}"
+                    ],
+                    "evidence": [],
+                    "resolution_error": "repo_root is not a directory",
+                },
+                None,
+            )
+        resolved_repo_root = candidate
+        root_source = "parameter"
+        evidence.append("repo_root parameter applied")
+
+    effective_scan_root = resolved_repo_root
+    cwd_matches_repo_root = _paths_same_dir(host_cwd, resolved_repo_root)
+    root_drift_detected = not cwd_matches_repo_root
+    drift_severity = "none"
+    if root_drift_detected:
+        drift_severity = "warning"
+        limitations.append(
+            "host_cwd differs from resolved_repo_root; canon file checks use "
+            f"effective_scan_root={effective_scan_root}"
+        )
+        evidence.append(f"host_cwd={host_cwd}")
+        evidence.append(f"resolved_repo_root={resolved_repo_root}")
+
+    return (
+        {
+            "host_cwd": str(host_cwd),
+            "resolved_repo_root": str(resolved_repo_root),
+            "effective_scan_root": str(effective_scan_root),
+            "root_source": root_source,
+            "cwd_matches_repo_root": cwd_matches_repo_root,
+            "root_drift_detected": root_drift_detected,
+            "drift_severity": drift_severity,
+            "limitations": limitations,
+            "evidence": evidence,
+        },
+        effective_scan_root,
+    )
+
+
+def _readiness_payload_with_root(
+    readiness: dict[str, Any], root_context: dict[str, Any]
+) -> dict[str, Any]:
+    merged = dict(readiness)
+    merged.update(root_context)
+    return merged
 
 
 def _infer_handler_status(tool_def: ToolDefinition) -> str:
@@ -1176,7 +1315,35 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     docs/surrealdb/context-action-readiness-contract.md
 
     Pure in-process evaluation. No DB/network. Fail-closed.
+    Canon minimum reads are verified on effective_scan_root (resolved repo root),
+    not on host_cwd alone. Host/repo drift is surfaced explicitly (#2848).
     """
+    root_context, effective_scan_root = _resolve_readiness_root_context(kwargs)
+    if effective_scan_root is None:
+        resolution_error = root_context.get("resolution_error", "repo root unresolved")
+        return {
+            "tool": "context.readiness",
+            "status": "ok",
+            "readiness": _readiness_payload_with_root(
+                {
+                    "status": "blocked_missing_context",
+                    "reasons": ["Repo root could not be resolved for readiness"],
+                    "required_next_reads": list(READINESS_MINIMUM_READS),
+                    "human_go_required": False,
+                    "stop_conditions": [f"S3: {resolution_error}"],
+                    "missing_context": [resolution_error],
+                    "missing_evidence": [],
+                    "scope_drift_findings": [],
+                    "uncertainties": [],
+                    "guardrails": [
+                        "Do not proceed. Resolve repo root before claiming repo-backed context.",
+                        "Readiness is not authorization. LR remains NO-GO. Board stage (trade-capable) is orthogonal.",
+                    ],
+                },
+                root_context,
+            ),
+        }
+
     # --- Input extraction ---
     task_scope = kwargs.get("task_scope")
     target_paths = kwargs.get("target_paths", [])
@@ -1236,28 +1403,24 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
         return {
             "tool": "context.readiness",
             "status": "ok",
-            "readiness": {
-                "status": "blocked_missing_context",
-                "reasons": ["Invalid or missing operation_mode"],
-                "required_next_reads": [
-                    "AGENTS.md",
-                    "agents/AGENTS.md",
-                    "agents/OPEN_CODE_AGENTS.md",
-                    "docs/runbooks/CONTROL_REGISTER.md",
-                    "CURRENT_STATUS.md",
-                    "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
-                ],
-                "human_go_required": False,
-                "stop_conditions": [invalid_mode_stop],
-                "missing_context": [invalid_mode_context],
-                "missing_evidence": [],
-                "scope_drift_findings": [],
-                "uncertainties": [],
-                "guardrails": [
-                    "Do not proceed. Resolve missing context first.",
-                    "Readiness is not authorization. LR remains NO-GO. Board stage (trade-capable) is orthogonal.",
-                ],
-            },
+            "readiness": _readiness_payload_with_root(
+                {
+                    "status": "blocked_missing_context",
+                    "reasons": ["Invalid or missing operation_mode"],
+                    "required_next_reads": list(READINESS_MINIMUM_READS),
+                    "human_go_required": False,
+                    "stop_conditions": [invalid_mode_stop],
+                    "missing_context": [invalid_mode_context],
+                    "missing_evidence": [],
+                    "scope_drift_findings": [],
+                    "uncertainties": [],
+                    "guardrails": [
+                        "Do not proceed. Resolve missing context first.",
+                        "Readiness is not authorization. LR remains NO-GO. Board stage (trade-capable) is orthogonal.",
+                    ],
+                },
+                root_context,
+            ),
         }
 
     # --- Accumulators ---
@@ -1269,14 +1432,7 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     guardrails: list[str] = []
     output_stop_conditions: list[str] = []
 
-    MINIMUM_READS = [
-        "AGENTS.md",
-        "agents/AGENTS.md",
-        "agents/OPEN_CODE_AGENTS.md",
-        "docs/runbooks/CONTROL_REGISTER.md",
-        "CURRENT_STATUS.md",
-        "docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md",
-    ]
+    MINIMUM_READS = list(READINESS_MINIMUM_READS)
 
     # --- Derive characteristics ---
     is_write = isinstance(operation_mode, str) and operation_mode.startswith("write")
@@ -1301,16 +1457,34 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     if not task_scope or not isinstance(task_scope, str) or not task_scope.strip():
         blocked_context.append("scope not defined")
 
-    # --- Check 3: Required Reads (minimum baseline) ---
-    missing_reads = [r for r in MINIMUM_READS if r not in required_reads]
-    if missing_reads:
+    # --- Check 3: Canon reads on effective_scan_root (repo-backed, not host cwd) ---
+    missing_reads_on_disk = _missing_canon_reads_on_disk(
+        effective_scan_root, READINESS_MINIMUM_READS
+    )
+    if missing_reads_on_disk:
         blocked_context.append(
-            f"minimum required reads missing: {', '.join(missing_reads)}"
+            "minimum canon reads unavailable at effective_scan_root: "
+            + ", ".join(missing_reads_on_disk)
         )
 
+    missing_reads_declared = [r for r in MINIMUM_READS if r not in required_reads]
+    canon_available_on_disk = not missing_reads_on_disk
+
     # --- Check 2: Context Package or Required Reads ---
-    if not context_package_ref and not required_reads:
+    if not context_package_ref and not required_reads and not canon_available_on_disk:
         blocked_context.append("no context package and no required reads")
+    elif (
+        not context_package_ref
+        and not required_reads
+        and canon_available_on_disk
+        and missing_reads_declared
+    ):
+        root_context["limitations"].append(
+            "required_reads parameter empty but canon files exist at effective_scan_root"
+        )
+        root_context["evidence"].append(
+            "repo-backed canon availability satisfied without required_reads parameter"
+        )
 
     # --- Check 5: Impact Report for write operations ---
     if is_write and not impact_refs:
@@ -1344,10 +1518,18 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
         )
 
     # --- Build output stop conditions from detected issues ---
-    if missing_reads:
-        for r in missing_reads:
-            output_stop_conditions.append(f"S3: minimum read unavailable: {r}")
-    if not context_package_ref and not required_reads:
+    if missing_reads_on_disk:
+        for r in missing_reads_on_disk:
+            output_stop_conditions.append(
+                f"S3: minimum read unavailable at effective_scan_root: {r}"
+            )
+    if root_context.get("root_drift_detected") and root_context.get(
+        "drift_severity"
+    ) == "warning":
+        output_stop_conditions.append(
+            "S3: host_cwd differs from resolved_repo_root — use effective_scan_root for canon reads"
+        )
+    if not context_package_ref and not required_reads and not canon_available_on_disk:
         output_stop_conditions.append("S2: no context package and no required reads")
     if is_write and not impact_refs:
         output_stop_conditions.append("S6: write without impact report")
@@ -1403,18 +1585,21 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
     return {
         "tool": "context.readiness",
         "status": "ok",
-        "readiness": {
-            "status": status,
-            "reasons": reasons,
-            "required_next_reads": required_next_reads,
-            "human_go_required": human_go_required,
-            "stop_conditions": output_stop_conditions,
-            "missing_context": blocked_context if blocked_context else [],
-            "missing_evidence": blocked_evidence if blocked_evidence else [],
-            "scope_drift_findings": scope_drift_findings,
-            "uncertainties": uncertainties,
-            "guardrails": guardrails,
-        },
+        "readiness": _readiness_payload_with_root(
+            {
+                "status": status,
+                "reasons": reasons,
+                "required_next_reads": required_next_reads,
+                "human_go_required": human_go_required,
+                "stop_conditions": output_stop_conditions,
+                "missing_context": blocked_context if blocked_context else [],
+                "missing_evidence": blocked_evidence if blocked_evidence else [],
+                "scope_drift_findings": scope_drift_findings,
+                "uncertainties": uncertainties,
+                "guardrails": guardrails,
+            },
+            root_context,
+        ),
     }
 
 

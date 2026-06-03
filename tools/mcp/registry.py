@@ -289,6 +289,10 @@ TOOLS_V0 = [
                     "items": {"type": "string"},
                     "description": "Canonical files the agent must read before acting.",
                 },
+                "repo_root": {
+                    "type": "string",
+                    "description": "Optional absolute path to the working repo root. Canon file checks use this (or bridge module root), not host cwd alone.",
+                },
                 "evidence_refs": {
                     "type": "array",
                     "items": {"type": "string"},
