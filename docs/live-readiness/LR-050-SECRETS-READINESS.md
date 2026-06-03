@@ -52,7 +52,7 @@
 | [`LR-050-RISK-LIMITS.md`](./LR-050-RISK-LIMITS.md) | Numeric limits; unrelated to secret values |
 | [`LR-050-KILL-SWITCH-RUNBOOK.md`](./LR-050-KILL-SWITCH-RUNBOOK.md) | Halt/revocation; post-incident secret rotation coupled here |
 | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | **Canary venue**, venue permission model, passphrase, IP allowlist, account binding |
-| [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Monitoring/alerting credentials and receiver proof |
+| [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) — receiver proof |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary plan — must reference credential gates below |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run — config/auth path without secret exposure |
 | [`knowledge/governance/SECRETS_POLICY.md`](../../knowledge/governance/SECRETS_POLICY.md) | Global secrets architecture |

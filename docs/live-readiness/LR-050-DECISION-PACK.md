@@ -65,7 +65,7 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 | Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
 | Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
 | Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
-| Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | Prometheus / Alertmanager readiness |
+| Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | SSOT: [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) — Prometheus / Alertmanager / receiver proof |
 | First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | OPEN | Depends on #2527–#2531 |
 | Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | OPEN | `real_money=false` / dry_run proof |
 | Exact human approval wording and checklist | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) | OPEN | **Child gate** — no GO wording in this pack |
@@ -145,11 +145,11 @@ Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.
 
 | Topic | Reference |
 |-------|-----------|
-| Canary alert matrix / abort vs investigate | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) (OPEN) |
+| Canary alert matrix / abort vs investigate | [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | P5 control map (alert-related controls) | [`P5_CANARY_EXECUTION_CHECKLIST.md`](../operations/P5_CANARY_EXECUTION_CHECKLIST.md) |
 | Prestart endpoint captures (historical) | `reports/p5_canary/2026-04-04/endpoints/` |
 
-**Gate:** No live-capital approval without documented Alertmanager/Prometheus readiness and stop rules ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531), [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529)).
+**Gate:** No live-capital approval without documented Alertmanager/Prometheus readiness, receiver proof, and stop rules ([LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md), [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md)).
 
 ---
 
@@ -185,7 +185,7 @@ No credentials, API keys, or secret values belong in this document.
 | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | Risk limits | Yes |
 | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | Kill-switch | Yes |
 | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | Secrets handling — [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) | Yes |
-| [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Observability | Yes |
+| [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | Observability — [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) | Yes |
 | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | Canary plan | Yes |
 | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | Dry-run proof | Yes |
 | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) | Approval wording | Yes |

@@ -59,7 +59,7 @@ Alle Punkte müssen **vor** Ausgabe der GO-Formulierung erfüllt sein. Ein fehle
 | 2 | Harte Kapital-, Order- und Verlustlimits dokumentiert und prüfbar | CLOSED + SSOT | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) |
 | 3 | Kill-Switch- und Stop-Mechanismen verifiziert (Runbook) | CLOSED + SSOT | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) |
 | 4 | Secret-Handling ohne Key-Exposure dokumentiert | CLOSED + SSOT | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) — [`LR-050-SECRETS-READINESS.md`](./LR-050-SECRETS-READINESS.md) |
-| 5 | Live-Canary-Monitoring und Alert-Gates dokumentiert | CLOSED + SSOT | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) |
+| 5 | Live-Canary-Monitoring und Alert-Gates dokumentiert | CLOSED + SSOT | [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | 6 | Erster Echtgeld-Canary-**Plan** (nicht Aktivierung) | CLOSED + SSOT | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) |
 | 7 | Live-Pfad-Dry-Run ohne Order-Placement belegt | CLOSED + SSOT | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) |
 | 8 | Exakte Freigabeformulierung (dieses Dokument) | Repo-backed auf `main` | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) |

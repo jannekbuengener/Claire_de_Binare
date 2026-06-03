@@ -28,7 +28,7 @@
 | **Circuit Breaker (module)** | [`services/risk/circuit_breakers.py`](../../services/risk/circuit_breakers.py) — standalone thresholds; **not imported** in production `process_signal` path |
 | **Risk-service halt** | Signal blocked before order creation (kill-switch gate, drawdown, exposure, `decide_trade` BLOCK, bot shutdown) |
 | **Execution-service halt** | Order rejected in `process_order()` (kill-switch, shadow, bot shutdown, trace contract) |
-| **Alert-triggered halt** | Operator/policy response to Prometheus/Alertmanager alerts — abort matrix **not** repo-complete until [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) |
+| **Alert-triggered halt** | Operator/policy response per [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) ([#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531)) |
 | **Safe execution mode (not halt)** | `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET` — reduce real mainnet capital exposure; **do not** REJECT orders in `process_order()`; `MockExecutor` / `LiveExecutor` dry-run may return **FILLED** simulated results |
 
 ---
@@ -145,8 +145,8 @@ Prometheus alert [`CircuitBreakerTriggered`](../../infrastructure/monitoring/ale
 | Status | Detail |
 |--------|--------|
 | **Policy** | Fail-closed: monitoring unevaluable → no new risk-on; operator manual halt |
-| **Repo today** | Critical alerts defined (e.g. `ServiceDown`, `CircuitBreakerTriggered`, `DatabaseConnectionLost`); **abort vs investigate routing for canary** → [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) |
-| **Enforceability** | `docs_only` until #2531 matrix + receiver proof |
+| **Repo today** | Critical alerts defined (e.g. `ServiceDown`, `CircuitBreakerTriggered`, `DatabaseConnectionLost`); canary matrix → [`LR-050-OBSERVABILITY-GATES.md`](./LR-050-OBSERVABILITY-GATES.md) |
+| **Enforceability** | `docs_only` until operator receiver proof per observability SSOT |
 
 ### 5.5 Data gaps / stale data
 
