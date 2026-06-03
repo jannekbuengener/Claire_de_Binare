@@ -18,7 +18,7 @@
 
 ```text
 brain_source: repo-only
-brain_status: used
+brain_status: not-used
 tools_or_queries:
   - gh issue view wave anchors + lineage issues
   - create_bridge().list_tools() → 27, all_readonly

@@ -15,7 +15,7 @@
 
 ```text
 brain_source: repo-only
-brain_status: used
+brain_status: not-used
 tools_or_queries:
   - git rev-parse HEAD → 1f2d361d529f8cd6ef33938c523e302eca25e07f
   - gh issue view 1976, 2778, 2821, 2831, 2832, 2833 (2026-06-03)
@@ -36,6 +36,7 @@ repo_crosscheck:
   - tools/mcp/context_bridge.py, permission_guard.py
   - docs/runbooks/surrealdb_context_mcp_access.md
 impact_on_plan:
+  - `brain_status=not-used` per [`agents/AGENTS.md`](../../agents/AGENTS.md) default for repo-only (no surrealdb-local record evidence)
   - Prior §B PARTIAL rows re-rated PASS_WITH_LIMITS or ACCEPTED_HOLD where current main + GitHub support artifacts
   - #1976 epic-close remains HOLD until #2832 RTP #2 and #2833 operator closeout
 limitations:
