@@ -67,24 +67,39 @@ These invariants describe **required conditions** for a safe non-sending path on
 
 ### 2.1 Canonical non-send predicates
 
-For **real** exchange submission to be blocked on the active execution path, **at least one** of the following must hold (see [`services/execution/service.py`](../../services/execution/service.py) `_require_live_confirmation` and init path):
+For **real** exchange submission to be blocked on the active execution path, repo-backed **non-send predicates** are only:
 
 | Mechanism | Env / code | Non-send effect |
 |-----------|------------|-----------------|
 | Mock adapter | `MOCK_TRADING=true` (default) | `resolve_execution_adapter_id` → `MOCK_BUILTIN` — no live MEXC adapter factory with credentials |
 | Dry-run executor | `DRY_RUN=true` (default) | `LiveExecutor(dry_run=True)` — **no** `MexcClient`; `execute_order` returns `DRY_RUN_*` without `place_*` |
-| Testnet-only safety net | `MEXC_TESTNET=true` (default) | Counted in `_require_live_confirmation` as safe mode — **not** sufficient alone (see §2.3) |
+
+`MEXC_TESTNET` is **not** a non-send predicate (see §2.2).
 
 **Must be evidenced explicitly in any future runtime dry-run pack:**
 
-- `DRY_RUN=true` — log line `Live Executor in DRY RUN mode` or config dump showing `DRY_RUN=True`.
+- `DRY_RUN=true` — log line `DRY RUN MODE` / `orders logged but not executed` or config dump showing `DRY_RUN=True`.
 - **And** either `MOCK_TRADING=true` **or** confirmed `MOCK_BUILTIN` adapter selection — log `Using execution adapter: mock_builtin` (exact adapter id per repo).
 
-### 2.2 `MEXC_TESTNET=true` is not sole dry-run protection
+Do **not** treat `MEXC_TESTNET=true` alone as proof of non-send or sandbox isolation.
 
-[`core/config/trading_mode.py`](../../core/config/trading_mode.py) maps `TradingMode.STAGED` to `DRY_RUN: False`, `MOCK_TRADING: False`, `MEXC_TESTNET: True`. On **testnet**, orders can still be **sent** to the exchange API if `DRY_RUN=false` and mock is off.
+### 2.2 `MEXC_TESTNET=true` — startup gate bypass only (not proven sandbox)
 
-**Invariant:** `MEXC_TESTNET=true` alone does **not** prove “no order placement”; it only limits venue to testnet.
+[`services/execution/service.py`](../../services/execution/service.py) `_require_live_confirmation()` treats `MEXC_TESTNET=true` like `MOCK_TRADING` / `DRY_RUN`: it **skips** the `CONFIRM_LIVE_TRADING` exit when all three are not simultaneously off. That is a **process startup** convenience, **not** proof that orders cannot be sent.
+
+When `MOCK_TRADING=false` and `DRY_RUN=false` but `MEXC_TESTNET=true`:
+
+- Startup can proceed without `CONFIRM_LIVE_TRADING=true`.
+- [`LiveExecutor`](../../services/execution/live_executor.py) still constructs `MexcClient` and may call `place_market_order` / `place_limit_order`.
+- [`core/clients/mexc.py`](../../core/clients/mexc.py) sets `base_url = "https://contract.mexc.com"` when `testnet=True` (comment: “Testnet URL”). The repo does **not** independently verify that this URL is an isolated sandbox, non-mainnet, or non-live-capital endpoint ([#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) — Venue Audit).
+
+**Invariants (fail-closed for #2535 / operator evidence):**
+
+- `MEXC_TESTNET=true` **does not** prove “no order placement”.
+- `MEXC_TESTNET=true` **does not** prove “only testnet” or safe venue isolation — treat as **`blocker_before_live`** until venue endpoint is repo- or operator-verified.
+- For future Runtime-GO dry-run evidence, **`DRY_RUN` and/or `MOCK_TRADING`** are the required non-send predicates; do not classify an exchange-capable path (`MOCK_TRADING=false`, `DRY_RUN=false`) as safely isolated based on `MEXC_TESTNET` alone.
+
+[`core/config/trading_mode.py`](../../core/config/trading_mode.py) `TradingMode.STAGED` maps to `DRY_RUN: False`, `MOCK_TRADING: False`, `MEXC_TESTNET: True` — that combination is **exchange-capable** in code terms, not dry-run.
 
 ### 2.3 `TRADING_MODE=staged` is not dry-run
 
@@ -134,7 +149,8 @@ Legend for **status**:
 
 | Proof item | Source / mechanism | Expected dry-run signal | docs-only | runtime dry-run | secret value | exchange call | Status | Expected evidence artifact | Fail-closed behavior |
 |------------|-------------------|-------------------------|-----------|-----------------|--------------|---------------|--------|---------------------------|----------------------|
-| **Config resolution (execution SSOT)** | [`services/execution/config.py`](../../services/execution/config.py) — defaults `MOCK_TRADING=true`, `DRY_RUN=true`, `MEXC_TESTNET=true` | Future drill: env/health shows all three true before inject | yes | yes | no | no | `docs_only` | Redacted config snapshot or compose env excerpt (names only) | Wrong env → treat as **unsafe**; do not inject test orders |
+| **Config resolution (execution SSOT)** | [`services/execution/config.py`](../../services/execution/config.py) — defaults `MOCK_TRADING=true`, `DRY_RUN=true`, `MEXC_TESTNET=true` | Future drill: confirm `DRY_RUN=true` **and** `MOCK_TRADING=true` (or mock adapter log); `MEXC_TESTNET` alone insufficient | yes | yes | no | no | `docs_only` | Redacted config snapshot (names only) | `DRY_RUN=false` + `MOCK_TRADING=false` → **unsafe** even if `MEXC_TESTNET=true` |
+| **MEXC_TESTNET venue isolation (unproven)** | [`core/clients/mexc.py`](../../core/clients/mexc.py) `testnet` → `contract.mexc.com` | Must not be cited as sandbox proof | yes | yes | no | yes (if misread as safe) | `blocker_before_live` | Venue Audit #2527 endpoint verification | Treat as **unproven**; use `DRY_RUN`/mock for non-send proof |
 | **BLUE compose default (reference)** | [`infrastructure/compose/compose.blue.yml`](../../infrastructure/compose/compose.blue.yml) `MOCK_TRADING: "true"` for `cdb_execution` | Service starts with mock unless overridden | yes | yes | no | no | `docs_only` | Operator records effective compose overlay | Override to `false` without `DRY_RUN` → **blocker_before_live** |
 | **Adapter selection** | [`core/contracts/external_adapter_registry.py`](../../core/contracts/external_adapter_registry.py) `default_execution_adapter_id(mock_trading=…)` | Log: mock_builtin vs mexc_builtin | yes | yes | no | no | `docs_only` | Startup log excerpt | `MEXC_BUILTIN` + `DRY_RUN=false` → exchange-capable path |
 | **`_require_live_confirmation` gate** | [`services/execution/service.py`](../../services/execution/service.py) | Process exits if mainnet tuple without `CONFIRM_LIVE_TRADING=true` | yes | partial | no | no | `docs_only` | Exit code 1 + CRITICAL log (future negative test only with Runtime-GO) | Fail-closed exit — no silent live |
@@ -166,7 +182,7 @@ Legend for **status**:
 |----------|------------------|------|
 | `MOCK_TRADING` | `true` | Mock vs MEXC builtin adapter |
 | `DRY_RUN` | `true` | LiveExecutor logs only |
-| `MEXC_TESTNET` | `true` | Testnet URL when live executor used |
+| `MEXC_TESTNET` | `true` | Selects `contract.mexc.com` in client — **not** verified sandbox; not a non-send flag |
 | `MEXC_API_KEY` / `MEXC_API_SECRET` | via `read_secret` (empty allowed when dry) | Required only when `DRY_RUN=false` and MEXC path |
 | `CONFIRM_LIVE_TRADING` | unset | Required `true` for mainnet tuple |
 
