@@ -37,7 +37,9 @@ GLOBAL_LIMITATIONS = (
 )
 
 
-def _invocation_fingerprint(tool_name: str, call: Mapping[str, Any], profile: str) -> str:
+def _invocation_fingerprint(
+    tool_name: str, call: Mapping[str, Any], profile: str
+) -> str:
     payload = {"profile": profile, "tool": tool_name, "call": dict(call)}
     return canonical_hash(payload)[:16]
 
@@ -168,11 +170,7 @@ def _limits_block(report: harness.HarnessReport) -> list[dict[str, str]]:
 
 def hash_payload_for_determinism(document: Mapping[str, Any]) -> dict[str, Any]:
     """Stable subset for aggregate determinism_hash (wall-clock excluded)."""
-    return {
-        k: v
-        for k, v in document.items()
-        if k not in HASH_EXCLUDED_TOP_LEVEL
-    }
+    return {k: v for k, v in document.items() if k not in HASH_EXCLUDED_TOP_LEVEL}
 
 
 def compute_aggregate_determinism_hash(document: Mapping[str, Any]) -> str:

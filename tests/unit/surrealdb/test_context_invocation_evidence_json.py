@@ -158,9 +158,9 @@ def test_determinism_hash_stable_for_equivalent_report() -> None:
     )
     doc_b = evidence_json.build_invocation_evidence(other)
     assert doc_a["determinism_hash"] == doc_b["determinism_hash"]
-    assert doc_a["determinism_hash"] == evidence_json.compute_aggregate_determinism_hash(
-        doc_a
-    )
+    assert doc_a[
+        "determinism_hash"
+    ] == evidence_json.compute_aggregate_determinism_hash(doc_a)
 
 
 def test_json_output_has_no_secret_substrings() -> None:
