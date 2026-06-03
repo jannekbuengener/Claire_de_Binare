@@ -41,7 +41,7 @@ else
   SECRETS_PATH ?= $(HOME)/Documents/.secrets/.cdb
 endif
 
-.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down
+.PHONY: help test test-unit test-integration test-e2e test-local test-local-stress test-local-performance test-local-lifecycle test-local-cli test-local-chaos test-local-backup test-full-system test-coverage docker-up docker-down docker-health systemcheck daily-check backup backup-postgres-only restore backup-health paper-trading-start paper-trading-logs paper-trading-stop replay-shadow-run rollback cleanup mcp-config-validate security-scan pre-close context-env-check context-query-config-init context-up context-down context-status context-logs context-restart context-schema-apply context-schema-check context-reset-local context-scan context-import-dry-run context-import-local context-query-smoke context-smoke context-smoke-db context-memory-db-proof context-claim-evidence-proof context-memory-rediscovery-proof context-doctor context-certify context-live-invoke context-live-invoke-full audit-trail-t3-bootstrap audit-trail-t3-proof audit-trail-t3-status audit-trail-t3-down
 
 help:
 	@echo "Claire de Binare - Test Commands"
@@ -110,7 +110,8 @@ help:
 	@echo "  make context-memory-rediscovery-proof - Cross-session memory rediscovery (#2720)"
 	@echo "  make context-doctor          - Read-only onboarding preflight (#2642)"
 	@echo "  make context-certify         - Read-only operator certification proof pack (#2776)"
-	@echo "  make context-live-invoke     - All-tools live bridge invocation matrix (#2849)"
+	@echo "  make context-live-invoke     - All-tools live bridge matrix, minimal profile (#2849)"
+	@echo "  make context-live-invoke-full - Same harness with inline records, 27 PASS (#2852)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
 # ============================================================================
@@ -405,6 +406,10 @@ context-certify:
 context-live-invoke:
 	@echo "=== Context live invocation regression harness (bridge, #2849) ==="
 	@$(PYTHON) -m tools.surrealdb.context_live_invocation_harness
+
+context-live-invoke-full:
+	@echo "=== Context live invocation harness, full inline-record profile (#2852) ==="
+	@$(PYTHON) -m tools.surrealdb.context_live_invocation_harness --profile full
 
 context-reset-local:
 	@echo "=== SurrealDB Local Reset (DESTRUKTIV - nur Context-Intelligence-Daten) ==="

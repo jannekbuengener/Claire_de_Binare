@@ -3,14 +3,15 @@
 Invokes every registered tool via ContextBridge (same handler path as MCP server)
 with benchmark-safe parameters. Produces a per-tool matrix for regression detection.
 
-Issue: #2849
+Issue: #2849, #2852 (profiles + ratification)
 Parent: #2847
 
 Usage:
     python -m tools.surrealdb.context_live_invocation_harness
+    python -m tools.surrealdb.context_live_invocation_harness --profile full
     python -m tools.surrealdb.context_live_invocation_harness --format json
-    python -m tools.surrealdb.context_live_invocation_harness --format markdown --output report.md
     make context-live-invoke
+    make context-live-invoke-full
 
 Exit codes:
     0 - all tools callable; no FAIL rows
@@ -39,6 +40,37 @@ OutputFormat = Literal["text", "json", "markdown"]
 
 EXPECTED_TOOL_COUNT = 27
 ISSUE_REF = "#2849"
+RATIFICATION_DOC = (
+    "docs/evidence/context_tooling/CDB_PASS_WITH_LIMITS_RATIFICATION_2026-06-03.md"
+)
+InvocationProfile = Literal["minimal", "full"]
+
+_BENCH_SCOPE = "bench-2852"
+_BENCH_EVIDENCE: list[dict[str, Any]] = [
+    {
+        "evidence_id": "ev1",
+        "evidence_type": "doc",
+        "scope": _BENCH_SCOPE,
+    }
+]
+_BENCH_CLAIM: list[dict[str, Any]] = [
+    {
+        "claim_id": "c1",
+        "status": "open",
+        "scope": _BENCH_SCOPE,
+        "evidence_refs": ["ev1"],
+    }
+]
+_BENCH_MEMORY: list[dict[str, Any]] = [
+    {"memory_id": "m1", "scope": _BENCH_SCOPE, "summary": "bench inline record"}
+]
+_BENCH_DECISION_EVENTS: list[dict[str, Any]] = [
+    {"decision_id": "d1", "scope": _BENCH_SCOPE, "status": "recorded"}
+]
+_BENCH_CONTRADICTION_RECORDS: dict[str, Any] = {
+    "evidence_records": _BENCH_EVIDENCE,
+    "claims": _BENCH_CLAIM,
+}
 
 _BENCH_BUNDLE: dict[str, Any] = {
     "meta": {
@@ -108,6 +140,53 @@ BENCHMARK_SAFE_INVOCATIONS: dict[str, dict[str, Any]] = {
     "cdb_agent_os_readiness": {"bundle": _BENCH_BUNDLE},
     "cdb_context_briefing": dict(_BRIEFING_PAYLOAD),
 }
+
+# Inline-record overrides for --profile full (#2852 operational completeness check).
+BENCHMARK_FULL_RECORD_OVERRIDES: dict[str, dict[str, Any]] = {
+    "cdb_context_evidence_resolve": {
+        "evidence_records": _BENCH_EVIDENCE,
+        "mode": "by_artifact",
+        "artifact": "AGENTS.md",
+        "limit": 10,
+    },
+    "cdb_context_claim_resolve": {
+        "claim_records": _BENCH_CLAIM,
+        "mode": "by_claim_id",
+        "claim_id": "c1",
+    },
+    "cdb_context_memory_get": {
+        "memory_records": _BENCH_MEMORY,
+        "mode": "by_scope",
+        "scope": _BENCH_SCOPE,
+    },
+    "cdb_context_decision_history": {
+        "decision_events": _BENCH_DECISION_EVENTS,
+        "mode": "by_scope",
+        "scope": _BENCH_SCOPE,
+        "limit": 3,
+    },
+    "cdb_context_decision_replay": {
+        "decision_events": _BENCH_DECISION_EVENTS,
+        "mode": "replay_by_decision_id",
+        "decision_id": "d1",
+    },
+    "cdb_context_contradictions": {
+        "bundle": _BENCH_BUNDLE,
+        "records": _BENCH_CONTRADICTION_RECORDS,
+    },
+}
+
+
+def invocations_for_profile(profile: InvocationProfile) -> dict[str, dict[str, Any]]:
+    """Return per-tool invocation payloads for minimal or full inline-record profile."""
+    merged = {name: dict(params) for name, params in BENCHMARK_SAFE_INVOCATIONS.items()}
+    if profile == "full":
+        for tool_name, overrides in BENCHMARK_FULL_RECORD_OVERRIDES.items():
+            call = dict(merged.get(tool_name, {}))
+            call.update(overrides)
+            merged[tool_name] = call
+    return merged
+
 
 # Fail-closed error codes that indicate the handler ran but lacks inline records (expected).
 PASS_WITH_LIMITS_ERROR_CODES = frozenset(
@@ -197,19 +276,14 @@ def _summarize_actual(result: dict[str, Any]) -> str:
     return f"status={status}"
 
 
-def _expected_summary(tool_name: str) -> str:
+def _expected_summary(tool_name: str, *, profile: InvocationProfile) -> str:
     if tool_name == "context.readiness":
         return "status=ok, readiness.status=ready_for_read_only"
     if tool_name == "cdb_context_memory_write_intent":
         return "status=refused (negative control; no persist)"
-    if tool_name in {
-        "cdb_context_evidence_resolve",
-        "cdb_context_claim_resolve",
-        "cdb_context_memory_get",
-        "cdb_context_decision_history",
-        "cdb_context_decision_replay",
-        "cdb_context_contradictions",
-    }:
+    if profile == "full" and tool_name in BENCHMARK_FULL_RECORD_OVERRIDES:
+        return "status=ok with inline adapter records"
+    if tool_name in BENCHMARK_FULL_RECORD_OVERRIDES:
         return "fail-closed missing_* records (no inline bundle)"
     return "status=ok (handler JSON)"
 
@@ -316,6 +390,8 @@ class HarnessReport:
     lr_note: str = "NO-GO"
     final_verdict: FinalVerdict = "pass"
     issue_ref: str = ISSUE_REF
+    profile: InvocationProfile = "minimal"
+    ratification_doc: str = RATIFICATION_DOC
     manifest_tool_names: list[str] = field(default_factory=list)
     registry_tool_names: list[str] = field(default_factory=list)
     missing_from_manifest: list[str] = field(default_factory=list)
@@ -335,6 +411,8 @@ class HarnessReport:
             "lr_note": self.lr_note,
             "final_verdict": self.final_verdict,
             "issue_ref": self.issue_ref,
+            "profile": self.profile,
+            "ratification_doc": self.ratification_doc,
             "manifest_tool_names": self.manifest_tool_names,
             "registry_tool_names": self.registry_tool_names,
             "missing_from_manifest": self.missing_from_manifest,
@@ -364,24 +442,28 @@ def _registry_tool_names(bridge: Any) -> list[str]:
     return sorted(names)
 
 
-def run_matrix(*, live: bool = True) -> HarnessReport:
+def run_matrix(
+    *,
+    live: bool = True,
+    profile: InvocationProfile = "minimal",
+    fail_on_limits: bool = False,
+) -> HarnessReport:
     """Build the invocation matrix. When live=False, only validate manifest/registry."""
     repo_root = _repo_root()
     git = _git_metadata(repo_root)
     bridge = create_bridge() if live else None
+    invocations = invocations_for_profile(profile)
     registry_names = (
-        _registry_tool_names(bridge)
-        if bridge
-        else sorted(BENCHMARK_SAFE_INVOCATIONS.keys())
+        _registry_tool_names(bridge) if bridge else sorted(invocations.keys())
     )
-    manifest_names = sorted(BENCHMARK_SAFE_INVOCATIONS.keys())
+    manifest_names = sorted(invocations.keys())
     missing = sorted(set(registry_names) - set(manifest_names))
     extra = sorted(set(manifest_names) - set(registry_names))
 
     rows: list[MatrixRow] = []
     if live and bridge is not None:
         for tool_name in registry_names:
-            params = BENCHMARK_SAFE_INVOCATIONS.get(tool_name)
+            params = invocations.get(tool_name)
             if params is None:
                 rows.append(
                     MatrixRow(
@@ -390,7 +472,7 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
                         expected="callable via bridge",
                         actual="no manifest entry",
                         status="FAIL",
-                        limitation="missing BENCHMARK_SAFE_INVOCATIONS entry",
+                        limitation=f"missing invocation entry for profile={profile}",
                     )
                 )
                 continue
@@ -411,7 +493,7 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
                 MatrixRow(
                     tool_name=tool_name,
                     call=params,
-                    expected=_expected_summary(tool_name),
+                    expected=_expected_summary(tool_name, profile=profile),
                     actual=_summarize_actual(result),
                     status=matrix_status,
                     handler_status=(
@@ -449,6 +531,10 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
         fail_reasons.append("safety gates must remain default-off")
     if summary.get("FAIL", 0) > 0:
         fail_reasons.append(f"{summary['FAIL']} FAIL row(s)")
+    if fail_on_limits and summary.get("PASS_WITH_LIMITS", 0) > 0:
+        fail_reasons.append(
+            f"{summary['PASS_WITH_LIMITS']} PASS_WITH_LIMITS row(s) not allowed"
+        )
 
     final: FinalVerdict = "fail" if fail_reasons else "pass"
 
@@ -463,6 +549,7 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
         summary=summary,
         safety_flags=safety,
         final_verdict=final,
+        profile=profile,
         manifest_tool_names=manifest_names,
         registry_tool_names=registry_names,
         missing_from_manifest=missing,
@@ -470,8 +557,10 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
     )
 
 
-def compute_exit_code(report: HarnessReport) -> int:
+def compute_exit_code(report: HarnessReport, *, fail_on_limits: bool = False) -> int:
     if report.final_verdict == "fail":
+        return 1
+    if fail_on_limits and report.summary.get("PASS_WITH_LIMITS", 0) > 0:
         return 1
     return 0
 
@@ -487,6 +576,8 @@ def format_report_markdown(report: HarnessReport) -> str:
         f"- **tool_count:** {report.tool_count} (expected {report.expected_tool_count})",
         f"- **final_verdict:** {report.final_verdict}",
         f"- **issue_ref:** {report.issue_ref}",
+        f"- **profile:** {report.profile}",
+        f"- **ratification_doc:** {report.ratification_doc}",
         f"- **lr_note:** {report.lr_note}",
         "",
         "## Summary",
@@ -531,6 +622,7 @@ Examples:
   python -m tools.surrealdb.context_live_invocation_harness
   python -m tools.surrealdb.context_live_invocation_harness --format json
   make context-live-invoke
+  make context-live-invoke-full
 
 Notes:
   - Bridge-only live path (same handlers as MCP server); no productive DB writes.
@@ -567,16 +659,36 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Validate manifest vs registry only (no live handler calls)",
     )
+    parser.add_argument(
+        "--profile",
+        choices=("minimal", "full"),
+        default="minimal",
+        help=(
+            "minimal: fail-closed record paths (6 PASS_WITH_LIMITS expected). "
+            "full: inline records for Wave-14 tools (27 PASS expected)."
+        ),
+    )
+    parser.add_argument(
+        "--fail-on-limits",
+        action="store_true",
+        help="Exit 1 when any PASS_WITH_LIMITS row is present",
+    )
     args = parser.parse_args(argv)
 
-    report = run_matrix(live=not args.manifest_only)
+    profile: InvocationProfile = args.profile
+    fail_on_limits = args.fail_on_limits or profile == "full"
+    report = run_matrix(
+        live=not args.manifest_only,
+        profile=profile,
+        fail_on_limits=fail_on_limits,
+    )
     output = format_report(report, args.format)
 
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(output, encoding="utf-8")
     print(output)
-    return compute_exit_code(report)
+    return compute_exit_code(report, fail_on_limits=fail_on_limits)
 
 
 if __name__ == "__main__":

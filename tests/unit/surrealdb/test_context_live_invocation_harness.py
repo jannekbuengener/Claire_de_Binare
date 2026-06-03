@@ -13,6 +13,18 @@ pytestmark = pytest.mark.unit
 
 def test_benchmark_manifest_covers_expected_tool_count() -> None:
     assert len(harness.BENCHMARK_SAFE_INVOCATIONS) == harness.EXPECTED_TOOL_COUNT
+    assert (
+        len(harness.invocations_for_profile("minimal")) == harness.EXPECTED_TOOL_COUNT
+    )
+    assert len(harness.invocations_for_profile("full")) == harness.EXPECTED_TOOL_COUNT
+
+
+def test_full_profile_overrides_six_wave14_tools() -> None:
+    assert len(harness.BENCHMARK_FULL_RECORD_OVERRIDES) == 6
+    minimal = harness.invocations_for_profile("minimal")
+    full = harness.invocations_for_profile("full")
+    for tool in harness.BENCHMARK_FULL_RECORD_OVERRIDES:
+        assert minimal[tool] != full[tool]
 
 
 def test_classify_ok_and_limits() -> None:
@@ -122,12 +134,43 @@ def test_run_matrix_live_mock_all_pass(monkeypatch: pytest.MonkeyPatch) -> None:
         },
     )
 
-    report = harness.run_matrix(live=True)
+    report = harness.run_matrix(live=True, profile="minimal")
     assert report.final_verdict == "pass"
     assert report.tool_count == 27
     assert report.summary.get("FAIL", 0) == 0
+    assert report.profile == "minimal"
     assert report.safety_flags["PERSIST_ALLOWED"] is False
     assert report.safety_flags["MUTATION_ALLOWED"] is False
+
+
+def test_run_matrix_full_profile_mock_all_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    registry_names = sorted(harness.invocations_for_profile("full").keys())
+    bridge = MagicMock()
+    bridge.list_tools.return_value = [{"name": n} for n in registry_names]
+
+    def _execute(tool_name: str, parameters: dict) -> dict:
+        if tool_name == "cdb_context_memory_write_intent":
+            return {
+                "status": "refused",
+                "code": "agent_memory_write_not_activated",
+            }
+        return {"status": "ok", "tool": tool_name}
+
+    bridge.execute_tool.side_effect = _execute
+    monkeypatch.setattr(harness, "create_bridge", lambda: bridge)
+    monkeypatch.setattr(
+        harness,
+        "_git_metadata",
+        lambda _root: {
+            "git_sha": "deadbeef",
+            "branch": "test",
+            "worktree_clean": True,
+            "git_available": True,
+        },
+    )
+    report = harness.run_matrix(live=True, profile="full", fail_on_limits=True)
+    assert report.final_verdict == "pass"
+    assert report.summary.get("PASS_WITH_LIMITS", 0) == 0
 
 
 def test_run_matrix_fails_when_registry_missing_manifest_entry(
@@ -150,7 +193,7 @@ def test_run_matrix_fails_when_registry_missing_manifest_entry(
             "git_available": True,
         },
     )
-    report = harness.run_matrix(live=True)
+    report = harness.run_matrix(live=True, profile="minimal")
     assert report.final_verdict == "fail"
     assert report.missing_from_manifest == ["context.unlisted_tool"]
 
