@@ -5,6 +5,7 @@
 - **Document role:** Human-reviewable decision pack for a future controlled live-capital / crypto canary
 - **Last updated:** 2026-06-03
 - **Verdict authority (unchanged):** [`LR-AUDIT-STATUS-2026-03-05.md`](./LR-AUDIT-STATUS-2026-03-05.md)
+- **Final reconcile SSOT (verdict + open blockers):** [`LR-050-FINAL-RECONCILE.md`](./LR-050-FINAL-RECONCILE.md) ([#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535))
 
 ## Safety boundaries (read first)
 
@@ -61,15 +62,15 @@ Diese Risiken bleiben offen, bis die zugehörigen Kind-Issues repo-backed erfül
 
 | Risk / gate | Owner issue | State | Note |
 |-------------|-------------|-------|------|
-| Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | OPEN | SSOT: [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) — inventory + candidate path; **not** live-ready |
-| Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | OPEN | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
-| Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | OPEN | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
-| Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | OPEN | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
-| Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | OPEN | SSOT: [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) — Prometheus / Alertmanager / receiver proof |
-| First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | OPEN | SSOT: [LR-050-CANARY-PLAN.md](./LR-050-CANARY-PLAN.md) — `plan_only`, not executable |
-| Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | OPEN | SSOT: [LR-050-DRY-RUN-PROOF.md](./LR-050-DRY-RUN-PROOF.md) — `dry_run_proof_contract`, `docs_only`; runtime evidence `blocker_before_live` |
-| Exact human approval wording and checklist | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) | OPEN | **Child gate** — no GO wording in this pack |
-| Final LR verdict reconcile | [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | OPEN | After #2527–#2534; may set `ready-for-human-live-approval` only if evidence supports it |
+| Venue / broker / exchange path audit | [#2527](https://github.com/jannekbuengener/Claire_de_Binare/issues/2527) | CLOSED | SSOT: [LR-050-VENUE-AUDIT.md](./LR-050-VENUE-AUDIT.md) — inventory + candidate path; **not** live-ready |
+| Hard capital, order, and loss limits | [#2528](https://github.com/jannekbuengener/Claire_de_Binare/issues/2528) | CLOSED | SSOT: [LR-050-RISK-LIMITS.md](./LR-050-RISK-LIMITS.md) — structure + enforceability; canary values `TBD_BLOCKER_BEFORE_LIVE` |
+| Kill-switch and stop controls verified | [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) | CLOSED | SSOT: [LR-050-KILL-SWITCH-RUNBOOK.md](./LR-050-KILL-SWITCH-RUNBOOK.md) |
+| Secret handling readiness (no key exposure) | [#2530](https://github.com/jannekbuengener/Claire_de_Binare/issues/2530) | CLOSED | SSOT: [LR-050-SECRETS-READINESS.md](./LR-050-SECRETS-READINESS.md) — gate definition only; venue permissions `TBD_BLOCKER_BEFORE_LIVE` until #2527 |
+| Live-canary monitoring / alert gates | [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) | CLOSED | SSOT: [LR-050-OBSERVABILITY-GATES.md](./LR-050-OBSERVABILITY-GATES.md) — Prometheus / Alertmanager / receiver proof |
+| First real-money canary **plan** (not activation) | [#2532](https://github.com/jannekbuengener/Claire_de_Binare/issues/2532) | CLOSED | SSOT: [LR-050-CANARY-PLAN.md](./LR-050-CANARY-PLAN.md) — `plan_only`, not executable |
+| Live-path dry-run without orders | [#2533](https://github.com/jannekbuengener/Claire_de_Binare/issues/2533) | CLOSED | SSOT: [LR-050-DRY-RUN-PROOF.md](./LR-050-DRY-RUN-PROOF.md) — `dry_run_proof_contract`, `docs_only`; runtime evidence `blocker_before_live` |
+| Exact human approval wording and checklist | [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) | CLOSED | **Child gate** — no GO wording in this pack |
+| Final LR verdict reconcile | [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | OPEN | SSOT: [LR-050-FINAL-RECONCILE.md](./LR-050-FINAL-RECONCILE.md) — verdict and open blockers |
 
 Residual policy risks (audit canon): no staged live-capital rollout plan approved; explicit human gate for real trades remains mandatory ([`ROADMAP.yaml`](./ROADMAP.yaml) — `requires: explicit_human_approval`).
 

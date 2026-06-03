@@ -20,11 +20,11 @@
 | P4 | 72h Soak | PASS | NO | `reports/p5_canary/2026-04-04/lr040/lr040_soak_gate_eval.json` | jannekbuengener |
 | P4 | Chaos: DB Failure | PASS | NO | [LR-041 Evidence](../evidence/LR-041.md) | jannekbuengener |
 | P4 | Chaos: Network | PASS | NO | [LR-042 Evidence](../evidence/LR-042.md) | jannekbuengener |
-| P5 | Canary Checklist | NO-GO | YES | [P5 Checklist](../operations/P5_CANARY_EXECUTION_CHECKLIST.md), `reports/p5_canary/2026-04-04/` | jannekbuengener |
+| P5 | Canary Checklist | NO-GO | YES | [P5 Checklist](../operations/P5_CANARY_EXECUTION_CHECKLIST.md), `reports/p5_canary/2026-04-04/`, [LR-050 Final Reconcile](./LR-050-FINAL-RECONCILE.md) (child SSOTs #2526–#2534 delivered; blocker_before_live open; not ready for human live approval) | jannekbuengener |
 
 **Rules:**
 - Blocker = YES: Must PASS before go-live
 - Blocker = NO: Should PASS, but not hard blocker
 - Ohne vollständige PASS-Zeile für alle Blocker = YES: **NO GO**
-- `P5` remains `NO-GO`: committed prestart-pack GO state plus committed lean shadow handoff do not authorize live capital or clear `LR-050`.
+- `P5` remains `NO-GO`: committed prestart-pack GO state plus committed lean shadow handoff do not authorize live capital or clear `LR-050`. Final reconcile ([#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535), [LR-050-FINAL-RECONCILE.md](./LR-050-FINAL-RECONCILE.md)) confirms fail-closed verdict; `ready-for-human-live-approval` is not set.
 - ~~`P3 Shadow Mode` remains `PARTIAL`~~ Resolved 2026-05-17: >24h soak run PASS, `LR-030-STATE.yaml` = DONE, evidence committed under `reports/lr030/2026-05-17/` ([#2440](https://github.com/jannekbuengener/Claire_de_Binare/issues/2440)). P3 is `DONE`.
