@@ -27,7 +27,13 @@ from tools.surrealdb.audit_trail_t3_common import (
 )
 
 
-def _run_compose_up(secrets_path: Path, compose_env_file: Path) -> None:
+def _run_compose_up(
+    secrets_path: Path,
+    compose_env_file: Path,
+    *,
+    surreal_user: str,
+    surreal_pass: str,
+) -> None:
     cmd = [
         "docker",
         "compose",
@@ -40,6 +46,8 @@ def _run_compose_up(secrets_path: Path, compose_env_file: Path) -> None:
     ]
     env = dict(**{k: v for k, v in __import__("os").environ.items()})
     env["SECRETS_PATH"] = str(secrets_path)
+    env["SURREAL_USER"] = surreal_user
+    env["SURREAL_PASS"] = surreal_pass
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, check=False)
     if proc.returncode != 0:
         raise RuntimeError(
@@ -91,14 +99,19 @@ def main() -> None:
         surreal_user=user,
         surreal_pass=password,
     )
-    write_compose_env_file(compose_env_file, surreal_user=user, surreal_pass=password)
+    write_compose_env_file(compose_env_file, surreal_user=user)
 
     print("[OK] Wrote SURREALDB_AUDIT_TRAIL_ENV (values redacted)")
     print("[OK] Wrote compose env + TLS material under SECRETS_PATH")
 
     if not args.skip_compose_up:
         print("[INFO] Starting cdb_audit_trail_t3 stack...")
-        _run_compose_up(secrets_path, compose_env_file)
+        _run_compose_up(
+            secrets_path,
+            compose_env_file,
+            surreal_user=user,
+            surreal_pass=password,
+        )
 
     env = load_env_file(env_file)
     ssl_context = build_ssl_context(env.tls_dir / "cert.pem")

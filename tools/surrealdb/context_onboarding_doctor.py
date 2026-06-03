@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Literal
 
+from tools.surrealdb.sensitive_output import redact_sensitive_text
 from tools.surrealdb.local_schema_check import (
     DEFAULT_DB,
     DEFAULT_NS,
@@ -537,7 +538,7 @@ def main(argv: list[str] | None = None) -> int:
         skip_mcp=args.skip_mcp,
         skip_schema=args.skip_schema,
     )
-    output = format_report(report, args.format)
+    output = redact_sensitive_text(format_report(report, args.format))
     _validate_output_safe(output)
     print(output)
     return compute_exit_code(report)
@@ -549,5 +550,8 @@ if __name__ == "__main__":
     except SystemExit:
         raise
     except ValueError as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        print(
+            f"ERROR: {redact_sensitive_text(str(exc))}",
+            file=sys.stderr,
+        )
         raise SystemExit(2) from exc

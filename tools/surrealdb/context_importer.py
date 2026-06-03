@@ -71,6 +71,10 @@ from urllib.parse import urlparse
 import yaml
 
 from core.utils.clock import ClockProvider, SystemClock
+from tools.surrealdb.sensitive_output import (
+    redact_sensitive_json,
+    redact_sensitive_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -3741,7 +3745,7 @@ def _write_report(path: Path, rendered: str) -> None:
                 "report output must resolve under "
                 f"{ALLOWED_OUTPUT_PREFIXES}, got: {path}"
             )
-        path.write_text(rendered + "\n", encoding="utf-8")
+        path.write_text(redact_sensitive_text(rendered) + "\n", encoding="utf-8")
     except WriteDeniedError:
         raise
     except OSError as exc:
@@ -4239,17 +4243,18 @@ def main(argv: list[str] | None = None) -> int:
         print(_emit_error(exc))
         return exc.exit_code
     except Exception as exc:  # noqa: BLE001 - scaffold safety net
-        logger.exception("context_importer internal error")
+        logger.error(
+            "context_importer internal error: %s",
+            redact_sensitive_text(str(exc)),
+        )
         print(
-            json.dumps(
+            redact_sensitive_json(
                 {
                     "schema_version": SCHEMA_VERSION,
                     "status": "error",
                     "error": "INTERNAL",
                     "message": str(exc),
-                },
-                ensure_ascii=True,
-                sort_keys=True,
+                }
             )
         )
         return EXIT_INTERNAL
@@ -4260,7 +4265,7 @@ def main(argv: list[str] | None = None) -> int:
         print(_emit_error(exc))
         return exc.exit_code
 
-    print(rendered)
+    print(redact_sensitive_text(rendered))
     return exit_code
 
 
