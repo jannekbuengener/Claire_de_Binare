@@ -93,7 +93,9 @@ def _canon_file_exists_at_root(scan_root: Path, repo_relative_path: str) -> bool
 def _missing_canon_reads_on_disk(
     scan_root: Path, minimum_reads: tuple[str, ...] = READINESS_MINIMUM_READS
 ) -> list[str]:
-    return [rel for rel in minimum_reads if not _canon_file_exists_at_root(scan_root, rel)]
+    return [
+        rel for rel in minimum_reads if not _canon_file_exists_at_root(scan_root, rel)
+    ]
 
 
 def _resolve_readiness_root_context(
@@ -139,7 +141,9 @@ def _resolve_readiness_root_context(
                     "cwd_matches_repo_root": False,
                     "root_drift_detected": True,
                     "drift_severity": "blocked",
-                    "limitations": [f"repo_root path resolution failed: {explicit_root!r}"],
+                    "limitations": [
+                        f"repo_root path resolution failed: {explicit_root!r}"
+                    ],
                     "evidence": [],
                     "resolution_error": "repo_root path resolution failed",
                 },
@@ -155,9 +159,7 @@ def _resolve_readiness_root_context(
                     "cwd_matches_repo_root": False,
                     "root_drift_detected": True,
                     "drift_severity": "blocked",
-                    "limitations": [
-                        f"repo_root is not a directory: {candidate}"
-                    ],
+                    "limitations": [f"repo_root is not a directory: {candidate}"],
                     "evidence": [],
                     "resolution_error": "repo_root is not a directory",
                 },
@@ -1523,9 +1525,10 @@ def context_readiness_handler(**kwargs) -> dict[str, Any]:
             output_stop_conditions.append(
                 f"S3: minimum read unavailable at effective_scan_root: {r}"
             )
-    if root_context.get("root_drift_detected") and root_context.get(
-        "drift_severity"
-    ) == "warning":
+    if (
+        root_context.get("root_drift_detected")
+        and root_context.get("drift_severity") == "warning"
+    ):
         output_stop_conditions.append(
             "S3: host_cwd differs from resolved_repo_root — use effective_scan_root for canon reads"
         )
@@ -2049,8 +2052,7 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
         for rc in resolved:
             sc_type = rc.get("type", "")
             sc_text = (
-                f"{rc.get('severity', 'warning')}: {sc_type} — "
-                f"{rc.get('reason', '')}"
+                f"{rc.get('severity', 'warning')}: {sc_type} — {rc.get('reason', '')}"
             )
             if sc_text not in stop_conditions:
                 stop_conditions.append(sc_text)
@@ -2177,12 +2179,11 @@ def context_briefing_handler(**kwargs) -> dict[str, Any]:
     known_risks.append("v0 briefing builder uses synthetic/mock package inputs")
     if readiness_status.startswith("blocked"):
         known_risks.append(
-            f"Readiness check blocked: {readiness_status}; "
-            f"briefing may be incomplete"
+            f"Readiness check blocked: {readiness_status}; briefing may be incomplete"
         )
     if not target_paths and not target_symbols:
         known_risks.append(
-            "no target_paths or target_symbols specified; " "context may be minimal"
+            "no target_paths or target_symbols specified; context may be minimal"
         )
 
     # --- Surface resolver failure ---

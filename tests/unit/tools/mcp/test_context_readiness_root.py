@@ -133,7 +133,9 @@ def test_missing_canon_on_scan_root_blocks_fail_closed(
 
 def test_invalid_repo_root_parameter_blocks() -> None:
     readiness = _readiness(
-        context_readiness_handler(**_base_kwargs(repo_root="/nonexistent/cdb/repo/root"))
+        context_readiness_handler(
+            **_base_kwargs(repo_root="/nonexistent/cdb/repo/root")
+        )
     )
     assert readiness["status"] == "blocked_missing_context"
     assert readiness["drift_severity"] == "blocked"
