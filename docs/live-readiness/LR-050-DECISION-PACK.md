@@ -82,8 +82,8 @@ Residual policy risks (audit canon): no staged live-capital rollout plan approve
 | State | Meaning | Current |
 |-------|---------|---------|
 | `NO-GO` | Live-capital canary not authorized; fail-closed | **Active** |
-| `ready-for-human-live-approval` | Planning/evidence complete enough for Jannek to review and issue **separate** exact approval per [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534); reconcile via [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | **Not reached** |
-| `GO` | Live-capital canary may proceed only after **explicit** human approval matching #2534 wording; never via issue/PR merge alone | **Not granted** |
+| `ready-for-human-live-approval` | Planning/evidence complete enough for Jannek to review and issue **separate** exact approval per [LR-050-HUMAN-APPROVAL.md](./LR-050-HUMAN-APPROVAL.md); reconcile via [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) | **Not reached** |
+| `GO` | Live-capital canary may proceed only after **explicit** human approval matching [LR-050-HUMAN-APPROVAL.md](./LR-050-HUMAN-APPROVAL.md); never via issue/PR merge alone | **Not granted** |
 
 **Operator decision log (template — do not pre-fill GO):**
 
@@ -92,7 +92,7 @@ Date (UTC):
 Operator:
 Decision: NO-GO | ready-for-human-live-approval | GO
 Evidence reviewed: LR-050-DECISION-PACK.md + LR-AUDIT-STATUS + child issues #2527–#2534
-If GO: exact approval text (must match #2534 checklist when that issue is DONE):
+If GO: exact approval text (must match [LR-050-HUMAN-APPROVAL.md](./LR-050-HUMAN-APPROVAL.md) — [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534)):
 Venue:
 Symbols:
 Max notional:
@@ -134,7 +134,7 @@ Procedure shape (not verdict): [`knowledge/operating_rules/LIVE_TRADING_RUNBOOK.
 
 1. Halt new orders (manual kill-switch / trading disable / allocation 0 per runbook).
 2. Restore canonical shadow/prestart path: `execution_status.mode` = `mock` (see P5 runtime-mode contract).
-3. Do not set `MOCK_TRADING="false"` or enable live execution without separate human GO per #2534.
+3. Do not set `MOCK_TRADING="false"` or enable live execution without separate human GO per [LR-050-HUMAN-APPROVAL.md](./LR-050-HUMAN-APPROVAL.md).
 4. Document incident and keep global verdict **NO-GO** until [#2535](https://github.com/jannekbuengener/Claire_de_Binare/issues/2535) reconcile.
 
 ---
@@ -166,7 +166,7 @@ No credentials, API keys, or secret values belong in this document.
 
 | Rule | Detail |
 |------|--------|
-| Who may grant live-capital GO | Defined only in [#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534) when DONE — **not** specified here |
+| Who may grant live-capital GO | [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534)) — only `jannekbuengener` (or explicit handoff) |
 | What PR #2526 / this pack grants | **Nothing** toward live or real-money trading |
 | Implicit approval | **Invalid** — ambiguous statements do not count as GO |
 | Issue / PR closure | Does **not** replace human approval |
@@ -194,6 +194,7 @@ No credentials, API keys, or secret values belong in this document.
 ## Related documents (no duplication)
 
 - [`README.md`](./README.md) — live-readiness index
+- [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) — exact live-capital GO/REVOKE wording ([#2534](https://github.com/jannekbuengener/Claire_de_Binare/issues/2534))
 - [`ISSUES.md`](./ISSUES.md) — LR task list
 - [`docs/operations/P5_PRESTART_PACK.md`](../operations/P5_PRESTART_PACK.md) — prestart template
 - [`docs/runbooks/CONTROL_REGISTER.md`](../runbooks/CONTROL_REGISTER.md) — Board stage vs LR
