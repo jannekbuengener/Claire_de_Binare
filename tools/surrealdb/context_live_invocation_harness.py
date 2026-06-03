@@ -230,7 +230,10 @@ def classify_tool_result(
     if tool_name == "cdb_context_memory_write_intent":
         if status == "refused":
             return "PASS"
-        if code == "agent_memory_write_not_activated" and status in ("refused", "error"):
+        if code == "agent_memory_write_not_activated" and status in (
+            "refused",
+            "error",
+        ):
             return "PASS"
         return "FAIL"
 
@@ -366,8 +369,10 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
     repo_root = _repo_root()
     git = _git_metadata(repo_root)
     bridge = create_bridge() if live else None
-    registry_names = _registry_tool_names(bridge) if bridge else sorted(
-        BENCHMARK_SAFE_INVOCATIONS.keys()
+    registry_names = (
+        _registry_tool_names(bridge)
+        if bridge
+        else sorted(BENCHMARK_SAFE_INVOCATIONS.keys())
     )
     manifest_names = sorted(BENCHMARK_SAFE_INVOCATIONS.keys())
     missing = sorted(set(registry_names) - set(manifest_names))
@@ -409,9 +414,9 @@ def run_matrix(*, live: bool = True) -> HarnessReport:
                     expected=_expected_summary(tool_name),
                     actual=_summarize_actual(result),
                     status=matrix_status,
-                    handler_status=str(result.get("status"))
-                    if result.get("status")
-                    else None,
+                    handler_status=(
+                        str(result.get("status")) if result.get("status") else None
+                    ),
                     error_code=_extract_error_code(result),
                     limitation=(
                         "MCP stdio path not exercised; use bridge proof"
