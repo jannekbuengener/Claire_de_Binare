@@ -29,6 +29,7 @@
 | **Risk-service halt** | Signal blocked before order creation (kill-switch gate, drawdown, exposure, `decide_trade` BLOCK, bot shutdown) |
 | **Execution-service halt** | Order rejected in `process_order()` (kill-switch, shadow, bot shutdown, trace contract) |
 | **Alert-triggered halt** | Operator/policy response to Prometheus/Alertmanager alerts — abort matrix **not** repo-complete until [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531) |
+| **Safe execution mode (not halt)** | `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET` — reduce real mainnet capital exposure; **do not** REJECT orders in `process_order()`; `MockExecutor` / `LiveExecutor` dry-run may return **FILLED** simulated results |
 
 ---
 
@@ -95,17 +96,21 @@
 | **Effect** | Stops order flow by stopping processes — coarse halt, not a trading-governance gate |
 | **This deliverable** | **Not executed.** Requires separate Runtime-GO to run or verify. |
 
-### 4.3 Trading disable / env config gates
+### 4.3 Capital-safe execution modes (not halt gates)
+
+These env/config flags are **Auto-Live / mainnet-capital guards**, not upstream halt gates in `process_order()`. Orders that pass Risk and Execution halt checks may still flow through execution and produce **simulated or dry-run FILLED results** — that is **not** proof that order flow was stopped.
 
 | Env / config | Service | Default (repo) | Role |
 |--------------|---------|----------------|------|
-| `MOCK_TRADING` | Execution [`services/execution/config.py`](../../services/execution/config.py) | `"true"` | Mock executor — no real exchange execution |
-| `DRY_RUN` | Execution config | `"true"` | Log-only safety |
-| `MEXC_TESTNET` | Execution config | `"true"` | Testnet, not mainnet capital |
-| `CONFIRM_LIVE_TRADING` | Execution [`_require_live_confirmation()`](../../services/execution/service.py) | unset / not `"true"` | **Startup gate only:** `sys.exit(1)` if all three safety nets above are false |
-| Compose BLUE | [`compose.blue.yml`](../../infrastructure/compose/compose.blue.yml) `cdb_execution` | `MOCK_TRADING: "true"` | Canonical stack default — **No auto-live** |
+| `MOCK_TRADING` | Execution [`services/execution/config.py`](../../services/execution/config.py) | `"true"` | Selects mock adapter ([`MockExecutor`](../../services/execution/mock_executor.py)) — simulates fills; **no** upstream REJECT |
+| `DRY_RUN` | Execution config + [`LiveExecutor._create_dry_run_result()`](../../services/execution/live_executor.py) | `"true"` | Live adapter path may return **FILLED** dry-run results; **no** upstream REJECT |
+| `MEXC_TESTNET` | Execution config | `"true"` | Testnet routing — not a `process_order()` reject gate |
+| `CONFIRM_LIVE_TRADING` | Execution [`_require_live_confirmation()`](../../services/execution/service.py) | unset / not `"true"` | **Startup gate only:** `sys.exit(1)` if MOCK/DRY_RUN/TESTNET all false — not a per-order halt |
+| Compose BLUE | [`compose.blue.yml`](../../infrastructure/compose/compose.blue.yml) `cdb_execution` | `MOCK_TRADING: "true"` | Canonical stack default — **No auto-live** on mainnet |
 
 **Note:** `LIVE_TRADING_CONFIRMED` is **not** a repo env name. Live confirmation uses **`CONFIRM_LIVE_TRADING=true`**.
+
+**Distinction for #2533 dry-run evidence:** Simulated/dry-run **FILLED** results prove **no real mainnet execution**, not that halt gates blocked order flow. Halt proof requires reject paths (shadow, File Kill Switch, bot shutdown) or explicit operator halt (§4.1).
 
 Setting `MOCK_TRADING="false"` without valid Human GO per [`LR-050-HUMAN-APPROVAL.md`](./LR-050-HUMAN-APPROVAL.md) §4 is **fail-closed** policy violation.
 
@@ -164,7 +169,7 @@ Canary-specific tuning remains `blocker_before_live` until [#2532](https://githu
 
 ## 6. Execution-service halt behavior
 
-All paths in [`services/execution/service.py`](../../services/execution/service.py) `process_order()`:
+[`services/execution/service.py`](../../services/execution/service.py) `process_order()` — **halt gates** (order REJECTED before executor):
 
 | Order | Gate | Result |
 |-------|------|--------|
@@ -172,9 +177,18 @@ All paths in [`services/execution/service.py`](../../services/execution/service.
 | 2 | `run_mode == "shadow"` | REJECTED (`shadow_blocked`) |
 | 3 | File Kill Switch (`get_kill_switch_details`) | REJECTED; eval exception → fail-closed active |
 | 4 | Bot shutdown (`bot_shutdown_active`, blocked strategy/bot IDs) | REJECTED |
-| 5 | Executor selection | Blocked upstream if MOCK/DRY_RUN/TESTNET; live path needs `CONFIRM_LIVE_TRADING` at **startup** |
 
-Defense-in-depth: Risk may block before Execution; Execution re-checks Kill Switch independently.
+**Not halt gates** (order may proceed to executor after gates above pass):
+
+| Mode | Behavior | Proof implication (#2533) |
+|------|----------|---------------------------|
+| `MOCK_TRADING=true` | `MockExecutor.execute_order()` — simulated latency/fills | FILLED mock results ≠ halt; proves no live adapter call |
+| `DRY_RUN=true` (MEXC path) | `LiveExecutor._create_dry_run_result()` — **FILLED** dry-run payload | FILLED dry-run ≠ halt; proves no exchange submission |
+| `MEXC_TESTNET=true` | Testnet routing at adapter init | Not mainnet capital; not a REJECT gate |
+
+`CONFIRM_LIVE_TRADING` is evaluated at **service startup** only (`_require_live_confirmation()`); it does not REJECT individual orders.
+
+Defense-in-depth: Risk may block before Execution; Execution re-checks File Kill Switch independently.
 
 ---
 
@@ -228,8 +242,8 @@ Defense-in-depth: Risk may block before Execution; Execution re-checks Kill Swit
 | Operator manual halt (File Kill Switch) | `POST /kill-switch/activate`; [`core/safety/kill_switch.py`](../../core/safety/kill_switch.py); shared `CDB_KILL_SWITCH_STATE_FILE` | `enforceable_now` | Unit: `tests/unit/safety/test_kill_switch.py`, `tests/unit/risk/test_kill_switch_endpoints.py`; HTTP checklist | yes (Runtime-GO for live drill) | OPEN until #2533 dry-run + optional E2E | Active → Risk block + Execution REJECTED; read error → active (KS core) / unevaluable (Risk gate) |
 | Kill Switch deactivate | `POST /kill-switch/deactivate` | `enforceable_now` | Same endpoints tests; operator checklist | yes | Recovery requires Human GO still valid | Deactivate without GO does not authorize live capital |
 | Service/container stop | `make docker-down` / compose down | `docs_only` | Documented in AGENTS.md; not executed here | yes | Coarse halt; not a governance SSOT | Process stop → no orders; no substitute for Kill Switch audit |
-| `MOCK_TRADING` / `DRY_RUN` / `MEXC_TESTNET` | [`services/execution/config.py`](../../services/execution/config.py); Compose `MOCK_TRADING: "true"` | `enforceable_now` | Read compose + config defaults; no runtime | no | Default prevents mainnet execution | All true/default → no real execution path |
-| `CONFIRM_LIVE_TRADING` startup gate | [`services/execution/service.py`](../../services/execution/service.py) `_require_live_confirmation()` | `enforceable_now` | Code read; startup test optional Runtime-GO | yes (if testing live startup path) | `blocker_before_live` if operator disables all three safety nets without GO | Missing `CONFIRM_LIVE_TRADING=true` → `sys.exit(1)` |
+| `MOCK_TRADING` / `DRY_RUN` / `MEXC_TESTNET` (safe modes) | [`services/execution/config.py`](../../services/execution/config.py); Compose `MOCK_TRADING: "true"`; not `process_order()` reject gates | `enforceable_now` (config); **not halt gates** | Read compose + config; code paths in `MockExecutor` / `LiveExecutor` dry-run | no | Default prevents **real mainnet** execution; order flow may continue with simulated FILLED results | Simulated/dry-run fills **must not** be read as halt proof (#2533) |
+| `CONFIRM_LIVE_TRADING` startup gate | [`services/execution/service.py`](../../services/execution/service.py) `_require_live_confirmation()` | `enforceable_now` | Code read; startup test optional Runtime-GO | yes (if testing live startup path) | `blocker_before_live` if operator disables all safe modes without GO | Missing `CONFIRM_LIVE_TRADING=true` → `sys.exit(1)` at startup; not per-order REJECT |
 | Risk File Kill Switch gate | `_kill_switch_gate()` in [`services/risk/service.py`](../../services/risk/service.py) | `enforceable_now` | Unit coverage indirect; #2533 dry-run | no (unit); yes (E2E) | E2E order-flow proof → `blocker_before_live` | Eval failure → block signal |
 | Risk drawdown halt (in-memory CB) | `check_drawdown_limit()`; `risk_state.circuit_breaker_active` | `enforceable_now` | `tests/unit/risk/test_service.py`; metric `circuit_breaker_active` | no | Does not set file KS; canary threshold TBD | Over drawdown → block + alert + bot shutdown |
 | Risk `decide_trade()` BLOCK | `DECISION_THRESHOLDS`, staleness/silence | `enforceable_now` (generic thresholds) | Risk unit tests; #2533 | no | Canary tuning `blocker_before_live` | Missing/ stale data → BLOCK |
@@ -254,7 +268,8 @@ Defense-in-depth: Risk may block before Execution; Execution re-checks Kill Swit
 - Config resolution: document `MOCK_TRADING`, `DRY_RUN`, `MEXC_TESTNET`, `CDB_KILL_SWITCH_STATE_FILE` without changing stack.
 - `GET /kill-switch` precheck read-only (inactive before canary).
 - Risk gate simulation: verify BLOCK/DENY paths with test values; `real_money=false` / `dry_run=true` in evidence artifact.
-- Execution gate: confirm shadow/KS rejection paths via unit/integration tests cited above — **no live order**.
+- Execution **halt** gates: confirm shadow / File Kill Switch / bot shutdown **REJECT** paths via unit/integration tests — **no live order**.
+- **Do not** treat mock or dry-run **FILLED** results as halt proof; they only attest no real mainnet submission (§4.3, §6).
 
 ### 10.2 Runtime-GO only (separate explicit approval)
 
@@ -284,8 +299,9 @@ Defense-in-depth: Risk may block before Execution; Execution re-checks Kill Swit
 1. **`soak_gate_eval.py` precheck gap:** `kill_switch_precheck_inactive` checks in-memory `circuit_breaker`, not `GET /kill-switch` or file state — can diverge from File Kill Switch.
 2. **Drawdown does not activate file Kill Switch:** Automatic file KS reasons exist in enum but are not wired from `check_drawdown_limit()`.
 3. **`risk_kill_switch_active` metric:** Reports `0` on read failure (not fail-closed like order gates).
-4. **`KILL_SWITCH_OPERATOR_CHECKLIST.md`:** Does not prove end-to-end order-flow stop under live runtime (stated in checklist Limits §83–87).
-5. **Alert / fill-rate abort:** Deferred to [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531); policy here is fail-closed only.
+4. **`MOCK_TRADING` / `DRY_RUN` safe modes:** Simulated or dry-run FILLED results are not halt proof — distinguish from REJECT gates (§4.3, §6).
+5. **`KILL_SWITCH_OPERATOR_CHECKLIST.md`:** Does not prove end-to-end order-flow stop under live runtime (stated in checklist Limits §83–87).
+6. **Alert / fill-rate abort:** Deferred to [#2531](https://github.com/jannekbuengener/Claire_de_Binare/issues/2531); policy here is fail-closed only.
 
 Closing [#2529](https://github.com/jannekbuengener/Claire_de_Binare/issues/2529) via PR merge delivers **gate definition and verification matrix** only. It does **not** grant live-capital GO, clear `LR-050`, or replace #2531/#2533 runtime proof.
 
