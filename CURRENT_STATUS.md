@@ -10,8 +10,8 @@
 
 ## Repo / Engineering Status (2026-06-03)
 
-- **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B summary in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). GitHub-live: #2831 **CLOSED**; #1976 **OPEN** (HOLD); #2832/#2833 **OPEN**. LR NO-GO; no writes/runtime activation.
-- **#1976 grandparent epic**: **OPEN** — §B recert delivered via #2831; epic-close **HOLD** until #2832 (second RTP) and #2833 (closeout). RTP #2821 **PASS** (PR #2829). See recert doc above.
+- **#2831 Grandparent §B wave matrix recertification**: **COMPLETED** — PR [#2834](https://github.com/jannekbuengener/Claire_de_Binare/pull/2834) squash-merged (`5face9c9`); deliverable [`docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md`](docs/surrealdb/SURREALDB_1976_WAVE_MATRIX_RECERTIFICATION_2026-06-03.md); §B summary in [`SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md`](docs/surrealdb/SURREALDB_1976_GRANDPARENT_DOD_AND_REAL_TASK_PROOF.md). Thermos SSOT follow-up PR [#2836](https://github.com/jannekbuengener/Claire_de_Binare/pull/2836). GitHub-live: #2831 **CLOSED**; #1976 **OPEN** (HOLD); #2832 **OPEN** (reopened after accidental auto-close by PR #2834); #2833 **OPEN**. Session log: `knowledge/logs/sessions/2026-06-03-2831-wave-matrix-recertification.md`. LR NO-GO; no writes/runtime activation.
+- **#1976 grandparent epic**: **OPEN** — §B recert on `main` (PR #2834); epic-close **HOLD** until #2832 (second RTP) and #2833 (closeout). RTP #2821 **PASS** (PR #2829). Do not close from recert alone.
 
 ## Repo / Engineering Status (2026-06-02)
 
