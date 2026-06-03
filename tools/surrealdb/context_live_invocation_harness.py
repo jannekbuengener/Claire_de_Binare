@@ -469,9 +469,7 @@ def run_matrix(
 ) -> HarnessReport:
     """Build the invocation matrix. When live=False, only validate manifest/registry."""
     repo_root = _repo_root()
-    root_inventory = _attach_root_inventory(
-        repo_root, check_github=check_github_roots
-    )
+    root_inventory = _attach_root_inventory(repo_root, check_github=check_github_roots)
     git = _git_metadata(repo_root)
     bridge = create_bridge() if live else None
     invocations = invocations_for_profile(profile)

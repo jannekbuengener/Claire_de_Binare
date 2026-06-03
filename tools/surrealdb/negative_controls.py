@@ -53,9 +53,7 @@ SECRET_SUBSTRINGS_IN_OUTPUT = (
     "secret=",
 )
 
-_HUMAN_GO_TOKEN_PATTERN = re.compile(
-    r"GO-\d{4}-\d{2}-\d{2}(?:-[A-Za-z0-9._-]+)?"
-)
+_HUMAN_GO_TOKEN_PATTERN = re.compile(r"GO-\d{4}-\d{2}-\d{2}(?:-[A-Za-z0-9._-]+)?")
 
 
 def default_safety_flags() -> dict[str, bool]:

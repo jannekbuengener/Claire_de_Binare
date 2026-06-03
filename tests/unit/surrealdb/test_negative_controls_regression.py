@@ -220,9 +220,7 @@ def test_harness_classify_mcp_blocked_safety_not_fail() -> None:
         },
     }
     assert (
-        nc.classify_memory_write_intent_negative_control(
-            result, invocation_path="mcp"
-        )
+        nc.classify_memory_write_intent_negative_control(result, invocation_path="mcp")
         == "BLOCKED_SAFETY"
     )
 
