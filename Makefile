@@ -112,6 +112,7 @@ help:
 	@echo "  make context-certify         - Read-only operator certification proof pack (#2776)"
 	@echo "  make context-live-invoke     - All-tools live bridge matrix, minimal profile (#2849)"
 	@echo "  make context-live-invoke-full - Same harness with inline records, 27 PASS (#2852)"
+	@echo "  make context-negative-controls - Write-intent/mutation negative-control regression (#2854)"
 	@echo "  make context-root-inventory  - Cross-repo root + GitHub target inventory (#2853)"
 # ============================================================================
 # CI-Tests (schnell, mit Mocks)
@@ -411,6 +412,10 @@ context-live-invoke:
 context-live-invoke-full:
 	@echo "=== Context live invocation harness, full inline-record profile (#2852) ==="
 	@$(PYTHON) -m tools.surrealdb.context_live_invocation_harness --profile full
+
+context-negative-controls:
+	@echo "=== Context write-intent / mutation negative-control regression (#2854) ==="
+	@$(PYTHON) -m pytest -q tests/unit/surrealdb/test_negative_controls_regression.py tests/unit/tools/mcp/test_memory_write_intent_tool.py tests/unit/surrealdb/test_memory_write_gate.py -m unit
 
 context-root-inventory:
 	@echo "=== Cross-repo root and GitHub target inventory (#2853) ==="

@@ -119,6 +119,10 @@ def test_full_json_pass_zero_accepted_limitations(
     assert doc["evidence_claims"] == []
     assert doc["missing_evidence_codes"] == []
     assert report.summary.get("PASS_WITH_LIMITS", 0) == 0
+    nc = doc.get("negative_controls") or {}
+    assert nc.get("schema") == "negative-controls-matrix/v1"
+    assert nc.get("issue_ref") == "2854"
+    assert nc["safety_flags"]["PERSIST_ALLOWED"] is False
 
 
 def test_determinism_hash_stable_for_equivalent_report() -> None:

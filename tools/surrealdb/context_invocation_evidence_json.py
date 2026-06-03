@@ -11,6 +11,7 @@ from typing import Any, Mapping
 
 from core.replay.canonical_json import canonical_hash, canonical_json_dumps
 from tools.surrealdb import context_live_invocation_harness as harness
+from tools.surrealdb.negative_controls import negative_control_matrix_summary
 from tools.surrealdb.db_record_evidence_contract import (
     ACCEPTED_LIMITATION_CODES,
     SCHEMA_VERSION as CLAIM_SCHEMA_VERSION,
@@ -218,6 +219,7 @@ def build_invocation_evidence(report: harness.HarnessReport) -> dict[str, Any]:
         "lr_note": report.lr_note,
         "safety_flags": dict(report.safety_flags),
         "root_inventory": dict(report.root_inventory),
+        "negative_controls": negative_control_matrix_summary(),
     }
     document["determinism_hash"] = compute_aggregate_determinism_hash(document)
     return document
