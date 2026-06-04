@@ -1,6 +1,6 @@
 # ARVP #2961 Paper Window Runtime Preflight — 2026-06-04
 
-Status: Preflight plan only — no runtime start, no DB mutation, no Docker/Compose
+Status: Preflight plan only — no runtime start, no DB mutation, no Docker/Compose orchestration; one non-mutating `docker exec cdb_execution printenv` env-read confirmed MOCK_TRADING=true; no secret values, DSNs, or full environment dumps were captured or committed
 Parent: #2961 (Phase A1)
 Roadmap: `docs/roadmaps/ARVP_TO_LIVE_GO_ROADMAP_2026-06.md` § Phase A1
 Extraction HOLD: `docs/evidence/arvp_window_bank_2961_extraction_2026-06-04.md` (merged #2964)
@@ -235,7 +235,7 @@ python -m services.validation.paper_reference_window_runner \
 1. **No Live-Go** — LR-050 stays NO-GO
 2. **No Real-Money-Go** — No real capital exposure
 3. **No Runtime Start** — without explicit Human-GO per step 6
-4. **No Docker** — No container orchestration without Human-GO
+4. **No Docker orchestration** — No container start/stop/compose without Human-GO. A single non-mutating `docker exec cdb_execution printenv | grep MOCK_TRADING` was used to confirm the running container's MOCK_TRADING=true setting. This command produced a single line (`MOCK_TRADING=true`) and no secret values, DSNs, passwords, tokens, or full environment dumps were committed or reported.
 5. **No workflow_dispatch** — without Human-GO
 6. **No DB Mutation** — Steps 3+4 are Human-Operator only
 7. **No secrets in repo** — Never commit POSTGRES_READONLY_PASSWORD_DSN or passwords
