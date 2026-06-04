@@ -363,7 +363,9 @@ def init_services():
                 adapter_id,
                 mock_trading=config.MOCK_TRADING,
             )
-            logger.info("🟢 Using execution adapter: %s (Paper Trading Mode)", adapter_id)
+            logger.info(
+                "🟢 Using execution adapter: %s (Paper Trading Mode)", adapter_id
+            )
         elif adapter_id == MEXC_BUILTIN:
             dry_run = config.DRY_RUN if hasattr(config, "DRY_RUN") else True
             testnet = config.MEXC_TESTNET if hasattr(config, "MEXC_TESTNET") else False
@@ -584,8 +586,10 @@ def process_order(order_data: object):
 
         execute_v2 = getattr(executor, "execute", None)
         if callable(execute_v2):
-            adapter_run_mode = order.run_mode if order.run_mode else (
-                "paper" if config.MOCK_TRADING else "live"
+            adapter_run_mode = (
+                order.run_mode
+                if order.run_mode
+                else ("paper" if config.MOCK_TRADING else "live")
             )
             adapter_response = execute_v2(
                 ExecutionAdapterRequest(
@@ -764,7 +768,10 @@ def process_order(order_data: object):
                     policy_snapshot=getattr(order, "policy_snapshot", None),
                 )
             except Exception:
-                logger.debug("Contract emission skipped (execution path guardrail)", exc_info=True)
+                logger.debug(
+                    "Contract emission skipped (execution path guardrail)",
+                    exc_info=True,
+                )
 
         # Update stats (Thread-safe)
         schema_status = ExecutionResult._schema_status(result.status)
