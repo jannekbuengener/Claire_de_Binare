@@ -3,7 +3,7 @@
 Status: Repo-backed evidence report for `#2961`
 Parent anchor: `#1900`
 Pilot source: `#1932`
-Evidence class: existing compare/calibration/scorecard artifacts formalized as a single-window batch seed
+Evidence class: committed pilot evidence formalized as a single-window batch seed
 Live-readiness implication: none
 Live/Echtgeld implication: none
 
@@ -16,7 +16,7 @@ This document operationalizes the Phase-1 finding on `#2961`:
 - true multi-window coverage remains blocked by missing additional comparison-grade paper windows
 
 This slice does not run replay, paper, runtime, Docker, workflows, or live data collection.
-It formalizes the existing artifact-backed seed and records the honest batch limits.
+It formalizes the committed pilot evidence and records the honest batch limits.
 
 ## Related Issues
 
@@ -37,8 +37,6 @@ It formalizes the existing artifact-backed seed and records the honest batch lim
    - paper fills: `1`
    - replay orders: `0`
    - replay fills: `0`
-   - compare status: `aligned`
-   - calibration status: `aligned`
    - drift classification: `pessimistic`
 
 ### Held
@@ -49,16 +47,22 @@ Additional windows are held as:
 
 Reason:
 
-- no second comparison-grade paper reference window is currently evidenced in the repo-backed or local artifact set inspected for `#2961`
+- no second comparison-grade paper reference window is currently evidenced in the committed pilot evidence inspected for `#2961`
 - no regime-meaningful comparison window is currently evidenced
 - no explicit reject-bearing comparison window is currently evidenced
 
-## Artifact Sources
+## Normative Sources
 
 - `docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md`
-- `artifacts/calibration_run_001/compare/replay-ae0be21cc75e-0001/shadow_comparison.json`
-- `artifacts/calibration_run_001/calibration/replay-ae0be21cc75e-0001/simulator_calibration_report.json`
-- `artifacts/calibration_run_001/scorecards/replay-ae0be21cc75e-0001/arvp_regime_scorecard.json`
+- `docs/governance/arvp_paper_reference_contract.md`
+- `docs/governance/arvp_platform.md`
+
+## Local Validation Scope
+
+During this `#2961` Phase-2 slice, the existing local JSON artifacts under
+`artifacts/calibration_run_001/` were re-read only as a consistency check.
+They remain local and untracked, and are not required as normative sources for
+the repo-backed claims in this document.
 
 ## Batch Result
 
