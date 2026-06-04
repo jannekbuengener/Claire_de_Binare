@@ -67,12 +67,12 @@ Filtered Trivy alerts for CVE-2026-34040, CVE-2026-41567, CVE-2026-42306, CVE-20
 
 ---
 
-## Ask-Gordon gate
+## Ask-Gordon gate (historical / decommissioned)
 
 | Item | Status |
 |------|--------|
 | Infra / compose / digest diff in this slice | **None** (docs-only) |
-| Ask-Gordon integration in repo | Not found |
+| Ask-Gordon integration in repo | Not found; historical reference only |
 | Gate outcome | **N/A** — no infra mutation; documented as repo-only triage |
 
 ---

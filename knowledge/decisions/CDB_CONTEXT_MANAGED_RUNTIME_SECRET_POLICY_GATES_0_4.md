@@ -216,7 +216,7 @@ issues + evidence + Jannek-GO:
 | G0-6 Adapter contract extension (read-only non-local allowlist) | Implementation PR |
 | G0-7 Operator proof pack (read OK / write fail-closed) | Session log |
 | G0-8 LR-SSOT human review | LR audit files |
-| G0-9 Gordon gate for Docker/compose | Explicit GO |
+| G0-9 Docker/compose change requires explicit Jannek Human-GO (Gordon gate decommissioned) | Explicit GO |
 | Write ladder L0–L4 | #2804 |
 | MCP/tunnel/compose changes | Scoped issues only |
 

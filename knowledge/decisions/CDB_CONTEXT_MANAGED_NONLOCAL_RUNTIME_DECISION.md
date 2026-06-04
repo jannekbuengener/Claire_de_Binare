@@ -99,7 +99,7 @@ labels until a future contract extends the factory with inverse allowlist guards
 | G0-6 | Adapter contract extension (**read-only**, non-local allowlist, localhost denylist for productive-read path) | Implementation PR + unit tests |
 | G0-7 | Operator proof pack: read queries succeed; write/admin SQL fail-closed | Session log + redacted proof |
 | G0-8 | LR-SSOT review: managed path docs do not imply LR-Go or Echtgeld | Human review vs `LR-AUDIT-STATUS` |
-| G0-9 | **Gordon gate** before any Docker/BLUE/RED/compose change | Explicit Gordon-GO (forbidden in #2803) |
+| G0-9 | Docker/BLUE/RED/compose change requires explicit Jannek Human-GO (Gordon gate decommissioned) | Explicit Human-GO (forbidden in #2803) |
 
 Gate 0 is **documentation and evidence** in this slice. Satisfying G0-4 through G0-9
 requires **follow-up issues**; none are activated here.
@@ -178,7 +178,7 @@ For this decision slice (#2803), evidence is **repo-only**:
 | **3** | Operator proof | Operator | Redacted session log; read PASS; write/admin FAIL |
 | **4** | Jannek-GO | Human | Per-option enablement (`managed_readonly` vs `nonlocal_readonly_mcp`) |
 | **5** | LR-SSOT review | Human | If docs touch live-readiness narrative |
-| **Gordon** | Infra/runtime | Human | **Only** for Docker/BLUE/RED/compose — **forbidden in #2803** |
+| **Jannek Human-GO** | Infra/runtime | Human | **Only** for Docker/BLUE/RED/compose; Gordon gate decommissioned — **forbidden in #2803** |
 
 Certification (`make context-certify`, #2801) supports readiness evaluation but
 **does not** authorize managed/non-local activation alone.
@@ -216,7 +216,7 @@ at decision time (2026-06-02); consider filing if implementation slice starts.
 | FU-1 | Managed-read-only pilot design (network + adapter allowlist) | `[PHASE-2] managed read-only context pilot design` |
 | FU-2 | Secret policy for managed/non-local postures | `[PHASE-2] context managed runtime secret policy` |
 | FU-3 | Non-local MCP/tunnel verification harness | `[PHASE-2] non-local read-only MCP verification` |
-| FU-4 | Runtime activation / compose (Gordon-GO) | `[PHASE-2] context runtime activation` (infra explicit) |
+| FU-4 | Runtime activation / compose (Jannek Human-GO; Gordon gate decommissioned) | `[PHASE-2] context runtime activation` (infra explicit) |
 
 Issue #2804 remains the **write-strategy design** slice; do not expand #2803 into write
 implementation.
@@ -241,7 +241,7 @@ implementation.
 | Enable `managed_readonly` | **Yes** — per follow-up issue | **Yes** if docs imply operational readiness |
 | Enable `nonlocal_readonly_mcp` | **Yes** — per follow-up issue | **Yes** if exposure changes trust model |
 | Flip persist/mutation defaults | **Yes** — explicit; out of #2803 | **Yes** |
-| Docker/BLUE/RED changes | **Gordon-GO** | No unless LR narrative changes |
+| Docker/BLUE/RED changes | **Jannek Human-GO** | No unless LR narrative changes |
 | Live/Echtgeld trading | **Yes** + LR human gate | **Required** |
 
 ## Safety and LR boundaries
