@@ -236,6 +236,41 @@ def _build_result_metadata(order: Order, result: ExecutionResult) -> dict:
     return metadata
 
 
+_ARVP_PAPER_ORDER_ID_PREFIX = "paper_"
+
+
+def _correlation_ledger_order_ids(
+    order: Order, result: ExecutionResult
+) -> tuple[str, str]:
+    """Return (canonical_order_id, exchange_order_id) for correlation_ledger.
+
+    ARVP paper-reference export (#1901) requires top-level ledger order_id to
+    start with ``paper_``. Risk-approved mock orders often carry a UUID while the
+    mock executor returns ``MOCK_...``; derive a stable ``paper_<internal>`` id
+    without changing live-trading semantics.
+    """
+    exchange_order_id = (result.order_id or "").strip()
+    internal_id = (order.order_id or "").strip()
+
+    if internal_id.startswith(_ARVP_PAPER_ORDER_ID_PREFIX):
+        return internal_id, exchange_order_id
+
+    if config.MOCK_TRADING:
+        if internal_id:
+            return f"{_ARVP_PAPER_ORDER_ID_PREFIX}{internal_id}", exchange_order_id
+        if exchange_order_id:
+            if exchange_order_id.startswith(_ARVP_PAPER_ORDER_ID_PREFIX):
+                return exchange_order_id, exchange_order_id
+            return (
+                f"{_ARVP_PAPER_ORDER_ID_PREFIX}{exchange_order_id}",
+                exchange_order_id,
+            )
+        return "", exchange_order_id
+
+    canonical = internal_id or exchange_order_id
+    return canonical, exchange_order_id
+
+
 def _parse_order_payload(order_data: object) -> Order | None:
     """Return validated Order or None for invalid payload input."""
     if not isinstance(order_data, dict):
@@ -608,8 +643,9 @@ def process_order(order_data: object):
             try:
                 timestamp_ms = int(time.time() * 1000)
                 schema_status = ExecutionResult._schema_status(result.status)
-                canonical_order_id = order.order_id or result.order_id
-                exchange_order_id = result.order_id
+                canonical_order_id, exchange_order_id = _correlation_ledger_order_ids(
+                    order, result
+                )
 
                 # ORDER event (always persisted)
                 order_payload = {

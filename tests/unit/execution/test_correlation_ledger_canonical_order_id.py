@@ -170,9 +170,10 @@ def test_execution_service_persists_canonical_order_id_for_paper_orders(
 
 
 @pytest.mark.unit
-def test_execution_service_falls_back_to_exchange_order_id_when_no_canonical_present(
+def test_execution_service_derives_paper_prefixed_ledger_id_for_mock_exchange_only(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Mock path without incoming order_id still writes ARVP-qualifying paper_* ids."""
     _disable_kill_switch(monkeypatch)
 
     fake_db = _FakeDb()
@@ -183,6 +184,7 @@ def test_execution_service_falls_back_to_exchange_order_id_when_no_canonical_pre
     monkeypatch.setattr(service, "bot_shutdown_active", False)
     monkeypatch.setattr(service, "blocked_strategy_ids", set())
     monkeypatch.setattr(service, "blocked_bot_ids", set())
+    monkeypatch.setattr(service.config, "MOCK_TRADING", True)
 
     result = service.process_order(
         {
@@ -199,6 +201,63 @@ def test_execution_service_falls_back_to_exchange_order_id_when_no_canonical_pre
 
     assert [c["event_type"] for c in fake_db.calls] == ["ORDER", "FILL"]
     for call in fake_db.calls:
-        assert call["order_id"] == "MOCK_456"
-        assert call["payload"]["order_id"] == "MOCK_456"
-        assert "exchange_order_id" not in call["payload"]
+        assert call["order_id"] == "paper_MOCK_456"
+        assert call["payload"]["order_id"] == "paper_MOCK_456"
+        assert call["payload"]["exchange_order_id"] == "MOCK_456"
+
+
+@pytest.mark.unit
+def test_execution_service_derives_paper_prefixed_ledger_id_from_risk_uuid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Risk -> mock path: UUID internal id becomes paper_<uuid> for ARVP export."""
+    _disable_kill_switch(monkeypatch)
+
+    risk_uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    ledger_order_id = f"paper_{risk_uuid}"
+
+    fake_db = _FakeDb()
+    fake_executor = _FakeExecutor(exchange_order_id="MOCK_RISK_1")
+    monkeypatch.setattr(service, "db", fake_db)
+    monkeypatch.setattr(service, "executor", fake_executor)
+    monkeypatch.setattr(service, "_publish_result", lambda _result: None)
+    monkeypatch.setattr(service, "bot_shutdown_active", False)
+    monkeypatch.setattr(service, "blocked_strategy_ids", set())
+    monkeypatch.setattr(service, "blocked_bot_ids", set())
+    monkeypatch.setattr(service.config, "MOCK_TRADING", True)
+
+    result = service.process_order(
+        {
+            "type": "order",
+            "symbol": "BTCUSDT",
+            "side": "BUY",
+            "quantity": 0.01,
+            "strategy_id": "primary_breakout_v1",
+            "signal_id": "sig-unit-3",
+            "decision_id": "dec-unit-3",
+            "order_id": risk_uuid,
+        }
+    )
+    assert result is not None
+
+    assert [c["event_type"] for c in fake_db.calls] == ["ORDER", "FILL"]
+    for call in fake_db.calls:
+        assert call["order_id"] == ledger_order_id
+        assert call["payload"]["order_id"] == ledger_order_id
+        assert call["payload"]["exchange_order_id"] == "MOCK_RISK_1"
+
+    ts_ms = int(fake_db.calls[0]["timestamp_ms"])
+    request = ExportRequest(
+        strategy_id="primary_breakout_v1",
+        symbol="BTCUSDT",
+        start_ts_ms_utc=ts_ms,
+        end_ts_ms_utc=ts_ms + 1,
+        extracted_by="tests",
+        source_query_intent="unit-test",
+        extracted_at_utc="2026-04-24T00:00:00Z",
+    )
+    exported = export_paper_reference_window(
+        request=request,
+        rows=_ledger_rows_for_export(fake_db.calls, ledger_order_id=ledger_order_id),
+    )
+    assert exported["contract_version"] == "arvp_paper_reference_window.v1"
