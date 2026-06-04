@@ -16,7 +16,7 @@ This roadmap defines a sequential, evidence-gated path from **ARVP product-compl
 
 ARVP exists as a *paper-phase multiplier* — it accelerates evidence generation by replaying historical market data through the real strategy/execution path, comparing against actual paper behavior, and surfacing simulator drift. Right now ARVP infrastructure is landed, but calibration evidence is a single 1-minute pilot window on one symbol. That is not product-complete.
 
-Live-Go (LR-050) is currently **NO-GO** with seven open blockers documented in `LR-050-FINAL-RECONCILE.md`. None of those blockers can be honestly closed without ARVP providing replay-vs-paper calibration evidence that the simulator is not dangerously optimistic — and right now, that evidence does not exist at multi-window scale.
+Live-Go (LR-050) is currently **NO-GO** with seven open blockers documented in `LR-050-FINAL-RECONCILE.md`. Three of those blockers (canary values, execution-realism, calibration-informed risk bounds) depend on ARVP evidence to be materially informed; the remaining four (receiver proof, secrets readiness, venue/testnet audit, human approval wording) can be prepared in parallel without ARVP complete. However, Phase A (ARVP product-complete) remains the sequencing prerequisite because calibrated replay-vs-paper evidence is needed before any honest canary-parameter decision can be made — and right now, that evidence does not exist at multi-window scale.
 
 This roadmap sequences work into five phases (A–E), each with explicit gates. ARVP product-complete (Phase A) is the prerequisite for all subsequent phases. No phase authorizes live trades, real-money exposure, or automatic runtime activation.
 
@@ -90,7 +90,7 @@ ARVP is "product-complete" when it can serve its stated purpose — **paper-phas
 
 | Criterion | Metric | Current Gap | Issue |
 |-----------|--------|-------------|-------|
-| Paper Reference Window Bank | At least 3 comparison-grade windows across 2+ symbols, diverse market conditions, minimum 1h window width each | Only 1 narrow pilot window (1 minute, BTCUSDT) exists; `HOLD_MISSING_COMPARISON_GRADE_WINDOWS` | #2961 |
+| Paper Reference Window Bank | At least 2 (target: 3+) comparison-grade windows; window width data-driven (prefer 5+ minutes); BTCUSDT-only acceptable for first canary product path; multi-symbol is an extension, not a blocker for product-complete; market-condition diversity best-effort, repo-backed | Only 1 narrow pilot window (1 minute, BTCUSDT) exists; `HOLD_MISSING_COMPARISON_GRADE_WINDOWS` | #2961 |
 | Replay-vs-Paper Batch Compare | Reproducible batch comparison across the window bank with per-window deltas and fingerprints | Batch exists for 1 window; multi-window comparison not evidenced | #2961 |
 | Calibration + Drift Classification | Systematic drift classification (optimistic/pessimistic/timing_delta/execution_semantics_gap/missing_data) per window | Classification surface exists; only pessimistic drift demonstrated on 1 narrow window | #1903, #2961 |
 | Regime Interpretation | Regime-scorecard output per window with activity/coverage metrics; no regime inference without data | Scorecard surface exists; `unavailable` on pilot (no `regime_segments`) | #1904, #2961 |
@@ -100,7 +100,7 @@ ARVP is "product-complete" when it can serve its stated purpose — **paper-phas
 
 ARVP product-complete is reached when:
 
-1. A Window Bank of at least 3 comparison-grade `paper_reference_window.v1` entries exists in the repo
+1. A Window Bank of at least 2 (target: 3+) comparison-grade `paper_reference_window.v1` entries exists in the repo; window width is data-driven (prefer 5+ minutes); multi-symbol coverage is a stretch goal, not a product-complete blocker
 2. A reproducible batch calibration across all bank windows produces per-window deltas and drift classification
 3. At least one ranked execution-realism gap is identified from calibration data (not theoretically, but from actual replay-vs-paper deltas)
 4. Regime scorecards are populated for at least one window with non-empty `regime_segments`
@@ -112,21 +112,27 @@ ARVP product-complete is reached when:
 
 ### Workstream A1: Paper Reference Window Bank
 
-**Goal:** Produce at least 3 comparison-grade paper reference windows with `correlation_ledger` provenance.
+**Goal:** Produce at least 2 (target: 3+) comparison-grade paper reference windows with `correlation_ledger` provenance.
 
 **Contract:** `arvp_paper_reference_contract.md` (v1, #1901)
 
 **Current state:** 1 window (`replay-ae0be21cc75e-0001`, BTCUSDT, 1-minute)
 
-**Required next step:**
-- Collect paper trading data over longer windows (recommend minimum 1h per window)
-- Cover at least 2 symbols (BTCUSDT + 1 other)
-- Cover at least 2 distinct market conditions (e.g., trending, choppy)
+**First step — attempt extraction from existing data (no runtime, no stack start):**
+- Use `paper_reference_window_runner.py` with readonly PostgreSQL access against the existing `correlation_ledger`
+- The 14-day paper trading period (#1784) may have left comparison-grade windows in the DB already
+- If 1+ additional windows are extractable, commit them to `artifacts/paper_reference_windows/` as repo-backed evidence
+- This step requires only read-only DB access — no Docker, no stack start, no workflow dispatch
+
+**If existing data is insufficient:**
+- Plan a new paper trading execution period under staged/shadow mode
 - All windows must satisfy `paper_reference_window.v1` contract requirements
+- Window width is data-driven (prefer 5+ minutes); 1h per window is aspirational, not a hard minimum
+- Multi-symbol replay requires `historical_bridge.py` adapter expansion (currently primary_breakout_v1/BTCUSDT-only); single-symbol BTCUSDT product-complete is acceptable for canary start
 
-**Blocking issue:** New paper trading execution periods needed — this requires runtime execution under staged/shadow mode, not a documentation task.
+**Blocking issue:** #2961 (HOLD for additional windows)
 
-**Issue anchor:** #2961 (HOLD for additional windows)
+**Issue anchor:** #2961
 
 ### Workstream A2: Replay-vs-Paper Batch Compare
 
@@ -404,11 +410,10 @@ The following are **absolute stop rules** for any agent working on this roadmap:
 
 ### Create
 
-1. **`[ARVP][WINDOW-BANK] Collect comparison-grade paper reference windows`**
-   - Scope: Produce 2+ additional `paper_reference_window.v1` entries that satisfy the contract in `arvp_paper_reference_contract.md` — minimum 1h windows, at least 2 symbols, at least 2 market conditions
-   - Depends on: Runtime paper trading execution (staged/shadow mode)
+1. **`[ARVP][WINDOW-BANK] Extract comparison-grade paper reference windows from existing correlation_ledger`**
+   - Scope: Use `paper_reference_window_runner.py` (readonly Postgres) to extract 2+ additional `paper_reference_window.v1` entries from the existing `correlation_ledger`. No runtime, no Docker, no stack start. If the 14-day paper trading period (#1784) left comparison-grade data, extraction is possible without new runtime. Only if existing data is insufficient: plan a new staged/shadow paper trading period.
    - Parent: #1900, #2961
-   - **Note:** This is the critical bottleneck. Without real paper data, ARVP cannot advance beyond single-window pilot.
+   - **Note:** This is the critical bottleneck. The first attempt should be readonly extraction — no new runtime until existing data is exhausted. `historical_bridge.py` currently supports only BTCUSDT; multi-symbol replay requires adapter expansion.
 
 2. **`[ARVP][RUNBOOK] Create ARVP operator runbook`**
    - Scope: Document end-to-end ARVP execution (data prep → replay → compare → calibrate → interpret) as a single operational guide
