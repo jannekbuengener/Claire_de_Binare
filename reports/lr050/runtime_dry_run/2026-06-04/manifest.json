@@ -1,0 +1,60 @@
+{
+  "issue": 2951,
+  "title": "[LR-050][RUNTIME-DRY-RUN] Produce non-destructive runtime evidence pack",
+  "date": "2026-06-04",
+  "generated_at_local": "04.06.2026 12:42:13,01 Europe/Berlin",
+  "branch": "lr050-runtime-dry-run-evidence-pack",
+  "base_ref": "origin/main",
+  "repo_head_at_capture": "4d332b0ffe6cb32bd02505c9fff38326d75e4c04",
+  "runtime_go_scope": {
+    "issue": 2951,
+    "non_destructive_only": true,
+    "evidence_pack_only": true,
+    "no_live_capital": true,
+    "no_exchange_mutation": true,
+    "source": "prompt_contract runtime_gate"
+  },
+  "brain_source": "repo-only",
+  "brain_status": "not-used",
+  "gordon_gate_used": false,
+  "lr_status": "NO-GO",
+  "overall_verdict": "repo-backed non-destructive evidence pack assembled; live blockers remain open",
+  "artifact_files": [
+    "manifest.json",
+    "command_manifest.md",
+    "effective_config_redacted.json",
+    "non_send_guard_proof.md",
+    "execution_dry_run_evidence.md",
+    "risk_gate_dry_run_evidence.md",
+    "order_builder_dry_run_evidence.md",
+    "redaction_report.md",
+    "blocker_matrix.md",
+    "summary.md"
+  ],
+  "executed_commands_summary": [
+    {
+      "name": "github_live_issue_2951",
+      "result": "OPEN"
+    },
+    {
+      "name": "github_live_open_prs",
+      "result": "none"
+    },
+    {
+      "name": "env_safe_flag_presence",
+      "result": "DRY_RUN, MOCK_TRADING, MEXC_TESTNET, CONFIRM_LIVE_TRADING, TRADING_MODE, EXECUTION_ADAPTER_ID all unset in current shell"
+    },
+    {
+      "name": "pytest_targeted_runtime_guard_set",
+      "result": "66 passed, 104 warnings, 0 failures with repo-local basetemp"
+    },
+    {
+      "name": "interactive_live_executor_dry_run",
+      "result": "dry_run=true, client_is_none=true, order_id=DRY_RUN_lr050-cli-1"
+    }
+  ],
+  "known_environment_limitations": [
+    "PowerShell exec path fails locally with CreateProcessAsUserW failed: 1312; cmd.exe fallback used.",
+    "pytest default temp roots under C:\\Users\\janne\\AppData\\Local\\Temp and D:\\tmp were not writable in this session; repo-local --basetemp succeeded."
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "scope": "#2951 non-destructive runtime evidence only",
+  "source_order": [
+    "github_live",
+    "repo_live",
+    "runtime_effective_config_evidence",
+    "local_command_output",
+    "canonical_governance_files"
+  ],
+  "shell_env_flags": {
+    "DRY_RUN": "unset",
+    "MOCK_TRADING": "unset",
+    "MEXC_TESTNET": "unset",
+    "CONFIRM_LIVE_TRADING": "unset",
+    "TRADING_MODE": "unset",
+    "EXECUTION_ADAPTER_ID": "unset"
+  },
+  "services_execution_defaults": {
+    "MEXC_BASE_URL": "https://contract.mexc.com",
+    "MEXC_TESTNET": true,
+    "MOCK_TRADING": true,
+    "DRY_RUN": true
+  },
+  "compose_blue_defaults": {
+    "MOCK_TRADING": "true",
+    "USE_REAL_BALANCE": "false",
+    "TRACE_CONTRACT_V1_ENABLED": "1"
+  },
+  "adapter_resolution": {
+    "default_execution_adapter_when_mock_trading_true": "mock_builtin",
+    "default_execution_adapter_when_mock_trading_false": "mexc_builtin",
+    "explicit_execution_adapter_id_in_shell": "unset"
+  },
+  "legacy_trading_mode_reference_only": {
+    "paper": {
+      "MOCK_TRADING": true,
+      "DRY_RUN": true,
+      "MEXC_TESTNET": true
+    },
+    "staged": {
+      "MOCK_TRADING": false,
+      "DRY_RUN": false,
+      "MEXC_TESTNET": true
+    },
+    "live": {
+      "MOCK_TRADING": false,
+      "DRY_RUN": false,
+      "MEXC_TESTNET": false
+    }
+  },
+  "active_execution_path_notes": [
+    "On cdb_execution, TRADING_MODE is logged but not wired to set effective execution flags.",
+    "MEXC_TESTNET alone is not accepted as non-send proof.",
+    "CONFIRM_LIVE_TRADING is a startup gate only when MOCK_TRADING=false, DRY_RUN=false, and MEXC_TESTNET=false."
+  ],
+  "session_non_send_conclusion": {
+    "repo_backed_preconditions_met": true,
+    "basis": [
+      "no shell overrides were set for safe/live flags",
+      "execution config defaults keep DRY_RUN and MOCK_TRADING enabled",
+      "compose.blue default keeps MOCK_TRADING enabled",
+      "direct LiveExecutor dry-run harness instantiated no client and returned DRY_RUN_* result"
+    ]
+  },
+  "redaction": {
+    "secret_values_read": false,
+    "secret_values_printed": false,
+    "safe_flags_only": true
+  }
+}
