@@ -6,6 +6,7 @@ Verifies that:
 - garbage env value → treated as true (fail-safe)
 - candle emission itself is unaffected by the kill-switch in either case
 """
+
 import copy
 import os
 from unittest.mock import MagicMock, patch
@@ -24,7 +25,7 @@ def _make_service(write_market_state: bool) -> CandleService:
     Uses a copy of the config to avoid mutating the module-level singleton.
     """
     service = CandleService()
-    service.config = copy.copy(service.config)   # isolate from global singleton
+    service.config = copy.copy(service.config)  # isolate from global singleton
     service.config.write_market_state = write_market_state
     service.redis_client = MagicMock()
     service.redis_client.xadd.return_value = None
@@ -104,6 +105,7 @@ def test_config_false_string_disables_write():
         # Re-parse env vars by re-importing config directly
         import importlib
         import services.candles.config as cfg_mod
+
         importlib.reload(cfg_mod)
         assert cfg_mod.config.write_market_state is False
     finally:
@@ -122,6 +124,7 @@ def test_config_false_case_insensitive():
         os.environ["CANDLE_WRITE_MARKET_STATE"] = "FALSE"
         import importlib
         import services.candles.config as cfg_mod
+
         importlib.reload(cfg_mod)
         assert cfg_mod.config.write_market_state is False
     finally:
@@ -140,6 +143,7 @@ def test_config_garbage_value_defaults_to_true():
         os.environ["CANDLE_WRITE_MARKET_STATE"] = "yes"
         import importlib
         import services.candles.config as cfg_mod
+
         importlib.reload(cfg_mod)
         assert cfg_mod.config.write_market_state is True
     finally:
