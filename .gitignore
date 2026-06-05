@@ -215,3 +215,7 @@ tools/test_pack/mock_exchange/
 /.opencode/skills/cdb-control-intake/assets/
 /.opencode/skills/cdb-control-intake/references/
 /.opencode/skills/cdb-control-intake/scripts/
+
+# Cursor skills — embedded git repos (local tooling, must not be staged as gitlinks)
+/.cursor/skills/skillforge/
+/.cursor/skills/mockexchange/
