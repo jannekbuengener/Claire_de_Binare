@@ -44,7 +44,9 @@ def test_last_tick_ts_ms_monotonic_guard():
         "trade_qty": "0.2",
     }
     aggregator.process_trade(trade2)
-    assert aggregator.last_tick_ts_ms.get("BTCUSDT") == 1700000002000  # Still older value
+    assert (
+        aggregator.last_tick_ts_ms.get("BTCUSDT") == 1700000002000
+    )  # Still older value
 
     # Newer trade - should update
     trade3 = {
