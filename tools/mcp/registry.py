@@ -209,7 +209,6 @@ TOOLS_V0 = [
                 "audit_type": {"type": "string", "default": "all"},
                 "limit": {"type": "integer", "default": 50},
             },
-            "anyOf": [{"required": ["target_tool"]}, {"required": ["entity_id"]}],
         },
         output_schema={
             "type": "object",

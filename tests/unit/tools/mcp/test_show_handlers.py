@@ -131,15 +131,11 @@ class TestShowAuditHandler:
         tool = ContextToolRegistry.get_tool("context.show_audit")
         schema = tool.input_schema
         props = schema.get("properties", {})
+        forbidden_top_level_keys = {"oneOf", "anyOf", "allOf", "enum", "not"}
         assert "target_tool" in props
         assert "entity_id" in props
-        any_of = schema.get("anyOf", [])
-        assert any(
-            isinstance(o, dict) and o.get("required") == ["target_tool"] for o in any_of
-        )
-        assert any(
-            isinstance(o, dict) and o.get("required") == ["entity_id"] for o in any_of
-        )
+        assert schema.get("type") == "object"
+        assert forbidden_top_level_keys.isdisjoint(schema)
         assert "tool" in tool.output_schema.get("properties", {})
         assert "status" in tool.output_schema.get("properties", {})
 
