@@ -512,10 +512,12 @@ If you encounter issues not covered here:
 
 ### 2. Review Documentation
 
+- **Short docs index**: [`docs/index.md`](docs/index.md)
 - **Governance**: `CDB_CONSTITUTION.md`, `CDB_GOVERNANCE.md`
-- **Policies**: `governance/` directory
-- **Service READMEs**: `services/*/README.md`
-- **API Documentation**: Service-specific API docs
+- **Runbooks**: [`docs/runbooks/README.md`](docs/runbooks/README.md)
+- **Contracts / security / evidence**: [`docs/contracts/README.md`](docs/contracts/README.md), [`docs/security/README.md`](docs/security/README.md), [`docs/evidence/README.md`](docs/evidence/README.md)
+- **Service READMEs**: [`services/README.md`](services/README.md) and `services/*/README.md`
+- **Paper runner**: [`tools/paper_trading/README.md`](tools/paper_trading/README.md) (not under `services/`)
 
 ### 3. Development Best Practices
 

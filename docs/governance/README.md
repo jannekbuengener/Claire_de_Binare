@@ -1,5 +1,7 @@
 # Governance Documentation
 
+Governance artifacts for Claire de Binare (CDB). **LR verdict: NO-GO** — live-capital gates remain in `docs/live-readiness/`.
+
 This directory contains governance artifacts for the Claire de Binare (CDB) trading system.
 
 ## System Invariants (Canonical)

@@ -1,8 +1,8 @@
 # Kubernetes Scaffold
 
-**Status: 🟡 PENDING - Awaiting Go/No-Go Decision**
+**Status: PENDING — Awaiting Go/No-Go Decision** (orthogonal to LR **NO-GO** on live capital)
 
-Siehe [K8s Budget Decision](../docs/decisions/K8S_BUDGET_DECISION.md) für Details.
+Siehe [K8s Budget Decision](../knowledge/decisions/K8S_BUDGET_DECISION.md) für Details.
 
 ## Struktur (falls GO)
 

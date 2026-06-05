@@ -1,7 +1,14 @@
 # SurrealDB Governance Mirror
 
+Experimentelle Mirror-/Context-Schicht neben Postgres. Postgres bleibt Source of Truth für Trading; produktive Agent-Writes bleiben gate-bound auf `main`.
+
 ## What this is
 SurrealDB dient als experimentelle Mirror-Schicht neben Postgres, um Governance-, Shadow-Soak- und Ledger-Events zu testen ohne den Trading-Flow zu beeinflussen. Postgres bleibt Source of Truth; SurrealDB liest nur App-Metadaten (keine Secrets / Real Funds).
+
+## Active docs (context / MCP)
+*   `docs/surrealdb/` — context contracts, proof matrices, runbooks
+*   `docs/runbooks/surrealdb_context_mcp_access.md` — MCP capability matrix
+*   `infrastructure/surrealdb/setup.surql` — schema bootstrap
 
 ## Schema
 Die folgenden Collections (Tables) sind als append-only Mirror definiert:
@@ -28,3 +35,6 @@ Alle Tabellen nutzen `PERMISSIONS FOR CREATE, FOR SELECT` und haben keine UPDATE
 - SurrealDB ist unabhängig: `surrealdb_enabled` bleibt `false` (Infra-Flag).  
 - Zum Rollback genügt es, die SurrealDB-Instance zu stoppen und `governance_source` auf `postgres`/`git` zu belassen.  
 - Schema kann jederzeit neu geladen werden (`surreal sql --file=setup.surql`).
+
+## SSOT boundary
+LR **NO-GO** — `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`. Managed/non-local runtime **NOT ACTIVATED**.

@@ -1,6 +1,6 @@
-# Regime Service
+# Regime Service (`cdb_regime`)
 
-Deterministische Marktregime-Erkennung (ADX/ATR) auf Basis von OHLCV-Marktdaten.
+Deterministische Marktregime-Erkennung (ADX/ATR) auf Basis von OHLCV-Marktdaten. **BLUE** stack service (port 8008).
 
 ## Streams
 - Input: `stream.market_data`

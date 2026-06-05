@@ -1,7 +1,7 @@
 # .github — Control Plane Entrypoint
 
 **Repo:** Claire de Binare (`jannekbuengener/Claire_de_Binare`)
-**Branch canon:** `github-meta-layer` → merged into `main`
+**Default branch:** `main`
 **LR verdict:** NO-GO (see `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
 **Board stage:** `trade-capable` (orthogonal to LR; no live capital)
 

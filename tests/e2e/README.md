@@ -1,14 +1,13 @@
-# E2E Tests - Deterministic Test Path
+# E2E Tests — Deterministic Test Path
 
-**Issue:** #354
-**Status:** ✅ Active
-**Owner:** Team B (Engineering)
+**Issue anchor:** `#354` (historical) · **Marker:** `@pytest.mark.e2e`
+**Boundary:** Shadow/Paper-first; LR **NO-GO** — kein Live-Kapital (`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`)
 
 ## Übersicht
 
-End-to-End Tests für Claire de Binare Trading Pipeline mit **deterministischen Fixtures**.
+End-to-End Tests für die Claire de Binare Trading Pipeline mit deterministischen Fixtures.
 
-**Ziel:** Reproduzierbare, stabile E2E-Tests mit <5% Flake-Rate.
+**Ziel:** Reproduzierbare, stabile E2E-Tests mit niedriger Flake-Rate.
 
 ---
 
@@ -16,10 +15,11 @@ End-to-End Tests für Claire de Binare Trading Pipeline mit **deterministischen 
 
 ```
 tests/e2e/
-├── README.md (dieses Dokument)
-├── test_smoke_pipeline.py  # Haupt-Smoke-Test (market_data → signals)
+├── README.md
+├── test_smoke_pipeline.py       # Smoke: market_data → signals
+├── test_paper_trading_p0.py     # Paper-trading P0 flows
 ├── fixtures/
-│   └── market_data.json  # Deterministisches market_data Fixture
+│   └── market_data.json
 └── __init__.py
 ```
 
@@ -32,57 +32,25 @@ tests/e2e/
 **File:** `test_smoke_pipeline.py::test_smoke_market_data_to_signal`
 
 **Pipeline:**
+
 ```
 1. market_data fixture → Redis Pub/Sub (market_data topic)
 2. cdb_signal → consumes market_data → generates signals
-3. signals → Redis Stream (trading_signals)
+3. signals → Redis Stream (stream.signals)
 4. Validation: signals_generated_total > 0
 ```
 
 **Determinismus:**
+
 - Fixture: `fixtures/market_data.json` (fixed prices, timestamps)
-- Expected Output: Mindestens 1 Signal generiert
+- Expected Output: mindestens 1 Signal generiert
 - Metrics: Prometheus `signals_generated_total` Counter
-
-**Success Criteria:**
-- [x] Test passed in 3 consecutive local runs
-- [x] Identical results (signal count, metrics)
-- [x] <5% flake rate (1 von 20 runs)
-
----
-
-## Fixtures
-
-### 1. market_data.json
-
-Deterministisches market_data Fixture für reproducible Tests.
-
-**Format:**
-```json
-[
-  {
-    "schema_version": "v1.0",
-    "source": "stub",
-    "symbol": "BTCUSDT",
-    "ts_ms": 1735574400000,
-    "price": "50000.00",
-    "trade_qty": "1.0",
-    "side": "buy"
-  },
-  ...
-]
-```
-
-**Properties:**
-- Fixed timestamps (deterministic sequence)
-- Fixed prices (reproducible signal triggers)
-- Contract v1.0 compliant (schema_version, trade_qty)
 
 ---
 
 ## Running Tests
 
-### Local (offizieller Einstieg)
+### Local (kanonischer Einstieg)
 
 ```powershell
 # Kanonischer lokaler E2E-Lauf (Stack-Start + Tests + Teardown)
@@ -92,135 +60,78 @@ Deterministisches market_data Fixture für reproducible Tests.
 .\infrastructure\scripts\run_e2e.ps1 -SkipStackStart -SkipTeardown
 ```
 
+Alternativ über Makefile (BLUE+RED muss laufen):
+
+```bash
+make docker-up
+make test-e2e
+```
+
 ### Local (manueller Debug-/Fallback-Pfad)
 
-```powershell
-# 1. Stack starten (CI/Test-Compose-Pfad)
-docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/dev.yml -f infrastructure/compose/logging.yml up -d
+**431B CI lab** (isoliert, nicht der Operator-BLUE+RED-Runtime):
 
-# 2. Run E2E Smoke Test
-.\.venv\Scripts\python.exe -m pytest tests/e2e/test_smoke_pipeline.py -v --tb=short
-
-# 3. Repeat 3x für Determinismus-Check
-for ($i=1; $i -le 3; $i++) {
-    Write-Host "Run $i/3..."
-    .\.venv\Scripts\python.exe -m pytest tests/e2e/test_smoke_pipeline.py -v
-}
+```bash
+docker compose -f infrastructure/compose/base.yml -f infrastructure/compose/test.yml up -d
+pytest -m e2e -v --tb=short
 ```
+
+**Operator runtime** (BLUE+RED, wenn E2E gegen laufenden Stack):
+
+```bash
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+pytest -m e2e -v --tb=short
+```
+
+Legacy `base.yml + dev.yml + logging.yml` ist **nicht** der kanonische Operator- oder E2E-Einstieg.
 
 ### CI (GitHub Actions)
 
 **Offizieller Workflow:** `.github/workflows/e2e.yml`
 
-Automatisch bei:
-- Push auf `main` (paths: `tests/e2e/**`, `services/**`, `infrastructure/compose/**`)
-- Manuell via `workflow_dispatch`
-- Wöchentlich (Sonntag 06:30 UTC)
-
-> `e2e-tests.yml` und `e2e-happy-path.yaml` sind historische Nebenpfade, nicht der offizielle E2E-Source-of-Truth.
+Automatisch bei Push auf `main` (path-filtered), `workflow_dispatch`, und wöchentlich (So 06:30 UTC).
 
 ---
 
 ## Debugging
 
-### 1. Check Service Health
+### Service Health
 
 ```powershell
-# Docker Health
 docker ps --filter name=cdb_ --format "table {{.Names}}\t{{.Status}}"
-
-# Redis market_data messages
-docker exec cdb_redis redis-cli SUBSCRIBE market_data
-
-# Prometheus metrics
-curl http://localhost:19090/api/v1/query?query=signals_generated_total
+make docker-health
 ```
 
-### 2. Check Logs
+### Logs
 
 ```powershell
-# Signal Engine (relevant für Signal-Generation)
 docker logs cdb_signal --tail 50
-
-# WebSocket Service (Publisher)
 docker logs cdb_ws --tail 50
 ```
 
-### 3. Common Issues
+### Common Issues
 
-**Issue:** Test fails mit "signals_generated_total = 0"
+**`signals_generated_total = 0`:** Signal-Health, Redis Pub/Sub auf `market_data`, Fixture prüfen.
 
-**Fix:**
-1. Check cdb_signal Health: `docker logs cdb_signal`
-2. Check Redis market_data Pub/Sub: `docker exec cdb_redis redis-cli SUBSCRIBE market_data`
-3. Check Fixture validity: `cat tests/e2e/fixtures/market_data.json`
-
-**Issue:** Flaky results (inconsistent signal count)
-
-**Fix:**
-1. Prüfen: Fixture deterministisch?
-2. Prüfen: Race Condition (zu kurze Wartezeit)?
-3. Prüfen: Stack Clean State (vorherige Test-Artefakte)?
+**Flaky results:** Wartezeiten/Race Conditions, Stack-Clean-State vor Run sicherstellen.
 
 ---
 
-## Metrics
+## CI vs Local
 
-### Key Metrics (Prometheus)
+| Surface | Stack canon | Pytest |
+|---|---|---|
+| `run_e2e.ps1` | Script-gesteuert | `tests/e2e/` |
+| `make test-e2e` | BLUE+RED (manuell vorher `make docker-up`) | `-m e2e` |
+| CI `e2e.yml` | Workflow-definiert | `-m e2e` |
 
-- `signals_generated_total`: Total Signals generiert (Counter)
-- `market_data_received_total`: market_data Messages consumed (Counter)
-- `redis_publish_total`: Redis Pub/Sub publishes (Counter)
-
-**Validation:**
-```python
-# Test-Assertion
-assert metrics["signals_generated_total"] > 0, "Keine Signals generiert!"
-```
+Unit/Integration ohne Container: `make test` (exkl. `e2e`, `local_only`).
 
 ---
 
-## Flake Tracking
+## Contact / References
 
-**Flake-Budget:** <5% (1 von 20 Runs)
-
-**Tracking Method:**
-```powershell
-# 20 Runs ausführen
-$failures = 0
-for ($i=1; $i -le 20; $i++) {
-    $result = .\.venv\Scripts\python.exe -m pytest tests\e2e\test_smoke_pipeline.py --tb=no -q
-    if ($LASTEXITCODE -ne 0) { $failures++ }
-}
-Write-Host "Flake Rate: $($failures/20*100)% ($failures/20)"
-```
-
-**Acceptable:** ≤1 Failure (5%)
-**Current Status:** TBD (wird nach Merge gemessen)
-
----
-
-## Evidence Requirements
-
-Für Issue-Abschluss benötigt:
-1. **Local:** 3 identische erfolgreiche Runs
-2. **CI:** 1 erfolgreicher GitHub Actions Run (e2e_smoke Job grün)
-3. **Flake:** <5% Rate über 20 Runs (optional, Post-Merge)
-
----
-
-## Evolution
-
-### Future E2E Scenarios (Post-Phase-0)
-
-- **E2E Full Pipeline:** market_data → signal → risk → order → execution
-- **E2E Chaos:** Service crashes, network delays, Redis failover
-- **E2E Load:** High-volume market_data (1000 msgs/sec)
-
----
-
-## Contact
-
-**Questions:** Issue #354
-**Debugging Support:** Team B (Engineering)
-**CI Issues:** Check `.github/workflows/e2e.yml` logs
+- Compose canon: `infrastructure/compose/README.md`
+- Signal stream: `stream.signals` (`services/signal/README.md`)
+- Engineering ledger: `CURRENT_STATUS.md`

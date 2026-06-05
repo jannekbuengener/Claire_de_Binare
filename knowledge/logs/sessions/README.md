@@ -1,26 +1,16 @@
 # Sessions Log Index
 
-This directory stores session log notes and investigation records.
+Session evidence logs for repo/agent work. Filename pattern: `YYYY-MM-DD-<topic>.md`.
 
-- [2025-12-28-issue-cleanup.md](2025-12-28-issue-cleanup.md)
-- [2025-12-29-cdb-ws-implementation.md](2025-12-29-cdb-ws-implementation.md)
-- [2025-12-29-docker-secrets-blueprint.md](2025-12-29-docker-secrets-blueprint.md)
-- [2025-12-29-issue-governance-session.md](2025-12-29-issue-governance-session.md)
-- [2025-12-29-mexc-credentials-integration-proposal.md](2025-12-29-mexc-credentials-integration-proposal.md)
-- [2025-12-31-codex-batch-01-ideas.md](2025-12-31-codex-batch-01-ideas.md)
-- [2025-12-31-codex-batch-01-results.md](2025-12-31-codex-batch-01-results.md)
-- [2025-12-31-codex-batch-02-ideas.md](2025-12-31-codex-batch-02-ideas.md)
-- [2025-12-31-codex-batch-02-results.md](2025-12-31-codex-batch-02-results.md)
-- [2025-12-31-codex-batch-03-ideas.md](2025-12-31-codex-batch-03-ideas.md)
-- [2025-12-31-codex-batch-03-results.md](2025-12-31-codex-batch-03-results.md)
-- [2025-12-31-codex-batch-04-ideas.md](2025-12-31-codex-batch-04-ideas.md)
-- [2025-12-31-codex-batch-04-results.md](2025-12-31-codex-batch-04-results.md)
-- [2025-12-31-codex-batch-05-ideas.md](2025-12-31-codex-batch-05-ideas.md)
-- [2025-12-31-codex-batch-05-results.md](2025-12-31-codex-batch-05-results.md)
-- [2025-12-31-codex-ideas.md](2025-12-31-codex-ideas.md)
-- [2025-12-31-codex-results.md](2025-12-31-codex-results.md)
-- [2026-01-02__docs_untracked_snapshot.md](2026-01-02__docs_untracked_snapshot.md)
-- [2026-01-02__fix-secret-ca-key.md](2026-01-02__fix-secret-ca-key.md)
-- [2026-01-02__textdokument-neu.md](2026-01-02__textdokument-neu.md)
-- [2026-01-18_CLAUDE_docs-consolidation-mapping.md](2026-01-18_CLAUDE_docs-consolidation-mapping.md)
-- [grafana_dashboard_audit_2026-01-08.md](grafana_dashboard_audit_2026-01-08.md)
+## Usage
+*   Write a new log at session close when repo/engineering state changed.
+*   Update `CURRENT_STATUS.md` when delivery status changes — logs alone are not the engineering SSOT.
+*   This index is **non-exhaustive**; list recent entries or browse the directory.
+
+## Recent pattern (2026)
+*   `2026-06-*` — LR-050 reconcile, SurrealDB/context closeout slices
+*   `2026-05-*` — Memory epic, context MCP proof paths
+*   Older entries remain as historical evidence under this directory.
+
+## SSOT boundary
+Live-Readiness **NO-GO** — `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.

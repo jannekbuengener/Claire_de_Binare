@@ -7,7 +7,7 @@ Only GREEN without EXCEPTION = real E2E validated.
 
 ## workflow_run Dependency Map
 
-Audit date: `2026-03-03`
+Audit date: `2026-03-03` (last full map review; re-verify on workflow `name:` renames)
 
 `workflow_run` dependencies in this repo currently resolve cleanly against existing
 workflow `name:` values. No string mismatches were found in the current tree.

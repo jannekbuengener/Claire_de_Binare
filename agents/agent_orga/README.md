@@ -10,10 +10,10 @@ relations:
     - agents/agent_orga/PLAN_AGENT_DOCS_ORCHESTRATION.md
 ---
 
-# Agent Orga — Cockpit
+## Agent Orga — Cockpit
 
 Hier startet man, wenn man **arbeiten** will: Setup, Ablauf, Orga-Entscheidungen.  
-Die **kanonischen Rollen** leben in `agents/roles/`.
+Die **kanonischen Rollen** leben in `agents/roles/`. Registry: [`agents/AGENTS.md`](../AGENTS.md).
 
 ## Startpfad (empfohlen)
 

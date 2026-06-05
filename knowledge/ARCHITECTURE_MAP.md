@@ -17,6 +17,8 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 **Operatives Inventar:** `governance/SERVICE_CATALOG.md` (Working Repo)
 
+**Operator READMEs (Working Repo, docs-only navigation):** [`../services/README.md`](../services/README.md), [`../core/README.md`](../core/README.md), [`../infrastructure/database/README.md`](../infrastructure/database/README.md), [`../tools/paper_trading/README.md`](../tools/paper_trading/README.md). Vollstaendige README-Index-Tabelle: `governance/SERVICE_CATALOG.md` § Navigation READMEs.
+
 ---
 
 ## 2. Service Map (SOLL)
@@ -38,31 +40,34 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 ### BLUE Stack (compose.blue.yml) — Core, always-on
 
-| Service | Container | Port | Funktion |
-|---------|-----------|------|----------|
-| PostgreSQL | cdb_postgres | 5432 | Persistenz |
-| Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
-| Market | cdb_market | 8009 | market_state:{symbol} Owner; Redis retry/reconnect bis verfügbar, /health fail-closed |
-| Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
-| Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
-| Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
-| Risk | cdb_risk | 8002 | Risk Gate, Circuit Breaker, Kill-Switch |
-| Execution | cdb_execution | 8003 | Order Execution (MOCK_TRADING=true) |
-| DB Writer | cdb_db_writer | — | Redis→PostgreSQL Persistenz |
-| Paper Runner | cdb_paper_runner | 8004 | Paper Trading Orchestrator |
+| Service | Container | Port | Code | Operator README |
+|---------|-----------|------|------|-----------------|
+| PostgreSQL | cdb_postgres | 5432 | infrastructure/database/ | [database/README.md](../infrastructure/database/README.md) |
+| Redis | cdb_redis | 6379 | infrastructure/compose/ | [compose/README.md](../infrastructure/compose/README.md) |
+| Market | cdb_market | 8009 | services/market/ | [services/market/README.md](../services/market/README.md) |
+| Candles | cdb_candles | 8007 | services/candles/ | [services/candles/README.md](../services/candles/README.md) |
+| Regime | cdb_regime | 8008 | services/regime/ | [services/regime/README.md](../services/regime/README.md) |
+| Allocation | cdb_allocation | 8006 | services/allocation/ | [services/allocation/README.md](../services/allocation/README.md) |
+| Risk | cdb_risk | 8002 | services/risk/ | [services/risk/README.md](../services/risk/README.md) |
+| Execution | cdb_execution | 8003 | services/execution/ | [services/execution/README.md](../services/execution/README.md) |
+| DB Writer | cdb_db_writer | — | services/db_writer/ | [services/db_writer/README.md](../services/db_writer/README.md) |
+| Paper Runner | cdb_paper_runner | 8004 | tools/paper_trading/ | [tools/paper_trading/README.md](../tools/paper_trading/README.md) |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated
 
+| Service | Container | Port | Code | Operator README |
+|---------|-----------|------|------|-----------------|
+| WebSocket | cdb_ws | 8000 | services/ws/ | [services/ws/README.md](../services/ws/README.md) |
+| Signal | cdb_signal | 8005 (Runtime) | services/signal/ | [services/signal/README.md](../services/signal/README.md) |
+| Reports | cdb_reports | — | services/reports/ | — |
+
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
-| WebSocket | cdb_ws | 8000 | MEXC Market Data Stream; `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen, sodass `/health` und `/metrics` auch ohne websocket-spezifische Runtime-Dependencies importierbar bleiben; Client-Absolute werden per Delta-Logik in Prometheus Counter ueberfuehrt (`decoded_messages_total`, `decode_errors_total`) |
-| Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback); audit metadata: `config_snapshot` (runtime params) + deterministic `config_hash` (SHA-256); `SIGNAL_BOT_ID` liefert repo-backed Experiment-Kontext im SIGNAL-Payload, aber keine neue first-class Ledger-ID; reserved metadata keys protected against override; used by Paper Reference Exporter (PR #2133) for signal-anchored bot_id/config_hash filtering in replay-vs-paper comparisons |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
 | Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
 | Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
-| Reports | cdb_reports | — | Daily Order Summary |
 
 Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
 
@@ -187,6 +192,7 @@ cdb_reports           Up (healthy)
 | **Regime Scorecard CLI** | `services/validation/arvp_regime_scorecard_runner.py` | Operator-facing CLI (`--run-id ID --replay-trace FILE --comparison FILE --output-dir DIR`). Optional inputs; fail-closed on invalid JSON. Produces arvp_regime_scorecard.json + arvp_regime_scorecard_summary.md. Exit codes: 0 ok / 1 usage / 2 parse error. | **AKTIV** (PR #1918) |
 | **Paper Reference Window Export** | `core/replay/paper_reference_window_export.py` | Export comparison-grade paper_reference_window from correlation_ledger. Fail-closed on missing/invalid fields; deterministic ordering by (timestamp_ms, event_pk). Requires ≥1 ORDER + ≥1 FILL with paper_-prefix. `order_id` bleibt der kanonische interne Ledger-Bezug; `exchange_order_id` wird nur als Payload-Kontext geführt, wenn er vom kanonischen Wert abweicht. `bot_id`/`config_hash` werden als SIGNAL-anchor-/payload-abgeleiteter Queryability-Kontext genutzt, nicht als neue first-class Ledger-IDs. | **AKTIV** (PR #1920, PR #2949) |
 | **Paper Reference Window CLI** | `services/validation/paper_reference_window_runner.py` | Operator-facing CLI (`--strategy-id ID --symbol SYM --start-ts-ms TS --end-ts-ms TS --output FILE`). Reads correlation_ledger from Postgres via required `POSTGRES_READONLY_PASSWORD_DSN`; fail-closed unless `current_user` and `session_user` both resolve to `cdb_readonly`, effective `SELECT` on `public.correlation_ledger` is present, and any `INSERT`/`UPDATE`/`DELETE` privilege drift is rejected. Produces arvp_paper_reference_window.v1 JSON. Exit codes: 0 success / 1 usage / 2 DB/contract error. Optionale `--bot-id`/`--config-hash` Filter qualifizieren ueber SIGNAL-Anker, fuehren aber keine neue first-class Experiment-ID ein. | **AKTIV** (PR #1920, PR #2479) |
+| **Paper Runtime Stimulus CLI** | `services/validation/paper_runtime_stimulus_runner.py` | Runtime-adjacent operator CLI: publishes a canonical BTCUSDT 1m breakout fixture to Redis `market_data` (default `--dry-run-preview`; `--publish` only after safety preflight `MOCK_TRADING=true`, `DRY_RUN=true`, `MEXC_TESTNET=true`). Supports `--runtime-relative` / `--base-ts-ms` to shift fixture timestamps to current wall-clock aligned to 1m cadence while preserving breakout shape (PR #2992). No DB writes; no Live-Go. Intended to help produce comparison-grade `paper_` chains for #2968/#2969. Exit codes: 0 success / 1 usage / 2 safety or publish failure. | **AKTIV** (PR #2989, PR #2992) |
 
 ---
 
@@ -259,6 +265,8 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: `verify_stack.ps1` Default ohne Logging-Overlay; `-IncludeLogging:$true` fuer Loki/Promtail; Logging-Aktivierungspfad auf `infrastructure/compose/` praezisiert; Windows-`make docker-health` ergaenzt (Issue #2671) | Codex |
+| 2026-06-05 | PRs #2999/#3001/#3003 Nachzug: Service-Map Code/README-Spalten; Paper Runner Code-Pfad `tools/paper_trading/`; Cross-Links zu `core/`, `services/`, `infrastructure/database/` READMEs (Issues #3000/#3004) | Cursor |
+| 2026-06-05 | PRs #2989/#2992 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI dokumentiert (`--dry-run-preview`, safety-gated `--publish`, `--runtime-relative` timestamp shift). Kein Live-Go; keine DB-Schreibfläche (Issues #2990/#2993) | Codex |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |

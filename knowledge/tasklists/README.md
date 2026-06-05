@@ -1,25 +1,15 @@
 # Knowledge Tasklists
 
-**Purpose:** Project-wide and strategic task management  
-**Domain:** knowledge  
-**Status:** active  
+Structured task lists and execution handoffs for knowledge-domain work.
 
-## Overview
+## Where to write
+*   Active tasklists and agent handoffs for knowledge/governance/docs slices.
+*   Link to GitHub issues for delivery tracking (`#1445` cockpit for operational focus).
 
-This directory contains strategic and cross-functional tasklists that support project-wide coordination and knowledge management.
+## Key entrypoints
+*   [Knowledge hub (knowledge/CDB_KNOWLEDGE_HUB.md)](../CDB_KNOWLEDGE_HUB.md)
+*   [Agent tasklists (agents/tasklists/)](../../agents/tasklists/)
+*   [Engineering ledger (CURRENT_STATUS.md)](../../CURRENT_STATUS.md)
 
-## Distinction
-
-- **`/agents/tasklists/`** → Agent-specific task management
-- **`/knowledge/tasklists/`** → Project-wide strategic tasks
-
-## Structure
-
-- Strategic project milestones
-- Cross-agent coordination tasks  
-- Knowledge management workflows
-- Governance-related task tracking
-
----
-
-Created to resolve CONSISTENCY_AUDIT.md Issue #4 (P2)
+## SSOT boundary
+Status lives in `CURRENT_STATUS.md` / Control Register — not in tasklist files.

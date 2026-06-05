@@ -8,11 +8,16 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | Wenn du ... | Geh hierhin | Warum |
 |-------|-------|-------|
 | Merge-Gates, Required Checks oder Actions-Fehler verstehen willst | [CI Index](ci/index.md) | Canon fuer PR-Gate, Trigger, Failure Modes und Workflow-Familien |
-| Shadow-/Soak-Evidence oder einen konkreten Run auditieren willst | [Shadow + Soak Run Index](evidence/SHADOW_SOAK_RUN_INDEX.md) | Kleiner Einstieg fuer kanonische vs. abgeleitete Evidence-Pfade und committe Snapshot-Verzeichnisse |
+| Shadow-/Soak-Evidence oder einen konkreten Run auditieren willst | [Evidence README](evidence/README.md) → [Shadow + Soak Run Index](evidence/SHADOW_SOAK_RUN_INDEX.md) | Evidence-Index; kein LR-Go |
+| Operative Runbooks und Control-Plane | [Runbooks README](runbooks/README.md) | Index inkl. CONTROL_REGISTER |
+| Contracts (docs + knowledge + core) | [Contracts README](contracts/README.md) | Vertragliche Docs und Code-Pfade |
+| Security-Triage und Scan-Inventar | [Security README](security/README.md) | Triage, CodeQL-Inventar, Readouts |
+| SurrealDB Context/MCP | [SurrealDB README](surrealdb/README.md) | Lokaler Context-Runtime-Index |
 | Toggles, Secrets, Defaults oder operative Env-Variablen suchst | [Env Index](env/index.md) | Einstieg fuer Schalter, Secret Stores und Consumer |
 | Schema, Migrations, Privileges, Fixtures oder DB-Validierung suchst | [DB Index](db/index.md) | Einstieg fuer Postgres-Canon und Surreal-Mirror |
 | den Echtgeld-Go/No-Go-Stand brauchst | [docs/live-readiness/README.md](live-readiness/README.md) | Single Source of Truth fuer Live-Readiness |
 | Board-, Milestone- oder Project-v2-Automation brauchst | [docs/runbooks/project_board_automation.md](runbooks/project_board_automation.md) | Operativer Leitfaden fuer Board-Automation |
+| Paper-Trading-Runner (Port 8004) | [tools/paper_trading/README.md](../tools/paper_trading/README.md) | Compose-Service `cdb_paper_runner` |
 
 ## Kern-Pointer
 
@@ -35,7 +40,9 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
   - Alle GitHub Actions Workflows.
 - [`infrastructure/compose/README.md`](../infrastructure/compose/README.md)
   - Compose-Layer, Stack-Aufbau und Infra-Einstieg.
-- [`infrastructure/database/`](../infrastructure/database/)
+- [`infrastructure/database/README.md`](../infrastructure/database/README.md)
   - Postgres-Schema, Migrations und Privilege-Skripte.
+- [`services/README.md`](../services/README.md)
+  - Service-Index inkl. Paper-Runner unter `tools/paper_trading/`.
 - [`tests/fixtures/README.md`](../tests/fixtures/README.md)
   - Deterministische DB-Fixtures und Seed-Daten.

@@ -4,6 +4,8 @@
 
 **Output:** `reports/shadow_mode/DAILY_DIGEST_<YYYY-MM-DD>.md` (max 1 page)
 
+**Boundary:** Shadow/offline evidence only — **kein** LR-Go, **kein** Live-Kapital, **kein** Echtgeld-Signal (`docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`).
+
 ---
 
 ## Usage
@@ -133,7 +135,8 @@ git log --since=24.hours --oneline --no-merges
 ### Setup SMTP (Grafana)
 
 **Prerequisites:**
-- Grafana SMTP configured in `infrastructure/compose/base.yml`
+- Grafana SMTP configured in `infrastructure/compose/compose.red.yml` (RED monitoring stack)
+- `base.yml` ist CI/lab baseline, nicht der kanonische Operator-Grafana-Pfad
 - Secrets: `smtp_user`, `smtp_password`, `smtp_from`, `alert_email_to`
 
 **Current Status:** Email sending placeholder implemented (requires Grafana SMTP API integration)

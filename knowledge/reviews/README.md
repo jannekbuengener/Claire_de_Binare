@@ -3,16 +3,17 @@ relations:
   role: doc
   domain: knowledge
   upstream: []
-  downstream:
-    - knowledge/reviews/AGENT_POLICY_KONSISTENZBERICHT.md
-    - knowledge/reviews/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md
+  downstream: []
 ---
-# Contains reports from technical and governance reviews.
+# Technical and governance review reports.
 
 ## Where to write / Where not to write
-*   **Write here:** Formal review reports, audit findings, consistency checks.
-*   **Do NOT write here:** Raw session notes (use `knowledge/SHARED.WORKING.MEMORY.md`), informal discussions.
+*   **Write here:** Review outcomes, audit summaries, structured findings.
+*   **Do NOT write here:** Live status SSOT (`CURRENT_STATUS.md`), LR verdicts (`docs/live-readiness/`).
 
 ## Key entrypoints
-*   [Agent Policy Consistency Report (knowledge/reviews/AGENT_POLICY_KONSISTENZBERICHT.md)](knowledge/reviews/AGENT_POLICY_KONSISTENZBERICHT.md)
-*   [Claude Technical Review Gemini Migration Plan (knowledge/reviews/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md)](knowledge/reviews/CLAUDE_TECHNICAL_REVIEW_GEMINI_MIGRATION_PLAN.md)
+*   [Shared working memory (knowledge/SHARED.WORKING.MEMORY.md)](../SHARED.WORKING.MEMORY.md) — session-scoped, not canonical status
+*   [Session logs (knowledge/logs/sessions/)](../logs/sessions/)
+*   [Governance (knowledge/governance/)](../governance/)
+
+Prefer dated review files in this directory over duplicating findings in status ledgers.

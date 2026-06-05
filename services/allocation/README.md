@@ -1,6 +1,6 @@
-# Allocation Service
+# Allocation Service (`cdb_allocation`)
 
-Deterministische Allokationsentscheidungen basierend auf Regime- und Performance-Signalen.
+Deterministische Allokationsentscheidungen basierend auf Regime- und Performance-Signalen. **BLUE** stack service (port 8006).
 
 ## Streams
 - Input: `stream.regime_signals`, `stream.fills`, `stream.bot_shutdown`

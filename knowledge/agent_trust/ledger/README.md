@@ -1,3 +1,5 @@
 # Ledger (append-only)
 
-Hier liegen Decision Events als YAML-Dateien, z.B. `2025-12-28T22-15-00Z__issue_close__claude.yaml`.
+Append-only trust events for agent scoring. Do not edit existing entries — append corrections as new events.
+
+Parent: [Agent Trust README](../README.md)
