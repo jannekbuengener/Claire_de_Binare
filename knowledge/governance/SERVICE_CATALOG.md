@@ -19,28 +19,43 @@
 
 ---
 
+## Navigation READMEs (Working Repo)
+
+Docs-only operator indices from PRs #2999, #3001, #3003. Ersetzen keine kanonische Funktionsbeschreibung in den Tabellen unten.
+
+| Bereich | README |
+|---|---|
+| Service-Index | [`services/README.md`](../../services/README.md) |
+| Shared core | [`core/README.md`](../../core/README.md) |
+| Replay / contracts | [`core/replay/README.md`](../../core/replay/README.md), [`core/contracts/README.md`](../../core/contracts/README.md) |
+| Offline validation | [`services/validation/README.md`](../../services/validation/README.md) |
+| DB schema / migrations | [`docs/db/index.md`](../../docs/db/index.md) |
+| Paper runner (compose `cdb_paper_runner`) | [`tools/paper_trading/README.md`](../../tools/paper_trading/README.md) — **nicht** `services/paper_runner/` |
+
+---
+
 ## Applikations-Services
 
 ### BLUE Stack (compose.blue.yml) — Core, always-on
 
-| Service | Container | Port | Code | Status | Funktion |
-|---------|-----------|------|------|--------|----------|
-| **Market** | cdb_market | 8009 | services/market/ | **AKTIV** | market_state:{symbol} Owner (Issue #1201); Redis retry/reconnect bis verfügbar, /health fail-closed; Email-Alerter ohne Empfaenger-Klartext-Logging |
-| **Candles** | cdb_candles | 8007 | services/candles/ | **AKTIV** | Tick→1-min Candle Aggregation |
-| **Regime** | cdb_regime | 8008 | services/regime/ | **AKTIV** | ADX/ATR Regime Classification |
-| **Allocation** | cdb_allocation | 8006 | services/allocation/ | **AKTIV** | Regime→Allocation Mapping |
-| **Risk** | cdb_risk | 8002 | services/risk/ | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details |
-| **Execution** | cdb_execution | 8003 | services/execution/ | **AKTIV** | Order Execution (MOCK_TRADING=true default); `/orders` Fehlerantworten nur mit sicherem Fehlercode |
-| **DB Writer** | cdb_db_writer | — | services/db_writer/ | **AKTIV** | Redis→PostgreSQL Persistenz; `db_writer.py` schreibt `stream.candles_1m` in `candles_1m` (Postgres), `candle_normalizer.py` normalisiert die Stream-Payloads auf dem Write-Pfad (PR #1856) |
-| **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | **AKTIV** | Paper Trading Orchestrator |
+| Service | Container | Port | Code | README | Status | Funktion |
+|---------|-----------|------|------|--------|--------|----------|
+| **Market** | cdb_market | 8009 | services/market/ | [README](../../services/market/README.md) | **AKTIV** | market_state:{symbol} Owner (Issue #1201); Redis retry/reconnect bis verfügbar, /health fail-closed; Email-Alerter ohne Empfaenger-Klartext-Logging |
+| **Candles** | cdb_candles | 8007 | services/candles/ | [README](../../services/candles/README.md) | **AKTIV** | Tick→1-min Candle Aggregation |
+| **Regime** | cdb_regime | 8008 | services/regime/ | [README](../../services/regime/README.md) | **AKTIV** | ADX/ATR Regime Classification |
+| **Allocation** | cdb_allocation | 8006 | services/allocation/ | [README](../../services/allocation/README.md) | **AKTIV** | Regime→Allocation Mapping |
+| **Risk** | cdb_risk | 8002 | services/risk/ | [README](../../services/risk/README.md) | **AKTIV** | Risk Gate, Circuit Breaker, Kill-Switch; `/kill-switch` Fehlerantworten fail-closed ohne Exception-Details |
+| **Execution** | cdb_execution | 8003 | services/execution/ | [README](../../services/execution/README.md) | **AKTIV** | Order Execution (MOCK_TRADING=true default); `/orders` Fehlerantworten nur mit sicherem Fehlercode |
+| **DB Writer** | cdb_db_writer | — | services/db_writer/ | [README](../../services/db_writer/README.md) | **AKTIV** | Redis→PostgreSQL Persistenz; `db_writer.py` schreibt `stream.candles_1m` in `candles_1m` (Postgres), `candle_normalizer.py` normalisiert die Stream-Payloads auf dem Write-Pfad (PR #1856) |
+| **Paper Runner** | cdb_paper_runner | 8004 | tools/paper_trading/ | [README](../../tools/paper_trading/README.md) | **AKTIV** | Paper Trading Orchestrator |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated from BLUE
 
-| Service | Container | Port | Code | Status | Funktion |
-|---------|-----------|------|------|--------|----------|
-| **WebSocket** | cdb_ws | 8000 | services/ws/ | **AKTIV** | MEXC Market Data Stream (protobuf); `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen (Health-/Metrics-Surface bleibt importierbar ohne websocket-spezifische Dependency); `decoded_messages_total` und `decode_errors_total` werden via Delta-Logik aus absoluten Client-Werten als Prometheus Counter fortgeschrieben |
-| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze); audit metadata: `config_snapshot` (deterministic runtime params snapshot) + `config_hash` (full SHA-256); `SIGNAL_BOT_ID` environment variable wired via compose.red.yml (PR #2129) liefert Experiment-Kontext im SIGNAL-Payload, aber keine neue first-class Ledger-ID; reserved metadata keys (strategy_id, bot_id, config_snapshot, config_hash, signal_reason, signal_inputs) sind immutable und können nicht durch Candidate-Signal-Metadata überschrieben werden |
-| **Reports** | cdb_reports | — | services/reports/ | **AKTIV** | Daily Order Summary + Email |
+| Service | Container | Port | Code | README | Status | Funktion |
+|---------|-----------|------|------|--------|--------|----------|
+| **WebSocket** | cdb_ws | 8000 | services/ws/ | [README](../../services/ws/README.md) | **AKTIV** | MEXC Market Data Stream (protobuf); `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen (Health-/Metrics-Surface bleibt importierbar ohne websocket-spezifische Dependency); `decoded_messages_total` und `decode_errors_total` werden via Delta-Logik aus absoluten Client-Werten als Prometheus Counter fortgeschrieben |
+| **Signal** | cdb_signal | 8005 (Runtime) | services/signal/ | [README](../../services/signal/README.md) | **AKTIV** | Signal Generation (`primary_breakout_v1` default nutzt zeitbasierte Lookback-Semantik, `momentum_builtin` statische Adapter-Grenze); audit metadata: `config_snapshot` (deterministic runtime params snapshot) + `config_hash` (full SHA-256); `SIGNAL_BOT_ID` environment variable wired via compose.red.yml (PR #2129) liefert Experiment-Kontext im SIGNAL-Payload, aber keine neue first-class Ledger-ID; reserved metadata keys (strategy_id, bot_id, config_snapshot, config_hash, signal_reason, signal_inputs) sind immutable und können nicht durch Candidate-Signal-Metadata überschrieben werden |
+| **Reports** | cdb_reports | — | services/reports/ | — | **AKTIV** | Daily Order Summary + Email |
 
 Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.py` bei `8001`; im kanonischen RED-Runtime-Pfad wird fuer `cdb_signal` in `infrastructure/compose/compose.red.yml` explizit `SIGNAL_PORT=8005` gesetzt. Ebenso wird `SIGNAL_BOT_ID` (audit identity) explizit via `environment:` durchgereicht (PR #2129).
 
@@ -51,6 +66,8 @@ Hinweis: Der Config-Default fuer `SIGNAL_PORT` liegt in `services/signal/config.
 ### Replay Infrastructure (LR-021, PR #1808)
 
 **Pfad:** `core/replay/`, `services/validation/` (reporter + CLI)
+
+**Navigation:** [`core/replay/README.md`](../../core/replay/README.md), [`core/contracts/README.md`](../../core/contracts/README.md), [`services/validation/README.md`](../../services/validation/README.md)
 
 **Funktion:** Deterministic shadow replay stack für accelerated backtesting, validation und gate evaluation offline, ohne live/paper/Redis-Runtime-Integration; ARVP §4.2 datasets via `DatasetSpec` + `DatasetProvider` (FileBackedDatasetProvider für JSON/JSONL, DBBackedDatasetProvider für Postgres `candles_1m`).
 
@@ -219,6 +236,7 @@ Referenz: `infrastructure/compose/SERVICE_MAPPING.md`, PR #2670.
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Service (Delta-Counter + lazy `mexc_pb`-Import) und Postgres-Exporter-DSN/Secret-Wiring im RED-Stack nachgezogen (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: Stack-Verification-Tabelle (`verify_stack.ps1` Default ohne Logging-Overlay, `-IncludeLogging:$true` opt-in, Windows-`make docker-health`) ergänzt (Issue #2671) | Codex |
 | 2026-06-05 | PRs #2989/#2992 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI im Validation-Katalog ergänzt (Issues #2990/#2993) | Codex |
+| 2026-06-05 | PRs #2999/#3001/#3003 Nachzug: § Navigation READMEs + README-Spalte; Paper Runner Code `tools/paper_trading/` explizit; Replay/DB README-Links (Issues #3000/#3004) | Cursor |
 ## PostgreSQL Schema Artefacts
 
 | Artefakt | Migration | Status | Bedeutung |

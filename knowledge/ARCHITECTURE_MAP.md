@@ -17,6 +17,8 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 **Operatives Inventar:** `governance/SERVICE_CATALOG.md` (Working Repo)
 
+**Operator READMEs (Working Repo, docs-only navigation):** [`../services/README.md`](../services/README.md), [`../core/README.md`](../core/README.md), [`../infrastructure/database/README.md`](../infrastructure/database/README.md), [`../tools/paper_trading/README.md`](../tools/paper_trading/README.md). Vollstaendige README-Index-Tabelle: `governance/SERVICE_CATALOG.md` § Navigation READMEs.
+
 ---
 
 ## 2. Service Map (SOLL)
@@ -38,31 +40,34 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 ### BLUE Stack (compose.blue.yml) — Core, always-on
 
-| Service | Container | Port | Funktion |
-|---------|-----------|------|----------|
-| PostgreSQL | cdb_postgres | 5432 | Persistenz |
-| Redis | cdb_redis | 6379 | Cache, Pub/Sub, Streams |
-| Market | cdb_market | 8009 | market_state:{symbol} Owner; Redis retry/reconnect bis verfügbar, /health fail-closed |
-| Candles | cdb_candles | 8007 | Tick→1-min Candle Aggregation |
-| Regime | cdb_regime | 8008 | ADX/ATR Regime Classification |
-| Allocation | cdb_allocation | 8006 | Regime→Allocation Mapping |
-| Risk | cdb_risk | 8002 | Risk Gate, Circuit Breaker, Kill-Switch |
-| Execution | cdb_execution | 8003 | Order Execution (MOCK_TRADING=true) |
-| DB Writer | cdb_db_writer | — | Redis→PostgreSQL Persistenz |
-| Paper Runner | cdb_paper_runner | 8004 | Paper Trading Orchestrator |
+| Service | Container | Port | Code | Operator README |
+|---------|-----------|------|------|-----------------|
+| PostgreSQL | [REDACTED] | 5432 | docs/db/ (index) | [docs/db/index.md](../docs/db/index.md) |
+| Redis | [REDACTED] | 6379 | infrastructure/compose/ | [compose/README.md](../infrastructure/compose/README.md) |
+| Market | cdb_market | 8009 | services/market/ | [services/market/README.md](../services/market/README.md) |
+| Candles | cdb_candles | 8007 | services/candles/ | [services/candles/README.md](../services/candles/README.md) |
+| Regime | cdb_regime | 8008 | services/regime/ | [services/regime/README.md](../services/regime/README.md) |
+| Allocation | cdb_allocation | 8006 | services/allocation/ | [services/allocation/README.md](../services/allocation/README.md) |
+| Risk | cdb_risk | 8002 | services/risk/ | [services/risk/README.md](../services/risk/README.md) |
+| Execution | cdb_execution | 8003 | services/execution/ | [services/execution/README.md](../services/execution/README.md) |
+| DB Writer | cdb_db_writer | — | services/db_writer/ | [services/db_writer/README.md](../services/db_writer/README.md) |
+| Paper Runner | cdb_paper_runner | 8004 | tools/paper_trading/ | [tools/paper_trading/README.md](../tools/paper_trading/README.md) |
 
 ### RED Stack (compose.red.yml) — Signal + Monitoring, failure-isolated
 
+| Service | Container | Port | Code | Operator README |
+|---------|-----------|------|------|-----------------|
+| WebSocket | cdb_ws | 8000 | services/ws/ | [services/ws/README.md](../services/ws/README.md) |
+| Signal | cdb_signal | 8005 (Runtime) | services/signal/ | [services/signal/README.md](../services/signal/README.md) |
+| Reports | cdb_reports | — | services/reports/ | — |
+
 | Service | Container | Port | Funktion |
 |---------|-----------|------|----------|
-| WebSocket | cdb_ws | 8000 | MEXC Market Data Stream; `MexcV3Client` wird nur bei `WS_SOURCE=mexc_pb` lazy geladen, sodass `/health` und `/metrics` auch ohne websocket-spezifische Runtime-Dependencies importierbar bleiben; Client-Absolute werden per Delta-Logik in Prometheus Counter ueberfuehrt (`decoded_messages_total`, `decode_errors_total`) |
-| Signal | cdb_signal | 8005 (Runtime) | Signal Generation (primary_breakout_v1: time-windowed lookback); audit metadata: `config_snapshot` (runtime params) + deterministic `config_hash` (SHA-256); `SIGNAL_BOT_ID` liefert repo-backed Experiment-Kontext im SIGNAL-Payload, aber keine neue first-class Ledger-ID; reserved metadata keys protected against override; used by Paper Reference Exporter (PR #2133) for signal-anchored bot_id/config_hash filtering in replay-vs-paper comparisons |
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
-| Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
-| Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
+| Postgres Exporter | [REDACTED]_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
+| Redis Exporter | [REDACTED]_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
-| Reports | cdb_reports | — | Daily Order Summary |
 
 Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
 
@@ -261,6 +266,7 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: `verify_stack.ps1` Default ohne Logging-Overlay; `-IncludeLogging:$true` fuer Loki/Promtail; Logging-Aktivierungspfad auf `infrastructure/compose/` praezisiert; Windows-`make docker-health` ergaenzt (Issue #2671) | Codex |
 | 2026-06-05 | PRs #2989/#2992 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI dokumentiert (`--dry-run-preview`, safety-gated `--publish`, `--runtime-relative` timestamp shift). Kein Live-Go; keine DB-Schreibfläche (Issues #2990/#2993) | Codex |
+| 2026-06-05 | PRs #2999/#3001/#3003 Nachzug: Service-Map Code/README-Spalten; Paper Runner Code-Pfad `tools/paper_trading/`; Cross-Links zu `core/`, `services/`, `infrastructure/database/` READMEs (Issues #3000/#3004) | Cursor |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |
