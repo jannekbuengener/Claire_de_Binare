@@ -220,16 +220,9 @@ Logging is configured via `LOG_LEVEL` env var (or `logging_config.json` if prese
 
 **Envelope chain:** Shadow/replay produces a linked chain `DecisionEnvelopeV1 → OrderEnvelopeV1 → FillEnvelopeV1` (see `core/replay/envelopes.py`). `core/replay/canonical_json.py` provides sorted-key JSON serialization for deterministic hashes.
 
-### Agent SDK (`cdb_agent_sdk/`)
+### Agent SDK (retired)
 
-Standalone Python package with analysis CLI tools (installed separately):
-
-```bash
-cdb-dataflow       # data-flow analysis
-cdb-determinism    # determinism inspection
-cdb-governance     # governance audit
-cdb-impact         # change-impact analysis
-```
+The standalone `cdb_agent_sdk/` package was removed from the working repo in PR #2994. Use the repo-local skill packs under `.codex/cdb_skills/` and `.opencode/skills/` instead. Historical notes remain in `knowledge/systems/SDK_OVERVIEW.md` (marked retired).
 
 ### MINGW64 / Git Bash (Windows)
 

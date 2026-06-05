@@ -1,5 +1,7 @@
 # CDB Agent SDK - Data Flow & Observability Engineer
 
+> **Retired (PR #2994, 2026-06-05):** The `cdb_agent_sdk/` package was removed from the working repo. Agent guidance now lives in `.codex/cdb_skills/` and `.opencode/skills/`. This document is retained as historical reference only.
+
 Ein Claude Agent SDK Agent, der die objektive Datenrealität von CDB (Claire de Binare) sichtbar macht, ohne zu interpretieren oder zu entscheiden.
 
 ## Rolle
