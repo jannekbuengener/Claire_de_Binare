@@ -9,7 +9,8 @@ list_dir:
   - path: "tests"
   - path: "tests/smoke"
   - path: "tools"
-  - path: "cdb_agent_sdk"
+  - path: ".codex/cdb_skills"
+  - path: ".opencode/skills"
 read_file:
   - path: "README.md"
     start_line: 1

@@ -7,54 +7,23 @@
   ],
   "roots": [
     {
-      "avoid": [
-        {
-          "path": "cdb_agent_sdk/.venv",
-          "why": "Local virtual environment."
-        }
-      ],
-      "id": "cdb_agent_sdk",
+      "id": "agent_skills",
       "key_entrypoints": [
         {
-          "path": "cdb_agent_sdk/README.md",
-          "why": "SDK subproject overview."
+          "path": ".codex/cdb_skills/cdb-session-start/SKILL.md",
+          "why": "Codex-local CDB agent skill pack (replaces removed cdb_agent_sdk/, PR #2994)."
         },
         {
-          "path": "cdb_agent_sdk/pyproject.toml",
-          "why": "SDK toolchain and packaging entrypoint."
+          "path": ".opencode/skills/cdb-session-start/SKILL.md",
+          "why": "OpenCode-local mirror of repo agent skills."
         }
       ],
-      "path": "cdb_agent_sdk",
+      "path": ".codex/cdb_skills",
       "top_level": [
         {
-          "name": ".env.example",
-          "purpose_guess": "SDK environment template.",
-          "type": "file"
-        },
-        {
-          "name": "README.md",
-          "purpose_guess": "SDK overview.",
-          "type": "file"
-        },
-        {
-          "name": "pyproject.toml",
-          "purpose_guess": "SDK packaging and tooling config.",
-          "type": "file"
-        },
-        {
-          "name": "src",
-          "purpose_guess": "SDK implementation code.",
+          "name": "cdb-session-start",
+          "purpose_guess": "Agent session-start skill module.",
           "type": "dir"
-        },
-        {
-          "name": "tests",
-          "purpose_guess": "SDK test suite.",
-          "type": "dir"
-        },
-        {
-          "name": "uv.lock",
-          "purpose_guess": "Locked SDK dependency graph.",
-          "type": "file"
         }
       ]
     },
@@ -447,8 +416,13 @@
           "type": "file"
         },
         {
-          "name": "cdb_agent_sdk",
-          "purpose_guess": "SDK-style subproject.",
+          "name": ".codex",
+          "purpose_guess": "Codex-local agent skill packs.",
+          "type": "dir"
+        },
+        {
+          "name": ".opencode",
+          "purpose_guess": "OpenCode-local agent skill packs.",
           "type": "dir"
         },
         {
