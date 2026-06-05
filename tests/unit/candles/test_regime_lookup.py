@@ -42,7 +42,12 @@ def test_regime_mapping_range():
 def test_regime_mapping_high_vol_chaotic():
     """HIGH_VOL_CHAOTIC → regime_id=2"""
     now_s = int(time.time())
-    entries = [("1-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 10)})]
+    entries = [
+        (
+            "1-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 10)},
+        )
+    ]
     service = _make_service_with_mock_redis(entries)
     assert service._lookup_regime_id("BTCUSDT") == 2
 
@@ -51,7 +56,12 @@ def test_regime_mapping_high_vol_chaotic():
 def test_regime_mapping_high_vol_any_suffix():
     """HIGH_VOL_* (any suffix via startswith) → regime_id=2"""
     now_s = int(time.time())
-    entries = [("1-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_WHATEVER", "ts": str(now_s - 10)})]
+    entries = [
+        (
+            "1-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_WHATEVER", "ts": str(now_s - 10)},
+        )
+    ]
     service = _make_service_with_mock_redis(entries)
     assert service._lookup_regime_id("BTCUSDT") == 2
 
@@ -60,7 +70,9 @@ def test_regime_mapping_high_vol_any_suffix():
 def test_regime_mapping_crisis():
     """CRISIS → regime_id=3"""
     now_s = int(time.time())
-    entries = [("1-0", {"symbol": "BTCUSDT", "regime": "CRISIS", "ts": str(now_s - 10)})]
+    entries = [
+        ("1-0", {"symbol": "BTCUSDT", "regime": "CRISIS", "ts": str(now_s - 10)})
+    ]
     service = _make_service_with_mock_redis(entries)
     assert service._lookup_regime_id("BTCUSDT") == 3
 
@@ -69,7 +81,9 @@ def test_regime_mapping_crisis():
 def test_regime_unknown_returns_none():
     """UNKNOWN regime string → None (fail-closed)"""
     now_s = int(time.time())
-    entries = [("1-0", {"symbol": "BTCUSDT", "regime": "UNKNOWN", "ts": str(now_s - 10)})]
+    entries = [
+        ("1-0", {"symbol": "BTCUSDT", "regime": "UNKNOWN", "ts": str(now_s - 10)})
+    ]
     service = _make_service_with_mock_redis(entries)
     assert service._lookup_regime_id("BTCUSDT") is None
 
@@ -152,7 +166,10 @@ def test_regime_skips_future_entry_and_uses_current_valid_entry():
     """Future regime entry must not mask a valid current-window TREND entry."""
     now_s = int(time.time())
     entries = [
-        ("2-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s + 100)}),
+        (
+            "2-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s + 100)},
+        ),
         ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
     ]
     service = _make_service_with_mock_redis(entries)
@@ -165,7 +182,10 @@ def test_regime_skips_stale_entry_and_uses_current_valid_entry():
     """Stale regime entry must not mask a valid current-window TREND entry."""
     now_s = int(time.time())
     entries = [
-        ("2-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 120)}),
+        (
+            "2-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 120)},
+        ),
         ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
     ]
     service = _make_service_with_mock_redis(entries)

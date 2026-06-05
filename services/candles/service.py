@@ -14,6 +14,7 @@ from typing import Optional
 
 import redis
 import importlib.util
+
 try:
     _FLASK_AVAILABLE = importlib.util.find_spec("flask") is not None
 except ModuleNotFoundError as e:
@@ -203,7 +204,9 @@ class CandleService:
             elif regime_str == "CRISIS":
                 return 3
             else:
-                logger.debug("regime_id skip: %s unknown regime '%s'", symbol, regime_str)
+                logger.debug(
+                    "regime_id skip: %s unknown regime '%s'", symbol, regime_str
+                )
                 return None
 
         except Exception as e:
@@ -402,6 +405,7 @@ if _FLASK_AVAILABLE:
             f"candle_candles_emitted_total {stats['candles_emitted']}\n"
         )
         return Response(body, mimetype="text/plain")
+
 else:
     app = None
 
