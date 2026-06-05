@@ -27,6 +27,12 @@ Stage `trade-capable` autorisiert kein Live-Trading.
 | [`project_board_automation.md`](project_board_automation.md) | Project v2 / Board |
 | [`control_board_board_as_code.md`](control_board_board_as_code.md) | Board-as-Code |
 
+## ARVP / Validation
+
+| Runbook | Thema |
+|---|---|
+| [`ARVP_OPERATOR_RUNBOOK.md`](ARVP_OPERATOR_RUNBOOK.md) | End-to-end ARVP: selection, extraction, replay, compare, calibration, drift |
+
 ## CDB Automation (Issue #1445-Nachzug)
 
 | Runbook | Thema |

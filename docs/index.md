@@ -10,6 +10,7 @@ sondern ein Pointer auf die bestehenden Docs, Runbooks und Source Trees.
 | Merge-Gates, Required Checks oder Actions-Fehler verstehen willst | [CI Index](ci/index.md) | Canon fuer PR-Gate, Trigger, Failure Modes und Workflow-Familien |
 | Shadow-/Soak-Evidence oder einen konkreten Run auditieren willst | [Evidence README](evidence/README.md) → [Shadow + Soak Run Index](evidence/SHADOW_SOAK_RUN_INDEX.md) | Evidence-Index; kein LR-Go |
 | Operative Runbooks und Control-Plane | [Runbooks README](runbooks/README.md) | Index inkl. CONTROL_REGISTER |
+| ARVP-End-to-End-Operator-Flow | [ARVP Operator Runbook](runbooks/ARVP_OPERATOR_RUNBOOK.md) | Window selection → extraction → replay → compare → calibrate → interpret |
 | Contracts (docs + knowledge + core) | [Contracts README](contracts/README.md) | Vertragliche Docs und Code-Pfade |
 | Security-Triage und Scan-Inventar | [Security README](security/README.md) | Triage, CodeQL-Inventar, Readouts |
 | SurrealDB Context/MCP | [SurrealDB README](surrealdb/README.md) | Lokaler Context-Runtime-Index |
