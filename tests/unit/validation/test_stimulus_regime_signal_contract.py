@@ -149,9 +149,9 @@ def test_fixture_breakout_keeps_regime_trend_not_high_vol():
         warmup_base_price_override=start,
     )
     current, last_raw, atr = _simulate_regime_state_machine(candles)
-    assert current == "TREND", (
-        f"confirmed regime must stay TREND (current={current}, last_raw={last_raw}, atr={atr})"
-    )
+    assert (
+        current == "TREND"
+    ), f"confirmed regime must stay TREND (current={current}, last_raw={last_raw}, atr={atr})"
 
 
 @pytest.mark.unit
