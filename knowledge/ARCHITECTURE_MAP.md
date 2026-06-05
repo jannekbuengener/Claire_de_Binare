@@ -42,8 +42,8 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 
 | Service | Container | Port | Code | Operator README |
 |---------|-----------|------|------|-----------------|
-| PostgreSQL | [REDACTED] | 5432 | docs/db/ (index) | [docs/db/index.md](../docs/db/index.md) |
-| Redis | [REDACTED] | 6379 | infrastructure/compose/ | [compose/README.md](../infrastructure/compose/README.md) |
+| PostgreSQL | cdb_postgres | 5432 | infrastructure/database/ | [database/README.md](../infrastructure/database/README.md) |
+| Redis | cdb_redis | 6379 | infrastructure/compose/ | [compose/README.md](../infrastructure/compose/README.md) |
 | Market | cdb_market | 8009 | services/market/ | [services/market/README.md](../services/market/README.md) |
 | Candles | cdb_candles | 8007 | services/candles/ | [services/candles/README.md](../services/candles/README.md) |
 | Regime | cdb_regime | 8008 | services/regime/ | [services/regime/README.md](../services/regime/README.md) |
@@ -65,8 +65,8 @@ Claire de Binare ist ein **event-getriebenes Krypto-Trading-System** mit:
 |---------|-----------|------|----------|
 | Prometheus | cdb_prometheus | 19090→9090 | Metrics |
 | Grafana | cdb_grafana | 3000 | Dashboards |
-| Postgres Exporter | [REDACTED]_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
-| Redis Exporter | [REDACTED]_exporter | 9121 | Redis Metrics |
+| Postgres Exporter | cdb_postgres_exporter | 9187 | PG Metrics; liest `postgres_password` als Secret, setzt `PGPASSWORD` und baut `DATA_SOURCE_NAME` aus `POSTGRES_USER`/`POSTGRES_DB` + Host/Port |
+| Redis Exporter | cdb_redis_exporter | 9121 | Redis Metrics |
 | cAdvisor | cdb_cadvisor | — | Container Metrics |
 
 Hinweis: `services/signal/config.py` hat `SIGNAL_PORT`-Default `8001`; der kanonische Runtime-Port ist `8005`, weil `infrastructure/compose/compose.red.yml` fuer `cdb_signal` `SIGNAL_PORT=8005` setzt.
