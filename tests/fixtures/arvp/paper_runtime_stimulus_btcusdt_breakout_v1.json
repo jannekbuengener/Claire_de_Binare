@@ -1,0 +1,27 @@
+{
+  "$schema": "paper_runtime_stimulus_fixture_v1",
+  "description": "Compact specification for generating a deterministic BTCUSDT 1m candle series that triggers primary_breakout_v1. The runner expands this into a full candle sequence. Warmup: N candles with steady +1.0 price increase per minute. Breakout: 1 candle where close > highest_high * (1 + breakout_buffer). regime_id=TREND, market_state_fresh=true, regime_fresh=true. Designed to produce exactly one BUY signal without PAPER_EVIDENCE_PROBE_MODE.",
+  "strategy_id": "primary_breakout_v1",
+  "symbol": "BTCUSDT",
+  "cadence_ms": 60000,
+  "entry_lookback_minutes": 240,
+  "exit_lookback_minutes": 120,
+  "breakout_buffer": 0.0005,
+  "min_minutes_between_entries": 60,
+  "warmup": {
+    "count": 244,
+    "base_ts_ms": 1700000000000,
+    "base_price": 100000.0,
+    "price_step": 1.0,
+    "volume": 200000.0,
+    "trade_qty": "1.0",
+    "regime_id": 0,
+    "market_state_fresh": true,
+    "regime_fresh": true
+  },
+  "breakout": {
+    "close_premium_pct": 0.10,
+    "volume": 500000.0,
+    "trade_qty": "2.5"
+  }
+}
