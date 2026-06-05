@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -321,6 +322,40 @@ class TestPublishMode:
         assert "password" not in lower
         assert "token" not in lower
 
+    def test_runtime_relative_burst_keeps_native_ts_then_follow_up_tick(
+        self, fixture_spec, monkeypatch
+    ):
+        """Burst keeps fixture ts_ms; follow-up tick uses wall clock after sweep."""
+        sleeps: list[float] = []
+        monkeypatch.setattr(time, "sleep", lambda s: sleeps.append(s))
+        base_ts = align_to_minute(int(time.time() * 1000)) - (
+            fixture_spec.warmup_count * ONE_MINUTE_MS
+        )
+        candles = generate_fixture_candles(fixture_spec, base_ts_ms_override=base_ts)
+        mock_publisher = MagicMock(spec=StimulusPublisher)
+        mock_publisher.publish.return_value = 1
+        before_ms = int(time.time() * 1000)
+
+        output = run_publish(
+            candles,
+            fixture_spec,
+            mock_publisher,
+            delay_seconds=0,
+            runtime_relative=True,
+        )
+
+        after_ms = int(time.time() * 1000)
+        assert mock_publisher.publish.call_count == len(candles) + 1
+        burst_last = json.loads(mock_publisher.publish.call_args_list[-2][0][1])
+        follow_up = json.loads(mock_publisher.publish.call_args_list[-1][0][1])
+        assert burst_last["ts_ms"] == candles[-1]["ts_ms"]
+        assert before_ms <= follow_up["ts_ms"] <= after_ms + 5000
+        assert follow_up["price"] == str(candles[-1]["close"])
+        assert follow_up["close"] == candles[-1]["close"]
+        assert "published: 246/246 market_data events" in output
+        assert "follow_up_tick_published: True" in output
+        assert sleeps  # sweep wait invoked
+
 
 class TestFixtureFileRoundTrip:
     def test_default_fixture_file_loads(self):
@@ -493,7 +528,8 @@ class TestRuntimeRelativeMode:
         assert run_id in output
         assert "Preview Mode" in output
 
-    def test_publish_with_runtime_relative_shows_mode(self, fixture_spec):
+    def test_publish_with_runtime_relative_shows_mode(self, fixture_spec, monkeypatch):
+        monkeypatch.setattr(time, "sleep", lambda _s: None)
         run_id = "test_run_id_5678"
         candles = generate_fixture_candles(
             fixture_spec, base_ts_ms_override=1_800_000_000_000, stimulus_run_id=run_id

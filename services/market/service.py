@@ -122,6 +122,8 @@ def _process_message(raw: str) -> None:
         MESSAGES_INVALID.inc()
         return
 
+    tick_source = data.get("source")
+
     try:
         sanitized = sanitize_market_data(data)
     except ValueError as exc:
@@ -156,7 +158,12 @@ def _process_message(raw: str) -> None:
             )
         except redis.RedisError as exc:
             logger.warning("Redis write failed for %s: %s", key, exc)
-        _update_market_state(key, entry["ts_ms"], _redis_client)
+        _update_market_state(
+            key,
+            entry["ts_ms"],
+            _redis_client,
+            tick_source=tick_source,
+        )
 
 
 # ─── Market State V1 ─────────────────────────────────────────────────────────
@@ -165,54 +172,77 @@ def _process_message(raw: str) -> None:
 # No creative reinterpretation — any behavior change here is a bug.
 
 
-def _lookup_regime_id(symbol: str, redis_client: redis.Redis) -> "int | None":
+def _lookup_regime_id(
+    symbol: str,
+    redis_client: redis.Redis,
+    as_of_ts_s: int | None = None,
+) -> "int | None":
     """Lookup regime_id from stream.regime_signals (deterministic mapping).
 
     Mapping (identical to cdb_candles):
     - TREND → 0, RANGE → 1, HIGH_VOL_* → 2, CRISIS → 3
     - missing / stale / invalid → None (fail-closed: RC_001 blocks)
+
+    Selection rule (Issue #3014 parity):
+    - Prefer the newest valid regime entry at or before ``as_of_ts_s`` when
+      provided (the candle timestamp being enriched).
+    - Future, out-of-range, and stale entries are skipped.
     """
     try:
         raw_entries = redis_client.xrevrange(MARKET_REGIME_STREAM, "+", "-", count=50)
 
+        lookup_ts_s = int(time.time()) if as_of_ts_s is None else int(as_of_ts_s)
+
         regime_entry = None
         for _entry_id, payload in raw_entries:
-            if payload.get("symbol") == symbol:
-                regime_entry = payload
-                break
+            if payload.get("symbol") != symbol:
+                continue
+
+            ts_raw = payload.get("ts")
+            if ts_raw is None:
+                logger.debug("regime_id skip: %s ts missing", symbol)
+                continue
+            try:
+                regime_ts = int(ts_raw)
+            except (ValueError, TypeError):
+                logger.debug("regime_id skip: %s ts not parseable", symbol)
+                continue
+
+            if regime_ts < 1_000_000_000 or regime_ts > 4_000_000_000:
+                logger.debug("regime_id skip: %s ts out of range %d", symbol, regime_ts)
+                continue
+
+            age = lookup_ts_s - regime_ts
+            if age < 0:
+                logger.debug("regime_id skip: %s ts in future", symbol)
+                continue
+            if age > MARKET_REGIME_STALENESS_SECONDS:
+                logger.debug(
+                    "regime_id skip: %s signal stale (%ds old, max %ds)",
+                    symbol,
+                    age,
+                    MARKET_REGIME_STALENESS_SECONDS,
+                )
+                continue
+
+            regime_entry = payload
+            break
 
         if regime_entry is None:
-            return None
-
-        ts_raw = regime_entry.get("ts")
-        if ts_raw is None:
-            return None
-        try:
-            regime_ts = int(ts_raw)
-        except (ValueError, TypeError):
-            return None
-
-        if regime_ts < 1_000_000_000 or regime_ts > 4_000_000_000:
-            return None
-
-        now_s = int(time.time())
-        age = now_s - regime_ts
-        if age < 0:
-            return None
-        if age > MARKET_REGIME_STALENESS_SECONDS:
+            logger.debug("regime_id skip: %s no signal found", symbol)
             return None
 
         regime_str = (regime_entry.get("regime") or "").upper()
         if regime_str == "TREND":
             return 0
-        elif regime_str == "RANGE":
+        if regime_str == "RANGE":
             return 1
-        elif regime_str.startswith("HIGH_VOL"):
+        if regime_str.startswith("HIGH_VOL"):
             return 2
-        elif regime_str == "CRISIS":
+        if regime_str == "CRISIS":
             return 3
-        else:
-            return None
+        logger.debug("regime_id skip: %s unknown regime '%s'", symbol, regime_str)
+        return None
 
     except Exception as exc:
         logger.warning("regime_id error for %s: %s", symbol, exc)
@@ -220,7 +250,11 @@ def _lookup_regime_id(symbol: str, redis_client: redis.Redis) -> "int | None":
 
 
 def _update_market_state(
-    symbol: str, last_tick_ts_ms: "int | None", redis_client: redis.Redis
+    symbol: str,
+    last_tick_ts_ms: "int | None",
+    redis_client: redis.Redis,
+    *,
+    tick_source: str | None = None,
 ) -> None:
     """Compute market_state V1 from candle history and persist to Redis.
 
@@ -270,9 +304,22 @@ def _update_market_state(
         return_5m = ((close_now - close_5m_ago) / close_5m_ago) * 100.0
         price_change_5m = abs(return_5m)
 
-        regime_id = _lookup_regime_id(symbol, redis_client)
+        candle_ts_s: int | None = None
+        ts_raw = candles[0].get("ts")
+        if ts_raw is not None:
+            try:
+                candle_ts_s = int(ts_raw)
+            except (TypeError, ValueError):
+                candle_ts_s = None
+
+        regime_id = _lookup_regime_id(symbol, redis_client, as_of_ts_s=candle_ts_s)
 
         ts_ms = int(time.time() * 1000)
+        effective_last_tick_ts_ms = last_tick_ts_ms
+        if tick_source == "stimulus_fixture":
+            # Runtime-relative fixture ticks carry historical ts_ms; RC_004 uses wall now.
+            effective_last_tick_ts_ms = ts_ms
+
         market_state = {
             "symbol": symbol,
             "return_1m": return_1m,
@@ -282,7 +329,7 @@ def _update_market_state(
             "close_now": close_now,
             "close_1m_ago": close_1m_ago,
             "close_5m_ago": close_5m_ago,
-            "last_tick_ts_ms": last_tick_ts_ms,
+            "last_tick_ts_ms": effective_last_tick_ts_ms,
         }
         if regime_id is not None:
             market_state["regime_id"] = regime_id

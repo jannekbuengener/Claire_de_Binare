@@ -245,6 +245,56 @@ def test_regime_id_absent_when_no_regime_signal():
     assert "regime_id" not in payload
 
 
+@pytest.mark.unit
+def test_regime_lookup_skips_future_entry_with_candle_anchor():
+    """Future regime entry must not mask a valid entry at candle timestamp."""
+    now_s = int(time.time())
+    regime_entries = [
+        (
+            "2-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s + 100)},
+        ),
+        ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
+    ]
+    mock_redis = _make_mock_redis([], regime_entries)
+    assert svc._lookup_regime_id("BTCUSDT", mock_redis, as_of_ts_s=now_s) == 0
+
+
+@pytest.mark.unit
+def test_stimulus_fixture_last_tick_always_wall_clock():
+    """stimulus_fixture ticks always map last_tick_ts_ms to wall clock for RC_004."""
+    closes = [110.0, 100.0, 99.0, 98.0, 97.0, 50.0]
+    mock_redis = _make_mock_redis(_candle_entries("BTCUSDT", closes), [])
+    historical_ts = int(time.time() * 1000) - 300_000
+
+    before_ms = int(time.time() * 1000)
+    svc._update_market_state(
+        "BTCUSDT",
+        historical_ts,
+        mock_redis,
+        tick_source="stimulus_fixture",
+    )
+    after_ms = int(time.time() * 1000)
+
+    payload = json.loads(mock_redis.setex.call_args[0][2])
+    assert before_ms <= payload["last_tick_ts_ms"] <= after_ms
+
+
+@pytest.mark.unit
+def test_regime_lookup_skips_stale_entry_with_candle_anchor():
+    """Stale regime entry must not mask a fresher valid entry at candle timestamp."""
+    now_s = int(time.time())
+    regime_entries = [
+        (
+            "2-0",
+            {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 400)},
+        ),
+        ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
+    ]
+    mock_redis = _make_mock_redis([], regime_entries)
+    assert svc._lookup_regime_id("BTCUSDT", mock_redis, as_of_ts_s=now_s) == 0
+
+
 # ─── TTL and key format ───────────────────────────────────────────────────────
 
 

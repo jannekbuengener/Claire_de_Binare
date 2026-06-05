@@ -47,6 +47,19 @@ DEFAULT_FIXTURE_PATH = Path(__file__).resolve().parent.parent.parent / (
 ONE_MINUTE_MS = 60_000
 
 
+def _wait_for_breakout_candle_sweep(
+    breakout_ts_s: int,
+    *,
+    interval_s: int = 60,
+    pad_s: float = 2.0,
+) -> float:
+    """Block until cdb_candles sweep can emit the breakout OHLCV window."""
+    wait_s = max(0.0, breakout_ts_s + interval_s - time.time()) + pad_s
+    if wait_s > 0:
+        time.sleep(wait_s)
+    return wait_s
+
+
 def compute_stimulus_run_id(
     base_ts_ms: int, fixture_path: Path, runtime_relative: bool
 ) -> str:
@@ -523,6 +536,12 @@ def run_publish(
     logger.info(summary)
 
     published = 0
+    expected_events = len(payloads) + (1 if runtime_relative else 0)
+    follow_up_tick_published = False
+    follow_up_tick_ts_ms: int | None = None
+    follow_up_tick_price: float | None = None
+    sweep_wait_s = 0.0
+
     for i, payload in enumerate(payloads):
         message = json.dumps(payload)
         try:
@@ -535,10 +554,33 @@ def run_publish(
         if delay_seconds > 0 and i < len(payloads) - 1:
             time.sleep(delay_seconds)
 
+    if runtime_relative and published == len(payloads):
+        breakout_ts_s = int(candles[-1]["ts_ms"] // 1000)
+        sweep_wait_s = _wait_for_breakout_candle_sweep(
+            breakout_ts_s, interval_s=spec.cadence_ms // 1000
+        )
+        follow_up_payload = to_market_data_payload(candles[-1])
+        follow_up_tick_ts_ms = int(time.time() * 1000)
+        follow_up_payload["ts_ms"] = follow_up_tick_ts_ms
+        if stimulus_run_id is not None:
+            follow_up_payload["stimulus_run_id"] = stimulus_run_id
+        try:
+            publisher.publish("market_data", json.dumps(follow_up_payload))
+            published += 1
+            follow_up_tick_published = True
+            follow_up_tick_price = float(candles[-1]["close"])
+        except Exception as exc:
+            logger.error("Failed to publish follow-up tick: %s", exc)
+
     lines = [
         summary,
         f"=== Publish Result ===",
-        f"  published: {published}/{len(payloads)} market_data events",
+        f"  published: {published}/{expected_events} market_data events",
+        f"  burst_published: {published - (1 if follow_up_tick_published else 0)}/{len(payloads)}",
+        f"  follow_up_tick_published: {follow_up_tick_published}",
+        f"  follow_up_tick_ts_ms: {follow_up_tick_ts_ms}",
+        f"  follow_up_tick_price: {follow_up_tick_price}",
+        f"  sweep_wait_s: {sweep_wait_s:.1f}",
         f"  stop_after_complete_chain: {stop_after_complete_chain}",
         f"  max_wait_seconds: {max_wait_seconds}",
         f"  LR status: {LR_STATUS}",
