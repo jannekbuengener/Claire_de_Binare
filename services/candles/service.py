@@ -285,6 +285,13 @@ class CandleService:
             ts_ms = int(time.time() * 1000)
             # Get last_tick_ts_ms from aggregator (updated on each trade)
             last_tick_ts_ms = self.aggregator.last_tick_ts_ms.get(symbol)
+            # When the last tick source is a stimulus fixture, the aggregator's
+            # ts_ms is a historical fixture timestamp.  Use wall-clock to preserve
+            # freshness so cdb_risk RC_004 (data_silence) does not block the
+            # shadow-validation path (#3021).  Without this, cdb_candles overwrites
+            # the wall-clock value that cdb_market already wrote (#3019).
+            if self.aggregator.last_tick_source.get(symbol) == "stimulus_fixture":
+                last_tick_ts_ms = ts_ms
             market_state = {
                 "symbol": symbol,
                 "return_1m": return_1m,

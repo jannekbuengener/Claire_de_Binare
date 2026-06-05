@@ -152,3 +152,118 @@ def test_config_garbage_value_defaults_to_true():
         else:
             os.environ["CANDLE_WRITE_MARKET_STATE"] = original
         importlib.reload(cfg_mod)
+
+
+# ─── Stimulus fixture freshness (#3021) ─────────────────────────────────────────
+
+
+@pytest.mark.unit
+def test_stimulus_fixture_uses_wall_clock_last_tick():
+    """When last_tick_source=stimulus_fixture, _update_market_state must use
+    wall-clock last_tick_ts_ms to preserve freshness for cdb_risk RC_004."""
+    service = _make_service(write_market_state=True)
+    service.aggregator.last_tick_ts_ms["BTCUSDT"] = 1700000000000  # historical
+    service.aggregator.last_tick_source["BTCUSDT"] = "stimulus_fixture"
+
+    from unittest.mock import patch
+    import time
+
+    wall_clock = 1780702600000
+
+    # Simulate 6 candles in the stream so market_state is not skipped
+    candles = [
+        {"symbol": "BTCUSDT", "close": "50000", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50001", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50002", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50003", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50004", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50005", "ts": str(wall_clock // 1000)},
+    ]
+    xrevrange_result = [(f"{wall_clock}-{i}", c) for i, c in enumerate(candles)]
+    service.redis_client.xrevrange.return_value = xrevrange_result
+
+    # Mock regime lookup to avoid Redis regime stream dependency
+    with patch.object(service, "_lookup_regime_id", return_value=0):
+        with patch.object(time, "time", return_value=wall_clock / 1000.0):
+            service._update_market_state("BTCUSDT", 1700000000000)
+
+    # Extract the payload that was setex'd into Redis
+    # setex(key, ttl, value) → args[0]=key, args[1]=ttl, args[2]=json_string
+    args, _kwargs = service.redis_client.setex.call_args
+    payload = __import__("json").loads(args[2])
+
+    # last_tick_ts_ms must be wall-clock, not the historical aggregator value
+    assert payload["last_tick_ts_ms"] == wall_clock
+
+
+@pytest.mark.unit
+def test_non_stimulus_source_preserves_aggregator_last_tick():
+    """When last_tick_source is not stimulus_fixture, _update_market_state must use
+    the aggregator's historical last_tick_ts_ms (existing behaviour, no regression)."""
+    service = _make_service(write_market_state=True)
+    service.aggregator.last_tick_ts_ms["BTCUSDT"] = 1700000000000  # historical
+    service.aggregator.last_tick_source["BTCUSDT"] = "live_exchange"
+
+    from unittest.mock import patch
+    import time
+
+    wall_clock = 1780702600000
+
+    candles = [
+        {"symbol": "BTCUSDT", "close": "50000", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50001", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50002", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50003", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50004", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50005", "ts": str(wall_clock // 1000)},
+    ]
+    xrevrange_result = [(f"{wall_clock}-{i}", c) for i, c in enumerate(candles)]
+    service.redis_client.xrevrange.return_value = xrevrange_result
+
+    with patch.object(service, "_lookup_regime_id", return_value=0):
+        with patch.object(time, "time", return_value=wall_clock / 1000.0):
+            service._update_market_state("BTCUSDT", 1700000000000)
+
+    args, _kwargs = service.redis_client.setex.call_args
+    payload = __import__("json").loads(args[2])
+
+    # last_tick_ts_ms must still be the aggregator's historical value
+    assert payload["last_tick_ts_ms"] == 1700000000000
+
+
+@pytest.mark.unit
+def test_stimulus_fixture_preserves_other_market_state_fields():
+    """The wall-clock override for last_tick_ts_ms must not change other fields."""
+    service = _make_service(write_market_state=True)
+    service.aggregator.last_tick_ts_ms["BTCUSDT"] = 1700000000000
+    service.aggregator.last_tick_source["BTCUSDT"] = "stimulus_fixture"
+
+    from unittest.mock import patch
+    import time
+
+    wall_clock = 1780702600000
+
+    candles = [
+        {"symbol": "BTCUSDT", "close": "50000", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50001", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50002", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50003", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50004", "ts": str(wall_clock // 1000)},
+        {"symbol": "BTCUSDT", "close": "50005", "ts": str(wall_clock // 1000)},
+    ]
+    xrevrange_result = [(f"{wall_clock}-{i}", c) for i, c in enumerate(candles)]
+    service.redis_client.xrevrange.return_value = xrevrange_result
+
+    with patch.object(service, "_lookup_regime_id", return_value=0):
+        with patch.object(time, "time", return_value=wall_clock / 1000.0):
+            service._update_market_state("BTCUSDT", 1700000000000)
+
+    args, _kwargs = service.redis_client.setex.call_args
+    payload = __import__("json").loads(args[2])
+
+    assert payload["symbol"] == "BTCUSDT"
+    assert payload["ts_ms"] == wall_clock
+    assert payload["close_now"] == 50000.0
+    assert payload["close_1m_ago"] == 50001.0
+    assert payload["close_5m_ago"] == 50005.0
+    assert payload["regime_id"] == 0
