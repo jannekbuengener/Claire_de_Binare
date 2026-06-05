@@ -4,6 +4,7 @@ import os
 import time
 import pytest
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 # Set required env var before importing service
 os.environ.setdefault("CANDLE_INTERVAL_SECONDS", "60")
@@ -144,6 +145,59 @@ def test_regime_ts_in_future_returns_none():
     entries = [("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(future_s)})]
     service = _make_service_with_mock_redis(entries)
     assert service._lookup_regime_id("BTCUSDT") is None
+
+
+@pytest.mark.unit
+def test_regime_skips_future_entry_and_uses_current_valid_entry():
+    """Future regime entry must not mask a valid current-window TREND entry."""
+    now_s = int(time.time())
+    entries = [
+        ("2-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s + 100)}),
+        ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
+    ]
+    service = _make_service_with_mock_redis(entries)
+
+    assert service._lookup_regime_id("BTCUSDT", as_of_ts_s=now_s) == 0
+
+
+@pytest.mark.unit
+def test_regime_skips_stale_entry_and_uses_current_valid_entry():
+    """Stale regime entry must not mask a valid current-window TREND entry."""
+    now_s = int(time.time())
+    entries = [
+        ("2-0", {"symbol": "BTCUSDT", "regime": "HIGH_VOL_CHAOTIC", "ts": str(now_s - 120)}),
+        ("1-0", {"symbol": "BTCUSDT", "regime": "TREND", "ts": str(now_s - 10)}),
+    ]
+    service = _make_service_with_mock_redis(entries)
+    original_staleness = service.config.regime_staleness_seconds
+    try:
+        service.config.regime_staleness_seconds = 30
+        assert service._lookup_regime_id("BTCUSDT", as_of_ts_s=now_s) == 0
+    finally:
+        service.config.regime_staleness_seconds = original_staleness
+
+
+@pytest.mark.unit
+def test_update_market_state_anchors_regime_lookup_to_candle_timestamp():
+    """Market-state enrichment must pass the candle timestamp into regime lookup."""
+    now_s = int(time.time())
+    candle_entries = [
+        ("6-0", {"symbol": "BTCUSDT", "close": "105.0", "ts": str(now_s - 60)}),
+        ("5-0", {"symbol": "BTCUSDT", "close": "104.0", "ts": str(now_s - 120)}),
+        ("4-0", {"symbol": "BTCUSDT", "close": "103.0", "ts": str(now_s - 180)}),
+        ("3-0", {"symbol": "BTCUSDT", "close": "102.0", "ts": str(now_s - 240)}),
+        ("2-0", {"symbol": "BTCUSDT", "close": "101.0", "ts": str(now_s - 300)}),
+        ("1-0", {"symbol": "BTCUSDT", "close": "100.0", "ts": str(now_s - 360)}),
+    ]
+    service = _make_service_with_mock_redis(candle_entries)
+    service.redis_client.setex = MagicMock()
+    service.aggregator.last_tick_ts_ms["BTCUSDT"] = now_s * 1000
+
+    with patch.object(service, "_lookup_regime_id", return_value=0) as lookup:
+        service._update_market_state("BTCUSDT", candle_ts_s=now_s)
+
+    lookup.assert_called_once_with("BTCUSDT", now_s)
+    service.redis_client.setex.assert_called_once()
 
 
 @pytest.mark.unit
