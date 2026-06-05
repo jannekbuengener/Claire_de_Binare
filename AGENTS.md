@@ -283,18 +283,23 @@ targets.
 
 ### Environment
 
-- In default Cursor Cloud images, Python 3.12 is at `/usr/bin/python3`; pip user
-  tools install to `/home/ubuntu/.local/bin` — add to PATH:
-  `export PATH="/home/ubuntu/.local/bin:$PATH"`.
-- Docker is not available by default. Unit and integration tests
-  (`make test-unit`, `make test-integration`) run without containers. E2E
-  (`make test-e2e`) requires the BLUE+RED stack and is not runnable here without
-  Docker setup.
+- Python 3.12 is at `/usr/bin/python3`. Create a project venv (requires one-time
+  `sudo apt install python3.12-venv` if `python3 -m venv` fails):
+  `python3 -m venv .venv && source .venv/bin/activate`.
+- Activate venv for all commands: `export PATH="/workspace/.venv/bin:$PATH"`.
+- Install deps: `pip install -r requirements.txt -r requirements-dev.txt -r requirements-mcp.txt`
+  (`requirements-mcp.txt` is required for unit-test collection; CI installs it too).
+- Docker is not pre-installed. One-time setup: Docker CE + `fuse-overlayfs` storage
+  driver (`/etc/docker/daemon.json`), `iptables-legacy`, start `sudo dockerd` in a
+  tmux session, then `sudo chmod 666 /var/run/docker.sock` (or add user to `docker`
+  group). See `make docker-up` in Makefile.
 
 ### Running Tests (CI mode, no containers)
 
-- Canonical CI command: `pytest -q -k "not test_mcp_time_server_runtime"`
-- Equivalently: `make test` (runs `make test-unit && make test-integration`)
+- Canonical CI command: `pytest -q -k "not test_mcp_time_server_runtime"` (5126+ tests).
+- `make test-unit` alone fails without MCP deps; use the CI filter or install
+  `requirements-mcp.txt` first.
+- Equivalently: `make test` after MCP deps are installed.
 - For coverage: `make test-coverage` (80% threshold)
 
 ### Linting
@@ -306,9 +311,17 @@ targets.
 
 ### Services
 
-All services under `services/` require Redis and Postgres (provided by Docker in
-normal operation). In Cloud Agent mode without Docker, verify service logic
-through unit/integration tests rather than starting services directly.
+Runtime requires Docker BLUE+RED (`make docker-up`) with `SECRETS_PATH` pointing
+to a directory containing at minimum: `REDIS_PASSWORD`, `POSTGRES_PASSWORD`,
+`MEXC_API_KEY.txt`, `MEXC_API_SECRET.txt`, `GRAFANA_PASSWORD`, plus RED-stack
+email secrets (`SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `ALERT_EMAIL_TO`,
+`POSTGRES_PASSWORD_DSN`). Use mock dev values only; LR remains NO-GO.
+
+Offline core-trading demo without full stack: `make replay-shadow-run
+REPLAY_INPUT_CANDLES=artifacts/backtests/primary_breakout_v1/20260418-212643/dataset.candles.json`.
+
+Health probes after `make docker-up`: allocation `:8006`, candles `:8007`, regime
+`:8008`, market `:8009`, risk `:8002`.
 
 ### Redis (message bus)
 
