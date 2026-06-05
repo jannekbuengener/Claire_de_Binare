@@ -184,10 +184,16 @@ Command template:
 ```bash
 python -m services.validation.arvp_regime_scorecard_runner \
   --run-id <RUN_ID> \
-  --replay-trace artifacts/replay_reports/<RUN_ID>/report.json \
+  --replay-trace <PATH_TO_REPLAY_TRACE_JSON> \
   --comparison artifacts/replay_vs_paper_compare/<RUN_ID>/shadow_comparison.json \
   --output-dir artifacts/arvp_regime_scorecards
 ```
+
+Operator notes:
+
+- Point `--replay-trace` at the replay trace JSON emitted by the replay pipeline.
+- Do not pass `report.json`; that schema is not accepted by the scorecard runner.
+- `--comparison` is optional and only suitable when the JSON already contains regime segments.
 
 Interpretation:
 
