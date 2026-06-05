@@ -26,6 +26,7 @@ Governance references: #2988, #2968, #2969, #2961, #1900
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -44,6 +45,23 @@ DEFAULT_FIXTURE_PATH = Path(__file__).resolve().parent.parent.parent / (
 )
 
 ONE_MINUTE_MS = 60_000
+
+
+def compute_stimulus_run_id(
+    base_ts_ms: int, fixture_path: Path, runtime_relative: bool
+) -> str:
+    """Deterministic, non-secret run identifier for attribution.
+
+    Combines base timestamp, fixture path stem, and mode flag into a short
+    hex hash.  Visible in payloads and summary output for traceability.
+    """
+    raw = f"{base_ts_ms}|{fixture_path.stem}|{runtime_relative}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def align_to_minute(ts_ms: int) -> int:
+    """Round down to the nearest 1-minute boundary."""
+    return (ts_ms // ONE_MINUTE_MS) * ONE_MINUTE_MS
 
 REQUIRED_SAFETY_ENV = {
     "MOCK_TRADING": "true",
@@ -196,13 +214,19 @@ def validate_fixture_spec(spec: FixtureSpec) -> list[str]:
     return errors
 
 
-def generate_fixture_candles(spec: FixtureSpec) -> list[dict[str, Any]]:
+def generate_fixture_candles(
+    spec: FixtureSpec,
+    *,
+    base_ts_ms_override: int | None = None,
+    stimulus_run_id: str | None = None,
+) -> list[dict[str, Any]]:
     candles: list[dict[str, Any]] = []
+    base_ts = base_ts_ms_override if base_ts_ms_override is not None else spec.warmup_base_ts_ms
 
     for i in range(spec.warmup_count):
-        ts_ms = spec.warmup_base_ts_ms + i * spec.cadence_ms
+        ts_ms = base_ts + i * spec.cadence_ms
         price = spec.warmup_base_price + i * spec.warmup_price_step
-        candles.append({
+        candle = {
             "symbol": spec.symbol,
             "ts_ms": ts_ms,
             "open": price,
@@ -216,9 +240,12 @@ def generate_fixture_candles(spec: FixtureSpec) -> list[dict[str, Any]]:
             "regime_id": spec.warmup_regime_id,
             "market_state_fresh": spec.warmup_market_state_fresh,
             "regime_fresh": spec.warmup_regime_fresh,
-        })
+        }
+        if stimulus_run_id is not None:
+            candle["stimulus_run_id"] = stimulus_run_id
+        candles.append(candle)
 
-    warmup_end_ts_ms = spec.warmup_base_ts_ms + spec.warmup_count * spec.cadence_ms
+    warmup_end_ts_ms = base_ts + spec.warmup_count * spec.cadence_ms
     highest_high = spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
     breakout_close = highest_high * (1 + spec.breakout_close_premium_pct / 100.0)
@@ -226,7 +253,7 @@ def generate_fixture_candles(spec: FixtureSpec) -> list[dict[str, Any]]:
     if breakout_close <= breakout_threshold:
         breakout_close = breakout_threshold + 1.0
 
-    candles.append({
+    breakout_candle = {
         "symbol": spec.symbol,
         "ts_ms": warmup_end_ts_ms,
         "open": highest_high,
@@ -240,7 +267,10 @@ def generate_fixture_candles(spec: FixtureSpec) -> list[dict[str, Any]]:
         "regime_id": spec.warmup_regime_id,
         "market_state_fresh": spec.warmup_market_state_fresh,
         "regime_fresh": spec.warmup_regime_fresh,
-    })
+    }
+    if stimulus_run_id is not None:
+        breakout_candle["stimulus_run_id"] = stimulus_run_id
+    candles.append(breakout_candle)
 
     return candles
 
@@ -253,7 +283,7 @@ def to_market_data_payload(candle: dict[str, Any]) -> dict[str, Any]:
     ``regime_fresh`` at the top level so that
     ``_process_primary_breakout_v1`` reads them from ``raw_data``.
     """
-    return {
+    payload = {
         "schema_version": "v1.0",
         "source": candle.get("source", "stimulus_fixture"),
         "symbol": candle["symbol"],
@@ -270,32 +300,47 @@ def to_market_data_payload(candle: dict[str, Any]) -> dict[str, Any]:
         "market_state_fresh": candle["market_state_fresh"],
         "regime_fresh": candle["regime_fresh"],
     }
+    run_id = candle.get("stimulus_run_id")
+    if run_id is not None:
+        payload["stimulus_run_id"] = run_id
+    return payload
 
 
-def fixture_summary(spec: FixtureSpec, candles: list[dict[str, Any]]) -> str:
+def fixture_summary(
+    spec: FixtureSpec,
+    candles: list[dict[str, Any]],
+    *,
+    stimulus_run_id: str | None = None,
+    runtime_relative: bool = False,
+) -> str:
     warmup_start = candles[0]["ts_ms"]
     warmup_end = candles[-2]["ts_ms"] if len(candles) > 1 else candles[0]["ts_ms"]
     breakout_ts = candles[-1]["ts_ms"]
     highest_high = spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
     breakout_close = candles[-1]["close"]
+    mode = "runtime-relative" if runtime_relative else "static-historical"
 
-    return (
-        f"=== Fixture Summary ===\n"
-        f"  strategy_id: {spec.strategy_id}\n"
-        f"  symbol: {spec.symbol}\n"
-        f"  cadence: 1m ({spec.cadence_ms} ms)\n"
-        f"  warmup candles: {spec.warmup_count}\n"
-        f"  breakout candles: 1\n"
-        f"  total candles: {len(candles)}\n"
-        f"  warmup range: ts_ms {warmup_start} - {warmup_end}\n"
-        f"  breakout ts_ms: {breakout_ts}\n"
-        f"  highest_high (warmup): {highest_high}\n"
-        f"  breakout threshold (highest_high * (1 + {spec.breakout_buffer})): {breakout_threshold}\n"
-        f"  breakout close: {breakout_close}\n"
-        f"  breakout fires: {breakout_close > breakout_threshold}\n"
-        f"  LR status: {LR_STATUS}\n"
-    )
+    lines = [
+        f"=== Fixture Summary ===",
+        f"  mode: {mode}",
+        f"  strategy_id: {spec.strategy_id}",
+        f"  symbol: {spec.symbol}",
+        f"  cadence: 1m ({spec.cadence_ms} ms)",
+        f"  warmup candles: {spec.warmup_count}",
+        f"  breakout candles: 1",
+        f"  total candles: {len(candles)}",
+        f"  warmup range: ts_ms {warmup_start} - {warmup_end}",
+        f"  breakout ts_ms: {breakout_ts}",
+        f"  highest_high (warmup): {highest_high}",
+        f"  breakout threshold (highest_high * (1 + {spec.breakout_buffer})): {breakout_threshold}",
+        f"  breakout close: {breakout_close}",
+        f"  breakout fires: {breakout_close > breakout_threshold}",
+        f"  LR status: {LR_STATUS}",
+    ]
+    if stimulus_run_id is not None:
+        lines.append(f"  stimulus_run_id: {stimulus_run_id}")
+    return "\n".join(lines)
 
 
 class StimulusPublisher:
@@ -336,9 +381,17 @@ class StimulusPublisher:
             self._client = None
 
 
-def run_preview(candles: list[dict[str, Any]], spec: FixtureSpec) -> str:
+def run_preview(
+    candles: list[dict[str, Any]],
+    spec: FixtureSpec,
+    *,
+    stimulus_run_id: str | None = None,
+    runtime_relative: bool = False,
+) -> str:
     payloads = [to_market_data_payload(c) for c in candles]
-    summary = fixture_summary(spec, candles)
+    summary = fixture_summary(
+        spec, candles, stimulus_run_id=stimulus_run_id, runtime_relative=runtime_relative
+    )
     lines = [
         summary,
         f"=== Preview Mode (no Redis publish) ===",
@@ -358,9 +411,14 @@ def run_publish(
     max_wait_seconds: int = 300,
     delay_seconds: float = 0.01,
     stop_after_complete_chain: bool = False,
+    *,
+    stimulus_run_id: str | None = None,
+    runtime_relative: bool = False,
 ) -> str:
     payloads = [to_market_data_payload(c) for c in candles]
-    summary = fixture_summary(spec, candles)
+    summary = fixture_summary(
+        spec, candles, stimulus_run_id=stimulus_run_id, runtime_relative=runtime_relative
+    )
     logger.info(summary)
 
     published = 0
@@ -442,6 +500,33 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=0.01,
         help="Delay between candle publications in seconds (default: 0.01).",
     )
+    parser.add_argument(
+        "--runtime-relative",
+        action="store_true",
+        default=False,
+        help=(
+            "Shift fixture timestamps to current wall-clock (or --base-ts-ms) "
+            "aligned to 1m cadence. Preserves candle shape and breakout condition."
+        ),
+    )
+    parser.add_argument(
+        "--base-ts-ms",
+        type=int,
+        default=None,
+        help=(
+            "Explicit base timestamp in ms for --runtime-relative mode. "
+            "Defaults to current wall-clock aligned to 1m boundary."
+        ),
+    )
+    parser.add_argument(
+        "--start-offset-minutes",
+        type=int,
+        default=0,
+        help=(
+            "Shift the runtime-relative base backward by this many minutes "
+            "(default: 0, meaning warmup starts at base_ts_ms)."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -466,7 +551,27 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  - {e}")
         return 3
 
-    candles = generate_fixture_candles(spec)
+    base_ts_ms_override: int | None = None
+    runtime_relative = args.runtime_relative
+    if runtime_relative:
+        if args.base_ts_ms is not None:
+            base_ts_ms_override = align_to_minute(args.base_ts_ms)
+        else:
+            base_ts_ms_override = align_to_minute(int(time.time() * 1000))
+        if args.start_offset_minutes > 0:
+            base_ts_ms_override -= args.start_offset_minutes * ONE_MINUTE_MS
+
+    run_id = compute_stimulus_run_id(
+        base_ts_ms_override if base_ts_ms_override is not None else spec.warmup_base_ts_ms,
+        args.fixture,
+        runtime_relative,
+    )
+
+    candles = generate_fixture_candles(
+        spec,
+        base_ts_ms_override=base_ts_ms_override,
+        stimulus_run_id=run_id,
+    )
 
     if spec.symbol != args.symbol:
         print(f"FIXTURE symbol {spec.symbol!r} does not match --symbol {args.symbol!r}")
@@ -479,7 +584,12 @@ def main(argv: list[str] | None = None) -> int:
         return 3
 
     if not args.publish:
-        output = run_preview(candles, spec)
+        output = run_preview(
+            candles,
+            spec,
+            stimulus_run_id=run_id,
+            runtime_relative=runtime_relative,
+        )
         print(output)
         return 0
 
@@ -501,6 +611,8 @@ def main(argv: list[str] | None = None) -> int:
             max_wait_seconds=args.max_wait_seconds,
             delay_seconds=args.delay_seconds,
             stop_after_complete_chain=args.stop_after_complete_chain,
+            stimulus_run_id=run_id,
+            runtime_relative=runtime_relative,
         )
         print(output)
         return 0
