@@ -265,8 +265,8 @@ Legacy-Layer (base.yml, dev.yml, tls.yml, etc.) existieren noch, sind nicht mehr
 | 2026-04-24 | PRs #1914/#1916/#1918/#1920 Nachzug: ARVP validation comparisons & scorecards. shadow_compare, replay_vs_paper_compare, simulator_calibration_report, arvp_regime_scorecards, paper_reference_window_export + CLI-Runner dokumentiert. Offline-Validation, keine Runtime-Komponenten. (Issues #1915/#1917/#1919/#1921) | Codex |
 | 2026-05-13 | PR #2453/#2455 Nachzug: WS-Metrics-Delta-Logik + lazy `mexc_pb`-Client-Import sowie Postgres-Exporter-DSN/Secret-Wiring in RED-Compose dokumentiert (Issues #2454/#2456) | Codex |
 | 2026-05-29 | PR #2670/#2671 Nachzug: `verify_stack.ps1` Default ohne Logging-Overlay; `-IncludeLogging:$true` fuer Loki/Promtail; Logging-Aktivierungspfad auf `infrastructure/compose/` praezisiert; Windows-`make docker-health` ergaenzt (Issue #2671) | Codex |
-| 2026-06-05 | PRs #2989/#2992 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI dokumentiert (`--dry-run-preview`, safety-gated `--publish`, `--runtime-relative` timestamp shift). Kein Live-Go; keine DB-Schreibfläche (Issues #2990/#2993) | Codex |
 | 2026-06-05 | PRs #2999/#3001/#3003 Nachzug: Service-Map Code/README-Spalten; Paper Runner Code-Pfad `tools/paper_trading/`; Cross-Links zu `core/`, `services/`, `infrastructure/database/` READMEs (Issues #3000/#3004) | Cursor |
+| 2026-06-05 | PRs #2989/#2992 Nachzug: `paper_runtime_stimulus_runner.py` als runtime-adjacent ARVP operator CLI dokumentiert (`--dry-run-preview`, safety-gated `--publish`, `--runtime-relative` timestamp shift). Kein Live-Go; keine DB-Schreibfläche (Issues #2990/#2993) | Codex |
 ### PostgreSQL Schema Artefacts (PR #2793)
 
 | Artifact | Migration | Status | Bedeutung |
