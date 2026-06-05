@@ -8,6 +8,7 @@ description: >
   outcome: unit tests only, replay needed, mock exchange or emulator needed,
   shadow evidence needed, or stop and do not release. Use after planning or
   before session close when a concrete change needs a validation decision.
+disable-model-invocation: true
 ---
 
 # CDB shadow validation

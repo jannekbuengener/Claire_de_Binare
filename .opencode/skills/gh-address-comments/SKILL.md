@@ -1,6 +1,7 @@
 ---
 name: gh-address-comments
 description: Address GitHub PR review comments in the current repo with `gh`. Use when the user wants comment triage, replies, or code changes for review feedback on the current-branch PR or a specified PR. Verify `gh` authentication first, rebuild context control-first, and do not assume an open PR exists. This skill does not handle generic issue-comment threads unless a separate workflow is added.
+disable-model-invocation: true
 ---
 
 # GitHub Comment Handler

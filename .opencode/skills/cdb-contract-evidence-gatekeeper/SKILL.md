@@ -1,6 +1,7 @@
 ---
 name: cdb-contract-evidence-gatekeeper
 description: 'Hard gatekeeper for Claire_de_Binare acceptance and evidence decisions. Use when the task is deciding `freigabefaehig`, `closure-ready`, `wirklich erledigt`, `go/no-go`, `accept/reject`, `PASS/BLOCKED`, blocker vs non-blocking gap, report artifact vs real defect, canon drift vs evidence gap, Stage-System vs LR-System vs Repo/Engineering-Status, or cross-service contract ambiguity around producer, owner, unit, metadata, persistence, or proof. Do not use for broad implementation work.'
+disable-model-invocation: true
 ---
 
 # CDB Contract Evidence Gatekeeper

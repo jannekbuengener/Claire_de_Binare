@@ -96,7 +96,11 @@ Establish a verified, fail-closed starting state before any repo work begins.
    - Report which fields are missing or which values are unsubstantiated.
    - Do not proceed to implementation planning.
 
-   Reference: `agents/AGENTS.md` § Brain Evidence Gate.
+   Reference: `agents/AGENTS.md` § Brain Evidence Gate;
+   default posture SSOT: `knowledge/decisions/CDB_CONTEXT_BRAIN_DEFAULT_POSTURE.md`
+   (#2775). Until verified MCP/DB evidence: `brain_source=repo-only`,
+   `brain_status=not-used`. `PERSIST_ALLOWED=False` / `MUTATION_ALLOWED=False`
+   on `main`; Context Brain output does not authorize writes or issue creation.
 
 6. MCP Capability Resolution Gate (conditional):
 

@@ -1,6 +1,7 @@
 ---
 name: ctb-ops-stack-skillpack
 description: Ops skillpack for the current CDB stack. Use when Codex needs command-first PowerShell guidance for Docker, compose, DR, rollback, incident response, or stack inspection in the working repo. Use canonical BLUE+RED runtime paths, respect `SECRETS_PATH`, and require explicit user approval before any mutating Docker or compose action.
+disable-model-invocation: true
 ---
 
 # CDB Ops Stack Skillpack

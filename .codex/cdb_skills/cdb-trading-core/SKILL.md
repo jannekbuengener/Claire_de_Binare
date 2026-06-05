@@ -1,6 +1,7 @@
 ---
 name: cdb-trading-core
 description: 'Trading-system development for Claire de Binare in the current working repo. Use when Codex needs cross-cutting work over strategy logic, backtesting, market-data flow, Risk Service integration, shadow or paper evidence, or performance reporting. Respect the current canon: the working repo is authoritative, `trade-capable` does not imply LR-GO, and no action may place live orders or use live credentials.'
+disable-model-invocation: true
 ---
 
 # Claire de Binare Trading

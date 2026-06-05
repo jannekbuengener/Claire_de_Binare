@@ -1,6 +1,7 @@
 ---
 name: cdb-backtest-engine
 description: Deterministic CDB backtesting and strategy evaluation in the working repo. Use when Codex needs to run or update offline backtests, parameter sweeps, walk-forward tests, baseline comparisons, or PR-ready evidence packs. Treat the local working repo as canon, not the retired external docs repo; never infer live readiness from Board stage; no live keys, no live or testnet execution.
+disable-model-invocation: true
 ---
 
 # Backtest Engine

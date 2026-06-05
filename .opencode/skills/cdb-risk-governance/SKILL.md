@@ -1,6 +1,7 @@
 ---
 name: cdb-risk-governance
 description: CDB risk-governance changes for the current Risk Service (`cdb_risk`). Use when Codex needs to implement or harden enforceable limits, kill-switches, drawdown or exposure caps, fail-closed gating, or human-approval semantics. Respect the current repo canon, the `Risk Service` naming, and the fact that Board stage does not clear live trading.
+disable-model-invocation: true
 ---
 
 # Risk Governance

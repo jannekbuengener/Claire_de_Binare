@@ -8,6 +8,7 @@ description: >
   as belegt, unklar, or kein Befund, and separate documentation drift from
   operational drift without expanding scope. Use this for bounded canon-drift
   reconciliation, not for generic docs cleanup.
+disable-model-invocation: true
 ---
 
 # CDB drift reconcile

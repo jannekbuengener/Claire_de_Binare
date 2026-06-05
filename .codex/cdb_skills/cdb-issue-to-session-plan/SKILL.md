@@ -1,6 +1,10 @@
 ---
 name: cdb-issue-to-session-plan
-description: Turn a concrete Claire_de_Binare GitHub issue into a fail-closed session plan. Use when Codex is given an issue number or issue URL and must not plan from the issue in isolation, but instead rebuild control context first, use CONTROL_REGISTER and Issue #1445 as the control anchor, distinguish the current human weekly comment from later automation comments, mirror the issue against stage, live-readiness guardrails, workflow pressure, and SSOT boundaries, then output a conservative mini-plan.
+description: >
+  Turn a concrete Claire_de_Binare GitHub issue into a fail-closed session plan.
+  Use when given an issue number or URL and control context must be rebuilt first
+  via CONTROL_REGISTER and Issue #1445 before deriving a conservative mini-plan.
+disable-model-invocation: true
 ---
 
 # CDB issue to session plan

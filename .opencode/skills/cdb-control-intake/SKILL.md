@@ -2,7 +2,10 @@
 name: cdb-control-intake
 description: >
   Establishes the CDB control context for a session by reading canonical control
-  surfaces and producing a fail-closed operational snapshot.
+  surfaces and producing a fail-closed operational snapshot. Use when beginning
+  CDB repo work after session-start, or when rebuilding control context before
+  planning or implementation in Claire_de_Binare.
+disable-model-invocation: true
 ---
 
 # CDB control intake

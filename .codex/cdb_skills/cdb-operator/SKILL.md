@@ -5,6 +5,7 @@ compatibility: opencode
 metadata:
   project: claire-de-binare
   workflow: operator
+disable-model-invocation: true
 ---
 
 # CDB Operator Skill
