@@ -62,7 +62,7 @@ def test_kill_switch_true_calls_market_state_write():
     service = _make_service(write_market_state=True)
     with patch.object(service, "_update_market_state") as mock_update:
         service._emit_candle(_CANDLE.copy())
-    mock_update.assert_called_once_with("BTCUSDT")
+    mock_update.assert_called_once_with("BTCUSDT", 1700000000)
 
 
 @pytest.mark.unit
