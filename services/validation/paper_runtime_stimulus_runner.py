@@ -63,6 +63,7 @@ def align_to_minute(ts_ms: int) -> int:
     """Round down to the nearest 1-minute boundary."""
     return (ts_ms // ONE_MINUTE_MS) * ONE_MINUTE_MS
 
+
 REQUIRED_SAFETY_ENV = {
     "MOCK_TRADING": "true",
     "DRY_RUN": "true",
@@ -123,7 +124,9 @@ def run_safety_preflight() -> SafetyPreflightResult:
     for key, expected in REQUIRED_SAFETY_ENV.items():
         actual = os.getenv(key, "").lower()
         passed = actual == expected
-        checks[key] = f"{'PASS' if passed else 'FAIL'} (expected={expected!r}, actual={actual!r})"
+        checks[key] = (
+            f"{'PASS' if passed else 'FAIL'} (expected={expected!r}, actual={actual!r})"
+        )
         if not passed:
             failures.append(f"{key}={actual!r} (expected {expected!r})")
 
@@ -135,7 +138,9 @@ def run_safety_preflight() -> SafetyPreflightResult:
             failures.append(f"{key}={actual!r} is explicitly rejected")
 
     use_real_balance = os.getenv("USE_REAL_BALANCE", "false").lower()
-    checks["USE_REAL_BALANCE"] = f"{'OK' if use_real_balance != 'true' else 'REJECT'} (actual={use_real_balance!r})"
+    checks["USE_REAL_BALANCE"] = (
+        f"{'OK' if use_real_balance != 'true' else 'REJECT'} (actual={use_real_balance!r})"
+    )
     if use_real_balance == "true":
         failures.append(f"USE_REAL_BALANCE=true is rejected")
 
@@ -180,10 +185,14 @@ def validate_fixture_spec(spec: FixtureSpec) -> list[str]:
     errors: list[str] = []
 
     if spec.strategy_id != "primary_breakout_v1":
-        errors.append(f"strategy_id must be primary_breakout_v1, got {spec.strategy_id!r}")
+        errors.append(
+            f"strategy_id must be primary_breakout_v1, got {spec.strategy_id!r}"
+        )
 
     if spec.symbol != "BTCUSDT":
-        errors.append(f"symbol must be BTCUSDT for primary_breakout_v1, got {spec.symbol!r}")
+        errors.append(
+            f"symbol must be BTCUSDT for primary_breakout_v1, got {spec.symbol!r}"
+        )
 
     if spec.cadence_ms != ONE_MINUTE_MS:
         errors.append(f"cadence_ms must be {ONE_MINUTE_MS} (1m), got {spec.cadence_ms}")
@@ -221,7 +230,11 @@ def generate_fixture_candles(
     stimulus_run_id: str | None = None,
 ) -> list[dict[str, Any]]:
     candles: list[dict[str, Any]] = []
-    base_ts = base_ts_ms_override if base_ts_ms_override is not None else spec.warmup_base_ts_ms
+    base_ts = (
+        base_ts_ms_override
+        if base_ts_ms_override is not None
+        else spec.warmup_base_ts_ms
+    )
 
     for i in range(spec.warmup_count):
         ts_ms = base_ts + i * spec.cadence_ms
@@ -246,7 +259,9 @@ def generate_fixture_candles(
         candles.append(candle)
 
     warmup_end_ts_ms = base_ts + spec.warmup_count * spec.cadence_ms
-    highest_high = spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
+    highest_high = (
+        spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
+    )
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
     breakout_close = highest_high * (1 + spec.breakout_close_premium_pct / 100.0)
 
@@ -316,7 +331,9 @@ def fixture_summary(
     warmup_start = candles[0]["ts_ms"]
     warmup_end = candles[-2]["ts_ms"] if len(candles) > 1 else candles[0]["ts_ms"]
     breakout_ts = candles[-1]["ts_ms"]
-    highest_high = spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
+    highest_high = (
+        spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
+    )
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
     breakout_close = candles[-1]["close"]
     mode = "runtime-relative" if runtime_relative else "static-historical"
@@ -350,8 +367,13 @@ class StimulusPublisher:
     In tests, can be replaced with a mock.
     """
 
-    def __init__(self, redis_host: str = "redis", redis_port: int = 6379,
-                 redis_password: Optional[str] = None, redis_db: int = 0):
+    def __init__(
+        self,
+        redis_host: str = "redis",
+        redis_port: int = 6379,
+        redis_password: Optional[str] = None,
+        redis_db: int = 0,
+    ):
         self.redis_host = redis_host
         self.redis_port = redis_port
         self.redis_password = redis_password
@@ -361,6 +383,7 @@ class StimulusPublisher:
     def _get_client(self):
         if self._client is None:
             import redis as _redis
+
             self._client = _redis.Redis(
                 host=self.redis_host,
                 port=self.redis_port,
@@ -390,7 +413,10 @@ def run_preview(
 ) -> str:
     payloads = [to_market_data_payload(c) for c in candles]
     summary = fixture_summary(
-        spec, candles, stimulus_run_id=stimulus_run_id, runtime_relative=runtime_relative
+        spec,
+        candles,
+        stimulus_run_id=stimulus_run_id,
+        runtime_relative=runtime_relative,
     )
     lines = [
         summary,
@@ -417,7 +443,10 @@ def run_publish(
 ) -> str:
     payloads = [to_market_data_payload(c) for c in candles]
     summary = fixture_summary(
-        spec, candles, stimulus_run_id=stimulus_run_id, runtime_relative=runtime_relative
+        spec,
+        candles,
+        stimulus_run_id=stimulus_run_id,
+        runtime_relative=runtime_relative,
     )
     logger.info(summary)
 
@@ -532,7 +561,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
-    logging.basicConfig(level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(name)s - %(levelname)s - %(message)s"
+    )
 
     preflight = run_safety_preflight()
     print(preflight.summary())
@@ -562,7 +593,11 @@ def main(argv: list[str] | None = None) -> int:
             base_ts_ms_override -= args.start_offset_minutes * ONE_MINUTE_MS
 
     run_id = compute_stimulus_run_id(
-        base_ts_ms_override if base_ts_ms_override is not None else spec.warmup_base_ts_ms,
+        (
+            base_ts_ms_override
+            if base_ts_ms_override is not None
+            else spec.warmup_base_ts_ms
+        ),
         args.fixture,
         runtime_relative,
     )

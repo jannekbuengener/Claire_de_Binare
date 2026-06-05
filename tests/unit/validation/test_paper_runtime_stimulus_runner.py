@@ -61,12 +61,16 @@ def fixture_spec() -> FixtureSpec:
 
 class TestSafetyPreflight:
     def test_passes_when_all_safe_env_set(self):
-        with patch.dict(os.environ, {
-            "MOCK_TRADING": "true",
-            "DRY_RUN": "true",
-            "MEXC_TESTNET": "true",
-            "USE_REAL_BALANCE": "false",
-        }, clear=False):
+        with patch.dict(
+            os.environ,
+            {
+                "MOCK_TRADING": "true",
+                "DRY_RUN": "true",
+                "MEXC_TESTNET": "true",
+                "USE_REAL_BALANCE": "false",
+            },
+            clear=False,
+        ):
             result = run_safety_preflight()
         assert result.passed is True
         assert len(result.failures) == 0
@@ -102,11 +106,15 @@ class TestSafetyPreflight:
         assert any("USE_REAL_BALANCE" in f for f in result.failures)
 
     def test_summary_contains_no_secrets(self):
-        with patch.dict(os.environ, {
-            "MOCK_TRADING": "true",
-            "DRY_RUN": "true",
-            "MEXC_TESTNET": "true",
-        }, clear=False):
+        with patch.dict(
+            os.environ,
+            {
+                "MOCK_TRADING": "true",
+                "DRY_RUN": "true",
+                "MEXC_TESTNET": "true",
+            },
+            clear=False,
+        ):
             result = run_safety_preflight()
         summary = result.summary()
         assert "password" not in summary.lower()
@@ -195,14 +203,15 @@ class TestFixtureCandleGeneration:
 
     def test_breakout_close_exceeds_highest_high_with_buffer(self, fixture_spec):
         candles = generate_fixture_candles(fixture_spec)
-        highest_high = fixture_spec.warmup_base_price + (
-            fixture_spec.warmup_count - 1
-        ) * fixture_spec.warmup_price_step
+        highest_high = (
+            fixture_spec.warmup_base_price
+            + (fixture_spec.warmup_count - 1) * fixture_spec.warmup_price_step
+        )
         breakout_threshold = highest_high * (1 + fixture_spec.breakout_buffer)
         breakout_close = candles[-1]["close"]
-        assert breakout_close > breakout_threshold, (
-            f"breakout_close {breakout_close} not > breakout_threshold {breakout_threshold}"
-        )
+        assert (
+            breakout_close > breakout_threshold
+        ), f"breakout_close {breakout_close} not > breakout_threshold {breakout_threshold}"
 
     def test_breakout_candle_has_required_fields(self, fixture_spec):
         candles = generate_fixture_candles(fixture_spec)
@@ -314,7 +323,9 @@ class TestPublishMode:
 
 class TestFixtureFileRoundTrip:
     def test_default_fixture_file_loads(self):
-        assert DEFAULT_FIXTURE_PATH.exists(), f"fixture not found at {DEFAULT_FIXTURE_PATH}"
+        assert (
+            DEFAULT_FIXTURE_PATH.exists()
+        ), f"fixture not found at {DEFAULT_FIXTURE_PATH}"
         spec = load_fixture_spec(DEFAULT_FIXTURE_PATH)
         errors = validate_fixture_spec(spec)
         assert errors == []
@@ -328,9 +339,9 @@ class TestFixtureFileRoundTrip:
     def test_default_fixture_breakout_fires(self):
         spec = load_fixture_spec(DEFAULT_FIXTURE_PATH)
         candles = generate_fixture_candles(spec)
-        highest_high = spec.warmup_base_price + (
-            spec.warmup_count - 1
-        ) * spec.warmup_price_step
+        highest_high = (
+            spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
+        )
         breakout_threshold = highest_high * (1 + spec.breakout_buffer)
         assert candles[-1]["close"] > breakout_threshold
 
@@ -345,11 +356,13 @@ class TestFixtureFileRoundTrip:
 class TestStopAfterCompleteChain:
     def test_flag_is_parsed(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args(["--stop-after-complete-chain"])
         assert args.stop_after_complete_chain is True
 
     def test_flag_defaults_false(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args([])
         assert args.stop_after_complete_chain is False
 
@@ -357,9 +370,11 @@ class TestStopAfterCompleteChain:
 class TestNoDBOrExportCall:
     def test_runner_does_not_import_db_writer(self):
         from services.validation import paper_runtime_stimulus_runner as mod
+
         source = open(mod.__file__).read()
         import_lines = [
-            line for line in source.split("\n")
+            line
+            for line in source.split("\n")
             if line.strip().startswith(("import ", "from "))
         ]
         import_text = "\n".join(import_lines)
@@ -401,17 +416,16 @@ class TestRuntimeRelativeMode:
         candles = generate_fixture_candles(
             fixture_spec, base_ts_ms_override=custom_base
         )
-        highest_high = fixture_spec.warmup_base_price + (
-            fixture_spec.warmup_count - 1
-        ) * fixture_spec.warmup_price_step
+        highest_high = (
+            fixture_spec.warmup_base_price
+            + (fixture_spec.warmup_count - 1) * fixture_spec.warmup_price_step
+        )
         breakout_threshold = highest_high * (1 + fixture_spec.breakout_buffer)
         assert candles[-1]["close"] > breakout_threshold
 
     def test_stimulus_run_id_in_candles_when_supplied(self, fixture_spec):
         run_id = "abc123def456"
-        candles = generate_fixture_candles(
-            fixture_spec, stimulus_run_id=run_id
-        )
+        candles = generate_fixture_candles(fixture_spec, stimulus_run_id=run_id)
         for c in candles:
             assert c["stimulus_run_id"] == run_id
 
@@ -422,17 +436,13 @@ class TestRuntimeRelativeMode:
 
     def test_stimulus_run_id_in_payload(self, fixture_spec):
         run_id = "abc123def456"
-        candles = generate_fixture_candles(
-            fixture_spec, stimulus_run_id=run_id
-        )
+        candles = generate_fixture_candles(fixture_spec, stimulus_run_id=run_id)
         payload = to_market_data_payload(candles[0])
         assert payload["stimulus_run_id"] == run_id
 
     def test_stimulus_run_id_in_summary(self, fixture_spec):
         run_id = "abc123def456"
-        candles = generate_fixture_candles(
-            fixture_spec, stimulus_run_id=run_id
-        )
+        candles = generate_fixture_candles(fixture_spec, stimulus_run_id=run_id)
         summary = fixture_summary(
             fixture_spec, candles, stimulus_run_id=run_id, runtime_relative=True
         )
@@ -483,8 +493,12 @@ class TestRuntimeRelativeMode:
         mock_publisher = MagicMock(spec=StimulusPublisher)
         mock_publisher.publish.return_value = 1
         output = run_publish(
-            candles, fixture_spec, mock_publisher, delay_seconds=0,
-            stimulus_run_id=run_id, runtime_relative=True,
+            candles,
+            fixture_spec,
+            mock_publisher,
+            delay_seconds=0,
+            stimulus_run_id=run_id,
+            runtime_relative=True,
         )
         assert "runtime-relative" in output
         assert run_id in output
@@ -492,21 +506,25 @@ class TestRuntimeRelativeMode:
 
     def test_runtime_relative_flag_parsed(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args(["--runtime-relative"])
         assert args.runtime_relative is True
 
     def test_runtime_relative_flag_defaults_false(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args([])
         assert args.runtime_relative is False
 
     def test_base_ts_ms_flag_parsed(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args(["--base-ts-ms", "1800000000000"])
         assert args.base_ts_ms == 1_800_000_000_000
 
     def test_start_offset_minutes_flag_parsed(self):
         from services.validation.paper_runtime_stimulus_runner import _parse_args
+
         args = _parse_args(["--start-offset-minutes", "5"])
         assert args.start_offset_minutes == 5
 
