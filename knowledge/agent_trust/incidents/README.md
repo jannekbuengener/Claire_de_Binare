@@ -1,3 +1,5 @@
 # Incidents
 
-Schwere Governance-Verstöße (kompakt, referenziert Ledger Events).
+Agent-trust incidents linked to ledger entries and policy cards.
+
+Parent: [Agent Trust README](../README.md)

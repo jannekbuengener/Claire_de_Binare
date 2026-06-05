@@ -1,5 +1,7 @@
 # Evidence: cdb-secrets-rotator Sample Outputs
 
+**Local scope:** Sample outputs only — not runtime or LR evidence.
+
 This directory contains **sample outputs** from `Rotate-Secrets.ps1` to demonstrate:
 - Safe logging (no secret values)
 - Idempotency (repeated operations)

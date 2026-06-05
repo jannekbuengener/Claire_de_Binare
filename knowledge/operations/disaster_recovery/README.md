@@ -1,8 +1,8 @@
 # Disaster Recovery - Docker Reinstallation
 
-**Location:** `Claire_de_Binare/knowledge/operations/disaster_recovery/`  
-**Last Updated:** 2025-12-31  
-**Status:** Production-Ready
+**Location:** `knowledge/operations/disaster_recovery/`  
+**Last Updated:** 2025-12-31 (event snapshot); kanonische Ops-Pfade siehe unten  
+**Status:** Canon backup/restore via Makefile; historische 2025-12-31-Skripte nur Referenz
 
 ---
 
@@ -211,7 +211,7 @@ docker compose restart cdb_grafana
 
 - [WORKSPACE_LAYOUT.md](../WORKSPACE_LAYOUT.md) - Workspace-Struktur
 - [Stack Lifecycle](../../systems/STACK_LIFECYCLE.md) - Docker Stack Management
-- [Setup Guide](../../archive/docs_legacy/SETUP_GUIDE.md) - Initial Setup
+- Historical setup notes: `docs/archive/` (read-only; not active canon)
 
 ---
 

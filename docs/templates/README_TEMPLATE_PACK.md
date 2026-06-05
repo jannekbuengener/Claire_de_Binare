@@ -1,5 +1,7 @@
 # Issue Template Pack (CDB)
 
+Documentation mirror for GitHub issue templates. **Live templates:** `.github/ISSUE_TEMPLATE/` (authoritative for GitHub UI).
+
 Enthält GitHub Issue Templates für euren Standard-Flow:
 
 - `.github/ISSUE_TEMPLATE/standard.md`

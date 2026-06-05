@@ -1,18 +1,36 @@
-# Contains individual microservices implementations.
+# Microservices (`services/`)
+
+Stateless runtime services for the BLUE+RED stack. Persistent state lives in Postgres/Redis, not in service containers.
 
 ## Where to write / Where not to write
-*   **Write here:** Stateless microservices code, service-specific configurations, Dockerfiles, requirements.
-*   **Do NOT write here:** Shared core logic (use `core/`), persistent state (use PSM concept), governance documents.
+*   **Write here:** Service code, service-local config, Dockerfiles, requirements.
+*   **Do NOT write here:** Shared domain logic (`core/`), governance docs (`knowledge/`), compose canon (`infrastructure/compose/`).
 
-## Key entrypoints
-*   [DB Writer Service (services/db_writer/)](services/db_writer/)
-*   [Execution Service (services/execution/)](services/execution/)
-*   [Regime Service (services/regime/)](services/regime/)
-*   [Risk Service (services/risk/)](services/risk/)
-*   [Signal Service (services/signal/)](services/signal/)
-*   [Allocation Service (services/allocation/)](services/allocation/)
+## Service index
 
-## Redis Transport Notes
+| Service | Stack | Notes |
+|---|---|---|
+| [allocation/](allocation/) | BLUE | Regime → allocation_pct |
+| [candles/](candles/) | BLUE | 1m candle aggregation |
+| [db_writer/](db_writer/) | BLUE | Redis streams → Postgres |
+| [execution/](execution/) | BLUE | Order submission (`MOCK_TRADING` default) |
+| [market/](market/) | BLUE | `market_state:{symbol}` owner |
+| [paper_runner/](paper_runner/) | BLUE | Paper trading runner |
+| [regime/](regime/) | BLUE | ADX/ATR regime classification |
+| [risk/](risk/) | BLUE | Central order gate + kill-switch |
+| [signal/](signal/) | RED | Strategy signals → `stream.signals` |
+| [ws/](ws/) | RED | MEXC WebSocket feed |
 
-- **market_data**: Uses Redis **Pub/Sub** (not Redis Streams). `XLEN market_data` returns 0 — this is expected.
-- **signals, orders, allocation_decisions**: Use Redis **Streams** for durable event log.
+## Redis transport
+
+- **market_data:** Redis Pub/Sub (not Streams) — `XLEN market_data` returns 0 by design.
+- **signals, orders, allocation_decisions, stream.fills:** Redis Streams for durable logs.
+
+## Runtime entry
+
+```bash
+docker compose -f infrastructure/compose/compose.blue.yml up -d
+docker compose -f infrastructure/compose/compose.red.yml up -d
+```
+
+See `infrastructure/compose/README.md` and `services/risk/README.md` / `services/signal/README.md`.

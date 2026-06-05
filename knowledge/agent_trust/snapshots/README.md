@@ -1,3 +1,5 @@
 # Snapshots
 
-Periodische Score-Stand (berechnet aus Ledger). Format: YAML.
+Point-in-time trust score snapshots derived from ledger events.
+
+Parent: [Agent Trust README](../README.md)

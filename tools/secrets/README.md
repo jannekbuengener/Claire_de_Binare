@@ -6,7 +6,7 @@ Automated secret rotation tool with governance guardrails for Claire de Binare.
 
 This tool rotates **machine-readable secrets** (DB passwords, Redis, app keys) while protecting **manual secrets** (Grafana admin password stored in password manager/browser).
 
-**Canonical secrets path:** `C:\Users\janne\Documents\.secrets\.cdb`
+**Canonical secrets path:** `~/Documents/.secrets/.cdb` (override via `SECRETS_PATH`)
 
 ## Quickstart
 
@@ -137,7 +137,7 @@ All operations log:
 
 ### "Secrets path does not exist"
 ```powershell
-mkdir "C:\Users\janne\Documents\.secrets\.cdb"
+mkdir "$HOME/Documents/.secrets/.cdb"
 ```
 
 ### "Manifest validation failed"

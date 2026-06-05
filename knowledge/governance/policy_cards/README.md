@@ -21,3 +21,6 @@ Policy Cards sind maschinenlesbare Regeln, die:
 - Jede Card hat eine ID `PC-XXX`.
 - Jede Card definiert `severity` und `trust_impact`.
 - Cards überschreiben keine Canon-Regeln – sie codieren sie.
+
+## SSOT boundary
+Policy cards codify governance; they do not grant LR/live-capital authorization. LR **NO-GO** — `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`.

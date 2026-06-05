@@ -34,6 +34,8 @@ All templates reference the same `cdb_context` stdio server as `claire-de-binare
 
 The canonical sync source is `claire-de-binare.mcp.json` at repo root (Cursor: `.cursor/mcp.json`).
 
+Repo-local skills (non-MCP): `.cursor/skills/`, `.codex/cdb_skills/`, `.opencode/skills/`.
+
 ## Validation
 
 After setup, run from repo root:

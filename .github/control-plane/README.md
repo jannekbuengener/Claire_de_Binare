@@ -1,6 +1,6 @@
 # .github Control-Plane Collection Layer
 
-**Introduced:** #1644 · **Branch:** `github-meta-layer`
+**Introduced:** #1644 · **Branch:** merged to `main`
 
 This directory is the **manifest-driven collection layer** above the real `.github` control-plane assets.
 
