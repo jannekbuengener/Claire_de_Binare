@@ -7,13 +7,13 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 | Skill | Wann |
 |---|---|
 | [`cdb-session-start`](cdb-session-start/SKILL.md) | Vor Repo-/GitHub-/Implementierungsarbeit |
-| [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung |
+| [`cdb-session-close`](cdb-session-close/SKILL.md) | Nach Implementierung/Validierung, vor Abschluss |
 
 ## Control / planning
 
 | Skill | Zweck |
 |---|---|
-| [`cdb-control-intake`](cdb-control-intake/SKILL.md) | Control context |
+| [`cdb-control-intake`](cdb-control-intake/SKILL.md) | Control context (Register, LR, status) |
 | [`cdb-issue-to-session-plan`](cdb-issue-to-session-plan/SKILL.md) | Issue → Session-Plan |
 | [`cdb-operator`](cdb-operator/SKILL.md) | Bootloader, GO gates |
 
@@ -42,4 +42,9 @@ Repo-versionierte Session-Skills für Cursor Agents. Jeder Skill lebt in `<name>
 
 - Codex: [`.codex/cdb_skills/README.md`](../../.codex/cdb_skills/README.md)
 - OpenCode: [`.opencode/skills/README.md`](../../.opencode/skills/README.md)
-- Subagents: [`.cursor/agents/README_CDB_CURSOR_SUBAGENTS.md`](../agents/README_CDB_CURSOR_SUBAGENTS.md)
+- Subagents (delegation only): [`.cursor/agents/README_CDB_CURSOR_SUBAGENTS.md`](../agents/README_CDB_CURSOR_SUBAGENTS.md)
+- Registry: [`agents/AGENTS.md`](../../agents/AGENTS.md)
+
+## Rule
+
+Skills strukturieren Arbeit; sie ersetzen keine Human-GO, LR-SSOT oder Write-Gates in `knowledge/governance/CDB_AGENT_POLICY.md`.

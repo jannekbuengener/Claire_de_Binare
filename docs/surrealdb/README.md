@@ -26,10 +26,11 @@ Dokumentation für Context Brain, MCP-Tools, Memory-Gates und SurrealDB-Mirror �
 - [`context-package-model-v2.md`](context-package-model-v2.md)
 - [`memory-write-gate-v1.md`](memory-write-gate-v1.md)
 - [`productive-memory-audit-trail-v1.md`](productive-memory-audit-trail-v1.md)
+- [`scoped-agent-memory-model-v1.md`](scoped-agent-memory-model-v1.md)
 
 ## Wave completion gates
 
-Wellen-Dokumente: `context-wave7-completion-gates.md` … `context-wave21-completion-gates.md`, `wave16-completion-gates.md`.
+Wellen-Dokumente: `context-wave7-completion-gates.md` … `context-wave21-completion-gates.md`, `wave16-completion-gates.md` — jeweils Wellen-Abschlusskriterien.
 
 ## Code / infra pointers
 
@@ -42,3 +43,4 @@ Wellen-Dokumente: `context-wave7-completion-gates.md` … `context-wave21-comple
 
 - Produktive Writes / managed runtime: **NOT ACTIVATED** ohne expliziten Human-GO.
 - LR **NO-GO** — `docs/live-readiness/LR-AUDIT-STATUS-2026-03-05.md`
+- Repo/engineering ledger: `CURRENT_STATUS.md`

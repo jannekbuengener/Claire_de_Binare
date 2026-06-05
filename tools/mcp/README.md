@@ -14,6 +14,8 @@ Validierung:
 
 ```bash
 make mcp-config-validate
+# oder
+python tools/validate_mcp_config.py tests/fixtures/mcp_smoke_config.json
 ```
 
 ## Guardrails
@@ -31,8 +33,15 @@ make mcp-config-validate
 | `context_bridge.py` | Bridge + tool dispatch |
 | `registry.py` | Tool registry |
 | `permission_guard.py` | Fail-closed permissions |
+| `*_tools.py` | Tool implementations |
+
+## Tests
+
+- `tests/unit/tools/mcp/` — contract/unit
+- `tests/smoke/test_mcp_runtime.py` — runtime smoke (CI slice may exclude)
 
 ## Canonical References
 
 - [`docs/runbooks/surrealdb_context_mcp_access.md`](../../docs/runbooks/surrealdb_context_mcp_access.md)
+- [`agents/templates/README.md`](../../agents/templates/README.md)
 - [`docs/surrealdb/README.md`](../../docs/surrealdb/README.md)

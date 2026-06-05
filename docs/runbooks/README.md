@@ -56,10 +56,10 @@ Stage `trade-capable` autorisiert kein Live-Trading.
 
 ## Evidence
 
-- [`evidence/`](evidence/) — Run-scoped Evidence; kein Status-SSOT.
+- [`evidence/`](evidence/) — Run-scoped Evidence (z. B. SurrealDB restore drill); kein Status-SSOT.
 
 ## Related
 
 - [`../index.md`](../index.md) — Docs-Hub
-- [`../../knowledge/runbooks/README.md`](../../knowledge/runbooks/README.md)
-- [`../../.github/README.md`](../../.github/README.md)
+- [`../../knowledge/runbooks/README.md`](../../knowledge/runbooks/README.md) — Knowledge-Runbooks (operating rules)
+- [`../../.github/README.md`](../../.github/README.md) — Control plane entry

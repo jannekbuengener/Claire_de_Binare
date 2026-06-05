@@ -32,5 +32,5 @@ docker compose -f infrastructure/compose/compose.blue.yml up -d cdb_db_writer
 ## Canonical References
 
 - `services/db_writer/db_writer.py`
-- `infrastructure/database/README.md`
+- [`infrastructure/database/README.md`](../../infrastructure/database/README.md)
 - `services/execution/README.md` (fills → stream)

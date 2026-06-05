@@ -22,6 +22,7 @@ Offline-/Batch-Validierung: Replay, Backtest, Paper-Runtime-Stimulus, ARVP-Score
 ## Usage
 
 ```bash
+# Typisch über pytest oder dedizierte Scripts/Make-Targets
 pytest -q tests/unit/validation/
 ```
 
@@ -30,3 +31,4 @@ pytest -q tests/unit/validation/
 - `services/validation/pipeline.py`
 - `tests/unit/validation/`
 - `knowledge/contracts/PRIMARY_BREAKOUT_V1_VALIDATION.md`
+- [`docs/evidence/SHADOW_SOAK_RUN_INDEX.md`](../../docs/evidence/SHADOW_SOAK_RUN_INDEX.md) (via [`docs/index.md`](../../docs/index.md))
