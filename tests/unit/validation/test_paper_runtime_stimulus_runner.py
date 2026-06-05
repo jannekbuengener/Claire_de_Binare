@@ -26,6 +26,7 @@ from services.validation.paper_runtime_stimulus_runner import (
     fixture_summary,
     generate_fixture_candles,
     load_fixture_spec,
+    resolve_runtime_base_ts_ms,
     run_preview,
     run_publish,
     run_safety_preflight,
@@ -394,6 +395,13 @@ class TestRuntimeRelativeMode:
             fixture_spec, base_ts_ms_override=custom_base
         )
         assert candles[0]["ts_ms"] == custom_base
+
+    def test_runtime_relative_anchor_places_breakout_on_wall_clock(self, fixture_spec):
+        wall = align_to_minute(1_800_000_000_000)
+        base = resolve_runtime_base_ts_ms(fixture_spec, wall_clock_ms=wall)
+        candles = generate_fixture_candles(fixture_spec, base_ts_ms_override=base)
+        assert candles[-1]["ts_ms"] == wall
+        assert candles[0]["ts_ms"] == wall - fixture_spec.warmup_count * ONE_MINUTE_MS
 
     def test_runtime_relative_preserves_1m_cadence(self, fixture_spec):
         custom_base = 1_800_000_000_000

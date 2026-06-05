@@ -64,6 +64,76 @@ def align_to_minute(ts_ms: int) -> int:
     return (ts_ms // ONE_MINUTE_MS) * ONE_MINUTE_MS
 
 
+def resolve_runtime_base_ts_ms(
+    spec: FixtureSpec,
+    *,
+    wall_clock_ms: int | None = None,
+    explicit_base_ms: int | None = None,
+    extra_offset_minutes: int = 0,
+) -> int:
+    """Anchor a runtime-relative series so the breakout candle lands on the current minute.
+
+    Without this offset, ``--runtime-relative`` would place warmup at wall-clock *now*
+    and push the breakout ~warmup_count minutes into the future, which breaks regime
+    lookup anchoring and mixes poorly with live ``market_data``.
+    """
+    if explicit_base_ms is not None:
+        base = align_to_minute(explicit_base_ms)
+    else:
+        now_ms = wall_clock_ms if wall_clock_ms is not None else int(time.time() * 1000)
+        base = align_to_minute(now_ms) - spec.warmup_count * spec.cadence_ms
+    if extra_offset_minutes > 0:
+        base -= extra_offset_minutes * ONE_MINUTE_MS
+    return base
+
+
+def _fetch_market_close_from_redis(symbol: str) -> float | None:
+    """Best-effort read of ``close_now`` from market_state for price anchoring."""
+    try:
+        import redis as _redis
+
+        client = _redis.Redis(
+            host=os.getenv("REDIS_HOST", "redis"),
+            port=int(os.getenv("REDIS_PORT", "6379")),
+            password=os.getenv("REDIS_PASSWORD"),
+            db=int(os.getenv("REDIS_DB", "0")),
+            decode_responses=True,
+            socket_connect_timeout=2,
+        )
+        client.ping()
+        for prefix in ("market_state", "market_state_shadow"):
+            raw = client.get(f"{prefix}:{symbol}")
+            if not raw:
+                continue
+            parsed = json.loads(raw)
+            if not isinstance(parsed, dict):
+                continue
+            for key in ("close_now", "close"):
+                value = parsed.get(key)
+                if value is None or value == "":
+                    continue
+                close = float(value)
+                if close > 0:
+                    return close
+    except Exception:
+        return None
+    return None
+
+
+def resolve_runtime_warmup_base_price(
+    spec: FixtureSpec,
+    *,
+    explicit_base_price: float | None = None,
+    market_close: float | None = None,
+) -> float:
+    """Choose a warmup start price that ends near the live market close when possible."""
+    if explicit_base_price is not None and explicit_base_price > 0:
+        return explicit_base_price
+    if market_close is not None and market_close > 0:
+        return market_close - (spec.warmup_count - 1) * spec.warmup_price_step
+    return spec.warmup_base_price
+
+
 REQUIRED_SAFETY_ENV = {
     "MOCK_TRADING": "true",
     "DRY_RUN": "true",
@@ -227,6 +297,7 @@ def generate_fixture_candles(
     spec: FixtureSpec,
     *,
     base_ts_ms_override: int | None = None,
+    warmup_base_price_override: float | None = None,
     stimulus_run_id: str | None = None,
 ) -> list[dict[str, Any]]:
     candles: list[dict[str, Any]] = []
@@ -235,10 +306,15 @@ def generate_fixture_candles(
         if base_ts_ms_override is not None
         else spec.warmup_base_ts_ms
     )
+    warmup_base_price = (
+        warmup_base_price_override
+        if warmup_base_price_override is not None
+        else spec.warmup_base_price
+    )
 
     for i in range(spec.warmup_count):
         ts_ms = base_ts + i * spec.cadence_ms
-        price = spec.warmup_base_price + i * spec.warmup_price_step
+        price = warmup_base_price + i * spec.warmup_price_step
         candle = {
             "symbol": spec.symbol,
             "ts_ms": ts_ms,
@@ -259,14 +335,11 @@ def generate_fixture_candles(
         candles.append(candle)
 
     warmup_end_ts_ms = base_ts + spec.warmup_count * spec.cadence_ms
-    highest_high = (
-        spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
-    )
+    highest_high = warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
-    breakout_close = highest_high * (1 + spec.breakout_close_premium_pct / 100.0)
-
-    if breakout_close <= breakout_threshold:
-        breakout_close = breakout_threshold + 1.0
+    # Minimal lift above threshold: preserves breakout fires=true while keeping ATR
+    # near the warmup cadence (large premium spikes classify HIGH_VOL_CHAOTIC).
+    breakout_close = breakout_threshold + spec.warmup_price_step
 
     breakout_candle = {
         "symbol": spec.symbol,
@@ -331,9 +404,8 @@ def fixture_summary(
     warmup_start = candles[0]["ts_ms"]
     warmup_end = candles[-2]["ts_ms"] if len(candles) > 1 else candles[0]["ts_ms"]
     breakout_ts = candles[-1]["ts_ms"]
-    highest_high = (
-        spec.warmup_base_price + (spec.warmup_count - 1) * spec.warmup_price_step
-    )
+    warmup_base = candles[0]["close"]
+    highest_high = warmup_base + (spec.warmup_count - 1) * spec.warmup_price_step
     breakout_threshold = highest_high * (1 + spec.breakout_buffer)
     breakout_close = candles[-1]["close"]
     mode = "runtime-relative" if runtime_relative else "static-historical"
@@ -552,8 +624,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=int,
         default=0,
         help=(
-            "Shift the runtime-relative base backward by this many minutes "
-            "(default: 0, meaning warmup starts at base_ts_ms)."
+            "Additional backward shift (minutes) applied after the runtime-relative "
+            "warmup anchor. Default 0: breakout candle aligns to the current minute."
+        ),
+    )
+    parser.add_argument(
+        "--base-price",
+        type=float,
+        default=None,
+        help=(
+            "Override warmup start price. When omitted in --runtime-relative mode, "
+            "the runner tries market_state close_now before falling back to the fixture."
         ),
     )
     return parser.parse_args(argv)
@@ -583,14 +664,20 @@ def main(argv: list[str] | None = None) -> int:
         return 3
 
     base_ts_ms_override: int | None = None
+    warmup_base_price_override: float | None = None
     runtime_relative = args.runtime_relative
     if runtime_relative:
-        if args.base_ts_ms is not None:
-            base_ts_ms_override = align_to_minute(args.base_ts_ms)
-        else:
-            base_ts_ms_override = align_to_minute(int(time.time() * 1000))
-        if args.start_offset_minutes > 0:
-            base_ts_ms_override -= args.start_offset_minutes * ONE_MINUTE_MS
+        base_ts_ms_override = resolve_runtime_base_ts_ms(
+            spec,
+            explicit_base_ms=args.base_ts_ms,
+            extra_offset_minutes=args.start_offset_minutes,
+        )
+        market_close = _fetch_market_close_from_redis(spec.symbol)
+        warmup_base_price_override = resolve_runtime_warmup_base_price(
+            spec,
+            explicit_base_price=args.base_price,
+            market_close=market_close,
+        )
 
     run_id = compute_stimulus_run_id(
         (
@@ -605,6 +692,7 @@ def main(argv: list[str] | None = None) -> int:
     candles = generate_fixture_candles(
         spec,
         base_ts_ms_override=base_ts_ms_override,
+        warmup_base_price_override=warmup_base_price_override,
         stimulus_run_id=run_id,
     )
 
