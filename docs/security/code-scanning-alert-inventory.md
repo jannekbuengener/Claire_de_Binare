@@ -119,9 +119,11 @@ gh pr view 2486 --json number,state,mergedAt,mergeCommit,url
 |------|--------|---------|
 | `py/unused-import` | 3 | `.github/scripts/control_plane_validate.py`, `.github/scripts/post_merge_followup_scanner.py` (×2) |
 
-### 4.6 Note-Level — SDK (5 Alerts)
+### 4.6 Note-Level — SDK (5 Alerts, historical)
 
-| Rule | Anzahl | Dateien |
+> **Historical:** `cdb_agent_sdk/` was removed from the repo (PR #2994). Agent skills now live under `.codex/cdb_skills/`, `.cursor/skills/`, and `.opencode/skills/`. Alert paths below refer to the former package layout at scan time.
+
+| Rule | Anzahl | Dateien (historical paths) |
 |------|--------|---------|
 | `py/unused-import` | 5 | `cdb_agent_sdk/src/cdb_agent_sdk/main.py` (×3), `cdb_agent_sdk/tests/test_agents.py`, `cdb_agent_sdk/tests/test_agent.py` |
 

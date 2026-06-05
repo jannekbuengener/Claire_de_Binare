@@ -16,6 +16,18 @@
         {
           "path": ".opencode/skills/cdb-session-start/SKILL.md",
           "why": "OpenCode-local mirror of repo agent skills."
+        },
+        {
+          "path": ".codex/cdb_skills/README.md",
+          "why": "Codex skill pack index."
+        },
+        {
+          "path": ".opencode/skills/README.md",
+          "why": "OpenCode skill pack index."
+        },
+        {
+          "path": ".cursor/skills/README.md",
+          "why": "Cursor skill pack index."
         }
       ],
       "path": ".codex/cdb_skills",
@@ -43,6 +55,14 @@
         {
           "path": "core/config/trading_mode.py",
           "why": "Safety-critical trading mode gate."
+        },
+        {
+          "path": "core/replay/README.md",
+          "why": "Replay and envelope helpers."
+        },
+        {
+          "path": "core/contracts/README.md",
+          "why": "Decision contract implementation."
         }
       ],
       "path": "core",
@@ -126,6 +146,30 @@
         {
           "path": "docs/live-readiness/README.md",
           "why": "Local live-readiness pointer."
+        },
+        {
+          "path": "docs/runbooks/README.md",
+          "why": "Operative runbook index."
+        },
+        {
+          "path": "docs/surrealdb/README.md",
+          "why": "SurrealDB context navigation."
+        },
+        {
+          "path": "docs/contracts/README.md",
+          "why": "Contracts docs index."
+        },
+        {
+          "path": "docs/security/README.md",
+          "why": "Security triage index."
+        },
+        {
+          "path": "docs/evidence/README.md",
+          "why": "Evidence parent index."
+        },
+        {
+          "path": "docs/meta/README.md",
+          "why": "Working-repo meta and canon pointers."
         }
       ],
       "path": "docs",
@@ -204,6 +248,14 @@
         {
           "path": "infrastructure/actions-runner/README.md",
           "why": "Self-hosted Actions runner setup."
+        },
+        {
+          "path": "infrastructure/database/README.md",
+          "why": "Postgres schema and migrations index."
+        },
+        {
+          "path": "infrastructure/scripts/README.md",
+          "why": "Stack bootstrap and ops scripts index."
         },
         {
           "path": "infrastructure/compose/README.md",
@@ -605,6 +657,10 @@
         {
           "path": "services/ws/service.py",
           "why": "WebSocket service entrypoint."
+        },
+        {
+          "path": "tools/paper_trading/README.md",
+          "why": "Paper runner service (compose cdb_paper_runner, port 8004)."
         }
       ],
       "path": "services",
@@ -683,6 +739,18 @@
         {
           "path": "tests/README.md",
           "why": "Test layout overview."
+        },
+        {
+          "path": "tests/integration/README.md",
+          "why": "Integration test conventions."
+        },
+        {
+          "path": "tests/replay/README.md",
+          "why": "Replay test conventions."
+        },
+        {
+          "path": "tests/smoke/README.md",
+          "why": "Smoke test conventions."
         },
         {
           "path": "tests/conftest.py",

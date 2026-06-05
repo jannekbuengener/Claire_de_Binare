@@ -73,6 +73,20 @@ einzigen generischen "Current Status"-Datei gebuendelt.
 - Status-bearing docs must declare whether they are `operational`, `working-repo`, `historical snapshot`, or `scoped evidence` whenever ambiguity is plausible.
 - No secondary file may override or restate the current repo-wide operational verdict independently of the canonical live-readiness source.
 
+## README vs. `index.md` Navigation Rule
+
+| Surface | Rolle | Beispiel |
+| --- | --- | --- |
+| `README.md` in einem Ordner | Lokaler Index + SSOT-Grenzen für diesen Tree | [`docs/runbooks/README.md`](../runbooks/README.md), [`services/risk/README.md`](../../services/risk/README.md) |
+| `index.md` | Kurz-Pointer-Seite über mehrere Untertrees | [`docs/index.md`](../index.md), [`docs/ci/index.md`](../ci/index.md), [`docs/db/index.md`](../db/index.md) |
+
+Regeln:
+
+- `docs/index.md` bleibt die kürzeste repo-weite Docs-Landingpage; sie verlinkt auf README-Indizes, ersetzt sie nicht.
+- Ordner mit vielen Dateien bekommen ein `README.md` (Tabelle + Abgrenzung); `index.md` nur wo bereits etabliert oder für flache Nav-Hubs.
+- Status-SSOT bleibt in den kanonischen Statusdateien (siehe Status SSOT Rule); READMEs fassen zusammen oder verweisen, erfinden keinen operativen Verdict.
+- Archiv unter `docs/archive/` ist read-only; aktive READMEs liegen außerhalb von `docs_hub_snapshot/`.
+
 ## Legacy Archive
 
 Local archive path:

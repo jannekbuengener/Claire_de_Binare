@@ -8,18 +8,19 @@ Stateless runtime services for the BLUE+RED stack. Persistent state lives in Pos
 
 ## Service index
 
-| Service | Stack | Notes |
+| Service | Stack | README |
 |---|---|---|
-| [allocation/](allocation/) | BLUE | Regime → allocation_pct |
-| [candles/](candles/) | BLUE | 1m candle aggregation |
-| [db_writer/](db_writer/) | BLUE | Redis streams → Postgres |
-| [execution/](execution/) | BLUE | Order submission (`MOCK_TRADING` default) |
-| [market/](market/) | BLUE | `market_state:{symbol}` owner |
-| [paper_runner/](paper_runner/) | BLUE | Paper trading runner |
-| [regime/](regime/) | BLUE | ADX/ATR regime classification |
-| [risk/](risk/) | BLUE | Central order gate + kill-switch |
-| [signal/](signal/) | RED | Strategy signals → `stream.signals` |
-| [ws/](ws/) | RED | MEXC WebSocket feed |
+| [allocation/](allocation/) | BLUE | [README](allocation/README.md) |
+| [candles/](candles/) | BLUE | [README](candles/README.md) |
+| [db_writer/](db_writer/) | BLUE | [README](db_writer/README.md) |
+| [execution/](execution/) | BLUE | [README](execution/README.md) |
+| [market/](market/) | BLUE | [README](market/README.md) |
+| Paper runner (`tools/paper_trading/`) | BLUE | [README](../tools/paper_trading/README.md) |
+| [regime/](regime/) | BLUE | [README](regime/README.md) |
+| [risk/](risk/) | BLUE | [README](risk/README.md) |
+| [signal/](signal/) | RED | [README](signal/README.md) |
+| [validation/](validation/) | offline lib | [README](validation/README.md) |
+| [ws/](ws/) | RED | [README](ws/README.md) |
 
 ## Redis transport
 
@@ -33,4 +34,4 @@ docker compose -f infrastructure/compose/compose.blue.yml up -d
 docker compose -f infrastructure/compose/compose.red.yml up -d
 ```
 
-See `infrastructure/compose/README.md` and `services/risk/README.md` / `services/signal/README.md`.
+See `infrastructure/compose/README.md` and linked service READMEs above.

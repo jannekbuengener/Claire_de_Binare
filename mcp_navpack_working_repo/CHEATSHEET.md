@@ -15,6 +15,7 @@
 - `infrastructure/compose/` for compose fragments and stack overlays.
 - `infrastructure/scripts/` for stack bootstrap, verification, backup, and DR scripts.
 - `docs/` for working-repo indices, runbooks, env/db pointers, and live-readiness support docs.
+- `docs/runbooks/README.md` and `docs/surrealdb/README.md` for runbook and SurrealDB context indexes.
 - `tests/` for unit, integration, replay, smoke, and e2e tests.
 - `tools/` for diagnostics, stack checks, MCP validation, hooks, and secrets helpers.
 - `scripts/` for guards, testnet setup, live-data activation, and project automation.
