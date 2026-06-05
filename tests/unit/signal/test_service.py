@@ -481,6 +481,103 @@ def test_signal_from_candidate_contains_config_snapshot_and_hash():
 
 
 @pytest.mark.unit
+def test_signal_from_candidate_uses_stimulus_run_id_for_fixture_signal_ids():
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        bot_id="audit-bot",
+        entry_lookback_minutes=5,
+        exit_lookback_minutes=3,
+        breakout_buffer=0.01,
+        min_minutes_between_entries=15,
+        trade_side_mode="long_only",
+    )
+
+    candidate = StrategySignalCandidate(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        side="BUY",
+        reason="Momentum candidate",
+        price=42.0,
+        pct_change=1.23,
+    )
+    market_data = MarketData(
+        symbol="ETHUSDT",
+        price=42.0,
+        timestamp=1_700_000_000,
+        pct_change=1.23,
+        volume=500000.0,
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        signal_a = engine._signal_from_candidate(
+            candidate,
+            market_data,
+            market_event={
+                "source": "stimulus_fixture",
+                "stimulus_run_id": "run-a",
+            },
+        )
+        signal_a_repeat = engine._signal_from_candidate(
+            candidate,
+            market_data,
+            market_event={
+                "source": "stimulus_fixture",
+                "stimulus_run_id": "run-a",
+            },
+        )
+        signal_b = engine._signal_from_candidate(
+            candidate,
+            market_data,
+            market_event={
+                "source": "stimulus_fixture",
+                "stimulus_run_id": "run-b",
+            },
+        )
+
+    assert signal_a.signal_id == signal_a_repeat.signal_id
+    assert signal_a.signal_id != signal_b.signal_id
+
+
+@pytest.mark.unit
+def test_signal_from_candidate_keeps_non_stimulus_ids_process_unique():
+    test_config = SignalConfig(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        bot_id="audit-bot",
+        entry_lookback_minutes=5,
+        exit_lookback_minutes=3,
+        breakout_buffer=0.01,
+        min_minutes_between_entries=15,
+        trade_side_mode="long_only",
+    )
+
+    candidate = StrategySignalCandidate(
+        strategy_id="test_strategy",
+        symbol="ETHUSDT",
+        side="BUY",
+        reason="Momentum candidate",
+        price=42.0,
+        pct_change=1.23,
+    )
+    market_data = MarketData(
+        symbol="ETHUSDT",
+        price=42.0,
+        timestamp=1_700_000_000,
+        pct_change=1.23,
+        volume=500000.0,
+    )
+
+    with patch("service.config", test_config):
+        engine = SignalEngine()
+        signal_a = engine._signal_from_candidate(candidate, market_data)
+        signal_b = engine._signal_from_candidate(candidate, market_data)
+
+    assert signal_a.signal_id != signal_b.signal_id
+
+
+@pytest.mark.unit
 def test_signal_from_candidate_protects_reserved_audit_metadata():
     test_config = SignalConfig(
         strategy_id="test_strategy",

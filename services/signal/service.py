@@ -267,13 +267,27 @@ class SignalEngine:
         }
 
     def _signal_from_candidate(
-        self, candidate: StrategySignalCandidate, market_data: MarketData
+        self,
+        candidate: StrategySignalCandidate,
+        market_data: MarketData,
+        market_event: dict | None = None,
     ) -> Signal:
         now_ms = int(time.time() * 1000)
         config_snapshot = _build_runtime_config_snapshot(self.config)
         config_hash = _build_config_hash(config_snapshot)
+        signal_id_name = None
+        if isinstance(market_event, dict):
+            raw_stimulus_run_id = market_event.get("stimulus_run_id")
+            source = market_event.get("source")
+            if isinstance(raw_stimulus_run_id, str) and source == "stimulus_fixture":
+                stimulus_run_id = raw_stimulus_run_id.strip()
+                if stimulus_run_id:
+                    signal_id_name = (
+                        f"stimulus:{stimulus_run_id}:{candidate.symbol}:"
+                        f"{candidate.side}:{market_data.timestamp}"
+                    )
         signal = Signal(
-            signal_id=f"sig-{generate_uuid_hex(length=32)}",
+            signal_id=f"sig-{generate_uuid_hex(name=signal_id_name, length=32)}",
             symbol=candidate.symbol,
             side=candidate.side,
             reason=candidate.reason,
@@ -733,7 +747,11 @@ class SignalEngine:
                 )
             )
             if response.signals:
-                signal = self._signal_from_candidate(response.signals[0], market_data)
+                signal = self._signal_from_candidate(
+                    response.signals[0],
+                    market_data,
+                    market_event=data,
+                )
                 logger.info(
                     f"✨ Signal generiert: {signal.symbol} {signal.side} @ ${signal.price:.2f} "
                     f"({signal.pct_change:+.2f}%)"
