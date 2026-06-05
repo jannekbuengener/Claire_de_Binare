@@ -57,7 +57,7 @@ jobs:
         run: |
           BASE="${{ github.event.pull_request.base.sha || github.event.before }}"
           HEAD="${{ github.sha }}"
-          FILES=$(git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- '*.py' | xargs)
+          FILES=$(git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- '*.py' ':!.codex/**' ':!.opencode/**' | xargs)
           [ -z "$FILES" ] && echo "No python changes" && exit 0
           black --config pyproject.toml --check $FILES
 
