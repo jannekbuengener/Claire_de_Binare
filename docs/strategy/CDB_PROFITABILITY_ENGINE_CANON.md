@@ -1,168 +1,350 @@
-﻿# CDB Profitability Engine Canon
+# CDB Profitability Engine Canon
 
-**Status:** Canonical (Draft)
+**Status:** Canonical
+**Mode:** Docs-only
 **Issue Reference:** #3032, #3033
-**Authority:** Strategy / Docs-Only
-**Live-Readiness:** NO-GO (Echtgeld-Blocker aktiv)
+**Authority:** Strategy / Governance / Docs
+**Live-Readiness:** NO-GO
+**Implementation Approval:** none
 
----
+## 1. Zweck und Status
 
-## 1. Purpose / Status
-Dieses Dokument definiert den kanonischen Rahmen fÃ¼r die Weiterentwicklung von Claire de Binare (CDB) zu einer **Profitability Engine**. Es dient als strategischer SSoT fÃ¼r die Einordnung von Strategy Candidates, Evidence-Anforderungen und den Ãœbergang von Research zu Paper-Trading.
+Dieses Dokument definiert den kanonischen Rahmen fuer Claire de Binare als **Profitability Engine**.
+Es bringt die neue Business- und Governance-Schicht offiziell ins Repo und dient als Grundlage fuer:
 
-**Status:** Dieses Dokument ist rein deklarativ. Es autorisiert keinen Live-Go und keine automatische Kapitalallokation.
+- #3034 Candidate Contract + Evidence Packet v1
+- #3035 Dataset Quality Gate
 
----
+Das Dokument ist strikt:
 
-## 2. Management Summary
-CDB wird von einem reinen Trading-Bot zu einer systematischen **Profitability Engine** ausgebaut. Der Fokus verschiebt sich von "wie man tradet" (Core Execution) zu "was man tradet und warum" (Profitability Validation). Die Engine nutzt die ARVP (Automated Replay & Validation Pipeline) als zentrales Beweis-Werkzeug, um eine Pipeline von validierten Handelsstrategien (Candidates) aufzubauen.
+- docs-only
+- kein Live-Go
+- kein Echtgeld-Go
+- keine Runtime-Aenderung
+- keine DB-Migration
+- keine Implementierungsfreigabe
+- keine automatische Promotion
+- keine Risk-/Execution-/Allocation-Aenderung
 
----
+Board-Stage `trade-capable` bleibt orthogonal und autorisiert kein Live-Kapital, keinen Echtgeldbetrieb und keine Strategie-Freigabe.
+LR bleibt NO-GO.
 
-## 3. Current Operating Boundary
-- **Core Protection:** Der bestehende Trading-Core (BLUE/RED Stack) bleibt als stabiles Fundament geschÃ¼tzt.
-- **Stage:** `trade-capable` (Board-Stage) erlaubt technischen Paper-Betrieb.
-- **LR-050:** Bleibt `NO-GO`. Kein Echtgeld-Handel.
-- **Data Blocker:** #3031 (DatenqualitÃ¤t) bleibt der primÃ¤re operative Blocker fÃ¼r verlÃ¤ssliche ARVP-LÃ¤ufe.
+## 2. Executive Summary
 
----
+CDB wird zur Profitability Engine.
 
-## 4. Profitability Engine Zielbild
-Die Profitability Engine ist eine Schicht *Ã¼ber* dem Core. Sie ist eine Fabrik fÃ¼r renditeorientierte Entscheidungen.
-- **Input:** Rohdaten, Strategy Models.
-- **Prozess:** Candidate Lifecycle -> ARVP Evidence -> League Table.
-- **Output:** Validierte Evidence Packets, die eine statistische Erwartung von Rendite belegen.
+Ziel ist eine wiederholbare Strategie-Fabrik:
 
----
+Ideen rein -> Kandidatenkarte -> Evidence Sheet -> Data Quality Gate -> ARVP/Replay -> Ranking -> Paper-Kandidat -> spaeter Micro-Live-Kandidat nur ueber separate Live-Readiness-Gates.
 
-## 5. Business-Ziel: Strategy Candidate Pipeline
-Das primÃ¤re Ziel ist nicht "der eine Algorithmus", sondern eine **Pipeline**.
-- Wir suchen Strategien, die unter verschiedenen Marktbedingungen (Regimes) stabil performen.
-- Ein Candidate muss erst beweisen, dass er die "Execution Economics" (GebÃ¼hren, Spread, Slippage) schlÃ¤gt, bevor er im Ranking aufsteigt.
+Der bestehende Core bleibt geschuetzt.
+Die Profitability Engine sitzt ueber bzw. neben dem Core.
 
----
+Wichtig:
 
-## 6. Rendite-Stufenmodell
-Wir klassifizieren Strategien nach ihrem Renditeziel und dem erforderlichen Evidence-Grad:
-- **Tier 10:** 10% p.a. (Low Risk, High Stability).
-- **Tier 20:** 20% p.a. (Standard Alpha).
-- **Tier 30:** 30% p.a. (Aggressive Alpha, hÃ¶here Drawdown-Toleranz).
-- **Tier 50+:** 50%+ p.a. (High Frequency / High Risk; nur fÃ¼r spezialisierte Sleeves).
+- Learning verbessert Wissen.
+- Trading fuehrt nur kontrolliert gepruefte Kandidaten aus.
+- ARVP ist Evidence, keine Freigabe.
+- Backtest ist kein Live-Beweis.
+- Paper ist kein Live-Beweis.
 
----
+## 3. Business-Zielbild
 
-## 7. Learning Loop vs. Trading Loop
-- **Learning Loop (Offline):** Research -> Backtest -> ARVP -> Evidence. Hier findet die Optimierung statt.
-- **Trading Loop (Runtime):** Signal -> Risk -> Execution. Hier findet nur die strikte AusfÃ¼hrung statt.
-- **Regel:** Die Trading Loop lernt nicht autonom. Ã„nderungen an der Logik mÃ¼ssen den Learning Loop vollstÃ¤ndig durchlaufen.
+Die Profitability Engine verfolgt ein klares Business-Ziel:
 
----
+- Renditeorientierung
+- Marktreife vorbereiten
+- mehrere Strategiekandidaten parallel pruefen
+- schlechte Kandidaten schnell verwerfen
+- gute Kandidaten haerter validieren
+- Paper-Portfolio vorbereiten
+- Kapitalsteuerung spaeter ueber eigene Gates fuehren
 
-## 8. Core Protection / No-Touch-Core
-Der Trading-Core ist die "Black Box" der AusfÃ¼hrung.
-- Ã„nderungen fÃ¼r die Profitability Engine dÃ¼rfen die StabilitÃ¤t des Core-Execution-Pfades nicht gefÃ¤hrden.
-- Neue Logik wird bevorzugt als unabhÃ¤ngige Services oder Side-Cars implementiert.
+Die Rendite entsteht nicht durch:
 
----
+- Core-Umbau
+- Live-Abkuerzung
+- KI-Autoritaet
+- Dashboard-Freigaben
+- automatische Promotion
 
-## 9. Authority Rules
-1. **Signal != Trade:** Ein Signal ist nur ein Vorschlag; Risk entscheidet (INV-002).
-2. **AI != Authority:** KI-VorschlÃ¤ge sind Research; nur Code/Config im Canon ist Wahrheit.
-3. **Dashboard != Freigabe:** Visualisierungen sind Information; Governance-Dateien sind AutoritÃ¤t.
-4. **Docs != Approval:** Dieses Dokument ist Plan; das Human Gate (`DELIVERY_APPROVED.yaml`) bleibt das Schloss.
+Rendite entsteht ueber:
 
----
+- Strategy Candidate Pipeline
+- Evidence
+- Data Quality
+- ARVP
+- Execution Economics
+- Ranking
+- Paper-Portfolio
+- spaetere Capital Sleeves
 
-## 10. Candidate Lifecycle
-1. **Inception:** Rohe Idee / Research.
-2. **Backtest:** Erste statistische PrÃ¼fung.
-3. **ARVP Candidate:** Integration in die ARVP; technischer Contract-Check.
-4. **Validated Candidate:** Evidence Packet liegt vor (ARVP-LÃ¤ufe Ã¼ber mehrere Regimes).
-5. **Paper Active:** Betrieb im Paper-Trading zur Echtzeit-Validierung.
-6. **Sleeve-Ready:** Bereit fÃ¼r (zukÃ¼nftige) Kapitalallokation.
+## 4. Rendite-Stufenmodell
 
----
+Die Stufen sind Forschungs- und Validierungsziele, keine Garantie und kein Live-Go.
 
-## 11. Promotion Gate Matrix
-| Von | Nach | Bedingung |
+| Stufe | Ziel | Bedeutung |
 |---|---|---|
-| Backtest | ARVP | Dataset Quality Gate PASS (#3035) |
-| ARVP | Validated | Evidence Packet vollstÃ¤ndig (min. 3 Regimes) |
-| Validated | Paper | Human Approval + Technical Readiness |
+| Stage A | 10 % Monatsziel | Forschungs- und Validierungsziel |
+| Stage B | 20 % Monatsziel | nur mit mehreren Kandidaten, Symbolen und Regimen |
+| Stage C | 30 % Monatsziel | opportunistische Hochleistungsstufe |
+| Stage D | 50 % Monatsziel | nur Experimental Sleeve, stark limitiert, High Risk |
 
----
+Regeln:
 
-## 12. Evidence Requirements
-Ein Evidence Packet MUSS enthalten:
-- **Deterministic Trace:** Jede Entscheidung im Testzeitraum ist nachvollziehbar.
-- **Regime Scorecard:** Performance-Metriken pro Marktphase.
-- **Execution Realism:** Simulation von Fees, Slippage und Latenz.
-- **Dataset Fingerprint:** Eindeutiger Bezug auf die verwendeten Quelldaten.
+- keine Renditegarantie
+- kein Echtgeld-Go
+- kein Live-Go
+- keine direkte Ableitung von Backtest-Erfolgen auf Live-Kapital
 
----
+## 5. No-Touch-Core
 
-## 13. Dataset Quality as Business Gate
-DatenqualitÃ¤t ist kein technisches Detail, sondern ein **Business-Risiko**.
-- LÃ¼ckenhafte oder falsche Daten fÃ¼hren zu "Halluzinationen" der ProfitabilitÃ¤t.
-- Das Dataset Quality Gate (#3035) blockt jede Promotion eines Candidates, dessen Datenbasis nicht verifiziert ist.
+Der Core ist nicht das Experimentierfeld.
 
----
+Nicht anfassbar fuer diese Schicht:
 
-## 14. Open-Source Tooling Posture
+- Signal
+- Risk
+- Execution
+- DB Writer
+- Risk-Layer
+- KillSwitch
+- Circuit Breaker
+- Execution Gate
+- LR-SSOT
 
-Wir folgen dem Prinzip: **Build the Core, Borrow the Tools**.
+Zusatzregeln:
 
-- **P0-Kandidaten fÃ¼r Candidate/Evidence Contracts:** `Pydantic`, `jsonschema`
-- **P0-Kandidat fÃ¼r Dataset Quality Gates:** `Pandera`
-- **P0-Kandidaten fÃ¼r Markdown/CLI-Reporting:** `Rich`, `Jinja2`
-- **SpÃ¤tere Referenz fÃ¼r Fee-/Exchange-Metadaten:** `ccxt`
-- **Nur Reference/Borrow-Pattern oder Reject, keine Core-Dependency:** `Freqtrade`, `Hummingbot`, `LEAN`, `Backtrader`, `Zipline`, `NautilusTrader`
+- keine produktiven Orders, Fills, Positions, Secrets oder Live Risk State in neue Research-/Brain-/Profitability-Schichten
+- keine automatische Promotion
+- kein Dashboard-Approval
+- keine AI-Approval
+- keine Docs-Approval
+- keine Umgehung von Risk, KillSwitch oder LR-Gates
 
-| Posture | Einordnung |
+## 6. Learning Loop vs Trading Loop
+
+### Learning Loop
+
+Candidate -> Backtest -> ARVP -> Scenario Stress -> Evidence -> Lessons -> Ranking -> Promotion Recommendation
+
+Zweck:
+
+- Wissen aufbauen
+- Kandidaten vergleichen
+- Drift sichtbar machen
+- schlechte Kandidaten verwerfen
+
+### Trading Loop
+
+Candidate nur nach Gates -> Strategy Context -> Scope/Capital -> Risk -> KillSwitch -> Execution Gate -> Operator/Human Gate -> moeglicher Trade
+
+Zweck:
+
+- nur kontrolliert gepruefte Kandidaten ausfuehren
+- keine experimentelle Kurzschlussschleife
+
+Kernsatz:
+
+Learning verbessert Wissen. Trading fuehrt nur kontrolliert gepruefte Kandidaten aus.
+
+## 7. Candidate Lifecycle
+
+Mindestens folgende Status gehoeren zum kanonischen Lifecycle:
+
+- IDEA
+- SPECIFIED
+- BACKTESTED
+- ARVP_VALIDATED
+- STRESS_TESTED
+- PAPER_CANDIDATE
+- PAPER_VALIDATED
+- MICRO_LIVE_CANDIDATE
+- CAPITAL_SCALING_CANDIDATE
+- REJECTED
+- PARKED
+- UNSAFE
+- SUPERSEDED
+- STALE
+
+### Terminal- und Sonderstatus
+
+| Status | Bedeutung |
 |---|---|
-| **Build (Core)** | Event-Bus, Risk-Engine, Replay-Loop, Audit-Ledger |
-| **P0 Use** | Pydantic/jsonschema, Pandera, Rich/Jinja2 |
-| **Later Reference** | ccxt |
-| **Reject / Borrow only** | Freqtrade, Hummingbot, LEAN, Backtrader, Zipline, NautilusTrader |
+| REJECTED | Kandidat ist fachlich oder evidenzseitig verworfen |
+| PARKED | Kandidat bleibt moeglich, aber ohne aktiven Deliveryschritt |
+| UNSAFE | Kandidat verletzt Risk-, Data- oder Safety-Grenzen |
+| SUPERSEDED | Kandidat wurde durch eine neuere Variante ersetzt |
+| STALE | Kandidat ist veraltet oder muss neu bewertet werden |
 
----
+## 8. Promotion Gate Matrix
 
-## 15. Roadmap Phase 0-8
+Jede Stufe braucht:
 
-- **Phase 0:** `#3031` Datenblocker sichtbar halten.
-- **Phase 1:** `#3033` Profitability Canon.
-- **Phase 2:** `#3034` Candidate Contract + Evidence Packet.
-- **Phase 3:** `#3035` Dataset Quality Gate.
-- **Phase 4:** ARVP Batch Runner + Scenario Packs.
-- **Phase 5:** Execution Economics.
-- **Phase 6:** Strategy League Table.
-- **Phase 7:** Paper Portfolio + Capital Sleeves Spec.
-- **Phase 8:** Control Room + Micro-Live-Readiness-Pfad, ohne Live-Go.
+- Entry Criteria
+- Evidence Required
+- Stop Criteria
+- Allowed Next Gate
+- Reject / Park / Unsafe Gruende
 
-## 16. Mapping to Existing Issues
-- **Parent:** #3032 (Profitability Engine Parent)
-- **Active Blockers:** #3031 (Data Blocker), #1900 (ARVP North-Star)
-- **Parked / Scaling:** #205 (Multi-Strategy), #211 (Multi-Asset) â€“ Bleiben geparkt bis Phase 6/7.
-- **Live Roadmap:** #2985 (Separate Live-Readiness-Schiene).
+| Von -> Nach | Entry Criteria | Evidence Required | Stop Criteria | Allowed Next Gate | Reject / Park / Unsafe Gruende |
+|---|---|---|---|---|---|
+| IDEA -> SPECIFIED | Problem, Hypothese, Strategy Family, Symbol Universe, Timeframe, Direction sind benannt | kurze Spezifikation, erste Risiko- und Execution-Annahmen | unklare Hypothese, Duplikat, unbounded scope, Safety-Konflikt | SPECIFIED | REJECTED bei fehlender Begrenzung, PARKED bei fehlendem Hebel, UNSAFE bei Risk-Konflikt |
+| SPECIFIED -> BACKTESTED | Contract ist vollstaendig genug fuer einen reproduzierbaren Test | Backtest-Report, Parameter-Set, Dataset-Fingerprint, Netto-Sicht | Daten fehlen, Contract ist lueckenhaft, Test ist nicht reproduzierbar | BACKTESTED | REJECTED bei unvollstaendigem Contract, UNSAFE bei nicht erlaubten Daten oder Bias |
+| BACKTESTED -> ARVP_VALIDATED | Backtest bestand mit Kostenannahmen und klares Zielbild ist vorhanden | ARVP/Replay-Trace, deterministischer Lauf, Fingerprint, Kosten- und Friction-Sicht | Replay driftet, Daten sind nicht vergleichbar, ARVP fehlt | ARVP_VALIDATED | REJECTED bei fehlender Evidence, PARKED bei offener Datenlage, UNSAFE bei deterministischer Verletzung |
+| ARVP_VALIDATED -> STRESS_TESTED | ARVP ist nachvollziehbar und ein Szenario-Paket ist definiert | Scenario Stress, Sensitivity, Worst-Case, Lessons, Ranking-Signale | zu optimistische Annahmen, fehlende Stressvarianz, instabile Ergebnisse | STRESS_TESTED | REJECTED bei fragiler Performance, PARKED bei fehlender Szenariodeckung |
+| STRESS_TESTED -> PAPER_CANDIDATE | Stress ist akzeptabel und Unsafe-Zonen sind ausgeschlossen oder klar begrenzt | Stress-Report, Recommendation, Loss-Profile, Drift-Befund | Drawdown zu hoch, Slippage zu hoch, Execution-Gap zu gross | PAPER_CANDIDATE | REJECTED bei fragiler oder unrentabler Kostenstruktur, UNSAFE bei Safety-Konflikt |
+| PAPER_CANDIDATE -> PAPER_VALIDATED | Paper-Betrieb oder Paper-Accounting ist als realistische Naeherung belegbar | Paper-Ledger, Replay-vs-Paper-Compare, Operator-Notizen, Fingerprints | Paper-Daten sind nicht vergleichbar, Event-Kette ist unvollstaendig | PAPER_VALIDATED | PARKED bei unklarer Vergleichbarkeit, REJECTED bei klar negativem Befund |
+| PAPER_VALIDATED -> MICRO_LIVE_CANDIDATE | Separate Live-Readiness-Gates sind vorbereitet und ein Human Gate existiert | Live-Readiness-Paket, Capital-Sleeve-Konzept, Risk- und KillSwitch-SSOT, Operator-Bestätigung | irgendein Live-Go- oder Echtgeld-Go wird impliziert, LR-Grenzen sind offen | MICRO_LIVE_CANDIDATE | UNSAFE bei direktem Live-Bezug ohne Gate, REJECTED bei fehlender readiness |
 
----
+### Gate-Logik
 
-## 17. Stop Criteria
-Die Engine stoppt oder wird zurÃ¼ckgestuft, wenn:
-- Die DatenqualitÃ¤t unter die Grenzwerte fÃ¤llt.
-- Replay-Determinismus verloren geht.
-- "Execution Realism" eine signifikante Divergenz zu Paper-Ergebnissen zeigt.
+- Ein Kandidat darf nur in den naechsten Zustand wechseln, wenn die Evidence den aktuellen Zustand eindeutig traegt.
+- Ein Kandidat wird geparkt, wenn der naechste Schritt sinnvoll ist, aber ein externer Blocker fehlt.
+- Ein Kandidat wird verworfen, wenn er fachlich, technisch oder riskseitig nicht tragfaehig ist.
+- Ein Kandidat wird als unsafe markiert, wenn er Risiken, Data-Grenzen oder LR-/Live-Grenzen verletzt.
 
----
+## 9. Evidence-Grundsatz
 
-## 18. Non-Goals
-- Automatischer Live-Handel.
-- Ersatz von Human-Governance durch Algorithmen.
-- Integration von Drittanbieter-Bots als Core-Execution.
+Brutto-Rendite reicht nicht.
 
----
+Netto zaehlt nach:
 
-## 19. Next Slices after #3033
-Nach Abschluss von #3033 (Canon) folgen:
-1. **#3034:** Technische Spezifikation des Candidate Contracts.
-2. **#3035:** Implementierung des Dataset Quality Gates (Pandera-basiert).
+- Fees
+- Spread
+- Slippage
+- Rejections
+- Latency-Verlusten
+
+Evidence muss sein:
+
+- reproduzierbar
+- deterministisch
+- hash- oder fingerprint-faehig
+- auditierbar
+
+Pflichtregeln:
+
+- Data Quality Gate ist vor ernsthafter Bewertung Pflicht
+- Replay-vs-Paper-Drift muss sichtbar werden
+- ARVP ist Evidence, keine Freigabe
+- Backtest und Paper sind keine Live-Beweise
+
+## 10. Geplante Profitability-Epics
+
+Kanonische Roadmap fuer die Profitability-Schicht:
+
+- #3032 Parent
+- #3033 Canon
+- #3034 Candidate Contract + Evidence Packet
+- #3035 Dataset Quality Gate
+- spaetere Child-Slices:
+  - ARVP Batch Runner
+  - Scenario Pack Library
+  - Execution Economics v1
+  - Strategy League Table v1
+  - Capital Sleeves Spec / Paper Accounting
+  - Profitability Control Room
+  - Paper-to-Micro-Live Ramp
+
+## 11. Mapping zu vorhandenen Issues
+
+| Issue | Einordnung |
+|---|---|
+| #3031 | aktueller operativer ARVP/Data-Blocker fuer replaybare 1m-Candles |
+| #1900 | ARVP North-Star / Paper-Phase-Multiplier |
+| #2961 | Replay-vs-Paper Calibration Batch Anker |
+| #2971 | Batch Compare Anker fuer Window Bank |
+| #1784 | Paper-Betriebsfaden / operativer Kontrollfaden |
+| #1445 | spaeterer Cockpit- oder Profitability-Control-Room-Anker |
+| #205 | geparkt, spaeterer Multi-Strategy-Routing-Anker |
+| #211 | geparkt, spaeterer Multi-Asset- und Portfolio-Anker |
+| #2985 | getrennte Live-Roadmap |
+
+## 12. Open-Source Tooling Policy
+
+Entscheidungsmuster:
+
+- BUILD: CDB-spezifische Governance, Candidate Lifecycle, Evidence-Semantik, Promotion Gates, Capital-Sleeve-Regeln
+- USE: kleine lizenzsaubere Libraries nach eigener Tooling-Entscheidung
+- BORROW: Muster aus bestehenden Quant-/Reporting-/Datenqualitaets-Tools
+- REFERENCE_ONLY: grosse Frameworks als Lernquelle
+- REJECT: fremde Bot-Cores, fremde Live-Execution, unklare Lizenz, zu viel Magic, Overfitting-Risiko
+
+### Konkrete Einordnung
+
+| Posture | Beispiele |
+|---|---|
+| BUILD | Governance, Candidate Lifecycle, Evidence Contract Semantics, Promotion Gates |
+| USE | Pydantic, jsonschema, Pandera, Rich, Jinja2 |
+| BORROW | Muster aus vectorbt, quantstats oder aehnlichen Analysewerkzeugen |
+| REFERENCE_ONLY | Freqtrade, Hummingbot, LEAN, Backtrader, Zipline, NautilusTrader |
+| REJECT | fremde Bot-Cores, fremde Live-Execution, nicht saubere Lizenz- oder Magic-Last |
+
+Wichtig:
+
+- Tooling-Entscheidungen gehoeren nicht als Code in #3033.
+- Tooling-Entscheidungen werden spaeter als eigene Issue-Slices spezifiziert.
+
+## 13. Stop-Kriterien
+
+Planung oder Umsetzung stoppt, wenn:
+
+- Live- oder Echtgeld-Go impliziert wird
+- Risk, KillSwitch oder LR-Gates umgangen werden
+- Backtest, Paper oder ARVP als Live-Beweis verkauft werden
+- Candidate Registry sofort als produktive DB erzwungen wird
+- Capital Sleeves direkt Risk- oder Allocation-Code beruehren, bevor Contracts und Evidence stehen
+- Open Source als fremder Bot-Core uebernommen werden soll
+- Renditeziele ohne Kosten-, Drawdown- oder Drift-Sicht diskutiert werden
+- Scope-Wachstum nicht als eigenes Issue abgegrenzt wird
+- Dashboard, AI oder Docs als Approval benutzt werden
+
+## 14. Naechster Arbeitsfluss
+
+Der Arbeitsfluss ist explizit gestuft:
+
+1. Nach #3033 kommt #3034.
+2. Nach #3034 kommt #3035.
+3. #3031 bleibt parallel und priorisiert als Datenblocker.
+4. Erst danach folgen:
+   - ARVP Batch Runner
+   - Scenario Packs
+   - Execution Economics
+   - Strategy League Table
+
+## 15. Non-Goals
+
+- kein Code ausser optionaler Docs-Index-Referenz
+- keine Dependency-Einfuehrung
+- keine Tooling-Implementation
+- keine DB
+- keine Runtime
+- keine Risk-/Execution-/Allocation-Aenderung
+- keine Live-Roadmap-Aenderung ausser Referenz
+- keine bestehenden Issues schliessen ausser #3033 nach erfolgreichem Merge
+
+## 16. Status-Semantik fuer spaetere Arbeit
+
+Wenn diese Schicht spaeter konkretisiert wird, gelten diese Bedeutungen:
+
+- IDEA: rohe Idee ohne belastbaren Contract
+- SPECIFIED: klar begrenzte Spezifikation
+- BACKTESTED: erster reproduzierbarer statistischer Check
+- ARVP_VALIDATED: replayfaehige Evidence vorhanden
+- STRESS_TESTED: Szenario- und Robustheitspruefung bestanden oder explizit geparkt
+- PAPER_CANDIDATE: fuer Paper-Betrieb geeignet, aber noch nicht validiert
+- PAPER_VALIDATED: Paper-Evidence und Replay-vs-Paper-Compare tragen den Kandidaten
+- MICRO_LIVE_CANDIDATE: nur nach separaten Live-Readiness-Gates
+- CAPITAL_SCALING_CANDIDATE: spaetere Skalierungsstufe, nie automatisch
+- REJECTED: verworfen
+- PARKED: belegt, aber momentan nicht weiter verfolgt
+- UNSAFE: verletzt Risiko-, Daten- oder Safety-Grenzen
+- SUPERSEDED: durch eine neuere Variante ersetzt
+- STALE: veraltet oder neu zu bewerten
+
+## 17. Abschlussregel
+
+Dieses Dokument ist der strategische Canon fuer die Profitability Engine.
+Es erzeugt keine Freigabe fuer Live-Go, Echtgeld-Go, Runtime-Aenderung oder DB-Mutation.
+Es definiert die Begriffe, Grenzen und Reihenfolge fuer die nachfolgenden Issue-Slices.
