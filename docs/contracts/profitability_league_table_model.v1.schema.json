@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_league_table_model.v1.schema.json",
+  "title": "Profitability League Table Model v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "created_at",
+    "parent_issue",
+    "scoring_dimensions",
+    "ranking_rules",
+    "recommendation_semantics",
+    "report_contract",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_league_table_model.v1"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^pltm-[a-z0-9_-]{6,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "scoring_dimensions": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "dimension",
+          "weight_pct",
+          "requires_net_economics",
+          "description"
+        ],
+        "properties": {
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "NET_RETURN",
+              "ROBUSTNESS",
+              "EVIDENCE_COMPLETENESS",
+              "SAFETY_STATUS",
+              "DRAWDOWN_DISCIPLINE",
+              "STRESS_RESILIENCE"
+            ]
+          },
+          "weight_pct": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 100.0
+          },
+          "requires_net_economics": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "ranking_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gross_only_ranking_allowed",
+        "ranking_ready_required",
+        "tie_breakers",
+        "blocked_conditions"
+      ],
+      "properties": {
+        "gross_only_ranking_allowed": {
+          "type": "boolean"
+        },
+        "ranking_ready_required": {
+          "type": "boolean"
+        },
+        "tie_breakers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "LOWER_DRAWDOWN",
+              "BETTER_STRESS_OUTCOME",
+              "HIGHER_EVIDENCE_COMPLETENESS",
+              "FEWER_LIMITATIONS"
+            ]
+          }
+        },
+        "blocked_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "recommendation_semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_recommendations",
+        "automatic_promotion_allowed",
+        "capital_authority",
+        "notes"
+      ],
+      "properties": {
+        "allowed_recommendations": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string",
+            "enum": [
+              "REJECT",
+              "PARK",
+              "PROMOTE_TO_NEXT_RESEARCH_GATE",
+              "UNSAFE",
+              "NO_RECOMMENDATION"
+            ]
+          }
+        },
+        "automatic_promotion_allowed": {
+          "type": "boolean"
+        },
+        "capital_authority": {
+          "type": "string",
+          "enum": ["NONE"]
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "report_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "report_ref",
+        "candidate_minimum_fields",
+        "score_range"
+      ],
+      "properties": {
+        "report_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_league_table_report.v1.schema.json"
+        },
+        "candidate_minimum_fields": {
+          "type": "array",
+          "minItems": 5,
+          "items": {
+            "type": "string",
+            "enum": [
+              "candidate_id",
+              "rank",
+              "total_score",
+              "net_return",
+              "recommendation",
+              "ranking_ready",
+              "evidence_completeness",
+              "limitations_summary"
+            ]
+          }
+        },
+        "score_range": {
+          "type": "string",
+          "const": "0_to_100"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

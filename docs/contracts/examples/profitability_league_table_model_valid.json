@@ -1,0 +1,82 @@
+{
+  "schema_version": "profitability_league_table_model.v1",
+  "model_id": "pltm-profitability-v1",
+  "created_at": "2026-06-06T19:20:00+00:00",
+  "parent_issue": "#3032",
+  "scoring_dimensions": [
+    {
+      "dimension": "NET_RETURN",
+      "weight_pct": 30.0,
+      "requires_net_economics": true,
+      "description": "Candidate must rank on net and not gross-only return."
+    },
+    {
+      "dimension": "ROBUSTNESS",
+      "weight_pct": 20.0,
+      "requires_net_economics": true,
+      "description": "Candidate should remain stable across replay, compare, and stress evidence."
+    },
+    {
+      "dimension": "EVIDENCE_COMPLETENESS",
+      "weight_pct": 20.0,
+      "requires_net_economics": false,
+      "description": "Missing evidence lowers confidence and score."
+    },
+    {
+      "dimension": "SAFETY_STATUS",
+      "weight_pct": 15.0,
+      "requires_net_economics": false,
+      "description": "Unsafe or blocked candidates cannot float upward via score alone."
+    },
+    {
+      "dimension": "STRESS_RESILIENCE",
+      "weight_pct": 15.0,
+      "requires_net_economics": false,
+      "description": "Scenario-pack results must visibly affect ranking confidence."
+    }
+  ],
+  "ranking_rules": {
+    "gross_only_ranking_allowed": false,
+    "ranking_ready_required": true,
+    "tie_breakers": [
+      "BETTER_STRESS_OUTCOME",
+      "LOWER_DRAWDOWN",
+      "HIGHER_EVIDENCE_COMPLETENESS"
+    ],
+    "blocked_conditions": [
+      "execution_economics_assessment.ranking_ready=false",
+      "candidate status is UNSAFE",
+      "dataset quality verdict is BLOCKED"
+    ]
+  },
+  "recommendation_semantics": {
+    "allowed_recommendations": [
+      "REJECT",
+      "PARK",
+      "PROMOTE_TO_NEXT_RESEARCH_GATE",
+      "UNSAFE",
+      "NO_RECOMMENDATION"
+    ],
+    "automatic_promotion_allowed": false,
+    "capital_authority": "NONE",
+    "notes": "League table output is advisory only and cannot authorize promotion or allocation."
+  },
+  "report_contract": {
+    "report_ref": "docs/contracts/profitability_league_table_report.v1.schema.json",
+    "candidate_minimum_fields": [
+      "candidate_id",
+      "rank",
+      "total_score",
+      "net_return",
+      "recommendation",
+      "ranking_ready",
+      "evidence_completeness",
+      "limitations_summary"
+    ],
+    "score_range": "0_to_100"
+  },
+  "limitations": [
+    "League Table remains research-only and not an execution or allocation authority.",
+    "Capital scaling anchors #205 and #211 stay future-only."
+  ]
+}

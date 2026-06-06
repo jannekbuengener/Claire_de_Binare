@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_league_table_report.v1.schema.json",
+  "title": "Profitability League Table Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_id",
+    "model_id",
+    "generated_at",
+    "table_status",
+    "candidate_rankings",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_league_table_report.v1"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^pltr-[a-z0-9_-]{6,64}$"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^pltm-[a-z0-9_-]{6,64}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "table_status": {
+      "type": "string",
+      "enum": ["COMPLETE", "PARTIAL", "BLOCKED"]
+    },
+    "candidate_rankings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "rank",
+          "total_score",
+          "ranking_ready",
+          "net_return",
+          "dimension_scores",
+          "recommendation",
+          "limitations_summary"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "pattern": "^cand-[a-z0-9_-]{4,64}$"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "total_score": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 100.0
+          },
+          "ranking_ready": {
+            "type": "boolean"
+          },
+          "net_return": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "dimension_scores": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "dimension",
+                "score"
+              ],
+              "properties": {
+                "dimension": {
+                  "type": "string",
+                  "enum": [
+                    "NET_RETURN",
+                    "ROBUSTNESS",
+                    "EVIDENCE_COMPLETENESS",
+                    "SAFETY_STATUS",
+                    "DRAWDOWN_DISCIPLINE",
+                    "STRESS_RESILIENCE"
+                  ]
+                },
+                "score": {
+                  "type": "number",
+                  "minimum": 0.0,
+                  "maximum": 100.0
+                }
+              }
+            }
+          },
+          "recommendation": {
+            "type": "string",
+            "enum": [
+              "REJECT",
+              "PARK",
+              "PROMOTE_TO_NEXT_RESEARCH_GATE",
+              "UNSAFE",
+              "NO_RECOMMENDATION"
+            ]
+          },
+          "limitations_summary": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

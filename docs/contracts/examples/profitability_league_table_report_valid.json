@@ -1,0 +1,81 @@
+{
+  "schema_version": "profitability_league_table_report.v1",
+  "report_id": "pltr-profitability-v1-run01",
+  "model_id": "pltm-profitability-v1",
+  "generated_at": "2026-06-06T19:35:00+00:00",
+  "table_status": "PARTIAL",
+  "candidate_rankings": [
+    {
+      "candidate_id": "cand-primary-breakout-a1",
+      "rank": 1,
+      "total_score": 78.4,
+      "ranking_ready": true,
+      "net_return": 0.098,
+      "dimension_scores": [
+        {
+          "dimension": "NET_RETURN",
+          "score": 82.0
+        },
+        {
+          "dimension": "ROBUSTNESS",
+          "score": 74.0
+        },
+        {
+          "dimension": "EVIDENCE_COMPLETENESS",
+          "score": 90.0
+        },
+        {
+          "dimension": "SAFETY_STATUS",
+          "score": 80.0
+        },
+        {
+          "dimension": "STRESS_RESILIENCE",
+          "score": 66.0
+        }
+      ],
+      "recommendation": "PARK",
+      "limitations_summary": [
+        "Slippage sensitivity still degrades ranking confidence.",
+        "Promotion remains advisory only."
+      ]
+    },
+    {
+      "candidate_id": "cand-secondary-breakout-b2",
+      "rank": 2,
+      "total_score": 51.2,
+      "ranking_ready": false,
+      "net_return": null,
+      "dimension_scores": [
+        {
+          "dimension": "NET_RETURN",
+          "score": 0.0
+        },
+        {
+          "dimension": "ROBUSTNESS",
+          "score": 58.0
+        },
+        {
+          "dimension": "EVIDENCE_COMPLETENESS",
+          "score": 49.0
+        },
+        {
+          "dimension": "SAFETY_STATUS",
+          "score": 62.0
+        },
+        {
+          "dimension": "STRESS_RESILIENCE",
+          "score": 55.0
+        }
+      ],
+      "recommendation": "NO_RECOMMENDATION",
+      "limitations_summary": [
+        "Execution economics not rank-ready.",
+        "Stress evidence is incomplete."
+      ]
+    }
+  ],
+  "limitations": [
+    "League Table report is advisory only and cannot trigger promotion.",
+    "Future capital or portfolio actions remain separate work."
+  ]
+}
