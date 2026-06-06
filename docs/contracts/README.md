@@ -12,6 +12,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Replay | [`REPLAY_CONTRACTS_AND_DETERMINISM.md`](REPLAY_CONTRACTS_AND_DETERMINISM.md) | Determinism rules |
 | Profitability | `profitability_candidate_contract.v1.schema.json`, `profitability_evidence_packet.v1.schema.json` | Strategy candidate and evidence packet research contracts |
 | Profitability data quality | `profitability_dataset_quality_report.v1.schema.json` | Dataset quality gate report for candidate validation |
+| Profitability ARVP batch | `profitability_arvp_batch_manifest.v1.schema.json`, `profitability_arvp_batch_summary.v1.schema.json` | Multi-candidate ARVP batch runner design contracts |
 
 ## Related canon (not duplicated here)
 

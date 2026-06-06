@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_arvp_batch_manifest.v1.schema.json",
+  "title": "Profitability ARVP Batch Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "created_at",
+    "parent_issue",
+    "dataset_selection",
+    "candidate_inputs",
+    "adapter_boundary",
+    "runner_surfaces",
+    "evidence_hooks",
+    "failure_policy",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_arvp_batch_manifest.v1"
+    },
+    "batch_id": {
+      "type": "string",
+      "pattern": "^profit-batch-[a-z0-9_-]{8,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "dataset_selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_quality_report_ref",
+        "dataset_fingerprint",
+        "symbol",
+        "timeframe",
+        "window_start_utc",
+        "window_end_utc",
+        "quality_verdict"
+      ],
+      "properties": {
+        "dataset_quality_report_ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dataset_fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "symbol": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeframe": {
+          "type": "string",
+          "minLength": 1
+        },
+        "window_start_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "window_end_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "quality_verdict": {
+          "type": "string",
+          "enum": ["PASS", "WARNING", "FAIL", "BLOCKED"]
+        }
+      }
+    },
+    "candidate_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "candidate_contract_ref",
+          "candidate_status",
+          "adapter_id",
+          "expected_next_gate"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "pattern": "^cand-[a-z0-9_-]{4,64}$"
+          },
+          "candidate_contract_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_status": {
+            "type": "string",
+            "enum": [
+              "SPECIFIED",
+              "BACKTESTED",
+              "ARVP_VALIDATED",
+              "STRESS_TESTED",
+              "PARKED",
+              "UNSAFE"
+            ]
+          },
+          "adapter_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_.-]{3,64}$"
+          },
+          "expected_next_gate": {
+            "type": "string",
+            "enum": [
+              "ARVP_VALIDATION",
+              "STRESS_TEST",
+              "EXECUTION_ECONOMICS",
+              "PARK",
+              "REJECT"
+            ]
+          },
+          "baseline_evidence_ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "adapter_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_contract_required",
+        "dataset_selector_required",
+        "pure_research_only",
+        "core_rewrite_allowed"
+      ],
+      "properties": {
+        "candidate_contract_required": {
+          "type": "boolean"
+        },
+        "dataset_selector_required": {
+          "type": "boolean"
+        },
+        "pure_research_only": {
+          "type": "boolean"
+        },
+        "core_rewrite_allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "runner_surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scenario_harness_surface",
+        "run_registry_surface",
+        "gate_surface",
+        "replay_compare_surface",
+        "scenario_pack_ref"
+      ],
+      "properties": {
+        "scenario_harness_surface": {
+          "type": "string",
+          "const": "core.replay.scenario_harness.run_scenario_group"
+        },
+        "run_registry_surface": {
+          "type": "string",
+          "const": "core.replay.run_registry.ReplayRunRecord"
+        },
+        "gate_surface": {
+          "type": "string",
+          "const": "core.replay.arvp_gate.ARVPEvidenceBundle"
+        },
+        "replay_compare_surface": {
+          "type": "string",
+          "const": "core.replay.replay_vs_paper_compare"
+        },
+        "scenario_pack_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "evidence_hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_packet_schema_ref",
+        "batch_summary_schema_ref",
+        "gate_verdict_required",
+        "compare_ref_required"
+      ],
+      "properties": {
+        "evidence_packet_schema_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_evidence_packet.v1.schema.json"
+        },
+        "batch_summary_schema_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_arvp_batch_summary.v1.schema.json"
+        },
+        "gate_verdict_required": {
+          "type": "boolean"
+        },
+        "compare_ref_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "failure_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_failure_mode",
+        "blocked_conditions",
+        "parked_conditions",
+        "summary_required"
+      ],
+      "properties": {
+        "candidate_failure_mode": {
+          "type": "string",
+          "enum": ["CONTINUE_AND_RECORD", "STOP_BATCH"]
+        },
+        "blocked_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "parked_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "summary_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

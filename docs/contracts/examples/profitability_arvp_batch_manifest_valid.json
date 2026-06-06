@@ -1,0 +1,62 @@
+{
+  "schema_version": "profitability_arvp_batch_manifest.v1",
+  "batch_id": "profit-batch-btc-breakout-q2",
+  "created_at": "2026-06-06T15:30:00+00:00",
+  "parent_issue": "#3032",
+  "dataset_selection": {
+    "dataset_quality_report_ref": "docs/contracts/examples/profitability_dataset_quality_report_valid.json",
+    "dataset_fingerprint": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "symbol": "BTCUSDT",
+    "timeframe": "1m",
+    "window_start_utc": "2026-04-18T00:00:00+00:00",
+    "window_end_utc": "2026-04-18T12:00:00+00:00",
+    "quality_verdict": "PASS"
+  },
+  "candidate_inputs": [
+    {
+      "candidate_id": "cand-primary-breakout-a1",
+      "candidate_contract_ref": "docs/contracts/examples/profitability_candidate_contract_valid.json",
+      "candidate_status": "BACKTESTED",
+      "adapter_id": "primary_breakout_v1.replay_adapter",
+      "expected_next_gate": "ARVP_VALIDATION",
+      "baseline_evidence_ref": "artifacts/backtests/primary_breakout_v1/summary.json"
+    }
+  ],
+  "adapter_boundary": {
+    "candidate_contract_required": true,
+    "dataset_selector_required": true,
+    "pure_research_only": true,
+    "core_rewrite_allowed": false
+  },
+  "runner_surfaces": {
+    "scenario_harness_surface": "core.replay.scenario_harness.run_scenario_group",
+    "run_registry_surface": "core.replay.run_registry.ReplayRunRecord",
+    "gate_surface": "core.replay.arvp_gate.ARVPEvidenceBundle",
+    "replay_compare_surface": "core.replay.replay_vs_paper_compare",
+    "scenario_pack_ref": "core.replay.scenario_packs.BUILTIN_SCENARIO_IDS"
+  },
+  "evidence_hooks": {
+    "evidence_packet_schema_ref": "docs/contracts/profitability_evidence_packet.v1.schema.json",
+    "batch_summary_schema_ref": "docs/contracts/profitability_arvp_batch_summary.v1.schema.json",
+    "gate_verdict_required": true,
+    "compare_ref_required": true
+  },
+  "failure_policy": {
+    "candidate_failure_mode": "CONTINUE_AND_RECORD",
+    "blocked_conditions": [
+      "dataset_quality_verdict=BLOCKED",
+      "candidate_contract_missing",
+      "adapter_boundary_missing"
+    ],
+    "parked_conditions": [
+      "scenario_group_failed_partial",
+      "replay_compare_missing",
+      "evidence_packet_incomplete"
+    ],
+    "summary_required": true
+  },
+  "limitations": [
+    "Research-only manifest; no runtime orchestration is implied.",
+    "Scenario Pack Library remains a separate issue (#3038)."
+  ]
+}

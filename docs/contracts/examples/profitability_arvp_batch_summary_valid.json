@@ -1,0 +1,58 @@
+{
+  "schema_version": "profitability_arvp_batch_summary.v1",
+  "batch_id": "profit-batch-btc-breakout-q2",
+  "started_at": "2026-06-06T15:35:00+00:00",
+  "finished_at": "2026-06-06T16:10:00+00:00",
+  "batch_status": "PARTIAL",
+  "total_candidates": 2,
+  "completed_candidates": 1,
+  "parked_candidates": 1,
+  "blocked_candidates": 0,
+  "failed_candidates": 0,
+  "candidate_results": [
+    {
+      "candidate_id": "cand-primary-breakout-a1",
+      "candidate_contract_ref": "docs/contracts/examples/profitability_candidate_contract_valid.json",
+      "batch_outcome": "COMPLETED",
+      "dataset_quality_verdict": "PASS",
+      "scenario_group_id": "profit_batch_group_01",
+      "scenario_group_manifest_ref": "artifacts/replay_reports/profit_batch_group_01/scenario_group_manifest.json",
+      "scenario_group_fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "run_record_refs": [
+        "artifacts/replay_reports/profit_batch_group_01/run_registry.jsonl#replay-ae0be21cc75e-0001"
+      ],
+      "gate_verdict_ref": "artifacts/replay_reports/profit_batch_group_01/arvp_gate_verdict.json",
+      "replay_compare_ref": "artifacts/replay_reports/profit_batch_group_01/replay_vs_paper_compare.json",
+      "evidence_packet_ref": "artifacts/replay_reports/profit_batch_group_01/profitability_evidence_packet.json",
+      "blocking_reasons": [],
+      "advisory_findings": [
+        "scenario_group: total=5 succeeded=5 failed=0"
+      ],
+      "next_action": "EXECUTION_ECONOMICS"
+    },
+    {
+      "candidate_id": "cand-secondary-breakout-b2",
+      "candidate_contract_ref": "docs/contracts/examples/profitability_candidate_contract_valid.json",
+      "batch_outcome": "PARKED",
+      "dataset_quality_verdict": "WARNING",
+      "scenario_group_id": "profit_batch_group_02",
+      "scenario_group_manifest_ref": "artifacts/replay_reports/profit_batch_group_02/scenario_group_manifest.json",
+      "scenario_group_fingerprint": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "run_record_refs": [
+        "artifacts/replay_reports/profit_batch_group_02/run_registry.jsonl#replay-bf1ce21cc75e-0001"
+      ],
+      "gate_verdict_ref": "artifacts/replay_reports/profit_batch_group_02/arvp_gate_verdict.json",
+      "evidence_packet_ref": "artifacts/replay_reports/profit_batch_group_02/profitability_evidence_packet.json",
+      "blocking_reasons": [],
+      "advisory_findings": [
+        "dataset_quality_warning: missing_candles=2",
+        "scenario_group: total=5 succeeded=4 failed=1"
+      ],
+      "next_action": "SCENARIO_PACK_REVIEW"
+    }
+  ],
+  "limitations": [
+    "Batch summary is advisory evidence only.",
+    "No ranking or capital decision is implied."
+  ]
+}

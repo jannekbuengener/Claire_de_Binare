@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_arvp_batch_summary.v1.schema.json",
+  "title": "Profitability ARVP Batch Summary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "batch_id",
+    "started_at",
+    "finished_at",
+    "batch_status",
+    "total_candidates",
+    "completed_candidates",
+    "parked_candidates",
+    "blocked_candidates",
+    "failed_candidates",
+    "candidate_results",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_arvp_batch_summary.v1"
+    },
+    "batch_id": {
+      "type": "string",
+      "pattern": "^profit-batch-[a-z0-9_-]{8,64}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "batch_status": {
+      "type": "string",
+      "enum": ["COMPLETED", "PARTIAL", "BLOCKED", "FAILED"]
+    },
+    "total_candidates": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completed_candidates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "parked_candidates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "blocked_candidates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failed_candidates": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "candidate_results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "candidate_id",
+          "candidate_contract_ref",
+          "batch_outcome",
+          "dataset_quality_verdict",
+          "scenario_group_id",
+          "scenario_group_manifest_ref",
+          "scenario_group_fingerprint",
+          "run_record_refs",
+          "gate_verdict_ref",
+          "evidence_packet_ref",
+          "blocking_reasons",
+          "advisory_findings",
+          "next_action"
+        ],
+        "properties": {
+          "candidate_id": {
+            "type": "string",
+            "pattern": "^cand-[a-z0-9_-]{4,64}$"
+          },
+          "candidate_contract_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "batch_outcome": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "PARKED",
+              "BLOCKED",
+              "FAILED"
+            ]
+          },
+          "dataset_quality_verdict": {
+            "type": "string",
+            "enum": ["PASS", "WARNING", "FAIL", "BLOCKED"]
+          },
+          "scenario_group_id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9_-]{1,64}$"
+          },
+          "scenario_group_manifest_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scenario_group_fingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "run_record_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "gate_verdict_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "replay_compare_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_packet_ref": {
+            "type": "string",
+            "minLength": 1
+          },
+          "blocking_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "advisory_findings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "next_action": {
+            "type": "string",
+            "enum": [
+              "EXECUTION_ECONOMICS",
+              "SCENARIO_PACK_REVIEW",
+              "DATA_REPAIR",
+              "PARK",
+              "REJECT"
+            ]
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
