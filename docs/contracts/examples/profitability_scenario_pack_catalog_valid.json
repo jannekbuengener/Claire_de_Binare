@@ -1,0 +1,71 @@
+{
+  "schema_version": "profitability_scenario_pack_catalog.v1",
+  "catalog_id": "psc-profitability-v1",
+  "created_at": "2026-06-06T17:20:00+00:00",
+  "parent_issue": "#3032",
+  "pack_version": "v1",
+  "stress_domains": [
+    "SLIPPAGE",
+    "SPREAD",
+    "PARTIAL_FILL",
+    "REJECTION",
+    "LATENCY",
+    "FEED_GAP",
+    "VOLATILITY",
+    "LIQUIDITY"
+  ],
+  "scenario_packs": [
+    {
+      "scenario_id": "baseline_reference",
+      "domain": "SPREAD",
+      "severity": "BASELINE",
+      "description": "Reference baseline with no extra friction beyond the scoped research assumptions.",
+      "deterministic": true,
+      "config_overrides": {},
+      "expected_research_use": "BASELINE_REFERENCE"
+    },
+    {
+      "scenario_id": "slippage_high",
+      "domain": "SLIPPAGE",
+      "severity": "HIGH",
+      "description": "Adverse slippage shock for thin fills or unfavorable price improvement.",
+      "deterministic": true,
+      "config_overrides": {
+        "execution_slippage_bps": 40
+      },
+      "expected_research_use": "REJECT_IF_FRAGILE"
+    },
+    {
+      "scenario_id": "rejection_medium",
+      "domain": "REJECTION",
+      "severity": "MEDIUM",
+      "description": "Deterministic rejection injection on a subset of entry attempts.",
+      "deterministic": true,
+      "config_overrides": {
+        "entry_rejection_rate": 0.15
+      },
+      "expected_research_use": "PARK_IF_FRAGILE"
+    },
+    {
+      "scenario_id": "feed_gap_high",
+      "domain": "FEED_GAP",
+      "severity": "HIGH",
+      "description": "Stale or gapped feed segment to expose brittle timing assumptions.",
+      "deterministic": true,
+      "config_overrides": {
+        "feed_gap_bars": 3
+      },
+      "expected_research_use": "STRESS_SCREEN"
+    }
+  ],
+  "evidence_integration": {
+    "batch_manifest_ref": "docs/contracts/profitability_arvp_batch_manifest.v1.schema.json",
+    "evidence_packet_ref": "docs/contracts/profitability_evidence_packet.v1.schema.json",
+    "stress_summary_ref": "docs/contracts/profitability_scenario_stress_summary.v1.schema.json",
+    "scenario_results_required": true
+  },
+  "limitations": [
+    "Catalog is research-only and does not imply runtime implementation.",
+    "Execution Economics remains a separate issue (#3039)."
+  ]
+}

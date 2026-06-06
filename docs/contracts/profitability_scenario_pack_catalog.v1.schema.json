@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_scenario_pack_catalog.v1.schema.json",
+  "title": "Profitability Scenario Pack Catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_id",
+    "created_at",
+    "parent_issue",
+    "pack_version",
+    "stress_domains",
+    "scenario_packs",
+    "evidence_integration",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_scenario_pack_catalog.v1"
+    },
+    "catalog_id": {
+      "type": "string",
+      "pattern": "^psc-[a-z0-9_-]{6,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "pack_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "stress_domains": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "SLIPPAGE",
+          "SPREAD",
+          "PARTIAL_FILL",
+          "REJECTION",
+          "LATENCY",
+          "FEED_GAP",
+          "VOLATILITY",
+          "LIQUIDITY"
+        ]
+      }
+    },
+    "scenario_packs": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "domain",
+          "severity",
+          "description",
+          "deterministic",
+          "config_overrides",
+          "expected_research_use"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]{3,64}$"
+          },
+          "domain": {
+            "type": "string",
+            "enum": [
+              "SLIPPAGE",
+              "SPREAD",
+              "PARTIAL_FILL",
+              "REJECTION",
+              "LATENCY",
+              "FEED_GAP",
+              "VOLATILITY",
+              "LIQUIDITY"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["BASELINE", "LOW", "MEDIUM", "HIGH"]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deterministic": {
+            "type": "boolean"
+          },
+          "config_overrides": {
+            "type": "object"
+          },
+          "expected_research_use": {
+            "type": "string",
+            "enum": [
+              "BASELINE_REFERENCE",
+              "STRESS_SCREEN",
+              "PARK_IF_FRAGILE",
+              "REJECT_IF_FRAGILE"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence_integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "batch_manifest_ref",
+        "evidence_packet_ref",
+        "stress_summary_ref",
+        "scenario_results_required"
+      ],
+      "properties": {
+        "batch_manifest_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_arvp_batch_manifest.v1.schema.json"
+        },
+        "evidence_packet_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_evidence_packet.v1.schema.json"
+        },
+        "stress_summary_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_scenario_stress_summary.v1.schema.json"
+        },
+        "scenario_results_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -13,6 +13,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Profitability | `profitability_candidate_contract.v1.schema.json`, `profitability_evidence_packet.v1.schema.json` | Strategy candidate and evidence packet research contracts |
 | Profitability data quality | `profitability_dataset_quality_report.v1.schema.json` | Dataset quality gate report for candidate validation |
 | Profitability ARVP batch | `profitability_arvp_batch_manifest.v1.schema.json`, `profitability_arvp_batch_summary.v1.schema.json` | Multi-candidate ARVP batch runner design contracts |
+| Profitability scenario packs | `profitability_scenario_pack_catalog.v1.schema.json`, `profitability_scenario_stress_summary.v1.schema.json` | Stress-scenario catalog and candidate stress summary contracts |
 
 ## Related canon (not duplicated here)
 

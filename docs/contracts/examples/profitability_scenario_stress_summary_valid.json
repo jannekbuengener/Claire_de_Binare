@@ -1,0 +1,60 @@
+{
+  "schema_version": "profitability_scenario_stress_summary.v1",
+  "stress_summary_id": "pss-primary-breakout-v1",
+  "candidate_id": "cand-primary-breakout-a1",
+  "catalog_id": "psc-profitability-v1",
+  "generated_at": "2026-06-06T17:45:00+00:00",
+  "overall_stress_outcome": "WARNING",
+  "scenario_results": [
+    {
+      "scenario_id": "baseline_reference",
+      "domain": "SPREAD",
+      "severity": "BASELINE",
+      "status": "PASS",
+      "net_return_delta": 0.0,
+      "max_drawdown_delta": 0.0,
+      "impact_summary": "Reference baseline remains within expected drawdown and return bounds.",
+      "requires_followup_issue": false
+    },
+    {
+      "scenario_id": "slippage_high",
+      "domain": "SLIPPAGE",
+      "severity": "HIGH",
+      "status": "FAIL",
+      "net_return_delta": -0.086,
+      "max_drawdown_delta": 0.041,
+      "impact_summary": "Candidate loses too much net return under adverse slippage shock.",
+      "requires_followup_issue": false
+    },
+    {
+      "scenario_id": "rejection_medium",
+      "domain": "REJECTION",
+      "severity": "MEDIUM",
+      "status": "WARNING",
+      "net_return_delta": -0.019,
+      "max_drawdown_delta": 0.008,
+      "impact_summary": "Candidate remains viable but should be parked pending order-path review.",
+      "requires_followup_issue": false
+    },
+    {
+      "scenario_id": "feed_gap_high",
+      "domain": "FEED_GAP",
+      "severity": "HIGH",
+      "status": "WARNING",
+      "net_return_delta": -0.026,
+      "max_drawdown_delta": 0.012,
+      "impact_summary": "Signal timing degrades under stale-feed windows but does not fully break.",
+      "requires_followup_issue": false
+    }
+  ],
+  "recommendation_impact": {
+    "promote_allowed": false,
+    "park_required": true,
+    "reject_required": false,
+    "notes": "Stress outcome stays advisory evidence only and blocks automatic promotion."
+  },
+  "limitations": [
+    "Stress summary is advisory evidence and not a paper or live approval.",
+    "Ranking and net-economics interpretation remain downstream work."
+  ]
+}
