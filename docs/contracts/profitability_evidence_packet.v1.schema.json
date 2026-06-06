@@ -1,0 +1,273 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Profitability Evidence Packet v1",
+  "description": "Machine-readable research evidence packet for CDB Profitability Engine candidates. Evidence packets support comparison and review only; they do not authorize paper, micro-live, live capital, runtime changes, or capital scaling.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "evidence_packet_id",
+    "candidate_id",
+    "generated_at",
+    "dataset_id",
+    "dataset_fingerprint",
+    "source_run_refs",
+    "gross_return",
+    "net_return",
+    "fees",
+    "spread_cost",
+    "slippage_cost",
+    "profit_factor",
+    "expectancy",
+    "win_rate",
+    "avg_win",
+    "avg_loss",
+    "max_drawdown",
+    "loss_streak",
+    "trade_count",
+    "regime_scorecard",
+    "scenario_results",
+    "replay_vs_paper_status",
+    "simulator_drift",
+    "risk_blocks",
+    "kill_switch_events",
+    "recommendation",
+    "limitations",
+    "safety_boundaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_evidence_packet.v1"
+    },
+    "evidence_packet_id": {
+      "type": "string",
+      "pattern": "^pep-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^cand-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "dataset_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "dataset_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "source_run_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      }
+    },
+    "gross_return": {
+      "type": "number"
+    },
+    "net_return": {
+      "type": "number"
+    },
+    "fees": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "spread_cost": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "slippage_cost": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "profit_factor": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "expectancy": {
+      "type": "number"
+    },
+    "win_rate": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0
+    },
+    "avg_win": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "avg_loss": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "max_drawdown": {
+      "type": "number",
+      "minimum": 0.0
+    },
+    "loss_streak": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "trade_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "regime_scorecard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "artifact_ref",
+        "summary"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "unavailable",
+            "insufficient_data"
+          ]
+        },
+        "artifact_ref": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            }
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "scenario_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "scenario_id",
+          "status",
+          "net_return",
+          "max_drawdown",
+          "notes"
+        ],
+        "properties": {
+          "scenario_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "WARNING",
+              "FAIL",
+              "BLOCKED",
+              "NOT_RUN"
+            ]
+          },
+          "net_return": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "max_drawdown": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "number",
+                "minimum": 0.0
+              }
+            ]
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        }
+      }
+    },
+    "replay_vs_paper_status": {
+      "type": "string",
+      "enum": [
+        "aligned",
+        "pessimistic_drift",
+        "optimistic_drift",
+        "ambiguous_drift",
+        "missing_reference",
+        "not_run"
+      ]
+    },
+    "simulator_drift": {
+      "type": "string",
+      "enum": [
+        "none",
+        "pessimistic",
+        "optimistic",
+        "ambiguous",
+        "unusable",
+        "not_assessed"
+      ]
+    },
+    "risk_blocks": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "kill_switch_events": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "recommendation": {
+      "type": "string",
+      "enum": [
+        "REJECT",
+        "PARK",
+        "PROMOTE_TO_NEXT_RESEARCH_GATE",
+        "UNSAFE",
+        "NO_RECOMMENDATION"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "safety_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  }
+}

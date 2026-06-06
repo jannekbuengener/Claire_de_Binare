@@ -1,0 +1,211 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Profitability Candidate Contract v1",
+  "description": "Machine-readable research contract for CDB Profitability Engine strategy candidates. This is not a trade approval, runtime contract, DB schema, or live-readiness signal.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "candidate_id",
+    "strategy_family",
+    "symbol_universe",
+    "timeframe",
+    "direction",
+    "regime_scope",
+    "parameter_set",
+    "hypothesis",
+    "risk_assumptions",
+    "execution_assumptions",
+    "status",
+    "allowed_next_gate",
+    "reject_reason",
+    "unsafe_zones",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_candidate_contract.v1"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^cand-[a-z0-9][a-z0-9-]{2,80}$"
+    },
+    "strategy_family": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "symbol_universe": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z0-9_:-]{3,40}$"
+      }
+    },
+    "timeframe": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "direction": {
+      "type": "string",
+      "enum": [
+        "long_only",
+        "short_only",
+        "long_short",
+        "flat_research_only"
+      ]
+    },
+    "regime_scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_regimes",
+        "blocked_regimes",
+        "freshness_required"
+      ],
+      "properties": {
+        "allowed_regimes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blocked_regimes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "freshness_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "parameter_set": {
+      "type": "object",
+      "description": "Candidate-local parameter snapshot. Values must remain research metadata and must not override runtime risk, execution, kill-switch, or LR gates.",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 2000
+    },
+    "risk_assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "execution_assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "IDEA",
+        "SPECIFIED",
+        "BACKTESTED",
+        "ARVP_VALIDATED",
+        "STRESS_TESTED",
+        "PAPER_CANDIDATE",
+        "PAPER_VALIDATED",
+        "MICRO_LIVE_CANDIDATE",
+        "CAPITAL_SCALING_CANDIDATE",
+        "REJECTED",
+        "PARKED",
+        "UNSAFE",
+        "SUPERSEDED",
+        "STALE"
+      ]
+    },
+    "allowed_next_gate": {
+      "type": "string",
+      "enum": [
+        "SPECIFIED",
+        "BACKTESTED",
+        "ARVP_VALIDATED",
+        "STRESS_TESTED",
+        "PAPER_CANDIDATE",
+        "PAPER_VALIDATED",
+        "MICRO_LIVE_CANDIDATE",
+        "CAPITAL_SCALING_CANDIDATE",
+        "NONE"
+      ]
+    },
+    "reject_reason": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      ]
+    },
+    "unsafe_zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "zone",
+          "reason"
+        ],
+        "properties": {
+          "zone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      }
+    }
+  }
+}

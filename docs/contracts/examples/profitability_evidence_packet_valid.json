@@ -1,0 +1,53 @@
+{
+  "schema_version": "profitability_evidence_packet.v1",
+  "evidence_packet_id": "pep-primary-breakout-v1-btcusdt-trend-001",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-trend",
+  "generated_at": "2026-06-06T00:00:00Z",
+  "dataset_id": "dataset-primary-breakout-v1-reference-20260418",
+  "dataset_fingerprint": "sha256:01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
+  "source_run_refs": [
+    "artifacts/backtests/primary_breakout_v1/20260418-212643/metrics.json",
+    "docs/evidence/arvp_calibration_pilot_1932_2026-04-26.md"
+  ],
+  "gross_return": 0.018,
+  "net_return": 0.011,
+  "fees": 0.002,
+  "spread_cost": 0.0015,
+  "slippage_cost": 0.0035,
+  "profit_factor": 1.12,
+  "expectancy": 0.02,
+  "win_rate": 0.51,
+  "avg_win": 0.042,
+  "avg_loss": 0.038,
+  "max_drawdown": 0.08,
+  "loss_streak": 4,
+  "trade_count": 24,
+  "regime_scorecard": {
+    "status": "unavailable",
+    "artifact_ref": null,
+    "summary": "No regime scorecard artifact is attached to this example packet."
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "base_case",
+      "status": "WARNING",
+      "net_return": 0.011,
+      "max_drawdown": 0.08,
+      "notes": "Example values only; not a pass claim."
+    }
+  ],
+  "replay_vs_paper_status": "pessimistic_drift",
+  "simulator_drift": "pessimistic",
+  "risk_blocks": 0,
+  "kill_switch_events": 0,
+  "recommendation": "PARK",
+  "limitations": [
+    "Example packet only; does not claim strategy readiness.",
+    "Dataset quality gate result is not embedded in this v1 fixture."
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO.",
+    "Backtest, ARVP, and paper evidence are not live approval.",
+    "No automatic promotion or capital scaling is authorized."
+  ]
+}

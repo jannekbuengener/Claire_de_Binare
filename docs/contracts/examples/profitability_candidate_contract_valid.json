@@ -1,0 +1,49 @@
+{
+  "schema_version": "profitability_candidate_contract.v1",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-trend",
+  "strategy_family": "primary_breakout",
+  "symbol_universe": [
+    "BTCUSDT"
+  ],
+  "timeframe": "1m",
+  "direction": "long_only",
+  "regime_scope": {
+    "allowed_regimes": [
+      "TREND"
+    ],
+    "blocked_regimes": [
+      "RANGE",
+      "PANIC",
+      "UNKNOWN"
+    ],
+    "freshness_required": true
+  },
+  "parameter_set": {
+    "entry_lookback_minutes": 240,
+    "exit_lookback_minutes": 120,
+    "breakout_buffer": 0.0005,
+    "min_minutes_between_entries": 60
+  },
+  "hypothesis": "BTCUSDT trend breakouts can produce positive net expectancy when regime freshness, execution friction, and replay-vs-paper drift remain inside explicit research limits.",
+  "risk_assumptions": [
+    "Core Risk Service, kill-switch, and LR gates remain authoritative.",
+    "Candidate evidence cannot override runtime risk blocks."
+  ],
+  "execution_assumptions": [
+    "Fees, spread, and slippage must be accounted for before ranking.",
+    "Backtest, ARVP, and paper evidence do not imply live execution readiness."
+  ],
+  "status": "SPECIFIED",
+  "allowed_next_gate": "BACKTESTED",
+  "reject_reason": null,
+  "unsafe_zones": [
+    {
+      "zone": "live-capital",
+      "reason": "LR remains NO-GO and this contract is research-only."
+    }
+  ],
+  "limitations": [
+    "Single-symbol v1 example.",
+    "No productive DB registry is created by this fixture."
+  ]
+}
