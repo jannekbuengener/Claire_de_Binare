@@ -147,7 +147,7 @@ graph TD
         SL[sync-labels.yml]
         CBU[control_board_upsert.yml]
         PRD[project_reconcile_daily.yml]
-        CAR[control_board_auto_routing.yml<br/>(PARKED #2772)]
+        CAR["control_board_auto_routing.yml<br/>(PARKED #2772)"]
     end
 
     %% Script connections
