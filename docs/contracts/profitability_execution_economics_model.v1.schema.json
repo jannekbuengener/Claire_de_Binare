@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_execution_economics_model.v1.schema.json",
+  "title": "Profitability Execution Economics Model v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "created_at",
+    "parent_issue",
+    "fee_model",
+    "spread_model",
+    "slippage_model",
+    "cost_attribution",
+    "evidence_integration",
+    "incomplete_assumption_policy",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_execution_economics_model.v1"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^peem-[a-z0-9_-]{6,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "fee_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "maker_bps",
+        "taker_bps",
+        "status_if_unknown"
+      ],
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": ["STATIC_RESEARCH_ASSUMPTION", "VENUE_PROFILE_REFERENCE"]
+        },
+        "maker_bps": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "taker_bps": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "status_if_unknown": {
+          "type": "string",
+          "enum": ["WARNING", "FAIL", "BLOCKED"]
+        }
+      }
+    },
+    "spread_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "measurement_unit",
+        "applies_to_entry_and_exit",
+        "status_if_unknown"
+      ],
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": ["OBSERVED_REPLAY_PROXY", "STATIC_RESEARCH_ASSUMPTION"]
+        },
+        "measurement_unit": {
+          "type": "string",
+          "enum": ["BPS", "PRICE_DISTANCE"]
+        },
+        "applies_to_entry_and_exit": {
+          "type": "boolean"
+        },
+        "status_if_unknown": {
+          "type": "string",
+          "enum": ["WARNING", "FAIL", "BLOCKED"]
+        }
+      }
+    },
+    "slippage_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "basis",
+        "input_sources",
+        "quantity_sensitive",
+        "status_if_unknown"
+      ],
+      "properties": {
+        "basis": {
+          "type": "string",
+          "enum": ["ARVP_SCENARIO_PROXY", "RESEARCH_ASSUMPTION"]
+        },
+        "input_sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["SCENARIO_RESULTS", "REPLAY_COMPARE", "STATIC_BPS"]
+          }
+        },
+        "quantity_sensitive": {
+          "type": "boolean"
+        },
+        "status_if_unknown": {
+          "type": "string",
+          "enum": ["WARNING", "FAIL", "BLOCKED"]
+        }
+      }
+    },
+    "cost_attribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gross_return_required",
+        "net_return_required",
+        "cost_fields",
+        "ranking_dependency"
+      ],
+      "properties": {
+        "gross_return_required": {
+          "type": "boolean"
+        },
+        "net_return_required": {
+          "type": "boolean"
+        },
+        "cost_fields": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "string",
+            "enum": ["fees", "spread_cost", "slippage_cost", "other_friction_cost"]
+          }
+        },
+        "ranking_dependency": {
+          "type": "string",
+          "const": "#3040"
+        }
+      }
+    },
+    "evidence_integration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_packet_ref",
+        "assessment_ref",
+        "net_fields_required_before_ranking"
+      ],
+      "properties": {
+        "evidence_packet_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_evidence_packet.v1.schema.json"
+        },
+        "assessment_ref": {
+          "type": "string",
+          "const": "docs/contracts/profitability_execution_economics_assessment.v1.schema.json"
+        },
+        "net_fields_required_before_ranking": {
+          "type": "boolean"
+        }
+      }
+    },
+    "incomplete_assumption_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "warning_conditions",
+        "fail_conditions",
+        "blocked_conditions"
+      ],
+      "properties": {
+        "warning_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "fail_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "blocked_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schema_version": "profitability_execution_economics_assessment.v1",
+  "assessment_id": "peea-primary-breakout-v1",
+  "candidate_id": "cand-primary-breakout-a1",
+  "model_id": "peem-profitability-v1",
+  "generated_at": "2026-06-06T18:45:00+00:00",
+  "gross_return": 0.143,
+  "net_return": 0.098,
+  "cost_breakdown": {
+    "fees": 0.012,
+    "spread_cost": 0.009,
+    "slippage_cost": 0.017,
+    "other_friction_cost": 0.007,
+    "total_cost": 0.045
+  },
+  "assessment_status": "WARNING",
+  "ranking_ready": false,
+  "assumption_findings": [
+    {
+      "category": "FEE",
+      "severity": "INFO",
+      "summary": "Fee basis is a bounded research assumption and not a live venue feed."
+    },
+    {
+      "category": "SLIPPAGE",
+      "severity": "WARNING",
+      "summary": "Candidate remains materially sensitive to slippage stress and should not rank as net-ready yet."
+    }
+  ],
+  "limitations": [
+    "Assessment is advisory evidence only and cannot authorize promotion.",
+    "Final ranking remains blocked until #3040 consumes the net-economics surface."
+  ]
+}
