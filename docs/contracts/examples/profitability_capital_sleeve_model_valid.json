@@ -1,0 +1,72 @@
+{
+  "schema_version": "profitability_capital_sleeve_model.v1",
+  "model_id": "pcsm-profitability-v1",
+  "created_at": "2026-06-06T20:05:00+00:00",
+  "parent_issue": "#3032",
+  "paper_context_ref": "#1784",
+  "sleeves": [
+    {
+      "sleeve_id": "CORE",
+      "label": "Core",
+      "purpose": "Paper sleeve for the most repeatable and evidence-complete candidates.",
+      "paper_only": true,
+      "candidate_profile": "HIGH_CONFIDENCE",
+      "admission_basis": [
+        "LEAGUE_TABLE",
+        "EXECUTION_ECONOMICS",
+        "STRESS_SUMMARY"
+      ]
+    },
+    {
+      "sleeve_id": "GROWTH",
+      "label": "Growth",
+      "purpose": "Paper sleeve for net-positive candidates that still need comparative learning.",
+      "paper_only": true,
+      "candidate_profile": "NET_POSITIVE_BUT_GROWING",
+      "admission_basis": [
+        "LEAGUE_TABLE",
+        "EXECUTION_ECONOMICS"
+      ]
+    },
+    {
+      "sleeve_id": "OPPORTUNISTIC",
+      "label": "Opportunistic",
+      "purpose": "Paper sleeve for tactical or regime-bound candidates with narrower use windows.",
+      "paper_only": true,
+      "candidate_profile": "TACTICAL_OR_REGIME_BOUND",
+      "admission_basis": [
+        "LEAGUE_TABLE",
+        "PAPER_OBSERVATION"
+      ]
+    },
+    {
+      "sleeve_id": "EXPERIMENTAL",
+      "label": "Experimental",
+      "purpose": "Paper sleeve for early research candidates kept visible without capital authority.",
+      "paper_only": true,
+      "candidate_profile": "EARLY_RESEARCH",
+      "admission_basis": [
+        "PAPER_OBSERVATION"
+      ]
+    }
+  ],
+  "allocation_simulation_rules": {
+    "real_capital_authority": false,
+    "simulation_only": true,
+    "drawdown_tracking_required": true,
+    "pnl_reporting_required": true
+  },
+  "integration_boundaries": {
+    "risk_code_change_allowed": false,
+    "allocation_service_change_allowed": false,
+    "future_anchors": [
+      "#205",
+      "#211"
+    ],
+    "live_roadmap_ref": "#2985"
+  },
+  "limitations": [
+    "Sleeve model is governance-only and does not authorize real capital.",
+    "Risk and allocation integration remain separate future gates."
+  ]
+}

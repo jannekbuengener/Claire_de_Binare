@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_capital_sleeve_model.v1.schema.json",
+  "title": "Profitability Capital Sleeve Model v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "created_at",
+    "parent_issue",
+    "paper_context_ref",
+    "sleeves",
+    "allocation_simulation_rules",
+    "integration_boundaries",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_capital_sleeve_model.v1"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^pcsm-[a-z0-9_-]{6,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "paper_context_ref": {
+      "type": "string",
+      "const": "#1784"
+    },
+    "sleeves": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sleeve_id",
+          "label",
+          "purpose",
+          "paper_only",
+          "candidate_profile",
+          "admission_basis"
+        ],
+        "properties": {
+          "sleeve_id": {
+            "type": "string",
+            "enum": [
+              "CORE",
+              "GROWTH",
+              "OPPORTUNISTIC",
+              "EXPERIMENTAL"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paper_only": {
+            "type": "boolean"
+          },
+          "candidate_profile": {
+            "type": "string",
+            "enum": [
+              "HIGH_CONFIDENCE",
+              "NET_POSITIVE_BUT_GROWING",
+              "TACTICAL_OR_REGIME_BOUND",
+              "EARLY_RESEARCH"
+            ]
+          },
+          "admission_basis": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "enum": [
+                "LEAGUE_TABLE",
+                "EXECUTION_ECONOMICS",
+                "STRESS_SUMMARY",
+                "PAPER_OBSERVATION"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "allocation_simulation_rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "real_capital_authority",
+        "simulation_only",
+        "drawdown_tracking_required",
+        "pnl_reporting_required"
+      ],
+      "properties": {
+        "real_capital_authority": {
+          "type": "boolean"
+        },
+        "simulation_only": {
+          "type": "boolean"
+        },
+        "drawdown_tracking_required": {
+          "type": "boolean"
+        },
+        "pnl_reporting_required": {
+          "type": "boolean"
+        }
+      }
+    },
+    "integration_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "risk_code_change_allowed",
+        "allocation_service_change_allowed",
+        "future_anchors",
+        "live_roadmap_ref"
+      ],
+      "properties": {
+        "risk_code_change_allowed": {
+          "type": "boolean"
+        },
+        "allocation_service_change_allowed": {
+          "type": "boolean"
+        },
+        "future_anchors": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "string",
+            "enum": ["#205", "#211"]
+          }
+        },
+        "live_roadmap_ref": {
+          "type": "string",
+          "const": "#2985"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

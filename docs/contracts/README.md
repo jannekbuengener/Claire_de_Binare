@@ -16,6 +16,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Profitability scenario packs | `profitability_scenario_pack_catalog.v1.schema.json`, `profitability_scenario_stress_summary.v1.schema.json` | Stress-scenario catalog and candidate stress summary contracts |
 | Profitability execution economics | `profitability_execution_economics_model.v1.schema.json`, `profitability_execution_economics_assessment.v1.schema.json` | Net-economics model and candidate cost-attribution contracts |
 | Profitability league table | `profitability_league_table_model.v1.schema.json`, `profitability_league_table_report.v1.schema.json` | Ranking model and recommendation report contracts |
+| Profitability capital sleeves | `profitability_capital_sleeve_model.v1.schema.json`, `profitability_paper_accounting_report.v1.schema.json` | Sleeve-governance model and paper-accounting report contracts |
 
 ## Related canon (not duplicated here)
 

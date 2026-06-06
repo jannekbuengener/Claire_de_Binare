@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_paper_accounting_report.v1.schema.json",
+  "title": "Profitability Paper Accounting Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "report_id",
+    "model_id",
+    "generated_at",
+    "report_scope",
+    "sleeve_reports",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_paper_accounting_report.v1"
+    },
+    "report_id": {
+      "type": "string",
+      "pattern": "^ppar-[a-z0-9_-]{6,64}$"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^pcsm-[a-z0-9_-]{6,64}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "report_scope": {
+      "type": "string",
+      "enum": ["PAPER_ONLY", "SIMULATION_ONLY"]
+    },
+    "sleeve_reports": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sleeve_id",
+          "candidate_count",
+          "paper_pnl",
+          "drawdown",
+          "allocation_simulation_status",
+          "notes"
+        ],
+        "properties": {
+          "sleeve_id": {
+            "type": "string",
+            "enum": [
+              "CORE",
+              "GROWTH",
+              "OPPORTUNISTIC",
+              "EXPERIMENTAL"
+            ]
+          },
+          "candidate_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "paper_pnl": {
+            "type": "number"
+          },
+          "drawdown": {
+            "type": "number",
+            "minimum": 0.0
+          },
+          "allocation_simulation_status": {
+            "type": "string",
+            "enum": ["NOT_STARTED", "SIMULATED", "BLOCKED"]
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

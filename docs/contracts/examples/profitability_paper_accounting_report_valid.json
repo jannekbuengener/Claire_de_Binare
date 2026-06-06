@@ -1,0 +1,54 @@
+{
+  "schema_version": "profitability_paper_accounting_report.v1",
+  "report_id": "ppar-profitability-v1-run01",
+  "model_id": "pcsm-profitability-v1",
+  "generated_at": "2026-06-06T20:20:00+00:00",
+  "report_scope": "PAPER_ONLY",
+  "sleeve_reports": [
+    {
+      "sleeve_id": "CORE",
+      "candidate_count": 2,
+      "paper_pnl": 0.124,
+      "drawdown": 0.041,
+      "allocation_simulation_status": "SIMULATED",
+      "notes": [
+        "Core sleeve remains paper-only despite positive pnl.",
+        "No real allocation authority is implied."
+      ]
+    },
+    {
+      "sleeve_id": "GROWTH",
+      "candidate_count": 3,
+      "paper_pnl": 0.083,
+      "drawdown": 0.067,
+      "allocation_simulation_status": "SIMULATED",
+      "notes": [
+        "Growth sleeve still needs more evidence before any future gate discussion."
+      ]
+    },
+    {
+      "sleeve_id": "OPPORTUNISTIC",
+      "candidate_count": 1,
+      "paper_pnl": 0.019,
+      "drawdown": 0.054,
+      "allocation_simulation_status": "NOT_STARTED",
+      "notes": [
+        "Tactical candidate remains too narrow for allocation simulation."
+      ]
+    },
+    {
+      "sleeve_id": "EXPERIMENTAL",
+      "candidate_count": 4,
+      "paper_pnl": -0.012,
+      "drawdown": 0.092,
+      "allocation_simulation_status": "BLOCKED",
+      "notes": [
+        "Experimental sleeve is observation-only and blocked from allocation simulation."
+      ]
+    }
+  ],
+  "limitations": [
+    "Paper accounting report is advisory only and cannot authorize capital.",
+    "Portfolio and live-roadmap work remain separate."
+  ]
+}
