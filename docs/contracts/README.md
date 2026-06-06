@@ -11,6 +11,7 @@ Repo-backed JSON/YAML schemas und Contract-Dokumente für Messages, Replay und C
 | Examples | [`examples/`](examples/) | Valid/invalid fixtures |
 | Replay | [`REPLAY_CONTRACTS_AND_DETERMINISM.md`](REPLAY_CONTRACTS_AND_DETERMINISM.md) | Determinism rules |
 | Profitability | `profitability_candidate_contract.v1.schema.json`, `profitability_evidence_packet.v1.schema.json` | Strategy candidate and evidence packet research contracts |
+| Profitability data quality | `profitability_dataset_quality_report.v1.schema.json` | Dataset quality gate report for candidate validation |
 
 ## Related canon (not duplicated here)
 

@@ -1,0 +1,65 @@
+{
+  "schema_version": "profitability_dataset_quality_report.v1",
+  "report_id": "dq-primary-breakout-v1-btcusdt-001",
+  "dataset_id": "dataset-primary-breakout-v1-reference-20260418",
+  "dataset_fingerprint": "sha256:01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
+  "generated_at": "2026-06-06T00:00:00Z",
+  "symbol": "BTCUSDT",
+  "timeframe": "1m",
+  "requested_window": {
+    "start_ts_ms": 1775001600000,
+    "end_ts_ms": 1776211140000
+  },
+  "observed_window": {
+    "start_ts_ms": 1775001600000,
+    "end_ts_ms": 1776211140000,
+    "candles_expected": 20160,
+    "candles_observed": 20158
+  },
+  "coverage_summary": {
+    "coverage_ratio": 0.9999,
+    "missing_candle_count": 2,
+    "duplicate_timestamp_count": 0,
+    "out_of_order_count": 0,
+    "timeframe_mismatch_count": 0
+  },
+  "checks": {
+    "coverage_check": {
+      "status": "WARNING",
+      "summary": "Coverage is below strict perfect completeness because two candles are missing."
+    },
+    "missing_candle_check": {
+      "status": "WARNING",
+      "summary": "Two missing 1m candles were detected inside the requested window.",
+      "details": [
+        "Concrete backfill remains a separate data issue such as #3031."
+      ]
+    },
+    "duplicate_check": {
+      "status": "PASS",
+      "summary": "No duplicate timestamps detected."
+    },
+    "ordering_check": {
+      "status": "PASS",
+      "summary": "Observed candles remain strictly increasing by ts_ms."
+    },
+    "timeframe_consistency_check": {
+      "status": "PASS",
+      "summary": "Observed cadence stays on a strict 1m canvas for present candles."
+    },
+    "symbol_window_metadata_check": {
+      "status": "PASS",
+      "summary": "Symbol and requested/observed window metadata are internally consistent."
+    },
+    "dataset_fingerprint_check": {
+      "status": "PASS",
+      "summary": "Content fingerprint is present and stable for downstream evidence joins."
+    }
+  },
+  "quality_verdict": "WARNING",
+  "blocking_reasons": [],
+  "limitations": [
+    "Example report only; not a claim that the referenced dataset is production-ready.",
+    "A WARNING verdict still requires downstream policy to decide whether the dataset is acceptable for the intended research slice."
+  ]
+}
