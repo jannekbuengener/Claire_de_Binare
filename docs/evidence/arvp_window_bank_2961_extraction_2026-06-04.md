@@ -224,3 +224,52 @@ Until then, the ARVP window bank remains at **1 window**.
 - `docs/roadmaps/ARVP_TO_LIVE_GO_ROADMAP_2026-06.md` — roadmap Phase A1
 - `correlation_ledger` (readonly SELECT via docker exec) — 34,237 rows inspected
 - GitHub: #2961 (OPEN), #1900 (OPEN), #1784 (OPEN)
+
+---
+
+## 9. Post-Closeout Reconciliation (2026-06-06)
+
+### 9.1 Downstream Closeout Summary
+
+Since this extraction report was written (2026-06-04), the following closeout chain has
+completed:
+
+| Issue | Title | Status |
+|-------|-------|--------|
+| #2967 | cdb_readonly Postgres role + DSN | DONE |
+| #2968 | Paper runtime — produce new paper-prefixed windows | **CLOSED** |
+| #2969 | Window-bank extraction — extract comparison-grade windows | **CLOSED** |
+| #3028 | Paper reference window artifact commit | **MERGED** (`af01c76c`) |
+
+### 9.2 Updated Window Bank
+
+The extraction-first HOLD documented in section 5 has been partially resolved:
+
+| # | Window ID | Symbol | Strategy | Provenance | Artifact |
+|---|-----------|--------|----------|-------------|----------|
+| 1 | `paper_1909_1776991354682` | BTCUSDT | primary_breakout_v1 | Pilot (2026-04-24) | Docs-backed only |
+| 2 | `0c39ac88-4f4c-5d47-8d7f-a4a3ccbabfab` | BTCUSDT | primary_breakout_v1 | #3028 (`af01c76c`) | `artifacts/paper_reference_windows/paper_reference_window.json` |
+
+**Current count: 2 comparison-grade windows** (was 1 at the time of original extraction report).
+
+### 9.3 Remaining Gap
+
+- **Target: 3+** for full multi-window batch calibration (`#2971`)
+- Calibration on window #2 not yet run (requires replay via Docker stack → Human-GO)
+- 3rd window requires additional paper runtime execution → Human-GO
+
+### 9.4 Updated Verdict
+
+Original verdict (section 5) remains valid as a historical record. The post-closeout
+update is:
+
+- **`batch_seed_count`**: 1 → **2**
+- **`multi_window_coverage`**: still `HOLD` (target 3+)
+- **Next step**: calibration on 2-window bank (replay needed for window #2), or 3rd window generation
+
+### 9.5 Safety
+
+- LR remains **NO-GO**
+- No Live-Go / Echtgeld-Go
+- #2961 remains OPEN
+- ARVP evidence does not imply Live-Go
