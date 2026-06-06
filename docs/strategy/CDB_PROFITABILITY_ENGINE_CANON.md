@@ -66,7 +66,7 @@ Der Trading-Core ist die "Black Box" der Ausführung.
 ---
 
 ## 9. Authority Rules
-1. **Signal != Trade:** Ein Signal ist nur ein Vorschlag; Risk entscheidet (INV-001).
+1. **Signal != Trade:** Ein Signal ist nur ein Vorschlag; Risk entscheidet (INV-002).
 2. **AI != Authority:** KI-Vorschläge sind Research; nur Code/Config im Canon ist Wahrheit.
 3. **Dashboard != Freigabe:** Visualisierungen sind Information; Governance-Dateien sind Autorität.
 4. **Docs != Approval:** Dieses Dokument ist Plan; das Human Gate (`DELIVERY_APPROVED.yaml`) bleibt das Schloss.
