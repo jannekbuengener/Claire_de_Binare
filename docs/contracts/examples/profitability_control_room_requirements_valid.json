@@ -1,0 +1,77 @@
+{
+  "schema_version": "profitability_control_room_requirements.v1",
+  "requirements_id": "pcrr-profitability-v1",
+  "created_at": "2026-06-07T08:45:00+00:00",
+  "parent_issue": "#3032",
+  "cockpit_anchor_ref": "#1445",
+  "panels": [
+    {
+      "panel_id": "CANDIDATE_STATUS",
+      "title": "Candidate Status",
+      "required_inputs": [
+        "profitability_candidate_contract.v1",
+        "profitability_evidence_packet.v1"
+      ],
+      "operator_view": true,
+      "management_view": true
+    },
+    {
+      "panel_id": "LEAGUE_TABLE",
+      "title": "Strategy League Table",
+      "required_inputs": [
+        "profitability_league_table_report.v1"
+      ],
+      "operator_view": true,
+      "management_view": true
+    },
+    {
+      "panel_id": "COST_RISK_REGIME",
+      "title": "Cost / Risk / Regime",
+      "required_inputs": [
+        "profitability_execution_economics_assessment.v1",
+        "profitability_scenario_stress_summary.v1"
+      ],
+      "operator_view": true,
+      "management_view": true
+    },
+    {
+      "panel_id": "EVIDENCE_COMPLETENESS",
+      "title": "Evidence Completeness",
+      "required_inputs": [
+        "profitability_dataset_quality_report.v1",
+        "profitability_arvp_batch_summary.v1"
+      ],
+      "operator_view": true,
+      "management_view": false
+    },
+    {
+      "panel_id": "SLEEVE_PNL",
+      "title": "Sleeve PnL",
+      "required_inputs": [
+        "profitability_paper_accounting_report.v1"
+      ],
+      "operator_view": true,
+      "management_view": true
+    }
+  ],
+  "operator_questions": [
+    "Welche Kandidaten sind aktuell blockiert oder geparkt und warum?",
+    "Welche Evidence-Luecken verhindern ehrliche Vergleiche?",
+    "Welche Sleeves zeigen im Paper-Modell auffaellige Drawdown- oder PnL-Muster?"
+  ],
+  "management_questions": [
+    "Welche Kandidaten sind netto und evidenzseitig am belastbarsten?",
+    "Wo konzentrieren sich die groessten Profitability-Risiken?",
+    "Welche Sleeve-Sicht bleibt rein paper-only und nicht aktivierend?"
+  ],
+  "authority_boundaries": {
+    "dashboard_is_approval": false,
+    "ai_is_authority": false,
+    "docs_are_authority": false,
+    "grafana_gate_semantics_allowed": false
+  },
+  "limitations": [
+    "Control Room requirements are read-only and not an approval surface.",
+    "Operational cockpit #1445 remains the existing anchor and is not replaced here."
+  ]
+}

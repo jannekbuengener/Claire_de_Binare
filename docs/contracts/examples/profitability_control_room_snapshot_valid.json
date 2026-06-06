@@ -1,0 +1,43 @@
+{
+  "schema_version": "profitability_control_room_snapshot.v1",
+  "snapshot_id": "pcrs-profitability-v1-run01",
+  "requirements_id": "pcrr-profitability-v1",
+  "generated_at": "2026-06-07T09:05:00+00:00",
+  "candidate_status_panel": {
+    "candidate_count": 6,
+    "status_summary": [
+      "2 candidates ranking-ready",
+      "3 candidates parked",
+      "1 candidate blocked by dataset quality"
+    ]
+  },
+  "league_table_panel": {
+    "table_status": "PARTIAL",
+    "top_candidates": [
+      "cand-primary-breakout-a1",
+      "cand-secondary-breakout-b2"
+    ]
+  },
+  "cost_risk_regime_panel": {
+    "cost_status": "WARNING",
+    "risk_status": "OK",
+    "regime_status": "WARNING"
+  },
+  "evidence_panel": {
+    "completeness_status": "WARNING",
+    "missing_artifact_count": 2
+  },
+  "sleeve_pnl_panel": {
+    "tracked_sleeves": [
+      "CORE",
+      "GROWTH",
+      "OPPORTUNISTIC",
+      "EXPERIMENTAL"
+    ],
+    "paper_only": true
+  },
+  "limitations": [
+    "Snapshot is advisory visibility only and cannot authorize promotion.",
+    "Cockpit and dashboard outputs remain non-authoritative."
+  ]
+}

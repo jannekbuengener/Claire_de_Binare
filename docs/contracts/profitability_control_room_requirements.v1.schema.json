@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_control_room_requirements.v1.schema.json",
+  "title": "Profitability Control Room Requirements v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "requirements_id",
+    "created_at",
+    "parent_issue",
+    "cockpit_anchor_ref",
+    "panels",
+    "operator_questions",
+    "management_questions",
+    "authority_boundaries",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_control_room_requirements.v1"
+    },
+    "requirements_id": {
+      "type": "string",
+      "pattern": "^pcrr-[a-z0-9_-]{6,64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "parent_issue": {
+      "type": "string",
+      "pattern": "^#3032$"
+    },
+    "cockpit_anchor_ref": {
+      "type": "string",
+      "const": "#1445"
+    },
+    "panels": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "panel_id",
+          "title",
+          "required_inputs",
+          "operator_view",
+          "management_view"
+        ],
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "enum": [
+              "CANDIDATE_STATUS",
+              "LEAGUE_TABLE",
+              "COST_RISK_REGIME",
+              "EVIDENCE_COMPLETENESS",
+              "SLEEVE_PNL"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required_inputs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "operator_view": {
+            "type": "boolean"
+          },
+          "management_view": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "operator_questions": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "management_questions": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "authority_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dashboard_is_approval",
+        "ai_is_authority",
+        "docs_are_authority",
+        "grafana_gate_semantics_allowed"
+      ],
+      "properties": {
+        "dashboard_is_approval": {
+          "type": "boolean"
+        },
+        "ai_is_authority": {
+          "type": "boolean"
+        },
+        "docs_are_authority": {
+          "type": "boolean"
+        },
+        "grafana_gate_semantics_allowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

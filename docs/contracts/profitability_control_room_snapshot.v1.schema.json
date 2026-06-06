@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://claire-de-binare/docs/contracts/profitability_control_room_snapshot.v1.schema.json",
+  "title": "Profitability Control Room Snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "requirements_id",
+    "generated_at",
+    "candidate_status_panel",
+    "league_table_panel",
+    "cost_risk_regime_panel",
+    "evidence_panel",
+    "sleeve_pnl_panel",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "profitability_control_room_snapshot.v1"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "pattern": "^pcrs-[a-z0-9_-]{6,64}$"
+    },
+    "requirements_id": {
+      "type": "string",
+      "pattern": "^pcrr-[a-z0-9_-]{6,64}$"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "candidate_status_panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_count",
+        "status_summary"
+      ],
+      "properties": {
+        "candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "status_summary": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "league_table_panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "table_status",
+        "top_candidates"
+      ],
+      "properties": {
+        "table_status": {
+          "type": "string",
+          "enum": ["COMPLETE", "PARTIAL", "BLOCKED"]
+        },
+        "top_candidates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "cost_risk_regime_panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cost_status",
+        "risk_status",
+        "regime_status"
+      ],
+      "properties": {
+        "cost_status": {
+          "type": "string",
+          "enum": ["OK", "WARNING", "FAIL", "BLOCKED"]
+        },
+        "risk_status": {
+          "type": "string",
+          "enum": ["OK", "WARNING", "FAIL", "BLOCKED"]
+        },
+        "regime_status": {
+          "type": "string",
+          "enum": ["OK", "WARNING", "FAIL", "BLOCKED"]
+        }
+      }
+    },
+    "evidence_panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completeness_status",
+        "missing_artifact_count"
+      ],
+      "properties": {
+        "completeness_status": {
+          "type": "string",
+          "enum": ["OK", "WARNING", "FAIL", "BLOCKED"]
+        },
+        "missing_artifact_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "sleeve_pnl_panel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tracked_sleeves",
+        "paper_only"
+      ],
+      "properties": {
+        "tracked_sleeves": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "CORE",
+              "GROWTH",
+              "OPPORTUNISTIC",
+              "EXPERIMENTAL"
+            ]
+          }
+        },
+        "paper_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
