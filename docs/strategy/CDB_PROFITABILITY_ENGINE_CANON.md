@@ -195,7 +195,7 @@ Jede Stufe braucht:
 | ARVP_VALIDATED -> STRESS_TESTED | ARVP ist nachvollziehbar und ein Szenario-Paket ist definiert | Scenario Stress, Sensitivity, Worst-Case, Lessons, Ranking-Signale | zu optimistische Annahmen, fehlende Stressvarianz, instabile Ergebnisse | STRESS_TESTED | REJECTED bei fragiler Performance, PARKED bei fehlender Szenariodeckung |
 | STRESS_TESTED -> PAPER_CANDIDATE | Stress ist akzeptabel und Unsafe-Zonen sind ausgeschlossen oder klar begrenzt | Stress-Report, Recommendation, Loss-Profile, Drift-Befund | Drawdown zu hoch, Slippage zu hoch, Execution-Gap zu gross | PAPER_CANDIDATE | REJECTED bei fragiler oder unrentabler Kostenstruktur, UNSAFE bei Safety-Konflikt |
 | PAPER_CANDIDATE -> PAPER_VALIDATED | Paper-Betrieb oder Paper-Accounting ist als realistische Naeherung belegbar | Paper-Ledger, Replay-vs-Paper-Compare, Operator-Notizen, Fingerprints | Paper-Daten sind nicht vergleichbar, Event-Kette ist unvollstaendig | PAPER_VALIDATED | PARKED bei unklarer Vergleichbarkeit, REJECTED bei klar negativem Befund |
-| PAPER_VALIDATED -> MICRO_LIVE_CANDIDATE | Separate Live-Readiness-Gates sind vorbereitet und ein Human Gate existiert | Live-Readiness-Paket, Capital-Sleeve-Konzept, Risk- und KillSwitch-SSOT, Operator-Bestätigung | irgendein Live-Go- oder Echtgeld-Go wird impliziert, LR-Grenzen sind offen | MICRO_LIVE_CANDIDATE | UNSAFE bei direktem Live-Bezug ohne Gate, REJECTED bei fehlender readiness |
+| PAPER_VALIDATED -> MICRO_LIVE_CANDIDATE | Separate Live-Readiness-Gates sind bestanden und ein explizites Human Approval liegt vor | Cleared LR-SSOT, Human Approval, Live-Readiness-Paket, Capital-Sleeve-Konzept, Risk- und KillSwitch-SSOT | irgendein Live-Go- oder Echtgeld-Go wird impliziert, LR-Grenzen sind offen oder nicht freigegeben | MICRO_LIVE_CANDIDATE | UNSAFE bei direktem Live-Bezug ohne freigegebene LR-Gates, REJECTED bei fehlender readiness |
 
 ### Gate-Logik
 
@@ -335,7 +335,7 @@ Wenn diese Schicht spaeter konkretisiert wird, gelten diese Bedeutungen:
 - STRESS_TESTED: Szenario- und Robustheitspruefung bestanden oder explizit geparkt
 - PAPER_CANDIDATE: fuer Paper-Betrieb geeignet, aber noch nicht validiert
 - PAPER_VALIDATED: Paper-Evidence und Replay-vs-Paper-Compare tragen den Kandidaten
-- MICRO_LIVE_CANDIDATE: nur nach separaten Live-Readiness-Gates
+- MICRO_LIVE_CANDIDATE: nur nach separaten Live-Readiness-Gates, clearem LR-SSOT und explizitem Human Approval
 - CAPITAL_SCALING_CANDIDATE: spaetere Skalierungsstufe, nie automatisch
 - REJECTED: verworfen
 - PARKED: belegt, aber momentan nicht weiter verfolgt
