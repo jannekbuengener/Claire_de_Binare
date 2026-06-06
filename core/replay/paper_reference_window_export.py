@@ -6,7 +6,11 @@ This module is intentionally narrow:
 
 Design rules:
   - Fail-closed: missing/invalid required fields -> PaperReferenceExportError.
-  - Explicit: strategy_id is taken from payload.strategy_id (not inferred).
+  - Chain-level strategy resolution: strategy_id is required in the export output
+    for every event (contract B2). When payload.strategy_id is present, it must
+    match the window's strategy_id. When absent (e.g. DECISION rows that do not
+    carry strategy_id in their evidence payload), it is resolved from the SIGNAL
+    anchor of the same correlation chain. Mixed-strategy chains are rejected.
   - Paper qualification: requires at least one ORDER and one FILL whose order_id
     is prefixed with "paper_".
   - Deterministic ordering: events are sorted by (timestamp_ms, event_pk).
@@ -215,13 +219,23 @@ def export_paper_reference_window(
 
         payload = row.get("payload")
         payload = {} if payload is None else _require_mapping(payload, "payload")
-        payload_strategy = _require_non_empty_string(
-            payload.get("strategy_id"), "payload.strategy_id"
-        )
-        if payload_strategy != request.strategy_id:
-            raise PaperReferenceExportError(
-                f"payload.strategy_id mismatch: expected {request.strategy_id!r}, got {payload_strategy!r}"
-            )
+
+        # strategy_id resolution (chain-level, #3025):
+        # If payload.strategy_id is present and non-empty, it must match
+        # request.strategy_id (strict per-row contract check).
+        # If absent or empty, it will be resolved from the SIGNAL anchor of the
+        # same correlation chain after all rows are processed.
+        raw_strategy = payload.get("strategy_id")
+        if raw_strategy is not None and isinstance(raw_strategy, str) and raw_strategy.strip():
+            resolved_strategy = raw_strategy.strip()
+            if resolved_strategy != request.strategy_id:
+                raise PaperReferenceExportError(
+                    f"payload.strategy_id mismatch: expected {request.strategy_id!r}, got {resolved_strategy!r}"
+                )
+            needs_chain_resolution = False
+        else:
+            needs_chain_resolution = True
+            resolved_strategy = None
 
         ev: dict[str, Any] = {
             "event_pk": event_pk,
@@ -230,6 +244,7 @@ def export_paper_reference_window(
             "symbol": symbol,
             "timestamp_ms": timestamp_ms,
             "payload": dict(payload),
+            "_needs_strategy_resolution": needs_chain_resolution,
         }
         # Optional chain fields (contract requires presence for certain event types, but
         # correlation_ledger allows nulls; we fail-closed when missing for those types).
@@ -298,6 +313,24 @@ def export_paper_reference_window(
                 "chain-integrity failed: event signal_id does not match SIGNAL anchor "
                 f"for correlation_id {correlation_id!r}"
             )
+
+    # Chain-level strategy_id resolution (#3025):
+    # Events that lack payload.strategy_id inherit it from their SIGNAL anchor.
+    # This allows DECISION rows (which do not carry strategy_id in their evidence
+    # payload) to be exported as part of a valid single-strategy chain.
+    for ev in all_events:
+        if not ev.pop("_needs_strategy_resolution"):
+            continue
+        correlation_id = str(ev["correlation_id"])
+        anchor = signal_anchors.get(correlation_id)
+        if anchor is None:
+            raise PaperReferenceExportError(
+                f"chain-strategy resolution failed: no SIGNAL anchor for "
+                f"correlation_id {correlation_id!r} to resolve payload.strategy_id"
+            )
+        # SIGNAL payload.strategy_id was already validated against request.strategy_id
+        # during the per-row loop, so request.strategy_id is the canonical value.
+        ev["payload"]["strategy_id"] = request.strategy_id
 
     selected_correlation_ids: set[str] = set()
     for correlation_id, anchor in signal_anchors.items():

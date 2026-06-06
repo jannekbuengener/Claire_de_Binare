@@ -176,6 +176,237 @@ def test_fails_closed_when_no_paper_fill() -> None:
         export_paper_reference_window(request=request, rows=rows)
 
 
+def _decision_row(
+    *,
+    event_pk: str,
+    correlation_id: str,
+    signal_id: str,
+    decision_id: str,
+    timestamp_ms: int,
+    strategy_id: str | None = "SENTINEL_NO_STRATEGY",
+) -> dict:
+    payload: dict = {
+        "decision_id": decision_id,
+        "signal_id": signal_id,
+        "regime_id": "HIGH_VOL_CHAOTIC",
+        "contract_version": "1.0",
+    }
+    if strategy_id != "SENTINEL_NO_STRATEGY":
+        payload["strategy_id"] = strategy_id
+    return {
+        "event_pk": event_pk,
+        "correlation_id": correlation_id,
+        "signal_id": signal_id,
+        "decision_id": decision_id,
+        "order_id": None,
+        "fill_id": None,
+        "event_type": "DECISION",
+        "symbol": "BTCUSDT",
+        "timestamp_ms": timestamp_ms,
+        "payload": payload,
+    }
+
+
+def test_decision_without_payload_strategy_id_resolves_from_signal_anchor() -> None:
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="sig-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1100,
+        ),
+        _decision_row(
+            event_pk="dec-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            timestamp_ms=1200,
+        ),
+        _order_row(
+            event_pk="ord-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1300,
+        ),
+        _fill_row(
+            event_pk="fill-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1400,
+        ),
+    ]
+    payload = export_paper_reference_window(request=request, rows=rows)
+    assert payload["strategy_id"] == "primary_breakout_v1"
+    events_by_type = {e["event_type"]: e for e in payload["events"]}
+    assert events_by_type["DECISION"]["payload"]["strategy_id"] == "primary_breakout_v1"
+
+
+def test_decision_rows_all_missing_strategy_id_resolved_from_signal() -> None:
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="sig-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1100,
+        ),
+        _decision_row(
+            event_pk="dec-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            timestamp_ms=1200,
+        ),
+        _decision_row(
+            event_pk="dec-1b",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1b",
+            timestamp_ms=1250,
+        ),
+        _order_row(
+            event_pk="ord-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1300,
+        ),
+        _fill_row(
+            event_pk="fill-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1400,
+        ),
+    ]
+    payload = export_paper_reference_window(request=request, rows=rows)
+    assert payload["strategy_id"] == "primary_breakout_v1"
+    for ev in payload["events"]:
+        if ev["event_type"] == "DECISION":
+            assert ev["payload"]["strategy_id"] == "primary_breakout_v1"
+
+
+def test_mixed_strategy_chain_rejected_even_when_signal_anchor_resolves() -> None:
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="sig-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1100,
+        ),
+        _decision_row(
+            event_pk="dec-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            timestamp_ms=1200,
+        ),
+        _order_row(
+            event_pk="ord-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1300,
+            strategy_id="other_strategy",
+        ),
+        _fill_row(
+            event_pk="fill-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1400,
+        ),
+    ]
+    with pytest.raises(
+        PaperReferenceExportError, match="payload\\.strategy_id mismatch"
+    ):
+        export_paper_reference_window(request=request, rows=rows)
+
+
+def test_chain_no_signal_anchor_cannot_resolve_strategy() -> None:
+    request = _req()
+    rows = [
+        _decision_row(
+            event_pk="dec-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            timestamp_ms=1200,
+        ),
+        _order_row(
+            event_pk="ord-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1300,
+        ),
+        _fill_row(
+            event_pk="fill-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1400,
+        ),
+    ]
+    with pytest.raises(PaperReferenceExportError, match="no SIGNAL anchors"):
+        export_paper_reference_window(request=request, rows=rows)
+
+
+def test_decision_with_explicit_strategy_id_matching_request_accepted() -> None:
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="sig-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1100,
+        ),
+        _decision_row(
+            event_pk="dec-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            timestamp_ms=1200,
+            strategy_id="primary_breakout_v1",
+        ),
+        _order_row(
+            event_pk="ord-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1300,
+        ),
+        _fill_row(
+            event_pk="fill-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1400,
+        ),
+    ]
+    payload = export_paper_reference_window(request=request, rows=rows)
+    assert payload["strategy_id"] == "primary_breakout_v1"
+
+
 def test_fails_closed_on_strategy_mismatch() -> None:
     request = _req()
     rows = [
