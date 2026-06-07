@@ -1,0 +1,147 @@
+{
+  "schema_version": "arvp_drift_classification_summary.v1",
+  "report_id": "arvp_drift_classification_2973_after_2971",
+  "created_at": "2026-06-07T19:00:00+00:00",
+  "parent_batch_compare_summary": "artifacts/batch_compare/2971/window_bank_2/batch_compare_summary.json",
+  "parent_evidence_doc": "docs/evidence/arvp_batch_compare_2971_after_2961.md",
+  "window_bank_count": 2,
+  "target_3_plus_windows": false,
+  "multi_window_coverage": "HOLD_MISSING_COMPARISON_GRADE_WINDOWS",
+  "aggregate_classification": {
+    "direction": "pessimistic",
+    "certainty": "limited",
+    "rationale": "Both windows classify as simulator_pessimistic. Aggregate certainty limited by: (1) only 2 windows instead of 3+ target, (2) 1 of 2 windows (#3028) venue/regime-confounded, (3) no regime scorecards available, (4) proxy-only calibration without explicit reject data. Aggregate would not change with additional same-venue windows unless window 3+ shows different drift direction."
+  },
+  "windows": [
+    {
+      "window_id": "paper_1909_1776991354682",
+      "replay_run_id": "replay-16a0a8f6d92f-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "MEXC",
+      "same_venue": true,
+      "venue_mismatch": false,
+      "regime_confounded": false,
+      "candle_source": "DB (candles_1m, MEXC feed)",
+      "comparison_fingerprint": "d71a4abdd5a89acbf1799cc4e837e845affc4c25b9eaf6c2460b81002b529e0f",
+      "calibration_fingerprint": "965fb48891129b8a1299804d679ba16b4e922242abb9601dfdca667e028c9da6",
+      "comparison_status": "aligned",
+      "drift_classification": "simulator_pessimistic",
+      "evidence_certainty": "moderate",
+      "signal_count_delta": 0,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "inferred_unfilled_count_delta": 0,
+      "evidence_level": "proxy",
+      "cross_run_confirmation": true,
+      "limitations": [
+        "proxy-only calibration, no explicit reject data",
+        "narrow 1-minute window"
+      ],
+      "deterministic_replay_ok": true
+    },
+    {
+      "window_id": "0c39ac88-4f4c-5d47-8d7f-a4a3ccbabfab",
+      "replay_run_id": "replay-577c2f83ac91-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "Binance",
+      "same_venue": false,
+      "venue_mismatch": true,
+      "regime_confounded": true,
+      "candle_source": "Binance Spot API (file dataset, 244 candles)",
+      "comparison_fingerprint": "8f74124bc362e09ad02ec4c11b2249d8e24fd0ac798d59467a3df552fb259405",
+      "calibration_fingerprint": "795b5a58d50dba9b42d6a10c5a10233d888b92c875f1bc1541afdb09fc204001",
+      "comparison_status": "aligned",
+      "drift_classification": "simulator_pessimistic",
+      "evidence_certainty": "limited",
+      "signal_count_delta": -1,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "inferred_unfilled_count_delta": 0,
+      "evidence_level": "proxy",
+      "cross_run_confirmation": false,
+      "limitations": [
+        "venue_mismatch: Binance != MEXC",
+        "regime_discrepancy: regime_id=0 (TREND default) vs original regime_id=2 (HIGH_VOL_CHAOTIC)",
+        "confounded drift: venue/regime differences may explain deltas, not pure simulator behavior",
+        "proxy-only calibration, no explicit reject data",
+        "narrow 2-minute window",
+        "signal delta of -1 likely venue/regime-related (pilot had signal_delta=0)"
+      ],
+      "deterministic_replay_ok": true
+    }
+  ],
+  "certainty_model": {
+    "aggregate_certainty": "limited",
+    "window_count_adequacy": "limited",
+    "same_venue_coverage": "limited",
+    "cross_run_consistency": "moderate",
+    "regime_data_availability": "unavailable",
+    "reject_evidence_availability": "unavailable",
+    "classification_canon_match": "moderate"
+  },
+  "ranked_findings": [
+    {
+      "rank": 1,
+      "finding": "Simulator consistently misses orders/fills in same-venue conditions",
+      "drift_class": "simulator_pessimistic",
+      "window": "Pilot (paper_1909_1776991354682)",
+      "certainty": "moderate",
+      "operational_impact": "high",
+      "detail": "If the simulator systematically misses orders that paper would execute, canary performance projections from replay-only evidence would be overconfident"
+    },
+    {
+      "rank": 2,
+      "finding": "Signal generation differs with venue/regime change",
+      "drift_class": "simulator_pessimistic (confounded)",
+      "window": "#3028 (0c39ac88-...)",
+      "certainty": "limited",
+      "operational_impact": "medium",
+      "detail": "Signal delta of -1 may be venue or regime related, not simulator-only. Cannot quantify without same-venue MEXC data"
+    },
+    {
+      "rank": 3,
+      "finding": "Fill behaviour identical across windows (both -1)",
+      "drift_class": "simulator_pessimistic",
+      "window": "Both",
+      "certainty": "limited",
+      "operational_impact": "medium",
+      "detail": "Consistent fill gap (-1/-1) across both windows suggests systematic simulator limit, but n=2 is too small for confident pattern claim"
+    },
+    {
+      "rank": 4,
+      "finding": "No explicit reject data available in any window",
+      "drift_class": "execution_semantics_gap (proxy)",
+      "window": "Both",
+      "certainty": "high (on absence)",
+      "operational_impact": "low",
+      "detail": "Proxy calibration is documented limitation from #1903 contract; explicit reject handling is a known gap"
+    }
+  ],
+  "execution_realism_candidate_gap": {
+    "identified": true,
+    "gap": "Fill model / order execution realism in replay",
+    "evidence": "Both windows show fill_count_delta=-1. Replay produces 0 fills where paper produced 1 fill. Consistent pattern across same-venue and venue-mismatched windows.",
+    "certainty": "moderate (pilot evidence) / limited (#3028 evidence)",
+    "blast_radius": "primary_breakout_v1 / BTCUSDT only",
+    "note": "Signal delta differs between windows (0 vs -1). The order/fill delta is the cleaner signal for simulator realism assessment."
+  },
+  "venue_regime_caveats": [
+    "Binance != MEXC: venue_mismatch=true in dataset_spec.json",
+    "Regime discrepancy: #3028 uses default regime_id=0 (TREND), original paper used regime_id=2 (HIGH_VOL_CHAOTIC)",
+    "Price differences between Binance and MEXC affect breakout detection",
+    "#3028 drift classification confounded by venue/regime differences, not pure simulator behavior"
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No Live-Go / Echtgeld-Go",
+    "No runtime execution beyond committed artifacts",
+    "No DB mutation",
+    "No strategy code changes",
+    "Binance candles are not MEXC evidence",
+    "Drift classification is diagnosis, not trade authorization",
+    "No batch conclusion without explicit limitations",
+    "#3028 drift classification confounded by venue/regime differences"
+  ]
+}
