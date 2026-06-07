@@ -153,3 +153,52 @@ def test_candle_rows_checksum_is_stable_and_order_independent() -> None:
         trade_count=6,
     )
     assert candle_rows_checksum([a, b]) == candle_rows_checksum([b, a])
+
+
+def test_build_backfill_manifest_without_apply_produces_zero_inserts() -> None:
+    from scripts.replay.candle_continuity import build_backfill_manifest
+
+    rows = [
+        CandleRow(
+            symbol="BTCUSDT",
+            ts_ms=1_000_000_020_000,
+            open=Decimal("50000.0"),
+            high=Decimal("50100.0"),
+            low=Decimal("49900.0"),
+            close=Decimal("50050.0"),
+            volume=Decimal("10.0"),
+            trade_count=42,
+        ),
+        CandleRow(
+            symbol="BTCUSDT",
+            ts_ms=1_000_000_080_000,
+            open=Decimal("50050.0"),
+            high=Decimal("50200.0"),
+            low=Decimal("50000.0"),
+            close=Decimal("50100.0"),
+            volume=Decimal("15.0"),
+            trade_count=55,
+        ),
+    ]
+    manifest = build_backfill_manifest(
+        source="binance_spot_api_v3_klines",
+        source_urls=["https://api.binance.com/api/v3/klines?test=1"],
+        import_command="test --no-apply",
+        symbol="BTCUSDT",
+        start_ts_ms=1_000_000_020_000,
+        end_ts_ms=1_000_000_080_000,
+        rows=rows,
+        inserted_count=0,
+        skipped_existing_count=0,
+    )
+    assert manifest["contract_version"] == "cdb_candle_backfill_import.v1"
+    assert manifest["source"] == "binance_spot_api_v3_klines"
+    assert manifest["inserted_count"] == 0
+    assert manifest["skipped_existing_count"] == 0
+    assert manifest["row_count"] == 2
+    assert len(manifest["rows"]) == 2
+    assert manifest["rows"][0]["ts_ms"] == 1_000_000_020_000
+    assert manifest["rows"][1]["ts_ms"] == 1_000_000_080_000
+    assert "import_id" in manifest
+    assert "checksum_sha256" in manifest
+    assert manifest["checksum_sha256"] == candle_rows_checksum(rows)
