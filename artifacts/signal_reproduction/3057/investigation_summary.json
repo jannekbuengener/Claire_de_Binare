@@ -1,0 +1,149 @@
+{
+  "schema_version": "arvp_signal_reproduction_investigation.v1",
+  "investigation_id": "arvp_signal_reproduction_3057_after_2980",
+  "created_at": "2026-06-07T19:30:00+00:00",
+  "parent_evidence_doc": "docs/evidence/arvp_signal_reproduction_gap_3057_after_2980.md",
+  "parent_issues": {
+    "3057": "https://github.com/jannekbuengener/Claire_de_Binare/issues/3057",
+    "2980": "https://github.com/jannekbuengener/Claire_de_Binare/issues/2980",
+    "2974": "https://github.com/jannekbuengener/Claire_de_Binare/issues/2974"
+  },
+  "investigation_summary": {
+    "question": "Why does replay/backtest produce signals_total=0 in paper reference windows, despite paper containing ORDER+FILL?",
+    "root_cause_classification": "MIXED_CAUSE",
+    "classification_detail": "Three independently verifiable gaps combine to produce the observed behavior",
+    "gaps": [
+      {
+        "id": "PAPER_REFERENCE_EXPORT_GAP",
+        "description": "Pre-window SIGNAL events are not exported by the paper reference window runner",
+        "applicable_window": "pilot",
+        "evidence_strength": "strong",
+        "code_files": [
+          "services/validation/paper_reference_window_runner.py:182-185",
+          "core/replay/paper_reference_window_export.py:214-218",
+          "core/replay/replay_vs_paper_compare.py:215-218"
+        ],
+        "artifact_evidence": [
+          "artifacts/calibration/2961/pilot_baseline/paper_reference_window.json (0 SIGNAL events, has ORDER+FILL with signal_id)",
+          "artifacts/calibration/2961/pilot_validation_compare/replay-16a0a8f6d92f-0001/shadow_comparison.json (signal_count_delta=0)"
+        ]
+      },
+      {
+        "id": "LIVE_VS_REPLAY_SIGNAL_SEMANTICS_GAP",
+        "description": "Live signal service uses tick price (intra-candle), replay uses candle close price",
+        "applicable_window": "both",
+        "evidence_strength": "strong",
+        "code_files": [
+          "services/signal/service.py:552 (close_now = market_data.price, tick/intra-candle)",
+          "core/replay/historical_bridge.py:161 (close_now = candle[close])"
+        ],
+        "artifact_evidence": [
+          "artifacts/replay_reports/replay-577c2f83ac91-0001/report.json (signals_total=0)",
+          "artifacts/replay_reports/arvp_verify_20260423_baseline/replay-30a9b4ff8d28-0001/report.json (signals_total=53, large window)"
+        ]
+      },
+      {
+        "id": "METRIC_COUNTING_GAP",
+        "description": "Comparison reports signal_count_delta=0 (false neutral), masking real signal absence",
+        "applicable_window": "pilot",
+        "evidence_strength": "medium",
+        "code_files": [
+          "core/replay/shadow_compare.py:370 (signal_count_delta = replay.signal_count - paper.signal_count)",
+          "core/replay/replay_vs_paper_compare.py:186-200 (paper signal_count counted from SIGNAL events in window)"
+        ],
+        "artifact_evidence": [
+          "artifacts/calibration/2961/pilot_validation_compare/replay-16a0a8f6d92f-0001/shadow_comparison.json (signal_count_delta=0, but paper had real signal)"
+        ]
+      }
+    ],
+    "mixed_cause_rationale": "Pilot window primarily explained by PAPER_REFERENCE_EXPORT_GAP (SIGNAL before window start, not exported). #3028 window primarily confounded by venue_mismatch but would still show LIVE_VS_REPLAY_SIGNAL_SEMANTICS_GAP. METRIC_COUNTING_GAP masks the pilot gap from downstream consumers."
+  },
+  "window_analysis": {
+    "pilot_window": {
+      "window_id": "paper_1909_1776991354682",
+      "replay_run_id": "replay-16a0a8f6d92f-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "MEXC",
+      "same_venue": true,
+      "paper_window": "2026-04-24T00:42:00+00:00 to 2026-04-24T00:43:00+00:00",
+      "paper_events": [
+        {"event_type": "SIGNAL", "in_window": false, "note": "occurred before 00:42:00, not exported by paper reference runner"},
+        {"event_type": "ORDER", "timestamp": "2026-04-24T00:42:34.803Z", "signal_id": "sig-1909-runtime-smoke"},
+        {"event_type": "FILL", "timestamp": "2026-04-24T00:42:34.803Z"}
+      ],
+      "replay_metrics": {
+        "signals_total": 0,
+        "buy_signals_total": 0,
+        "sell_signals_total": 0,
+        "orders_placed": 0,
+        "fills_recorded": 0,
+        "candles_total": 475,
+        "warmup_count": 240,
+        "live_candle_count": 235
+      },
+      "signal_count_delta": 0,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "primary_gap": "PAPER_REFERENCE_EXPORT_GAP",
+      "secondary_gap": "METRIC_COUNTING_GAP",
+      "note": "signal_count_delta=0 is a FALSE NEUTRAL. Paper SIGNAL existed but outside window bounds. Replay produced 0 signals."
+    },
+    "window_3028": {
+      "window_id": "0c39ac88-4f4c-5d47-8d7f-a4a3ccbabfab",
+      "replay_run_id": "replay-577c2f83ac91-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "Binance",
+      "same_venue": false,
+      "venue_mismatch": true,
+      "regime_confounded": true,
+      "paper_window": "2026-06-06T00:28:12.551Z to 2026-06-06T00:30:12.814Z",
+      "paper_events": [
+        {"event_type": "SIGNAL", "timestamp": "2026-06-06T00:29:12.551Z", "in_window": true},
+        {"event_type": "DECISION", "timestamp": "2026-06-06T00:29:12.551Z", "in_window": true},
+        {"event_type": "ORDER", "timestamp": "2026-06-06T00:29:12.551Z", "in_window": true},
+        {"event_type": "FILL", "timestamp": "2026-06-06T00:29:12.551Z", "in_window": true}
+      ],
+      "replay_metrics": {
+        "signals_total": 0,
+        "buy_signals_total": 0,
+        "sell_signals_total": 0,
+        "orders_placed": 0,
+        "fills_recorded": 0,
+        "candles_total": 244,
+        "warmup_count": 240,
+        "live_candle_count": 4
+      },
+      "signal_count_delta": -1,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "primary_gap": "LIVE_VS_REPLAY_SIGNAL_SEMANTICS_GAP",
+      "confounds": ["venue_mismatch: Binance != MEXC", "regime_discrepancy: regime_id=0 vs 2"],
+      "note": "SIGNAL IS inside window bounds. Delta=-1 is visible. However, confounded by venue/regime. Live uses tick prices, replay uses candle closes."
+    }
+  },
+  "follow_up": {
+    "implementation_issue_suggested": true,
+    "implementation_issue_title": "[ARVP][SIGNAL][FIX] Preserve causal signal context for paper reference replay comparison",
+    "implementation_scope": "Fix paper_reference_window_export.py to include causally-linked pre-window SIGNAL events",
+    "implementation_validation": "After fix, pilot window signal_count_delta should change from 0 to -1",
+    "architectural_gap_tracking": "LIVE_VS_REPLAY_SIGNAL_SEMANTICS_GAP — document as known limitation, no narrow fix available"
+  },
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No Live-Go / Echtgeld-Go",
+    "No runtime execution beyond committed artifacts",
+    "No DB mutation",
+    "No strategy/signal code changes",
+    "No execution/fill model changes",
+    "This investigation is diagnosis, not trading authorization",
+    "#1905 remains CLOSED",
+    "#2980 remains HOLD with new blocker"
+  ],
+  "restunsicherheiten": [
+    "Exact pre-window SIGNAL timestamp for pilot not preserved in committed artifacts",
+    "No same-venue MEXC data for #3028 to isolate LIVE_VS_REPLAY_SIGNAL_SEMANTICS_GAP",
+    "n=2 window bank limits generalization"
+  ]
+}
