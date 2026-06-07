@@ -1,0 +1,86 @@
+{
+  "schema_version": "arvp_batch_compare_summary.v1",
+  "batch_id": "arvp_batch_compare_2971_after_2961",
+  "created_at": "2026-06-07T16:30:00+00:00",
+  "window_bank_count": 2,
+  "multi_window_coverage": "HOLD_MISSING_COMPARISON_GRADE_WINDOWS",
+  "windows": [
+    {
+      "window_id": "paper_1909_1776991354682",
+      "replay_run_id": "replay-16a0a8f6d92f-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "MEXC",
+      "same_venue": true,
+      "candle_source": "DB (candles_1m, MEXC feed)",
+      "comparison_fingerprint": "d71a4abdd5a89acbf1799cc4e837e845affc4c25b9eaf6c2460b81002b529e0f",
+      "calibration_fingerprint": "965fb48891129b8a1299804d679ba16b4e922242abb9601dfdca667e028c9da6",
+      "comparison_status": "aligned",
+      "drift_classification": "pessimistic",
+      "evidence_certainty": "moderate",
+      "signal_count_delta": 0,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "inferred_unfilled_count_delta": 0,
+      "limitations": ["proxy-only calibration, no explicit reject data"],
+      "deterministic_replay_ok": true
+    },
+    {
+      "window_id": "0c39ac88-4f4c-5d47-8d7f-a4a3ccbabfab",
+      "replay_run_id": "replay-577c2f83ac91-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "Binance",
+      "same_venue": false,
+      "venue_mismatch": true,
+      "candle_source": "Binance Spot API (file dataset, 244 candles)",
+      "comparison_fingerprint": "8f74124bc362e09ad02ec4c11b2249d8e24fd0ac798d59467a3df552fb259405",
+      "calibration_fingerprint": "795b5a58d50dba9b42d6a10c5a10233d888b92c875f1bc1541afdb09fc204001",
+      "comparison_status": "aligned",
+      "drift_classification": "pessimistic",
+      "evidence_certainty": "limited",
+      "signal_count_delta": -1,
+      "order_count_delta": -1,
+      "fill_count_delta": -1,
+      "inferred_unfilled_count_delta": 0,
+      "limitations": [
+        "venue_mismatch: Binance != MEXC",
+        "regime_discrepancy: regime_id=0 (TREND default) vs original regime_id=2 (HIGH_VOL_CHAOTIC)",
+        "confounded drift: venue/regime differences may explain deltas, not pure simulator behavior",
+        "proxy-only calibration, no explicit reject data"
+      ],
+      "deterministic_replay_ok": true
+    }
+  ],
+  "cross_window_delta_analysis": {
+    "both_pessimistic": true,
+    "pilot_same_venue": "pessimistic (moderate certainty)",
+    "window_3028_caveat": "pessimistic (limited certainty, venue/regime confounded)",
+    "signal_delta_match": false,
+    "signal_delta_pilot": 0,
+    "signal_delta_3028": -1,
+    "signal_delta_note": "pilot signals matched (same-venue); #3028 signal -1 likely venue/regime-related"
+  },
+  "batch_decision": {
+    "batch_ready": true,
+    "window_count_adequate": false,
+    "same_venue_windows": 1,
+    "venue_mismatch_windows": 1,
+    "target_3_plus_windows": false,
+    "status": "PARTIALLY_UNBLOCKED",
+    "recommendation": "2-window batch available. 3+ comparison-grade windows still required for full multi-window batch compare per #2971 target."
+  },
+  "venue_regime_caveats": [
+    "Binance != MEXC: venue_mismatch=true in dataset_spec.json",
+    "Regime discrepancy: #3028 uses default regime_id=0 (TREND), original paper used regime_id=2 (HIGH_VOL_CHAOTIC)",
+    "Price differences between Binance and MEXC affect breakout detection",
+    "#3028 drift classification confounded by venue/regime differences, not pure simulator behavior"
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No Live-Go / Echtgeld-Go",
+    "Binance candles are not MEXC evidence",
+    "Batch evidence is offline comparison, not runtime authorization",
+    "No trading decisions derived from this batch"
+  ]
+}
