@@ -1,0 +1,92 @@
+{
+  "schema_version": "arvp_regime_scorecard_summary.v1",
+  "report_id": "arvp_regime_scorecards_2975_after_2973",
+  "created_at": "2026-06-07T19:30:00+00:00",
+  "parent_drift_classification": "docs/evidence/arvp_drift_classification_2973_after_2971.md",
+  "parent_evidence_doc": "docs/evidence/arvp_regime_scorecards_2975_after_2973.md",
+  "window_bank_count": 2,
+  "windows": [
+    {
+      "window_id": "paper_1909_1776991354682",
+      "replay_run_id": "replay-16a0a8f6d92f-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "MEXC",
+      "same_venue": true,
+      "venue_mismatch": false,
+      "regime_context_available": false,
+      "regime_confounded": false,
+      "expected_regime_id": null,
+      "replay_regime_id": null,
+      "regime_discrepancy": false,
+      "scorecard_status": "unavailable",
+      "scorecard_source": "comparison",
+      "scorecard_fingerprint": "43e57fb78982c091dde9a147a71a69ee06676991cbe37cf719d0d8e4e5f61a15",
+      "scorecard_note": "unavailable: comparison input has no regime_segments",
+      "drift_classification": "simulator_pessimistic",
+      "evidence_certainty": "moderate",
+      "cross_run_confirmation": true
+    },
+    {
+      "window_id": "0c39ac88-4f4c-5d47-8d7f-a4a3ccbabfab",
+      "replay_run_id": "replay-577c2f83ac91-0001",
+      "symbol": "BTCUSDT",
+      "strategy": "primary_breakout_v1",
+      "venue": "Binance",
+      "same_venue": false,
+      "venue_mismatch": true,
+      "regime_context_available": false,
+      "regime_confounded": true,
+      "expected_regime_id": "HIGH_VOL_CHAOTIC (regime_id=2)",
+      "replay_regime_id": "TREND (regime_id=0, defaulted)",
+      "regime_discrepancy": true,
+      "regime_discrepancy_note": "Binance dataset defaults all regime_id to 0 (TREND). Original MEXC paper trade used regime_id=2 (HIGH_VOL_CHAOTIC). Regime entry gates behaved differently in replay vs paper.",
+      "scorecard_status": "unavailable",
+      "scorecard_source": "comparison",
+      "scorecard_fingerprint": "e49de1d8524c3ca66c40db8f8001ecead5b31867883032af93984110612bf0a9",
+      "scorecard_note": "unavailable: comparison input has no regime_segments",
+      "drift_classification": "simulator_pessimistic (confounded)",
+      "evidence_certainty": "limited",
+      "cross_run_confirmation": false
+    }
+  ],
+  "regime_context_summary": {
+    "any_regime_segments_available": false,
+    "windows_with_regime_context": 0,
+    "windows_without_regime_context": 2,
+    "windows_with_regime_discrepancy": 1,
+    "aggregate_scorecard_status": "unavailable"
+  },
+  "findings": [
+    {
+      "finding": "No regime_segments in any window's comparison input — scorecards unavailable for both",
+      "status": "confirmed",
+      "evidence": "shadow_comparison.json files lack regime_segments field; CLI produced unavailable"
+    },
+    {
+      "finding": "#3028 regime discrepancy: replay uses regime_id=0 (TREND) but original paper used regime_id=2 (HIGH_VOL_CHAOTIC)",
+      "status": "confirmed",
+      "evidence": "artifacts/candles/3028_window/dataset_spec.json regime_note; consistent across #2961/#2971/#2973 evidence chain",
+      "impact": "Drift classification confounded; regime entry/exits not comparable across replay vs paper"
+    }
+  ],
+  "limitations": [
+    "No regime_segments in shadow_comparison.json for either window",
+    "No step-level replay traces with regime_id per step",
+    "#3028 regime discrepancy is structural (Binance lacks regime data)",
+    "Narrow 1-2 minute windows unlikely to contain regime transitions",
+    "Single symbol (BTCUSDT) and single strategy (primary_breakout_v1) only",
+    "Proxy-only calibration — no explicit reject data for regime-level analysis"
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No Live-Go / Echtgeld-Go",
+    "No runtime execution beyond committed artifacts",
+    "No DB mutation",
+    "No strategy code changes",
+    "Binance candles are not MEXC evidence",
+    "Regime scorecards are diagnosis, not trade authorization",
+    "#3028 regime discrepancy is a structural confound, not a recoverable gap",
+    "No inference of regime behavior from aggregate metrics"
+  ]
+}
