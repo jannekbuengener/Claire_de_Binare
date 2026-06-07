@@ -202,3 +202,20 @@ Closing decision: #2961 acceptance criteria are **partially met**:
 - ✅ no live-readiness or capital approval implication
 - ❌ calibration for #3028 window not possible (HOLD_REPLAY_DATASET_MISSING)
 - ❌ batch comparison across all windows not complete (1 of 2 windows)
+
+---
+
+## Post-#3031 Status Update (2026-06-07)
+
+**#3031 resolved the candle data gap.** PR #3051 (merged ca9a17a4) backfilled 244
+continuous 1m BTCUSDT candles from Binance Spot API for the #3028 window.
+
+**Calibration for #3028 window is now completed.** See the updated evidence document:
+[`docs/evidence/arvp_calibration_batch_2961_after_3031.md`](arvp_calibration_batch_2961_after_3031.md)
+
+**Critical caveat:** The Binance dataset is `venue_mismatch=true` — not same-venue
+MEXC evidence. The #3028 calibration is a functional pipeline validation, not pure
+simulator evidence. See the new document for full classification and limitations.
+
+**Updated status:** #2961 acceptance criteria are now fully met (with explicit
+venue/regime limitations documented). The 2-window calibration batch is complete.
