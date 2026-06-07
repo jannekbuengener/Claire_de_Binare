@@ -1,0 +1,97 @@
+{
+  "schema_version": "arvp_execution_realism_decision_summary.v1",
+  "report_id": "arvp_execution_realism_decision_2970_after_2975",
+  "created_at": "2026-06-07T20:00:00+00:00",
+  "upstream_evidence": [
+    "docs/evidence/arvp_drift_classification_2973_after_2971.md",
+    "docs/evidence/arvp_regime_scorecards_2975_after_2973.md",
+    "docs/evidence/arvp_batch_compare_2971_after_2961.md",
+    "docs/evidence/arvp_calibration_batch_2961_after_3031.md",
+    "artifacts/drift_classification/2973/window_bank_2/drift_classification_summary.json",
+    "artifacts/regime_scorecards/2975/window_bank_2/regime_scorecard_summary.json"
+  ],
+  "aggregate_drift": {
+    "direction": "pessimistic",
+    "certainty": "limited",
+    "window_count": 2,
+    "same_venue_window_count": 1,
+    "venue_mismatch_window_count": 1
+  },
+  "ranked_gaps": [
+    {
+      "rank": 1,
+      "gap": "Fill Model / Order Execution Realism in replay",
+      "evidence_summary": "Both windows show fill_count_delta=-1. Replay produces 0 fills where paper produced 1 fill.",
+      "certainty": "moderate (pilot) / limited (#3028)",
+      "operational_impact": "high",
+      "action": "Confirm #2980 as implementation path",
+      "implementation_issue": 2980
+    },
+    {
+      "rank": 2,
+      "gap": "Signal Generation / Venue-Regime Sensitivity",
+      "evidence_summary": "#3028 shows signal_count_delta=-1 (pilot had 0). Confounded by venue/regime differences.",
+      "certainty": "limited",
+      "operational_impact": "medium",
+      "action": "Hold until same-venue MEXC data available",
+      "implementation_issue": null
+    },
+    {
+      "rank": 3,
+      "gap": "Fill Consistency Pattern",
+      "evidence_summary": "Consistent -1/-1 order/fill delta across both windows. n=2, 50% confounded.",
+      "certainty": "limited",
+      "operational_impact": "medium",
+      "action": "Monitor as additional windows become available",
+      "implementation_issue": null
+    },
+    {
+      "rank": 4,
+      "gap": "Explicit Reject Data",
+      "evidence_summary": "No window has explicit reject data. Proxy-only calibration per #1903 contract.",
+      "certainty": "high (on absence)",
+      "operational_impact": "low",
+      "action": "Not a #2970/#2980 concern. Documented limitation.",
+      "implementation_issue": null
+    }
+  ],
+  "decisions": [
+    {
+      "issue": 1905,
+      "decision": "REMAINS_CLOSED",
+      "rationale": "Closed by PR #2949 as side effect (explicit Non-goals stated no close). No execution-realism delivery. Successor is #2980.",
+      "reopen": false
+    },
+    {
+      "issue": 2980,
+      "decision": "CONFIRMED_IMPLEMENTATION_PATH",
+      "rationale": "Correct issue for Rank-1 Fill Model / Order Execution Realism gap. Narrow fix, measurable, no broad refactor.",
+      "top_ranked_gap": "Fill Model / Order Execution Realism"
+    },
+    {
+      "issue": 2970,
+      "decision": "CLOSURE_READY",
+      "rationale": "All 6 acceptance criteria satisfied. Decision report committed. #1905/#2980 decisions documented.",
+      "closure_status": "DONE_MERGED_CLOSED_2970"
+    }
+  ],
+  "validation": {
+    "git_diff_check": "pending",
+    "json_parse": "ok",
+    "evidence_crosscheck": "pending",
+    "pr_checks": "pending"
+  },
+  "blockers_for_2974": [
+    "Rank-1 fix implementation (#2980) not yet delivered",
+    "Operator runbook (A6) not started"
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO",
+    "No Live-Go / Echtgeld-Go",
+    "No runtime, Docker, DB, MCP changes",
+    "No Risk/Execution/Allocation code changes",
+    "#1905 not reopened",
+    "Decision is prioritization, not fix delivery",
+    "ARVP evidence is validation, not live approval"
+  ]
+}
