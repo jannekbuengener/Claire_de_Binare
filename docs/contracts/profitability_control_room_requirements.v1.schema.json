@@ -38,7 +38,8 @@
     },
     "panels": {
       "type": "array",
-      "minItems": 4,
+      "minItems": 5,
+      "maxItems": 5,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -79,7 +80,84 @@
             "type": "boolean"
           }
         }
-      }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "panel_id": {
+                "const": "CANDIDATE_STATUS"
+              }
+            },
+            "required": [
+              "panel_id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "panel_id": {
+                "const": "LEAGUE_TABLE"
+              }
+            },
+            "required": [
+              "panel_id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "panel_id": {
+                "const": "COST_RISK_REGIME"
+              }
+            },
+            "required": [
+              "panel_id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "panel_id": {
+                "const": "EVIDENCE_COMPLETENESS"
+              }
+            },
+            "required": [
+              "panel_id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "properties": {
+              "panel_id": {
+                "const": "SLEEVE_PNL"
+              }
+            },
+            "required": [
+              "panel_id"
+            ]
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
     },
     "operator_questions": {
       "type": "array",
@@ -108,16 +186,16 @@
       ],
       "properties": {
         "dashboard_is_approval": {
-          "type": "boolean"
+          "const": false
         },
         "ai_is_authority": {
-          "type": "boolean"
+          "const": false
         },
         "docs_are_authority": {
-          "type": "boolean"
+          "const": false
         },
         "grafana_gate_semantics_allowed": {
-          "type": "boolean"
+          "const": false
         }
       }
     },
