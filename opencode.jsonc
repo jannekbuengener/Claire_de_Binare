@@ -1,10 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "cdb_context": {
-      "type": "local",
-      "command": ["python", "-m", "tools.mcp.server"],
-      "enabled": true
-    }
-  }
+  // cdb_context is intentionally left to user-local OpenCode MCP config.
+  // OpenCode 1.1.20 does not cleanly support `cwd` in this config path,
+  // and the repo-local Python entrypoint needs the working directory set.
+  "mcp": {}
 }
