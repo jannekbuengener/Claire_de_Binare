@@ -843,3 +843,235 @@ def test_filters_export_by_config_hash_only() -> None:
         "ORDER",
         "FILL",
     ]
+
+
+# ---------------------------------------------------------------------------
+# Causal context events (#3058)
+# ---------------------------------------------------------------------------
+
+
+def test_exports_causal_context_events_when_provided() -> None:
+    """causal_context_rows populate causal_context_events array with metadata."""
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="in-signal",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+        _order_row(
+            event_pk="in-order",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1600,
+        ),
+        _fill_row(
+            event_pk="in-fill",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1700,
+        ),
+    ]
+    causal = [
+        _signal_row(
+            event_pk="causal-sig-1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=500,  # outside window [1000, 2000]
+        ),
+    ]
+    payload = export_paper_reference_window(
+        request=request, rows=rows, causal_context_rows=causal
+    )
+
+    assert "causal_context_events" in payload
+    assert len(payload["causal_context_events"]) == 1
+    ce = payload["causal_context_events"][0]
+    assert ce["event_type"] == "SIGNAL"
+    assert ce["in_window"] is False
+    assert ce["context_scope"] == "pre_window_causal"
+    assert ce["signal_id"] == "sig1"
+    assert "causal_for_event_ids" in ce
+    # Still 1 in-window SIGNAL (pilot: 0 in-window + 1 causal = 1 total)
+    assert len(payload["events"]) == 3
+
+
+def test_causal_context_main_events_unchanged() -> None:
+    """causal_context_rows do not affect main events list."""
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="s1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+        _order_row(
+            event_pk="o1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1600,
+        ),
+        _fill_row(
+            event_pk="f1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1700,
+        ),
+    ]
+    # Build causal row with timestamp outside window
+    causal = [
+        _signal_row(
+            event_pk="causal-s1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=500,
+        ),
+    ]
+    no_causal = export_paper_reference_window(request=request, rows=rows)
+    with_causal = export_paper_reference_window(
+        request=request, rows=rows, causal_context_rows=causal
+    )
+    assert no_causal["events"] == with_causal["events"]
+    assert no_causal["causal_context_events"] == []
+    assert len(with_causal["causal_context_events"]) == 1
+
+
+def test_causal_context_signal_inside_window_fails_closed() -> None:
+    """causal_context_rows must be outside window bounds."""
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="s1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+        _order_row(
+            event_pk="o1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1600,
+        ),
+        _fill_row(
+            event_pk="f1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1700,
+        ),
+    ]
+    # signal at 1500 is inside window [1000, 2000]
+    causal_inside = [
+        _signal_row(
+            event_pk="bad",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+    ]
+    with pytest.raises(PaperReferenceExportError, match="is inside window"):
+        export_paper_reference_window(
+            request=request, rows=rows, causal_context_rows=causal_inside
+        )
+
+
+def test_causal_context_unmatched_signal_id_fails_closed() -> None:
+    """causal SIGNAL must have signal_id matching in-window ORDER/FILL."""
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="s1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+        _order_row(
+            event_pk="o1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1600,
+        ),
+        _fill_row(
+            event_pk="f1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1700,
+        ),
+    ]
+    causal_unmatched = [
+        _signal_row(
+            event_pk="unmatched",
+            correlation_id="c2",
+            signal_id="sig-orphan",
+            timestamp_ms=500,
+        ),
+    ]
+    with pytest.raises(PaperReferenceExportError, match="has no matching ORDER/FILL"):
+        export_paper_reference_window(
+            request=request, rows=rows, causal_context_rows=causal_unmatched
+        )
+
+
+def test_causal_context_non_signal_type_fails_closed() -> None:
+    """causal_context_rows must be SIGNAL events."""
+    request = _req()
+    rows = [
+        _signal_row(
+            event_pk="s1",
+            correlation_id="c1",
+            signal_id="sig1",
+            timestamp_ms=1500,
+        ),
+        _order_row(
+            event_pk="o1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            timestamp_ms=1600,
+        ),
+        _fill_row(
+            event_pk="f1",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_001",
+            fill_id="fill1",
+            timestamp_ms=1700,
+        ),
+    ]
+    causal_bad_type = [
+        _order_row(
+            event_pk="bad-type",
+            correlation_id="c1",
+            signal_id="sig1",
+            decision_id="dec1",
+            order_id="paper_999",
+            timestamp_ms=500,
+        ),
+    ]
+    with pytest.raises(PaperReferenceExportError, match="SIGNAL"):
+        export_paper_reference_window(
+            request=request, rows=rows, causal_context_rows=causal_bad_type
+        )
