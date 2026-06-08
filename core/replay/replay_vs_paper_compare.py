@@ -160,7 +160,9 @@ def _paper_provenance_id(paper: Mapping[str, Any]) -> str:
     return "paper_reference_window.v1"
 
 
-def load_paper_reference_window(paper_reference: Mapping[str, Any]) -> PaperReferenceWindow:
+def load_paper_reference_window(
+    paper_reference: Mapping[str, Any],
+) -> PaperReferenceWindow:
     """Parse arvp_paper_reference_window.v1 dict into PaperReferenceWindow.
 
     Counts are derived from the supplied event set:
@@ -297,7 +299,9 @@ def compare_from_paths(paths: ComparePaths) -> ShadowComparisonResult:
         return compare_windows_or_unusable(replay, paper)
     except ShadowCompareError as exc:
         # Defensive: compare_windows_or_unusable should not raise.
-        raise ReplayVsPaperCompareError(f"Comparison failed unexpectedly: {exc}") from exc
+        raise ReplayVsPaperCompareError(
+            f"Comparison failed unexpectedly: {exc}"
+        ) from exc
 
 
 def write_comparison_bundle(

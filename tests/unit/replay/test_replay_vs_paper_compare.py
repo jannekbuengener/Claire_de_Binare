@@ -21,7 +21,9 @@ def _write_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
 
 
-def _replay_report(*, symbol: str = "BTCUSDT", strategy_id: str = "primary_breakout_v1") -> dict:
+def _replay_report(
+    *, symbol: str = "BTCUSDT", strategy_id: str = "primary_breakout_v1"
+) -> dict:
     return {
         "schema_version": "replay_report.v1",
         "report_type": "shadow_replay",

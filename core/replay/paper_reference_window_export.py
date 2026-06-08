@@ -248,7 +248,11 @@ def export_paper_reference_window(
         # If absent or empty, it will be resolved from the SIGNAL anchor of the
         # same correlation chain after all rows are processed.
         raw_strategy = payload.get("strategy_id")
-        if raw_strategy is not None and isinstance(raw_strategy, str) and raw_strategy.strip():
+        if (
+            raw_strategy is not None
+            and isinstance(raw_strategy, str)
+            and raw_strategy.strip()
+        ):
             resolved_strategy = raw_strategy.strip()
             if resolved_strategy != request.strategy_id:
                 raise PaperReferenceExportError(

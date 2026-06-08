@@ -352,7 +352,6 @@ class TestCompareWindowsFailClosed:
         with pytest.raises(ShadowCompareError, match="misaligned.*temporal overlap"):
             compare_windows(_make_replay(), p)
 
-
     # --- Causal signal context tests (#3058) ---
 
     def test_signal_context_delta_no_causal(self):

@@ -1027,9 +1027,7 @@ def test_causal_context_unmatched_signal_id_fails_closed() -> None:
             timestamp_ms=500,
         ),
     ]
-    with pytest.raises(
-        PaperReferenceExportError, match="has no matching ORDER/FILL"
-    ):
+    with pytest.raises(PaperReferenceExportError, match="has no matching ORDER/FILL"):
         export_paper_reference_window(
             request=request, rows=rows, causal_context_rows=causal_unmatched
         )

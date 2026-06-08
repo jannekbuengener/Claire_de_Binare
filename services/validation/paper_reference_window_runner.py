@@ -113,10 +113,15 @@ def _verify_readonly_identity(conn) -> tuple[str, str, str]:
         identity_row = cursor.fetchone()
 
     if identity_row is None or len(identity_row) != 3:
-        raise RuntimeError("Readonly identity probe did not return current_database/current_user/session_user")
+        raise RuntimeError(
+            "Readonly identity probe did not return current_database/current_user/session_user"
+        )
 
     current_database, current_user, session_user = identity_row
-    if current_user != _EXPECTED_READONLY_LOGIN or session_user != _EXPECTED_READONLY_LOGIN:
+    if (
+        current_user != _EXPECTED_READONLY_LOGIN
+        or session_user != _EXPECTED_READONLY_LOGIN
+    ):
         raise RuntimeError(
             "Readonly identity probe failed: "
             f"current_user={current_user}, session_user={session_user}, "
@@ -216,7 +221,9 @@ def main(argv: list[str] | None = None) -> int:
                     args.causal_lookup_start_ms is not None
                     or args.causal_lookup_end_ms is not None
                 ):
-                    lookup_start = args.causal_lookup_start_ms or request.start_ts_ms_utc
+                    lookup_start = (
+                        args.causal_lookup_start_ms or request.start_ts_ms_utc
+                    )
                     lookup_end = args.causal_lookup_end_ms or request.end_ts_ms_utc
                     cursor.execute(
                         """
