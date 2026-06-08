@@ -133,6 +133,29 @@ class TestPaperReferenceWindow:
         with pytest.raises(ShadowCompareError, match="signal_count"):
             _make_paper(signal_count=True)
 
+    # --- causal_signal_count (#3058) ---
+
+    def test_causal_signal_count_valid_positive(self):
+        w = _make_paper(causal_signal_count=3)
+        assert w.causal_signal_count == 3
+
+    def test_causal_signal_count_valid_zero(self):
+        w = _make_paper(causal_signal_count=0)
+        assert w.causal_signal_count == 0
+
+    def test_causal_signal_count_negative_raises(self):
+        with pytest.raises(ShadowCompareError, match="causal_signal_count"):
+            _make_paper(causal_signal_count=-1)
+
+    def test_causal_signal_count_bool_raises(self):
+        with pytest.raises(ShadowCompareError, match="causal_signal_count"):
+            _make_paper(causal_signal_count=True)
+
+    def test_causal_signal_count_in_to_dict(self):
+        w = _make_paper(causal_signal_count=2)
+        d = w.to_dict()
+        assert d["causal_signal_count"] == 2
+
 
 # ---------------------------------------------------------------------------
 # ReplayOutputWindow validation
@@ -329,6 +352,45 @@ class TestCompareWindowsFailClosed:
         with pytest.raises(ShadowCompareError, match="misaligned.*temporal overlap"):
             compare_windows(_make_replay(), p)
 
+    # --- Causal signal context tests (#3058) ---
+
+    def test_signal_context_delta_no_causal(self):
+        """Without causal context, signal_context_delta == signal_count_delta."""
+        r = _make_replay(signal_count=5)
+        p = _make_paper(signal_count=3, causal_signal_count=0)
+        result = compare_windows(r, p)
+        assert result.signal_count_delta == 2  # 5 - 3
+        assert result.signal_context_delta == 2  # 5 - (3 + 0)
+        assert result.signal_count_false_neutral_detected is False
+
+    def test_signal_context_delta_with_causal(self):
+        """With causal context, signal_context_delta includes causal signals."""
+        r = _make_replay(signal_count=5)
+        p = _make_paper(signal_count=3, causal_signal_count=2)
+        result = compare_windows(r, p)
+        assert result.signal_count_delta == 2  # 5 - 3 (in-window only)
+        assert result.signal_context_delta == 0  # 5 - (3 + 2)
+        assert result.signal_count_false_neutral_detected is False
+
+    def test_signal_count_false_neutral_detected(self):
+        """False neutral: in-window paper signal_count=0 but causal_signal_count>0."""
+        r = _make_replay(signal_count=3)
+        p = _make_paper(signal_count=0, causal_signal_count=1)
+        result = compare_windows(r, p)
+        assert result.signal_count_delta == 3  # 3 - 0 (in-window only, looks bad)
+        assert result.signal_context_delta == 2  # 3 - (0 + 1)
+        assert result.signal_count_false_neutral_detected is True
+
+    def test_signal_context_delta_in_json_artifact(self, tmp_path):
+        """signal_context_delta and false-neutral flag appear in artifact JSON."""
+        r = _make_replay(signal_count=3)
+        p = _make_paper(signal_count=0, causal_signal_count=1)
+        result = compare_windows(r, p)
+        write_shadow_comparison_artifact(result, tmp_path)
+        data = json.loads((tmp_path / "shadow_comparison.json").read_text())
+        assert data["signal_context_delta"] == 2
+        assert data["signal_count_false_neutral_detected"] is True
+
 
 # ---------------------------------------------------------------------------
 # Determinism
@@ -413,6 +475,15 @@ class TestBuildCalibrationSummary:
     def test_returns_string(self, result):
         assert isinstance(build_calibration_summary(result), str)
 
+    def test_contains_signal_context_delta(self):
+        """Summary includes signal_context_delta in its output."""
+        r = _make_replay(signal_count=3)
+        p = _make_paper(signal_count=0, causal_signal_count=1)
+        result = compare_windows(r, p)
+        summary = build_calibration_summary(result)
+        assert "+2" in summary  # 3 - (0 + 1) = 2
+        assert "Signal False Neutral" in summary
+
 
 # ---------------------------------------------------------------------------
 # write_shadow_comparison_artifact
@@ -446,6 +517,8 @@ class TestWriteShadowComparisonArtifact:
             "symbol",
             "strategy_id",
             "signal_count_delta",
+            "signal_context_delta",
+            "signal_count_false_neutral_detected",
             "order_count_delta",
             "fill_count_delta",
             "inferred_unfilled_count_delta",

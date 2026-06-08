@@ -18,6 +18,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import psycopg2
 
@@ -64,6 +65,16 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default="paper_reference_window_runner",
         help="Extractor identifier (non-empty).",
     )
+    p.add_argument(
+        "--causal-lookup-start-ms",
+        type=int,
+        help="Optional earlier bound for causal pre-window SIGNAL lookup (#3058).",
+    )
+    p.add_argument(
+        "--causal-lookup-end-ms",
+        type=int,
+        help="Optional later bound for causal post-window SIGNAL lookup (#3058).",
+    )
     return p.parse_args(argv)
 
 
@@ -102,10 +113,15 @@ def _verify_readonly_identity(conn) -> tuple[str, str, str]:
         identity_row = cursor.fetchone()
 
     if identity_row is None or len(identity_row) != 3:
-        raise RuntimeError("Readonly identity probe did not return current_database/current_user/session_user")
+        raise RuntimeError(
+            "Readonly identity probe did not return current_database/current_user/session_user"
+        )
 
     current_database, current_user, session_user = identity_row
-    if current_user != _EXPECTED_READONLY_LOGIN or session_user != _EXPECTED_READONLY_LOGIN:
+    if (
+        current_user != _EXPECTED_READONLY_LOGIN
+        or session_user != _EXPECTED_READONLY_LOGIN
+    ):
         raise RuntimeError(
             "Readonly identity probe failed: "
             f"current_user={current_user}, session_user={session_user}, "
@@ -162,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         conn = _create_readonly_connection()
+        causal_context_rows: list[dict[str, Any]] = []
         try:
             readonly_identity = _verify_readonly_identity(conn)
             _verify_readonly_privileges(conn)
@@ -189,10 +206,70 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 colnames = [d.name for d in cursor.description]
                 rows = [dict(zip(colnames, r, strict=True)) for r in cursor.fetchall()]
+
+                # Causal context lookup (#3058):
+                # Find signal_ids on in-window ORDER/FILL events, then look up
+                # SIGNAL events with those signal_ids outside the window bounds.
+                causal_signal_ids: set[str] = set()
+                for r in rows:
+                    et = (r.get("event_type") or "").upper()
+                    if et in ("ORDER", "FILL"):
+                        sid = r.get("signal_id")
+                        if isinstance(sid, str) and sid.strip():
+                            causal_signal_ids.add(sid.strip())
+                if causal_signal_ids and (
+                    args.causal_lookup_start_ms is not None
+                    or args.causal_lookup_end_ms is not None
+                ):
+                    lookup_start = (
+                        args.causal_lookup_start_ms or request.start_ts_ms_utc
+                    )
+                    lookup_end = args.causal_lookup_end_ms or request.end_ts_ms_utc
+                    cursor.execute(
+                        """
+                        SELECT
+                          event_pk,
+                          correlation_id,
+                          signal_id,
+                          decision_id,
+                          order_id,
+                          fill_id,
+                          event_type,
+                          symbol,
+                          timestamp_ms,
+                          payload
+                        FROM correlation_ledger
+                        WHERE event_type = 'SIGNAL'
+                          AND signal_id = ANY(%s)
+                          AND symbol = %s
+                          AND (
+                            timestamp_ms < %s
+                            OR timestamp_ms > %s
+                          )
+                          AND timestamp_ms >= %s
+                          AND timestamp_ms <= %s
+                        ORDER BY timestamp_ms ASC
+                        """,
+                        (
+                            list(causal_signal_ids),
+                            request.symbol,
+                            request.start_ts_ms_utc,
+                            request.end_ts_ms_utc,
+                            lookup_start,
+                            lookup_end,
+                        ),
+                    )
+                    causal_colnames = [d.name for d in cursor.description]
+                    causal_context_rows = [
+                        dict(zip(causal_colnames, r, strict=True))
+                        for r in cursor.fetchall()
+                    ]
         finally:
             conn.close()
 
-        payload = export_paper_reference_window(request=request, rows=rows)
+        payload = export_paper_reference_window(
+            request=request, rows=rows, causal_context_rows=causal_context_rows
+        )
         out_path.write_text(canonical_json_dumps(payload), encoding="utf-8")
     except PaperReferenceExportError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

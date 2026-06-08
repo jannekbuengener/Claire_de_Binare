@@ -128,6 +128,7 @@ class PaperReferenceWindow:
     actual_reject_count: int | None
     inferred_unfilled_count: int
     provenance_id: str
+    causal_signal_count: int = 0
 
     def __post_init__(self) -> None:
         _require_non_empty_string(self.symbol, "symbol")
@@ -144,6 +145,7 @@ class PaperReferenceWindow:
             ("order_count", self.order_count),
             ("fill_count", self.fill_count),
             ("inferred_unfilled_count", self.inferred_unfilled_count),
+            ("causal_signal_count", self.causal_signal_count),
         ):
             _require_non_negative_int(val, name)
         if self.actual_reject_count is not None:
@@ -163,6 +165,8 @@ class PaperReferenceWindow:
         }
         if self.actual_reject_count is not None:
             result["actual_reject_count"] = self.actual_reject_count
+        if self.causal_signal_count:
+            result["causal_signal_count"] = self.causal_signal_count
         return result
 
 
@@ -267,6 +271,8 @@ class ShadowComparisonResult:
     window_end_utc_replay: str
     window_start_utc_paper: str
     window_end_utc_paper: str
+    signal_context_delta: int = 0
+    signal_count_false_neutral_detected: bool = False
 
     def to_dict(self) -> dict:
         result: dict[str, object] = {
@@ -277,6 +283,8 @@ class ShadowComparisonResult:
             "paper_provenance_id": self.paper_provenance_id,
             "replay_run_id": self.replay_run_id,
             "signal_count_delta": self.signal_count_delta,
+            "signal_context_delta": self.signal_context_delta,
+            "signal_count_false_neutral_detected": self.signal_count_false_neutral_detected,
             "status": self.status,
             "strategy_id": self.strategy_id,
             "symbol": self.symbol,
@@ -359,6 +367,16 @@ def compare_windows(
 
     fingerprint = canonical_hash({"paper": paper.to_dict(), "replay": replay.to_dict()})
 
+    # Causal-aware signal context (#3058):
+    # signal_count_delta stays as in-window-only delta for backward
+    # compatibility.  signal_context_delta includes causal (pre-window)
+    # SIGNAL events on the paper side.
+    paper_total_signals = paper.signal_count + paper.causal_signal_count
+    signal_context_delta = replay.signal_count - paper_total_signals
+    signal_count_false_neutral = (
+        paper.signal_count == 0 and paper.causal_signal_count > 0
+    )
+
     return ShadowComparisonResult(
         comparison_fingerprint=fingerprint,
         status=_STATUS_ALIGNED,
@@ -381,6 +399,8 @@ def compare_windows(
         window_end_utc_replay=replay.window_end_utc,
         window_start_utc_paper=paper.window_start_utc,
         window_end_utc_paper=paper.window_end_utc,
+        signal_context_delta=signal_context_delta,
+        signal_count_false_neutral_detected=signal_count_false_neutral,
     )
 
 
@@ -447,9 +467,10 @@ def build_comparison_summary(result: ShadowComparisonResult) -> str:
         f"Paper:   {result.window_start_utc_paper} – {result.window_end_utc_paper}",
         "",
         "## Count Deltas (replay − paper)",
-        f"Signal count delta:  {result.signal_count_delta:+d}",
-        f"Order count delta:   {result.order_count_delta:+d}",
-        f"Fill count delta:    {result.fill_count_delta:+d}",
+        f"Signal count delta (in-window):  {result.signal_count_delta:+d}",
+        f"Signal context delta (causal):   {result.signal_context_delta:+d}",
+        f"Order count delta:               {result.order_count_delta:+d}",
+        f"Fill count delta:                {result.fill_count_delta:+d}",
         "Reject delta:        only available when explicit reject data exists.",
         "Unfilled order delta: informational proxy, not treated as reject evidence.",
         f"Unfilled order delta: {result.inferred_unfilled_count_delta:+d}",
@@ -468,6 +489,14 @@ def build_comparison_summary(result: ShadowComparisonResult) -> str:
             f"Replay fill rate:  {result.fill_rate_replay}",
             f"Paper fill rate:   {result.fill_rate_paper}",
             f"Fill rate delta:   {result.fill_rate_delta:+}",
+        ]
+    if result.signal_count_false_neutral_detected:
+        lines += [
+            "",
+            "## Signal False Neutral",
+            "signal_count_delta=0 is a false neutral — paper had causal pre-window",
+            "SIGNAL events that are not visible in the in-window count.",
+            f"causal_signal_count on paper side: {result.paper_provenance_id} not directly available here.",
         ]
     if result.alignment_issue is not None:
         lines += ["", f"Alignment issue: {result.alignment_issue}"]

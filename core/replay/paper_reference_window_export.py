@@ -178,12 +178,34 @@ def build_export_request(
     )
 
 
+def _gather_causal_signal_ids(
+    all_events: list[dict[str, Any]],
+) -> set[str]:
+    """Collect signal_ids from ORDER/FILL events in the main events list."""
+    causal_signal_ids: set[str] = set()
+    for ev in all_events:
+        if ev["event_type"] in ("ORDER", "FILL"):
+            sid = str(ev.get("signal_id", "")).strip()
+            if sid:
+                causal_signal_ids.add(sid)
+    return causal_signal_ids
+
+
 def export_paper_reference_window(
     *,
     request: ExportRequest,
     rows: Sequence[Mapping[str, Any]],
+    causal_context_rows: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Transform correlation_ledger rows into an arvp_paper_reference_window.v1 payload."""
+    """Transform correlation_ledger rows into an arvp_paper_reference_window.v1 payload.
+
+    When causal_context_rows is provided (SIGNAL events outside the window
+    bounds that have signal_id matching in-window ORDER/FILL events), they are
+    included in a separate ``causal_context_events`` array.  Each causal-context
+    event is marked with ``in_window: false`` and
+    ``context_scope: \"pre_window_causal\"``, and is *not* counted as an
+    in-window event by downstream consumers.
+    """
     if not isinstance(rows, Sequence):
         raise PaperReferenceExportError("rows must be a sequence")
     if not rows:
@@ -226,7 +248,11 @@ def export_paper_reference_window(
         # If absent or empty, it will be resolved from the SIGNAL anchor of the
         # same correlation chain after all rows are processed.
         raw_strategy = payload.get("strategy_id")
-        if raw_strategy is not None and isinstance(raw_strategy, str) and raw_strategy.strip():
+        if (
+            raw_strategy is not None
+            and isinstance(raw_strategy, str)
+            and raw_strategy.strip()
+        ):
             resolved_strategy = raw_strategy.strip()
             if resolved_strategy != request.strategy_id:
                 raise PaperReferenceExportError(
@@ -396,6 +422,73 @@ def export_paper_reference_window(
 
     events.sort(key=lambda e: (int(e["timestamp_ms"]), str(e["event_pk"])))
 
+    # --- Causal context: pre-window SIGNAL events (#3058) ---
+    causal_context_events: list[dict[str, Any]] = []
+    expected_causal_signal_ids = _gather_causal_signal_ids(events)
+    if causal_context_rows is not None and expected_causal_signal_ids:
+        for idx, raw in enumerate(causal_context_rows):
+            row = _require_mapping(raw, f"causal_context_rows[{idx}]")
+            event_type = _require_non_empty_string(
+                row.get("event_type"), f"causal_context_rows[{idx}].event_type"
+            ).upper()
+            if event_type != "SIGNAL":
+                raise PaperReferenceExportError(
+                    f"causal_context_rows[{idx}] must be SIGNAL, got {event_type!r}"
+                )
+            ts_ms = _require_int(
+                row.get("timestamp_ms"), f"causal_context_rows[{idx}].timestamp_ms"
+            )
+            # Must be strictly outside the window.
+            if request.start_ts_ms_utc <= ts_ms <= request.end_ts_ms_utc:
+                raise PaperReferenceExportError(
+                    f"causal_context_rows[{idx}] timestamp_ms {ts_ms} is inside window "
+                    f"[{request.start_ts_ms_utc}, {request.end_ts_ms_utc}]"
+                )
+            signal_id = _require_non_empty_string(
+                row.get("signal_id"), f"causal_context_rows[{idx}].signal_id"
+            )
+            if signal_id not in expected_causal_signal_ids:
+                raise PaperReferenceExportError(
+                    f"causal_context_rows[{idx}] signal_id {signal_id!r} has no "
+                    f"matching ORDER/FILL in window"
+                )
+            correlation_id = _require_non_empty_string(
+                row.get("correlation_id"), f"causal_context_rows[{idx}].correlation_id"
+            )
+            ev_pk = _require_non_empty_string(
+                row.get("event_pk"), f"causal_context_rows[{idx}].event_pk"
+            )
+            payload = row.get("payload")
+            payload = {} if payload is None else _require_mapping(payload, "payload")
+
+            # Find which in-window event_pks are caused by this signal.
+            causal_for_event_ids = [
+                str(e["event_pk"])
+                for e in events
+                if str(e.get("signal_id", "")) == signal_id
+            ]
+
+            causal_ev: dict[str, Any] = {
+                "event_pk": ev_pk,
+                "correlation_id": correlation_id,
+                "event_type": event_type,
+                "symbol": _require_non_empty_string(
+                    row.get("symbol"), f"causal_context_rows[{idx}].symbol"
+                ).upper(),
+                "timestamp_ms": ts_ms,
+                "signal_id": signal_id,
+                "payload": dict(payload),
+                "context_scope": "pre_window_causal",
+                "in_window": False,
+                "causal_for_event_ids": causal_for_event_ids,
+            }
+            for name in ("decision_id", "order_id", "fill_id"):
+                val = row.get(name)
+                if isinstance(val, str) and val.strip():
+                    causal_ev[name] = val.strip()
+
+            causal_context_events.append(causal_ev)
+
     return {
         "contract_version": _CONTRACT_VERSION,
         "strategy_id": request.strategy_id,
@@ -407,4 +500,5 @@ def export_paper_reference_window(
         "extracted_at_utc": request.extracted_at_utc,
         "extracted_by": request.extracted_by,
         "events": events,
+        "causal_context_events": causal_context_events,
     }
