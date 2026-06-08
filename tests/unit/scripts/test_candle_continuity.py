@@ -12,6 +12,7 @@ from scripts.replay.candle_continuity import (
     collapse_missing_timestamps,
     expected_timestamps,
     parse_binance_kline,
+    parse_mexc_kline,
 )
 
 
@@ -128,6 +129,91 @@ def test_parse_binance_kline_rejects_unaligned_open_time() -> None:
         parse_binance_kline(
             "BTCUSDT",
             [1_000_000_020_001, "1", "1", "1", "1", "1", 0, "0", 1],
+        )
+
+
+def test_parse_mexc_kline_maps_eight_field_response() -> None:
+    row = parse_mexc_kline(
+        "btcusdt",
+        [
+            1_000_000_020_000,
+            "50000.01000000",
+            "50010.02000000",
+            "49990.03000000",
+            "50005.04000000",
+            "12.34567890",
+            1_000_000_079_999,
+            "617000.00",
+            99,
+        ],
+    )
+    assert row == CandleRow(
+        symbol="BTCUSDT",
+        ts_ms=1_000_000_020_000,
+        open=Decimal("50000.01000000"),
+        high=Decimal("50010.02000000"),
+        low=Decimal("49990.03000000"),
+        close=Decimal("50005.04000000"),
+        volume=Decimal("12.34567890"),
+        trade_count=0,
+    )
+
+
+def test_parse_mexc_kline_accepts_seven_fields() -> None:
+    row = parse_mexc_kline(
+        "BTCUSDT",
+        [
+            1_000_000_020_000,
+            "50000.0",
+            "50100.0",
+            "49900.0",
+            "50050.0",
+            "10.0",
+            1_000_000_079_999,
+        ],
+    )
+    assert row.symbol == "BTCUSDT"
+    assert row.trade_count == 0
+    assert row.open == Decimal("50000.0")
+
+
+def test_parse_mexc_kline_rejects_too_few_fields() -> None:
+    with pytest.raises(CandleContinuityError, match="fewer than 7 fields"):
+        parse_mexc_kline(
+            "BTCUSDT",
+            [1_000_000_020_000, "50000.0", "50100.0", "49900.0", "50050.0", "10.0"],
+        )
+
+
+def test_parse_mexc_kline_rejects_unaligned_open_time() -> None:
+    with pytest.raises(CandleContinuityError, match="1m-aligned"):
+        parse_mexc_kline(
+            "BTCUSDT",
+            [1_000_000_020_001, "50000.0", "50100.0", "49900.0", "50050.0", "10.0", 1_000_000_079_999, "600000.0"],
+        )
+
+
+def test_parse_mexc_kline_rejects_non_positive_ohlc() -> None:
+    with pytest.raises(CandleContinuityError, match="non-positive OHLC"):
+        parse_mexc_kline(
+            "BTCUSDT",
+            [1_000_000_020_000, "0.0", "50100.0", "49900.0", "50050.0", "10.0", 1_000_000_079_999, "600000.0"],
+        )
+
+
+def test_parse_mexc_kline_rejects_high_below_low() -> None:
+    with pytest.raises(CandleContinuityError, match="high is below low"):
+        parse_mexc_kline(
+            "BTCUSDT",
+            [1_000_000_020_000, "50000.0", "49900.0", "50100.0", "50050.0", "10.0", 1_000_000_079_999, "600000.0"],
+        )
+
+
+def test_parse_mexc_kline_rejects_negative_volume() -> None:
+    with pytest.raises(CandleContinuityError, match="negative volume"):
+        parse_mexc_kline(
+            "BTCUSDT",
+            [1_000_000_020_000, "50000.0", "50100.0", "49900.0", "50050.0", "-10.0", 1_000_000_079_999, "600000.0"],
         )
 
 
