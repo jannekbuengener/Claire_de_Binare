@@ -280,6 +280,7 @@ def main() -> None:
             args.force,
         )
 
+    marketplace_path = None
     if args.with_marketplace:
         marketplace_path = Path(args.marketplace_path).expanduser().resolve()
         update_marketplace_json(
