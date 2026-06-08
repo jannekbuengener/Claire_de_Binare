@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
+import pathlib
 from unittest.mock import patch
 
 import pytest
 
 from core.replay.historical_bridge import (
     HistoricalBridgeError,
+    VALID_PRICE_POLICIES,
     PrimaryBreakoutBridgeConfig,
     build_primary_breakout_historical_bridge,
 )
@@ -140,7 +143,9 @@ def test_bridge_rejects_invalid_trade_side_mode_in_config() -> None:
     candles = _candles()
     config = PrimaryBreakoutBridgeConfig(trade_side_mode="both")
 
-    with pytest.raises(HistoricalBridgeError, match="trade_side_mode must be long_only"):
+    with pytest.raises(
+        HistoricalBridgeError, match="trade_side_mode must be long_only"
+    ):
         build_primary_breakout_historical_bridge(candles, config=config)
 
 
@@ -210,10 +215,156 @@ def test_runtime_and_historical_bridge_align_on_first_evaluable_breakout() -> No
     assert runtime_signal.reason == "breakout_entry"
 
     first_request = requests[0]
-    assert int(first_request.market_event["ts_ms"]) == candles[runtime_signal_index]["ts_ms"]
-    assert first_request.market_event["market_state"]["close_now"] == runtime_signal.price
+    assert (
+        int(first_request.market_event["ts_ms"])
+        == candles[runtime_signal_index]["ts_ms"]
+    )
+    assert (
+        first_request.market_event["market_state"]["close_now"] == runtime_signal.price
+    )
     assert (
         first_request.market_event["market_state"]["highest_high"]
         == runtime_signal.metadata["highest_high"]
         == 102.0
     )
+
+
+@pytest.mark.unit
+def test_price_policy_default_is_close() -> None:
+    config = PrimaryBreakoutBridgeConfig()
+    assert config.price_policy == "close"
+
+
+@pytest.mark.unit
+def test_price_policy_accepts_valid_values() -> None:
+    for policy in ("close", "high", "hlc3", "ohlc4"):
+        config = PrimaryBreakoutBridgeConfig(price_policy=policy)
+        assert config.price_policy == policy
+
+
+@pytest.mark.unit
+def test_price_policy_rejects_invalid_value() -> None:
+    with pytest.raises(HistoricalBridgeError, match="price_policy must be one of"):
+        PrimaryBreakoutBridgeConfig(price_policy="midpoint").validate()
+
+
+def _policy_candle_series(count: int = 245) -> list[dict]:
+    """Monotonically increasing candle series for price policy tests."""
+    return [
+        {
+            "symbol": "BTCUSDT",
+            "ts_ms": 1_700_000_000_000 + i * 60_000,
+            "open": 100.0 + i * 0.1,
+            "high": 101.0 + i * 0.1,
+            "low": 99.0 + i * 0.1,
+            "close": 100.0 + i * 0.1,
+            "volume": 10000.0 + i,
+            "regime_id": 0,
+            "market_state_fresh": True,
+            "regime_fresh": True,
+        }
+        for i in range(count)
+    ]
+
+
+@pytest.mark.unit
+def test_price_policy_high_produces_at_least_as_many_breakouts() -> None:
+    """high policy should produce >= breakouts vs close on monotonically rising data."""
+    candles = _candles(count=250)
+    close_requests = build_primary_breakout_historical_bridge(
+        candles,
+        config=PrimaryBreakoutBridgeConfig(price_policy="close"),
+    )
+    high_requests = build_primary_breakout_historical_bridge(
+        candles,
+        config=PrimaryBreakoutBridgeConfig(price_policy="high"),
+    )
+    assert len(high_requests) >= len(close_requests)
+
+
+@pytest.mark.unit
+def test_price_policy_hlc3_computes_typical_price() -> None:
+    candles = _policy_candle_series(250)
+    close_req = build_primary_breakout_historical_bridge(
+        candles,
+        config=PrimaryBreakoutBridgeConfig(price_policy="close"),
+    )
+    hlc3_req = build_primary_breakout_historical_bridge(
+        candles,
+        config=PrimaryBreakoutBridgeConfig(price_policy="hlc3"),
+    )
+    if close_req:
+        close_now_close = close_req[0].market_event["market_state"]["close_now"]
+        close_now_hlc3 = hlc3_req[0].market_event["market_state"]["close_now"]
+        candle_240 = candles[240]
+        expected_hlc3 = round(
+            (candle_240["high"] + candle_240["low"] + candle_240["close"]) / 3.0, 2
+        )
+        assert close_now_hlc3 == expected_hlc3
+        assert close_now_close == candle_240["close"]
+
+
+@pytest.mark.unit
+def test_price_policy_ohlc4_computes_average_price() -> None:
+    candles = _policy_candle_series(250)
+    ohlc4_req = build_primary_breakout_historical_bridge(
+        candles,
+        config=PrimaryBreakoutBridgeConfig(price_policy="ohlc4"),
+    )
+    if ohlc4_req:
+        candle_240 = candles[240]
+        expected = round(
+            (
+                candle_240["open"]
+                + candle_240["high"]
+                + candle_240["low"]
+                + candle_240["close"]
+            )
+            / 4.0,
+            2,
+        )
+        assert ohlc4_req[0].market_event["market_state"]["close_now"] == expected
+
+
+@pytest.mark.unit
+def test_price_policy_all_policies_produce_valid_close_now() -> None:
+    candles = _policy_candle_series(250)
+    for policy in sorted(VALID_PRICE_POLICIES):
+        requests = build_primary_breakout_historical_bridge(
+            candles,
+            config=PrimaryBreakoutBridgeConfig(price_policy=policy),
+        )
+        assert len(requests) > 0
+        for req in requests:
+            close_now = req.market_event["market_state"]["close_now"]
+            assert isinstance(close_now, float)
+            assert close_now > 0
+
+
+@pytest.mark.unit
+def test_price_policy_pilot_evaluation_differs() -> None:
+    """Smoke check: at least one non-close policy must produce different close_now
+    values on the real pilot candle dataset."""
+
+    pilot = json.loads(
+        pathlib.Path("artifacts/calibration/2961/pilot_candles.json").read_text("utf-8")
+    )
+    close_reqs = build_primary_breakout_historical_bridge(
+        pilot,
+        config=PrimaryBreakoutBridgeConfig(price_policy="close"),
+    )
+    high_reqs = build_primary_breakout_historical_bridge(
+        pilot,
+        config=PrimaryBreakoutBridgeConfig(price_policy="high"),
+    )
+    ohlc4_reqs = build_primary_breakout_historical_bridge(
+        pilot,
+        config=PrimaryBreakoutBridgeConfig(price_policy="ohlc4"),
+    )
+    # At least one of high or ohlc4 must produce different close_now values
+    close_prices = {req.market_event["market_state"]["close_now"] for req in close_reqs}
+    high_prices = {req.market_event["market_state"]["close_now"] for req in high_reqs}
+    ohlc4_prices = {req.market_event["market_state"]["close_now"] for req in ohlc4_reqs}
+    assert (
+        close_prices != high_prices or close_prices != ohlc4_prices
+    ), f"All policies produced identical close_now values: {close_prices}"

@@ -18,9 +18,34 @@ PRIMARY_BREAKOUT_STRATEGY_ID = "primary_breakout_v1"
 PRIMARY_BREAKOUT_SYMBOL = "BTCUSDT"
 ONE_MINUTE_MS = 60_000
 
+VALID_PRICE_POLICIES = frozenset({"close", "high", "hlc3", "ohlc4"})
+
 
 class HistoricalBridgeError(ValueError):
     """Raised when historical input is not bridge-safe."""
+
+
+def _apply_price_policy(row: Mapping[str, Any], policy: str) -> float:
+    """Compute the effective close_now price for a candle row under a given policy.
+
+    Policies:
+    - ``close`` — settled candle close (current default, deterministic)
+    - ``high`` — candle high (optimistic intrabar proxy)
+    - ``hlc3`` — typical price (high + low + close) / 3 (conservative proxy)
+    - ``ohlc4`` — average price (open + high + low + close) / 4 (conservative proxy)
+    """
+    close = _required_number(row, "close")
+    if policy == "close":
+        return close
+    high = _required_number(row, "high")
+    if policy == "high":
+        return high
+    low = _required_number(row, "low")
+    if policy == "hlc3":
+        return (high + low + close) / 3.0
+    # ohlc4
+    open_val = _required_number(row, "open")
+    return (open_val + high + low + close) / 4.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -32,6 +57,7 @@ class PrimaryBreakoutBridgeConfig:
     breakout_buffer: float = 0.0005
     min_minutes_between_entries: int = 60
     trade_side_mode: str = "long_only"
+    price_policy: str = "close"
 
     def validate(self) -> None:
         if self.entry_lookback_minutes <= 0:
@@ -44,6 +70,11 @@ class PrimaryBreakoutBridgeConfig:
             raise HistoricalBridgeError("min_minutes_between_entries must be >= 0")
         if self.trade_side_mode != "long_only":
             raise HistoricalBridgeError("trade_side_mode must be long_only")
+        if self.price_policy not in VALID_PRICE_POLICIES:
+            raise HistoricalBridgeError(
+                f"price_policy must be one of {sorted(VALID_PRICE_POLICIES)}, "
+                f"got {self.price_policy!r}"
+            )
 
 
 def _required_number(row: Mapping[str, Any], key: str) -> float:
@@ -110,7 +141,9 @@ def _validate_candle_series(
         ts_ms = _required_int(row, "ts_ms")
         if previous_ts_ms is not None:
             if ts_ms <= previous_ts_ms:
-                raise HistoricalBridgeError("candles must be strictly increasing by ts_ms")
+                raise HistoricalBridgeError(
+                    "candles must be strictly increasing by ts_ms"
+                )
             if ts_ms - previous_ts_ms != ONE_MINUTE_MS:
                 raise HistoricalBridgeError(
                     "candles must have strict 1m cadence (delta 60000 ms)"
@@ -158,13 +191,11 @@ def build_primary_breakout_historical_bridge(
     requests: list[StrategyAdapterRequest] = []
     for index in range(max_lookback, len(candles)):
         row = candles[index]
-        close_now = _required_number(row, "close")
+        close_now = _apply_price_policy(row, active_config.price_policy)
         ts_ms = _required_int(row, "ts_ms")
         data_gap_active = _optional_bool(row, "data_gap_active", default=False)
 
-        entry_window = candles[
-            index - active_config.entry_lookback_minutes : index
-        ]
+        entry_window = candles[index - active_config.entry_lookback_minutes : index]
         exit_window = candles[index - active_config.exit_lookback_minutes : index]
         highest_high = max(_required_number(item, "high") for item in entry_window)
         lowest_low = min(_required_number(item, "low") for item in exit_window)
@@ -209,7 +240,9 @@ def build_primary_breakout_historical_bridge(
         }
         if data_gap_active:
             market_snapshot["volume"] = (
-                _required_number(row, "volume") if row.get("volume") is not None else 0.0
+                _required_number(row, "volume")
+                if row.get("volume") is not None
+                else 0.0
             )
         else:
             market_event["price"] = close_now
@@ -219,7 +252,9 @@ def build_primary_breakout_historical_bridge(
             market_snapshot["high"] = _required_number(row, "high")
             market_snapshot["low"] = _required_number(row, "low")
             market_snapshot["volume"] = (
-                _required_number(row, "volume") if row.get("volume") is not None else 0.0
+                _required_number(row, "volume")
+                if row.get("volume") is not None
+                else 0.0
             )
         requests.append(
             StrategyAdapterRequest(
