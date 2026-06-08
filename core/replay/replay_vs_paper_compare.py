@@ -164,7 +164,8 @@ def load_paper_reference_window(paper_reference: Mapping[str, Any]) -> PaperRefe
     """Parse arvp_paper_reference_window.v1 dict into PaperReferenceWindow.
 
     Counts are derived from the supplied event set:
-      - signal_count: number of SIGNAL events
+      - signal_count: number of SIGNAL events in the main events list
+      - causal_signal_count: number of SIGNAL events in causal_context_events
       - order_count: number of ORDER events with paper_ order_id
       - fill_count:  number of FILL events with paper_ order_id
       - reject_count: max(0, order_count - fill_count)
@@ -244,6 +245,21 @@ def load_paper_reference_window(paper_reference: Mapping[str, Any]) -> PaperRefe
                 f"Unknown event_type {ev_type!r} in events[{idx}]"
             )
 
+    # --- Causal context events (#3058) ---
+    causal_signal_count = 0
+    causal_events_raw = paper.get("causal_context_events")
+    if isinstance(causal_events_raw, list):
+        for idx, raw in enumerate(causal_events_raw):
+            cev = _require_mapping(raw, f"causal_context_events[{idx}]")
+            cev_type = _require_non_empty_string(
+                cev.get("event_type"), f"causal_context_events[{idx}].event_type"
+            )
+            if cev_type != "SIGNAL":
+                raise ReplayVsPaperCompareError(
+                    f"causal_context_events[{idx}] event_type must be SIGNAL, got {cev_type!r}"
+                )
+            causal_signal_count += 1
+
     inferred_unfilled_count = _infer_reject_count(order_count, fill_count)
     actual_reject_count_or_none = actual_reject_count if saw_explicit_rejects else None
     provenance_id = _paper_provenance_id(paper)
@@ -259,6 +275,7 @@ def load_paper_reference_window(paper_reference: Mapping[str, Any]) -> PaperRefe
         actual_reject_count=actual_reject_count_or_none,
         inferred_unfilled_count=inferred_unfilled_count,
         provenance_id=provenance_id,
+        causal_signal_count=causal_signal_count,
     )
 
 

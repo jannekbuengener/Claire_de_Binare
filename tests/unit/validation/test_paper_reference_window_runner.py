@@ -103,7 +103,9 @@ def test_main_exports_with_verified_readonly_identity(
     monkeypatch.setattr(
         runner,
         "export_paper_reference_window",
-        lambda request, rows: {"schema_version": "arvp_paper_reference_window.v1"},
+        lambda request, rows, causal_context_rows=None: {
+            "schema_version": "arvp_paper_reference_window.v1"
+        },
     )
     monkeypatch.setattr(
         runner,

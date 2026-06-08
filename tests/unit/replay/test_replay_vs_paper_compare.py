@@ -180,3 +180,52 @@ def test_paper_reference_unknown_event_type_raises() -> None:
     payload["events"][0]["event_type"] = "UNKNOWN"
     with pytest.raises(ReplayVsPaperCompareError, match="Unknown event_type"):
         load_paper_reference_window(payload)
+
+
+def test_load_paper_reference_window_with_causal_context_events() -> None:
+    """causal_context_events are counted as causal_signal_count."""
+    payload = _paper_reference_window()
+    payload["causal_context_events"] = [
+        {
+            "event_pk": "causal-sig-1",
+            "correlation_id": "c1",
+            "event_type": "SIGNAL",
+            "symbol": "BTCUSDT",
+            "timestamp_ms": payload["start_ts_ms_utc"] - 60_000,
+            "payload": {"strategy_id": "primary_breakout_v1"},
+            "signal_id": "s1",
+            "in_window": False,
+            "context_scope": "pre_window_causal",
+        },
+    ]
+    paper = load_paper_reference_window(payload)
+    assert paper.causal_signal_count == 1
+    assert paper.signal_count == 1  # in-window unchanged
+
+
+def test_load_paper_reference_window_no_causal_context_events() -> None:
+    """Missing causal_context_events is a no-op (causal_signal_count=0)."""
+    payload = _paper_reference_window()
+    # Ensure key is absent, not just empty
+    assert "causal_context_events" not in payload
+    paper = load_paper_reference_window(payload)
+    assert paper.causal_signal_count == 0
+    assert paper.signal_count == 1
+
+
+def test_causal_context_event_non_signal_type_raises() -> None:
+    """causal_context_events must be SIGNAL type."""
+    payload = _paper_reference_window()
+    payload["causal_context_events"] = [
+        {
+            "event_pk": "bad-type",
+            "correlation_id": "c1",
+            "event_type": "ORDER",
+            "symbol": "BTCUSDT",
+            "timestamp_ms": payload["start_ts_ms_utc"] - 60_000,
+            "payload": {"strategy_id": "primary_breakout_v1"},
+            "signal_id": "s1",
+        },
+    ]
+    with pytest.raises(ReplayVsPaperCompareError, match="event_type must be SIGNAL"):
+        load_paper_reference_window(payload)
