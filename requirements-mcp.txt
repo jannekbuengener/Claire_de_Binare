@@ -1,5 +1,5 @@
 # MCP Server & Test Dependencies
 # Pinned for determinism and environment independence (Issue #686)
 mcp==1.27.2
-mcp-server-time==2026.1.26
+mcp-server-time==2026.6.4
 pytest-asyncio==1.4.0
