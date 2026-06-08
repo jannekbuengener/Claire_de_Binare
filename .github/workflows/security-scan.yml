@@ -378,7 +378,7 @@ jobs:
           echo "### Known Issues (Documented as Accepted Risk)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**gosu Binary CVEs in Redis/Postgres base images:**" >> $GITHUB_STEP_SUMMARY
-          echo "- 4 CRITICAL + 40 HIGH CVEs from Go stdlib 1.18.2" >> $GITHUB_STEP_SUMMARY
+          echo "- 4 CRITICAL + 40 HIGH CVEs from Go stdlib 1.18.2 (incl. CVE-2026-42504 Go mime)" >> $GITHUB_STEP_SUMMARY
           echo "- Risk: LOW (startup-only, no network exposure)" >> $GITHUB_STEP_SUMMARY
           echo "- Documented in: [docs/security/TRIAGE_RUNBOOK.md](docs/security/TRIAGE_RUNBOOK.md)" >> $GITHUB_STEP_SUMMARY
           echo "- Upstream tracking: docker-library/redis, docker-library/postgres" >> $GITHUB_STEP_SUMMARY
