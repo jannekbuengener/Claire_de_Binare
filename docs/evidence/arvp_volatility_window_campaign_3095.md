@@ -3,7 +3,7 @@
 **Campaign ID:** `arvp_3095_vol_window_20260608_2341`
 **Start UTC:** 2026-06-08T23:41:09Z
 **Planned Duration:** max 8h (until ~2026-06-09T07:41:09Z)
-**Status:** HOLD_CAMPAIGN_STILL_RUNNING
+**Status:** HOLD_INTERRUPTED_BY_HOST_SHUTDOWN (see `arvp_volatility_window_campaign_3095_interruption.md`)
 **Evidence Class:** `natural_paper_evidence` (pending — no chain yet)
 **Observed Events:** 0 (DB-verified via `cdb_readonly`)
 **Monitoring Cycles:** 4 (23:43–00:14 UTC)
@@ -324,9 +324,9 @@ Stack health at verification time: All BLUE services healthy (`docker ps`), regi
 
 ## Status
 
-**HOLD_CAMPAIGN_STILL_RUNNING**
+**HOLD_INTERRUPTED_BY_HOST_SHUTDOWN** (interruption record: `arvp_volatility_window_campaign_3095_interruption.md`)
 
-Campaign #1 has ~7.5h remaining (until ~07:41 UTC). 0 events observed through 4 monitoring cycles. No SIGNAL fired — `primary_breakout_v1` 0.5% breakout threshold not triggered. Regime `HIGH_VOL_CHAOTIC` persisted throughout observation.
+Campaign #1 was interrupted by host shutdown before reaching its 8h window. 0 events observed through 4 monitoring cycles (until 00:14 UTC). Host became unavailable after ~00:21 UTC and rebooted at ~10:00 UTC. The remaining ~7h of the campaign window cannot be evaluated — no DB evidence is available. Campaign is neither a completed 8h observation nor a confirmed 8h failure.
 
 ### Stop Condition Assessment
 
@@ -348,10 +348,11 @@ Campaign #1 has ~7.5h remaining (until ~07:41 UTC). 0 events observed through 4 
 
 BTCUSDT ranged narrowly (~$63,011–$63,194) during the observed window. The 0.5% breakout in 15 minutes was not met despite `HIGH_VOL_CHAOTIC` regime. Regime classification (`HIGH_VOL_CHAOTIC`) reflects short-term volatility metrics; it does not guarantee a directional breakout of sufficient magnitude for the strategy trigger. This is consistent with the findings from #3087 Phase 2 (9.4h natural observation → 0 chains).
 
-### Next Steps
+### Next Steps (superseded by interruption)
 
-- [ ] Campaign continues passively until 8h timeout (~07:41 UTC) or chain found
-- [ ] If chain found before timeout: follow Step 4 extraction→compare→calibrate→scorecard path
-- [ ] On 8h timeout without chain: close with `HOLD_NO_CHAIN_CAMPAIGN_1`; plan Campaign #2
-- [ ] Campaign #2 must respect 24h min total observation policy; schedule after sufficient rest
+- ⛔ ~~Campaign continues passively until 8h timeout~~ — host became unavailable
+- ⛔ ~~Chain extraction path~~ — no DB evidence available for host-down period
+- [ ] **Updated plan:** Restart as Campaign #1R (fresh ID, same campaign slot) or skip to Campaign #2
+- [ ] Add host-availability preflight to future campaign plans (power/sleep risk, runtime continuity, heartbeat)
 - [ ] #3087 remains BLOCKED; #2974 remains BLOCKED by §5.2.4
+- [ ] See `docs/evidence/arvp_volatility_window_campaign_3095_interruption.md` for full interruption record and recommendation
