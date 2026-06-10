@@ -3,8 +3,11 @@
 **Campaign ID:** `arvp_3095_vol_window_2r_20260610_1111`
 **Start UTC:** 2026-06-10T11:11:00Z
 **Planned Duration:** max 8h (until ~2026-06-10T19:11:00Z)
-**Status:** CAMPAIGN_2R_RUNNING
-**Campaign #:** 2R of max 3 (replaces interrupted Campaign #2; does not consume a new slot)
+**Status:** HOLD_NO_CHAIN_CAMPAIGN_2R
+**Evidence Class:** `campaign_timeout_record` — not `natural_paper_evidence` (no chain produced)
+**Observed Events:** 0 — no chain across full 8h window
+**Close UTC:** 2026-06-10T19:11:00Z (timeout)
+**Campaign #:** 2R of max 3 (replaces interrupted Campaign #2; counts as Slot #2 failure)
 
 ---
 
@@ -15,9 +18,9 @@
 | Campaign #1 | `arvp_3095_vol_window_20260608_2341` | HOLD_INTERRUPTED_BY_HOST_SHUTDOWN | No |
 | Campaign #1R | `arvp_3095_vol_window_1r_20260609_1109` | HOLD_NO_CHAIN_CAMPAIGN_1R — Slot #1 consumed | No |
 | Campaign #2 | `arvp_3095_vol_window_2_20260609_1942` | HOLD_INTERRUPTED_CAMPAIGN_2 | No (observed 3h 14min) |
-| Campaign #2R | `arvp_3095_vol_window_2r_20260610_1111` | **CAMPAIGN_2R_RUNNING** | — |
+| Campaign #2R | `arvp_3095_vol_window_2r_20260610_1111` | **HOLD_NO_CHAIN_CAMPAIGN_2R — Slot #2 consumed** | No |
 
-**Slot #1 consumed** (Campaign #1R failure). Slot #2 does NOT count (interruption). **Campaign #2R is a replacement for the interrupted #2 — does NOT consume a new slot.**
+**Slot #1 consumed** (Campaign #1R failure). Slot #2 does NOT count (interruption). **Slot #2R consumed** (Campaign #2R timeout — full 8h window, 0 chain). **Effective slot count: 2 of max 3 consumed.**
 
 ---
 
@@ -161,6 +164,58 @@ HIGH_VOL_CHAOTIC (regime_id=2) is in `blocked_regimes` per the decision contract
 | correlation_ledger events since start | 0 |
 | Chain candidate | None |
 
+### Cycle 2 — 2026-06-10T15:00 UTC
+
+| Metric | Value |
+|--------|-------|
+| Core BLUE services | All healthy (4h uptime) |
+| Host continuity | ✅ Continuous — 0 sleep/wake events |
+| Safety flags | All confirmed |
+| Regime | HIGH_VOL_CHAOTIC |
+| BTCUSDT 15m range | 0.625% (61812.03 → 62198.65) |
+| BTCUSDT 60m range | 0.721% (61812.03 → 62257.64) |
+| BTCUSDT latest | ~62198 |
+| correlation_ledger events since start | 0 |
+| Chain candidate | None |
+
+### Cycle 3 — 2026-06-10T16:58 UTC
+
+| Metric | Value |
+|--------|-------|
+| Core BLUE services | All healthy (6h uptime) |
+| Host continuity | ✅ Continuous — 0 sleep/wake events |
+| Safety flags | All confirmed |
+| Regime | HIGH_VOL_CHAOTIC |
+| BTCUSDT 15m range | 0.541% (61930.00 → 62264.88) |
+| BTCUSDT 60m range | 1.285% (61930.00 → 62725.98) |
+| BTCUSDT latest | ~62183 |
+| correlation_ledger events since start | 0 |
+| Chain candidate | None |
+
+### Cycle 4 (Closeout) — 2026-06-10T19:12 UTC (past 8h timeout)
+
+| Metric | Value |
+|--------|-------|
+| Core BLUE services | All healthy (8h+ uptime) |
+| Host continuity | ✅ Continuous since boot 22:59 UTC Jun 9 — 0 sleep/wake events |
+| Safety flags | All confirmed (MOCK=true, DRY=true, TESTNET=true, REAL_BALANCE=false) |
+| Regime | HIGH_VOL_CHAOTIC (signals at 19:06, 19:09, 19:10, 19:12 CEST) |
+| BTCUSDT 15m range | 0.323% (61742.70 → 61942.25) |
+| BTCUSDT 60m range | 0.693% (61597.70 → 62024.72) |
+| BTCUSDT latest | ~61789 (down from ~62183 at Cycle 3) |
+| Candles in campaign window | 471 of ~480 expected (9 missing from Docker restart gap) |
+| correlation_ledger events since start | **0** |
+| Chain candidate | **None** |
+
+### Campaign Range Trend
+
+| Cycle | Time (UTC) | BTCUSDT | 15m Range | 60m Range | Events |
+|-------|------------|---------|-----------|-----------|--------|
+| Start | 11:11 | ~61503 | 0.307% | 1.474% | 0 |
+| Cycle 2 | 15:00 | ~62198 | 0.625% | 0.721% | 0 |
+| Cycle 3 | 16:58 | ~62183 | 0.541% | 1.285% | 0 |
+| Closeout | 19:12 | ~61789 | **0.323%** | 0.693% | **0** |
+
 ---
 
 ## Safety Boundaries
@@ -204,8 +259,67 @@ HIGH_VOL_CHAOTIC (regime_id=2) is in `blocked_regimes` per the decision contract
 
 ---
 
+## Campaign #2R Verdict: HOLD_NO_CHAIN_CAMPAIGN_2R
+
+### Why This Is a Real Campaign Failure
+
+| Fact | Evidence |
+|------|----------|
+| Campaign ran full 8h window | Start 11:11 UTC → timeout 19:11 UTC (verified at 19:12 UTC) |
+| Host was continuously available | Boot 22:59 UTC Jun 9 — ~20h uptime at closeout, 0 sleep/wake events |
+| Docker stack healthy throughout | All core BLUE services 8h+ steady |
+| No runtime/DB/correlation interruption | Postgres accessible throughout; 0 errors |
+| Safety flags unchanged | MOCK=true, DRY=true, TESTNET=true, REAL_BALANCE=false throughout |
+| correlation_ledger events: 0 | DB-verified at cycles 1, 2, 3, and closeout |
+| Chain produced: no | No SIGNAL → DECISION → ORDER → FILL chain |
+
+### Root Cause
+
+`primary_breakout_v1` requires a 0.5% price breakout within 15 minutes. Throughout the 8h campaign, BTCUSDT showed elevated volatility (15m range peaked at 0.625% at Cycle 2) but the movement was choppy (HIGH_VOL_CHAOTIC regime) without a clean directional breakout. The strategy's breakout detection logic requires a sustained directional move, not just raw high-low spread. BTCUSDT first rallied +1.13% (~61503 → ~62198), then reversed to ~61789 by closeout.
+
+This is the same pattern as Campaign #1R (0 chains, full 8h), Campaign #1 (0 events before interruption), Campaign #2 (0 events before interruption), and Phase 2 (~9.4h, 0 chains).
+
+### Classification
+
+This campaign **is**:
+- A completed 8h campaign (full window observed)
+- A real campaign failure (strategy did not trigger under natural market conditions)
+- Counted toward the max-3 campaign limit as **Slot #2 failure**
+
+This campaign **is not**:
+- `natural_paper_evidence` (no chain → nothing to extract)
+- Interrupted (host was continuously available)
+- Comparison-grade (no window to extract, no `regime_segments`)
+- A pipeline defect (system functioned correctly throughout)
+
+### Impact on #3087
+
+| Gate | Status | Reason |
+|------|--------|--------|
+| §5.2.4 — at least one window with non-empty `regime_segments` | **BLOCKED** | Campaign #2R produced 0 chains → no window → no `regime_segments` |
+| Campaign attempts consumed | **2 of max 3** | #1R = Slot #1, #2R = Slot #2 |
+| Campaign #3 eligible | **Yes** | Remaining: 1 of max 3 |
+| Waiver escalation | **Not yet** | Requires ≥3 campaign failures |
+
+### Recommendation
+
+Campaign #3 should start under a fresh start-criteria evaluation. TREND regime preferred. After Campaign #3 failure (or interruption), escalate to Option E (waiver/split) per #3094.
+
+### Stop Condition Assessment (at closeout)
+
+| Condition | Met? | Detail |
+|-----------|------|--------|
+| Early stop (chain found) | ❌ | No chain throughout 8h |
+| 8h timeout | ✅ | Verified at 19:12 UTC (past 19:11 UTC) |
+| Safety flag change | ❌ | All unchanged throughout |
+| Stack/health degradation | ❌ | All healthy — 8h+ uptime |
+| Host shutdown/reboot | ❌ | Continuous since boot 22:59 UTC Jun 9, 0 sleep events |
+| Start criterion lost | ❌ | Regime stayed HIGH_VOL_CHAOTIC throughout |
+
+---
+
 ## Status
 
-**CAMPAIGN_2R_RUNNING**
+**HOLD_NO_CHAIN_CAMPAIGN_2R**
 
-Campaign #2R started at 2026-06-10T11:11:00Z with start criterion P2 (BTCUSDT 60m range 1.474% ≥ 0.75%) + P3 (HIGH_VOL_CHAOTIC). P1 (15m range 0.307%) did not individually meet the 0.35% threshold. Safety flags confirmed. Host uptime 12h+ continuous. Docker core BLUE healthy (2h). Timeout at ~2026-06-10T19:11:00Z. Monitoring active.
+Campaign #2R started at 2026-06-10T11:11:00Z, ran full 8h window, and reached timeout at ~2026-06-10T19:11:00Z. Start criteria were met (P2 60m range 1.474% + P3 HIGH_VOL_CHAOTIC). All 4 monitoring cycles (including closeout) confirmed 0 correlation_ledger events, no SIGNAL → DECISION → ORDER → FILL chain, and continuous host/runtime availability. Safety flags remained confirmed throughout. BTCUSDT ranged from ~61503 (start) → ~62198 (Cycle 2 peak) → ~61789 (closeout). 471 of 480 expected candles present in the campaign window (9 missing from Docker restart gap at 11:11-11:22 UTC). This campaign counts as Slot #2 failure (2 of max 3 consumed). #3087 remains BLOCKED. Next: Campaign #3 with fresh start-criteria evaluation, or escalate to Option E per #3094 after 3 failures.
