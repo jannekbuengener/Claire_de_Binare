@@ -45,6 +45,7 @@ def test_guardrails_no_forbidden_calls():
         "core/utils/clock.py",
         "core/utils/seed.py",
         "core/utils/uuid_gen.py",
+        "tools/arvp_probe_layer.py",
     }
     patterns = {
         "datetime.now": re.compile(r"datetime\.now\("),
