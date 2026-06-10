@@ -372,9 +372,7 @@ def probe_db_readonly(
     psycopg2_available = importlib.util.find_spec("psycopg2") is not None
     pg_isready_available = False
     try:
-        subprocess.run(
-            ["pg_isready", "--version"], capture_output=True, timeout=5
-        )
+        subprocess.run(["pg_isready", "--version"], capture_output=True, timeout=5)
         pg_isready_available = True
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
@@ -392,10 +390,14 @@ def probe_db_readonly(
             ready = subprocess.run(
                 [
                     "pg_isready",
-                    "-h", host,
-                    "-p", str(port),
-                    "-d", dbname,
-                    "-U", user,
+                    "-h",
+                    host,
+                    "-p",
+                    str(port),
+                    "-d",
+                    dbname,
+                    "-U",
+                    user,
                 ],
                 capture_output=True,
                 text=True,
@@ -424,8 +426,11 @@ def probe_db_readonly(
             import psycopg2
 
             conn = psycopg2.connect(
-                host=host, port=port, dbname=dbname,
-                user=user, connect_timeout=10,
+                host=host,
+                port=port,
+                dbname=dbname,
+                user=user,
+                connect_timeout=10,
             )
             cur = conn.cursor()
             cur.execute("SELECT 1 AS ok")
@@ -438,8 +443,11 @@ def probe_db_readonly(
             svr_version = None
             try:
                 conn2 = psycopg2.connect(
-                    host=host, port=port, dbname=dbname,
-                    user=user, connect_timeout=10,
+                    host=host,
+                    port=port,
+                    dbname=dbname,
+                    user=user,
+                    connect_timeout=10,
                 )
                 cur2 = conn2.cursor()
                 cur2.execute("SELECT version()")
@@ -471,7 +479,9 @@ def probe_db_readonly(
     return _ok(
         {
             "connectivity": "ok (pg_isready only)",
-            "host": host, "port": port, "dbname": dbname,
+            "host": host,
+            "port": port,
+            "dbname": dbname,
         },
         limitations + ["pg_isready only; no SELECT verification"],
     )
@@ -482,14 +492,15 @@ def probe_db_readonly(
 # ---------------------------------------------------------------------------
 
 
-def _run_sql(
-    host: str, port: int, dbname: str, user: str, query: str
-) -> list[tuple]:
+def _run_sql(host: str, port: int, dbname: str, user: str, query: str) -> list[tuple]:
     import psycopg2
 
     conn = psycopg2.connect(
-        host=host, port=port, dbname=dbname,
-        user=user, connect_timeout=10,
+        host=host,
+        port=port,
+        dbname=dbname,
+        user=user,
+        connect_timeout=10,
     )
     try:
         cur = conn.cursor()
@@ -519,7 +530,10 @@ def probe_candles(
 
     try:
         latest = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             f"SELECT MAX(ts_ms) FROM candles_1m WHERE symbol='{symbol}'",
         )
         latest_ts = latest[0][0] if latest and latest[0][0] else None
@@ -530,7 +544,10 @@ def probe_candles(
             )
 
         range_15m = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             f"SELECT MAX(high) - MIN(low) FROM candles_1m "
             f"WHERE symbol='{symbol}' "
             f"AND ts_ms >= NOW() - INTERVAL '15 minutes'",
@@ -540,7 +557,10 @@ def probe_candles(
         )
 
         range_60m = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             f"SELECT MAX(high) - MIN(low) FROM candles_1m "
             f"WHERE symbol='{symbol}' "
             f"AND ts_ms >= NOW() - INTERVAL '60 minutes'",
@@ -550,7 +570,10 @@ def probe_candles(
         )
 
         gaps = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             f"SELECT ts_ms - LAG(ts_ms) OVER (ORDER BY ts_ms) AS gap "
             f"FROM candles_1m WHERE symbol='{symbol}' "
             f"ORDER BY ts_ms DESC LIMIT 10",
@@ -567,14 +590,15 @@ def probe_candles(
         large_gaps = [g for g in gap_minutes_list if g > gap_threshold_minutes]
 
         latest_close = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             f"SELECT close FROM candles_1m WHERE symbol='{symbol}' "
             f"ORDER BY ts_ms DESC LIMIT 1",
         )
         latest_price = (
-            float(latest_close[0][0])
-            if latest_close and latest_close[0][0]
-            else None
+            float(latest_close[0][0]) if latest_close and latest_close[0][0] else None
         )
 
         evidence = {
@@ -602,8 +626,7 @@ def probe_candles(
         limitations = []
         if len(large_gaps) > 0:
             limitations.append(
-                f"candle gap(s) >{gap_threshold_minutes} min detected: "
-                f"{large_gaps}"
+                f"candle gap(s) >{gap_threshold_minutes} min detected: " f"{large_gaps}"
             )
         return {
             "status": status,
@@ -630,6 +653,7 @@ def probe_ledger(
     port: int = DB_DEFAULTS["port"],
     dbname: str = DB_DEFAULTS["dbname"],
     user: str = DB_DEFAULTS["user"],
+    include_events: bool = False,
 ) -> ProbeResult:
     import importlib
 
@@ -641,7 +665,10 @@ def probe_ledger(
 
     try:
         latest = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             "SELECT ts_ms, event_type, status, lineage_hash "
             "FROM correlation_ledger ORDER BY ts_ms DESC LIMIT 1",
         )
@@ -661,14 +688,20 @@ def probe_ledger(
         count_since_start: int | None = None
         if campaign_start_utc:
             count_rows = _run_sql(
-                host, port, dbname, user,
+                host,
+                port,
+                dbname,
+                user,
                 f"SELECT COUNT(*) FROM correlation_ledger "
                 f"WHERE ts_ms >= '{campaign_start_utc}'::timestamptz",
             )
             count_since_start = int(count_rows[0][0]) if count_rows else 0
 
         grouped = _run_sql(
-            host, port, dbname, user,
+            host,
+            port,
+            dbname,
+            user,
             "SELECT event_type, status, COUNT(*) as cnt "
             "FROM correlation_ledger "
             "GROUP BY event_type, status ORDER BY event_type, status",
@@ -683,19 +716,54 @@ def probe_ledger(
                 }
             )
 
-        return _ok(
-            {
-                "latest_event": latest_event,
-                "events_since_campaign_start": count_since_start,
-                "events_by_type_status": events_by_type_status,
-                "campaign_start_utc": campaign_start_utc,
-                "queries": [
-                    "SELECT ... FROM correlation_ledger ORDER BY ts_ms DESC LIMIT 1",
-                    "SELECT COUNT(*) FROM correlation_ledger WHERE ts_ms >= ...",
-                    "SELECT event_type, status, COUNT(*) FROM correlation_ledger GROUP BY ...",
-                ],
-            }
-        )
+        evidence: dict[str, Any] = {
+            "latest_event": latest_event,
+            "events_since_campaign_start": count_since_start,
+            "events_by_type_status": events_by_type_status,
+            "campaign_start_utc": campaign_start_utc,
+            "queries": [
+                "SELECT ... FROM correlation_ledger ORDER BY ts_ms DESC LIMIT 1",
+                "SELECT COUNT(*) FROM correlation_ledger WHERE ts_ms >= ...",
+                "SELECT event_type, status, COUNT(*) FROM correlation_ledger GROUP BY ...",
+            ],
+        }
+
+        events_raw: list[dict] | None = None
+        if include_events:
+            try:
+                rows = _run_sql(
+                    host,
+                    port,
+                    dbname,
+                    user,
+                    "SELECT id, ts_ms, event_type, status, lineage_hash "
+                    "FROM correlation_ledger ORDER BY ts_ms ASC",
+                )
+                events_raw = []
+                for row in rows:
+                    events_raw.append(
+                        {
+                            "id": row[0],
+                            "ts_ms": (
+                                row[1].isoformat()
+                                if hasattr(row[1], "isoformat")
+                                else str(row[1])
+                            ),
+                            "event_type": row[2],
+                            "status": row[3],
+                            "lineage_hash": row[4],
+                        }
+                    )
+                evidence["events"] = events_raw
+                evidence["queries"].append(
+                    "SELECT id, ts_ms, event_type, status, lineage_hash "
+                    "FROM correlation_ledger ORDER BY ts_ms ASC"
+                )
+            except Exception as exc:
+                logger.warning("events query failed: %s", exc)
+                evidence["events_error"] = str(exc)
+
+        return _ok(evidence)
     except Exception as exc:
         return _blocked(
             {"error": str(exc)},
@@ -718,6 +786,7 @@ REGIME_PATTERNS: list[tuple[str, str]] = [
 def _try_http_regime(port: int = 8008, timeout: int = 5) -> str | None:
     try:
         import urllib.request
+
         url = f"http://localhost:{port}/health"
         with urllib.request.urlopen(url, timeout=timeout) as resp:
             return resp.read().decode("utf-8")
@@ -725,9 +794,7 @@ def _try_http_regime(port: int = 8008, timeout: int = 5) -> str | None:
         return None
 
 
-def probe_regime(
-    container: str = "cdb_regime", health_port: int = 8008
-) -> ProbeResult:
+def probe_regime(container: str = "cdb_regime", health_port: int = 8008) -> ProbeResult:
     http_body = _try_http_regime(port=health_port)
     if http_body:
         for pattern, label in REGIME_PATTERNS:
@@ -749,9 +816,7 @@ def probe_regime(
         )
 
     try:
-        logs = _run_docker_cmd(
-            ["logs", container, "--tail", "10"], timeout=10
-        )
+        logs = _run_docker_cmd(["logs", container, "--tail", "10"], timeout=10)
     except (FileNotFoundError, RuntimeError) as exc:
         return _unavailable(
             {"error": str(exc)},
@@ -791,9 +856,7 @@ def main() -> None:
     parser.add_argument("--all", action="store_true", help="Run all probes")
     parser.add_argument("--host", action="store_true", help="Host probe")
     parser.add_argument("--docker", action="store_true", help="Docker probe")
-    parser.add_argument(
-        "--safety", action="store_true", help="Safety flags probe"
-    )
+    parser.add_argument("--safety", action="store_true", help="Safety flags probe")
     parser.add_argument("--db", action="store_true", help="DB readonly probe")
     parser.add_argument(
         "--candles", action="store_true", help="Candle/market data probe"
@@ -835,9 +898,7 @@ def main() -> None:
     if args.all or args.host:
         results.append({"probe": "host", **probe_host()})
     if args.all or args.docker:
-        results.append(
-            {"probe": "docker", **probe_docker(targets=args.docker_targets)}
-        )
+        results.append({"probe": "docker", **probe_docker(targets=args.docker_targets)})
     if args.all or args.safety:
         results.append({"probe": "safety", **probe_safety()})
     if args.all or args.db:

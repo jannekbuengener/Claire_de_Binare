@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
+from tools.arvp_chain_detector import ChainDetector, normalize_event_type
 from tools.arvp_probe_layer import (
     probe_candles,
     probe_db_readonly,
@@ -124,7 +125,7 @@ def run_all_probes(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     results.append(
         {
             "probe": "correlation_ledger",
-            **probe_ledger(campaign_start_utc=start_utc),
+            **probe_ledger(campaign_start_utc=start_utc, include_events=True),
         }
     )
     results.append({"probe": "regime", **probe_regime()})
@@ -144,24 +145,18 @@ def _check_blocked(probes: list[dict[str, Any]], name: str) -> bool:
     return p is not None and p.get("status") in ("blocked",)
 
 
-def detect_chain(probes: list[dict[str, Any]]) -> bool:
+def detect_chain(probes: list[dict[str, Any]]) -> dict[str, Any] | None:
     ledger = _find_probe(probes, "correlation_ledger")
     if ledger is None or ledger.get("status") != "ok":
-        return False
+        return None
 
-    evidence = ledger.get("evidence", {})
-    events_by_type = evidence.get("events_by_type_status", [])
+    detector = ChainDetector.from_probe_result(ledger)
+    result = detector.detect()
 
-    found_types: set[str] = set()
-    for entry in events_by_type:
-        etype = str(entry.get("event_type", "")).upper()
-        if etype == "ORDER" or etype.startswith("ORDER("):
-            found_types.add("ORDER")
-        else:
-            found_types.add(etype)
+    if result.get("chain_status") == "complete_chain":
+        return result
 
-    required = {"SIGNAL", "DECISION", "ORDER", "FILL"}
-    return required.issubset(found_types)
+    return None
 
 
 def detect_interruption(probes: list[dict[str, Any]]) -> bool:
@@ -203,7 +198,11 @@ def evaluate_state(
     if safety is not None and safety.get("status") == "blocked":
         return STATE_BLOCKED_GOVERNANCE
 
-    if detect_chain(probes):
+    chain_result = detect_chain(probes)
+    if (
+        chain_result is not None
+        and chain_result.get("chain_status") == "complete_chain"
+    ):
         return STATE_CHAIN_FOUND
 
     if detect_interruption(probes):
@@ -236,7 +235,9 @@ def _build_cycle_entry(
 
     probe_statuses = {p["probe"]: p.get("status") for p in probes}
 
-    return {
+    chain_details = detect_chain(probes)
+
+    entry: dict[str, Any] = {
         "observed_at_utc": _utcnow(),
         "cycle": cycle,
         "campaign_id": manifest.get("campaign_id"),
@@ -247,6 +248,22 @@ def _build_cycle_entry(
         "no_mutation": True,
         "limitations": [],
     }
+
+    if chain_details is not None:
+        entry["chain_details"] = {
+            "chain_status": chain_details.get("chain_status"),
+            "complete": chain_details.get("complete"),
+            "event_count": chain_details.get("event_count"),
+            "event_ids": chain_details.get("event_ids"),
+            "first_event_ts": chain_details.get("first_event_ts"),
+            "last_event_ts": chain_details.get("last_event_ts"),
+            "missing_steps": chain_details.get("missing_steps"),
+            "observed_types": chain_details.get("observed_types"),
+        }
+        if chain_details.get("export_trigger"):
+            entry["chain_details"]["export_trigger"] = chain_details["export_trigger"]
+
+    return entry
 
 
 def write_jsonl_entry(path: str, entry: dict[str, Any]) -> None:

@@ -398,15 +398,15 @@ class TestEvaluateState:
 @pytest.mark.unit
 class TestDetectChain:
     def test_no_ledger_probe(self):
-        assert detect_chain([]) is False
+        assert detect_chain([]) is None
 
     def test_ledger_not_ok(self):
         probes = [_blocked("correlation_ledger")]
-        assert detect_chain(probes) is False
+        assert detect_chain(probes) is None
 
     def test_empty_events(self):
         probes = [_ok("correlation_ledger", {"events_by_type_status": []})]
-        assert detect_chain(probes) is False
+        assert detect_chain(probes) is None
 
     def test_partial_chain(self):
         probes = [
@@ -419,7 +419,7 @@ class TestDetectChain:
                 },
             )
         ]
-        assert detect_chain(probes) is False
+        assert detect_chain(probes) is None
 
     def test_full_chain(self):
         probes = [
@@ -435,7 +435,10 @@ class TestDetectChain:
                 },
             )
         ]
-        assert detect_chain(probes) is True
+        result = detect_chain(probes)
+        assert result is not None
+        assert result["chain_status"] == "complete_chain"
+        assert result["complete"] is True
 
 
 # ---------------------------------------------------------------------------
@@ -575,7 +578,9 @@ class TestRunAllProbes:
         )
         monkeypatch.setattr(
             "tools.arvp_campaign_supervisor.probe_ledger",
-            lambda campaign_start_utc=None: _ok("correlation_ledger"),
+            lambda campaign_start_utc=None, include_events=False: _ok(
+                "correlation_ledger"
+            ),
         )
 
         manifest = _minimal_manifest()
