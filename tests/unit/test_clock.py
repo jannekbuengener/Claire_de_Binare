@@ -1,4 +1,5 @@
 import pytest
+
 """Unit tests for core.utils.clock module."""
 
 import re
@@ -46,6 +47,7 @@ def test_guardrails_no_forbidden_calls():
         "core/utils/seed.py",
         "core/utils/uuid_gen.py",
         "tools/arvp_probe_layer.py",
+        "tools/arvp_campaign_supervisor.py",
     }
     patterns = {
         "datetime.now": re.compile(r"datetime\.now\("),
@@ -71,4 +73,6 @@ def test_guardrails_no_forbidden_calls():
         for label, pattern in patterns.items():
             if pattern.search(content):
                 violations.append(f"{rel}:{label}")
-    assert not violations, "Forbidden calls detected:\\n" + "\\n".join(sorted(violations))
+    assert not violations, "Forbidden calls detected:\\n" + "\\n".join(
+        sorted(violations)
+    )
