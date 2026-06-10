@@ -256,9 +256,7 @@ class GitHubReporter:
 
         return results
 
-    def _resolve_targets(
-        self, state: str, campaign_failure_count: int
-    ) -> list[int]:
+    def _resolve_targets(self, state: str, campaign_failure_count: int) -> list[int]:
         targets: list[int] = []
         if self._post_3095:
             targets.append(ISSUE_CAMPAIGN)
@@ -278,9 +276,7 @@ class GitHubReporter:
 
         cmd = [self._gh, "issue", "comment", str(issue_number), "--body", body]
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if result.returncode != 0:
                 return {
                     "action": "comment_failed",
@@ -331,7 +327,9 @@ class GitHubReporter:
         try:
             exists = subprocess.run(
                 ["git", "rev-parse", "--verify", branch],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             if exists.returncode == 0:
                 return {
@@ -342,42 +340,71 @@ class GitHubReporter:
 
             subprocess.run(
                 ["git", "checkout", "-b", branch],
-                capture_output=True, text=True, timeout=10, check=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=True,
             )
 
             paths = [p for p in [evidence_doc, evidence_log] if p and os.path.isfile(p)]
             for p in paths:
                 subprocess.run(
                     ["git", "add", p],
-                    capture_output=True, text=True, timeout=10, check=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=True,
                 )
 
             subprocess.run(
-                ["git", "commit", "-m", f"docs/evidence: add {campaign_id} {state} evidence"],
-                capture_output=True, text=True, timeout=10, check=True,
+                [
+                    "git",
+                    "commit",
+                    "-m",
+                    f"docs/evidence: add {campaign_id} {state} evidence",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=True,
             )
 
             subprocess.run(
                 ["git", "push", "-u", "origin", branch],
-                capture_output=True, text=True, timeout=30, check=True,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=True,
             )
 
             pr_cmd = [
-                self._gh, "pr", "create",
-                "--title", pr_title,
-                "--body", pr_body_content,
-                "--base", "main",
-                "--head", branch,
+                self._gh,
+                "pr",
+                "create",
+                "--title",
+                pr_title,
+                "--body",
+                pr_body_content,
+                "--base",
+                "main",
+                "--head",
+                branch,
                 "--draft",
-                "--label", "ARVP,evidence",
+                "--label",
+                "ARVP,evidence",
             ]
             pr_result = subprocess.run(
-                pr_cmd, capture_output=True, text=True, timeout=30,
+                pr_cmd,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
             if pr_result.returncode != 0:
                 subprocess.run(
                     ["git", "checkout", "main"],
-                    capture_output=True, text=True, timeout=10,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
                 )
                 return {
                     "action": "pr_create_failed",
@@ -387,7 +414,9 @@ class GitHubReporter:
 
             subprocess.run(
                 ["git", "checkout", "main"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
 
             return {
@@ -396,11 +425,16 @@ class GitHubReporter:
                 "url": pr_result.stdout.strip(),
             }
 
-        except (FileNotFoundError, subprocess.TimeoutExpired,
-                subprocess.CalledProcessError) as exc:
+        except (
+            FileNotFoundError,
+            subprocess.TimeoutExpired,
+            subprocess.CalledProcessError,
+        ) as exc:
             subprocess.run(
                 ["git", "checkout", "main"],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             return {
                 "action": "pr_create_failed",
@@ -422,39 +456,49 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         )
     )
     parser.add_argument(
-        "--manifest", required=True,
+        "--manifest",
+        required=True,
         help="Path to campaign manifest (YAML or JSON)",
     )
     parser.add_argument(
-        "--cycle-entry", default=None,
+        "--cycle-entry",
+        default=None,
         help="JSON string of the supervisor cycle entry",
     )
     parser.add_argument(
-        "--cycle-entry-file", default=None,
+        "--cycle-entry-file",
+        default=None,
         help="Path to JSON file containing the cycle entry",
     )
     parser.add_argument(
-        "--state", default=None,
+        "--state",
+        default=None,
         help="Override terminal state (used without cycle entry for simple reports)",
     )
     parser.add_argument(
-        "--campaign-failure-count", type=int, default=0,
+        "--campaign-failure-count",
+        type=int,
+        default=0,
         help="Number of consecutive campaign failures (for #3087 escalation)",
     )
     parser.add_argument(
-        "--github-write", action="store_true",
+        "--github-write",
+        action="store_true",
         help="Enable live GitHub issue comments via gh CLI",
     )
     parser.add_argument(
-        "--create-pr", action="store_true",
+        "--create-pr",
+        action="store_true",
         help="Create evidence PR (implies --github-write)",
     )
     parser.add_argument(
-        "--gh-executable", default="gh",
+        "--gh-executable",
+        default="gh",
         help="Path to gh executable (default: gh)",
     )
     parser.add_argument(
-        "--verbose", action="store_true",
+        "--verbose",
+        action="store_true",
         help="Enable debug logging",
     )
     return parser.parse_args(argv)
@@ -468,9 +512,7 @@ def load_entry(args: argparse.Namespace) -> dict[str, Any]:
             return json.load(f)
     if args.state:
         return {"state": args.state, "observed_at_utc": "unknown"}
-    raise ValueError(
-        "one of --cycle-entry, --cycle-entry-file, or --state is required"
-    )
+    raise ValueError("one of --cycle-entry, --cycle-entry-file, or --state is required")
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -30,7 +30,6 @@ from tools.arvp_github_reporter import (
     ISSUE_REFERENCE_WINDOW,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -183,11 +182,14 @@ class TestRenderInterrupted:
 
 @pytest.mark.unit
 class TestRenderBlocked:
-    @pytest.mark.parametrize("state", [
-        STATE_BLOCKED_RUNTIME,
-        STATE_BLOCKED_DB_READONLY,
-        STATE_BLOCKED_GOVERNANCE,
-    ])
+    @pytest.mark.parametrize(
+        "state",
+        [
+            STATE_BLOCKED_RUNTIME,
+            STATE_BLOCKED_DB_READONLY,
+            STATE_BLOCKED_GOVERNANCE,
+        ],
+    )
     def test_contains_blocked_info(self, state: str):
         entry = _entry(state)
         body = render_blocked(entry, _manifest())
@@ -283,15 +285,18 @@ class TestSafetyNoForbiddenPatterns:
         "MEXC_TESTNET=false",
     ]
 
-    @pytest.mark.parametrize("state", [
-        STATE_CHAIN_FOUND,
-        STATE_TIMEOUT_NO_CHAIN,
-        STATE_INTERRUPTED,
-        STATE_BLOCKED_RUNTIME,
-        STATE_BLOCKED_DB_READONLY,
-        STATE_BLOCKED_GOVERNANCE,
-        STATE_EVIDENCE_MERGED,
-    ])
+    @pytest.mark.parametrize(
+        "state",
+        [
+            STATE_CHAIN_FOUND,
+            STATE_TIMEOUT_NO_CHAIN,
+            STATE_INTERRUPTED,
+            STATE_BLOCKED_RUNTIME,
+            STATE_BLOCKED_DB_READONLY,
+            STATE_BLOCKED_GOVERNANCE,
+            STATE_EVIDENCE_MERGED,
+        ],
+    )
     def test_no_forbidden_in_template(self, state: str):
         body = render_body(state, _entry(state), _manifest())
         for pat in self.FORBIDDEN:
@@ -433,42 +438,62 @@ class TestGitHubReporterInit:
 @pytest.mark.unit
 class TestResolveTargets:
     def test_chain_found_includes_3087(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3095": True,
-            "post_on_issue_3087": True,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3095": True,
+                    "post_on_issue_3087": True,
+                }
+            )
+        )
         targets = reporter._resolve_targets(STATE_CHAIN_FOUND, 0)
         assert ISSUE_CAMPAIGN in targets
         assert ISSUE_REFERENCE_WINDOW in targets
 
     def test_timeout_no_chain_excludes_3087_below_3(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3095": True,
-            "post_on_issue_3087": True,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3095": True,
+                    "post_on_issue_3087": True,
+                }
+            )
+        )
         targets = reporter._resolve_targets(STATE_TIMEOUT_NO_CHAIN, 2)
         assert ISSUE_CAMPAIGN in targets
         assert ISSUE_REFERENCE_WINDOW not in targets
 
     def test_timeout_no_chain_includes_3087_at_3(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3095": True,
-            "post_on_issue_3087": True,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3095": True,
+                    "post_on_issue_3087": True,
+                }
+            )
+        )
         targets = reporter._resolve_targets(STATE_TIMEOUT_NO_CHAIN, 3)
         assert ISSUE_REFERENCE_WINDOW in targets
 
     def test_3095_disabled_via_manifest(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3095": False,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3095": False,
+                }
+            )
+        )
         targets = reporter._resolve_targets(STATE_CHAIN_FOUND, 0)
         assert ISSUE_CAMPAIGN not in targets
 
     def test_3087_disabled_via_manifest(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3087": False,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3087": False,
+                }
+            )
+        )
         targets = reporter._resolve_targets(STATE_CHAIN_FOUND, 0)
         assert ISSUE_REFERENCE_WINDOW not in targets
 
@@ -544,12 +569,12 @@ class TestReportTerminal:
             # commit, push, gh pr create, checkout main
             mock_run.side_effect = [
                 mock_comment,  # gh issue comment (to #3095)
-                mock_fail,     # git rev-parse --verify (branch doesn't exist)
-                mock_ok,       # git checkout -b
-                mock_ok,       # git commit
-                mock_ok,       # git push
-                mock_ok,       # gh pr create
-                mock_ok,       # git checkout main
+                mock_fail,  # git rev-parse --verify (branch doesn't exist)
+                mock_ok,  # git checkout -b
+                mock_ok,  # git commit
+                mock_ok,  # git push
+                mock_ok,  # gh pr create
+                mock_ok,  # git checkout main
             ]
 
             results = reporter.report_terminal(_entry(STATE_CHAIN_FOUND))
@@ -597,12 +622,12 @@ class TestReportTerminal:
             #           push(rc=1), gh pr create(rc=1), checkout main
             mock_run.side_effect = [
                 mock_comment,  # gh issue comment (to #3095)
-                mock_fail,     # git rev-parse (branch doesn't exist)
-                mock_ok,       # git checkout -b
-                mock_ok,       # git commit
-                mock_fail,     # git push (rc=1, but check=True not enforced by mock)
-                mock_fail,     # gh pr create (rc=1)
-                mock_ok,       # git checkout main (cleanup after pr_create fails)
+                mock_fail,  # git rev-parse (branch doesn't exist)
+                mock_ok,  # git checkout -b
+                mock_ok,  # git commit
+                mock_fail,  # git push (rc=1, but check=True not enforced by mock)
+                mock_fail,  # gh pr create (rc=1)
+                mock_ok,  # git checkout main (cleanup after pr_create fails)
             ]
 
             results = reporter.report_terminal(_entry(STATE_CHAIN_FOUND))
@@ -634,11 +659,15 @@ class TestReportTerminal:
                 assert "TIMEOUT_NO_CHAIN" in r["body"]
 
     def test_reports_to_multiple_issues(self):
-        reporter = GitHubReporter(_manifest(github_reporting={
-            "post_on_issue_3095": True,
-            "post_on_issue_3087": True,
-            "post_on_issue_3102": True,
-        }))
+        reporter = GitHubReporter(
+            _manifest(
+                github_reporting={
+                    "post_on_issue_3095": True,
+                    "post_on_issue_3087": True,
+                    "post_on_issue_3102": True,
+                }
+            )
+        )
         results = reporter.report_terminal(_entry(STATE_CHAIN_FOUND), 0)
         comment_actions = [r for r in results if "comment" in r.get("action", "")]
         issues_reported = {r["issue"] for r in comment_actions}
@@ -673,7 +702,9 @@ class TestPostComment:
             assert result["action"] == "comment_posted"
             mock_run.assert_called_once_with(
                 ["gh", "issue", "comment", "3095", "--body", "test body"],
-                capture_output=True, text=True, timeout=30,
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
     def test_gh_not_found_returns_error(self):
@@ -745,13 +776,12 @@ class TestLoadEntry:
     def test_from_file(self):
         from tools.arvp_github_reporter import load_entry
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"state": "TIMEOUT_NO_CHAIN"}, f)
             fname = f.name
 
         try:
+
             class FakeArgs:
                 cycle_entry = None
                 cycle_entry_file = fname
