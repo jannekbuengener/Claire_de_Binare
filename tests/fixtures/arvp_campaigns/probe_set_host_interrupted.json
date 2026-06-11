@@ -1,0 +1,71 @@
+[
+  {
+    "probe": "host",
+    "status": "ok",
+    "evidence": {
+      "uptime_seconds": 120,
+      "sleep_wake_indicators": ["Wake history count: 1"]
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "docker",
+    "status": "ok",
+    "evidence": {
+      "containers": [],
+      "total_targets": 2,
+      "running": 2,
+      "healthy": 2,
+      "missing": 0
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "safety",
+    "status": "ok",
+    "evidence": {"all_flags_match_expected": true},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "db_readonly",
+    "status": "ok",
+    "evidence": {"connectivity": "ok"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "candles",
+    "status": "ok",
+    "evidence": {"latest_price": 62100.50, "gap_detected": false},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "correlation_ledger",
+    "status": "ok",
+    "evidence": {
+      "latest_event": null,
+      "events_since_campaign_start": 0,
+      "events_by_type_status": []
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "regime",
+    "status": "ok",
+    "evidence": {"current_regime": "RANGE"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  }
+]

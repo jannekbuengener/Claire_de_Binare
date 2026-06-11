@@ -1,0 +1,51 @@
+schema_version: "1.0"
+campaign_id: test_campaign_3
+parent_issue: 3095
+related_issues:
+  - 3087
+  - 3102
+symbol: BTCUSDT
+strategy_id: primary_breakout_v1
+evidence_class: natural_paper_evidence
+start_utc: "2026-06-10T08:00:00Z"
+timeout_utc: "2099-01-01T00:00:00Z"
+max_duration_hours: 8.0
+start_criteria:
+  pre_documented: true
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_execution
+  - cdb_regime
+db_readonly_targets:
+  - public.correlation_ledger
+evidence_doc: docs/evidence/test_campaign_3.md
+evidence_log_jsonl: artifacts/campaigns/test_campaign_3/evidence_log.jsonl
+github_reporting:
+  post_on_issue_3095: true
+  post_on_issue_3087: false
+  post_on_issue_3102: false
+  pr_create_on_chain_found: true
+  issue_close_after_acceptance: false
+allowed_statuses:
+  - planned
+  - running
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged

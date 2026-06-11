@@ -1,0 +1,67 @@
+[
+  {
+    "probe": "host",
+    "status": "ok",
+    "evidence": {
+      "uptime_seconds": 86400,
+      "sleep_wake_indicators": ["none detected"]
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "docker",
+    "status": "ok",
+    "evidence": {
+      "containers": [],
+      "total_targets": 2,
+      "running": 2,
+      "healthy": 2,
+      "missing": 0
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "safety",
+    "status": "ok",
+    "evidence": {"all_flags_match_expected": true},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "db_readonly",
+    "status": "blocked",
+    "evidence": {"error": "connection refused", "connectivity": "fail"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": ["DB not reachable"],
+    "no_mutation": true
+  },
+  {
+    "probe": "candles",
+    "status": "ok",
+    "evidence": {"latest_price": 62100.50, "gap_detected": false},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "correlation_ledger",
+    "status": "blocked",
+    "evidence": {"error": "ledger probe failed: connection refused"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": ["ledger probe failed"],
+    "no_mutation": true
+  },
+  {
+    "probe": "regime",
+    "status": "ok",
+    "evidence": {"current_regime": "RANGE"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  }
+]

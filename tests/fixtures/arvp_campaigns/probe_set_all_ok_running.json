@@ -1,0 +1,85 @@
+[
+  {
+    "probe": "host",
+    "status": "ok",
+    "evidence": {
+      "uptime_seconds": 86400,
+      "sleep_wake_indicators": ["none detected"]
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "docker",
+    "status": "ok",
+    "evidence": {
+      "containers": [],
+      "total_targets": 2,
+      "running": 2,
+      "healthy": 2,
+      "missing": 0
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "safety",
+    "status": "ok",
+    "evidence": {
+      "container": "cdb_execution",
+      "all_flags_match_expected": true,
+      "flags": [
+        {"flag": "MOCK_TRADING", "value": "true", "expected": "true", "match": true},
+        {"flag": "USE_REAL_BALANCE", "value": "false", "expected": "false", "match": true},
+        {"flag": "DRY_RUN", "value": "true", "expected": "true", "match": true},
+        {"flag": "MEXC_TESTNET", "value": "true", "expected": "true", "match": true}
+      ]
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "db_readonly",
+    "status": "ok",
+    "evidence": {"connectivity": "ok", "select_1_ok": true},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "candles",
+    "status": "ok",
+    "evidence": {
+      "symbol": "BTCUSDT",
+      "latest_price": 62100.50,
+      "gap_detected": false,
+      "largest_gap_minutes": null
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "correlation_ledger",
+    "status": "ok",
+    "evidence": {
+      "latest_event": null,
+      "events_since_campaign_start": 0,
+      "events_by_type_status": []
+    },
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  },
+  {
+    "probe": "regime",
+    "status": "ok",
+    "evidence": {"current_regime": "RANGE"},
+    "observed_at_utc": "2026-06-10T12:00:00Z",
+    "limitations": [],
+    "no_mutation": true
+  }
+]
