@@ -284,6 +284,11 @@ SAFETY_FLAGS_EXPECTED: dict[str, str] = {
     "MEXC_TESTNET": "true",
 }
 
+# Flags that are code defaults (not required in Docker env).
+# Per arvp_campaign_supervisor_manifest_state_machine.md §9.1:
+# DRY_RUN and MEXC_TESTNET are "Verified at start (code defaults)".
+CODE_DEFAULT_FLAGS: set[str] = {"DRY_RUN", "MEXC_TESTNET"}
+
 
 def probe_safety(container: str = "cdb_execution") -> ProbeResult:
     try:
@@ -315,7 +320,10 @@ def probe_safety(container: str = "cdb_execution") -> ProbeResult:
     all_match = True
     for flag, expected in SAFETY_FLAGS_EXPECTED.items():
         actual = env_dict.get(flag)
-        match = actual is not None and actual.lower() == expected.lower()
+        if flag in CODE_DEFAULT_FLAGS and actual is None:
+            match = True
+        else:
+            match = actual is not None and actual.lower() == expected.lower()
         if not match:
             all_match = False
         flags.append(
@@ -356,9 +364,12 @@ def probe_safety(container: str = "cdb_execution") -> ProbeResult:
 DB_DEFAULTS = {
     "host": os.environ.get("CDB_DB_HOST", "localhost"),
     "port": int(os.environ.get("CDB_DB_PORT", "5432")),
-    "dbname": os.environ.get("CDB_DB_NAME", "claire"),
+    "dbname": os.environ.get("CDB_DB_NAME", "claire_de_binare"),
     "user": os.environ.get("CDB_DB_USER", "claire_user"),
+    "container": "cdb_postgres",
 }
+
+LEDGER_TIMESTAMP_COL = "timestamp_ms"
 
 
 def probe_db_readonly(
@@ -471,19 +482,40 @@ def probe_db_readonly(
                 limitations,
             )
         except Exception as exc:
-            return _blocked(
-                {"connectivity": "fail", "error": str(exc)},
-                limitations + [f"psycopg2 connection failed: {exc}"],
-            )
+            limitations.append(f"psycopg2 connection failed: {exc}")
 
-    return _ok(
-        {
-            "connectivity": "ok (pg_isready only)",
-            "host": host,
-            "port": port,
-            "dbname": dbname,
-        },
-        limitations + ["pg_isready only; no SELECT verification"],
+    fallback_rows = _run_sql_docker_exec("SELECT 1 AS ok", DB_DEFAULTS["container"])
+    if fallback_rows:
+        svr_version = None
+        version_rows = _run_sql_docker_exec(
+            "SELECT version()", DB_DEFAULTS["container"]
+        )
+        if version_rows and version_rows[0]:
+            svr_version = version_rows[0][0]
+        return _ok(
+            {
+                "connectivity": "ok",
+                "select_1_ok": True,
+                "server_version": svr_version or "unknown",
+                "host": "docker exec",
+                "port": "container",
+                "dbname": dbname,
+                "user": user,
+                "method": "docker_exec",
+                "container": DB_DEFAULTS["container"],
+            },
+            limitations + ["connected via docker exec; host port auth not verified"],
+        )
+
+    if not psycopg2_available and not fallback_rows:
+        return _unavailable(
+            {"error": "no DB connectivity method available"},
+            ["install psycopg2 or ensure Docker container is running"],
+        )
+
+    return _blocked(
+        {"connectivity": "fail"},
+        limitations + ["all connectivity methods failed"],
     )
 
 
@@ -492,24 +524,74 @@ def probe_db_readonly(
 # ---------------------------------------------------------------------------
 
 
-def _run_sql(host: str, port: int, dbname: str, user: str, query: str) -> list[tuple]:
-    import psycopg2
+def _run_sql(
+    host: str,
+    port: int,
+    dbname: str,
+    user: str,
+    query: str,
+    container: str = DB_DEFAULTS["container"],
+) -> list[tuple]:
+    import importlib
 
-    conn = psycopg2.connect(
-        host=host,
-        port=port,
-        dbname=dbname,
-        user=user,
-        connect_timeout=10,
+    if importlib.util.find_spec("psycopg2"):
+        try:
+            import psycopg2
+
+            conn = psycopg2.connect(
+                host=host,
+                port=port,
+                dbname=dbname,
+                user=user,
+                connect_timeout=10,
+            )
+            try:
+                cur = conn.cursor()
+                cur.execute(query)
+                rows = cur.fetchall()
+                cur.close()
+                return rows
+            finally:
+                conn.close()
+        except Exception:
+            pass
+
+    fallback = _run_sql_docker_exec(query, container)
+    if fallback:
+        return fallback
+    raise RuntimeError(
+        f"DB unreachable via psycopg2 ({host}:{port}/{dbname}) and docker exec"
     )
+
+
+def _run_sql_docker_exec(query: str, container: str) -> list[tuple] | None:
     try:
-        cur = conn.cursor()
-        cur.execute(query)
-        rows = cur.fetchall()
-        cur.close()
-        return rows
-    finally:
-        conn.close()
+        out = _run_docker_cmd(
+            [
+                "exec",
+                container,
+                "psql",
+                "-U",
+                "claire_user",
+                "-d",
+                "claire_de_binare",
+                "-At",
+                "-c",
+                query,
+            ],
+            timeout=15,
+        )
+        rows: list[tuple] = []
+        for line in out.strip().split("\n"):
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split("|")
+            row: tuple = tuple(parts)
+            rows.append(row)
+        return rows if rows else None
+    except Exception:
+        return None
 
 
 def probe_candles(
@@ -550,7 +632,7 @@ def probe_candles(
             user,
             f"SELECT MAX(high) - MIN(low) FROM candles_1m "
             f"WHERE symbol='{symbol}' "
-            f"AND ts_ms >= NOW() - INTERVAL '15 minutes'",
+            f"AND ts_ms >= EXTRACT(EPOCH FROM NOW() - INTERVAL '15 minutes')::bigint * 1000",
         )
         range_15m_val = (
             float(range_15m[0][0]) if range_15m and range_15m[0][0] else None
@@ -563,7 +645,7 @@ def probe_candles(
             user,
             f"SELECT MAX(high) - MIN(low) FROM candles_1m "
             f"WHERE symbol='{symbol}' "
-            f"AND ts_ms >= NOW() - INTERVAL '60 minutes'",
+            f"AND ts_ms >= EXTRACT(EPOCH FROM NOW() - INTERVAL '60 minutes')::bigint * 1000",
         )
         range_60m_val = (
             float(range_60m[0][0]) if range_60m and range_60m[0][0] else None
@@ -617,9 +699,9 @@ def probe_candles(
             "gap_threshold_minutes": gap_threshold_minutes,
             "queries": [
                 "SELECT MAX(ts_ms) FROM candles_1m WHERE symbol='BTCUSDT'",
-                "SELECT MAX(high)-MIN(low) FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= NOW()-INTERVAL '15 minutes'",
-                "SELECT MAX(high)-MIN(low) FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= NOW()-INTERVAL '60 minutes'",
-                "SELECT ts_ms - LAG(ts_ms) OVER (ORDER BY ts_ms) FROM candles_1m WHERE symbol='BTCUSDT' ORDER BY ts_ms DESC LIMIT 10",
+                "SELECT MAX(high)-MIN(low) FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= ...15min_epoch_ms",
+                "SELECT MAX(high)-MIN(low) FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= ...60min_epoch_ms",
+                "SELECT ts_ms - LAG(ts_ms) OVER ... FROM candles_1m ORDER BY ts_ms DESC LIMIT 10",
             ],
         }
         status = "blocked" if len(large_gaps) > 0 else "ok"
@@ -669,8 +751,8 @@ def probe_ledger(
             port,
             dbname,
             user,
-            "SELECT ts_ms, event_type, status, lineage_hash "
-            "FROM correlation_ledger ORDER BY ts_ms DESC LIMIT 1",
+            "SELECT timestamp_ms, event_type, correlation_id "
+            "FROM correlation_ledger ORDER BY timestamp_ms DESC LIMIT 1",
         )
         latest_event: dict | None = None
         if latest:
@@ -681,8 +763,7 @@ def probe_ledger(
                     else str(latest[0][0])
                 ),
                 "event_type": latest[0][1],
-                "status": latest[0][2],
-                "lineage_hash": latest[0][3],
+                "correlation_id": latest[0][2],
             }
 
         count_since_start: int | None = None
@@ -693,7 +774,8 @@ def probe_ledger(
                 dbname,
                 user,
                 f"SELECT COUNT(*) FROM correlation_ledger "
-                f"WHERE ts_ms >= '{campaign_start_utc}'::timestamptz",
+                f"WHERE timestamp_ms >= "
+                f"EXTRACT(EPOCH FROM '{campaign_start_utc}'::timestamptz)::bigint * 1000",
             )
             count_since_start = int(count_rows[0][0]) if count_rows else 0
 
@@ -702,29 +784,28 @@ def probe_ledger(
             port,
             dbname,
             user,
-            "SELECT event_type, status, COUNT(*) as cnt "
+            "SELECT event_type, COUNT(*) as cnt "
             "FROM correlation_ledger "
-            "GROUP BY event_type, status ORDER BY event_type, status",
+            "GROUP BY event_type ORDER BY event_type",
         )
-        events_by_type_status: list[dict] = []
+        events_by_type: list[dict] = []
         for row in grouped:
-            events_by_type_status.append(
+            events_by_type.append(
                 {
                     "event_type": row[0],
-                    "status": row[1],
-                    "count": int(row[2]),
+                    "count": int(row[1]),
                 }
             )
 
         evidence: dict[str, Any] = {
             "latest_event": latest_event,
             "events_since_campaign_start": count_since_start,
-            "events_by_type_status": events_by_type_status,
+            "events_by_type_status": events_by_type,
             "campaign_start_utc": campaign_start_utc,
             "queries": [
-                "SELECT ... FROM correlation_ledger ORDER BY ts_ms DESC LIMIT 1",
-                "SELECT COUNT(*) FROM correlation_ledger WHERE ts_ms >= ...",
-                "SELECT event_type, status, COUNT(*) FROM correlation_ledger GROUP BY ...",
+                "SELECT ... FROM correlation_ledger ORDER BY timestamp_ms DESC LIMIT 1",
+                "SELECT COUNT(*) FROM correlation_ledger WHERE timestamp_ms >= ...",
+                "SELECT event_type, COUNT(*) FROM correlation_ledger GROUP BY ...",
             ],
         }
 
@@ -736,8 +817,8 @@ def probe_ledger(
                     port,
                     dbname,
                     user,
-                    "SELECT id, ts_ms, event_type, status, lineage_hash "
-                    "FROM correlation_ledger ORDER BY ts_ms ASC",
+                    "SELECT id, timestamp_ms, event_type, correlation_id "
+                    "FROM correlation_ledger ORDER BY timestamp_ms ASC",
                 )
                 events_raw = []
                 for row in rows:
@@ -750,14 +831,13 @@ def probe_ledger(
                                 else str(row[1])
                             ),
                             "event_type": row[2],
-                            "status": row[3],
-                            "lineage_hash": row[4],
+                            "correlation_id": row[3],
                         }
                     )
                 evidence["events"] = events_raw
                 evidence["queries"].append(
-                    "SELECT id, ts_ms, event_type, status, lineage_hash "
-                    "FROM correlation_ledger ORDER BY ts_ms ASC"
+                    "SELECT id, timestamp_ms, event_type, correlation_id "
+                    "FROM correlation_ledger ORDER BY timestamp_ms ASC"
                 )
             except Exception as exc:
                 logger.warning("events query failed: %s", exc)

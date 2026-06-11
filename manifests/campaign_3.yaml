@@ -1,0 +1,67 @@
+schema_version: "1.0"
+campaign_id: arvp_3095_vol_window_3_20260611_1301
+parent_issue: 3095
+related_issues:
+  - 3087
+symbol: BTCUSDT
+strategy_id: primary_breakout_v1
+evidence_class: natural_paper_evidence
+start_utc: "2026-06-11T13:03:00Z"
+timeout_utc: "2026-06-11T21:03:00Z"
+max_duration_hours: 8.0
+start_criteria:
+  pre_documented: true
+  description: "P2 fulfilled (60m range 1.103% >= 0.75%) + HIGH_VOL_CHAOTIC regime per #3103 policy"
+  start_policy_ref: docs/evidence/arvp_volatility_window_start_policy_3103.md
+  primary_p1_threshold_pct: 0.35
+  primary_p2_threshold_pct: 0.75
+  primary_p3_regimes:
+    - TREND
+  actual_p1_pct: 0.281
+  actual_p2_pct: 1.103
+  actual_p3: HIGH_VOL_CHAOTIC
+  criteria_met: true
+  criteria_met_reason: "P2 (1.103% >= 0.75%) + HIGH_VOL_CHAOTIC allowed per #3103 because P2 is met and no blockers active"
+safety_flags:
+  mock_trading: true
+  use_real_balance: false
+  dry_run: true
+  mexc_testnet: true
+runtime_targets:
+  - cdb_execution
+  - cdb_regime
+  - cdb_risk
+  - cdb_market
+  - cdb_candles
+  - cdb_db_writer
+db_readonly_targets:
+  - public.correlation_ledger
+  - public.candles_1m
+evidence_doc: docs/evidence/arvp_volatility_window_campaign_3095_3.md
+evidence_log_jsonl: artifacts/campaigns/arvp_3095_vol_window_3_20260611_1301/evidence_log.jsonl
+github_reporting:
+  post_on_issue_3095: true
+  post_on_issue_3087: false
+  post_on_issue_3102: true
+  pr_create_on_chain_found: true
+  issue_close_after_acceptance: false
+allowed_statuses:
+  - planned
+  - preflight_failed
+  - running
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_pr_open
+  - evidence_merged
+terminal_statuses:
+  - chain_found
+  - timeout_no_chain
+  - interrupted
+  - blocked_runtime
+  - blocked_db_readonly
+  - blocked_governance
+  - evidence_merged
