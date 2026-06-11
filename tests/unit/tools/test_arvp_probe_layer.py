@@ -395,17 +395,17 @@ class TestProbeLedger:
 
         query_counter = [0]
         results_map = [
-            # latest event query
+            # latest event query (timestamp_ms, event_type, correlation_id)
             [
                 (
                     datetime(2026, 6, 10, 12, 0, 0, tzinfo=timezone.utc),
-                    "SIGNAL", "active", "abc123",
+                    "SIGNAL", "abc123",
                 )
             ],
             # count query
             [(5,)],
-            # group by query
-            [("SIGNAL", "active", 3), ("ORDER", "filled", 2)],
+            # group by query (event_type, count)
+            [("SIGNAL", 3), ("ORDER", 2)],
         ]
 
         class FakeCursor:
@@ -427,7 +427,7 @@ class TestProbeLedger:
         result = probe_ledger(campaign_start_utc="2026-06-10T08:00:00Z")
         assert result["status"] == "ok"
         assert result["evidence"]["latest_event"]["event_type"] == "SIGNAL"
-        assert result["evidence"]["latest_event"]["lineage_hash"] == "abc123"
+        assert result["evidence"]["latest_event"]["correlation_id"] == "abc123"
 
     def test_blocked_db_error(self, monkeypatch):
         monkeypatch.setattr(
@@ -437,6 +437,11 @@ class TestProbeLedger:
         fake_psycopg2 = MagicMock()
         fake_psycopg2.connect.side_effect = Exception("connection refused")
         monkeypatch.setitem(sys.modules, "psycopg2", fake_psycopg2)
+
+        monkeypatch.setattr(
+            "tools.arvp_probe_layer._run_sql_docker_exec",
+            lambda _q, _c: None,
+        )
 
         result = probe_ledger()
         assert result["status"] == "blocked"
