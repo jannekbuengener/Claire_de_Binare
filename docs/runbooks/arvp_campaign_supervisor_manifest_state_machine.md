@@ -104,7 +104,8 @@ start_utc: "2026-06-11T08:00:00Z"
 timeout_utc: "2026-06-11T16:00:00Z"
 max_duration_hours: 8.0
 start_criteria:
-  description: "15m rolling range >= 0.35% OR 60m range >= 0.75% OR regime TREND/HIGH_VOL_CHAOTIC"
+  description: "15m rolling range >= 0.35% (P1) OR 60m range >= 0.75% (P2) OR regime TREND with directional plausibility (P3). HIGH_VOL_CHAOTIC alone is NOT sufficient - see #3103 start policy."
+  start_policy_ref: docs/evidence/arvp_volatility_window_start_policy_3103.md
   primary_p1_threshold_pct: 0.35
   primary_p2_threshold_pct: 0.75
   primary_p3_regimes:
