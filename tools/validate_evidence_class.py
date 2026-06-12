@@ -83,11 +83,11 @@ def main(argv: list[str] | None = None) -> int:
             raw = path.read_text(encoding="utf-8")
             artifact = json.loads(raw)
         except (json.JSONDecodeError, OSError) as exc:
-            warnings.append(f"{path}: cannot read/parse: {exc}")
+            failures.append(f"{path}: cannot read/parse: {exc}")
             continue
 
         if not isinstance(artifact, dict):
-            warnings.append(f"{path}: JSON root is not a dict, skipped")
+            failures.append(f"{path}: JSON root is not a dict")
             continue
 
         if "evidence_class" not in artifact:

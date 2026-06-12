@@ -283,22 +283,45 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: paper_reference_window export failed: {exc}", file=sys.stderr)
         return 2
 
-    evidence_class = "natural_paper_evidence"
-    warning_banner = evidence_class_warning_banner(evidence_class)
     now_utc = utcnow().isoformat()
     extracted_by = getattr(request, "extracted_by", "paper_reference_window_runner")
+
+    # Detect stimulus-derived chains: any event payload containing
+    # stimulus_run_id means the window comes from the stimulus runner,
+    # not from natural market conditions (#3129 review).
+    has_stimulus = False
+    for ev in payload.get("events", []):
+        ev_payload = ev.get("payload", {})
+        if isinstance(ev_payload, dict) and ev_payload.get("stimulus_run_id"):
+            has_stimulus = True
+            break
+    if not has_stimulus:
+        for ev in payload.get("causal_context_events", []):
+            ev_payload = ev.get("payload", {})
+            if isinstance(ev_payload, dict) and ev_payload.get("stimulus_run_id"):
+                has_stimulus = True
+                break
+
+    if has_stimulus:
+        evidence_class = "pipeline_test_evidence"
+        payload["pipeline_tool"] = "paper_runtime_stimulus_runner"
+        payload["fixture_source"] = f"extracted_by={extracted_by}"
+    else:
+        evidence_class = "natural_paper_evidence"
+        payload["campaign_id"] = request.strategy_id
+        payload["start_criterion"] = "ledger_export"
+        payload["safety_flags"] = {
+            "mock_trading": True,
+            "dry_run": True,
+            "mexc_testnet": True,
+        }
+        payload["provenance"] = f"extracted_by={extracted_by}@{now_utc}"
+
+    warning_banner = evidence_class_warning_banner(evidence_class)
     payload["evidence_class"] = evidence_class
     payload["evidence_class_version"] = "1.0"
     payload["produced_by"] = "paper_reference_window_runner"
     payload["produced_at_utc"] = now_utc
-    payload["campaign_id"] = request.strategy_id
-    payload["start_criterion"] = "ledger_export"
-    payload["safety_flags"] = {
-        "mock_trading": True,
-        "dry_run": True,
-        "mexc_testnet": True,
-    }
-    payload["provenance"] = f"extracted_by={extracted_by}@{now_utc}"
     if warning_banner:
         payload["warning_banner"] = warning_banner
 
