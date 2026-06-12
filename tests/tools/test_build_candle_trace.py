@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-import json
+import hashlib
+
 import pytest
 
-from tools.build_candle_trace import build_trace, regime_str_from_raw
+from tools.build_candle_trace import (
+    build_trace,
+    derive_source_sha256,
+    regime_str_from_raw,
+)
 
 
 class TestRegimeStrFromRaw:
@@ -71,6 +76,19 @@ class TestBuildTrace:
         trace = build_trace(candles, run_id="my-test-run")
         assert trace["run_id"] == "my-test-run"
 
+    def test_source_sha256_controls_run_id(self):
+        candles = [{"ts_ms": 1000, "regime_id": 0}]
+        trace = build_trace(candles, source_sha256="abc123def456")
+        assert trace["run_id"] == "candle-trace-abc123def456"
+
+    def test_source_sha256_is_truncated_to_existing_run_id_shape(self):
+        candles = [{"ts_ms": 1000, "regime_id": 0}]
+        trace = build_trace(
+            candles,
+            source_sha256="01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12",
+        )
+        assert trace["run_id"] == "candle-trace-01f30b10fb3e7712"
+
     def test_deterministic_run_id(self):
         candles_a = [{"ts_ms": 100, "regime_id": 0}, {"ts_ms": 200, "regime_id": 1}]
         candles_b = [{"ts_ms": 100, "regime_id": 0}, {"ts_ms": 200, "regime_id": 1}]
@@ -85,3 +103,28 @@ class TestBuildTrace:
     def test_invalid_ts_ms_raises(self):
         with pytest.raises(ValueError, match="ts_ms"):
             build_trace([{"ts_ms": "not-a-number", "regime_id": 0}])
+
+
+class TestDeriveSourceSha256:
+    def test_prefers_recorded_dataset_sha256(self, tmp_path):
+        input_path = tmp_path / "dataset.candles.json"
+        input_path.write_text("[]", encoding="utf-8")
+        (tmp_path / "config.resolved.json").write_text(
+            '{"dataset_sha256": "01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12"}',
+            encoding="utf-8",
+        )
+
+        assert (
+            derive_source_sha256(input_path, b"[]")
+            == "01f30b10fb3e7712a2c0e8b8122ce1789ee9e669ff04d6cfbb9fc7034edcdb12"
+        )
+
+    def test_falls_back_to_raw_input_bytes_hash(self, tmp_path):
+        input_path = tmp_path / "dataset.candles.json"
+        raw_bytes = b"[]"
+        input_path.write_bytes(raw_bytes)
+
+        assert (
+            derive_source_sha256(input_path, raw_bytes)
+            == hashlib.sha256(raw_bytes).hexdigest()
+        )

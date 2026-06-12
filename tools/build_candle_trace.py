@@ -36,13 +36,37 @@ def regime_str_from_raw(raw: object) -> str | None:
     return None
 
 
-def build_trace(candles: list[dict], run_id: str | None = None) -> dict:
+def derive_source_sha256(input_path: Path, raw_bytes: bytes) -> str:
+    for metadata_name in ("config.resolved.json", "extraction_manifest.json"):
+        metadata_path = input_path.with_name(metadata_name)
+        if not metadata_path.is_file():
+            continue
+        try:
+            metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(metadata, dict):
+            continue
+        dataset_sha256 = metadata.get("dataset_sha256")
+        if isinstance(dataset_sha256, str) and dataset_sha256.strip():
+            return dataset_sha256.strip()
+
+    return hashlib.sha256(raw_bytes).hexdigest()
+
+
+def build_trace(
+    candles: list[dict],
+    run_id: str | None = None,
+    source_sha256: str | None = None,
+) -> dict:
     if run_id is None:
-        raw_bytes = json.dumps(candles, sort_keys=True, ensure_ascii=False).encode(
-            "utf-8"
+        digest = (
+            source_sha256
+            or hashlib.sha256(
+                json.dumps(candles, sort_keys=True, ensure_ascii=False).encode("utf-8")
+            ).hexdigest()
         )
-        digest = hashlib.sha256(raw_bytes).hexdigest()[:16]
-        run_id = f"candle-trace-{digest}"
+        run_id = f"candle-trace-{digest[:16]}"
 
     steps = []
     for candle in candles:
@@ -88,10 +112,14 @@ def main(argv: list[str] | None = None) -> int:
 
     input_path = Path(args.input_candles)
     try:
-        raw = input_path.read_text(encoding="utf-8")
+        raw_bytes = input_path.read_bytes()
+        raw = raw_bytes.decode("utf-8")
         candles = json.loads(raw)
     except (OSError, json.JSONDecodeError) as exc:
         print(f"ERROR: Failed to read candles: {exc}", file=sys.stderr)
+        return 1
+    except UnicodeDecodeError as exc:
+        print(f"ERROR: Failed to decode candles as UTF-8: {exc}", file=sys.stderr)
         return 1
 
     if not isinstance(candles, list):
@@ -99,7 +127,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        trace = build_trace(candles, run_id=args.run_id)
+        source_sha256 = derive_source_sha256(input_path, raw_bytes)
+        trace = build_trace(
+            candles,
+            run_id=args.run_id,
+            source_sha256=source_sha256,
+        )
     except ValueError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
