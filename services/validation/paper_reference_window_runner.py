@@ -81,6 +81,13 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         type=int,
         help="Optional later bound for causal post-window SIGNAL lookup (#3058).",
     )
+    p.add_argument(
+        "--chain-source",
+        default="live",
+        choices=["live", "stimulus"],
+        help="Source of the chain: 'live' (natural market, default) or 'stimulus' (synthetic fixture). "
+        "Stimulus chains are classified as pipeline_test_evidence.",
+    )
     return p.parse_args(argv)
 
 
@@ -96,6 +103,7 @@ def _build_source_query_intent(args: argparse.Namespace) -> str:
         qualifiers.append(f"filter bot_id={args.bot_id}")
     if args.config_hash:
         qualifiers.append(f"filter config_hash={args.config_hash}")
+    qualifiers.append(f"chain_source={getattr(args, 'chain_source', 'live')}")
     return "; ".join(qualifiers)
 
 
@@ -286,23 +294,12 @@ def main(argv: list[str] | None = None) -> int:
     now_utc = utcnow().isoformat()
     extracted_by = getattr(request, "extracted_by", "paper_reference_window_runner")
 
-    # Detect stimulus-derived chains: any event payload containing
-    # stimulus_run_id means the window comes from the stimulus runner,
-    # not from natural market conditions (#3129 review).
-    has_stimulus = False
-    for ev in payload.get("events", []):
-        ev_payload = ev.get("payload", {})
-        if isinstance(ev_payload, dict) and ev_payload.get("stimulus_run_id"):
-            has_stimulus = True
-            break
-    if not has_stimulus:
-        for ev in payload.get("causal_context_events", []):
-            ev_payload = ev.get("payload", {})
-            if isinstance(ev_payload, dict) and ev_payload.get("stimulus_run_id"):
-                has_stimulus = True
-                break
-
-    if has_stimulus:
+    # Evidence class is determined by --chain-source CLI arg. Stimulus-runner
+    # chains cannot be detected from persisted ledger fields (stimulus_run_id
+    # is used for UUIDv5 signal-id seeding but never stored), so the operator
+    # must explicitly declare the chain source (#3129 review).
+    chain_source = getattr(args, "chain_source", "live")
+    if chain_source == "stimulus":
         evidence_class = "pipeline_test_evidence"
         payload["pipeline_tool"] = "paper_runtime_stimulus_runner"
         payload["fixture_source"] = f"extracted_by={extracted_by}"
@@ -340,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
         f"window=[{request.start_ts_ms_utc},{request.end_ts_ms_utc}], "
         f"bot_id={request.bot_id or '*'}, config_hash={request.config_hash or '*'}, "
         f"evidence_class={evidence_class}, "
+        f"chain_source={chain_source}, "
         f"database={readonly_database}, current_user={readonly_current_user}, "
         f"session_user={readonly_session_user})"
     )
