@@ -1,0 +1,67 @@
+{
+  "schema_version": "profitability_evidence_packet.v1",
+  "evidence_packet_id": "pep-primary-breakout-v1-btcusdt-mexc-3091",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3091",
+  "generated_at": "2026-06-12T18:00:00Z",
+  "dataset_id": "mexc_strict_window_3091_island_3",
+  "dataset_fingerprint": "sha256:d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "source_run_refs": [
+    "artifacts/candles/mexc_strict_window_3091/dataset_spec.json",
+    "artifacts/candles/mexc_strict_window_3091/provenance_manifest.json",
+    "docs/evidence/mexc_future_capture_3091.md",
+    "docs/evidence/profitability_dataset_quality_report_mexc_3091.json",
+    "docs/evidence/profitability_candidate_primary_breakout_v1.json"
+  ],
+  "gross_return": 0.0,
+  "net_return": 0.0,
+  "fees": 0.0,
+  "spread_cost": 0.0,
+  "slippage_cost": 0.0,
+  "profit_factor": 0.0,
+  "expectancy": 0.0,
+  "win_rate": 0.0,
+  "avg_win": 0.0,
+  "avg_loss": 0.0,
+  "max_drawdown": 0.0,
+  "loss_streak": 0,
+  "trade_count": 0,
+  "regime_scorecard": {
+    "status": "unavailable",
+    "artifact_ref": null,
+    "summary": "regime_id is null for all 3496 rows in the MEXC dataset. No regime scorecard can be produced until regime assignment is available."
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "replay_dry_run",
+      "status": "PASS",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "python -m services.validation.strategy_replay_runner --dataset-source file --input-candles artifacts/candles/mexc_strict_window_3091/candles.jsonl --strategy-id primary_breakout_v1 --symbol BTCUSDT --adapter-id primary_breakout_runner_v1 --dry-run: PASS (config valid, dataset loaded, candles_total=3496)."
+    },
+    {
+      "scenario_id": "replay_full_run",
+      "status": "FAIL",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "Full replay fails with 'ERROR: failed to derive execution provenance id: missing required field: regime_id'. The historical bridge (build_primary_breakout_historical_bridge) requires integer regime_id per row; 3496 of 3496 rows have regime_id=null."
+    }
+  ],
+  "replay_vs_paper_status": "not_run",
+  "simulator_drift": "not_assessed",
+  "risk_blocks": 0,
+  "kill_switch_events": 0,
+  "recommendation": "PARK",
+  "limitations": [
+    "All financial metrics are zero because no backtest execution was possible. The dataset lacks regime assignment (regime_id is null).",
+    "Dataset provenance is validated (SHA-256, venue=mexc, venue_match=true, 0 gaps, strict_campaign_grade), but this alone is insufficient for profitability evidence.",
+    "This packet serves as a seed artifact: it demonstrates that the evidence pipeline can be constructed end-to-end (dataset -> quality report -> candidate -> evidence packet) but is blocked at the backtest execution stage by the regime_id gap.",
+    "Once a regime assignment bridge or pre-computed regime labels are available for this dataset, the packet can be updated with actual backtest metrics."
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO. This packet does not constitute any form of live trading approval.",
+    "Board 'trade-capable' stage does not authorize live capital or strategy promotion.",
+    "All zero-value financial metrics are explicitly placeholder values due to blocked execution; they are not claims of zero profitability or zero risk.",
+    "No automatic promotion to BACKTESTED, ARVP_VALIDATED, or any downstream gate is authorized by this packet.",
+    "Dataset evidence class is controlled_lab_evidence, not natural_paper_evidence."
+  ]
+}

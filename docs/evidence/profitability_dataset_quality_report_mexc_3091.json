@@ -1,0 +1,64 @@
+{
+  "schema_version": "profitability_dataset_quality_report.v1",
+  "report_id": "dq-mexc-strict-window-3091-btcusdt",
+  "dataset_id": "mexc_strict_window_3091_island_3",
+  "dataset_fingerprint": "sha256:d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "generated_at": "2026-06-12T18:00:00Z",
+  "symbol": "BTCUSDT",
+  "timeframe": "1m",
+  "requested_window": {
+    "start_ts_ms": 1780753380000,
+    "end_ts_ms": 1780963080000
+  },
+  "observed_window": {
+    "start_ts_ms": 1780753380000,
+    "end_ts_ms": 1780963080000,
+    "candles_expected": 3496,
+    "candles_observed": 3496
+  },
+  "coverage_summary": {
+    "coverage_ratio": 1.0,
+    "missing_candle_count": 0,
+    "duplicate_timestamp_count": 0,
+    "out_of_order_count": 0,
+    "timeframe_mismatch_count": 0
+  },
+  "checks": {
+    "coverage_check": {
+      "status": "PASS",
+      "summary": "Complete coverage: 3496/3496 candles present. No gaps detected."
+    },
+    "missing_candle_check": {
+      "status": "PASS",
+      "summary": "Zero missing candles. Every expected timestamp from 1780753380000 to 1780963080000 at 60000ms cadence is present."
+    },
+    "duplicate_check": {
+      "status": "PASS",
+      "summary": "No duplicate timestamps detected in the 3496-row dataset."
+    },
+    "ordering_check": {
+      "status": "PASS",
+      "summary": "All 3496 rows are strictly increasing by ts_ms with consistent 60000ms cadence."
+    },
+    "timeframe_consistency_check": {
+      "status": "PASS",
+      "summary": "Dataset adheres to strict 1m cadence: every pair of consecutive rows is exactly 60000ms apart."
+    },
+    "symbol_window_metadata_check": {
+      "status": "PASS",
+      "summary": "Symbol is consistent (BTCUSDT throughout). Window metadata matches provenance_manifest.json and dataset_spec.json."
+    },
+    "dataset_fingerprint_check": {
+      "status": "PASS",
+      "summary": "Content SHA-256 verified: d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605 matches provenance manifest and dataset_spec.json."
+    }
+  },
+  "quality_verdict": "PASS",
+  "blocking_reasons": [],
+  "limitations": [
+    "Dataset is controlled_lab_evidence, not natural_paper_evidence. It originates from MEXC WS persistent capture (real venue data), pre-dates any replay run, but lacks the full SIGNAL->DECISION->ORDER->FILL chain required for natural paper classification.",
+    "regime_id is null for all 3496 rows. The regime service was not running during MEXC WS capture, so this dataset cannot currently feed strategy_backtest_runner without a regime-assignment bridge.",
+    "File-backed replay dry-run succeeds (dataset loads, config validates), but full replay fails at execution provenance derivation due to the missing regime_id requirement in build_primary_breakout_historical_bridge.",
+    "Venue match is confirmed (venue=mexc, venue_match=true), making this dataset suitable for venue-aware replay once regime assignment is resolved."
+  ]
+}
