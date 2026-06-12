@@ -204,16 +204,18 @@ insufficient condition for natural_paper_evidence.
 
 ---
 
-## 9. Gordon Checkpoint
+## 9. Active Gate
 
-```
-ASK GORDON BEFORE ANY FUTURE STACK/INFRA EXECUTION:
-- Stack start/stop/restart
-- Docker rebuild after db_writer cursor-persistence patch
-- Redis stream configuration changes
-- DB schema migrations
-- Any action that could disrupt the active capture pipeline
-```
+Gordon/Docker-AI is historical/decommissioned and is not an active operational gate.
+
+For future Docker/Infra/Runtime actions, the active gate is:
+- explicit Jannek Human-GO
+- GitHub-live evidence
+- repo-backed evidence
+- required checks where applicable
+
+No Gordon-based checks apply.
+LR remains NO-GO.
 
 ---
 
