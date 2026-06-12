@@ -47,9 +47,7 @@ class TestRequireInt:
 
 class TestBuildSignalAwareTrace:
     def _make_candles(self, count: int = 5) -> list[dict]:
-        return [
-            {"ts_ms": 1000 + i * 100, "regime_id": 0} for i in range(count)
-        ]
+        return [{"ts_ms": 1000 + i * 100, "regime_id": 0} for i in range(count)]
 
     def _make_gate_trace(
         self, ts_list: list[int], entry_ready: list[bool]
@@ -128,11 +126,21 @@ class TestBuildSignalAwareTrace:
         trace = build_signal_aware_trace(candles, gt, baseline_metrics=baseline)
         assert trace["attribution_contract"]["buy_entry_count"] == 2
         assert trace["attribution_contract"]["baseline_reconciled"] is True
-        assert trace["attribution_contract"]["sell_signal_attribution_available"] is False
-        assert trace["attribution_contract"]["trade_closure_attribution_available"] is False
-        assert trace["attribution_contract"]["attribution_scope"] == "entry_gate_buy_only"
+        assert (
+            trace["attribution_contract"]["sell_signal_attribution_available"] is False
+        )
+        assert (
+            trace["attribution_contract"]["trade_closure_attribution_available"]
+            is False
+        )
+        assert (
+            trace["attribution_contract"]["attribution_scope"] == "entry_gate_buy_only"
+        )
         assert trace["attribution_contract"]["natural_paper_evidence"] is False
-        assert trace["attribution_contract"]["signal_attribution_availability"] == "partial"
+        assert (
+            trace["attribution_contract"]["signal_attribution_availability"]
+            == "partial"
+        )
 
     def test_regime_id_preserved(self):
         candles = [
@@ -151,7 +159,9 @@ class TestBuildSignalAwareTrace:
     def test_notes_contain_partial_attribution(self):
         candles = self._make_candles(2)
         gt = self._make_gate_trace([1000], [True])
-        trace = build_signal_aware_trace(candles, gt, baseline_metrics={"buy_signals_total": 1})
+        trace = build_signal_aware_trace(
+            candles, gt, baseline_metrics={"buy_signals_total": 1}
+        )
         notes = trace.get("notes", [])
         assert any("partial_attribution" in n for n in notes)
         assert any("unavailable_trade_closures" in n for n in notes)

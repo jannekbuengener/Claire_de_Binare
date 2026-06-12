@@ -302,7 +302,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if attribution_contract:
-        contract_path = Path(args.attribution_contract_output or output_path.with_name("attribution_contract.json"))
+        contract_path = Path(
+            args.attribution_contract_output
+            or output_path.with_name("attribution_contract.json")
+        )
         contract_path.parent.mkdir(parents=True, exist_ok=True)
         try:
             contract_path.write_text(
@@ -310,7 +313,9 @@ def main(argv: list[str] | None = None) -> int:
                 encoding="utf-8",
             )
         except OSError as exc:
-            print(f"ERROR: Failed to write attribution contract: {exc}", file=sys.stderr)
+            print(
+                f"ERROR: Failed to write attribution contract: {exc}", file=sys.stderr
+            )
             return 1
 
     print(f"OK: trace written to {output_path}")
@@ -321,7 +326,9 @@ def main(argv: list[str] | None = None) -> int:
     if attribution_contract:
         print(f"  buy_entry_count:   {attribution_contract['buy_entry_count']}")
         print(f"  baseline_ok:       {attribution_contract['baseline_reconciled']}")
-        ac_path = args.attribution_contract_output or output_path.with_name("attribution_contract.json")
+        ac_path = args.attribution_contract_output or output_path.with_name(
+            "attribution_contract.json"
+        )
         print(f"  contract:          {ac_path}")
     return 0
 
