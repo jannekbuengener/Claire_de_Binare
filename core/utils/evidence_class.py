@@ -72,6 +72,12 @@ def _check_required_fields(artifact: dict[str, Any], ec: str) -> None:
             f"evidence_class={ec!r} missing required field(s): "
             f"{', '.join(sorted(missing))}"
         )
+    ec_version = artifact.get("evidence_class_version")
+    if ec_version is not None and ec_version != SCHEMA_VERSION:
+        raise EvidenceClassError(
+            f"evidence_class_version must be {SCHEMA_VERSION!r}, "
+            f"got {ec_version!r}"
+        )
 
 
 def validate_evidence_class(artifact: dict[str, Any]) -> None:

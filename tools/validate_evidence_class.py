@@ -76,7 +76,7 @@ def main(argv: list[str] | None = None) -> int:
 
     for path in files:
         if not path.is_file():
-            warnings.append(f"{path}: not a file, skipped")
+            failures.append(f"{path}: not a file")
             continue
 
         try:
