@@ -201,7 +201,7 @@ This campaign **is**:
 - A completed 8h campaign with full observation
 - A `campaign_timeout_record` — not `natural_paper_evidence` (no chain produced)
 - A **market failure** (slot #3 consumed)
-- Comparison-grade evidence for Option-E evaluation
+- NOT comparison-grade (no paper chain produced) — usable only for waiver/escalation decision
 
 This campaign **is not**:
 - An interrupted campaign (host was continuously available)
@@ -232,7 +232,7 @@ This campaign **is not**:
 **Option-E / waiver-or-split decision is now required** per #3094 design:
 
 1. Create `[ARVP][DECISION]` issue for Option-E evaluation
-2. Evidence pack: all 4 campaign timeout records (#1R, #2R, #3) + interruption records (#1, #2)
+2. Evidence pack: 3 campaign timeout records (#1R, #2R, #3) + 2 interruption records (#1, #2)
 3. Options:
    - **Waiver**: Accept §5.2.4 regime_segments gate as not achievable under current market conditions; proceed to §6 calibration with synthetic or simulator-based evidence
    - **Split**: Split the requirement into a separate evidence path
