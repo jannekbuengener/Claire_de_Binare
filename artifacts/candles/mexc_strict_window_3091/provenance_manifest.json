@@ -1,0 +1,32 @@
+{
+  "schema_version": "provenance_manifest.v1",
+  "window_id": "mexc_strict_window_3091_island_3",
+  "export_timestamp_utc": "2026-06-12T17:05:00Z",
+  "source_table": "public.candles_1m",
+  "export_user": "cdb_readonly",
+  "query_semantics": "SELECT symbol, ts_ms, open, high, low, close, volume, trade_count, regime_id FROM public.candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= 1780753380000 AND ts_ms <= 1780963080000 ORDER BY ts_ms ASC",
+  "row_count": 3496,
+  "window_start_ts_ms": 1780753380000,
+  "window_end_ts_ms": 1780963080000,
+  "window_start_utc": "2026-06-06T13:43:00Z",
+  "window_end_utc": "2026-06-08T23:58:00Z",
+  "symbol": "BTCUSDT",
+  "venue": "mexc",
+  "venue_match": true,
+  "capture_method": "mexc_ws_v3_persistent",
+  "no_runtime_capture_in_this_slice": true,
+  "no_live_go": true,
+  "lr_status": "NO-GO",
+  "artifacts": {
+    "candles_path": "artifacts/candles/mexc_strict_window_3091/candles.jsonl",
+    "candles_jsonl_sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+    "dataset_spec_path": "artifacts/candles/mexc_strict_window_3091/dataset_spec.json",
+    "gap_report_path": "artifacts/candles/mexc_strict_window_3091/gap_report.json"
+  },
+  "refs": [
+    "#3091",
+    "#3086",
+    "#3133",
+    "#3138"
+  ]
+}

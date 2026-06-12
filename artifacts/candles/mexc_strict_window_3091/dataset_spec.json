@@ -4,11 +4,13 @@
   "venue": "mexc",
   "venue_match": true,
   "venue_note": "MEXC Spot V3 WebSocket persistent capture pipeline (ws -> candles -> db_writer -> candles_1m)",
-  "source": "db",
+  "source": "file",
   "source_label": "mexc_ws_persistent_capture",
-  "source_detail": "Real-time MEXC aggregated deals via protobuf-decoded WS, aggregated to 1m OHLCV by cdb_candles, persisted by cdb_db_writer",
+  "source_detail": "Real-time MEXC aggregated deals via protobuf-decoded WS, aggregated to 1m OHLCV by cdb_candles, persisted by cdb_db_writer. Exported from public.candles_1m via cdb_readonly for #3091.",
+  "file_path": "artifacts/candles/mexc_strict_window_3091/candles.jsonl",
   "db_table": "candles_1m",
-  "db_query": "SELECT ts_ms, open, high, low, close, volume, trade_count FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= 1780753380000 AND ts_ms <= 1780963080000 ORDER BY ts_ms ASC",
+  "db_query": "SELECT symbol, ts_ms, open, high, low, close, volume, trade_count, regime_id FROM candles_1m WHERE symbol='BTCUSDT' AND ts_ms >= 1780753380000 AND ts_ms <= 1780963080000 ORDER BY ts_ms ASC",
+  "candles_sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
   "window_id": "mexc_strict_window_3091_island_3",
   "start_ts_ms": 1780753380000,
   "end_ts_ms": 1780963080000,
@@ -21,7 +23,7 @@
   "missing_candles": 0,
   "coverage_pct": 100.0,
   "data_quality_grade": "strict_campaign_grade",
-  "gap_report_path": null,
+  "gap_report_path": "artifacts/candles/mexc_strict_window_3091/gap_report.json",
   "fingerprint": "618064a3ec6f2f4e51f9f3a8a5ba4ccfe30c30d60685e17794d49c11a78b4586",
   "fingerprint_method": "sha256(ts_ms|open|high|low|close|volume|trade_count per row, ordered by ts_ms ASC)",
   "fingerprint_row_count": 3496,
@@ -33,7 +35,9 @@
     "unique_constraint": "UNIQUE(symbol, ts_ms)",
     "ingested_at_range_utc": "2026-06-06T13:43:00Z to 2026-06-08T23:58:00Z",
     "backfill_import_id": null,
-    "provenance_note": "All candles originate from the MEXC WS persistent capture pipeline. No bulk backfill was used for this window."
+    "provenance_note": "All candles originate from the MEXC WS persistent capture pipeline. No bulk backfill was used for this window. File export executed 2026-06-12 as readonly SELECT via cdb_readonly.",
+    "no_runtime_capture_in_this_slice": true,
+    "export_principal": "cdb_readonly"
   },
   "warning": "Dataset readiness only. NOT natural_paper_evidence. Cannot satisfy §5.2.4 without a natural paper campaign evidence chain (SIGNAL -> DECISION -> ORDER -> FILL).",
   "natural_paper_evidence": false,
@@ -44,7 +48,7 @@
   "board_stage": "trade-capable",
   "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading.",
   "replay_compatibility": {
-    "provider": "DBBackedDatasetProvider",
+    "provider": "FileBackedDatasetProvider",
     "candle_series_validation": "PASS (no gaps, strict 1m cadence, all required fields present)",
     "cadence_check": "60000ms between all consecutive rows"
   },
@@ -56,6 +60,8 @@
   "refs": [
     "#3091",
     "#3086",
-    "#3092"
+    "#3092",
+    "#3133",
+    "#3138"
   ]
 }
