@@ -3,68 +3,70 @@
   "summary_id": "econ-primary-breakout-v1-btcusdt-mexc-3091-calibrated",
   "evidence_packet_ref": "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_3091_calibrated_v2.json",
   "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3091",
-  "generated_at": "2026-06-12T18:35:00Z",
-  "replay_run_id": "replay-f270366bef3c-0001",
+  "generated_at": "2026-06-12T19:00:00Z",
+  "replay_run_id": "replay-00126958cf0e-0001",
   "dataset_id": "mexc_strict_window_3091_island_3",
   "calibration_variant": {
     "slug": "atr_p75_61.82",
     "atr_threshold": 61.82,
-    "selection_rule": "ATR at p75 (75th percentile of BTCUSDT ATR distribution). Distribution-based, non-profit-selected per variant_selection_rule from #3032 prompt contract.",
-    "regime_distribution": {
-      "TREND": 849,
-      "RANGE": 1697,
-      "HIGH_VOL_CHAOTIC": 950
-    },
-    "regime_notes": "27.2% HVC, 24.3% TREND, 48.5% RANGE. Commissioned regime labels: estimated via offline ADX/ATR heuristic, not runtime-derived.",
-    "calibration_manifest_ref": "artifacts/candles/mexc_strict_window_3091_regime_calibration/atr_p75_61.82/calibration_manifest.json"
+    "selection_rule": "ATR at p75 (75th percentile of BTCUSDT ATR distribution). Distribution-based, non-profit-selected per variant_selection_rule from #3032 prompt contract."
   },
   "trade_metrics": {
     "signals_total": 8,
     "buy_signals_total": 4,
     "sell_signals_total": 4,
     "closed_trades_total": 4,
-    "win_count": 1,
-    "loss_count": 3,
+    "trades_win_count": 1,
+    "trades_loss_count": 3,
     "win_rate": 0.25
   },
-  "return_metrics": {
-    "gross_return": null,
-    "gross_return_available": false,
-    "gross_return_note": "Replay runner does not emit gross_return for this strategy/adapter combination.",
-    "net_return": null,
-    "net_return_available": false,
-    "net_return_note": "Cannot compute without fees, spread, and slippage data from execution simulator.",
+  "return_metrics_r": {
+    "gross_return_r": -0.014218334,
+    "expectancy_r": -0.0035545835,
+    "fee_adjusted_expectancy_r": -0.0047524499,
     "profit_factor": 0.517272534,
-    "profit_factor_available": true,
-    "profit_factor_note": "Gross profit factor from replay runner. < 1.0 indicates net loss before fees."
+    "fee_adjusted_profit_factor": 0.4245816038,
+    "max_drawdown_r": 0.0230160327,
+    "fee_adjusted_max_drawdown_r": 0.0230160327,
+    "avg_win_r": 0.0152358301,
+    "avg_loss_r": -0.0098180547,
+    "largest_win_r": 0.0152358301,
+    "largest_loss_r": -0.010912841,
+    "fee_adjustment_note": "Pre-fee metrics use r_return from trade dict (price return only). Fee-adjusted metrics subtract entry_fee + exit_fee divided by (entry_price * order_size) from each r_return."
+  },
+  "return_metrics_quote": {
+    "gross_pnl_quote": -918.0281407209,
+    "net_pnl_quote": -1217.3056627209,
+    "fees_total_quote": 299.277522,
+    "order_size": 1.0,
+    "quote_note": "Absolute PnL in USDT quote currency computed from (exit_price - entry_price) * order_size, summed across trades. Fees from execution simulator (taker rate 0.06%)."
   },
   "risk_metrics": {
-    "max_drawdown": null,
-    "max_drawdown_available": false,
-    "expectancy_r": null,
-    "expectancy_available": false,
-    "avg_win": null,
-    "avg_loss": null,
-    "loss_streak": null
+    "max_drawdown_quote": null,
+    "max_drawdown_quote_available": false,
+    "max_drawdown_quote_note": "Available as r-multiple only. Absolute quote drawdown requires equity curve with per-bar NAV."
   },
-  "cost_metrics": {
-    "fees": 0.0,
-    "fees_model": "assumed_zero",
-    "fees_note": "Fees not modeled by current execution simulator. MEXC spot fees are typically 0.0%/0.0% maker/taker for BTCUSDT. Realistic fee modeling requires separate replay runner extension.",
-    "spread_cost": 0.0,
-    "spread_model": "assumed_zero",
-    "spread_note": "Spread cost not modeled. BTCUSDT MEXC spread is typically <0.01%. Negligible relative to breakout buffer (0.0005) at this trade count.",
-    "slippage_cost": 0.0,
-    "slippage_model": "assumed_zero",
-    "slippage_note": "Slippage not modeled with order_book_depth_multiplier=10000 and order_size=1.0. At 4 trades in 58h, realistic slippage impact is minimal."
+  "unavailable_metrics": {
+    "sharpe_ratio": null,
+    "sharpe_ratio_note": "Requires return time series (per-bar or per-trade with durations). Not computable from end-of-trade point returns alone.",
+    "sortino_ratio": null,
+    "sortino_ratio_note": "Same as sharpe_ratio -- requires time series.",
+    "equity_curve": null,
+    "equity_curve_note": "Per-bar equity snapshots not available. Cumulative r-return tracked as gross_return_r only.",
+    "avg_holding_period_minutes": null,
+    "avg_holding_period_note": "Trade entry/exit timestamps available in trade dict but not summarized."
   },
   "execution_quality": {
-    "simulator_drift": "not_assessed",
-    "simulator_drift_note": "No paper reference exists for comparison. Replay is the only execution surface for this dataset.",
+    "deterministic_replay_ok": true,
+    "data_integrity_ok": true,
     "risk_blocks": 0,
-    "kill_switch_events": 0,
-    "execution_replay_ok": true,
-    "deterministic_replay_ok": true
+    "kill_switch_events": 0
+  },
+  "sample_size_gate": {
+    "verdict": "insufficient",
+    "closed_trades_total": 4,
+    "threshold": 5,
+    "note": "4 trades in 58h. Economic assessment of profitability is statistically meaningless at this trade count. Any value from 0.25 to 4.0 for profit factor is possible by random chance with 4 trades."
   },
   "evidence_gate": {
     "gate_result": "FAIL",
@@ -73,23 +75,32 @@
       "min_profit_factor",
       "min_expectancy_r"
     ],
-    "gate_note": "All variants fail minimum closed trades (4 < threshold) and minimum profit factor/profit factor thresholds. This is expected for a 58h dataset with 240-minute lookback strategy. Gate thresholds are calibrated for multi-week backtest windows."
+    "gate_note": "Gate thresholds calibrated for multi-week backtest windows. Expected failure for 58h dataset."
   },
   "verdict": {
     "economic_viability": "UNKNOWN",
-    "verdict_note": "4 trades over 58h with profit_factor=0.517 does not support economic viability assessment. The dataset is too short for statistical significance. Profit factor < 1.0 at this trade count is not evidence of strategy weakness -- it is evidence of insufficient data.",
+    "verdict_note": "4 trades with net_pnl_quote=-1217.31 USDT and fee_adj_profit_factor=0.425 does not support economic viability. The negative net PnL at this trade count is not evidence of strategy weakness -- it is consistent with random chance.",
     "evidence_readiness": "BLOCKED_BY_DATASET_LENGTH",
-    "next_step": "Acquire longer BTCUSDT MEXC dataset (>1 week, >10k candles) with calibrated ATR threshold to assess economic viability."
+    "next_step": "Acquire longer BTCUSDT MEXC dataset (>1 week, >10k candles). All economics fields now computable from replay output."
   },
+  "metrics_availability": {
+    "trade_level_pnl": true,
+    "fee_adjusted_returns": true,
+    "equity_curve": false,
+    "absolute_drawdown_quote": false,
+    "sharpe_ratio": false,
+    "slippage_per_trade": false
+  },
+  "runner_version": "replay_economics_output_v1 (added in #3148)",
   "evidence_class": "controlled_lab_evidence",
   "regime_labels_estimated": true,
   "no_promotion": true,
   "lr_status": "NO-GO",
   "refs": [
     "#3032",
-    "#3141",
-    "#3142",
+    "#3147",
+    "#3145",
     "#3143",
-    "#3145"
+    "#3141"
   ]
 }

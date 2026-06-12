@@ -622,16 +622,83 @@ def _build_report(
         if drawdown > max_drawdown_r:
             max_drawdown_r = drawdown
 
+    gross_return_r = equity
+    avg_win_r = sum(wins) / len(wins) if wins else None
+    avg_loss_r = sum(losses) / len(losses) if losses else None
+    largest_win_r = max(wins) if wins else None
+    largest_loss_r = min(losses) if losses else None
+    trades_win_count = len(wins)
+    trades_loss_count = len(losses)
+
+    order_size = float(run_config.order_size)
+    gross_pnl_quote = sum(
+        (float(t["exit_price"]) - float(t["entry_price"])) * order_size
+        for t in trades
+    )
+    fees_total = sum(
+        float(t.get("entry_fee", 0.0)) + float(t.get("exit_fee", 0.0))
+        for t in trades
+    )
+    net_pnl_quote = gross_pnl_quote - fees_total
+
+    # Fee-adjusted trade returns for r-multiple metrics
+    fee_adj_trade_returns = [
+        float(trade.get("exit_price", 0.0)) / float(trade.get("entry_price", 1.0)) - 1.0
+        - (float(trade.get("entry_fee", 0.0)) + float(trade.get("exit_fee", 0.0)))
+        / (float(trade.get("entry_price", 1.0)) * order_size)
+        for trade in trades
+    ] if trades else []
+    if fee_adj_trade_returns:
+        fee_adj_equity = 0.0
+        fee_adj_peak = 0.0
+        fee_adj_max_drawdown_r = 0.0
+        for r in fee_adj_trade_returns:
+            fee_adj_equity += r
+            fee_adj_peak = max(fee_adj_peak, fee_adj_equity)
+            fee_adj_max_drawdown_r = max(
+                fee_adj_max_drawdown_r, fee_adj_peak - fee_adj_equity
+            )
+        fee_adj_expectancy_r = sum(fee_adj_trade_returns) / len(fee_adj_trade_returns)
+        fee_adj_wins = [r for r in fee_adj_trade_returns if r > 0]
+        fee_adj_losses = [r for r in fee_adj_trade_returns if r < 0]
+        fee_adj_gross_profit = sum(fee_adj_wins)
+        fee_adj_gross_loss = abs(sum(fee_adj_losses))
+        if fee_adj_gross_loss <= 0 and fee_adj_gross_profit > 0:
+            fee_adj_gross_loss = _EPSILON
+        fee_adj_profit_factor = (
+            fee_adj_gross_profit / fee_adj_gross_loss
+            if fee_adj_gross_loss > 0
+            else 0.0
+        )
+    else:
+        fee_adj_expectancy_r = None
+        fee_adj_profit_factor = None
+        fee_adj_max_drawdown_r = None
+
     signals_total = len(output_requests)
     buy_signals_total = sum(1 for signal in output_requests if signal["side"] == "BUY")
     sell_signals_total = sum(
         1 for signal in output_requests if signal["side"] == "SELL"
     )
+    closed_trades_total = len(trades)
+
+    # Sample size verdict for economics interpretability
+    if closed_trades_total == 0:
+        sample_size_verdict = "no_trades"
+    elif closed_trades_total < 5:
+        sample_size_verdict = "insufficient"
+    elif closed_trades_total < 30:
+        sample_size_verdict = "weak"
+    elif closed_trades_total < 100:
+        sample_size_verdict = "usable"
+    else:
+        sample_size_verdict = "adequate"
+
     metrics = {
         "signals_total": signals_total,
         "buy_signals_total": buy_signals_total,
         "sell_signals_total": sell_signals_total,
-        "closed_trades_total": len(trades),
+        "closed_trades_total": closed_trades_total,
         "win_rate": (len(wins) / len(trade_returns)) if trade_returns else 0.0,
         "profit_factor": profit_factor,
         "expectancy_r": expectancy_r,
@@ -641,6 +708,45 @@ def _build_report(
         "data_integrity_ok": data_integrity_ok,
         "data_integrity_diagnostics": dict(data_integrity_diagnostics),
         "deterministic_replay_ok": deterministic_replay_ok,
+        # Extended economics fields
+        "gross_return_r": gross_return_r,
+        "avg_win_r": avg_win_r,
+        "avg_loss_r": avg_loss_r,
+        "largest_win_r": largest_win_r,
+        "largest_loss_r": largest_loss_r,
+        "trades_win_count": trades_win_count,
+        "trades_loss_count": trades_loss_count,
+        "gross_pnl_quote": gross_pnl_quote,
+        "net_pnl_quote": net_pnl_quote,
+        "fees_total_quote": fees_total,
+        "fee_adjusted_expectancy_r": fee_adj_expectancy_r,
+        "fee_adjusted_profit_factor": fee_adj_profit_factor,
+        "fee_adjusted_max_drawdown_r": fee_adj_max_drawdown_r,
+        "sample_size_verdict": sample_size_verdict,
+        "metrics_availability": {
+            "trade_level_pnl_available": bool(trades),
+            "fee_adjusted_returns_available": bool(trades),
+            "equity_curve_available": False,
+            "equity_curve_note": (
+                "Per-bar equity snapshots not available. "
+                "Drawdown computed from end-of-trade point estimates only."
+            ),
+            "absolute_drawdown_quote_available": False,
+            "absolute_drawdown_quote_note": (
+                "Max drawdown available as r-multiple only (max_drawdown_r). "
+                "Absolute quote drawdown requires an equity curve with per-bar nav."
+            ),
+            "sharpe_ratio_available": False,
+            "sharpe_ratio_note": (
+                "Requires return time series (per-bar or per-trade with durations). "
+                "Not computable from end-of-trade point returns alone."
+            ),
+            "slippage_per_trade_available": False,
+            "slippage_note": (
+                "Execution simulator slippage is accounted for in fill prices. "
+                "Per-trade slippage breakdown not exposed in trade dict."
+            ),
+        },
     }
     thresholds = _extract_thresholds()
     gate_result = _evaluate_gate(metrics, thresholds)
