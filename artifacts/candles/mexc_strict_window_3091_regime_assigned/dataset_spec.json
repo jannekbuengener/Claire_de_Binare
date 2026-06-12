@@ -1,0 +1,64 @@
+{
+  "schema_version": "dataset_spec.v2",
+  "issue": "#3142",
+  "symbol": "BTCUSDT",
+  "venue": "mexc",
+  "venue_match": true,
+  "venue_note": "MEXC Spot V3 WebSocket persistent capture pipeline. Derived dataset with offline regime labels.",
+  "source": "file",
+  "source_label": "mexc_ws_persistent_capture_regime_assigned",
+  "source_detail": "Derived from artifacts/candles/mexc_strict_window_3091/candles.jsonl. Offline ADX/ATR regime assignment mirroring services/regime/service.py. See regime_assignment_manifest.json for full method details.",
+  "file_path": "artifacts/candles/mexc_strict_window_3091_regime_assigned/candles.jsonl",
+  "derived_from": "artifacts/candles/mexc_strict_window_3091/candles.jsonl",
+  "derived_from_sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "regime_source": "offline_heuristic_adx_atr",
+  "regime_labels_estimated": true,
+  "regime_labels_estimation_note": "All regime_id values are estimated via deterministic offline ADX/ATR heuristic. NOT runtime-derived. Evidence class: controlled_lab_evidence.",
+  "window_id": "mexc_strict_window_3091_island_3_regime_assigned",
+  "start_ts_ms": 1780753380000,
+  "end_ts_ms": 1780963080000,
+  "start_utc": "2026-06-06T13:43:00Z",
+  "end_utc": "2026-06-08T23:58:00Z",
+  "duration_minutes": 3496,
+  "duration_hours": 58.27,
+  "actual_candles": 3496,
+  "data_quality_grade": "strict_campaign_grade",
+  "evidence_class": "controlled_lab_evidence",
+  "evidence_class_note": "Derived dataset with estimated regime labels. Upgrades to natural_paper_evidence only after a successful campaign produces SIGNAL->DECISION->ORDER->FILL chain.",
+  "regime_assignment_method": {
+    "script": "scripts/profitability/assign_regime_to_mexc_3091.py",
+    "method": "offline_heuristic_adx_atr",
+    "mirrors": "services/regime/service.py:_derive_regime + services/regime/models.py:compute_adx/compute_atr",
+    "parameters": {
+      "adx_period": 14,
+      "atr_period": 14,
+      "adx_trend_threshold": 25.0,
+      "adx_range_threshold": 20.0,
+      "atr_high_vol_threshold": 2.0,
+      "confirmation_bars": 3,
+      "buffer_maxlen": 70
+    },
+    "regime_mapping": {
+      "0": "TREND",
+      "1": "RANGE",
+      "2": "HIGH_VOL_CHAOTIC",
+      "3": "CRISIS"
+    }
+  },
+  "replay_compatibility": {
+    "provider": "FileBackedDatasetProvider",
+    "candle_series_validation": "Expected PASS (derived from strict_campaign_grade source, all fields unchanged except regime_id)",
+    "cadence_check": "60000ms between all consecutive rows",
+    "regime_id_available": true,
+    "regime_id_estimated": true
+  },
+  "lr_status": "NO-GO",
+  "board_stage": "trade-capable",
+  "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading.",
+  "refs": [
+    "#3142",
+    "#3032",
+    "#3141",
+    "#3091"
+  ]
+}

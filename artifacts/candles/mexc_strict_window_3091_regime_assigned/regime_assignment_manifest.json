@@ -1,0 +1,71 @@
+{
+  "schema_version": "regime_assignment_manifest.v1",
+  "issue": "#3142",
+  "derived_from": {
+    "source_directory": "artifacts\\candles\\mexc_strict_window_3091",
+    "source_candles": "artifacts\\candles\\mexc_strict_window_3091\\candles.jsonl",
+    "source_sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+    "source_rows": 3496
+  },
+  "method": "offline_heuristic_adx_atr",
+  "method_detail": "Deterministic offline ADX/ATR-based regime classification mirroring services/regime/service.py:_derive_regime and services/regime/models.py (compute_adx, compute_atr). Confirmation bars applied per RegimeService logic (services/regime/service.py:143-153).",
+  "estimation": true,
+  "estimation_note": "All regime_id values are estimated/synthetic via offline ADX/ATR heuristic. They are NOT runtime-derived. Evidence class remains controlled_lab_evidence. No claim is made that these labels match what a live regime service would have produced.",
+  "evidence_class": "controlled_lab_evidence",
+  "parameters": {
+    "adx_period": 14,
+    "atr_period": 14,
+    "adx_trend_threshold": 25.0,
+    "adx_range_threshold": 20.0,
+    "atr_high_vol_threshold": 2.0,
+    "confirmation_bars": 3,
+    "buffer_maxlen": 70,
+    "source": "infrastructure/compose/compose.blue.yml regime env vars"
+  },
+  "regime_mapping": {
+    "0": "TREND",
+    "1": "RANGE",
+    "2": "HIGH_VOL_CHAOTIC",
+    "3": "CRISIS"
+  },
+  "regime_distribution": {
+    "0": {
+      "regime_name": "TREND",
+      "count": 16
+    },
+    "2": {
+      "regime_name": "HIGH_VOL_CHAOTIC",
+      "count": 3480
+    }
+  },
+  "regime_distribution_summary": {
+    "0": 16,
+    "2": 3480
+  },
+  "initial_fallback_regime": {
+    "regime_id": 0,
+    "regime_name": "TREND",
+    "note": "Regime defaulted to 0 (TREND) for first 14 candles (ADX/ATR require period+1=15 candles). Full buffer depth is 70 candles."
+  },
+  "warmup_candles_defaulted": 14,
+  "confirmation_bars_applied": true,
+  "deterministic": true,
+  "no_randomness": true,
+  "no_gaps": true,
+  "all_rows_assigned": true,
+  "output_rows": 3496,
+  "input_output_row_count_match": true,
+  "no_raw_dataset_overwrite": true,
+  "raw_dataset_sha256_unchanged": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "generated_by": "scripts/profitability/assign_regime_to_mexc_3091.py",
+  "generated_for": "Issue #3142 — Regime-assigned file-backed MEXC replay",
+  "refs": [
+    "#3142",
+    "#3032",
+    "#3141",
+    "#3091"
+  ],
+  "lr_status": "NO-GO",
+  "board_stage": "trade-capable",
+  "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading."
+}
