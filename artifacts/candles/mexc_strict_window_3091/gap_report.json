@@ -1,0 +1,11 @@
+{
+  "schema_version": "gap_report.v1",
+  "window_id": "mexc_strict_window_3091_island_3",
+  "window_start_utc": "2026-06-06T13:43:00Z",
+  "window_end_utc": "2026-06-08T23:58:00Z",
+  "total_candles": 3496,
+  "gap_count": 0,
+  "gaps": [],
+  "conclusion": "STRICT_CAMPAIGN_GRADE — zero gaps. 100% 1m coverage.",
+  "produced_at_utc": "2026-06-12T14:17:00Z"
+}
