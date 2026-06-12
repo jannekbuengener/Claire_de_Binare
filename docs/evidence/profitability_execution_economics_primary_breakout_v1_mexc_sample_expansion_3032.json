@@ -1,0 +1,90 @@
+{
+  "schema_version": "execution_economics_summary.v1",
+  "summary_id": "econ-primary-breakout-v1-btcusdt-mexc-sample-expansion-3032",
+  "evidence_packet_ref": "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_sample_expansion_3032.json",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3032",
+  "generated_at": "2026-06-12T20:00:00Z",
+  "replay_run_id": "replay-b1472f81e943-0001",
+  "dataset_id": "mexc_sample_expansion_3032_1m_cadence",
+  "calibration_variant": {
+    "slug": "atr_p75_52_59",
+    "atr_threshold": 52.59,
+    "selection_rule": "ATR at p75 (75th percentile of this Jan-2026 BTCUSDT ATR distribution). Distribution-based, non-profit-selected. Same methodology as #3145/#3147: p75 rule applied to the new dataset's independent ATR percentile."
+  },
+  "trade_metrics": {
+    "signals_total": 10,
+    "buy_signals_total": 5,
+    "sell_signals_total": 5,
+    "closed_trades_total": 5,
+    "trades_win_count": 0,
+    "trades_loss_count": 5,
+    "win_rate": 0.0
+  },
+  "return_metrics_r": {
+    "gross_return_r": -0.0108940532,
+    "expectancy_r": -0.0021788106,
+    "fee_adjusted_expectancy_r": -0.0033775046,
+    "profit_factor": 0.0,
+    "fee_adjusted_profit_factor": 0.0,
+    "max_drawdown_r": 0.0168875231,
+    "fee_adjusted_max_drawdown_r": 0.0168875231,
+    "avg_win_r": null,
+    "avg_loss_r": -0.0021788106,
+    "largest_win_r": null,
+    "largest_loss_r": -0.0040200316,
+    "fee_adjustment_note": "Pre-fee metrics use r_return from trade dict. Fee-adjusted metrics subtract entry_fee + exit_fee divided by (entry_price * order_size) from each r_return. With 0 wins, all win-related R metrics are null."
+  },
+  "return_metrics_quote": {
+    "gross_pnl_quote": -1029.9821084595,
+    "net_pnl_quote": -1592.4796364595,
+    "fees_total_quote": 562.497528,
+    "order_size": 1.0,
+    "quote_note": "Absolute PnL in USDT quote currency. Fees from execution simulator at taker rate 0.06% per fill (2 fills per round-trip trade x 5 trades = 10 fills)."
+  },
+  "risk_metrics": {
+    "max_drawdown_quote": null,
+    "max_drawdown_quote_available": false,
+    "max_drawdown_quote_note": "Available as r-multiple only. Absolute quote drawdown requires equity curve with per-bar NAV."
+  },
+  "unavailable_metrics": {
+    "sharpe_ratio": null,
+    "sharpe_ratio_note": "Requires return time series.",
+    "sortino_ratio": null,
+    "sortino_ratio_note": "Requires return time series.",
+    "equity_curve": null,
+    "equity_curve_note": "Per-bar equity snapshots not available.",
+    "avg_holding_period_minutes": null,
+    "avg_holding_period_note": "Not summarized by replay runner."
+  },
+  "execution_quality": {
+    "deterministic_replay_ok": true,
+    "data_integrity_ok": true,
+    "risk_blocks": 0,
+    "kill_switch_events": 0
+  },
+  "sample_size_gate": {
+    "verdict": "insufficient",
+    "closed_trades_total": 5,
+    "recommended_threshold": 20,
+    "note": "5 trades over 126h (7575 1m candles) vs prior 4 trades over 58h. 25% trade count increase, 2.2x time extension. Still insufficient for economic assessment. Per #3145: target >10k candles for statistically meaningful trade count (>20 expected). Directional evidence (0 wins, 5 losses) is consistent with a bearish window (BTC -6.3%) but does not constitute strategy validation."
+  },
+  "evidence_gate": {
+    "gate_result": "FAIL",
+    "gate_failed_criteria": [
+      "min_closed_trades_total",
+      "min_profit_factor",
+      "min_expectancy_r"
+    ],
+    "gate_note": "Gate thresholds calibrated for multi-week backtest windows. Expected failure for a 1-week dataset with 5 trades."
+  },
+  "verdict": {
+    "overall": "PARK",
+    "economic_assessment": "Not interpretable at N=5",
+    "improvement_over_prior": "25% more trades (5 vs 4), 2.2x longer window (126h vs 58h), fee data now available. Pipeline improvement confirmed but sample threshold not reached.",
+    "next_recommended_step": "Acquire longer contiguous dataset. Existing 123k BTCUSDT rows span 121 days but are fragmented into segments separated by hours-to-weeks gaps. Largest contiguous 1m-cadenced segment is 7575 rows (126h). A longer runtime capture or gap-tolerant replay mode would be needed for multi-week evidence."
+  },
+  "evidence_class": "controlled_lab_evidence",
+  "lr_status": "NO-GO",
+  "parent_issue": "#3032",
+  "child_issue": "#3150"
+}
