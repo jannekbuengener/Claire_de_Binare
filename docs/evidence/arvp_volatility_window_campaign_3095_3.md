@@ -4,7 +4,7 @@
 **Start UTC:** 2026-06-11T13:03:00Z
 **Planned Duration:** max 8h (until ~2026-06-11T21:03:00Z)
 **Status:** TIMEOUT_NO_CHAIN
-**Evidence Class:** `natural_paper_evidence` (completed 8h window)
+**Evidence Class:** `campaign_timeout_record` — not `natural_paper_evidence` (no chain produced)
 **Close UTC:** 2026-06-11T21:15:44Z (cycle 32)
 **Campaign #:** 3 of max 3
 
@@ -17,11 +17,12 @@
 | Campaign #1 | `arvp_3095_vol_window_20260608_2341` | HOLD_INTERRUPTED_BY_HOST_SHUTDOWN | No |
 | Campaign #1R | `arvp_3095_vol_window_1r_20260609_1109` | HOLD_NO_CHAIN_CAMPAIGN_1R — Slot #1 consumed | No |
 | Campaign #2 | `arvp_3095_vol_window_2_20260609_1942` | HOLD_INTERRUPTED_CAMPAIGN_2 | No |
+| Campaign #2R | `arvp_3095_vol_window_2r_20260610_1111` | HOLD_NO_CHAIN_CAMPAIGN_2R — Slot #2 consumed | No |
 | Campaign #3 | `arvp_3095_vol_window_3_20260611_1301` | **TIMEOUT_NO_CHAIN — Slot #3 consumed** | No |
 
-**Slot #1 consumed** (Campaign #1R). **Slot #2 NOT consumed** (infrastructure interruption). **Slot #3 consumed** (Campaign #3 — completed 8h timeout with no chain).
+**Slot #1 consumed** (Campaign #1R). **Slot #2 NOT consumed** (infrastructure interruption). **Slot #2R consumed** (Campaign #2R timeout — full 8h window, 0 chain). **Slot #3 consumed** (Campaign #3 timeout — full 8h window, 0 chain).
 
-**Total consumed slots: 3 of max 3** (Campaign #1R, Campaign #3, no remaining capacity).
+**Total consumed slots: 3 of max 3** (Campaign #1R, Campaign #2R, Campaign #3 — no remaining capacity).
 
 ---
 
@@ -188,8 +189,9 @@ BTCUSDT moved during the 8h window. The campaign started at 13:03 UTC with P2 = 
 This is the **third gated no-chain campaign slot** under the #3094 design:
 
 - Campaign #1R: HOLD_NO_CHAIN (slot #1 consumed)
+- Campaign #2R: HOLD_NO_CHAIN (slot #2 consumed)
 - Campaign #3: TIMEOUT_NO_CHAIN (slot #3 consumed)
-- Campaign #2: HOLD_INTERRUPTED (infrastructure, **not** a slot consumption)
+- Campaign #1, #2: infrastructure interruptions (**not** slot consumptions)
 
 Campaign #3 is a complete 8h window with continuous host availability, full probe coverage, and zero chain events. This is a clean market verdict: under the conditions observed (BTCUSDT, HIGH_VOL_CHAOTIC regime, 0.5% breakout threshold), `primary_breakout_v1` did not produce a natural paper chain.
 
@@ -197,7 +199,7 @@ Campaign #3 is a complete 8h window with continuous host availability, full prob
 
 This campaign **is**:
 - A completed 8h campaign with full observation
-- A `natural_paper_evidence` record
+- A `campaign_timeout_record` — not `natural_paper_evidence` (no chain produced)
 - A **market failure** (slot #3 consumed)
 - Comparison-grade evidence for Option-E evaluation
 
@@ -213,9 +215,10 @@ This campaign **is not**:
 | Campaign #1 | HOLD_INTERRUPTED_BY_HOST_SHUTDOWN | No (interruption) |
 | Campaign #1R | HOLD_NO_CHAIN_CAMPAIGN_1R | **Yes** — Slot #1 consumed |
 | Campaign #2 | HOLD_INTERRUPTED_CAMPAIGN_2 | **No** (infrastructure interruption) |
+| Campaign #2R | HOLD_NO_CHAIN_CAMPAIGN_2R | **Yes** — Slot #2 consumed |
 | Campaign #3 | TIMEOUT_NO_CHAIN | **Yes** — Slot #3 consumed |
 
-**Effective slot count: 2 of max 3 consumed** (Campaign #1R, Campaign #3). Campaign capacity is **exhausted**: 3 gated no-chain campaign slots consumed across the series (#1R, #2R was never run separately, #3 is the 3rd).
+**Effective slot count: 3 of max 3 consumed** (Campaign #1R, Campaign #2R, Campaign #3). No remaining campaign capacity.
 
 ### Impact on #3087
 
@@ -229,7 +232,7 @@ This campaign **is not**:
 **Option-E / waiver-or-split decision is now required** per #3094 design:
 
 1. Create `[ARVP][DECISION]` issue for Option-E evaluation
-2. Evidence pack: all 3 campaign evidence docs
+2. Evidence pack: all 4 campaign timeout records (#1R, #2R, #3) + interruption records (#1, #2)
 3. Options:
    - **Waiver**: Accept §5.2.4 regime_segments gate as not achievable under current market conditions; proceed to §6 calibration with synthetic or simulator-based evidence
    - **Split**: Split the requirement into a separate evidence path
@@ -278,7 +281,8 @@ This campaign **is not**:
 - `docs/evidence/arvp_deterministic_window_production_3094.md` — Campaign policy design
 - `docs/evidence/arvp_volatility_window_campaign_3095_1r.md` — Campaign #1R evidence
 - `docs/evidence/arvp_volatility_window_campaign_3095_interruption.md` — Campaign #1 interruption record
-- `docs/evidence/arvp_volatility_window_campaign_3095_2.md` — Campaign #2 evidence
+- `docs/evidence/arvp_volatility_window_campaign_3095_2.md` — Campaign #2 evidence (interruption)
+- `docs/evidence/arvp_volatility_window_campaign_3095_2r.md` — Campaign #2R evidence (Slot #2)
 - `docs/evidence/arvp_volatility_window_campaign_3095_3.md` — Campaign #3 evidence (this document)
 - `docs/evidence/arvp_volatility_window_start_policy_3103.md` — Start criteria policy
 - `manifests/campaign_3.yaml` — Campaign #3 start manifest
@@ -306,6 +310,6 @@ This campaign **is not**:
 
 Campaign #3 ran for 8h 12min (13:03 → 21:15 UTC, 32 cycles) under HIGH_VOL_CHAOTIC regime. Start criterion: P2 (60m range 1.103% ≥ 0.75%) + P3 (HIGH_VOL_CHAOTIC). Host was continuously available; all probes reported ok throughout (host `warn` and regime `warn` non-blocking). Zero events, zero chains detected across all 32 monitoring cycles. `primary_breakout_v1` did not trigger — BTCUSDT did not produce a 0.5% breakout within any 15m window during the campaign window.
 
-Campaign #3 was the **third gated no-chain campaign slot**. Combined with Campaign #1R (Slot #1), 3 slots are consumed. Campaign #2 was an infrastructure interruption and does not count.
+Campaign #3 was the **third gated no-chain campaign slot** (Campaign #1R = Slot #1, Campaign #2R = Slot #2, Campaign #3 = Slot #3). Campaign #1 and Campaign #2 were infrastructure interruptions and do not count.
 
 **All 3 no-chain campaign slots are exhausted. The Option-E / waiver-or-split decision is now required per #3094 design.**
