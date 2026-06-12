@@ -1,0 +1,145 @@
+{
+  "schema_version": "calibration_variants_manifest.v1",
+  "issue": "#3144",
+  "parent": "#3032",
+  "refs": [
+    "#3142",
+    "#3143"
+  ],
+  "raw_dataset": {
+    "path": "artifacts\\candles\\mexc_strict_window_3091\\candles.jsonl",
+    "sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+    "rows": 3496
+  },
+  "calibration_grid": [
+    {
+      "slug": "baseline_atr_2.0",
+      "atr_threshold": 2.0
+    },
+    {
+      "slug": "atr_p50_48.01",
+      "atr_threshold": 48.01
+    },
+    {
+      "slug": "atr_p75_61.82",
+      "atr_threshold": 61.82
+    },
+    {
+      "slug": "atr_p90_76.84",
+      "atr_threshold": 76.84
+    },
+    {
+      "slug": "atr_pct_0.01pct_6.09",
+      "atr_threshold": 6.09
+    },
+    {
+      "slug": "atr_pct_0.05pct_30.43",
+      "atr_threshold": 30.43
+    },
+    {
+      "slug": "atr_pct_0.1pct_60.86",
+      "atr_threshold": 60.86
+    },
+    {
+      "slug": "atr_pct_0.25pct_152.15",
+      "atr_threshold": 152.15
+    }
+  ],
+  "variant_count": 8,
+  "variants": [
+    {
+      "slug": "baseline_atr_2.0",
+      "atr_threshold": 2.0,
+      "note": "Current committed config (ATR=2.0) -- expected 0 trades",
+      "rows": 3496,
+      "distribution": {
+        "0": 16,
+        "2": 3480
+      }
+    },
+    {
+      "slug": "atr_p50_48.01",
+      "atr_threshold": 48.01,
+      "note": "ATR at p50 (median) -- balanced regime split",
+      "rows": 3496,
+      "distribution": {
+        "0": 503,
+        "2": 1798,
+        "1": 1195
+      }
+    },
+    {
+      "slug": "atr_p75_61.82",
+      "atr_threshold": 61.82,
+      "note": "ATR at p75 (upper quartile) -- mostly TREND/RANGE",
+      "rows": 3496,
+      "distribution": {
+        "0": 849,
+        "1": 1697,
+        "2": 950
+      }
+    },
+    {
+      "slug": "atr_p90_76.84",
+      "atr_threshold": 76.84,
+      "note": "ATR at p90 -- conservative HVC filter",
+      "rows": 3496,
+      "distribution": {
+        "0": 1162,
+        "1": 1992,
+        "2": 342
+      }
+    },
+    {
+      "slug": "atr_pct_0.01pct_6.09",
+      "atr_threshold": 6.09,
+      "note": "ATR_pct 0.01% of price (~6 USD) -- generous threshold",
+      "rows": 3496,
+      "distribution": {
+        "0": 16,
+        "2": 3480
+      }
+    },
+    {
+      "slug": "atr_pct_0.05pct_30.43",
+      "atr_threshold": 30.43,
+      "note": "ATR_pct 0.05% of price (~30 USD) -- moderate threshold",
+      "rows": 3496,
+      "distribution": {
+        "0": 41,
+        "2": 3346,
+        "1": 109
+      }
+    },
+    {
+      "slug": "atr_pct_0.1pct_60.86",
+      "atr_threshold": 60.86,
+      "note": "ATR_pct 0.1% of price (~61 USD) -- near p75",
+      "rows": 3496,
+      "distribution": {
+        "0": 814,
+        "1": 1685,
+        "2": 997
+      }
+    },
+    {
+      "slug": "atr_pct_0.25pct_152.15",
+      "atr_threshold": 152.15,
+      "note": "ATR_pct 0.25% of price (~152 USD) -- strict threshold",
+      "rows": 3496,
+      "distribution": {
+        "0": 1382,
+        "1": 2092,
+        "2": 22
+      }
+    }
+  ],
+  "evidence_class": "controlled_lab_evidence",
+  "test_only": true,
+  "estimation": true,
+  "lr_status": "NO-GO",
+  "no_live_go": true,
+  "no_echtgeld_go": true,
+  "no_production_config_change": true,
+  "generated_by": "scripts/profitability/generate_calibration_variants_3032.py"
+}

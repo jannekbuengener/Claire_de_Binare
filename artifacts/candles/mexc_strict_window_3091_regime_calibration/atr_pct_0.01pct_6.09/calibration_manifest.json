@@ -1,0 +1,71 @@
+{
+  "schema_version": "calibration_variant_manifest.v1",
+  "issue": "#3144",
+  "parent": "#3032",
+  "refs": [
+    "#3142",
+    "#3143"
+  ],
+  "variant_slug": "atr_pct_0.01pct_6.09",
+  "atr_high_vol_threshold": 6.09,
+  "threshold_note": "ATR_pct 0.01% of price (~6 USD) -- generous threshold",
+  "derived_from": {
+    "source_directory": "artifacts\\candles\\mexc_strict_window_3091",
+    "source_candles": "artifacts\\candles\\mexc_strict_window_3091\\candles.jsonl",
+    "source_sha256": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+    "source_rows": 3496
+  },
+  "method": "offline_heuristic_adx_atr",
+  "method_detail": "Deterministic offline ADX/ATR regime classification with parameterized ATR threshold=6.09. ADX thresholds unchanged (trend=25.0, range=20.0). Confirmation bars applied per RegimeService logic.",
+  "parameters": {
+    "adx_period": 14,
+    "atr_period": 14,
+    "adx_trend_threshold": 25.0,
+    "adx_range_threshold": 20.0,
+    "atr_high_vol_threshold": 6.09,
+    "confirmation_bars": 3,
+    "buffer_maxlen": 70
+  },
+  "estimation": true,
+  "estimation_note": "All regime_id values are estimated via offline ADX/ATR heuristic. They are NOT runtime-derived. Evidence class remains controlled_lab_evidence. This is a test-only calibration variant.",
+  "evidence_class": "controlled_lab_evidence",
+  "test_only": true,
+  "regime_mapping": {
+    "0": "TREND",
+    "1": "RANGE",
+    "2": "HIGH_VOL_CHAOTIC",
+    "3": "CRISIS"
+  },
+  "regime_distribution": {
+    "0": {
+      "regime_name": "TREND",
+      "count": 16
+    },
+    "2": {
+      "regime_name": "HIGH_VOL_CHAOTIC",
+      "count": 3480
+    }
+  },
+  "regime_distribution_summary": {
+    "0": 16,
+    "2": 3480
+  },
+  "initial_fallback_regime": {
+    "regime_id": 0,
+    "regime_name": "TREND",
+    "note": "Regime defaulted to 0 (TREND) for first 14 candles (ADX/ATR require period+1=15 candles)."
+  },
+  "warmup_candles_defaulted": 14,
+  "confirmation_bars_applied": true,
+  "deterministic": true,
+  "no_randomness": true,
+  "output_rows": 3496,
+  "input_output_row_count_match": true,
+  "no_raw_dataset_overwrite": true,
+  "raw_dataset_sha256_unchanged": "d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "generated_by": "scripts/profitability/generate_calibration_variants_3032.py",
+  "generated_for": "Issue #3144 -- BTCUSDT regime calibration analysis",
+  "lr_status": "NO-GO",
+  "board_stage": "trade-capable",
+  "board_stage_note": "Board stage is orthogonal to LR. Does not authorize live trading."
+}
