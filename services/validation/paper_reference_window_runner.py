@@ -284,27 +284,19 @@ def main(argv: list[str] | None = None) -> int:
 
     evidence_class = "natural_paper_evidence"
     warning_banner = evidence_class_warning_banner(evidence_class)
-    evidence_envelope: dict[str, Any] = {
-        "contract_version": payload.get("contract_version"),
-        "strategy_id": payload.get("strategy_id"),
-        "symbol": payload.get("symbol"),
-        "start_ts_ms_utc": payload.get("start_ts_ms_utc"),
-        "end_ts_ms_utc": payload.get("end_ts_ms_utc"),
-        "evidence_class": evidence_class,
-        "evidence_class_version": "1.0",
-        "produced_by": "paper_reference_window_runner",
-    }
+    payload["evidence_class"] = evidence_class
+    payload["evidence_class_version"] = "1.0"
+    payload["produced_by"] = "paper_reference_window_runner"
     if warning_banner:
-        evidence_envelope["warning_banner"] = warning_banner
-    evidence_envelope["window"] = payload
+        payload["warning_banner"] = warning_banner
 
     try:
-        validate_evidence_class(evidence_envelope)
+        validate_evidence_class(payload)
     except EvidenceClassError as exc:
         print(f"EVIDENCE CLASS VALIDATION FAILED: {exc}", file=sys.stderr)
         return 2
 
-    out_path.write_text(canonical_json_dumps(evidence_envelope), encoding="utf-8")
+    out_path.write_text(canonical_json_dumps(payload), encoding="utf-8")
 
     readonly_database, readonly_current_user, readonly_session_user = readonly_identity
     print(

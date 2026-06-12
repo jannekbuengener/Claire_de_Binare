@@ -101,7 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         # If both are provided, prefer replay-side scorecard as primary output.
         scorecard = scorecards[0]
         out_dir = output_root / run_id
-        write_regime_scorecard_bundle(scorecard=scorecard, output_dir=out_dir)
+        write_regime_scorecard_bundle(
+            scorecard=scorecard, output_dir=out_dir, bundle_metadata=metadata
+        )
     except ARVPRegimeScorecardError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2

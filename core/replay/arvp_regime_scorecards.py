@@ -373,12 +373,16 @@ def write_regime_scorecard_bundle(
     *,
     scorecard: ARVPRegimeScorecard,
     output_dir: pathlib.Path,
+    bundle_metadata: dict[str, object] | None = None,
 ) -> tuple[pathlib.Path, pathlib.Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     json_path = output_dir / _FILENAME_JSON
     md_path = output_dir / _FILENAME_MD
     try:
-        json_path.write_text(canonical_json_dumps(scorecard.to_dict()), encoding="utf-8")
+        result = scorecard.to_dict()
+        if bundle_metadata:
+            result = {**bundle_metadata, **result}
+        json_path.write_text(canonical_json_dumps(result), encoding="utf-8")
         md_path.write_text(build_scorecard_summary(scorecard), encoding="utf-8")
     except OSError as exc:
         raise ARVPRegimeScorecardError(
