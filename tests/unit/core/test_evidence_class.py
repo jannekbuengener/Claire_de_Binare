@@ -14,31 +14,67 @@ from core.utils.evidence_class import (
 )
 
 
+def _minimal_natural_paper() -> dict:
+    return {
+        "evidence_class": "natural_paper_evidence",
+        "evidence_class_version": "1.0",
+        "produced_by": "test_runner",
+        "produced_at_utc": "2026-06-12T00:00:00+00:00",
+        "campaign_id": "test_campaign",
+        "start_criterion": "manual",
+        "safety_flags": {"mock_trading": True, "dry_run": True, "mexc_testnet": True},
+        "provenance": "test_provenance",
+    }
+
+
+def _minimal_controlled_lab() -> dict:
+    return {
+        "evidence_class": "controlled_lab_evidence",
+        "evidence_class_version": "1.0",
+        "produced_by": "test_runner",
+        "produced_at_utc": "2026-06-12T00:00:00+00:00",
+        "warning_banner": "NOT natural_paper_evidence — cannot satisfy §5.2.4",
+        "scenario_source": "test_scenario",
+        "reproducibility_contract": "test_fingerprint",
+    }
+
+
+def _minimal_pipeline_test() -> dict:
+    return {
+        "evidence_class": "pipeline_test_evidence",
+        "evidence_class_version": "1.0",
+        "produced_by": "test_runner",
+        "produced_at_utc": "2026-06-12T00:00:00+00:00",
+        "warning_banner": "Pipeline test only — NOT valid for Product-Complete gate",
+        "pipeline_tool": "test_tool",
+        "fixture_source": "test_fixture",
+    }
+
+
+def _minimal_waiver() -> dict:
+    return {
+        "evidence_class": "waiver_decision",
+        "evidence_class_version": "1.0",
+        "produced_by": "test_runner",
+        "produced_at_utc": "2026-06-12T00:00:00+00:00",
+        "warning_banner": "Policy decision — not evidence; requires formal governance vote",
+        "governance_ref": "test_ref",
+        "residual_uncertainties": "test_risk",
+    }
+
+
 class TestValidateEvidenceClass:
     def test_natural_paper_evidence_valid(self):
-        artifact = {"evidence_class": "natural_paper_evidence"}
-        validate_evidence_class(artifact)
+        validate_evidence_class(_minimal_natural_paper())
 
     def test_controlled_lab_evidence_with_banner(self):
-        artifact = {
-            "evidence_class": "controlled_lab_evidence",
-            "warning_banner": "NOT natural_paper_evidence — cannot satisfy §5.2.4",
-        }
-        validate_evidence_class(artifact)
+        validate_evidence_class(_minimal_controlled_lab())
 
     def test_pipeline_test_evidence_with_banner(self):
-        artifact = {
-            "evidence_class": "pipeline_test_evidence",
-            "warning_banner": "Pipeline test only — NOT valid for Product-Complete gate",
-        }
-        validate_evidence_class(artifact)
+        validate_evidence_class(_minimal_pipeline_test())
 
     def test_waiver_decision_with_banner(self):
-        artifact = {
-            "evidence_class": "waiver_decision",
-            "warning_banner": "Policy decision — not evidence; requires formal governance vote",
-        }
-        validate_evidence_class(artifact)
+        validate_evidence_class(_minimal_waiver())
 
     def test_missing_evidence_class_fails(self):
         with pytest.raises(EvidenceClassError, match="Missing evidence_class"):
@@ -53,56 +89,93 @@ class TestValidateEvidenceClass:
             validate_evidence_class({"evidence_class": "invalid_class"})
 
     def test_controlled_lab_missing_banner_fails(self):
+        art = _minimal_controlled_lab()
+        art.pop("warning_banner")
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(
-                {
-                    "evidence_class": "controlled_lab_evidence",
-                    "warning_banner": "",
-                }
-            )
+            validate_evidence_class(art)
 
     def test_controlled_lab_wrong_banner_fails(self):
+        art = _minimal_controlled_lab()
+        art["warning_banner"] = "some random text"
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(
-                {
-                    "evidence_class": "controlled_lab_evidence",
-                    "warning_banner": "some random text",
-                }
-            )
+            validate_evidence_class(art)
 
     def test_pipeline_test_missing_banner_fails(self):
+        art = _minimal_pipeline_test()
+        art.pop("warning_banner")
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(
-                {
-                    "evidence_class": "pipeline_test_evidence",
-                    "warning_banner": "",
-                }
-            )
+            validate_evidence_class(art)
 
     def test_waiver_decision_missing_banner_fails(self):
+        art = _minimal_waiver()
+        art.pop("warning_banner")
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(
-                {
-                    "evidence_class": "waiver_decision",
-                }
-            )
+            validate_evidence_class(art)
 
     def test_extra_fields_ok(self):
-        validate_evidence_class(
-            {
-                "evidence_class": "natural_paper_evidence",
-                "produced_by": "test",
-                "run_id": "abc123",
-                "some_other_field": "value",
-            }
-        )
+        art = _minimal_natural_paper()
+        art["run_id"] = "abc123"
+        art["some_other_field"] = "value"
+        validate_evidence_class(art)
+
+    def test_missing_evidence_class_version_fails(self):
+        art = _minimal_natural_paper()
+        art.pop("evidence_class_version")
+        with pytest.raises(EvidenceClassError, match="evidence_class_version"):
+            validate_evidence_class(art)
+
+    def test_missing_produced_by_fails(self):
+        art = _minimal_natural_paper()
+        art.pop("produced_by")
+        with pytest.raises(EvidenceClassError, match="produced_by"):
+            validate_evidence_class(art)
+
+    def test_missing_produced_at_utc_fails(self):
+        art = _minimal_natural_paper()
+        art.pop("produced_at_utc")
+        with pytest.raises(EvidenceClassError, match="produced_at_utc"):
+            validate_evidence_class(art)
+
+    def test_missing_natural_paper_per_class_field_fails(self):
+        art = _minimal_natural_paper()
+        art.pop("campaign_id")
+        with pytest.raises(EvidenceClassError, match="campaign_id"):
+            validate_evidence_class(art)
+
+    def test_missing_controlled_lab_per_class_field_fails(self):
+        art = _minimal_controlled_lab()
+        art.pop("scenario_source")
+        with pytest.raises(EvidenceClassError, match="scenario_source"):
+            validate_evidence_class(art)
+
+    def test_missing_pipeline_test_per_class_field_fails(self):
+        art = _minimal_pipeline_test()
+        art.pop("pipeline_tool")
+        with pytest.raises(EvidenceClassError, match="pipeline_tool"):
+            validate_evidence_class(art)
+
+    def test_missing_waiver_per_class_field_fails(self):
+        art = _minimal_waiver()
+        art.pop("governance_ref")
+        with pytest.raises(EvidenceClassError, match="governance_ref"):
+            validate_evidence_class(art)
+
+    def test_blank_produced_by_fails(self):
+        art = _minimal_natural_paper()
+        art["produced_by"] = ""
+        with pytest.raises(EvidenceClassError, match="produced_by"):
+            validate_evidence_class(art)
+
+    def test_blank_produced_at_utc_fails(self):
+        art = _minimal_natural_paper()
+        art["produced_at_utc"] = "   "
+        with pytest.raises(EvidenceClassError, match="produced_at_utc"):
+            validate_evidence_class(art)
 
 
 class TestValidateEvidenceClassOrSkip:
     def test_valid_returns_empty_list(self):
-        errors = validate_evidence_class_or_skip(
-            {"evidence_class": "natural_paper_evidence"}
-        )
+        errors = validate_evidence_class_or_skip(_minimal_natural_paper())
         assert errors == []
 
     def test_invalid_returns_error_list(self):
@@ -119,7 +192,7 @@ class TestValidateEvidenceClassOrSkip:
 
 class TestValidateEvidenceClassFromJson:
     def test_valid_json(self):
-        json_str = json.dumps({"evidence_class": "natural_paper_evidence"})
+        json_str = json.dumps(_minimal_natural_paper())
         validate_evidence_class_from_json(json_str)
 
     def test_invalid_json(self):
@@ -179,13 +252,10 @@ class TestPipelineTestEvidenceCannotBeNaturalPaper:
         assert "pipeline_test_evidence" != "natural_paper_evidence"
 
     def test_pipeline_test_rejected_as_unknown_when_used_as_natural(self):
+        art = _minimal_pipeline_test()
+        art["warning_banner"] = ""
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(
-                {
-                    "evidence_class": "pipeline_test_evidence",
-                    "warning_banner": "",
-                }
-            )
+            validate_evidence_class(art)
 
     def test_warning_banner_distinct(self):
         pipeline_banner = evidence_class_warning_banner("pipeline_test_evidence")
@@ -194,9 +264,7 @@ class TestPipelineTestEvidenceCannotBeNaturalPaper:
         assert "Pipeline test only" in pipeline_banner
 
     def test_validate_blocks_silent_upgrade(self):
-        """An artifact labeled pipeline_test_evidence cannot pass as natural_paper_evidence."""
-        artifact = {
-            "evidence_class": "pipeline_test_evidence",
-        }
+        art = _minimal_pipeline_test()
+        art.pop("warning_banner")
         with pytest.raises(EvidenceClassError, match="requires warning banner"):
-            validate_evidence_class(artifact)
+            validate_evidence_class(artifact=art)

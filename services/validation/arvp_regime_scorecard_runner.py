@@ -19,6 +19,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import datetime
 import sys
 from pathlib import Path
 
@@ -32,7 +33,6 @@ from core.replay.arvp_regime_scorecards import (
 from core.utils.evidence_class import (
     EvidenceClassError,
     evidence_class_warning_banner,
-    is_valid_evidence_class,
     validate_evidence_class,
 )
 
@@ -67,20 +67,7 @@ def main(argv: list[str] | None = None) -> int:
 
     evidence_class = str(args.evidence_class)
     warning_banner = evidence_class_warning_banner(evidence_class)
-
-    metadata: dict[str, str] = {
-        "evidence_class": evidence_class,
-        "evidence_class_version": "1.0",
-        "produced_by": "arvp_regime_scorecard_runner",
-    }
-    if warning_banner:
-        metadata["warning_banner"] = warning_banner
-
-    try:
-        validate_evidence_class(metadata)
-    except EvidenceClassError as exc:
-        print(f"EVIDENCE CLASS VALIDATION FAILED: {exc}", file=sys.stderr)
-        return 2
+    now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     run_id = str(args.run_id)
     output_root = Path(args.output_dir)
@@ -100,6 +87,24 @@ def main(argv: list[str] | None = None) -> int:
 
         # If both are provided, prefer replay-side scorecard as primary output.
         scorecard = scorecards[0]
+
+        metadata: dict[str, str] = {
+            "evidence_class": evidence_class,
+            "evidence_class_version": "1.0",
+            "produced_by": "arvp_regime_scorecard_runner",
+            "produced_at_utc": now_utc,
+            "scenario_source": args.replay_trace or args.comparison or "unknown",
+            "reproducibility_contract": scorecard.scorecard_fingerprint,
+        }
+        if warning_banner:
+            metadata["warning_banner"] = warning_banner
+
+        try:
+            validate_evidence_class(metadata)
+        except EvidenceClassError as exc:
+            print(f"EVIDENCE CLASS VALIDATION FAILED: {exc}", file=sys.stderr)
+            return 2
+
         out_dir = output_root / run_id
         write_regime_scorecard_bundle(
             scorecard=scorecard, output_dir=out_dir, bundle_metadata=metadata

@@ -15,6 +15,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import datetime
 import os
 import sys
 from pathlib import Path
@@ -284,9 +285,19 @@ def main(argv: list[str] | None = None) -> int:
 
     evidence_class = "natural_paper_evidence"
     warning_banner = evidence_class_warning_banner(evidence_class)
+    now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
     payload["evidence_class"] = evidence_class
     payload["evidence_class_version"] = "1.0"
     payload["produced_by"] = "paper_reference_window_runner"
+    payload["produced_at_utc"] = now_utc
+    payload["campaign_id"] = request.strategy_id
+    payload["start_criterion"] = "ledger_export"
+    payload["safety_flags"] = {
+        "mock_trading": True,
+        "dry_run": True,
+        "mexc_testnet": True,
+    }
+    payload["provenance"] = f"extracted_by={request.extracted_by}@{now_utc}"
     if warning_banner:
         payload["warning_banner"] = warning_banner
 

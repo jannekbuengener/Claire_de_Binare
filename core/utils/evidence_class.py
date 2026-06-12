@@ -24,9 +24,54 @@ _WARNING_BANNERS: dict[str, str] = {
 
 SCHEMA_VERSION = "1.0"
 
+_BASE_REQUIRED_FIELDS: set[str] = {
+    "evidence_class_version",
+    "produced_by",
+    "produced_at_utc",
+}
+
+_CLASS_REQUIRED_FIELDS: dict[str, set[str]] = {
+    "natural_paper_evidence": {
+        "campaign_id",
+        "start_criterion",
+        "safety_flags",
+        "provenance",
+    },
+    "controlled_lab_evidence": {
+        "scenario_source",
+        "reproducibility_contract",
+    },
+    "pipeline_test_evidence": {
+        "pipeline_tool",
+        "fixture_source",
+    },
+    "waiver_decision": {
+        "governance_ref",
+        "residual_uncertainties",
+    },
+}
+
 
 class EvidenceClassError(ValueError):
     """Raised when evidence_class validation fails."""
+
+
+def _check_required_fields(artifact: dict[str, Any], ec: str) -> None:
+    """Check all required base and per-class fields are present and non-blank."""
+    missing: list[str] = []
+    for field in _BASE_REQUIRED_FIELDS:
+        val = artifact.get(field)
+        if val is None or (isinstance(val, str) and not val.strip()):
+            missing.append(field)
+    for field in _CLASS_REQUIRED_FIELDS.get(ec, set()):
+        val = artifact.get(field)
+        if val is None or (isinstance(val, str) and not val.strip()):
+            missing.append(field)
+    if missing:
+        raise EvidenceClassError(
+            f"evidence_class={ec!r} missing required field(s): "
+            f"{', '.join(sorted(missing))}"
+        )
 
 
 def validate_evidence_class(artifact: dict[str, Any]) -> None:
@@ -38,7 +83,7 @@ def validate_evidence_class(artifact: dict[str, Any]) -> None:
 
     Raises:
         EvidenceClassError: If validation fails (missing, unknown,
-            or missing required warning banner).
+            missing required warning banner, or missing required fields).
     """
     ec = artifact.get("evidence_class")
 
@@ -64,6 +109,8 @@ def validate_evidence_class(artifact: dict[str, Any]) -> None:
                 f"containing: {expected_banner!r}. "
                 f"Got: {actual_banner!r}"
             )
+
+    _check_required_fields(artifact, ec)
 
 
 def validate_evidence_class_or_skip(artifact: dict[str, Any]) -> list[str]:
