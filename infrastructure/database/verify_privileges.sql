@@ -128,6 +128,20 @@ SELECT
 -- GRANT cdb_reader TO cdb_readonly are not reliably visible via
 -- information_schema.table_privileges WHERE grantee = 'cdb_readonly'.
 
+\echo '=== 7b. Effective privileges (cdb_readonly -> public.candles_1m) ==='
+-- #3091: readonly candle export for MEXC same-venue datasets.
+WITH readonly_role AS (
+    SELECT oid
+    FROM pg_roles
+    WHERE rolname = 'cdb_readonly'
+)
+SELECT
+    EXISTS (SELECT 1 FROM readonly_role) AS cdb_readonly_exists,
+    COALESCE((SELECT has_table_privilege(oid, 'public.candles_1m', 'SELECT') FROM readonly_role), false) AS cdb_can_select,
+    COALESCE((SELECT has_table_privilege(oid, 'public.candles_1m', 'INSERT') FROM readonly_role), false) AS cdb_can_insert,
+    COALESCE((SELECT has_table_privilege(oid, 'public.candles_1m', 'UPDATE') FROM readonly_role), false) AS cdb_can_update,
+    COALESCE((SELECT has_table_privilege(oid, 'public.candles_1m', 'DELETE') FROM readonly_role), false) AS cdb_can_delete;
+
 \echo '=== 8. Table privileges (claire_user direct) ==='
 SELECT table_name, privilege_type
 FROM information_schema.table_privileges

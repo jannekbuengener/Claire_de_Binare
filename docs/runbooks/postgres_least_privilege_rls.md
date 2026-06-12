@@ -31,6 +31,8 @@ against Issue #741 which scopes both topics.
 | `risk_events` | SELECT | SELECT, INSERT | ALL | Append-only risk decisions |
 | `correlation_ledger` | SELECT | SELECT, INSERT | ALL | Append-only correlation audit trail |
 | `blocked_decisions` | SELECT | SELECT, INSERT | ALL | Append-only blocked decision log |
+| `candles_1m` | SELECT | — | ALL | Persistent 1m OHLCV candle data (#1855); readonly export for #3091 |
+| `candle_backfill_imports` | SELECT | — | ALL | Candle backfill provenance (#1906); readonly audit |
 | `core_secrets_metadata` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `audit_trail` | SELECT | — | ALL | Governance mirror (no runtime writes) |
 | `governance_events` | SELECT | — | ALL | Governance mirror (no runtime writes) |
@@ -209,7 +211,9 @@ Check output sections 1-8. The readonly verification must confirm:
 - membership in `cdb_reader`
 - no membership in `cdb_writer` or `cdb_admin`
 - effective `SELECT` on `public.correlation_ledger`
+- effective `SELECT` on `public.candles_1m` (#3091: MEXC same-venue candle export)
 - no effective `INSERT`, `UPDATE`, or `DELETE` on `public.correlation_ledger`
+- no effective `INSERT`, `UPDATE`, or `DELETE` on `public.candles_1m`
 
 ### Step 4: Enforce (deliberate operator step)
 

@@ -56,6 +56,7 @@ DECLARE
     reader_tables TEXT[] := ARRAY[
         'signals', 'orders', 'trades', 'positions', 'portfolio_snapshots',
         'risk_events', 'correlation_ledger', 'blocked_decisions',
+        'candles_1m', 'candle_backfill_imports',
         'core_secrets_metadata', 'audit_trail', 'governance_events',
         'deployment_approvals_mirror', 'system_config', 'security_policy_refs',
         'schema_version'

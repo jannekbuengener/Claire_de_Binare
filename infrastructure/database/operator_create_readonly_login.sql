@@ -108,6 +108,21 @@ BEGIN
         RAISE EXCEPTION 'cdb_readonly must not have write privileges on public.correlation_ledger';
     END IF;
 
+    -- #3091: readonly candle export surface must also be accessible.
+    IF to_regclass('public.candles_1m') IS NULL THEN
+        RAISE NOTICE 'public.candles_1m does not exist — candle export surface not verified in this run.';
+    ELSE
+        IF NOT has_table_privilege('cdb_readonly', 'public.candles_1m', 'SELECT') THEN
+            RAISE EXCEPTION 'cdb_readonly must have SELECT on public.candles_1m via cdb_reader';
+        END IF;
+
+        IF has_table_privilege('cdb_readonly', 'public.candles_1m', 'INSERT')
+           OR has_table_privilege('cdb_readonly', 'public.candles_1m', 'UPDATE')
+           OR has_table_privilege('cdb_readonly', 'public.candles_1m', 'DELETE') THEN
+            RAISE EXCEPTION 'cdb_readonly must not have write privileges on public.candles_1m';
+        END IF;
+    END IF;
+
     RAISE NOTICE '---------------------------------------------';
     RAISE NOTICE 'operator_create_readonly_login.sql applied';
     RAISE NOTICE 'cdb_readonly remains operator-managed';
