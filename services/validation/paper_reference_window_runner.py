@@ -15,7 +15,6 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import datetime
 import os
 import sys
 from pathlib import Path
@@ -29,6 +28,7 @@ from core.replay.paper_reference_window_export import (
     build_export_request,
     export_paper_reference_window,
 )
+from core.utils.clock import utcnow
 from core.utils.evidence_class import (
     EvidenceClassError,
     evidence_class_warning_banner,
@@ -285,7 +285,8 @@ def main(argv: list[str] | None = None) -> int:
 
     evidence_class = "natural_paper_evidence"
     warning_banner = evidence_class_warning_banner(evidence_class)
-    now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    now_utc = utcnow().isoformat()
+    extracted_by = getattr(request, "extracted_by", "paper_reference_window_runner")
     payload["evidence_class"] = evidence_class
     payload["evidence_class_version"] = "1.0"
     payload["produced_by"] = "paper_reference_window_runner"
@@ -297,7 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         "dry_run": True,
         "mexc_testnet": True,
     }
-    payload["provenance"] = f"extracted_by={request.extracted_by}@{now_utc}"
+    payload["provenance"] = f"extracted_by={extracted_by}@{now_utc}"
     if warning_banner:
         payload["warning_banner"] = warning_banner
 

@@ -19,7 +19,6 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
-import datetime
 import sys
 from pathlib import Path
 
@@ -30,6 +29,7 @@ from core.replay.arvp_regime_scorecards import (
     load_json,
     write_regime_scorecard_bundle,
 )
+from core.utils.clock import utcnow
 from core.utils.evidence_class import (
     EvidenceClassError,
     evidence_class_warning_banner,
@@ -67,7 +67,7 @@ def main(argv: list[str] | None = None) -> int:
 
     evidence_class = str(args.evidence_class)
     warning_banner = evidence_class_warning_banner(evidence_class)
-    now_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    now_utc = utcnow().isoformat()
 
     run_id = str(args.run_id)
     output_root = Path(args.output_dir)
