@@ -1,0 +1,95 @@
+{
+  "schema_version": "execution_economics_summary.v1",
+  "summary_id": "econ-primary-breakout-v1-btcusdt-mexc-3091-calibrated",
+  "evidence_packet_ref": "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_3091_calibrated_v2.json",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3091",
+  "generated_at": "2026-06-12T18:35:00Z",
+  "replay_run_id": "replay-f270366bef3c-0001",
+  "dataset_id": "mexc_strict_window_3091_island_3",
+  "calibration_variant": {
+    "slug": "atr_p75_61.82",
+    "atr_threshold": 61.82,
+    "selection_rule": "ATR at p75 (75th percentile of BTCUSDT ATR distribution). Distribution-based, non-profit-selected per variant_selection_rule from #3032 prompt contract.",
+    "regime_distribution": {
+      "TREND": 849,
+      "RANGE": 1697,
+      "HIGH_VOL_CHAOTIC": 950
+    },
+    "regime_notes": "27.2% HVC, 24.3% TREND, 48.5% RANGE. Commissioned regime labels: estimated via offline ADX/ATR heuristic, not runtime-derived.",
+    "calibration_manifest_ref": "artifacts/candles/mexc_strict_window_3091_regime_calibration/atr_p75_61.82/calibration_manifest.json"
+  },
+  "trade_metrics": {
+    "signals_total": 8,
+    "buy_signals_total": 4,
+    "sell_signals_total": 4,
+    "closed_trades_total": 4,
+    "win_count": 1,
+    "loss_count": 3,
+    "win_rate": 0.25
+  },
+  "return_metrics": {
+    "gross_return": null,
+    "gross_return_available": false,
+    "gross_return_note": "Replay runner does not emit gross_return for this strategy/adapter combination.",
+    "net_return": null,
+    "net_return_available": false,
+    "net_return_note": "Cannot compute without fees, spread, and slippage data from execution simulator.",
+    "profit_factor": 0.517272534,
+    "profit_factor_available": true,
+    "profit_factor_note": "Gross profit factor from replay runner. < 1.0 indicates net loss before fees."
+  },
+  "risk_metrics": {
+    "max_drawdown": null,
+    "max_drawdown_available": false,
+    "expectancy_r": null,
+    "expectancy_available": false,
+    "avg_win": null,
+    "avg_loss": null,
+    "loss_streak": null
+  },
+  "cost_metrics": {
+    "fees": 0.0,
+    "fees_model": "assumed_zero",
+    "fees_note": "Fees not modeled by current execution simulator. MEXC spot fees are typically 0.0%/0.0% maker/taker for BTCUSDT. Realistic fee modeling requires separate replay runner extension.",
+    "spread_cost": 0.0,
+    "spread_model": "assumed_zero",
+    "spread_note": "Spread cost not modeled. BTCUSDT MEXC spread is typically <0.01%. Negligible relative to breakout buffer (0.0005) at this trade count.",
+    "slippage_cost": 0.0,
+    "slippage_model": "assumed_zero",
+    "slippage_note": "Slippage not modeled with order_book_depth_multiplier=10000 and order_size=1.0. At 4 trades in 58h, realistic slippage impact is minimal."
+  },
+  "execution_quality": {
+    "simulator_drift": "not_assessed",
+    "simulator_drift_note": "No paper reference exists for comparison. Replay is the only execution surface for this dataset.",
+    "risk_blocks": 0,
+    "kill_switch_events": 0,
+    "execution_replay_ok": true,
+    "deterministic_replay_ok": true
+  },
+  "evidence_gate": {
+    "gate_result": "FAIL",
+    "gate_failed_criteria": [
+      "min_closed_trades_total",
+      "min_profit_factor",
+      "min_expectancy_r"
+    ],
+    "gate_note": "All variants fail minimum closed trades (4 < threshold) and minimum profit factor/profit factor thresholds. This is expected for a 58h dataset with 240-minute lookback strategy. Gate thresholds are calibrated for multi-week backtest windows."
+  },
+  "verdict": {
+    "economic_viability": "UNKNOWN",
+    "verdict_note": "4 trades over 58h with profit_factor=0.517 does not support economic viability assessment. The dataset is too short for statistical significance. Profit factor < 1.0 at this trade count is not evidence of strategy weakness -- it is evidence of insufficient data.",
+    "evidence_readiness": "BLOCKED_BY_DATASET_LENGTH",
+    "next_step": "Acquire longer BTCUSDT MEXC dataset (>1 week, >10k candles) with calibrated ATR threshold to assess economic viability."
+  },
+  "evidence_class": "controlled_lab_evidence",
+  "regime_labels_estimated": true,
+  "no_promotion": true,
+  "lr_status": "NO-GO",
+  "refs": [
+    "#3032",
+    "#3141",
+    "#3142",
+    "#3143",
+    "#3145"
+  ]
+}

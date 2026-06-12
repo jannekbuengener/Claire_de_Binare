@@ -1,0 +1,92 @@
+{
+  "schema_version": "profitability_evidence_packet.v1",
+  "evidence_packet_id": "pep-primary-breakout-v1-btcusdt-mexc-3091-calibrated-v2",
+  "candidate_id": "cand-primary-breakout-v1-btcusdt-mexc-3091",
+  "generated_at": "2026-06-12T18:35:00Z",
+  "dataset_id": "mexc_strict_window_3091_island_3",
+  "dataset_fingerprint": "sha256:d79a1c3c81191dcf4418ae0c2b2775a6f354ed0cc6801a6955904871c4077605",
+  "source_run_refs": [
+    "artifacts/candles/mexc_strict_window_3091/dataset_spec.json",
+    "artifacts/candles/mexc_strict_window_3091/provenance_manifest.json",
+    "artifacts/candles/mexc_strict_window_3091_regime_calibration/atr_p75_61.82/calibration_manifest.json",
+    "artifacts/candles/mexc_strict_window_3091_regime_calibration/atr_p75_61.82/candles.jsonl",
+    "artifacts/replay_reports/replay-f270366bef3c-0001/report.json",
+    "docs/evidence/profitability_btcusdt_regime_calibration_3032.md",
+    "docs/evidence/profitability_execution_economics_primary_breakout_v1_mexc_3091_calibrated.json",
+    "docs/evidence/profitability_first_evidence_packet_mexc_3091.md",
+    "docs/evidence/profitability_evidence_packet_primary_breakout_v1_mexc_3091.json"
+  ],
+  "gross_return": 0.0,
+  "net_return": 0.0,
+  "fees": 0.0,
+  "spread_cost": 0.0,
+  "slippage_cost": 0.0,
+  "profit_factor": 0.517272534,
+  "expectancy": 0.0,
+  "win_rate": 0.25,
+  "avg_win": 0.0,
+  "avg_loss": 0.0,
+  "max_drawdown": 0.0,
+  "loss_streak": 0,
+  "trade_count": 4,
+  "regime_scorecard": {
+    "status": "ok",
+    "artifact_ref": "artifacts/candles/mexc_strict_window_3091_regime_calibration/atr_p75_61.82/calibration_manifest.json",
+    "summary": "Regime labels assigned via offline ADX/ATR heuristic with calibrated ATR threshold=61.82 (p75). Distribution: TREND=849 (24.3%), RANGE=1697 (48.5%), HIGH_VOL_CHAOTIC=950 (27.2%). Labels are estimated, not runtime-derived. Regime split enables strategy entry evaluation."
+  },
+  "scenario_results": [
+    {
+      "scenario_id": "replay_calibrated_atr_p75",
+      "status": "PASS",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "Full replay completed with calibrated ATR=61.82 (p75). run_id=replay-f270366bef3c-0001. 8 signals (4 buy + 4 sell), 4 closed trades. deterministic_replay_ok=True. Gate=FAIL (min_closed_trades_total, min_profit_factor, min_expectancy_r). Economics fields largely unavailable from current replay runner."
+    },
+    {
+      "scenario_id": "replay_calibration_baseline_atr_2_0",
+      "status": "FAIL",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "Baseline replay with committed ATR=2.0: 0 signals, 0 trades. 99.5% HIGH_VOL_CHAOTIC blocks all entries. Confirms the calibration was necessary to produce any strategy signals."
+    },
+    {
+      "scenario_id": "replay_calibrated_atr_p50",
+      "status": "PASS",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "ATR=48.01 (p50): 6 signals, 3 closed trades. Regime: 51.4% HVC, 14.4% TREND, 34.2% RANGE. Representative of median volatility."
+    },
+    {
+      "scenario_id": "replay_calibrated_atr_p90",
+      "status": "PASS",
+      "net_return": 0.0,
+      "max_drawdown": 0.0,
+      "notes": "ATR=76.84 (p90): 10 signals, 5 closed trades. Regime: 9.8% HVC, 33.2% TREND, 57.0% RANGE. Most permissive non-extreme threshold."
+    }
+  ],
+  "replay_vs_paper_status": "not_run",
+  "simulator_drift": "not_assessed",
+  "risk_blocks": 0,
+  "kill_switch_events": 0,
+  "recommendation": "PARK",
+  "limitations": [
+    "Only 4 closed trades over 58h (3496 1m candles) -- insufficient for statistical significance.",
+    "Profit factor 0.517 at 4 trades is not evidence of strategy weakness; it is evidence of insufficient data. 1 win and 3 losses at single-digit trade count can produce any profit factor by random chance.",
+    "Gross return, net return, expectancy, max drawdown, avg_win, avg_loss, and cost metrics are unavailable from current replay runner. This is a replay runner limitation, not a dataset or strategy limitation.",
+    "Regime labels are estimated via offline ADX/ATR heuristic, not runtime-derived. They are controlled_lab_evidence.",
+    "Fees, spread, and slippage assumed zero. MEXC BTCUSDT spot fees are typically 0.0% maker/taker. Realistic cost modeling requires replay runner extension.",
+    "Calibrated ATR threshold (61.82) is derived from this specific 58h BTCUSDT MEXC window. No claim of generalizability to other time periods, symbols, or venues.",
+    "This evidence packet v2 supersedes the v1 packet (#3141) which had all-zero metrics due to blocked execution.",
+    "Dataset window: 2026-06-06T13:43Z to 2026-06-08T23:58Z. This is a single contiguous period with no regime diversity (no long-term trend or sustained low-vol period)."
+  ],
+  "safety_boundaries": [
+    "LR remains NO-GO. This packet does not constitute any form of live trading approval.",
+    "Board 'trade-capable' stage does not authorize live capital or strategy promotion.",
+    "Calibrated ATR threshold is controlled_lab_evidence only. No production config change has been made or is authorized by this packet.",
+    "Recommendation PARK means: do not promote. Do not allocate capital. Do not run paper. Wait for longer dataset and richer economics output.",
+    "Profit factor 0.517 is documented as-is without interpretation as strategy profitability or lack thereof.",
+    "All regime labels are explicitly marked as estimated. They are NOT runtime-derived.",
+    "Strategy code, core replay, runner, provider, and schema are unchanged from main.",
+    "No automatic promotion to BACKTESTED, PAPER_VALIDATED, or any downstream gate is authorized by this packet."
+  ]
+}
