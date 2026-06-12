@@ -1,0 +1,19 @@
+{
+  "schema_version": "signal_aware_trace.v1",
+  "run_id": "run_002",
+  "signal_attribution_availability": "partial",
+  "buy_entry_attribution_available": true,
+  "buy_entry_count": 22,
+  "sell_signal_attribution_available": false,
+  "trade_closure_attribution_available": false,
+  "attribution_scope": "entry_gate_buy_only",
+  "source_trace_kind": "gate_trace_jsonl",
+  "natural_paper_evidence": false,
+  "baseline_reconciled": true,
+  "baseline_buy_signals_total": 22,
+  "sell_inferred_count": null,
+  "missing_gate_trace_steps": 262,
+  "warmup_or_before_gate_region_steps": 240,
+  "candle_count": 20160,
+  "gate_trace_row_count": 19898
+}
