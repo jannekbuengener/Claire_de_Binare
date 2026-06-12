@@ -28,6 +28,11 @@ from core.replay.paper_reference_window_export import (
     build_export_request,
     export_paper_reference_window,
 )
+from core.utils.evidence_class import (
+    EvidenceClassError,
+    evidence_class_warning_banner,
+    validate_evidence_class,
+)
 
 _READONLY_DSN_ENV = "POSTGRES_READONLY_PASSWORD_DSN"
 _EXPECTED_READONLY_LOGIN = "cdb_readonly"
@@ -270,7 +275,6 @@ def main(argv: list[str] | None = None) -> int:
         payload = export_paper_reference_window(
             request=request, rows=rows, causal_context_rows=causal_context_rows
         )
-        out_path.write_text(canonical_json_dumps(payload), encoding="utf-8")
     except PaperReferenceExportError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
@@ -278,12 +282,37 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: paper_reference_window export failed: {exc}", file=sys.stderr)
         return 2
 
+    evidence_class = "natural_paper_evidence"
+    warning_banner = evidence_class_warning_banner(evidence_class)
+    evidence_envelope: dict[str, Any] = {
+        "contract_version": payload.get("contract_version"),
+        "strategy_id": payload.get("strategy_id"),
+        "symbol": payload.get("symbol"),
+        "start_ts_ms_utc": payload.get("start_ts_ms_utc"),
+        "end_ts_ms_utc": payload.get("end_ts_ms_utc"),
+        "evidence_class": evidence_class,
+        "evidence_class_version": "1.0",
+        "produced_by": "paper_reference_window_runner",
+    }
+    if warning_banner:
+        evidence_envelope["warning_banner"] = warning_banner
+    evidence_envelope["window"] = payload
+
+    try:
+        validate_evidence_class(evidence_envelope)
+    except EvidenceClassError as exc:
+        print(f"EVIDENCE CLASS VALIDATION FAILED: {exc}", file=sys.stderr)
+        return 2
+
+    out_path.write_text(canonical_json_dumps(evidence_envelope), encoding="utf-8")
+
     readonly_database, readonly_current_user, readonly_session_user = readonly_identity
     print(
         "OK: paper_reference_window exported "
         f"(strategy_id={request.strategy_id}, symbol={request.symbol}, "
         f"window=[{request.start_ts_ms_utc},{request.end_ts_ms_utc}], "
         f"bot_id={request.bot_id or '*'}, config_hash={request.config_hash or '*'}, "
+        f"evidence_class={evidence_class}, "
         f"database={readonly_database}, current_user={readonly_current_user}, "
         f"session_user={readonly_session_user})"
     )

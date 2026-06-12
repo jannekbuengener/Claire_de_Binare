@@ -6,6 +6,9 @@ a comparison-grade SIGNAL -> DECISION -> ORDER(paper_) -> FILL chain under
 MOCK_TRADING=true / DRY_RUN=true / MEXC_TESTNET=true without modifying any
 service logic or runner contract.
 
+Evidence class: pipeline_test_evidence
+WARNING: Pipeline test only — NOT valid for Product-Complete gate (§5.2.4).
+
 Safety boundaries
 ----------------
 - Never authorises Live-Go or Echtgeld-Go.
@@ -36,9 +39,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+from core.utils.evidence_class import evidence_class_warning_banner
+
 logger = logging.getLogger("paper_runtime_stimulus_runner")
 
 LR_STATUS = "NO-GO"
+
+EVIDENCE_CLASS = "pipeline_test_evidence"
+EVIDENCE_CLASS_BANNER = evidence_class_warning_banner(EVIDENCE_CLASS)
 
 DEFAULT_FIXTURE_PATH = Path(__file__).resolve().parent.parent.parent / (
     "tests/fixtures/arvp/paper_runtime_stimulus_btcusdt_breakout_v1.json"
@@ -425,6 +433,8 @@ def fixture_summary(
 
     lines = [
         f"=== Fixture Summary ===",
+        f"  evidence_class: {EVIDENCE_CLASS}",
+        f"  warning_banner: {EVIDENCE_CLASS_BANNER}",
         f"  mode: {mode}",
         f"  strategy_id: {spec.strategy_id}",
         f"  symbol: {spec.symbol}",
@@ -507,6 +517,8 @@ def run_preview(
         summary,
         f"=== Preview Mode (no Redis publish) ===",
         f"  intended market_data events: {len(payloads)}",
+        f"  evidence_class: {EVIDENCE_CLASS}",
+        f"  warning_banner: {EVIDENCE_CLASS_BANNER}",
         f"  expected chain target: SIGNAL >= 1, DECISION >= 1, ORDER(paper_) >= 1, FILL >= 1",
         f"  next runtime validation command:",
         f"    python -m services.validation.paper_runtime_stimulus_runner --publish --fixture <path>",
@@ -575,6 +587,8 @@ def run_publish(
     lines = [
         summary,
         f"=== Publish Result ===",
+        f"  evidence_class: {EVIDENCE_CLASS}",
+        f"  warning_banner: {EVIDENCE_CLASS_BANNER}",
         f"  published: {published}/{expected_events} market_data events",
         f"  burst_published: {published - (1 if follow_up_tick_published else 0)}/{len(payloads)}",
         f"  follow_up_tick_published: {follow_up_tick_published}",
@@ -584,6 +598,7 @@ def run_publish(
         f"  stop_after_complete_chain: {stop_after_complete_chain}",
         f"  max_wait_seconds: {max_wait_seconds}",
         f"  LR status: {LR_STATUS}",
+        f"  WARNING: {EVIDENCE_CLASS_BANNER}",
         f"  NOTE: This tool does not authorise Live-Go or Echtgeld-Go.",
         f"  To verify chain formation, query the audit ledger after runtime processes events.",
     ]
