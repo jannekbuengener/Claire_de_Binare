@@ -38,7 +38,9 @@ def regime_str_from_raw(raw: object) -> str | None:
 
 def build_trace(candles: list[dict], run_id: str | None = None) -> dict:
     if run_id is None:
-        raw_bytes = json.dumps(candles, sort_keys=True, ensure_ascii=False).encode("utf-8")
+        raw_bytes = json.dumps(candles, sort_keys=True, ensure_ascii=False).encode(
+            "utf-8"
+        )
         digest = hashlib.sha256(raw_bytes).hexdigest()[:16]
         run_id = f"candle-trace-{digest}"
 
