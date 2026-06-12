@@ -12,13 +12,13 @@ _VALID_CLASSES: set[str] = {
 
 _WARNING_BANNERS: dict[str, str] = {
     "controlled_lab_evidence": (
-        "NOT natural_paper_evidence — cannot satisfy §5.2.4"
+        "⚠ NOT natural_paper_evidence — cannot satisfy §5.2.4"
     ),
     "pipeline_test_evidence": (
-        "Pipeline test only — NOT valid for Product-Complete gate"
+        "⚠ Pipeline test only — NOT valid for Product-Complete gate"
     ),
     "waiver_decision": (
-        "Policy decision — not evidence; requires formal governance vote"
+        "⚠ Policy decision — not evidence; requires formal governance vote"
     ),
 }
 

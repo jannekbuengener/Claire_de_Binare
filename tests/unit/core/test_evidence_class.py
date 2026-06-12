@@ -33,7 +33,7 @@ def _minimal_controlled_lab() -> dict:
         "evidence_class_version": "1.0",
         "produced_by": "test_runner",
         "produced_at_utc": "2026-06-12T00:00:00+00:00",
-        "warning_banner": "NOT natural_paper_evidence — cannot satisfy §5.2.4",
+        "warning_banner": "⚠ NOT natural_paper_evidence — cannot satisfy §5.2.4",
         "scenario_source": "test_scenario",
         "reproducibility_contract": "test_fingerprint",
     }
@@ -45,7 +45,7 @@ def _minimal_pipeline_test() -> dict:
         "evidence_class_version": "1.0",
         "produced_by": "test_runner",
         "produced_at_utc": "2026-06-12T00:00:00+00:00",
-        "warning_banner": "Pipeline test only — NOT valid for Product-Complete gate",
+        "warning_banner": "⚠ Pipeline test only — NOT valid for Product-Complete gate",
         "pipeline_tool": "test_tool",
         "fixture_source": "test_fixture",
     }
@@ -57,7 +57,7 @@ def _minimal_waiver() -> dict:
         "evidence_class_version": "1.0",
         "produced_by": "test_runner",
         "produced_at_utc": "2026-06-12T00:00:00+00:00",
-        "warning_banner": "Policy decision — not evidence; requires formal governance vote",
+        "warning_banner": "⚠ Policy decision — not evidence; requires formal governance vote",
         "governance_ref": "test_ref",
         "residual_uncertainties": "test_risk",
     }

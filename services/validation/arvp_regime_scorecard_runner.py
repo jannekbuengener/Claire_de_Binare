@@ -52,7 +52,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     p.add_argument(
         "--evidence-class",
         default=_DEFAULT_EVIDENCE_CLASS,
-        choices=["natural_paper_evidence", "controlled_lab_evidence", "pipeline_test_evidence", "waiver_decision"],
+        choices=["controlled_lab_evidence"],
         help=f"Evidence classification for the output artifact (default: {_DEFAULT_EVIDENCE_CLASS}).",
     )
     return p.parse_args(argv)
