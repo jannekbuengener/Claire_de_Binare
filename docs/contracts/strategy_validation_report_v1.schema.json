@@ -285,6 +285,73 @@
         },
         "deterministic_replay_ok": {
           "type": "boolean"
+        },
+        "gross_return_r": {
+          "description": "Cumulative sum of all non-fee-adjusted trade r_returns. Null when zero trades.",
+          "type": "number"
+        },
+        "avg_win_r": {
+          "description": "Average r_return of winning trades. Null when zero winning trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "avg_loss_r": {
+          "description": "Average r_return of losing trades. Null when zero losing trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "largest_win_r": {
+          "description": "Largest single trade winning r_return. Null when zero winning trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "largest_loss_r": {
+          "description": "Largest single trade losing r_return (most negative). Null when zero losing trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "trades_win_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trades_loss_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gross_pnl_quote": {
+          "description": "Sum of (exit_price - entry_price) * order_size across all trades in quote currency. Null when zero trades.",
+          "type": "number"
+        },
+        "net_pnl_quote": {
+          "description": "gross_pnl_quote - fees_total_quote. Null when zero trades.",
+          "type": "number"
+        },
+        "fees_total_quote": {
+          "description": "Sum of entry_fee + exit_fee across all trades in quote currency. Null when zero trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "fee_adjusted_expectancy_r": {
+          "description": "Expectancy after subtracting fees from each trade r_return. Null when zero trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "fee_adjusted_profit_factor": {
+          "description": "Profit factor on fee-adjusted trade returns. Null when zero trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "fee_adjusted_max_drawdown_r": {
+          "description": "Max drawdown on fee-adjusted cumulative trade returns. Null when zero trades.",
+          "oneOf": [{"type": "number"}, {"type": "null"}]
+        },
+        "sample_size_verdict": {
+          "description": "Automated sample size assessment for economics interpretability.",
+          "type": "string",
+          "enum": [
+            "no_trades",
+            "insufficient",
+            "weak",
+            "usable",
+            "adequate"
+          ]
+        },
+        "metrics_availability": {
+          "description": "Map of field availability flags with explanatory notes for unavailable fields.",
+          "type": "object"
         }
       }
     },
